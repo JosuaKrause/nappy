@@ -52,7 +52,7 @@ static func over(buildings: Array[Building], home_door: City.HomeDoor, door_x_ra
 ## about the run (`run.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall the city actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
-## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.
+## tile one step north of the scar (`Vector2i.UP`, the same direction `RowGround.
 ## _wants_this_side()`'s `AT_THE_FRONT` case checks, on the map and `BUILDING`) is always a real
 ## lot. `tests/test_acts.gd` checks that over every site the fire can be given.
 ##

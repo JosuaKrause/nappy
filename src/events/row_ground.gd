@@ -221,7 +221,7 @@ func offers_for_role(def: EventDef, role: GameEnums.BlockerRole) -> Dictionary:
 ## What `def` asks of the ground when it wants `side`: rows that ask the same thing share one
 ## answer. A spread asks for no corner on top of what its scan asks (`_scan_question()`).
 func _question(def: EventDef, side: int) -> String:
-	return _scan_question(def, side) + ("|no corner" if def.has_a_spread else "")
+	return _scan_question(def, side) + ("|no-corner" if def.has_a_spread else "")
 
 ## What `def` asks of the scan when it wants `side`: the kinds of tile it stands on, the lane of
 ## the sidewalk, and whether it burns the front it stands at.

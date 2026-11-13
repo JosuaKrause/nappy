@@ -2230,9 +2230,10 @@ tile holds here — a closed tile, a held street, the home block, **a standing s
 (`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
 spread, the power station's front; all but the street the
 home's front door opens onto, a door the escape never sets off from (`DaySpec.holds_the_home_streets`
-off; `docs/CITY.md`, "The escape"). What is sited after dawn asks the ground the walk was planned
-on (`RowGround`, made under that setting and handed to every `EventScheduler.WalkSiting` by
-`EventsAhead`), so a row placed while she walks keeps the rule the walk was planned under.
+off; `docs/CITY.md`, "The escape"). What is sited after dawn asks a ground under the same setting: a day's own,
+handed on from dawn (`WalkEvents.ground()`), and on a walk no dawn of a day planned one `EventsAhead`
+makes under the walk's spec (`_ground_of_the_walk()`), so a row placed while she walks keeps the rule
+the walk was planned under.
 Each candidate then meets the day's own spacing (`StreetInvalidation.room_around()`) and the escape's own refusals
 below, and is never offered the ground she starts on.
 

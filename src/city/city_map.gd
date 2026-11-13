@@ -328,7 +328,7 @@ func is_shut(tile: Vector2i) -> bool:
 ## the home block. See `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing
 ## on the home block".
 ##
-## **Two readers, and the docstring is for both.** `EventScheduler.open_ground_for` refuses any
+## **Two readers, and the docstring is for both.** `RowGround.tiles_for()` refuses any
 ## candidate tile on a held segment, the fix this exists for. `CarStrategy.cannot_go_on()` (M110,
 ## "The crowd goes round a seal") wants the identical fact for the same reason a car should not
 ## queue across a seal it cannot see through — read it with `is_held_at()`, and the reason

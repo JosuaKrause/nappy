@@ -366,8 +366,8 @@ func stand_down() -> void:
 ## **The walk's own settings, out of the spec the run flow hands in**: whether falling asleep owes
 ## her a return (`DaySpec.owes_a_return`), whether a torn poster sends a pursuer
 ## (`DaySpec.poster_pursuits`) and whether what is sited after dawn keeps off the home's streets
-## (`DaySpec.holds_the_home_streets`, read by every `EventScheduler.WalkSiting` the director makes). Every walk hands its spec in as it starts (`start_day()`); a rig may
-## hand another in mid-walk. Until one is handed in, a day's settings (`DaySpec`'s own defaults).
+## (`DaySpec.holds_the_home_streets`, which `EventsAhead` keeps as the rule it makes a ground under for a walk no dawn planned; a day's ground keeps the rule it was made under at dawn). Every walk hands its spec in as it starts (`start_day()`); a rig may
+## hand another in mid-walk, which no longer changes the home-street rule of a day's later sitings. Until one is handed in, a day's settings (`DaySpec`'s own defaults).
 func use_the_spec(spec: DaySpec) -> void:
 	_owes_a_return = spec.owes_a_return
 	ahead.sends_poster_pursuits = spec.poster_pursuits

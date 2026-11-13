@@ -763,7 +763,7 @@ const AHEAD_MIN_SPEED := 40.0
 # friction row on a precinct route street weighs sixteen times over.
 #
 # Neither is a filter, and the one filter there is lives in the row's own ground
-# (`EventScheduler.ground_for()`): **a wall never stands on ground a route runs along.** That one
+# (`RowGround.offers_for_role()`): **a wall never stands on ground a route runs along.** That one
 # can be absolute because the whole off-corridor city remains available to it, so it cannot starve
 # a row of ground. It is stated per **sidewalk**, so the far side of a route's own street is legal
 # ground for a wall, which is where a wall the route view's bag draws stands.

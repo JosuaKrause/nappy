@@ -717,7 +717,10 @@ static func street_ground(map: CityMap, ground: RowGround, segment: StreetNetwor
 ##
 ## **One ground a walk**: the dawn makes the day's and hands it on with the plan
 ## (`DayEvents.ground()`), so whoever is handed the walk's asks that one. A caller that makes its
-## own is one with no walk's ground to be handed: a scene recipe's row, a check, a probe.
+## own is one with no walk's ground to be handed: a scene recipe's row, a check, a probe, the escape's
+## draw (`_draw_the_walk()`, for its plan, handed on to nobody) and, for a walk no dawn of a day
+## planned, `EventsAhead._ground_of_the_walk()` and
+## `ResistanceDirector._fronts_a_fire_catches_on()`.
 static func row_ground(map: CityMap, corridor: Corridor = null,
 		from_the_door := true) -> RowGround:
 	return RowGround.new(map, corridor, from_the_door,
@@ -1432,6 +1435,10 @@ class WalkSiting extends RefCounted:
 	## on with the walk (`WalkEvents.ground()`). **Whether the home's streets are the walk's is the
 	## ground's** (`DaySpec.holds_the_home_streets`): nothing sited after dawn stands on the street
 	## her front door opens onto, as nothing at dawn does, because both ask the one ground.
+	## **A null ground is allowed only for a caller that asks `cells_ahead()` and `cell_centre()`
+	## alone**, where she is going and never which tiles a row may stand on (the happenings,
+	## `ResistanceHappenings`, on a walk no dawn planned): the first row question (`ahead_of()`, `prepare()`,
+	## `off_her_path()`) is a call on null.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 			verdicts: EventScheduler.Verdicts, builder: PlanBuilder, ground: RowGround) -> void:
 		_day = for_day
