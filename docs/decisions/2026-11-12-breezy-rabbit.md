@@ -31,3 +31,8 @@ to Opus for any build that changes play or builds a seam from its design.
 - **The measuring and capture rows (Haiku, Sonnet) stay**, read as already the lowest model able.
 - **No line about one Fable agent at a time** (inbox #1433 in minty-rabbit): whether it is standing is
   asked on the board (one-fable-standing), and the entry keeps that item.
+- **How a hand-off reaches a builder**: the Fable designer says in its report whether it writes the code or hands
+  it off, and on a hand-off the orchestrator briefs the lowest model able from the design. The filer's proposal,
+  since the player's words do not say how.
+- **Drawing keeps Opus**, and the measuring and capture rows name the lowest model for their kind; the catch-all
+  covers only a build and the tasks no row names.
