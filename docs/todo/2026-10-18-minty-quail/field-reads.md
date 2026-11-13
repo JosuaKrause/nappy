@@ -40,11 +40,15 @@ second list that only shrinks (`tools/check_field_reads.py --summary` counts the
 warning). A file is typed either inside its area's conversion below or ahead of it, by a pass that
 types its receivers, deletes its line and converts no read. **The check fails a read it newly sees
 once a file is typed**: `tools/field_reads.txt` only shrinks (inbox #1182 in gray-dolphin), and the
-one growth the player allowed is a read that moved (inbox #1350 in grassy-trout). *Open, not asked:*
-whether that allowance also covers a read the typing reveals. So far a typing pass that met such a
-read converted it, widening its search to that read's class, as for the animated water
-(`SceneryWater`, the record 2026-10-18-minty-quail-sandy-hedgehog) and the excitement source
-(`ExcitementSource`, the record 2026-10-18-minty-quail-tawny-toad), or left the file its line.
+one growth the player allowed is a read that moved (inbox #1350 in grassy-trout). **A read that
+typing a file reveals is not added to the list either**: asked whether it may be, the player chose
+"B", the typing pass converting such a read or leaving the file untyped, and added "why would it
+leave the file untyped? it should get picked up eventually if not immediately" (inbox #1429 in
+minty-rabbit). *Read as:* a typing pass that meets such a read converts it, widening its search to
+that read's class, as for the animated water (`SceneryWater`, the record
+2026-10-18-minty-quail-sandy-hedgehog) and the excitement source (`ExcitementSource`, the record
+2026-10-18-minty-quail-tawny-toad); where it cannot, the file keeps its opt-out line, a list that
+only shrinks, and its area's conversion or a later typing pass types it and converts the read.
 Every file under `tests/` is typed but the two that wait for polite-tapir's placement step 4
 (`typed-everywhere.md`); the suites' conversion (`tests-one-module.md`) is still to come. The two
 scripts under `tools/` that carry it (`tools/cost_table.gd`, `tools/split-scenes-crop.gd`) are typed by the pull
