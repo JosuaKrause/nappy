@@ -27,12 +27,9 @@ same session: "please use only one fable at a time and not in parallel" (inbox #
 
 **Why it is work on how the project is worked on:** the orchestrating skill's model table is what
 every brief picks its model from, so it goes first (the orchestrating skill's "Work on how the project
-is worked on goes first"). The table's `fable-only` row says only that
-writing the code "may go to another model", not who decides; that gap let the brief for
-polite-tapir's `RowGround` seam (the event scheduler's breakup) hand Fable the coding.
+is worked on goes first").
 
-**What is left:** the model table's rewrite is built (the record 2026-11-12-breezy-rabbit). Open:
-whether "one fable at a time and not in parallel" (inbox #1433 in minty-rabbit) is a standing rule for
-the model table or held for that session only (`one-fable-line.md`, asked on the board).
+**Open:** whether "one fable at a time and not in parallel" (inbox #1433 in minty-rabbit) is a standing
+rule for the model table or held for that session only (`one-fable-line.md`, asked on the board).
 
 *Not asked for:* the band `now` is the filer's proposal.
