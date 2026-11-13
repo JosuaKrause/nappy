@@ -1,6 +1,5 @@
 # tawny-hedgehog — `tools/inbox.py cite` reads a citation wrapped across a line as one run, and writes only with `--write` · 2026-11-13
 
-
 **The ask.** "schedule a bug fix. remember those get highest priority" (amber-goose #1442), said of `cite` doubling a
 citation wrapped across a line and editing files when an agent ran it to look a note up. Band `bug`, as the player
 named it.
