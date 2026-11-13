@@ -90,7 +90,8 @@ static func _plans(context: DawnContext) -> Array[EventPlan]:
 		var tile := map.world_to_tile(foot)
 		if at_a_site or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 			continue
-		if not DoorClearanceRule.clear_of_the_doors(foot, PackedVector2Array(), doors, loudspeaker.field_reach()):
+		if not DoorClearanceRule.clear_of_the_doors(foot, PackedVector2Array(), doors,
+				loudspeaker.field_reach()):
 			continue
 		var added := EventPlan.new(loudspeaker, foot)
 		added.mast_id = added_mast_id(foot)

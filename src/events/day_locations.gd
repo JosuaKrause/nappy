@@ -9,7 +9,7 @@ extends RefCounted
 ##
 ## **Laid out every day at dawn**, by the dawn's context (`DawnContext.locations()`) the first time
 ## `EventScheduler.build_day()` asks, after the routes are established and the day's holds are on
-## the map (`EventScheduler.build_day()`). On day 13 the roadblock
+## the map. On day 13 the roadblock
 ## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn from its
 ## view's bag (`LocationDraw`). The day's planner hands the locations on to the walk
 ## (`DawnContext.locations()`, `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's

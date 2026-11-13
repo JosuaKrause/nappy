@@ -1191,8 +1191,8 @@ const FINALE_DISTANT_FLASH_MEAN_SECONDS := 1.3
 
 # --------------------------------------------------------------------- masts ---
 # M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a
-# street with a field, not a floor under the whole city. See `MastSites`, `EventScheduler.
-# DawnMasts` and `EventManager`'s own broadcast clock.
+# street with a field, not a floor under the whole city. See `MastSites`, `DawnMasts` and
+# `EventManager`'s own broadcast clock.
 
 ## How many masts a city carries. The orchestrator's own number, open to overturn: enough that one
 ## is never far from a route without turning every street into one.
