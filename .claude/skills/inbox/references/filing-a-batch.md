@@ -28,8 +28,8 @@ request carries the whole batch:
   once it is filed; the playtest goes beside that number, which stays:
 
   ```sh
-  uv run python tools/inbox.py cite N M ... --dry-run   # the numbers of the batch, as in its `Filed from` lines
-  uv run python tools/inbox.py cite N M ...
+  uv run python tools/inbox.py cite N M ...           # the numbers of the batch, as in its `Filed from` lines; prints the diff, writes nothing
+  uv run python tools/inbox.py cite N M ... --write   # edits the files
   ```
 
   The pull request does not exist yet at this step, so the notes are given by number; once it is
@@ -41,7 +41,8 @@ request carries the whole batch:
   Markdown and skills included, and never into a link: `CLAUDE.md`'s citation rule counts that form
   as a citation, and `tools/check_citations.py` checks that the name holds the note. A number counts
   only as `#N` followed by no digit or letter, or as `issues/N` in a URL, so an SVG colour such as
-  `#9004a6` never matches. A bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text
+  `#9004a6` never matches. A run wrapped across a line is read as one run, and a citation whose ` in`
+  ends a line is named by the next line's first word. A bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text
   and a run mixing playtests are listed as `file:line: text` and never edited. **Fix a listed
   citation by hand, the same way, when nothing near it names the playtest**; a bare number inside a
   sentence, list or heading that already names the playtest can stay. A line that already names the
