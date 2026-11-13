@@ -12,7 +12,7 @@ description: Rules for the run log — the one invariant it must never break, wh
 - **Anything derivable from the seed, `Tuning` or the catalogue stays out of the log.**
 - **A per-frame check goes in `TelemetryObserver`**, never in the gameplay class. The frame
   record's timing wrap is the one exception.
-- **A timed system wraps its unchanged body in `if timing.on:`** on the `FrameTiming` it is handed,
+- **A timed system wraps its unchanged body in `if timing.is_on():`** on the `FrameTiming` it is handed,
   and a `_draw()` override carries no counting code.
 - **Game logic writes through the `RunTrace` it is handed**, never `Telemetry` itself.
 - **A new entry answers a question open in the queue or a playtest doc**, and reuses a kind from
@@ -60,13 +60,13 @@ so what a system cost in a frame can only be timed where it runs, which an obser
 outside.
 
 **A timed system is handed its timing sink and wraps its body.** The sink is a `FrameTiming`
-(`src/frame_timing.gd`, the null sink whose `on` is false; `FrameRecord` in `src/telemetry/` is the
+(`src/frame_timing.gd`, the null sink whose `is_on()` is false; `FrameRecord` in `src/telemetry/` is the
 subclass that feeds the record), kept in a member that whoever builds the system sets. The body
 moves into a private function behind one branch, as in `EventManager`:
 
 ```gdscript
 func _physics_process(delta: float) -> void:
-	if timing.on:
+	if timing.is_on():
 		var outer := timing.enter(FrameTiming.EVENTS)
 		_tick_the_events(delta)
 		timing.leave(outer)
@@ -74,9 +74,9 @@ func _physics_process(delta: float) -> void:
 		_tick_the_events(delta)
 ```
 
-`on`, `enter()` and `leave()` are the handed sink's, never statics of a class. `enter()` answers
+`is_on()`, `enter()` and `leave()` are the handed sink's, never statics of a class; the system asks `is_on()` and never reads a field of the sink. `enter()` answers
 the bucket that was being charged, so a timed system inside another is charged to itself alone.
-Off, the wrap is two reads and no call, which every player pays: a live event wraps its
+Off, the wrap is one cheap call and one branch, which every player pays: a live event wraps its
 `_process()` the same way, a couple of hundred of them a frame. An event's step and a crowd
 agent's step are not timed on their own, since each runs inside a tick that is. `src/crowd/` names
 none of the record: it is handed a `CrowdTiming`, which `FrameRecordTiming` in `src/telemetry/`

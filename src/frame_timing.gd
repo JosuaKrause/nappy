@@ -72,12 +72,12 @@ enum Job { GROUND, BUILDING, PROP, SHADOW, DECAL, GUARD }
 ## yard layer), and the view's nodes, which the recorder, standing beside the view, may not name.
 const DRAW_KIND_META := &"counts_draws_as"
 
-## Whether a record is running now. Read by every timed entry point before anything else.
-var on := false
+## Whether a record is running now, behind `is_on()`; the subclass that runs a record sets it.
+var _on := false
 
 ## Whether a record is running now. Every timed entry point asks it before anything else.
 func is_on() -> bool:
-	return on
+	return _on
 
 ## Starts charging `bucket` and answers the bucket that was being charged, for `leave()`.
 func enter(_bucket: int) -> int:

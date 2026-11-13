@@ -26,14 +26,14 @@ var ledger: FrameLedger
 func frame_ledger() -> FrameLedger:
 	return ledger
 
-## Starts the record on `with`, answering to `on` from here.
+## Starts the record on `with`, answering to `is_on()` from here.
 func start(with: FrameLedger) -> void:
 	ledger = with
-	on = true
+	_on = true
 
 ## Switches the timing off, keeping the ledger: the next recorder carries on in it.
 func stop() -> void:
-	on = false
+	_on = false
 
 ## Overrides FrameTiming.enter.
 func enter(bucket: int) -> int:
@@ -51,12 +51,12 @@ func drew(kind: int) -> void:
 
 ## Overrides FrameTiming.scenery_deferred_begins.
 func scenery_deferred_begins() -> void:
-	if on:
+	if _on:
 		ledger.deferred_scenery_begins(Time.get_ticks_usec())
 
 ## Overrides FrameTiming.scenery_deferred_ends.
 func scenery_deferred_ends() -> void:
-	if on:
+	if _on:
 		ledger.deferred_scenery_ends(Time.get_ticks_usec())
 
 ## Overrides FrameTiming.scenery_job.

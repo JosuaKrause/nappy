@@ -983,7 +983,7 @@ subtracts the product from a phone's frames subtracts too little.
 
 **Off, it costs every player as little as the wrap can.** The live events are timed once each a
 frame, so each holds the `FrameTiming` its manager hands it (`EventInstance.timing`) and, off, pays
-a member read and a read of its `on` before its body, which stays in its own `_process()`; a static
+a member read and one `is_on()` call before its body, which stays in its own `_process()`; a static
 read and a call into a second function there, on a couple of hundred timed bodies a frame, made
 every player's frame measurably longer on a desktop, with the record off. A crowd agent is not timed on its own: it steps
 inside the crowd's tick, which is. The systems timed once a frame (the crowd's and the event

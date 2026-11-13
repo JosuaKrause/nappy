@@ -569,7 +569,7 @@ func _process(_delta: float) -> void:
 	if look == null:
 		return
 	_take_the_layer_it_warns_on()
-	if timing.on:
+	if timing.is_on():
 		var outer := timing.enter(FrameTiming.EVENTS)
 		look.redraw_if_the_picture_changed()
 		timing.leave(outer)
