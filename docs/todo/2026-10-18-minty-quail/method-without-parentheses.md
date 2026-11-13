@@ -18,14 +18,17 @@ trips the engine's warning for a statement that does nothing (`standalone_expres
   an error, and no line of the tree trips it (minty-quail-round-dolphin).
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
+- The same check fails a method's name written without its parentheses on a receiver whose class
+  is under `src/`, opt-out line or not, unless the reference hands the `Callable` on; its `--help`
+  is the one text of the forms that do.
 - The naming rule of designing-classes ("Fields are not API"), for every conversion of a yes-or-no
   field: its method takes a name the field did not have, so a read left behind after a conversion
   names something that no longer exists. It stops parsing on a typed receiver in a file that does
   not silence `unsafe_property_access`; everywhere else it fails when the line runs.
 
-**What nothing reports:** the same mistake on a receiver the check can type (a class under `src/` or
-an engine value), in a file under `src/` that still carries the opt-out line, in a test, or as a
-bare name of the file's own class with no receiver (`if is_ready:`).
+**What nothing reports:** the same mistake on an engine value (the field-read check knows only that
+the value is no class under `src/`, not which engine class, so it has no list of its methods), in a
+test, or as a bare name of the file's own class with no receiver (`if is_ready:`).
 
 **What is left.**
 
@@ -59,8 +62,3 @@ bare name of the file's own class with no receiver (`if is_ready:`).
   `event-interface.md` carry the rule, with the filer's reading that only a read of this class's
   field from outside its file fails the step. The search finds the read the conversion missed, not
   one a branch merged later brings.
-- **A rule in the field-read check**: a typed receiver's method named with no `(` after it fails
-  unless the reference hands the `Callable` on. The same record says what a first build of this
-  was, why it left its pull request, and where its code is. Built again, the list of forms that
-  hand a `Callable` on has one owner, the checker's docstring, with a unit case per form, and no
-  other text restates it.
