@@ -93,9 +93,10 @@ number keep it, and so do the entries and records that already have one.
   `priority: bug|now|next|later|parked`, optionally an `upnext: true` line (it prints first,
   whatever the band, until the work starts), optionally a `fable-only: true` line (every pull
   request that builds an item of the entry carries the GitHub label `fable-only`: Fable designs the
-  code and reviews it, and writing the code may go to another model; only for an entry the player
+  code and reviews it, and the Fable designer decides whether the coding is too complex to hand off
+  and otherwise hands it to the lowest model that can do it; only for an entry the player
   names, and it marks every item of the entry, inbox #1293 in grassy-trout, inbox #1299 in grassy-trout,
-  inbox #1387 in mossy-bunny), and an `after: <entry folder>` line for each entry it
+  inbox #1387 in mossy-bunny, inbox #1432 in minty-rabbit), and an `after: <entry folder>` line for each entry it
   truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
   order list to edit (brisk-heron 13). **A playtest note is filed `now`** unless the player names
   another band, since a note from playing is a bug report (olive-koala 11): pass `--priority now` to

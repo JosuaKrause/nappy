@@ -51,20 +51,25 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Task kind | Model |
 |---|---|
 | A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
-| A pull request labelled `fable-only`, a label put only on work the player names; the label also comes from the entry the pull request builds, whose opening block says `fable-only: true` (`docs/TODO.md`) | Fable designs its code and reviews it; writing the code may go to another model (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout) |
+| A pull request labelled `fable-only`, a label put only on work the player names; the label also comes from the entry the pull request builds, whose opening block says `fable-only: true` (`docs/TODO.md`) | Fable designs its code and reviews it; the Fable designer decides whether the coding is too complex to hand off, writes it itself if so and otherwise hands it to the lowest model that can do it, and a brief never decides this for it (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout, inbox #1432 in minty-rabbit) |
 | The review of anything Fable designed | Fable (inbox #1299 in grassy-trout) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
-| Build at test parity | Sonnet |
-| Build that changes play, or builds a seam from its design | Opus |
-| Investigate an unexplained result | Opus |
+| A design: always detailed, the kind a builder works from | a stronger model (inbox #1432 in minty-rabbit) |
+| A build, and every task that is neither a design nor a review, an investigation of an unexplained result included | the lowest model that can do it, since a detailed design is what lets a weaker model build (inbox #1432 in minty-rabbit) |
 | Measure: run a named probe batch into a fixed table, no conclusion | Haiku |
 | Measure with interpretation: what is noise, what is real, what a picture shows | Sonnet |
 | Capture named moments for a PR | Haiku, the pictures judged by the measurer or the reviewer |
 | Review fixes | the builder, while warm |
 | Review of a play-changing or design PR, of one that carries a drawing, or of a change to what a rule says | Opus |
 | Review of queue, docs, a skill's wording alone or a small delta | Sonnet |
+
+**A design is always detailed, and a build takes the lowest model that can do it** (inbox #1432 in
+minty-rabbit): designing is where a stronger model goes, because the detailed design is what lets a
+weaker model build, so the table gives a build, and any task that is neither a design nor a review,
+the lowest model able to do it, never a fixed stronger one. A review keeps its own rows, since
+reviews have their own decision points and some need no strong model.
 
 **In Claude Code, drawing is Opus's** (PLAYTEST-123 8), since the result is judged by eye and a
 weaker first pass costs the player a review round; Codex has its own model hierarchy and keeps its
@@ -383,9 +388,8 @@ coming. **Run `tools/agent-status.sh` before touching anything**, then follow
 The rules in this file that are the filer's proposal or reading, not the player's words, each open
 to the player's correction:
 
-- **Every row of the model table that carries no citation**, the merging row and the two build
-  rows among them, to be revised once the agent counter holds enough entries (inbox #900 in
-  freckled-moose). The player asked for a granular table revised after experiments or statistics,
+- **Every row of the model table that carries no citation**, the merging row among them, to be
+  revised once the agent counter holds enough entries (inbox #900 in freckled-moose). The player asked for a granular table revised after experiments or statistics,
   and for Haiku to be tried on captures and measuring.
 - **That a stronger model than a row's takes a milestone whose geometry or contracts warrant it**
   ("The model table"); the player's words are that the model is chosen by judgement
