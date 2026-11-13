@@ -140,7 +140,7 @@ var _absent_segments := {}
 var _built_over := {}
 ## Which of `_built_over` are **dead ends** — a street with one end walled — as a set of keys. The
 ## rest belong to a big building, which took its street whole.
-var dead_ends := {}
+var _dead_ends := {}
 ## The landmarks, each as the **pair of blocks** it joins. A big building builds over the one street
 ## between two neighbouring blocks and leaves every other street around them alone; a type that
 ## closes all four is a different type and does not exist yet. See
@@ -149,9 +149,9 @@ var big_buildings: Array[Rect2i] = []
 
 ## The one big building that is the city's power station, as its pair of blocks — also in
 ## `big_buildings`, which is every landmark including this one. `Rect2i()` on a map that has none,
-## which `CityGenerator.validate()` refuses, so only a hand-built map ever reads it empty. Always two
-## blocks wide and one deep: the front door is on its long south side, the one face the 2.5D view
-## draws (see `Building`). See `CityGenerator._place_power_station`.
+## which `CityGenerator.validation_problems()` refuses, so only a hand-built map ever reads it
+## empty. Always two blocks wide and one deep: the front door is on its long south side, the one
+## face the 2.5D view draws (see `Building`). See `CityGenerator._place_power_station`.
 var power_station := Rect2i()
 ## The street the power station's front door opens onto, as a `StreetNetwork.Segment.key()` — the
 ## real street south of one of its two blocks. See `power_station_door_street()`.
@@ -168,8 +168,8 @@ var _power_station_industrial_blocks := 0
 ## How wide the power station's front door is, in tiles.
 const POWER_STATION_DOOR_TILES := 2
 
-## Whether this city has its power station — false only on a map `CityGenerator.validate()` would
-## refuse.
+## Whether this city has its power station — false only on a map
+## `CityGenerator.validation_problems()` would refuse.
 func has_power_station() -> bool:
 	return power_station.size != Vector2i.ZERO
 
@@ -331,7 +331,7 @@ func is_shut(tile: Vector2i) -> bool:
 ## **Two readers, and the docstring is for both.** `EventScheduler.open_ground_for` refuses any
 ## candidate tile on a held segment, the fix this exists for. `CarStrategy.cannot_go_on()` (M110,
 ## "The crowd goes round a seal") wants the identical fact for the same reason a car should not
-## queue across a seal it cannot see through — read it with `is_held`/`is_held_at`, and the reason
+## queue across a seal it cannot see through — read it with `is_held_at()`, and the reason
 ## through `held_streets()`, rather than keeping a list of one's own.
 var _held := HeldStreets.new()
 
@@ -359,13 +359,13 @@ func hold_segment(key: Vector3i, why: HeldStreets.Why) -> void:
 
 ## Whether `segment` is held today. Null answers false, so a caller need not check for a real
 ## street first.
-func is_held(segment: StreetNetwork.Segment) -> bool:
+func _is_held(segment: StreetNetwork.Segment) -> bool:
 	return segment != null and _held.has(segment.key())
 
 ## Whether the street segment a tile stands on is held today. False for a tile inside a junction
 ## or a block interior, where `StreetNetwork.segment_containing` names no segment at all.
 func is_held_at(tile: Vector2i) -> bool:
-	return is_held(network.segment_containing(tile))
+	return _is_held(network.segment_containing(tile))
 
 ## Whether a tile is inside the home block's own lot — the ground `_place_home` carves the notch
 ## out of. Distinct from `is_held_at`, which is about the streets *around* the block: a catalogue
@@ -724,9 +724,9 @@ func record_built_over(key: Vector3i, rect: Rect2i) -> void:
 func forget_built_over(key: Vector3i) -> void:
 	_built_over.erase(key)
 
-## Records that the street `key` is a dead end (`dead_ends`).
+## Records that the street `key` is a dead end (`_dead_ends`).
 func mark_dead_end(key: Vector3i) -> void:
-	dead_ends[key] = true
+	_dead_ends[key] = true
 
 ## Plans `block`'s arc (`block_plans`).
 func plan_block(block: Vector2i, plan: BlockPlan) -> void:
@@ -912,7 +912,7 @@ func copy() -> CityMap:
 	twin._zone_anchor = _zone_anchor.duplicate()
 	twin._absent_segments = _absent_segments.duplicate()
 	twin._built_over = _built_over.duplicate()
-	twin.dead_ends = dead_ends.duplicate()
+	twin._dead_ends = _dead_ends.duplicate()
 	twin.big_buildings = big_buildings.duplicate()
 	twin.power_station = power_station
 	twin._power_station_door_key = _power_station_door_key
@@ -984,7 +984,7 @@ func capture() -> Dictionary:
 	var absent: Array[Vector3i] = []
 	absent.assign(_absent_segments.keys())
 	var walled: Array[Vector3i] = []
-	walled.assign(dead_ends.keys())
+	walled.assign(_dead_ends.keys())
 	var trees: Array[Vector2i] = []
 	for tree in StreetTrees.planted(self):
 		trees.append(tree.tile)
@@ -1041,7 +1041,7 @@ static func restored(facts: Dictionary) -> CityMap:
 		map._absent_segments[key] = true
 	var walled: Array = facts["dead_ends"]
 	for key: Vector3i in walled:
-		map.dead_ends[key] = true
+		map._dead_ends[key] = true
 	map._built_over = (facts["built_over"] as Dictionary).duplicate()
 	map.boundary_wall_at_a = (facts["boundary_wall_at_a"] as Dictionary).duplicate()
 	map.region_of_junction = (facts["region_of_junction"] as PackedInt32Array).duplicate()
@@ -1622,12 +1622,12 @@ static func _lut(predicate: Callable) -> PackedByteArray:
 ## indexed `y * size.x + x`. Negative where the tile cannot be reached. Read it with
 ## `reaches()` and `distance_at()` rather than indexing it by hand.
 ##
-## Flat rather than a `Vector2i -> int` dictionary because this is the most-run piece of
-## arithmetic in the project: `CityGenerator.validate` sweeps it twice per generation attempt
-## and `EventScheduler` once more for every day it plans. A dictionary hashes a Variant about
-## fifty thousand times to answer a question the tile grid answers by index, and the four
-## neighbour steps are written out rather than looped for the same reason — the loop's own
-## bounds test costs more than the arithmetic it guards.
+## Flat rather than a `Vector2i -> int` dictionary because this is the most-run piece of arithmetic
+## in the project: `CityGenerator.validation_problems()` sweeps it twice per generation attempt and
+## `EventScheduler` once more for every day it plans. A dictionary hashes a Variant about fifty
+## thousand times to answer a question the tile grid answers by index, and the four neighbour steps
+## are written out rather than looped for the same reason — the loop's own bounds test costs more
+## than the arithmetic it guards.
 func walk_field(from: Vector2i, blocked: Dictionary = {}) -> PackedInt32Array:
 	return walk_field_from([from], blocked)
 

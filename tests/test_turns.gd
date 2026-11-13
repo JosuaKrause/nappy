@@ -891,7 +891,7 @@ func _all_four_arms_are_plain(junction: Vector2i) -> bool:
 			if not _city.map.has_street(key):
 				return false
 			var segment := _city.map.network.by_key(key)
-			if _city.map.is_held(segment):
+			if _city.map.held_streets().has(segment.key()):
 				return false
 			var rect := segment.tile_rect()
 			for tile: Vector2i in [rect.position, rect.end - Vector2i.ONE]:

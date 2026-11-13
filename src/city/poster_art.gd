@@ -19,16 +19,16 @@ extends RefCounted
 ## `ImageTexture` is fifteen 32×32 pictures made once at a loading moment, then drawn exactly like
 ## the intact sheets are.
 
-## The four kinds of poster, in the order the run brings them to the walls. `WANTED` draws the
-## one-X copy, or the two-X copy (`WANTED_CROSSED`) once the neighbor has been taken — see
-## `sheet()`. The copy is a picture, not a kind: `PosterState` holds `WANTED` either way, so a wall
-## pasted before day 10 shows the neighbor crossed out once the raid has happened, which is what a
-## wanted notice is.
+## The four kinds of poster, in the order the run brings them to the walls. `WANTED` draws the one-X
+## copy, or the two-X copy (`WANTED_CROSSED`) once the neighbor has been taken — see
+## `texture_for()`. The copy is a picture, not a kind: `PosterState` holds `WANTED` either way, so a
+## wall pasted before day 10 shows the neighbor crossed out once the raid has happened, which is
+## what a wanted notice is.
 enum Kind { LEADER, RULES, CURFEW, UNIFORM, WANTED }
 
 ## The wanted notice with the neighbor's face crossed out as well, for a run whose day 10 warning was
 ## never given on a day she won (`RunState.neighbor_was_taken()`, which `PosterWalls` asks and hands
-## each front as `Building.neighbor_taken`).
+## each front with its cells, `Building.hand_over_posters()`).
 const WANTED_CROSSED := &"events/posters/poster_wanted_crossed"
 ## Where the crossed copy's three torn pictures are kept in `_torn`, past every kind's own.
 const _CROSSED_TORN := 1000
@@ -71,7 +71,7 @@ var _torn: Dictionary = {}
 
 ## The intact sheet for `kind`, a region on the held `buildings` page — the crossed wanted notice in
 ## place of the plain one once the neighbor has been taken (`neighbor_taken`).
-static func sheet(atlas: AtlasLibrary, kind: int, neighbor_taken: bool) -> Texture2D:
+static func _sheet(atlas: AtlasLibrary, kind: int, neighbor_taken: bool) -> Texture2D:
 	if _crossed(kind, neighbor_taken):
 		return atlas.region(WANTED_CROSSED)
 	return atlas.region(SHEETS[kind])
@@ -81,7 +81,7 @@ static func sheet(atlas: AtlasLibrary, kind: int, neighbor_taken: bool) -> Textu
 func _torn_sheet(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
 	var key := _CROSSED_TORN + tear if _crossed(kind, neighbor_taken) else kind * TEARS + tear
 	var composed: Texture2D = _torn.get(key)
-	return composed if composed else sheet(atlas, kind, neighbor_taken)
+	return composed if composed else _sheet(atlas, kind, neighbor_taken)
 
 ## Whether `kind` draws as the crossed wanted notice, the neighbor taken or not.
 static func _crossed(kind: int, neighbor_taken: bool) -> bool:
@@ -118,7 +118,7 @@ func prepare(atlas: AtlasLibrary) -> void:
 ## The picture for a sheet as `PosterState` holds it: intact, or torn the `tear`th way, the wanted
 ## notice crossed out when `neighbor_taken`.
 func texture_for(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
-	return sheet(atlas, kind, neighbor_taken) if tear == PosterState.INTACT \
+	return _sheet(atlas, kind, neighbor_taken) if tear == PosterState.INTACT \
 			else _torn_sheet(atlas, kind, tear, neighbor_taken)
 
 ## The recipe, per pixel: the poster's colour with its alpha multiplied by the mask's, then the

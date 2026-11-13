@@ -16,6 +16,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const Boot := preload("res://tests/booted_main.gd")
 const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
+const RecordingShadowDrawer := preload("res://tests/recording_shadow_drawer.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_run_config_scratch.json"
 const SEED := 4242
@@ -295,10 +296,20 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	city.all_cyclists_pelicans = true
 	t.add_child(city)
 	city.build(MapCache.of(SEED))
-	# The shadow layer is the scene's own child, found by the name the scene gives it.
+	# The shadow layer is the scene's own child, found by the name the scene gives it. What it draws
+	# is read off a recording drawer handed to it the way the city hands its own, every chunk it
+	# stands asked to draw again: under `--skip shadows` none draws a tile.
 	var shadows := city.get_node("BuildingShadows") as BuildingShadows
+	var shade := RecordingShadowDrawer.new()
+	shadows.draw_through(shade)
+	var chunks := 0
+	for chunk in shadows.get_children():
+		if chunk is CanvasItem:
+			(chunk as CanvasItem).queue_redraw()
+			chunks += 1
+	await t.get_tree().process_frame
 	t.check(city.scenery_ground.mode() == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
-			and shadows.skip_draw, "the ground, the scenery and the shadows")
+			and chunks > 0 and shade.draws.is_empty(), "the ground, the scenery and the shadows")
 	t.check(city.events.skip_drawing
 			and city.events.pelican_rig == EventSpawner.PelicanRig.ALWAYS,
 			"the events")

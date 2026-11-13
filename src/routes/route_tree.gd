@@ -687,10 +687,10 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 ## search, so the spur joins whichever of them is nearest the tree. Tried without the main road
 ## first and with it only if nothing else joins, as the trunk is.
 ##
-## A no-op when nothing grew, or when the destination cannot reach the tree at all; the first
-## leaves the day to `ClosurePlanner`'s calm areas kept reachable, the second cannot happen
-## on a city `CityGenerator.validate()` accepted, since every walkable tile is reachable from
-## the home.
+## A no-op when nothing grew, or when the destination cannot reach the tree at all; the first leaves
+## the day to `ClosurePlanner`'s calm areas kept reachable, the second cannot happen on a city
+## `CityGenerator.validation_problems()` accepted, since every walkable tile is reachable from the
+## home.
 func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:
 	if _colours.is_empty() or not grid:
 		return

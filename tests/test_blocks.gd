@@ -397,8 +397,8 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> 
 ## owned by the flat decal layer. This is the rendering boundary that keeps a one-tile bed from
 ## covering the stroller while preserving the tree's ordinary sorting behavior.
 ##
-## The beds are read off a recording drawer handed to the city's decals through the member the city
-## hands its own through (`CityDecals.drawer`), the decals' streamed chunks prepared again with it
+## The beds are read off a recording drawer handed to the city's decals the way the city hands its
+## own (`CityDecals.draw_through()`), the decals' streamed chunks prepared again with it
 ## (`refresh_street_tree_pits()`, which the city calls on a day's closures) and every chunk of the
 ## city prepared (`update_view()`, which the residency calls). The residency is first brought to the
 ## view the camera gives, where it stands while the camera does, so its own frame neither prepares
@@ -410,9 +410,8 @@ func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	city.build(map)
 	var decals: CityDecals = city.get_node("Decals")
 	var planted := StreetTrees.planted(map)
-	t.check(decals.drawer != null, "the city hands its decals the drawer they lay their beds through")
 	var recorder := RecordingSceneryDrawer.new()
-	decals.drawer = recorder
+	decals.draw_through(recorder)
 	city.scenery.update(Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), true)
 	decals.refresh_street_tree_pits()
@@ -451,8 +450,8 @@ func _test_unstreamed_decals_draw_every_bed(t: TestRunner) -> void:
 	atlas.acquire(CityDecals.DECORATION_ATLAS)
 	var recorder := RecordingSceneryDrawer.new()
 	var decals := CityDecals.new()
-	decals.atlas = atlas
-	decals.drawer = recorder
+	decals.use_atlas(atlas)
+	decals.draw_through(recorder)
 	decals.set_street_tree_pits(planted, map)
 	t.add_child(decals)
 	await t.get_tree().process_frame

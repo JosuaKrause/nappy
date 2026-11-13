@@ -16,7 +16,7 @@ extends RefCounted
 var _open_rect := Rect2i()
 ## The playground inside a park. Only a park has one, and it goes with the park: a
 ## requisitioned park has no swings in it.
-var playground := Rect2i()
+var _playground := Rect2i()
 ## The market plaza carved out of a commercial block. Stays whatever happens to the block —
 ## paving does not care who is in charge.
 var _square := Rect2i()
@@ -32,7 +32,7 @@ var _passage := Rect2i()
 func copy() -> BlockLayout:
 	var twin := BlockLayout.new()
 	twin._open_rect = _open_rect
-	twin.playground = playground
+	twin._playground = _playground
 	twin._square = _square
 	twin._alley = _alley
 	twin._passage = _passage
@@ -44,23 +44,23 @@ func open_ground() -> Rect2i:
 
 ## Whether the block has open ground.
 func has_open_ground() -> bool:
-	return has(_open_rect)
+	return _has(_open_rect)
 
 ## Carves the block's open ground out of it at generation.
 func carve_open_ground(rect: Rect2i) -> void:
 	_open_rect = rect
 
-## The playground inside a park (`playground`), empty on any other block.
+## The playground inside a park (`_playground`), empty on any other block.
 func playground_rect() -> Rect2i:
-	return playground
+	return _playground
 
 ## Whether the block has a playground.
 func has_playground() -> bool:
-	return has(playground)
+	return _has(_playground)
 
 ## Carves the playground out of the park at generation.
 func carve_playground(rect: Rect2i) -> void:
-	playground = rect
+	_playground = rect
 
 ## The market plaza of a commercial block (`_square`), empty on any other block.
 func square_rect() -> Rect2i:
@@ -68,7 +68,7 @@ func square_rect() -> Rect2i:
 
 ## Whether the block has a plaza.
 func has_square() -> bool:
-	return has(_square)
+	return _has(_square)
 
 ## Carves the plaza out of the block at generation.
 func carve_square(rect: Rect2i) -> void:
@@ -80,7 +80,7 @@ func alley_rect() -> Rect2i:
 
 ## Whether the block has a through-alley.
 func has_alley() -> bool:
-	return has(_alley)
+	return _has(_alley)
 
 ## Carves the through-alley out of the block at generation.
 func carve_alley(rect: Rect2i) -> void:
@@ -92,7 +92,7 @@ func passage_rect() -> Rect2i:
 
 ## Whether the block has an archway.
 func has_passage() -> bool:
-	return has(_passage)
+	return _has(_passage)
 
 ## Carves the archway out of the block at generation.
 func carve_passage(rect: Rect2i) -> void:
@@ -102,18 +102,19 @@ func carve_passage(rect: Rect2i) -> void:
 ## `square`, `alley` and `passage`. What an authored scene saves of the block (`CityMap.capture()`)
 ## and `restored()` makes the same layout from.
 func capture() -> Dictionary:
-	return {"open_rect": _open_rect, "playground": playground, "square": _square, "alley": _alley,
+	return {"open_rect": _open_rect, "playground": _playground, "square": _square, "alley": _alley,
 			"passage": _passage}
 
 ## The layout `carves` describes, as `capture()` names them.
 static func restored(carves: Dictionary) -> BlockLayout:
 	var layout := BlockLayout.new()
 	layout._open_rect = carves["open_rect"]
-	layout.playground = carves["playground"]
+	layout._playground = carves["playground"]
 	layout._square = carves["square"]
 	layout._alley = carves["alley"]
 	layout._passage = carves["passage"]
 	return layout
 
-static func has(rect: Rect2i) -> bool:
+## Whether `rect` is a carve at all: an empty rect means the block has none of that.
+static func _has(rect: Rect2i) -> bool:
 	return rect.size.x > 0 and rect.size.y > 0

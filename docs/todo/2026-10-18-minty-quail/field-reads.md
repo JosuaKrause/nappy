@@ -120,14 +120,11 @@ Left, each its own design question:
   name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
   failure. It becomes underscore-private with the tests-one-module item (`tests-one-module.md`), when
   that suite reads through a method the game also calls.
-- **Three public fields with no reader under `src/` outside their own class.**
+- **A public field with no reader under `src/` outside its own class.**
   `SpreadLook.Slice.index` is read only by the look probe, by string (`canvas.get(&"index")` in
   `tests/probes/look_fingerprint.gd`), which row 4a's scripted rewrite of `event-interface.md` would
   not find; it goes private when the probe asks `SpreadLook.slices()` for a slice's place, with the
   probe's `LK` hash shown unchanged and a released slice not yet freed taken care of.
-  `SceneryLayer.frame_b` is used only by suites (`test_roof_entities`, `test_scenery_residency`,
-  `test_scenery_animation`) and a windowed probe, and `SceneryLayer.drawer` only by its own file;
-  `tools/check_test_only_members.py` misses `frame_b` because the name is also a local elsewhere.
 - **The flock's look reads a bird's fields.** `_draw_birds()` in `src/events/views/flock_look.gd`
   reads `at`, `lift`, `heading` and `phase` off `EventFlock.Bird`, an inner class
   `tools/check_field_reads.py` does not see, and four suites read the same fields. `Bird` gets its

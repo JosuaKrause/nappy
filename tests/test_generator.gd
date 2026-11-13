@@ -5,9 +5,9 @@ extends RefCounted
 ## player cannot see, so it is checked across many seeds rather than by looking at one.
 
 ## Seeds the guarantee sweep validates. Two hundred is the one long loop in this suite that earns
-## its minutes: `CityGenerator.validate()` is the whole of `docs/CITY.md`'s layout contract, the
-## failures it exists to catch are one-seed-in-a-hundred arrangements, and a city that fails it is a
-## run nobody can win. Nothing else here needs a number anywhere near it.
+## its minutes: `CityGenerator.validation_problems()` is the whole of `docs/CITY.md`'s layout
+## contract, the failures it exists to catch are one-seed-in-a-hundred arrangements, and a city that
+## fails it is a run nobody can win. Nothing else here needs a number anywhere near it.
 const SEEDS_TO_VALIDATE := 200
 ## Seeds for the expensive route-redundancy sweep, which is O(segments x BFS).
 const SEEDS_TO_STRESS := 3
@@ -80,9 +80,9 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 			var lot := CityMap.block_rect(block)
 			var holes: Array[Rect2i] = []
 			for hole: Rect2i in [layout.square_rect(), layout.alley_rect(), layout.passage_rect()]:
-				if BlockLayout.has(hole):
+				if hole.has_area():
 					holes.append(hole)
-			if BlockLayout.has(layout.open_ground()):
+			if layout.has_open_ground():
 				if layout.open_ground() == lot:
 					continue  # open ground, nothing built on it
 				holes.append(layout.open_ground())
@@ -110,11 +110,11 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 			if holes.is_empty():
 				seen.plain += 1
 				t.check(pieces == [lot], "%s: with no hole the lot is one building" % where)
-			elif holes.size() == 1 and BlockLayout.has(layout.alley_rect()):
+			elif holes.size() == 1 and layout.has_alley():
 				seen.alley += 1
 				t.check(pieces.size() == 2, "%s: a through-alley leaves two slabs (got %d)"
 						% [where, pieces.size()])
-			elif holes.size() == 1 and BlockLayout.has(layout.square_rect()):
+			elif holes.size() == 1 and layout.has_square():
 				seen.corner += 1
 				t.check(pieces.size() == 2, "%s: a corner square leaves an L of two (got %d)"
 						% [where, pieces.size()])
@@ -122,7 +122,7 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 				seen.home += 1
 				t.check(pieces.size() == 3, "%s: the home's notch leaves three (got %d)"
 						% [where, pieces.size()])
-			elif BlockLayout.has(layout.open_ground()):
+			elif layout.has_open_ground():
 				seen.court += 1
 	for kind: String in seen:
 		t.check(seen[kind] > 0, "some generated block is a %s one (%d found)" % [kind, seen[kind]])
@@ -161,9 +161,9 @@ func _test_guarantees_hold_across_seeds(t: TestRunner) -> void:
 	var failures: Array[String] = []
 	for i in SEEDS_TO_VALIDATE:
 		var map := _map(i)
-		var reason := CityGenerator.validate(map)
-		if reason != "":
-			failures.append("seed %d: %s" % [_seed(i), reason])
+		var problems := CityGenerator.validation_problems(map)
+		if not problems.is_empty():
+			failures.append("seed %d: %s" % [_seed(i), problems[0]])
 	t.check(failures.is_empty(), "every seed satisfies the generation guarantees: %s"
 			% ", ".join(failures.slice(0, 3)))
 
@@ -544,6 +544,20 @@ func _street_segments(map: CityMap) -> Array[Rect2i]:
 			segments.append(Rect2i(block_x, corridor * period, Tuning.BLOCK_SIZE, width))
 	return segments
 
+## The streets `map` walled at one end, read off the ground the city says was built over
+## (`CityMap.streets_built_over()`, street to the rect built over, which the telemetry map draws): a
+## dead end's rect is the wall across one end of its street, where a landmark or an apartment complex
+## builds the whole street over. Told apart by that rect rather than by which ends stay walkable
+## (`RegionPlanner._dead_end_ground_region()`'s rule), since a solid apartment complex's absorbed
+## cross leaves its middle junction walkable and would read as one walkable end.
+func _dead_ends_of(map: CityMap) -> Array[Vector3i]:
+	var dead_ends: Array[Vector3i] = []
+	var built_over := map.streets_built_over()
+	for key: Vector3i in built_over:
+		if built_over[key] != map.street_network().by_key(key).tile_rect():
+			dead_ends.append(key)
+	return dead_ends
+
 ## Hard blockers. *(M50 step 1.)*
 ##
 ## The thing that makes this worth a test of its own is that a dead end is a claim made on the
@@ -568,13 +582,14 @@ func _test_a_dead_end_is_a_dead_end(t: TestRunner) -> void:
 				for x in range(lot.position.x, lot.end.x):
 					calm[Vector2i(x, y)] = true
 
-		t.check(not map.dead_ends.is_empty(), "seed %d has dead ends at all" % _seed(i))
-		t.check(map.dead_ends.size() <= Tuning.MAX_CUL_DE_SACS,
+		var dead_ends := _dead_ends_of(map)
+		t.check(not dead_ends.is_empty(), "seed %d has dead ends at all" % _seed(i))
+		t.check(dead_ends.size() <= Tuning.MAX_CUL_DE_SACS,
 				"seed %d has at most %d of them (%d)"
-				% [_seed(i), Tuning.MAX_CUL_DE_SACS, map.dead_ends.size()])
-		total += map.dead_ends.size()
+				% [_seed(i), Tuning.MAX_CUL_DE_SACS, dead_ends.size()])
+		total += dead_ends.size()
 
-		for key: Vector3i in map.dead_ends:
+		for key: Vector3i in dead_ends:
 			var segment := map.street_network().by_key(key)
 			t.check(not map.has_street(key),
 					"seed %d: dead end %s is out of the lattice too" % [_seed(i), key])
@@ -644,6 +659,7 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 	var total := 0
 	for i in seeds:
 		var map := _map(i)
+		var dead_ends := _dead_ends_of(map)
 		t.check(not map.big_building_pairs().is_empty(), "seed %d has a landmark in it" % _seed(i))
 		t.check(map.big_building_pairs().size() <= CityGenerator.MAX_BIG_BUILDINGS,
 				"seed %d has at most %d (%d)"
@@ -657,7 +673,7 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 				t.check(map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING,
 						"seed %d: block %s is a big building for the whole run" % [_seed(i), block])
 				var layout: BlockLayout = map.layout_of(block)
-				t.check(layout != null and not BlockLayout.has(layout.open_ground()),
+				t.check(layout != null and not layout.has_open_ground(),
 						"seed %d: and has nothing carved into it to repaint" % _seed(i))
 
 			# Solid across the whole footprint, the street between included.
@@ -680,13 +696,13 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 					% [_seed(i), between])
 			t.check(map.is_hard_blocker(between),
 					"seed %d: and out of it because it was built over" % _seed(i))
-			t.check(not map.dead_ends.has(between),
+			t.check(not dead_ends.has(between),
 					"seed %d: and is not counted as a dead end" % _seed(i))
 
 			# And nothing else round the pair was taken *by the landmark*. A dead end may still sit
 			# on one of them, which is legitimate city and is why the exception is named.
 			for segment in map.street_network().around_blocks(pair):
-				t.check(map.has_street(segment.key()) or map.dead_ends.has(segment.key()),
+				t.check(map.has_street(segment.key()) or dead_ends.has(segment.key()),
 						"seed %d: %s round the landmark %s is still a street"
 						% [_seed(i), segment.key(), pair])
 
@@ -871,7 +887,7 @@ func _test_an_alley_is_exactly_one_cell_wide(t: TestRunner) -> void:
 		var map := _map(i)
 		for block: Vector2i in map.blocks_with_layouts():
 			var alley: Rect2i = (map.layout_of(block) as BlockLayout).alley_rect()
-			if not BlockLayout.has(alley):
+			if not alley.has_area():
 				continue
 			rolled += 1
 			var lot := CityMap.block_rect(block)
@@ -930,12 +946,13 @@ func _test_calm_is_never_at_the_edge_or_beside_the_spine(t: TestRunner) -> void:
 ## kind of calm they are.** *(Playtest 14 finding 7, and the 2026-08-31 re-report off a telemetry
 ## map: "I see two diagonally adjacent parks — that bug is still not fixed?")*
 ##
-## Asserted here rather than only inside `CityGenerator.validate()`, and that is the point of it
-## existing at all: validate() was **both** of the things that were wrong. It skipped every lot
-## that was not `_OPEN_CALM`, so a courtyard was not a calm area as far as the guarantee went, and
-## it stepped `RIGHT` and `DOWN` only, so it had never looked at a diagonal — including through
-## M49, which fixed the diagonal in the placement rule and left the guarantee checking the old
-## shape. A test that calls validate() would have agreed with it about both.
+## Asserted here rather than only inside `CityGenerator.validation_problems()`, and that is the
+## point of it existing at all: the guarantee check was **both** of the things that were wrong. It
+## skipped every lot that was not `_OPEN_CALM`, so a courtyard was not a calm area as far as the
+## guarantee went, and it stepped `RIGHT` and `DOWN` only, so it had never looked at a diagonal —
+## including through M49, which fixed the diagonal in the placement rule and left the guarantee
+## checking the old shape. A test that only called the guarantee check would have agreed with it
+## about both.
 ##
 ## So this walks the whole ring itself, over `map.calm_blocks_now()` — the list the closure planner, the
 ## park rules and the telemetry picture all use, which is the list the player is looking at.

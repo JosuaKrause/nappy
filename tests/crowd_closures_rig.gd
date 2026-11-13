@@ -1253,7 +1253,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 	var held_home := false
 	for segment in home_segments:
 		home_keys[segment.key()] = true
-		if map.is_held(segment):
+		if map.held_streets().has(segment.key()):
 			held_home = true
 	t.check(held_home,
 			"at least one of them is held today, or this test is not exercising the carve-out")

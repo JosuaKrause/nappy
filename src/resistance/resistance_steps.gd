@@ -261,7 +261,7 @@ static func narrow_target_on(day: int) -> Step:
 ## - **`STATION_DOOR`**: the pavement tiles in front of the power station's front door
 ##   (`CityMap.power_station_door_tiles()`), where she stands to reach it — the same tiles the day's
 ##   corridor grows its spur to (`RouteTree.for_day`). Empty on a city with no station, which
-##   `CityGenerator.validate()` refuses.
+##   `CityGenerator.validation_problems()` refuses.
 static func target_candidates(step: Step, map: CityMap,
 		region_plan: RegionPlanner.RegionPlan) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []

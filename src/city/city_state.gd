@@ -23,11 +23,11 @@ var _changed_on := {}
 var _open_today := {}
 ## Where a block's step along its arc is written down for the run log — the run's trace, handed
 ## on by `RunState.use_trace()`; silent for the scratch states a generator or a recipe builds.
-var trace := RunTrace.new()
+var _trace := RunTrace.new()
 
-## Writes the blocks' steps to `sink` from here on (see `trace`).
+## Writes the blocks' steps to `sink` from here on (see `_trace`).
 func use_trace(sink: RunTrace) -> void:
-	trace = sink
+	_trace = sink
 
 ## Back to day 1 with every block at the start of its arc.
 func reset() -> void:
@@ -188,7 +188,7 @@ func _advance(plans: Dictionary, block: Vector2i, day: int,
 	_stage[block] = _index(block) + 1
 	_changed_on[block] = day
 	var cause_name: String = GameEnums.BlockCause.keys()[cause]
-	trace.note("arc", "block %s %s -> %s (%s)" % [
+	_trace.note("arc", "block %s %s -> %s (%s)" % [
 		RunTrace.tile(block), RunTrace.purpose(was),
 		RunTrace.purpose(purpose_of(plans, block)),
 		cause_name.to_lower()])

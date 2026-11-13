@@ -2,7 +2,7 @@ extends RefCounted
 ## Authored units remain real production roof furniture through residency changes.
 ##
 ## The authored layout is read off what the roof draws, through a drawer handed in as the city hands
-## one (`Building.roof_drawer`): a recording one (`tests/recording_roof_drawer.gd`) where the check
+## one (`Building.equip()`): a recording one (`tests/recording_roof_drawer.gd`) where the check
 ## is what was drawn, the real one a building makes for itself where the check is the picture's
 ## own width or joint and the roof is read off where its objects stand (`tests/roof_reads.gd`).
 
@@ -28,8 +28,13 @@ func _roof(t: TestRunner, footprint: Vector2, height: float, district: int,
 	building.height = height
 	building.district = district
 	if drawer != null:
-		building.roof_drawer = drawer
+		var atlas := AtlasLibrary.new()
+		building.equip(atlas, drawer, FrontDrawer.new(atlas))
 	t.add_child(building)
+	if drawer != null:
+		# Equipped as the city equips it, the building waits for the residency, which stands a
+		# building in view up.
+		building.residence().set_resident(true)
 	return building
 
 ## The roof units standing on a standalone `building`, which parents them to itself.

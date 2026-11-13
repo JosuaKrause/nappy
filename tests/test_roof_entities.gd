@@ -4,17 +4,18 @@ extends RefCounted
 ## Three things are tested apart. Where a roof's units stand is decided by its random draws, so the
 ## roof drawn is checked on its own as a function of the seed and the lot. The roof that holds the
 ## units is checked with a drawer that records what it is told to draw
-## (`tests/recording_roof_drawer.gd`), handed in through `Building.roof_drawer` as the city hands the
+## (`tests/recording_roof_drawer.gd`), handed in through `Building.equip()` as the city hands the
 ## real one: every unit is drawn once, at its foot, in the layer the city gave it, at the rotor
 ## phase of the clock the city gave it. And the real drawer (`RoofDrawer`) is checked on
 ## its own, handed chosen units and a bare layer, with no building and no roll.
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
 
 func run(t: TestRunner) -> void:
 	_test_every_placed_unit_is_drawn_at_its_foot_in_entities(t)
-	_test_the_real_drawer_draws_each_unit_as_told(t)
+	await _test_the_real_drawer_draws_each_unit_as_told(t)
 	_test_the_layout_is_a_function_of_the_seed_and_the_lot(t)
 	_test_reserved_cells_hold_native_base_widths(t)
 	_test_narrow_and_fragmented_roofs_keep_their_unit_count(t)
@@ -37,15 +38,18 @@ func _new_fixture(t: TestRunner, district: GameEnums.BlockPurpose, drawer: RoofD
 	t.add_child(root)
 	var building := Building.new()
 	building.name = "Building"
-	building.atlas = AtlasLibrary.new()
-	building.roof_drawer = drawer if drawer != null else RoofDrawer.new(building.atlas)
+	var atlas := AtlasLibrary.new()
+	building.equip(atlas, drawer if drawer != null else RoofDrawer.new(atlas), FrontDrawer.new(atlas))
 	if stand:
-		(drawer as RecordingRoofDrawer).real = RoofDrawer.new(building.atlas)
+		(drawer as RecordingRoofDrawer).real = RoofDrawer.new(atlas)
 	building.position = Vector2(320.0, 320.0)
 	building.stand_on(Rect2i(), Vector2(256.0, 256.0), 0, district, 64.0)
 	building.put_roof_objects_in(entities)
 	building.scenery_clock = clock
 	root.add_child(building)
+	# Equipped as the city equips it, the building waits for the residency, which stands a building
+	# in view up.
+	building.residence().set_resident(true)
 	return {"root": root, "entities": entities, "building": building}
 
 func _free(fixture: Dictionary) -> void:
@@ -117,10 +121,15 @@ func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t: TestRunner) -> 
 
 ## The real drawer on its own: chosen units into a bare layer, one of each kind of thing a roof
 ## unit can be (a vent housing on either rotor frame, a joined duct section, an ordinary picture).
+## The frame a rotor shows is the picture it stands, read off a recording scenery drawer handed to
+## the drawer as the city hands it its own (`tests/recording_scenery_drawer.gd`), once a frame has
+## drawn it.
 func _test_the_real_drawer_draws_each_unit_as_told(t: TestRunner) -> void:
 	var layer := Node2D.new()
 	t.add_child(layer)
-	var drawer := RoofDrawer.new(AtlasLibrary.new())
+	var atlas := AtlasLibrary.new()
+	var scenery := RecordingSceneryDrawer.new()
+	var drawer := RoofDrawer.new(atlas, scenery)
 	var units := [
 		{"cell": Vector2i(2, 3), "texture": Building.VENT_HOUSING, "at": Vector2(48, -96),
 			"links": -1, "frame_b": true},
@@ -135,6 +144,7 @@ func _test_the_real_drawer_draws_each_unit_as_told(t: TestRunner) -> void:
 		objects.append(drawer.draw(layer, unit.cell, unit.texture, unit.at, unit.links, unit.frame_b))
 	t.check(layer.get_children() == objects, "each unit stands in the layer it was handed, in the"
 			+ " order it was drawn")
+	await t.get_tree().process_frame
 	for i in units.size():
 		var unit: Dictionary = units[i]
 		var object := objects[i]
@@ -148,8 +158,12 @@ func _test_the_real_drawer_draws_each_unit_as_told(t: TestRunner) -> void:
 					"roof art has no collision child")
 		t.check(not object.is_processing(), "stationary roof housing has no per-frame callback")
 		if unit.texture == Building.VENT_HOUSING:
+			var shown: Array[Dictionary] = []
+			if object.rotor != null:
+				shown = scenery.shown_on(object.rotor)
+			var picture := Building.VENT_ROTOR_B if unit.frame_b else Building.VENT_ROTOR
 			t.check(object.rotor != null and object.rotor.get_parent() == object
-					and object.rotor.frame_b == unit.frame_b,
+					and shown.size() == 1 and shown[0].texture == atlas.region(picture),
 					"a vent housing stands with its turning rotor on the frame it was handed")
 		else:
 			t.check(object.rotor == null and object.get_child_count() == 0,

@@ -47,30 +47,30 @@ var _faces_away := false
 var signals: TrafficSignals
 ## The baked atlas pages this head draws from (`AtlasLibrary`), handed by the city before it is
 ## added; a head nobody handed one (a suite's) makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
 ## What the head and its lit lamp are drawn through (`TrafficLightDrawer`), handed by the city
 ## before the head is added, the same one to every head it stands; a head nobody handed one makes
-## its own over its `atlas` when it first enters the tree.
+## its own over its `_atlas` when it first enters the tree.
 var drawer: TrafficLightDrawer = null
 
 ## Mounts the head at `at_junction`, drawing from `library` through `heads` and showing what `lights`
-## says, before the city adds it. See `atlas`, `drawer`, `junction` and `signals`.
+## says, before the city adds it. See `_atlas`, `drawer`, `junction` and `signals`.
 func mount(library: AtlasLibrary, heads: TrafficLightDrawer, at_junction: Vector2i,
 		lights: TrafficSignals) -> void:
-	atlas = library
+	_atlas = library
 	drawer = heads
 	junction = at_junction
 	signals = lights
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
 	if drawer == null:
-		drawer = TrafficLightDrawer.new(atlas)
-	atlas.acquire(&"street_kit")
+		drawer = TrafficLightDrawer.new(_atlas)
+	_atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
-	atlas.release(&"street_kit")
+	_atlas.release(&"street_kit")
 
 ## Overrides ScenerySprite._apply_residence.
 func _apply_residence(resident: bool) -> void:

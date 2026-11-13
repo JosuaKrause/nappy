@@ -243,14 +243,6 @@ func _take(count: int, keep_out: Array) -> Array:
 			_queue.remove_at(at)
 	return taken
 
-## The size of every bag in the queue, the one being drawn from first. For a test, and for a scene
-## that rigs a bag and wants to say what it left.
-func sizes() -> Array[int]:
-	var found: Array[int] = []
-	for bag in _queue:
-		found.append(bag.size())
-	return found
-
 ## The marbles in the bag being drawn from, as a copy — what a rig has just put in front.
 func bag_in_front() -> Array:
 	return [] if _queue.is_empty() else (_queue[0] as Array).duplicate()
