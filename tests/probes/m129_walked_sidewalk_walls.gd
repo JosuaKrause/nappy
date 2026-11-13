@@ -311,12 +311,11 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var corridor := dawn.corridor()
 	var provenance := {}   # EventPlan instance id -> Source
 
-	var ambient := EventScheduler._place_ambient(dawn)
-	events.add_all(ambient)
-	for plan: EventPlan in ambient:
-		provenance[plan.get_instance_id()] = Source.OTHER
-
 	var before := events.size()
+	DawnAmbient.new().run(dawn)
+	_tag_new(events.placements(), provenance, before, Source.OTHER)
+
+	before = events.size()
 	EventScheduler._place_scripted(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 

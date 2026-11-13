@@ -450,7 +450,7 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 			"and silences the mast she touched, not the near or the routed one (%s)" % silenced)
 	var scarred := []
 	for scar: Dictionary in _city.run.attempt_spend.scars:
-		if String(scar["id"]) == EventScheduler.SILENCED_MAST:
+		if String(scar["id"]) == DawnMasts.SILENCED_MAST:
 			scarred.append(scar["position"])
 	t.check(scarred.size() == 1 and (scarred[0] as Vector2).distance_to(third_foot) < 1.0,
 			"and the one scar is that mast's foot")

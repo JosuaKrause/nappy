@@ -65,7 +65,7 @@ func _test_no_row_is_city_wide(t: TestRunner) -> void:
 	t.check(loudspeaker.outer_radius > loudspeaker.inner_radius,
 			"the loudspeaker has an edge a route can go round")
 	t.check(curfew.outer_radius > curfew.inner_radius,
-			"so does the curfew announcement it carries on EventScheduler.CURFEW_ANNOUNCE_DAY")
+			"so does the curfew announcement it carries on DawnMasts.CURFEW_ANNOUNCE_DAY")
 
 # ------------------------------------------------------------------- sites ---
 
@@ -270,10 +270,10 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
-	_start(EventScheduler.CURFEW_ANNOUNCE_DAY)
+	_start(DawnMasts.CURFEW_ANNOUNCE_DAY)
 	for site in _sites():
 		_city.events.stream_around(site.foot)
-	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a
+	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `DawnMasts` skips a
 	# site whose tile is today's own closure, region wall or checkpoint ground rather than
 	# planting on top of it (`tests/test_events.gd`,
 	# `_test_nothing_the_catalogue_places_stands_on_held_ground`), so a day may carry fewer.
@@ -322,7 +322,7 @@ func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> v
 	t.check(not _plan_for(target.id).silenced, "the mast speaks the day she reaches it")
 	var foot := _city.events.mast_foot(target.id)
 	_city.events.silence_mast(target.id)
-	run.add_scar(EventScheduler.SILENCED_MAST, foot)
+	run.add_scar(DawnMasts.SILENCED_MAST, foot)
 
 	run.header.day = first + 1
 	_start(first + 1)

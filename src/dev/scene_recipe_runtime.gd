@@ -1007,11 +1007,11 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
 			plan.mast_id = str(entry.mast_id) if entry.has("mast_id") \
-					else EventScheduler.added_mast_id(plan.position)
+					else DawnMasts.added_mast_id(plan.position)
 		plans.append(plan)
 	return plans
 
-## An authored mast stands where the day's masts may, by the checks `EventScheduler._place_masts()`
+## An authored mast stands where the day's masts may, by the checks `DawnMasts`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
 ## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street, its field
 ## off a calm interior and off every place a region door could stand, which holds the doors this

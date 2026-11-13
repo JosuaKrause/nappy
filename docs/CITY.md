@@ -253,7 +253,7 @@ reached from it.
 day's routes are fixed at dawn, and everything sited while she walks — day 3's fire, the poster
 crews, her route's bag, day 11's added mast — is what the day's own placement rules accept, none of
 it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
-street no route runs along (`EventScheduler._place_the_roadblocks()`), or one put across the
+street no route runs along (`DawnRoadblocks`), or one put across the
 nearest such section out of her sight in place of what it held
 (`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out once, as the walk starts, from the day's plan
 (`DayReach`).
@@ -269,7 +269,7 @@ baby in has to be somewhere else, and the day plans for that too:
 - **`ClosurePlanner` already keeps two calm areas reachable**, so one of them is not the swing's.
 - **One other area is clean.** Day 12 is the first day of act IV, so every area is unused and the
   calm rule has kept them clean (`CalmAreas.unused_ground()`); where she has used every area there
-  is, the one the spoilers pass over is kept clean the same way (`EventScheduler._calm_kept_clean()`,
+  is, the one the spoilers pass over is kept clean the same way (`DawnCalmKeptClean`,
   never the swing's park).
 - **A route to it is kept** by the day's route rules, which keep the tree open, and the tree reaches
   the calm. Reached from home, it is reached from the swing: the swing is kept reachable from home,
@@ -557,7 +557,7 @@ walks there without a route pointing the way.
   allowance even when no barrier stands today.
 - **At least one calm area is always usable.** On the day she has settled in every calm area there
   is, the one the spoilers pass over joins the ground nothing may reach
-  (`EventScheduler._calm_kept_clean()`). The player has to find out which.
+  (`DawnCalmKeptClean`). The player has to find out which.
 
 ## Road closures
 
@@ -648,7 +648,7 @@ question below:
 - `CalmAreas.unused_ground()` is the ground `EventScheduler` refuses: **nothing is placed near a
   calm area she has not used this act**, so those stay clean rather than being cleaned up
   afterwards.
-- `EventScheduler._calm_kept_clean()` covers the day she has used every calm area there is: the one
+- `DawnCalmKeptClean` covers the day she has used every calm area there is: the one
   area the spoilers pass over joins the ground nothing may reach.
 - `_spoil_the_parks_she_used` spoils every area she has already settled in **this act** — what stops
   her going back to the same bench every day — except the currently active `CityMap.fenced_park`,

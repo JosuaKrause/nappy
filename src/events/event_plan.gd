@@ -21,7 +21,7 @@ var facing := Vector2.RIGHT
 var gate_state: RegionPlanner.GateState = null
 
 ## `MastSites.Site.id` for a mast's own plan (its ordinary broadcast and, on
-## `EventScheduler.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
+## `DawnMasts.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
 ## question `EventManager.silence_mast()` and the broadcast clock's own sync ask before
 ## touching a plan.
 var mast_id := ""

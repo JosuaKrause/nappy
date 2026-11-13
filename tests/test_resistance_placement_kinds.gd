@@ -74,7 +74,7 @@ func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void
 	var doorstep := _city.map.doorstep_world_position()
 	var scar_at := _city.map.tile_to_world(site)
 	run.attempt_spend.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
-	# `_place_scars()` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
+	# `DawnScars` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
 	# if `scar_at` is inside the streaming radius of the doorstep.
 	var spec := DaySpec.for_day(8)
 	RigStreets.begin(_city.streets(), _city.map, spec)

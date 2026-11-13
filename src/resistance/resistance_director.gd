@@ -666,7 +666,7 @@ func _recorded_scar(scar_id: String) -> Vector2:
 ## The instance standing at the run's own recorded scar for `scar_id`, put in the world now and kept
 ## there for the rest of the day wherever she walks, or null when the run never recorded one
 ## (`_recorded_scar()`). The scheduler re-places the same def at the scar every day after
-## `since_day` (`EventScheduler._place_scars()`), and that plan is what this rides
+## `since_day` (`DawnScars`), and that plan is what this rides
 ## (`EventManager.keep_live()`): she may read the mark from anywhere in the city, far outside the
 ## streaming radius, and walk away from the shell again afterwards, and neither may leave the
 ## contact riding nothing. A scar today has no plan for (one recorded on this same day) gets an
@@ -1718,7 +1718,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ## "let's not rig the roadblock let's place one properly and guide to that -- just make sure it's
 ## closeby"; inbox #1185 in gentle-owl: use a roadblock the day placed, and swap one in when none is close by)*.
 ## Dawn stands roadblocks beside her routes so that one usually is
-## (`EventScheduler._place_the_roadblocks()`). Close by is walked from where she read the mark,
+## (`DawnRoadblocks`). Close by is walked from where she read the mark,
 ## out to `NEAR_THE_MARK` and then each of `ROADBLOCK_WIDER_REACH` in turn, nearest first
 ## (`_paths_reach_between()`), and a place counts when ground she can touch it from is reached and
 ## is reachable from home (`_reachable_from_home()`):
@@ -2093,7 +2093,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 		if near_plans.is_empty():
 			var added := _add_a_mast_near(mark, rng)
 			if not added.is_empty():
-				_mast_id = EventScheduler.added_mast_id(_map.tile_to_world(added[0]))
+				_mast_id = DawnMasts.added_mast_id(_map.tile_to_world(added[0]))
 				return _map.tile_to_world(added[0])
 			if offered.is_empty():
 				return Vector2.INF
@@ -2197,7 +2197,7 @@ func _weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) -
 
 ## Silences the mast day 11 sent her to, for the rest of the run: today through
 ## `EventManager.silence_mast()`, and every later day through the scar it leaves
-## (`EventScheduler.SILENCED_MAST`), which `EventScheduler._place_masts()` reads before a mast's plan
+## (`DawnMasts.SILENCED_MAST`), which `DawnMasts` reads before a mast's plan
 ## is ever made. A scar rather than a field of its own on `RunState` because it is exactly what a
 ## scar is — a permanent mark on the city left by what happened on an earlier day — and so it is
 ## saved, and given back with a lost day, by what already does both for the burnt shell.
@@ -2207,7 +2207,7 @@ func _silence_the_mast() -> void:
 	var foot := _events.mast_foot(_mast_id)
 	_events.silence_mast(_mast_id)
 	if foot != Vector2.INF:
-		_run.add_scar(EventScheduler.SILENCED_MAST, foot)
+		_run.add_scar(DawnMasts.SILENCED_MAST, foot)
 	trace.note("contact", "mast %s is silenced for the rest of the run" % _mast_id)
 
 ## How far from where she touched the mark the neighbor has to start, at least: off screen, so they

@@ -16,10 +16,6 @@ extends RefCounted
 ## park* is a statement about the parks. Tying the two put the second decision inside the first,
 ## where nobody making it would see it.
 const CALM_ZONE_DENIAL_RATE := 7.7
-## The day the masts carry the curfew announcement instead of their ordinary broadcast — the day
-## `_curfew_announce()` used to be `scripted_day` for, kept as a named day rather than re-read off
-## the def so the two rows do not have to agree about which field means "when" any more.
-const CURFEW_ANNOUNCE_DAY := 6
 ## How many times over a tile on the day's routes is offered to a **friction** placement.
 ##
 ## *"Benign blockers go on the route… to make it more challenging / force the player to think their
@@ -174,10 +170,11 @@ const WALL_WORTH_OF_COST := Tuning.METER_MAX * 0.48
 
 ## **Plans what stands on the walk the dawn's context describes** (`DawnContext`): which rows, how
 ## they are drawn, and which placement rules apply are all the spec's (`DaySpec`, "how its events
-## are placed"), so a day and the escape's city are one entry point and one judge (`_best_of()`). A
-## day draws the catalogue (`DaySpec.Draw.CATALOGUE`, below); the escape's city fills each street of
-## its walk from its marble bag (`DaySpec.Draw.BAG_PER_STREET`, `_draw_the_walk()`). Nothing here
-## asks which day it is beyond `DawnContext.day()`, the day the catalogue's rows are read for.
+## are placed"), so a day and the escape's city are one entry point and one set of rules
+## (`StreetInvalidation`). A day draws the catalogue (`DaySpec.Draw.CATALOGUE`, below); the
+## escape's city fills each street of its walk from its marble bag (`DaySpec.Draw.BAG_PER_STREET`,
+## `_draw_the_walk()`). Nothing here asks which day it is beyond `DawnContext.day()`, the day the
+## catalogue's rows are read for.
 ##
 ## **Every input is the context's**, handed it by whoever made it (`DayPlanner`, or a suite's
 ## `GameDawn`): the walk and its calm areas, the heat, the doors, what stands, the run's scars and
@@ -187,115 +184,48 @@ const WALL_WORTH_OF_COST := Tuning.METER_MAX * 0.48
 ## `EventCatalogue.heated()`, so nothing in this file tests for it.
 ##
 ## **Plans into the context and answers nothing**: the day's plan is `DawnContext.events()`, written
-## only by the passes below, and the locations and the ground the dawn built are read beside it
-## (`DawnContext.locations()`, `DawnContext.ground()`).
+## only by the dawn's phases (`_phases()`) and the passes below, and the locations and the ground
+## the dawn built are read beside it (`DawnContext.locations()`, `DawnContext.ground()`).
+##
+## **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
+## park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
+## park she can reach from the swing"). Dawn keeps it by construction: the calm other than
+## `calm.besides()` is the ground the calm rule and `DawnCalmKeptClean` keep clean, and the day's
+## routes, which no body the day plans closes (the route rules of `StreetInvalidation`, and
+## `RouteGroundRule` for the scars and the spoilers), run to it.
 static func build_day(context: DawnContext) -> void:
 	var spec := context.spec()
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
 		_draw_the_walk(context, _street_bag(spec.bag, street_bag_seed(context.day_seed())))
 		return
-	_plan_the_dawn(context)
-	_ensure_the_run_is_taught(context)
-
-	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in
-	# the park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second
-	# open park she can reach from the swing"). Dawn keeps it by construction: the calm other than
-	# `calm.besides()` is the ground the calm rule and `_calm_kept_clean()` keep clean, and the
-	# day's routes, which no body the day plans closes (the route rules of `StreetInvalidation`,
-	# and `RouteGroundRule` for the scars and the spoilers), run to it.
-	_count_what_is_left_uncovered(context)
-
-## `build_day` up to and including the dawn draw, added to the context's plan: the ambient rows,
-## the scars, the masts, the roadblock phase (`DawnContext.roadblock_row()`, day 13's roadblock),
-## the scripted rows, the one-shots, the spoilers in a park she used, the moments she is owed and
-## the draw of every location from its view's bag (`_draw_the_locations()`), each phase on its own
-## stream off the day's seed (`DawnContext.stream()`). The day's locations are laid out
-## (`DawnContext.locations()`) and held by the fixed parts before the phases draw into them.
-static func _plan_the_dawn(context: DawnContext) -> void:
-	var map := context.map()
-	var events := context.events()
-	var locations := context.locations()
-
-	# **The fixed parts' phases** (the design's "the city's fixed parts have phases of their own"):
-	# the ambient rows and the masts stand where their planners put them, and each is recorded on
-	# the location holding it, so the draw passes over it; so is each of the region wall's bodies
-	# (standing, planned before the day: "a wall makes its location unavailable throughout"). A
-	# seal's bodies stand at dawn as standing and the day's rules keep rows off them, but hold no
-	# location: a soft seal is not held, its carriageway still walkable and a row standing on it the
-	# price of that route (`docs/EVENTS.md`, the held streets), and a hard seal's street is held
-	# already. The region doors' bodies are not standing: a street door's street is held, and an
-	# alley door is kept clear by the doors' rule (`CHECKPOINT_EVENT_GAP`). A mast's
-	# location on a day before the masts holds nothing and is drawn like any other.
-	var fixed := _place_ambient(context)
-	events.add_all(fixed)
-	_place_scars(context)
-	var masts := _place_masts(context)
-	events.add_all(masts)
-	fixed.append_array(masts)
-	for part in events.standing():
-		if part.is_in_the_wall() and part.is_placed():
-			fixed.append(part)
-	for part in fixed:
-		var tile := map.world_to_tile(part.placed_at())
-		locations.hold_fixed_part(part, tile, map.tile_at(tile))
-	# **One calm area stays clean by construction**: where she has settled in every area this act,
-	# the one the spoilers leave alone joins the calm ground nothing may reach. See
-	# `_calm_kept_clean()`.
-	if context.spec().keeps_unused_calm_clear:
-		context.keep_clean(_calm_kept_clean(context.calm(), events))
-	_place_the_roadblocks(context)
-	# **The scripted rows' dawn phase**: each draws one of the day's open locations its ground
-	# takes and is assigned it (`ScriptedPhase`), offered through the dawn draw's own path and
-	# judged by the day's rules, so the draw after passes over it. The one-shots are owed to her
-	# walk (`_place_one_shots()`).
+	for phase in _phases():
+		phase.run(context)
 	_place_scripted(context)
 	_place_one_shots(context)
 	_spoil_the_parks_she_used(context)
 	_owe_the_moments(context)
 	_draw_the_locations(context)
+	_ensure_the_run_is_taught(context)
+	_count_what_is_left_uncovered(context)
 
-## **The roadblock phase at dawn** (inbox #1185 in gentle-owl: the day's routes first, then roadblocks next to
-## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
-## route-adjacent sections, spread by a bias toward the section farthest from those already placed,
-## until every route tile has one close by, no section still offered could bring one close by a
-## route tile that has none, or `RoadblockPhase.MOST` stand (the orchestrator's reading, open to
-## correction). The task's row is `DawnContext.roadblock_row()`, null on every other day, which this
-## leaves exactly as it was.
+## **The dawn's phases, in the order they run** (`DawnPhase`, one class each under
+## `dawn_phases/`), each handed the day's context and each on its own stream off the day's seed
+## (`DawnContext.stream()`). The order is the order rows enter the day's plan.
 ##
-## **The phase places into the day's locations** (`DawnContext.locations()`, laid out off the
-## walk's corridor every day), before the dawn draw fills the rest (`_draw_the_locations()`).
-##
-## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
-## stands the roadblock where it fits in the section and asks today's placement rules of it
-## (`StreetInvalidation`), never on the main road (inbox #1186 in gentle-owl); close by is the
-## walk her paths take from the ground she touches it from without leaving the circle of
-## `RuledRoadblockGround.TASK_ROW_CLOSE_BY` round it (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
-##
-## **What it does not promise.** Close by is measured over the ground as it stands when this runs:
-## the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more.
-## `_count_what_is_left_uncovered()` writes to the run log how many route tiles have
-## none as the day finally stands.
-##
-## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the dawn draw after it
-## draws the day's other rows, the roadblock holding no marble in it, spaced against these as against
-## anything already down, and never over one.
-static func _place_the_roadblocks(context: DawnContext) -> void:
-	var def := context.roadblock_row()
-	if def == null:
-		return
-	var day := context.day()
-	var map := context.map()
-	def = def.for_day(day)
-	var judged := RuledRoadblockGround.new(def, day, map, context.builder(), context.events(),
-			context.ground(), context.corridor(), context.rules())
-	var phase := RoadblockPhase.new(context.locations(), judged)
-	var placed: Array[String] = []
-	for plan in phase.place(context.stream(RoadblockPhase.SALT)):
-		placed.append(RunTrace.tile(map.world_to_tile(plan.placed_at())))
-	context.note("plan", ("%d %s placed beside the day's routes, at %s; %d route tiles left with " +
-			"none close by, the phase done")
-			% [placed.size(), def.id, " ".join(placed) if not placed.is_empty() else "none",
-			phase.left_uncovered()])
+## The city's fixed parts come first (the design's "the city's fixed parts have phases of their
+## own"): the ambient rows, the masts and the region wall's bodies stand where their planners put
+## them and each holds its location, so the draw passes over it; the run's scars stand between
+## them. Then the calm area the day keeps clean is decided, before the first judge asks the
+## day's rules; then day 13's roadblocks.
+static func _phases() -> Array[DawnPhase]:
+	return [
+		DawnAmbient.new(),
+		DawnScars.new(),
+		DawnMasts.new(),
+		DawnWallBodies.new(),
+		DawnCalmKeptClean.new(),
+		DawnRoadblocks.new(),
+	]
 
 ## **Whether `section` is on the main road**, where nothing that closes a street stands outside the
 ## escape (inbox #1186 in gentle-owl): neither a roadblock the phase places nor one day 13's task swaps in.
@@ -333,7 +263,7 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 ## (not a region door's body or the wall's own) is read as close by every route tile its paths
 ## reach within `RuledRoadblockGround.TASK_ROW_CLOSE_BY` over the day's whole obstruction
 ## (`DayReach.shut_by()`), and the route tiles it leaves are counted. The roadblock phase
-## (`_place_the_roadblocks()`) aims at none,
+## (`DawnRoadblocks`) aims at none,
 ## but a route tile no section within reach took one for and ground the later passes shut both
 ## leave some. A
 ## count and nothing more: nothing is placed or moved here. Nothing on a day with no `def`
@@ -672,7 +602,7 @@ static func _ensure_the_run_is_taught(context: DawnContext) -> void:
 ## - **It spoils with events, not by taking the ground away.** The park is still there, still
 ##   calm ground, still walkable. Things are standing in it, and she can see that from
 ##   the street and decide. An event that could seal or end the day is never chosen for this.
-## - **One area is kept clean by construction** (`_calm_kept_clean()`): the spoilers pass over it and
+## - **One area is kept clean by construction** (`DawnCalmKeptClean`): the spoilers pass over it and
 ##   its ground joins what nothing may reach, so the day it creates is still winnable and the
 ##   alternative is still real rather than nominal.
 ## - **They are ordinary events, placed like any other.** They have no count of their own
@@ -720,40 +650,11 @@ static func _spoil_the_parks_she_used(context: DawnContext) -> void:
 			spoilable -= 1
 			_spoil_one_park(context, rng, block)
 
-## **The calm area the day keeps clean, where only construction can keep one**: `NONE` while an area
-## counted today (any but `calm.besides()`, day 12's swing park) is one she has not used this act,
-## since the calm rule keeps every unused area clear (`CalmAreas.unused_ground()`); otherwise the
-## counted area she used longest ago that nothing standing spoils yet, else the least spoiled. The
-## spoilers pass over it and its ground joins what nothing may reach, so the day has clean calm
-## ground by construction (`docs/CITY.md`, "Guarantees").
-static func _calm_kept_clean(calm: CalmAreas, events: DayEvents) -> Vector2i:
-	var used := calm.used()
-	var counted: Array[Vector2i] = []
-	for block in calm.blocks():
-		if block == calm.besides():
-			continue
-		if not used.has(block):
-			return CalmAreas.NONE
-		counted.append(block)
-	var oldest_first: Array[Vector2i] = []
-	for i in range(used.size() - 1, -1, -1):
-		if counted.has(used[i]):
-			oldest_first.append(used[i])
-	var least := CalmAreas.NONE
-	for block in oldest_first:
-		if not events.is_spoiled(block):
-			return block
-		if least == CalmAreas.NONE \
-				or events.spoilers_of(block).size() < events.spoilers_of(least).size():
-			least = block
-	return least
-
 static func _spoil_one_park(context: DawnContext, rng: RandomNumberGenerator,
 		block: Vector2i) -> void:
 	var map := context.map()
 	var events := context.events()
 	var calm := context.calm()
-	var route_ground := context.route_ground()
 	var lot := calm.rect_of(block)
 	var open: Array[Vector2i] = []
 	for tile in map.rect_tiles(lot):
@@ -777,8 +678,8 @@ static func _spoil_one_park(context: DawnContext, rng: RandomNumberGenerator,
 		var plan := EventPlan.new(def, at)
 		# A body on a tile a route runs along stands beside the route instead, in its own cell:
 		# the park is shut by what is placed in it (PLAYTEST-140 8), so a cell keeps its spoiler.
-		if not _keeps_the_routes(plan, map, route_ground):
-			plan = _beside_the_routes(def, cell, cells, open, map, route_ground)
+		if not context.keeps_the_routes(plan):
+			plan = _beside_the_routes(def, cell, cells, open, context)
 			if plan == null:
 				continue
 		events.add(plan)
@@ -789,17 +690,18 @@ static func _spoil_one_park(context: DawnContext, rng: RandomNumberGenerator,
 			% [", ".join(placed), RunTrace.tile(block)])
 
 ## **`def` stood on the open tile of `cell`'s own ground nearest its centre that leaves the day's
-## routes their ground** (`_keeps_the_routes()`), or null where every tile of the cell is refused.
-## A spoiler whose first tile puts its body on a route stands beside the route rather than not at
-## all, since a used park the day could not shut is shut by its spoilers alone (PLAYTEST-140 8:
-## "a used park is shut by the events placed in it, as before"). The tiles are asked in order of
-## distance from the cell's centre, so the body is checked before it is accepted and nothing is
-## repaired after. A tile is the cell's own when no other cell of the grid (`cells`) has a centre
-## nearer it, which keeps the spoilers spread as the grid spreads them. A route is a chain of
-## two-tile cells and a grid cell is several times wider, so only a park the routes fill leaves a
-## cell no such tile.
+## routes their ground** (`DawnContext.keeps_the_routes()`), or null where every tile of the cell
+## is refused. A spoiler whose first tile puts its body on a route stands beside the route rather
+## than not at all, since a used park the day could not shut is shut by its spoilers alone
+## (PLAYTEST-140 8: "a used park is shut by the events placed in it, as before"). The tiles are
+## asked in order of distance from the cell's centre, so the body is checked before it is
+## accepted and nothing is repaired after. A tile is the cell's own when no other cell of the grid
+## (`cells`) has a centre nearer it, which keeps the spoilers spread as the grid spreads them. A
+## route is a chain of two-tile cells and a grid cell is several times wider, so only a park the
+## routes fill leaves a cell no such tile.
 static func _beside_the_routes(def: EventDef, cell: Vector2, cells: Array[Vector2],
-		open: Array[Vector2i], map: CityMap, route_ground: RouteGroundRule) -> EventPlan:
+		open: Array[Vector2i], context: DawnContext) -> EventPlan:
+	var map := context.map()
 	var centre := map.world_to_tile(cell)
 	var order := open.duplicate()
 	# Nearest first, and the same order on every run: ties go by row, then column.
@@ -814,7 +716,7 @@ static func _beside_the_routes(def: EventDef, cell: Vector2, cells: Array[Vector
 		if not _is_nearest_to(cell, at, cells):
 			continue
 		var plan := EventPlan.new(def, at)
-		if _keeps_the_routes(plan, map, route_ground):
+		if context.keeps_the_routes(plan):
 			return plan
 	return null
 
@@ -945,156 +847,7 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 		suitable.append(def)
 	return suitable
 
-## The masts: the run's sites (`mast_sites`, worked out once on the city as built,
-## `EventWorld.mast_sites()`), planted from `Tuning.MAST_FIRST_DAY` and standing at the same places
-## every day of the run. Bypasses the scripted rows' dawn phase (`_place_scripted`) entirely — a mast is not a
-## tile the day's own roll chose, it is a fixture the city already carries, the same way
-## `_place_ambient()` beside this hands out one plan per playground rather than rolling for one.
-##
-## **Except a day whose own closures, region wall or checkpoints need that exact tile.** `map`
-## already carries today's holds and closures by the time `build_day` runs them — `EventManager.
-## start_day()` populates both before calling this — so a site is skipped for the day rather than
-## planted on top of a barricade or a hut: `tests/test_events.gd`,
-## `_test_nothing_the_catalogue_places_stands_on_held_ground`, holds this for every row the
-## catalogue places and a mast is no longer an exception to it. `MastSites` already keeps every
-## site a full block off the home street and its own field off a calm interior, so this is rare —
-## a closure or a wall is one street's own width, not the whole city — and it costs a day's worth
-## of one mast rather than a guarantee.
-##
-## **And a day whose own doors it would reach.** `MastSites._reaches_a_possible_door()` already
-## refuses a site near *any* boundary segment's own door position — the boundary and the wall's
-## own end are fixed at generation (`RegionPlanner.assign()`), so that exclusion is as
-## day-independent as the sites themselves, and it is `MastSites`' own count that shows how few
-## sites it actually costs. `doors` is only today's *open* doors, narrower than every boundary
-## segment could ever be, so this second check is a safety net for whatever the siting-time
-## exclusion cannot see (an alley door among them) rather than the rule's main work — see
-## `DoorClearanceRule.clear_of_the_doors()`, the same guarantee `tests/test_checkpoints.gd` holds for every row.
-##
-## On `CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
-## alongside its ordinary `loudspeaker` one — see that row's own doc for why a second, invisible
-## plan is what "the masts carry the announcement" means rather than a second mast.
-##
-## **A mast she silenced on an earlier day stands silenced**: `scars` carries a `SILENCED_MAST`
-## entry at its foot (`ResistanceDirector._silence_the_mast()`), and its plans are made with
-## `EventPlan.silenced` already set — the pole and horns are there, the lamp is out and there is no
-## field, for the rest of the run.
-##
-## **So does a mast queued for day 11's task** (`EventManager.queue_a_mast()`): a `SILENCED_MAST` scar
-## no site's foot is within a tile of is that mast, and it is planned again at its own foot, silenced,
-## under `added_mast_id()`, on every later day whose holds, closures and doors leave the tile alone
-## — the same refusals a site is planned under. One that was never silenced left no scar and is not
-## planned again (*"Only if silenced"*).
-static func _place_masts(context: DawnContext) -> Array[EventPlan]:
-	var day := context.day()
-	var map := context.map()
-	var heat := context.heat()
-	var doors := context.doors()
-	var scars := context.scars()
-	var planned: Array[EventPlan] = []
-	if day < Tuning.MAST_FIRST_DAY:
-		return planned
-	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
-	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
-			if day == CURFEW_ANNOUNCE_DAY else null
-	var sites := context.mast_sites()
-	for scar in scars:
-		if String(scar["id"]) != SILENCED_MAST or int(scar["since_day"]) >= day:
-			continue
-		var foot: Vector2 = scar["position"]
-		var at_a_site := false
-		for site in sites:
-			if site.foot.distance_to(foot) < Tuning.TILE_SIZE:
-				at_a_site = true
-				break
-		var tile := map.world_to_tile(foot)
-		if at_a_site or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
-			continue
-		if not DoorClearanceRule.clear_of_the_doors(foot, PackedVector2Array(), doors, loudspeaker.field_reach()):
-			continue
-		var added := EventPlan.new(loudspeaker, foot)
-		added.mast_id = added_mast_id(foot)
-		added.silenced = true
-		planned.append(added)
-	for site in sites:
-		var tile := map.world_to_tile(site.foot)
-		if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
-			continue
-		if not DoorClearanceRule.clear_of_the_doors(site.foot, PackedVector2Array(), doors,
-				loudspeaker.field_reach()):
-			continue
-		var quiet := _was_silenced(site.foot, day, scars)
-		var mast := EventPlan.new(loudspeaker, site.foot)
-		mast.mast_id = site.id
-		mast.silenced = quiet
-		planned.append(mast)
-		if curfew:
-			var announcement := EventPlan.new(curfew, site.foot)
-			announcement.mast_id = site.id
-			announcement.silenced = quiet
-			planned.append(announcement)
-	return planned
-
-## The id of a mast queued for day 11's task at `foot` (`EventManager.queue_a_mast()`), the same
-## every day it is planned again from its scar, and never a `MastSites` site's own id.
-static func added_mast_id(foot: Vector2) -> String:
-	return "added-%d-%d" % [roundi(foot.x), roundi(foot.y)]
-
-## The scar id a mast she silenced leaves at its foot. No catalogue row answers it, so
-## `_place_scars` places nothing for it; `_place_masts` is its only reader.
-const SILENCED_MAST := "silenced_mast"
-
-## Whether a `SILENCED_MAST` scar from an earlier day stands at `foot` — within a tile, since the
-## foot a scar records and the foot a site computes are the same point read twice.
-static func _was_silenced(foot: Vector2, day: int, scars: Array[Dictionary]) -> bool:
-	for scar in scars:
-		if String(scar["id"]) == SILENCED_MAST and int(scar["since_day"]) < day \
-				and (scar["position"] as Vector2).distance_to(foot) < Tuning.TILE_SIZE:
-			return true
-	return false
-
-## Permanent marks left by earlier days, placed again exactly where they happened, each into
-## `events`, unless a body of one would cover a tile a route runs along or the street she starts on
-## (`route_ground`, the day's `RouteGroundRule` counting the streets): then it is not stood today, which is the day's routes
-## kept open by construction rather than a repair taking it away afterwards.
-static func _place_scars(context: DawnContext) -> void:
-	var day := context.day()
-	var map := context.map()
-	var events := context.events()
-	var route_ground := context.route_ground()
-	var heat := context.heat()
-	for scar in context.scars():
-		if int(scar["since_day"]) >= day or String(scar["id"]) == SILENCED_MAST:
-			continue
-		var def := EventCatalogue.by_id(String(scar["id"]))
-		if def:
-			var plan := EventPlan.new(EventCatalogue.heated(def, heat), scar["position"])
-			plan.permanent = true
-			if _keeps_the_routes(plan, map, route_ground):
-				events.add(plan)
-
-## Whether `plan`, stood where it is, leaves the day's routes their ground: no body of it covers a
-## tile a route runs along, on a street or off one (`route_ground`). Only that: a scar or a spoiler
-## is not spaced, not given a role and asked no line rule, so a field of one stands on a route's
-## line as it always did and only a body is kept off the route's tiles; it asks nothing of what the
-## day holds or what stands.
-static func _keeps_the_routes(plan: EventPlan, map: CityMap,
-		route_ground: RouteGroundRule) -> bool:
-	var none: Array[EventPlan] = []
-	return route_ground.allows(plan, map.world_to_tile(plan.placed_at()), none, none)
-
 # ----------------------------------------------------------------- placement ---
-
-static func _place_ambient(context: DawnContext) -> Array[EventPlan]:
-	var map := context.map()
-	var planned: Array[EventPlan] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.AMBIENT, context.day(), context.heat()):
-		match def.ambient_source:
-			EventDef.AmbientSource.PLAYGROUND:
-				for rect in map.playgrounds:
-					planned.append(EventPlan.new(def, map.tile_rect_to_world(rect).get_center()))
-			_:
-				pass
-	return planned
 
 static func _place_scripted(context: DawnContext) -> void:
 	var day := context.day()
