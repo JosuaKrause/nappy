@@ -1001,18 +1001,20 @@ def names_playtest(line: str, playtest: Playtest) -> bool:
 # with the rest of it (`#1156 in name`); or a line ends on the citation's own ` in`, the name opening the next.
 RUN_CONTINUES = re.compile(r"(?:,|,? and)\s*$")
 HEAD_OF_RUN = re.compile(CITATION.pattern + RUN_CONTINUES.pattern, re.IGNORECASE)
-RUN_TAIL = re.compile(r"\s*(#\d+(?![0-9A-Za-z])(?:(?:, and |, | and )#\d+(?![0-9A-Za-z]))*)")
+# A continued line may sit inside a Markdown quote, so its leading `>` markers are skipped.
+RUN_TAIL = re.compile(r"\s*(?:>\s*)*(#\d+(?![0-9A-Za-z])(?:(?:, and |, | and )#\d+(?![0-9A-Za-z]))*)")
 IN_ENDS_LINE = re.compile(r" in\s*$")
-NAME_OPENS_LINE = re.compile(r"\s*(?:\[([^\]]*)\]\([^)]*\)|([A-Za-z][\w-]*))")
+NAME_OPENS_LINE = re.compile(r"\s*(?:>\s*)*(?:\[([^\]]*)\]\([^)]*\)|([A-Za-z][\w-]*))")
 
 
 def cite_line(
-    line: str, path: str, targets: dict[int, Playtest], before: str = "", after: str = ""
+    line: str, path: str, targets: dict[int, Playtest], before: str = "", after: str = "", before2: str = ""
 ) -> tuple[str, bool]:
     """`line` with the regular citations of `targets` edited, and whether any other form of one is left.
 
-    `before` and `after` are the neighbouring lines: a run that wraps across the line break is one run,
-    read from the line that ends it, and a citation whose ` in` ends a line is named by the next.
+    `before` and `after` are the neighbouring lines (`before2` the one above `before`): a run that wraps
+    across the line break, over two or three lines, is one run read from the line that ends it, and a
+    citation whose ` in` ends a line is named by the next. A run over more lines is listed for a hand fix.
     """
 
     def named(number: int) -> bool:
@@ -1048,12 +1050,26 @@ def cite_line(
         else:
             irregular = True
 
+    def head_numbers() -> list[int] | None:
+        """The numbers of the run that `before` (or `before2` and `before`) opens and leaves open, if any."""
+        head = HEAD_OF_RUN.search(before)
+        if head is not None:
+            return [int(n) for n in re.findall(r"#(\d+)", head.group(0))]
+        middle = RUN_TAIL.match(before)
+        top = HEAD_OF_RUN.search(before2)
+        if middle is None or top is None or RUN_CONTINUES.search(before, middle.end()) is None:
+            return None
+        return [int(n) for n in re.findall(r"#(\d+)", top.group(0) + middle.group(1))]
+
     tail = RUN_TAIL.match(line) if before else None
-    head = HEAD_OF_RUN.search(before) if tail is not None else None
-    if tail is not None and head is not None:
-        head_numbers = [int(n) for n in re.findall(r"#(\d+)", head.group(0))]
+    opened = head_numbers() if tail is not None else None
+    if tail is not None and opened is not None:
         tail_numbers = [int(n) for n in re.findall(r"#(\d+)", tail.group(1))]
-        cite_run(head_numbers + tail_numbers, tail.end(), (tail.start(1), tail.end()), line[tail.end() :], after)
+        if RUN_CONTINUES.match(line, tail.end()) and RUN_TAIL.match(after):
+            # The middle line of a run over three: the line that ends it edits it.
+            covered.append((tail.start(1), tail.end()))
+        else:
+            cite_run(opened + tail_numbers, tail.end(), (tail.start(1), tail.end()), line[tail.end() :], after)
     for match in CITATION.finditer(line):
         rest = line[match.end() :]
         if RUN_CONTINUES.match(rest) and RUN_TAIL.match(after):
@@ -1088,7 +1104,8 @@ def cite_text(path: str, text: str, targets: dict[int, Playtest]) -> tuple[str, 
     for index, line in enumerate(original):
         before = original[index - 1] if index > 0 else ""
         after = original[index + 1] if index + 1 < len(original) else ""
-        lines[index], irregular = cite_line(line, path, targets, before, after)
+        before2 = original[index - 2] if index > 1 else ""
+        lines[index], irregular = cite_line(line, path, targets, before, after, before2)
         if irregular:
             hand.append(index + 1)
     return "\n".join(lines), hand

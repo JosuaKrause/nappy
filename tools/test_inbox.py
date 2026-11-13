@@ -963,14 +963,12 @@ class CiteTests(unittest.TestCase):
         subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
         subprocess.run(["git", "add", "-A"], cwd=self.root, check=True)
 
-    def cite(self, *argv: str) -> tuple[int, str, str]:
-        """`cite --write`, unless the run is one that must not write."""
-        flags = [] if "--dry-run" in argv or "--no-write" in argv else ["--write"]
+    def cite(self, *argv: str, write: bool = True) -> tuple[int, str, str]:
+        """`cite --write`, unless the run is a dry one or `write` is False (no flag at all)."""
+        flags = ["--write"] if write and "--dry-run" not in argv else []
         out, err = io.StringIO(), io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
-            code = inbox.main(
-                ["cite", "--root", str(self.root), *flags, *[a for a in argv if a != "--no-write"]], FakeGh({})
-            )
+            code = inbox.main(["cite", "--root", str(self.root), *flags, *argv], FakeGh({}))
         return code, out.getvalue(), err.getvalue()
 
     def read(self, name: str) -> str:
@@ -1050,7 +1048,7 @@ class CiteTests(unittest.TestCase):
         self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
 
     def test_no_flag_prints_the_diff_and_writes_nothing(self) -> None:
-        _, out, _ = self.cite("9001", "--no-write")
+        _, out, _ = self.cite("9001", write=False)
         self.assertIn("+Two-thirds (inbox #9001 in quiet-yak) and more.", out)
         self.assertIn("would edit", out)
         self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
@@ -1116,6 +1114,25 @@ class CiteWrappedRunTests(unittest.TestCase):
         self.assertEqual(new, text)
         self.assertEqual(hand, [2])
 
+    def test_a_run_over_three_lines_naming_the_playtest_gets_no_edit(self) -> None:
+        text = "(inbox #9101 and\n#9102, #9101 and\n#9102 in gray-egret).\n"
+        self.assertEqual(self.cite(text), (text, []))
+
+    def test_a_run_over_three_lines_naming_no_playtest_gets_one_in_at_its_end(self) -> None:
+        text = "(inbox #9101 and\n#9102, #9101 and\n#9102) here.\n"
+        new, hand = self.cite(text)
+        self.assertEqual(new, "(inbox #9101 and\n#9102, #9101 and\n#9102 in gray-egret) here.\n")
+        self.assertEqual(hand, [])
+        self.assertEqual(self.cite(new), (new, []))
+
+    def test_a_continued_line_inside_a_quote_is_part_of_the_run(self) -> None:
+        named = "> (inbox #9101 and\n> #9102 in gray-egret).\n"
+        self.assertEqual(self.cite(named), (named, []))
+        unnamed = "> (inbox #9101 and\n> #9102) here.\n"
+        self.assertEqual(self.cite(unnamed)[0], "> (inbox #9101 and\n> #9102 in gray-egret) here.\n")
+        wrapped_in = "> (inbox #9101 in\n> gray-egret) here.\n"
+        self.assertEqual(self.cite(wrapped_in), (wrapped_in, []))
+
     def test_the_wrapped_sentences_of_the_repository_get_no_edit(self) -> None:
         root = TOOLS.parent
         held_by = inbox.playtests_by_number(root)
@@ -1129,9 +1146,8 @@ class CiteWrappedRunTests(unittest.TestCase):
             ".claude/skills/orchestrating/SKILL.md",
         ):
             path = root / name
-            if not path.exists():
-                continue
             with self.subTest(name=name):
+                self.assertTrue(path.exists(), f"{name} is missing")
                 text = path.read_text(encoding="utf-8")
                 new, hand = inbox.cite_text(name, text, targets)
                 self.assertEqual(new, text)
