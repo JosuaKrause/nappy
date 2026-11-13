@@ -106,7 +106,7 @@ An event that is somewhere is half of what makes a route a decision. It can be r
 and finding out it is there is what walking a street is for.
 
 **`AHEAD_OF_PLAYER`, which is the cat and the day-3 charging dog.** No tile. The day owes it to her
-(`EventScheduler._owe_the_moments()`), and `EventDirector` sites it while she is walking. A
+(`DawnMoments`), and `EventDirector` sites it while she is walking. A
 crossing row — the cat — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her.
 A pursuer — `charging_dog`, on `Tuning.RUN_TAUGHT_DAY` — is sited down her line instead, outside the
 view along the heading she is actually walking (`Offscreen.boundary()`), so it has an
@@ -1295,7 +1295,7 @@ Each item quotes the code on this branch.
 
 1. **Whether a row is valid at a location is asked of the whole day standing, not of the street's
    own draws.** Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
-   `EventScheduler._draw_the_locations()`). Today's placement rules are the invalidation, one class
+   `DawnDraw`). Today's placement rules are the invalidation, one class
    each (`StreetRule`: the calm she has not used, a door's clear ground, a route's junctions, its
    walked sidewalk, a pacing beat's opening and its ground off the streets, with the escape's one
    notice at a time and its walk kept open), composed per walk (`StreetInvalidation`) with a location's own ground
@@ -1359,17 +1359,25 @@ Each item quotes the code on this branch.
 EventScheduler.build_day(context):
     the context (DawnContext) holds the day's inputs and gives each phase its own stream off the
     day's seed
-    1. the day's locations (DayLocations, the context's), each told its view
+    the dawn's phases are the thirteen phase classes under src/events/dawn_phases/ (beside their
+    base, DawnPhase, and RuledRoadblockGround), run in the order of EventScheduler._phases(); steps 2 to 9 below are the phases, step 2 being four of them, with
+    DawnCalmKeptClean (which calm area the spoilers leave alone) between steps 2 and 3 and
+    DawnRoadblockCount (the run-log count of route tiles day 13's roadblocks leave uncovered) after 9
+    1. the day's locations (DayLocations, laid out by the context the first time a phase asks), each
+       told its view; no phase does it
     2. add all AMBIENT events for the current act, the scars, the masts at the run's sites;
        the region wall's bodies (standing), the masts and the ambient rows each hold the
        location under it; the seals stand, and hold none
-    3. day 13: the roadblock phase (RoadblockPhase)
-    4. the SCRIPTED events whose day == day_index, each drawing a location (ScriptedPhase)
+       (DawnAmbient, DawnScars, DawnMasts, DawnWallBodies)
+    3. day 13: the roadblock phase (DawnRoadblocks, which runs RoadblockPhase)
+    4. the SCRIPTED events whose day == day_index, each drawing a location
+       (DawnScripted, which runs ScriptedPhase)
     5. owe her walk the ONE_SHOT events not yet consumed this run, gated by
-       first_day/last_day, each sited later on her way
-    6. spoil the parks she used  (docs/CITY.md)
-    7. owe her the day's moments (the rows the director sites in front of her)
-    8. draw every open location from its view's bag (LocationDraw)
+       first_day/last_day, each sited later on her way (DawnOneShots)
+    6. spoil the parks she used  (docs/CITY.md) (DawnSpoilers)
+    7. owe her the day's moments (the rows the director sites in front of her) (DawnMoments)
+    8. draw every open location from its view's bag (DawnDraw, which runs LocationDraw)
+    9. on the day the run is taught, a pursuit added where the day owes none (DawnLesson)
    The roadblock phase, the scripted rows and the draw are asked all the day's rules
    (StreetInvalidation), the route rules among them; the scars and the spoilers are asked,
    as each body is placed, whether it covers a tile a route runs along (RouteGroundRule,
@@ -1622,7 +1630,7 @@ the hard blocking events in that case"; "fewer of all three", to a question that
 wall-type events.)* On a day the region wall stands (`DaySpec.region_wall_stands()`), every
 wall-role row is scaled by `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`) twice
 over: its weight in every view's bag (`EventScheduler.view_weight()`), so a location draws one that
-much less often, and its cap (`EventScheduler._caps_of()`, a fraction rounded up or down on its own
+much less often, and its cap (`DawnDraw._caps_of()`, a fraction rounded up or down on its own
 stream), so a wall whose cap binds is thinned as well. The empty marbles are counted against the
 walls weighed in full, so what a wall gives up is not respent on friction: the day holds fewer walls.
 A lighter weight alone makes fewer only of a wall whose cap does not bind, which is why the cap is
@@ -2006,7 +2014,7 @@ All implemented.
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and a **wall** by passability rather than by price: 24px of tables billing anybody within 56px of them leaves no line along the 64px sidewalk it stands on, so it is what the far side of a day-one street carries and never what the route's own sidewalk does. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 20 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. **The measure is a pass, not standing beside him**: she and he going different ways at `Tuning.WALK_SPEED` while he paces. What a pass nets, and the walk-through cost that keeps him under `EventScheduler.WALL_WORTH_OF_COST`, are his line in [COSTS.md](COSTS.md). **Friction or a wall depending on where his beat runs**: the way past him is never a lane and always a crossing — a beat that reaches a junction box is one she can leave at the zebra there while he is at the far end of it, and he stays on the route like any other timing problem; a beat truncated short of a junction by a closure or a calm zone leaves no way off his sidewalk, and that placement is a wall. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. One of him is also the resistance's first contact: the instance she actually hands the note to keeps shouting for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover, still charging her the whole time, before he stops and walks off, the same departure any finished event takes (`EventInstance.leave_for_a_completed_task()`), while every other live one carries on. `paces` never reaches the end of its own path and he carries no `duration`, so this is the only way he ever leaves — at `departs_at` (60px/s, faster than his 30px/s shuffle and well under her own walk), and not until she is `Tuning.OUT_OF_SIGHT` of him: he does not pop out of existence mid-screen if she is standing right there watching. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
-| `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
+| `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
 | `burning_building` | ONE_SHOT | 3 | Against the one face of a building the city actually draws, `AT_THE_FRONT` — never `AGAINST_THE_BUILDING`, the way `reversing_lorry` sites, since that catches only an east-or-west wall `building.gd` never puts a facade on — and never the power station's front, whose facade does not draw burnt and whose transformer yard has no wall. **Sited from the walk she is taking** (`EventDef.on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `aftermath.on_sight` calls `fire_truck` in the moment she first sees it. **The fire itself has no field and no obstacle — the truck it calls in is the danger, not the fire** (*"the fire goes on the building. the challenge is the fire truck not the fire"*, PLAYTEST-144, statement 12): `FireLook._draw_fire()` paints the flames and the smoke above them on the facade of the building it stands against, and the sidewalk in front stays clear. The flames burn along that building's whole facade, every column of it the city draws, and stay inside it: never on a neighbor's tile, and never on a column another building's roof covers (*"the fire should be on the whole building not only the door"*, sandy-egret). Burns for the rest of the day; from the next morning on, the scar it leaves is the building itself drawn burnt (`CityFronts.mark_the_burnt_frontage()`, `Building.Condition.BURNT`): windows black and broken under soot, the door boarded, the parapet charred. The `burnt_shell` row at the scar has no body and no picture of its own on the sidewalk, only its faint 2.5/s field — *"the building is what needs to be burnt, not an object next to the building"*. |
 | `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius, warned of first — its badge goes up alone the moment the fire is seen, pointing up the fire's own street, for its one-second telegraph, the most a badge is up alone, and it is then created just off screen on that road — and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has a body, the patrol car's construction (see "A car is solid and never drives into her"): solid while it drives and once it has parked, lethal only in front of it while it drives its route, and harmless once parked. What it closes is still the ground its field covers rather than the road itself: the body closes none (`obstructs_radius` is zero) and lies inside the field's 70px inner radius. A loss to it names `fire_truck` as its cause. |
@@ -3120,7 +3128,7 @@ the destination was not a decision, this one that *which* destination was not on
 
 #### It has to cover the ground, not stand in it
 
-**What denies calm ground is not reaching it, it is out-emitting `EventScheduler.CALM_ZONE_DENIAL_RATE`**,
+**What denies calm ground is not reaching it, it is out-emitting `DawnSpoilers.CALM_ZONE_DENIAL_RATE`**,
 7.7/s — so a busker at intensity 19.3 is useless past 157px however far his 190px
 field reaches, in a lot that is 704px across. One spoiler is a small share of a four-block calm
 zone: the day rolls its spoiler for the block she used, and she settles in that same block anyway.
@@ -3128,9 +3136,9 @@ zone: the day rolls its spoiler for the block she used, and she settles in that 
 denial radius — which is why a row that stands on calm ground is raised no further than it has to
 be.
 
-`EventScheduler._denial_radius()` is that arithmetic, and a spoiler is a **crowd** laid out on a grid
+`DawnSpoilers._denial_radius()` is that arithmetic, and a spoiler is a **crowd** laid out on a grid
 over the calm ground, sized from what each of them actually denies and capped at
-`EventScheduler.SPOILERS_TO_DENY_A_PARK`. Two details that are not incidental:
+`DawnSpoilers.SPOILERS_TO_DENY_A_PARK`. Two details that are not incidental:
 
 - **Each cell rolls its own def**, so a spoiled park is a busker *and* a leaf blower *and* a market
   stall. A park that is busy today is busy with several different things, and nine copies of one
@@ -3143,7 +3151,7 @@ over the calm ground, sized from what each of them actually denies and capped at
 Measured over five seeds and twenty lots: the share of the calm ground she cannot settle on goes
 from **8–12% on an ordinary day to 91% of a one-block courtyard and 99% of a four-block zone**. The
 body a spoiler may have scales with the lot too — a sixteenth of its shortest side, floored at
-`OBSTRUCTION_A_PARK_CAN_HOLD` — because a 28px market trestle is nothing in a 704px zone and a wall
+`DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD` — because a 28px market trestle is nothing in a 704px zone and a wall
 across a four-tile courtyard.
 
 ## Pulsing events

@@ -11,7 +11,7 @@ extends RefCounted
 ## share is the location's own weight times the bag's (`LocationGround.scale()`).
 ##
 ## **Every location is drawn once, at dawn**, by the day's plan
-## (`EventScheduler._draw_the_locations()`, the last phase of `EventScheduler.build_day()`), before
+## (`DawnDraw`, a phase of `EventScheduler.build_day()`), before
 ## she can move, so a retry draws the same day. The locations are drawn in the day's order
 ## (`DayLocations.drawing_order()`), so a street's later locations draw with its earlier draws
 ## standing. A row handed to her walk is drawn as any other and kept with no position, for her walk

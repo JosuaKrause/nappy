@@ -836,7 +836,7 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 		var consumed: Array[String] = []
 		var first := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements()
 		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
-		# where it becomes real — `EventScheduler._place_one_shots`. And a lost day gives back what
+		# where it becomes real — `DawnOneShots`. And a lost day gives back what
 		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
 		# The other direction, the day after it burned on a day she won, is the loop below this one.
 		t.check(consumed.is_empty(),

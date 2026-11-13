@@ -1258,14 +1258,14 @@ func validate() -> bool:
 				+ "wherever she goes, and one placed at dawn is met only if she walks there")
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
-	# `EventScheduler._place_one_shots` and a location's draw (`LocationDraw`) leave a plan unplaced
+	# `DawnOneShots` and a location's draw (`LocationDraw`) leave a plan unplaced
 	# for it, and only `EventDirector` sites what they leave. The siting is a tile with the
 	# corridor's own questions asked of it, which a director-sited row never has, and a thing that
 	# moves has no one place for its scar to be recorded at.
 	if on_her_way:
 		if kind != GameEnums.EventKind.ONE_SHOT and kind != GameEnums.EventKind.RECURRING:
 			push_error("event '%s' is sited from her walk and is neither a one-shot nor " % id
-					+ "recurring: nothing but EventScheduler._place_one_shots and "
+					+ "recurring: nothing but DawnOneShots and "
 					+ "LocationDraw leaves a plan for her walk to site")
 			return false
 		if spawn_mode != SpawnMode.MAP:
@@ -1853,7 +1853,7 @@ func silent_beyond() -> float:
 ## sidewalk would refuse every site the design exists to make. Nothing physical closes it: the fire
 ## has no body (PLAYTEST-144 12), and the engine it calls parks on the carriageway, so the street's
 ## way through is the engine's field, a cost and not a closure. A one-shot carrying this flag is
-## never placed at dawn (`EventScheduler._place_one_shots()` plans it with no position), so nothing
+## never placed at dawn (`DawnOneShots` plans it with no position), so nothing
 ## else in the day is judged differently because of it.
 ## **A recurring row carrying it is not exempt**: a poster crew closes nothing, and it is drawn at a
 ## location and judged as any other before it is handed to her walk with no position
@@ -1886,7 +1886,7 @@ func reaches_the_far_lane() -> bool:
 ## have to be planned around and the placement rules in `EventScheduler` have no business refusing a
 ## placement over it. The disc is therefore where the emission crosses
 ## that rate, not `outer_radius`, where it stops reaching at all; the same distinction
-## `EventScheduler._denial_radius()` makes about calm ground, at a different rate and with a
+## `DawnSpoilers._denial_radius()` makes about calm ground, at a different rate and with a
 ## different zero. A row quieter than the rate everywhere denies **nothing** here, where it still
 ## denies its own inner disc to a pram trying to settle.
 ##

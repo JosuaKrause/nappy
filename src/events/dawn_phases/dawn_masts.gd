@@ -4,7 +4,7 @@ extends DawnPhase
 ## (`DawnContext.mast_sites()`, worked out once on the city as built,
 ## `EventWorld.mast_sites()`), planted from `Tuning.MAST_FIRST_DAY` and standing at the same
 ## places every day of the run. Outside the scripted rows' dawn phase
-## (`EventScheduler._place_scripted()`) entirely — a mast is not a tile the day's own roll
+## (`DawnScripted`) entirely — a mast is not a tile the day's own roll
 ## chose, it is a fixture the city already carries, the same way `DawnAmbient` hands out one
 ## plan per playground rather than rolling for one.
 ##

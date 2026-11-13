@@ -62,7 +62,7 @@ the bag per view and its draw (`ViewBag`, `LocationDraw`), the day's placement r
 (`StreetRule`, composed by `StreetInvalidation`, with a location's own ground in `LocationFit`), the
 roadblock phase (`RoadblockPhase`), day 13's section swap, the scene recipes' locations, and the
 fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open location is drawn
-at dawn by one loop (`EventScheduler._draw_the_locations()`: `LocationDraw.draw_all()` over
+at dawn by one loop (`DawnDraw`, the dawn draw's phase: `LocationDraw.draw_all()` over
 `DayLocations.drawing_order()`); a poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. Nothing is drawn as she
 walks. A day's routes stay open by local rules alone: besides a route's junctions, its walked sidewalk
@@ -111,7 +111,13 @@ full text names the files each step owns.
    due within the next two events after the mark (olive-koala 2), lands on the next location she
    comes to on her way, so a player who turns at a junction still meets him; a row she must meet
    whatever route she takes exists wherever she goes, the guarantee the covering sites gave at dawn
-   (M50-the-city-points-somewhere). These stay dependent on her path on purpose. With the last
+   (M50-the-city-points-somewhere). These stay dependent on her path on purpose. `WalkSiting` leaves the event scheduler for a
+   file of its own as this step rewrites it: "yes, and make it so you can inject it which will
+   allow for it to be mocked easily" (the player on the board, question walksiting-lift, 2026-11-13;
+   inbox #1456). **Read as** (the orchestrator's reading): the classes that make one today with
+   `WalkSiting.new()`, `EventsAhead` (in `start_day()`, `queue_a_mast()` and `rig_her_route()`) and
+   `ResistanceHappenings` (in `_market_ahead_of()`), are handed it, or a maker of it, as
+   `EventDirector` already is, so a test of any of them can pass a mock in its place. With the last
    caller gone, `EventScheduler._best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES` and whatever only
    they used are deleted. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
    ground still needs it.
@@ -123,9 +129,8 @@ full text names the files each step owns.
    vans > barriers > empty", inbox #785 in minty-lemur), while about a third of the streets stand empty today; this
    step keeps today's share and `tests/probes/escape_winnable.gd` shows the before and after.
 
-Steps 3, 4 and 5 touch different files and run in parallel once step 2 is in. The event scheduler's
-breakup (`scheduler-breakup.md`) is interleaved: its phases move into classes of their own before
-step 2, so step 2 edits a small file.
+Steps 3, 4 and 5 touch different files and run in parallel once step 2 is in. The dawn draw step 2
+edits is a small file of its own (`src/events/dawn_phases/dawn_draw.gd`).
 
 **How a step is accepted.** Its suites pass, as for every step of the refactor ("for the refactor
 test parity is enough", inbox #813 in curly-moose), with the tests that held main's exact counts changed to hold

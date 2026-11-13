@@ -149,7 +149,7 @@ var pastes_posters := true
 enum Draw {
 	## The catalogue's day: the ambient rows, the scars, the masts, the scripted rows, the
 	## one-shots, the spoilers in a park she used, then every one of the day's locations drawn from
-	## its view's bag of the recurring rows (`EventScheduler._draw_the_locations()`) — every one of
+	## its view's bag of the recurring rows (`DawnDraw`) — every one of
 	## the fourteen days.
 	CATALOGUE,
 	## Every street of the walk draws one marble from one bag holding `bag`, and a marble stands one
@@ -186,7 +186,7 @@ var caps_per_day := true
 ## The share of its **wall**-role rows the day draws: every wall-role row's weight in the view bags
 ## is scaled by it (`EventScheduler.view_weight()`), while the empty marbles are set for every wall
 ## weighed in full, so a location draws a wall that much less often; and its cap is scaled by it too
-## (`EventScheduler._caps_of()`), so a wall whose cap binds is thinned as well. The day holds about
+## (`DawnDraw._caps_of()`), so a wall whose cap binds is thinned as well. The day holds about
 ## that share of its walls. `1.0` keeps every wall: every day the region wall does not stand
 ## (`region_wall_stands()`) and every section of the escape. On a day it stands, `for_day()` hands
 ## `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day holds about half its walls, not all of them.

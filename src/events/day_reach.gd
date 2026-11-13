@@ -69,8 +69,8 @@ func paths_within(map: CityMap, seeds: Array[Vector2i], centre: Vector2, radius:
 ## `paths_within()` over `shut` rather than a reach's own: the one walk both the task's measure and
 ## dawn's (`DawnRoadblocks`) take, so the two measure close by alike.
 ## They measure it over different ground: dawn over what stood when its pass ran, the task over the
-## walk's whole plan, which the passes after dawn's shut more of (`EventScheduler.
-## _count_what_is_left_uncovered()` counts the route tiles that leaves without a roadblock).
+## walk's whole plan, which the passes after dawn's shut more of (`DawnRoadblockCount`
+## counts the route tiles that leaves without a roadblock).
 static func paths_over(map: CityMap, shut: Dictionary, seeds: Array[Vector2i], centre: Vector2,
 		radius: float) -> Dictionary:
 	var found := {}

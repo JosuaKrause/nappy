@@ -24,8 +24,8 @@ hook, a general project script, or anything else of that kind) is the exception 
 (inbox #1305 in grassy-trout). *Read as, open to the player's correction:* a pull request another entry
 already has stays open as a draft and resumes after the refactor closes.
 
-**The design review's items are polite-tapir** (the refactor's design review: placement drawn as she walks, the
-event scheduler broken up, one start for every kind of day, the standing layer breaks, the baseline measurements),
+**The design review's items are polite-tapir** (the refactor's design review: placement drawn as she walks, one
+start for every kind of day, the standing layer breaks, the baseline measurements),
 an entry of their own that carries `fable-only: true` where this entry does not (inbox #1387 in mossy-bunny).
 *Read as, the filer's, open to the player's correction:* the review was of the refactor's design ("have a fable
 agent review the design of the refactor", inbox #1265 in olive-ferret), so its items are the refactor's work, the
@@ -106,8 +106,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
    files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
-   - **The design review's tracks are the entry polite-tapir** (placement drawn as she walks with
-     the event scheduler's breakup interleaved, one start for every kind of day, the standing layer
+   - **The design review's tracks are the entry polite-tapir** (placement drawn as she walks, one
+     start for every kind of day, the standing layer
      breaks, the baseline readings); its README gives their order and where each meets the items
      here.
    - **Run flow:** `city-hand-ins.md`'s third pull request, which settles who builds the events and
@@ -131,7 +131,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      pursuit and the rest as parts an event has, and every caller asking through methods). Its
      first steps, the callers outside the events folder and the live event's own behaviours and
      looks, run beside the placement track; the dawn, the event manager's parts, the resistance
-     and the scene recipes follow placement and the scheduler's breakup; then a row written as its
+     and the scene recipes follow placement; then a row written as its
      parts, and the events' suites (what is left of `re-derived-cases.md`, the scene recipes' own ground scans, closes with
      polite-tapir's placement or after it);
      `system-map.md` once the redesign is complete.

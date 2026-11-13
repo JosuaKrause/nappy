@@ -6,7 +6,7 @@ extends RefCounted
 ## tutorial dog may appear later but not as tutorial."* `EventDef.spawn_mode_on(day)` is what
 ## switches: `AHEAD_OF_PLAYER` through the teaching day, `MAP` after it, so the row is placed on a
 ## tile and met by routing into it, the way `alley_robbery` is, rather than sited by the director on
-## her heading or off it. See `EventScheduler._draw_the_locations()` and `EventDirector.start_day()`.
+## her heading or off it. See `DawnDraw` and `EventDirector.start_day()`.
 ##
 ## Two things past the switch, both below. **The map-placed dog waits** inside its own field for
 ## her rather than announcing itself the moment it streams in — `EventDef.for_day(day)`,

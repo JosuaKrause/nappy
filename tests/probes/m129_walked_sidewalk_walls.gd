@@ -118,7 +118,7 @@ const _DOOR_ID_PREFIX := "checkpoint"
 enum Source {
 	CANDIDATE_LOOP,   ## the dawn phases and the draw, reached by scripted and recurring rows.
 	SEAL,             ## `SealPlanner.plan_day`, before the scheduler ever runs.
-	CALM_GROUND,      ## `_spoil_the_parks_she_used` — asked only the routes' ground (`RouteGroundRule`).
+	CALM_GROUND,      ## `DawnSpoilers` — asked only the routes' ground (`RouteGroundRule`).
 	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tiles` — a tile barrier, not a row.
 	REGION,           ## `RegionPlanner.plan_day`'s wall and door bodies.
 	OTHER,            ## ambient, scars, the taught-run pursuer — everything else `build_day` adds.
@@ -127,7 +127,7 @@ enum Source {
 const _SOURCE_NAMES := {
 	Source.CANDIDATE_LOOP: "scheduler dawn phases and draw",
 	Source.SEAL: "seals (SealPlanner)",
-	Source.CALM_GROUND: "calm-ground pass (_spoil_the_parks_she_used)",
+	Source.CALM_GROUND: "calm-ground pass (DawnSpoilers)",
 	Source.CLOSURE: "closures (ClosurePlanner)",
 	Source.REGION: "region walls/doors (RegionPlanner)",
 	Source.OTHER: "other (ambient, scars, taught-run pursuer)",
@@ -316,23 +316,23 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	_tag_new(events.placements(), provenance, before, Source.OTHER)
 
 	before = events.size()
-	EventScheduler._place_scripted(dawn)
+	DawnScripted.new().run(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()
-	EventScheduler._place_one_shots(dawn)
+	DawnOneShots.new().run(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()
-	EventScheduler._spoil_the_parks_she_used(dawn)
+	DawnSpoilers.new().run(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()
-	EventScheduler._draw_the_locations(dawn)
+	DawnDraw.new().run(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()
-	EventScheduler._ensure_the_run_is_taught(dawn)
+	DawnLesson.new().run(dawn)
 	_tag_new(events.placements(), provenance, before, Source.OTHER)
 
 	var planned := events.placements()

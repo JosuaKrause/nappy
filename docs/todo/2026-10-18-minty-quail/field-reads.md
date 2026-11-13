@@ -65,8 +65,8 @@ is the files open work rewrites, typed by that work or after it, and three kept 
 own:
 
 - The event scheduler, the walk's ground and the event director (`src/events/event_scheduler.gd`,
-  `walk_ground.gd`, `event_director.gd`), which the placement rewrite and the scheduler's breakup
-  rewrite, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
+  `walk_ground.gd`, `event_director.gd`), which the placement rewrite
+  rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
   row 3b's.
 - `src/main.gd` and the city scene (`src/city/city.gd`), which the third hand-ins pull request and
   who builds the event manager and the crowd rewrite (`city-hand-ins.md`), the city scene then row
@@ -136,8 +136,7 @@ Left, each its own design question:
   changes no line under `src/`.
 - **The lines the placement rewrite, the third hand-ins pull request and the events' interface
   touch** are converted after those land:
-  - `src/events/`, which the placement rewrite and the event scheduler's breakup rewrite
-    (polite-tapir's `placement-by-construction.md` and `scheduler-breakup.md`);
+  - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `day_director.gd` and `main.gd`, the third hand-ins pull request's smaller cases still left, and
     the reads of the city's event manager and crowd, which wait for who builds them
     (`city-hand-ins.md`); `run_session.gd`'s reads of `City.map`, `City.crowd` and `Crowd.sources`

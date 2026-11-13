@@ -35,7 +35,7 @@ extends RefCounted
 ## node, nothing that runs.
 
 ## The phase's stream salt off the day's seed (`DawnContext.stream()`): apart from the dawn
-## draw's (`EventScheduler.LOCATIONS_SALT`) and the moments' (`EventScheduler.MOMENTS_SALT`), so it
+## draw's (`EventScheduler.LOCATIONS_SALT`) and the moments' (`DawnMoments.SALT`), so it
 ## never shares a stream with either.
 const SALT := 5
 ## How strongly a section's distance from the nearest roadblock already placed weights its draw:

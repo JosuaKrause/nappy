@@ -204,15 +204,15 @@ func _pulse_mean_multiplier() -> float:
 		total += _pulse_multiplier(phase)
 	return total / float(steps)
 
-## `EventScheduler._denial_radius` reads live off `EventCatalogue`, so "after" is asked of the
+## `DawnSpoilers._denial_radius()` reads live off `EventCatalogue`, so "after" is asked of the
 ## real def; "before" is the same formula asked of the M117 numbers, kept as constants above.
 func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("busker")
 	var before_denial := _denial_radius(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER)
-	var after_denial := EventScheduler._denial_radius(def)
+	var after_denial := DawnSpoilers._denial_radius(def)
 
-	print("\n== busker denial radius (EventScheduler.CALM_ZONE_DENIAL_RATE = %.1f/s) =="
-			% EventScheduler.CALM_ZONE_DENIAL_RATE)
+	print("\n== busker denial radius (DawnSpoilers.CALM_ZONE_DENIAL_RATE = %.1f/s) =="
+			% DawnSpoilers.CALM_ZONE_DENIAL_RATE)
 	print("before: intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
 			% [OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER, before_denial])
 	print("after:  intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
@@ -241,7 +241,7 @@ func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 	t.check(true, "beat-mean and denial radius measured (see above and _busker_never_fills_the_day)")
 
 func _denial_radius(intensity: float, inner: float, outer: float) -> float:
-	var decay := EventScheduler.CALM_ZONE_DENIAL_RATE
+	var decay := DawnSpoilers.CALM_ZONE_DENIAL_RATE
 	if intensity <= decay:
 		return inner
 	var frac := sqrt(1.0 - decay / intensity)
