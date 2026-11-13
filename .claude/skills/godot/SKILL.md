@@ -109,9 +109,11 @@ Thing in things`, `things[0] as Thing`).
 **What the field-read check adds to the engine.** In a file under `src/` without the opt-out line,
 `tools/check_field_reads.py` fails a field's or a method's name read through a receiver whose
 class it cannot tell, such as a Variant, and the fix is a typed name to read through (for a
-dictionary's key, a subscript). It does not see a method named without its parentheses on a
-receiver it can type. What it counts as a field and a method, what it excuses and what else it
-cannot see is said once, in the text `uv run python tools/check_field_reads.py --help` prints.
+dictionary's key, a subscript). In every file under `src/` it also fails a method named without
+its parentheses on a receiver it types as a class under `src/`, unless the reference hands the
+Callable on in one of the forms that text lists; an engine value's method it does not see. What it
+counts as a field and a method, what it excuses and what else it cannot see is said once, in the
+text `uv run python tools/check_field_reads.py --help` prints.
 
 **The setting reaches every script a debug build parses in this project, and no release export.**
 That is `src/`, `tests/` with its rigs, fixtures and probes, the `.gd` scripts under `tools/`
@@ -299,6 +301,12 @@ is the only part that governs the code in front of them.
   (minty-quail-busy-heron), open to the player's correction: the player's words ask that the
   field-read check be made to work (inbox #1268 in olive-ferret) and say nothing of a method read
   without its parentheses.
+- **A method named without its parentheses on a receiver the check types as a class under `src/`
+  fails unless the reference hands the Callable on, in every file under `src/`, the opt-out line
+  or not** ("Types"), the orchestrator's proposal, and its reach to a file carrying the opt-out
+  line the builder's choice, open to the player's correction: the player's words on the
+  field-read check (inbox #1268 in olive-ferret) say nothing of it. The plainer alternative is to
+  leave it unreported, as the engine leaves it in a condition.
 - **Which values the language cannot type** ("Types": the inner level of a nested collection, what
   a Variant-returning call gives) is the filer's reading of where the player's rule ends
   (inbox #1280 in olive-ferret), taken from what the engine accepts.

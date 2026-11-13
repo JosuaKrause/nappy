@@ -14,6 +14,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -293,18 +294,6 @@ class MethodReferenceTests(unittest.TestCase):
         body = "func a(rects: Array) -> void:\n\tprint(rects[0].end)\n"
         self.assertEqual(self.kinds(reader(body) | {"src/other.gd": other}), [])
 
-    def test_a_method_named_without_parentheses_on_a_receiver_the_check_can_type_is_not_seen(self) -> None:
-        # The docstring's blind spot: the rule is for a receiver whose class cannot be told, handed on or not.
-        body = (
-            "var t: Thing\nfunc f(n: Node, items: Array) -> void:\n\tif t.make:\n\t\tpass\n\tt.go\n"
-            "\tassert(n.queue_free)\n\tg(items[0].go)\n\tvar cb: Callable = items[0].make\n"
-            "func g(c: Callable) -> void:\n\tpass\n"
-        )
-        self.assertEqual(
-            self.kinds(reader(body)),
-            [(9, "items[0].go", reads.UNKNOWN_METHOD), (10, "items[0].make", reads.UNKNOWN_METHOD)],
-        )
-
     def test_what_counts_as_a_var_a_class_declares(self) -> None:
         # A var of a class a receiver can name (a class_name or an autoload) counts; one only an inner class or a
         # file with no class_name declares does not, and a use of it through an unknown receiver is not seen.
@@ -383,6 +372,110 @@ class MethodReferenceTests(unittest.TestCase):
                 (6, "items[0].rang", reads.UNKNOWN_METHOD),
             ],
         )
+
+
+class TypedMethodReferenceTests(unittest.TestCase):
+    """A typed receiver's own method named without its parentheses fails unless the reference hands the Callable on,
+    in one of the forms the checker's docstring numbers; each form has its case below."""
+
+    def refs(self, src: dict[str, str], autoloads: dict[str, str] | None = None) -> list[tuple[int, str]]:
+        tree = reads.Tree(src, autoloads or {})
+        return [(u.line, u.expression) for u in reads.reads_of(tree).unknown if u.kind == reads.REFERENCE]
+
+    def handed(self, body: str, references: int) -> None:
+        """`body`, functions of Reader holding `t: Thing`, makes `references` references to Thing's methods, and each
+        hands the Callable on: nothing fails, and every one fails where nothing counts as handing it on."""
+        src = reader("var t: Thing\n" + body + "func g(a: Variant, b: Variant = null) -> void:\n\tpass\n")
+        self.assertEqual(self.refs(src), [])
+        with mock.patch.object(reads, "hands_on", return_value=False):
+            self.assertEqual(len(self.refs(src)), references)
+
+    def test_a_reference_that_hands_nothing_on_fails_with_the_line_or_without(self) -> None:
+        body = (
+            "var t: Thing\nvar d := {}\nfunc f() -> void:\n\tt.go\n\tif t.make:\n\t\tpass\n\telif t.make:\n"
+            "\t\tpass\n\twhile t.make:\n\t\tbreak\n\tassert(t.make)\n\tassert(t.make, 'message')\n"
+            "\tvar a := not t.make\n\tvar b := d[t.make]\n\tvar c := {1: t.make}\n\tif (t.make):\n\t\tpass\n"
+            "\tvar e := t.make == null\n"
+        )
+        lines = [6, 7, 9, 11, 13, 14, 15, 16, 17, 18, 20]
+        self.assertEqual(self.refs(reader(body)), [(n, "t.go" if n == 6 else "t.make") for n in lines])
+        with_line = reader(body, LINE + "class_name Reader\nextends Node\n")
+        self.assertEqual(self.refs(with_line), [(n + 1, "t.go" if n == 6 else "t.make") for n in lines])
+        failure = reads.failures_of(reads.reads_of(reads.Tree(reader(body), {})), [])[0]
+        self.assertIn("src/reader.gd:6: `t.go` names a method of the receiver's class without its parentheses", failure)
+        self.assertIn("always true in a condition", failure)
+        self.assertIn("tools/check_field_reads.py --help", failure)
+
+    def test_it_reaches_a_name_the_unknown_receiver_rule_excuses(self) -> None:
+        # `clear` is an inner class's var elsewhere, `scale` an engine property name and another file's constant,
+        # `count` another class's var: none of that excuses the receiver's own method.
+        crowd = (
+            "class_name Crowd\nextends Node\nfunc clear() -> void:\n\tpass\nfunc scale() -> float:\n\treturn 1.0\n"
+            "func count() -> int:\n\treturn 0\n"
+        )
+        other = "class_name Other\nextends RefCounted\nconst scale := 1\nclass Start:\n\tvar clear := true\n"
+        body = "var crowd: Crowd\nfunc f() -> void:\n\tcrowd.clear\n\tif crowd.scale:\n\t\tpass\n\tprint(crowd.count)\n"
+        src = reader(body) | {"src/crowd.gd": crowd, "src/other.gd": other}
+        self.assertIn("scale", reads.ENGINE_PROPERTIES)
+        self.assertEqual(self.refs(src), [(5, "crowd.clear"), (6, "crowd.scale")])
+
+    def test_an_inherited_method_an_inner_classs_an_autoloads_its_own_through_self_and_a_static_one(self) -> None:
+        body = (
+            "var sub: SubThing\nclass Box:\n\tfunc poke() -> void:\n\t\tpass\nfunc own() -> void:\n\tpass\n"
+            "func f() -> void:\n\tsub.go\n\tvar box := Box.new()\n\tbox.poke\n\tself.own\n\tLoose.prod\n\tThing.go\n"
+        )
+        nameless = "extends Node\nfunc prod() -> void:\n\tpass\n"
+        src = reader(body) | {"src/nameless.gd": nameless}
+        self.assertEqual(
+            self.refs(src, {"Loose": "src/nameless.gd"}),
+            [(10, "sub.go"), (12, "box.poke"), (13, "self.own"), (14, "Loose.prod"), (15, "Thing.go")],
+        )
+
+    def test_an_engine_value_a_field_and_an_unknown_receiver_are_not_this_rule(self) -> None:
+        # An engine value's methods are the docstring's blind spot; a field is a read; an unknown receiver is the
+        # other rule's.
+        body = "var t: Thing\nfunc f(n: Node, items: Array) -> void:\n\tif n.is_inside_tree or t.count:\n\t\tpass\n"
+        body += "\tif items[0].make:\n\t\tpass\n"
+        src = reader(body)
+        self.assertEqual(self.refs(src), [])
+        self.assertEqual(unknown(src), [(7, "items[0].make")])
+
+    def test_form_1_a_step_follows_it(self) -> None:
+        self.handed("func f() -> void:\n\tt.go.call()\n\tvar cb := t.go.bind(1)\n\tif t.go.is_valid():\n\t\tpass\n", 3)
+
+    def test_form_2_an_argument_of_a_call(self) -> None:
+        self.handed(
+            "signal done\nfunc f() -> void:\n\tg(t.go)\n\tg(1, t.make)\n\tdone.connect(t.go)\n"
+            "\tg(\n\t\t1,\n\t\tt.go,\n\t)\n\tg(\n\t\tt.make\n\t)\n",
+            5,
+        )
+
+    def test_form_3_an_element_of_an_array_literal(self) -> None:
+        self.handed(
+            "func f() -> Array:\n\tvar xs := [t.go, t.make]\n\tvar ys := [\n\t\tt.go,\n\t]\n\treturn [t.go]\n", 4
+        )
+
+    def test_form_4_the_right_side_of_an_assignment(self) -> None:
+        self.handed(
+            "var held: Callable\nfunc f(c: Callable = t.go) -> void:\n\tvar a := t.go\n\tvar b: Callable = t.make\n"
+            "\theld = t.go\n",
+            4,
+        )
+
+    def test_form_5_a_returned_value(self) -> None:
+        self.handed("func f() -> Callable:\n\tg(func() -> Callable: return t.make)\n\treturn t.go\n", 2)
+
+    def test_form_6_a_branch_of_a_ternary(self) -> None:
+        self.handed(
+            "func f() -> Callable:\n\tg(t.go if t else Callable())\n\tvar a := Callable() if t else t.make\n"
+            "\treturn t.go if t else Callable()\n",
+            3,
+        )
+
+    def test_a_parenthesised_expression_is_what_its_parentheses_are(self) -> None:
+        self.handed("func f() -> Callable:\n\tvar a := (t.go)\n\tg((t.make))\n\treturn (\n\t\tt.go\n\t)\n", 3)
+        src = reader("var t: Thing\nfunc f() -> void:\n\tif (t.make):\n\t\tpass\n\tassert((t.go))\n")
+        self.assertEqual(self.refs(src), [(5, "t.make"), (7, "t.go")])
 
 
 class OptOutTests(unittest.TestCase):
