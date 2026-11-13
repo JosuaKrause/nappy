@@ -11,7 +11,8 @@ which the player named.
 **Read as:** two pieces of work. The bug in `tools/inbox.py cite` is fixed (`cite-on-lookup.md`). And "those get
 highest priority" is a standing rule that the orchestrating skill does not yet state: an entry in the `bug` band is
 started, reviewed and merged ahead of all other work, an entry the player has put first included
-(`bugs-go-first.md`). The `bug` band's place above `now` is already the player's (mossy-ferret #710); what the skill
+(`bugs-go-first.md`, which waits on the player's answer on the board, since it narrows the fence they set).
+The `bug` band's place above `now` is already the player's (mossy-ferret #710); what the skill
 lacks is that bug work passes the fence of an entry put first, which today only work on how the project is worked on
 passes (inbox #1305 in grassy-trout).
 
