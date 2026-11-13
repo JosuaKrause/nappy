@@ -396,11 +396,17 @@ class TypedMethodReferenceTests(unittest.TestCase):
             "\t\tpass\n\twhile t.make:\n\t\tbreak\n\tassert(t.make)\n\tassert(t.make, 'message')\n"
             "\tvar a := not t.make\n\tvar b := d[t.make]\n\tvar c := {1: t.make}\n\tif (t.make):\n\t\tpass\n"
             "\tvar e := t.make == null\n"
+            # An `=` that is a compound assignment or a comparison, or a dictionary's `=`, is no assignment.
+            "\tc += t.go\n\tvar e2 := x == t.go\n\tvar e3 := {k = t.go, j = 1}\n"
+            # A ternary's branch is what the ternary is: here a condition, or a dictionary's value.
+            "\tif (a if a else t.make):\n\t\tpass\n\tif (t.make if a else a):\n\t\tpass\n\tif a if a else t.make:\n"
+            "\t\tpass\n\tvar e4 := {k = a if a else t.make, j = 1}\n\treturn x != t.go\n"
         )
-        lines = [6, 7, 9, 11, 13, 14, 15, 16, 17, 18, 20]
-        self.assertEqual(self.refs(reader(body)), [(n, "t.go" if n == 6 else "t.make") for n in lines])
+        go = {6, 21, 22, 23, 31}
+        lines = [6, 7, 9, 11, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 26, 28, 30, 31]
+        self.assertEqual(self.refs(reader(body)), [(n, "t.go" if n in go else "t.make") for n in lines])
         with_line = reader(body, LINE + "class_name Reader\nextends Node\n")
-        self.assertEqual(self.refs(with_line), [(n + 1, "t.go" if n == 6 else "t.make") for n in lines])
+        self.assertEqual(self.refs(with_line), [(n + 1, "t.go" if n in go else "t.make") for n in lines])
         failure = reads.failures_of(reads.reads_of(reads.Tree(reader(body), {})), [])[0]
         self.assertIn("src/reader.gd:6: `t.go` names a method of the receiver's class without its parentheses", failure)
         self.assertIn("always true in a condition", failure)
@@ -431,14 +437,18 @@ class TypedMethodReferenceTests(unittest.TestCase):
             [(10, "sub.go"), (12, "box.poke"), (13, "self.own"), (14, "Loose.prod"), (15, "Thing.go")],
         )
 
-    def test_an_engine_value_a_field_and_an_unknown_receiver_are_not_this_rule(self) -> None:
-        # An engine value's methods are the docstring's blind spot; a field is a read; an unknown receiver is the
-        # other rule's.
+    def test_an_engine_method_a_field_and_an_unknown_receiver_are_not_this_rule(self) -> None:
+        # An engine method, on an engine value or inherited by a class under src/, is the docstring's blind spot; a
+        # field is a read; an unknown receiver is the other rule's.
+        walker = "class_name Walker\nextends Node2D\nfunc walk() -> void:\n\tpass\n"
         body = "var t: Thing\nfunc f(n: Node, items: Array) -> void:\n\tif n.is_inside_tree or t.count:\n\t\tpass\n"
         body += "\tif items[0].make:\n\t\tpass\n"
-        src = reader(body)
-        self.assertEqual(self.refs(src), [])
-        self.assertEqual(unknown(src), [(7, "items[0].make")])
+        body += "func h(w: Walker) -> void:\n\tif w.is_inside_tree or self.is_inside_tree:\n\t\tpass\n"
+        body += "\tif w.walk:\n\t\tpass\n"
+        src = reader(body) | {"src/walker.gd": walker}
+        self.assertEqual(self.refs(src), [(12, "w.walk")])
+        untold = [u for u in reads.reads_of(reads.Tree(src, {})).unknown if u.kind != reads.REFERENCE]
+        self.assertEqual([(u.line, u.expression) for u in untold], [(7, "items[0].make")])
 
     def test_form_1_a_step_follows_it(self) -> None:
         self.handed("func f() -> void:\n\tt.go.call()\n\tvar cb := t.go.bind(1)\n\tif t.go.is_valid():\n\t\tpass\n", 3)
@@ -468,8 +478,9 @@ class TypedMethodReferenceTests(unittest.TestCase):
     def test_form_6_a_branch_of_a_ternary(self) -> None:
         self.handed(
             "func f() -> Callable:\n\tg(t.go if t else Callable())\n\tvar a := Callable() if t else t.make\n"
-            "\treturn t.go if t else Callable()\n",
-            3,
+            "\tvar b := (Callable() if t else t.go)\n\tvar c := Callable() if t else Callable() if t else t.go\n"
+            "\tg(1, Callable() if t else t.make)\n\treturn t.go if t else Callable()\n",
+            6,
         )
 
     def test_a_parenthesised_expression_is_what_its_parentheses_are(self) -> None:

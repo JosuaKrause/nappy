@@ -69,8 +69,8 @@ skipped uses of a var's name.
 
 **A typed receiver's own method named without its parentheses.** In every file under `src/`, with the line or
 without it, a `.name` with no `(` after it fails where the check tells the receiver's class, a class under `src/` (an
-inner class included), and that class or one it extends declares `name` as a method: a reference to the function,
-always true in a condition, and a statement that does nothing on a line of its own (`crowd.clear` for
+inner class included), and that class or one under `src/` it extends declares `name` as a method: a reference to the
+function, always true in a condition, and a statement that does nothing on a line of its own (`crowd.clear` for
 `crowd.clear()`). It passes where the reference hands the Callable on, in one of these forms and no other:
 
 1. a step follows it: `t.go.bind(1)`, `t.go.call()`, `t.go.unbind(1)`;
@@ -78,14 +78,19 @@ always true in a condition, and a statement that does nothing on a line of its o
    parentheses: `g(t.go)`, `done.connect(t.go)`, `Thing.new(1, t.go)`;
 3. it is an element of an array literal: `[t.go]`;
 4. it is the right side of an `=` or a `:=`: an assignment, a declaration, a parameter's default (`cb = t.go`, `var
-   cb: Callable = t.go`, `var cb := t.go`);
+   cb: Callable = t.go`, `var cb := t.go`), and not a compound assignment's (`cb += t.go`), a comparison's (`x ==
+   t.go`) or a dictionary entry's (`{k = t.go}`);
 5. it is a returned value, a lambda's included: `return t.go`;
-6. it is a branch of a ternary: `t.go if t else Callable()`, `Callable() if t else t.go`.
+6. it is a branch of a ternary that itself stands in one of these forms: `var cb := t.go if t else Callable()`,
+   `g(Callable() if t else t.go)`; a branch of a ternary that stands in a condition or a dictionary's value fails
+   with it (`if (x if x else t.go):`).
 
 A parenthesised expression is what its parentheses are: `(t.go)` hands the Callable on where `t.go` in its place
-would. Anything else fails: a condition (`if`, `elif`, `while`, `assert(...)`), an operand (`not t.go`, `t.go == f`),
-a subscript (`d[t.go]`), a dictionary's value, a statement on its own. A form found in the tree that hands a Callable
-on and is not among these is added here with a unit case of its own; this list is the one text of them.
+would, and so does a ternary in parentheses. Anything else fails: a condition (`if`, `elif`, `while`,
+`assert(...)`), an operand (`not t.go`, `t.go == f`), a subscript (`d[t.go]`), a dictionary's value, a statement on
+its own. A form found in the tree that hands a Callable on and is not among these is added here with a unit case of
+its own; this list is the one text of them.
+
 
 **The line has one form**, the file's whole first line, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`: double-quoted names separated by `, `, only those three warnings, each once, in that
@@ -106,8 +111,10 @@ receiver whose class cannot be told read with such a name fails only where some 
 name as a method; a bare name nothing declares is taken for an engine property of the file's own class; a
 parameter of a function whose parameter list closes at the margin (a line starting with `)`, which opens a new
 block) has no type here, so a read through it is neither a read nor an unknown. A method named without its
-parentheses is not seen on an engine value (`if node.is_inside_tree:`): the check tells an engine value only as not
-a class under `src/`, never as which engine class, so it has no list of that value's methods; nor as a bare name of
+parentheses is not seen where it is an engine method, on an engine value (`if node.is_inside_tree:`) or inherited
+by a class under `src/` (`if crowd.is_inside_tree:` with `Crowd extends Node`, `if self.is_inside_tree:`): the check
+tells an engine value only as not a class under `src/`, never as which engine class, and knows a class's methods
+only as far as its ancestors under `src/` declare them, so it has no list of the engine's methods; nor as a bare name of
 the file's own class with no receiver (`if is_ready:`); nor where the receiver ends on a line before its dot, a chain
 broken over lines. A second read of a field a file already reads is not a new
 line, so a change that adds one to a listed reader file and field passes `--base`: review reads the diff for it.
@@ -410,10 +417,16 @@ ENGINE_PROPERTIES = frozenset(
 )
 CONSTANT = re.compile(r"^(?:static[ \t]+)?(?:const|enum)[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
 # What `hands_on` reads around a method reference, for the forms the module docstring lists: before it on its line
-# (HANDED_STATEMENT), before it inside the bracket holding it (HANDED_ELEMENT), and after it (HANDED_AFTER).
-HANDED_STATEMENT = re.compile(r"(?:(?<![=!<>:+\-*/%&|^])=|:=|\breturn|\belse)[ \t]*$")
+# (HANDED_STATEMENT, an `=` that is no comparison and no compound assignment, a `:=`, a `return`), before it inside
+# the bracket holding it (HANDED_ELEMENT), and after it (HANDED_AFTER); TERNARY_THEN and TERNARY_ELSE tell a branch
+# of a ternary, and STATEMENT_TOKEN and STATEMENT_KEYWORD where the expression holding it starts.
+STATEMENT_TOKEN = re.compile(r"(?<![=!<>:+\-*/%&|^])=(?!=)|:=|\breturn\b")
+HANDED_STATEMENT = re.compile(rf"(?:{STATEMENT_TOKEN.pattern})[ \t]*$")
 HANDED_ELEMENT = re.compile(r"(?:^|,)\s*$")
-HANDED_AFTER = re.compile(r"^[ \t]*(?:$|[)\],]|if\b)")
+HANDED_AFTER = re.compile(r"^[ \t]*(?:$|[)\],])")
+TERNARY_THEN = re.compile(r"^\s*if\b.*\belse\b", re.DOTALL)
+TERNARY_ELSE = re.compile(r"\bif\b.*\belse\s*$", re.DOTALL)
+STATEMENT_KEYWORD = re.compile(r"^[ \t]*(?:if|elif|while|match)\b")
 # The words a `(` or a `[` may follow without being a call or a subscript: after `assert(`, `if (` or `while (` the
 # bracket holds a condition, and after `return [` or `in [` an array literal.
 KEYWORDS = frozenset(
@@ -1318,6 +1331,37 @@ def list_bracket(bare: str, opener: int) -> bool:
     return bare[opener] == "[" and not called
 
 
+def ternary_of(bare: str, start: int, end: int, opener: int) -> tuple[int, int] | None:
+    """The span of the ternary whose branch is the reference spanning `start` to `end`, or None where it is not a
+    whole branch of one: the expression holding the reference, inside the bracket `opener` (or on its line where none
+    is), between the commas around it, after an `=`, a `:=`, a `return` or an `if`, `elif`, `while` or `match` that
+    opens the statement, and before the `:` that closes such a statement."""
+    if opener >= 0:
+        close = close_of(bare, opener)
+        region_start, region_end = opener + 1, close if close >= 0 else len(bare)
+    else:
+        line_end = bare.find("\n", end)
+        region_start, region_end = bare.rfind("\n", 0, start) + 1, len(bare) if line_end < 0 else line_end
+    flat = top_level(bare[region_start:region_end])
+    at, to = start - region_start, end - region_start
+    left = flat.rfind(",", 0, at) + 1
+    right = flat.find(",", to)
+    right = len(flat) if right < 0 else right
+    tokens = list(STATEMENT_TOKEN.finditer(flat, left, at))
+    if tokens:
+        first = tokens[-1].end()
+    else:
+        keyword = STATEMENT_KEYWORD.match(flat[left:at])
+        first = left + (keyword.end() if keyword else 0)
+    colon = flat.find(":", to, right) if opener < 0 else -1
+    last = colon if colon >= 0 else right
+    head, tail = flat[first:at], flat[to:last]
+    if not ((not head.strip() and TERNARY_THEN.match(tail)) or (not tail.strip() and TERNARY_ELSE.search(head))):
+        return None
+    text = bare[region_start + first : region_start + last]
+    return (region_start + first + len(text) - len(text.lstrip()), region_start + last - len(text) + len(text.rstrip()))
+
+
 def hands_on(bare: str, start: int, end: int) -> bool:
     """Whether the method reference spanning `start` to `end` of the file's blanked code hands the Callable on, in
     one of the forms the module docstring lists; anything else is a function where a value was meant."""
@@ -1326,10 +1370,15 @@ def hands_on(bare: str, start: int, end: int) -> bool:
     after = bare[end : len(bare) if line_end < 0 else line_end]
     if after.lstrip(" \t").startswith("."):
         return True
+    opener = enclosing(bare, start)
+    before = bare[max(line_start, opener + 1) : start]
+    if re.match(r"[ \t]*if\b", after) or re.search(r"\belse[ \t]*$", before):
+        span = ternary_of(bare, start, end, opener)
+        return span is not None and span != (start, end) and hands_on(bare, *span)
     if not HANDED_AFTER.match(after):
         return False
-    opener = enclosing(bare, start)
-    if HANDED_STATEMENT.search(bare[max(line_start, opener + 1) : start]):
+    statement = HANDED_STATEMENT.search(before)
+    if statement and (statement.group().startswith("return") or opener < 0 or bare[opener] != "{"):
         return True
     if opener < 0 or not HANDED_ELEMENT.search(bare[opener + 1 : start]):
         return False
@@ -1382,7 +1431,6 @@ def reads_of(tree: Tree) -> Found:
                 if (
                     klass in tree.files
                     and tree.method_return(klass, name)[0]
-                    and not tree.member_field_type(klass, name)[0]
                     and not hands_on(
                         bare,
                         line_offset + len(line[: match.start()].rstrip(" \t")) - len(receiver or ""),
