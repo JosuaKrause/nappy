@@ -79,7 +79,7 @@ matters is the moment somebody is about to touch the file.
 | `src/crowd/**`, `src/city/traffic_signals.gd`, `src/city/traffic_light.gd`, `src/ground_shape.gd` | **crowd-traffic** |
 | `src/ui/**`, `sprites.gd`, `palette.gd`, `src/events/views/event_look.gd`, `src/crowd/crowd_agent.gd`, `src/player/stroller.gd`, `src/events/warning_board.gd` | **cues** |
 | `src/telemetry/**`, `src/autoload/telemetry.gd` | **telemetry** |
-| `src/autoload/tuning.gd`, `src/events/event_catalogue.gd`, `src/events/event_scheduler.gd`, `src/crowd/crowd_lanes.gd`, `src/player/baby.gd`, `src/city/city.gd`, `src/field.gd` | **balance** |
+| `src/autoload/tuning.gd`, `src/events/event_catalogue.gd`, `src/events/event_scheduler.gd`, `src/crowd/crowd_lanes.gd`, `src/player/baby.gd`, `src/city/city.gd`, `src/field.gd`, `src/events/dawn_phases/ruled_roadblock_ground.gd`, `src/events/ruled_location_ground.gd`, `src/events/dawn_phases/dawn_masts.gd`, `src/events/dawn_phases/dawn_spoilers.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
 | `tools/synthesize-sfx.py` | **sound-effects** |
 | `tools/reference.sh`, `tools/reference.py`, `docs/reference/**`, `docs/style-references/**` | **reference-photos** |
