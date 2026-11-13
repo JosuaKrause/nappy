@@ -268,7 +268,7 @@ static func _plan_the_dawn(context: DawnContext) -> void:
 ## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
 ## (`StreetInvalidation`), never on the main road (inbox #1186 in gentle-owl); close by is the walk her paths take from
-## the ground she touches it from without leaving the circle of `TASK_ROW_CLOSE_BY` round it
+## the ground she touches it from without leaving the circle of `RuledRoadblockGround.TASK_ROW_CLOSE_BY` round it
 ## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this runs:
@@ -299,19 +299,19 @@ static func _place_the_roadblocks(context: DawnContext) -> void:
 
 ## **Whether `section` is on the main road**, where nothing that closes a street stands outside the
 ## escape (inbox #1186 in gentle-owl): neither a roadblock the phase places nor one day 13's task swaps in.
-static func _is_on_the_main_road(map: CityMap, section: Location) -> bool:
+static func is_on_the_main_road(map: CityMap, section: Location) -> bool:
 	var segment := section.segment()
 	return map.is_main_road(not segment.horizontal, segment.a.x)
 
 ## **`def`, an event that spans the street, standing across `section`**: on the carriageway tile of
 ## the section nearest its middle, built as any placement is (`builder`, `PlanBuilder.build()`), or
-## null where the section is on the main road (`_is_on_the_main_road()`) or has no carriageway. Nothing is judged:
+## null where the section is on the main road (`is_on_the_main_road()`) or has no carriageway. Nothing is judged:
 ## day 13's task replaces the section's whole content with it, a route-adjacent section being valid
 ## ground under the route-adjacent rules already (inbox #1185 in gentle-owl); what the section held is spent by
 ## the caller (`EventStreaming.swap_section()`).
 static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap,
 		section: Location, rng: RandomNumberGenerator) -> EventPlan:
-	if _is_on_the_main_road(map, section):
+	if is_on_the_main_road(map, section):
 		return null
 	var tiles := section.tiles()
 	var middle := map.world_to_tile(section.centre())
@@ -328,116 +328,10 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 		return null
 	return builder.build(def, best, rng)
 
-## **The day's ground as the roadblock phase asks it** (`RoadblockGround`): the route tiles, a
-## section's roadblock left out where the day's rules invalidate it, and close by along her paths.
-##
-## - **The route tiles** are every walkable tile a route runs along (`Corridor.carries_a_route()`)
-##   that nothing already standing shuts (`DayReach.shut_by()`).
-## - **A section's roadblock** stands where it fits inside the section: on the tile of the row's own
-##   ground for its role (`RowGround.offers_for_role()`: off every tile a route runs along, off a
-##   held or closed street, the home block, a tree) nearest the section's middle that the day's rules
-##   (`StreetInvalidation`) refuse nothing, asked against the day's plans and what stands
-##   (`DayEvents.standing()`). A section with no such tile is offered none, and none is ever offered
-##   on the main road (inbox #1186 in gentle-owl). **Every rule invalidates here, the spacing between two of a row
-##   included**: a tile with
-##   another roadblock within `EVENT_SPACING_SAME` (256px), the one rule that bends elsewhere, is
-##   not offered, so construction keeps the day's roadblocks apart and the phase's bias ranks what is
-##   left. *Read as, the orchestrator's and open to correction:* which events make others invalid is
-##   "what your current rules accomplish. the same applies still" (inbox #1185 in gentle-owl), and the spacing is
-##   one of those rules.
-## - **Close by** is the walk her paths take, without leaving the circle of `TASK_ROW_CLOSE_BY` round
-##   it, from the ground she touches it from (`_touched_from()`), with its own body standing.
-class RuledRoadblockGround extends RoadblockGround:
-	var _def: EventDef
-	var _role := GameEnums.BlockerRole.NONE
-	var _map: CityMap
-	var _builder: PlanBuilder
-	var _events: DayEvents
-	var _corridor: Corridor
-	var _rules: StreetInvalidation
-	## The row's own ground for its role, as the day's ground answers it (`tile -> times offered`).
-	var _own := {}
-	var _shut := {}
-
-	## `ground` is the day's ground (`RowGround`), asked once for the row's own.
-	func _init(def: EventDef, day: int, map: CityMap, builder: PlanBuilder, events: DayEvents,
-			ground: RowGround, corridor: Corridor, rules: StreetInvalidation) -> void:
-		_def = def
-		_role = EventScheduler.role_for(def, day)
-		_map = map
-		_builder = builder
-		_events = events
-		_corridor = corridor
-		_rules = rules
-		_own = ground.offers_for_role(def, _role)
-		var down := events.placements().duplicate()
-		down.append_array(events.standing())
-		_shut = DayReach.shut_by(map, down)
-
-	## Two of the row's fields and a street: the farthest a rule asks of two rows together reaches.
-	##
-	## Overrides RoadblockGround.reoffer_within.
-	func reoffer_within() -> float:
-		return 2.0 * maxf(_def.field_reach(), EventScheduler.EVENT_SPACING_ANY) \
-				+ (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH) * Tuning.TILE_SIZE
-
-	## Overrides RoadblockGround.route_tiles.
-	func route_tiles() -> Array[Vector2i]:
-		var found: Array[Vector2i] = []
-		for y in _map.size.y:
-			for x in _map.size.x:
-				var tile := Vector2i(x, y)
-				if _corridor.carries_a_route(tile) and _map.is_walkable(tile) \
-						and not _shut.has(tile):
-					found.append(tile)
-		return found
-
-	## Overrides RoadblockGround.offer.
-	func offer(section: Location) -> EventPlan:
-		if EventScheduler._is_on_the_main_road(_map, section):
-			return null
-		var tiles := section.tiles()
-		var middle := _map.world_to_tile(section.centre())
-		var fits: Array[Vector2i] = []
-		for y in range(tiles.position.y, tiles.end.y):
-			for x in range(tiles.position.x, tiles.end.x):
-				if _own.has(Vector2i(x, y)):
-					fits.append(Vector2i(x, y))
-		fits.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-			var da := (a - middle).length_squared()
-			var db := (b - middle).length_squared()
-			return da < db or (da == db and (a.y < b.y or (a.y == b.y and a.x < b.x))))
-		var already := _events.placements()
-		var reach_context := already.duplicate()
-		reach_context.append_array(_events.standing())
-		for tile in fits:
-			var candidate := _builder.build(_def, tile, RandomNumberGenerator.new())
-			# `INF` alone: room all round, so the spacing between two of a row
-			# (`EVENT_SPACING_SAME`) leaves a tile invalid rather than merely cramped.
-			if candidate and _rules.room(candidate, _role, tile, already, reach_context) == INF:
-				return candidate
-		return null
-
-	## Overrides RoadblockGround.covers.
-	func covers(plan: EventPlan) -> Array[Vector2i]:
-		var shut := _shut.duplicate()
-		EventScheduler.block_a_disc(_map, shut, plan.placed_at(), plan.blocking_radius())
-		var found: Array[Vector2i] = []
-		for tile: Vector2i in DayReach.paths_over(_map, shut,
-				EventScheduler._touched_from(_map, shut, plan), plan.placed_at(),
-				EventScheduler.TASK_ROW_CLOSE_BY):
-			found.append(tile)
-		return found
-
-	## Overrides RoadblockGround.stand.
-	func stand(plan: EventPlan) -> void:
-		_events.add(plan)
-		EventScheduler.block_a_disc(_map, _shut, plan.placed_at(), plan.blocking_radius())
-
 ## **How many of the day's route tiles have none of `def`'s rows close by as the day stands**,
 ## written to the run log: once every pass is done, each placed `def` the day stands
 ## (not a region door's body or the wall's own) is read as close by every route tile its paths
-## reach within `TASK_ROW_CLOSE_BY` over the day's whole obstruction (`DayReach.shut_by()`), and the
+## reach within `RuledRoadblockGround.TASK_ROW_CLOSE_BY` over the day's whole obstruction (`DayReach.shut_by()`), and the
 ## route tiles it leaves are counted. The roadblock phase (`_place_the_roadblocks()`) aims at none,
 ## but a route tile no section within reach took one for and ground the later passes shut both
 ## leave some. A
@@ -458,8 +352,7 @@ static func _count_what_is_left_uncovered(context: DawnContext) -> void:
 		if plan.row_id() != def.id or not plan.is_placed() or plan.is_door() \
 				or plan.is_in_the_wall():
 			continue
-		for reached: Vector2i in DayReach.paths_over(map, shut, _touched_from(map, shut, plan),
-				plan.placed_at(), TASK_ROW_CLOSE_BY):
+		for reached: Vector2i in RuledRoadblockGround.close_by(map, shut, plan):
 			covered[reached] = true
 	var tiles := 0
 	var left := 0
@@ -472,28 +365,7 @@ static func _count_what_is_left_uncovered(context: DawnContext) -> void:
 			if not covered.has(tile):
 				left += 1
 	context.note("plan", "%d of %d route tiles have no %s within %.0fpx along her paths as the day stands"
-			% [left, tiles, def.id, TASK_ROW_CLOSE_BY])
-
-## The widest a task's row is searched for round where she read its mark: a block and a street past
-## the 576px circle round it (`ResistanceDirector.ROADBLOCK_WIDER_REACH`'s last ring), 1,024px. What
-## the roadblock phase aims to stand day 13's roadblocks within of every stretch of her routes
-## (`_place_the_roadblocks()`).
-const TASK_ROW_CLOSE_BY := (Tuning.BLOCK_SIZE * 2.5 + Tuning.STREET_WIDTH * 2.0) * Tuning.TILE_SIZE
-
-## The walkable ground left open within a tile and a half of `plan`'s body: where she touches it
-## from.
-static func _touched_from(map: CityMap, shut: Dictionary, plan: EventPlan) -> Array[Vector2i]:
-	var reach := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
-	var centre := map.world_to_tile(plan.placed_at())
-	var span := ceili(reach / Tuning.TILE_SIZE)
-	var found: Array[Vector2i] = []
-	for dy in range(-span, span + 1):
-		for dx in range(-span, span + 1):
-			var tile := centre + Vector2i(dx, dy)
-			if map.in_bounds(tile) and map.is_walkable(tile) and not shut.has(tile) \
-					and map.tile_to_world(tile).distance_to(plan.placed_at()) <= reach:
-				found.append(tile)
-	return found
+			% [left, tiles, def.id, RuledRoadblockGround.TASK_ROW_CLOSE_BY])
 
 ## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`):
 ## what a recurring row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew)
@@ -548,7 +420,7 @@ static func _draw_the_walk(context: DawnContext, bag: MarbleBag) -> void:
 	var fit := LocationFit.new(context.day(), map, context.builder(), context.ground(),
 			route.start())
 	var offered := RuledLocationGround.new(context.day(), context.day_seed(), map, events,
-			context.corridor(), fit, context.rules())
+			context.corridor(), fit, context.rules(), context.ground())
 	var placed := {}
 	for segment in route.streets_on_the_walk():
 		var def: EventDef = spec.bag_rows.get(bag.draw())
@@ -1230,7 +1102,7 @@ static func _place_scripted(context: DawnContext) -> void:
 	var ground := context.ground()
 	var phase_ground := RuledLocationGround.new(day, context.day_seed(), map, events,
 			context.corridor(), LocationFit.new(day, map, context.builder(), ground),
-			context.rules())
+			context.rules(), ground)
 	var weigh := func(def: EventDef, location: Location) -> float:
 		return _weight_in(def, location, day, map, ground)
 	var phase := ScriptedPhase.new(context.locations(), phase_ground, weigh)
@@ -1905,7 +1777,8 @@ static func _draw_the_locations(context: DawnContext) -> void:
 		rows[def.id] = def.for_day(day)
 	var bags := _view_bags(rows, day, spec, base)
 	var judged := RuledLocationGround.new(day, base, map, context.events(), context.corridor(),
-			LocationFit.new(day, map, context.builder(), context.ground()), context.rules())
+			LocationFit.new(day, map, context.builder(), context.ground()), context.rules(),
+			context.ground())
 	var caps := _caps_of(rows, day, spec, context.stream(CAPS_SALT)) if spec.caps_per_day else {}
 	LocationDraw.new(context.locations(), bags, rows, judged, caps).draw_all(
 			context.stream(LOCATIONS_SALT))
@@ -2101,7 +1974,7 @@ const GROUND_WEIGHTS := {
 
 ## A row's weight on a location of `kind` (`Location.Kind`): `GROUND_WEIGHTS`', one where it lists
 ## none.
-static func _ground_weight(def: EventDef, kind: int) -> float:
+static func ground_weight(def: EventDef, kind: int) -> float:
 	var weights: Dictionary = GROUND_WEIGHTS.get(def.id, {})
 	return float(weights.get(kind, 1.0))
 
@@ -2144,115 +2017,6 @@ static func _owe_the_moments(context: DawnContext) -> void:
 ## bags (`tests/probes/placement_rows.gd` on main, eighteen seeds, rounded). Measured, not derived: a
 ## fixed count each day, where the fill's rolls made it vary from one city to the next.
 const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31, 32, 32, 32]
-
-## **The day's ground as the dawn draw asks it** (`LocationGround`): a row's event at a location,
-## left out where the day's rules invalidate it, and the location's own weight.
-##
-## - **The event** stands on a tile of the location the row fits (`LocationFit`), tried in an order
-##   of the location's own stream, and is asked of the day's rules (`StreetInvalidation`) against
-##   the day's plans and what stands: the first tile with room all round, else the roomiest a rule
-##   leaves valid, else none.
-## - **The weight** (the player's "yes" to a weight per location, inbox #1185 in gentle-owl): four times over on a
-##   precinct street (`EVENT_PRECINCT_WEIGHT`), six times over for a costly wall on the street between
-##   two strands of the routes (`EVENT_WALL_GAP_WEIGHT`), and five times over for the mouse in an
-##   alley beside a sack pile (`_MOUSE_PILE_EXTRA_COPIES` and one). And the mouse a location draws
-##   is offered the location's tiles beside a pile first (`_beside_a_pile_first()`), so it stands by
-##   the sacks where the location reaches them.
-class RuledLocationGround extends LocationGround:
-	var _day := 0
-	var _base := 0
-	var _map: CityMap
-	var _events: DayEvents
-	var _corridor: Corridor
-	var _fit: LocationFit
-	var _rules: StreetInvalidation
-	var _piles := {}
-
-	func _init(day: int, base: int, map: CityMap, events: DayEvents, corridor: Corridor,
-			fit: LocationFit, rules: StreetInvalidation) -> void:
-		_day = day
-		_base = base
-		_map = map
-		_events = events
-		_corridor = corridor
-		_fit = fit
-		_rules = rules
-		for tile in GarbageSacks.alley_pile_tiles(map, day):
-			_piles[tile] = true
-
-	## Overrides LocationGround.offer.
-	func offer(def: EventDef, location: Location) -> EventPlan:
-		var fits := _fit.tiles(def, location)
-		if fits.is_empty():
-			return null
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:%s:%s" % [_base, location.tiles(), def.id])
-		for i in range(fits.size() - 1, 0, -1):
-			var j := rng.randi_range(0, i)
-			var kept := fits[i]
-			fits[i] = fits[j]
-			fits[j] = kept
-		if def.id == EventScheduler._MOUSE_ID:
-			fits = _beside_a_pile_first(fits)
-		var role := EventScheduler.role_for(def, _day)
-		var already := _events.placements()
-		var reach_context := already.duplicate()
-		reach_context.append_array(_events.standing())
-		var best: EventPlan = null
-		var best_room := -INF
-		for tile in fits:
-			var candidate := _fit.build(def, tile, rng)
-			if not candidate:
-				continue
-			var room := _rules.room(candidate, role, tile, already, reach_context)
-			if room == INF:
-				return candidate
-			if room > best_room:
-				best_room = room
-				best = candidate
-		return best
-
-	## Overrides LocationGround.scale.
-	func scale(def: EventDef, location: Location) -> float:
-		var times := 1.0
-		var segment := location.segment()
-		var middle := _map.world_to_tile(location.centre())
-		if segment and (_map.street_kind_at(true, middle) == GameEnums.StreetKind.PEDESTRIAN
-				or _map.street_kind_at(false, middle) == GameEnums.StreetKind.PEDESTRIAN):
-			times *= float(EventScheduler.EVENT_PRECINCT_WEIGHT)
-		if segment and EventScheduler._is_a_wall_by_cost(def) and not def.hard_fail \
-				and EventScheduler.role_for(def, _day) == GameEnums.BlockerRole.WALL \
-				and _corridor.is_in_a_gap(middle):
-			times *= float(EventScheduler.EVENT_WALL_GAP_WEIGHT)
-		if def.id == EventScheduler._MOUSE_ID and _beside_a_pile(location.tiles()):
-			times *= float(EventScheduler._MOUSE_PILE_EXTRA_COPIES + 1)
-		return times * EventScheduler._ground_weight(def, location.kind())
-
-	## Overrides LocationGround.stand.
-	func stand(plan: EventPlan) -> void:
-		_events.add(plan)
-
-	## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
-	## it was handed.
-	func _beside_a_pile_first(tiles: Array[Vector2i]) -> Array[Vector2i]:
-		var beside: Array[Vector2i] = []
-		var rest: Array[Vector2i] = []
-		for tile in tiles:
-			if _beside_a_pile(Rect2i(tile, Vector2i.ONE)):
-				beside.append(tile)
-			else:
-				rest.append(tile)
-		beside.append_array(rest)
-		return beside
-
-	func _beside_a_pile(tiles: Rect2i) -> bool:
-		for y in range(tiles.position.y - EventScheduler._MOUSE_PILE_ADJACENCY,
-				tiles.end.y + EventScheduler._MOUSE_PILE_ADJACENCY):
-			for x in range(tiles.position.x - EventScheduler._MOUSE_PILE_ADJACENCY,
-					tiles.end.x + EventScheduler._MOUSE_PILE_ADJACENCY):
-				if _piles.has(Vector2i(x, y)):
-					return true
-		return false
 
 ## **An authored scene's row at the location its tile names**, or null with the reason appended to
 ## `why`. A recipe keeps its data: `at` names the tile, and so the location holding it
@@ -2405,14 +2169,6 @@ class Verdicts extends RefCounted:
 	## Drops every verdict kept.
 	func forget() -> void:
 		_kept.clear()
-
-## `alley_mouse`'s own preference: an alley location beside a garbage-sack pile
-## (`GarbageSacks.alley_pile_tiles()`, within `_MOUSE_PILE_ADJACENCY` tiles) weighs the mouse
-## `_MOUSE_PILE_EXTRA_COPIES` and one times over (`RuledLocationGround.scale()`), and the mouse it
-## draws is offered its tiles beside the pile first.
-const _MOUSE_ID := "alley_mouse"
-const _MOUSE_PILE_ADJACENCY := 1
-const _MOUSE_PILE_EXTRA_COPIES := 4
 
 # ------------------------------------------------- a path never has to cost (M129) ---
 

@@ -227,7 +227,8 @@ src/
 	row_ground.gd         which tiles a row may stand on today and how many times over each is
 	                      offered: one object a walk, made at dawn and handed to every placement
 	                      that asks, then to the walk; handed the map, the corridor, the
-	                      home-street rule, the weights and which wall is one by cost
+	                      home-street rule, the weights and which wall is one by cost, and answers the
+	                      weights it was made with
 	day_events.gd         the day's planned rows read through one object: what each spoils, a
 	                      pursuit; kept in step as the plan is built, never saved
 	calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used
@@ -256,7 +257,10 @@ src/
 	                      the empty event, drawn without putting back, only what a location accepts
 	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag
 	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid, the
-	                      location's own weight, standing one; the day's own is the scheduler's ruled ground
+	                      location's own weight, standing one; the day's own is `RuledLocationGround`
+	ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
+	                      fits and the day's rules leave it valid, the location's weight; handed the
+	                      walk's ground
 	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
 	                      ground on the day, and the candidate built on one
 	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
@@ -268,7 +272,8 @@ src/
 	                      where one refuses, else the room round it
 	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
 	                      if valid, the route tiles one is close by, standing one; the day's own is
-	                      the scheduler's ruled ground
+	                      `RuledRoadblockGround`
+	dawn_phases/          ruled_roadblock_ground.gd, the day's own ground as the roadblock phase asks it
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the

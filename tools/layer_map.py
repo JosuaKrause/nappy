@@ -59,6 +59,7 @@ FOLDERS: dict[str, str] = {
     "src/day": "flow",
     "src/dev": "root",
     "src/events": "simulation",
+    "src/events/dawn_phases": "model",
     "src/finale": "model",
     "src/interior": "world",
     "src/player": "simulation",
@@ -127,7 +128,8 @@ FILES: dict[str, str] = {
     "src/dev/debug_readout.gd": "observers",
     "src/dev/route_lines.gd": "observers",
     # events: the rows and the specs they are written in are data; the plan-builders, pure
-    # functions of the map and the day, are the model; the rest (the folder's) is simulation.
+    # functions of the map and the day, are the model; the rest (the folder's) is simulation; the
+    # dawn's phases are a folder of the model's.
     "src/events/abduction_spec.gd": "data",
     "src/events/aftermath.gd": "data",
     "src/events/day_switch.gd": "data",
@@ -155,6 +157,7 @@ FILES: dict[str, str] = {
     "src/events/plan_builder.gd": "model",
     "src/events/roadblock_ground.gd": "model",
     "src/events/row_ground.gd": "model",
+    "src/events/ruled_location_ground.gd": "model",
     "src/events/roadblock_phase.gd": "model",
     "src/events/scripted_phase.gd": "model",
     "src/events/street_locations.gd": "model",
