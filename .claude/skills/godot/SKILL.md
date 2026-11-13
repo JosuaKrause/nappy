@@ -302,9 +302,9 @@ is the only part that governs the code in front of them.
   (minty-quail-busy-heron), open to the player's correction: the player's words ask that the
   field-read check be made to work (inbox #1268 in olive-ferret) and say nothing of a method read
   without its parentheses.
-- **A method named without its parentheses on a receiver the check types as a class under `src/`
-  fails unless the reference hands the Callable on, in every file under `src/`, the opt-out line
-  or not** ("Types"), the orchestrator's proposal, and its reach to a file carrying the opt-out
+- **A method a class under `src/` declares, named without its parentheses on a receiver the check
+  types as that class or one extending it, fails unless the reference hands the Callable on, in
+  every file under `src/`, the opt-out line or not** ("Types"), the orchestrator's proposal, and its reach to a file carrying the opt-out
   line the builder's choice, open to the player's correction: the player's words on the
   field-read check (inbox #1268 in olive-ferret) say nothing of it. The plainer alternative is to
   leave it unreported, as the engine leaves it in a condition.

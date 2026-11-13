@@ -81,16 +81,17 @@ function, always true in a condition, and a statement that does nothing on a lin
    cb: Callable = t.go`, `var cb := t.go`), and not a compound assignment's (`cb += t.go`), a comparison's (`x ==
    t.go`) or a dictionary entry's (`{k = t.go}`);
 5. it is a returned value, a lambda's included: `return t.go`;
-6. it is a branch of a ternary that itself stands in one of these forms: `var cb := t.go if t else Callable()`,
-   `g(Callable() if t else t.go)`; a branch of a ternary that stands in a condition or a dictionary's value fails
-   with it (`if (x if x else t.go):`).
+6. it is the first or the last branch of a ternary, or of a chain of them, that itself stands in one of these
+   forms: `var cb := t.go if t else Callable()`, `g(Callable() if t else t.go)`, `var cb := Callable() if a else
+   Callable() if b else t.go`. A middle branch of a chain passes only in parentheses of its own (`Callable() if a
+   else (t.go if b else Callable())`), and a branch of a ternary that stands in a condition or a dictionary's value
+   fails with it (`if (x if x else t.go):`).
 
 A parenthesised expression is what its parentheses are: `(t.go)` hands the Callable on where `t.go` in its place
 would, and so does a ternary in parentheses. Anything else fails: a condition (`if`, `elif`, `while`,
 `assert(...)`), an operand (`not t.go`, `t.go == f`), a subscript (`d[t.go]`), a dictionary's value, a statement on
 its own. A form found in the tree that hands a Callable on and is not among these is added here with a unit case of
 its own; this list is the one text of them.
-
 
 **The line has one form**, the file's whole first line, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`: double-quoted names separated by `, `, only those three warnings, each once, in that
@@ -419,14 +420,13 @@ CONSTANT = re.compile(r"^(?:static[ \t]+)?(?:const|enum)[ \t]+([A-Za-z_]\w*)", r
 # What `hands_on` reads around a method reference, for the forms the module docstring lists: before it on its line
 # (HANDED_STATEMENT, an `=` that is no comparison and no compound assignment, a `:=`, a `return`), before it inside
 # the bracket holding it (HANDED_ELEMENT), and after it (HANDED_AFTER); TERNARY_THEN and TERNARY_ELSE tell a branch
-# of a ternary, and STATEMENT_TOKEN and STATEMENT_KEYWORD where the expression holding it starts.
+# of a ternary, and STATEMENT_TOKEN where the expression holding it starts.
 STATEMENT_TOKEN = re.compile(r"(?<![=!<>:+\-*/%&|^])=(?!=)|:=|\breturn\b")
 HANDED_STATEMENT = re.compile(rf"(?:{STATEMENT_TOKEN.pattern})[ \t]*$")
 HANDED_ELEMENT = re.compile(r"(?:^|,)\s*$")
 HANDED_AFTER = re.compile(r"^[ \t]*(?:$|[)\],])")
 TERNARY_THEN = re.compile(r"^\s*if\b.*\belse\b", re.DOTALL)
 TERNARY_ELSE = re.compile(r"\bif\b.*\belse\s*$", re.DOTALL)
-STATEMENT_KEYWORD = re.compile(r"^[ \t]*(?:if|elif|while|match)\b")
 # The words a `(` or a `[` may follow without being a call or a subscript: after `assert(`, `if (` or `while (` the
 # bracket holds a condition, and after `return [` or `in [` an array literal.
 KEYWORDS = frozenset(
@@ -1333,9 +1333,8 @@ def list_bracket(bare: str, opener: int) -> bool:
 
 def ternary_of(bare: str, start: int, end: int, opener: int) -> tuple[int, int] | None:
     """The span of the ternary whose branch is the reference spanning `start` to `end`, or None where it is not a
-    whole branch of one: the expression holding the reference, inside the bracket `opener` (or on its line where none
-    is), between the commas around it, after an `=`, a `:=`, a `return` or an `if`, `elif`, `while` or `match` that
-    opens the statement, and before the `:` that closes such a statement."""
+    first or last branch of one: the expression holding the reference, inside the bracket `opener` (or on its line
+    where none is), between the commas around it, and after the last `=`, `:=` or `return` before it."""
     if opener >= 0:
         close = close_of(bare, opener)
         region_start, region_end = opener + 1, close if close >= 0 else len(bare)
@@ -1348,13 +1347,8 @@ def ternary_of(bare: str, start: int, end: int, opener: int) -> tuple[int, int] 
     right = flat.find(",", to)
     right = len(flat) if right < 0 else right
     tokens = list(STATEMENT_TOKEN.finditer(flat, left, at))
-    if tokens:
-        first = tokens[-1].end()
-    else:
-        keyword = STATEMENT_KEYWORD.match(flat[left:at])
-        first = left + (keyword.end() if keyword else 0)
-    colon = flat.find(":", to, right) if opener < 0 else -1
-    last = colon if colon >= 0 else right
+    first = tokens[-1].end() if tokens else left
+    last = right
     head, tail = flat[first:at], flat[to:last]
     if not ((not head.strip() and TERNARY_THEN.match(tail)) or (not tail.strip() and TERNARY_ELSE.search(head))):
         return None

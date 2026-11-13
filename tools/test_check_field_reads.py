@@ -400,10 +400,13 @@ class TypedMethodReferenceTests(unittest.TestCase):
             "\tc += t.go\n\tvar e2 := x == t.go\n\tvar e3 := {k = t.go, j = 1}\n"
             # A ternary's branch is what the ternary is: here a condition, or a dictionary's value.
             "\tif (a if a else t.make):\n\t\tpass\n\tif (t.make if a else a):\n\t\tpass\n\tif a if a else t.make:\n"
-            "\t\tpass\n\tvar e4 := {k = a if a else t.make, j = 1}\n\treturn x != t.go\n"
+            "\t\tpass\n\tvar e4 := {k = a if a else t.make, j = 1}\n"
+            # A comparison's `==` opens no expression inside a ternary; a chain's middle branch needs its parentheses.
+            "\tassert(x == a if a else t.go)\n\tvar e5 := Callable() if a else t.go if b else Callable()\n"
+            "\treturn x != t.go\n"
         )
-        go = {6, 21, 22, 23, 31}
-        lines = [6, 7, 9, 11, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 26, 28, 30, 31]
+        go = {6, 21, 22, 23, 31, 32, 33}
+        lines = [6, 7, 9, 11, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 26, 28, 30, 31, 32, 33]
         self.assertEqual(self.refs(reader(body)), [(n, "t.go" if n in go else "t.make") for n in lines])
         with_line = reader(body, LINE + "class_name Reader\nextends Node\n")
         self.assertEqual(self.refs(with_line), [(n + 1, "t.go" if n in go else "t.make") for n in lines])
@@ -479,8 +482,9 @@ class TypedMethodReferenceTests(unittest.TestCase):
         self.handed(
             "func f() -> Callable:\n\tg(t.go if t else Callable())\n\tvar a := Callable() if t else t.make\n"
             "\tvar b := (Callable() if t else t.go)\n\tvar c := Callable() if t else Callable() if t else t.go\n"
-            "\tg(1, Callable() if t else t.make)\n\treturn t.go if t else Callable()\n",
-            6,
+            "\tg(1, Callable() if t else t.make)\n\tvar d := Callable() if t else (t.go if t else Callable())\n"
+            "\tvar e := t.make if t else func() -> void: pass\n\treturn t.go if t else Callable()\n",
+            8,
         )
 
     def test_a_parenthesised_expression_is_what_its_parentheses_are(self) -> None:
