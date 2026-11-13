@@ -45,8 +45,10 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
     cite [N ...] [--pr P]    in the working tree, puts the playtest a filed note is in beside every
                              existing citation of it outside docs/playtests/ -- `inbox #N` becomes
                              `inbox #N in name`, the playtest's bare name, in every file (never a
-                             link) -- and lists every other form for a hand fix; local only. It matches a
-                             `#N` only where no digit or letter follows, so a hex color never matches
+                             link) -- and lists every other form for a hand fix; local only. Without --write
+                             (or with --dry-run) it prints the diff and the hand-fix list and edits
+                             nothing. A run wrapped across a line is one run. It matches a `#N` only
+                             where no digit or letter follows, so a hex color never matches
 
 `ask`, `capture`, `append` and `correct` refuse text holding one of the tool's own mark lines, a
 look-alike included (another heading level, a curly apostrophe), and write nothing.
@@ -153,6 +155,7 @@ examples:
   uv run python tools/inbox.py close --pr 430 --dry-run
   uv run python tools/inbox.py cite --pr 430 --dry-run
   uv run python tools/inbox.py cite 497 498
+  uv run python tools/inbox.py cite 497 498 --write
 """
 
 
@@ -994,8 +997,25 @@ def names_playtest(line: str, playtest: Playtest) -> bool:
     return re.search(rf"(?<![\w-]){re.escape(playtest.name)}(?![\w-])", line) is not None
 
 
-def cite_line(line: str, path: str, targets: dict[int, Playtest]) -> tuple[str, bool]:
-    """`line` with the regular citations of `targets` edited, and whether any other form of one is left."""
+# A run wrapped across a line: the first line ends inside the run (`inbox #N and`), the next one opens
+# with the rest of it (`#1156 in name`); or a line ends on the citation's own ` in`, the name opening the next.
+RUN_CONTINUES = re.compile(r"(?:,|,? and)\s*$")
+HEAD_OF_RUN = re.compile(CITATION.pattern + RUN_CONTINUES.pattern, re.IGNORECASE)
+# A continued line may sit inside a Markdown quote, so its leading `>` markers are skipped.
+RUN_TAIL = re.compile(r"\s*(?:>\s*)*(#\d+(?![0-9A-Za-z])(?:(?:, and |, | and )#\d+(?![0-9A-Za-z]))*)")
+IN_ENDS_LINE = re.compile(r" in\s*$")
+NAME_OPENS_LINE = re.compile(r"\s*(?:>\s*)*(?:\[([^\]]*)\]\([^)]*\)|([A-Za-z][\w-]*))")
+
+
+def cite_line(
+    line: str, path: str, targets: dict[int, Playtest], before: str = "", after: str = "", before2: str = ""
+) -> tuple[str, bool]:
+    """`line` with the regular citations of `targets` edited, and whether any other form of one is left.
+
+    `before` and `after` are the neighbouring lines (`before2` the one above `before`): a run that wraps
+    across the line break, over two or three lines, is one run read from the line that ends it, and a
+    citation whose ` in` ends a line is named by the next. A run over more lines is listed for a hand fix.
+    """
 
     def named(number: int) -> bool:
         return names_playtest(line, targets[number])
@@ -1003,28 +1023,61 @@ def cite_line(line: str, path: str, targets: dict[int, Playtest]) -> tuple[str, 
     covered: list[tuple[int, int]] = []
     edits: list[tuple[int, str]] = []
     irregular = False
-    for match in CITATION.finditer(line):
-        numbers = [int(n) for n in re.findall(r"#(\d+)", match.group(0))]
+
+    def cite_run(numbers: list[int], end: int, span: tuple[int, int], following: str, next_line: str) -> None:
+        """One run, `numbers` of it, ending at `end`: `following` is what comes after on this line."""
+        nonlocal irregular
         mine = [n for n in numbers if n in targets]
         if not mine:
-            continue
-        covered.append(match.span())
+            return
+        covered.append(span)
         if all(named(n) for n in mine):
-            continue
+            return
         playtest = targets[mine[0]]
-        already = ALREADY_IN.match(line, match.end())
+        already = ALREADY_IN.match(line, end)
+        if already is None and IN_ENDS_LINE.match(following):
+            already = NAME_OPENS_LINE.match(next_line)
         if already is not None:
             # An ` in <name or link>` right after the citation is a citation already made; a different
             # playtest there is for a hand fix, and never gets a second "in".
             if (already.group(1) or already.group(2)) != playtest.name:
                 irregular = True
-            continue
+            return
         regular = len(mine) == len(numbers) and all(targets[n] == playtest for n in mine)
-        if regular and line[match.end() : match.end() + 1] != "]":
+        if regular and line[end : end + 1] != "]":
             # The bare name in every file, Markdown included: CLAUDE.md says once how a name is found.
-            edits.append((match.end(), f" in {playtest.name}"))
+            edits.append((end, f" in {playtest.name}"))
         else:
             irregular = True
+
+    def head_numbers() -> list[int] | None:
+        """The numbers of the run that `before` (or `before2` and `before`) opens and leaves open, if any."""
+        head = HEAD_OF_RUN.search(before)
+        if head is not None:
+            return [int(n) for n in re.findall(r"#(\d+)", head.group(0))]
+        middle = RUN_TAIL.match(before)
+        top = HEAD_OF_RUN.search(before2)
+        if middle is None or top is None or RUN_CONTINUES.match(before, middle.end()) is None:
+            return None
+        return [int(n) for n in re.findall(r"#(\d+)", top.group(0) + middle.group(1))]
+
+    tail = RUN_TAIL.match(line) if before else None
+    opened = head_numbers() if tail is not None else None
+    if tail is not None and opened is not None:
+        tail_numbers = [int(n) for n in re.findall(r"#(\d+)", tail.group(1))]
+        if RUN_CONTINUES.match(line, tail.end()) and RUN_TAIL.match(after):
+            # The middle line of a run over three: the line that ends it edits it.
+            covered.append((tail.start(1), tail.end()))
+        else:
+            cite_run(opened + tail_numbers, tail.end(), (tail.start(1), tail.end()), line[tail.end() :], after)
+    for match in CITATION.finditer(line):
+        rest = line[match.end() :]
+        if RUN_CONTINUES.match(rest) and RUN_TAIL.match(after):
+            # The first line of a wrapped run: the line that ends it edits it.
+            covered.append(match.span())
+            continue
+        numbers = [int(n) for n in re.findall(r"#(\d+)", match.group(0))]
+        cite_run(numbers, match.end(), match.span(), rest, after)
 
     def uncovered(start: int) -> bool:
         return not any(low <= start < high for low, high in covered)
@@ -1047,8 +1100,12 @@ def cite_text(path: str, text: str, targets: dict[int, Playtest]) -> tuple[str, 
     """`text` of file `path` with its regular citations edited, and the 1-based lines left for a hand fix."""
     lines = text.split("\n")
     hand: list[int] = []
-    for index, line in enumerate(lines):
-        lines[index], irregular = cite_line(line, path, targets)
+    original = list(lines)
+    for index, line in enumerate(original):
+        before = original[index - 1] if index > 0 else ""
+        after = original[index + 1] if index + 1 < len(original) else ""
+        before2 = original[index - 2] if index > 1 else ""
+        lines[index], irregular = cite_line(line, path, targets, before, after, before2)
         if irregular:
             hand.append(index + 1)
     return "\n".join(lines), hand
@@ -1252,14 +1309,25 @@ def build_parser() -> argparse.ArgumentParser:
             " docs/playtests/, edits the plain `inbox #N` form (or `inbox #N, #M and #K`) to carry the playtest:"
             " ` in name`, the playtest's bare name, in every file and never a link. A bare `(#N)`, a range,"
             " an issue URL or a link text is listed as file:line for a hand fix, never edited; a line already"
-            " naming the playtest is left alone, so a second run changes nothing. Edits this checkout only."
+            " naming the playtest is left alone, so a second run changes nothing. A run wrapped across a line is one"
+            " run. Without --write it prints the diff and the hand-fix list and writes nothing; --write edits"
+            " this checkout only."
         ),
     )
     cite.add_argument("numbers", nargs="*", type=int, metavar="N", help="a filed note's number")
     cite.add_argument(
         "--pr", type=int, default=None, help="the filing pull request, whose `Filed from #N` lines name notes"
     )
-    cite.add_argument("--dry-run", action="store_true", help="print the diff and the hand-fix list; write nothing")
+    cite.add_argument(
+        "--write",
+        action="store_true",
+        help="edit the files; without it, the diff and the hand-fix list are printed and nothing is written",
+    )
+    cite.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the diff and the hand-fix list; write nothing (what no flag does as well)",
+    )
     cite.add_argument("--root", default=None, help="the checkout to edit (default: the one this tool is in)")
     return parser
 
@@ -1269,11 +1337,13 @@ def main(argv: Sequence[str], runner: Runner = run_command) -> int:
     args = parser.parse_args(list(argv))
     if args.command == "cite" and not args.numbers and args.pr is None:
         parser.error("cite needs a note number or --pr")
+    if args.command == "cite" and args.write and args.dry_run:
+        parser.error("cite takes --write or --dry-run, not both")
     try:
         if args.command == "cite":
             github = GitHub(args.repo or default_repo(runner), runner) if args.pr is not None else None
             return cmd_cite(
-                github, Path(args.root).resolve() if args.root else ROOT, args.numbers, args.pr, args.dry_run
+                github, Path(args.root).resolve() if args.root else ROOT, args.numbers, args.pr, not args.write
             )
         github = GitHub(args.repo or default_repo(runner), runner)
         if args.command == "capture":
