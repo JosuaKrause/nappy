@@ -981,8 +981,8 @@ in it. On a desktop the whole cost, the record on against off, measured between 
 half and four times the product (`docs/evidence/m159-frame-record-2026-10-04/`), so a reader who
 subtracts the product from a phone's frames subtracts too little.
 
-**Off, the wrap is one member read, one `is_on()` call and one branch.** The live events are timed once each a
-frame, so each holds the `FrameTiming` its manager hands it (`EventInstance.timing`) and, off, pays
+**Off, the wrap is one member read, one `is_on()` call and one branch.** The live events are timed
+once each a frame, so each holds the `FrameTiming` its manager hands it (`EventInstance.timing`) and, off, pays
 a member read and one `is_on()` call before its body, which stays in its own `_process()`: a static
 read and a call into a second function there, on a couple of hundred timed bodies a frame, would
 cost every player more than that one call. A crowd agent is not timed on its own: it steps
