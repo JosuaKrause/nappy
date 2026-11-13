@@ -489,7 +489,7 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 # ------------------------------------------------------------------ ticking ---
 
 func _physics_process(delta: float) -> void:
-	if timing.on:
+	if timing.is_on():
 		var outer := timing.enter(FrameTiming.EVENTS)
 		_tick_the_events(delta)
 		timing.leave(outer)
