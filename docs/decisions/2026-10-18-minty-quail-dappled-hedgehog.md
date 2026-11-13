@@ -19,8 +19,9 @@ and it missed 58 method names.
   receiver's own class.
 - **On today's tree** it checks fifty such references and fails none; nothing under `src/` changes, and
   `tools/field_reads.txt` is unaffected.
-- **Out of reach**: an engine value's method (the check knows only that it is no class under `src/`), a bare name of the
-  file's own class, and tests. The godot and designing-classes skills and the using-tools row say what the check now
+- **Out of reach**: an engine value's method (the check knows only that it is no class under `src/`), a method a class
+  under `src/` inherits from the engine, a receiver broken over lines, a bare name of the file's own class, and
+  tests. The godot and designing-classes skills and the using-tools row say what the check now
   reports, and the godot skill proposes, open to the player, the rule's reach into files with the opt-out line.
 - **The queue item says what reports the mistake now and what does not**, and loses the bullet that queued the rule.
 

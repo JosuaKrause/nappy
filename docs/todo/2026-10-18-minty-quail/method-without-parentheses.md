@@ -27,8 +27,9 @@ trips the engine's warning for a statement that does nothing (`standalone_expres
   not silence `unsafe_property_access`; everywhere else it fails when the line runs.
 
 **What nothing reports:** the same mistake on an engine value (the field-read check knows only that
-the value is no class under `src/`, not which engine class, so it has no list of its methods), in a
-test, or as a bare name of the file's own class with no receiver (`if is_ready:`).
+the value is no class under `src/`, not which engine class, so it has no list of its methods), on a
+method a class under `src/` inherits from the engine (`w.is_inside_tree`), in a test, or as a bare
+name of the file's own class with no receiver (`if is_ready:`).
 
 **What is left.**
 
