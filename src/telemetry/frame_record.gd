@@ -12,11 +12,11 @@ extends FrameTiming
 ## (physics, process, drawing, waiting), and what no named system claims stays in the phase's own
 ## rest. That is why the buckets add up to the frame exactly.
 ##
-## **Off, it costs one member read per timed entry point**, and nothing is allocated, so a release
+## **Off, it costs one `is_on()` call per timed entry point**, and nothing is allocated, so a release
 ## page without `?framerecord=1` never reaches the clock. It is on only while a `FrameRecorder` is
 ## in the tree (`start()` and `stop()`): the escape builds none. The live events, timed a couple
-## of hundred times a frame, read the sink's `on` through a member of their own
-## (`EventInstance.timing`); the systems timed once a frame read it directly.
+## of hundred times a frame, ask the sink's `is_on()` through a member of their own
+## (`EventInstance.timing`); the systems timed once a frame ask it directly.
 
 ## The record itself: kept by the sitting along with this object, so a recording spans a restart.
 ## Null until `start()`.
@@ -26,14 +26,14 @@ var ledger: FrameLedger
 func frame_ledger() -> FrameLedger:
 	return ledger
 
-## Starts the record on `with`, answering to `on` from here.
+## Starts the record on `with`, answering to `is_on()` from here.
 func start(with: FrameLedger) -> void:
 	ledger = with
-	on = true
+	_on = true
 
 ## Switches the timing off, keeping the ledger: the next recorder carries on in it.
 func stop() -> void:
-	on = false
+	_on = false
 
 ## Overrides FrameTiming.enter.
 func enter(bucket: int) -> int:
@@ -51,12 +51,12 @@ func drew(kind: int) -> void:
 
 ## Overrides FrameTiming.scenery_deferred_begins.
 func scenery_deferred_begins() -> void:
-	if on:
+	if _on:
 		ledger.deferred_scenery_begins(Time.get_ticks_usec())
 
 ## Overrides FrameTiming.scenery_deferred_ends.
 func scenery_deferred_ends() -> void:
-	if on:
+	if _on:
 		ledger.deferred_scenery_ends(Time.get_ticks_usec())
 
 ## Overrides FrameTiming.scenery_job.

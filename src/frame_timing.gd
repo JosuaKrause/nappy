@@ -2,8 +2,8 @@ class_name FrameTiming
 extends RefCounted
 ## Where a system charges its time to the frame record, and the names of what it charges: what a
 ## system that is timed is handed in place of reading a switch every reader would share. **This is
-## the null sink** — it records nothing and says so (`on` is false) — which a system with no record
-## to feed (a rig, a test, a page without `?framerecord=1`) keeps; `FrameRecord`
+## the null sink** — it records nothing and says so (`is_on()` is false) — which a system with no
+## record to feed (a rig, a test, a page without `?framerecord=1`) keeps; `FrameRecord`
 ## (`src/telemetry/`) is the one that feeds the record, handed in by whoever builds the system
 ## (`main`, and `City` for what it makes), and the one the `Sitting` keeps across a scene reload.
 ##
@@ -13,7 +13,7 @@ extends RefCounted
 ## from inside another one is charged to itself and not to both. The game's own `_draw()` calls
 ## are not counted here: `FrameRecorder` listens for them on the nodes that draw.
 ##
-## **Off, it costs one member read per timed entry point**, and nothing is allocated.
+## **Off, it costs one `is_on()` call per timed entry point**, and nothing is allocated.
 
 ## What the physics steps did that no named system claims: her own movement and the physics
 ## server's step, and any `_draw()` a physics callback queued, since the engine flushes those at
@@ -72,12 +72,12 @@ enum Job { GROUND, BUILDING, PROP, SHADOW, DECAL, GUARD }
 ## yard layer), and the view's nodes, which the recorder, standing beside the view, may not name.
 const DRAW_KIND_META := &"counts_draws_as"
 
-## Whether a record is running now. Read by every timed entry point before anything else.
-var on := false
+## Whether a record is running now, behind `is_on()`; the subclass that runs a record sets it.
+var _on := false
 
 ## Whether a record is running now. Every timed entry point asks it before anything else.
 func is_on() -> bool:
-	return on
+	return _on
 
 ## Starts charging `bucket` and answers the bucket that was being charged, for `leave()`.
 func enter(_bucket: int) -> int:

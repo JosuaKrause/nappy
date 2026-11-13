@@ -888,10 +888,6 @@ src/events/event_spawner.gd on_first_landing
 # [FrameGraph] src/ui/frame_graph.gd
 src/dev/debug_readout.gd text_colour
 
-# [FrameTiming] src/frame_timing.gd
-src/events/event_instance.gd on
-src/events/event_manager.gd on
-
 # [GameSave] src/autoload/game_save.gd
 src/main.gd trace
 
