@@ -45,9 +45,11 @@ func tiles(def: EventDef, location: Location) -> Array[Vector2i]:
 			fits.append(tile)
 	return fits
 
-## `def`'s candidate built at `tile`, its facing and path drawn on `rng`, or null where none fits.
-func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventPlan:
-	return _builder.build(def, tile, rng)
+## `def`'s candidate built at `tile`, its facing and path drawn on `rng`, or null where none fits;
+## a route along the street stops inside `within` where it has area (`PlanBuilder.build()`).
+func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
+		within := Rect2i()) -> EventPlan:
+	return _builder.build(def, tile, rng, within)
 
 func _own_ground(def: EventDef) -> Dictionary:
 	if not _own.has(def):

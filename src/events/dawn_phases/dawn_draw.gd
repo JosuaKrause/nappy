@@ -1,24 +1,33 @@
 class_name DawnDraw
 extends DawnPhase
-## **The dawn draw**: every open location of the day drawn from its view's bag (`LocationDraw`,
-## inbox #1185 in gentle-owl): the bags (made from `EventScheduler.view_fills()`) hold every
-## recurring row the catalogue places on the map today, each as many times as its weight in the view
-## (`EventScheduler.view_weight()`), and the empty event; the day's ground answers which row is
-## valid where and how much each location weighs it (`RuledLocationGround`). The rows
-## other phases place have no marble: the moments she is owed (`DawnMoments`), and on the day
-## of the roadblock phase its row (`DawnContext.roadblock_row()`), the phase's alone. The draw
-## places into the context's plan.
+## **The dawn draw**: every open location of the day drawn from its view's bag, a unit at a time
+## (inbox #1185 in gentle-owl; `UnitDraw`, `LocationDraw`): each unit (a street, a junction box, an
+## alley, a park or a square; `DayUnits`) draws its locations in one go, on its own stream, from a
+## fresh bag per view of the view's fill (`EventScheduler.view_fills()`: every recurring row the
+## catalogue places on the map today, each as many times as its weight in the view, and the empty
+## event), at most one of a row in a unit, after every touching unit of lower rank. The day's ground
+## answers which row is valid where and how much each location weighs it (`RuledLocationGround`),
+## judged among the dawn's plans and the draws of the units touching the one drawing, on the first
+## tile no rule refuses, a route kept on its location's run (`Location.run()`), and a lethal field
+## held to ground the drawing unit sees (`UnitScopeRule`). The rows other phases place have no
+## marble: the moments she is owed (`DawnMoments`), and on the day of the roadblock phase its row
+## (`DawnContext.roadblock_row()`), the phase's alone.
+##
+## **It prepares the draw and holds it in the context** (`DawnContext.hold_the_draw()`), then draws
+## every unit into the day's plan, so the day is whole at dawn: what drawing every unit at dawn in
+## rank order gives, whatever order the units are asked for in.
 ##
 ## Model: no node.
 
-## The phase salt a share of a wall's cap is rounded on (`_caps_of()`).
-const CAPS_SALT := 8
+## **Whether a drawn row's route stays on its location's run** (`RuledLocationGround`'s
+## `keeps_routes_on_the_run`, `Location.run()`): a route longer than its street is cut to the
+## street and the boxes at its ends, as the player settled it on the board (question long-routes),
+## and this is the one setting that answer lives in.
+const ROUTES_STAY_ON_THE_RUN := true
 
 ## Overrides DawnPhase.run.
 func run(context: DawnContext) -> void:
 	var day := context.day()
-	var spec := context.spec()
-	var base := context.day_seed()
 	var map := context.map()
 	var beside_the_routes := context.roadblock_row()
 	var rows := {}
@@ -28,33 +37,18 @@ func run(context: DawnContext) -> void:
 		if beside_the_routes != null and def.id == beside_the_routes.id:
 			continue
 		rows[def.id] = def.for_day(day)
-	var fills := EventScheduler.view_fills(rows, day, spec)
-	var bags := {}
-	for view: int in fills:
-		bags[view] = ViewBag.new(fills[view], EventScheduler.view_bag_seed(base, view))
+	var fills := EventScheduler.view_fills(rows, day, context.spec())
+	var units := DayUnits.of(context.locations().all(), context.day_seed())
+	var scope := UnitScopeRule.new(units)
+	var also: Array[StreetRule] = [scope]
+	var ground := context.ground()
 	var events := context.events()
-	var judged := RuledLocationGround.new(day, base, map, events.standing(), context.corridor(),
-			LocationFit.new(day, map, context.builder(), context.ground()), context.rules(),
-			context.ground())
-	var caps := _caps_of(rows, day, spec, context.stream(CAPS_SALT)) if spec.caps_per_day else {}
-	events.add_all(LocationDraw.new(context.locations(), bags, rows, judged, caps).draw_all(
-			context.stream(EventScheduler.LOCATIONS_SALT), events.placements()))
-
-## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
-## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
-## wall whose cap binds as well as of one whose weight does (`EventScheduler.view_weight()`
-## scales the weight). A
-## share of a cap that is not whole is rounded up or down on `rng`, by its fraction, so the day
-## holds the share on average.
-static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
-		rng: RandomNumberGenerator) -> Dictionary:
-	var caps := {}
-	var ids := rows.keys()
-	ids.sort()
-	for id: String in ids:
-		var def: EventDef = rows[id]
-		var most := float(def.most_in_a_day())
-		if EventScheduler.role_for(def, day) == GameEnums.BlockerRole.WALL:
-			most *= spec.wall_row_share
-		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
-	return caps
+	var judged := RuledLocationGround.new(day, context.day_seed(), map, events.standing(),
+			context.corridor(),
+			LocationFit.new(day, map, context.builder().without_todays_bodies(), ground),
+			context.rules(), ground, false, ROUTES_STAY_ON_THE_RUN, also)
+	context.hold_the_draw(UnitDraw.new(units,
+			LocationDraw.new(context.locations(), rows, judged), fills, events.placements(), scope))
+	var draw := context.unit_draw()
+	for unit in draw.units().undrawn_within(Vector2.ZERO, INF):
+		events.add_all(draw.draw(unit))

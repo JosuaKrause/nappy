@@ -35,10 +35,17 @@ var _plan: EventPlan = null
 var _kind := Kind.SECTION
 ## Whether a draw has filled it, with an event or with nothing (`record()`).
 var _drawn := false
+## The tiles of the whole thing it is a part of, for a location of no street (`part_of()`).
+var _whole := Rect2i()
 
+## `whole` is the tiles of the whole thing a location of no street is a part of (`part_of()`): an
+## alley's third its alley's rect, an open lot's cell its lot's bounds, a junction box its own
+## rect; a street's location passes none.
 func _init(segment: StreetNetwork.Segment, section: int, tiles: Rect2i,
-		centre: Vector2, view: int, available: bool, kind := Kind.SECTION) -> void:
+		centre: Vector2, view: int, available: bool, kind := Kind.SECTION,
+		whole := Rect2i()) -> void:
 	_kind = kind
+	_whole = whole
 	_segment = segment
 	_section = section
 	_tiles = tiles
@@ -53,6 +60,28 @@ func segment() -> StreetNetwork.Segment:
 ## The tiles the location covers.
 func tiles() -> Rect2i:
 	return _tiles
+
+## **The tiles of the whole thing the location is a part of**, the unit it draws with
+## (`DayUnits`): a sidewalk's or a section's street (`StreetNetwork.Segment.tile_rect()`); an
+## alley's third its alley, an open lot's cell its lot, a junction box itself, as each was told at
+## layout.
+func part_of() -> Rect2i:
+	if _segment:
+		return _segment.tile_rect()
+	return _whole
+
+## **The tiles a route starting in the location may lie on**: for a sidewalk or a section, its
+## street's rect grown by a street's width at both ends along the street, so the junction boxes at
+## its ends are on it and nothing past them; for any other location, the whole it is a part of
+## (`part_of()`). Everything that can come near a route laid on it stands in a unit touching the
+## street's, whose draws see each other (`RuledLocationGround`'s `keeps_routes_on_the_run`).
+func run() -> Rect2i:
+	if not _segment:
+		return _whole
+	var street := _segment.tile_rect()
+	if _segment.horizontal:
+		return street.grow_individual(Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH, 0)
+	return street.grow_individual(0, Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH)
 
 ## The middle of the location, in world space.
 func centre() -> Vector2:

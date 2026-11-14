@@ -4,9 +4,20 @@ extends LocationGround
 ## left out where the day's rules invalidate it, and the location's own weight.
 ##
 ## - **The event** stands on a tile of the location the row fits (`LocationFit`), tried in an order
-##   of the location's own stream, and is asked of the day's rules (`StreetInvalidation`) against
-##   the plans it is handed and what the day stands: the first tile with room all round, else the
-##   roomiest a rule leaves valid, else none.
+##   of the location's own stream, and is asked of the day's rules (`StreetInvalidation`) and then
+##   of the rules it was made with besides (`also`), against the plans it is handed and what the day
+##   stands. **Which tile, is a setting** (a mode is a configuration): the unit draw takes the first
+##   tile no rule refuses, so nothing ranks a tile by rows on other streets (`roomiest` false); the
+##   scripted rows and the escape take the first tile with room all round, else the roomiest a rule
+##   leaves valid (`roomiest` true), else none. With `roomiest` false the two spacings that never
+##   bend still hold, since `StreetInvalidation.room()` refuses them: nothing within
+##   `EventScheduler.EVENT_SPACING_ANY` of anything it is judged among, and nothing inside a lethal
+##   row's field, either way round.
+## - **A route is built inside its location's run where the setting says**
+##   (`keeps_routes_on_the_run`, the unit draw's): a moving row's route stops at the far edge of the junction boxes at its own
+##   street's ends (`Location.run()`), so everything that could come near it stands in a unit its
+##   draw sees (a route longer than its street is cut, as the player settled it on the board,
+##   question long-routes: the dog walker's, the patrol's and the convoy's routes are cut to it).
 ## - **The weight** (the player's "yes" to a weight per location, inbox #1185 in gentle-owl): a
 ##   precinct street as many times over as the walk's ground offers a precinct tile
 ##   (`RowGround.Weights.precinct()`, four), the street between two strands of the routes as many
@@ -20,8 +31,8 @@ extends LocationGround
 ## Handed the day, the day's seed, the map, the bodies the day stands (the seals and the region
 ## wall's, `DayEvents.standing()`), the walk's corridor, the fit (`LocationFit`), the day's rules,
 ## the walk's ground, whose weights and whose reading of a wall it asks (`RowGround.weights()`,
-## `RowGround.is_a_wall_by_cost()`). It keeps no plan: what a candidate is judged among comes
-## with each `offer()`. Model: no node.
+## `RowGround.is_a_wall_by_cost()`), and its three settings. It keeps no plan: what a candidate is
+## judged among comes with each `offer()`. Model: no node.
 
 ## `alley_mouse`'s own preference: an alley location beside a garbage-sack pile
 ## (`GarbageSacks.alley_pile_tiles()`, within `_MOUSE_PILE_ADJACENCY` tiles) weighs the mouse
@@ -39,11 +50,19 @@ var _corridor: Corridor
 var _fit: LocationFit
 var _rules: StreetInvalidation
 var _ground: RowGround
+var _roomiest := true
+var _keeps_routes_on_the_run := false
+var _also: Array[StreetRule] = []
 var _piles := {}
 
-## `ground` is the walk's ground (`RowGround`), the one `fit` is made over.
+## `ground` is the walk's ground (`RowGround`), the one `fit` is made over. The settings:
+## `roomiest`, where no tile has room all round, take the roomiest a rule leaves valid (else the
+## first tile no rule refuses); `keeps_routes_on_the_run`, a route is built inside its location's
+## run (`Location.run()`); `also`, rules asked of each candidate after the day's, with the same
+## arguments.
 func _init(day: int, base: int, map: CityMap, standing: Array[EventPlan], corridor: Corridor,
-		fit: LocationFit, rules: StreetInvalidation, ground: RowGround) -> void:
+		fit: LocationFit, rules: StreetInvalidation, ground: RowGround, roomiest := true,
+		keeps_routes_on_the_run := false, also: Array[StreetRule] = []) -> void:
 	_day = day
 	_base = base
 	_map = map
@@ -52,6 +71,9 @@ func _init(day: int, base: int, map: CityMap, standing: Array[EventPlan], corrid
 	_fit = fit
 	_rules = rules
 	_ground = ground
+	_roomiest = roomiest
+	_keeps_routes_on_the_run = keeps_routes_on_the_run
+	_also = also.duplicate()
 	for tile in GarbageSacks.alley_pile_tiles(map, day):
 		_piles[tile] = true
 
@@ -72,19 +94,30 @@ func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventP
 	var role := EventScheduler.role_for(def, _day)
 	var reach_context := among.duplicate()
 	reach_context.append_array(_standing)
+	var run := location.run() if _keeps_routes_on_the_run else Rect2i()
 	var best: EventPlan = null
 	var best_room := -INF
 	for tile in fits:
-		var candidate := _fit.build(def, tile, rng)
+		var candidate := _fit.build(def, tile, rng, run)
 		if not candidate:
 			continue
 		var room := _rules.room(candidate, role, tile, among, reach_context)
-		if room == INF:
+		if room == -INF or not _also_allow(candidate, tile, among, reach_context):
+			continue
+		if room == INF or not _roomiest:
 			return candidate
 		if room > best_room:
 			best_room = room
 			best = candidate
 	return best
+
+## Whether every rule in `also` allows `candidate` at `tile`, asked as the day's rules are.
+func _also_allow(candidate: EventPlan, tile: Vector2i, among: Array[EventPlan],
+		around: Array[EventPlan]) -> bool:
+	for rule in _also:
+		if not rule.allows(candidate, tile, among, around):
+			return false
+	return true
 
 ## Overrides LocationGround.scale.
 func scale(def: EventDef, location: Location) -> float:

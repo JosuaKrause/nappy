@@ -1,5 +1,5 @@
 extends RefCounted
-## Measurement probe for the walk's mix (`docs/EVENTS.md`, "The density, and why it is caps and
+## Measurement probe for the walk's mix (`docs/EVENTS.md`, "The density, and why it is shares and
 ## bags"): **what each day puts in the world as she walks, row by row, by view and by kind of
 ## ground.** Not a suite: it prints rather than asserting, so it lives here under `tests/probes/`,
 ## where the runner never discovers it, and runs only by name:

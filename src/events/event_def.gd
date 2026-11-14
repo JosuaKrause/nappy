@@ -662,7 +662,7 @@ func is_a_one_shot_off_her_way() -> bool:
 
 ## **Whether a recurring row the day draws is handed to her walk to site** (`on_her_way`, the
 ## sidewalk poster crew): a location draws it like any other and hands it on with no position for
-## the walk to put on her way (`LocationDraw.draw_all()`). Asked too by the park
+## the walk to put on her way (`LocationDraw.draw()`). Asked too by the park
 ## spoilers, which offer none such, since a park it spoiled would be left empty.
 func is_handed_to_her_walk() -> bool:
 	return on_her_way != null and kind == GameEnums.EventKind.RECURRING
@@ -1857,7 +1857,7 @@ func silent_beyond() -> float:
 ## else in the day is judged differently because of it.
 ## **A recurring row carrying it is not exempt**: a poster crew closes nothing, and it is drawn at a
 ## location and judged as any other before it is handed to her walk with no position
-## (`LocationDraw.draw_all()`).
+## (`LocationDraw.draw()`).
 func has_a_line_to_avoid() -> bool:
 	if role == EventDef.Role.SCENERY or pursuit != null:
 		return false
