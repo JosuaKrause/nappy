@@ -23,6 +23,7 @@ func run(t: TestRunner) -> void:
 	_test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t)
 	_test_a_debug_build_builds_the_layers_off_by_default(t)
 	_test_the_layers_flag_starts_only_the_listed_layers_on(t)
+	_test_the_layers_flag_accepts_seven(t)
 	_test_the_layer_keys_resolve_to_their_own_layer(t)
 	_test_a_release_or_an_echo_toggles_nothing(t)
 	_test_number_keys_toggle_their_own_layer(t)
@@ -147,6 +148,10 @@ func _test_parse_layers_drops_malformed_entries_without_crashing(t: TestRunner) 
 			"an out-of-range entry (there is no layer 9 or 0 to set) is dropped the same way")
 	t.check(_layers("2,2") == [2], "a repeated entry is not added twice")
 
+func _test_the_layers_flag_accepts_seven(t: TestRunner) -> void:
+	t.check(_layers("5,7") == [5, 7], "7 is a layer the flag names, and 8 is not one")
+	t.check(_layers("7,8") == [7], "an eighth entry is dropped the way any out-of-range one is")
+
 func _test_apply_initial_state_sets_only_the_listed_layers(t: TestRunner) -> void:
 	var layers := DebugLayers.new()
 	layers.apply_initial_state([1, 3])
@@ -246,12 +251,13 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 
 ## Every key a player presses reaches its own layer through the viewport, the route a real key takes:
 ## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the routes and `6` the frame
-## graph, and nothing else is a layer key. Each key is pressed alone from a state with everything
+## graph, `7` the events' own routes, and nothing else is a layer key. Each key is pressed alone from a state with everything
 ## off, and what it turned on is the one thing that changed.
 func _test_the_layer_keys_resolve_to_their_own_layer(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	rig.readout.draw_routes(null)
 	var routes := rig.readout.get_node("RouteLines") as RouteLines
+	var event_routes := rig.readout.get_node("EventRouteLines") as EventRouteLines
 	var layers := rig.layers()
 	rig.readout.close_the_title()
 	for number: int in [1, 2, 3]:
@@ -267,12 +273,17 @@ func _test_the_layer_keys_resolve_to_their_own_layer(t: TestRunner) -> void:
 	t.check(routes.visible and not rig.readout.graph_on(), "5 is the route lines")
 	UI.push(rig.readout, _key(KEY_6))
 	t.check(rig.readout.graph_on(), "6 is the frame graph")
-	var before := [layers.layer_on(1), layers.layer_on(2), layers.layer_on(3),
-			rig.readout.readout_on(), routes.visible, rig.readout.graph_on()]
 	UI.push(rig.readout, _key(KEY_7))
+	t.check(event_routes.visible and routes.visible, "7 is the events' own routes, beside 5")
+	UI.push(rig.readout, _key(KEY_7))
+	t.check(not event_routes.visible and routes.visible, "and a second 7 turns only them off")
+	var before := [layers.layer_on(1), layers.layer_on(2), layers.layer_on(3),
+			rig.readout.readout_on(), routes.visible, event_routes.visible,
+			rig.readout.graph_on()]
+	UI.push(rig.readout, _key(KEY_8))
 	t.check([layers.layer_on(1), layers.layer_on(2), layers.layer_on(3),
-			rig.readout.readout_on(), routes.visible, rig.readout.graph_on()] == before,
-			"a seventh key answers nothing")
+			rig.readout.readout_on(), routes.visible, event_routes.visible,
+			rig.readout.graph_on()] == before, "an eighth key answers nothing")
 	rig.free_all()
 
 func _test_a_release_or_an_echo_toggles_nothing(t: TestRunner) -> void:
@@ -314,7 +325,7 @@ func _test_layer_keys_do_nothing_outside_a_debug_build(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false))
 	t.check(rig.layers() == null, "no layer node in a release build")
 	var readout_before := rig.readout.readout_on()
-	for code: Key in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6]:
+	for code: Key in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7]:
 		UI.push(rig.readout, _key(code))
 	t.check(rig.layers() == null and rig.readout.readout_on() == readout_before
 			and not rig.readout.graph_on(),

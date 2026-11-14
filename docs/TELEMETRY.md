@@ -1188,8 +1188,11 @@ today's tree (`DayStreets.route_tree()`, `City.streets()`) once rather than quer
 `FrameGraph` (`src/ui/frame_graph.gd`), the sixth layer below, answers a third question again — not
 the ground truth and not the day's plan, but what the last 240 frames actually cost — and reads
 `DebugReadout._process()`'s own `delta` each frame it is on rather than querying the world at all.
+`EventRouteLines` (`src/dev/event_route_lines.gd`), the seventh layer below, answers a fourth — where
+each live event's own route runs — and asks each live `EventInstance` for it (`walks()`) every frame
+it is on.
 
-Six layers, each a number key, read as a raw keycode rather than an input-map action so a release
+Seven layers, each a number key, read as a raw keycode rather than an input-map action so a release
 build has nothing in `project.godot` to reach:
 
 - **`1` fields** — every emitter's actual falloff boundary, inner and outer level, for events,
@@ -1222,7 +1225,7 @@ build has nothing in `project.godot` to reach:
   assembled, not merely hidden behind an invisible label. **A release build carries it too when
   the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
   parsed straight off the page's query string and not gated behind `enabled()`. The readout builds
-  the geometry layers (`1`-`3`, `5`, `DebugReadout.show_the_world()` and `draw_routes()`) under that
+  the geometry layers (`1`-`3`, `5`, `7`, `DebugReadout.show_the_world()` and `draw_routes()`) under that
   same `_debug or _readout_requested` gate too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
   to draw (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags") — only the `1`/`2`/`3`
   key presses that toggle one by hand stay debug-build only, since a release page sends no such
@@ -1314,11 +1317,20 @@ build has nothing in `project.godot` to reach:
   from that moment rather than a window that silently skipped the time it spent off. The run log's
   own `spike` line (see "What a frame cost" above) stays on `--spikes` alone regardless of `6`: it
   is the log's own line, not this view's recording.
+- **`7` event routes** — every live event that has a route, drawn as one hot-pink
+  (`EventRouteLines.ROUTE_COLOUR`) polyline from where it starts to where it ends, a dot at the
+  start and a square at the end, read from `EventInstance.walks()` on the frame it is drawn: a dog
+  walker's block, a police patrol's street, a convoy's way, the beat a pacing row folds over. An
+  event that stands, or is gone, draws nothing. It answers where each event's own route runs, as
+  layer `5` answers where *her* day's routes run, so a change to how a row's route is cut shows
+  as a different picture. Built under the same `_debug or _readout_requested` gate as the others,
+  off by default, `--layers 7` (or `?layers=7`) starts it on, and the `7` key toggles it in a
+  debug build.
 
 The mapping above is printed once on boot in a debug build. With no `--layers` flag and no
-`--spikes`, a run opens with the readout on and the other five layers off, so an unflagged debug
-run looks exactly as it did before this existed. `--layers 1,3,5,6` (or the page's own
-`?layers=1,3,5,6`) sets which of the five non-readout layers start on instead, so a rig screenshot
+`--spikes`, a run opens with the readout on and the other six layers off, so an unflagged debug
+run looks exactly as it did before this existed. `--layers 1,3,5,6,7` (or the page's own
+`?layers=1,3,5,6,7`) sets which of the six non-readout layers start on instead, so a rig screenshot
 of a particular disagreement is reproducible without a keypress; a malformed entry is dropped with
 a printed note rather than failing the whole flag. `4` is not part of that list — it defaults on
 already. `--spikes` starts `6` on the same way, whether or not `--layers` also names it.
