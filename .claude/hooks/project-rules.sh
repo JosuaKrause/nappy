@@ -116,11 +116,13 @@ rows=(
 #   crowd's footprint rule.
 # - The four files named after palette.gd draw the cues: the mark and its color, the car's caret,
 #   the exclamation mark over the stroller, and the warning board that raises it.
-# - The ten files besides tuning.gd in the balance row hold the numbers the balance skill's
-#   description names outside Tuning: the catalogue's caps, the views' shares, the crowd's
-#   busyness, the baby's excitement, the city's decay multipliers and the field's falloff. Four
-#   of them are event files the dawn phases and the ruled ground hold numbers in: the roadblocks'
-#   close-by distance, the mouse's pile weights, the curfew day and the park spoilers' numbers.
+# - The six files named after tuning.gd hold the numbers the balance skill's description names
+#   outside Tuning: the catalogue's caps, the views' shares, the crowd's busyness, the baby's
+#   excitement, the city's decay multipliers and the field's falloff.
+# - The four files named after field.gd are the dawn phases and the ruled ground, which hold the
+#   roadblocks' close-by distance, the mouse's two numbers (how near a sack pile it prefers to
+#   stand, and how many extra copies of such a spot it draws from), the curfew day and the park
+#   spoilers' numbers.
 # - assets/atlases/membership.json is the text file both kinds of artwork are registered in.
 # - docs/evidence/ holds experiment evidence (verify: its method, provenance and retention) and
 #   captures (session-captures: where a frame is kept and what it may be said to prove).
