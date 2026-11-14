@@ -29,11 +29,10 @@ func run(context: DawnContext) -> void:
 	var day := context.day()
 	var map := context.map()
 	var beside_the_routes := context.roadblock_row()
+	var beside_id := beside_the_routes.id if beside_the_routes != null else ""
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, context.heat()):
-		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
-			continue
-		if beside_the_routes != null and def.id == beside_the_routes.id:
+		if not def.is_drawn_by_units(day, beside_id):
 			continue
 		rows[def.id] = def.for_day(day)
 	var fills := EventScheduler.view_fills(rows, day, context.spec())

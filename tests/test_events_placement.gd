@@ -22,6 +22,7 @@ func run(t: TestRunner) -> void:
 	_test_friction_on_a_sidewalk_can_be_walked_past(t)
 	_test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t)
 	_test_the_square_poster_crew_only_ever_stands_on_a_square(t)
+	_test_a_recipes_drawn_row_keeps_its_route_on_its_run(t)
 	_test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t)
 	_test_a_routes_junctions_stay_clear(t)
 	_test_nothing_takes_the_routes_own_sidewalk(t)
@@ -489,6 +490,61 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 				refused += 1
 	t.check(placed >= 1, "and the sweep actually placed one (%d)" % placed)
 	t.check(refused > 100, "and refused it sidewalk ground (%d tiles asked)" % refused)
+
+## **A scene recipe lays a row the units draw as the day lays it: its route stays on its
+## location's run** (`Location.run()`, `EventScheduler.recipe_placement()`), so an authored dog
+## walker or patrol has the route a played day gives one and never a longer one. Asked over a few
+## cities for each of the two moving rows: every point of a placed route is a tile of the run of the
+## location holding the row's tile, and the count of placements whose uncut route would have left
+## the run is what stops the check passing on routes that were short anyway.
+func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void:
+	var placed := 0
+	var would_leave := 0
+	for id: String in ["dog_walker", "police_patrol"]:
+		var def := EventCatalogue.by_id(id)
+		var day := maxi(def.first_day, 6)
+		for i in 3:
+			var map := MapCache.of(4242 + i * 97)
+			var state := CityState.new()
+			state.begin_day(map.block_plans, day)
+			map.repaint(state)
+			var corridor := Corridor.of(RouteTree.for_day(map, day))
+			var locations := DayLocations.lay_out(map, corridor)
+			var offered := EventScheduler.row_ground(map).tiles_for(def)
+			var rng := _rng(day)
+			for k in 6:
+				if offered.is_empty():
+					break
+				var tile: Vector2i = offered[rng.randi_range(0, offered.size() - 1)]
+				var seed_of_route := day + k * 17
+				var plan := EventScheduler.recipe_placement(def, day, map,
+						GamePlanBuilder.over(map), map.tile_to_world(tile), seed_of_route, [],
+						corridor, PackedVector2Array(), CalmAreas.of(map), [], locations)
+				if plan == null:
+					continue
+				placed += 1
+				var location := locations.holding(tile, map.tile_at(tile))
+				var run := location.run()
+				var outside := 0
+				for point in plan.path:
+					if not run.has_point(map.world_to_tile(point)):
+						outside += 1
+				t.check(outside == 0, "%s on day %d: %d of its route's points lie off the run %s"
+						% [id, day, outside, run])
+				var uncut_rng := RandomNumberGenerator.new()
+				uncut_rng.seed = seed_of_route
+				var uncut := LocationFit.new(day, map, GamePlanBuilder.over(map),
+						EventScheduler.row_ground(map, corridor)).build(def, tile, uncut_rng,
+						Rect2i())
+				if uncut != null:
+					for point in uncut.path:
+						if not run.has_point(map.world_to_tile(point)):
+							would_leave += 1
+							break
+	t.check(placed >= 4, "the sweep placed routes to check (%d)" % placed)
+	t.check(would_leave >= 1,
+			"and some route would have left its run uncut (%d), so the bound is what held it"
+			% would_leave)
 
 ## **A man pacing the route's own sidewalk can always be left at a crossing, and one who cannot be
 ## left is never on it.** *(PLAYTEST-77, 2026-09-19: "if the yeller paces across a crosswalk then

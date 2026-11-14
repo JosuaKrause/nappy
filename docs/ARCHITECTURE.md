@@ -273,16 +273,16 @@ src/
 	ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
 	                      fits and the day's rules leave it valid among the plans it is handed, the
 	                      location's weight; handed the walk's ground and the bodies the day stands,
-	                      and its settings: the first allowed tile or the roomiest, a route kept on
-	                      its location's run, and rules asked besides the day's
+	                      and its two settings: the first allowed tile or the roomiest, and a route
+	                      kept on its location's run
 	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
 	                      ground on the day, and the candidate built on one
 	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
 	                      may stand, given what the walk placed and what stands round it
 	street_rules/         one file per rule: the unused calm, a door's clear ground, a route's
 	                      junctions, its walked sidewalk, a pacing beat's opening, its ground off
-	                      the streets kept free of bodies, the escape's one notice at a time and its walk kept open,
-	                      and a lethal field held to the ground a unit's draw sees
+	                      the streets kept free of bodies, and the escape's one notice at a time
+	                      and its walk kept open
 	street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room
 	                      where one refuses, else the room round it
 	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock

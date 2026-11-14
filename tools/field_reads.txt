@@ -369,7 +369,6 @@ src/dev/route_rig_planner.gd shape
 src/dev/route_rig_planner.gd solid_when
 src/dev/scene_recipe_runtime.gd aftermath
 src/dev/scene_recipe_runtime.gd id
-src/dev/scene_recipe_runtime.gd max_per_day
 src/dev/scene_recipe_runtime.gd pursuit
 src/dev/scene_recipe_runtime.gd role
 src/dev/scene_recipe_runtime.gd stops_where_it_arrives

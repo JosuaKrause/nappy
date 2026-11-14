@@ -4,7 +4,8 @@ extends RefCounted
 ## ends and the streets meeting it there; a lot (an alley, a park, a square) touching the streets
 ## and boxes round its block, and they each other through it, and another lot in its block; two
 ## parallel streets with no lot between them not touching; the undrawn units near a point nearest
-## first, and every one for an infinite radius; and a reach handed in making units that far apart touch besides.
+## first, and every one for an infinite radius; and a reach handed in making units that far apart
+## touch besides.
 ##
 ## Built of plain values: `Location`s made by hand on the lattice's own numbers (a junction box at
 ## `junction * CityMap.period()`, a street between two of them,

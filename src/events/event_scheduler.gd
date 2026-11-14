@@ -1263,11 +1263,11 @@ const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31,
 ## location: the tile is one the location takes for the row (`LocationFit`), the candidate built
 ## there on a private stream (`route_seed`, so unrelated actors cannot move a required path), a
 ## recurring row's route kept on its location's run as the day's unit draw keeps it
-## (`Location.run()`), and the day's rules allow it (`StreetInvalidation`, the calm `calm` says she has not used left alone). No
-## tries and no fallback: a location that does not take the row fails the recipe loudly, with the
-## reason, rather than placing it somewhere else (the orchestrator's reading, open to the player's
-## overturn). `locations` is the day's, laid out once for the whole recipe; laid out here for a
-## caller that hands none. `builder` builds the candidate.
+## (`Location.run()`), and the day's rules allow it (`StreetInvalidation`, the calm `calm` says
+## she has not used left alone). No tries and no fallback: a location that does not take the row
+## fails the recipe loudly, with the reason, rather than placing it somewhere else (the
+## orchestrator's reading, open to the player's overturn). `locations` is the day's, laid out once
+## for the whole recipe; laid out here for a caller that hands none. `builder` builds the candidate.
 static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: PlanBuilder,
 		at: Vector2, route_seed: int, already: Array[EventPlan], corridor: Corridor,
 		doors: PackedVector2Array, calm: CalmAreas, standing: Array[EventPlan] = [],
@@ -1293,7 +1293,8 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
 	var run := Rect2i()
-	if def.is_drawn_by_units(day) and DawnDraw.ROUTES_STAY_ON_THE_RUN:
+	var beside := ResistanceSteps.guarded_row_on(day)
+	if def.is_drawn_by_units(day, beside) and DawnDraw.ROUTES_STAY_ON_THE_RUN:
 		run = location.run()
 	var candidate := fit.build(def, tile, rng, run)
 	if not candidate:

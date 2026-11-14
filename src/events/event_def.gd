@@ -663,11 +663,14 @@ func obstructs_within() -> float:
 func is_a_one_shot_off_her_way() -> bool:
 	return kind == GameEnums.EventKind.ONE_SHOT and on_her_way == null
 
-## **Whether a unit's draw can draw the row on `day`** (`DawnDraw`): a recurring row placed on the
-## map, so one a day's dawn gives a marble in its view's bag; the moments' rows (director-sited) and
-## the one-shots are not.
-func is_drawn_by_units(day: int) -> bool:
-	return kind == GameEnums.EventKind.RECURRING and spawn_mode_on(day) == SpawnMode.MAP
+## **Whether a unit's draw can draw the row on `day`** (`DawnDraw`, and a scene recipe's
+## placement, which lays a row as the day does): a recurring row placed on the map, so one a day's
+## dawn gives a marble in its view's bag. The moments' rows (director-sited) and the one-shots are
+## not, and neither is the row the roadblock phase stands that day, `beside_the_routes` (its id,
+## `""` for none: the phase's alone, `ResistanceSteps.guarded_row_on()`).
+func is_drawn_by_units(day: int, beside_the_routes: String) -> bool:
+	return kind == GameEnums.EventKind.RECURRING and spawn_mode_on(day) == SpawnMode.MAP \
+			and (beside_the_routes == "" or id != beside_the_routes)
 
 ## **Whether a recurring row the day draws is handed to her walk to site** (`on_her_way`, the
 ## sidewalk poster crew): a location draws it like any other and hands it on with no position for
