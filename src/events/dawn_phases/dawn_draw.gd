@@ -1,8 +1,8 @@
 class_name DawnDraw
 extends DawnPhase
 ## **The dawn draw**: every open location of the day drawn from its view's bag (`LocationDraw`,
-## inbox #1185 in gentle-owl): the bags (made from `EventScheduler.view_fills()`) hold every recurring row
-## the catalogue places on the map today, each as many times as its weight in the view
+## inbox #1185 in gentle-owl): the bags (made from `EventScheduler.view_fills()`) hold every
+## recurring row the catalogue places on the map today, each as many times as its weight in the view
 ## (`EventScheduler.view_weight()`), and the empty event; the day's ground answers which row is
 ## valid where and how much each location weighs it (`RuledLocationGround`). The rows
 ## other phases place have no marble: the moments she is owed (`DawnMoments`), and on the day
@@ -35,7 +35,7 @@ func run(context: DawnContext) -> void:
 	var events := context.events()
 	var judged := RuledLocationGround.new(day, base, map, events.standing(), context.corridor(),
 			LocationFit.new(day, map, context.builder(), context.ground()), context.rules(),
-			context.ground(), true)
+			context.ground())
 	var caps := _caps_of(rows, day, spec, context.stream(CAPS_SALT)) if spec.caps_per_day else {}
 	events.add_all(LocationDraw.new(context.locations(), bags, rows, judged, caps).draw_all(
 			context.stream(EventScheduler.LOCATIONS_SALT), events.placements()))

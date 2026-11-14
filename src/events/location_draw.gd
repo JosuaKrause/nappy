@@ -15,8 +15,8 @@ extends RefCounted
 ## she can move, so a retry draws the same day. The locations are drawn in the day's order
 ## (`DayLocations.drawing_order()`), so a street's later locations draw with its earlier draws
 ## standing: the draw keeps its own list of what it has placed, handed to the judge after the plans
-## it was given (`draw_all()`'s `among`). A row handed to her walk is drawn as any other and kept with no position, for her walk
-## to site (`_as_drawn()`).
+## it was given (`draw_all()`'s `among`). A row handed to her walk is drawn as any other and kept
+## with no position, for her walk to site (`_as_drawn()`).
 ##
 ## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
 ## (`id -> EventDef`), the day's ground, and the day's caps (`id -> how many may stand`, a row not
@@ -42,15 +42,15 @@ func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: 
 ## the order drawn, a row handed to her walk among them with no position. The day's plan is the
 ## caller's to add them to.
 func draw_all(rng: RandomNumberGenerator, among: Array[EventPlan]) -> Array[EventPlan]:
-	var standing := among.duplicate()
+	var judged_among := among.duplicate()
 	var placed: Array[EventPlan] = []
 	for location in _locations.drawing_order(rng):
 		if not location.is_available() or location.is_taken() or location.is_drawn():
 			continue
-		var plan := _as_drawn(_draw(location, standing))
+		var plan := _as_drawn(_draw(location, judged_among))
 		_locations.record(location, plan)
 		if plan:
-			standing.append(plan)
+			judged_among.append(plan)
 			_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
 			placed.append(plan)
 	return placed

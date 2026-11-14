@@ -5,7 +5,8 @@ extends RefCounted
 ## day's open locations its ground takes, each weighted by `weigh` (the row's role weights over the
 ## location's tiles: a wall kept off the route, friction drawn onto it, as the roll weighed a tile),
 ## offers it the row through `ground` (the dawn draw's own path: the first tile with room all round,
-## else the roomiest a rule leaves), judged among the day's plan (`events`) at each ask, and assigns the location what it took, so no draw happens there.
+## else the roomiest a rule leaves), judged among the day's plan (`events`) at each ask, and assigns
+## the location what it took, so no draw happens there.
 ## A location that takes nothing is passed over and the draw goes on among the rest; none left, and
 ## the row does not happen, which is the right failure direction. Placement by location, no tile
 ## rolled (the orchestrator's reading of the fixed parts' phases, open to correction;

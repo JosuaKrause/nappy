@@ -11,9 +11,8 @@ extends RefCounted
 ## accepts.
 
 ## The event `def` would be at `location`, stood on a tile of the location it fits on, or null where
-## it fits nowhere there or the day's rules leave it invalid among `among`, the plans standing in
-## the day so far (the judge also reads the bodies the day stands as sealed ground, which it was
-## made with).
+## it fits nowhere there or the day's rules leave it invalid among `among`, the day's plans placed
+## so far (the judge also reads the bodies the day stands as sealed ground, which it was made with).
 func offer(_def: EventDef, _location: Location, _among: Array[EventPlan]) -> EventPlan:
 	assert(false, "LocationGround.offer() is overridden by every implementation")
 	return null

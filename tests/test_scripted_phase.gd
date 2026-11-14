@@ -1,11 +1,11 @@
 extends RefCounted
 ## `ScriptedPhase`, the dawn phase for a row the day places for a reason of its own (a scripted row
 ## on its day): it draws one of the day's open locations, weighted by
-## what it is handed, offers it the row, assigns the location what it took and stands it, and passes
-## over a location that takes nothing. Run with stand-ins for what it is handed: the day's locations
-## (`_Locations`, ground locations with no street, the open ones set by hand) and the day's ground
-## (`_Ground`, whose offers a check sets). The real ground is the dawn draw's own
-## (`RuledLocationGround`); the phase on a real day is `tests/test_events_scheduler.gd`'s.
+## what it is handed, offers it the row, assigns the location what it took and adds it to the day's
+## plan, and passes over a location that takes nothing. Run with stand-ins for what it is handed: the
+## day's locations (`_Locations`, ground locations with no street, the open ones set by hand), the
+## day's plan (`_Events`, a list) and the day's ground (`_Ground`, whose offers a check sets). The
+## real ground is the dawn draw's own (`RuledLocationGround`); the phase on a real day is `tests/test_events_scheduler.gd`'s.
 ##
 ## - **A location weighed nothing is never drawn**, over many streams, and not once every location
 ##   weighed something has refused either: the row then does not happen, rather than landing where
@@ -141,7 +141,8 @@ func _test_a_location_that_takes_nothing_is_passed_over(t: TestRunner) -> void:
 func _test_what_it_takes_is_assigned_and_stood(t: TestRunner) -> void:
 	var locations := _Locations.new()
 	var one := _location(0)
-	locations.open = [one]
+	var two := _location(1)
+	locations.open = [one, two]
 	var ground := _Ground.new()
 	var events := _Events.new()
 	var given := EventPlan.new(EventCatalogue.by_id("roadblock"), Vector2.ZERO)
@@ -153,6 +154,10 @@ func _test_what_it_takes_is_assigned_and_stood(t: TestRunner) -> void:
 	t.check(events.rows == ([given, plan] as Array[EventPlan]), "and the plan is added to the day's")
 	t.check(ground.asked_among.size() == 1 and ground.asked_among[0] == [given],
 			"the ask was judged among the plans the day held when it was made")
+	var second := phase.place(_row(), _rng(1))
+	t.check(second != null and two.is_taken(), "the next row the one phase places takes the other")
+	t.check(ground.asked_among.size() == 2 and ground.asked_among[1] == [given, plan],
+			"and is judged among the day's plans as they are by then, the first row's included")
 
 func _test_a_location_weighed_nothing_is_not_drawn_once_the_rest_refuse(t: TestRunner) -> void:
 	var landed := 0

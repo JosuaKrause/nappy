@@ -5,8 +5,8 @@ extends LocationGround
 ##
 ## - **The event** stands on a tile of the location the row fits (`LocationFit`), tried in an order
 ##   of the location's own stream, and is asked of the day's rules (`StreetInvalidation`) against
-##   the plans it is handed and what the day stands: the first tile with room all round, else (with
-##   `roomiest`) the roomiest a rule leaves valid, else none.
+##   the plans it is handed and what the day stands: the first tile with room all round, else the
+##   roomiest a rule leaves valid, else none.
 ## - **The weight** (the player's "yes" to a weight per location, inbox #1185 in gentle-owl): a
 ##   precinct street as many times over as the walk's ground offers a precinct tile
 ##   (`RowGround.Weights.precinct()`, four), the street between two strands of the routes as many
@@ -20,8 +20,7 @@ extends LocationGround
 ## Handed the day, the day's seed, the map, the bodies the day stands (the seals and the region
 ## wall's, `DayEvents.standing()`), the walk's corridor, the fit (`LocationFit`), the day's rules,
 ## the walk's ground, whose weights and whose reading of a wall it asks (`RowGround.weights()`,
-## `RowGround.is_a_wall_by_cost()`), and whether it takes the roomiest tile a rule leaves valid where
-## none has room all round (`roomiest`). It keeps no plan: what a candidate is judged among comes
+## `RowGround.is_a_wall_by_cost()`). It keeps no plan: what a candidate is judged among comes
 ## with each `offer()`. Model: no node.
 
 ## `alley_mouse`'s own preference: an alley location beside a garbage-sack pile
@@ -40,14 +39,11 @@ var _corridor: Corridor
 var _fit: LocationFit
 var _rules: StreetInvalidation
 var _ground: RowGround
-var _roomiest := true
 var _piles := {}
 
-## `ground` is the walk's ground (`RowGround`), the one `fit` is made over. `roomiest` says whether
-## a location with no tile of room all round takes the roomiest a rule leaves valid (true), or none
-## (false, the first tile `StreetInvalidation.room()` does not refuse).
+## `ground` is the walk's ground (`RowGround`), the one `fit` is made over.
 func _init(day: int, base: int, map: CityMap, standing: Array[EventPlan], corridor: Corridor,
-		fit: LocationFit, rules: StreetInvalidation, ground: RowGround, roomiest: bool) -> void:
+		fit: LocationFit, rules: StreetInvalidation, ground: RowGround) -> void:
 	_day = day
 	_base = base
 	_map = map
@@ -56,7 +52,6 @@ func _init(day: int, base: int, map: CityMap, standing: Array[EventPlan], corrid
 	_fit = fit
 	_rules = rules
 	_ground = ground
-	_roomiest = roomiest
 	for tile in GarbageSacks.alley_pile_tiles(map, day):
 		_piles[tile] = true
 
@@ -86,10 +81,6 @@ func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventP
 		var room := _rules.room(candidate, role, tile, among, reach_context)
 		if room == INF:
 			return candidate
-		if not _roomiest:
-			if room != -INF:
-				return candidate
-			continue
 		if room > best_room:
 			best_room = room
 			best = candidate

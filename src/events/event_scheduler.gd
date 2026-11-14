@@ -279,7 +279,7 @@ static func _draw_the_walk(context: DawnContext, bag: MarbleBag) -> void:
 	var fit := LocationFit.new(context.day(), map, context.builder(), context.ground(),
 			route.start())
 	var offered := RuledLocationGround.new(context.day(), context.day_seed(), map,
-			events.standing(), context.corridor(), fit, context.rules(), context.ground(), true)
+			events.standing(), context.corridor(), fit, context.rules(), context.ground())
 	var placed := {}
 	for segment in route.streets_on_the_walk():
 		var def: EventDef = spec.bag_rows.get(bag.draw())
@@ -1152,8 +1152,9 @@ const FRICTION_VIEW_SCALES := [
 ]
 
 ## **The day's three bag fills** (`view -> {marble -> count}`, a marble a row's id or
-## `ViewBag.EMPTY`): each view's rows as many times as their weight in it (`view_weight()`, `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds),
-## and empty marbles enough that the view's share of locations holding an event is the share today's
+## `ViewBag.EMPTY`): each view's rows as many times as their weight in it (`view_weight()`,
+## `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds), and empty
+## marbles enough that the view's share of locations holding an event is the share today's
 ## placement gave it (`VIEW_SHARES`, measured, times `VIEW_SHARE_SCALES`, fitted; the orchestrator's
 ## reading of fork 5(a), open to correction). The empty marbles are counted against every wall
 ## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that

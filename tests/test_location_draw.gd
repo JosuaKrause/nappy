@@ -112,7 +112,7 @@ func _test_each_location_is_judged_among_the_plans_handed_in_and_those_placed_si
 		t.check(seen.size() == 1 + i and seen[0] == given,
 				"location %d is judged among the handed-in plan and the %d placed before it (%d)"
 				% [i, i, seen.size()])
-		if i > 0:
+		if i > 0 and seen.size() > i:
 			t.check(seen[i] == placed[i - 1], "and the last of them is the one placed just before")
 	t.check(among == ([given] as Array[EventPlan]), "the list handed in is not added to")
 
@@ -185,17 +185,24 @@ func _test_a_locations_weight_reaches_its_bag(t: TestRunner) -> void:
 	t.check(plain > 60 and plain < 140, "one weighing it as the bag does, about half the time (%d of 200)"
 			% plain)
 
-## A bag of one poster crew, a row her walk sites (`EventDef.is_handed_to_her_walk()`): the location
-## draws it, and what is recorded and answered is the crew with no position, for the walk.
+## A bag of poster crews, a row her walk sites (`EventDef.is_handed_to_her_walk()`): the location
+## draws one, and what is recorded and answered is the crew with no position, for the walk; the
+## location after it is judged among that crew, so no row drawn after it is spaced from a place it
+## never stands on.
 func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t: TestRunner) -> void:
 	var location := _location(0)
 	var locations := _Locations.new()
-	locations.order = [location] as Array[Location]
+	locations.order = [location, _location(1)] as Array[Location]
 	var ground := _Ground.new()
-	var placed := _drawn(locations, {"poster_crew": 1}, {"poster_crew": _row("poster_crew")},
+	var placed := _drawn(locations, {"poster_crew": 2}, {"poster_crew": _row("poster_crew")},
 			ground)
 	var recorded: EventPlan = locations.recorded.get(location)
-	t.check(placed.size() == 1 and placed[0].row_id() == "poster_crew" \
+	t.check(placed.size() == 2 and placed[0].row_id() == "poster_crew" \
 			and not placed[0].is_placed(), "a drawn crew is answered with no position")
-	t.check(recorded == placed[0],
-			"and it is what the location records")
+	t.check(recorded == placed[0], "and it is what the location records")
+	if placed.size() != 2 or ground.asked_among.size() != 2:
+		return
+	var next_among: Array = ground.asked_among[1]
+	t.check(next_among == [placed[0]],
+			"and the next location is judged among that crew with no position (%d)"
+			% next_among.size())

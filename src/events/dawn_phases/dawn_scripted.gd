@@ -18,7 +18,7 @@ func run(context: DawnContext) -> void:
 	var ground := context.ground()
 	var phase_ground := RuledLocationGround.new(day, context.day_seed(), map, events.standing(),
 			context.corridor(), LocationFit.new(day, map, context.builder(), ground),
-			context.rules(), ground, true)
+			context.rules(), ground)
 	var weigh := func(def: EventDef, location: Location) -> float:
 		return _weight_in(def, location, day, map, ground)
 	var phase := ScriptedPhase.new(context.locations(), events, phase_ground, weigh)
