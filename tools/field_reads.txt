@@ -304,8 +304,6 @@ src/events/dawn_context.gd keeps_the_walk_open
 src/events/dawn_context.gd keeps_unused_calm_clear
 src/events/dawn_context.gd one_notice_at_a_time
 src/events/dawn_phases/dawn_calm_kept_clean.gd keeps_unused_calm_clear
-src/events/dawn_phases/dawn_draw.gd caps_per_day
-src/events/dawn_phases/dawn_draw.gd wall_row_share
 src/events/dawn_phases/dawn_moments.gd caps_per_day
 src/events/day_planner.gd closes_streets
 src/events/day_planner.gd holds_the_home_streets

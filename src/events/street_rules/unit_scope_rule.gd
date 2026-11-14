@@ -25,9 +25,10 @@ func _init(units: DayUnits) -> void:
 func look_from(unit: PlacementUnit) -> void:
 	_looking_from = unit
 
-## Overrides StreetRule.allows. False where `candidate` keeps its field clear and a unit within
-## its field (`DayUnits.reached_by()`) is neither the unit looked from nor one touching it; true
-## while no unit has been looked from.
+## False where `candidate` keeps its field clear and a unit within its field
+## (`DayUnits.reached_by()`) is neither the unit looked from nor one touching it; true while no
+## unit has been looked from.
+## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
 		_placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
 	if _looking_from == null or not candidate.keeps_its_field_clear():
