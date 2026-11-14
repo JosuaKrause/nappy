@@ -5,10 +5,16 @@ extends RefCounted
 ## weighs the row. The draw decides what each location holds; this answers for the day's ground, so
 ## the draw is handed it (dependency injection) and a test hands a stand-in holding the answers it
 ## sets. The day's own is `RuledLocationGround`. Every method is to be overridden.
+##
+## **The judge is a function of what it is handed**: it keeps no plan and stands none. The caller
+## hands the plans a candidate is judged among and keeps the list it hands in, adding what it
+## accepts.
 
 ## The event `def` would be at `location`, stood on a tile of the location it fits on, or null where
-## it fits nowhere there or the day's rules leave it invalid given what already stands.
-func offer(_def: EventDef, _location: Location) -> EventPlan:
+## it fits nowhere there or the day's rules leave it invalid among `among`, the plans standing in
+## the day so far (the judge also reads the bodies the day stands as sealed ground, which it was
+## made with).
+func offer(_def: EventDef, _location: Location, _among: Array[EventPlan]) -> EventPlan:
 	assert(false, "LocationGround.offer() is overridden by every implementation")
 	return null
 
@@ -17,7 +23,3 @@ func offer(_def: EventDef, _location: Location) -> EventPlan:
 func scale(_def: EventDef, _location: Location) -> float:
 	assert(false, "LocationGround.scale() is overridden by every implementation")
 	return 1.0
-
-## Stands `plan` in the day, so what is offered after it is asked with it standing.
-func stand(_plan: EventPlan) -> void:
-	assert(false, "LocationGround.stand() is overridden by every implementation")

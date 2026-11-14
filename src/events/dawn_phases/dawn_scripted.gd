@@ -16,12 +16,12 @@ func run(context: DawnContext) -> void:
 	var map := context.map()
 	var events := context.events()
 	var ground := context.ground()
-	var phase_ground := RuledLocationGround.new(day, context.day_seed(), map, events,
+	var phase_ground := RuledLocationGround.new(day, context.day_seed(), map, events.standing(),
 			context.corridor(), LocationFit.new(day, map, context.builder(), ground),
-			context.rules(), ground)
+			context.rules(), ground, true)
 	var weigh := func(def: EventDef, location: Location) -> float:
 		return _weight_in(def, location, day, map, ground)
-	var phase := ScriptedPhase.new(context.locations(), phase_ground, weigh)
+	var phase := ScriptedPhase.new(context.locations(), events, phase_ground, weigh)
 	var rng := context.stream(SALT)
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, context.heat()):
 		# A row sited while she walks is owed here with no position, as every such row is.
