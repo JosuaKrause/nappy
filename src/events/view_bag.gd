@@ -4,7 +4,8 @@ extends RefCounted
 ## events for that view multiplied by their probability/weight. empty is also a possible event"):
 ## every row possible in the view as many times as its weight, and the empty event, drawn without
 ## putting back and filled again once it runs empty, as every marble bag of the game is
-## (`MarbleBag`, PLAYTEST-125). `ViewBags` makes the day's three.
+## (`MarbleBag`, PLAYTEST-125). `DawnDraw` makes the day's three, each of a fill
+## `EventScheduler.view_fills()` answers.
 ##
 ## **A draw considers only what the location it fills accepts** (`draw()`): a row the street's
 ## earlier draws or the location's own ground leave invalid is not considered, and stays in the bag

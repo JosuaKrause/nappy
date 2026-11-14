@@ -5,8 +5,8 @@ extends LocationGround
 ##
 ## - **The event** stands on a tile of the location the row fits (`LocationFit`), tried in an order
 ##   of the location's own stream, and is asked of the day's rules (`StreetInvalidation`) against
-##   the day's plans and what stands: the first tile with room all round, else the roomiest a rule
-##   leaves valid, else none.
+##   the plans it is handed and what the day stands: the first tile with room all round, else the
+##   roomiest a rule leaves valid, else none.
 ## - **The weight** (the player's "yes" to a weight per location, inbox #1185 in gentle-owl): a
 ##   precinct street as many times over as the walk's ground offers a precinct tile
 ##   (`RowGround.Weights.precinct()`, four), the street between two strands of the routes as many
@@ -17,9 +17,11 @@ extends LocationGround
 ##   tiles beside a pile first (`_beside_a_pile_first()`), so it stands by the sacks where the
 ##   location reaches them.
 ##
-## Handed the day, the day's seed, the map, the day's plan, the walk's corridor, the fit
-## (`LocationFit`), the day's rules and the walk's ground, whose weights and whose reading of a
-## wall it asks (`RowGround.weights()`, `RowGround.is_a_wall_by_cost()`). Model: no node.
+## Handed the day, the day's seed, the map, the bodies the day stands (the seals and the region
+## wall's, `DayEvents.standing()`), the walk's corridor, the fit (`LocationFit`), the day's rules,
+## the walk's ground, whose weights and whose reading of a wall it asks (`RowGround.weights()`,
+## `RowGround.is_a_wall_by_cost()`). It keeps no plan: what a candidate is judged among comes
+## with each `offer()`. Model: no node.
 
 ## `alley_mouse`'s own preference: an alley location beside a garbage-sack pile
 ## (`GarbageSacks.alley_pile_tiles()`, within `_MOUSE_PILE_ADJACENCY` tiles) weighs the mouse
@@ -32,7 +34,7 @@ const _MOUSE_PILE_EXTRA_COPIES := 4
 var _day := 0
 var _base := 0
 var _map: CityMap
-var _events: DayEvents
+var _standing: Array[EventPlan] = []
 var _corridor: Corridor
 var _fit: LocationFit
 var _rules: StreetInvalidation
@@ -40,12 +42,12 @@ var _ground: RowGround
 var _piles := {}
 
 ## `ground` is the walk's ground (`RowGround`), the one `fit` is made over.
-func _init(day: int, base: int, map: CityMap, events: DayEvents, corridor: Corridor,
+func _init(day: int, base: int, map: CityMap, standing: Array[EventPlan], corridor: Corridor,
 		fit: LocationFit, rules: StreetInvalidation, ground: RowGround) -> void:
 	_day = day
 	_base = base
 	_map = map
-	_events = events
+	_standing = standing.duplicate()
 	_corridor = corridor
 	_fit = fit
 	_rules = rules
@@ -54,7 +56,7 @@ func _init(day: int, base: int, map: CityMap, events: DayEvents, corridor: Corri
 		_piles[tile] = true
 
 ## Overrides LocationGround.offer.
-func offer(def: EventDef, location: Location) -> EventPlan:
+func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventPlan:
 	var fits := _fit.tiles(def, location)
 	if fits.is_empty():
 		return null
@@ -68,16 +70,15 @@ func offer(def: EventDef, location: Location) -> EventPlan:
 	if def.id == _MOUSE_ID:
 		fits = _beside_a_pile_first(fits)
 	var role := EventScheduler.role_for(def, _day)
-	var already := _events.placements()
-	var reach_context := already.duplicate()
-	reach_context.append_array(_events.standing())
+	var reach_context := among.duplicate()
+	reach_context.append_array(_standing)
 	var best: EventPlan = null
 	var best_room := -INF
 	for tile in fits:
 		var candidate := _fit.build(def, tile, rng)
 		if not candidate:
 			continue
-		var room := _rules.room(candidate, role, tile, already, reach_context)
+		var room := _rules.room(candidate, role, tile, among, reach_context)
 		if room == INF:
 			return candidate
 		if room > best_room:
@@ -100,10 +101,6 @@ func scale(def: EventDef, location: Location) -> float:
 	if def.id == _MOUSE_ID and _beside_a_pile(location.tiles()):
 		times *= float(_MOUSE_PILE_EXTRA_COPIES + 1)
 	return times * EventScheduler.ground_weight(def, location.kind())
-
-## Overrides LocationGround.stand.
-func stand(plan: EventPlan) -> void:
-	_events.add(plan)
 
 ## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
 ## it was handed.

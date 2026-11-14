@@ -278,8 +278,8 @@ static func _draw_the_walk(context: DawnContext, bag: MarbleBag) -> void:
 	var events := context.events()
 	var fit := LocationFit.new(context.day(), map, context.builder(), context.ground(),
 			route.start())
-	var offered := RuledLocationGround.new(context.day(), context.day_seed(), map, events,
-			context.corridor(), fit, context.rules(), context.ground())
+	var offered := RuledLocationGround.new(context.day(), context.day_seed(), map,
+			events.standing(), context.corridor(), fit, context.rules(), context.ground())
 	var placed := {}
 	for segment in route.streets_on_the_walk():
 		var def: EventDef = spec.bag_rows.get(bag.draw())
@@ -291,9 +291,9 @@ static func _draw_the_walk(context: DawnContext, bag: MarbleBag) -> void:
 		var order_rng := RandomNumberGenerator.new()
 		order_rng.seed = hash("%d:%s:walk-street" % [context.day_seed(), segment.key()])
 		for location in street.drawing_order(order_rng):
-			var placement := offered.offer(def, location)
+			var placement := offered.offer(def, location, events.placements())
 			if placement:
-				offered.stand(placement)
+				events.add(placement)
 				placed[def.id] = int(placed.get(def.id, 0)) + 1
 				break
 	context.note("plan", "the escape's bag drew %d marbles for %d rows"
@@ -1104,7 +1104,7 @@ const LOCATIONS_SALT := 6
 ## **Every wall-role row's weight is scaled by `wall_share`** (`DaySpec.wall_row_share`), so there
 ## are fewer of them once the region wall stands (azure-puffin 4: "let's loosen the density of the
 ## hard blocking events in that case", and "fewer of all three" to a question that listed the
-## wall-type events; the record bouncy-egret). `view_bags()` counts the empty marbles against every
+## wall-type events; the record bouncy-egret). `view_fills()` counts the empty marbles against every
 ## wall weighed in full, so the share takes walls away rather than giving their place to the other
 ## rows.
 ##
@@ -1151,16 +1151,18 @@ const FRICTION_VIEW_SCALES := [
 	[1.03, 1.06, 1.03, 1.03],
 ]
 
-## **The day's three bags** (`view -> ViewBag`): each view's rows as many times as their weight in it
-## (`view_weight()`, `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds),
-## and empty marbles enough that the view's share of locations holding an event is the share today's
+## **The day's three bag fills** (`view -> {marble -> count}`, a marble a row's id or
+## `ViewBag.EMPTY`): each view's rows as many times as their weight in it (`view_weight()`,
+## `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds), and empty
+## marbles enough that the view's share of locations holding an event is the share today's
 ## placement gave it (`VIEW_SHARES`, measured, times `VIEW_SHARE_SCALES`, fitted; the orchestrator's
 ## reading of fork 5(a), open to correction). The empty marbles are counted against every wall
 ## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that
 ## share of them and the rest of the day as it was; the scales are fitted on the days as they are
-## played, the gatehouse day's share included. Each on its own stream off `base`.
-static func view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> Dictionary:
-	var bags := {}
+## played, the gatehouse day's share included. A bag is made of a fill (`ViewBag.new()`) on its own
+## stream (`view_bag_seed()`).
+static func view_fills(rows: Dictionary, day: int, spec: DaySpec) -> Dictionary:
+	var fills := {}
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
 			PlacementView.View.OFF_THE_ROUTE]:
 		var fill := {}
@@ -1176,8 +1178,12 @@ static func view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> D
 		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1])
 				* float(VIEW_SHARE_SCALES[view][clampi(day, 1, 14) - 1]), 0.001, 0.95)
 		fill[ViewBag.EMPTY] = maxi(1, roundi((whole / share - weight) * BAG_MARBLES_PER_WEIGHT))
-		bags[view] = ViewBag.new(fill, hash("%d:%d:view-bag:%d" % [base, LOCATIONS_SALT, view]))
-	return bags
+		fills[view] = fill
+	return fills
+
+## The seed of the view's bag off the day's seed `base`: its own stream.
+static func view_bag_seed(base: int, view: int) -> int:
+	return hash("%d:%d:view-bag:%d" % [base, LOCATIONS_SALT, view])
 
 ## Marbles per unit of a row's weight in a view's bag: ten, so the lightest row (the square's poster
 ## crew, 0.03) comes in at a marble where the others keep their proportions.

@@ -14,8 +14,9 @@ extends RefCounted
 ## (`DawnDraw`, a phase of `EventScheduler.build_day()`), before
 ## she can move, so a retry draws the same day. The locations are drawn in the day's order
 ## (`DayLocations.drawing_order()`), so a street's later locations draw with its earlier draws
-## standing. A row handed to her walk is drawn as any other and kept with no position, for her walk
-## to site (`_as_drawn()`).
+## standing: the draw keeps its own list of what it has placed, handed to the judge after the plans
+## it was given (`draw_all()`'s `among`). A row handed to her walk is drawn as any other and kept
+## with no position, for her walk to site (`_as_drawn()`).
 ##
 ## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
 ## (`id -> EventDef`), the day's ground, and the day's caps (`id -> how many may stand`, a row not
@@ -36,23 +37,26 @@ func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: 
 	_ground = ground
 	_caps = caps
 
-## **Draws every open location**, its order shuffled within each street on `rng`, and answers the
-## events placed, in the order drawn, a row handed to her walk among them with no position.
-func draw_all(rng: RandomNumberGenerator) -> Array[EventPlan]:
+## **Draws every open location**, its order shuffled within each street on `rng`, each judged among
+## `among`, the day's plans so far, and what the draw has placed since; answers the events placed, in
+## the order drawn, a row handed to her walk among them with no position. The day's plan is the
+## caller's to add them to.
+func draw_all(rng: RandomNumberGenerator, among: Array[EventPlan]) -> Array[EventPlan]:
+	var judged_among := among.duplicate()
 	var placed: Array[EventPlan] = []
 	for location in _locations.drawing_order(rng):
 		if not location.is_available() or location.is_taken() or location.is_drawn():
 			continue
-		var plan := _as_drawn(_draw(location))
+		var plan := _as_drawn(_draw(location, judged_among))
 		_locations.record(location, plan)
 		if plan:
-			_ground.stand(plan)
+			judged_among.append(plan)
 			_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
 			placed.append(plan)
 	return placed
 
-## One location's draw: the event placed, or null for the empty event.
-func _draw(location: Location) -> EventPlan:
+## One location's draw, judged among `among`: the event placed, or null for the empty event.
+func _draw(location: Location, among: Array[EventPlan]) -> EventPlan:
 	var bag: ViewBag = _bags.get(location.view())
 	if bag == null:
 		return null
@@ -61,7 +65,7 @@ func _draw(location: Location) -> EventPlan:
 		var def: EventDef = _rows[id]
 		if _caps.has(id) and int(_stood.get(id, 0)) >= int(_caps[id]):
 			return false
-		var plan := _ground.offer(def, location)
+		var plan := _ground.offer(def, location, among)
 		offered[id] = plan
 		return plan != null
 	var scale := func(id: String) -> float:

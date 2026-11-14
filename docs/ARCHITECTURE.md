@@ -258,11 +258,12 @@ src/
 	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
 	                      the empty event, drawn without putting back, only what a location accepts
 	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag
-	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid, the
-	                      location's own weight, standing one; the day's own is `RuledLocationGround`
+	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid among
+	                      the plans it is handed, the location's own weight; the day's own is
+	                      `RuledLocationGround`
 	ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
-	                      fits and the day's rules leave it valid, the location's weight; handed the
-	                      walk's ground
+	                      fits and the day's rules leave it valid among the plans it is handed, the
+	                      location's weight; handed the walk's ground and the bodies the day stands
 	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
 	                      ground on the day, and the candidate built on one
 	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate

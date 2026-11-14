@@ -1,12 +1,13 @@
 extends RefCounted
 ## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn
 ## (inbox #1185 in gentle-owl): each open location drawn once and what it drew recorded, an event
-## drawn stood in the day, a location taken, unavailable or already drawn left alone, a row the
-## day's ground refuses at a location never drawn there, a row not drawn once it has stood as many
-## times as the caps handed in say, each location's weight handed to its bag, and a row handed to
-## her walk drawn unplaced. Run with stand-ins for what it is handed: the day's locations
-## (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and weights a
-## check sets); the bags are real (`ViewBag`), of a few marbles each.
+## drawn standing among what the next location is judged by, a location taken, unavailable or already
+## drawn left alone, a row the day's ground refuses at a location never drawn there, a row not drawn
+## once it has stood as many times as the caps handed in say, each location's weight handed to its
+## bag, a row handed to her walk drawn unplaced, and each location judged among the plans the draw
+## was handed and those it placed since. Run with stand-ins for what it is handed: the day's
+## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and
+## weights a check sets); the bags are real (`ViewBag`), of a few marbles each.
 
 func run(t: TestRunner) -> void:
 	_test_each_open_location_is_drawn_once(t)
@@ -14,6 +15,7 @@ func run(t: TestRunner) -> void:
 	_test_a_row_the_ground_refuses_is_never_drawn_there(t)
 	_test_a_row_at_its_cap_is_not_drawn(t)
 	_test_a_locations_weight_reaches_its_bag(t)
+	_test_each_location_is_judged_among_the_plans_handed_in_and_those_placed_since(t)
 	_test_a_row_handed_to_her_walk_is_drawn_unplaced(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
@@ -36,10 +38,12 @@ class _Ground extends LocationGround:
 	var refused: Array = []
 	## Location -> its weight for every row.
 	var weights := {}
-	var stood: Array[EventPlan] = []
+	## The plans each ask was judged among, in the order asked.
+	var asked_among: Array = []
 
 	## Overrides LocationGround.offer.
-	func offer(def: EventDef, location: Location) -> EventPlan:
+	func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventPlan:
+		asked_among.append(among.duplicate())
 		if refused.has([def.id, location]):
 			return null
 		return EventPlan.new(def, location.centre())
@@ -47,10 +51,6 @@ class _Ground extends LocationGround:
 	## Overrides LocationGround.scale.
 	func scale(_def: EventDef, location: Location) -> float:
 		return float(weights.get(location, 1.0))
-
-	## Overrides LocationGround.stand.
-	func stand(plan: EventPlan) -> void:
-		stood.append(plan)
 
 static func _location(x: int, available := true) -> Location:
 	var tiles := Rect2i(Vector2i(x * 4, 0), Vector2i(3, 2))
@@ -70,9 +70,9 @@ static func _rng() -> RandomNumberGenerator:
 
 ## The draw over `locations`, a bag of `fill` for the route view, `rows` the marbles' rows.
 static func _drawn(locations: _Locations, fill: Dictionary, rows: Dictionary, ground: _Ground,
-		caps := {}, seed_value := 1) -> Array[EventPlan]:
+		caps := {}, seed_value := 1, among: Array[EventPlan] = []) -> Array[EventPlan]:
 	var bags := {ON: ViewBag.new(fill, seed_value)}
-	return LocationDraw.new(locations, bags, rows, ground, caps).draw_all(_rng())
+	return LocationDraw.new(locations, bags, rows, ground, caps).draw_all(_rng(), among)
 
 func _test_each_open_location_is_drawn_once(t: TestRunner) -> void:
 	var locations := _Locations.new()
@@ -82,15 +82,39 @@ func _test_each_open_location_is_drawn_once(t: TestRunner) -> void:
 			{"cafe_tables": _row("cafe_tables")}, ground)
 	t.check(locations.recorded.size() == 3, "each of three open locations is drawn (%d recorded)"
 			% locations.recorded.size())
-	t.check(placed.size() == 2 and ground.stood == placed,
-			"a fill of two cafes and one empty puts two cafes down, each stood in the day (%d)"
-			% placed.size())
+	t.check(placed.size() == 2,
+			"a fill of two cafes and one empty puts two cafes down (%d)" % placed.size())
 	var empties := 0
 	for location: Location in locations.recorded:
 		if locations.recorded[location] == null:
 			empties += 1
 		t.check(location.is_drawn(), "and every location says it is drawn")
 	t.check(empties == 1, "and the third draws the empty event (%d)" % empties)
+
+## The judge is handed the plans the draw was given, then each plan the draw placed, the one it
+## stands for the next location, and the list the draw was given is left as it was.
+func _test_each_location_is_judged_among_the_plans_handed_in_and_those_placed_since(
+		t: TestRunner) -> void:
+	var locations := _Locations.new()
+	locations.order = [_location(0), _location(1), _location(2)] as Array[Location]
+	var ground := _Ground.new()
+	var given := EventPlan.new(_row("roadblock"), Vector2.ZERO)
+	var among: Array[EventPlan] = [given]
+	var placed := _drawn(locations, {"cafe_tables": 1}, {"cafe_tables": _row("cafe_tables")}, ground,
+			{}, 1, among)
+	t.check(placed.size() == 3 and ground.asked_among.size() == 3,
+			"a bag of cafes places one at each of three locations (%d placed, %d asks)"
+			% [placed.size(), ground.asked_among.size()])
+	if placed.size() != 3 or ground.asked_among.size() != 3:
+		return
+	for i in 3:
+		var seen: Array = ground.asked_among[i]
+		t.check(seen.size() == 1 + i and seen[0] == given,
+				"location %d is judged among the handed-in plan and the %d placed before it (%d)"
+				% [i, i, seen.size()])
+		if i > 0 and seen.size() > i:
+			t.check(seen[i] == placed[i - 1], "and the last of them is the one placed just before")
+	t.check(among == ([given] as Array[EventPlan]), "the list handed in is not added to")
 
 func _test_a_taken_unavailable_or_drawn_location_is_left_alone(t: TestRunner) -> void:
 	var taken := _location(0)
@@ -161,17 +185,24 @@ func _test_a_locations_weight_reaches_its_bag(t: TestRunner) -> void:
 	t.check(plain > 60 and plain < 140, "one weighing it as the bag does, about half the time (%d of 200)"
 			% plain)
 
-## A bag of one poster crew, a row her walk sites (`EventDef.is_handed_to_her_walk()`): the location
-## draws it, and what is recorded, stood and answered is the crew with no position, for the walk.
+## A bag of poster crews, a row her walk sites (`EventDef.is_handed_to_her_walk()`): the location
+## draws one, and what is recorded and answered is the crew with no position, for the walk; the
+## location after it is judged among that crew, so no row drawn after it is spaced from a place it
+## never stands on.
 func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t: TestRunner) -> void:
 	var location := _location(0)
 	var locations := _Locations.new()
-	locations.order = [location] as Array[Location]
+	locations.order = [location, _location(1)] as Array[Location]
 	var ground := _Ground.new()
-	var placed := _drawn(locations, {"poster_crew": 1}, {"poster_crew": _row("poster_crew")},
+	var placed := _drawn(locations, {"poster_crew": 2}, {"poster_crew": _row("poster_crew")},
 			ground)
 	var recorded: EventPlan = locations.recorded.get(location)
-	t.check(placed.size() == 1 and placed[0].row_id() == "poster_crew" \
+	t.check(placed.size() == 2 and placed[0].row_id() == "poster_crew" \
 			and not placed[0].is_placed(), "a drawn crew is answered with no position")
-	t.check(recorded == placed[0] and ground.stood == placed,
-			"and it is what the location records and the day stands")
+	t.check(recorded == placed[0], "and it is what the location records")
+	if placed.size() != 2 or ground.asked_among.size() != 2:
+		return
+	var next_among: Array = ground.asked_among[1]
+	t.check(next_among == [placed[0]],
+			"and the next location is judged among that crew with no position (%d)"
+			% next_among.size())
