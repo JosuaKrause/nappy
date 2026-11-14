@@ -73,6 +73,19 @@ class Plan extends RefCounted:
 	func use_ground(ground: RowGround) -> void:
 		_ground = ground
 
+	## The day's units' draw, as the dawn's context holds it (`DawnContext.unit_draw()`), which the
+	## walk draws from as she comes near each unit (`WalkEvents.unit_draw()`); null for a walk that
+	## draws nothing as she walks (the escape's walks, the building, a scene recipe's).
+	var _unit_draw: UnitDraw = null
+
+	## The day's units' draw. See `_unit_draw`.
+	func unit_draw() -> UnitDraw:
+		return _unit_draw
+
+	## Hands the plan the day's units' draw. See `_unit_draw`.
+	func use_unit_draw(draw: UnitDraw) -> void:
+		_unit_draw = draw
+
 ## The world the walk is planned over.
 var world: EventWorld
 
@@ -212,6 +225,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.use_calm(calm)
 	result.use_locations(dawn.locations())
 	result.use_ground(dawn.ground())
+	result.use_unit_draw(dawn.unit_draw())
 	return result
 
 ## **The day's calm areas as the map stands now**, with the areas she settled in this act

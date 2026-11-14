@@ -1859,9 +1859,12 @@ hides act I from the player who needs act I most.
 
 Three consequences, all of them chosen:
 
-- **A retry is the same day.** The city, the closures and the whole event plan are deterministic
-  from the seed and the day number, which is what makes a retry worth having in a game about
-  learning a route.
+- **A retry is the same day.** The city, the closures, the dawn's plan and every unit's draw (a
+  street, a junction box, an alley, a park or a square, each drawing its locations as she comes
+  near it, `UnitDraw`) follow from the seed and the day number whatever her path, which is what
+  makes a retry worth having in a game about learning a route. What is sited from her walk (the
+  moments, day 3's fire, the poster crews' walls, a task's places) is sited from the walk she takes
+  then.
 - **What a lost attempt spent is given back.** *"a retry always rolls new -- nothing that happened
   on the day that got retried can influence the next repeat -- that has been a long standing
   rule"*, and *"it is the same day exactly how the player encountered it the first time this run.

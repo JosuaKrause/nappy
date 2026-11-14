@@ -41,11 +41,13 @@ func _test_everything_but_leaves_out_the_plan_being_placed(t: TestRunner) -> voi
 
 func _test_clearing_forgets_the_walk(t: TestRunner) -> void:
 	var walk := WalkEvents.new()
+	var draw := UnitDraw.new(DayUnits.of([] as Array[Location], 1), null, {}, [] as Array[EventPlan])
 	walk.take([_row("busker", Vector2(64, 64))] as Array[EventPlan], CalmAreas.new(),
-			PackedVector2Array([Vector2(640, 64)]))
+			PackedVector2Array([Vector2(640, 64)]), null, null, null, draw)
 	walk.clear()
-	t.check(walk.plans().is_empty() and walk.calm() == null and walk.doors().is_empty(),
-			"a cleared walk holds nothing of the last one")
+	t.check(walk.plans().is_empty() and walk.calm() == null and walk.doors().is_empty()
+			and walk.unit_draw() == null,
+			"a cleared walk holds nothing of the last one, its units' draw included")
 
 ## **Whether a point stands clear of the walk's events** (`is_clear_at()`, what the park cordon keeps
 ## its last gap clear of): inside a body's clearance is not clear, past it is; a spent plan, one not

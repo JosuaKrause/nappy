@@ -242,7 +242,8 @@ func assign(section: Location, plan: EventPlan) -> void:
 ## true for, and is passed over where `may_take` (the section) answers false: the caller's answer for
 ## her view and for what may be replaced. Null where no open section of `view` qualifies. *Read as, the orchestrator's and
 ## open to correction:* nearest along her paths (fork 7 of the placement proposal), with no cap on the
-## distance, and a section whose locations are not yet drawn qualifying like any other.
+## distance, and a section whose locations are not yet drawn qualifying like any other: its unit and
+## the units touching it draw before the roadblock stands (`EventsAhead.swap_in_a_section()`).
 func nearest_section_in(view: int, paths: Dictionary, may_touch: Callable,
 		may_take: Callable) -> Location:
 	var ranked: Array = []

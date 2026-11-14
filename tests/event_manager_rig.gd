@@ -40,11 +40,13 @@ static func rng(day: int) -> RandomNumberGenerator:
 ## Starts day `day` on `city` through the manager, which plans it against the city's streets: the
 ## rig runs no dawn of the city's own (`City.start_day()`), so it begins them for the day first, as
 ## dawn grows them with no street closed (`RigStreets.begin()`). `consumed` is the one-shots the run
-## has already spent, appended to as the day spends them.
-static func start(city: City, day: int, consumed: Array[String] = []) -> void:
+## has already spent, appended to as the day spends them; `focus` is where she stands as the walk
+## starts, round which its units draw (`EventManager.start_day()`).
+static func start(city: City, day: int, consumed: Array[String] = [],
+		focus := Vector2.ZERO) -> void:
 	var spec := DaySpec.for_day(day)
 	RigStreets.begin(city.streets(), city.map, spec)
-	city.events.start_day(spec, rng(day), consumed)
+	city.events.start_day(spec, rng(day), consumed, focus)
 
 ## A player the manager can find, out of the physics loop (its own physics is off) and moved by
 ## hand or by a walking node. A camera is under it, as the manager looks through her camera.

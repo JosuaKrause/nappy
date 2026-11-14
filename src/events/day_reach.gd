@@ -1,8 +1,8 @@
 class_name DayReach
 extends RefCounted
-## **Where she can get to from home today, as the walk was planned**: the ground the walk's plan
-## shuts and the flood from home over it, worked out once when the walk starts and handed to
-## whoever asks whether a place is one she can be sent to — the resistance's marks, contacts,
+## **Where she can get to from home today**: the ground the walk's plan shuts and the flood from
+## home over it, worked out when the walk starts and handed to whoever asks whether a place is one
+## she can be sent to — the resistance's marks, contacts,
 ## masts and roadblocks, and the park cordon's last gap.
 ##
 ## *(inbox #1156: "have an object that contains the derived information -- don't rederive over
@@ -16,18 +16,24 @@ extends RefCounted
 ## only through one is no place to send her. A region door's bodies shut nothing: she walks through
 ## a door.
 ##
-## **Taken when the walk starts and kept**, never brought up to date: a body put up later (day 11's
-## added mast, day 13's roadblock) must not shut the ground its own task stands on, and a body that
-## leaves only gives ground back. **Never saved**: a load starts the walk again from the run's saved
-## inputs.
+## **Taken when the walk starts, and told only what the units draw** (`shut_more()`): a unit's
+## draw follows from the day's seed as the dawn's plan does, and each unit draws as she comes near
+## it (`EventsAhead`), so its bodies shut ground as the dawn's do. What is sited from her walk is
+## never added: a body put up later (day 11's added mast, day 13's roadblock) must not shut the
+## ground its own task stands on, and a body that leaves only gives ground back. **Never saved**: a
+## load starts the walk again from the run's saved inputs.
 
+var _map: CityMap
 var _grid: ReachabilityGrid
 var _shut := {}
 var _reached := {}
+## Whether `_shut` grew since `_reached` was flooded (`shut_more()`): the next question floods again.
+var _stale := false
 
 ## **The reach of `plans` on `map`**, read as `map` stands now: its closures and its soft seals.
 static func of(map: CityMap, plans: Array[EventPlan]) -> DayReach:
 	var reach := DayReach.new()
+	reach._map = map
 	reach._grid = ReachabilityGrid.build(map)
 	reach._shut = shut_by(map, plans)
 	reach._reached = reach._grid.flood([map.home_tile()], reach._shut)
@@ -48,7 +54,56 @@ static func shut_by(map: CityMap, plans: Array[EventPlan]) -> Dictionary:
 
 ## Whether `tile` is reached from home over the ground left open.
 func reaches(tile: Vector2i) -> bool:
+	if _stale:
+		_reached = _grid.flood([_map.home_tile()], _shut)
+		_stale = false
 	return _grid.reaches(tile, _shut, _reached)
+
+## **Shuts what the obstructing plans among `plans` stand on as well** (`EventPlan.obstructs()`,
+## their discs as `of()` paints them), the next question flooding again: what a unit's draw placed
+## as she walks (`EventsAhead`), which follows from the day's seed as the dawn's plan does. What is
+## sited from her walk is never added.
+func shut_more(plans: Array[EventPlan]) -> void:
+	var blockers: Array[EventPlan] = []
+	for plan in plans:
+		if plan.obstructs():
+			blockers.append(plan)
+	if blockers.is_empty():
+		return
+	_shut.merge(EventScheduler.blocked_by(_map, blockers))
+	_stale = true
+
+## **A shortest walk from home to `tile`** over the walkable ground left open, home first and
+## `tile` last, a tile a step; empty where none reaches it. Home is walked from even where the
+## ground there is shut, as the flood is. What the resistance confirms a far place along
+## (`ResistanceDirector._confirmed()`).
+func way_from_home(tile: Vector2i) -> Array[Vector2i]:
+	var way: Array[Vector2i] = []
+	var home := _map.home_tile()
+	var came_from := {home: home}
+	var queue: Array[Vector2i] = [home]
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		if at == tile:
+			break
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := at + step
+			if came_from.has(next) or not _map.is_walkable(next) or _shut.has(next):
+				continue
+			came_from[next] = at
+			queue.append(next)
+	if not came_from.has(tile):
+		return way
+	var back := tile
+	while back != home:
+		way.append(back)
+		var previous: Vector2i = came_from[back]
+		back = previous
+	way.append(home)
+	way.reverse()
+	return way
 
 ## Whether `tile` is shut.
 func is_shut(tile: Vector2i) -> bool:

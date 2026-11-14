@@ -30,6 +30,7 @@ func run(t: TestRunner) -> void:
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
 		_test_a_day_started_twice_stands_the_same_rows,
+		_test_two_walks_draw_the_same_day,
 		_test_the_walk_is_handed_the_ground_the_dawn_made,
 		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
 	]
@@ -123,9 +124,10 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 ## suite's city.
 
 ## **A day started twice stands the same rows on the same tiles** (PLAYTEST-119 27;
-## `docs/MECHANICS.md`, "A retry is the same day"): the dawn draws every location before she can
-## move (`DawnDraw`, a unit at a time), so day 4 started a second time, after a walk east on the first
-## start, plans from nothing the first start or the walk left in the city or the manager.
+## `docs/MECHANICS.md`, "A retry is the same day"): the dawn plans before she can move, and the
+## units round where she starts draw before she can either, so day 4 started a second time, after a
+## walk east on the first start, plans from nothing the first start or the walk left in the city
+## or the manager. That the units the walk draws are the same whatever her path is the next test's.
 func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 	var events := _city.events
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -150,6 +152,58 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 			"started twice, day 4 stands the same rows on the same tiles")
 	events.use_player(null)
 	rig.free()
+
+## **Two walks draw the same day** (`UnitDraw`, `EventsAhead.draw_what_comes_near()`): day 4
+## started at her door with a played day's stream radius, walked east for 60 ticks through the
+## manager's own tick, then started again and walked south, draws every unit the start left undrawn
+## the same, row for row and tile for tile, once the rest of the day is drawn
+## (`EventManager.draw_the_ground_round()`); and each walk drew some of those units before the
+## rest, in an order of its own. A row handed to her walk reads as `row@walk`, wherever her walk
+## has since sited it. What this does not cover: the moments, the rows sited from her walk and
+## the rows her route's bag rigs, which follow her walk on purpose.
+func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
+	var events := _city.events
+	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	var home := _city.map.doorstep_world_position()
+	var rig := Rig.walker(t, _city, home)
+	var readings: Array[String] = []
+	var drawn_on_the_walk: Array[int] = []
+	for heading: Vector2 in [Vector2.RIGHT, Vector2.DOWN]:
+		Rig.start(_city, 4, [], home)
+		events.use_player(rig)
+		rig.global_position = home
+		var kept := events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+		var each := func(_n: int) -> void:
+			rig.velocity = heading * Tuning.WALK_SPEED
+			rig.global_position += rig.velocity * Rig.WALK_STEP
+		await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
+		var drawn := 0
+		for unit in kept:
+			if unit.is_drawn():
+				drawn += 1
+		drawn_on_the_walk.append(drawn)
+		events.draw_the_ground_round(Vector2.ZERO, INF)
+		readings.append(_what_the_units_drew(kept))
+	t.check(readings[0] == readings[1] and readings[0] != "",
+			"walked east and walked south, day 4's units draw the same rows on the same tiles")
+	t.check(drawn_on_the_walk[0] > 0 and drawn_on_the_walk[1] > 0,
+			"and each walk drew some of them on the way (%d east, %d south)"
+					% [drawn_on_the_walk[0], drawn_on_the_walk[1]])
+	events.use_player(null)
+	rig.free()
+
+## Each of `units`' draws as `name: row@tile, ...`, one line a unit, a row handed to her walk as
+## `row@walk`.
+func _what_the_units_drew(units: Array[PlacementUnit]) -> String:
+	var lines: Array[String] = []
+	for unit in units:
+		var parts: Array[String] = []
+		for plan in unit.drawn():
+			parts.append("%s@%s" % [plan.row_id(), "walk" if plan.row().is_handed_to_her_walk()
+					else str(_city.map.world_to_tile(plan.placed_at()))])
+		lines.append("%s: %s" % [unit.name(), ", ".join(parts)])
+	lines.sort()
+	return "\n".join(lines)
 
 ## Each of `plans` as its row and the place it was put, in order.
 static func _where_they_stand(plans: Array[EventPlan]) -> String:

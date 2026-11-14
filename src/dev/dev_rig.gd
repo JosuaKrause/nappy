@@ -272,8 +272,12 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 ## whichever is larger of `outer_radius` and `EventDef.notice`, plus a tile's width of clearance,
 ## so a rig can photograph the silence before it notices her rather than always finding it already
 ## noticing.
+##
+## **Every unit of the day is drawn first** (`EventManager.draw_the_ground_round()`): a unit draws
+## as she comes near it, so a row the target names may stand in a unit no walk has reached yet.
 static func first_event_position(events: EventManager, map: CityMap, trace: RunTrace,
 		wanted_id: String = "") -> Vector2:
+	events.draw_the_ground_round(Vector2.ZERO, INF)
 	var waits_for_her_walk := false
 	for plan in events.plans():
 		if not plan.is_placed():

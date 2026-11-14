@@ -153,8 +153,9 @@ var _doors := PackedVector2Array()
 
 ## Today's plans that the day made and left for her walk to site — `EventDef.on_her_way`,
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
-## in `start_day()`; and the places a marble from her route's bag names, added the moment the marble
-## is drawn (`_place_on_her_route()`). Emptied as each one is put in the world.
+## in `start_day()`, or handed over as a unit draws one as she walks (`owe_on_her_way()`); and the
+## places a marble from her route's bag names, added the moment the marble is drawn
+## (`_place_on_her_route()`). Emptied as each one is put in the world.
 var _on_her_way: Array[EventPlan] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
@@ -572,6 +573,16 @@ func _place_on_her_route(def: EventDef) -> void:
 ## which joins the day's plan when it is first sited rather than at dawn.
 func is_from_her_route(plan: EventPlan) -> bool:
 	return _placed_from_the_route.has(plan)
+
+## **A row a unit drew as she walks and handed to her walk** (`plan`, unplaced: the sidewalk poster
+## crew), owed to her walk as one the dawn left is (`start_day()` reads those off the day's plan),
+## sited on her way like any other (`site_what_is_on_her_way()`). `siting` is the day's placement
+## context, taken where the day had none, since a day with nothing left for her walk at its start
+## was started without one.
+func owe_on_her_way(plan: EventPlan, siting: EventScheduler.WalkSiting) -> void:
+	_on_her_way.append(plan)
+	if not _siting:
+		_siting = siting
 
 # ------------------------------------------------- the place that is on her way ---
 

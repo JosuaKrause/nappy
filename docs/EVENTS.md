@@ -626,7 +626,7 @@ exists so a pursuer stuck against a wall lets go in the end.
   carriageway, and warned as a car warns, "Solid things are solid"). It does not telegraph its
   coming ("What telegraphs"), and its in-world approach still meets the telegraph contract.
 - **A `MAP` mover** — `military_convoy` on an ordinary day from 13, the escape's trucks — **is a
-  place the day planned at dawn** and streams in at `Tuning.EVENT_STREAM_RADIUS`, telegraphing in the
+  place the day planned before she comes near it** (its unit's draw) and streams in at `Tuning.EVENT_STREAM_RADIUS`, telegraphing in the
   world (4.43s) with a badge because 120px/s is faster than a walk, and the fairness contract checks
   it like every row. It telegraphs: 120px/s down the road she is on, about 30 points in a pass.
 
@@ -1298,9 +1298,10 @@ Each item quotes the code on this branch.
    out and groups them into units (`DayUnits`: a street, a junction box, an alley, a park or a
    square); two units touch when they share a junction box or border the same alley, park or
    square. Each unit draws all its locations in one go, on its own stream, from a fresh bag per view
-   (`UnitDraw`, `LocationDraw`, `DawnDraw`), and before a unit draws, every undrawn touching unit
-   of lower rank (a fixed rank, from the day's seed and the unit) draws first, so a unit's draw is
-   the same whatever order the units are drawn in. Today's placement rules are the invalidation,
+   (`UnitDraw`, `LocationDraw`, `DawnDraw`), as she comes near it (`EventsAhead`), and before a unit
+   draws, every undrawn touching unit of lower rank (a fixed rank, from the day's seed and the unit)
+   draws first, so a unit's draw is the same whatever order the units are drawn in, and so
+   whatever her path. Today's placement rules are the invalidation,
    one class each (`StreetRule`: the calm she has not used, a door's clear ground, a route's
    junctions, its walked sidewalk, a pacing beat's opening and its ground off the streets, with the
    escape's one notice at a time and its walk kept open), composed per walk (`StreetInvalidation`)
@@ -1355,18 +1356,11 @@ Each item quotes the code on this branch.
    per street, so a square holds one street musician. Nothing asks the spacing between two of a row
    (`EVENT_SPACING_SAME`) of a drawn row; two of a row may stand in two touching units as near as
    the 64px between any two events allows.
-6. **Most events are placed at dawn, not drawn during the walk.**
-   - The dawn draw fills every location in the morning.
-   - During the walk, only these are sited ahead of her:
-     - the route bag's marbles;
-     - the `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows;
-     - the `on_her_way` rows (`EventDirector.site_what_is_on_her_way()`);
-     - day 11's added mast.
-7. **Each row's draw is weighed by a fitted weight per kind of ground** (`GROUND_WEIGHTS`), on top
+6. **Each row's draw is weighed by a fitted weight per kind of ground** (`GROUND_WEIGHTS`), on top
    of the location's own weight, so each row's count on each kind of ground stays today's. The
    design has the view's bag alone decide; the weights are what holds the refactor at today's mix
    while the rules are still today's (item 1), and are fitted again when the rules change.
-8. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
+7. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
    only the cells a route runs along (`Corridor.carries_a_route()`, in `RowGround.offers_for_role()`), so on a
    route street a wall stands only on the sidewalk across from the route, and the ground beyond the
    streets is told its view by the grid's own depth (`Corridor.view_of_ground()`).
@@ -1394,11 +1388,12 @@ EventScheduler.build_day(context):
        first_day/last_day, each sited later on her way (DawnOneShots)
     6. spoil the parks she used  (docs/CITY.md) (DawnSpoilers)
     7. owe her the day's moments (the rows the director sites in front of her) (DawnMoments)
-    8. draw every open location from its view's bag, a unit at a time: each street, junction
-       box, alley, park or square on its own stream, from a fresh bag per view, at most one of a
-       row in it, after every touching unit of lower rank, so the day is what drawing every unit
-       in rank order gives (DawnDraw, which holds the day's UnitDraw in the context and runs
-       LocationDraw)
+    8. prepare the draw of every open location from its view's bag, a unit at a time, and draw
+       none: each street, junction box, alley, park or square draws as she comes near it
+       (EventsAhead), on its own stream, from a fresh bag per view, at most one of a row in it,
+       after every touching unit of lower rank, so the day is what drawing every unit in rank
+       order gives whatever her path (DawnDraw, which holds the day's UnitDraw in the context;
+       the walk carries it, and it runs LocationDraw)
     9. on the day the run is taught, a pursuit added where the day owes none (DawnLesson)
    The roadblock phase, the scripted rows and the draw are asked all the day's rules
    (StreetInvalidation), the route rules among them; the scars and the spoilers are asked,
@@ -1788,7 +1783,7 @@ group goes with it.
 
 A poster crew placed anywhere in the city is a crew she never meets, and a wall she never sees
 changing. So `poster_crew` carries an `EventDef.on_her_way` with `OnHerWay.at_a_front`. **A
-location that draws a crew at dawn keeps it with no position** (`LocationDraw.draw()`), so no
+location that draws a crew keeps it with no position** (`LocationDraw.draw()`), so no
 row drawn after it is spaced from a place it never stands at, and
 `EventDirector.site_what_is_on_her_way()` sites it the way it sites the fire — on the branch
 of the day's route tree she is walking, beyond the streaming band and within
@@ -2065,7 +2060,7 @@ neighbourhood's own rather than a patrol's.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Its field is light — the danger is that you start planning around it. It is a car: a solid body she walks round whether it drives or stands, and lethal only in front of it while it drives its route, with her on the carriageway, after a car's warning (see "Solid things are solid"). **Past `EventDef.HEAT_INVESTIGATES_LEVEL` it investigates** (`EventDef.investigates()`, from its `HuntSpec`; [merry-stork](playtests/2026-10-10-merry-stork.md): "an investigating police car should not leave the street. it should stop if close to her and a policeman should emerge and pursue her"): it drives its route until she is within `EventDef.HEAT_INVESTIGATE_WITHIN` (150px) of it along a clear line, then stops where it is on its route — never inside a junction box: seen from inside one, it drives on until its body is clear and stops there — and the day's pursuer on foot gets out at its door on her side (`EventsAhead.let_the_officers_out()`, "The pursuer on foot" below); it stands, quiet and striking nobody, while he is out. His catch is a stop that costs her 40 points and never ends the day by itself ("The heat" above); once he has stopped her, given up or run out his chase he walks back and gets in, and the car drives on along its route the way it was going, standing first while she is in its way. The car itself never pursues: it goes where its route goes, which is the carriageway wherever the route is drawn on it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
-| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. **Sited from her walk** (`EventDef.on_her_way`, `OnHerWay.at_a_front`): drawn at a sidewalk location at dawn like any recurring row and kept there with no position (`LocationDraw.draw()`), then sited by her walk one crew at a time on the branch she is walking, in front of a blank ground-floor cell and facing it, where it pastes its wall while she can see it — see "The crews paste the walls she passes". The dawn's draw offers it by its `pavement_side`, `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands, on a north-south street with a real building on the far side, and judges it there as it judges any row; no row drawn after it is spaced from that place, since it never stands there. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. A sidewalk row only: a square has no frontage lane for a pinned body to stand in, and `poster_crew_square` below is the square's own crew. |
+| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. **Sited from her walk** (`EventDef.on_her_way`, `OnHerWay.at_a_front`): drawn at a sidewalk location like any recurring row and kept there with no position (`LocationDraw.draw()`), then sited by her walk one crew at a time on the branch she is walking, in front of a blank ground-floor cell and facing it, where it pastes its wall while she can see it — see "The crews paste the walls she passes". The draw offers it by its `pavement_side`, `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands, on a north-south street with a real building on the far side, and judges it there as it judges any row; no row drawn after it is spaced from that place, since it never stands there. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. A sidewalk row only: a square has no frontage lane for a pinned body to stand in, and `poster_crew_square` below is the square's own crew. |
 | `poster_crew_square` | RECURRING | 4 | The same crew on a square, pasting onto a free-standing advertising column — every number is `poster_crew`'s, because it is the same event on the ground a row pinned against a building cannot stand on. It takes no pavement side, so `EventInstance` centres its 11px body on the tile it is given, and its picture carries the column beside the worker. The density is the sidewalk row's own, split rather than added: about one poster crew in a hundred used to land on a square, which is the square share of the ground the roll draws from, so this row carries a hundredth of that row's weight and is a rare sight by measurement. |
 | `loudspeaker` | SCRIPTED | 5 | **A mast on a street, with a field.** Six of them (`Tuning.MAST_COUNT`), sited once by `MastSites.compute()` — junction corners, commercial squares, the main road, each snapped to her own sidewalk or a square's paving — and placed fresh every day from `Tuning.MAST_FIRST_DAY` by `DawnMasts`, bypassing the ordinary roll: `scripted_day` stays 0, the seal pictures' own sentinel. `MastSites` also refuses a site near where a region door could ever stand (`Tuning.CHECKPOINT_EVENT_GAP` of any boundary segment's own door position — the boundary is fixed at generation, so the refusal costs no day-to-day variety); a site is skipped for the day rather than planted over them for the narrower case a day's own closures, region wall or checkpoints still catch — an alley door among them, or held ground — rare, since a closure is one street's own width against the whole city. Same field shape as `homeless_yeller` (inner 45px, outer 210px), so walking past a speaking mast on its own sidewalk costs what walking past him does — [COSTS.md](COSTS.md): both 40.0 to walk straight through. `pulse_period` 22s, `telegraph_time` 3s, repeating: `EventLook.mast_is_telegraphing_now()` reads the mast's own `age`, which is `EventStreaming.broadcast_clock` rather than a clock of its own, so every mast telegraphs and speaks in the same phase. Solid at `EventCatalogue.MAST_BODY` (6px), a pole rather than a body to edge past. **A mast she silenced stays silenced**: day 11's task sends her to the foot of one live mast, and reaching it silences it through `EventManager.silence_mast()` and leaves an `DawnMasts.SILENCED_MAST` scar at its foot, which `DawnMasts` reads on every later day to plan that mast already silenced — pole and horns standing, lamp out, no field. **Day 11 can put up one more**: when no live mast stands where her paths reach inside a `ResistanceDirector.NEAR_THE_MARK` (576px) circle round where she read the mark, `EventManager.queue_a_mast()` generates a seventh, as the next event the day's scheduler places (the player: "if there is a mast queued up that will be the next event to be generated"), with every rule a planned row is placed under except the three that keep a line along her routes (`StreetInvalidation.room_around()`'s spacing included, so never inside a lethal row's field; the route junctions, the route sidewalks and a pacing beat's opening are not asked of any mast, the fixed ones and the two day 11 adds alike, because a mast's field reaches the junction box at the end of its street — inbox #684 in [coral-lark](playtests/2026-10-11-coral-lark.md), "Exempt like fixed masts"), among ground where one of those paths first reaches its edge, out of her view, that a site would be offered on; the task sends her there (the player: "Now just add a new mast close by"). It is silenced, counted by day 14's sabotage and scarred like the others, and `DawnMasts` stands it again, silenced, from its scar on every later day; one never silenced is not planned again. |
 | `curfew_announce` | SCRIPTED | 6 | What the masts carry on `DawnMasts.CURFEW_ANNOUNCE_DAY` on top of their ordinary broadcast — placed by `DawnMasts` at every mast site alongside that day's `loudspeaker` plan, `Look.NONE` so the mast's own picture (the pole, the lamp, the arcs) is what is seen. Same field shape as the ordinary broadcast, stronger (intensity 30 against 20), brief and fading (`intensity_ramp` 0.2, `duration` 26s); for those seconds she meets both fields. The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
@@ -2611,7 +2606,7 @@ cannot actually be made through at all; see "Solid things are solid". It is stil
 price a **row**: it is what being close costs.
 
 **A row is priced at the point of its own life she meets it at, and for a `TOWARD_PLAYER` row that
-is the moment it is created.** A `MAP` placement was made at dawn, so by the time she walks up to it
+is the moment it is created.** A `MAP` placement was made before she came near it, so by the time she walks up to it
 the telegraph is hours over and the pass is the whole field at full strength. A row the director
 sites down her own line is warned of before it exists and created just off screen with its
 telegraph spent, so it meets her at its own intensity from its first frame; the pass columns of

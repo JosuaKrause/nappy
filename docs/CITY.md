@@ -250,13 +250,15 @@ day's seals and bodies have been found to ring, and finds the place's tile reach
 reached from it.
 
 **Nothing placed during the walk closes a route, so nothing is checked live** (inbox #1173). The
-day's routes are fixed at dawn, and everything sited while she walks — day 3's fire, the poster
-crews, her route's bag, day 11's added mast — is what the day's own placement rules accept, none of
-it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
+day's routes are fixed at dawn, and everything drawn or sited while she walks — each unit's draw as
+she comes near it, day 3's fire, the poster crews, her route's bag, day 11's added mast — is what
+the day's own placement rules accept, none of it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
 street no route runs along (`DawnRoadblocks`), or one put across the
 nearest such section out of her sight in place of what it held
-(`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out once, as the walk starts, from the day's plan
-(`DayReach`).
+(`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out as the walk starts, from the dawn's plan, and
+learns each unit's draw as it is drawn (`DayReach`); a place it fixes before she is near it is
+confirmed along a way from home, the units round that way drawn first, so nothing drawn later can
+shut it (`ResistanceDirector._confirmed()`).
 
 **Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
 *(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the

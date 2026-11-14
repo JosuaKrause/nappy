@@ -1,14 +1,18 @@
 # The day's plan, the streaming, and the excitement query
 
-Read this before touching `EventScheduler.build_day()`, `EventStreaming`,
+Read this before touching `EventScheduler.build_day()`, `UnitDraw`, `EventStreaming`,
 `EventManager.stream_around()`, `ExcitementSource`, or anything that emits at the baby.
 
-## The day is planned whole; only the world near the player is built
+## The day follows from its seed; only the world near the player is built
 
 Every guarantee is stated over a **day** — one usable park, two distinct routes to two distinct calm
 areas, a one-shot that fires once per run, determinism from a seed — and all of them are properties
-of the *plan*. `EventScheduler.build_day()` plans the entire map at dawn. What streams is the
-*instantiation*.
+of the *plan*. `EventScheduler.build_day()` plans the dawn's part and prepares the draw of the
+day's locations; each unit of them (a street, a junction box, an alley, a park or a square) draws
+as she comes near it (`UnitDraw`, `EventsAhead.draw_what_comes_near()`), after every touching unit
+of lower rank, so every unit's draw is the same whatever her path, what drawing every unit at dawn
+would give. A unit within the stream radius of her is drawn before the streaming looks there, and
+nothing is sited on ground whose units have not drawn. What streams is the *instantiation*.
 
 - **Nothing may be seen to appear.** Both radii are wider than half the viewport diagonal.
 - **`EVENT_STREAM_RADIUS` must stay wider than the widest field in the catalogue.** Otherwise
@@ -19,8 +23,10 @@ of the *plan*. `EventScheduler.build_day()` plans the entire map at dawn. What s
   `EventPlan.travelled` carry it over, and `EventPlan.behaviours` each behaviour's own state. It
   **resumes** rather than catching up on lost time.
 
-**Do not move a guarantee out of `build_day` and into the streaming.** If something has to be true
-of a day, it has to be decided where the day is.
+**Do not move a guarantee out of the dawn or a unit's own draw and into the streaming.** If
+something has to be true of a day, it has to be decided where the day is: at dawn
+(`EventScheduler.build_day()`) or by a unit's own draw (`UnitDraw`), each of which reads only what
+follows from the seed.
 
 ## Excitement is a pure query
 

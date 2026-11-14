@@ -1,8 +1,10 @@
 class_name EventStreaming
 extends RefCounted
 ## **A day's plan and its live events are different things, and this is what joins them.** The day
-## is planned whole at dawn (`EventManager.start_day()`), which is what keeps every invariant stated
-## over a day (one usable park, a walkable route to it, determinism); a plan becomes an
+## follows from its seed whatever her path: the dawn plans its part (`EventManager.start_day()`)
+## and every unit of the day's locations draws the same whatever order it is drawn in, as she comes
+## near it (`UnitDraw`, `EventsAhead.draw_what_comes_near()`), which is what keeps every invariant
+## stated over a day (one usable park, a walkable route to it, determinism); a plan becomes an
 ## `EventInstance` only when the player comes within `stream_radius` of it (`stream_in()`), and goes
 ## again when she leaves (`stream_out()`), carrying what it was in the middle of — except a plan a
 ## task rides, which `keep_live()` puts in the world at once and keeps there. A plan that comes

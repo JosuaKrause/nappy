@@ -237,10 +237,12 @@ src/
 	                      this act, the one that does not count today
 	walk_events.gd        the walk's plans read through one object once it has started: the plans
 	                      in the order they stream, everything but one, what stands in an area, the
-	                      doors, the calm areas, the reach, the day's locations and its ground
-	day_reach.gd          where she can get to from home as the walk was planned: the ground its
-	                      plan shuts and the flood over it, made once as the walk starts; and the
-	                      walk her paths take within a circle, the measure of close by
+	                      doors, the calm areas, the reach, the day's locations, its ground and its
+	                      units' draw
+	day_reach.gd          where she can get to from home: the ground the walk's plan shuts and the
+	                      flood over it, made as the walk starts and told what each unit draws; a
+	                      shortest walk from home to a tile; and the walk her paths take within a
+	                      circle, the measure of close by
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
@@ -256,9 +258,9 @@ src/
 	                      an alley, a park or a square; its name, its rank and its stream for the day
 	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
 	                      junction box, or a shared alley, park or square
-	unit_draw.gd          the day's units drawn one at a time, each after every touching unit of
-	                      lower rank, from a fresh bag per view, judged among the dawn's plans and
-	                      the touching units' draws
+	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
+	                      every touching unit of lower rank, from a fresh bag per view, judged among
+	                      the dawn's plans and the touching units' draws
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
@@ -291,8 +293,9 @@ src/
 	dawn_phases/          the dawn's phases, one class each with run(context), handed the dawn's
 	                      context: the ambient rows, the scars, the masts, the wall's bodies, the calm
 	                      area kept clean, the roadblocks, the scripted rows, the one-shots, the park
-	                      spoilers, the moments, the dawn draw, the run lesson, the roadblock count;
-	                      and the roadblock phase's ruled ground
+	                      spoilers, the moments, the dawn draw (prepared, each unit drawn as she
+	                      walks), the run lesson, the roadblock count; and the roadblock phase's
+	                      ruled ground
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the
@@ -318,7 +321,8 @@ src/
 	events_ahead.gd       what the director puts in front of her while she walks: sited on her
 	                       way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
 	                       a task's mast placed after dawn and day 13's roadblock put across a
-	                       route-adjacent section in place of what it held, the fire lit at dusk
+	                       route-adjacent section in place of what it held, the fire lit at dusk,
+	                       and the day's units drawn as she comes near them
 	event_director.gd     sites what the day planned and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a

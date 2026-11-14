@@ -16,7 +16,8 @@ description: Rules for adding or changing an event in the catalogue — the fair
 - **Whether a row telegraphs its coming is the rule's question**, never switched to pass a contract.
 - **Nothing appears in her view and nothing vanishes while she is looking at it.**
 - **Excitement is a pure query.** Nothing writes `Baby.excitement` from outside.
-- **A guarantee about a day is decided in `EventScheduler.build_day()`**, never in the streaming.
+- **A guarantee about a day is decided at dawn or by a unit's own draw (`UnitDraw`)**, never in the
+  streaming.
 - **A number that moves regenerates `docs/COSTS.md` in the same commit** (the **balance** skill).
 - **Before changing where any event is placed**, read `docs/EVENTS.md`, "The three views and the
   placement order": the player's design, and where the code does not follow it yet.
@@ -33,7 +34,7 @@ area each, to be read whole before the first edit there:
 | `EventDef.pursuit`, `EventDef.notice`, `PursuitSpec`, `EventPursuit`, a charger, robber or guard | `references/pursuits.md` |
 | `EventDef.flock_size`, `EventFlock`, a look that moves, a partly animated picture | `references/flocks-and-moving-pictures.md` |
 | a new row, `spawn_mode`, `on_her_way`, `hard_fail`, the role, `pavement_side` | `references/fields.md` |
-| `EventScheduler.build_day()`, `EventStreaming`, `ExcitementSource`, anything that emits | `references/plan-and-excitement.md` |
+| `EventScheduler.build_day()`, `UnitDraw`, `EventStreaming`, `ExcitementSource`, anything that emits | `references/plan-and-excitement.md` |
 
 ## Adding a row
 
@@ -200,11 +201,12 @@ A thing made of several bodies is `EventDef.flock_size`; a moving thing bobs by 
 a partly animated scene keeps its still pixels and its moving pixels in separate layers. All three
 are `references/flocks-and-moving-pictures.md`.
 
-## The day is planned whole, and excitement is a pure query
+## The day follows from its seed, and excitement is a pure query
 
-**Do not move a guarantee out of `EventScheduler.build_day()` and into the streaming.** Every
-guarantee is stated over a day and is a property of the plan; what streams is the instantiation,
-and a spent plan stays spent while a running one resumes. **Do not add a code path that writes to
+**Do not move a guarantee out of the dawn (`EventScheduler.build_day()`) or a unit's own draw
+(`UnitDraw`) and into the streaming.** Every guarantee is stated over a day and is a property of
+the plan, which the dawn and each unit's draw make the same whatever her path; what streams is the
+instantiation, and a spent plan stays spent while a running one resumes. **Do not add a code path that writes to
 `Baby.excitement` from outside**: `Baby` asks the world for its sources and sums them, and anything
 that emits is an `ExcitementSource`, which asks whether a wall stands between it and her. The
 reasons and the traps (the stream radius against the widest field, what a stream-out carries, the

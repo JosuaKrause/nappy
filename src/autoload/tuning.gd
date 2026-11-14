@@ -687,6 +687,16 @@ const EVENT_STREAM_RADIUS := 900.0
 ## And how far past it an event has to get before it is taken away again, so an event on the
 ## boundary does not flicker in and out as the player paces.
 const EVENT_STREAM_HYSTERESIS := 260.0
+## **How far beyond the stream radius a unit of the day's locations draws** (a street, a
+## junction box, an alley, a park or a square; `UnitDraw`): one period of the lattice, 448px. A
+## unit is wanted once any part of it is within `EVENT_STREAM_RADIUS` plus this of her, and drawn a
+## unit a tick (`EventsAhead.draw_what_comes_near()`), so a draw is paid for well before the
+## streaming looks there. It is also the ground a placement made from her walk has drawn round it
+## first (`EventsAhead.draw_the_ground_round()`, the resistance's places): wider than the widest
+## reach a placement rule asks (a lethal field of 270px), so no unit drawn later can conflict with
+## what was sited there. It changes when a draw is paid, never what a day holds: every unit draws
+## the same whatever order the units are drawn in.
+const EVENT_DRAW_AHEAD := float((BLOCK_SIZE + STREET_WIDTH) * TILE_SIZE)
 
 ## Far enough from the player that nothing there can be seen, which is what *nothing vanishes while
 ## you are looking at it* is measured against.

@@ -96,8 +96,9 @@ var atlas: AtlasLibrary = null:
 		world.atlas = value
 		world.drawer = EventDrawer.new(value)
 ## How close the player has to be for a planned event to exist (`EventStreaming.stream_radius`).
-## `INF` turns streaming off and puts the whole day in the world at once, which is what the escape's
-## building and a test rig with no player want.
+## `INF` turns streaming off and puts the whole day in the world at once, every unit of the day's
+## drawn at the walk's start, which is what the escape's building and a test rig with no player
+## want.
 var stream_radius: float:
 	get:
 		return streaming.stream_radius
@@ -284,26 +285,28 @@ func _begin(spec: DaySpec) -> void:
 	use_the_spec(spec)
 
 ## **The second half, which every walk shares** (a day, a section of the escape, a scene's recipe):
-## takes `plan`'s placements and streams the events around `focus`. A day's plan records its bodies
-## and hands the director what the day owes her; a walk planned whole hands it nothing. `world.day` is the
-## plan's: the day's own number for a day, the run's last day for the escape's sections.
+## takes `plan`'s placements, draws the day's units round `focus` (a day's alone has a unit draw)
+## and streams the events around `focus`. A day's plan records its bodies and hands the director
+## what the day owes her; a walk planned whole hands it nothing. `world.day` is the plan's: the
+## day's own number for a day, the run's last day for the escape's sections.
 func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	world.day = spec.number if plan.is_a_day else world.run.header.day
 	_encounters.day = spec.number
 	_walk = plan.walk
-	# Where she can get to from home, worked out once as the walk starts, from what it planned and
-	# the map's closures and soft seals as they stand now (`DayReach`).
+	# Where she can get to from home, worked out as the walk starts, from what it planned and the
+	# map's closures and soft seals as they stand now, and told what each unit draws (`DayReach`).
 	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
 	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations(),
-			plan.ground())
+			plan.ground(), plan.unit_draw())
 	if plan.is_a_day:
 		# Every stationary solid body the day has sited, recorded per tile so the crowd goes round
 		# it — see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live
 		# instances because a body is a body whether or not the player has come near enough to
 		# stream it in, and the crowd is placed and steered across the whole map. After the whole
-		# plan is assembled, so that everything the day places — the catalogue's rows, the seals,
-		# the wall and the door structure — is in it, and every held segment the record refuses
-		# against is already on the map.
+		# plan is assembled, so that everything the dawn places — its rows, the seals, the wall and
+		# the door structure — is in it, and every held segment the record refuses against is
+		# already on the map; a unit's draws are recorded as each unit draws
+		# (`EventStreaming.add()`).
 		for placed in plan.placements:
 			if placed.is_placed():
 				spawner.record_the_body(placed.get_instance_id(), placed.def, placed.position,
@@ -312,6 +315,9 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day)
+	# The day's units round where she starts draw before anything streams in: every unit within the
+	# stream radius, so the streaming finds each whole (`EventsAhead.draw_what_comes_near()`).
+	ahead.draw_what_comes_near(focus, stream_radius)
 	streaming.stream_around(focus)
 
 ## The walk the plan `start_day()` started is stated against (`RouteSource`): the day's route tree,
@@ -505,13 +511,18 @@ func _tick_the_events(delta: float) -> void:
 	if she_is_here:
 		# First, so everything below asks the same view of what she can see this frame.
 		_look_through_the_camera()
+		# The day's units she comes near draw first, before anything is sited or streamed in; and
+		# **nothing is sited on a tick that leaves a unit wanted**, so nothing is sited on ground
+		# whose units have not drawn (`EventsAhead.draw_what_comes_near()`).
+		var wanted := ahead.draw_what_comes_near(world.player.global_position, stream_radius)
+		var sites := not _recipe_plan and ahead.has_director() and not wanted
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn. Nothing is sited in a world with no
 		# director.
-		if not _recipe_plan and ahead.has_director():
+		if sites:
 			ahead.site_what_is_on_her_way(delta)
 		streaming.stream_around(world.player.global_position)
-		if not _recipe_plan and ahead.has_director():
+		if sites:
 			ahead.place_what_is_owed_ahead(delta)
 		spawner.summon_what_has_been_sighted(_walk_events.plans())
 		spawner.report_the_pelicans_in_view()
@@ -652,14 +663,30 @@ func keep_live(id: String, at: Vector2) -> EventInstance:
 	return streaming.keep_live(id, at)
 
 ## Takes today's plans of the rows `ids` inside `rect` out of the day
-## (`EventStreaming.take_away_within()`).
+## (`EventStreaming.take_away_within()`), the units over `rect` drawn first
+## (`_draw_the_ground_over()`).
 func take_away_within(rect: Rect2, ids: Array[String]) -> int:
+	_draw_the_ground_over(rect)
 	return streaming.take_away_within(rect, ids)
 
 ## Takes today's plans inside `rect` not yet in the world out of the day, all but the ambient rows
-## (`EventStreaming.take_away_the_unseen_within()`).
+## (`EventStreaming.take_away_the_unseen_within()`), the units over `rect` drawn first
+## (`_draw_the_ground_over()`).
 func take_away_the_unseen_within(rect: Rect2) -> int:
+	_draw_the_ground_over(rect)
 	return streaming.take_away_the_unseen_within(rect)
+
+## **Draws every undrawn unit of the day any part of which lies within `reach` of `at`**, each after
+## every unit it waits for (`EventsAhead.draw_the_ground_round()`): what a placement made from her
+## walk asks before it looks at ground. Answers whether it drew any unit.
+func draw_the_ground_round(at: Vector2, reach: float) -> bool:
+	return ahead.draw_the_ground_round(at, reach)
+
+## The units over `rect` drawn before an area is cleared of its rows (a frontage boarded up, a park
+## cordoned off), so no unit draws a row there after it was cleared: round its centre, as far as
+## half its diagonal.
+func _draw_the_ground_over(rect: Rect2) -> void:
+	ahead.draw_the_ground_round(rect.get_center(), rect.size.length() * 0.5)
 
 ## Today's foot for a mast id (`EventStreaming.mast_foot()`).
 func mast_foot(mast_id: String) -> Vector2:
@@ -685,7 +712,9 @@ func plans() -> Array[EventPlan]:
 ## of the catalogue's kinds are out is what makes a day, and where each instance stands is only
 ## interesting for the ones she actually walked into, which the `near` lines cover at the moment it
 ## matters. The *plan*, not what is live: what is live is a fact about where she is standing this
-## frame. `none` when nothing is planned.
+## frame. The plan as it stands: the dawn's, and what each unit drawn so far placed (at a day's
+## start, the units round where she starts; `EventsAhead.draw_what_comes_near()`). `none` when
+## nothing is planned.
 func event_summary() -> String:
 	var counts := {}
 	for plan in plans():

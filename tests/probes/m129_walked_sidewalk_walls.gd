@@ -329,6 +329,9 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	before = events.size()
 	DawnDraw.new().run(dawn)
+	# The dawn draw prepares the units' draw and draws none; every unit is drawn here, the whole
+	# day a walk that comes near every unit draws.
+	GameDawn.draw_every_unit(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()
