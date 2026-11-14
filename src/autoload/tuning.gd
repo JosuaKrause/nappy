@@ -744,8 +744,8 @@ const AHEAD_MIN_SPEED := 40.0
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
 # happens several times a day rather than once. The density itself lives in
-# the view bags' shares (`EventScheduler.VIEW_SHARES`) and the catalogue's `max_per_day`, both
-# **measured** rather than derived.
+# the view bags' shares (`EventScheduler.VIEW_SHARES`) and the rows' weights, both **measured**
+# rather than derived.
 #
 # What lives here is what the density needs in order to be legible. Placement is a uniform random
 # tile, so a low per-type cap is the only thing keeping two of the same event off one pavement —

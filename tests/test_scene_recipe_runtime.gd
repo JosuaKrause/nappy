@@ -167,6 +167,7 @@ func run(t: TestRunner) -> void:
 	_test_charging_is_for_a_pursuer_that_waits(t)
 	_test_relentless_is_for_a_pursuer(t)
 	_test_heat_installs_the_heated_row(t)
+	_test_the_per_day_cap_binds_only_a_row_no_unit_draws(t)
 	await _test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
 	await _test_inputs(t)
@@ -402,6 +403,78 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 			% EventDef.HEAT_INVESTIGATE_WITHIN)
 	player.free()
 	city.free()
+
+## **A scene's rows are held to a row's per-day cap only where the day holds one**: a row the units
+## draw is capped by its unit (one of a row in a unit, `LocationDraw`) and not by the day, so a scene
+## with three chatting mothers (`max_per_day` 2, drawn by the units) is installed, while one with
+## one roadblock more than its cap, on day 13 where the roadblock phase's row is the one row no
+## unit draws, is refused with the cap's own message. Each is a scene begun on a city of its own, its rows' tiles the ones the
+## day's placement itself accepts one after another (`EventScheduler.recipe_placement()`).
+func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void:
+	const CITY_SCENE := preload("res://scenes/world/city.tscn")
+	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
+	var own_run := RunState.new()
+	own_run.start_run(4242)
+	own_run.header.day = 13
+	var city: City = CITY_SCENE.instantiate()
+	city.run = own_run
+	t.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, own_run.header.day)
+	city.start_day(state, own_run.header.day, own_run.calendar.day_rng(own_run.header.day, "closures"))
+	var player: Stroller = STROLLER_SCENE.instantiate()
+	t.add_child(player)
+	var baby: Baby = player.get_node("Baby")
+	var drawn := EventCatalogue.by_id("chatting_mother")
+	var not_drawn := EventCatalogue.by_id("roadblock")
+	var cap := not_drawn.most_in_a_day()
+	t.check(drawn.is_drawn_by_units(13, "roadblock") and drawn.most_in_a_day() < 3
+			and not not_drawn.is_drawn_by_units(13, "roadblock"),
+			"on day 13 the chatting mother is drawn by the units and the roadblock is not")
+	for case: Array in [[drawn, 3, true], [not_drawn, cap + 1, false]]:
+		var def: EventDef = case[0]
+		var entries: Array = []
+		var tiles := _placeable_tiles(city, def, own_run.header.day, int(case[1]))
+		for i in tiles.size():
+			var at := city.map.tile_to_world(tiles[i])
+			entries.append({"name": "%s_%d" % [def.id, i], "row": def.id, "at": [at.x, at.y]})
+		t.check(entries.size() == int(case[1]), "%d places for %s are found (%d)"
+				% [int(case[1]), def.id, entries.size()])
+		var runtime := SceneRecipeRuntime.new()
+		runtime.configure({"data": {"setup": {"day": own_run.header.day, "events": entries,
+				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {},
+				"map": city.map}, _recipe_config(false), own_run)
+		var errors := runtime.install(city, player, baby,
+				DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
+		var capped := errors.any(func(e: String) -> bool:
+				return e.contains("exceeds the ordinary per-day cap"))
+		t.check(capped != bool(case[2]), "%d of %s %s: %s" % [int(case[1]), def.id,
+				"are installed with no cap" if bool(case[2]) else "are refused by the day's cap",
+				errors])
+		runtime.free()
+	player.free()
+	city.free()
+
+## Up to `count` tiles the day's own placement accepts for `def`, one after another, each placed
+## among those before it.
+func _placeable_tiles(city: City, def: EventDef, day: int, count: int) -> Array[Vector2i]:
+	var map := city.map
+	var corridor := Corridor.of(RouteTree.for_day(map, day))
+	var locations := DayLocations.lay_out(map, corridor)
+	var offered := EventScheduler.row_ground(map).tiles_for(def)
+	var already: Array[EventPlan] = []
+	var found: Array[Vector2i] = []
+	for tile in offered:
+		if found.size() >= count:
+			break
+		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+				map.tile_to_world(tile), 1, already, corridor, PackedVector2Array(),
+				CalmAreas.of(map), [], locations)
+		if plan != null:
+			already.append(plan)
+			found.append(tile)
+	return found
 
 ## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
 ## played day's task can (the thing it rode on finishing, day 10's neighbor home first): the manifest

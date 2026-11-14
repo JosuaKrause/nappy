@@ -1,0 +1,29 @@
+Evidence for PR #1462 (polite-tapir, units at dawn, placement step 2 of 4): the density.
+
+Claim: on this branch the day's drawn rows are far denser than on main for chatting mothers (day 1)
+and charging dogs (day 4), and the walk meets them in the same streets. Each pair of stills is the
+same walk at the same second on main and on this branch.
+
+Limits: stills, not counts. A still shows the neighbourhood at one moment, so it shows what is
+around her and not how many she meets along the walk; the counts below are the day's plans, read
+from the run logs, not encounters. The two builds draw different days (their plans differ), so
+the "same day" means the same seed and day number. The walk is the same script on both, but a
+still is taken at a wall-clock second of a rig run, which is near, not exactly, the same tick.
+
+Source revision: branch feature-polite-tapir-units-at-dawn at 97490b92e (PR #1462 head); main at
+da1daf08d (origin/main when captured, detached checkout).
+
+Command (from each checkout, once per day and second):
+  tools/shot.sh <out>.png <seconds> --seed 77 --day <1|4> --invincible --no-save --walk 2s3e
+with seconds 3, 6, 9 and 12. The walk is two seconds south, then three east, from the doorstep.
+
+Plan counts, from each run's log (its `plan events:` line):
+  day 1, branch: chatting_mother x93, dog_walker x14
+  day 1, main:   chatting_mother x2,  dog_walker x14
+  day 4, branch: charging_dog x53, chatting_mother x66, dog_walker x12, police_patrol x12
+  day 4, main:   charging_dog x3,  chatting_mother x2,  dog_walker x22, police_patrol x10
+
+Files: day<1|4>-walk-t<3|6|9|12>-<branch|main>.png, 16 stills in all.
+
+Retained: all 16 stills. No burst and no run log is kept here; the plan counts above are the
+run logs' own lines, copied out for the claim.

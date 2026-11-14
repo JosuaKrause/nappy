@@ -2,7 +2,7 @@ extends "res://tests/events_shared_city.gd"
 ## What a street actually costs her: running is the answer to exactly the one kind of thing that
 ## follows her and nothing else, nothing is cheaper to walk through than around it, the pavement
 ## can be blocked from day one, a day has enough in it to meet, danger arrives on schedule, the
-## caps can spend the budget, the named decisions arrive, two of a kind are not the same incident,
+## named decisions arrive, no two events are drawn inside each other,
 ## nothing happens inside a lethal field, a pursuer keeps no field clear, and the city remembers
 ## where she has already walked.
 ##
@@ -21,9 +21,8 @@ func run(t: TestRunner) -> void:
 	_test_the_pavement_can_be_blocked_from_day_one(t)
 	_test_a_day_has_enough_in_it_to_meet(t)
 	_test_danger_arrives_before_act_three(t)
-	_test_the_caps_can_spend_the_budget(t)
 	_test_the_named_decisions_arrive(t)
-	_test_two_of_a_kind_are_not_the_same_incident(t)
+	_test_no_two_events_are_drawn_inside_each_other(t)
 	_test_a_pursuer_keeps_no_field_clear(t)
 	_test_the_city_remembers_where_she_went(t)
 
@@ -322,18 +321,6 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 				"'%s' warns for %.2fs before it can reach her against a required %.2fs"
 				% [id, def.warning_time(), def.minimum_telegraph()])
 
-## The caps have to leave room for the density, or the budget is decoration. Stated over the
-## day-1 pool because that is where it was actually wrong: three dog walkers and three cafés
-## on a forty-nine-block city, of which only the ~23% near her is ever instantiated.
-func _test_the_caps_can_spend_the_budget(t: TestRunner) -> void:
-	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
-	var ceiling := 0
-	for def in EventCatalogue.available_on(1):
-		if def.kind == GameEnums.EventKind.RECURRING:
-			ceiling += def.max_per_day
-	t.check(ceiling >= blocks,
-			"day 1's caps allow at least one event per block (%d against %d)" % [ceiling, blocks])
-
 ## The two events playtest 05 named, and the reason it named them: the dog-walker decision
 ## has to arrive more than once, and the café that exists to force a crossing has to be
 ## findable at all. Both are counted over the whole map, since what she meets on a route is
@@ -362,14 +349,14 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 				"seed %d: day 1 carries %s cafés" % [city_seed, counts.get("cafe_tables", 0)])
 	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")
 
-## What `max_per_day` was quietly doing before M28, now doing it on purpose. The fallback in
-## `_roomiest_of_several` can still put two of a kind closer than `EVENT_SPACING_SAME` on a
-## full map, so this is stated as "almost never" plus a hard floor that nothing may cross.
-func _test_two_of_a_kind_are_not_the_same_incident(t: TestRunner) -> void:
+## **No two events are drawn inside each other**: every two placed events of a day stand at
+## least `EventScheduler.EVENT_SPACING_ANY` apart, the one spacing no placement bends. Two of a
+## kind may stand closer than `EVENT_SPACING_SAME` where two touching units each drew one; that a
+## unit draws one of a row is `tests/test_events_scheduler.gd`'s.
+func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
+	var pairs := 0
 	for day: int in [1, 8, 14]:
 		var planned := _planned(day)
-		var same_pairs := 0
-		var crowded := 0
 		for i in planned.size():
 			for j in range(i + 1, planned.size()):
 				var a: EventPlan = planned[i]
@@ -381,17 +368,11 @@ func _test_two_of_a_kind_are_not_the_same_incident(t: TestRunner) -> void:
 				if b.def.kind == GameEnums.EventKind.AMBIENT:
 					continue
 				var gap := a.position.distance_to(b.position)
+				pairs += 1
 				t.check(gap >= EventScheduler.EVENT_SPACING_ANY - 0.5,
 						"day %d: '%s' and '%s' are not drawn inside each other (%.0fpx)"
 						% [day, a.def.id, b.def.id, gap])
-				if a.def.id != b.def.id:
-					continue
-				same_pairs += 1
-				if gap < EventScheduler.EVENT_SPACING_SAME:
-					crowded += 1
-		t.check(crowded * 20 <= same_pairs,
-				"day %d: %d of %d same-kind pairs share a stretch of pavement"
-				% [day, crowded, same_pairs])
+	t.check(pairs > 0, "there were placed pairs to measure (%d)" % pairs)
 
 ## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
 ## either row that carries it today.** A lethal field that follows her is neither on the

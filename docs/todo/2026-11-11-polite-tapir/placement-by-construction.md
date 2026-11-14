@@ -62,8 +62,13 @@ the bag per view and its draw (`ViewBag`, `LocationDraw`), the day's placement r
 (`StreetRule`, composed by `StreetInvalidation`, with a location's own ground in `LocationFit`), the
 roadblock phase (`RoadblockPhase`), day 13's section swap, the scene recipes' locations, and the
 fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open location is drawn
-at dawn by one loop (`DawnDraw`, the dawn draw's phase: `LocationDraw.draw_all()` over
-`DayLocations.drawing_order()`); a poster crew is handed to her walk as it is drawn, and a sidewalk
+at dawn unit by unit (`DawnDraw` over `UnitDraw`): a unit is a street (three sections, six sidewalk
+locations), a junction box, an alley, or one park or square (`PlacementUnit`, grouped by
+`DayUnits`), with its own stream and a fixed rank from the day's seed, and before a unit draws, every
+undrawn unit touching it (sharing a junction box, or bordering the same alley, park or square) with a
+lower rank draws first. Each unit draws from a bag per view filled fresh, at most one of a row in the
+unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
+on the board, question long-routes, inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. Nothing is drawn as she
 walks. A day's routes stay open by local rules alone: besides a route's junctions, its walked sidewalk
 and a pacing beat's opening, the route's ground rule (`RouteGroundRule`) keeps every body's disc and
@@ -79,22 +84,19 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-2. **A street is drawn as one unit, the first time she comes near it.** A unit is a street (three
-   sections, six sidewalk locations), a junction box, an alley, or one park or square. Each has its
-   own random stream, seeded by the day's seed and the unit, and draws all its locations in one go
-   when any of them enters the band ahead of her. Each unit also has a fixed rank from the same
-   seed: before a unit draws, every undrawn unit touching it (sharing a junction box, or bordering
-   the same alley, park or square) with a lower rank draws first. The day is then exactly what
-   drawing every unit at dawn in rank order would give, whatever her path, without paying for
-   streets she never comes near. The rows with a body are drawn this way too. The dawn's one draw
-   of every open location (`LocationDraw.draw_all()`) and the daily caps for drawn rows go
-   (a cap depends on order; "at most one of a row per street" replaces the same-row spacing and the
-   roomiest-tile ranking). A body drawn out of her view onto a lane a car stands in has the crowd
-   recycle that car. `docs/MECHANICS.md`'s "A retry is the same day" stays true of every drawn row, and the
-   test that holds it for the dawn's draw (`test_event_manager`, a day started twice) gains the walk
-   for the unit draw: the same city and day drawn along two different walks hold the same drawn
-   rows on the same tiles. The test does not cover what is sited from her walk (the moments and step 4's rigged
-   marbles), and the doc's sentence says so.
+2. **A unit draws the first time she comes near it.** The units, their ranks and their draw are built
+   and drawn at dawn in rank order (above); what is left moves the draw onto her walk. A unit draws all
+   its locations in one go when any of them enters the band ahead of her, each after the lower-ranked
+   units touching it, so the day is exactly what drawing every unit at dawn in rank order gives,
+   whatever her path, without paying for streets she never comes near. A body drawn out of her view
+   onto a lane a car stands in has the crowd recycle that car. `docs/MECHANICS.md`'s "A retry is the
+   same day" stays true of every drawn row, and the test that holds it for the dawn's draw
+   (`test_event_manager`, a day started twice) gains the walk for the unit draw: the same city and day
+   drawn along two different walks hold the same drawn rows on the same tiles. The test does not
+   cover what is sited from her walk (the moments and step 4's rigged marbles), and the doc's sentence
+   says so. *Open, with the player:* how far a unit's draw looks (board question touching-reach; the
+   reach is one setting of `DayUnits`), and what the day holds until step 3 now that the caps are gone
+   (board question day-density).
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.

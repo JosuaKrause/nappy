@@ -13,7 +13,7 @@ extends RefCounted
 ## seed 4242, are the streets' and the siting's own, and nothing else of a city is read.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
-## The run's seed. Where the far dog runs is chosen clear of the day's bodies (`_on_a_clear_line()`),
+## The run's seed. Where each dog runs is chosen clear of the day's bodies (`_on_a_clear_line()`),
 ## whatever the seed's draw stands on the arterial.
 const RUN_SEED := 2
 ## The engine's clock for the walks: each physics tick carries `1 / Engine.physics_ticks_per_second
@@ -53,6 +53,7 @@ func run(t: TestRunner) -> void:
 	_events.use_player(_rig)
 	for speed: float in [0.0, Tuning.WALK_SPEED]:
 		_start_the_day(true)
+		_rig.global_position = _on_a_clear_line(_rig.global_position)
 		var seen := await _meet_and_turn(t, speed)
 		t.check(seen["sent"],
 				"the director sent a loose dog down her line, she going away at %.0fpx/s" % speed)

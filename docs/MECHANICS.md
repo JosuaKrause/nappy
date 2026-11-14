@@ -976,8 +976,8 @@ happens", for which events earn that and what the contract on them is.
 **The density target is one event per block**, and streaming is what makes it computable: the
 stream radius is a knowable fraction of the map, so what she is standing in is a knowable fraction
 of what the day planned. The bags' shares are per location for the same reason (`EventScheduler.
-VIEW_SHARES`), and the caps have to move before the shares — see docs/EVENTS.md, "The density, and
-why it is caps and bags".
+VIEW_SHARES`), and no daily cap bounds a row the units draw — see docs/EVENTS.md, "The density,
+and why it is shares and bags".
 
 What the density does to the game is a change of kind, not of degree. A street with one event every
 four blocks is a street with an event *on* it — you see it, you route around it, and the rest of the

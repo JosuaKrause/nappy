@@ -304,8 +304,6 @@ src/events/dawn_context.gd keeps_the_walk_open
 src/events/dawn_context.gd keeps_unused_calm_clear
 src/events/dawn_context.gd one_notice_at_a_time
 src/events/dawn_phases/dawn_calm_kept_clean.gd keeps_unused_calm_clear
-src/events/dawn_phases/dawn_draw.gd caps_per_day
-src/events/dawn_phases/dawn_draw.gd wall_row_share
 src/events/dawn_phases/dawn_moments.gd caps_per_day
 src/events/day_planner.gd closes_streets
 src/events/day_planner.gd holds_the_home_streets
@@ -371,7 +369,6 @@ src/dev/route_rig_planner.gd shape
 src/dev/route_rig_planner.gd solid_when
 src/dev/scene_recipe_runtime.gd aftermath
 src/dev/scene_recipe_runtime.gd id
-src/dev/scene_recipe_runtime.gd max_per_day
 src/dev/scene_recipe_runtime.gd pursuit
 src/dev/scene_recipe_runtime.gd role
 src/dev/scene_recipe_runtime.gd stops_where_it_arrives

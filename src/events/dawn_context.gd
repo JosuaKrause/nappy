@@ -48,6 +48,7 @@ var _locations: DayLocations = null
 var _kept_clean := CalmAreas.NONE
 var _rules: StreetInvalidation = null
 var _route_ground: RouteGroundRule = null
+var _unit_draw: UnitDraw = null
 
 ## The dawn of the walk `spec` describes, on `map`, placed against `walk` and `calm`:
 ## `seed_value` is the day's seed, `builder` builds every plan the dawn sites at a tile, and
@@ -123,8 +124,8 @@ func day_seed() -> int:
 ##   more plan for `StreetInvalidation.room_around` to reject a placement against — and a
 ##   rejection is a re-roll.
 ##
-## Separate streams close the first completely and most of the second (each phase's salt, the dawn
-## draw's `LOCATIONS_SALT` among them).
+## Separate streams close the first completely and most of the second (each phase's salt, and
+## each unit's own stream for the draw, `PlacementUnit.stream()`).
 ## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted
 ## still moves that event. That is the right answer — a fire that burnt a block down did happen,
 ## and the day should acknowledge it — and it is a handful of placements rather than the whole
@@ -256,6 +257,16 @@ func rules() -> StreetInvalidation:
 		_rules = StreetInvalidation.new(_map, corridor(), _leave_alone(), _doors,
 				_builder if _spec.one_notice_at_a_time else null, walk_ground)
 	return _rules
+
+## **Holds the day's unit draw** (`UnitDraw`), which the dawn draw's phase prepares
+## (`DawnDraw`): said once a dawn.
+func hold_the_draw(draw: UnitDraw) -> void:
+	assert(_unit_draw == null, "a dawn holds one unit draw")
+	_unit_draw = draw
+
+## The day's unit draw (`hold_the_draw()`), or null where no phase held one: the escape's bag walk.
+func unit_draw() -> UnitDraw:
+	return _unit_draw
 
 ## **Records a fixed part on the location holding where it stands**
 ## (`DayLocations.hold_fixed_part()`), so no draw happens there: an ambient row, a mast, one of

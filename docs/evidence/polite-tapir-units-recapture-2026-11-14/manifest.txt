@@ -1,0 +1,30 @@
+Evidence for PR #1462 (polite-tapir, units at dawn): recapture of the cut routes and the density.
+
+Claim: on the branch a dog walker's, patrol's and convoy's own stretch is cut to the street's run, and the day
+holds far more chatting mothers and charging dogs. Limits: the two builds plan different days from the same
+seed, so main's unit and the branch's are different instances in different places; the sheets show how long one
+unit of each build stays in view, not the same unit. Judging the pictures is the reviewer's.
+
+Source: branch f2ba7828b; main da1daf08d (detached checkout). Scratch scripts outside the repository made the
+sheets (frames shrunk to half size, labelled with their time).
+
+Time series: a static camera on her, standing at the first live unit of the row, zoom 0.6, one run per frame:
+  tools/shot.sh out.png <t> --seed 77 --day <d> --invincible --no-save --spawn event:<id> --zoom 0.6 --player-view
+Frame times: dog walker 1,3,5,7,9,11,14,18,24,30 s (day 4); police patrol 1,2,4,6,9,12,15,20 s (day 4);
+military convoy 1,2,3,4,5,6,8,10 s (day 13, branch only).
+Density: tools/shot.sh out.png <t> --seed 77 --day <1|4> --invincible --no-save --player-view --walk 2s12e10n12e
+at t = 8, 16, 24, 32 s; one row per time, main left, branch right.
+
+Plan counts (the run log's plan line), seed 77:
+  day 4 : branch chatting_mother x66, charging_dog x53, dog_walker x12, police_patrol x12
+          main   chatting_mother x2,  charging_dog x3,  dog_walker x22, police_patrol x10
+  day 9 : branch chatting_mother x54, charging_dog x30, dog_walker x20, police_patrol x3
+          main   chatting_mother x2,  charging_dog x2,  dog_walker x17, police_patrol x10
+  day 13: branch military_convoy planned (x1; seed 4242 x2); main plans none (its day-13 column comes from
+          Happenings and is the same on both builds)
+  day 1 : not recorded.
+The run log gives no per-walk encounter counts, so none are given.
+
+Would not capture: a line or log of a unit's own route (no dev flag draws it; layer 5 is the route tree); the
+follow camera gave no steady track of one unit; main has no planned convoy to set beside the branch's; the
+police patrol sheets are hard to read at this size.
