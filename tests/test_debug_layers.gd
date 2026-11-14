@@ -24,6 +24,7 @@ func run(t: TestRunner) -> void:
 	_test_a_debug_build_builds_the_layers_off_by_default(t)
 	_test_the_layers_flag_starts_only_the_listed_layers_on(t)
 	_test_the_layers_flag_accepts_seven(t)
+	_test_the_escapes_second_world_hands_the_event_routes_its_events(t)
 	_test_the_layer_keys_resolve_to_their_own_layer(t)
 	_test_a_release_or_an_echo_toggles_nothing(t)
 	_test_number_keys_toggle_their_own_layer(t)
@@ -151,6 +152,41 @@ func _test_parse_layers_drops_malformed_entries_without_crashing(t: TestRunner) 
 func _test_the_layers_flag_accepts_seven(t: TestRunner) -> void:
 	t.check(_layers("5,7") == [5, 7], "7 is a layer the flag names, and 8 is not one")
 	t.check(_layers("7,8") == [7], "an eighth entry is dropped the way any out-of-range one is")
+
+## A manager that answers the instances it was given, for the hand-over below.
+class StandInEvents extends EventManager:
+	var live: Array[EventInstance] = []
+
+	## Overrides EventManager.instances.
+	func instances() -> Array[EventInstance]:
+		return live
+
+## The escape walks out of the service door and `main` calls `show_the_world()` again: the one
+## `EventRouteLines` the readout built answers the new world's events, not the building's.
+func _test_the_escapes_second_world_hands_the_event_routes_its_events(t: TestRunner) -> void:
+	var rig := Rig.new(t, _config([], true))
+	var route_a := PackedVector2Array([Vector2.ZERO, Vector2(50.0, 0.0)])
+	var route_b := PackedVector2Array([Vector2(10.0, 10.0), Vector2(10.0, 90.0)])
+	var building := StandInEvents.new()
+	var instance_a := EventInstance.new()
+	instance_a.setup(EventCatalogue.by_id("police_patrol"), route_a[0], route_a)
+	building.live = [instance_a]
+	var city := StandInEvents.new()
+	var instance_b := EventInstance.new()
+	instance_b.setup(EventCatalogue.by_id("police_patrol"), route_b[0], route_b)
+	city.live = [instance_b]
+	var event_routes := rig.readout.get_node("EventRouteLines") as EventRouteLines
+	rig.readout.show_the_world(building, null, rig.world, null, null)
+	t.check(event_routes.routes() == [route_a], "the first world's events are the ones drawn")
+	rig.readout.show_the_world(city, null, rig.world, null, null)
+	t.check(rig.readout.get_node("EventRouteLines") == event_routes
+			and event_routes.routes() == [route_b],
+			"the second world reuses the one node and draws only the new world's events")
+	rig.free_all()
+	instance_a.free()
+	instance_b.free()
+	building.free()
+	city.free()
 
 func _test_apply_initial_state_sets_only_the_listed_layers(t: TestRunner) -> void:
 	var layers := DebugLayers.new()

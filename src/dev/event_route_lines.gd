@@ -16,8 +16,8 @@ extends Node2D
 ## beat, the one stretch it folds back and forth over.
 ##
 ## **Redrawn every frame while it is shown, and not at all while it is off.** An event appears, walks
-## and leaves, so the picture is asked again each frame it is visible; a hidden `CanvasItem` is
-## neither processed for it nor drawn.
+## and leaves, so the picture is asked again each frame it is visible. While it is hidden
+## `_process()` still runs but asks for no redraw, and a hidden `CanvasItem` is not drawn.
 
 ## Hot pink: the debug view's other colours are amber and deep red (fields), cyan (shadows), green
 ## (bodies) and the purple of her own routes, and none of them is this, so a line is told at once
