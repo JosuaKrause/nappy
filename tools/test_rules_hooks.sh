@@ -4374,6 +4374,24 @@ write_guard_allowed=(
 #     each runs its write cases whole: both arrays in the two ask modes, and write_guard_never_asked
 #     with local identities, the machine an agent works on, where a write that must stay denied
 #     is denied by that failed mode test rather than by the list of askable writes.
+# The ask's reason opens with the command itself, cut to 200 characters with an ellipsis (rosy-marmot).
+assert_write_guard_ask_reason() {
+    checks=$((checks + 1))
+    local raw
+    raw=$(printf '%s' "$2" | write_guard_payload \
+        | write_guard_env CLAUDE_CODE_REMOTE=true NAPPY_ASK_FOR_PLAYER_WRITES=1 NAPPY_AGENTS_DIR="$write_guard_agents" \
+            "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
+    case "$raw" in
+        "$3"*) echo "ok   $1" ;;
+        *) fail "$1: the ask reason does not start with the expected text: $raw" ;;
+    esac
+}
+write_guard_long_cmd="git push origin feature/$(printf 'a%.0s' $(seq 1 250))"
+assert_write_guard_ask_reason "an ask's reason shows the command" \
+    'git push origin feature/x' $'The command to approve: git push origin feature/x\n--'
+assert_write_guard_ask_reason "a long command is cut at 200 characters with an ellipsis" \
+    "$write_guard_long_cmd" "The command to approve: ${write_guard_long_cmd:0:200}...
+--"
 write_guard_switch=1
 for write_guard_cmd in "${write_guard_never_asked[@]}"; do
     assert_write_guard "local identities: $write_guard_cmd -> deny" deny "$write_guard_cmd"
