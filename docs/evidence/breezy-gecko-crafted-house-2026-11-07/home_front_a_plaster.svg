@@ -1,0 +1,175 @@
+<!-- Draft A, plaster: her home block's front drawn as one crafted picture, in the escape's own
+     hallway plaster. A review draft, not an installed asset: nothing in the game reads this file.
+
+     Footprint, at the game's own scale (one 32px cell per tile), as the home block is today:
+     the door's building is 8 cells wide and 4 wall rows tall (y 0 to 128; ground floor, then
+     three above, her floor the top one), and in front of it the two flanking lots, 3 cells wide
+     and one wall row tall under one roof row (y 128 to 192), with the 2-cell stoop between them
+     (x 96 to 160). The roofs and the stoop are context, drawn so the front reads in place; the
+     game draws those itself.
+
+     Matched to art/interior/: the wall is hallway_wall.svg's plaster (#b5a28c) with its marks
+     (#a18f7c) and its plinth band (#776459 over a dark shadow); every window is
+     hallway_wall_window.svg's square four-pane window (a 20px dark frame, a cross mullion, a pale
+     sill), dark glass where the room is unlit and warm glass where it is lit, in a fixed pattern
+     since the home block is the same on every seed; the street door is entrance_door.svg itself,
+     the 42x44 double door the lobby shows from inside, under a stone hood, with an unlit
+     wall_lamp.svg sconce either side. The two cells the door stands in keep no window on the
+     ground floor or the floor above, since the door and its hood rise into that floor. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="256" height="192" viewBox="0 0 256 192" shape-rendering="crispEdges">
+  <defs>
+    <g id="win-dark">
+      <rect x="6" y="5" width="20" height="20" fill="#3b3034"/>
+      <rect x="8" y="7" width="16" height="16" fill="#3b3a46"/>
+      <path d="M15 7V23 M8 15H24" stroke="#8b8478" stroke-width="1"/>
+      <rect x="5" y="23" width="22" height="2" fill="#d1b99c"/>
+      <rect x="5" y="25" width="22" height="1" fill="#3b3034" fill-opacity="0.35"/>
+    </g>
+    <g id="win-lit">
+      <rect x="6" y="5" width="20" height="20" fill="#3b3034"/>
+      <rect x="8" y="7" width="16" height="16" fill="#e9c27a"/>
+      <rect x="8" y="7" width="16" height="5" fill="#f6dda3"/>
+      <path d="M15 7V23 M8 15H24" stroke="#c99a5a" stroke-width="1"/>
+      <rect x="5" y="23" width="22" height="2" fill="#e3c99f"/>
+      <rect x="5" y="25" width="22" height="1" fill="#3b3034" fill-opacity="0.35"/>
+    </g>
+    <g id="marks">
+      <path d="M3 7H13 M21 18H29" stroke="#a18f7c" stroke-width="1"/>
+    </g>
+    <g id="marks-b">
+      <path d="M18 4H26 M4 20H10" stroke="#a18f7c" stroke-width="1"/>
+    </g>
+    <g id="lamp">
+      <rect x="2" y="2" width="2" height="5" fill="#776459"/>
+      <path d="M0 3L6 3L4 1L2 1Z" fill="#79716b"/>
+      <rect x="1" y="4" width="4" height="4" fill="#8e8a82"/>
+      <rect x="1" y="4" width="4" height="4" fill="none" stroke="#5f5a55" stroke-width="1"/>
+      <rect x="2" y="5" width="1" height="1" fill="#b9b5ac"/>
+    </g>
+  </defs>
+
+  <!-- The main front: plaster, the marks scattered as hallway_wall.svg scatters them. -->
+  <rect x="0" y="0" width="256" height="128" fill="#b5a28c"/>
+  <use xlink:href="#marks" transform="translate(0 0)"/>
+  <use xlink:href="#marks-b" transform="translate(96 32)"/>
+  <use xlink:href="#marks" transform="translate(160 64)"/>
+  <use xlink:href="#marks-b" transform="translate(224 0)"/>
+  <use xlink:href="#marks" transform="translate(64 64)"/>
+  <use xlink:href="#marks-b" transform="translate(192 96)"/>
+  <use xlink:href="#marks" transform="translate(32 96)"/>
+
+  <!-- Floor bands: a thin course at each floor line, the plinth's colour, so the four floors read. -->
+  <rect x="0" y="31" width="256" height="1" fill="#a18f7c"/>
+  <rect x="0" y="63" width="256" height="1" fill="#a18f7c"/>
+  <rect x="0" y="95" width="256" height="1" fill="#a18f7c"/>
+
+  <!-- Cornice along the wall head, under the roof's own parapet. -->
+  <rect x="0" y="0" width="256" height="1" fill="#3b3034"/>
+  <rect x="0" y="1" width="256" height="2" fill="#d1b99c"/>
+  <rect x="0" y="3" width="256" height="1" fill="#776459"/>
+  <rect x="0" y="4" width="256" height="1" fill="#3b3034" fill-opacity="0.3"/>
+
+  <!-- Third floor (hers): cell 3 is the window nearest above the door, the neighbor's. -->
+  <use xlink:href="#win-dark" transform="translate(0 0)"/>
+  <use xlink:href="#win-lit" transform="translate(32 0)"/>
+  <use xlink:href="#win-dark" transform="translate(64 0)"/>
+  <use xlink:href="#win-dark" transform="translate(96 0)"/>
+  <use xlink:href="#win-dark" transform="translate(128 0)"/>
+  <use xlink:href="#win-dark" transform="translate(160 0)"/>
+  <use xlink:href="#win-lit" transform="translate(192 0)"/>
+  <use xlink:href="#win-dark" transform="translate(224 0)"/>
+  <!-- Second floor. -->
+  <use xlink:href="#win-lit" transform="translate(0 32)"/>
+  <use xlink:href="#win-dark" transform="translate(32 32)"/>
+  <use xlink:href="#win-dark" transform="translate(64 32)"/>
+  <use xlink:href="#win-dark" transform="translate(96 32)"/>
+  <use xlink:href="#win-lit" transform="translate(128 32)"/>
+  <use xlink:href="#win-dark" transform="translate(160 32)"/>
+  <use xlink:href="#win-dark" transform="translate(192 32)"/>
+  <use xlink:href="#win-lit" transform="translate(224 32)"/>
+  <!-- First floor: nothing over the door's two cells. -->
+  <use xlink:href="#win-dark" transform="translate(0 64)"/>
+  <use xlink:href="#win-dark" transform="translate(32 64)"/>
+  <use xlink:href="#win-lit" transform="translate(64 64)"/>
+  <use xlink:href="#win-dark" transform="translate(160 64)"/>
+  <use xlink:href="#win-lit" transform="translate(192 64)"/>
+  <use xlink:href="#win-dark" transform="translate(224 64)"/>
+  <!-- Ground floor: her block keeps its ground-floor windows, none behind the door. -->
+  <use xlink:href="#win-dark" transform="translate(0 96)"/>
+  <use xlink:href="#win-lit" transform="translate(32 96)"/>
+  <use xlink:href="#win-dark" transform="translate(64 96)"/>
+  <use xlink:href="#win-dark" transform="translate(160 96)"/>
+  <use xlink:href="#win-dark" transform="translate(192 96)"/>
+  <use xlink:href="#win-lit" transform="translate(224 96)"/>
+
+  <!-- Plinth: hallway_wall.svg's band along the ground line. -->
+  <rect x="0" y="122" width="256" height="3" fill="#776459"/>
+  <rect x="0" y="125" width="256" height="3" fill="#3b3034" fill-opacity="0.58"/>
+
+  <!-- The door: a stone hood over it and a lamp either side. -->
+  <rect x="104" y="79" width="48" height="1" fill="#3b3034"/>
+  <rect x="104" y="80" width="48" height="2" fill="#d1b99c"/>
+  <rect x="104" y="82" width="48" height="1" fill="#776459"/>
+  <rect x="105" y="83" width="46" height="1" fill="#3b3034" fill-opacity="0.35"/>
+  <use xlink:href="#lamp" transform="translate(98 96)"/>
+  <use xlink:href="#lamp" transform="translate(152 96)"/>
+  <!-- art/interior/entrance_door.svg, unchanged, its bottom centre on the ground line at x 128. -->
+  <g transform="translate(107 84)">
+    <rect x="2" y="2" width="38" height="39" fill="#846050" stroke="#3b3034" stroke-width="1"/>
+    <rect x="5" y="6" width="15" height="35" fill="#563c38"/>
+    <rect x="22" y="6" width="15" height="35" fill="#5d4039"/>
+    <path d="M8 10H17 M25 10H34 M8 18H17 M25 18H34" stroke="#a57b5d" stroke-width="1"/>
+    <circle cx="17" cy="28" r="1.5" fill="#d4b26e"/>
+    <circle cx="25" cy="28" r="1.5" fill="#d4b26e"/>
+    <path d="M0 41H42" stroke="#251f26" stroke-width="2"/>
+  </g>
+
+  <!-- Context: the flanking lots' roofs, with the front parapet along their south edge. -->
+  <rect x="0" y="128" width="96" height="32" fill="#9a8169"/>
+  <rect x="160" y="128" width="96" height="32" fill="#9a8169"/>
+  <rect x="0" y="156" width="96" height="1" fill="#3b2d32" fill-opacity="0.5"/>
+  <rect x="160" y="156" width="96" height="1" fill="#3b2d32" fill-opacity="0.5"/>
+  <rect x="0" y="157" width="96" height="2" fill="#ffffff" fill-opacity="0.34"/>
+  <rect x="160" y="157" width="96" height="2" fill="#ffffff" fill-opacity="0.34"/>
+  <rect x="0" y="159" width="96" height="1" fill="#3b2d32"/>
+  <rect x="160" y="159" width="96" height="1" fill="#3b2d32"/>
+
+  <!-- The flanking lots' fronts: the same plaster, windows and plinth. -->
+  <rect x="0" y="160" width="96" height="32" fill="#b5a28c"/>
+  <rect x="160" y="160" width="96" height="32" fill="#b5a28c"/>
+  <use xlink:href="#win-lit" transform="translate(0 160)"/>
+  <use xlink:href="#win-dark" transform="translate(32 160)"/>
+  <use xlink:href="#win-dark" transform="translate(64 160)"/>
+  <use xlink:href="#win-dark" transform="translate(160 160)"/>
+  <use xlink:href="#win-dark" transform="translate(192 160)"/>
+  <use xlink:href="#win-lit" transform="translate(224 160)"/>
+  <rect x="0" y="186" width="96" height="3" fill="#776459"/>
+  <rect x="160" y="186" width="96" height="3" fill="#776459"/>
+  <rect x="0" y="189" width="96" height="3" fill="#3b3034" fill-opacity="0.58"/>
+  <rect x="160" y="189" width="96" height="3" fill="#3b3034" fill-opacity="0.58"/>
+
+  <!-- Context: the stoop, eight stone steps down from the door to the pavement. -->
+  <rect x="96" y="128" width="64" height="64" fill="#8d867b"/>
+  <g fill="#aba395">
+    <rect x="98" y="129" width="60" height="6"/>
+    <rect x="98" y="137" width="60" height="6"/>
+    <rect x="98" y="145" width="60" height="6"/>
+    <rect x="98" y="153" width="60" height="6"/>
+    <rect x="98" y="161" width="60" height="6"/>
+    <rect x="98" y="169" width="60" height="6"/>
+    <rect x="98" y="177" width="60" height="6"/>
+    <rect x="98" y="185" width="60" height="6"/>
+  </g>
+  <g fill="#d6cfc1">
+    <rect x="98" y="134" width="60" height="1"/>
+    <rect x="98" y="142" width="60" height="1"/>
+    <rect x="98" y="150" width="60" height="1"/>
+    <rect x="98" y="158" width="60" height="1"/>
+    <rect x="98" y="166" width="60" height="1"/>
+    <rect x="98" y="174" width="60" height="1"/>
+    <rect x="98" y="182" width="60" height="1"/>
+    <rect x="98" y="190" width="60" height="1"/>
+  </g>
+  <rect x="96" y="128" width="2" height="64" fill="#776459"/>
+  <rect x="158" y="128" width="2" height="64" fill="#776459"/>
+</svg>
