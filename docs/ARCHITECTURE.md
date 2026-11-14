@@ -718,11 +718,12 @@ state — a field's inner and outer falloff boundary, the ground extent a shadow
 every collision body's own outline — read from `EventInstance`, `CrowdAgent`, `Building`, `Prop`
 and `Stroller` rather than drawn by any of them. `RouteLines` (`src/dev/route_lines.gd`), a sibling
 node rather than a fourth case on that class, draws a fourth: the day's own `RouteTree` as one
-purple polyline per route. Each of those four, plus the readout, is a numbered layer (`1`-`5`, `4`
-is the readout) `DebugReadout._unhandled_input()` toggles on raw keycodes rather than an input-map
+purple polyline per route, and `EventRouteLines`, a third such node, draws every live event's own
+route as a hot-pink polyline (layer `7`). Each of those, plus the readout and the frame graph, is a
+numbered layer (`1`-`7`, `4` is the readout) `DebugReadout._unhandled_input()` toggles on raw keycodes rather than an input-map
 action, so `project.godot` carries no binding a release build could ever reach. `DevFlags.layers_override()`
 (`--layers 1,3` or the page's own `?layers=1,3,5`, also open to a release page behind `?debug=1`)
-sets which of the four non-readout layers start on; the readout defaults on regardless, so an
+sets which of the non-readout layers start on; the readout defaults on regardless, so an
 unflagged debug run looks exactly as it always has.
 See docs/TELEMETRY.md, "The debug view", for the key mapping and what each layer draws.
 

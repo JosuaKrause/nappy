@@ -573,8 +573,9 @@ static func _controls_from_query(query: String) -> String:
 
 ## `--layers 1,3` (or `?layers=1,3` in the open bundle): which of the debug layers start on, so a
 ## rig screenshot of a particular disagreement is reproducible without a keypress — `1`-`3` are
-## `DebugLayers`' geometry, `5` the day's routes (`RouteLines`) and `6` the spike view
-## (`FrameGraph`). `4`, the readout, defaults on already and is not part of this list.
+## `DebugLayers`' geometry, `5` the day's routes (`RouteLines`), `6` the spike view
+## (`FrameGraph`) and `7` every live event's own route (`EventRouteLines`). `4`, the readout,
+## defaults on already and is not part of this list.
 func layers_override() -> Array[int]:
 	var args := active_args()
 	var index := args.find("--layers")
@@ -596,7 +597,7 @@ static func _parse_layers(raw: String) -> Array[int]:
 			push_warning("--layers: ignoring non-numeric entry '%s'" % word)
 			continue
 		var n := int(word)
-		if n < 1 or n > 6 or n == 4:
+		if n < 1 or n > 7 or n == 4:
 			push_warning("--layers: ignoring out-of-range entry '%d'" % n)
 			continue
 		if not n in result:

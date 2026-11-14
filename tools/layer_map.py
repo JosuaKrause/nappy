@@ -126,6 +126,7 @@ FILES: dict[str, str] = {
     "src/dev/debug_layers.gd": "observers",
     "src/dev/debug_mode_note.gd": "observers",
     "src/dev/debug_readout.gd": "observers",
+    "src/dev/event_route_lines.gd": "observers",
     "src/dev/route_lines.gd": "observers",
     # events: the rows and the specs they are written in are data; the plan-builders, pure
     # functions of the map and the day, are the model; the rest (the folder's) is simulation; the
