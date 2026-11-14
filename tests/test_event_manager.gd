@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 		_test_two_walks_draw_the_same_day,
 		_test_the_walk_is_handed_the_ground_the_dawn_made,
 		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
+		_test_a_drawn_body_is_told_to_whoever_listens,
 	]
 	for test in tests:
 		_build_city(t)
@@ -193,6 +194,46 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 					% drawn_on_the_walk)
 	events.use_player(null)
 	rig.free()
+
+## **A body a draw stands is told on, tile for tile** (`EventsAhead.use_drawn_body_listener()`): the
+## listener is called once for each placed plan whose row has a solid body, with
+## `EventSpawner.obstructed_footprint()` of it, and for no plan without one. With no listener a draw
+## says nothing and still stands its rows.
+func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
+	var told: Array[String] = []
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_city.events.use_drawn_body_listener(func(tiles: Array[Vector2i]) -> void:
+		told.append(str(tiles)))
+	_start(4)
+	var undrawn := _city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+	told.clear()
+	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	var expected: Array[String] = []
+	var placed := 0
+	for unit in undrawn:
+		for plan in unit.drawn():
+			if not plan.is_placed():
+				continue
+			placed += 1
+			var tiles := EventSpawner.obstructed_footprint(_city.map, plan.def, plan.position,
+					plan.facing)
+			if not tiles.is_empty():
+				expected.append(str(tiles))
+	expected.sort()
+	told.sort()
+	t.check(not expected.is_empty() and expected.size() < placed,
+			"day 4's draw stands rows with a body and rows without one (%d of %d placed have one)"
+			% [expected.size(), placed])
+	t.check(told == expected,
+			"the listener is told the footprint of each placed plan that has one, and no other"
+			+ " (%d told, %d expected)" % [told.size(), expected.size()])
+	var told_so_far := told.size()
+	_city.events.use_drawn_body_listener(Callable())
+	_start(4)
+	var drawn_before := _city.events.plans().size()
+	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	t.check(told.size() == told_so_far and _city.events.plans().size() > drawn_before,
+			"with no listener a draw tells nobody and still stands its rows")
 
 ## Each of `units`' draws as `name: row@tile, ...`, one line a unit, a row handed to her walk as
 ## `row@walk`.

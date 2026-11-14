@@ -1363,6 +1363,33 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	return true
 
+## **Recycles every car a drawn body has landed on, where nobody can see it go**: a car whose body
+## covers a tile of `tiles` (`GroundShape.tiles_under()`, which always holds the tile its centre,
+## so the tile of its lane it stands on, is in), told to leave where it is out of her view
+## (`LaneMover.leave_if_unseen()`). `tiles` is the ground the body stands on
+## (`EventSpawner.obstructed_footprint()`), which a unit drawn on her walk names while she is a
+## street away from it (`EventsAhead.use_drawn_body_listener()`).
+##
+## **A car in her view is left to the pocket rule** (`CarStrategy.begin_frame()`): it stands, and is
+## recycled once nobody can see it. A draw lands 900px or more from her, but the field is a box
+## 800px either way, so its corners hold cars up to 1,131px out and a car there can be in her view
+## of a body drawn at a corner. **Only a car is recycled**: a walker standing in the new body walks
+## out of it (`LaneMover._keep_out_of_a_body()`).
+func recycle_cars_on(tiles: Array[Vector2i]) -> void:
+	if tiles.is_empty():
+		return
+	var covered := {}
+	for tile in tiles:
+		covered[tile] = true
+	for agent in _agents:
+		var lane := agent.lane()
+		if lane.kind() != CrowdAgent.Kind.CAR:
+			continue
+		for under in lane.shape().tiles_under(agent.position, agent.heading()):
+			if covered.has(under):
+				agent.leave_if_unseen()
+				break
+
 func agent_count() -> int:
 	return _agents.size()
 

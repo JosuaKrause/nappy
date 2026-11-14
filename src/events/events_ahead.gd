@@ -399,6 +399,7 @@ func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
 		return
 	for plan in placed:
 		if plan.is_placed():
+			_tell_the_crowd_of_the_body(plan)
 			_streaming.add(plan)
 			continue
 		_walk.add(plan)
@@ -732,3 +733,27 @@ func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: 
 	_director.start_recipe_route(marbles, pre_bag, owed, first_after,
 			world.run.resistance.progress)
 	return _director.owed() if _director else 0
+
+# ------------------------------------------------------ a drawn body, told on ---
+
+## Who is told the ground a drawn body stands on (`use_drawn_body_listener()`), a `func(tiles:
+## Array[Vector2i]) -> void`. Invalid for none: a rig with no crowd.
+var _drawn_body_listener := Callable()
+
+## **Hands in who is told where a drawn body stands**: called with the tiles
+## (`EventSpawner.obstructed_footprint()`) of each plan a draw places that has a body, before the
+## body is recorded, so a crowd that holds a car on those tiles can recycle it
+## (`Crowd.recycle_cars_on()`). A unit draws out of her view, so what is recycled is not seen go. The
+## city, which makes both the events and the crowd, hands it the crowd's call. With none nothing is
+## told.
+func use_drawn_body_listener(listener: Callable) -> void:
+	_drawn_body_listener = listener
+
+## Tells the listener the ground `plan`'s body stands on, when it has one.
+func _tell_the_crowd_of_the_body(plan: EventPlan) -> void:
+	if not _drawn_body_listener.is_valid():
+		return
+	var tiles := EventSpawner.obstructed_footprint(world.map, plan.def, plan.position, plan.facing)
+	if tiles.is_empty():
+		return
+	_drawn_body_listener.call(tiles)

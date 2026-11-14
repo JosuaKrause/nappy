@@ -923,6 +923,16 @@ precinct's paving and a van parked on its lane, which is not a junction and so i
 pocket record. It does the same thing for the same reason: it stands, and it goes when nobody is
 looking.
 
+**A car a body lands on is the third.** A unit draws its events as she comes near it, out of her
+view (900px or more from her), so a stall or a barrier can land on a lane where a car already
+stands. `City` hands the events' band the crowd's `Crowd.recycle_cars_on()`, which the band calls
+with the ground each drawn body stands on (`EventSpawner.obstructed_footprint()`) before the body
+is recorded. Every car whose body covers one of those tiles is recycled where it is beyond
+`OUT_OF_SIGHT` of the camera (`LaneMover.leave_if_unseen()`): the field is a box 800px either way,
+so its corners hold cars up to 1,131px out, and a car in view is left to the pocket rule above, to
+stand and go when nobody is looking. A walker needs none of this: one standing in the new body
+walks out of it.
+
 **Sealed-off ground has walkers in it, and they keep walking.** *(2026-09-19: "they should be able
 to spawn inside a closed off section but shouldn't stand in one place but instead walk until they
 are forced to turn around (by the environment)".)* There is no walker pocket: a person turns round

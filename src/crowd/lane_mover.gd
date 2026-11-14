@@ -655,6 +655,17 @@ func _stands_on_a_street() -> bool:
 		return false
 	return _map.is_street(tile)
 
+## **Recycles this agent (`_recycle()`) where nobody can see it go, and says whether it did**
+## (`_out_of_view()`): what `Crowd.recycle_cars_on()` asks of a car a body has landed on. An agent
+## in her view is left as it is and answers false, to be dealt with by the rule that already
+## covers it (a car a pocket holds stands and is recycled once nobody can see it,
+## `CarStrategy.begin_frame()`).
+func leave_if_unseen() -> bool:
+	if not _out_of_view():
+		return false
+	_recycle()
+	return true
+
 ## Whether this agent is far enough from the camera that taking it away cannot be seen.
 ##
 ## **`CrowdField.centre_point()` is the camera.** `Crowd._physics_process()` puts it on the player
@@ -664,9 +675,9 @@ func _stands_on_a_street() -> bool:
 ## it* has always been measured against.
 ##
 ## The field's own edge is nowhere near this: it is 800px out, so an agent recycled for leaving the
-## box is out of sight several hundred pixels over. This is for the one recycle that happens
-## somewhere the player may well be standing — a pocket — and it is the whole of what makes that
-## legal.
+## box is out of sight several hundred pixels over. This is for the recycles that happen
+## somewhere the player may well be standing — a pocket, or a lane a drawn body has landed on
+## (`leave_if_unseen()`) — and it is the whole of what makes that legal.
 func _out_of_view() -> bool:
 	if not _field:
 		return true

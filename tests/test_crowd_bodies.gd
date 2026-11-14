@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 	_test_a_row_across_the_whole_street_still_turns_a_car(t, crowd, map)
 	_test_a_precinct_blocked_across_its_width_turns_walkers_round(t, crowd, map)
 	_test_partial_bodies_in_neighbouring_rows_wall_a_precinct(t, crowd, map)
+	_test_a_car_a_drawn_body_lands_on_is_recycled_out_of_view(t, crowd, map)
 
 	free_crowd(crowd)
 
@@ -297,6 +298,60 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t: Te
 	t.check(oncoming_started - oncoming.position.y > float(CityMap.period()) * Tuning.TILE_SIZE,
 			"while the oncoming lane keeps flowing past it (%.0fpx covered)"
 			% (oncoming_started - oncoming.position.y))
+	map.clear_day_obstructions()
+
+# ------------------------------------------------------- a body drawn on a car ---
+# A unit draws out of her view while she walks, so a body can land on a lane a car already stands in
+# (`Crowd.recycle_cars_on()`, told through `EventsAhead.use_drawn_body_listener()`). The car is
+# taken out where nobody sees it go; one in her view stands to the pocket rule, which is
+# `CarStrategy`'s own question and not this suite's.
+
+## Three cars on one street, a body told to cover the tile one of them stands on: it is recycled
+## when she is far from it and left standing when she is looking at it, and the car on a tile the
+## body leaves clear is never touched.
+func _test_a_car_a_drawn_body_lands_on_is_recycled_out_of_view(t: TestRunner, crowd: Crowd,
+		map: CityMap) -> void:
+	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a stretch of ordinary street to land a body on")
+	if run.x < 0:
+		return
+	var corridor := run.x
+	var lane: int = CrowdLanes.road_lane(true, 1.0)
+	var tile := Tuning.TILE_SIZE
+	var covered_along := run.y + 4
+	var covered: Array[Vector2i] = [Vector2i(corridor * CityMap.period() + lane, covered_along)]
+	var far_from_her := Vector2(CrowdLanes.lane_centre(corridor, lane)
+			+ 2.0 * Tuning.OUT_OF_SIGHT, float(covered_along * tile))
+	var checks := {"out of her view": far_from_her, "in her view": Vector2.INF}
+	for what: String in checks:
+		crowd.start_day(1, _rng(1), Vector2.ZERO)
+		crowd.clear()
+		var on_it := place_on(crowd, map, CrowdAgent.Kind.CAR, corridor, lane,
+				float(covered_along * tile) + 16.0, 1.0)
+		var clear_of_it := place_on(crowd, map, CrowdAgent.Kind.CAR, corridor, lane,
+				float((covered_along + 8) * tile) + 16.0, 1.0)
+		var focus: Vector2 = checks[what]
+		crowd.set_focus(on_it.position if focus == Vector2.INF else focus)
+		var was := on_it.position
+		var stayed := clear_of_it.position
+		crowd.recycle_cars_on(covered)
+		t.check(clear_of_it.position == stayed,
+				"a car on ground the body leaves clear is not touched (%s)" % what)
+		if what == "out of her view":
+			t.check(on_it.position.distance_to(was) > float(tile),
+					"a car a body lands on is recycled out of her view, to somewhere else")
+		else:
+			t.check(on_it.position == was,
+					"and one she can see stands where it is, for the pocket rule to take once nobody sees it")
+	crowd.start_day(1, _rng(1), Vector2.ZERO)
+	crowd.clear()
+	var walker := place_on(crowd, map, CrowdAgent.Kind.WALKER, corridor, 0,
+			float(covered_along * tile) + 16.0, 1.0)
+	crowd.set_focus(far_from_her)
+	var stood := walker.position
+	var sidewalk: Array[Vector2i] = [map.world_to_tile(walker.position)]
+	crowd.recycle_cars_on(sidewalk)
+	t.check(walker.position == stood, "a walker is never recycled: it walks out of a body itself")
 	map.clear_day_obstructions()
 
 # ------------------------------------------------------------ a precinct ---

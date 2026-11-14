@@ -1972,8 +1972,8 @@ is loud, and the reason a park is quiet.
   view it stands exactly where the seal caught it — no step, no steering, no turn — so a sealed
   crossing holds a car or two standing rather than shunting between its seals. The distance
   is measured from `CrowdField.centre_point()`, which is the player, and the field's own edge is
-  twice as far out — so this is the only recycle that ever happens somewhere she could have been
-  standing.
+  twice as far out — so this and the recycle of a car a drawn body lands on (`Crowd.recycle_cars_on()`,
+  docs/MECHANICS.md) are the only recycles that ever happen somewhere she could have been standing.
 
 - **Bodies are solid, and cars are lethal.** Walking into somebody displaces you both and startles
   them; stepping into the carriageway in front of a moving car ends the day; traffic gives way at a
