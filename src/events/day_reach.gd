@@ -27,7 +27,8 @@ var _map: CityMap
 var _grid: ReachabilityGrid
 var _shut := {}
 var _reached := {}
-## Whether `_shut` grew since `_reached` was flooded (`shut_more()`): the next question floods again.
+## Whether `_shut` grew since `_reached` was flooded (`shut_more()`): the next question floods
+## again.
 var _stale := false
 
 ## **The reach of `plans` on `map`**, read as `map` stands now: its closures and its soft seals.

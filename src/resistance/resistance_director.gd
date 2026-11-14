@@ -95,8 +95,8 @@ const PICK_REACHABLE_REDRAW_LIMIT := 24
 const CONFIRM_PASSES := 8
 ## Every how many tiles of the way from home the units round it are drawn (`_confirmed()`): every
 ## tile of the way is then within half this, 128px, of one drawn round, so a unit a pass leaves
-## undrawn, more than `Tuning.EVENT_DRAW_AHEAD` (448px) from each of those, lies more than 320px from
-## the whole way, beyond the widest reach a placement rule asks (a lethal field of 270px).
+## undrawn, more than `Tuning.EVENT_DRAW_AHEAD` (448px) from each of those, lies more than 320px
+## from the whole way, beyond the widest reach a placement rule asks (a lethal field of 270px).
 const CONFIRM_STEP := 8
 
 ## The tile `_draw_reachable()` and the neighbor's start answer for "nothing qualified" — off the

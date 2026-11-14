@@ -167,7 +167,7 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 	var home := _city.map.doorstep_world_position()
 	var rig := Rig.walker(t, _city, home)
 	var readings: Array[String] = []
-	var drawn_on_the_walk: Array[int] = []
+	var drawn_on_the_walk: Array[String] = []
 	for heading: Vector2 in [Vector2.RIGHT, Vector2.DOWN]:
 		Rig.start(_city, 4, [], home)
 		events.use_player(rig)
@@ -177,18 +177,20 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 			rig.velocity = heading * Tuning.WALK_SPEED
 			rig.global_position += rig.velocity * Rig.WALK_STEP
 		await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
-		var drawn := 0
+		var drawn: Array[String] = []
 		for unit in kept:
 			if unit.is_drawn():
-				drawn += 1
-		drawn_on_the_walk.append(drawn)
+				drawn.append(unit.name())
+		drawn.sort()
+		drawn_on_the_walk.append(", ".join(drawn))
 		events.draw_the_ground_round(Vector2.ZERO, INF)
 		readings.append(_what_the_units_drew(kept))
 	t.check(readings[0] == readings[1] and readings[0] != "",
 			"walked east and walked south, day 4's units draw the same rows on the same tiles")
-	t.check(drawn_on_the_walk[0] > 0 and drawn_on_the_walk[1] > 0,
-			"and each walk drew some of them on the way (%d east, %d south)"
-					% [drawn_on_the_walk[0], drawn_on_the_walk[1]])
+	t.check(drawn_on_the_walk[0] != "" and drawn_on_the_walk[1] != ""
+			and drawn_on_the_walk[0] != drawn_on_the_walk[1],
+			"and each walk drew some of them on the way, not the same ones (east %s; south %s)"
+					% drawn_on_the_walk)
 	events.use_player(null)
 	rig.free()
 

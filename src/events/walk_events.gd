@@ -14,9 +14,9 @@ extends RefCounted
 ## any other way.
 ##
 ## **Its writes are the walk's own**: `take()` at a walk's start, `add()` for a plan placed while she
-## walks (a unit's draw, a mast queued near her, a place from her route's bag), and `clear()`. A plan being moved
-## or spent is the plan's own business, since nothing here is derived from where a plan stands or
-## whether it is spent.
+## walks (a unit's draw, a mast queued near her, a place from her route's bag), and `clear()`. A
+## plan being moved or spent is the plan's own business, since nothing here is derived from where a
+## plan stands or whether it is spent.
 ##
 ## **Never saved**: a load starts the walk again from the run's saved inputs.
 ##
