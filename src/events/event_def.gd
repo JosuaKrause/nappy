@@ -401,8 +401,10 @@ func moves() -> bool:
 func drawn_as_often() -> float:
 	return weight
 
-## **The most of the row a day stands** (`max_per_day`): a draw does not consider it once that many
-## stand (`LocationDraw`).
+## **The most of the row a day stands** (`max_per_day`) where something counts it across the day:
+## the moments the dawn owes her (`DawnMoments`), the director's marbles, the escape's loop and the
+## scene recipes. A unit's draw counts nothing across the day; it holds one of a row in the unit
+## (`LocationDraw`).
 func most_in_a_day() -> int:
 	return max_per_day
 @export var max_per_day := 1
