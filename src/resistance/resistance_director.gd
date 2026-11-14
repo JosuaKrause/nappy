@@ -2542,10 +2542,11 @@ func _reach() -> DayReach:
 ## place; the units round every `CONFIRM_STEP`th tile of it and round the place itself drawn
 ## (`EventManager.draw_the_ground_round()`, `Tuning.EVENT_DRAW_AHEAD` round each), what they draw
 ## shutting more of the reach; and where a pass draws no unit, the place stands. A refused place is
-## redrawn as an unreachable one is. With no events (a rig placing on a bare map) nothing draws, and
-## the place stands as it is reached.
+## redrawn as an unreachable one is. Where nothing draws as she walks (no events: a rig placing on a
+## bare map; or a walk with no unit draw: a scene recipe's, the escape's), the place stands as it
+## is reached.
 func _confirmed(tile: Vector2i) -> bool:
-	if not _events:
+	if not _events or not _walk.unit_draw():
 		return true
 	var reach := _reach()
 	for _pass in CONFIRM_PASSES:

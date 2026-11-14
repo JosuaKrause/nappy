@@ -74,12 +74,16 @@ func shut_more(plans: Array[EventPlan]) -> void:
 	_shut.merge(EventScheduler.blocked_by(_map, blockers))
 	_stale = true
 
-## **A shortest walk from home to `tile`** over the walkable ground left open, home first and
-## `tile` last, a tile a step; empty where none reaches it. Home is walked from even where the
-## ground there is shut, as the flood is. What the resistance confirms a far place along
+## **A shortest walk from home to `tile`** over the ground left open, home first and `tile` last, a
+## tile a step; empty where none reaches it. It walks the ground the flood floods (what the
+## lattice's walker may cross, `CityMap.passable()` with `Mover.lattice()`, less what is shut), so
+## a tile `reaches()` answers for has a way. Home is walked from even where the ground there is
+## shut, as the flood is. What the resistance confirms a far place along
 ## (`ResistanceDirector._confirmed()`).
 func way_from_home(tile: Vector2i) -> Array[Vector2i]:
 	var way: Array[Vector2i] = []
+	var ground := Mover.lattice()
+	var bounds := Rect2i(Vector2i.ZERO, _map.size_in_tiles())
 	var home := _map.home_tile()
 	var came_from := {home: home}
 	var queue: Array[Vector2i] = [home]
@@ -91,7 +95,8 @@ func way_from_home(tile: Vector2i) -> Array[Vector2i]:
 			break
 		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var next := at + step
-			if came_from.has(next) or not _map.is_walkable(next) or _shut.has(next):
+			if came_from.has(next) or _shut.has(next) or not bounds.has_point(next) \
+					or not _map.passable(next, ground):
 				continue
 			came_from[next] = at
 			queue.append(next)

@@ -953,6 +953,11 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	var her := player.global_position
 	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	var map := city.map
+	# Every unit drawn first, as a walk that came near each would have drawn it: the section is
+	# chosen by what it holds, and the swap draws the section's surroundings before it stands its
+	# roadblock (`EventsAhead.swap_in_a_section()`), which this way draws nothing the record from
+	# before would not have.
+	city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	for plan in city.events.plans():
 		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
 			plan.spend()
