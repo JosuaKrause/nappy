@@ -1,0 +1,38 @@
+Evidence for PR #1462 (polite-tapir, units at dawn, placement step 2 of 4): the cut routes.
+
+Claim: on this branch a drawn dog walker's and police patrol's route is cut to the street's run
+(the branch's `Location.run()`, with `DawnDraw.ROUTES_STAY_ON_THE_RUN`), so its stretch is shorter
+than on main. The purple line in each picture is the day's route (debug layer 5, `--layers 5`).
+
+Limits: a route's length is read from the picture only roughly; the burst frames show a walker
+moving along it, not its exact length. The two builds draw different days (their plans differ, see
+the counts below), so "same day" means the same seed and day number, not the same events. The
+police patrol follow frames (day4-police-patrol-follow-*) do not clearly show a patrol on the route;
+the overview pictures are the route evidence for day 4. A burst is a rig walk with `--invincible`,
+so no real run's timing is shown.
+
+Source revision: branch feature-polite-tapir-units-at-dawn at 97490b92e (PR #1462 head); main at
+da1daf08d (origin/main when captured, detached checkout).
+
+Commands (from each checkout; RESOLUTION defaults to 1280x720; the burst frames are the same runs):
+  tools/shot.sh <out>.png 4 --seed 77 --day 9 --invincible --no-save --overview --layers 5
+  tools/shot.sh <out>.png 8 --seed 77 --day 9 --invincible --no-save --follow dog_walker --layers 5 --press snapshot_burst 4
+  tools/shot.sh <out>.png 8 --seed 77 --day 4 --invincible --no-save --follow police_patrol --layers 5 --press snapshot_burst 4
+  tools/shot.sh <out>.png 8 --seed 77 --day 4 --invincible --no-save --follow dog_walker --layers 5 --press snapshot_burst 4
+  tools/shot.sh <out>.png 4 --seed 77 --day 4 --invincible --no-save --overview --layers 5
+
+Plan counts, from each run's log (its `plan events:` line, the rows the day drew):
+  day 9, branch: dog_walker x20, police_patrol x3   (charging_dog x30, chatting_mother x54)
+  day 9, main:   dog_walker x17, police_patrol x10  (charging_dog x2, chatting_mother x2)
+  day 4, branch: dog_walker x12, police_patrol x12  (charging_dog x53, chatting_mother x66)
+  day 4, main:   dog_walker x22, police_patrol x10  (charging_dog x3, chatting_mother x2)
+
+Retained: for each of the six bursts, burst.json and its first, middle and last frame (a burst is
+11 to 28 frames; the other frames and the run logs stay in the telemetry folder outside the
+repository), and the overview and follow stills of each run.
+
+Files: day9-overview-routes-{branch,main}.png, day4-overview-routes-{branch,main}.png,
+day9-dog-walker-follow-{branch,main}.png, day4-dog-walker-follow-{branch,main}.png,
+day4-police-patrol-follow-{branch,main}.png; and for each of day9-dog-walker-{branch,main},
+day4-dog-walker-{branch,main} and day4-police-patrol-{branch,main}: -burst.json, -burst-first.png,
+-burst-middle.png and -burst-last.png.
