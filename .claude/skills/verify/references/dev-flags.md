@@ -54,6 +54,9 @@ somewhere.
   of tiles inside the corner, on the pavement — the dev rig's nearest-walkable search (`src/dev/dev_rig.gd`,
   the closest walkable point to a target) will otherwise happily leave her on the boundary
   carriageway.
+- **`--layers 7` draws every live event's own route**, one hot-pink polyline each with a dot at its
+  start and a square at its end (`EventRouteLines`), the way `--layers 5` draws her day's planned
+  routes in purple; `--layers 5,7` shows both. `6` is the frame graph, not a route layer.
 - **`--after` is in seconds, not frames.** The windowed build draws ~110fps, so a frame count is
   quietly useless.
 - **`--press snapshot_burst <seconds>` records a burst instead of a still** (PLAYTEST-56;

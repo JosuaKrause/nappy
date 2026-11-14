@@ -3,7 +3,8 @@ extends Node2D
 ## The developer's furniture over a run, none of it part of the game's UI: the right-hand readout
 ## (seed, day, phase, her ground, what is out, the frame's cost, the meter's flows), the frame-time
 ## graph, the `?debug=1` note, the debug view's world overlays (`DebugLayers`) and the day's planned
-## routes (`RouteLines`), their number keys, and the snapshot keys.
+## routes (`RouteLines`), every live event's own route (`EventRouteLines`), their number keys, and
+## the snapshot keys.
 ##
 ## **Gated, not merely hidden.** The readout runs only on a debug build (`_debug`) or under the
 ## page's own `?debug=1` or `--debug` (`_readout_requested`); the graph, the overlays and the routes
@@ -83,6 +84,8 @@ var _debug_mode_note: DebugModeNote
 var _debug_layers: DebugLayers
 ## The day's planned routes, key `5` — null unless the gate holds, and until a city stands.
 var _route_lines: RouteLines
+## Every live event's own route, key `7` — null unless the gate holds, and until a world stands.
+var _event_routes: EventRouteLines
 
 ## What the readout reads.
 var _run: RunHeader
@@ -144,6 +147,7 @@ func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: Worl
 		return
 	if _debug_layers:
 		_debug_layers.setup(events, crowd, world, _player)
+		_event_routes.setup(events)
 		return
 	_debug_layers = DebugLayers.new()
 	_debug_layers.name = "DebugLayers"
@@ -152,7 +156,15 @@ func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: Worl
 	_debug_layers.apply_initial_state(_layers_override)
 	add_child(_debug_layers)
 	_debug_layers.process_mode = Node.PROCESS_MODE_PAUSABLE
-	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes")
+	_event_routes = EventRouteLines.new()
+	_event_routes.name = "EventRouteLines"
+	DrawLayer.draw_on(_event_routes, DrawLayer.Layer.DEBUG)
+	_event_routes.setup(events)
+	_event_routes.apply_initial_state(_layers_override)
+	add_child(_event_routes)
+	_event_routes.process_mode = Node.PROCESS_MODE_PAUSABLE
+	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes"
+			+ "   6 frame graph   7 event routes")
 
 ## The day's planned routes over `map`, drawn as purple polylines. A sibling of the overlays rather
 ## than a fourth case on them: those query the live geometry every frame, and this draws a fixed
@@ -404,7 +416,8 @@ static func _debug_snapshot_action(event: InputEvent) -> StringName:
 	return &""
 
 ## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the day's routes, `6` the
-## frame-time graph — or `0` for anything else, an echo included.
+## frame-time graph, `7` every live event's own route — or `0` for anything else, an echo
+## included.
 static func _debug_layer_key(event: InputEvent) -> int:
 	if not (event is InputEventKey and (event as InputEventKey).pressed):
 		return 0
@@ -417,9 +430,11 @@ static func _debug_layer_key(event: InputEvent) -> int:
 		KEY_4: return 4
 		KEY_5: return 5
 		KEY_6: return 6
+		KEY_7: return 7
 		_: return 0
 
-## `4` and `6` are this node's own switches, `5` the routes' visibility, and `1`–`3` the overlays'.
+## `4` and `6` are this node's own switches, `5` and `7` the route layers' visibility, and `1`–`3`
+## the overlays'.
 ## Turning the graph off also empties its ring, so `6` twice leaves a blank graph that fills from
 ## that moment (2026-09-15, the player: "toggling the layer twice will lead to a blank frame
 ## array").
@@ -431,6 +446,10 @@ func _toggle_debug_layer(layer: int) -> void:
 	if layer == 5:
 		if _route_lines:
 			_route_lines.visible = not _route_lines.visible
+		return
+	if layer == 7:
+		if _event_routes:
+			_event_routes.visible = not _event_routes.visible
 		return
 	if layer == 6:
 		_layer_graph_on = not _layer_graph_on
