@@ -46,6 +46,14 @@ class Segment extends RefCounted:
 		return Rect2i(origin + Vector2i(0, Tuning.STREET_WIDTH),
 				Vector2i(Tuning.STREET_WIDTH, Tuning.BLOCK_SIZE))
 
+	## The street's tiles grown by a street's width at both ends along the street: the street and
+	## the two junction boxes at its ends, and nothing past them.
+	func run_rect() -> Rect2i:
+		var street := tile_rect()
+		if horizontal:
+			return street.grow_individual(Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH, 0)
+		return street.grow_individual(0, Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH)
+
 	## The one-tile strip where the street meets the junction at one of its ends. A closure
 	## is sealed here rather than in the middle of the street, so that it is visible from
 	## the junction — which is the last moment the player can still choose another way.

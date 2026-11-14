@@ -3,20 +3,18 @@ extends RefCounted
 ## all touch drawn in every order they can be asked for, the draws and what each is judged among the
 ## same every time; a unit asked for draws the touching units of lower rank it waits for first, down
 ## a chain, and is judged among the dawn's plans and the draws of the units touching it only; a
-## unit draws once; a street's sections come first in the order it draws its locations; and the
-## scope rule is told which unit draws before it does.
+## unit draws once; and a street's sections come first in the order it draws its locations.
 ##
 ## Run with stand-ins for what it is handed: the day's units (`_Units`, a touching table set by
-## hand), the location draw (`_Drawing`, which records each call and answers one plan for it) and
-## the scope rule (`_Scope`, which records whom it was told looks); the units are real
-## (`PlacementUnit`, state), each of one location or a street's handful made by hand.
+## hand) and the location draw (`_Drawing`, which records each call and answers one plan for it);
+## the units are real (`PlacementUnit`, state), each of one location or a street's handful made by
+## hand.
 
 func run(t: TestRunner) -> void:
 	_test_every_order_of_asking_draws_the_same(t)
 	_test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t)
 	_test_a_unit_draws_once(t)
 	_test_a_streets_sections_draw_first(t)
-	_test_the_scope_rule_is_told_who_draws(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -31,10 +29,6 @@ class _Units extends DayUnits:
 		found.sort_custom(func(a: PlacementUnit, b: PlacementUnit) -> bool:
 			return a.draws_before(b))
 		return found
-
-	## Overrides DayUnits.touches.
-	func touches(a: PlacementUnit, b: PlacementUnit) -> bool:
-		return (table.get(a.name(), []) as Array).has(b)
 
 class _Drawing extends LocationDraw:
 	## Location -> the name of its unit.
@@ -58,13 +52,6 @@ class _Drawing extends LocationDraw:
 		unit_of[plan.placed_at()] = name
 		var placed: Array[EventPlan] = [plan]
 		return placed
-
-class _Scope extends UnitScopeRule:
-	var looked: Array[String] = []
-
-	## Overrides UnitScopeRule.look_from.
-	func look_from(unit: PlacementUnit) -> void:
-		looked.append(unit.name())
 
 ## A unit of one junction location at `x` blocks along, and its location in `drawing`.
 static func _unit(x: int, drawing: _Drawing, day_seed := 11) -> PlacementUnit:
@@ -196,13 +183,3 @@ func _test_a_streets_sections_draw_first(t: TestRunner) -> void:
 			sidewalk, sidewalk, sidewalk] as Array[int]) and sections == ([0, 1, 2] as Array[int]),
 			"a street draws its three sections first, in order along it, then its sidewalks")
 	t.check(drawing.calls[0][3] == [ON], "from one bag, of the one view its locations are in")
-
-func _test_the_scope_rule_is_told_who_draws(t: TestRunner) -> void:
-	var drawing := _Drawing.new()
-	var ranked := _ranked([_unit(0, drawing), _unit(1, drawing)] as Array[PlacementUnit])
-	var units := _Units.new()
-	units.table = {ranked[0].name(): [ranked[1]], ranked[1].name(): [ranked[0]]}
-	var scope := _Scope.new(units)
-	UnitDraw.new(units, drawing, _fills(), _dawn(), scope).draw(ranked[1])
-	t.check(scope.looked == ([ranked[0].name(), ranked[1].name()] as Array[String]),
-			"the scope rule is told each unit before it draws, in the order they draw")

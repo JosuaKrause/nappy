@@ -87,7 +87,8 @@ func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 
 ## Every row stands on a tile type its row allows, and **no unit holds two drawn rows of one id**
 ## (`LocationDraw.draw()`): the units are the day's own (`DawnContext.unit_draw()`), each found
-## from the plans that stand in it.
+## as one that touches a unit of the day's locations (`DayUnits.touching()`, every unit has a
+## neighbour: a street its boxes).
 func _test_scheduler_respects_placement_and_one_of_a_row_per_unit(t: TestRunner) -> void:
 	var map := _map()
 	var units_seen := 0
@@ -101,12 +102,12 @@ func _test_scheduler_respects_placement_and_one_of_a_row_per_unit(t: TestRunner)
 			var tile := map.world_to_tile(plan.position)
 			t.check(map.tile_at(tile) in plan.def.placement,
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
-		var units := _dawn(day).unit_draw().units()
+		var dawn := _dawn(day)
+		var units := dawn.unit_draw().units()
+		var fresh := DayUnits.of(dawn.locations().all(), dawn.day_seed())
 		var checked := {}
-		for plan: EventPlan in planned:
-			if not plan.is_placed():
-				continue
-			for unit in units.reached_by(plan, 0.0):
+		for start in fresh.undrawn_within(Vector2.ZERO, INF):
+			for unit in units.touching(start):
 				if checked.has(unit):
 					continue
 				checked[unit] = true

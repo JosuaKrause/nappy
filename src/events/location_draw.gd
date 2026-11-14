@@ -1,10 +1,11 @@
 class_name LocationDraw
 extends RefCounted
 ## **One unit's locations drawn, each from its view's bag** (inbox #1185 in gentle-owl;
-## `docs/EVENTS.md`, "The three views and the placement order"): every location still open is filled by one draw from
-## the bag of its view (`ViewBag`), the empty event among the marbles, and what is drawn is what
-## stands there, with no rejection: **a row the day's ground leaves invalid at the location is not
-## considered** (`LocationGround.offer()`, today's placement rules deciding, as the player said:
+## `docs/EVENTS.md`, "The three views and the placement order"): every location still open is
+## filled by one draw from the bag of its view (`ViewBag`), the empty event among the marbles, and
+## what is drawn is what stands there, with no rejection: **a row the day's ground leaves invalid
+## at the location is not considered** (`LocationGround.offer()`, today's placement rules
+## deciding, as the player said:
 ## "which events make which others invalid on the same street -- this is what your current rules
 ## accomplish. the same applies still"). Each row's share is the location's own weight times the
 ## bag's (`LocationGround.scale()`).

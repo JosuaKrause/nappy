@@ -1306,14 +1306,17 @@ Each item quotes the code on this branch.
    escape's one notice at a time and its walk kept open), composed per walk (`StreetInvalidation`)
    with a location's own ground (`LocationFit`), each asked against the dawn's plans and the draws
    of the unit and the units touching it, and a location takes the first tile no rule refuses
-   (`RuledLocationGround.offer()`). Two rules make that scope enough. A lethal row is refused
-   ground from which its field would reach a unit its draw cannot see (`UnitScopeRule`; the step's
-   designer's choice, open to the player's overturn). And a drawn row's route stops at the far edge
-   of the junction boxes at its own street's ends (`Location.run()`), so the dog walker's, the
-   police patrol's and the military convoy's routes are at most a street and its two boxes long, as
-   the player settled it on the board (question long-routes). One case is left open and measured (`tests/probes/m129_zero_cost_line.gd`): two rows in
-   units at opposite ends of a route's street, neither touching the other, each reaching into the
-   street, are not asked together whether its walked sidewalk keeps a free line.
+   (`RuledLocationGround.offer()`). Two things make that scope enough. A lethal row a unit draws
+   is a wall or a pursuer, and neither keeps a field clear (`EventPlan.keeps_its_field_clear()`),
+   so no drawn row has a field to reach ground the draw cannot see; a row that does keep one is
+   never a unit's, it is the dawn's (which every unit's draw is judged among) or sited from her
+   walk. And a drawn row's route stops at the far edge of the junction boxes at its own street's
+   ends (`Location.run()`), so the dog walker's, the police patrol's and the military convoy's
+   routes stay inside a street and its two boxes (a route starts on a tile of the street and goes
+   one way, so at most 13 tiles; one drawn in a junction box stays in the box), the player's
+   answer (inbox #1460). One case is left open and measured (`tests/probes/m129_zero_cost_line.gd`):
+   two rows in units at opposite ends of a route's street, neither touching the other, each
+   reaching into the street, are not asked together whether its walked sidewalk keeps a free line.
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
 2. **The walk's sitings still roll a spot.** `WalkSiting` goes through `_best_of()`, which rolls
@@ -2003,7 +2006,9 @@ a unit draws depend on the order the units are drawn in, and so on her path. In 
 holds at most one of a row (`LocationDraw`), and the day places what its shares and weights give.
 Repeats are fine — the same event several times over is what a street is — so density needs no new
 catalogue rows. `max_per_day` still bounds what no unit draws: the moments she is owed
-(`DawnMoments`), the director's marbles, the escape's bag and the scene recipes. **So heat does not
+(`DawnMoments`, where the spec keeps the caps), the director's marbles and the rows of a scene
+recipe that no unit draws (`SceneRecipeRuntime`); the escape's bag does not, since the escape's
+spec turns the caps off, and no other spec walks a bag. **So heat does not
 bound a drawn row**: heat raises a row's `max_per_day` (`EventDef.heated()`), which a drawn row no
 longer meets.
 

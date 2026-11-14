@@ -171,7 +171,6 @@ FILES: dict[str, str] = {
     "src/events/street_rules/route_ground_rule.gd": "model",
     "src/events/street_rules/route_junctions_rule.gd": "model",
     "src/events/street_rules/route_sidewalk_rule.gd": "model",
-    "src/events/street_rules/unit_scope_rule.gd": "model",
     "src/events/street_rules/unused_calm_rule.gd": "model",
     "src/events/street_rules/walk_open_rule.gd": "model",
     "src/events/unit_draw.gd": "model",

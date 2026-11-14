@@ -25,19 +25,16 @@ var _units: DayUnits
 var _drawing: LocationDraw
 var _fills := {}
 var _dawn: Array[EventPlan] = []
-var _scope_rule: UnitScopeRule
 
 ## `units` the day's units; `drawing` draws one unit's locations (`LocationDraw`); `fills` the
 ## three views' bag fills (`view -> {marble -> count}`, `EventScheduler.view_fills()`); `dawn` the
-## plans the dawn placed, copied; `scope_rule` the rule told which unit draws
-## (`UnitScopeRule.look_from()`), or null.
-func _init(units: DayUnits, drawing: LocationDraw, fills: Dictionary, dawn: Array[EventPlan],
-		scope_rule: UnitScopeRule = null) -> void:
+## plans the dawn placed, copied.
+func _init(units: DayUnits, drawing: LocationDraw, fills: Dictionary,
+		dawn: Array[EventPlan]) -> void:
 	_units = units
 	_drawing = drawing
 	_fills = fills
 	_dawn = dawn.duplicate()
-	_scope_rule = scope_rule
 
 ## The day's units the draw draws.
 func units() -> DayUnits:
@@ -47,7 +44,7 @@ func units() -> DayUnits:
 ## unit touching it has a lower rank, else the same question asked of the lowest-ranked such unit.
 ## Null where `unit` is drawn. Each step lowers the rank, so it ends, on a unit every touching unit
 ## of lower rank of which is drawn: the one condition a draw has.
-func next_towards(unit: PlacementUnit) -> PlacementUnit:
+func _next_towards(unit: PlacementUnit) -> PlacementUnit:
 	if unit.is_drawn():
 		return null
 	var at := unit
@@ -57,10 +54,10 @@ func next_towards(unit: PlacementUnit) -> PlacementUnit:
 		lower = _lowest_waited_for(at)
 	return at
 
-## **Draws one unit, the one `next_towards(unit)` names**, and answers what it placed, in the
+## **Draws one unit, the one `_next_towards(unit)` names**, and answers what it placed, in the
 ## order drawn, a row handed to her walk among them unplaced. Empty where `unit` is drawn.
 func draw_one_towards(unit: PlacementUnit) -> Array[EventPlan]:
-	var next := next_towards(unit)
+	var next := _next_towards(unit)
 	if next == null:
 		var none: Array[EventPlan] = []
 		return none
@@ -87,8 +84,6 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 	for other in _units.touching(unit):
 		if other.is_drawn():
 			among.append_array(other.drawn())
-	if _scope_rule:
-		_scope_rule.look_from(unit)
 	var rng := unit.stream()
 	var order := _order_of(unit.locations(), rng)
 	var bags := {}

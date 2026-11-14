@@ -976,7 +976,10 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 					% [entry.name, (": " + "; ".join(why)) if not why.is_empty() else ""])
 			continue
 		counts[def.id] = int(counts.get(def.id, 0)) + 1
-		if def.max_per_day > 0 and int(counts[def.id]) > def.max_per_day:
+		# A day holds no cap on a row its units draw (one of a row in a unit instead,
+		# `LocationDraw`), so a row a unit draws is held to none here either.
+		var capped := not def.is_drawn_by_units(_run.header.day) and def.max_per_day > 0
+		if capped and int(counts[def.id]) > def.max_per_day:
 			errors.append("event %s exceeds the ordinary per-day cap" % entry.name)
 		var requested := PackedVector2Array()
 		for point: Variant in entry.get("path", []):

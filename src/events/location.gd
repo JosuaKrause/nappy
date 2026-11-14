@@ -78,10 +78,7 @@ func part_of() -> Rect2i:
 func run() -> Rect2i:
 	if not _segment:
 		return _whole
-	var street := _segment.tile_rect()
-	if _segment.horizontal:
-		return street.grow_individual(Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH, 0)
-	return street.grow_individual(0, Tuning.STREET_WIDTH, 0, Tuning.STREET_WIDTH)
+	return _segment.run_rect()
 
 ## The middle of the location, in world space.
 func centre() -> Vector2:

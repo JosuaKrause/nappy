@@ -1,7 +1,7 @@
 class_name DayUnits
 extends RefCounted
 ## **The day's units and which touch which**, worked out once from the day's locations
-## (`DayLocations.all()`) and handed to whatever draws or asks (`UnitDraw`, `UnitScopeRule`): the
+## (`DayLocations.all()`) and handed to whatever draws or asks (`UnitDraw`): the
 ## one object holding the answer, so nothing works it out again (inbox #1156 in gray-dolphin).
 ##
 ## **Two units touch when they share a junction box, or border the same alley, park or square**
@@ -15,9 +15,8 @@ extends RefCounted
 ##   lot itself included;
 ## - two different units touch where both meet one box or both border one lot;
 ## - and, where a reach is given (`of()`'s `reach`), two units whose ground lies within that reach
-##   of each other touch as well. None is given in the game: the item's relation is the default,
-##   and a reach is how a probe measures what a wider relation would pull (the board's
-##   touching-reach question).
+##   of each other touch as well. The reach is one setting whose default, none, is the item's
+##   relation, which the game uses; a probe gives one to measure what a wider relation would pull.
 ##
 ## *The designer's readings, open to overturn:* a lot borders every street and box round its
 ## block, not only the ones its ground opens onto (an alley robbery's field covers its whole block
@@ -76,11 +75,6 @@ func touching(unit: PlacementUnit) -> Array[PlacementUnit]:
 	var kept: Array[PlacementUnit] = _touching_in_order[unit.name()]
 	return kept.duplicate()
 
-## Whether `a` and `b` touch: two different units sharing a box or a lot.
-func touches(a: PlacementUnit, b: PlacementUnit) -> bool:
-	var names: Dictionary = _touching.get(a.name(), {})
-	return names.has(b.name())
-
 ## **The undrawn units any part of whose bounds lies within `radius` of `at`**, nearest first (by
 ## the distance from `at` to the bounds, a tie by the draw order); every undrawn unit for `radius`
 ## INF.
@@ -99,16 +93,6 @@ func undrawn_within(at: Vector2, radius: float) -> Array[PlacementUnit]:
 	var found: Array[PlacementUnit] = []
 	for entry: Array in ranked:
 		found.append(entry[1])
-	return found
-
-## **The units, drawn or not, whose bounds lie within `reach` of `plan`**
-## (`EventPlan.reach_touches()`): where a field of that reach, from where the plan stands or any
-## corner of its route, can land.
-func reached_by(plan: EventPlan, reach: float) -> Array[PlacementUnit]:
-	var found: Array[PlacementUnit] = []
-	for unit in _order:
-		if plan.reach_touches(unit.bounds(), reach):
-			found.append(unit)
 	return found
 
 ## The unit kind a location's kind belongs to.

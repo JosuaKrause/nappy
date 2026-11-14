@@ -402,9 +402,10 @@ func drawn_as_often() -> float:
 	return weight
 
 ## **The most of the row a day stands** (`max_per_day`) where something counts it across the day:
-## the moments the dawn owes her (`DawnMoments`), the director's marbles, the escape's loop and the
-## scene recipes. A unit's draw counts nothing across the day; it holds one of a row in the unit
-## (`LocationDraw`).
+## the moments the dawn owes her (`DawnMoments`, where the spec keeps the caps), the director's
+## marbles and the rows of a scene recipe that no unit draws (`SceneRecipeRuntime`). The escape's
+## bag walk reads `max_per_day` only for a spec that keeps the caps, and the escape's does not. A
+## unit's draw counts nothing across the day; it holds one of a row in the unit (`LocationDraw`).
 func most_in_a_day() -> int:
 	return max_per_day
 @export var max_per_day := 1
@@ -661,6 +662,12 @@ func obstructs_within() -> float:
 ## `validate()`'s refusal is a `push_error`, which fails the whole run.
 func is_a_one_shot_off_her_way() -> bool:
 	return kind == GameEnums.EventKind.ONE_SHOT and on_her_way == null
+
+## **Whether a unit's draw can draw the row on `day`** (`DawnDraw`): a recurring row placed on the
+## map, so one a day's dawn gives a marble in its view's bag; the moments' rows (director-sited) and
+## the one-shots are not.
+func is_drawn_by_units(day: int) -> bool:
+	return kind == GameEnums.EventKind.RECURRING and spawn_mode_on(day) == SpawnMode.MAP
 
 ## **Whether a recurring row the day draws is handed to her walk to site** (`on_her_way`, the
 ## sidewalk poster crew): a location draws it like any other and hands it on with no position for

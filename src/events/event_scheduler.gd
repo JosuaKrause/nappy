@@ -1261,8 +1261,9 @@ const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31,
 ## `why`. A recipe keeps its data: `at` names the tile, and so the location holding it
 ## (`DayLocations.holding()`, of the ground under it), which is asked once, as a dawn phase asks a
 ## location: the tile is one the location takes for the row (`LocationFit`), the candidate built
-## there on a private stream (`route_seed`, so unrelated actors cannot move a required path), and the
-## day's rules allow it (`StreetInvalidation`, the calm `calm` says she has not used left alone). No
+## there on a private stream (`route_seed`, so unrelated actors cannot move a required path), a
+## recurring row's route kept on its location's run as the day's unit draw keeps it
+## (`Location.run()`), and the day's rules allow it (`StreetInvalidation`, the calm `calm` says she has not used left alone). No
 ## tries and no fallback: a location that does not take the row fails the recipe loudly, with the
 ## reason, rather than placing it somewhere else (the orchestrator's reading, open to the player's
 ## overturn). `locations` is the day's, laid out once for the whole recipe; laid out here for a
@@ -1291,7 +1292,10 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
-	var candidate := fit.build(def, tile, rng)
+	var run := Rect2i()
+	if def.is_drawn_by_units(day) and DawnDraw.ROUTES_STAY_ON_THE_RUN:
+		run = location.run()
+	var candidate := fit.build(def, tile, rng, run)
 	if not candidate:
 		why.append("%s cannot be built on tile %s" % [def.id, tile])
 		return null

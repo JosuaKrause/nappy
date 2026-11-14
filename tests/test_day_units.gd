@@ -4,8 +4,7 @@ extends RefCounted
 ## ends and the streets meeting it there; a lot (an alley, a park, a square) touching the streets
 ## and boxes round its block, and they each other through it, and another lot in its block; two
 ## parallel streets with no lot between them not touching; the undrawn units near a point nearest
-## first, and every one for an infinite radius; the units a field of a reach lands on; and a reach
-## handed in making units that far apart touch besides.
+## first, and every one for an infinite radius; and a reach handed in making units that far apart touch besides.
 ##
 ## Built of plain values: `Location`s made by hand on the lattice's own numbers (a junction box at
 ## `junction * CityMap.period()`, a street between two of them,
@@ -16,7 +15,6 @@ func run(t: TestRunner) -> void:
 	_test_a_street_touches_its_boxes_and_the_streets_meeting_there(t)
 	_test_a_lot_touches_the_ground_round_its_block(t)
 	_test_the_undrawn_units_nearest_first(t)
-	_test_the_units_a_field_reaches(t)
 	_test_a_reach_widens_what_touches(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
@@ -121,11 +119,11 @@ func _test_a_street_touches_its_boxes_and_the_streets_meeting_there(t: TestRunne
 	t.check(_names(units.touching(north)) == expected,
 			"a street touches the two boxes at its ends and the streets meeting it there (%s)"
 			% [_names(units.touching(north))])
-	t.check(units.touches(north, east) and units.touches(east, north),
+	t.check(_touch(units, north, east) and _touch(units, east, north),
 			"two streets meeting at a box touch, both ways")
-	t.check(not units.touches(north, south),
+	t.check(not _touch(units, north, south),
 			"two parallel streets with no lot between them do not touch")
-	t.check(not units.touches(north, far) and not units.touches(north, north),
+	t.check(not _touch(units, north, far) and not _touch(units, north, north),
 			"nor does a street two blocks away, and nothing touches itself")
 	var touching := units.touching(north)
 	var in_order := true
@@ -147,14 +145,14 @@ func _test_a_lot_touches_the_ground_round_its_block(t: TestRunner) -> void:
 	var far := _unit_named(units, _street_name(Vector2i(4, 1), true))
 	var round_the_block := true
 	for unit: PlacementUnit in [north, south, west, corner]:
-		round_the_block = round_the_block and units.touches(alley, unit)
+		round_the_block = round_the_block and _touch(units, alley, unit)
 	t.check(round_the_block, "an alley touches every street and box round its block")
-	t.check(units.touches(north, south),
+	t.check(_touch(units, north, south),
 			"and the streets on opposite sides of its block touch through it")
-	t.check(units.touches(_unit_named(units, _box_name(Vector2i(1, 1))), south),
+	t.check(_touch(units, _unit_named(units, _box_name(Vector2i(1, 1))), south),
 			"as a box and a street on opposite sides of the block do")
-	t.check(units.touches(alley, square), "two lots in one block touch")
-	t.check(not units.touches(alley, far), "while a street two blocks away does not")
+	t.check(_touch(units, alley, square), "two lots in one block touch")
+	t.check(not _touch(units, alley, far), "while a street two blocks away does not")
 
 func _test_the_undrawn_units_nearest_first(t: TestRunner) -> void:
 	var units := DayUnits.of(_city(false), 1)
@@ -182,18 +180,6 @@ static func _distance(at: Vector2, unit: PlacementUnit) -> float:
 	return at.distance_to(Vector2(clampf(at.x, bounds.position.x, bounds.end.x),
 			clampf(at.y, bounds.position.y, bounds.end.y)))
 
-func _test_the_units_a_field_reaches(t: TestRunner) -> void:
-	var units := DayUnits.of(_city(false), 1)
-	var box := _box_rect(Vector2i(4, 1))
-	var at := Vector2(box.get_center()) * Tuning.TILE_SIZE
-	var plan := EventPlan.new(EventCatalogue.by_id("cafe_tables"), at)
-	var expected: Array[String] = [_box_name(Vector2i(4, 1)), _street_name(Vector2i(4, 1), true)]
-	t.check(_names(units.reached_by(plan, 4.0 * Tuning.TILE_SIZE)) == expected,
-			"a field of four tiles from a box's middle lands on the box and its street (%s)"
-			% [_names(units.reached_by(plan, 4.0 * Tuning.TILE_SIZE))])
-	t.check(units.reached_by(plan, 20.0 * Tuning.TILE_SIZE).size() == 3,
-			"and one of twenty tiles on the box at the street's far end as well")
-
 ## **A reach handed in widens the relation, and only by it**: the two parallel streets either side of
 ## a block, 256px apart with no lot between them, do not touch by the item's relation, and do with a
 ## reach of 270px, while the street two blocks away still does not.
@@ -202,12 +188,16 @@ func _test_a_reach_widens_what_touches(t: TestRunner) -> void:
 	var south_name := _street_name(Vector2i(1, 2), true)
 	var far_name := _street_name(Vector2i(4, 1), true)
 	var plain := DayUnits.of(_city(false), 1)
-	t.check(not plain.touches(_unit_named(plain, north_name), _unit_named(plain, south_name)),
+	t.check(not _touch(plain, _unit_named(plain, north_name), _unit_named(plain, south_name)),
 			"by the item's relation two parallel streets a block apart do not touch")
 	var wide := DayUnits.of(_city(false), 1, 270.0)
 	var north := _unit_named(wide, north_name)
-	t.check(wide.touches(north, _unit_named(wide, south_name))
-			and wide.touches(_unit_named(wide, south_name), north),
+	t.check(_touch(wide, north, _unit_named(wide, south_name))
+			and _touch(wide, _unit_named(wide, south_name), north),
 			"with a reach of 270px they touch, both ways")
-	t.check(not wide.touches(north, _unit_named(wide, far_name)),
+	t.check(not _touch(wide, north, _unit_named(wide, far_name)),
 			"and a street two blocks off still does not")
+
+## Whether `b` is one of the units `a` touches (`DayUnits.touching()`).
+static func _touch(units: DayUnits, a: PlacementUnit, b: PlacementUnit) -> bool:
+	return b in units.touching(a)

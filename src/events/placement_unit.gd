@@ -66,14 +66,14 @@ func locations() -> Array[Location]:
 	return _locations
 
 ## Its fixed rank for the day, a hash of the day's seed and its name.
-func rank() -> int:
+func _ranking() -> int:
 	return _rank
 
 ## **Whether this unit draws before `other`** where the two touch: the lower rank first, a tie
 ## broken by the name, so every two units are ordered.
 func draws_before(other: PlacementUnit) -> bool:
-	if _rank != other.rank():
-		return _rank < other.rank()
+	if _rank != other._ranking():
+		return _rank < other._ranking()
 	return _name < other.name()
 
 ## **The unit's own stream**: a new generator each call, seeded by the day's seed and the name, so

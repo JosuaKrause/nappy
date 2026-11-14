@@ -40,8 +40,8 @@ A test never asserts what a setting is, and the relationship tests that encode a
 draws the rules leave empty, with `GROUND_WEIGHTS`, each row's weight per kind of ground, fitted
 beside them so the mix holds), and the rows' weights. **`max_per_day` does not move a row the units
 draw**: no daily cap bounds one, a unit holding at most one of a row instead (`docs/EVENTS.md`,
-"The density, and why it is shares and bags"); it still bounds the moments, the director's marbles,
-the escape's bag and the scene recipes, and is changed first for those, because **a share the
+"The density, and why it is shares and bags"); it still bounds the moments, the director's marbles
+and the rows of a scene recipe that no unit draws, and is changed first for those, because **a share the
 catalogue cannot fill is not density**. Then **measure what
 a day places**, over several seeds (`tests/probes/placement_view_mix.gd` per view,
 `tests/probes/placement_rows.gd` row by row, on main and on the branch), since the day's rules
@@ -60,8 +60,8 @@ They move by different multiples, and only the last is what the player is compla
 
 ## Two levers, and which one binds differs by day
 
-Where a cap still applies (the moments, the director's marbles, the escape's bag, the scene
-recipes), a **cap** binds when the day reaches it. A **weight** binds when it does not, because a
+Where a cap still applies (the moments, the director's marbles, the rows of a scene recipe that
+no unit draws; the escape's bag turns the caps off), a **cap** binds when the day reaches it. A **weight** binds when it does not, because a
 row is only drawn as often as its weight, and a row the units draw has the weight alone. **Raising a
 cap the day never reaches does nothing at all** — that is "a share the catalogue cannot fill is not
 density" at the other end.
