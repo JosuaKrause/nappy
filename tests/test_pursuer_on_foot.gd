@@ -82,9 +82,13 @@ func _the_map_of_day_8(seed_value: int) -> CityMap:
 	map.repaint(state)
 	return map
 
-## The routes the day's own planning gives `police_patrol` at full heat on `seed_value`'s map: the
-## paths of the patrols a real day-8 dawn (`EventScheduler.build_day()`) places, those at least 400px
-## long. Planned once per seed for the suite, and only read by the checks that drive a patrol down them.
+## Real `police_patrol` routes at full heat on `seed_value`'s map, those at least 400px long: from
+## where each patrol a real day-8 dawn (`EventScheduler.build_day()`) places stands, the route the
+## plan builder lays there with nothing bounding it (`PlanBuilder.build()`), as a patrol her walk
+## sites (the return's patrols) is laid. A patrol the units draw keeps its route on its street and
+## the boxes at its ends (`Location.run()`), at most 13 tiles, too short to drive up to her and let
+## a man out. Planned once per seed for the suite, and only read by the checks that drive a patrol
+## down them.
 func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	if _routes.has(seed_value):
 		return _routes[seed_value]
@@ -93,11 +97,14 @@ func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	rng.seed = seed_value
 	var plans := GameDawn.of(DaySpec.for_day(8), rng, map).on(RouteTree.for_day(map, 8)) \
 			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
+	var builder := GamePlanBuilder.over(map)
 	var routes: Array[PackedVector2Array] = []
 	for plan in plans:
-		if plan.def.id == "police_patrol" and plan.path.size() >= 2 \
-				and plan.path[0].distance_to(plan.path[1]) >= 400.0:
-			routes.append(plan.path)
+		if plan.def.id != "police_patrol" or plan.path.size() < 2:
+			continue
+		var laid := builder.build(plan.def, map.world_to_tile(plan.path[0]), rng)
+		if laid and laid.path.size() >= 2 and laid.path[0].distance_to(laid.path[1]) >= 400.0:
+			routes.append(laid.path)
 	_routes[seed_value] = routes
 	return routes
 
