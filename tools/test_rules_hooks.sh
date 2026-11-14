@@ -877,6 +877,14 @@ assert_first_edit "src/city/city.gd -> city + balance" \
     "city,balance,godot,designing-classes,orchestrating," "src/city/city.gd"
 assert_first_edit "src/field.gd -> balance" \
     "balance,godot,designing-classes,orchestrating," "src/field.gd"
+assert_first_edit "src/events/dawn_phases/ruled_roadblock_ground.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/dawn_phases/ruled_roadblock_ground.gd"
+assert_first_edit "src/events/ruled_location_ground.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/ruled_location_ground.gd"
+assert_first_edit "src/events/dawn_phases/dawn_masts.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/dawn_phases/dawn_masts.gd"
+assert_first_edit "src/events/dawn_phases/dawn_spoilers.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/dawn_phases/dawn_spoilers.gd"
 
 # The queue, the review items and the playtests all bring playtest-feedback: an entry's context
 # file and an item file, a review item, a new playtest named by date and two words, and an old

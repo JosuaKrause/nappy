@@ -88,7 +88,7 @@ rows=(
 	"src/crowd/** src/city/traffic_signals.gd src/city/traffic_light.gd src/ground_shape.gd => crowd-traffic"
 	"src/ui/** sprites.gd palette.gd src/events/views/event_look.gd src/crowd/crowd_agent.gd src/player/stroller.gd src/events/warning_board.gd => cues"
 	"src/telemetry/** src/autoload/telemetry.gd => telemetry"
-	"src/autoload/tuning.gd src/events/event_catalogue.gd src/events/event_scheduler.gd src/crowd/crowd_lanes.gd src/player/baby.gd src/city/city.gd src/field.gd => balance"
+	"src/autoload/tuning.gd src/events/event_catalogue.gd src/events/event_scheduler.gd src/crowd/crowd_lanes.gd src/player/baby.gd src/city/city.gd src/field.gd src/events/dawn_phases/ruled_roadblock_ground.gd src/events/ruled_location_ground.gd src/events/dawn_phases/dawn_masts.gd src/events/dawn_phases/dawn_spoilers.gd => balance"
 	"tools/*.py pyproject.toml uv.lock .python-version => python-tooling"
 	"tools/synthesize-sfx.py => sound-effects"
 	"tools/reference.sh tools/reference.py docs/reference/** docs/style-references/** => reference-photos"
@@ -119,6 +119,10 @@ rows=(
 # - The six files named after tuning.gd hold the numbers the balance skill's description names
 #   outside Tuning: the catalogue's caps, the views' shares, the crowd's busyness, the baby's
 #   excitement, the city's decay multipliers and the field's falloff.
+# - The four files named after field.gd are the dawn phases and the ruled ground, which hold the
+#   roadblocks' close-by distance, the mouse's two numbers (how near a sack pile it prefers to
+#   stand, and how many extra copies of such a spot it draws from), the curfew day and the park
+#   spoilers' numbers.
 # - assets/atlases/membership.json is the text file both kinds of artwork are registered in.
 # - docs/evidence/ holds experiment evidence (verify: its method, provenance and retention) and
 #   captures (session-captures: where a frame is kept and what it may be said to prove).
