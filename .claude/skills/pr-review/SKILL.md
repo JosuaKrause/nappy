@@ -179,7 +179,10 @@ findings are never sent as a `gh pr comment` or any other write the guard's prom
 through as the player. **A review's text is written to a file first and passed to the API with
 capital `-F`** (`-F body=@file`; **committing**, "Text handed to a write goes through a file",
 spells the calls that make the file): lowercase `-f` (`--raw-field`) sends the literal text `@file`
-as the body, and the review then has to be edited.
+as the body, and the review then has to be edited. **Every other field of that call is a capital
+`-F` too**, the inline comments' `comments[][path]`, `comments[][line]` and `comments[][body]`
+included: `gh api` builds its `-f` fields and its `-F` fields in separate passes, so a call that
+mixes them groups the comments wrongly and GitHub refuses the review with a 422, posting nothing.
 
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.
