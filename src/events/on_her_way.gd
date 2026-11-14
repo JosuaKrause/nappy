@@ -6,7 +6,7 @@ extends Resource
 ## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves
 ## is the moment: a one-shot is planned with no position (`DawnOneShots`), a
 ## recurring row is drawn at a location as any other and handed to her walk with no position
-## (`LocationDraw.draw_all()`), and
+## (`LocationDraw.draw()`), and
 ## `EventDirector.site_what_is_on_her_way()` puts it on a tile of its own ground ahead of her (a
 ## building face for the fire and the crews) once her direction for the day is clear, off screen and
 ## far enough that she meets it rather than watches it appear. Until it has been in the world it may

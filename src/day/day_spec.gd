@@ -180,14 +180,16 @@ var keeps_unused_calm_clear := true
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
 ## refused (`EventScheduler.clearance_around_her()`).
 var holds_the_home_streets := true
-## Whether a row stands at most its `EventDef.max_per_day` copies: a day's caps, which the escape
-## does without (minty-lemur #785) — what stands there is one draw a street from its bag.
+## Whether a row stands at most its `EventDef.max_per_day` copies where the day counts it (the
+## moments it owes her, `DawnMoments`, and the bag walk's draw, `EventScheduler._draw_the_walk()`;
+## a unit's draw holds one of a row in the unit instead): a day's caps. The escape, the one spec
+## that walks a bag, turns them off (minty-lemur #785): what stands there is one draw a street
+## from its bag.
 var caps_per_day := true
 ## The share of its **wall**-role rows the day draws: every wall-role row's weight in the view bags
 ## is scaled by it (`EventScheduler.view_weight()`), while the empty marbles are set for every wall
-## weighed in full, so a location draws a wall that much less often; and its cap is scaled by it too
-## (`DawnDraw._caps_of()`), so a wall whose cap binds is thinned as well. The day holds about
-## that share of its walls. `1.0` keeps every wall: every day the region wall does not stand
+## weighed in full, so a location draws a wall that much less often. The day holds about that
+## share of its walls. `1.0` keeps every wall: every day the region wall does not stand
 ## (`region_wall_stands()`) and every section of the escape. On a day it stands, `for_day()` hands
 ## `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day holds about half its walls, not all of them.
 var wall_row_share := 1.0

@@ -124,7 +124,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 
 ## **A day started twice stands the same rows on the same tiles** (PLAYTEST-119 27;
 ## `docs/MECHANICS.md`, "A retry is the same day"): the dawn draws every location before she can
-## move (`LocationDraw.draw_all()`), so day 4 started a second time, after a walk east on the first
+## move (`DawnDraw`, a unit at a time), so day 4 started a second time, after a walk east on the first
 ## start, plans from nothing the first start or the walk left in the city or the manager.
 func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 	var events := _city.events

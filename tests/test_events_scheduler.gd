@@ -1,6 +1,6 @@
 extends "res://tests/events_shared_city.gd"
 ## The scheduler's own determinism and safety rules -- the same seed replans identically, placement
-## and per-day caps are respected, a one-shot fires once per run, an alley robbery and the alley
+## is respected and no unit draws two of a row, a one-shot fires once per run, an alley robbery and the alley
 ## mouse stay on the alley's own ground, a calm area a day has not used is left alone -- plus the
 ## day's own content guarantees: the successors of a resolved event resolve, the fire truck is
 ## never itself scheduled, the fire engine is warned long enough from the worst position on its
@@ -23,7 +23,7 @@ const STEP := 1.0 / 60.0
 
 func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
-	_test_scheduler_respects_placement_and_caps(t)
+	_test_scheduler_respects_placement_and_one_of_a_row_per_unit(t)
 	_test_one_shots_fire_once_per_run(t)
 	_test_alley_robbery_never_lands_on_a_required_alley(t)
 	_test_the_mouse_crosses_the_alleys_own_short_axis(t)
@@ -85,30 +85,39 @@ func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 	var day_two := GameDawn.of(DaySpec.for_day(2), _rng(2), map).spent(consumed).plan().placements()
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
-func _test_scheduler_respects_placement_and_caps(t: TestRunner) -> void:
+## Every row stands on a tile type its row allows, and **no unit holds two drawn rows of one id**
+## (`LocationDraw.draw()`): the units are the day's own (`DawnContext.unit_draw()`), each found
+## as one that touches a unit of the day's locations (`DayUnits.touching()`, every unit has a
+## neighbour: a street its boxes).
+func _test_scheduler_respects_placement_and_one_of_a_row_per_unit(t: TestRunner) -> void:
 	var map := _map()
+	var units_seen := 0
 	for day in range(1, 15):
 		var planned := _planned(day)
-		var counts := {}
 		for plan: EventPlan in planned:
-			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-			# An `AHEAD_OF_PLAYER` event has no tile: the day budgets it and the director sites
-			# it in front of the player later. The cap above still applies to it, which is the
-			# point of costing it here rather than giving the director its own allowance.
+			# An `AHEAD_OF_PLAYER` event has no tile: the director sites it in front of the player
+			# later.
 			if plan.def.placement.is_empty() or not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.position)
 			t.check(map.tile_at(tile) in plan.def.placement,
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
-		for id: String in counts:
-			var def: EventDef = EventCatalogue.by_id(id)
-			# A one-shot is exempt: it is owed to her walk as one plan, and that it is one is
-			# asserted in `tests/test_event_manager.gd`.
-			if def.kind == GameEnums.EventKind.AMBIENT \
-					or def.kind == GameEnums.EventKind.ONE_SHOT:
-				continue
-			t.check(counts[id] <= def.max_per_day,
-					"day %d: '%s' respects max_per_day" % [day, id])
+		var dawn := _dawn(day)
+		var units := dawn.unit_draw().units()
+		var fresh := DayUnits.of(dawn.locations().all(), dawn.day_seed())
+		var checked := {}
+		for start in fresh.undrawn_within(Vector2.ZERO, INF):
+			for unit in units.touching(start):
+				if checked.has(unit):
+					continue
+				checked[unit] = true
+				var ids := {}
+				for drawn in unit.drawn():
+					t.check(not ids.has(drawn.row_id()), "day %d: %s draws '%s' once"
+							% [day, unit.name(), drawn.row_id()])
+					ids[drawn.row_id()] = true
+		units_seen += checked.size()
+	t.check(units_seen > 0, "there were drawn units to ask (%d)" % units_seen)
 
 ## **A one-shot is planned on at most one day of a run.** Asserted here, over the plan; that it is
 ## one plan owed to her walk is asserted where the manager plans it: `tests/test_event_manager.gd`.
@@ -174,7 +183,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 						% [run_seed, day, tile])
 	t.check(checked > 0, "some run placed alley_robbery to check (%d)" % checked)
 
-## Not the ordinary placement check — `_test_scheduler_respects_placement_and_caps` already holds
+## Not the ordinary placement check — `_test_scheduler_respects_placement_and_one_of_a_row_per_unit` already holds
 ## `alley_mouse` to landing on an `ALLEY` tile, the same as every other `MAP` row. What nothing else
 ## checks is the alley dash's own reason for existing (`EventInstance.path` of the mouse): that the
 ## two-point dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
@@ -528,15 +537,12 @@ const _WALL_SHARE_TOLERANCE := 0.2
 ## point 4: "fewer of all three"). The same city, seed and day is planned twice, once as the game plans it
 ## (`DaySpec.for_day()`) and once with `wall_row_share` at `1.0`, every wall weighed in full, so the
 ## check is a relationship between the two days rather than the rule read back to itself: the share
-## of walls the day keeps is `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` within `_WALL_SHARE_TOLERANCE`, a
-## wall the full day stands at its cap stands at most its cap times the share, rounded up (its cap is
-## scaled as well as its weight), and a day before `Tuning.REGION_WALL_FIRST_DAY` is the same day
-## either way.
+## of walls the day keeps is `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` within `_WALL_SHARE_TOLERANCE`,
+## and a day before `Tuning.REGION_WALL_FIRST_DAY` is the same day either way.
 func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> void:
 	var map := _map()
 	var walls := 0
 	var kept := 0
-	var capped_rows := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY - 1, Tuning.REGION_WALL_FIRST_DAY, 11, 13]:
 		var every_wall := DaySpec.for_day(day)
 		every_wall.wall_row_share = 1.0
@@ -544,19 +550,6 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> 
 		var full_plans := GameDawn.of(every_wall, _rng(day), map).spent(consumed).plan().placements()
 		var full := _walls_of(full_plans)
 		var game := _walls_of(_planned(day))
-		if day >= Tuning.REGION_WALL_FIRST_DAY:
-			# A wall whose cap the full day reaches is thinned too: the share scales its cap.
-			var full_by_row := _walls_by_row(full_plans)
-			var game_by_row := _walls_by_row(_planned(day))
-			for id: String in full_by_row:
-				var most: int = full_by_row[id][1]
-				if int(full_by_row[id][0]) < most:
-					continue
-				capped_rows += 1
-				var bound := ceili(most * DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE)
-				t.check(int(game_by_row.get(id, [0, 0])[0]) <= bound,
-						"day %d: '%s', at its cap of %d with every wall kept, stands at most %d (%d)"
-						% [day, id, most, bound, int(game_by_row.get(id, [0, 0])[0])])
 		if day < Tuning.REGION_WALL_FIRST_DAY:
 			t.check(full == game and full > 0,
 					"day %d, before the gatehouse day, places the same %d walls either way (%d)"
@@ -565,21 +558,10 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> 
 		walls += full
 		kept += game
 	t.check(walls > 0, "the days from the gatehouse day had walls to weigh (%d)" % walls)
-	t.check(capped_rows > 0, "and walls at their cap to thin (%d)" % capped_rows)
 	var share := float(kept) / maxf(1.0, float(walls))
 	t.check(absf(share - DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
 			"from the gatehouse day the day keeps %.2f of its walls (%d of %d); the share asked "
 			% [share, kept, walls] + "for is %.2f" % DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE)
-
-## The placed recurring wall-role rows of `plans` by row: `id -> [how many, the row's cap]`.
-static func _walls_by_row(plans: Array[EventPlan]) -> Dictionary:
-	var found := {}
-	for plan in plans:
-		if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed() \
-				and plan.def.kind == GameEnums.EventKind.RECURRING:
-			var was: Array = found.get(plan.def.id, [0, plan.def.most_in_a_day()])
-			found[plan.def.id] = [int(was[0]) + 1, was[1]]
-	return found
 
 ## How many of `plans` are placed recurring wall-role rows, the rows the bags weigh by the share.
 static func _walls_of(plans: Array[EventPlan]) -> int:

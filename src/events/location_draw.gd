@@ -1,70 +1,74 @@
 class_name LocationDraw
 extends RefCounted
-## **The day's locations drawn at dawn, each from its view's bag** (inbox #1185 in gentle-owl; `docs/EVENTS.md`,
-## "The three views and the placement order"): every location still open is filled by one draw from
-## the bag of its view (`ViewBag`), the empty event among the marbles, and what is drawn is what
-## stands there, with no rejection: **a row the day's ground leaves invalid at the location is not
-## considered** (`LocationGround.offer()`, today's placement rules deciding, as the player said:
+## **One unit's locations drawn, each from its view's bag** (inbox #1185 in gentle-owl;
+## `docs/EVENTS.md`, "The three views and the placement order"): every location still open is
+## filled by one draw from the bag of its view (`ViewBag`), the empty event among the marbles, and
+## what is drawn is what stands there, with no rejection: **a row the day's ground leaves invalid
+## at the location is not considered** (`LocationGround.offer()`, today's placement rules
+## deciding, as the player said:
 ## "which events make which others invalid on the same street -- this is what your current rules
-## accomplish. the same applies still"), and a row that has stood as many times as the day's caps
-## let it is not either (the orchestrator's reading of fork 5(b), open to correction). Each row's
-## share is the location's own weight times the bag's (`LocationGround.scale()`).
+## accomplish. the same applies still"). Each row's share is the location's own weight times the
+## bag's (`LocationGround.scale()`).
 ##
-## **Every location is drawn once, at dawn**, by the day's plan
-## (`DawnDraw`, a phase of `EventScheduler.build_day()`), before
-## she can move, so a retry draws the same day. The locations are drawn in the day's order
-## (`DayLocations.drawing_order()`), so a street's later locations draw with its earlier draws
-## standing: the draw keeps its own list of what it has placed, handed to the judge after the plans
-## it was given (`draw_all()`'s `among`). A row handed to her walk is drawn as any other and kept
-## with no position, for her walk to site (`_as_drawn()`).
+## **At most one of a row in a unit**, in place of daily caps, since a cap binds whoever draws
+## last and so depends on the order the day is drawn in (step 2 of
+## `docs/todo/2026-11-11-polite-tapir/placement-by-construction.md`): a unit draws in one call, so
+## the rule is a set kept for the length of the call. *The designer's reading, open
+## to overturn:* per junction box, per alley and per park or square too, so a square holds one
+## street musician.
 ##
-## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
-## (`id -> EventDef`), the day's ground, and the day's caps (`id -> how many may stand`, a row not
-## named having none). Model: no node.
+## A unit's locations draw in one call (`UnitDraw`), each judged among what the unit's draw may
+## see and what the call has placed since, so a street's later locations draw with its earlier
+## draws standing. A row handed to her walk is drawn as any other and kept with no position, for
+## her walk to site (`_as_drawn()`).
+##
+## Handed the day's locations, which record each draw, the rows the bags' marbles name
+## (`id -> EventDef`) and the day's ground. Model: no node.
 
 var _locations: DayLocations
-var _bags: Dictionary
 var _rows: Dictionary
 var _ground: LocationGround
-var _caps := {}
-var _stood := {}
 
-func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: LocationGround,
-		caps: Dictionary) -> void:
+## `locations` records each draw (`DayLocations.record()`); `rows` the rows the bags' marbles name
+## (`id -> EventDef`); `ground` the judge.
+func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround) -> void:
 	_locations = locations
-	_bags = bags
 	_rows = rows
 	_ground = ground
-	_caps = caps
 
-## **Draws every open location**, its order shuffled within each street on `rng`, each judged among
-## `among`, the day's plans so far, and what the draw has placed since; answers the events placed, in
-## the order drawn, a row handed to her walk among them with no position. The day's plan is the
-## caller's to add them to.
-func draw_all(rng: RandomNumberGenerator, among: Array[EventPlan]) -> Array[EventPlan]:
+## **Draws `order`, one unit's locations, each from the bag of its view** (`bags`,
+## `view -> ViewBag`), judged among `among`, which grows by each row placed; answers the events
+## placed, in the order drawn, a row handed to her walk among them with no position. A location not
+## available, taken or already drawn is passed over. **At most one of a row over the call**: a row
+## already drawn here is not considered again, a row handed to her walk included. `among` itself is
+## left as it was handed.
+func draw(order: Array[Location], bags: Dictionary, among: Array[EventPlan]) -> Array[EventPlan]:
 	var judged_among := among.duplicate()
+	var drawn_here := {}
 	var placed: Array[EventPlan] = []
-	for location in _locations.drawing_order(rng):
+	for location in order:
 		if not location.is_available() or location.is_taken() or location.is_drawn():
 			continue
-		var plan := _as_drawn(_draw(location, judged_among))
+		var plan := _as_drawn(_draw(location, bags, judged_among, drawn_here))
 		_locations.record(location, plan)
 		if plan:
 			judged_among.append(plan)
-			_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
+			drawn_here[plan.row_id()] = true
 			placed.append(plan)
 	return placed
 
-## One location's draw, judged among `among`: the event placed, or null for the empty event.
-func _draw(location: Location, among: Array[EventPlan]) -> EventPlan:
-	var bag: ViewBag = _bags.get(location.view())
+## One location's draw from its view's bag among `bags`, judged among `among`, a row in
+## `drawn_here` not considered: the event placed, or null for the empty event.
+func _draw(location: Location, bags: Dictionary, among: Array[EventPlan],
+		drawn_here: Dictionary) -> EventPlan:
+	var bag: ViewBag = bags.get(location.view())
 	if bag == null:
 		return null
 	var offered := {}
 	var accepts := func(id: String) -> bool:
-		var def: EventDef = _rows[id]
-		if _caps.has(id) and int(_stood.get(id, 0)) >= int(_caps[id]):
+		if drawn_here.has(id):
 			return false
+		var def: EventDef = _rows[id]
 		var plan := _ground.offer(def, location, among)
 		offered[id] = plan
 		return plan != null

@@ -250,27 +250,39 @@ src/
 	                      and the open section of a view nearest along her paths
 	street_locations.gd   one street's locations: three sections along it, two sidewalk locations
 	                      in each, a section taken whole by an event that spans the street
-	location.gd           one location: its street, section, tiles, view, and what stands on it
+	location.gd           one location: its street, section, tiles, view, what stands on it, the whole
+	                      it is part of and the run a route starting in it may lie on
+	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
+	                      an alley, a park or a square; its name, its rank and its stream for the day
+	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
+	                      junction box, or a shared alley, park or square
+	unit_draw.gd          the day's units drawn one at a time, each after every touching unit of
+	                      lower rank, from a fresh bag per view, judged among the dawn's plans and
+	                      the touching units' draws
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
 	                      the row's role, offered the row and assigned what it took
 	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
 	                      the empty event, drawn without putting back, only what a location accepts
-	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag
+	location_draw.gd      one unit's open locations, each drawn from its view's bag, at most one of
+	                      a row in the unit
 	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid among
 	                      the plans it is handed, the location's own weight; the day's own is
 	                      `RuledLocationGround`
 	ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
 	                      fits and the day's rules leave it valid among the plans it is handed, the
-	                      location's weight; handed the walk's ground and the bodies the day stands
+	                      location's weight; handed the walk's ground and the bodies the day stands,
+	                      and its settings: the first allowed tile or the roomiest, a route kept on
+	                      its location's run, and rules asked besides the day's
 	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
 	                      ground on the day, and the candidate built on one
 	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
 	                      may stand, given what the walk placed and what stands round it
 	street_rules/         one file per rule: the unused calm, a door's clear ground, a route's
 	                      junctions, its walked sidewalk, a pacing beat's opening, its ground off
-	                      the streets kept free of bodies, the escape's one notice at a time and its walk kept open
+	                      the streets kept free of bodies, the escape's one notice at a time and its walk kept open,
+	                      and a lethal field held to the ground a unit's draw sees
 	street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room
 	                      where one refuses, else the room round it
 	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock

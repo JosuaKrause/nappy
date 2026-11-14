@@ -5,7 +5,8 @@ extends RefCounted
 ## plan, and passes over a location that takes nothing. Run with stand-ins for what it is handed: the
 ## day's locations (`_Locations`, ground locations with no street, the open ones set by hand), the
 ## day's plan (`_Events`, a list) and the day's ground (`_Ground`, whose offers a check sets). The
-## real ground is the dawn draw's own (`RuledLocationGround`); the phase on a real day is `tests/test_events_scheduler.gd`'s.
+## real ground is the dawn draw's own (`RuledLocationGround`); the phase on a real day is
+## `tests/test_events_scheduler.gd`'s.
 ##
 ## - **A location weighed nothing is never drawn**, over many streams, and not once every location
 ##   weighed something has refused either: the row then does not happen, rather than landing where

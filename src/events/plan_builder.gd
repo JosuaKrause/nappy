@@ -21,6 +21,8 @@ var _stands_at: Callable
 ## `(candidate: EventPlan, already: Array[EventPlan]) -> float`: the candidate's room among the
 ## placed plans, `-INF` for none.
 var _room_among: Callable
+## Whether a route passes today's bodies (`without_todays_bodies()`).
+var _passes_todays_bodies := false
 
 ## A builder over `map` that asks `walks_as` what stops a moving row, `stands_at` where a body
 ## stands and `room_among` the room a candidate has among placed plans.
@@ -30,8 +32,19 @@ func _init(map: CityMap, walks_as: Callable, stands_at: Callable, room_among: Ca
 	_stands_at = stands_at
 	_room_among = room_among
 
-## One candidate placement on a given tile, with its route built if it moves.
-func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventPlan:
+## **A builder like this one whose routes are not stopped by today's bodies** (`Mover.BODIES`
+## cleared from what stops a row, its body's reach kept): a route laid on the map as the dawn left
+## it. At dawn no body is on the map, so it builds what this one does; while she walks it keeps
+## what was sited or is live from changing a unit's draw (`DawnDraw`).
+func without_todays_bodies() -> PlanBuilder:
+	var builder := PlanBuilder.new(_map, _walks_as, _stands_at, _room_among)
+	builder._passes_todays_bodies = true
+	return builder
+
+## One candidate placement on a given tile, with its route built if it moves. `within`, where it
+## has area, bounds a route along the street: it stops at the last tile inside it, as at a closure.
+func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
+		within := Rect2i()) -> EventPlan:
 	var at := _map.tile_to_world(tile)
 	if not def.mobile:
 		var placed := EventPlan.new(def, at)
@@ -45,7 +58,7 @@ func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventPl
 			var crossing := _cross_street_path(tile)
 			return null if crossing.is_empty() else EventPlan.new(def, at, crossing)
 		EventDef.PathMode.ALONG_STREET:
-			var route := _along_street_path(tile, def, rng)
+			var route := _along_street_path(tile, def, rng, within)
 			# Nowhere to go from here; a "mobile" event that stands still is worse than
 			# another roll of the dice.
 			return null if route.is_empty() else EventPlan.new(def, at, route)
@@ -96,7 +109,7 @@ func room_along(tile: Vector2i, direction: Vector2i) -> int:
 ## first version — parked every long route hard against the city wall, which put the fire
 ## the engine leaves behind out on the boundary every single time.
 func _along_street_path(tile: Vector2i, def: EventDef,
-		rng: RandomNumberGenerator) -> PackedVector2Array:
+		rng: RandomNumberGenerator, within := Rect2i()) -> PackedVector2Array:
 	var vertical_corridor := CityMap.corridor_offset(tile.x) >= 0
 	var forward := Vector2i.DOWN if vertical_corridor else Vector2i.RIGHT
 	var backward := -forward
@@ -122,12 +135,15 @@ func _along_street_path(tile: Vector2i, def: EventDef,
 	# barrier, a seal, a body standing today) rather than walking or driving through it — and short
 	# of a calm zone's absorbed corridor as well. A corridor that ends in a park is not a corridor a
 	# delivery van can drive down, and unlike a closure there is nothing there to hit: the route
-	# would simply cross the grass.
+	# would simply cross the grass. And short of the edge of `within`, where one is handed.
 	var from_a_street := _map.is_street(tile)
-	var mover: Mover = _walks_as.call(def)
+	var walks_as: Mover = _walks_as.call(def)
+	var mover := _as_it_stops(walks_as)
+	var bounded := within.has_area()
 	for step in range(1, length + 1):
 		var next := tile + along * step
-		if not _map.passable(next, mover) or (from_a_street and not _map.is_street(next)):
+		if not _map.passable(next, mover) or (from_a_street and not _map.is_street(next)) \
+				or (bounded and not within.has_point(next)):
 			length = step - 1
 			break
 	if length <= 0:
@@ -158,7 +174,7 @@ func _cross_street_path(tile: Vector2i) -> PackedVector2Array:
 	var vertical_road := CityMap.corridor_offset(tile.x) >= 0
 	var across := Vector2i.RIGHT if vertical_road else Vector2i.DOWN
 	var reach := Tuning.STREET_WIDTH
-	var mover := Mover.on_foot()
+	var mover := _as_it_stops(Mover.on_foot())
 	var ends: Array[Vector2i] = []
 	for way: Vector2i in [-across, across]:
 		var end := tile
@@ -170,3 +186,13 @@ func _cross_street_path(tile: Vector2i) -> PackedVector2Array:
 	if ends[0] == ends[1] or not _map.passable(tile, mover):
 		return PackedVector2Array()
 	return PackedVector2Array([_map.tile_to_world(ends[0]), _map.tile_to_world(ends[1])])
+
+## `mover` as this builder's routes are stopped: as it is, or with today's bodies left out where
+## the builder passes them (`without_todays_bodies()`).
+func _as_it_stops(mover: Mover) -> Mover:
+	if not _passes_todays_bodies or not mover.is_blocked_by(Mover.BODIES):
+		return mover
+	var layers := mover.layers_blocked() & ~Mover.BODIES
+	if is_zero_approx(mover.body_reach()):
+		return Mover.of(layers)
+	return Mover.new(layers, mover.body_reach())

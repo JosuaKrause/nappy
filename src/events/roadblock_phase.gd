@@ -34,9 +34,9 @@ extends RefCounted
 ## Handed the day's locations and what it asks of the day's ground (`RoadblockGround`). Model: no
 ## node, nothing that runs.
 
-## The phase's stream salt off the day's seed (`DawnContext.stream()`): apart from the dawn
-## draw's (`EventScheduler.LOCATIONS_SALT`) and the moments' (`DawnMoments.SALT`), so it
-## never shares a stream with either.
+## The phase's stream salt off the day's seed (`DawnContext.stream()`): apart from the units'
+## own streams the dawn draw draws on (`PlacementUnit.stream()`) and the moments'
+## (`DawnMoments.SALT`), so it never shares a stream with either.
 const SALT := 5
 ## How strongly a section's distance from the nearest roadblock already placed weights its draw:
 ## the weight is that distance to this power. *Proposed, not asked for, open to overturn:* the player

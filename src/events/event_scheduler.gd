@@ -1081,9 +1081,6 @@ class WalkSiting extends RefCounted:
 
 # ------------------------------------------------- the day's locations, from the bags ---
 
-## The phase salt the dawn draw shuffles each street's locations on, and the bags' streams start
-## from: apart from every other phase's.
-const LOCATIONS_SALT := 6
 ## **A row's weight in a view's bag**: its own `EventDef.weight` times what the view is to its role,
 ## the offers today's placement made per tile of the view's ground (`RowGround._times_for_role()`'s gradient),
 ## stated per view (inbox #1185 in gentle-owl: "all possible events for that view multiplied by their
@@ -1159,8 +1156,8 @@ const FRICTION_VIEW_SCALES := [
 ## reading of fork 5(a), open to correction). The empty marbles are counted against every wall
 ## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that
 ## share of them and the rest of the day as it was; the scales are fitted on the days as they are
-## played, the gatehouse day's share included. A bag is made of a fill (`ViewBag.new()`) on its own
-## stream (`view_bag_seed()`).
+## played, the gatehouse day's share included. Each unit's draw makes its bags of these fills, on
+## its own stream (`UnitDraw`, `ViewBag.new()`).
 static func view_fills(rows: Dictionary, day: int, spec: DaySpec) -> Dictionary:
 	var fills := {}
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
@@ -1180,10 +1177,6 @@ static func view_fills(rows: Dictionary, day: int, spec: DaySpec) -> Dictionary:
 		fill[ViewBag.EMPTY] = maxi(1, roundi((whole / share - weight) * BAG_MARBLES_PER_WEIGHT))
 		fills[view] = fill
 	return fills
-
-## The seed of the view's bag off the day's seed `base`: its own stream.
-static func view_bag_seed(base: int, view: int) -> int:
-	return hash("%d:%d:view-bag:%d" % [base, LOCATIONS_SALT, view])
 
 ## Marbles per unit of a row's weight in a view's bag: ten, so the lightest row (the square's poster
 ## crew, 0.03) comes in at a marble where the others keep their proportions.
@@ -1268,8 +1261,9 @@ const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31,
 ## `why`. A recipe keeps its data: `at` names the tile, and so the location holding it
 ## (`DayLocations.holding()`, of the ground under it), which is asked once, as a dawn phase asks a
 ## location: the tile is one the location takes for the row (`LocationFit`), the candidate built
-## there on a private stream (`route_seed`, so unrelated actors cannot move a required path), and the
-## day's rules allow it (`StreetInvalidation`, the calm `calm` says she has not used left alone). No
+## there on a private stream (`route_seed`, so unrelated actors cannot move a required path), a
+## recurring row's route kept on its location's run as the day's unit draw keeps it
+## (`Location.run()`), and the day's rules allow it (`StreetInvalidation`, the calm `calm` says she has not used left alone). No
 ## tries and no fallback: a location that does not take the row fails the recipe loudly, with the
 ## reason, rather than placing it somewhere else (the orchestrator's reading, open to the player's
 ## overturn). `locations` is the day's, laid out once for the whole recipe; laid out here for a
@@ -1298,7 +1292,10 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
-	var candidate := fit.build(def, tile, rng)
+	var run := Rect2i()
+	if def.is_drawn_by_units(day) and DawnDraw.ROUTES_STAY_ON_THE_RUN:
+		run = location.run()
+	var candidate := fit.build(def, tile, rng, run)
 	if not candidate:
 		why.append("%s cannot be built on tile %s" % [def.id, tile])
 		return null
