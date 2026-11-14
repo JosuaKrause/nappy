@@ -362,6 +362,9 @@ func _widest_field() -> float:
 func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
+	# Every unit drawn, as a walk that comes near each would draw it, so the day's whole plan is
+	# there to choose from (a unit draws as she comes near it, and she is nowhere yet).
+	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	var plan: EventPlan = null
 	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's street
 	# ends; a parked van never does).
