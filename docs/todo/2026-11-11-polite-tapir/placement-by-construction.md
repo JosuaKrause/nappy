@@ -58,7 +58,7 @@ by line; its numbered list says where the code differs.
 ## What is built
 
 The locations of every day (`DayLocations`, `StreetLocations`, `Location`, each told its view once),
-the bag per view and its draw (`ViewBag`, `LocationDraw`), the day's placement rules as classes
+the bag per view and the unit's marble draw (`ViewBag`, `MarbleDraw`, `UnitRoom`), the day's placement rules as classes
 (`StreetRule`, composed by `StreetInvalidation`, with a location's own ground in `LocationFit`), the
 roadblock phase (`RoadblockPhase`), day 13's section swap, the scene recipes' locations, and the
 fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open location is drawn
@@ -66,7 +66,8 @@ unit by unit as she comes near it (`UnitDraw`, prepared by `DawnDraw`, drawn by 
 locations), a junction box, an alley, or one park or square (`PlacementUnit`, grouped by
 `DayUnits`), with its own stream and a fixed rank from the day's seed, and before a unit draws, every
 undrawn unit touching it (sharing a junction box, or bordering the same alley, park or square) with a
-lower rank draws first. Each unit draws from a bag per view filled fresh, at most one of a row in the
+lower rank draws first. Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
+is placed (the whole street, a section, or one location) and the unit's rows laid out together, at most one of a row in the
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
 on the board, question long-routes, inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. A place her walk
@@ -86,12 +87,26 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-2. **A unit's draw takes everything that matters together, and a marble is drawn before it is
-   placed.** The units draw as she walks (above). The board questions on how far a unit's draw looks
-   (touching-reach) and on what the day holds until step 3 (day-density) are answered, and the answers
-   wait in the inbox for the next filing. Two notes there change the draw again: everything that matters
-   is drawn together (the touching-reach answer), and a marble is drawn before it is placed (a note of
-   its own).
+2. **Everything that matters is drawn together.** The units draw as she walks, a marble drawn before it
+   is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
+   the day holds until step 3 (day-density) are answered, and the answers wait in the inbox for the next
+   filing. The touching-reach answer is "everything that matters must be drawn together" (inbox #1461).
+   On the three route rows the player said "neither of these should be drawn at the beginning. they all
+   should be drawn when the player is close by to guarantee an encounter", then "just spawn in the car
+   just ahead of the player? then you guarantee an encounter", "the same for the dog walker and the
+   convoy", "the route only matters *after* it was spawned", "and then only if the player follows them
+   around" and "so the route can be ad-hoc" (inbox #1460). **Read as** (the orchestrator's reading): the
+   dog walker, the police patrol and the military convoy are to be put in the world just ahead of her
+   when she comes near, and each one's route is worked out as it goes, from where it was put, so like
+   the beats sited from her walk they depend on her path; until that is built they stay drawn by a
+   street, cut to its run. The free-line probe (`tests/probes/m129_zero_cost_line.gd`) shows routes
+   losing her free line, at four of five places where rows that each leave one together leave none,
+   since each line rule checks one piece and none joins a junction box's free tiles to the sidewalk she
+   walks. The player answered "sure" in chat to option C of free-line-density and to pick (c) of
+   line-reach-close (inbox #1461). **Read as**: the draw gains a rule that follows her line from a
+   junction box onto the sidewalk she walks, for every row that lands near her route, and a street that
+   draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465). So step
+   2 still owes two things: the three route rows put just ahead of her, and that rule.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.

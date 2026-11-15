@@ -10,8 +10,9 @@ extends RefCounted
 ## **Laid out every day at dawn**, by the dawn's context (`DawnContext.locations()`) the first time
 ## `EventScheduler.build_day()` asks, after the routes are established and the day's holds are on
 ## the map. On day 13 the roadblock
-## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn from its
-## view's bag, a unit at a time (`UnitDraw`, `LocationDraw`; the units are grouped from `all()`).
+## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn, a unit
+## at a time, from the bag of its unit's view (`UnitDraw`, `MarbleDraw`; the units are grouped from
+## `all()`).
 ## The day's planner hands the locations on to the walk
 ## (`DawnContext.locations()`, `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's
 ## task takes a section for its roadblock when none is close by (`nearest_section_in()`). Pure state:
@@ -68,10 +69,10 @@ func open_locations() -> Array[Location]:
 	for key: Vector3i in _streets:
 		var street := _streets[key] as StreetLocations
 		for location in street.sidewalks() + street.sections():
-			if location.is_available() and not location.is_taken() and not location.is_drawn():
+			if location.is_open():
 				found.append(location)
 	for location in _grounds:
-		if location.is_available() and not location.is_taken() and not location.is_drawn():
+		if location.is_open():
 			found.append(location)
 	return found
 

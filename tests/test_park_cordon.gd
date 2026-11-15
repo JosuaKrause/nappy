@@ -770,6 +770,25 @@ func _busker_in_the_park(pace := 0.0) -> EventInstance:
 		row = walking
 	return _city.events.spawn_extra(row, area.position + area.size * Vector2(0.25, 0.3))
 
+## **Spends the rows the day's units drew within twice `Tuning.OUT_OF_SIGHT` of `person`**
+## (`EventDef.is_drawn_by_units()`), the units there drawn first so none draws a row there later,
+## and gives their bodies back to the map (`CityMap.release_obstruction()`), as taking a plan out
+## of the day does (`EventStreaming.take_away_the_unseen_within()`). The walk-out check's time
+## bound (the view box's two half extents over his pace) is the walk of one turn on bare ground; a
+## stall or a street musician a unit's draw happened to stand on his way makes him bend round it
+## and adds a detour the bound does not allow. The check is about the way he plans out of her
+## sight, so what the units drew round it is cleared and the day's luck does not move it. The
+## ground the day always gives him stays: the region wall and its door, the seals, the playground.
+func _clear_the_drawn_rows_round(person: EventInstance) -> void:
+	var day := ResistanceSteps.swing_day()
+	var beside := ResistanceSteps.guarded_row_on(day)
+	_city.events.draw_the_ground_round(person.global_position, Tuning.OUT_OF_SIGHT * 2.0)
+	for plan in _city.events.plans():
+		if plan.is_placed() and plan.row().is_drawn_by_units(day, beside) \
+				and plan.placed_at().distance_to(person.global_position) < Tuning.OUT_OF_SIGHT * 2.0:
+			plan.spend()
+			_city.map.release_obstruction(plan.get_instance_id())
+
 ## **A person walked out never ends in her view** *("Nothing vanishes while you are looking at
 ## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
 ## she stood at the touch, and it is her way out too: she walks it at `Tuning.WALK_SPEED`, setting
@@ -785,6 +804,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t: TestRunner) -> void:
 		var fixture := _at_the_swing(t, func() -> void: person[0] = _busker_in_the_park())
 		var happenings: ResistanceHappenings = fixture.happenings
 		var busker: EventInstance = person[0]
+		_clear_the_drawn_rows_round(busker)
 		var her := [fixture.swing]
 		var shows := _camera_on(her)
 		_tick(happenings, her[0], shows.is_valid())

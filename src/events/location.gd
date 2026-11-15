@@ -102,6 +102,12 @@ func is_taken() -> bool:
 func take(plan: EventPlan) -> void:
 	_plan = plan
 
+## **Whether a draw may still fill it**: available, nothing put here and not drawn yet. What a
+## unit's draw speaks for (`UnitRoom`, `MarbleDraw`) and what a phase may still fill
+## (`DayLocations.open_locations()`).
+func is_open() -> bool:
+	return _available and _plan == null and not _drawn
+
 ## Whether `other` lies inside this location's section: the same street and the same section,
 ## whichever side. What `StreetLocations` takes along with a section.
 func shares_a_section_with(other: Location) -> bool:

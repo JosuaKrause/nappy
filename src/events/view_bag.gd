@@ -4,18 +4,19 @@ extends RefCounted
 ## events for that view multiplied by their probability/weight. empty is also a possible event"):
 ## every row possible in the view as many times as its weight, and the empty event, drawn without
 ## putting back and filled again once it runs empty, as every marble bag of the game is
-## (`MarbleBag`, PLAYTEST-125). Each unit's draw makes its own, one a view, each of
-## a fill `EventScheduler.view_fills()` answers (`UnitDraw`).
+## (`MarbleBag`, PLAYTEST-125). Each unit's draw makes its own, one bag of the fill of the unit's
+## view that `EventScheduler.view_fills()` answers (`UnitDraw`).
 ##
-## **A draw considers only what the location it fills accepts** (`draw()`): a row the street's
-## earlier draws or the location's own ground leave invalid is not considered, and stays in the bag
-## for the next location (inbox #1185 in gentle-owl: "the bag itself doesn't change just that the invalid events
-## don't get considered when drawing"). And **each row's share is scaled by the location's own
-## weight** (`scale`; the player's "yes" to a weight per location that scales its view bag's weights,
-## inbox #1185 in gentle-owl), so a precinct's location draws its rows more often than an ordinary street's.
+## **A draw considers only what the unit drawing accepts** (`draw()`): a row the unit's earlier
+## draws or its locations' own ground leave invalid is not considered, and stays in the bag for the
+## next draw (inbox #1185 in gentle-owl: "the bag itself doesn't change just that the invalid events
+## don't get considered when drawing"; `MarbleDraw`). And **each row's share is scaled by its weight
+## in the unit** (`scale`, the largest of what the unit's locations weigh it; the player's "yes" to a
+## weight per location that scales its view bag's weights, inbox #1185 in gentle-owl), so a
+## precinct's street draws its rows more often than an ordinary street.
 ##
 ## Kept as how many of each marble are left rather than a list of marbles, since a draw weighs every
-## row the location accepts by its count and its scale, and the empty marbles outnumber the rest many
+## row the unit accepts by its count and its scale, and the empty marbles outnumber the rest many
 ## times over. Its own stream: a draw takes nothing from any other. Model: no node.
 
 ## The empty event's marble.
@@ -38,7 +39,7 @@ func _init(fill: Dictionary, seed_value: int) -> void:
 ## up, and once per marble at most: one it refuses is not considered again in this draw, which draws
 ## exactly as weighing only the accepted ones from the start would. A bag with nothing it accepts
 ## left is given a second fill beside what it still holds, so the marbles refused here stay for the
-## locations after it; `EMPTY` where even that holds nothing accepted.
+## draws after it; `EMPTY` where even that holds nothing accepted.
 func draw(accepts: Callable, scale: Callable) -> String:
 	if _total() <= 0:
 		_left = _fill.duplicate()

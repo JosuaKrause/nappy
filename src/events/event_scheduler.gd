@@ -175,7 +175,8 @@ static func build_day(context: DawnContext) -> void:
 ## them. Then the calm area the day keeps clean is decided, before the first judge asks the
 ## day's rules; then day 13's roadblocks. Then the rows the day places for a reason of its own (the
 ## scripted rows), the one-shots owed to her walk, the spoilers in the parks she used, the moments
-## she is owed and the draw of every open location from its view's bag; the run lesson is added
+## she is owed and the draw of every open location, a unit at a time from the bag of the unit's
+## most permissive view; the run lesson is added
 ## after the draw, where the day owes no pursuit, and the last phase counts for the run log what
 ## day 13's roadblocks leave uncovered.
 static func _phases() -> Array[DawnPhase]:
@@ -228,7 +229,7 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 
 ## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`):
 ## what a recurring row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew)
-## becomes as a location draws it (`LocationDraw`), so no row drawn after it is spaced from a place
+## becomes as a unit draws it (`MarbleDraw`), so no row drawn after it is spaced from a place
 ## it never stands at. A one-shot owed to her walk is planned unplaced by `DawnOneShots`.
 static func owed_to_her_walk(plan: EventPlan) -> EventPlan:
 	var owed := EventPlan.new(plan.def, Vector2.INF)
@@ -1195,8 +1196,8 @@ const FRICTION_VIEW_SCALES := [
 ## reading of fork 5(a), open to correction). The empty marbles are counted against every wall
 ## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that
 ## share of them and the rest of the day as it was; the scales are fitted on the days as they are
-## played, the gatehouse day's share included. Each unit's draw makes its bags of these fills, on
-## its own stream (`UnitDraw`, `ViewBag.new()`).
+## played, the gatehouse day's share included. Each unit's draw makes one bag, of the fill of its
+## view, on its own stream (`UnitDraw`, `ViewBag.new()`).
 static func view_fills(rows: Dictionary, day: int, spec: DaySpec) -> Dictionary:
 	var fills := {}
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
@@ -1253,14 +1254,18 @@ const VIEW_SHARE_SCALES := [
 ## **How often a row is drawn on each kind of ground** (`row id -> {Location.Kind -> weight}`),
 ## a weight a location of that kind scales the row's share of its view's bag by
 ## (`RuledLocationGround.scale()`; the player's "yes" to a group of locations per kind of ground
-## and a weight per location scaling its view's bag, inbox #1185 in gentle-owl). **Why it is needed:** each
-## location draws one marble, so a row whose own ground is rare (a square's few cells, an alley's
-## three locations, the junction boxes) would be drawn only as often as its share of the bag times
-## the few locations that take it, where today's placement picked the row by weight against the
-## whole day and then found it any tile of its ground. So each row's weight on each kind of ground
-## is fitted until its daily count there is today's (`tests/probes/placement_rows.gd` against main,
-## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
-## derived, and fitted again with the view scales whenever the draw's rules change.
+## and a weight per location scaling its view's bag, inbox #1185 in gentle-owl). **Why it is
+## needed:** a unit off the streets draws one marble for each of its open locations and a street
+## three to six (or one, where its first takes it whole), so a row whose own ground is rare (a
+## square's few cells, an alley's three locations, the junction boxes) would be drawn only as often
+## as its share of the bag times the few locations that take it, where the placement before the
+## bags picked the row by weight against the whole day and then found it any tile of its ground.
+## So each row's weight on each kind of ground is fitted until its daily count there is what the
+## day placed before the bags (`tests/probes/placement_rows.gd` against main, eighteen seeds), the
+## way the view scales are; a row or a kind not listed weighs one. They are fitted to a draw of one
+## marble a location, so under the marble draw (`MarbleDraw`) the counts move until they are fitted
+## again. Measured, not derived, and fitted again with the view scales whenever the draw's rules
+## change.
 const GROUND_WEIGHTS := {
 	"abduction": {Location.Kind.SIDEWALK: 0.14, Location.Kind.JUNCTION: 91.19},
 	"alley_mouse": {Location.Kind.ALLEY: 14.67},

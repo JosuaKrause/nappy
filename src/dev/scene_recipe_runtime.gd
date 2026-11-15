@@ -977,7 +977,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			continue
 		counts[def.id] = int(counts.get(def.id, 0)) + 1
 		# A day holds no cap on a row its units draw (one of a row in a unit instead,
-		# `LocationDraw`), so a row a unit draws is held to none here either.
+		# `MarbleDraw`), so a row a unit draws is held to none here either.
 		var beside := ResistanceSteps.guarded_row_on(_run.header.day)
 		var capped := not def.is_drawn_by_units(_run.header.day, beside) \
 				and def.most_in_a_day() > 0

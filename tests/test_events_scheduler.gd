@@ -87,7 +87,7 @@ func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
 ## Every row stands on a tile type its row allows, and **no unit holds two drawn rows of one id**
-## (`LocationDraw.draw()`): the units are the day's own (`DawnContext.unit_draw()`), each found
+## (`MarbleDraw.draw()`): the units are the day's own (`DawnContext.unit_draw()`), each found
 ## as one that touches a unit of the day's locations (`DayUnits.touching()`, every unit has a
 ## neighbour: a street its boxes).
 func _test_scheduler_respects_placement_and_one_of_a_row_per_unit(t: TestRunner) -> void:

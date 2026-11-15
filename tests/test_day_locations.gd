@@ -9,7 +9,7 @@ extends RefCounted
 ## holding its location, so it leaves the locations still open to a phase or a draw; every
 ## location answered once by `all()`; each location told the whole it is part of
 ## (`Location.part_of()`), and a street's location the run a route of it may lie on
-## (`Location.run()`). Laid out
+## (`Location.run()`); and a location open only while available, untaken and undrawn. Laid out
 ## on a bare city's lattice (`CityMap.new()`, every street present), with a stand-in for the corridor
 ## whose views the check sets (`_Views`); which view a street really is in is `Corridor.view_of()`'s,
 ## checked in `tests/test_corridor.gd`.
@@ -29,6 +29,7 @@ func run(t: TestRunner) -> void:
 	_test_a_fixed_part_holds_its_location(t)
 	_test_every_location_is_answered_once(t)
 	_test_each_location_is_part_of_its_whole(t)
+	_test_a_location_is_open_while_nothing_holds_it(t)
 
 const ON := Vector3i(2, 2, 0)
 const BESIDE := Vector3i(3, 2, 1)
@@ -266,8 +267,8 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 ## sidewalk of the first section (`assign_to()`, as a scripted row or a fixed part's hold is) leaves
 ## that section drawn as the empty event, not taken, so no carriageway row is drawn there over the
 ## cafe; the section's other sidewalk stays open, and so do the two sections whose sidewalks hold
-## nothing. A draw never gets here first: a street draws its sections before its sidewalks
-## (`UnitDraw`).
+## nothing. A draw never needs it: a street's draw lays a section row and the sidewalks it takes
+## out together, before it records any of them (`MarbleDraw`).
 func _test_a_sidewalk_holding_an_event_closes_its_section(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
@@ -426,3 +427,27 @@ func _test_each_location_is_part_of_its_whole(t: TestRunner) -> void:
 			+ "ends (%s)" % [section.run() if section else Rect2i()])
 	t.check(thirds[0].run() == alley and the_box.run() == box,
 			"and a location of no street's run is the whole it is part of")
+
+## The sidewalk locations of the street `key` in `locations`, in the order laid out.
+static func _sidewalks_of(locations: DayLocations, key: Vector3i) -> Array[Location]:
+	var found: Array[Location] = []
+	for location in locations.all():
+		if location.kind() == Location.Kind.SIDEWALK and location.segment().key() == key:
+			found.append(location)
+	return found
+
+## **A location is open while a draw may still fill it** (`Location.is_open()`): available, nothing
+## put on it and not drawn; a fixed part's hold, a draw's empty event and a street held today each
+## close one.
+func _test_a_location_is_open_while_nothing_holds_it(t: TestRunner) -> void:
+	var map := CityMap.new()
+	map.hold_segment(OFF, HeldStreets.Why.SEAL)
+	var locations := DayLocations.lay_out(map, _views())
+	var sidewalks := _sidewalks_of(locations, BESIDE)
+	t.check(sidewalks[0].is_open() and sidewalks[1].is_open(), "an untouched sidewalk location is open")
+	locations.assign_to(sidewalks[0], EventPlan.new(EventCatalogue.by_id("cafe_tables"),
+			sidewalks[0].centre()))
+	locations.record(sidewalks[1], null)
+	t.check(not sidewalks[0].is_open(), "one a dawn phase filled is not")
+	t.check(not sidewalks[1].is_open(), "nor one a draw left empty")
+	t.check(not _sidewalks_of(locations, OFF)[0].is_open(), "nor one on a street held today")

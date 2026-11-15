@@ -3,22 +3,23 @@ extends RefCounted
 ## all touch drawn in every order they can be asked for, the draws and what each is judged among the
 ## same every time; a unit asked for draws the touching units of lower rank it waits for first, down
 ## a chain, and is judged among the dawn's plans and the draws of the units touching it only, a
-## plan her walk sites never among them; a unit draws once; and a street's sections come first in
-## the order it draws its locations.
+## plan her walk sites never among them; a unit draws once; and a unit whose locations are in
+## different views draws from the bag of the most permissive of them.
 ##
 ## Run with stand-ins for what it is handed: the day's units (`_Units`, a touching table set by
-## hand) and the location draw (`_Drawing`, which records each call and answers one plan for it);
-## the units are real (`PlacementUnit`, state), each of one location or a street's handful made by
-## hand.
+## hand) and the unit's draw (`_Drawing`, which records each call and answers one plan for it,
+## drawing one marble from the bag it is handed); the units are real (`PlacementUnit`, state),
+## each of a location or two made by hand, and so are the bags (`ViewBag`).
 
 func run(t: TestRunner) -> void:
 	_test_every_order_of_asking_draws_the_same(t)
 	_test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t)
 	_test_no_draw_is_judged_among_a_plan_her_walk_sites(t)
 	_test_a_unit_draws_once(t)
-	_test_a_streets_sections_draw_first(t)
+	_test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
+const OFF := PlacementView.View.OFF_THE_ROUTE
 
 class _Units extends DayUnits:
 	## Unit name -> the units it touches.
@@ -32,11 +33,11 @@ class _Units extends DayUnits:
 			return a.draws_before(b))
 		return found
 
-class _Drawing extends LocationDraw:
-	## Location -> the name of its unit.
+class _Drawing extends MarbleDraw:
+	## A plan's place -> the name of the unit that drew it.
 	var unit_of := {}
 	## `[unit name, [the names of the units whose plans it was judged among, "dawn" for the
-	## dawn's], the order's locations, the views of its bags, the rows it was judged among]` per
+	## dawn's], the marble it drew from the bag it was handed, the rows it was judged among]` per
 	## call.
 	var calls: Array = []
 	var cafe := EventCatalogue.by_id("cafe_tables")
@@ -46,33 +47,33 @@ class _Drawing extends LocationDraw:
 	func _init() -> void:
 		super(null, {}, null)
 
-	## Overrides LocationDraw.draw.
-	func draw(order: Array[Location], bags: Dictionary, among: Array[EventPlan]) -> Array[EventPlan]:
+	## Overrides MarbleDraw.draw.
+	func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[EventPlan]:
 		var seen: Array[String] = []
 		var rows: Array[String] = []
 		for plan in among:
 			seen.append(str(unit_of.get(plan.placed_at(), "dawn")))
 			rows.append(plan.row_id())
-		var name: String = unit_of[order[0]]
-		calls.append([name, seen, order.duplicate(), bags.keys(), rows])
-		var plan := EventPlan.new(cafe, order[0].centre())
+		var name := unit.name()
+		var marble := bag.draw(func(_id: String) -> bool: return true,
+				func(_id: String) -> float: return 1.0)
+		calls.append([name, seen, marble, rows])
+		var plan := EventPlan.new(cafe, unit.locations()[0].centre())
 		unit_of[plan.placed_at()] = name
 		var placed: Array[EventPlan] = [plan]
 		if hands_over.has(name):
 			placed.append(EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF))
 		return placed
 
-## A unit of one junction location at `x` blocks along, and its location in `drawing`.
-static func _unit(x: int, drawing: _Drawing, day_seed := 11) -> PlacementUnit:
+## A unit of one junction location at `x` blocks along.
+static func _unit(x: int, day_seed := 11) -> PlacementUnit:
 	var tiles := Rect2i(Vector2i(x * CityMap.period(), 0), Vector2i.ONE * Tuning.STREET_WIDTH)
 	var location := Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE, ON,
 			true, Location.Kind.JUNCTION, tiles)
 	var locations: Array[Location] = [location]
-	var unit := PlacementUnit.new(PlacementUnit.Kind.JUNCTION, tiles,
+	return PlacementUnit.new(PlacementUnit.Kind.JUNCTION, tiles,
 			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE, Vector2(tiles.size) * Tuning.TILE_SIZE),
 			locations, day_seed)
-	drawing.unit_of[location] = unit.name()
-	return unit
 
 ## `units` lowest rank first.
 static func _ranked(units: Array[PlacementUnit]) -> Array[PlacementUnit]:
@@ -106,7 +107,7 @@ func _test_every_order_of_asking_draws_the_same(t: TestRunner) -> void:
 	var readings: Array = []
 	for order: Array in orders:
 		var drawing := _Drawing.new()
-		var made: Array[PlacementUnit] = [_unit(0, drawing), _unit(1, drawing), _unit(2, drawing)]
+		var made: Array[PlacementUnit] = [_unit(0), _unit(1), _unit(2)]
 		var units := _Units.new()
 		for unit in made:
 			var others: Array[PlacementUnit] = []
@@ -130,8 +131,8 @@ func _test_every_order_of_asking_draws_the_same(t: TestRunner) -> void:
 
 func _test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t: TestRunner) -> void:
 	var drawing := _Drawing.new()
-	var ranked := _ranked([_unit(0, drawing), _unit(1, drawing), _unit(2, drawing),
-			_unit(3, drawing)] as Array[PlacementUnit])
+	var ranked := _ranked([_unit(0), _unit(1), _unit(2),
+			_unit(3)] as Array[PlacementUnit])
 	var low := ranked[0]
 	var mid := ranked[1]
 	var high := ranked[2]
@@ -158,7 +159,7 @@ func _test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t: TestRunner)
 ## row and neither of the two, so where her walk put them changes nothing it draws.
 func _test_no_draw_is_judged_among_a_plan_her_walk_sites(t: TestRunner) -> void:
 	var drawing := _Drawing.new()
-	var ranked := _ranked([_unit(0, drawing), _unit(1, drawing)] as Array[PlacementUnit])
+	var ranked := _ranked([_unit(0), _unit(1)] as Array[PlacementUnit])
 	var low := ranked[0]
 	var high := ranked[1]
 	drawing.hands_over[low.name()] = true
@@ -179,7 +180,7 @@ func _test_no_draw_is_judged_among_a_plan_her_walk_sites(t: TestRunner) -> void:
 	crew.position = high.bounds().get_center()
 	fire.position = high.bounds().get_center() + Vector2(64.0, 0.0)
 	draw.draw(high)
-	var rows: Array = drawing.calls[1][4]
+	var rows: Array = drawing.calls[1][3]
 	t.check(crew.is_placed() and fire.is_placed() and rows == ["roadblock", "cafe_tables"],
 			"sited since, neither the crew nor the dawn's set piece is among what the next unit "
 			+ "is judged among: the dawn's placed row and the lower unit's placed row alone (%s)"
@@ -187,7 +188,7 @@ func _test_no_draw_is_judged_among_a_plan_her_walk_sites(t: TestRunner) -> void:
 
 func _test_a_unit_draws_once(t: TestRunner) -> void:
 	var drawing := _Drawing.new()
-	var unit := _unit(0, drawing)
+	var unit := _unit(0)
 	var draw := UnitDraw.new(_Units.new(), drawing, _fills(), _dawn())
 	var first := draw.draw(unit)
 	var second := draw.draw(unit)
@@ -195,34 +196,22 @@ func _test_a_unit_draws_once(t: TestRunner) -> void:
 			"a unit asked for twice draws once (%d calls)" % drawing.calls.size())
 	t.check(unit.drawn() == first, "and holds what it drew")
 
-func _test_a_streets_sections_draw_first(t: TestRunner) -> void:
+## **A unit of mixed views draws from the bag of the most permissive one** (inbox #1466): an open
+## lot of two cells, the first off the route and the second on it, is handed a bag of the
+## on-the-route fill, each fill one marble of its own, so the marble its draw takes names the bag.
+func _test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t: TestRunner) -> void:
 	var drawing := _Drawing.new()
-	var segment := StreetNetwork.Segment.new(Vector2i(1, 1), true)
-	var rect := segment.tile_rect()
+	var lot := Rect2i(Vector2i(20, 20), Vector2i(8, 4))
 	var locations: Array[Location] = []
-	for section in 3:
-		var tiles := Rect2i(rect.position + Vector2i(section * 3, 0), Vector2i(2, rect.size.y))
-		locations.append(Location.new(segment, section, tiles, Vector2(tiles.position) * 32.0, ON,
-				true, Location.Kind.SECTION))
-	for section in 3:
-		for side in 2:
-			var tiles := Rect2i(rect.position + Vector2i(section * 3, side * 4), Vector2i(2, 2))
-			locations.append(Location.new(segment, section, tiles, Vector2(tiles.position) * 32.0,
-					ON, true, Location.Kind.SIDEWALK))
-	var street := PlacementUnit.new(PlacementUnit.Kind.STREET, rect, Rect2(), locations, 5)
-	for location in locations:
-		drawing.unit_of[location] = street.name()
-	UnitDraw.new(_Units.new(), drawing, _fills(), _dawn()).draw(street)
-	var order: Array = drawing.calls[0][2]
-	var kinds: Array[int] = []
-	var sections: Array[int] = []
-	for location: Location in order:
-		kinds.append(location.kind())
-		if location.kind() == Location.Kind.SECTION:
-			sections.append(location.section())
-	var sidewalk := Location.Kind.SIDEWALK
-	var section_kind := Location.Kind.SECTION
-	t.check(kinds == ([section_kind, section_kind, section_kind, sidewalk, sidewalk, sidewalk,
-			sidewalk, sidewalk, sidewalk] as Array[int]) and sections == ([0, 1, 2] as Array[int]),
-			"a street draws its three sections first, in order along it, then its sidewalks")
-	t.check(drawing.calls[0][3] == [ON], "from one bag, of the one view its locations are in")
+	for x in 2:
+		var tiles := Rect2i(lot.position + Vector2i(x * 4, 0), Vector2i(4, 4))
+		locations.append(Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
+				OFF if x == 0 else ON, true, Location.Kind.OPEN, lot))
+	var unit := PlacementUnit.new(PlacementUnit.Kind.OPEN, lot,
+			Rect2(Vector2(lot.position) * Tuning.TILE_SIZE, Vector2(lot.size) * Tuning.TILE_SIZE),
+			locations, 5)
+	var fills := {ON: {"cafe_tables": 1}, OFF: {"dog_walker": 1}}
+	UnitDraw.new(_Units.new(), drawing, fills, _dawn()).draw(unit)
+	t.check(drawing.calls.size() == 1 and drawing.calls[0][2] == "cafe_tables",
+			"a lot with a cell off the route and one on it draws from the route's bag (%s)"
+			% [drawing.calls[0][2] if not drawing.calls.is_empty() else "no draw"])
