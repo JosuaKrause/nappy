@@ -136,7 +136,7 @@ class _Drawing extends RefCounted:
 			var spoken := 0
 			for plan in unit.drawn():
 				var share := plan.row().takes_of_a_street() \
-						if unit.kind() == PlacementUnit.Kind.STREET \
+						if unit.kind() == PlacementGround.Kind.STREET \
 						else EventDef.StreetShare.A_LOCATION
 				if share == EventDef.StreetShare.A_STREET:
 					counts[0] += 1
@@ -518,7 +518,7 @@ static func _unit_draw_reaching(dawn: DawnContext, reach: float) -> UnitDraw:
 			dawn.rules(), ground, false, DawnDraw.ROUTES_STAY_ON_THE_RUN)
 	return UnitDraw.new(DayUnits.of(dawn.locations().all(), dawn.day_seed(), reach),
 			MarbleDraw.new(dawn.locations(), rows, judged),
-			EventScheduler.view_fills(rows, day, dawn.spec()), events.placements())
+			UnitFills.new(rows, day, dawn.spec()), events.placements())
 
 ## How many of `routes` home reached among the day's closures (`reached_bare`) that it no longer
 ## reaches among the bodies of `plans` and that no body's disc covers, each printed as a `WX` line

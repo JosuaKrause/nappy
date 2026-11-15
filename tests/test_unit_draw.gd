@@ -3,12 +3,14 @@ extends RefCounted
 ## all touch drawn in every order they can be asked for, the draws and what each is judged among the
 ## same every time; a unit asked for draws the touching units of lower rank it waits for first, down
 ## a chain, and is judged among the dawn's plans and the draws of the units touching it only, a
-## plan her walk sites never among them; a unit draws once; and a unit whose locations are in
-## different views draws from the bag of the most permissive of them.
+## plan her walk sites never among them; a unit draws once; a unit whose locations are in
+## different views draws from the bag of the most permissive of them; and a unit draws from the
+## fill of its view and its kind of ground.
 ##
 ## Run with stand-ins for what it is handed: the day's units (`_Units`, a touching table set by
-## hand) and the unit's draw (`_Drawing`, which records each call and answers one plan for it,
-## drawing one marble from the bag it is handed); the units are real (`PlacementUnit`, state),
+## hand), the day's fills (`_Fills`, a fill set by hand for each view and ground, which records
+## each ask) and the unit's draw (`_Drawing`, which records each call and answers one plan for
+## it, drawing one marble from the bag it is handed); the units are real (`PlacementUnit`, state),
 ## each of a location or two made by hand, and so are the bags (`ViewBag`).
 
 func run(t: TestRunner) -> void:
@@ -17,6 +19,7 @@ func run(t: TestRunner) -> void:
 	_test_no_draw_is_judged_among_a_plan_her_walk_sites(t)
 	_test_a_unit_draws_once(t)
 	_test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t)
+	_test_a_unit_draws_from_the_fill_of_its_view_and_its_ground(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 const OFF := PlacementView.View.OFF_THE_ROUTE
@@ -32,6 +35,23 @@ class _Units extends DayUnits:
 		found.sort_custom(func(a: PlacementUnit, b: PlacementUnit) -> bool:
 			return a.draws_before(b))
 		return found
+
+class _Fills extends UnitFills:
+	## `Vector2i(view, ground)` -> the fill handed for it.
+	var by_view_and_ground := {}
+	## `Vector2i(view, ground)` per ask, in the order asked.
+	var asked: Array[Vector2i] = []
+
+	func _init(fills: Dictionary) -> void:
+		super({}, 1, null)
+		by_view_and_ground = fills
+
+	## Overrides UnitFills.of.
+	func of(view: PlacementView.View, ground: PlacementGround.Kind) -> Dictionary:
+		var key := Vector2i(view, ground)
+		asked.append(key)
+		var fill: Dictionary = by_view_and_ground.get(key, {ViewBag.EMPTY: 1})
+		return fill
 
 class _Drawing extends MarbleDraw:
 	## A plan's place -> the name of the unit that drew it.
@@ -71,7 +91,7 @@ static func _unit(x: int, day_seed := 11) -> PlacementUnit:
 	var location := Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE, ON,
 			true, Location.Kind.JUNCTION, tiles)
 	var locations: Array[Location] = [location]
-	return PlacementUnit.new(PlacementUnit.Kind.JUNCTION, tiles,
+	return PlacementUnit.new(PlacementGround.Kind.JUNCTION, tiles,
 			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE, Vector2(tiles.size) * Tuning.TILE_SIZE),
 			locations, day_seed)
 
@@ -86,8 +106,9 @@ static func _dawn() -> Array[EventPlan]:
 			Vector2(-500, -500))]
 	return dawn
 
-static func _fills() -> Dictionary:
-	return {ON: {"cafe_tables": 1, ViewBag.EMPTY: 1}}
+static func _fills() -> _Fills:
+	return _Fills.new({Vector2i(ON, PlacementGround.Kind.JUNCTION):
+			{"cafe_tables": 1, ViewBag.EMPTY: 1}})
 
 ## The calls a draw made, each as its unit and what it was judged among, by rank position.
 static func _readable(calls: Array, ranked: Array[PlacementUnit]) -> Array[String]:
@@ -207,11 +228,40 @@ func _test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t: TestRunne
 		var tiles := Rect2i(lot.position + Vector2i(x * 4, 0), Vector2i(4, 4))
 		locations.append(Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
 				OFF if x == 0 else ON, true, Location.Kind.OPEN, lot))
-	var unit := PlacementUnit.new(PlacementUnit.Kind.OPEN, lot,
+	var unit := PlacementUnit.new(PlacementGround.Kind.OPEN, lot,
 			Rect2(Vector2(lot.position) * Tuning.TILE_SIZE, Vector2(lot.size) * Tuning.TILE_SIZE),
 			locations, 5)
-	var fills := {ON: {"cafe_tables": 1}, OFF: {"dog_walker": 1}}
+	var fills := _Fills.new({Vector2i(ON, PlacementGround.Kind.OPEN): {"cafe_tables": 1},
+			Vector2i(OFF, PlacementGround.Kind.OPEN): {"dog_walker": 1}})
 	UnitDraw.new(_Units.new(), drawing, fills, _dawn()).draw(unit)
 	t.check(drawing.calls.size() == 1 and drawing.calls[0][2] == "cafe_tables",
 			"a lot with a cell off the route and one on it draws from the route's bag (%s)"
 			% [drawing.calls[0][2] if not drawing.calls.is_empty() else "no draw"])
+
+## **A unit draws from the fill of its view and its kind of ground** (`UnitFills.of()`): a
+## street and a junction box, both on the route, are handed fills of one marble each, a different one
+## for each ground, so the marble each draw takes names the fill its bag was made of.
+func _test_a_unit_draws_from_the_fill_of_its_view_and_its_ground(t: TestRunner) -> void:
+	var drawing := _Drawing.new()
+	var tiles := Rect2i(Vector2i(Tuning.STREET_WIDTH, 0), Vector2i(8, Tuning.STREET_WIDTH))
+	var sidewalk := Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
+			ON, true, Location.Kind.SIDEWALK, tiles)
+	var bounds := Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE,
+			Vector2(tiles.size) * Tuning.TILE_SIZE)
+	var street := PlacementUnit.new(PlacementGround.Kind.STREET, tiles, bounds,
+			[sidewalk] as Array[Location], 5)
+	var box := _unit(0)
+	var fills := _Fills.new({Vector2i(ON, PlacementGround.Kind.STREET): {"dog_walker": 1},
+			Vector2i(ON, PlacementGround.Kind.JUNCTION): {"cafe_tables": 1}})
+	var draw := UnitDraw.new(_Units.new(), drawing, fills, _dawn())
+	draw.draw(street)
+	draw.draw(box)
+	var marbles: Array[String] = []
+	for call: Array in drawing.calls:
+		marbles.append(str(call[2]))
+	t.check(marbles == ["dog_walker", "cafe_tables"],
+			"a street and a junction box of one view draw from their own ground's fill (%s)"
+			% [marbles])
+	t.check(fills.asked == [Vector2i(ON, PlacementGround.Kind.STREET),
+			Vector2i(ON, PlacementGround.Kind.JUNCTION)],
+			"each asks the fills for its view and its ground (%s)" % [fills.asked])

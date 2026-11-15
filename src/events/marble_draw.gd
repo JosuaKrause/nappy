@@ -95,7 +95,7 @@ func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround) ->
 ## is left as it is. `among` is left as handed.
 func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[EventPlan]:
 	var room := UnitRoom.of(unit)
-	var street := unit.kind() == PlacementUnit.Kind.STREET
+	var street := unit.kind() == PlacementGround.Kind.STREET
 	var open := _open_of(unit)
 	var scales := {}
 	var drawn: Array[EventDef] = []
@@ -142,7 +142,7 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 ## handed (`LocationGround`); `def` and the rows after it are laid again.
 func _lay_out(laid: Array[_Placing], drawn: Array[EventDef], def: EventDef, unit: PlacementUnit,
 		open: Array[Location], among: Array[EventPlan], scales: Dictionary) -> Array[_Placing]:
-	var street := unit.kind() == PlacementUnit.Kind.STREET
+	var street := unit.kind() == PlacementGround.Kind.STREET
 	var rows: Array[EventDef] = drawn.duplicate()
 	rows.append(def)
 	rows = _largest_first(rows, street)
@@ -172,7 +172,7 @@ func _lay_out(laid: Array[_Placing], drawn: Array[EventDef], def: EventDef, unit
 ## `judged`. Null where none takes it.
 func _place(row: EventDef, unit: PlacementUnit, open: Array[Location], used: Dictionary,
 		judged: Array[EventPlan], scales: Dictionary) -> _Placing:
-	var street := unit.kind() == PlacementUnit.Kind.STREET
+	var street := unit.kind() == PlacementGround.Kind.STREET
 	var share := _share_of(row, street)
 	var ranked: Array = []
 	for index in open.size():
@@ -204,7 +204,7 @@ static func _may_hold(share: EventDef.StreetShare, location: Location, unit: Pla
 		open: Array[Location], used: Dictionary) -> bool:
 	if used.has(location) or not open.has(location):
 		return false
-	if unit.kind() != PlacementUnit.Kind.STREET:
+	if unit.kind() != PlacementGround.Kind.STREET:
 		return true
 	if share == EventDef.StreetShare.A_LOCATION:
 		return location.kind() == Location.Kind.SIDEWALK
@@ -218,7 +218,7 @@ static func _may_hold(share: EventDef.StreetShare, location: Location, unit: Pla
 ## The locations of `unit` a row standing at `placing`'s location takes.
 static func _taken_by(placing: _Placing, unit: PlacementUnit) -> Array[Location]:
 	var taken: Array[Location] = [placing.location()]
-	if unit.kind() == PlacementUnit.Kind.STREET:
+	if unit.kind() == PlacementGround.Kind.STREET:
 		taken.append_array(_ground_of(placing.share(), placing.location(), unit))
 	return taken
 
@@ -243,7 +243,7 @@ static func _ground_of(share: EventDef.StreetShare, location: Location,
 ## yet), zero where there is none, so the bag never rolls it.
 func _weight(def: EventDef, unit: PlacementUnit, open: Array[Location],
 		scales: Dictionary) -> float:
-	var share := _share_of(def, unit.kind() == PlacementUnit.Kind.STREET)
+	var share := _share_of(def, unit.kind() == PlacementGround.Kind.STREET)
 	var best := 0.0
 	for location in open:
 		if _may_hold(share, location, unit, open, {}):

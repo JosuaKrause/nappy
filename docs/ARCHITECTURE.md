@@ -249,6 +249,8 @@ src/
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
+	placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a
+	                      park or a square
 	day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
 	                      lots, junction boxes), laid out at dawn and handed round: each one's view,
 	                      what a fixed part holds, what is taken or drawn,
@@ -258,17 +260,19 @@ src/
 	location.gd           one location: its street, section, tiles, view, what stands on it, the whole
 	                      it is part of and the run a route starting in it may lie on
 	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
-	                      an alley, a park or a square; its name, its rank and its stream for the day,
-	                      and its view, the most permissive of its locations'
+	                      an alley, a park or a square (its kind of ground); its name, its rank and
+	                      its stream for the day, and its view, the most permissive of its locations'
 	unit_room.gd          what is left of a unit for its draw to speak for: whether a street is
 	                      untouched, its whole sections and half-filled ones, what share of a street
 	                      (the whole street, a section, a location) a marble may still take
 	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
 	                      junction box, or a shared alley, park or square
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
-	                      every touching unit of lower rank, from one fresh bag of its view, judged
-	                      among the dawn's plans and the touching units' draws, never a plan her walk
-	                      sites
+	                      every touching unit of lower rank, from one fresh bag of its view and kind
+	                      of ground, judged among the dawn's plans and the touching units' draws,
+	                      never a plan her walk sites
+	unit_fills.gd         the day's bag fills, one for each view and kind of ground, worked out the
+	                      first time a unit draws and kept for the day
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
