@@ -87,21 +87,26 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-2. **Everything that matters is drawn together.** The units draw as she walks, a marble drawn before
-   it is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
+2. **Everything that matters is drawn together.** The units draw as she walks, a marble drawn before it
+   is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
    the day holds until step 3 (day-density) are answered, and the answers wait in the inbox for the next
-   filing. The touching-reach answer, "everything that matters must be drawn together" (inbox #1461),
-   does not lengthen the routes. The dog walker, the police patrol and the military convoy are no longer
-   laid on a route by a street's draw: each is put in the world just ahead of her when she comes near,
-   so that she meets it (the player on the board, question route-draw, and in chat, inbox #1460). Its
-   route is worked out as it goes, from where it was put, and only matters while she follows it
-   (inbox #1460). Until that is built, they stay drawn by a street, cut to its run. What the step still
-   owes is that, and one street rule. The free-line probe (`tests/probes/m129_zero_cost_line.gd`) shows
-   routes losing her free line where rows that each leave one together leave none, since each line rule
-   checks one piece and none follows her line through a junction box. The draw gains a rule that follows
-   her line from the junction box onto the sidewalk she walks, for every row that lands near her route,
-   and a street that draws after its neighbours keeps one sidewalk open, given what they drew (the
-   player on the board, questions free-line-density and line-reach-close, inbox #1461 and #1465).
+   filing. The touching-reach answer is "everything that matters must be drawn together" (inbox #1461).
+   On the three route rows the player said "neither of these should be drawn at the beginning. they all
+   should be drawn when the player is close by to guarantee an encounter", then "just spawn in the car
+   just ahead of the player? then you guarantee an encounter", "the same for the dog walker and the
+   convoy", "the route only matters *after* it was spawned", "and then only if the player follows them
+   around" and "so the route can be ad-hoc" (inbox #1460). **Read as** (the orchestrator's reading): the
+   dog walker, the police patrol and the military convoy are to be put in the world just ahead of her
+   when she comes near, and each one's route is worked out as it goes, from where it was put, so like
+   the beats sited from her walk they depend on her path; until that is built they stay drawn by a
+   street, cut to its run. The free-line probe (`tests/probes/m129_zero_cost_line.gd`) shows routes
+   losing her free line, at four of five places where rows that each leave one together leave none,
+   since each line rule checks one piece and none joins a junction box's free tiles to the sidewalk she
+   walks. The player answered "sure" in chat to option C of free-line-density and to pick (c) of
+   line-reach-close (inbox #1461). **Read as**: the draw gains a rule that follows her line from a
+   junction box onto the sidewalk she walks, for every row that lands near her route, and a street that
+   draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465). So step
+   2 still owes two things: the three route rows put just ahead of her, and that rule.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.
