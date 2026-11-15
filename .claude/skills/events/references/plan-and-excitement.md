@@ -26,7 +26,7 @@ coming within `WayConfirmation.CLEAR` of an undrawn unit; beyond that ground, th
 way from home and round the place draw first. So what a place is judged against is whole, and
 nothing a unit draws later stands inside it. The one exception is day 8's burnt building on a day
 none of the sidewalk below its door can be reached: its contact and red arrow stay on the facade
-behind the burnt shell, where the run's fire burned, with nothing asked or drawn for it. The
+behind the burnt shell, where the run's fire burned, which passes unasked. The
 other siting that draws nothing is the fire lit at dusk on a won day, after which nothing draws.
 A moment the director sends at her (a cat across her
 path, a pursuer; `EventsAhead.place_what_is_owed_ahead()`) is no place: it starts in her view or

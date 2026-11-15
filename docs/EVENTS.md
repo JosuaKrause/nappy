@@ -1307,9 +1307,10 @@ Each item quotes the code on this branch.
    `Tuning.EVENT_DRAW_AHEAD`), while a place the resistance sends her to lies inside the ground
    already drawn round her or has the units along a way from home and round it drawn first
    (`WayConfirmation`), so each is judged against what stands there and nothing a unit draws
-   later stands inside it. The one place of the two that is neither is day 8's burnt building on
+   later stands inside it. The one place the resistance sends her to that is neither is day 8's burnt building on
    a day none of the sidewalk below its door can be reached: it stands where the run's fire
-   burned, with nothing asked or drawn for it. Today's placement rules are the invalidation,
+   burned, which passes unasked. The other siting that draws nothing is the fire lit at dusk on a
+   won day, after which nothing draws. Today's placement rules are the invalidation,
    one class each (`StreetRule`: the calm she has not used, a door's clear ground, a route's
    junctions, its walked sidewalk, a pacing beat's opening and its ground off the streets, with the
    escape's one notice at a time and its walk kept open), composed per walk (`StreetInvalidation`)
