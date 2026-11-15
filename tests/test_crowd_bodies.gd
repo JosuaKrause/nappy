@@ -301,10 +301,9 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t: Te
 	map.clear_day_obstructions()
 
 # ------------------------------------------------------- a body drawn on a car ---
-# A unit draws out of her view while she walks, so a body can land on a lane a car already stands in
-# (`Crowd.recycle_cars_on()`, told through `EventsAhead.use_drawn_body_listener()`). The car is
-# taken out where nobody sees it go; one in her view stands to the pocket rule, which is
-# `CarStrategy`'s own question and not this suite's.
+# A body placed on her walk can land on a lane a car already stands in (`Crowd.recycle_cars_on()`,
+# told through `EventStreaming.use_body_listener()`). The car is taken out where nobody sees it go;
+# one in her view is left where it is, and drives out of the body as a walker walks out of one.
 
 ## Three cars on one street, a body told to cover the tile one of them stands on: it is recycled
 ## when she is far from it and left standing when she is looking at it, and the car on a tile the
@@ -342,7 +341,21 @@ func _test_a_car_a_drawn_body_lands_on_is_recycled_out_of_view(t: TestRunner, cr
 					"a car a body lands on is recycled out of her view, to somewhere else")
 		else:
 			t.check(on_it.position == was,
-					"and one she can see stands where it is, for the pocket rule to take once nobody sees it")
+					"and one she can see is left where it is, to drive out of the body")
+	# **The body half of "lane tile or body"**: a car whose centre is on the next tile along, its
+	# capsule reaching the middle of the covered one (20px past the middle of the covered tile is
+	# 4px into the next), is on the body though the tile under its centre is clear.
+	crowd.start_day(1, _rng(1), Vector2.ZERO)
+	crowd.clear()
+	var half_over := place_on(crowd, map, CrowdAgent.Kind.CAR, corridor, lane,
+			float(covered_along * tile) + 36.0, 1.0)
+	crowd.set_focus(far_from_her)
+	var half_over_was := half_over.position
+	t.check(not covered.has(map.world_to_tile(half_over.position)),
+			"the car's centre is on a tile the body leaves clear")
+	crowd.recycle_cars_on(covered)
+	t.check(half_over.position.distance_to(half_over_was) > float(tile),
+			"a car whose centre is on the next tile but whose body covers the covered one is recycled")
 	crowd.start_day(1, _rng(1), Vector2.ZERO)
 	crowd.clear()
 	var walker := place_on(crowd, map, CrowdAgent.Kind.WALKER, corridor, 0,

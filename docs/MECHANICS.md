@@ -924,15 +924,20 @@ precinct's paving and a van parked on its lane, which is not a junction and so i
 pocket record. It does the same thing for the same reason: it stands, and it goes when nobody is
 looking.
 
-**A car a body lands on is the third.** A unit draws its events as she comes near it, out of her
-view (900px or more from her), so a stall or a barrier can land on a lane where a car already
-stands. `City` hands the events' band the crowd's `Crowd.recycle_cars_on()`, which the band calls
-with the ground each drawn body stands on (`EventSpawner.obstructed_footprint()`) before the body
-is recorded. Every car whose body covers one of those tiles is recycled where it is beyond
-`OUT_OF_SIGHT` of the camera (`LaneMover.leave_if_unseen()`): the field is a box 800px either way,
-so its corners hold cars up to 1,131px out, and a car in view is left to the pocket rule above, to
-stand and go when nobody is looking. A walker needs none of this: one standing in the new body
-walks out of it.
+**A car a body lands on is the third.** A body placed after dawn can land on a lane where a car
+already stands: a unit's stall or barrier drawn as she comes near it (900px or more from her, out
+of her view), day 13's roadblock swapped in across a section, a mast put up, a place put on her
+route, a siting moved. `City` hands the events' streaming the crowd's `Crowd.recycle_cars_on()`,
+which `EventStreaming.add()` calls with the ground the body stands on
+(`EventSpawner.obstructed_footprint()`) once the body is recorded, so the car's new place is rolled
+with the body already on the map. Every car whose body covers one of those tiles is recycled
+(`LaneMover.leave_if_unseen()`). A car can stand there because the crowd's field reaches further
+than a draw's distance: its box's corners are 1,131px from her, and a lane's entry band runs 420px
+beyond the box's edge. A draw lands twice `OUT_OF_SIGHT` or more from her, so on a played day every
+such car is out of view; a body put down near her, as day 13's swapped roadblock is, can have a car
+under it in view, and the check against `OUT_OF_SIGHT` is what keeps it from vanishing there. A car
+it finds in view is left alone and drives out of the body, as a walker walks out: it is in no
+pocket, so the pocket rule above does not hold it. A walker needs none of this.
 
 **Sealed-off ground has walkers in it, and they keep walking.** *(2026-09-19: "they should be able
 to spawn inside a closed off section but shouldn't stand in one place but instead walk until they

@@ -1363,18 +1363,24 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	return true
 
-## **Recycles every car a drawn body has landed on, where nobody can see it go**: a car whose body
+## **Recycles every car a body has landed on, where nobody can see it go**: a car whose body
 ## covers a tile of `tiles` (`GroundShape.tiles_under()`, which always holds the tile its centre,
-## so the tile of its lane it stands on, is in), told to leave where it is out of her view
+## so the tile of its lane it stands on, is in), told to leave where it is, out of her view
 ## (`LaneMover.leave_if_unseen()`). `tiles` is the ground the body stands on
-## (`EventSpawner.obstructed_footprint()`), which a unit drawn on her walk names while she is a
-## street away from it (`EventsAhead.use_drawn_body_listener()`).
+## (`EventSpawner.obstructed_footprint()`), which `EventStreaming` names to its listener once the
+## body is recorded (`EventStreaming.use_body_listener()`): a unit drawn as she comes near it, day
+## 13's swapped roadblock, a mast put up, a place put on her route and a siting moved.
 ##
-## **A car in her view is left to the pocket rule** (`CarStrategy.begin_frame()`): it stands, and is
-## recycled once nobody can see it. A draw lands 900px or more from her, but the field is a box
-## 800px either way, so its corners hold cars up to 1,131px out and a car there can be in her view
-## of a body drawn at a corner. **Only a car is recycled**: a walker standing in the new body walks
-## out of it (`LaneMover._keep_out_of_a_body()`).
+## **Where the car comes from.** A unit draws only while no part of it is within the 900px stream
+## radius of her, so a draw's bodies land about 870px or more from her, twice `OUT_OF_SIGHT`. The
+## crowd's field reaches that far: its box's corners are 1,131px from her and a lane's entry band
+## runs 420px (`LaneMover.ENTRY_SPREAD`) beyond the box's edge, up to 1,220px along a street. On a
+## played day every car a draw reaches is out of her view and is recycled. A body put down near her
+## (day 13's roadblock stands where she read the mark) can have a car under it in her view; **that
+## car is left alone**, it is in no pocket (`CarStrategy.begin_frame()` holds only a car in a
+## sealed junction, `CrowdPockets`), and it drives out of the body as a walker walks out. The view
+## check is the crowd's own contract for whoever calls it. **Only a car is recycled**: a walker
+## standing in the new body walks out of it (`LaneMover._keep_out_of_a_body()`).
 func recycle_cars_on(tiles: Array[Vector2i]) -> void:
 	if tiles.is_empty():
 		return

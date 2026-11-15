@@ -318,7 +318,14 @@ func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
 			"a route-adjacent section far from her door holds a row of a unit not yet drawn")
 	if chosen == null or its_unit == null:
 		return
+	var told: Array[String] = []
+	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
+		told.append(str(tiles)))
 	var swapped := events.swap_in_a_section(chosen, across)
+	var across_footprint := EventSpawner.obstructed_footprint(map, across.def, across.position,
+			across.facing)
+	t.check(not across_footprint.is_empty() and str(across_footprint) in told,
+			"the swap tells the crowd's listener the roadblock's footprint, as a drawn body is told")
 	t.check(swapped != null and its_unit.is_drawn(),
 			"the swap draws the section's unit before its roadblock stands")
 	events.draw_the_ground_round(Vector2.ZERO, INF)

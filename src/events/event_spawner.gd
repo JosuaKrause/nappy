@@ -54,10 +54,12 @@ var _sight_reported: Dictionary = {}
 # for exactly this reason, so neither release can open ground the other is still standing on.
 
 ## Records one body's footprint under `owner`, or nothing at all for anything the record leaves
-## out. Safe to call for every plan and every instance: the deciding is all in
+## out, and answers the tiles it recorded (none for the latter). Safe to call for every plan and every instance: the deciding is all in
 ## `obstructed_footprint()`.
-func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> void:
-	world.map.obstruct_tiles(owner, obstructed_footprint(world.map, def, at, facing))
+func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> Array[Vector2i]:
+	var tiles := obstructed_footprint(world.map, def, at, facing)
+	world.map.obstruct_tiles(owner, tiles)
+	return tiles
 
 ## The tiles a row's own solid body stands on when it is sited at `at` looking `facing`, or an
 ## empty list for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a

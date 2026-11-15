@@ -406,8 +406,8 @@ func build(city_map: CityMap) -> void:
 	crowd.atlas = atlas
 	add_child(crowd)
 	crowd.setup(self, map, signals, _streets, navigator)
-	# A body a draw on her walk stands on a lane takes the car there away, out of her view.
-	events.use_drawn_body_listener(crowd.recycle_cars_on)
+	# A body placed on her walk that stands on a lane takes the car there away, where she cannot see.
+	events.use_body_listener(crowd.recycle_cars_on)
 	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
 	excitement_sources = [events.sources, crowd.sources]
 	_blackout = Blackout.new()

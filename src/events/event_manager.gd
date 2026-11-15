@@ -806,7 +806,7 @@ func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: 
 	_recipe_plan = false
 	return ahead.start_recipe_route(marbles, pre_bag, owed, first_after)
 
-## Hands in who is told the ground a drawn body stands on, the crowd's call that recycles a car
-## standing there (`EventsAhead.use_drawn_body_listener()`).
-func use_drawn_body_listener(listener: Callable) -> void:
-	ahead.use_drawn_body_listener(listener)
+## Hands in who is told the ground a body placed after dawn stands on, the crowd's call that
+## recycles a car standing there (`EventStreaming.use_body_listener()`).
+func use_body_listener(listener: Callable) -> void:
+	streaming.use_body_listener(listener)

@@ -655,16 +655,13 @@ func _stands_on_a_street() -> bool:
 		return false
 	return _map.is_street(tile)
 
-## **Recycles this agent (`_recycle()`) where nobody can see it go, and says whether it did**
-## (`_out_of_view()`): what `Crowd.recycle_cars_on()` asks of a car a body has landed on. An agent
-## in her view is left as it is and answers false, to be dealt with by the rule that already
-## covers it (a car a pocket holds stands and is recycled once nobody can see it,
-## `CarStrategy.begin_frame()`).
-func leave_if_unseen() -> bool:
-	if not _out_of_view():
-		return false
-	_recycle()
-	return true
+## **Recycles this agent (`_recycle()`) where nobody can see it go** (`_out_of_view()`): what
+## `Crowd.recycle_cars_on()` asks of a car a body has landed on. An agent in her view is left as it
+## is. No rule holds it there: a car on a body's tile is in no pocket (`CarStrategy.begin_frame()`
+## holds only a car in a sealed junction), so it drives out of the body, as a walker walks out.
+func leave_if_unseen() -> void:
+	if _out_of_view():
+		_recycle()
 
 ## Whether this agent is far enough from the camera that taking it away cannot be seen.
 ##
@@ -675,9 +672,12 @@ func leave_if_unseen() -> bool:
 ## it* has always been measured against.
 ##
 ## The field's own edge is nowhere near this: it is 800px out, so an agent recycled for leaving the
-## box is out of sight several hundred pixels over. This is for the recycles that happen
-## somewhere the player may well be standing — a pocket, or a lane a drawn body has landed on
-## (`leave_if_unseen()`) — and it is the whole of what makes that legal.
+## box is out of sight several hundred pixels over. This is for the recycles that can happen
+## somewhere the player may well be standing, and it is the whole of what makes them legal: a
+## pocket, and a car a body has landed on (`leave_if_unseen()`). A unit's draw lands about 870px or
+## more from her, so on a played day every car it reaches is out of view anyway; the check matters
+## for a body put down near her, as day 13's swapped roadblock is, and for a focus that is not
+## where the draw measured from.
 func _out_of_view() -> bool:
 	if not _field:
 		return true
