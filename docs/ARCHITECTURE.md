@@ -1274,8 +1274,9 @@ field with its value before and after (`tests/shared_state.gd`).
   arrow: what it points at, chosen and swept by the director's ticks), `crossing` (day 9's door
   done by crossing it), `reach_marks`, `reach_contacts`, `reach_relocated` and `reach_narrow`
   (every mark and contact placed where she can reach it) and `sent_places` (whatever contact
-  stands on days 6 to 13, a mark moved near her and a mast the arrow moves the contact to: inside
-  the ground drawn round her, or with a way from home whose ground has drawn).
+  stands on days 6 to 13, a mark moved near her, a mast the arrow moves the contact to and a
+  look-alike it rides onto: inside the ground drawn round her, or with a way from home whose
+  ground has drawn).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.

@@ -106,13 +106,13 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 			"tasks were placed (%d), most on the edge rather than by the fallback (%d)"
 			% [checked[0], fell_back[0]])
 
-## How far either way her view reaches in `_test_the_nearest_place_that_stands_in_is_confirmed()`:
-## past the circle a task is placed on and the ground drawn round where she read the mark
+## How far either way her view reaches in the two tests of a place that stands in: past the
+## circle a task is placed on and the ground drawn round where she read the mark
 ## (`ResistanceDirector.NEAR_THE_MARK` and `Tuning.EVENT_DRAW_AHEAD`, 1,024px), with a street's
 ## length to spare, so the nearest place out of her view stands beyond all of it.
 const WIDE_VIEW_HALF := Vector2(1600.0, 1600.0)
 
-## **The nearest place that stands in for a task near its mark is confirmed**
+## **The nearest place that stands in for a task near its mark is one she can be sent to**
 ## (`ResistanceDirector._nearest_to_the_mark()`, `WayConfirmation`). Day 6's mark is read with a
 ## view so wide that every place where her paths reach the circle round her is in it, so nothing
 ## there qualifies and the nearest place out of her view stands in, with no cap on how far: beyond
@@ -145,21 +145,18 @@ func _test_the_nearest_place_that_stands_in_is_confirmed(t: TestRunner) -> void:
 	director.free()
 	_free_city()
 
-## The city whose day 11 reaches the mast fallback with her own screen as the view: no mast stands
-## where a path reaches the circle round her and none could be put up, so the nearest live mast
-## anywhere stands in (`ResistanceDirector._place_at_a_mast()`).
-const MAST_FALLBACK_SEED := 5
-
-## **The nearest live mast that stands in for day 11's task is confirmed**
-## (`ResistanceDirector._nearest_confirmed_mast()`, `WayConfirmation`). The run log says the
-## fallback placed it, it stands past the ground drawn round where she read the mark, no unit lies
-## undrawn within `Tuning.EVENT_DRAW_AHEAD` of it, and a way from home to the tile beside it runs
-## over ground that has drawn (`_the_way_has_drawn()`), so no unit drawn later can stand a body on
-## it or shut the way.
+## **The nearest live mast that stands in for day 11's task is one she can be sent to**
+## (`ResistanceDirector._nearest_confirmed_mast()`, `WayConfirmation`). Day 11's mark is read with
+## the view that wide (`WIDE_VIEW_HALF`), so no ground where her paths reach the circle round her
+## can take a mast out of her view, and with no mast standing there the nearest live one anywhere
+## stands in. The run log says the fallback placed it, it stands past the ground drawn round where
+## she read the mark, and a tile beside its foot has no undrawn unit within
+## `Tuning.EVENT_DRAW_AHEAD` of it and a way from home over ground that has drawn
+## (`_the_way_has_drawn()`), so no unit drawn later can stand a body on it or shut the way.
 func _test_the_nearest_live_mast_that_stands_in_is_confirmed(t: TestRunner) -> void:
-	_build_city_in_a_new_run(t, MAST_FALLBACK_SEED)
+	_build_city_in_a_new_run(t, SEED)
 	var lines: Array[String] = []
-	var read := _read_the_mark_on(t, 11, MAST_FALLBACK_SEED, lines)
+	var read := _read_the_mark_on(t, 11, SEED, lines, WIDE_VIEW_HALF)
 	var director: ResistanceDirector = read[0]
 	var mark: Vector2 = read[1]
 	var player: Stroller = read[2]
@@ -168,19 +165,18 @@ func _test_the_nearest_live_mast_that_stands_in_is_confirmed(t: TestRunner) -> v
 		fell_back = fell_back or "no mast stands where a path reaches" in line
 	var at := director.contact_position()
 	t.check(fell_back and at != Vector2.INF,
-			"day 11's mast stands in when none stands where her paths reach the circle round her")
+			"with everything near her in her view and no mast there, the nearest live mast stands "
+			+ "in for day 11's task")
 	if fell_back and at != Vector2.INF:
 		t.check(at.distance_to(mark) > ResistanceDirector.NEAR_THE_MARK + Tuning.EVENT_DRAW_AHEAD,
 				"%.0fpx from the mark, beyond the ground drawn round where she read it"
 				% at.distance_to(mark))
-		var units := _city.events.walk_events().unit_draw().units()
-		t.check(units.undrawn_within(at, Tuning.EVENT_DRAW_AHEAD).is_empty(),
-				"every unit within %.0fpx of the mast has drawn" % Tuning.EVENT_DRAW_AHEAD)
 		var foot := _city.map.world_to_tile(at)
 		var way := false
 		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			way = way or _the_way_has_drawn(foot + side)
-		t.check(way, "and the units along a way from home to the tile beside it have drawn")
+		t.check(way, "and the units round a tile beside it, and along a way from home to that "
+				+ "tile, have drawn")
 	player.free()
 	director.free()
 	_free_city()

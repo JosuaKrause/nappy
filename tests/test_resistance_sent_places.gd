@@ -74,7 +74,6 @@ func _test_wherever_she_is_sent_a_way_stands_over_drawn_ground(t: TestRunner) ->
 		_ask_the_arrows_mast(t, seed_value, arrows)
 		_ask_a_look_alike(t, seed_value, look_alikes)
 	_free_city()
-	print("ZZTALLY held %s scars %s moved %s arrows %s look_alikes %s" % [held, scars, moved, arrows, look_alikes])
 	t.check(held[INSIDE] > 0 and held[FROM_HOME] > 0 and held[NO_WAY] == 0,
 			"tasks stood inside the ground drawn round her (%d) and beyond it, over a way from home (%d)"
 			% [held[INSIDE], held[FROM_HOME]])
