@@ -405,7 +405,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 	city.free()
 
 ## **A scene's rows are held to a row's per-day cap only where the day holds one**: a row the units
-## draw is capped by its unit (one of a row in a unit, `LocationDraw`) and not by the day, so a scene
+## draw is capped by its unit (one of a row in a unit, `MarbleDraw`) and not by the day, so a scene
 ## with three chatting mothers (`max_per_day` 2, drawn by the units) is installed, while one with
 ## one roadblock more than its cap, on day 13 where the roadblock phase's row is the one row no
 ## unit draws, is refused with the cap's own message. Each is a scene begun on a city of its own, its rows' tiles the ones the

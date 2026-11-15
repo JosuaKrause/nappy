@@ -1261,8 +1261,12 @@ func _release_points(body: EventPlan) -> Array[Vector2]:
 ## **And the same days planned without the gap are what says the sweep is not vacuous.** The run
 ## this milestone comes from was let out at 72 and crying 0.4s later, so the unguarded number has to
 ## be able to break the same bound — a sweep whose "before" also passed would be measuring nothing.
+## So the sweep takes every day the region wall stands, not two of them: whether a day without the
+## gap puts something loud beside a door is the draw's, and two days are too few to count on it.
 func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
-	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
+	var days: Array[int] = []
+	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+		days.append(day)
 	var worst_guarded := 0.0
 	var worst_unguarded := 0.0
 	var releases := 0

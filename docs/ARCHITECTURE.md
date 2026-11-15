@@ -258,20 +258,25 @@ src/
 	location.gd           one location: its street, section, tiles, view, what stands on it, the whole
 	                      it is part of and the run a route starting in it may lie on
 	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
-	                      an alley, a park or a square; its name, its rank and its stream for the day
+	                      an alley, a park or a square; its name, its rank and its stream for the day,
+	                      and its view, the most permissive of its locations'
+	unit_room.gd          what is left of a unit for its draw to speak for: a street's whole sections
+	                      and half-filled ones, what share of a street a marble may still take
 	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
 	                      junction box, or a shared alley, park or square
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
-	                      every touching unit of lower rank, from a fresh bag per view, judged among
-	                      the dawn's plans and the touching units' draws, never a plan her walk sites
+	                      every touching unit of lower rank, from one fresh bag of its view, judged
+	                      among the dawn's plans and the touching units' draws, never a plan her walk
+	                      sites
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
 	                      the row's role, offered the row and assigned what it took
 	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
-	                      the empty event, drawn without putting back, only what a location accepts
-	location_draw.gd      one unit's open locations, each drawn from its view's bag, at most one of
-	                      a row in the unit
+	                      the empty event, drawn without putting back, only what the unit accepts
+	marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
+	                      out again largest first as each is added, what the room left or the
+	                      layout cannot hold left out, at most one of a row in the unit
 	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid among
 	                      the plans it is handed, the location's own weight; the day's own is
 	                      `RuledLocationGround`

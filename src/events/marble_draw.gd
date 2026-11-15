@@ -243,9 +243,9 @@ func _weight(def: EventDef, open: Array[Location], street: bool, scales: Diction
 
 ## How many times over `location` weighs `def` (`LocationGround.scale()`), asked once a draw.
 func _scale(def: EventDef, location: Location, scales: Dictionary) -> float:
-	if not scales.has(def.id):
-		scales[def.id] = {}
-	var of_row: Dictionary = scales[def.id]
+	if not scales.has(def):
+		scales[def] = {}
+	var of_row: Dictionary = scales[def]
 	if not of_row.has(location):
 		of_row[location] = _ground.scale(def, location)
 	var scale: float = of_row[location]
