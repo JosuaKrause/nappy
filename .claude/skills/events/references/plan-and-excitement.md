@@ -16,17 +16,19 @@ would give. A unit within the stream radius of her is drawn before the streaming
 
 **A place her walk sites stands on ground whose units have drawn, and no draw reads it.**
 A placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEAD` of its place
-first (`EventsAhead.draw_the_ground_round()`): a place the director sites ahead of her, which gives
-up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`); the walk home day 10's
-neighbor is given, with the units along it; day 13's swap; an area cleared of its rows. **A place
+first (`EventsAhead.draw_the_ground_round()`); a place the director sites ahead of her, for one,
+gives up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`). **A place
 the resistance sends her to is asked by where it stands** (`WayConfirmation`, asked wherever a
 contact is stood or moved, `ResistanceDirector._she_can_be_sent_to()`): inside the ground already
 drawn round her (the stream radius, and round where she reads a mark as far as its task is looked
 for and `Tuning.EVENT_DRAW_AHEAD` beyond) it stands as it is, her own paths reaching it without
 coming within `WayConfirmation.CLEAR` of an undrawn unit; beyond that ground, the units along a
 way from home and round the place draw first. So what a place is judged against is whole, and
-nothing a unit draws later stands inside it. The one siting that draws nothing is the fire lit at
-dusk on a won day, after which nothing draws. A moment the director sends at her (a cat across her
+nothing a unit draws later stands inside it. The one exception is day 8's burnt building on a day
+none of the sidewalk below its door can be reached: its contact and red arrow stay on the facade
+behind the burnt shell, where the run's fire burned, with nothing asked or drawn for it. The
+other siting that draws nothing is the fire lit at dusk on a won day, after which nothing draws.
+A moment the director sends at her (a cat across her
 path, a pursuer; `EventsAhead.place_what_is_owed_ahead()`) is no place: it starts in her view or
 just off her screen, inside the stream radius, where every unit has drawn. The red arrow's choice
 among several places that answer a task is no place either: it is made again twice a second over

@@ -1302,13 +1302,14 @@ Each item quotes the code on this branch.
    draws, every undrawn touching unit of lower rank (a fixed rank, from the day's seed and the unit)
    draws first, so a unit's draw is the same whatever order the units are drawn in, and so
    whatever her path. What her walk sites changes no unit's draw: no draw is judged among a plan
-   her walk sites, and a placement made from her walk (a place the director sites ahead of her,
-   the walk home day 10's neighbor is given, day 13's swap, an area cleared of its rows) draws the
+   her walk sites, and a placement made from her walk draws the
    units round its place before the place stands (`EventsAhead.draw_the_ground_round()`, out to
    `Tuning.EVENT_DRAW_AHEAD`), while a place the resistance sends her to lies inside the ground
    already drawn round her or has the units along a way from home and round it drawn first
    (`WayConfirmation`), so each is judged against what stands there and nothing a unit draws
-   later stands inside it. Today's placement rules are the invalidation,
+   later stands inside it. The one place of the two that is neither is day 8's burnt building on
+   a day none of the sidewalk below its door can be reached: it stands where the run's fire
+   burned, with nothing asked or drawn for it. Today's placement rules are the invalidation,
    one class each (`StreetRule`: the calm she has not used, a door's clear ground, a route's
    junctions, its walked sidewalk, a pacing beat's opening and its ground off the streets, with the
    escape's one notice at a time and its walk kept open), composed per walk (`StreetInvalidation`)

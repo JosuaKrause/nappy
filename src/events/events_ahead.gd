@@ -394,12 +394,9 @@ func draw_what_comes_near(at: Vector2, stream_radius: float) -> void:
 
 ## **Draws now every undrawn unit any part of which lies within `reach` of `at`**, each after every
 ## unit it waits for: what a placement made from her walk asks before its place stands, so
-## nothing is sited on ground whose units have not drawn (a place the director sites ahead of her,
-## `WalkSiting.ahead_of()`; day 13's swap; the ground round where she reads a mark, as far as
-## its task is looked for, and along a way from home to a place the resistance sends her to
-## beyond the ground drawn round her, `WayConfirmation`; an area cleared of its rows;
-## the ground the streaming is about to look at, `EventManager.stream_around()`; the developer's
-## spawn target). Answers whether it drew any unit.
+## nothing is sited on ground whose units have not drawn. Every caller is such a placement, or
+## the streaming about to look at the ground (`EventManager.stream_around()`), or the developer's
+## spawn target. Answers whether it drew any unit.
 func draw_the_ground_round(at: Vector2, reach: float) -> bool:
 	var draw := _walk.unit_draw()
 	if not draw:
