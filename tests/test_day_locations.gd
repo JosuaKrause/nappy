@@ -271,8 +271,8 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 ## sidewalk of the first section (`assign_to()`, as a scripted row or a fixed part's hold is) leaves
 ## that section drawn as the empty event, not taken, so no carriageway row is drawn there over the
 ## cafe; the section's other sidewalk stays open, and so do the two sections whose sidewalks hold
-## nothing. A draw never gets here first: a street draws its sections before its sidewalks
-## (`UnitDraw`).
+## nothing. A draw never needs it: a street's draw lays a section row and the sidewalks it takes
+## out together, before it records any of them (`MarbleDraw`).
 func _test_a_sidewalk_holding_an_event_closes_its_section(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
