@@ -527,9 +527,11 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		door = _the_door_behind(at, her)
 	# **The one point a step's contact is stood, whichever search fixed its place**: the ground
 	# she is sent to (`_ground`) is asked by where it stands (`_she_can_be_sent_to()`), and
-	# asked before anything is put in the street for it. A place whose search asked already has
-	# its answer kept; one that named no ground is refused. **A refusal is a step with nowhere to
-	# go today**, as an empty pool is: no contact, no arrow, the step neither done nor failed.
+	# asked before the contact is stood. What a search already put in the street stays (a mast
+	# near her, day 13's roadblock) or is retired on a refusal (day 10's neighbor). A place
+	# whose search asked already has its answer kept; one that named no ground is refused.
+	# **A refusal is a step with nowhere to go today**, as an empty pool is: no contact, no
+	# arrow, the step neither done nor failed.
 	if at != Vector2.INF and not _she_can_be_sent_to(_ground, her, _nothing_stands_on):
 		trace.note("contact", "step %d: no way stands to %s over ground that has drawn; it has no place"
 				% [_step.index, "the place it was given" if _ground == NO_TILE
