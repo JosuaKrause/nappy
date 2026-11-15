@@ -1979,10 +1979,11 @@ is loud, and the reason a park is quiet.
   view it stands exactly where the seal caught it — no step, no steering, no turn — so a sealed
   crossing holds a car or two standing rather than shunting between its seals. The distance
   is measured from `CrowdField.centre_point()`, which is the player, and the field's own edge is
-  twice as far out — so this is the only recycle that ever happens somewhere she could have been
-  standing. The recycle of a car a body lands on (`Crowd.recycle_cars_on()`, docs/MECHANICS.md) is
-  the other kind: it happens out at the field's edge, where a draw lands, and asks `OUT_OF_SIGHT`
-  all the same.
+  twice as far out — so this and the recycle of a car a body is put down on near her (day 13's
+  swapped roadblock, an added mast, a place put on her route, a siting moved;
+  `Crowd.recycle_cars_on()`, docs/MECHANICS.md) are the only recycles that can happen somewhere she
+  could have been standing. A unit's draw lands out by the field's edge and asks `OUT_OF_SIGHT` all
+  the same.
 
 - **Bodies are solid, and cars are lethal.** Walking into somebody displaces you both and startles
   them; stepping into the carriageway in front of a moving car ends the day; traffic gives way at a

@@ -35,20 +35,23 @@ func _init(the_world: EventWorld, spawner: EventSpawner, walk: WalkEvents) -> vo
 ## `func(tiles: Array[Vector2i]) -> void`. Invalid for none: a rig with no crowd.
 var _body_listener := Callable()
 
-## **Hands in who is told where a body stands**, called by `add()` with the tiles a plan's body
-## covers (`EventSpawner.obstructed_footprint()`) once the body is recorded on the map, so a crowd
-## that holds a car on those tiles can recycle it (`Crowd.recycle_cars_on()`) and the car's new
-## place is rolled with the body already in the map's record. `add()` is the one call a body
-## placed after dawn goes through: a unit's draw as she comes near it, day 13's swapped roadblock
-## (`swap_section()`), day 11's added mast, a place put down on her route and a siting the director
-## moves. The city, which makes both the events and the crowd, hands it the crowd's call. A body
-## spawned with no plan (`EventSpawner.spawn()`) is told to nobody: it has no plan to add, and
-## what spawns one is a rig or a scripted moment, not the walk. With no listener nothing is told.
+## **Hands in who is told where a body stands**, called by `add()` and `move_the_body()` with the
+## tiles a plan's body covers (`EventSpawner.obstructed_footprint()`) once the body is recorded on
+## the map, so a crowd that holds a car on those tiles can recycle it (`Crowd.recycle_cars_on()`)
+## and the car's new place is rolled with the body already in the map's record. A body placed after
+## dawn goes through one of two calls, each through `_record_and_tell()`: `add()` for a plan new to
+## the walk (a unit's draw as she comes near it, day 13's swapped roadblock (`swap_section()`), day
+## 11's added mast, a place put down on her route) and `move_the_body()` for a plan the director
+## sites again. The tiles are read and never changed: they are the map's own record of the body.
+## The city, which makes both the events and the crowd, hands it the crowd's call. A body spawned
+## with no plan (`EventSpawner.spawn()`) is told to nobody: it has no plan to add, and what spawns
+## one is a rig or a scripted moment, not the walk. With no listener nothing is told.
 func use_body_listener(listener: Callable) -> void:
 	_body_listener = listener
 
-## Adds one plan placed after dawn to the walk's, its body recorded where it stands, so it streams
-## in like any planned row, and tells the listener the ground that body stands on.
+## Adds one plan new to the walk (placed after dawn) to the walk's, its body recorded where it
+## stands, so it streams in like any planned row, and tells the listener the ground that body
+## stands on.
 func add(plan: EventPlan) -> void:
 	_walk.add(plan)
 	_record_and_tell(plan)

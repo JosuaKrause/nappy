@@ -1376,10 +1376,11 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 ## crowd's field reaches that far: its box's corners are 1,131px from her and a lane's entry band
 ## runs 420px (`LaneMover.ENTRY_SPREAD`) beyond the box's edge, up to 1,220px along a street. On a
 ## played day every car a draw reaches is out of her view and is recycled. A body put down near her
-## (day 13's roadblock stands where she read the mark) can have a car under it in her view; **that
-## car is left alone**, it is in no pocket (`CarStrategy.begin_frame()` holds only a car in a
-## sealed junction, `CrowdPockets`), and it drives out of the body as a walker walks out. The view
-## check is the crowd's own contract for whoever calls it. **Only a car is recycled**: a walker
+## (day 13's swapped roadblock stands across the nearest section beside her routes, out of her sight
+## but often within `OUT_OF_SIGHT` of her) can have a car under it that this check counts as in her
+## view; **that car is left alone**, it is in no pocket (`CarStrategy.begin_frame()` holds only a
+## car in a sealed junction, `CrowdPockets`), and it drives out of the body as a walker walks out.
+## The view check is the crowd's own contract for whoever calls it. **Only a car is recycled**: a walker
 ## standing in the new body walks out of it (`LaneMover._keep_out_of_a_body()`).
 func recycle_cars_on(tiles: Array[Vector2i]) -> void:
 	if tiles.is_empty():

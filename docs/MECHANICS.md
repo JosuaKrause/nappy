@@ -918,7 +918,8 @@ recycle refuse a car a spot inside one, because a car cannot turn round against 
 stopped nose-on holds the queue behind it. A car a seal goes up around while it is already standing
 there stands exactly where it caught it — no step, no steering, no turn — until it is recycled out,
 at the first frame it is further from the camera than `OUT_OF_SIGHT`: the field's own edge is off
-camera by hundreds of pixels, and this is the one recycle that has to check. **A car can be caught
+camera by hundreds of pixels, and this is one of the two recycles that have to check, the
+third below being the other. **A car can be caught
 one scale below a pocket** — on a stub of carriageway too short to turn round in, between a
 precinct's paving and a van parked on its lane, which is not a junction and so is invisible to the
 pocket record. It does the same thing for the same reason: it stands, and it goes when nobody is
@@ -928,9 +929,10 @@ looking.
 already stands: a unit's stall or barrier drawn as she comes near it (900px or more from her, out
 of her view), day 13's roadblock swapped in across a section, a mast put up, a place put on her
 route, a siting moved. `City` hands the events' streaming the crowd's `Crowd.recycle_cars_on()`,
-which `EventStreaming.add()` calls with the ground the body stands on
-(`EventSpawner.obstructed_footprint()`) once the body is recorded, so the car's new place is rolled
-with the body already on the map. Every car whose body covers one of those tiles is recycled
+which `EventStreaming.add()` (a plan new to the walk: the draw, the swap, the mast, a route's place)
+and `EventStreaming.move_the_body()` (a plan sited again) call, through one routine, with the ground
+the body stands on (`EventSpawner.obstructed_footprint()`) once the body is recorded, so the car's
+new place is rolled with the body already on the map. Every car whose body covers one of those tiles is recycled
 (`LaneMover.leave_if_unseen()`). A car can stand there because the crowd's field reaches further
 than a draw's distance: its box's corners are 1,131px from her, and a lane's entry band runs 420px
 beyond the box's edge. A draw lands twice `OUT_OF_SIGHT` or more from her, so on a played day every

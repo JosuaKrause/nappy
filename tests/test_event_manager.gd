@@ -207,12 +207,19 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 ## listener a draw says nothing and still stands its rows.
 func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	var told: Array[String] = []
+	# Told tiles the map does not yet hold as a body's, asked as the listener is called: the body
+	# is recorded before the crowd is told, so every tile told is one the map already holds.
+	var not_yet_recorded: Array[Vector2i] = []
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_city.events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
-		told.append(str(tiles)))
+		told.append(str(tiles))
+		for tile in tiles:
+			if not _city.map.is_obstructed(tile):
+				not_yet_recorded.append(tile))
 	_start(4)
 	var undrawn := _city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
 	told.clear()
+	not_yet_recorded.clear()
 	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	var expected: Array[String] = []
 	var placed := 0
@@ -233,6 +240,9 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	t.check(told == expected,
 			"the listener is told the footprint of each placed plan that has one, and no other"
 			+ " (%d told, %d expected)" % [told.size(), expected.size()])
+	t.check(not_yet_recorded.is_empty(),
+			"and each is told after the body is recorded: the map holds every tile told as a body's"
+			+ " (%d tiles it did not yet)" % not_yet_recorded.size())
 	var told_so_far := told.size()
 	_city.events.use_body_listener(Callable())
 	_start(4)
