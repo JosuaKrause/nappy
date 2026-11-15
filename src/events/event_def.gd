@@ -547,16 +547,21 @@ func for_day(day: int) -> EventDef:
 @export var mobile := false
 @export var speed := 0.0
 @export var path_mode := PathMode.NONE
-## Route length for ALONG_STREET, in tiles.
+## Route length for ALONG_STREET, in tiles, at most: a row the units draw stops sooner, at the far
+## side of the junction box at its street's end (`Location.run()`, inbox #1460).
 @export var path_length_tiles := 24
 
 ## Walks its route and turns round at the ends, for ever.
 ##
 ## The difference between a **journey** and a **beat**. A dog walker is going somewhere: its route
-## is thirty tiles, it is gone at the end of them, and it costs the stretch of sidewalk it owns
-## while you are there. A man shouting is *at* a place, and without this the only way to say so is
-## to make him stationary, which reads from the street as "it didn't move". A paced event never
-## reaches the end of its path, so it never departs and never expires.
+## runs down its street to the far side of the junction box at the street's end, it is gone at
+## the end of it, and it costs the stretch of sidewalk it owns while you are there. (That is how a
+## drawn row's route is laid now, inbox #1460: its street draws as she comes near it, and a route
+## kept to the street and its boxes has everything that could come near it in a unit whose draw
+## sees the street's; `Location.run()`, `DawnDraw.ROUTES_STAY_ON_THE_RUN`.) A man shouting is
+## *at* a place, and without this the only way to say so is to make him stationary, which reads
+## from the street as "it didn't move". A paced event never reaches the end of its path, so it
+## never departs and never expires.
 @export var paces := false
 ## Holds still until the telegraph is over, then goes.
 ##

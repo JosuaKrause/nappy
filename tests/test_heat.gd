@@ -367,8 +367,9 @@ func _test_it_patrols_while_it_waits(t: TestRunner) -> void:
 ## `_has_expired()` returns false for the whole time a pursuer is waiting, so a heated patrol that
 ## never notices her has to live until it drives off the end of its own route — the same "mobile
 ## row that reaches the end of a route it does not pace" rule every other mobile event already
-## follows, arrived at through a different door. A short path so the test does not need the ninety
-## seconds a scheduler-built 40-tile one would take to run out.
+## follows, arrived at through a different door. A 300px path, about the length of a drawn
+## patrol's route as one is laid now (to its street and the junction boxes at its ends, at most 13
+## tiles, inbox #1460), so it runs out in about four seconds.
 func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(300.0, 0.0)])
