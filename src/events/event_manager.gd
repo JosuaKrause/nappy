@@ -315,10 +315,8 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day)
-	# The day's units round where she starts draw before anything streams in: every unit within the
-	# stream radius, so the streaming finds each whole (`EventsAhead.draw_what_comes_near()`).
-	ahead.draw_what_comes_near(focus, stream_radius)
-	streaming.stream_around(focus)
+	# The day's units round where she starts draw before anything streams in (`stream_around()`).
+	stream_around(focus)
 
 ## The walk the plan `start_day()` started is stated against (`RouteSource`): the day's route tree,
 ## the escape's two chains (`FinalePlanner.Plan`), or null in the building and before a walk starts.
@@ -511,18 +509,18 @@ func _tick_the_events(delta: float) -> void:
 	if she_is_here:
 		# First, so everything below asks the same view of what she can see this frame.
 		_look_through_the_camera()
-		# The day's units she comes near draw first, before anything is sited or streamed in; and
-		# **nothing is sited on a tick that leaves a unit wanted**, so nothing is sited on ground
-		# whose units have not drawn (`EventsAhead.draw_what_comes_near()`).
-		var wanted := ahead.draw_what_comes_near(world.player.global_position, stream_radius)
-		var sites := not _recipe_plan and ahead.has_director() and not wanted
+		# The day's units she comes near draw first, before anything is streamed in: every unit
+		# within the stream radius of her whole, so the streaming finds no row of it missing
+		# (`EventsAhead.draw_what_comes_near()`). What is sited below draws the ground round its
+		# own site (`EventScheduler.WalkSiting.ahead_of()`).
+		ahead.draw_what_comes_near(world.player.global_position, stream_radius)
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn. Nothing is sited in a world with no
 		# director.
-		if sites:
+		if not _recipe_plan and ahead.has_director():
 			ahead.site_what_is_on_her_way(delta)
 		streaming.stream_around(world.player.global_position)
-		if sites:
+		if not _recipe_plan and ahead.has_director():
 			ahead.place_what_is_owed_ahead(delta)
 		spawner.summon_what_has_been_sighted(_walk_events.plans())
 		spawner.report_the_pelicans_in_view()
@@ -653,8 +651,13 @@ func _let_her_out(at: Vector2) -> void:
 # What the run flow, the resistance, the city and the observers ask of a day's events, answered by
 # the part that owns it.
 
-## Brings into the world everything within reach of `at` (`EventStreaming.stream_around()`).
+## Brings into the world everything within reach of `at` (`EventStreaming.stream_around()`),
+## **every unit of the day's locations any part of which lies within the stream radius of `at`
+## drawn first** (`EventsAhead.draw_the_ground_round()`), so the streaming finds each whole wherever
+## a walk starts and wherever she is put down (her doorstep, a scene's start, the developer's
+## `--spawn`).
 func stream_around(at: Vector2) -> void:
+	ahead.draw_the_ground_round(at, stream_radius)
 	streaming.stream_around(at)
 
 ## The planned instance of the row `id` within a tile of `at`, put in the world and kept there

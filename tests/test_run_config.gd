@@ -389,10 +389,6 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1)
 	RigStreets.begin(city.streets(), city.map, spec)
 	city.events.start_day(spec, rng, consumed)
-	# Every unit of the day drawn before she walks: nothing is sited on a tick that leaves a unit
-	# near her undrawn (`EventsAhead.draw_what_comes_near()`), and this is about the director's
-	# clock, not about when the units round a place she was put down at draw.
-	city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	var start := CrowdLanes.arterial_pavement(city.map)
 	start.y = city.map.world_size().y * 0.5
 	her.global_position = start

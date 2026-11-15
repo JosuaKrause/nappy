@@ -184,7 +184,7 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 		drawn.sort()
 		drawn_on_the_walk.append(", ".join(drawn))
 		events.draw_the_ground_round(Vector2.ZERO, INF)
-		readings.append(_what_the_units_drew(kept))
+		readings.append(Rig.what_the_units_drew(_city.map, kept))
 	t.check(readings[0] == readings[1] and readings[0] != "",
 			"walked east and walked south, day 4's units draw the same rows on the same tiles")
 	t.check(drawn_on_the_walk[0] != "" and drawn_on_the_walk[1] != ""
@@ -193,19 +193,6 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 					% drawn_on_the_walk)
 	events.use_player(null)
 	rig.free()
-
-## Each of `units`' draws as `name: row@tile, ...`, one line a unit, a row handed to her walk as
-## `row@walk`.
-func _what_the_units_drew(units: Array[PlacementUnit]) -> String:
-	var lines: Array[String] = []
-	for unit in units:
-		var parts: Array[String] = []
-		for plan in unit.drawn():
-			parts.append("%s@%s" % [plan.row_id(), "walk" if plan.row().is_handed_to_her_walk()
-					else str(_city.map.world_to_tile(plan.placed_at()))])
-		lines.append("%s: %s" % [unit.name(), ", ".join(parts)])
-	lines.sort()
-	return "\n".join(lines)
 
 ## Each of `plans` as its row and the place it was put, in order.
 static func _where_they_stand(plans: Array[EventPlan]) -> String:

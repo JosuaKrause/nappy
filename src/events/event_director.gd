@@ -672,6 +672,10 @@ const ON_HER_WAY_LOOK := 1.0
 ## through a thinned seal or into an alley, the window holds none of that ground (no building
 ## frontage, for the fire and the crews), or a candidate stands in a door's clear ground — this answers with nothing and asks again a second later, from
 ## wherever she has got to. A day she walks into a corner is a day it waits.
+##
+## **And nothing is sited on ground whose units have not drawn.** The siting draws the units of
+## the day's locations round its pick before the pick stands, and gives up a pick that drew one
+## (`EventScheduler.WalkSiting.ahead_of()`): the next look judges against what they drew.
 func site_what_is_on_her_way(delta: float, at: Vector2,
 		velocity: Vector2) -> Array[EventPlan]:
 	var moved: Array[EventPlan] = []

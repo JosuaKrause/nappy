@@ -1,5 +1,6 @@
 extends "res://tests/resistance_rig.gd"
-## M188: a mark is never placed in an alley she cannot reach.
+## M188: a mark is never placed in an alley she cannot reach, and one placed across the city
+## stands on a way from home whose ground has drawn.
 
 func run(t: TestRunner) -> void:
 	_test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
@@ -15,10 +16,19 @@ func run(t: TestRunner) -> void:
 ## — reusing `_day_reachability()`/`_stands_on_legal_ground()` rather than a second implementation
 ## of either. A full-city-generation sweep is the expensive kind (M125's own finding, cut from six
 ## seeds to three for the same reason), so this stays at four rather than growing further.
+##
+## **And a mark is confirmed along a way from home** (`ResistanceDirector._pick_reachable()`,
+## `WayConfirmation`): the dawn draws no unit and the day's start only those round her door, so a
+## mark across the city is found reachable over ground whose units have not drawn, and a body
+## drawn there later could shut the way. As the day starts, before she is placed, the units along
+## a way from home to the mark and round the mark have drawn (`_the_way_has_drawn()`); the sweep
+## counts the marks that stand beyond what the start drew round her door, where the confirmation
+## had ground to draw.
 const MARK_REACHABILITY_SWEEP_SEEDS: Array[int] = [2295276695, 291862120, 314159, 555555]
 
 func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) -> void:
 	var checked := 0
+	var far_marks := 0
 	for seed_value in MARK_REACHABILITY_SWEEP_SEEDS:
 		# One city of a run of its own per seed: each day below clears the steps and the alleys
 		# used on that run, so no day leans on what the day before did.
@@ -37,6 +47,16 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 			var director := _director(t)
 			director.start_day(day, _production_rng(seed_value, day, "resistance"),
 					Tuning.day_length(day))
+			# Read as the day starts, before she is placed and a tick may move the mark near her.
+			var placed_step := director.current_step()
+			if placed_step != null and placed_step.is_pickup:
+				var placed_at := director.contact_position()
+				t.check(_the_way_has_drawn(city.map.world_to_tile(placed_at)),
+						"seed %d day %d: the units along a way from home to the mark have drawn"
+						% [seed_value, day])
+				if placed_at.distance_to(city.map.doorstep_world_position()) \
+						> Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_DRAW_AHEAD:
+					far_marks += 1
 			# `main.gd`'s own order: she is placed and ticks once before this checks anything —
 			# see `_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground`'s own
 			# doc for why the tick is load-bearing.
@@ -64,3 +84,6 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 			director.free()
 	_free_city()
 	t.check(checked > 0, "the sweep actually checked something (%d)" % checked)
+	t.check(far_marks > 0,
+			"and some marks stood beyond the ground the day's start drew round her door (%d)"
+			% far_marks)

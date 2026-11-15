@@ -12,7 +12,7 @@ var _city: City
 
 ## Moves her down the route a walking test sets it, on its own physics tick, before the city's
 ## (it is added to the tree first), so the manager's tick sees her where this tick put her.
-var _walker_node: Walker
+var _walker_node: Rig.Walker
 
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 		_teardown()
 
 func _build_city(t: TestRunner) -> void:
-	_walker_node = Walker.new()
+	_walker_node = Rig.Walker.new()
 	t.add_child(_walker_node)
 	_city = Rig.build_city(t)
 
@@ -99,28 +99,6 @@ func _start(day: int) -> void:
 ## the outbound and return legs of a 210s day are.
 const WALK_SECONDS := 240.0
 
-## Takes her down a route on its own physics tick, at `Tuning.WALK_SPEED`: a point is walked to
-## rather than through, and `velocity` is set to match, since the director's clock only runs while
-## she is actually going somewhere and its heading is read off `velocity`. A point within a step of
-## her is passed over.
-class Walker extends Node:
-	var rig: Stroller
-	var route := PackedVector2Array()
-	var next := 0
-	var heading := Vector2.RIGHT
-
-	func _physics_process(delta: float) -> void:
-		if rig == null:
-			return
-		var step := Tuning.WALK_SPEED * delta
-		while next < route.size() and route[next].distance_to(rig.global_position) <= step:
-			next += 1
-		if next >= route.size():
-			return
-		heading = (route[next] - rig.global_position).normalized()
-		rig.velocity = heading * Tuning.WALK_SPEED
-		rig.global_position += heading * step
-
 ## Seconds of walking since the last `_start`, advanced by `_walk` so a test can say *when*
 ## something happened without threading a clock through the walking itself.
 var _walk_clock := 0.0
@@ -136,7 +114,7 @@ var _walk_clock := 0.0
 func _walk(t: TestRunner, rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vector2:
 	_walker_node.rig = rig
 	_walker_node.route = route
-	_walker_node.next = _nearest_on(route, rig.global_position)
+	_walker_node.next = Rig.nearest_on(route, rig.global_position)
 	while _walker_node.next < route.size() and _walk_clock < WALK_SECONDS:
 		await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), Rig.WALK_SCALE)
 		_walk_clock += Rig.WALK_STEP
@@ -239,18 +217,6 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 	t.check(behind_her == 0,
 			"walking a long way up its road, the place stays up the road from her (%d frames not)"
 			% behind_her)
-
-## The index of the route point she is standing nearest to. A route is a chain of cell centres and
-## she walks between them, so this is where a resumed walk picks up.
-func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
-	var best := 0
-	var best_distance := INF
-	for i in route.size():
-		var distance := route[i].distance_to(at)
-		if distance < best_distance:
-			best_distance = distance
-			best = i
-	return best
 
 ## The tree the manager planned this day against, chosen the way `EventManager.start_day` chooses
 ## it: the city's own if a `City.start_day` has ever grown one, and a fresh `RouteTree.for_day`
