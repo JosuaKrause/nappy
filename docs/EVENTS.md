@@ -1462,7 +1462,8 @@ mouse, which stands on the alley's tiles beside the pile where it can. *(The pla
 inbox #1185 in gentle-owl.)*
 
 **And each row is weighed by the kind of ground the location is** (`EventScheduler.GROUND_WEIGHTS`,
-a weight per row per `Location.Kind`), so the mix inside each view is today's as well as its count.
+a weight per row per `Location.Kind`), so the mix inside each view starts from what the day placed before the bags, and the marble draw
+moves it until step 3 replaces the tables (item 6 of "Where the code differs from the design").
 A unit off the streets draws one marble for each of its open locations, and a street three to six
 (a small marble speaks for one sidewalk location, a section marble for two), or one where its
 first marble takes it whole, so a row whose own ground is
@@ -1470,7 +1471,7 @@ rare (a square's cells, an alley's three locations, the junction boxes) would be
 often as its share of the bag times the few locations that take it, and the sidewalk rows would
 take the share it lost: the street musician
 would all but leave the squares, and day 12's protest the crossings. The weights are fitted, with
-the view scales, until each row's daily count on each kind of ground is today's
+the view scales, until each row's daily count on each kind of ground is what the day placed before the bags
 (`tests/probes/placement_rows.gd`, run on main and on the branch over the same cities and streams);
 they are measured, not derived, and are fitted again whenever the draw's rules change. **And each
 role is weighed per view and act** (`EventScheduler.WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`),

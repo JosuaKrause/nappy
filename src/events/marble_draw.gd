@@ -31,7 +31,9 @@ extends RefCounted
 ##   corner weighs it. Where it may stand is one answer for the weight and the layout
 ##   (`_may_hold()`): a row that takes the whole street stands in a section of a street nothing of
 ##   which is taken, one that takes a section in a section whose two sidewalk locations are open,
-##   and anything else on a sidewalk location.
+##   and anything else on a sidewalk location. On a street with a held sidewalk `UnitRoom` already
+##   refuses a row that takes the whole street; the answer only keeps the bag from being told a
+##   weight for it, which moves a roll of the unit's stream, not what a street may hold.
 ## - **Off the streets every marble takes one location**: a junction box, an alley's thirds, a
 ##   park's or a square's cells, every row the size of one.
 ##

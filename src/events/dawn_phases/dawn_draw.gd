@@ -4,8 +4,8 @@ extends DawnPhase
 ## gentle-owl; `UnitDraw`, `MarbleDraw`): each unit (a street, a junction box, an alley, a park
 ## or a square; `DayUnits`) draws in one go, on its own stream, from one fresh bag of the fill of
 ## its view, the most permissive of its locations' (`PlacementUnit.view()`;
-## `EventScheduler.view_fills()`: every recurring row the catalogue places on the map today, each as many times as its weight in
-## the view, and the empty event), each marble drawn before it has a place and its rows laid out
+## `EventScheduler.view_fills()`: every recurring row the catalogue places on the map today, each as many times as
+## its weight in the view, and the empty event), each marble drawn before it has a place and its rows laid out
 ## in the unit (inbox #1466), at most one of a row in a unit, after every touching unit of lower
 ## rank. The day's ground answers which row is valid where and how much each location weighs it
 ## (`RuledLocationGround`), judged among the dawn's plans and the draws of the units touching the
