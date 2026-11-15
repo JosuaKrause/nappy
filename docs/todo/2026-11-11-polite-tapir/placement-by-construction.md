@@ -87,8 +87,9 @@ full text names the files each step owns.
 2. **A body drawn onto a car's lane recycles the car.** The units draw as she walks (above). What is
    left: a body drawn out of her view onto a lane a car stands in has the crowd recycle that car. The
    board questions on how far a unit's draw looks (touching-reach) and on what the day holds until step 3
-   (day-density) are answered; the answers wait in the inbox for the next filing, and the first of them
-   changes the draw again (everything that matters drawn together, a marble drawn before it is placed).
+   (day-density) are answered, and the answers wait in the inbox for the next filing. Two notes there
+   change the draw again: everything that matters is drawn together (the touching-reach answer), and a
+   marble is drawn before it is placed (a note of its own).
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.
