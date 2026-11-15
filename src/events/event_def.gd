@@ -547,8 +547,10 @@ func for_day(day: int) -> EventDef:
 @export var mobile := false
 @export var speed := 0.0
 @export var path_mode := PathMode.NONE
-## Route length for ALONG_STREET, in tiles, at most: a row the units draw stops sooner, at the far
-## side of the junction box at its street's end (`Location.run()`, inbox #1460).
+## Route length for ALONG_STREET, in tiles, at most: a route a unit draws is also bounded by its
+## location's run (`Location.run()`, inbox #1460: the far side of the junction box at its street's
+## end, or the box's own edge for a row drawn in a box), so a long row stops sooner there and a
+## short beat (the shouting man, the chatting mother, 8 tiles) keeps its length.
 @export var path_length_tiles := 24
 
 ## Walks its route and turns round at the ends, for ever.
