@@ -10,15 +10,17 @@ extends RefCounted
 ##   `PlacementUnit.view()`), among the rows the unit may still take: **a row is left out of the
 ##   draw**, and stays in the bag, where the unit has drawn it already (at most one of a row in a
 ##   unit, in place of daily caps, since a cap binds whoever draws last), where what it takes of a
-##   street (`EventDef.takes_of_a_street()`) does not fit the room left (`UnitRoom`: after a small
-##   marble only small ones, the player's filter), and where the unit's rows cannot be laid out
-##   with it under the day's rules (`LocationGround.offer()`, today's placement rules deciding, as
-##   the player said: "which events make which others invalid on the same street -- this is what
-##   your current rules accomplish. the same applies still", inbox #1185 in gentle-owl). The empty
+##   street (`EventDef.takes_of_a_street()`) does not fit the room left (`UnitRoom`: the whole
+##   street only as its first marble, after a small marble only small ones, the player's filter),
+##   and where the unit's rows cannot be laid out with it under the day's rules
+##   (`LocationGround.offer()`, today's placement rules deciding, as the player said: "which
+##   events make which others invalid on the same street -- this is what your current rules
+##   accomplish. the same applies still", inbox #1185 in gentle-owl). The empty
 ##   marble is always accepted and takes one location, so each row left out makes empty likelier:
 ##   across from a drawn event the draw is mostly empty.
 ## - **The unit's rows are laid out again each time one is added, and the last layout stands**
-##   (`_lay_out()`): largest first (a section, then a location; ties in the order drawn), each row on the location that weighs it most and takes it
+##   (`_lay_out()`): largest first (the whole street, then a section, then a location; ties in the
+##   order drawn), each row on the location that weighs it most and takes it
 ##   (`LocationGround.scale()`, ties in an order of the unit's stream), judged among the plans the
 ##   draw was handed and the rows laid before it. So no location has first pick, a larger row
 ##   drawn later still goes first, and whether the unit can hold a row beside what it has drawn is
@@ -26,9 +28,12 @@ extends RefCounted
 ##   others leaves the *new* row out of the draw.
 ## - **A row's weight in the unit** is the largest the unit's open locations it may stand on weigh
 ##   it (`_weight()`), so a row whose ground is in one corner of a street is drawn as often as that
-##   corner weighs it.
-## - **Off the streets every marble takes one location**: a junction box, an alley's thirds, a park's
-##   or a square's cells, every row the size of one.
+##   corner weighs it. Where it may stand is one answer for the weight and the layout
+##   (`_may_hold()`): a row that takes the whole street stands in a section of a street nothing of
+##   which is taken, one that takes a section in a section whose two sidewalk locations are open,
+##   and anything else on a sidewalk location.
+## - **Off the streets every marble takes one location**: a junction box, an alley's thirds, a
+##   park's or a square's cells, every row the size of one.
 ##
 ## A row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew) is drawn and laid
 ## as any other and kept with no position, for her walk to site (`_as_drawn()`), so the rows laid
@@ -36,6 +41,13 @@ extends RefCounted
 ##
 ## Handed the day's locations, which record each draw, the rows the bag's marbles name
 ## (`id -> EventDef`) and the day's ground. Model: no node.
+
+## Where each share is laid in a layout, the largest first (`_largest_first()`).
+const SIZE_ORDER := {
+	EventDef.StreetShare.A_STREET: 0,
+	EventDef.StreetShare.A_SECTION: 1,
+	EventDef.StreetShare.A_LOCATION: 2,
+}
 
 var _locations: DayLocations
 var _rows: Dictionary
@@ -99,7 +111,7 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 		return not trial.is_empty()
 	var weight := func(id: String) -> float:
 		var def: EventDef = _rows.get(id)
-		return _weight(def, open, street, scales) if def else 0.0
+		return _weight(def, unit, open, scales) if def else 0.0
 	while room.is_open():
 		var marble := bag.draw(accepts, weight)
 		if marble == ViewBag.EMPTY:
@@ -180,22 +192,22 @@ func _place(row: EventDef, unit: PlacementUnit, open: Array[Location], used: Dic
 			return _Placing.new(row, share, location, _as_drawn(plan))
 	return null
 
-## **Whether a row taking `share` may stand in `location`**, none of the ground it would take
-## `used`: a section where the section and both its sidewalk locations are open, a location where
-## it is a sidewalk location; off the streets any open location.
+## **Whether a row taking `share` may stand in `location`**, `location` and the rest of the ground
+## it would take open and not `used`: the whole street from a section where every location of the
+## street is; a section where the section and both its sidewalk locations are; a location where it
+## is a sidewalk location; off the streets any open location. The weight asks it with nothing
+## used, the layout with what the rows laid before hold, so a row is never weighed by a location
+## the layout could not put it on.
 static func _may_hold(share: EventDef.StreetShare, location: Location, unit: PlacementUnit,
 		open: Array[Location], used: Dictionary) -> bool:
 	if used.has(location) or not open.has(location):
 		return false
 	if unit.kind() != PlacementUnit.Kind.STREET:
 		return true
-	if share == EventDef.StreetShare.A_SECTION:
-		if location.kind() != Location.Kind.SECTION:
-			return false
-	elif location.kind() != Location.Kind.SIDEWALK:
+	if share == EventDef.StreetShare.A_LOCATION:
+		return location.kind() == Location.Kind.SIDEWALK
+	if location.kind() != Location.Kind.SECTION:
 		return false
-	else:
-		return true
 	for other in _ground_of(share, location, unit):
 		if used.has(other) or not open.has(other):
 			return false
@@ -208,28 +220,32 @@ static func _taken_by(placing: _Placing, unit: PlacementUnit) -> Array[Location]
 		taken.append_array(_ground_of(placing.share(), placing.location(), unit))
 	return taken
 
-## **The other locations of a street `unit` a row taking `share` at `location` takes**: a section
-## its two sidewalk locations, a location none.
+## **The other locations of a street `unit` a row taking `share` at `location` takes**: the whole
+## street every other location of the street, a section its two sidewalk locations, a location
+## none.
 static func _ground_of(share: EventDef.StreetShare, location: Location,
 		unit: PlacementUnit) -> Array[Location]:
 	var ground: Array[Location] = []
 	for other in unit.locations():
-		if other == location or other.kind() != Location.Kind.SIDEWALK:
+		if other == location:
 			continue
-		if share == EventDef.StreetShare.A_SECTION and location.shares_a_section_with(other):
+		if share == EventDef.StreetShare.A_STREET:
+			ground.append(other)
+		elif share == EventDef.StreetShare.A_SECTION and other.kind() == Location.Kind.SIDEWALK \
+				and location.shares_a_section_with(other):
 			ground.append(other)
 	return ground
 
 ## **`def`'s weight in the unit**: the largest of what the open locations it may stand on weigh it
-## (`LocationGround.scale()`; in a street a section's for a row that takes a section, a sidewalk
-## location's otherwise), zero where there is none, so the bag never rolls it.
-func _weight(def: EventDef, open: Array[Location], street: bool, scales: Dictionary) -> float:
-	var on_a_section := street and _share_of(def, street) == EventDef.StreetShare.A_SECTION
+## (`LocationGround.scale()`, over the locations `_may_hold()` lets it stand on with nothing laid
+## yet), zero where there is none, so the bag never rolls it.
+func _weight(def: EventDef, unit: PlacementUnit, open: Array[Location],
+		scales: Dictionary) -> float:
+	var share := _share_of(def, unit.kind() == PlacementUnit.Kind.STREET)
 	var best := 0.0
 	for location in open:
-		if street and (location.kind() == Location.Kind.SECTION) != on_a_section:
-			continue
-		best = maxf(best, _scale(def, location, scales))
+		if _may_hold(share, location, unit, open, {}):
+			best = maxf(best, _scale(def, location, scales))
 	return best
 
 ## How many times over `location` weighs `def` (`LocationGround.scale()`), asked once a draw.
@@ -246,12 +262,12 @@ func _scale(def: EventDef, location: Location, scales: Dictionary) -> float:
 static func _share_of(def: EventDef, street: bool) -> EventDef.StreetShare:
 	return def.takes_of_a_street() if street else EventDef.StreetShare.A_LOCATION
 
-## **`rows` largest first**: a section, then a location, ties in the order handed.
+## **`rows` largest first**: the whole street, then a section, then a location, ties in the order
+## handed.
 static func _largest_first(rows: Array[EventDef], street: bool) -> Array[EventDef]:
 	var ranked: Array = []
 	for index in rows.size():
-		var share := _share_of(rows[index], street)
-		var size := 0 if share == EventDef.StreetShare.A_SECTION else 1
+		var size: int = SIZE_ORDER[_share_of(rows[index], street)]
 		ranked.append([size, index])
 	ranked.sort_custom(func(a: Array, b: Array) -> bool:
 		var size_a: int = a[0]

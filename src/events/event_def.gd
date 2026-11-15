@@ -986,19 +986,25 @@ func spans_the_street() -> bool:
 func span_the_street() -> void:
 	_spans_the_street = true
 
-## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`;
-## inbox #1466: a marble that takes a segment leaves at least two more draws, and one smaller than
-## a segment is followed by another small one): one sidewalk location, or one whole section.
-enum StreetShare { A_LOCATION, A_SECTION }
+## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`), the
+## player's three sizes (inbox #1466: a marble that takes the whole street ends its draw, one that
+## takes a segment leaves at least two more draws, and one smaller than a segment is followed by
+## another small one): one sidewalk location, one whole section, or the whole street.
+enum StreetShare { A_LOCATION, A_SECTION, A_STREET }
 
-## **What the row takes of a street**, read off its ground and its path, never set: a section where
-## it stands on the carriageway (it spans the street or drives it), else one sidewalk location,
+## **What the row takes of a street**, read off its ground and its movement, never set: the whole
+## street where it drives the carriageway along the street on a route at least a street long
+## (`Tuning.BLOCK_SIZE` tiles), so it is met in every section, as the police patrol and the
+## military convoy do with their routes cut to their street's run (`Location.run()`); a section
+## where it otherwise stands on the carriageway (it spans the street); else one sidewalk location,
 ## whatever its path along it. A row a street draws takes a section only while the street has that
-## much room left (`UnitRoom`).
+## much room left, and the whole street only while nothing of it is taken (`UnitRoom`).
 func takes_of_a_street() -> StreetShare:
-	if placement.has(GameEnums.TileType.ROAD):
-		return StreetShare.A_SECTION
-	return StreetShare.A_LOCATION
+	if not placement.has(GameEnums.TileType.ROAD):
+		return StreetShare.A_LOCATION
+	if mobile and path_mode == PathMode.ALONG_STREET and path_length_tiles >= Tuning.BLOCK_SIZE:
+		return StreetShare.A_STREET
+	return StreetShare.A_SECTION
 
 ## Entering the lethal radius ends the day immediately.
 @export var hard_fail := false
