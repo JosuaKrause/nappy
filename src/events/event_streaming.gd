@@ -41,8 +41,10 @@ var _body_listener := Callable()
 ## and the car's new place is rolled with the body already in the map's record. A body placed after
 ## dawn goes through one of two calls, each through `_record_and_tell()`: `add()` for a plan new to
 ## the walk (a unit's draw as she comes near it, day 13's swapped roadblock (`swap_section()`), day
-## 11's added mast, a place put down on her route) and `move_the_body()` for a plan the director
-## sites again. The tiles are read and never changed: they are the map's own record of the body.
+## 11's added mast, a place put down on her route) and `move_the_body()` for a plan the walk already
+## holds that the director sites on her way, the first time or again (day 3's fire, a poster crew, a
+## route's mast before it is in the world). The tiles are read and never changed: they are the
+## map's own record of the body.
 ## The city, which makes both the events and the crowd, hands it the crowd's call. A body spawned
 ## with no plan (`EventSpawner.spawn()`) is told to nobody: it has no plan to add, and what spawns
 ## one is a rig or a scripted moment, not the walk. With no listener nothing is told.
@@ -57,8 +59,9 @@ func add(plan: EventPlan) -> void:
 	_record_and_tell(plan)
 
 ## **Gives back the ground a plan's body stood on and takes the ground it stands on now**, under
-## the same owner, and tells the listener it: a plan the director sited again where it stands
-## (`EventsAhead.site_what_is_on_her_way()`).
+## the same owner, and tells the listener it: for a plan the walk already holds that the director
+## sites on her way, the first time or again (day 3's fire, a poster crew, a route's mast before it
+## is in the world; `EventsAhead.site_what_is_on_her_way()`).
 func move_the_body(plan: EventPlan) -> void:
 	world.map.release_obstruction(plan.get_instance_id())
 	_record_and_tell(plan)

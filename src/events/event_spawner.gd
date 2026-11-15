@@ -54,8 +54,8 @@ var _sight_reported: Dictionary = {}
 # for exactly this reason, so neither release can open ground the other is still standing on.
 
 ## Records one body's footprint under `owner`, or nothing at all for anything the record leaves
-## out, and answers the tiles it recorded (none for the latter). Safe to call for every plan and every instance: the deciding is all in
-## `obstructed_footprint()`.
+## out, and answers the tiles it recorded (none for the latter). Safe to call for every plan and
+## every instance: the deciding is all in `obstructed_footprint()`.
 func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> Array[Vector2i]:
 	var tiles := obstructed_footprint(world.map, def, at, facing)
 	world.map.obstruct_tiles(owner, tiles)

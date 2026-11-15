@@ -1380,8 +1380,8 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 ## but often within `OUT_OF_SIGHT` of her) can have a car under it that this check counts as in her
 ## view; **that car is left alone**, it is in no pocket (`CarStrategy.begin_frame()` holds only a
 ## car in a sealed junction, `CrowdPockets`), and it drives out of the body as a walker walks out.
-## The view check is the crowd's own contract for whoever calls it. **Only a car is recycled**: a walker
-## standing in the new body walks out of it (`LaneMover._keep_out_of_a_body()`).
+## The view check is the crowd's own contract for whoever calls it. **Only a car is recycled**: a
+## walker standing in the new body walks out of it (`LaneMover._keep_out_of_a_body()`).
 func recycle_cars_on(tiles: Array[Vector2i]) -> void:
 	if tiles.is_empty():
 		return
