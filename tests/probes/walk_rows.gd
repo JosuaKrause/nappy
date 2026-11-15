@@ -279,7 +279,7 @@ func _walk_every_day(reach: float) -> void:
 		var gave_up := 0
 		var nearest := INF
 		# What the units placed by share, the marbles they drew and the empty ones.
-		var marbles: Array[int] = [0, 0, 0, 0, 0]
+		var marbles: Array[int] = [0, 0, 0, 0]
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
