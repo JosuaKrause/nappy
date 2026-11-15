@@ -193,6 +193,9 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 	var events := _city.events
 	_the_day_drawn_whole()
 	var kept := _start()
+	var told: Array[String] = []
+	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
+		told.append(str(tiles)))
 	var route := Rig.longest_route_out(_city, DAY)
 	var back := route.duplicate()
 	back.reverse()
@@ -204,6 +207,8 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 	var sited_at := {}
 	var sitings := 0
 	var on_undrawn_ground := 0
+	var bodies_sited := 0
+	var sited_and_not_told := 0
 	var walked := 0.0
 	while _walker.next < route.size() and walked < WALK_SECONDS and sitings < SITINGS:
 		await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), Rig.WALK_SCALE)
@@ -214,12 +219,22 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 				continue
 			sited_at[plan] = plan.placed_at()
 			sitings += 1
+			var footprint := EventSpawner.obstructed_footprint(_city.map, plan.def,
+					plan.position, plan.facing)
+			if not footprint.is_empty():
+				bodies_sited += 1
+				if not told.has(str(footprint)):
+					sited_and_not_told += 1
 			if not _units().undrawn_within(plan.placed_at(), Tuning.EVENT_DRAW_AHEAD).is_empty():
 				on_undrawn_ground += 1
 	_walker.rig = null
 	t.check(sitings >= SITINGS,
 			"her walk sites the crews the units it drew handed to her walk (%d sitings in %.0fs)"
 			% [sitings, walked])
+	t.check(bodies_sited > 0 and sited_and_not_told == 0,
+			"each siting with a body told the listener where it stands (%d told of %d with a body)"
+			% [bodies_sited - sited_and_not_told, bodies_sited])
+	events.use_body_listener(Callable())
 	t.check(on_undrawn_ground == 0,
 			"and at no siting does an undrawn unit lie within %.0fpx of the site (%d of %d did)"
 			% [Tuning.EVENT_DRAW_AHEAD, on_undrawn_ground, sitings])
@@ -318,7 +333,14 @@ func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
 			"a route-adjacent section far from her door holds a row of a unit not yet drawn")
 	if chosen == null or its_unit == null:
 		return
+	var told: Array[String] = []
+	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
+		told.append(str(tiles)))
 	var swapped := events.swap_in_a_section(chosen, across)
+	var across_footprint := EventSpawner.obstructed_footprint(map, across.def, across.position,
+			across.facing)
+	t.check(not across_footprint.is_empty() and str(across_footprint) in told,
+			"the swap tells the crowd's listener the roadblock's footprint, as a drawn body is told")
 	t.check(swapped != null and its_unit.is_drawn(),
 			"the swap draws the section's unit before its roadblock stands")
 	events.draw_the_ground_round(Vector2.ZERO, INF)

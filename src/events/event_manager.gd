@@ -805,3 +805,8 @@ func send_a_pursuer() -> void:
 func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
 	_recipe_plan = false
 	return ahead.start_recipe_route(marbles, pre_bag, owed, first_after)
+
+## Hands in who is told the ground a body placed after dawn stands on, the crowd's call that
+## recycles a car standing there (`EventStreaming.use_body_listener()`).
+func use_body_listener(listener: Callable) -> void:
+	streaming.use_body_listener(listener)

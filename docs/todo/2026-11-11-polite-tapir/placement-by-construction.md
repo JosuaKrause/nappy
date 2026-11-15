@@ -70,7 +70,9 @@ lower rank draws first. Each unit draws from a bag per view filled fresh, at mos
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
 on the board, question long-routes, inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. A place her walk
-sites stands on ground whose units have drawn, and no draw reads it. A day's routes stay open by local rules alone: besides a route's junctions, its walked sidewalk
+sites stands on ground whose units have drawn, and no draw reads it. A body put down after dawn (drawn, swapped in or moved by the director) tells the crowd, which
+recycles a car standing under it where she cannot see it (`EventStreaming.use_body_listener()`,
+`Crowd.recycle_cars_on()`). A day's routes stay open by local rules alone: besides a route's junctions, its walked sidewalk
 and a pacing beat's opening, the route's ground rule (`RouteGroundRule`) keeps every body's disc and
 every lethal row's inner disc off a tile a route runs along off the streets (an alley, a park cut, a
 square), and keeps the scars and the park spoilers off every route tile and off the street she starts
@@ -84,12 +86,12 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-2. **A body drawn onto a car's lane recycles the car.** The units draw as she walks (above). What is
-   left: a body drawn out of her view onto a lane a car stands in has the crowd recycle that car. The
-   board questions on how far a unit's draw looks (touching-reach) and on what the day holds until step 3
-   (day-density) are answered, and the answers wait in the inbox for the next filing. Two notes there
-   change the draw again: everything that matters is drawn together (the touching-reach answer), and a
-   marble is drawn before it is placed (a note of its own).
+2. **A unit's draw takes everything that matters together, and a marble is drawn before it is
+   placed.** The units draw as she walks (above). The board questions on how far a unit's draw looks
+   (touching-reach) and on what the day holds until step 3 (day-density) are answered, and the answers
+   wait in the inbox for the next filing. Two notes there change the draw again: everything that matters
+   is drawn together (the touching-reach answer), and a marble is drawn before it is placed (a note of
+   its own).
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.

@@ -652,8 +652,7 @@ func site_what_is_on_her_way(delta: float) -> void:
 		if _director.is_from_her_route(plan) and not _walk.plans().has(plan):
 			_put_down_on_her_route(plan, body)
 			continue
-		world.map.release_obstruction(plan.get_instance_id())
-		_spawner.record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+		_streaming.move_the_body(plan)
 		# A mast's id is its foot (`DawnMasts.added_mast_id()`), so a mast moved before it was
 		# ever in the world is named by where it now stands.
 		if plan.mast_id != "":

@@ -165,8 +165,9 @@ func may_be_placed_on(tile: Vector2i) -> bool:
 ## A car's bob and its give-way run every frame. **A car in a turn is following a path that was
 ## checked before it started**, so none of the lane steering, look-ahead or diverting applies to it:
 ## the only thing left to decide is how far along the curve it has come. It is not recycled mid-turn
-## either — a recycle is a teleport, and half a turn is the one place in a car's life where that
-## would be seen.
+## in her view either — a recycle is a teleport, and half a turn is the one place in a car's life
+## where that would be seen. (A car a body has landed on is recycled mid-turn too, where she cannot
+## see it: `Crowd.recycle_cars_on()`.)
 ##
 ## **A car sealed in** — the one case a placement cannot prevent (`setup()` already refuses to put
 ## one in a pocket) — stands where the seal caught it, since it cannot turn round against a barrier:
