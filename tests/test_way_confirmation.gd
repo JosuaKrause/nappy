@@ -22,6 +22,7 @@ func run(t: TestRunner) -> void:
 	_test_a_place_inside_the_ground_drawn_round_her_stands_unasked(t)
 	_test_a_place_beyond_the_ground_drawn_round_her_is_asked_from_home(t)
 	_test_a_place_only_a_way_round_reaches_is_asked_from_home(t)
+	_test_with_nothing_left_to_draw_a_place_reached_from_home_stands_unasked(t)
 	_test_a_place_with_nothing_left_to_draw_stands_after_one_pass(t)
 	_test_a_body_drawn_on_the_way_sends_the_next_pass_down_another(t)
 	_test_a_place_every_way_to_which_a_draw_shuts_is_refused(t)
@@ -139,16 +140,34 @@ func _test_a_place_beyond_the_ground_drawn_round_her_is_asked_from_home(t: TestR
 func _test_a_place_only_a_way_round_reaches_is_asked_from_home(t: TestRunner) -> void:
 	var map := _loop()
 	var draw := _draw(map, [] as Array[EventPlan])
-	# Everything has drawn, and a body stands across the far side between her and the place.
+	# A body stands across the far side between her and the place, and the one unit left to draw
+	# is a table far along the bottom, so the ground round her has drawn well past the place.
 	draw.reach.shut_more([_across_the_far_side(map, 9)] as Array[EventPlan])
+	draw.undrawn_tables = [Vector2i(10, BOTTOM + 1)]
 	var her := map.tile_to_world(HER)
 	t.check(draw.reach.is_shut(Vector2i(RIGHT, 9)) and draw.reach.is_shut(Vector2i(RIGHT + 1, 9))
-			and draw.reach.reaches(PLACE),
-			"a body across the far side leaves the place reached only the long way round")
+			and draw.reach.reaches(PLACE)
+			and draw.drawn_round(her) - WayConfirmation.CLEAR > her.distance_to(map.tile_to_world(PLACE)),
+			"a body across the far side leaves the place reached only the long way round, through "
+			+ "ground that has not drawn")
 	var stands := _confirmation(map, draw).a_way_stands(PLACE, her, draw.leaves_free)
-	t.check(stands and not draw.asked.is_empty(),
-			"so her own paths do not reach it near her, and it is asked from home (%d asks)"
-			% draw.asked.size())
+	t.check(stands and not draw.asked.is_empty() and draw.undrawn_tables.is_empty(),
+			"so her own paths do not reach it inside the ground drawn round her, and it is asked "
+			+ "from home (%d asks)" % draw.asked.size())
+
+func _test_with_nothing_left_to_draw_a_place_reached_from_home_stands_unasked(t: TestRunner) -> void:
+	var map := _loop()
+	var draw := _draw(map, [] as Array[EventPlan])
+	draw.reach.shut_more([_across_the_far_side(map, 9)] as Array[EventPlan])
+	var her := map.tile_to_world(HER)
+	var stands := _confirmation(map, draw).a_way_stands(PLACE, her, draw.leaves_free)
+	t.check(stands and draw.asked.is_empty(),
+			"with no unit left to draw, the same place stands unasked: every way to it is over "
+			+ "drawn ground")
+	draw.reach.shut_more([_across_the_far_side(map, 15)] as Array[EventPlan])
+	t.check(not draw.reach.reaches(PLACE)
+			and not _confirmation(map, draw).a_way_stands(PLACE, her, draw.leaves_free),
+			"and one cut off from home on both sides is refused")
 
 ## Whether `way` runs along the row `row`.
 static func _runs_along(way: Array[Vector2i], row: int) -> bool:

@@ -74,18 +74,21 @@ func a_way_stands(tile: Vector2i, her: Vector2, still_stands: Callable) -> bool:
 
 ## Whether the place at `tile` lies inside the ground drawn round `her`: her paths, walked from
 ## her own tile over the ground the reach leaves open (`DayReach.paths_within()`), reach it
-## without coming within `CLEAR` of the nearest undrawn unit. They are walked no further than
-## `CLEAR` past the place either, which bounds the walk where the ground has drawn far beyond it;
-## a place only a longer way round reaches is asked from home. Draws nothing.
+## without coming within `CLEAR` of the nearest undrawn unit; a place only a way round through
+## undrawn ground reaches is asked from home. With no unit left to draw every way is over drawn
+## ground, so the place stands where it is reached from home, or is the tile she stands on. Draws
+## nothing.
 func _her_own_way_stands(tile: Vector2i, her: Vector2) -> bool:
 	if her == Vector2.INF:
 		return false
+	var her_tile := _map.world_to_tile(her)
 	var drawn: float = _drawn_round.call(her)
-	var away := _map.tile_to_world(tile).distance_to(her)
-	if away >= drawn - CLEAR:
+	if is_inf(drawn):
+		return tile == her_tile or _reach.reaches(tile)
+	if _map.tile_to_world(tile).distance_to(her) >= drawn - CLEAR:
 		return false
-	var from: Array[Vector2i] = [_map.world_to_tile(her)]
-	return _reach.paths_within(_map, from, her, minf(drawn - CLEAR, away + CLEAR)).has(tile)
+	var from: Array[Vector2i] = [her_tile]
+	return _reach.paths_within(_map, from, her, drawn - CLEAR).has(tile)
 
 ## Whether a way from home to the place at `tile` stands once the ground along it has drawn: the
 ## passes of the class comment, and `still_stands` asked after the one that drew nothing.

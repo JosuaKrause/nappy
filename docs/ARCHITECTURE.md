@@ -243,8 +243,9 @@ src/
 	                      flood over it, made as the walk starts and told what each unit draws; a
 	                      shortest walk from home to a tile; and the walk her paths take within a
 	                      circle, the measure of close by
-	way_confirmation.gd   whether a place fixed from her walk stands: the units along a way from
-	                      home to it drawn first, until a way stands that no undrawn unit lies near
+	way_confirmation.gd   whether she can be sent to a place, by where it stands: inside the ground
+	                      drawn round her as it is, beyond it once the units along a way from home
+	                      have drawn and a way stands that no undrawn unit lies near
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
@@ -1258,9 +1259,9 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,
-  `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `crossing`, `replacement`,
-  `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the rig's circle) and
-  `reach_relocated` read the day's obstruction (`ResistanceReads.day_reachability()`) and
+  `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `sent_places`, `crossing`,
+  `replacement`, `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the
+  rig's circle), `reach_relocated` and `sent_places` read the day's obstruction (`ResistanceReads.day_reachability()`) and
   the way home over it from `ReachabilityGrid`, in `tests/resistance_reads.gd` with the red arrow's
   tip and what stands under it): `steps` (the step table, touch-completion, a
   task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
@@ -1271,8 +1272,10 @@ field with its value before and after (`tests/shared_state.gd`).
   guard set on her from off screen), `placement_kinds` (the four placement kinds a perform step
   may use, each task's own site, a day built in its order), `arrow` (the red
   arrow: what it points at, chosen and swept by the director's ticks), `crossing` (day 9's door
-  done by crossing it) and `reach_marks`, `reach_contacts`, `reach_relocated` and `reach_narrow`
-  (every mark and contact placed where she can reach it).
+  done by crossing it), `reach_marks`, `reach_contacts`, `reach_relocated` and `reach_narrow`
+  (every mark and contact placed where she can reach it) and `sent_places` (whatever contact
+  stands on days 6 to 13, a mark moved near her and a mast the arrow moves the contact to: inside
+  the ground drawn round her, or with a way from home whose ground has drawn).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.

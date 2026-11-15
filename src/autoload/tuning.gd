@@ -691,10 +691,12 @@ const EVENT_STREAM_HYSTERESIS := 260.0
 ## junction box, an alley, a park or a square; `UnitDraw`): one period of the lattice, 448px. A
 ## unit is wanted once any part of it is within `EVENT_STREAM_RADIUS` plus this of her, and drawn a
 ## unit a tick (`EventsAhead.draw_what_comes_near()`), so a draw is paid for well before the
-## streaming looks there. It is also how far round its place every placement made from her walk
+## streaming looks there. It is also how far round its place a placement made from her walk
 ## draws the units first (`EventsAhead.draw_the_ground_round()`: a place the director sites ahead
-## of her, the resistance's places, day 13's swap): wider than the widest reach a placement rule
-## asks (a lethal field of 270px), so no unit drawn later can conflict with what was sited there.
+## of her, day 13's swap, a place the resistance sends her to beyond the ground already drawn
+## round her and every eighth tile of the way from home to it, `WayConfirmation`): wider than the
+## widest reach a placement rule asks (a lethal field of 270px), so no unit drawn later can
+## conflict with what was sited there.
 ## It changes when a draw is paid, never what a day holds: every unit draws the same whatever order
 ## the units are drawn in.
 const EVENT_DRAW_AHEAD := float((BLOCK_SIZE + STREET_WIDTH) * TILE_SIZE)
