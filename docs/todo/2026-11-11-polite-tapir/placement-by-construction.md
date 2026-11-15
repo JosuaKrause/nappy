@@ -67,7 +67,7 @@ locations), a junction box, an alley, or one park or square (`PlacementUnit`, gr
 `DayUnits`), with its own stream and a fixed rank from the day's seed, and before a unit draws, every
 undrawn unit touching it (sharing a junction box, or bordering the same alley, park or square) with a
 lower rank draws first. Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
-is placed (a section, or one location) and the unit's rows laid out together, at most one of a row in the
+is placed (the whole street, a section, or one location) and the unit's rows laid out together, at most one of a row in the
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
 on the board, question long-routes, inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. A place her walk

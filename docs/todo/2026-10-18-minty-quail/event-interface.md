@@ -532,7 +532,7 @@ re-derive it.
 
 ## 3. What the placement track needs from it
 
-The placement track owns `src/events/street_rules/`, `location_draw.gd`,
+The placement track owns `src/events/street_rules/`, `marble_draw.gd`,
 `day_locations.gd`, `view_bag.gd` and the scheduler's blocks, and it is being built now. Its files
 ask a row and a plan almost only through methods already (`row()`, `line_reach()`,
 `obstructs_within()`, `notice_within()`, `counts_against_the_line()`, `reach_touches()`,
