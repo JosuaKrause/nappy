@@ -90,14 +90,24 @@ func start_day(day: int, tree: RouteTree) -> void:
 ## left, at the walk's start, and for one a unit draws as she walks, as it is drawn. Answers it.
 func _siting_for(day: int, plan: EventPlan) -> EventScheduler.WalkSiting:
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(day, world.city_map, _day_tree, _walk,
-				EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
-		# Where a crew may paste: only the city's buildings know their blank walls, and the walls
-		# paste every dawn, so the fronts are asked for today's, here.
-		if world.poster_walls():
-			_siting.fronts = world.poster_walls().fronts()
+		_siting = _a_siting(day, _day_tree)
 	_siting.prepare(plan.def)
 	return _siting
+
+## **A placement context for the rows her walk sites ahead of her**, over `tree`: the walk's
+## events, a store of verdicts of its own, the walk's ground (`_ground_of_the_walk()`), the fronts
+## a crew may paste, and **what draws the ground round a site it picks** (`draw_the_ground_round()`,
+## `WalkSiting.use_the_ground_drawer()`), so nothing it sites stands on ground whose units have not
+## drawn.
+func _a_siting(day: int, tree: RouteTree) -> EventScheduler.WalkSiting:
+	var siting := EventScheduler.WalkSiting.new(day, world.city_map, tree, _walk,
+			EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
+	# Where a crew may paste: only the city's buildings know their blank walls, and the walls
+	# paste every dawn, so the fronts are asked for today's, here.
+	if world.poster_walls():
+		siting.fronts = world.poster_walls().fronts()
+	siting.use_the_ground_drawer(draw_the_ground_round)
+	return siting
 
 ## **The ground a siting made here stands its rows on** (`RowGround`): the walk's, as dawn made it
 ## (`WalkEvents.ground()`), so nothing sited after dawn scans the city for what dawn already
@@ -349,19 +359,25 @@ var _still_wanted := false
 ## there; else one unit of the nearest wanted one's pull (`UnitDraw.draw_one_towards()`), a unit
 ## being wanted once any part of it lies within `Tuning.EVENT_DRAW_AHEAD` beyond the stream radius.
 ## Asked again only on a tick she stands on another tile than at the last ask, or a unit was still
-## wanted then. Answers whether any unit is still wanted, on which tick the manager sites nothing.
-## A walk with no unit draw (the escape's, the building, a scene recipe's) draws nothing.
+## wanted then. A walk with no unit draw (the escape's, the building, a scene recipe's) draws
+## nothing.
 ##
 ## Neither number changes what a day holds: every unit's draw is the same whatever order the units
-## are drawn in (`UnitDraw`); they set only when the work is paid. One unit is a few milliseconds,
-## so one a tick drains the band far faster than she walks into it.
-func draw_what_comes_near(at: Vector2, stream_radius: float) -> bool:
+## are drawn in (`UnitDraw`); they set only when the work is paid. Most units draw in under a
+## millisecond and a few take tens of milliseconds or more (`tests/probes/walk_rows.gd` prints
+## the spread), so beyond the stream radius it is one a tick: a pull of dozens of units is spread
+## over as many ticks, and still drains far faster than she walks into it.
+##
+## **The band beyond the stream radius is not what keeps a siting off undrawn ground**: a place
+## her walk sites has the units round it drawn by the siting itself (`draw_the_ground_round()`,
+## which each such placement calls before its place stands), wherever the band has got to.
+func draw_what_comes_near(at: Vector2, stream_radius: float) -> void:
 	var draw := _walk.unit_draw()
 	if not draw:
-		return false
+		return
 	var tile := Vector2i((at / Tuning.TILE_SIZE).floor())
 	if tile == _asked_at and not _still_wanted:
-		return false
+		return
 	_asked_at = tile
 	var units := draw.units()
 	var inside := units.undrawn_within(at, stream_radius)
@@ -374,12 +390,13 @@ func draw_what_comes_near(at: Vector2, stream_radius: float) -> bool:
 			_take_what_was_drawn(draw.draw_one_towards(wanted[0]))
 	_still_wanted = not units.undrawn_within(at,
 			stream_radius + Tuning.EVENT_DRAW_AHEAD).is_empty()
-	return _still_wanted
 
 ## **Draws now every undrawn unit any part of which lies within `reach` of `at`**, each after every
-## unit it waits for: what a placement made from her walk asks before it looks at ground, so
-## nothing is sited on ground whose units have not drawn (day 13's swap, the resistance's places,
-## an area cleared of its rows, the developer's spawn target). Answers whether it drew any unit.
+## unit it waits for: what a placement made from her walk asks before its place stands, so
+## nothing is sited on ground whose units have not drawn (a place the director sites ahead of her,
+## `WalkSiting.ahead_of()`; day 13's swap; the resistance's places; an area cleared of its rows;
+## the ground the streaming is about to look at, `EventManager.stream_around()`; the developer's
+## spawn target). Answers whether it drew any unit.
 func draw_the_ground_round(at: Vector2, reach: float) -> bool:
 	var draw := _walk.unit_draw()
 	if not draw:
@@ -511,11 +528,8 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _director.route_bag():
 		return []
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
-				else RouteTree.for_day(world.city_map, world.day), _walk,
-				EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
-		if world.poster_walls():
-			_siting.fronts = world.poster_walls().fronts()
+		_siting = _a_siting(world.day, _day_tree if _day_tree
+				else RouteTree.for_day(world.city_map, world.day))
 	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)
 	for id in ids:
 		var row := _director.route_row(id)

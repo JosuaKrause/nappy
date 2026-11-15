@@ -1,9 +1,11 @@
 extends "res://tests/resistance_rig.gd"
-## M188: the narrow targets are reachable on their day, and a task is placed near its mark.
+## M188: the narrow targets are reachable on their day, and a task is placed near its mark; where
+## the nearest place stands in for one, a way from home to it is confirmed.
 
 
 func run(t: TestRunner) -> void:
 	_test_a_task_is_placed_near_its_mark(t)
+	_test_the_nearest_place_that_stands_in_is_confirmed(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
 	_free_city()
 
@@ -21,7 +23,10 @@ func run(t: TestRunner) -> void:
 ## nearest section, however far (the director's run log says which); and a task put in
 ## the world is put outside her view, day 13's found roadblock excepted, which stood there all along. *("create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the
-## circle".)* Before, it was drawn anywhere within 576px as the crow flies.
+## circle".)* Before, it was drawn anywhere within 576px as the crow flies. On each of these days
+## the units round where she read the mark have drawn by then, as far as the task is looked for
+## and `Tuning.EVENT_DRAW_AHEAD` beyond: she is put down on the mark here, across a city the day's
+## start drew only round her door.
 func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 	var checked := [0]
 	var fell_back := [0]
@@ -39,6 +44,16 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 					"seed %d day %d: reading the mark puts its task on offer" % [seed_value, day])
 			if step != null and not step.is_pickup:
 				checked[0] += 1
+				# The units round where she read the mark draw before its task is looked for
+				# (`ResistanceDirector._draw_the_ground_round_her()`), so what it is placed
+				# among and the paths it is found by are not changed by a unit drawn later.
+				var looked_within: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back() if day == 13 \
+						else ResistanceDirector.NEAR_THE_MARK
+				t.check(_city.events.walk_events().unit_draw().units().undrawn_within(mark,
+						looked_within + Tuning.EVENT_DRAW_AHEAD).is_empty(),
+						("seed %d day %d: the units round where she read the mark have drawn, as " +
+						"far as its task is looked for (%.0fpx) and %.0fpx beyond")
+						% [seed_value, day, looked_within, Tuning.EVENT_DRAW_AHEAD])
 				var mast := step.target_kind == ResistanceSteps.TargetKind.MAST
 				var target := director.contact_position() if mast or director.rider() == null \
 						else director.rider().global_position
@@ -88,6 +103,45 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 	t.check(checked[0] > 0 and fell_back[0] * 3 < checked[0],
 			"tasks were placed (%d), most on the edge rather than by the fallback (%d)"
 			% [checked[0], fell_back[0]])
+
+## How far either way her view reaches in `_test_the_nearest_place_that_stands_in_is_confirmed()`:
+## past the circle a task is placed on and the ground drawn round where she read the mark
+## (`ResistanceDirector.NEAR_THE_MARK` and `Tuning.EVENT_DRAW_AHEAD`, 1,024px), with a street's
+## length to spare, so the nearest place out of her view stands beyond all of it.
+const WIDE_VIEW_HALF := Vector2(1600.0, 1600.0)
+
+## **The nearest place that stands in for a task near its mark is confirmed**
+## (`ResistanceDirector._nearest_to_the_mark()`, `WayConfirmation`). Day 6's mark is read with a
+## view so wide that every place where her paths reach the circle round her is in it, so nothing
+## there qualifies and the nearest place out of her view stands in, with no cap on how far: beyond
+## the ground drawn round where she read the mark. The run log says the fallback placed it, it
+## stands past that ground, and the units along a way from home to it and round it have drawn
+## (`_the_way_has_drawn()`), so no unit drawn later can shut the way or stand a body on it.
+func _test_the_nearest_place_that_stands_in_is_confirmed(t: TestRunner) -> void:
+	_build_city_in_a_new_run(t, SEED)
+	var lines: Array[String] = []
+	var read := _read_the_mark_on(t, 6, SEED, lines, WIDE_VIEW_HALF)
+	var director: ResistanceDirector = read[0]
+	var mark: Vector2 = read[1]
+	var player: Stroller = read[2]
+	var step := director.current_step()
+	var fell_back := false
+	for line in lines:
+		fell_back = fell_back or "nothing qualifies where a path reaches" in line
+	t.check(step != null and not step.is_pickup and fell_back and director.rider() != null,
+			"with everything near her in her view, the nearest place out of it stands in for "
+			+ "day 6's task")
+	if step != null and not step.is_pickup and director.rider() != null:
+		var target := director.rider().global_position
+		t.check(target.distance_to(mark)
+				> ResistanceDirector.NEAR_THE_MARK + Tuning.EVENT_DRAW_AHEAD,
+				"%.0fpx from the mark, beyond the ground drawn round where she read it"
+				% target.distance_to(mark))
+		t.check(_the_way_has_drawn(_city.map.world_to_tile(target)),
+				"and the units along a way from home to it have drawn")
+	player.free()
+	director.free()
+	_free_city()
 
 ## Cities whose narrow targets the day's own seals and bodies could ring, found by
 ## `tests/probes/m181_resistance_targets.gd`'s wide run: each had a last-night destination cut off

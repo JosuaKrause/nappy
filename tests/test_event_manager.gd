@@ -160,8 +160,10 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 ## the same, row for row and tile for tile, once the rest of the day is drawn
 ## (`EventManager.draw_the_ground_round()`); and each walk drew some of those units before the
 ## rest, in an order of its own. A row handed to her walk reads as `row@walk`, wherever her walk
-## has since sited it. What this does not cover: the moments, the rows sited from her walk and
-## the rows her route's bag rigs, which follow her walk on purpose.
+## has since sited it. A walk too short for the director to site anything: one long enough for a
+## crew to stand on her way is in `test_event_manager_units.gd`, with what its units draw held
+## against the day drawn whole. Neither covers the moments and the rows her route's bag rigs,
+## which follow her walk on purpose.
 func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 	var events := _city.events
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -185,7 +187,7 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 		drawn.sort()
 		drawn_on_the_walk.append(", ".join(drawn))
 		events.draw_the_ground_round(Vector2.ZERO, INF)
-		readings.append(_what_the_units_drew(kept))
+		readings.append(Rig.what_the_units_drew(_city.map, kept))
 	t.check(readings[0] == readings[1] and readings[0] != "",
 			"walked east and walked south, day 4's units draw the same rows on the same tiles")
 	t.check(drawn_on_the_walk[0] != "" and drawn_on_the_walk[1] != ""
@@ -234,19 +236,6 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	t.check(told.size() == told_so_far and _city.events.plans().size() > drawn_before,
 			"with no listener a draw tells nobody and still stands its rows")
-
-## Each of `units`' draws as `name: row@tile, ...`, one line a unit, a row handed to her walk as
-## `row@walk`.
-func _what_the_units_drew(units: Array[PlacementUnit]) -> String:
-	var lines: Array[String] = []
-	for unit in units:
-		var parts: Array[String] = []
-		for plan in unit.drawn():
-			parts.append("%s@%s" % [plan.row_id(), "walk" if plan.row().is_handed_to_her_walk()
-					else str(_city.map.world_to_tile(plan.placed_at()))])
-		lines.append("%s: %s" % [unit.name(), ", ".join(parts)])
-	lines.sort()
-	return "\n".join(lines)
 
 ## Each of `plans` as its row and the place it was put, in order.
 static func _where_they_stand(plans: Array[EventPlan]) -> String:

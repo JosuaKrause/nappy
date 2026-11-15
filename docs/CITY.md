@@ -256,9 +256,14 @@ the day's own placement rules accept, none of it a body across her way. Day 13's
 street no route runs along (`DawnRoadblocks`), or one put across the
 nearest such section out of her sight in place of what it held
 (`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out as the walk starts, from the dawn's plan, and
-learns each unit's draw as it is drawn (`DayReach`); a place it fixes before she is near it is
-confirmed along a way from home, the units round that way drawn first, so nothing drawn later can
-shut it (`ResistanceDirector._confirmed()`).
+learns each unit's draw as it is drawn (`DayReach`). A place it fixes for her to walk to is
+confirmed along a way from home, the units round that way and round the place drawn first, so
+nothing drawn later can shut it or stand on the place (`WayConfirmation`): a mark or a contact picked from a pool, the
+nearest place that stands in for a task near its mark, and the section day 13's roadblock is put
+across. A task looked for near where she read its mark has the units round her drawn first, as
+far as it is looked for and `Tuning.EVENT_DRAW_AHEAD` beyond. Day 10's neighbor is given a walk
+home the units along which have drawn, laid again where one of them stood a body across it
+(`ResistanceDirector._send_the_neighbor_home()`).
 
 **Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
 *(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the

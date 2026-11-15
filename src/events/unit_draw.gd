@@ -14,6 +14,13 @@ extends RefCounted
 ## by induction over the ranks, every unit's draw is a function of the dawn and the seed alone,
 ## which is what drawing every unit at dawn in rank order gives.
 ##
+## **No draw reads a plan her walk sites.** A plan the dawn or a unit left with no place stands
+## where her walk later puts it (day 3's fire, a poster crew; `EventDirector`), and the director
+## writes that place into the very plan, so it is kept out of what a draw is judged among: the
+## dawn's plans are copied without the ones that had no place, and a touching unit's row handed to
+## her walk (`EventDef.is_handed_to_her_walk()`) is passed over. Neither changes a draw made while
+## the plan has no place, since every rule passes over a plan that stands nowhere.
+##
 ## Drawing one unit: its locations in an order of its own stream, a street's three sections first
 ## (`StreetLocations` keeps a row that takes its section drawn before the sidewalks it takes), the
 ## rest shuffled, so no location of a unit always has first pick; a fresh bag per view the unit
@@ -28,13 +35,16 @@ var _dawn: Array[EventPlan] = []
 
 ## `units` the day's units; `drawing` draws one unit's locations (`LocationDraw`); `fills` the
 ## three views' bag fills (`view -> {marble -> count}`, `EventScheduler.view_fills()`); `dawn` the
-## plans the dawn placed, copied.
+## plans the dawn placed, copied, a plan it left with no place left out (the class comment says
+## why).
 func _init(units: DayUnits, drawing: LocationDraw, fills: Dictionary,
 		dawn: Array[EventPlan]) -> void:
 	_units = units
 	_drawing = drawing
 	_fills = fills
-	_dawn = dawn.duplicate()
+	for plan in dawn:
+		if plan.is_placed():
+			_dawn.append(plan)
 
 ## The day's units the draw draws.
 func units() -> DayUnits:
@@ -78,12 +88,17 @@ func _lowest_waited_for(unit: PlacementUnit) -> PlacementUnit:
 			return other
 	return null
 
-## Draws `unit`, every touching unit of lower rank drawn already.
+## Draws `unit`, every touching unit of lower rank drawn already: judged among the dawn's plans and
+## what the touching units drew, a row one of them handed to her walk passed over, which by now
+## may stand where her walk sited it.
 func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 	var among: Array[EventPlan] = _dawn.duplicate()
 	for other in _units.touching(unit):
-		if other.is_drawn():
-			among.append_array(other.drawn())
+		if not other.is_drawn():
+			continue
+		for plan in other.drawn():
+			if not plan.row().is_handed_to_her_walk():
+				among.append(plan)
 	var rng := unit.stream()
 	var order := _order_of(unit.locations(), rng)
 	var bags := {}

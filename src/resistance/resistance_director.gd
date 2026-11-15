@@ -89,16 +89,6 @@ const TRAP_DRAW_LIMIT := 24
 ## doc for why. The same shape of budget as `TRAP_DRAW_LIMIT`.
 const PICK_REACHABLE_REDRAW_LIMIT := 24
 
-## How many times a place fixed before she is near it is confirmed along a way from home
-## (`_confirmed()`) before it is refused: each pass draws the units round a way, which may shut that
-## way and send the next pass down another.
-const CONFIRM_PASSES := 8
-## Every how many tiles of the way from home the units round it are drawn (`_confirmed()`): every
-## tile of the way is then within half this, 128px, of one drawn round, so a unit a pass leaves
-## undrawn, more than `Tuning.EVENT_DRAW_AHEAD` (448px) from each of those, lies more than 320px
-## from the whole way, beyond the widest reach a placement rule asks (a lethal field of 270px).
-const CONFIRM_STEP := 8
-
 ## The tile `_draw_reachable()` and the neighbor's start answer for "nothing qualified" — off the
 ## grid, since every real tile this director ever asks about is non-negative.
 const NO_TILE := Vector2i(-1, -1)
@@ -818,6 +808,14 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## since her own position and the camera are still the previous attempt's (`_begin_step()`); in
 ## the day, her live position and `true`, for the roadblock's guard placed as she reads its mark and for
 ## `_move_the_mark()`'s relocation.
+##
+## **His spot is looked for on ground whose units have drawn**, with no draw of its own: every
+## contact a guard is set for is a place this director fixed, and the units round it drew as it
+## was fixed. A mark is a pick confirmed along a way from home (`_confirmed()`); a roadblock the
+## day placed lies within the ground drawn round where she read the mark
+## (`_place_the_roadblock_near()`), and one swapped in has its section's surroundings drawn
+## (`EventManager.swap_in_a_section()`); a mark moved near her (`_move_the_mark()`) and a
+## roadblock he follows her to are within the stream radius of her, where every unit has drawn.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_mark: bool,
 		her: Vector2, on_screen_matters: bool, reach := ContactPoint.REACH,
 		approach := Vector2.ZERO) -> void:
@@ -833,10 +831,6 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_guard = null
 	else:
 		_task_guard = null
-	# The units round the contact draw before his spot is looked for, so the spot is checked against
-	# what they stand there.
-	if _events:
-		_events.draw_the_ground_round(at, Tuning.EVENT_DRAW_AHEAD)
 	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters, reach, approach)
 	var placement := "band"
 	if for_mark:
@@ -1710,24 +1704,33 @@ func _where_she_read_it(mark: Vector2) -> Vector2:
 	return her if her != Vector2.INF else mark
 
 ## The tile of `candidates` nearest `mark` that every placement refusal here leaves alone — legal
-## ground (`SpawnSiting.CONTACT_GROUND`), reachable from home, off her screen — or
-## `Vector2.INF` when none does. `_pick_near()`'s fallback.
+## ground (`SpawnSiting.CONTACT_GROUND`), reachable from home, off her screen — and that a way
+## from home is confirmed to (`_confirmed()`, which asks once more whether a body stands on it
+## after the units round it have drawn), or `Vector2.INF` when none does. `_pick_near()`'s
+## fallback. **There is no cap on how far it stands**, so it may stand beyond the ground drawn
+## round where she read the mark (`_draw_the_ground_round_her()`): the candidates are asked
+## nearest first, each for what is cheap to ask before the units along its way are drawn, so the
+## first that passes is the answer and the pool is not drawn through.
 func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
-	var nearest := Vector2.INF
-	var nearest_distance := INF
-	for tile in candidates:
+	var by_distance: Array = []
+	for index in candidates.size():
+		by_distance.append([_map.tile_to_world(candidates[index]).distance_to(mark), index])
+	# Nearest first, and of two as near the earlier in the pool, as a scan of the pool takes it.
+	by_distance.sort_custom(func(a: Array, b: Array) -> bool:
+		return a[0] < b[0] if a[0] != b[0] else a[1] < b[1])
+	for entry: Array in by_distance:
+		var tile := candidates[entry[1]]
 		var world := _map.tile_to_world(tile)
-		var distance := world.distance_to(mark)
-		if distance >= nearest_distance:
-			continue
 		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
 				or not _reachable_from_home(tile) \
 				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
 			continue
-		nearest_distance = distance
-		nearest = world
-	return nearest
+		var free := func(_tile: Vector2i) -> bool:
+			return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, world)
+		if _confirmed(tile, free):
+			return world
+	return Vector2.INF
 
 ## **Day 13's roadblock is one the day placed, close by** *(inbox #650 in mossy-beaver, the player:
 ## "let's not rig the roadblock let's place one properly and guide to that -- just make sure it's
@@ -1752,6 +1755,11 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ##    phases of their own, the orchestrator's reading. Nothing else does: not how far it is, not
 ##    whether what it holds stands still or has noticed her, and not a placement rule asked again.
 ##
+## **The units round where she read the mark draw first**, out to the widest ring and
+## `Tuning.EVENT_DRAW_AHEAD` beyond (`_draw_the_ground_round_her()`), so her paths to a roadblock
+## the day placed are walked over ground no unit drawn later can shut; a section swapped in
+## further off is confirmed along a way from home (`_section_to_swap()`).
+##
 ## **Nothing is added in the walk** (inbox #1185 in gentle-owl): with neither, which only a day with no open
 ## route-adjacent section reachable from her leaves, the task has no roadblock, and the run log says
 ## so. Nothing is checked live: neither closes a route, since each stands off them.
@@ -1766,6 +1774,8 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 		return null
 	var reaches: Array[float] = [NEAR_THE_MARK]
 	reaches.append_array(ROADBLOCK_WIDER_REACH)
+	# Before her paths are walked: a body a unit draws later must not shut one.
+	_draw_the_ground_round_her(her, reaches.back())
 	var paths := _paths_reach_between(her, 0.0, reaches.back())
 	for reach in reaches:
 		var found := _a_roadblock_the_day_placed(def.id, paths, reach)
@@ -1825,7 +1835,11 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 ## main road, on its carriageway), with neither it nor anything the section holds in her view
 ## (`_drawing_shows()`), and holding none of the city's fixed parts (`EventPlan.is_a_fixed_part()`).
 ## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
-## draws nothing.
+## draws nothing. **And a way from home to it is confirmed** (`_confirmed()`, asked of the nearest
+## of its tiles her paths reach that is reachable from home), since a section across the city may
+## lie beyond ground whose units have not drawn: asked after the two checks that read nothing a
+## unit draws and before what the section holds is looked at, which the confirmation's own draw
+## round the place may add to.
 ## Answers the section and the roadblock checked across it (`SectionToSwap`), the very plan whose
 ## place was asked of her view, so what is put there is what was checked; null where none does or
 ## the walk has no locations. *Read as, the orchestrator's and open to
@@ -1839,11 +1853,13 @@ func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Section
 		return null
 	var row := def.for_day(_day)
 	var checked := {}
-	var may_take := func(section: Location) -> bool:
+	var may_take := func(section: Location, searched: Dictionary) -> bool:
 		# Stationary, so it draws nothing from a stream: a fresh one, never the director's.
 		var across := EventScheduler.across_the_section(row, _builder, _map, section,
 				RandomNumberGenerator.new())
 		if across == null or _drawing_shows(row, across.placed_at()):
+			return false
+		if not _confirmed_to_touch(section, searched):
 			return false
 		for plan in _walk.placed_within(_map.tile_rect_to_world(section.tiles())):
 			if plan.is_a_fixed_part() or _drawing_shows(plan.row(), plan.where_it_stands_now()):
@@ -1851,12 +1867,32 @@ func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Section
 		checked[section] = across
 		return true
 	var section := locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths,
-			_reachable_from_home, may_take)
+			_reachable_from_home, may_take.bind(paths))
 	if not section:
 		var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
-		section = locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT,
-				_paths_reach_between(her, 0.0, whole_city), _reachable_from_home, may_take)
+		var over_the_city := _paths_reach_between(her, 0.0, whole_city)
+		section = locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, over_the_city,
+				_reachable_from_home, may_take.bind(over_the_city))
 	return SectionToSwap.new(section, checked[section]) if section else null
+
+## **Whether a way from home is confirmed to `section`** (`_confirmed()`): asked of the nearest of
+## its tiles along `paths` (`tile -> its distance from her`) that is reachable from home, the tile
+## `DayLocations.nearest_section_in()` ranks the section by. False where her paths reach none.
+func _confirmed_to_touch(section: Location, paths: Dictionary) -> bool:
+	var tiles := section.tiles()
+	var nearest := NO_TILE
+	var nearest_distance := INF
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			var tile := Vector2i(x, y)
+			if paths.has(tile) and float(paths[tile]) < nearest_distance \
+					and _reachable_from_home(tile):
+				nearest_distance = float(paths[tile])
+				nearest = tile
+	# The roadblock replaces what the section holds, so nothing more is asked of the tile.
+	var whatever_stands_there := func(_tile: Vector2i) -> bool:
+		return true
+	return nearest != NO_TILE and _confirmed(nearest, whatever_stands_there)
 
 ## **The section day 13's swap takes and the roadblock checked across it** (`_section_to_swap()`):
 ## the two answers one search found, kept together so the roadblock placed is the one checked.
@@ -2245,47 +2281,76 @@ const NEIGHBOR_WALK_BAND_TILES := 8
 ##
 ## The start is drawn by the day's RNG from the band of tiles `NEIGHBOR_WALK_BAND_TILES` either side
 ## of the walk asked for, in `tiles_of_type()`'s own order, so the same day draws the same start.
+##
+## **The units along the walk draw before the neighbor sets out** (`_draw_the_ground_along()`):
+## the start is blocks away, over ground her walk may not have come near, and a body a unit draws
+## there later would stand on the walk already given. So the walk is laid, the units round it
+## drawn, and where that drew any it is laid again over what they shut, from the same start while
+## that is still one the band offers, up to `WayConfirmation.PASSES` times; the neighbor is sent
+## down the first walk a pass draws nothing round, or down the last one laid.
 func _send_the_neighbor_home() -> EventInstance:
 	if not _events:
 		return null
 	var def := EventCatalogue.neighbor_heading_home()
 	var door := _map.world_to_tile(_map.doorstep_world_position())
-	var shut := _reach().shut()
-	var on_foot := shut.duplicate()
-	for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
-		on_foot[tile] = true
 	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
-	for blocked: Dictionary in [on_foot, shut]:
-		var field := _map.walk_field(door, blocked)
-		var start := _a_neighbor_start(field, wanted)
-		if start == NO_TILE:
-			continue
-		var path := _walk_home(field, start)
-		trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
-				% [_map.distance_at(field, start), RunTrace.tile(start)])
-		return _events.spawn_extra(def, path[0], path)
+	var ground := _spawn_siting.ask_of_ground()
+	var kept := NO_TILE
+	for pass_index in WayConfirmation.PASSES:
+		var shut := _reach().shut()
+		var on_foot := shut.duplicate()
+		for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
+			on_foot[tile] = true
+		var laid_again := false
+		for blocked: Dictionary in [on_foot, shut]:
+			var field := _map.walk_field(door, blocked)
+			var start := kept if _is_a_neighbor_start(field, wanted, kept, ground) \
+					else _a_neighbor_start(field, wanted, ground)
+			if start == NO_TILE:
+				continue
+			var path := _walk_home(field, start)
+			if _draw_the_ground_along(path) and pass_index + 1 < WayConfirmation.PASSES:
+				kept = start
+				laid_again = true
+				break
+			trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
+					% [_map.distance_at(field, start), RunTrace.tile(start)])
+			return _events.spawn_extra(def, path[0], path)
+		if not laid_again:
+			break
 	if _pinned_neighbor != Vector2.INF:
 		_scene_task_errors.append(("setup.task.neighbor %s is not a start the day could draw: a " +
 				"sidewalk tile centre %d±%d tiles of walk from home, %.0fpx or more from her")
 				% [_pinned_neighbor, wanted, NEIGHBOR_WALK_BAND_TILES, NEIGHBOR_CLEAR_OF_HER])
 	return null
 
+## **Draws the units round a walk** given as its corners (`walk`): round each corner and every
+## `WayConfirmation.STEP` tiles of each run between two, out to `Tuning.EVENT_DRAW_AHEAD`
+## (`EventManager.draw_the_ground_round()`), so no unit drawn later stands a body on it. Answers
+## whether it drew any.
+func _draw_the_ground_along(walk: PackedVector2Array) -> bool:
+	var drew := false
+	var stride := float(WayConfirmation.STEP * Tuning.TILE_SIZE)
+	for k in walk.size():
+		drew = _events.draw_the_ground_round(walk[k], Tuning.EVENT_DRAW_AHEAD) or drew
+		if k + 1 == walk.size():
+			break
+		var along := stride
+		while along < walk[k].distance_to(walk[k + 1]):
+			drew = _events.draw_the_ground_round(walk[k].move_toward(walk[k + 1], along),
+					Tuning.EVENT_DRAW_AHEAD) or drew
+			along += stride
+	return drew
+
 ## A sidewalk tile whose walk home is within `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen
-## from her and on ground a contact may stand on, drawn by the day's RNG — or `NO_TILE`.
-func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
-	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
-	var ground := _spawn_siting.ask_of_ground()
+## from her and on ground a contact may stand on (`ground`, `SpawnSiting.ask_of_ground()`), drawn by
+## the day's RNG — or `NO_TILE`.
+func _a_neighbor_start(field: PackedInt32Array, wanted: int,
+		ground: SpawnSiting.Ask) -> Vector2i:
 	var offered: Array[Vector2i] = []
 	for tile in _map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		var walk := _map.distance_at(field, tile)
-		if walk < 0 or absi(walk - wanted) > NEIGHBOR_WALK_BAND_TILES:
-			continue
-		if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
-			continue
-		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
-				_map.tile_to_world(tile)):
-			continue
-		offered.append(tile)
+		if _is_a_neighbor_start(field, wanted, tile, ground):
+			offered.append(tile)
 	if _pinned_neighbor != Vector2.INF:
 		# A scene's pin (`start_recipe_task()`): one of the starts the draw below chooses among, or
 		# none — never the nearest one standing in for it.
@@ -2295,6 +2360,21 @@ func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 	if offered.is_empty():
 		return NO_TILE
 	return offered[_rng.randi_range(0, offered.size() - 1)]
+
+## Whether `tile` is a start the neighbor's draw offers over `field`: a walk home within
+## `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen from her, on ground a contact may stand on
+## (`ground`). False for `NO_TILE`.
+func _is_a_neighbor_start(field: PackedInt32Array, wanted: int, tile: Vector2i,
+		ground: SpawnSiting.Ask) -> bool:
+	if tile == NO_TILE:
+		return false
+	var walk := _map.distance_at(field, tile)
+	if walk < 0 or absi(walk - wanted) > NEIGHBOR_WALK_BAND_TILES:
+		return false
+	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
+	if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
+		return false
+	return _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, _map.tile_to_world(tile))
 
 ## The walk from `start` down `field` to the doorstep, as the corners of it: each step goes to a
 ## neighbor one tile nearer home, keeping the heading it already has where that is one of them, so
@@ -2415,7 +2495,8 @@ static func target_ground(map: CityMap, day: int,
 ## seals, which none of the five pool refusals or `is_obstructed()` can see — each asks about the
 ## tile itself, not the streets between it and the doorstep. See `_reachable_from_home()`. **And
 ## confirmed along a way from home** (`_confirmed()`), the units round it drawn, since a unit draws
-## as she comes near it and one still undrawn could shut the way later.
+## as she comes near it and one still undrawn could shut the way later; whether a body stands on
+## the tile is asked again once they have drawn, since one of them may have stood one there.
 ##
 ## **Two kinds of pool, and the check means something different in each.** A mark's alleys and a
 ## rider's sidewalks are hundreds of tiles across the whole city; the day's obstruction seals off
@@ -2457,9 +2538,10 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 			else SpawnSiting.Rule.LEGAL_GROUND
 	var stands := func(tile: Vector2i) -> bool:
 		return _spawn_siting.allows(legal, ground, _map.tile_to_world(tile))
+	var free := func(tile: Vector2i) -> bool:
+		return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(tile))
 	var open := func(tile: Vector2i) -> bool:
-		return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(tile)) \
-				and _reachable_from_home(tile) and _confirmed(tile)
+		return free.call(tile) and _reachable_from_home(tile) and _confirmed(tile, free)
 	var tile := _draw_reachable(candidates, rng, stands, open,
 			_run.facts.completed_resistance_alley_tiles)
 	return _map.tile_to_world(tile) if tile != NO_TILE else Vector2.INF
@@ -2534,43 +2616,37 @@ func _reach() -> DayReach:
 		_own_reach = DayReach.of(_map, _walk.plans())
 	return _own_reach
 
-## **Whether a place fixed before she is near it stands, with a way to it nothing drawn later can
-## reach** (`tile`): a unit of the day's locations draws as she comes near it (`UnitDraw`), so the
-## ground between home and a far place may still be undrawn, and a body a unit draws there later
-## could shut the way the place was found reachable by. Up to `CONFIRM_PASSES` times: a shortest
-## way from home to `tile` over the ground open now (`DayReach.way_from_home()`), none refusing the
-## place; the units round every `CONFIRM_STEP`th tile of it and round the place itself drawn
-## (`EventManager.draw_the_ground_round()`, `Tuning.EVENT_DRAW_AHEAD` round each), what they draw
-## shutting more of the reach; and where a pass draws no unit, the place stands. A refused place is
-## redrawn as an unreachable one is. Where nothing draws as she walks (no events: a rig placing on a
-## bare map; or a walk with no unit draw: a scene recipe's, the escape's), the place stands as it
-## is reached.
-func _confirmed(tile: Vector2i) -> bool:
+## **Whether a place fixed from her walk stands, with a way to it nothing drawn later can reach**
+## (`tile`; `WayConfirmation`): a unit of the day's locations draws as she comes near it
+## (`UnitDraw`), so the ground between home and the place may still be undrawn, and a body a unit
+## draws there later could shut the way the place was found reachable by. The units along a way
+## from home and round the place are drawn first (`EventManager.draw_the_ground_round()`), what
+## they draw shutting more of the reach, until a way stands that no undrawn unit lies near; a
+## place with none is refused, and the caller takes the next candidate as it does for an
+## unreachable one. **Every place this director fixes for her to walk to is asked it**: a pick from
+## a pool (`_pick_reachable()`), the nearest place that stands in for a task near its mark
+## (`_nearest_to_the_mark()`), and the section day 13's roadblock is put across
+## (`_section_to_swap()`). **`still_stands` is the caller's own question of the tile** (`func(tile:
+## Vector2i) -> bool`, no body standing on it), asked once more after the units round it have
+## drawn, since one of them may have stood a body there that shuts no way. Where nothing draws as
+## she walks (no events: a rig placing on a bare map; or a walk with no unit draw: a scene
+## recipe's, the escape's), the place stands as it is reached.
+func _confirmed(tile: Vector2i, still_stands: Callable) -> bool:
 	if not _events or not _walk.unit_draw():
 		return true
-	var reach := _reach()
-	for _pass in CONFIRM_PASSES:
-		var way := reach.way_from_home(tile)
-		if way.is_empty():
-			return false
-		var drew := false
-		for k in range(0, way.size(), CONFIRM_STEP):
-			drew = _events.draw_the_ground_round(_map.tile_to_world(way[k]),
-					Tuning.EVENT_DRAW_AHEAD) or drew
-		drew = _events.draw_the_ground_round(_map.tile_to_world(tile), Tuning.EVENT_DRAW_AHEAD) \
-				or drew
-		if not drew:
-			return true
-	return false
+	return WayConfirmation.new(_map, _reach(), _events.draw_the_ground_round) \
+			.confirms(tile, still_stands)
 
-## **The units round where she read the mark at `mark` drawn first**, out to the circle a task near
-## it is placed on and `Tuning.EVENT_DRAW_AHEAD` beyond (`EventManager.draw_the_ground_round()`), so
-## what a place fixed while she is near is checked against has drawn. Inside the band round her,
-## which the walk keeps drawn, it draws nothing. Nothing with no mark or no events.
-func _draw_the_ground_round_her(mark: Vector2) -> void:
+## **The units round where she read the mark at `mark` drawn first**, out to `reach`, how far from
+## her its task is looked for (the circle a task near it is placed on, or the widest ring day 13's
+## roadblock is looked for in), and `Tuning.EVENT_DRAW_AHEAD` beyond
+## (`EventManager.draw_the_ground_round()`): so what a place fixed while she is near is checked
+## against has drawn, her paths to it are walked over ground no unit drawn later can shut, and
+## nothing drawn later stands on it. What her walk already drew is not drawn again. Nothing with
+## no mark or no events.
+func _draw_the_ground_round_her(mark: Vector2, reach := NEAR_THE_MARK) -> void:
 	if _events and mark != Vector2.INF:
-		_events.draw_the_ground_round(_where_she_read_it(mark),
-				NEAR_THE_MARK + Tuning.EVENT_DRAW_AHEAD)
+		_events.draw_the_ground_round(_where_she_read_it(mark), reach + Tuning.EVENT_DRAW_AHEAD)
 
 ## Whether `tile` is reachable from home under the day's full obstruction (`_reach()`): closures
 ## alone can leave a mark's own alley reachable while the day's events and seals together seal every

@@ -2,8 +2,9 @@ extends RefCounted
 ## `UnitDraw`, the day's units drawn each after every touching unit of lower rank: three units that
 ## all touch drawn in every order they can be asked for, the draws and what each is judged among the
 ## same every time; a unit asked for draws the touching units of lower rank it waits for first, down
-## a chain, and is judged among the dawn's plans and the draws of the units touching it only; a
-## unit draws once; and a street's sections come first in the order it draws its locations.
+## a chain, and is judged among the dawn's plans and the draws of the units touching it only, a
+## plan her walk sites never among them; a unit draws once; and a street's sections come first in
+## the order it draws its locations.
 ##
 ## Run with stand-ins for what it is handed: the day's units (`_Units`, a touching table set by
 ## hand) and the location draw (`_Drawing`, which records each call and answers one plan for it);
@@ -13,6 +14,7 @@ extends RefCounted
 func run(t: TestRunner) -> void:
 	_test_every_order_of_asking_draws_the_same(t)
 	_test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t)
+	_test_no_draw_is_judged_among_a_plan_her_walk_sites(t)
 	_test_a_unit_draws_once(t)
 	_test_a_streets_sections_draw_first(t)
 
@@ -34,9 +36,12 @@ class _Drawing extends LocationDraw:
 	## Location -> the name of its unit.
 	var unit_of := {}
 	## `[unit name, [the names of the units whose plans it was judged among, "dawn" for the
-	## dawn's], the order's locations, the views of its bags]` per call.
+	## dawn's], the order's locations, the views of its bags, the rows it was judged among]` per
+	## call.
 	var calls: Array = []
 	var cafe := EventCatalogue.by_id("cafe_tables")
+	## Unit name -> true for a unit whose draw also hands a poster crew to her walk, with no place.
+	var hands_over := {}
 
 	func _init() -> void:
 		super(null, {}, null)
@@ -44,13 +49,17 @@ class _Drawing extends LocationDraw:
 	## Overrides LocationDraw.draw.
 	func draw(order: Array[Location], bags: Dictionary, among: Array[EventPlan]) -> Array[EventPlan]:
 		var seen: Array[String] = []
+		var rows: Array[String] = []
 		for plan in among:
 			seen.append(str(unit_of.get(plan.placed_at(), "dawn")))
+			rows.append(plan.row_id())
 		var name: String = unit_of[order[0]]
-		calls.append([name, seen, order.duplicate(), bags.keys()])
+		calls.append([name, seen, order.duplicate(), bags.keys(), rows])
 		var plan := EventPlan.new(cafe, order[0].centre())
 		unit_of[plan.placed_at()] = name
 		var placed: Array[EventPlan] = [plan]
+		if hands_over.has(name):
+			placed.append(EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF))
 		return placed
 
 ## A unit of one junction location at `x` blocks along, and its location in `drawing`.
@@ -141,6 +150,40 @@ func _test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t: TestRunner)
 	draw.draw(alone)
 	t.check(_readable(drawing.calls, ranked).back() == "u3 among dawn",
 			"and draws alone, among the dawn's plans, when asked for")
+
+## **No draw is judged among a plan her walk sites.** A crew the lower of two touching units handed
+## to her walk, and a set piece the dawn left with no place, are each sited since, the place
+## written into the very plan as the director writes it (`EventDirector.site_what_is_on_her_way()`);
+## the higher unit, drawn after, is judged among the dawn's placed row and the lower unit's placed
+## row and neither of the two, so where her walk put them changes nothing it draws.
+func _test_no_draw_is_judged_among_a_plan_her_walk_sites(t: TestRunner) -> void:
+	var drawing := _Drawing.new()
+	var ranked := _ranked([_unit(0, drawing), _unit(1, drawing)] as Array[PlacementUnit])
+	var low := ranked[0]
+	var high := ranked[1]
+	drawing.hands_over[low.name()] = true
+	var units := _Units.new()
+	units.table = {low.name(): [high], high.name(): [low]}
+	var dawn := _dawn()
+	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
+	dawn.append(fire)
+	var draw := UnitDraw.new(units, drawing, _fills(), dawn)
+	var crew: EventPlan = null
+	for plan in draw.draw(low):
+		if not plan.is_placed():
+			crew = plan
+	t.check(crew != null and crew.row().is_handed_to_her_walk() and low.drawn().has(crew),
+			"the lower unit hands a crew to her walk, with no place, and holds it as drawn")
+	if crew == null:
+		return
+	crew.position = high.bounds().get_center()
+	fire.position = high.bounds().get_center() + Vector2(64.0, 0.0)
+	draw.draw(high)
+	var rows: Array = drawing.calls[1][4]
+	t.check(crew.is_placed() and fire.is_placed() and rows == ["roadblock", "cafe_tables"],
+			"sited since, neither the crew nor the dawn's set piece is among what the next unit "
+			+ "is judged among: the dawn's placed row and the lower unit's placed row alone (%s)"
+			% [rows])
 
 func _test_a_unit_draws_once(t: TestRunner) -> void:
 	var drawing := _Drawing.new()

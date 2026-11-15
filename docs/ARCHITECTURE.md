@@ -243,6 +243,8 @@ src/
 	                      flood over it, made as the walk starts and told what each unit draws; a
 	                      shortest walk from home to a tile; and the walk her paths take within a
 	                      circle, the measure of close by
+	way_confirmation.gd   whether a place fixed from her walk stands: the units along a way from
+	                      home to it drawn first, until a way stands that no undrawn unit lies near
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
@@ -260,7 +262,7 @@ src/
 	                      junction box, or a shared alley, park or square
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
 	                      every touching unit of lower rank, from a fresh bag per view, judged among
-	                      the dawn's plans and the touching units' draws
+	                      the dawn's plans and the touching units' draws, never a plan her walk sites
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
@@ -1224,6 +1226,10 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_event_manager.gd` — the manager against a real generated city: retirement,
   successors, summed excitement. Its header gives the reason it builds one: an instance freed but
   left in the list and a successor spawned but never tracked are invisible to a data-level test.
+- `test_event_manager_units.gd` — the manager against a real generated city, the day's units
+  drawn as she comes near them: a unit draws before the streaming looks at its ground, and what
+  her walk sites, swaps in or takes away draws the units round it first. Its header gives the
+  reason it builds a city: each rule is the order of two parts the manager owns.
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —
   pushing every block to the end of its arc moves no walkable tile.
