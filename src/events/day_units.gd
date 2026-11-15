@@ -95,6 +95,16 @@ func undrawn_within(at: Vector2, radius: float) -> Array[PlacementUnit]:
 		found.append(entry[1])
 	return found
 
+## **How far round `at` the day's ground has drawn**: the distance from `at` to the bounds of the
+## nearest undrawn unit, so no undrawn unit lies within any radius below it
+## (`undrawn_within()`); `INF` where every unit has drawn.
+func drawn_round(at: Vector2) -> float:
+	var nearest := INF
+	for unit in _order:
+		if not unit.is_drawn():
+			nearest = minf(nearest, _distance_to(at, unit.bounds()))
+	return nearest
+
 ## The unit kind a location's kind belongs to.
 static func _unit_kind(kind: int) -> PlacementUnit.Kind:
 	match kind:

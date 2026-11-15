@@ -24,6 +24,7 @@ const STEP := 1.0 / 60.0
 func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
 	_test_scheduler_respects_placement_and_one_of_a_row_per_unit(t)
+	_test_the_dawn_draws_no_unit(t)
 	_test_one_shots_fire_once_per_run(t)
 	_test_alley_robbery_never_lands_on_a_required_alley(t)
 	_test_the_mouse_crosses_the_alleys_own_short_axis(t)
@@ -118,6 +119,25 @@ func _test_scheduler_respects_placement_and_one_of_a_row_per_unit(t: TestRunner)
 					ids[drawn.row_id()] = true
 		units_seen += checked.size()
 	t.check(units_seen > 0, "there were drawn units to ask (%d)" % units_seen)
+
+## **The dawn draws no unit** (`DawnDraw`): it prepares the day's units' draw and holds it, every
+## unit left for her walk to draw as she comes near it (`EventsAhead.draw_what_comes_near()`), so
+## the dawn's plan is the day's without a unit's draws, which the whole day adds.
+func _test_the_dawn_draws_no_unit(t: TestRunner) -> void:
+	var day := 4
+	var consumed: Array[String] = []
+	var dawn := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).masts(_sites()) \
+			.spent(consumed).undrawn().planned()
+	var undrawn := dawn.unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+	var every := DayUnits.of(dawn.locations().all(), dawn.day_seed()).undrawn_within(Vector2.ZERO,
+			INF)
+	t.check(not every.is_empty() and undrawn.size() == every.size(),
+			"day %d: the dawn leaves all %d of its units undrawn (%d)"
+					% [day, every.size(), undrawn.size()])
+	var whole := _dawn(day).events().placements().size()
+	t.check(dawn.events().placements().size() < whole,
+			"and its plan holds fewer rows than the whole day's (%d of %d)"
+					% [dawn.events().placements().size(), whole])
 
 ## **A one-shot is planned on at most one day of a run.** Asserted here, over the plan; that it is
 ## one plan owed to her walk is asserted where the manager plans it: `tests/test_event_manager.gd`.

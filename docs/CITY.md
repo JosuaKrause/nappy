@@ -250,13 +250,31 @@ day's seals and bodies have been found to ring, and finds the place's tile reach
 reached from it.
 
 **Nothing placed during the walk closes a route, so nothing is checked live** (inbox #1173). The
-day's routes are fixed at dawn, and everything sited while she walks — day 3's fire, the poster
-crews, her route's bag, day 11's added mast — is what the day's own placement rules accept, none of
-it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
+day's routes are fixed at dawn, and everything drawn or sited while she walks — each unit's draw as
+she comes near it, day 3's fire, the poster crews, her route's bag, day 11's added mast — is what
+the day's own placement rules accept, none of it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
 street no route runs along (`DawnRoadblocks`), or one put across the
 nearest such section out of her sight in place of what it held
-(`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out once, as the walk starts, from the day's plan
-(`DayReach`).
+(`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out as the walk starts, from the dawn's plan, and
+learns each unit's draw as it is drawn (`DayReach`). **Every place it fixes for her to walk to is
+asked one question wherever a contact is stood or moved, by where the place stands**
+(`ResistanceDirector._she_can_be_sent_to()`, `WayConfirmation`). A place inside the ground already
+drawn round her stands as it is: her own paths reach it without coming within
+`WayConfirmation.CLEAR` of an undrawn unit. That ground is the stream radius the walk keeps drawn
+round her, and, where she reads a mark, what a task looked for near her draws first, as far as it
+is looked for and `Tuning.EVENT_DRAW_AHEAD` beyond. A place beyond that ground has a way from home
+confirmed, the units along the way and round the place drawn first, so nothing drawn later can
+shut the way or stand on the place. A place that is refused is no place: a search takes its next,
+a move is not made, and a step left with none has nowhere to go that day. Day 8's burnt building
+stands where the run's fire burned, also on a day none of its frontage can be reached. Where
+several places answer a task (any man shouting, any roadblock, any live mast), the red arrow
+points at the closest on foot, chosen again twice a second over the ground as it has drawn: a
+choice, not a place fixed. A man shouting or a roadblock it points at is in the world, which the
+streaming keeps to the ground drawn round her, and the contact stays where it was stood; a mast it
+moves day 11's contact to is asked the same question. Day 10's neighbor is given a walk
+home the units along which have drawn, laid again where one of them stood a body across it
+(`ResistanceDirector._send_the_neighbor_home()`). `tests/test_resistance_sent_places.gd` asks the
+outcome of whatever contact stands, on days 6 to 13.
 
 **Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
 *(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the

@@ -603,7 +603,45 @@ class WalkSiting extends RefCounted:
 	## plan being sited is never among them** — a row being moved off a position it has not yet been
 	## seen at must not be spaced against its own old body, or the second siting is refused the
 	## street the first one was standing in.
+	##
+	## **A site stands only on ground whose units have drawn.** The band lies beyond what her walk
+	## keeps drawn round her, so a pick may stand beside a unit of the day's locations that has not
+	## drawn (`UnitDraw`): judged against a walk that does not hold that unit's rows yet, and a
+	## unit drawn there later is not judged against the pick either. So the ground round every
+	## pick is drawn first (`use_the_ground_drawer()`, out to `Tuning.EVENT_DRAW_AHEAD`), and **a
+	## pick that drew a unit is given up**, a wait like any other refusal: the same ask a look
+	## later is judged against what those units drew. A pick that draws nothing stands, and no
+	## unit drawn after it lies within `Tuning.EVENT_DRAW_AHEAD` of it. The waits end, since each
+	## one draws at least one unit of a day that has a fixed number of them.
 	func ahead_of(def: EventDef, rng: RandomNumberGenerator, besides: EventPlan,
+			at: Vector2, heading: Vector2, near: float, far: float) -> EventPlan:
+		var site := _a_site_ahead_of(def, rng, besides, at, heading, near, far)
+		if site and _draws_the_ground_round.is_valid() \
+				and _draws_the_ground_round.call(site.placed_at(), Tuning.EVENT_DRAW_AHEAD):
+			# The units just drawn joined the walk's plans, which no verdict kept so far has seen.
+			_verdicts.forget()
+			return _waited(_ITS_GROUND_HAD_NOT_DRAWN)
+		return site
+
+	## Why `ahead_of()` gave up a pick the ground round which had not drawn, as `waits` counts it.
+	const _ITS_GROUND_HAD_NOT_DRAWN := "the ground round its site had not drawn"
+
+	## What draws the ground round a site before it stands (`use_the_ground_drawer()`); none until
+	## one is handed in.
+	var _draws_the_ground_round := Callable()
+
+	## **Hands the siting what draws the ground round a site**: `draws_round` is `func(at: Vector2,
+	## reach: float) -> bool`, which draws every undrawn unit of the day's locations any part of
+	## which lies within `reach` of `at`, what they place joining the walk's plans, and answers
+	## whether it drew any (`EventsAhead.draw_the_ground_round()`). `ahead_of()` asks it of every
+	## site it picks. A siting handed none judges as the walk stands: one that only places among
+	## tiles its caller drew round first (`among()`), or only asks where she is going
+	## (`cells_ahead()`).
+	func use_the_ground_drawer(draws_round: Callable) -> void:
+		_draws_the_ground_round = draws_round
+
+	## The pick `ahead_of()` makes, before the ground round it is asked for.
+	func _a_site_ahead_of(def: EventDef, rng: RandomNumberGenerator, besides: EventPlan,
 			at: Vector2, heading: Vector2, near: float, far: float) -> EventPlan:
 		var role := EventScheduler.role_for(def, _day)
 		# A wall by its fit alone is never put on a sidewalk a route runs along, so it is put on the
@@ -820,8 +858,9 @@ class WalkSiting extends RefCounted:
 	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against the walk's plans
 	## with the day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
 	## gets, over a pool the caller chose: day 11's mast queued near her
-	## (`EventManager.queue_a_mast()`). Null when nothing offered passes. `null` rather than the
-	## roomiest of a refused pool: `_best_of()` already answers with nothing for a pool where every
+	## (`EventManager.queue_a_mast()`), the ground round which its caller draws before it offers
+	## the pool (`ResistanceDirector._place_at_a_mast()`). Null when nothing offered passes. `null`
+	## rather than the roomiest of a refused pool: `_best_of()` already answers with nothing for a pool where every
 	## tile is illegal, and with the roomiest only among legal ones.
 	func among(def: EventDef, rng: RandomNumberGenerator, offered: Array[Vector2i]) -> EventPlan:
 		if offered.is_empty():

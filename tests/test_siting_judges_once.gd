@@ -21,7 +21,11 @@ extends "res://tests/events_shared_city.gd"
 ## - and the shared verdicts are dropped the moment they stop being true: a crew accepted in a look,
 ##   then a crew standing where it was put, and the next copy is not put there once the verdicts
 ##   are dropped, where the kept ones put it there; and the director drops them before and after
-##   asking about a plan already placed and after every plan it places or moves.
+##   asking about a plan already placed and after every plan it places or moves;
+## - and a pick the ground round which had not drawn is given up: the siting asks what it was
+##   handed to draw that ground (`WalkSiting.use_the_ground_drawer()`), and where that drew a unit
+##   the pick was judged without the unit's rows, so it answers nothing, drops its verdicts, and
+##   the same ask made again stands once nothing is left to draw.
 ##
 ## **What is counted is the siting's verdict store** (`EventScheduler.Verdicts`), which the siting
 ## is handed where it is built: the store `_best_of()` asks for a candidate's verdict before judging
@@ -36,6 +40,7 @@ func run(t: TestRunner) -> void:
 	_test_one_offer_per_look(t)
 	_test_a_look_shares_its_verdicts(t)
 	_test_a_dropped_verdict_is_judged_again(t)
+	_test_a_pick_on_undrawn_ground_is_given_up(t)
 	_test_the_director_drops_the_verdicts(t)
 
 ## A verdict store that keeps what it is given, as the siting's own does, and counts: every
@@ -376,6 +381,75 @@ func _test_a_dropped_verdict_is_judged_again(t: TestRunner) -> void:
 			"with the verdicts dropped, a copy is not put where a crew now stands")
 	t.check(kept != null and kept.position == stands[false],
 			"kept, the verdicts would have put it there (the check above is not vacuous)")
+
+## What a siting is handed to draw the ground round a pick, by hand: it answers that it drew a
+## unit `draws` times, then that nothing was left to draw, and keeps what it was asked.
+class _GroundDrawer extends RefCounted:
+	var draws := 1
+	## `[at, reach]` per ask, in order.
+	var asked: Array = []
+
+	func draws_round(at: Vector2, reach: float) -> bool:
+		asked.append([at, reach])
+		draws -= 1
+		return draws >= 0
+
+## **A pick the ground round which had not drawn is given up, and the same ask stands once it
+## has** (`WalkSiting.ahead_of()`). Somewhere on the day's longest route a crew is accepted; a
+## siting handed a drawer is asked the same there, from the same stream: the drawer is asked for
+## the ground round that very pick, out to `Tuning.EVENT_DRAW_AHEAD`; while it draws a unit the
+## siting answers nothing and counts the wait, having judged a candidate and dropped its verdict;
+## and once the drawer has nothing left to draw the same pick stands.
+func _test_a_pick_on_undrawn_ground_is_given_up(t: TestRunner) -> void:
+	var map := _map()
+	var day := 9
+	var already := _planned(day)
+	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
+	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
+	var verdicts := CountingVerdicts.new()
+	var sitings: Array[EventScheduler.WalkSiting] = []
+	for _both in 2:
+		var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
+				_walk(map, already), EventScheduler.Verdicts.new() if sitings.is_empty()
+				else verdicts, GamePlanBuilder.over(map), EventScheduler.row_ground(map))
+		for tile in EventScheduler.row_ground(map).tiles_for(crew, EventDef.Pavement.AT_THE_FRONT):
+			siting.fronts[tile] = true
+		sitings.append(siting)
+	# Down the day's longest route until the band ahead of her has a crew accepted, by a siting
+	# handed nothing to draw with.
+	var route := _longest_route(day)
+	var spot := Vector2.INF
+	var heading := Vector2.ZERO
+	var pick: EventPlan = null
+	for i in range(1, route.size()):
+		var toward := (route[i] - route[i - 1]).normalized()
+		pick = sitings[0].ahead_of(crew, _stream(), null, route[i - 1], toward, near, far)
+		if pick:
+			spot = route[i - 1]
+			heading = toward
+			break
+	t.check(pick != null, "somewhere on the route accepts a crew")
+	if pick == null:
+		return
+	var drawer := _GroundDrawer.new()
+	var siting := sitings[1]
+	siting.use_the_ground_drawer(drawer.draws_round)
+	siting.begin_look()
+	var given_up := siting.ahead_of(crew, _stream(), null, spot, heading, near, far)
+	var judged := verdicts.judged
+	var waits := int(siting.waits.get("the ground round its site had not drawn", 0))
+	t.check(given_up == null and waits == 1 and drawer.asked == [[pick.position,
+			Tuning.EVENT_DRAW_AHEAD]],
+			"asked for the ground round its pick, which draws a unit, the siting gives the pick up "
+			+ "(%d waits, asked %s)" % [waits, drawer.asked])
+	var again := siting.ahead_of(crew, _stream(), null, spot, heading, near, far)
+	siting.end_look()
+	t.check(again != null and _same(again, pick) and drawer.asked.size() == 2,
+			"and asked again with nothing left to draw, the same pick stands")
+	t.check(judged > 0 and verdicts.judged > judged and verdicts.again == 0,
+			"judged afresh, the verdicts of the look dropped with the pick (%d, then %d)"
+			% [judged, verdicts.judged])
 
 ## A stand-in for the walk holding `plans`, planned against `map`'s calm areas, none of them used.
 func _walk(map: CityMap, plans: Array[EventPlan]) -> FakeWalkEvents:

@@ -29,8 +29,8 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void
 			"and the escape city's spec does not, as its dawn placement does not")
 	manager.free()
 
-## Every place in `EventsAhead` that builds a `WalkSiting` (the day's, a mast's, a rigged
-## route's) hands what it builds the walk's ground (`_ground_of_the_walk()` in the call; which
+## Every place in `EventsAhead` that builds a `WalkSiting` (the one maker the day's and a rigged
+## route's share, and a mast's) hands what it builds the walk's ground (`_ground_of_the_walk()` in the call; which
 ## ground that answers is held by `tests/test_event_manager.gd`) and a verdict store of its own
 ## (`EventScheduler.Verdicts.new()` in the call), neither of which any siting's answers show: a
 ## store shared between sitings would let one asked during the other's look read verdicts judged

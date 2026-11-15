@@ -6,7 +6,10 @@ extends RefCounted
 ## plain day has: every calm area unused (`CalmAreas.of()`), the mast sites worked out on the map
 ## as it stands (`MastSites.compute()`), the route tree the city grows for the spec's day
 ## (`RouteTree.for_day()`), nothing spent, no scars, no heat, no doors, nothing standing, no trace
-## and no roadblock row. A helper, not a suite: the runner loads only `test_*.gd`.
+## and no roadblock row. **And the whole day**: the dawn draws no unit of the day's locations (each
+## draws as she comes near it), so `planned()` and `plan()` draw every unit into the plan, which is
+## what any walk that comes near every unit draws (`undrawn()` leaves the dawn as the game leaves
+## it). A helper, not a suite: the runner loads only `test_*.gd`.
 ##
 ## **The one place under `tests/` that knows how a dawn is handed its inputs**, so a change to
 ## that reaches the suites and the probes through this file.
@@ -26,6 +29,8 @@ var _doors := PackedVector2Array()
 var _standing: Array[EventPlan] = []
 var _trace: RunTrace = null
 var _roadblock: EventDef = null
+## Whether `undrawn()` was said: the dawn left as the game leaves it, no unit drawn.
+var _undrawn := false
 
 ## The dawn of the walk `spec` describes on `map`, its seed the one `rng` was made with.
 static func of(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap) -> GameDawn:
@@ -103,12 +108,33 @@ func context() -> DawnContext:
 	dawn.use_the_roadblock_row(_roadblock)
 	return dawn
 
-## Plans the dawn and answers its context: the plan, and the locations and the ground it built.
+## **The dawn left as the game leaves it**: no unit drawn (`DawnDraw` prepares the units' draw and
+## draws none; each unit draws as she comes near it, `EventsAhead`), for a test or a probe of the
+## dawn itself or of the draw as she walks. Without it, `planned()` and `plan()` draw every unit.
+func undrawn() -> GameDawn:
+	_undrawn = true
+	return self
+
+## **Draws every unit of `dawn` into its plan** (`DawnContext.unit_draw()`), nearest the city's
+## corner first: the whole day, the same whatever order the units are drawn in (`UnitDraw`), as a
+## walk that comes near every unit draws it. Nothing where the dawn holds no draw (the escape's bag
+## walk). For a probe that runs the dawn's passes by hand.
+static func draw_every_unit(dawn: DawnContext) -> void:
+	var draw := dawn.unit_draw()
+	if not draw:
+		return
+	for unit in draw.units().undrawn_within(Vector2.ZERO, INF):
+		dawn.events().add_all(draw.draw(unit))
+
+## Plans the dawn and answers its context: the plan, and the locations and the ground it built,
+## every unit drawn into the plan (`draw_every_unit()`) unless `undrawn()` was said.
 func planned() -> DawnContext:
 	var dawn := context()
 	EventScheduler.build_day(dawn)
+	if not _undrawn:
+		draw_every_unit(dawn)
 	return dawn
 
-## Plans the dawn and answers its plan.
+## Plans the dawn and answers its plan, every unit drawn into it unless `undrawn()` was said.
 func plan() -> DayEvents:
 	return planned().events()

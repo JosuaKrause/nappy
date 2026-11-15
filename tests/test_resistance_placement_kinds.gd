@@ -33,6 +33,8 @@ func run(t: TestRunner) -> void:
 	_test_the_mast_task_favors_the_near_mast(t)
 	_test_the_neighbor_leaves_for_work_until_the_raid(t)
 	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
+	_test_the_morning_neighbors_way_is_over_drawn_ground(t)
+	_test_the_neighbors_walk_home_is_over_drawn_ground(t)
 	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
 	_test_the_sealed_door_stands_after_a_reload(t)
 	_test_a_lost_day_ten_restores_the_ordinary_door(t)
@@ -885,6 +887,46 @@ func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 				"day %d: no neighbor leaves for work" % day)
 		director.free()
 
+## **The units along the morning neighbor's way have drawn before it is measured**
+## (`ResistanceHappenings._send_the_neighbor_to_work()`): the way runs along her street past the
+## ground drawn round her door, so it is measured against what the units along it stand there. Day
+## 5 planned and started at her door at a played day's stream radius: no undrawn unit lies within
+## `Tuning.EVENT_DRAW_AHEAD` of the way, asked every `WayConfirmation.STEP` tiles of it, the way
+## runs on beyond the stream radius of her door, and the rest of the day has not drawn.
+func _test_the_morning_neighbors_way_is_over_drawn_ground(t: TestRunner) -> void:
+	_build_city_in_a_new_run(t)
+	var day := 5
+	var door := _city.map.doorstep_world_position()
+	var state := CityState.new()
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures"))
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], door)
+	var director := _director(t)
+	var before := _live("neighbor")
+	director.start_day(day, _rng(day, "resistance"), 300.0)
+	var neighbor := _new_one("neighbor", before)
+	t.check(neighbor != null and neighbor.path.size() == 2,
+			"day %d: the neighbor leaves for work along her street" % day)
+	if neighbor:
+		var units := _city.events.walk_events().unit_draw().units()
+		var from := neighbor.path[0]
+		var to := neighbor.path[1]
+		var undrawn := 0
+		var along := 0.0
+		while along <= from.distance_to(to):
+			undrawn += units.undrawn_within(from.move_toward(to, along),
+					Tuning.EVENT_DRAW_AHEAD).size()
+			along += WayConfirmation.STEP * Tuning.TILE_SIZE
+		t.check(to.distance_to(door) > Tuning.EVENT_STREAM_RADIUS,
+				"the way runs on past the ground drawn round her door (%.0fpx)"
+				% to.distance_to(door))
+		t.check(undrawn == 0, "no undrawn unit lies within %.0fpx of it (%d do)"
+				% [Tuning.EVENT_DRAW_AHEAD, undrawn])
+		t.check(not units.undrawn_within(Vector2.ZERO, INF).is_empty(),
+				"while the day's other units are still to draw")
+		_city.events.retire(neighbor)
+	director.free()
+
 ## Day 10: the red arrow points at the neighbor, out in the city and walking home along a real walk
 ## that ends at her doorstep, about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of their walk away. Reached
 ## first, the neighbor runs and the task counts; reaching the door first, they are taken — the task
@@ -940,6 +982,62 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t: TestRunner) -> void
 	retry_run.header.day = ResistanceHappenings.NEIGHBOR_DAY + 1
 	t.check(retry_run.neighbor_was_taken(), "from the next day the neighbor is taken")
 	late.free()
+
+## A city on which a unit along the first walk laid for the neighbor draws a body across it (found
+## by walking forty cities with the walk laid once: four of them stood a body on it).
+const CITY_WHERE_A_DRAW_CROSSES_THE_WALK := 8
+
+## **The units along the neighbor's walk home have drawn before the neighbor sets out, and the
+## walk crosses nothing they drew** (`ResistanceDirector._send_the_neighbor_home()`). The start is
+## blocks from her door, over ground whose units draw only as she comes near, so a body drawn
+## there later would stand on the walk already given. Day 10's mark touched as the day starts, on
+## the test city and on one where a unit along the first walk laid draws a body across it: every
+## unit any part of which lies within `Tuning.EVENT_DRAW_AHEAD` of the walk, asked at each corner
+## and every `WayConfirmation.STEP` tiles between, has drawn; no tile of the walk is shut by a
+## body (`DayReach.is_shut()`); and the rest of the day has not drawn.
+func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
+	for seed_value: int in [SEED, CITY_WHERE_A_DRAW_CROSSES_THE_WALK]:
+		var run := _build_city_in_a_new_run(t, seed_value)
+		var day := ResistanceHappenings.NEIGHBOR_DAY
+		run.header.day = day
+		var state := CityState.new()
+		state.begin_day(_city.map.block_plans, day)
+		_city.start_day(state, day, _rng(day, "closures", seed_value))
+		_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+				_city.map.doorstep_world_position())
+		var director := _director(t)
+		director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
+		_read_the_mark(director)
+		var neighbor := director.rider()
+		t.check(neighbor != null and neighbor.def.id == "neighbor",
+				"seed %d: day 10's neighbor is walking home" % seed_value)
+		if neighbor == null:
+			director.free()
+			continue
+		var units := _city.events.walk_events().unit_draw().units()
+		var reach := _city.events.walk_events().reach()
+		var stride := float(WayConfirmation.STEP * Tuning.TILE_SIZE)
+		var undrawn := 0
+		var shut := 0
+		for k in neighbor.path.size():
+			var length := 0.0 if k + 1 == neighbor.path.size() \
+					else neighbor.path[k].distance_to(neighbor.path[k + 1])
+			var along := 0.0
+			while along <= length:
+				var at := neighbor.path[k] if along == 0.0 \
+						else neighbor.path[k].move_toward(neighbor.path[k + 1], along)
+				if is_zero_approx(fmod(along, stride)):
+					undrawn += units.undrawn_within(at, Tuning.EVENT_DRAW_AHEAD).size()
+				if reach.is_shut(_city.map.world_to_tile(at)):
+					shut += 1
+				along += Tuning.TILE_SIZE
+		t.check(undrawn == 0, "seed %d: no undrawn unit lies within %.0fpx of the walk (%d do)"
+				% [seed_value, Tuning.EVENT_DRAW_AHEAD, undrawn])
+		t.check(shut == 0, "seed %d: and no tile of the walk is shut by a body (%d are)"
+				% [seed_value, shut])
+		t.check(not units.undrawn_within(Vector2.ZERO, INF).is_empty(),
+				"seed %d: while the day's other units are still to draw" % seed_value)
+		director.free()
 
 ## Day 10's raid: vans at her building and a patrol, arriving only once she is out of sight of her
 ## door, and never on her own sidewalk — the doorstep stays reachable along it.

@@ -19,7 +19,7 @@ extends RefCounted
 ##   asked directly from a few places she may stand (`_guard_position()`,
 ##   `_roadblock_guard_spot()`), with and without her screen counted;
 ## - **the relocation and the extras**: `_nearest_alley_within()`, `_nearest_to_the_mark()`,
-##   `_door_can_be_touched()`, the neighbor's start (`_send_the_neighbor_home()`), the mast added
+##   `_frontage_below()`, the neighbor's start (`_send_the_neighbor_home()`), the mast added
 ##   near the mark (`_add_a_mast_near()`) and day 13's roadblock placed near it
 ##   (`_place_the_roadblock_near()`);
 ## - **the happenings**: day 10's raid, refused with her view on a van and let through off it, and
@@ -190,7 +190,7 @@ func _the_extras(city: City, director: ResistanceDirector, player: Stroller, lab
 	_print("%s nearest to the mark %s" % [label, _point(director._nearest_to_the_mark(sidewalk,
 			contact))])
 	printed += 1
-	_print("%s door touched %s" % [label, director._door_can_be_touched(contact)])
+	_print("%s door touched %s" % [label, not director._frontage_below(contact).is_empty()])
 	printed += 1
 	if day >= 6:
 		var neighbor := director._send_the_neighbor_home()

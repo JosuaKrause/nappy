@@ -6,8 +6,9 @@ extends RefCounted
 ## (`place_what_is_owed_ahead()`); the men a stopped vehicle lets out (`let_the_officers_out()`);
 ## the pursuer on foot a torn poster sends (`send_a_pursuer()`); the mast and the task row a
 ## resistance task places after dawn (`queue_a_mast()`, `swap_in_a_section()`); and the set piece she
-## never met, lit at dusk (`light_what_she_never_met()`). Nothing here is planned at dawn: the day's
-## plan is `EventStreaming`'s, and what this places joins it.
+## never met, lit at dusk (`light_what_she_never_met()`); and **the day's units, each drawn as she
+## comes near it** (`draw_what_comes_near()`, `draw_the_ground_round()`). Nothing here is planned at
+## dawn: the day's plan is `EventStreaming`'s, and what this places or draws joins it.
 ##
 ## Handed the world the events stand in (`EventWorld`), the walk's events every placement here is
 ## stated against (`WalkEvents`), the streaming a placed plan joins (`EventStreaming`), the spawner a row is made by (`EventSpawner`) and the warning board a row
@@ -79,18 +80,34 @@ func start_day(day: int, tree: RouteTree) -> void:
 	_day_tree = tree
 	for plan in _walk.plans():
 		if plan.def.on_her_way != null and not plan.is_placed():
-			if not _siting:
-				_siting = EventScheduler.WalkSiting.new(day, world.city_map, tree, _walk,
-						EventScheduler.Verdicts.new(), world.plan_builder(),
-						_ground_of_the_walk())
-				# Where a crew may paste: only the city's buildings know their blank walls, and
-				# the walls paste every dawn, so the fronts are asked for today's, here.
-				if world.poster_walls():
-					_siting.fronts = world.poster_walls().fronts()
-			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
-			_siting.prepare(plan.def)
+			_siting_for(day, plan)
 	_director.start_day(day, _walk.plans(), world.run.calendar.day_rng(day, "ahead"), _siting,
 			world.run.resistance.progress)
+
+## **The day's placement context for a row left for her walk to site** (`plan`), made the first
+## time one needs it, over the day's tree (`start_day()`), and its first attempt's one-time scans
+## for `plan`'s row done now rather than mid-walk (`WalkSiting.prepare()`): for a row the dawn
+## left, at the walk's start, and for one a unit draws as she walks, as it is drawn. Answers it.
+func _siting_for(day: int, plan: EventPlan) -> EventScheduler.WalkSiting:
+	if not _siting:
+		_siting = _a_siting(day, _day_tree)
+	_siting.prepare(plan.def)
+	return _siting
+
+## **A placement context for the rows her walk sites ahead of her**, over `tree`: the walk's
+## events, a store of verdicts of its own, the walk's ground (`_ground_of_the_walk()`), the fronts
+## a crew may paste, and **what draws the ground round a site it picks** (`draw_the_ground_round()`,
+## `WalkSiting.use_the_ground_drawer()`), so nothing it sites stands on ground whose units have not
+## drawn.
+func _a_siting(day: int, tree: RouteTree) -> EventScheduler.WalkSiting:
+	var siting := EventScheduler.WalkSiting.new(day, world.city_map, tree, _walk,
+			EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
+	# Where a crew may paste: only the city's buildings know their blank walls, and the walls
+	# paste every dawn, so the fronts are asked for today's, here.
+	if world.poster_walls():
+		siting.fronts = world.poster_walls().fronts()
+	siting.use_the_ground_drawer(draw_the_ground_round)
+	return siting
 
 ## **The ground a siting made here stands its rows on** (`RowGround`): the walk's, as dawn made it
 ## (`WalkEvents.ground()`), so nothing sited after dawn scans the city for what dawn already
@@ -118,8 +135,11 @@ func owe_the_return(day: int) -> void:
 	if _director:
 		_director.owe_the_return(day, world.run.resistance.progress)
 
-## Forgets the day's owed pursuer and the poster tear's pursuer.
+## Forgets the day's owed pursuer, the poster tear's pursuer and where the units were last asked
+## for.
 func clear() -> void:
+	_asked_at = Vector2i(-1, -1)
+	_still_wanted = false
 	_pursuer_owed = null
 	_pursuer_retry_in = 0.0
 	_pursuer_failure_logged = false
@@ -309,7 +329,8 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## streams in like any planned row, broadcasts on the one clock, is silenced by
 ## `EventStreaming.silence_mast()`, counts for `EventStreaming.silence_all_masts()`, and once
 ## silenced stands silenced on later days from its scar (`DawnMasts`). Null when no offered tile passes, which leaves day 11 to the
-## nearest live mast, or, when no live mast stands at all, with nowhere to go.
+## nearest live mast she can be sent to (`ResistanceDirector._nearest_confirmed_mast()`), or, where
+## there is none, with nowhere to go.
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventPlan:
 	if offered.is_empty():
 		return null
@@ -326,6 +347,84 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	_streaming.add(plan)
 	return plan
 
+# ---------------------------------------------------------- the units she comes near ---
+
+## The tile she stood on at the last ask of `draw_what_comes_near()`, or none since the walk began.
+var _asked_at := Vector2i(-1, -1)
+## Whether a unit was still wanted at the last ask.
+var _still_wanted := false
+
+## **Draws what her place asks for** (the day's units, `WalkEvents.unit_draw()`): every undrawn
+## unit any part of which lies within the stream radius (`stream_radius`, the manager's) of `at`
+## at once, each with every unit it waits for, so no row of it is missing when the streaming looks
+## there; else one unit of the nearest wanted one's pull (`UnitDraw.draw_one_towards()`), a unit
+## being wanted once any part of it lies within `Tuning.EVENT_DRAW_AHEAD` beyond the stream radius.
+## Asked again only on a tick she stands on another tile than at the last ask, or a unit was still
+## wanted then. A walk with no unit draw (the escape's, the building, a scene recipe's) draws
+## nothing.
+##
+## Neither number changes what a day holds: every unit's draw is the same whatever order the units
+## are drawn in (`UnitDraw`); they set only when the work is paid. Most units draw in under a
+## millisecond and a few take tens of milliseconds or more (`tests/probes/walk_rows.gd` prints
+## the spread), so beyond the stream radius it is one a tick: a pull of dozens of units is spread
+## over as many ticks, and still drains far faster than she walks into it.
+##
+## **The band beyond the stream radius is not what keeps a siting off undrawn ground**: a place
+## her walk sites has the units round it drawn by the siting itself (`draw_the_ground_round()`,
+## which each such placement calls before its place stands), wherever the band has got to.
+func draw_what_comes_near(at: Vector2, stream_radius: float) -> void:
+	var draw := _walk.unit_draw()
+	if not draw:
+		return
+	var tile := Vector2i((at / Tuning.TILE_SIZE).floor())
+	if tile == _asked_at and not _still_wanted:
+		return
+	_asked_at = tile
+	var units := draw.units()
+	var inside := units.undrawn_within(at, stream_radius)
+	if not inside.is_empty():
+		for unit in inside:
+			_take_what_was_drawn(draw.draw(unit))
+	else:
+		var wanted := units.undrawn_within(at, stream_radius + Tuning.EVENT_DRAW_AHEAD)
+		if not wanted.is_empty():
+			_take_what_was_drawn(draw.draw_one_towards(wanted[0]))
+	_still_wanted = not units.undrawn_within(at,
+			stream_radius + Tuning.EVENT_DRAW_AHEAD).is_empty()
+
+## **Draws now every undrawn unit any part of which lies within `reach` of `at`**, each after every
+## unit it waits for: what a placement made from her walk asks before its place stands, so
+## nothing is sited on ground whose units have not drawn. Whatever needs the ground drawn before
+## it acts on it calls it, the streaming about to look at the ground
+## (`EventManager.stream_around()`) for one. Answers whether it drew any unit.
+func draw_the_ground_round(at: Vector2, reach: float) -> bool:
+	var draw := _walk.unit_draw()
+	if not draw:
+		return false
+	var near := draw.units().undrawn_within(at, reach)
+	for unit in near:
+		_take_what_was_drawn(draw.draw(unit))
+	return not near.is_empty()
+
+## **What a draw placed joins the walk**: a placed row through the streaming, its body recorded
+## where it stands, as a row placed after dawn is (`EventStreaming.add()`); a row handed to her
+## walk (`EventDef.is_handed_to_her_walk()`, drawn with no position) added to the walk unplaced
+## and owed to the director, to site on her way, as one the dawn left is (`start_day()`); and the
+## walk's reach told what now stands in the way (`DayReach.shut_more()`).
+func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
+	if placed.is_empty():
+		return
+	for plan in placed:
+		if plan.is_placed():
+			_streaming.add(plan)
+			continue
+		_walk.add(plan)
+		if _director and plan.row().is_handed_to_her_walk():
+			_director.owe_on_her_way(plan, _siting_for(world.day, plan))
+	var reach := _walk.reach()
+	if reach:
+		reach.shut_more(placed)
+
 ## **Day 13's task roadblock `plan` across `section`**, a route-adjacent section of the day's
 ## locations, when no roadblock the day placed is close by where she read the mark
 ## (`ResistanceDirector._place_the_roadblock_near()`, inbox #1185 in gentle-owl: "the roadblock replaces the content
@@ -334,11 +433,15 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 ## (`DayLocations.assign()`), and whatever the section held (`WalkEvents.placed_within()`) spent and
 ## taken out of the world with its body given back, the roadblock put in the world at once and kept
 ## there for the rest of the day (`EventStreaming.swap_section()`), since the task's contact rides
-## it. Answers its live instance, or null where the walk has no locations.
+## it. **The section's unit and the units touching it draw first** (`draw_the_ground_round()`), so
+## what the section holds, the rows just drawn among them, is what the roadblock replaces, and no
+## draw stands anything there afterwards. Answers its live instance, or null where the walk has no
+## locations.
 func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
 	var locations := _walk.locations()
 	if not section or not plan or not locations:
 		return null
+	draw_the_ground_round(section.centre(), Tuning.EVENT_DRAW_AHEAD)
 	var olds := _walk.placed_within(world.city_map.tile_rect_to_world(section.tiles()))
 	locations.assign(section, plan)
 	return _streaming.swap_section(olds, plan)
@@ -424,11 +527,8 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _director.route_bag():
 		return []
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
-				else RouteTree.for_day(world.city_map, world.day), _walk,
-				EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
-		if world.poster_walls():
-			_siting.fronts = world.poster_walls().fronts()
+		_siting = _a_siting(world.day, _day_tree if _day_tree
+				else RouteTree.for_day(world.city_map, world.day))
 	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)
 	for id in ids:
 		var row := _director.route_row(id)

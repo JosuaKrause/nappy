@@ -30,6 +30,7 @@ func run(t: TestRunner) -> void:
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
 		_test_a_day_started_twice_stands_the_same_rows,
+		_test_two_walks_draw_the_same_day,
 		_test_the_walk_is_handed_the_ground_the_dawn_made,
 		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
 	]
@@ -123,9 +124,10 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 ## suite's city.
 
 ## **A day started twice stands the same rows on the same tiles** (PLAYTEST-119 27;
-## `docs/MECHANICS.md`, "A retry is the same day"): the dawn draws every location before she can
-## move (`DawnDraw`, a unit at a time), so day 4 started a second time, after a walk east on the first
-## start, plans from nothing the first start or the walk left in the city or the manager.
+## `docs/MECHANICS.md`, "A retry is the same day"): the dawn plans before she can move, and the
+## units round where she starts draw before she can either, so day 4 started a second time, after a
+## walk east on the first start, plans from nothing the first start or the walk left in the city
+## or the manager. That the units the walk draws are the same whatever her path is the next test's.
 func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 	var events := _city.events
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -148,6 +150,49 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 			await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
 	t.check(started[0] == started[1] and started[0] != "",
 			"started twice, day 4 stands the same rows on the same tiles")
+	events.use_player(null)
+	rig.free()
+
+## **Two walks draw the same day** (`UnitDraw`, `EventsAhead.draw_what_comes_near()`): day 4
+## started at her door with a played day's stream radius, walked east for 60 ticks through the
+## manager's own tick, then started again and walked south, draws every unit the start left undrawn
+## the same, row for row and tile for tile, once the rest of the day is drawn
+## (`EventManager.draw_the_ground_round()`); and each walk drew some of those units before the
+## rest, in an order of its own. A row handed to her walk reads as `row@walk`, wherever her walk
+## has since sited it. A walk too short for the director to site anything: one long enough for a
+## crew to stand on her way is in `test_event_manager_units.gd`, with what its units draw held
+## against the day drawn whole. Neither covers the moments and the rows her route's bag rigs,
+## which follow her walk on purpose.
+func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
+	var events := _city.events
+	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	var home := _city.map.doorstep_world_position()
+	var rig := Rig.walker(t, _city, home)
+	var readings: Array[String] = []
+	var drawn_on_the_walk: Array[String] = []
+	for heading: Vector2 in [Vector2.RIGHT, Vector2.DOWN]:
+		Rig.start(_city, 4, [], home)
+		events.use_player(rig)
+		rig.global_position = home
+		var kept := events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+		var each := func(_n: int) -> void:
+			rig.velocity = heading * Tuning.WALK_SPEED
+			rig.global_position += rig.velocity * Rig.WALK_STEP
+		await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
+		var drawn: Array[String] = []
+		for unit in kept:
+			if unit.is_drawn():
+				drawn.append(unit.name())
+		drawn.sort()
+		drawn_on_the_walk.append(", ".join(drawn))
+		events.draw_the_ground_round(Vector2.ZERO, INF)
+		readings.append(Rig.what_the_units_drew(_city.map, kept))
+	t.check(readings[0] == readings[1] and readings[0] != "",
+			"walked east and walked south, day 4's units draw the same rows on the same tiles")
+	t.check(drawn_on_the_walk[0] != "" and drawn_on_the_walk[1] != ""
+			and drawn_on_the_walk[0] != drawn_on_the_walk[1],
+			"and each walk drew some of them on the way, not the same ones (east %s; south %s)"
+					% drawn_on_the_walk)
 	events.use_player(null)
 	rig.free()
 
@@ -308,6 +353,9 @@ func _widest_field() -> float:
 func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
+	# Every unit drawn, as a walk that comes near each would draw it, so the day's whole plan is
+	# there to choose from (a unit draws as she comes near it, and she is nowhere yet).
+	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	var plan: EventPlan = null
 	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's street
 	# ends; a parked van never does).

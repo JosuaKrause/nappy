@@ -3,8 +3,8 @@ extends RefCounted
 ## **What the walk's events are, read through one object while she walks it**: the walk's plans in
 ## the order they stream, what the walk was planned against that a placement made while she walks
 ## is stated against too — where today's region doors stand, the day's calm areas and the day's
-## ground for a row (`RowGround`) — and where she can get to from home as the walk was planned
-## (`DayReach`).
+## ground for a row (`RowGround`) — where she can get to from home (`DayReach`), and the day's
+## units' draw (`UnitDraw`), each unit drawn as she comes near it.
 ## `DayEvents` is the day while dawn plans it; this is the walk once it has started.
 ##
 ## *(inbox #1156: "have an object that contains the derived information -- don't rederive over
@@ -14,9 +14,9 @@ extends RefCounted
 ## any other way.
 ##
 ## **Its writes are the walk's own**: `take()` at a walk's start, `add()` for a plan placed while she
-## walks (a mast queued near her, a place from her route's bag), and `clear()`. A plan being moved
-## or spent is the plan's own business, since nothing here is derived from where a plan stands or
-## whether it is spent.
+## walks (a unit's draw, a mast queued near her, a place from her route's bag), and `clear()`. A
+## plan being moved or spent is the plan's own business, since nothing here is derived from where a
+## plan stands or whether it is spent.
 ##
 ## **Never saved**: a load starts the walk again from the run's saved inputs.
 ##
@@ -29,6 +29,7 @@ var _doors := PackedVector2Array()
 var _reach: DayReach = null
 var _locations: DayLocations = null
 var _ground: RowGround = null
+var _unit_draw: UnitDraw = null
 
 # ------------------------------------------------------------------- writes ---
 
@@ -36,17 +37,20 @@ var _ground: RowGround = null
 ## day's calm areas, or none for a walk that is not a day in the city), with today's region doors
 ## standing at `doors`, `reach`, where she can get to from home as it was planned (none for a
 ## walk that is not in the city), `locations`, the day's locations as dawn laid them out (none
-## on a day that laid none out), and `ground`, the day's ground for a row as dawn made it (none for
-## a walk no dawn of a day planned).
+## on a day that laid none out), `ground`, the day's ground for a row as dawn made it (none for
+## a walk no dawn of a day planned), and `unit_draw`, the day's units' draw as dawn prepared it
+## (none for a walk that draws nothing as she walks: the escape's, the building, a scene recipe's).
 func take(plans: Array[EventPlan], calm: CalmAreas = null,
 		doors := PackedVector2Array(), reach: DayReach = null,
-		locations: DayLocations = null, ground: RowGround = null) -> void:
+		locations: DayLocations = null, ground: RowGround = null,
+		unit_draw: UnitDraw = null) -> void:
 	_plans = plans
 	_calm = calm
 	_doors = doors
 	_reach = reach
 	_locations = locations
 	_ground = ground
+	_unit_draw = unit_draw
 
 ## Adds one plan placed while she walks, after every plan already in the walk.
 func add(plan: EventPlan) -> void:
@@ -60,6 +64,7 @@ func clear() -> void:
 	_reach = null
 	_locations = null
 	_ground = null
+	_unit_draw = null
 
 # ---------------------------------------------------------------- questions ---
 
@@ -102,8 +107,9 @@ func doors() -> PackedVector2Array:
 func calm() -> CalmAreas:
 	return _calm
 
-## Where she can get to from home as the walk was planned (`DayReach`), or null for a walk that is
-## not in the city (the building) and before a walk starts.
+## Where she can get to from home (`DayReach`): as the walk was planned, and told what each unit
+## draws as she walks (`DayReach.shut_more()`); null for a walk that is not in the city (the
+## building) and before a walk starts.
 func reach() -> DayReach:
 	return _reach
 
@@ -119,6 +125,13 @@ func locations() -> DayLocations:
 ## building, a scene recipe's) and before a walk starts.
 func ground() -> RowGround:
 	return _ground
+
+## **The day's units' draw** (`UnitDraw`), as dawn prepared it: each unit draws as she comes near
+## it (`EventsAhead.draw_what_comes_near()`), and what it places joins the walk. Null for a walk
+## that draws nothing as she walks (the escape's, the building, a scene recipe's) and before a walk
+## starts.
+func unit_draw() -> UnitDraw:
+	return _unit_draw
 
 ## **The walk's placed, unspent plans standing inside `area`** (world space), by where each was
 ## placed: what a section holds, which day 13's swap spends when it puts its roadblock across the

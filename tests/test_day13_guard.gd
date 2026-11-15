@@ -89,6 +89,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
 	_test_with_none_close_by_a_section_is_taken(t)
+	_test_a_section_across_the_city_is_confirmed(t)
 	_test_a_swap_replaces_what_the_section_holds(t)
 
 func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) -> void:
@@ -850,15 +851,18 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_
 		return
 	var plans := city.events.plans()
 	# Found: one of the day's own roadblocks, placed and unspent and not the wall's or a door's, is
-	# what the task rides. Swapped: one plan more, it the roadblock, across a section whose content,
-	# if it held any, is spent. Neither holds for a roadblock added outside the day's plan, which is
-	# no plan at all.
+	# what the task rides. Swapped: a plan the walk gained as she read the mark is the roadblock,
+	# across a section whose content, if it held any, is spent; the units drawn round where she
+	# read it and round the section add their own plans beside it. Neither holds for a roadblock
+	# added outside the day's plan, which is no plan at all.
 	var found := false
 	for index in plans_before:
 		var plan := plans[index]
 		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
 				and not plan.is_door() and plan.instance() == roadblock)
-	var swapped: bool = plans.size() == plans_before + 1 and plans[plans.size() - 1].instance() == roadblock
+	var swapped := false
+	for index in range(plans_before, plans.size()):
+		swapped = swapped or plans[index].instance() == roadblock
 	t.check(found or swapped,
 			"seed %d: it is a roadblock the day placed, or one put across a section in place of what it held"
 			% seed_value)
@@ -938,6 +942,84 @@ func _test_with_none_close_by_a_section_is_taken(t: TestRunner) -> void:
 			"(swap) no part of it is in her view when it is put there")
 	_tear_down(player, director, city)
 
+## **A section taken across the city is confirmed** (`ResistanceDirector._section_to_swap()`,
+## `WayConfirmation`): every roadblock the day placed is spent and every route-adjacent section but
+## one far from her and from her door is taken already, so the task takes that one, over the whole
+## city. The dawn draws no unit, so the ground between home and that section has not drawn when
+## she reads the mark; by the time the roadblock stands across it, the units along a way from home
+## to ground she touches the section from have drawn (a tile of the section the walk's reach
+## reaches), so no unit drawn later can shut the way.
+func _test_a_section_across_the_city_is_confirmed(t: TestRunner) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	var her := player.global_position
+	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var map := city.map
+	for plan in city.events.plans():
+		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
+			plan.spend()
+	var walk := city.events.walk_events()
+	var units := walk.unit_draw().units()
+	var locations := walk.locations()
+	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
+	var home := map.doorstep_world_position()
+	# The route-adjacent section a roadblock stands across that is farthest from her and from her
+	# door, on ground whose unit has not drawn and the walk's reach reaches.
+	var chosen: Location = null
+	var chosen_distance := 0.0
+	for section in locations.sections_in(PlacementView.View.ROUTE_ADJACENT):
+		var centre := section.centre()
+		var distance := minf(centre.distance_to(her), centre.distance_to(home))
+		if distance <= chosen_distance or units.undrawn_within(centre, 1.0).is_empty() \
+				or not walk.reach().reaches(map.world_to_tile(centre)) \
+				or EventScheduler.across_the_section(def, GamePlanBuilder.over(map), map, section,
+						RandomNumberGenerator.new()) == null:
+			continue
+		chosen = section
+		chosen_distance = distance
+	t.check(chosen != null and chosen_distance > ResistanceDirector.ROADBLOCK_WIDER_REACH.back(),
+			"(across) a route-adjacent section on undrawn ground stands %.0fpx from her and "
+			% chosen_distance + "from her door, past the widest ring a roadblock is looked for in")
+	if chosen == null:
+		_tear_down(player, director, city)
+		return
+	for section in locations.sections_in(PlacementView.View.ROUTE_ADJACENT):
+		if section != chosen:
+			locations.assign(section, EventPlan.new(def, section.centre()))
+	if director.current_step():
+		director.contact().complete_now()
+	var roadblock: EventInstance = director.rider()
+	t.check(roadblock != null and chosen.tiles().has_point(map.world_to_tile(roadblock.body_position())),
+			"(across) the roadblock stands across that section")
+	var confirmed := false
+	var tiles := chosen.tiles()
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			confirmed = confirmed or _the_way_has_drawn(city, Vector2i(x, y))
+	t.check(confirmed,
+			"(across) and the units along a way from home to ground she touches it from have drawn")
+	_tear_down(player, director, city)
+
+## Whether the ground along a way from home to `tile` has drawn, as a place the director confirmed
+## has it (`WayConfirmation`): no undrawn unit of the day lies within `Tuning.EVENT_DRAW_AHEAD` of
+## every `WayConfirmation.STEP`th tile of a shortest way from home over the walk's reach
+## (`DayReach.way_from_home()`), nor of `tile` itself. False where the walk's reach has no way.
+static func _the_way_has_drawn(city: City, tile: Vector2i) -> bool:
+	var walk := city.events.walk_events()
+	var units := walk.unit_draw().units()
+	var way := walk.reach().way_from_home(tile)
+	if way.is_empty():
+		return false
+	var asked: Array[Vector2i] = [tile]
+	for k in range(0, way.size(), WayConfirmation.STEP):
+		asked.append(way[k])
+	for at in asked:
+		if not units.undrawn_within(city.map.tile_to_world(at), Tuning.EVENT_DRAW_AHEAD) \
+				.is_empty():
+			return false
+	return true
+
 ## **A swap replaces what the section holds, and leaves no mark of it on the map** (inbox #1185 in gentle-owl: "it
 ## replaces the content of the section with the roadblock"): every roadblock the day placed is spent,
 ## and she reads the mark where it stands, her screen round her. A route-adjacent section out of
@@ -953,6 +1035,11 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	var her := player.global_position
 	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	var map := city.map
+	# Every unit drawn first, as a walk that came near each would have drawn it: the section is
+	# chosen by what it holds, and the swap draws the section's surroundings before it stands its
+	# roadblock (`EventsAhead.swap_in_a_section()`), which this way draws nothing the record from
+	# before would not have.
+	city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	for plan in city.events.plans():
 		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
 			plan.spend()

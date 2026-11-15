@@ -531,11 +531,32 @@ func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: floa
 			queue.append(next)
 	return found
 
+## **Whether the ground along a way from home to `tile` has drawn**, as a place the director
+## confirmed has it (`WayConfirmation`): no undrawn unit of the day lies within
+## `Tuning.EVENT_DRAW_AHEAD` of every `WayConfirmation.STEP`th tile of a shortest way from home
+## over the walk's reach (`DayReach.way_from_home()`), nor of `tile` itself. False where the walk's
+## reach has no way to it.
+func _the_way_has_drawn(tile: Vector2i) -> bool:
+	var walk := _city.events.walk_events()
+	var units := walk.unit_draw().units()
+	var way := walk.reach().way_from_home(tile)
+	if way.is_empty():
+		return false
+	var asked: Array[Vector2i] = [tile]
+	for k in range(0, way.size(), WayConfirmation.STEP):
+		asked.append(way[k])
+	for at in asked:
+		if not units.undrawn_within(_city.map.tile_to_world(at), Tuning.EVENT_DRAW_AHEAD) \
+				.is_empty():
+			return false
+	return true
+
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
-## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
-## `[director with the task active, the mark's position, her rig]`. With `trace_into`, the director
-## is handed a trace that records its lines there, from the day's start.
-func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Array[String] = []) -> Array:
+## `seed_value`, on a run whose earlier steps are done and whose alleys are unused, and answers the
+## director as the day starts: its mark placed and unread, nobody in the world yet. With
+## `trace_into`, the director is handed a trace that records its lines there, from the day's start.
+func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
+		trace_into: Array[String] = []) -> ResistanceDirector:
 	var run: RunState = _city.run
 	run.resistance.completed_steps = _completed_through(2 * (day - 6))
 	run.facts.completed_resistance_alley_tiles = []
@@ -548,10 +569,23 @@ func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Arr
 	var director := _director(t)
 	director.trace = RecordingTrace.new(trace_into)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
+	return director
+
+## Plans `day` on the test city as `_start_the_day_on()` does, and reads the day's mark standing on
+## it with her screen the view around her: `[director with the task active, the mark's position,
+## her rig]`. With `view_half`, the view around her is that far either way and not her screen's,
+## for a case that wants everything near her in her view.
+func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Array[String] = [],
+		view_half := Vector2.ZERO) -> Array:
+	var director := _start_the_day_on(t, day, seed_value, trace_into)
 	var mark := director.contact_position()
 	var player := _rig_player(t, mark)
 	director.use_player(player)
-	_watch_the_screen_round(director, mark)
+	if view_half == Vector2.ZERO:
+		_watch_the_screen_round(director, mark)
+	else:
+		_look_at(Rect2(mark - view_half, view_half * 2.0))
+		director.set_sight(_city.events.sees)
 	var step := director.current_step()
 	if step != null and step.is_pickup:
 		_read_the_mark(director)

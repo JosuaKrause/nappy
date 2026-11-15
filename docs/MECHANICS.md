@@ -844,8 +844,9 @@ every solid body should do that -- not necessarily force a turn around but at le
 solid".)* A café's tables, a construction band, a kerbed van, a stall, a skip, a burnt-out car:
 `CityMap.obstructed_tiles` records the tiles each stationary solid body stands on — every piece of
 it, for the one row that is several (`docs/EVENTS.md`, "A row may be solid in parts") — filled from
-the day's whole plan rather than from the events near the player, because the crowd is steered
-across the whole map while an event only exists within reach of her. Mobile rows are exempt, the way the
+the day's plan rather than from the events in the world: the dawn's plan as the day starts, and
+each unit's rows as the unit draws, which is before any of its ground comes within the stream
+radius of her. The crowd is steered over ground wider than the reach an event exists within. Mobile rows are exempt, the way the
 catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
 is a door, because a hard seal and a gatehouse each already have an answer.
 
@@ -1859,9 +1860,12 @@ hides act I from the player who needs act I most.
 
 Three consequences, all of them chosen:
 
-- **A retry is the same day.** The city, the closures and the whole event plan are deterministic
-  from the seed and the day number, which is what makes a retry worth having in a game about
-  learning a route.
+- **A retry is the same day.** The city, the closures, the dawn's plan and every unit's draw (a
+  street, a junction box, an alley, a park or a square, each drawing its locations as she comes
+  near it, `UnitDraw`) follow from the seed and the day number whatever her path, which is what
+  makes a retry worth having in a game about learning a route. What is sited from her walk (the
+  moments, day 3's fire, the poster crews' walls, a task's places) is sited from the walk she takes
+  then.
 - **What a lost attempt spent is given back.** *"a retry always rolls new -- nothing that happened
   on the day that got retried can influence the next repeat -- that has been a long standing
   rule"*, and *"it is the same day exactly how the player encountered it the first time this run.

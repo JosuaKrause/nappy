@@ -86,6 +86,9 @@ func _start_the_day(forced: bool) -> void:
 	var spec := DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2)
 	RigStreets.begin(_streets, _map, spec)
 	_events.start_day(spec, rng, consumed)
+	# Every unit drawn first: the stretch each dog runs is chosen clear of the day's bodies
+	# (`_on_a_clear_line()`), so every body the day stands has to stand before it is chosen.
+	_events.draw_the_ground_round(Vector2.ZERO, INF)
 	_rig.global_position = CrowdLanes.arterial_pavement(_map)
 	_rig.velocity = Vector2.ZERO
 

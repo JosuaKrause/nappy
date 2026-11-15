@@ -12,9 +12,11 @@ extends DawnPhase
 ## phases place have no marble: the moments she is owed (`DawnMoments`), and on the day of the
 ## roadblock phase its row (`DawnContext.roadblock_row()`), the phase's alone.
 ##
-## **It prepares the draw and holds it in the context** (`DawnContext.hold_the_draw()`), then draws
-## every unit into the day's plan, so the day is whole at dawn: what drawing every unit at dawn in
-## rank order gives, whatever order the units are asked for in.
+## **It prepares the draw, holds it in the context** (`DawnContext.hold_the_draw()`) **and draws
+## nothing**: the draw travels with the walk (`DayPlanner.Plan.unit_draw()`,
+## `WalkEvents.unit_draw()`), and each unit draws as she comes near it
+## (`EventsAhead.draw_what_comes_near()`), the same whatever order the units are drawn in, and so
+## whatever her path: what drawing every unit at dawn in rank order would give.
 ##
 ## Model: no node.
 
@@ -45,6 +47,3 @@ func run(context: DawnContext) -> void:
 			context.rules(), ground, false, ROUTES_STAY_ON_THE_RUN)
 	context.hold_the_draw(UnitDraw.new(units,
 			LocationDraw.new(context.locations(), rows, judged), fills, events.placements()))
-	var draw := context.unit_draw()
-	for unit in draw.units().undrawn_within(Vector2.ZERO, INF):
-		events.add_all(draw.draw(unit))
