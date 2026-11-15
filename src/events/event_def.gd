@@ -994,11 +994,11 @@ enum StreetShare { A_LOCATION, A_SECTION, A_STREET }
 
 ## **What the row takes of a street**, read off its ground and its movement, never set: the whole
 ## street where it drives the carriageway along the street on a route at least a street long
-## (`Tuning.BLOCK_SIZE` tiles), so it is met in every section, as the police patrol and the
-## military convoy do with their routes cut to their street's run (`Location.run()`); a section
-## where it otherwise stands on the carriageway (it spans the street); else one sidewalk location,
-## whatever its path along it. A row a street draws takes a section only while the street has that
-## much room left, and the whole street only while nothing of it is taken (`UnitRoom`).
+## (`Tuning.BLOCK_SIZE` tiles), as the police patrol and the military convoy do, their routes cut
+## to their street's run (`Location.run()`); a section where it otherwise stands on the
+## carriageway (it spans the street); else one sidewalk location, whatever its path along it. A
+## row a street draws takes a section only while the street has that much room left, and the
+## whole street only while nothing of it is taken (`UnitRoom`).
 func takes_of_a_street() -> StreetShare:
 	if not placement.has(GameEnums.TileType.ROAD):
 		return StreetShare.A_LOCATION

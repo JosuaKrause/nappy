@@ -1224,10 +1224,13 @@ draw more".
 - *Read as* (the designer's, open to correction): the street's rows are a set, laid out again each
   time a marble is added, largest first, and the layout made when the last marble was drawn is
   what stands, so whether the street can hold a row beside what it has drawn is known as the row
-  comes up. The share a row takes is read off its ground: a section where it stands on the
-  carriageway, else one sidewalk location, however it travels along it: the player's three sizes
-  and no fourth; the empty marble is the smallest. A mixed unit draws from the bag of its most permissive view, since a
-  marble has no location to pick a bag by.
+  comes up. The share a row takes is read off its ground and its movement, the player's three
+  sizes and no fourth: the whole street where it drives the carriageway along the street on a
+  route at least a street long (the police patrol and the military convoy, their routes cut to
+  their street's run), which fits only a street nothing of which is taken and ends its draw; a
+  section where it otherwise stands on the carriageway (a roadblock); else one sidewalk location,
+  however it travels along it. The empty marble is the smallest. A mixed unit draws from the bag
+  of its most permissive view, since a marble has no location to pick a bag by.
 
 **A location is part of a street** (inbox #1185 in gentle-owl):
 - A street is split along its length into **three sections**.
@@ -1392,10 +1395,12 @@ Each item quotes the code on this branch.
    (`EVENT_SPACING_SAME`) of a drawn row; two of a row may stand in two touching units as near as
    the 64px between any two events allows.
 6. **Each row's draw is weighed by a fitted weight per kind of ground** (`GROUND_WEIGHTS`), on top
-   of the largest weight among the unit's locations the row may stand on, so each row's count on
-   each kind of ground stays near today's. The
-   design has the view's bag alone decide; the weights are what holds the refactor at today's mix
-   while the rules are still today's (item 1), and are fitted again when the rules change.
+   of the largest weight among the unit's locations the row may stand on. The weights were fitted
+   to a draw of one marble a location, to hold each row's count on each kind of ground at what the
+   day placed before the bags; under the marble draw the counts move (more rows stand on the
+   sidewalks, `tests/probes/walk_rows.gd`), and they move until the weights are fitted again. The
+   design has the view's bag alone decide; the weights are what holds the refactor near the old
+   mix while the rules are still today's (item 1), and are fitted again when the rules change.
 7. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
    only the cells a route runs along (`Corridor.carries_a_route()`, in `RowGround.offers_for_role()`), so on a
    route street a wall stands only on the sidewalk across from the route, and the ground beyond the
@@ -1458,9 +1463,12 @@ inbox #1185 in gentle-owl.)*
 
 **And each row is weighed by the kind of ground the location is** (`EventScheduler.GROUND_WEIGHTS`,
 a weight per row per `Location.Kind`), so the mix inside each view is today's as well as its count.
-A unit draws about one marble for each of its locations, so a row whose own ground is rare (a
-square's cells, an alley's three locations, the junction boxes) would be drawn only as often as its
-share of the bag times the few locations that take it, and the sidewalk rows would take the share it lost: the street musician
+A unit off the streets draws one marble for each of its open locations, and a street three to six
+(a small marble speaks for one sidewalk location, a section marble for two), or one where its
+first marble takes it whole, so a row whose own ground is
+rare (a square's cells, an alley's three locations, the junction boxes) would be drawn only as
+often as its share of the bag times the few locations that take it, and the sidewalk rows would
+take the share it lost: the street musician
 would all but leave the squares, and day 12's protest the crossings. The weights are fitted, with
 the view scales, until each row's daily count on each kind of ground is today's
 (`tests/probes/placement_rows.gd`, run on main and on the branch over the same cities and streams);
@@ -2322,8 +2330,8 @@ streets and the caps)*, each a setting the city section's spec turns off
   the service exit on the side of the block (`docs/CITY.md`, "The escape"), and that exit opens onto
   one of the streets round the home block, so holding them would empty the street she starts on.
 - **The bags and `max_per_day` caps**: a day draws every location from the bag of its unit's view,
-  a unit at a time, and holds the moments it owes her to their caps; the escape stands what its slots draw from
-  its bag (above).
+  a unit at a time, and holds the moments it owes her to their caps; the escape stands what its
+  slots draw from its bag (above).
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
 (`EventScheduler.clearance_around_her`), because *"the spawning shouldn't be a check. the pathing

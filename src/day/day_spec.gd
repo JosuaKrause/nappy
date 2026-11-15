@@ -148,9 +148,9 @@ var pastes_posters := true
 ## What stands on the walk and how it is drawn (`EventScheduler.build_day()`).
 enum Draw {
 	## The catalogue's day: the ambient rows, the scars, the masts, the scripted rows, the
-	## one-shots, the spoilers in a park she used, then every one of the day's locations drawn from
-	## its view's bag of the recurring rows (`DawnDraw`) — every one of
-	## the fourteen days.
+	## one-shots, the spoilers in a park she used, then every one of the day's locations drawn a
+	## unit at a time, from the bag of the recurring rows of the unit's most permissive view
+	## (`DawnDraw`) — every one of the fourteen days.
 	CATALOGUE,
 	## Every street of the walk draws one marble from one bag holding `bag`, and a marble stands one
 	## of its row (`bag_rows`) at the first of the street's locations it is valid at, the rest of the
