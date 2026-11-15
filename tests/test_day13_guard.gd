@@ -851,15 +851,18 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_
 		return
 	var plans := city.events.plans()
 	# Found: one of the day's own roadblocks, placed and unspent and not the wall's or a door's, is
-	# what the task rides. Swapped: one plan more, it the roadblock, across a section whose content,
-	# if it held any, is spent. Neither holds for a roadblock added outside the day's plan, which is
-	# no plan at all.
+	# what the task rides. Swapped: a plan the walk gained as she read the mark is the roadblock,
+	# across a section whose content, if it held any, is spent; the units drawn round where she
+	# read it and round the section add their own plans beside it. Neither holds for a roadblock
+	# added outside the day's plan, which is no plan at all.
 	var found := false
 	for index in plans_before:
 		var plan := plans[index]
 		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
 				and not plan.is_door() and plan.instance() == roadblock)
-	var swapped: bool = plans.size() == plans_before + 1 and plans[plans.size() - 1].instance() == roadblock
+	var swapped := false
+	for index in range(plans_before, plans.size()):
+		swapped = swapped or plans[index].instance() == roadblock
 	t.check(found or swapped,
 			"seed %d: it is a roadblock the day placed, or one put across a section in place of what it held"
 			% seed_value)

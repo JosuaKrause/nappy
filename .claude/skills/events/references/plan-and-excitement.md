@@ -11,8 +11,22 @@ of the *plan*. `EventScheduler.build_day()` plans the dawn's part and prepares t
 day's locations; each unit of them (a street, a junction box, an alley, a park or a square) draws
 as she comes near it (`UnitDraw`, `EventsAhead.draw_what_comes_near()`), after every touching unit
 of lower rank, so every unit's draw is the same whatever her path, what drawing every unit at dawn
-would give. A unit within the stream radius of her is drawn before the streaming looks there, and
-nothing is sited on ground whose units have not drawn. What streams is the *instantiation*.
+would give. A unit within the stream radius of her is drawn before the streaming looks there
+(`EventManager.stream_around()` and the manager's tick). What streams is the *instantiation*.
+
+**A place her walk sites has the units round it drawn before it stands, and no draw reads it.**
+Each placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEAD` of its place
+first (`EventsAhead.draw_the_ground_round()`): a place the director sites ahead of her, which gives
+up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`); a place the resistance fixes,
+with the units along a way from home to it (`WayConfirmation`) or round where she read the mark;
+day 13's swap; an area cleared of its rows. So what it is judged against is whole, and nothing a
+unit draws later stands inside it. The one siting that draws nothing is the fire lit at dusk on a
+won day, after which nothing draws. A moment the director sends at her (a cat across her path, a
+pursuer; `EventsAhead.place_what_is_owed_ahead()`) is no place: it starts in her view or just off
+her screen, inside the stream radius, where every unit has drawn. A unit's draw is never judged
+among a plan her walk sites (`UnitDraw`), so where her walk put a thing changes no drawn row. **A
+new placement made from her walk draws the ground round its place first**, or it is judged
+against a walk that does not hold that ground's rows yet.
 
 - **Nothing may be seen to appear.** Both radii are wider than half the viewport diagonal.
 - **`EVENT_STREAM_RADIUS` must stay wider than the widest field in the catalogue.** Otherwise
@@ -26,7 +40,8 @@ nothing is sited on ground whose units have not drawn. What streams is the *inst
 **Do not move a guarantee out of the dawn or a unit's own draw and into the streaming.** If
 something has to be true of a day, it has to be decided where the day is: at dawn
 (`EventScheduler.build_day()`) or by a unit's own draw (`UnitDraw`), each of which reads only what
-follows from the seed.
+is fixed before she moves (the seed, the day, the run as the day starts) and nothing her walk
+does.
 
 ## Excitement is a pure query
 

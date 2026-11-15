@@ -13,20 +13,32 @@ extends RefCounted
 ## tile or a unit was still wanted, every undrawn unit within the stream radius of her
 ## (`Tuning.EVENT_STREAM_RADIUS`) drawn whole, with every unit it waits for, else one unit towards
 ## the nearest unit within `Tuning.EVENT_DRAW_AHEAD` beyond it; what a draw places joins her walk,
-## a row handed to her walk owed to the director (`EventDirector.owe_on_her_way()`). On a tick
-## that leaves a unit wanted the director sites nothing, as the manager has it; on every other
-## tick it sites what it sites on her way (`EventDirector.due()`, `site_what_is_on_her_way()`).
+## a row handed to her walk owed to the director (`EventDirector.owe_on_her_way()`). Every tick
+## the director sites what it sites on her way (`EventDirector.due()`,
+## `site_what_is_on_her_way()`), its siting handed what draws the ground round a pick, as the
+## manager hands it (`WalkSiting.use_the_ground_drawer()`): the units within
+## `Tuning.EVENT_DRAW_AHEAD` of a pick draw before it stands, and a pick that drew one is given up.
 ## After the walk every unit left is drawn. A placed row counts once it comes within the stream
 ## radius of her, the moment it would stream in, under its row, its view and its kind of ground:
-## a row the director sites on her way among them, once sited (a poster crew), but not a place her
+## a row the director sites on her way among them, once sited (day 3's fire), but not a place her
 ## route's bag hands it. Prints `WD day seeds streamed`, `WV day row view count`, `WK day row kind
 ## count` and `WM day met at-the-door late-out`, where the capped rows are met (`CAPPED`: within
 ## the stream radius of her door, and in the second half of the walk out), summed over the seeds,
 ## and per seed and day `WT day seed siting ticks median p99 worst total`, the director's siting's
 ## tick costs in microseconds, and `WP day seed microseconds`, the dawn's planning of each
-## (`EventScheduler.build_day()`, which draws no unit). Each day is planned as the game plans it:
-## its closures, holds, region wall and seals first, the seals and the wall's bodies handed in as
-## standing.
+## (`EventScheduler.build_day()`, which draws no unit). **And whether what her walk sited stands on
+## drawn ground**: per day, summed over the seeds, `WS day sitings on-undrawn gave-up nearest`,
+## the places the director sited or moved on her way, how many of them had an undrawn unit within
+## `Tuning.EVENT_DRAW_AHEAD` when sited (expected none), how many picks the siting gave up because
+## the ground round them had not drawn, and the smallest gap, in px, between a place sited from
+## her walk and a row a unit drew, measured with every unit drawn (`EventPlan.gap_to()`; expected
+## no less than `EventScheduler.EVENT_SPACING_ANY`); `WS all` sums the days. **What it sites is
+## day 3's fire**: a sidewalk poster crew pastes a building's blank wall, which only the built
+## city knows (`EventsAhead._a_siting()` hands the siting the day's fronts), so a crew a unit
+## hands to her walk stays unplaced here; a crew sited on drawn ground is
+## `tests/test_event_manager_units.gd`'s, against the game's own manager. Each day is planned
+## as the game plans it: its closures, holds, region wall and seals first, the seals and the wall's
+## bodies handed in as standing.
 ##
 ## **What drawing as she walks costs, at two reaches of the touching relation** (`REACHES`):
 ## the item's relation, which the game uses (none), and the widest lethal field a rule keeps clear
@@ -82,13 +94,48 @@ class _Drawing extends RefCounted:
 	## Every unit drawn so far.
 	var _drawn := 0
 	var _wanted := false
+	## The walk what is drawn joins, the director a row handed to her walk is owed to and the
+	## siting it is sited by (`walked_by()`).
+	var _walk: WalkEvents
+	var _director: EventDirector
+	var _siting: EventScheduler.WalkSiting
+	## Every row a unit drew with a place, so far.
+	var rows: Array[EventPlan] = []
 
 	func _init(the_draw: UnitDraw) -> void:
 		draw = the_draw
 		longest_chain = _longest_chain(draw.units())
 
-	## Draws what her place at `at` (on `tile`) asks for. Answers what was placed, and leaves
-	## `wants_more()` answering whether a unit is still wanted.
+	## Takes the walk what is drawn joins, as `EventsAhead` has it: a placed row added to the
+	## walk, a row handed to her walk added unplaced and owed to `director`, to site on her way
+	## with `siting`.
+	func walked_by(walk: WalkEvents, director: EventDirector,
+			siting: EventScheduler.WalkSiting) -> void:
+		_walk = walk
+		_director = director
+		_siting = siting
+
+	## What a draw placed joins the walk (`walked_by()`).
+	func join(placed: Array[EventPlan]) -> void:
+		for plan in placed:
+			_walk.add(plan)
+			if plan.is_placed():
+				rows.append(plan)
+			elif plan.row().is_handed_to_her_walk():
+				_director.owe_on_her_way(plan, _siting)
+
+	## Draws every undrawn unit any part of which lies within `reach` of `at`, each with every
+	## unit it waits for, what they place joining the walk, and answers whether it drew any: what
+	## the siting is handed to draw the ground round a pick
+	## (`EventsAhead.draw_the_ground_round()`).
+	func round_a_site(at: Vector2, reach: float) -> bool:
+		var near := draw.units().undrawn_within(at, reach)
+		for unit in near:
+			while not unit.is_drawn():
+				join(_one_towards(unit))
+		return not near.is_empty()
+
+	## Draws what her place at `at` (on `tile`) asks for. Answers what was placed.
 	func near(at: Vector2, tile: Vector2i) -> Array[EventPlan]:
 		var placed: Array[EventPlan] = []
 		if tile == _asked_at and not _wanted:
@@ -116,10 +163,6 @@ class _Drawing extends RefCounted:
 		_wanted = not units.undrawn_within(at,
 				Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_DRAW_AHEAD).is_empty()
 		return placed
-
-	## Whether a unit was still wanted at the last ask.
-	func wants_more() -> bool:
-		return _wanted
 
 	## Draws every unit left, after the walk.
 	func the_rest() -> Array[EventPlan]:
@@ -171,6 +214,10 @@ func _walk_every_day(reach: float) -> void:
 	var all_pull := 0
 	var all_chain := 0
 	var all_costs: Array[int] = []
+	var all_sitings := 0
+	var all_on_undrawn := 0
+	var all_gave_up := 0
+	var all_nearest := INF
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}
@@ -183,6 +230,12 @@ func _walk_every_day(reach: float) -> void:
 		# Route tiles cut off from home, after the dawn's plan and at the end of her walk.
 		var cut_at_dawn := 0
 		var cut_after_walk := 0
+		# What her walk sited: how many places, how many on ground not yet drawn, how many picks
+		# given up for it, and the smallest gap to a row a unit drew.
+		var sitings := 0
+		var on_undrawn := 0
+		var gave_up := 0
+		var nearest := INF
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
@@ -270,6 +323,12 @@ func _walk_every_day(reach: float) -> void:
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])
 			director.start_day(day, plans, director_rng, siting)
+			drawing.walked_by(walk, director, siting)
+			# The game's siting draws the ground round its pick; the wider reach is measured for
+			# its draw alone and sites nothing.
+			if the_games:
+				siting.use_the_ground_drawer(drawing.round_a_site)
+			var sited := {}
 			var route := _longest_route(tree, siting)
 			if route.size() < 2:
 				continue
@@ -286,7 +345,7 @@ func _walk_every_day(reach: float) -> void:
 			var counted := {}
 			var siting_ticks: Array[int] = []
 			var tick := 0
-			_join_the_walk(drawing.near(at, map.world_to_tile(at)), walk, director, siting)
+			drawing.join(drawing.near(at, map.world_to_tile(at)))
 			for k in range(1, path.size()):
 				var toward: Vector2 = path[k] - at
 				while toward.length() > Tuning.WALK_SPEED * TICK:
@@ -295,17 +354,20 @@ func _walk_every_day(reach: float) -> void:
 					at += velocity * TICK
 					walked += Tuning.WALK_SPEED * TICK
 					tick += 1
-					_join_the_walk(drawing.near(at, map.world_to_tile(at)), walk, director,
-							siting)
+					drawing.join(drawing.near(at, map.world_to_tile(at)))
 					toward = path[k] - at
 					if not the_games:
 						continue
-					# Nothing is sited on a tick that leaves a unit wanted, as the manager has it.
-					if not drawing.wants_more():
-						var t1 := Time.get_ticks_usec()
-						director.due(TICK, at, velocity)
-						director.site_what_is_on_her_way(TICK, at, velocity)
-						siting_ticks.append(Time.get_ticks_usec() - t1)
+					var t1 := Time.get_ticks_usec()
+					director.due(TICK, at, velocity)
+					var moved := director.site_what_is_on_her_way(TICK, at, velocity)
+					siting_ticks.append(Time.get_ticks_usec() - t1)
+					for plan in moved:
+						sited[plan] = true
+						sitings += 1
+						if not drawing.draw.units().undrawn_within(plan.placed_at(),
+								Tuning.EVENT_DRAW_AHEAD).is_empty():
+							on_undrawn += 1
 					if tick % 10 == 0:
 						for plan in walk.plans():
 							if counted.has(plan) or not plan.is_placed() or plan.is_a_fixed_part():
@@ -319,7 +381,14 @@ func _walk_every_day(reach: float) -> void:
 										capped_at_the_door += 1
 									if walked > out_length * 0.5 and walked <= out_length:
 										capped_late_out += 1
-			_join_the_walk(drawing.the_rest(), walk, director, siting)
+			drawing.join(drawing.the_rest())
+			gave_up += int(siting.waits.get("the ground round its site had not drawn", 0))
+			for plan: EventPlan in sited:
+				if not plan.is_placed():
+					continue
+				for row in drawing.rows:
+					if row != plan:
+						nearest = minf(nearest, plan.gap_to(row))
 			print("WU %d %d %d %d %d %d %d" % [reach, day, i, drawing.on_the_walk, drawing.after,
 					drawing.longest_pull, drawing.longest_chain])
 			print("WQ %d %d %d %s" % [reach, day, i, _quantiles(drawing.costs)])
@@ -354,6 +423,11 @@ func _walk_every_day(reach: float) -> void:
 		all_cut_at_dawn += cut_at_dawn
 		all_cut_after_walk += cut_after_walk
 		print("WM %d %d %d %d" % [day, capped_met, capped_at_the_door, capped_late_out])
+		print("WS %d %d %d %d %.0f" % [day, sitings, on_undrawn, gave_up, nearest])
+		all_sitings += sitings
+		all_on_undrawn += on_undrawn
+		all_gave_up += gave_up
+		all_nearest = minf(all_nearest, nearest)
 		for key: String in by_view:
 			print("WV %d %s %d" % [day, key, by_view[key]])
 		for key: String in by_kind:
@@ -362,15 +436,7 @@ func _walk_every_day(reach: float) -> void:
 	print("WQ all %d %s" % [reach, _quantiles(all_costs)])
 	if the_games:
 		print("WC all %d %d" % [all_cut_at_dawn, all_cut_after_walk])
-
-## What a draw placed joining her walk, as `EventsAhead` has it: a placed row added to the walk,
-## a row handed to her walk added unplaced and owed to the director, to site on her way.
-static func _join_the_walk(placed: Array[EventPlan], walk: WalkEvents, director: EventDirector,
-		siting: EventScheduler.WalkSiting) -> void:
-	for plan in placed:
-		walk.add(plan)
-		if not plan.is_placed() and plan.row().is_handed_to_her_walk():
-			director.owe_on_her_way(plan, siting)
+		print("WS all %d %d %d %.0f" % [all_sitings, all_on_undrawn, all_gave_up, all_nearest])
 
 ## **The dawn's unit draw with the touching relation widened to `reach`**: the draw `DawnDraw.run()`
 ## prepares, its parts made as it makes them, over units grouped with `reach` (`DayUnits.of()`).

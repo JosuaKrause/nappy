@@ -14,6 +14,11 @@ extends RefCounted
 ## the way (`DayReach.shut_more()`), so the next pass walks the ground as it stands then: down
 ## another way where there is one, and to a refusal where there is none.
 ##
+## **The place is asked of once more, after the pass that drew nothing** (`still_stands`, the
+## caller's own question of the tile): whoever fixes a place asks whether anything stands on it
+## before the units round it have drawn, and one of them may stand a body there that shuts no way
+## (a café's tables on a sidewalk), so the answer from before the draw is not the one that holds.
+##
 ## Handed what it reads, so a check hands it a street drawn by hand and a stand-in for the draw.
 ## Model: no node.
 
@@ -38,8 +43,10 @@ func _init(map: CityMap, reach: DayReach, draws_round: Callable) -> void:
 	_reach = reach
 	_draws_round = draws_round
 
-## Whether the place at `tile` stands. See the class comment.
-func confirms(tile: Vector2i) -> bool:
+## Whether the place at `tile` stands. `still_stands` is `func(tile: Vector2i) -> bool`, whether
+## the caller's place may still stand there, asked once the units round it have drawn. See the
+## class comment.
+func confirms(tile: Vector2i, still_stands: Callable) -> bool:
 	for _pass in PASSES:
 		var way := _reach.way_from_home(tile)
 		if way.is_empty():
@@ -49,5 +56,5 @@ func confirms(tile: Vector2i) -> bool:
 			drew = _draws_round.call(_map.tile_to_world(way[k]), Tuning.EVENT_DRAW_AHEAD) or drew
 		drew = _draws_round.call(_map.tile_to_world(tile), Tuning.EVENT_DRAW_AHEAD) or drew
 		if not drew:
-			return true
+			return still_stands.call(tile)
 	return false

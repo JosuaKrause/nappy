@@ -634,9 +634,9 @@ class WalkSiting extends RefCounted:
 	## reach: float) -> bool`, which draws every undrawn unit of the day's locations any part of
 	## which lies within `reach` of `at`, what they place joining the walk's plans, and answers
 	## whether it drew any (`EventsAhead.draw_the_ground_round()`). `ahead_of()` asks it of every
-	## site it picks. A siting handed none judges as the walk stands: one over a walk that draws
-	## nothing as she walks (a scene recipe's), and one that only places among tiles its caller
-	## drew round first (`among()`).
+	## site it picks. A siting handed none judges as the walk stands: one that only places among
+	## tiles its caller drew round first (`among()`), or only asks where she is going
+	## (`cells_ahead()`).
 	func use_the_ground_drawer(draws_round: Callable) -> void:
 		_draws_the_ground_round = draws_round
 
@@ -859,8 +859,8 @@ class WalkSiting extends RefCounted:
 	## with the day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
 	## gets, over a pool the caller chose: day 11's mast queued near her
 	## (`EventManager.queue_a_mast()`), the ground round which its caller draws before it offers
-	## the pool (`ResistanceDirector._place_at_a_mast()`). Null when nothing offered passes. `null` rather than the
-	## roomiest of a refused pool: `_best_of()` already answers with nothing for a pool where every
+	## the pool (`ResistanceDirector._place_at_a_mast()`). Null when nothing offered passes. `null`
+	## rather than the roomiest of a refused pool: `_best_of()` already answers with nothing for a pool where every
 	## tile is illegal, and with the roomiest only among legal ones.
 	func among(def: EventDef, rng: RandomNumberGenerator, offered: Array[Vector2i]) -> EventPlan:
 		if offered.is_empty():

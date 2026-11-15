@@ -5,7 +5,7 @@ extends RefCounted
 ## the top and a long one along the bottom, further apart than a draw reaches. The reach is real
 ## (`DayReach`, on the hand-drawn map); the draw is a stand-in (`_Draw`) that holds units by hand,
 ## each a point and the body it draws there, draws the ones an ask reaches, and tells the reach,
-## as the manager's draw does.
+## as the manager's draw does; and tables by hand, which stand on a tile and shut no way.
 
 ## The loop's rows and columns, in tiles: a sidewalk two tiles wide along each.
 const TOP := 3
@@ -22,6 +22,7 @@ func run(t: TestRunner) -> void:
 	_test_a_place_every_way_to_which_a_draw_shuts_is_refused(t)
 	_test_a_place_with_no_way_is_refused_and_nothing_draws(t)
 	_test_a_draw_that_never_settles_is_given_up(t)
+	_test_a_place_a_drawn_unit_stands_on_is_refused(t)
 
 ## The units of a day, by hand: asked to draw round a point, it draws each undrawn unit within the
 ## reach of it (a body standing across the loop at the unit's own point), tells the walk's reach,
@@ -33,10 +34,20 @@ class _Draw extends RefCounted:
 	## Every point asked, in order.
 	var asked: Array[Vector2] = []
 	var never_settles := false
+	## The map a tile is found on, and where tables that shut no way stand: the ones whose unit
+	## has not drawn, and the ones whose unit has.
+	var map: CityMap
+	var undrawn_tables: Array[Vector2i] = []
+	var tables: Array[Vector2i] = []
 
 	func draws_round(at: Vector2, within: float) -> bool:
 		asked.append(at)
 		var drew := never_settles
+		for table: Vector2i in undrawn_tables.duplicate():
+			if map.tile_to_world(table).distance_to(at) <= within:
+				undrawn_tables.erase(table)
+				tables.append(table)
+				drew = true
 		for body: EventPlan in undrawn.duplicate():
 			if body.placed_at().distance_to(at) > within:
 				continue
@@ -44,6 +55,11 @@ class _Draw extends RefCounted:
 			reach.shut_more([body] as Array[EventPlan])
 			drew = true
 		return drew
+
+	## Whether no drawn table stands on `tile`: what the confirmation asks of the place once its
+	## ground has drawn.
+	func leaves_free(tile: Vector2i) -> bool:
+		return not tables.has(tile)
 
 func _loop() -> CityMap:
 	var map := CityMap.new(Vector2i(40, 24))
@@ -63,6 +79,7 @@ func _across(map: CityMap, row: int) -> EventPlan:
 ## The draw over `map` with `bodies` still to draw, and its reach with nothing standing.
 func _draw(map: CityMap, bodies: Array[EventPlan]) -> _Draw:
 	var draw := _Draw.new()
+	draw.map = map
 	draw.reach = DayReach.of(map, [] as Array[EventPlan])
 	draw.undrawn = bodies
 	return draw
@@ -78,7 +95,7 @@ func _test_a_place_with_nothing_left_to_draw_stands_after_one_pass(t: TestRunner
 	var map := _loop()
 	var draw := _draw(map, [] as Array[EventPlan])
 	var way := draw.reach.way_from_home(PLACE)
-	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE)
+	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE, draw.leaves_free)
 	t.check(stands and _runs_along(way, TOP),
 			"with nothing left to draw, the place stands, on the short way along the top")
 	var every_step := true
@@ -92,7 +109,7 @@ func _test_a_place_with_nothing_left_to_draw_stands_after_one_pass(t: TestRunner
 func _test_a_body_drawn_on_the_way_sends_the_next_pass_down_another(t: TestRunner) -> void:
 	var map := _loop()
 	var draw := _draw(map, [_across(map, TOP)] as Array[EventPlan])
-	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE)
+	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE, draw.leaves_free)
 	var way := draw.reach.way_from_home(PLACE)
 	t.check(stands and draw.undrawn.is_empty() and draw.reach.is_shut(Vector2i(ACROSS, TOP)),
 			"a unit on the short way draws a body across it, and the place still stands")
@@ -104,7 +121,7 @@ func _test_a_place_every_way_to_which_a_draw_shuts_is_refused(t: TestRunner) -> 
 	var map := _loop()
 	var draw := _draw(map, [_across(map, TOP), _across(map, BOTTOM)] as Array[EventPlan])
 	t.check(draw.reach.reaches(PLACE), "before anything draws, the place is reached from home")
-	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE)
+	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE, draw.leaves_free)
 	t.check(not stands and draw.undrawn.is_empty() and not draw.reach.reaches(PLACE),
 			"a body drawn across the short way and then one across the long way leave no way, "
 			+ "and the place is refused")
@@ -113,7 +130,7 @@ func _test_a_place_with_no_way_is_refused_and_nothing_draws(t: TestRunner) -> vo
 	var map := _loop()
 	var draw := _draw(map, [] as Array[EventPlan])
 	draw.reach.shut_more([_across(map, TOP), _across(map, BOTTOM)] as Array[EventPlan])
-	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE)
+	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE, draw.leaves_free)
 	t.check(not stands and draw.asked.is_empty(),
 			"a place cut off from home is refused without a draw being asked for")
 
@@ -122,7 +139,18 @@ func _test_a_draw_that_never_settles_is_given_up(t: TestRunner) -> void:
 	var draw := _draw(map, [] as Array[EventPlan])
 	draw.never_settles = true
 	var per_pass := ceili(draw.reach.way_from_home(PLACE).size() / float(WayConfirmation.STEP)) + 1
-	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE)
+	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round).confirms(PLACE, draw.leaves_free)
 	t.check(not stands and draw.asked.size() == per_pass * WayConfirmation.PASSES,
 			"a place every pass of which draws again is refused once the passes run out "
 			+ "(%d asks)" % draw.asked.size())
+
+func _test_a_place_a_drawn_unit_stands_on_is_refused(t: TestRunner) -> void:
+	var map := _loop()
+	var draw := _draw(map, [] as Array[EventPlan])
+	draw.undrawn_tables = [PLACE]
+	t.check(draw.leaves_free(PLACE), "before its unit draws, nothing stands on the place")
+	var stands := WayConfirmation.new(map, draw.reach, draw.draws_round) \
+			.confirms(PLACE, draw.leaves_free)
+	t.check(not stands and draw.tables == [PLACE] and draw.reach.reaches(PLACE),
+			"a place a unit drawn round it stood its tables on is refused, though the way to it "
+			+ "is open")

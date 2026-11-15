@@ -23,7 +23,10 @@ func run(t: TestRunner) -> void:
 ## nearest section, however far (the director's run log says which); and a task put in
 ## the world is put outside her view, day 13's found roadblock excepted, which stood there all along. *("create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the
-## circle".)* Before, it was drawn anywhere within 576px as the crow flies.
+## circle".)* Before, it was drawn anywhere within 576px as the crow flies. On each of these days
+## the units round where she read the mark have drawn by then, as far as the task is looked for
+## and `Tuning.EVENT_DRAW_AHEAD` beyond: she is put down on the mark here, across a city the day's
+## start drew only round her door.
 func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 	var checked := [0]
 	var fell_back := [0]
@@ -41,6 +44,16 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 					"seed %d day %d: reading the mark puts its task on offer" % [seed_value, day])
 			if step != null and not step.is_pickup:
 				checked[0] += 1
+				# The units round where she read the mark draw before its task is looked for
+				# (`ResistanceDirector._draw_the_ground_round_her()`), so what it is placed
+				# among and the paths it is found by are not changed by a unit drawn later.
+				var looked_within: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back() if day == 13 \
+						else ResistanceDirector.NEAR_THE_MARK
+				t.check(_city.events.walk_events().unit_draw().units().undrawn_within(mark,
+						looked_within + Tuning.EVENT_DRAW_AHEAD).is_empty(),
+						("seed %d day %d: the units round where she read the mark have drawn, as " +
+						"far as its task is looked for (%.0fpx) and %.0fpx beyond")
+						% [seed_value, day, looked_within, Tuning.EVENT_DRAW_AHEAD])
 				var mast := step.target_kind == ResistanceSteps.TargetKind.MAST
 				var target := director.contact_position() if mast or director.rider() == null \
 						else director.rider().global_position

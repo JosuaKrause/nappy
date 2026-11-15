@@ -159,8 +159,10 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 ## the same, row for row and tile for tile, once the rest of the day is drawn
 ## (`EventManager.draw_the_ground_round()`); and each walk drew some of those units before the
 ## rest, in an order of its own. A row handed to her walk reads as `row@walk`, wherever her walk
-## has since sited it. What this does not cover: the moments, the rows sited from her walk and
-## the rows her route's bag rigs, which follow her walk on purpose.
+## has since sited it. A walk too short for the director to site anything: one long enough for a
+## crew to stand on her way is in `test_event_manager_units.gd`, with what its units draw held
+## against the day drawn whole. Neither covers the moments and the rows her route's bag rigs,
+## which follow her walk on purpose.
 func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 	var events := _city.events
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS

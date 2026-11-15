@@ -23,6 +23,9 @@ extends RefCounted
 ## ground its own task stands on, and a body that leaves only gives ground back. **Never saved**: a
 ## load starts the walk again from the run's saved inputs.
 
+## The four steps a walk takes from a tile.
+const _STEPS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+
 var _map: CityMap
 var _grid: ReachabilityGrid
 var _shut := {}
@@ -78,28 +81,46 @@ func shut_more(plans: Array[EventPlan]) -> void:
 ## tile a step; empty where none reaches it. It walks the ground the flood floods (what the
 ## lattice's walker may cross, `CityMap.passable()` with `Mover.lattice()`, less what is shut), so
 ## a tile `reaches()` answers for has a way. Home is walked from even where the ground there is
-## shut, as the flood is. What the resistance confirms a far place along
-## (`ResistanceDirector._confirmed()`).
+## shut, as the flood is. What a place fixed from her walk is confirmed along (`WayConfirmation`).
+##
+## **Searched towards the tile, not flooded out from home**: a tile is taken up in the order of
+## the steps walked to it plus the steps a straight walk from it to `tile` would still take, the
+## least first, and of those the one found last, so the search runs at `tile` and widens only where
+## that way is shut. That sum never falls along a walk and grows by two with a step away from
+## `tile`, so the tiles wait in two lists, the least sum's (`front`) and the next's (`beyond`); a
+## tile found again by a shorter walk takes the shorter, and by the time it is taken up from
+## `front` its steps are its fewest. On the lattice it looks at the streets between home and the
+## tile where a flood looks at the city as far out as the tile: the search is asked on the tick
+## she reads a mark.
 func way_from_home(tile: Vector2i) -> Array[Vector2i]:
 	var way: Array[Vector2i] = []
 	var ground := Mover.lattice()
 	var bounds := Rect2i(Vector2i.ZERO, _map.size_in_tiles())
 	var home := _map.home_tile()
 	var came_from := {home: home}
-	var queue: Array[Vector2i] = [home]
-	var head := 0
-	while head < queue.size():
-		var at: Vector2i = queue[head]
-		head += 1
+	var steps_to := {home: 0}
+	var front: Array[Vector2i] = [home]
+	var beyond: Array[Vector2i] = []
+	while not front.is_empty() or not beyond.is_empty():
+		if front.is_empty():
+			front = beyond
+			beyond = []
+		var at: Vector2i = front.pop_back()
 		if at == tile:
 			break
-		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var steps: int = int(steps_to[at]) + 1
+		var left := absi(tile.x - at.x) + absi(tile.y - at.y)
+		for step in _STEPS:
 			var next := at + step
-			if came_from.has(next) or _shut.has(next) or not bounds.has_point(next) \
-					or not _map.passable(next, ground):
+			if int(steps_to.get(next, steps + 1)) <= steps or _shut.has(next) \
+					or not bounds.has_point(next) or not _map.passable(next, ground):
 				continue
+			steps_to[next] = steps
 			came_from[next] = at
-			queue.append(next)
+			if absi(tile.x - next.x) + absi(tile.y - next.y) < left:
+				front.append(next)
+			else:
+				beyond.append(next)
 	if not came_from.has(tile):
 		return way
 	var back := tile

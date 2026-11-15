@@ -844,8 +844,9 @@ every solid body should do that -- not necessarily force a turn around but at le
 solid".)* A café's tables, a construction band, a kerbed van, a stall, a skip, a burnt-out car:
 `CityMap.obstructed_tiles` records the tiles each stationary solid body stands on — every piece of
 it, for the one row that is several (`docs/EVENTS.md`, "A row may be solid in parts") — filled from
-the day's whole plan rather than from the events near the player, because the crowd is steered
-across the whole map while an event only exists within reach of her. Mobile rows are exempt, the way the
+the day's plan rather than from the events in the world: the dawn's plan as the day starts, and
+each unit's rows as the unit draws, which is before any of its ground comes within the stream
+radius of her. The crowd is steered over ground wider than the reach an event exists within. Mobile rows are exempt, the way the
 catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
 is a door, because a hard seal and a gatehouse each already have an answer.
 

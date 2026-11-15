@@ -9,8 +9,8 @@ extends DawnPhase
 ## `DawnContext.roadblock_row()`, null on every other day, which this leaves exactly as it was.
 ##
 ## **The phase places into the day's locations** (`DawnContext.locations()`, laid out off the
-## walk's corridor every day), before the dawn draw fills the rest
-## (`DawnDraw`).
+## walk's corridor every day), before the units draw the rest as she walks (`DawnDraw` prepares
+## that draw).
 ##
 ## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
@@ -20,13 +20,13 @@ extends DawnPhase
 ## task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this
-## runs: the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more.
-## `DawnRoadblockCount` writes to the run log how many route tiles
-## have none as the day finally stands.
+## runs: the scripted rows, the one-shots and the spoilers after it shut more, and so does each
+## unit as it draws on her walk. `DawnRoadblockCount` writes to the run log how many route tiles
+## have none as the dawn leaves the day.
 ##
-## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the dawn draw after
-## it draws the day's other rows, the roadblock holding no marble in it, spaced against these as
-## against anything already down, and never over one.
+## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the units draw the
+## day's other rows as she walks, the roadblock holding no marble in their bags, each spaced
+## against these as against anything the dawn placed, and never over one.
 ##
 ## Model: no node.
 
