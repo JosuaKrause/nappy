@@ -19,7 +19,8 @@ Each placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEA
 first (`EventsAhead.draw_the_ground_round()`): a place the director sites ahead of her, which gives
 up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`); a place the resistance fixes,
 with the units along a way from home to it (`WayConfirmation`) or round where she read the mark;
-day 13's swap; an area cleared of its rows. So what it is judged against is whole, and nothing a
+the walk home day 10's neighbor is given, with the units along it; day 13's swap; an area cleared
+of its rows. So what it is judged against is whole, and nothing a
 unit draws later stands inside it. The one siting that draws nothing is the fire lit at dusk on a
 won day, after which nothing draws. A moment the director sends at her (a cat across her path, a
 pursuer; `EventsAhead.place_what_is_owed_ahead()`) is no place: it starts in her view or just off

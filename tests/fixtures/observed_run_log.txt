@@ -54,7 +54,7 @@ begin_day 2 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse x2, burst_water_main x21, busker, cafe_tables x47, car_accident x20, cat_dash x6, chatting_mother x52, construction x38, cyclist x8, delivery_van x34, dog_walker x6, fallen_tree, homeless_yeller x2, ice_cream_van x2, leaf_blower x4, loose_dog x12, market_stall x46, moving_van x43, playground x2, scaffolding x21, skip x22
+0.0 plan events: alley_mouse x3, burst_water_main x21, busker x2, cafe_tables x48, car_accident x20, cat_dash x6, chatting_mother x59, construction x38, cyclist x8, delivery_van x34, dog_walker x6, fallen_tree, homeless_yeller x2, ice_cream_van x2, leaf_blower x6, loose_dog x12, market_stall x46, moving_van x43, playground x2, scaffolding x21, skip x22
 0.0 start doorstep (80,84), facing 180°
 === the escape
 begin_section 15 Escape the building 4242 180.0

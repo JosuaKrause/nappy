@@ -2281,47 +2281,76 @@ const NEIGHBOR_WALK_BAND_TILES := 8
 ##
 ## The start is drawn by the day's RNG from the band of tiles `NEIGHBOR_WALK_BAND_TILES` either side
 ## of the walk asked for, in `tiles_of_type()`'s own order, so the same day draws the same start.
+##
+## **The units along the walk draw before the neighbor sets out** (`_draw_the_ground_along()`):
+## the start is blocks away, over ground her walk may not have come near, and a body a unit draws
+## there later would stand on the walk already given. So the walk is laid, the units round it
+## drawn, and where that drew any it is laid again over what they shut, from the same start while
+## that is still one the band offers, up to `WayConfirmation.PASSES` times; the neighbor is sent
+## down the first walk a pass draws nothing round, or down the last one laid.
 func _send_the_neighbor_home() -> EventInstance:
 	if not _events:
 		return null
 	var def := EventCatalogue.neighbor_heading_home()
 	var door := _map.world_to_tile(_map.doorstep_world_position())
-	var shut := _reach().shut()
-	var on_foot := shut.duplicate()
-	for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
-		on_foot[tile] = true
 	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
-	for blocked: Dictionary in [on_foot, shut]:
-		var field := _map.walk_field(door, blocked)
-		var start := _a_neighbor_start(field, wanted)
-		if start == NO_TILE:
-			continue
-		var path := _walk_home(field, start)
-		trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
-				% [_map.distance_at(field, start), RunTrace.tile(start)])
-		return _events.spawn_extra(def, path[0], path)
+	var ground := _spawn_siting.ask_of_ground()
+	var kept := NO_TILE
+	for pass_index in WayConfirmation.PASSES:
+		var shut := _reach().shut()
+		var on_foot := shut.duplicate()
+		for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
+			on_foot[tile] = true
+		var laid_again := false
+		for blocked: Dictionary in [on_foot, shut]:
+			var field := _map.walk_field(door, blocked)
+			var start := kept if _is_a_neighbor_start(field, wanted, kept, ground) \
+					else _a_neighbor_start(field, wanted, ground)
+			if start == NO_TILE:
+				continue
+			var path := _walk_home(field, start)
+			if _draw_the_ground_along(path) and pass_index + 1 < WayConfirmation.PASSES:
+				kept = start
+				laid_again = true
+				break
+			trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
+					% [_map.distance_at(field, start), RunTrace.tile(start)])
+			return _events.spawn_extra(def, path[0], path)
+		if not laid_again:
+			break
 	if _pinned_neighbor != Vector2.INF:
 		_scene_task_errors.append(("setup.task.neighbor %s is not a start the day could draw: a " +
 				"sidewalk tile centre %d±%d tiles of walk from home, %.0fpx or more from her")
 				% [_pinned_neighbor, wanted, NEIGHBOR_WALK_BAND_TILES, NEIGHBOR_CLEAR_OF_HER])
 	return null
 
+## **Draws the units round a walk** given as its corners (`walk`): round each corner and every
+## `WayConfirmation.STEP` tiles of each run between two, out to `Tuning.EVENT_DRAW_AHEAD`
+## (`EventManager.draw_the_ground_round()`), so no unit drawn later stands a body on it. Answers
+## whether it drew any.
+func _draw_the_ground_along(walk: PackedVector2Array) -> bool:
+	var drew := false
+	var stride := float(WayConfirmation.STEP * Tuning.TILE_SIZE)
+	for k in walk.size():
+		drew = _events.draw_the_ground_round(walk[k], Tuning.EVENT_DRAW_AHEAD) or drew
+		if k + 1 == walk.size():
+			break
+		var along := stride
+		while along < walk[k].distance_to(walk[k + 1]):
+			drew = _events.draw_the_ground_round(walk[k].move_toward(walk[k + 1], along),
+					Tuning.EVENT_DRAW_AHEAD) or drew
+			along += stride
+	return drew
+
 ## A sidewalk tile whose walk home is within `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen
-## from her and on ground a contact may stand on, drawn by the day's RNG — or `NO_TILE`.
-func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
-	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
-	var ground := _spawn_siting.ask_of_ground()
+## from her and on ground a contact may stand on (`ground`, `SpawnSiting.ask_of_ground()`), drawn by
+## the day's RNG — or `NO_TILE`.
+func _a_neighbor_start(field: PackedInt32Array, wanted: int,
+		ground: SpawnSiting.Ask) -> Vector2i:
 	var offered: Array[Vector2i] = []
 	for tile in _map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		var walk := _map.distance_at(field, tile)
-		if walk < 0 or absi(walk - wanted) > NEIGHBOR_WALK_BAND_TILES:
-			continue
-		if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
-			continue
-		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
-				_map.tile_to_world(tile)):
-			continue
-		offered.append(tile)
+		if _is_a_neighbor_start(field, wanted, tile, ground):
+			offered.append(tile)
 	if _pinned_neighbor != Vector2.INF:
 		# A scene's pin (`start_recipe_task()`): one of the starts the draw below chooses among, or
 		# none — never the nearest one standing in for it.
@@ -2331,6 +2360,21 @@ func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 	if offered.is_empty():
 		return NO_TILE
 	return offered[_rng.randi_range(0, offered.size() - 1)]
+
+## Whether `tile` is a start the neighbor's draw offers over `field`: a walk home within
+## `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen from her, on ground a contact may stand on
+## (`ground`). False for `NO_TILE`.
+func _is_a_neighbor_start(field: PackedInt32Array, wanted: int, tile: Vector2i,
+		ground: SpawnSiting.Ask) -> bool:
+	if tile == NO_TILE:
+		return false
+	var walk := _map.distance_at(field, tile)
+	if walk < 0 or absi(walk - wanted) > NEIGHBOR_WALK_BAND_TILES:
+		return false
+	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
+	if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
+		return false
+	return _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, _map.tile_to_world(tile))
 
 ## The walk from `start` down `field` to the doorstep, as the corners of it: each step goes to a
 ## neighbor one tile nearer home, keeping the heading it already has where that is one of them, so

@@ -502,6 +502,12 @@ func _bring_the_column(def: EventDef, place: Vector2, lane_x: float, going: floa
 ## given; the longer one when only one fits a block. A figure walking half
 ## her pace down her own street is out of sight long before the route runs out, whichever way she
 ## goes, so the departure at its end is one nobody sees.
+##
+## **The units along the way draw before it is measured** (`EventManager.draw_the_ground_round()`,
+## round every `WayConfirmation.STEP`th tile of it out to `Tuning.EVENT_DRAW_AHEAD`, as far as the
+## way goes): the street runs on past the ground drawn round her door, and a unit draws only as
+## she comes near it, so the way stops short of a body any unit along it stands there, and none
+## drawn later stands on it.
 func _send_the_neighbor_to_work() -> EventInstance:
 	if not _events or not _map or not _builder:
 		return null
@@ -519,6 +525,9 @@ func _send_the_neighbor_to_work() -> EventInstance:
 	var length := 0
 	var mover := EventInstance.mover_for(def)
 	for step in range(1, room + 1):
+		if (step - 1) % WayConfirmation.STEP == 0:
+			_events.draw_the_ground_round(_map.tile_to_world(tile + along * step),
+					Tuning.EVENT_DRAW_AHEAD)
 		if not _map.passable(tile + along * step, mover):
 			break
 		length = step

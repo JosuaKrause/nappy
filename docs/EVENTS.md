@@ -1303,7 +1303,8 @@ Each item quotes the code on this branch.
    draws first, so a unit's draw is the same whatever order the units are drawn in, and so
    whatever her path. What her walk sites changes no unit's draw: no draw is judged among a plan
    her walk sites, and a placement made from her walk (a place the director sites ahead of her, a
-   place the resistance fixes, day 13's swap, an area cleared of its rows) draws the units round
+   place the resistance fixes, the walk home day 10's neighbor is given, day 13's swap, an area
+   cleared of its rows) draws the units round
    its place before the place stands (`EventsAhead.draw_the_ground_round()`, out to
    `Tuning.EVENT_DRAW_AHEAD`), so it is judged against what stands there and nothing a unit draws
    later stands inside it. Today's placement rules are the invalidation,
