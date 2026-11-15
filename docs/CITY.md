@@ -258,10 +258,12 @@ nearest such section out of her sight in place of what it held
 (`ResistanceDirector._section_to_swap()`); either stands off the routes and closes none of them. Where the resistance may send her is worked out as the walk starts, from the dawn's plan, and
 learns each unit's draw as it is drawn (`DayReach`). A place it fixes for her to walk to is
 confirmed along a way from home, the units round that way and round the place drawn first, so
-nothing drawn later can shut it or stand on the place (`WayConfirmation`): a mark or a contact picked from a pool, the
-nearest place that stands in for a task near its mark, and the section day 13's roadblock is put
+nothing drawn later can shut it or stand on the place (`WayConfirmation`), except a mast near her
+mark: a mark or a contact picked from a pool, the nearest place that stands in for a task near its
+mark, the nearest live mast that stands in for day 11's, and the section day 13's roadblock is put
 across. A task looked for near where she read its mark has the units round her drawn first, as
-far as it is looked for and `Tuning.EVENT_DRAW_AHEAD` beyond. Day 10's neighbor is given a walk
+far as it is looked for and `Tuning.EVENT_DRAW_AHEAD` beyond, which is all a mast near her mark has
+(one her paths reach inside the circle round her, or one put up on its edge). Day 10's neighbor is given a walk
 home the units along which have drawn, laid again where one of them stood a body across it
 (`ResistanceDirector._send_the_neighbor_home()`).
 

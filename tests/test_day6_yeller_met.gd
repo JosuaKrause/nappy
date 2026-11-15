@@ -16,7 +16,8 @@ extends RefCounted
 ## him by, and `tests/probes/calm_pelican_day7_van_met.gd` measures how often a played walk does.
 ##
 ## Walks the way `--route mark,task,calm,home` does, at `Tuning.WALK_SPEED`, running what the
-## manager's own tick runs for her walk, so he is sited where a played day sites him; and where that
+## manager's own tick runs for her walk, the units drawing as she comes near them
+## (`EventManager.stream_around()`), so he is sited where a played day sites him; and where that
 ## walk ends before he is sited, on walking, back to the mark and home again, until he is, since the
 ## guarantee counts events and a walk that ends first owes nothing (a third event handed out before
 ## his siting still fails him). A sweep of
@@ -63,9 +64,9 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	# Every unit drawn first: the man her route is handed is told from the plans standing once the
-	# mark is read, so the men the day's units draw have to stand by then, as the dawn's do.
-	city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	# The units draw as she walks; a man one of them drew is told from the man her route is
+	# handed by the row it holds as drawn (`_a_unit_drew()`).
+	var units := city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
@@ -97,7 +98,8 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 			var sited_now := false
 			if seen["man"] == null and seen["read"]:
 				for plan: EventPlan in events.plans():
-					if plan.def.id == ROW and not (seen["standing"] as Array).has(plan):
+					if plan.def.id == ROW and not (seen["standing"] as Array).has(plan) \
+							and not _a_unit_drew(units, plan):
 						seen["man"] = plan
 						seen["outcome"] = _first_siting(plan, player,
 								int(seen["owed"]) - events.owed_ahead())
@@ -137,6 +139,10 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 	resistance.free()
 	city.free()
 	return outcome
+
+## Whether one of the day's `units` drew `plan`, and it is not the man her route was handed.
+func _a_unit_drew(units: Array[PlacementUnit], plan: EventPlan) -> bool:
+	return units.any(func(unit: PlacementUnit) -> bool: return unit.drawn().has(plan))
 
 ## "kept" when one of the world's men shouting stands where `man` was sited (within a tile, the
 ## band middle a pacing body is laid on), or what is wrong.

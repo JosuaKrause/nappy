@@ -18,7 +18,9 @@ would give. A unit within the stream radius of her is drawn before the streaming
 Each placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEAD` of its place
 first (`EventsAhead.draw_the_ground_round()`): a place the director sites ahead of her, which gives
 up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`); a place the resistance fixes,
-with the units along a way from home to it (`WayConfirmation`) or round where she read the mark;
+with the units along a way from home to it (`WayConfirmation`), or, for a mast near where she read
+the mark, round where she read it (no way to that mast is confirmed, the ground within the circle
+round her and `Tuning.EVENT_DRAW_AHEAD` beyond holding the ground round it);
 the walk home day 10's neighbor is given, with the units along it; day 13's swap; an area cleared
 of its rows. So what it is judged against is whole, and nothing a
 unit draws later stands inside it. The one siting that draws nothing is the fire lit at dusk on a

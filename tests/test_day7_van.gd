@@ -11,6 +11,11 @@ extends RefCounted
 ## into view; on no tile a route of the day runs along, and leaving her a way home — while the van
 ## the task rides, placed near the mark, stays where it is. How often a played walk sees it is
 ## `tests/probes/calm_pelican_day7_van_met.gd`'s to measure.
+##
+## The units draw as she walks (`EventManager.stream_around()`), and a van one of them drew is
+## told from hers by the row the unit holds as drawn (`_a_unit_drew()`). The tiles her van shuts
+## are read off the tick it stands, which a unit drawing on that tick adds its own bodies to, so
+## that check holds of both.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
@@ -43,9 +48,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	# Every unit drawn first: the van her route is handed is told from the plans standing once the
-	# mark is read, so the vans the day's units draw have to stand by then, as the dawn's do.
-	city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	var units := city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
 
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
@@ -120,9 +123,10 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 			if city.events.owed_ahead() < owed_before and handed < size:
 				handed += 1
 				if handed == size:
-					drawn_within = _a_place_from_her_route(city.events, standing) != null
+					drawn_within = _a_place_from_her_route(city.events, standing, units) != null
 			for plan: EventPlan in city.events.plans().slice(plans_before):
-				if plan.def.id == ROW and not standing.has(plan):
+				if plan.def.id == ROW and not standing.has(plan) \
+						and not _a_unit_drew(units, plan):
 					placed.append(plan)
 					her_at_siting = player.global_position
 					where_sited = plan.position
@@ -324,12 +328,16 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 			queue.append(next)
 	return reached
 
+## Whether one of the day's `units` drew `plan`, and it is not the van her route was handed.
+func _a_unit_drew(units: Array[PlacementUnit], plan: EventPlan) -> bool:
+	return units.any(func(unit: PlacementUnit) -> bool: return unit.drawn().has(plan))
+
 ## The van a marble from her route's bag handed to her walk to site, sited or not; null when none
 ## has been.
-func _a_place_from_her_route(events: EventManager,
-		standing: Array[EventPlan]) -> EventPlan:
+func _a_place_from_her_route(events: EventManager, standing: Array[EventPlan],
+		units: Array[PlacementUnit]) -> EventPlan:
 	for plan: EventPlan in events.plans():
-		if plan.def.id == ROW and not standing.has(plan):
+		if plan.def.id == ROW and not standing.has(plan) and not _a_unit_drew(units, plan):
 			return plan
 	return null
 

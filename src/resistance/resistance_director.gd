@@ -1709,27 +1709,39 @@ func _where_she_read_it(mark: Vector2) -> Vector2:
 ## after the units round it have drawn), or `Vector2.INF` when none does. `_pick_near()`'s
 ## fallback. **There is no cap on how far it stands**, so it may stand beyond the ground drawn
 ## round where she read the mark (`_draw_the_ground_round_her()`): the candidates are asked
-## nearest first, each for what is cheap to ask before the units along its way are drawn, so the
-## first that passes is the answer and the pool is not drawn through.
+## nearest first, each for what is cheap to ask before the units along its way are drawn, the
+## nearest found again by a scan after each refusal, so the first that passes is the answer and
+## neither is the pool drawn through nor the whole of it ordered.
 func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
-	var by_distance: Array = []
-	for index in candidates.size():
-		by_distance.append([_map.tile_to_world(candidates[index]).distance_to(mark), index])
-	# Nearest first, and of two as near the earlier in the pool, as a scan of the pool takes it.
-	by_distance.sort_custom(func(a: Array, b: Array) -> bool:
-		return a[0] < b[0] if a[0] != b[0] else a[1] < b[1])
-	for entry: Array in by_distance:
-		var tile := candidates[entry[1]]
-		var world := _map.tile_to_world(tile)
-		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
-				or not _reachable_from_home(tile) \
-				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
-			continue
+	var refused := {}
+	while true:
+		# The nearest that passes the cheap checks, of two as near the earlier in the pool; a scan
+		# finds it again after each refusal, where ordering the whole pool would cost more than
+		# the one or two places that are asked.
+		var nearest := -1
+		var nearest_distance := INF
+		for index in candidates.size():
+			if refused.has(index):
+				continue
+			var world := _map.tile_to_world(candidates[index])
+			var distance := world.distance_to(mark)
+			if distance >= nearest_distance:
+				continue
+			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
+					or not _reachable_from_home(candidates[index]) \
+					or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
+				continue
+			nearest = index
+			nearest_distance = distance
+		if nearest < 0:
+			return Vector2.INF
+		var at := _map.tile_to_world(candidates[nearest])
 		var free := func(_tile: Vector2i) -> bool:
-			return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, world)
-		if _confirmed(tile, free):
-			return world
+			return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, at)
+		if _confirmed(candidates[nearest], free):
+			return at
+		refused[nearest] = true
 	return Vector2.INF
 
 ## **Day 13's roadblock is one the day placed, close by** *(inbox #650 in mossy-beaver, the player:
@@ -2101,8 +2113,9 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## far one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
 ## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
 ## close by"* (2026-10-03, quiet-yak, inbox #486). Only where no ground near the mark can take one is the offered mast
-## nearest the mark the one. **No live mast anywhere is no mast near her**, so a mark still has one
-## put up beside it. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws among
+## nearest the mark that a way from home is confirmed to the one (`_nearest_confirmed_mast()`), and
+## where none is the task has no place, as with no live mast. **No live mast anywhere is no mast
+## near her**, so a mark still has one put up beside it. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws among
 ## them all.
 func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector2:
 	_mast_id = ""
@@ -2134,11 +2147,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 		_follow_the_paths_to_the_edge(_where_she_read_it(mark))
 		var near_plans: Array[EventPlan] = []
 		var near_beside: Array[Vector2i] = []
-		var nearest := 0
 		for i in offered.size():
-			var distance := _map.tile_to_world(beside[i]).distance_to(mark)
-			if distance < _map.tile_to_world(beside[nearest]).distance_to(mark):
-				nearest = i
 			if _circle_inside.has(beside[i]) or _circle_edge.has(beside[i]):
 				near_plans.append(offered[i])
 				near_beside.append(beside[i])
@@ -2147,18 +2156,46 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 			if not added.is_empty():
 				_mast_id = DawnMasts.added_mast_id(_map.tile_to_world(added[0]))
 				return _map.tile_to_world(added[0])
-			if offered.is_empty():
-				return Vector2.INF
+			var stand_in := _nearest_confirmed_mast(offered, beside, ground, mark)
 			trace.note("contact", ("no mast stands where a path reaches the %.0fpx circle round her and "
-					+ "none could be put up; the nearest live one is %.0fpx from the mark") % [
-					NEAR_THE_MARK, offered[nearest].position.distance_to(mark)])
-			near_plans.append(offered[nearest])
-			near_beside.append(beside[nearest])
+					+ "none could be put up; the nearest live one a way is confirmed to is %s") % [
+					NEAR_THE_MARK, "none" if stand_in < 0
+					else "%.0fpx from the mark" % offered[stand_in].position.distance_to(mark)])
+			if stand_in < 0:
+				return Vector2.INF
+			near_plans.append(offered[stand_in])
+			near_beside.append(beside[stand_in])
 		offered = near_plans
 		beside = near_beside
 	var index := _weighted_mast_index(beside, rng)
 	_mast_id = offered[index].mast_id
 	return offered[index].position
+
+## The index in `offered` of the live mast nearest `mark` anywhere in the city that a way from home
+## is confirmed to (`_confirmed()`, which draws the units round the tile beside it, `beside[i]`, and
+## along the way, and asks once more that no body stands on it), or -1 when none is.
+## `_place_at_a_mast()`'s fallback, with no cap on how far it stands, so it may stand beyond the
+## ground drawn round where she read the mark: the masts are asked nearest first and the first that
+## passes is the answer, the nearest found again by a scan after each refusal, so a mast is
+## confirmed only where the ones nearer were refused and the whole list is never ordered.
+func _nearest_confirmed_mast(offered: Array[EventPlan], beside: Array[Vector2i],
+		ground: SpawnSiting.Ask, mark: Vector2) -> int:
+	var standing := func(tile: Vector2i) -> bool:
+		return _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+				_map.tile_to_world(tile))
+	var refused := {}
+	while refused.size() < offered.size():
+		var nearest := -1
+		var nearest_distance := INF
+		for i in offered.size():
+			var distance := _map.tile_to_world(beside[i]).distance_to(mark)
+			if not refused.has(i) and distance < nearest_distance:
+				nearest = i
+				nearest_distance = distance
+		if _confirmed(beside[nearest], standing):
+			return nearest
+		refused[nearest] = true
+	return -1
 
 ## Queues one more mast near `mark` for day 11's task, when no live mast stands where her paths
 ## reach within the circle round her (`_place_at_a_mast()`), and answers `[its foot, the tile beside
@@ -2623,10 +2660,13 @@ func _reach() -> DayReach:
 ## from home and round the place are drawn first (`EventManager.draw_the_ground_round()`), what
 ## they draw shutting more of the reach, until a way stands that no undrawn unit lies near; a
 ## place with none is refused, and the caller takes the next candidate as it does for an
-## unreachable one. **Every place this director fixes for her to walk to is asked it**: a pick from
-## a pool (`_pick_reachable()`), the nearest place that stands in for a task near its mark
-## (`_nearest_to_the_mark()`), and the section day 13's roadblock is put across
-## (`_section_to_swap()`). **`still_stands` is the caller's own question of the tile** (`func(tile:
+## unreachable one. **Every place this director fixes for her to walk to is asked it except a
+## mast near her mark**: a pick from a pool (`_pick_reachable()`), the nearest place that stands in
+## for a task near its mark (`_nearest_to_the_mark()`), the nearest live mast that stands in for
+## day 11's (`_nearest_confirmed_mast()`), and the section day 13's roadblock is put across
+## (`_section_to_swap()`). **A mast near her mark**, one her paths reach inside the circle round
+## her or one put up on its edge (`_add_a_mast_near()`), has the units out to the circle and
+## `Tuning.EVENT_DRAW_AHEAD` beyond drawn instead (`_draw_the_ground_round_her()`). **`still_stands` is the caller's own question of the tile** (`func(tile:
 ## Vector2i) -> bool`, no body standing on it), asked once more after the units round it have
 ## drawn, since one of them may have stood a body there that shuts no way. Where nothing draws as
 ## she walks (no events: a rig placing on a bare map; or a walk with no unit draw: a scene
