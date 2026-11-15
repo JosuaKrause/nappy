@@ -70,7 +70,7 @@ lower rank draws first. Each unit draws from a bag per view filled fresh, at mos
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
 on the board, question long-routes, inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. A place her walk
-sites draws the units round it first, and no draw reads it. A day's routes stay open by local rules alone: besides a route's junctions, its walked sidewalk
+sites stands on ground whose units have drawn, and no draw reads it. A day's routes stay open by local rules alone: besides a route's junctions, its walked sidewalk
 and a pacing beat's opening, the route's ground rule (`RouteGroundRule`) keeps every body's disc and
 every lethal row's inner disc off a tile a route runs along off the streets (an alley, a park cut, a
 square), and keeps the scars and the park spoilers off every route tile and off the street she starts
