@@ -91,15 +91,16 @@ full text names the files each step owns.
    it is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
    the day holds until step 3 (day-density) are answered, and the answers wait in the inbox for the next
    filing. The touching-reach answer, "everything that matters must be drawn together" (inbox #1461),
-   does not lengthen the routes: the dog walker, the police patrol and the military convoy stay drawn by
-   their street as she comes near, cut to its run (the player on the board, question route-draw,
-   inbox #1460). What the step still owes is one street rule. The free-line probe
-   (`tests/probes/m129_zero_cost_line.gd`) shows routes losing her free line where rows that each leave
-   one together leave none, since each line rule checks one piece and none follows her line through a
-   junction box. The draw gains a rule that follows her line from the junction box onto the sidewalk she
-   walks, for every row that lands near her route, and a street that draws after its neighbours keeps
-   one sidewalk open, given what they drew (the player on the board, questions free-line-density and
-   line-reach-close, inbox #1461 and #1465).
+   does not lengthen the routes. The dog walker, the police patrol and the military convoy are no longer
+   laid on a route by a street's draw: each is put in the world just ahead of her when she comes near,
+   so that she meets it (the player on the board, question route-draw, and in chat, inbox #1460). Until
+   that is built, they stay drawn by a street, cut to its run. What the step still owes is that, and one
+   street rule. The free-line probe (`tests/probes/m129_zero_cost_line.gd`) shows routes losing her free
+   line where rows that each leave one together leave none, since each line rule checks one piece and
+   none follows her line through a junction box. The draw gains a rule that follows her line from the
+   junction box onto the sidewalk she walks, for every row that lands near her route, and a street that
+   draws after its neighbours keeps one sidewalk open, given what they drew (the player on the board,
+   questions free-line-density and line-reach-close, inbox #1461 and #1465).
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.
