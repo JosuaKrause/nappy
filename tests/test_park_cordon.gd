@@ -770,6 +770,22 @@ func _busker_in_the_park(pace := 0.0) -> EventInstance:
 		row = walking
 	return _city.events.spawn_extra(row, area.position + area.size * Vector2(0.25, 0.3))
 
+## **Retires every event but `person` within twice `Tuning.OUT_OF_SIGHT` of them, the planned ones
+## not yet in the world spent.** The walk-out
+## check's time bound (the view box's two half extents over his pace) is the walk of one turn on
+## bare ground; a stall or a van the day's draw happened to stand on his way makes him bend round it
+## and adds a detour the bound does not allow. The check is about the way he plans out of her
+## sight, so the rows that draw leaves round it are cleared, and the day's luck does not move it.
+func _clear_the_drawn_rows_round(person: EventInstance) -> void:
+	for instance in _city.events.instances():
+		if instance != person and instance.global_position.distance_to(person.global_position) \
+				< Tuning.OUT_OF_SIGHT * 2.0:
+			_city.events.retire(instance)
+	for plan in _city.events.plans():
+		if plan.is_placed() and plan.placed_at().distance_to(person.global_position) \
+				< Tuning.OUT_OF_SIGHT * 2.0:
+			plan.spend()
+
 ## **A person walked out never ends in her view** *("Nothing vanishes while you are looking at
 ## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
 ## she stood at the touch, and it is her way out too: she walks it at `Tuning.WALK_SPEED`, setting
@@ -785,6 +801,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t: TestRunner) -> void:
 		var fixture := _at_the_swing(t, func() -> void: person[0] = _busker_in_the_park())
 		var happenings: ResistanceHappenings = fixture.happenings
 		var busker: EventInstance = person[0]
+		_clear_the_drawn_rows_round(busker)
 		var her := [fixture.swing]
 		var shows := _camera_on(her)
 		_tick(happenings, her[0], shows.is_valid())
