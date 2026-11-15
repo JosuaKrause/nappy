@@ -5,8 +5,8 @@ extends RefCounted
 ## smaller ones move; a row the layout cannot hold beside the drawn ones is refused as it comes up,
 ## and one whose share does not fit the room left is refused without the ground being asked; one of
 ## a row in a unit; a row's weight the largest the locations it may stand on weigh it; a row handed
-## to her walk recorded with no position and the next row judged without it; a side recorded as its
-## sidewalk; every open location ends recorded as drawn, one not open left alone; and the plans
+## to her walk recorded with no position and the next row judged without it; a row that travels a
+## sidewalk taking one location of it, as any other sidewalk row; every open location ends recorded as drawn, one not open left alone; and the plans
 ## handed in are left as handed.
 ##
 ## Run with stand-ins for what it is handed: the day's locations (`_Locations`, which records each
@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 	_test_one_of_a_row_in_a_unit(t)
 	_test_a_rows_weight_is_the_largest_of_its_locations(t)
 	_test_a_row_handed_to_her_walk_is_recorded_unplaced(t)
-	_test_a_side_is_recorded_as_its_sidewalk(t)
+	_test_a_row_that_travels_a_sidewalk_takes_one_location(t)
 	_test_every_open_location_ends_drawn(t)
 	_test_the_plans_handed_in_are_left_as_handed(t)
 
@@ -33,17 +33,9 @@ const ON := PlacementView.View.ON_THE_ROUTE
 class _Locations extends DayLocations:
 	## Location -> the plan recorded there, null for the empty event.
 	var recorded := {}
-	## Location -> the plan recorded there as a whole sidewalk's (`record_side()`).
-	var sides := {}
 
 	## Overrides DayLocations.record.
 	func record(location: Location, plan: EventPlan) -> void:
-		recorded[location] = plan
-		location.record(plan)
-
-	## Overrides DayLocations.record_side.
-	func record_side(location: Location, plan: EventPlan) -> void:
-		sides[location] = plan
 		recorded[location] = plan
 		location.record(plan)
 
@@ -151,7 +143,8 @@ static func _rows(ids: Array[String]) -> Dictionary:
 ## `unit` drawn from `bag` among `among`, its rows the marbles' and the catalogue's.
 static func _drawn(unit: PlacementUnit, bag: _Bag, ground: _Ground, locations: _Locations,
 		among: Array[EventPlan] = []) -> Array[EventPlan]:
-	var ids: Array[String] = ["cafe_tables", "busker", "roadblock", "dog_walker", "poster_crew"]
+	var ids: Array[String] = ["cafe_tables", "busker", "roadblock", "dog_walker", "poster_crew",
+			"market_stall", "leaf_blower", "homeless_yeller"]
 	return MarbleDraw.new(locations, _rows(ids), ground).draw(unit, bag, among)
 
 ## Where `id` was recorded, or null.
@@ -293,14 +286,22 @@ func _test_a_row_handed_to_her_walk_is_recorded_unplaced(t: TestRunner) -> void:
 			without = without and not (plan.row_id() == "poster_crew" and plan.is_placed())
 	t.check(without, "the cafe is judged among no placed crew (%d asks)" % asks.size())
 
-## A dog walker, a row that travels its sidewalk, is recorded as the whole sidewalk's.
-func _test_a_side_is_recorded_as_its_sidewalk(t: TestRunner) -> void:
+## A dog walker, a row that travels its sidewalk, takes one sidewalk location and no more: drawn
+## first, it leaves the street five more, so five more rows are placed beside it, each on a
+## location of its own.
+func _test_a_row_that_travels_a_sidewalk_takes_one_location(t: TestRunner) -> void:
 	var locations := _Locations.new()
-	var placed := _drawn(_street(), _Bag.new(["dog_walker"] as Array[String]), _Ground.new(),
-			locations)
-	t.check(placed.size() == 1 and locations.sides.size() == 1
-			and locations.sides.values()[0] == placed[0],
-			"a dog walker is recorded as its sidewalk's (%d sides)" % locations.sides.size())
+	var ids: Array[String] = ["dog_walker", "cafe_tables", "busker", "market_stall",
+			"leaf_blower", "homeless_yeller"]
+	var placed := _drawn(_street(), _Bag.new(ids), _Ground.new(), locations)
+	var stood := {}
+	for plan in placed:
+		for location: Location in locations.recorded:
+			if locations.recorded[location] == plan:
+				stood[location] = true
+	t.check(placed.size() == 6 and stood.size() == 6,
+			"a dog walker and five rows beside it stand on six locations of their own (%d placed)"
+			% placed.size())
 
 ## A lot of three cells, one a dawn phase holds: drawing one cafe records both open cells, one with
 ## the cafe and the other empty, and leaves the held one alone. A street drawing nothing but empty

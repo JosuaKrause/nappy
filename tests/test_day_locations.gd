@@ -9,9 +9,7 @@ extends RefCounted
 ## holding its location, so it leaves the locations still open to a phase or a draw; every
 ## location answered once by `all()`; each location told the whole it is part of
 ## (`Location.part_of()`), and a street's location the run a route of it may lie on
-## (`Location.run()`); a location open only while available, untaken and undrawn; the sidewalk
-## locations of one sidewalk told apart from the far sidewalk's; and a row drawn to travel a
-## sidewalk given the whole of it, its sections closed, the far sidewalk left open. Laid out
+## (`Location.run()`); and a location open only while available, untaken and undrawn. Laid out
 ## on a bare city's lattice (`CityMap.new()`, every street present), with a stand-in for the corridor
 ## whose views the check sets (`_Views`); which view a street really is in is `Corridor.view_of()`'s,
 ## checked in `tests/test_corridor.gd`.
@@ -32,8 +30,6 @@ func run(t: TestRunner) -> void:
 	_test_every_location_is_answered_once(t)
 	_test_each_location_is_part_of_its_whole(t)
 	_test_a_location_is_open_while_nothing_holds_it(t)
-	_test_a_sidewalks_locations_are_told_from_the_far_ones(t)
-	_test_a_side_drawn_takes_its_sidewalk_and_closes_its_sections(t)
 
 const ON := Vector3i(2, 2, 0)
 const BESIDE := Vector3i(3, 2, 1)
@@ -455,59 +451,3 @@ func _test_a_location_is_open_while_nothing_holds_it(t: TestRunner) -> void:
 	t.check(not sidewalks[0].is_open(), "one a dawn phase filled is not")
 	t.check(not sidewalks[1].is_open(), "nor one a draw left empty")
 	t.check(not _sidewalks_of(locations, OFF)[0].is_open(), "nor one on a street held today")
-
-## **The sidewalk locations of one sidewalk** (`Location.is_on_the_sidewalk_of()`): of a street's six,
-## each lies on its own sidewalk with two others, one in each other section, and on neither with
-## the one across from it nor with one of another street; a section is on no sidewalk. Asked of a
-## street along the lattice and of one across it.
-func _test_a_sidewalks_locations_are_told_from_the_far_ones(t: TestRunner) -> void:
-	var locations := DayLocations.lay_out(CityMap.new(), _views())
-	for key: Vector3i in [BESIDE, ON]:
-		var sidewalks := _sidewalks_of(locations, key)
-		var right := sidewalks.size() == 6
-		for sidewalk in sidewalks:
-			var mates: Array[int] = []
-			for other in sidewalks:
-				if sidewalk.is_on_the_sidewalk_of(other):
-					mates.append(other.section())
-			mates.sort()
-			right = right and mates == ([0, 1, 2] as Array[int])
-			for other in sidewalks:
-				if other != sidewalk and other.section() == sidewalk.section():
-					right = right and not sidewalk.is_on_the_sidewalk_of(other)
-		t.check(right, "each sidewalk location of %s lies on one sidewalk with one of each other " % key
-				+ "section, never with the one across from it")
-	var beside := _sidewalks_of(locations, BESIDE)
-	var on := _sidewalks_of(locations, ON)
-	t.check(not beside[0].is_on_the_sidewalk_of(on[0]), "nor with one of another street")
-	var section := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)[0]
-	t.check(not section.is_on_the_sidewalk_of(beside[0]) and not beside[0].is_on_the_sidewalk_of(section),
-			"and a section is on no sidewalk")
-
-## **A row drawn to travel a sidewalk takes the whole of it** (`DayLocations.record_side()`): the
-## location it is recorded at holds it, the other two locations of that sidewalk are taken by it,
-## the street's three sections are closed to a row that spans the street, and the far sidewalk's
-## three stay open to the draw.
-func _test_a_side_drawn_takes_its_sidewalk_and_closes_its_sections(t: TestRunner) -> void:
-	var locations := DayLocations.lay_out(CityMap.new(), _views())
-	var sidewalks := _sidewalks_of(locations, BESIDE)
-	var at := sidewalks[0]
-	var walker := EventPlan.new(EventCatalogue.by_id("dog_walker"), at.centre())
-	locations.record_side(at, walker)
-	var near := 0
-	var far_open := 0
-	for sidewalk in sidewalks:
-		if at.is_on_the_sidewalk_of(sidewalk):
-			if not sidewalk.is_open() and (sidewalk.is_taken() or sidewalk == at):
-				near += 1
-		elif sidewalk.is_open():
-			far_open += 1
-	t.check(at.is_drawn() and near == 3,
-			"the sidewalk's three locations are the walker's (%d of 3)" % near)
-	var closed := 0
-	for section in locations.all():
-		if section.kind() == Location.Kind.SECTION and section.segment().key() == BESIDE \
-				and section.is_drawn() and not section.is_taken():
-			closed += 1
-	t.check(closed == 3, "the street's three sections are closed to a row across it (%d)" % closed)
-	t.check(far_open == 3, "and the far sidewalk's three stay open (%d)" % far_open)

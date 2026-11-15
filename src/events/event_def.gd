@@ -988,19 +988,16 @@ func span_the_street() -> void:
 
 ## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`;
 ## inbox #1466: a marble that takes a segment leaves at least two more draws, and one smaller than
-## a segment is followed by another small one): one sidewalk location, one whole sidewalk of the
-## street (a side: one sidewalk location in each of its three sections), or one whole section.
-enum StreetShare { A_LOCATION, A_SIDE, A_SECTION }
+## a segment is followed by another small one): one sidewalk location, or one whole section.
+enum StreetShare { A_LOCATION, A_SECTION }
 
 ## **What the row takes of a street**, read off its ground and its path, never set: a section where
-## it stands on the carriageway (it spans the street or drives it), a side where it travels along
-## a sidewalk (a route or a beat down the street), else one sidewalk location. A row a street draws
-## takes a side or a section only while the street has that much room left (`UnitRoom`).
+## it stands on the carriageway (it spans the street or drives it), else one sidewalk location,
+## whatever its path along it. A row a street draws takes a section only while the street has that
+## much room left (`UnitRoom`).
 func takes_of_a_street() -> StreetShare:
 	if placement.has(GameEnums.TileType.ROAD):
 		return StreetShare.A_SECTION
-	if mobile and path_mode == PathMode.ALONG_STREET:
-		return StreetShare.A_SIDE
 	return StreetShare.A_LOCATION
 
 ## Entering the lethal radius ends the day immediately.

@@ -113,23 +113,6 @@ func is_open() -> bool:
 func shares_a_section_with(other: Location) -> bool:
 	return other.segment() == _segment and other.section() == _section
 
-## **Whether `other` is a sidewalk location of this one's sidewalk**: both sidewalk locations of
-## one street, on the same side of it, itself included. What a row that travels a sidewalk takes
-## of its street (`EventDef.StreetShare.A_SIDE`, `DayLocations.record_side()`). A street's two
-## sidewalk locations of one section lie on its two sides; two of different sections lie on one
-## side where they line up along the street, sharing the row of tiles (or the column) its sidewalk
-## band runs in.
-func is_on_the_sidewalk_of(other: Location) -> bool:
-	if _kind != Kind.SIDEWALK or other.kind() != Kind.SIDEWALK or _segment == null \
-			or other.segment() != _segment:
-		return false
-	if other == self:
-		return true
-	if shares_a_section_with(other):
-		return false
-	var tiles := other.tiles()
-	return tiles.position.y == _tiles.position.y or tiles.position.x == _tiles.position.x
-
 ## Which of its street's three sections the location is in, 0 to 2 along the street from its first
 ## junction.
 func section() -> int:

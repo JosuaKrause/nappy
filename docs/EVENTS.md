@@ -1224,10 +1224,9 @@ draw more".
 - *Read as* (the designer's, open to correction): the street's rows are a set, laid out again each
   time a marble is added, largest first, and the layout made when the last marble was drawn is
   what stands, so whether the street can hold a row beside what it has drawn is known as the row
-  comes up. The share a row takes is read off its ground and path: a section where it stands on the
-  carriageway, a side (one sidewalk location in each of the three sections) where it travels a
-  sidewalk, the designer's addition to the player's sizes, else one sidewalk location; the empty
-  marble is the smallest. A mixed unit draws from the bag of its most permissive view, since a
+  comes up. The share a row takes is read off its ground: a section where it stands on the
+  carriageway, else one sidewalk location, however it travels along it: the player's three sizes
+  and no fourth; the empty marble is the smallest. A mixed unit draws from the bag of its most permissive view, since a
   marble has no location to pick a bag by.
 
 **A location is part of a street** (inbox #1185 in gentle-owl):

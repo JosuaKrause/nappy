@@ -28,9 +28,9 @@ candidate loop, where the beat exists. A row that wants a role its data does not
 change to `EventScheduler.role_for()`, not a new field.
 
 **What a row takes of a street is not a decision either.** `EventDef.takes_of_a_street()` reads it
-off the row's ground and path (a section where it stands on the carriageway, a side where it
-travels a sidewalk, else one sidewalk location), and a row that takes a side or a section is drawn
-only while its street has that much room left (`UnitRoom`).
+off the row's ground (a section where it stands on the carriageway, else one sidewalk location),
+and a row that takes a section is drawn only while its street has that much room left
+(`UnitRoom`).
 
 **`obstructs_radius` is not a decision.** If it stands still and it is drawn, it is solid at half
 its silhouette.

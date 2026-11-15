@@ -1,14 +1,12 @@
 extends RefCounted
 ## `UnitRoom`, what is left of a unit for its draw to speak for (inbox #1466): a whole street fits
-## a marble of any size first; after a side exactly three small marbles follow; after a section at
-## least two more draws; after a small marble only small ones until its section is full; a street
+## a marble of any size first; after a section at least two more draws; after a small marble only small ones until its section is full; a street
 ## part of which a dawn phase holds starts with what is left; every unit off the streets draws one
 ## small marble per open location; and a unit with nothing open has no room. Built of plain values:
 ## a unit and its locations are state, made by hand, so nothing is mocked.
 
 func run(t: TestRunner) -> void:
 	_test_a_whole_street_fits_any_marble_first(t)
-	_test_after_a_side_three_small_marbles_follow(t)
 	_test_after_a_section_at_least_two_more_draws_follow(t)
 	_test_after_a_small_marble_only_small_ones_until_its_section_is_full(t)
 	_test_a_street_part_of_which_is_held_starts_with_what_is_left(t)
@@ -16,7 +14,6 @@ func run(t: TestRunner) -> void:
 	_test_a_unit_with_nothing_open_has_no_room(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
-const SIDE := EventDef.StreetShare.A_SIDE
 const SECTION := EventDef.StreetShare.A_SECTION
 const SMALL := EventDef.StreetShare.A_LOCATION
 
@@ -64,29 +61,17 @@ static func _draws(room: UnitRoom, share: EventDef.StreetShare) -> int:
 
 func _test_a_whole_street_fits_any_marble_first(t: TestRunner) -> void:
 	var room := UnitRoom.of(_street())
-	t.check(room.is_open() and room.fits(SIDE) and room.fits(SECTION) and room.fits(SMALL),
-			"a whole street fits a side, a section or a small marble first")
+	t.check(room.is_open() and room.fits(SECTION) and room.fits(SMALL),
+			"a whole street fits a section or a small marble first")
 	t.check(_draws(UnitRoom.of(_street()), SMALL) == 6,
 			"and draws six small marbles, one a sidewalk location")
 	t.check(_draws(UnitRoom.of(_street()), SECTION) == 3, "or three sections")
 
-func _test_after_a_side_three_small_marbles_follow(t: TestRunner) -> void:
-	var room := UnitRoom.of(_street())
-	room.take(SIDE)
-	var neither := true
-	var draws := 0
-	while room.is_open() and draws < 20:
-		neither = neither and not room.fits(SIDE) and not room.fits(SECTION)
-		room.take(SMALL)
-		draws += 1
-	t.check(draws == 3, "after a side exactly three draws follow (%d)" % draws)
-	t.check(neither, "and none of them fits a side or a section")
-
 func _test_after_a_section_at_least_two_more_draws_follow(t: TestRunner) -> void:
 	var by_sections := UnitRoom.of(_street())
 	by_sections.take(SECTION)
-	t.check(by_sections.is_open() and not by_sections.fits(SIDE),
-			"a street with a section drawn has room left, and no side fits")
+	t.check(by_sections.is_open() and by_sections.fits(SECTION),
+			"a street with a section drawn has room left, and another section fits")
 	t.check(_draws(by_sections, SECTION) == 2, "two more sections fit, the fewest draws left")
 	var by_small := UnitRoom.of(_street())
 	by_small.take(SECTION)
@@ -95,10 +80,10 @@ func _test_after_a_section_at_least_two_more_draws_follow(t: TestRunner) -> void
 func _test_after_a_small_marble_only_small_ones_until_its_section_is_full(t: TestRunner) -> void:
 	var room := UnitRoom.of(_street())
 	room.take(SMALL)
-	t.check(room.fits(SMALL) and not room.fits(SECTION) and not room.fits(SIDE),
+	t.check(room.fits(SMALL) and not room.fits(SECTION),
 			"after a small marble only a small one fits")
 	room.take(SMALL)
-	t.check(room.fits(SECTION) and not room.fits(SIDE),
+	t.check(room.fits(SECTION),
 			"and once a second fills its section, a section fits again")
 	room.take(SECTION)
 	room.take(SMALL)
@@ -108,8 +93,7 @@ func _test_after_a_small_marble_only_small_ones_until_its_section_is_full(t: Tes
 	t.check(not room.is_open(), "until the street is spoken for")
 
 ## A sidewalk location a dawn phase holds closes its section (`DayLocations.assign_to()`), which
-## leaves that section a half and the other two whole; a whole sidewalk taken (a row travelling it,
-## `DayLocations.record_side()`) leaves three halves.
+## leaves that section a half and the other two whole.
 func _test_a_street_part_of_which_is_held_starts_with_what_is_left(t: TestRunner) -> void:
 	var street := _street()
 	var held := street.locations()[3]
@@ -117,25 +101,14 @@ func _test_a_street_part_of_which_is_held_starts_with_what_is_left(t: TestRunner
 	held.take(cafe)
 	street.locations()[0].record(null)
 	var room := UnitRoom.of(street)
-	t.check(not room.fits(SECTION) and not room.fits(SIDE),
+	t.check(not room.fits(SECTION),
 			"a street one sidewalk location of which is held fits no section until its half is "
-			+ "filled, and no side")
+			+ "filled")
 	t.check(_draws(room, SMALL) == 5, "and draws five small marbles")
-	var walked := _street()
-	var near := walked.locations()[3]
-	var walker := EventPlan.new(EventCatalogue.by_id("dog_walker"), near.centre())
-	for location in walked.locations():
-		if location.kind() == Location.Kind.SECTION:
-			location.record(null)
-		elif near.is_on_the_sidewalk_of(location):
-			location.take(walker)
-	var halves := UnitRoom.of(walked)
-	t.check(not halves.fits(SECTION) and _draws(halves, SMALL) == 3,
-			"a street a whole sidewalk of which is taken has three halves, and no section fits")
 
 func _test_off_the_streets_each_open_location_takes_one_marble(t: TestRunner) -> void:
 	var box := UnitRoom.of(_ground(PlacementUnit.Kind.JUNCTION, Location.Kind.JUNCTION, 1))
-	t.check(not box.fits(SECTION) and not box.fits(SIDE) and _draws(box, SMALL) == 1,
+	t.check(not box.fits(SECTION) and _draws(box, SMALL) == 1,
 			"a junction box draws one small marble and fits no larger one")
 	var alley := UnitRoom.of(_ground(PlacementUnit.Kind.ALLEY, Location.Kind.ALLEY, 2, 1))
 	t.check(_draws(alley, SMALL) == 2, "an alley with two of its three open draws two")

@@ -61,21 +61,6 @@ func record(location: Location, plan: EventPlan) -> void:
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	location.record(plan)
 
-## **Records the draw's `plan`, a row that travels a sidewalk, at `location`, and gives it the
-## whole sidewalk** (`EventDef.StreetShare.A_SIDE`, `MarbleDraw`): the other sidewalk locations of
-## that sidewalk of the street (`Location.is_on_the_sidewalk_of()`) are taken by it, and the three
-## sections it runs along are closed to a row that spans the street
-## (`StreetLocations.close_the_section_of()`), so the far sidewalk alone stays open to the draw.
-func record_side(location: Location, plan: EventPlan) -> void:
-	var street := _streets[location.segment().key()] as StreetLocations
-	location.record(plan)
-	for sidewalk in street.sidewalks():
-		if sidewalk != location and location.is_on_the_sidewalk_of(sidewalk):
-			sidewalk.take(plan)
-	for sidewalk in street.sidewalks():
-		if location.is_on_the_sidewalk_of(sidewalk):
-			street.close_the_section_of(sidewalk)
-
 ## **Every location still open to a phase**: available and neither taken nor drawn, street by
 ## street in the lattice's order (each street's sidewalk locations, then its sections), then the
 ## ground beyond the streets. Unshuffled, so a phase that draws among them draws on its own stream.

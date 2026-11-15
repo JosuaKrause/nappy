@@ -55,11 +55,11 @@ extends RefCounted
 ## its pull and its cost only.
 ##
 ## **And how the units drew, marble by marble** (`MarbleDraw`): per day, summed over the seeds,
-## `WZ day sides sections locations marbles empty`, the rows every unit placed by what each took of
+## `WZ day sections locations marbles empty`, the rows every unit placed by what each took of
 ## its unit (`EventDef.takes_of_a_street()` in a street, one location elsewhere; a row handed to her
 ## walk counted), the marbles the units drew and how many of them were empty. A unit's marbles are
-## worked out from its room before it draws (`UnitRoom`, counted in small marbles: a side speaks
-## for three, a section for two), since every marble takes its share of it and a unit draws until
+## worked out from its room before it draws (`UnitRoom`, counted in small marbles: a section speaks
+## for two), since every marble takes its share of it and a unit draws until
 ## it is spoken for; `WZ all` sums the days.
 ##
 ## **And whether the day's routes stay open, which no rule floods the city to keep** (`RouteGroundRule`
@@ -127,28 +127,24 @@ class _Drawing extends RefCounted:
 			_room[unit.name()] = count
 
 	## **What the day's units placed, by share, and the marbles they drew**, every unit drawn:
-	## `[sides, sections, locations, marbles, empty]`.
+	## `[sections, locations, marbles, empty]`.
 	func marbles() -> Array[int]:
-		var counts: Array[int] = [0, 0, 0, 0, 0]
+		var counts: Array[int] = [0, 0, 0, 0]
 		for unit in _units:
 			var spoken := 0
 			for plan in unit.drawn():
 				var share := plan.row().takes_of_a_street() \
 						if unit.kind() == PlacementUnit.Kind.STREET \
 						else EventDef.StreetShare.A_LOCATION
-				match share:
-					EventDef.StreetShare.A_SIDE:
-						counts[0] += 1
-						spoken += 3
-					EventDef.StreetShare.A_SECTION:
-						counts[1] += 1
-						spoken += 2
-					_:
-						counts[2] += 1
-						spoken += 1
+				if share == EventDef.StreetShare.A_SECTION:
+					counts[0] += 1
+					spoken += 2
+				else:
+					counts[1] += 1
+					spoken += 1
 			var empty := int(_room[unit.name()]) - spoken
-			counts[3] += unit.drawn().size() + empty
-			counts[4] += empty
+			counts[2] += unit.drawn().size() + empty
+			counts[3] += empty
 		return counts
 
 	## Takes the walk what is drawn joins, as `EventsAhead` has it: a placed row added to the
@@ -263,7 +259,7 @@ func _walk_every_day(reach: float) -> void:
 	var all_on_undrawn := 0
 	var all_gave_up := 0
 	var all_nearest := INF
-	var all_marbles: Array[int] = [0, 0, 0, 0, 0]
+	var all_marbles: Array[int] = [0, 0, 0, 0]
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}
@@ -472,8 +468,7 @@ func _walk_every_day(reach: float) -> void:
 			continue
 		print("WD %d %d %d" % [day, SEEDS, placed])
 		print("WC %d %d %d" % [day, cut_at_dawn, cut_after_walk])
-		print("WZ %d %d %d %d %d %d" % [day, marbles[0], marbles[1], marbles[2], marbles[3],
-				marbles[4]])
+		print("WZ %d %d %d %d %d" % [day, marbles[0], marbles[1], marbles[2], marbles[3]])
 		for k in marbles.size():
 			all_marbles[k] += marbles[k]
 		all_cut_at_dawn += cut_at_dawn
@@ -492,8 +487,8 @@ func _walk_every_day(reach: float) -> void:
 	print("WQ all %d %s" % [reach, _quantiles(all_costs)])
 	if the_games:
 		print("WC all %d %d" % [all_cut_at_dawn, all_cut_after_walk])
-		print("WZ all %d %d %d %d %d" % [all_marbles[0], all_marbles[1], all_marbles[2],
-				all_marbles[3], all_marbles[4]])
+		print("WZ all %d %d %d %d" % [all_marbles[0], all_marbles[1], all_marbles[2],
+				all_marbles[3]])
 		print("WS all %d %d %d %.0f" % [all_sitings, all_on_undrawn, all_gave_up, all_nearest])
 
 ## **The dawn's unit draw with the touching relation widened to `reach`**: the draw `DawnDraw.run()`

@@ -18,8 +18,7 @@ extends RefCounted
 ##   marble is always accepted and takes one location, so each row left out makes empty likelier:
 ##   across from a drawn event the draw is mostly empty.
 ## - **The unit's rows are laid out again each time one is added, and the last layout stands**
-##   (`_lay_out()`): largest first (a side, then a section, then a location; ties in the order
-##   drawn), each row on the location that weighs it most and takes it
+##   (`_lay_out()`): largest first (a section, then a location; ties in the order drawn), each row on the location that weighs it most and takes it
 ##   (`LocationGround.scale()`, ties in an order of the unit's stream), judged among the plans the
 ##   draw was handed and the rows laid before it. So no location has first pick, a larger row
 ##   drawn later still goes first, and whether the unit can hold a row beside what it has drawn is
@@ -69,7 +68,7 @@ class _Placing extends RefCounted:
 	func plan() -> EventPlan:
 		return _plan
 
-## `locations` records each draw (`DayLocations.record()`, `record_side()`); `rows` the rows the
+## `locations` records each draw (`DayLocations.record()`); `rows` the rows the
 ## bag's marbles name (`id -> EventDef`); `ground` the judge.
 func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround) -> void:
 	_locations = locations
@@ -112,10 +111,7 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 		laid.assign(trial)
 		room.take(_share_of(def, street))
 	for placing in laid:
-		if placing.share() == EventDef.StreetShare.A_SIDE:
-			_locations.record_side(placing.location(), placing.plan())
-		else:
-			_locations.record(placing.location(), placing.plan())
+		_locations.record(placing.location(), placing.plan())
 	for location in unit.locations():
 		if location.is_open():
 			_locations.record(location, null)
@@ -185,24 +181,21 @@ func _place(row: EventDef, unit: PlacementUnit, open: Array[Location], used: Dic
 	return null
 
 ## **Whether a row taking `share` may stand in `location`**, none of the ground it would take
-## `used`: a section where the section and both its sidewalk locations are open, a side where every
-## sidewalk location of that sidewalk is, a location where it is a sidewalk location; off the
-## streets any open location.
+## `used`: a section where the section and both its sidewalk locations are open, a location where
+## it is a sidewalk location; off the streets any open location.
 static func _may_hold(share: EventDef.StreetShare, location: Location, unit: PlacementUnit,
 		open: Array[Location], used: Dictionary) -> bool:
 	if used.has(location) or not open.has(location):
 		return false
 	if unit.kind() != PlacementUnit.Kind.STREET:
 		return true
-	match share:
-		EventDef.StreetShare.A_SECTION:
-			if location.kind() != Location.Kind.SECTION:
-				return false
-		_:
-			if location.kind() != Location.Kind.SIDEWALK:
-				return false
-			if share == EventDef.StreetShare.A_LOCATION:
-				return true
+	if share == EventDef.StreetShare.A_SECTION:
+		if location.kind() != Location.Kind.SECTION:
+			return false
+	elif location.kind() != Location.Kind.SIDEWALK:
+		return false
+	else:
+		return true
 	for other in _ground_of(share, location, unit):
 		if used.has(other) or not open.has(other):
 			return false
@@ -216,7 +209,7 @@ static func _taken_by(placing: _Placing, unit: PlacementUnit) -> Array[Location]
 	return taken
 
 ## **The other locations of a street `unit` a row taking `share` at `location` takes**: a section
-## its two sidewalk locations, a side the other sidewalk locations of its sidewalk, a location none.
+## its two sidewalk locations, a location none.
 static func _ground_of(share: EventDef.StreetShare, location: Location,
 		unit: PlacementUnit) -> Array[Location]:
 	var ground: Array[Location] = []
@@ -224,8 +217,6 @@ static func _ground_of(share: EventDef.StreetShare, location: Location,
 		if other == location or other.kind() != Location.Kind.SIDEWALK:
 			continue
 		if share == EventDef.StreetShare.A_SECTION and location.shares_a_section_with(other):
-			ground.append(other)
-		elif share == EventDef.StreetShare.A_SIDE and location.is_on_the_sidewalk_of(other):
 			ground.append(other)
 	return ground
 
@@ -255,13 +246,12 @@ func _scale(def: EventDef, location: Location, scales: Dictionary) -> float:
 static func _share_of(def: EventDef, street: bool) -> EventDef.StreetShare:
 	return def.takes_of_a_street() if street else EventDef.StreetShare.A_LOCATION
 
-## **`rows` largest first**: a side, then a section, then a location, ties in the order handed.
+## **`rows` largest first**: a section, then a location, ties in the order handed.
 static func _largest_first(rows: Array[EventDef], street: bool) -> Array[EventDef]:
 	var ranked: Array = []
 	for index in rows.size():
 		var share := _share_of(rows[index], street)
-		var size := 0 if share == EventDef.StreetShare.A_SIDE \
-				else (1 if share == EventDef.StreetShare.A_SECTION else 2)
+		var size := 0 if share == EventDef.StreetShare.A_SECTION else 1
 		ranked.append([size, index])
 	ranked.sort_custom(func(a: Array, b: Array) -> bool:
 		var size_a: int = a[0]
