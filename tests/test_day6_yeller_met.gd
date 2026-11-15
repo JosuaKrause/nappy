@@ -63,6 +63,9 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
+	# Every unit drawn first: the man her route is handed is told from the plans standing once the
+	# mark is read, so the men the day's units draw have to stand by then, as the dawn's do.
+	city.events.draw_the_ground_round(Vector2.ZERO, INF)
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
