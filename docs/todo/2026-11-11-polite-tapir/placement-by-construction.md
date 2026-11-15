@@ -58,7 +58,7 @@ by line; its numbered list says where the code differs.
 ## What is built
 
 The locations of every day (`DayLocations`, `StreetLocations`, `Location`, each told its view once),
-the bag per view and its draw (`ViewBag`, `LocationDraw`), the day's placement rules as classes
+the bag per view and the unit's marble draw (`ViewBag`, `MarbleDraw`, `UnitRoom`), the day's placement rules as classes
 (`StreetRule`, composed by `StreetInvalidation`, with a location's own ground in `LocationFit`), the
 roadblock phase (`RoadblockPhase`), day 13's section swap, the scene recipes' locations, and the
 fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open location is drawn
@@ -66,7 +66,8 @@ unit by unit as she comes near it (`UnitDraw`, prepared by `DawnDraw`, drawn by 
 locations), a junction box, an alley, or one park or square (`PlacementUnit`, grouped by
 `DayUnits`), with its own stream and a fixed rank from the day's seed, and before a unit draws, every
 undrawn unit touching it (sharing a junction box, or bordering the same alley, park or square) with a
-lower rank draws first. Each unit draws from a bag per view filled fresh, at most one of a row in the
+lower rank draws first. Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
+is placed (a section, or one location) and the unit's rows laid out together, at most one of a row in the
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
 on the board, question long-routes, inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. A place her walk
@@ -86,12 +87,11 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-2. **A unit's draw takes everything that matters together, and a marble is drawn before it is
-   placed.** The units draw as she walks (above). The board questions on how far a unit's draw looks
-   (touching-reach) and on what the day holds until step 3 (day-density) are answered, and the answers
-   wait in the inbox for the next filing. Two notes there change the draw again: everything that matters
-   is drawn together (the touching-reach answer), and a marble is drawn before it is placed (a note of
-   its own).
+2. **Everything that matters is drawn together.** The units draw as she walks, a marble drawn before
+   it is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
+   the day holds until step 3 (day-density) are answered, and the answers wait in the inbox for the next
+   filing. The touching-reach answer changes the draw again: everything that matters is drawn together,
+   so a long route keeps its full length; how is the board question route-draw.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.
