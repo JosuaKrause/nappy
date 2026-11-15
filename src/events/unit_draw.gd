@@ -21,23 +21,21 @@ extends RefCounted
 ## her walk (`EventDef.is_handed_to_her_walk()`) is passed over. Neither changes a draw made while
 ## the plan has no place, since every rule passes over a plan that stands nowhere.
 ##
-## Drawing one unit: its locations in an order of its own stream, a street's three sections first
-## (`StreetLocations` keeps a row that takes its section drawn before the sidewalks it takes), the
-## rest shuffled, so no location of a unit always has first pick; a fresh bag per view the unit
-## has a location in, of the view's fill, on the unit's stream (`ViewBag`), so what a far unit
-## drew changes nothing here; at most one of a row in the unit (`LocationDraw.draw()`). Model: no
-## node.
+## Drawing one unit: one fresh bag, of the fill of the unit's view (the most permissive of its
+## locations', `PlacementUnit.view()`), on the unit's stream (`ViewBag`), so what a far unit drew
+## changes nothing here; the marbles drawn from it and laid out in the unit (`MarbleDraw.draw()`),
+## a marble drawn before it has a place. Model: no node.
 
 var _units: DayUnits
-var _drawing: LocationDraw
+var _drawing: MarbleDraw
 var _fills := {}
 var _dawn: Array[EventPlan] = []
 
-## `units` the day's units; `drawing` draws one unit's locations (`LocationDraw`); `fills` the
+## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `fills` the
 ## three views' bag fills (`view -> {marble -> count}`, `EventScheduler.view_fills()`); `dawn` the
 ## plans the dawn placed, copied, a plan it left with no place left out (the class comment says
 ## why).
-func _init(units: DayUnits, drawing: LocationDraw, fills: Dictionary,
+func _init(units: DayUnits, drawing: MarbleDraw, fills: Dictionary,
 		dawn: Array[EventPlan]) -> void:
 	_units = units
 	_drawing = drawing
@@ -100,33 +98,9 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 			if not plan.row().is_handed_to_her_walk():
 				among.append(plan)
 	var rng := unit.stream()
-	var order := _order_of(unit.locations(), rng)
-	var bags := {}
-	for location in order:
-		var view := location.view()
-		if bags.has(view) or not _fills.has(view):
-			continue
-		bags[view] = ViewBag.new(_fills[view], hash("%d:%s:bag:%d" % [rng.seed, unit.name(), view]))
-	var placed := _drawing.draw(order, bags, among)
+	var view := unit.view()
+	var fill: Dictionary = _fills.get(view, {ViewBag.EMPTY: 1})
+	var bag := ViewBag.new(fill, hash("%d:%s:bag:%d" % [rng.seed, unit.name(), view]))
+	var placed := _drawing.draw(unit, bag, among)
 	unit.record_draw(placed)
 	return placed
-
-## **A unit's locations in the order it draws them**: a street's sections first, in their order
-## along it, so a row that takes its section is drawn before the sidewalks it takes; then every
-## other location, shuffled on `rng` (Fisher-Yates), so with one of a row per unit the first
-## location in map order does not always have first pick of every row.
-static func _order_of(locations: Array[Location], rng: RandomNumberGenerator) -> Array[Location]:
-	var order: Array[Location] = []
-	var rest: Array[Location] = []
-	for location in locations:
-		if location.kind() == Location.Kind.SECTION:
-			order.append(location)
-		else:
-			rest.append(location)
-	for i in range(rest.size() - 1, 0, -1):
-		var j := rng.randi_range(0, i)
-		var kept := rest[i]
-		rest[i] = rest[j]
-		rest[j] = kept
-	order.append_array(rest)
-	return order

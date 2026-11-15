@@ -1,14 +1,16 @@
 class_name DawnDraw
 extends DawnPhase
-## **The dawn draw**: every open location of the day drawn from its view's bag, a unit at a time
-## (inbox #1185 in gentle-owl; `UnitDraw`, `LocationDraw`): each unit (a street, a junction box, an
-## alley, a park or a square; `DayUnits`) draws its locations in one go, on its own stream, from a
-## fresh bag per view of the view's fill (`EventScheduler.view_fills()`: every recurring row the
-## catalogue places on the map today, each as many times as its weight in the view, and the empty
-## event), at most one of a row in a unit, after every touching unit of lower rank. The day's ground
-## answers which row is valid where and how much each location weighs it (`RuledLocationGround`),
-## judged among the dawn's plans and the draws of the units touching the one drawing, on the first
-## tile no rule refuses, a route kept on its location's run (`Location.run()`). The rows other
+## **The dawn draw**: every open location of the day drawn, a unit at a time (inbox #1185 in
+## gentle-owl; `UnitDraw`, `MarbleDraw`): each unit (a street, a junction box, an alley, a park or a
+## square; `DayUnits`) draws in one go, on its own stream, from one fresh bag of the fill of its
+## view, the most permissive of its locations' (`PlacementUnit.view()`; `EventScheduler.view_fills()`:
+## every recurring row the catalogue places on the map today, each as many times as its weight in
+## the view, and the empty event), each marble drawn before it has a place and its rows laid out
+## in the unit (inbox #1466), at most one of a row in a unit, after every touching unit of lower
+## rank. The day's ground answers which row is valid where and how much each location weighs it
+## (`RuledLocationGround`), judged among the dawn's plans and the draws of the units touching the
+## one drawing, on the first tile no rule refuses, a route kept on its location's run
+## (`Location.run()`). The rows other
 ## phases place have no marble: the moments she is owed (`DawnMoments`), and on the day of the
 ## roadblock phase its row (`DawnContext.roadblock_row()`), the phase's alone.
 ##
@@ -46,4 +48,4 @@ func run(context: DawnContext) -> void:
 			LocationFit.new(day, map, context.builder().without_todays_bodies(), ground),
 			context.rules(), ground, false, ROUTES_STAY_ON_THE_RUN)
 	context.hold_the_draw(UnitDraw.new(units,
-			LocationDraw.new(context.locations(), rows, judged), fills, events.placements()))
+			MarbleDraw.new(context.locations(), rows, judged), fills, events.placements()))

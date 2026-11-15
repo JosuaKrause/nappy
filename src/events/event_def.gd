@@ -405,7 +405,7 @@ func drawn_as_often() -> float:
 ## the moments the dawn owes her (`DawnMoments`, where the spec keeps the caps), the director's
 ## marbles and the rows of a scene recipe that no unit draws (`SceneRecipeRuntime`). The escape's
 ## bag walk reads `max_per_day` only for a spec that keeps the caps, and the escape's does not. A
-## unit's draw counts nothing across the day; it holds one of a row in the unit (`LocationDraw`).
+## unit's draw counts nothing across the day; it holds one of a row in the unit (`MarbleDraw`).
 func most_in_a_day() -> int:
 	return max_per_day
 @export var max_per_day := 1
@@ -673,8 +673,8 @@ func is_drawn_by_units(day: int, beside_the_routes: String) -> bool:
 			and (beside_the_routes == "" or id != beside_the_routes)
 
 ## **Whether a recurring row the day draws is handed to her walk to site** (`on_her_way`, the
-## sidewalk poster crew): a location draws it like any other and hands it on with no position for
-## the walk to put on her way (`LocationDraw.draw()`). Asked too by the park
+## sidewalk poster crew): a unit draws it like any other and hands it on with no position for
+## the walk to put on her way (`MarbleDraw.draw()`). Asked too by the park
 ## spoilers, which offer none such, since a park it spoiled would be left empty.
 func is_handed_to_her_walk() -> bool:
 	return on_her_way != null and kind == GameEnums.EventKind.RECURRING
@@ -986,6 +986,23 @@ func spans_the_street() -> bool:
 func span_the_street() -> void:
 	_spans_the_street = true
 
+## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`;
+## inbox #1466: a marble that takes a segment leaves at least two more draws, and one smaller than
+## a segment is followed by another small one): one sidewalk location, one whole sidewalk of the
+## street (a side: one sidewalk location in each of its three sections), or one whole section.
+enum StreetShare { A_LOCATION, A_SIDE, A_SECTION }
+
+## **What the row takes of a street**, read off its ground and its path, never set: a section where
+## it stands on the carriageway (it spans the street or drives it), a side where it travels along
+## a sidewalk (a route or a beat down the street), else one sidewalk location. A row a street draws
+## takes a side or a section only while the street has that much room left (`UnitRoom`).
+func takes_of_a_street() -> StreetShare:
+	if placement.has(GameEnums.TileType.ROAD):
+		return StreetShare.A_SECTION
+	if mobile and path_mode == PathMode.ALONG_STREET:
+		return StreetShare.A_SIDE
+	return StreetShare.A_LOCATION
+
 ## Entering the lethal radius ends the day immediately.
 @export var hard_fail := false
 
@@ -1117,7 +1134,7 @@ func at_heat(level: int) -> EventDef:
 		hot.max_per_day = maxi(max_per_day,
 				roundi(max_per_day * lerpf(1.0, HEAT_PRESSES_POPULATION, through)))
 		# And as many more marbles in the day's bags: a cap a draw rarely reaches would raise no
-		# population, so the row's weight, which sets how often a location draws it, rises with it.
+		# population, so the row's weight, which sets how often a unit draws it, rises with it.
 		hot.weight = weight * lerpf(1.0, HEAT_PRESSES_POPULATION, through)
 		hot.intensity = intensity * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)
 		hunts_from = HEAT_INVESTIGATES_LEVEL
@@ -1270,7 +1287,7 @@ func validate() -> bool:
 				+ "wherever she goes, and one placed at dawn is met only if she walks there")
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
-	# `DawnOneShots` and a location's draw (`LocationDraw`) leave a plan unplaced
+	# `DawnOneShots` and a unit's draw (`MarbleDraw`) leave a plan unplaced
 	# for it, and only `EventDirector` sites what they leave. The siting is a tile with the
 	# corridor's own questions asked of it, which a director-sited row never has, and a thing that
 	# moves has no one place for its scar to be recorded at.
@@ -1278,7 +1295,7 @@ func validate() -> bool:
 		if kind != GameEnums.EventKind.ONE_SHOT and kind != GameEnums.EventKind.RECURRING:
 			push_error("event '%s' is sited from her walk and is neither a one-shot nor " % id
 					+ "recurring: nothing but DawnOneShots and "
-					+ "LocationDraw leaves a plan for her walk to site")
+					+ "MarbleDraw leaves a plan for her walk to site")
 			return false
 		if spawn_mode != SpawnMode.MAP:
 			push_error("event '%s' is sited from her walk and is director-sited besides: it is " % id
@@ -1869,7 +1886,7 @@ func silent_beyond() -> float:
 ## else in the day is judged differently because of it.
 ## **A recurring row carrying it is not exempt**: a poster crew closes nothing, and it is drawn at a
 ## location and judged as any other before it is handed to her walk with no position
-## (`LocationDraw.draw()`).
+## (`MarbleDraw.draw()`).
 func has_a_line_to_avoid() -> bool:
 	if role == EventDef.Role.SCENERY or pursuit != null:
 		return false

@@ -30,6 +30,7 @@ var _name := ""
 var _rank := 0
 var _drawn := false
 var _placed: Array[EventPlan] = []
+var _view: int = PlacementView.View.OFF_THE_ROUTE
 
 ## `tiles` is the ground the unit is: its street's rect, its box, its alley's rect, its lot's
 ## bounds (`Location.part_of()`); `bounds` the same in world space; `locations` its locations, a
@@ -44,6 +45,8 @@ func _init(kind: Kind, tiles: Rect2i, bounds: Rect2, locations: Array[Location],
 	_name = "%s:(%d, %d, %d, %d)" % [_KIND_NAMES[kind], tiles.position.x, tiles.position.y,
 			tiles.size.x, tiles.size.y]
 	_rank = hash("%d:unit-rank:%s" % [day_seed, _name])
+	for location in locations:
+		_view = mini(_view, location.view())
 
 ## What ground the unit is (`Kind`).
 func kind() -> Kind:
@@ -64,6 +67,16 @@ func bounds() -> Rect2:
 ## Its locations: a street's sections first, then its sidewalks, as laid out.
 func locations() -> Array[Location]:
 	return _locations
+
+## **The view whose bag the unit draws from** (`PlacementView.View`): the most permissive of its
+## locations' views, on the route before route-adjacent before off the route, so a park a route
+## cuts through draws from the route's bag; off the route for a unit with no location. *(The
+## player, of a unit whose locations have different views: "the more permissive (in terms of
+## traversability) view gets priority", "whichever is easier to implement"; inbox #1466.)* A
+## marble is drawn before it has a location, so there is no location's view to pick a bag by.
+## Worked out once, as the unit is made.
+func view() -> int:
+	return _view
 
 ## Its fixed rank for the day, a hash of the day's seed and its name.
 func _ranking() -> int:

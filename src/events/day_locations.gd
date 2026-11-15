@@ -10,8 +10,9 @@ extends RefCounted
 ## **Laid out every day at dawn**, by the dawn's context (`DawnContext.locations()`) the first time
 ## `EventScheduler.build_day()` asks, after the routes are established and the day's holds are on
 ## the map. On day 13 the roadblock
-## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn from its
-## view's bag, a unit at a time (`UnitDraw`, `LocationDraw`; the units are grouped from `all()`).
+## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn, a unit
+## at a time, from the bag of its unit's view (`UnitDraw`, `MarbleDraw`; the units are grouped from
+## `all()`).
 ## The day's planner hands the locations on to the walk
 ## (`DawnContext.locations()`, `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's
 ## task takes a section for its roadblock when none is close by (`nearest_section_in()`). Pure state:
@@ -60,6 +61,21 @@ func record(location: Location, plan: EventPlan) -> void:
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	location.record(plan)
 
+## **Records the draw's `plan`, a row that travels a sidewalk, at `location`, and gives it the
+## whole sidewalk** (`EventDef.StreetShare.A_SIDE`, `MarbleDraw`): the other sidewalk locations of
+## that sidewalk of the street (`Location.is_on_the_sidewalk_of()`) are taken by it, and the three
+## sections it runs along are closed to a row that spans the street
+## (`StreetLocations.close_the_section_of()`), so the far sidewalk alone stays open to the draw.
+func record_side(location: Location, plan: EventPlan) -> void:
+	var street := _streets[location.segment().key()] as StreetLocations
+	location.record(plan)
+	for sidewalk in street.sidewalks():
+		if sidewalk != location and location.is_on_the_sidewalk_of(sidewalk):
+			sidewalk.take(plan)
+	for sidewalk in street.sidewalks():
+		if location.is_on_the_sidewalk_of(sidewalk):
+			street.close_the_section_of(sidewalk)
+
 ## **Every location still open to a phase**: available and neither taken nor drawn, street by
 ## street in the lattice's order (each street's sidewalk locations, then its sections), then the
 ## ground beyond the streets. Unshuffled, so a phase that draws among them draws on its own stream.
@@ -68,10 +84,10 @@ func open_locations() -> Array[Location]:
 	for key: Vector3i in _streets:
 		var street := _streets[key] as StreetLocations
 		for location in street.sidewalks() + street.sections():
-			if location.is_available() and not location.is_taken() and not location.is_drawn():
+			if location.is_open():
 				found.append(location)
 	for location in _grounds:
-		if location.is_available() and not location.is_taken() and not location.is_drawn():
+		if location.is_open():
 			found.append(location)
 	return found
 

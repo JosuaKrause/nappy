@@ -5,8 +5,8 @@ extends Resource
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
 ## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves
 ## is the moment: a one-shot is planned with no position (`DawnOneShots`), a
-## recurring row is drawn at a location as any other and handed to her walk with no position
-## (`LocationDraw.draw()`), and
+## recurring row is drawn by a unit as any other and handed to her walk with no position
+## (`MarbleDraw.draw()`), and
 ## `EventDirector.site_what_is_on_her_way()` puts it on a tile of its own ground ahead of her (a
 ## building face for the fire and the crews) once her direction for the day is clear, off screen and
 ## far enough that she meets it rather than watches it appear. Until it has been in the world it may

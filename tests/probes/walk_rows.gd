@@ -54,6 +54,14 @@ extends RefCounted
 ## the wider reach is a second dawn planned on a fresh city and walked the same way, measured for
 ## its pull and its cost only.
 ##
+## **And how the units drew, marble by marble** (`MarbleDraw`): per day, summed over the seeds,
+## `WZ day sides sections locations marbles empty`, the rows every unit placed by what each took of
+## its unit (`EventDef.takes_of_a_street()` in a street, one location elsewhere; a row handed to her
+## walk counted), the marbles the units drew and how many of them were empty. A unit's marbles are
+## worked out from its room before it draws (`UnitRoom`, counted in small marbles: a side speaks
+## for three, a section for two), since every marble takes its share of it and a unit draws until
+## it is spoken for; `WZ all` sums the days.
+##
 ## **And whether the day's routes stay open, which no rule floods the city to keep** (`RouteGroundRule`
 ## and the line rules of `StreetInvalidation` keep them by construction): per day, summed over the
 ## seeds, `WC day dawn walk`, the route tiles (`Corridor.carries_a_route()`) home reached among the
@@ -101,10 +109,47 @@ class _Drawing extends RefCounted:
 	var _siting: EventScheduler.WalkSiting
 	## Every row a unit drew with a place, so far.
 	var rows: Array[EventPlan] = []
+	## Every unit of the day, and each one's room before it drew, in small marbles (unit name ->
+	## count).
+	var _units: Array[PlacementUnit] = []
+	var _room := {}
 
 	func _init(the_draw: UnitDraw) -> void:
 		draw = the_draw
 		longest_chain = _longest_chain(draw.units())
+		_units = draw.units().undrawn_within(Vector2.ZERO, INF)
+		for unit in _units:
+			var room := UnitRoom.of(unit)
+			var count := 0
+			while room.is_open():
+				room.take(EventDef.StreetShare.A_LOCATION)
+				count += 1
+			_room[unit.name()] = count
+
+	## **What the day's units placed, by share, and the marbles they drew**, every unit drawn:
+	## `[sides, sections, locations, marbles, empty]`.
+	func marbles() -> Array[int]:
+		var counts: Array[int] = [0, 0, 0, 0, 0]
+		for unit in _units:
+			var spoken := 0
+			for plan in unit.drawn():
+				var share := plan.row().takes_of_a_street() \
+						if unit.kind() == PlacementUnit.Kind.STREET \
+						else EventDef.StreetShare.A_LOCATION
+				match share:
+					EventDef.StreetShare.A_SIDE:
+						counts[0] += 1
+						spoken += 3
+					EventDef.StreetShare.A_SECTION:
+						counts[1] += 1
+						spoken += 2
+					_:
+						counts[2] += 1
+						spoken += 1
+			var empty := int(_room[unit.name()]) - spoken
+			counts[3] += unit.drawn().size() + empty
+			counts[4] += empty
+		return counts
 
 	## Takes the walk what is drawn joins, as `EventsAhead` has it: a placed row added to the
 	## walk, a row handed to her walk added unplaced and owed to `director`, to site on her way
@@ -218,6 +263,7 @@ func _walk_every_day(reach: float) -> void:
 	var all_on_undrawn := 0
 	var all_gave_up := 0
 	var all_nearest := INF
+	var all_marbles: Array[int] = [0, 0, 0, 0, 0]
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}
@@ -236,6 +282,8 @@ func _walk_every_day(reach: float) -> void:
 		var on_undrawn := 0
 		var gave_up := 0
 		var nearest := INF
+		# What the units placed by share, the marbles they drew and the empty ones.
+		var marbles: Array[int] = [0, 0, 0, 0, 0]
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
@@ -382,6 +430,10 @@ func _walk_every_day(reach: float) -> void:
 									if walked > out_length * 0.5 and walked <= out_length:
 										capped_late_out += 1
 			drawing.join(drawing.the_rest())
+			if the_games:
+				var counted_marbles := drawing.marbles()
+				for k in marbles.size():
+					marbles[k] += counted_marbles[k]
 			gave_up += int(siting.waits.get("the ground round its site had not drawn", 0))
 			for plan: EventPlan in sited:
 				if not plan.is_placed():
@@ -420,6 +472,10 @@ func _walk_every_day(reach: float) -> void:
 			continue
 		print("WD %d %d %d" % [day, SEEDS, placed])
 		print("WC %d %d %d" % [day, cut_at_dawn, cut_after_walk])
+		print("WZ %d %d %d %d %d %d" % [day, marbles[0], marbles[1], marbles[2], marbles[3],
+				marbles[4]])
+		for k in marbles.size():
+			all_marbles[k] += marbles[k]
 		all_cut_at_dawn += cut_at_dawn
 		all_cut_after_walk += cut_after_walk
 		print("WM %d %d %d %d" % [day, capped_met, capped_at_the_door, capped_late_out])
@@ -436,6 +492,8 @@ func _walk_every_day(reach: float) -> void:
 	print("WQ all %d %s" % [reach, _quantiles(all_costs)])
 	if the_games:
 		print("WC all %d %d" % [all_cut_at_dawn, all_cut_after_walk])
+		print("WZ all %d %d %d %d %d" % [all_marbles[0], all_marbles[1], all_marbles[2],
+				all_marbles[3], all_marbles[4]])
 		print("WS all %d %d %d %.0f" % [all_sitings, all_on_undrawn, all_gave_up, all_nearest])
 
 ## **The dawn's unit draw with the touching relation widened to `reach`**: the draw `DawnDraw.run()`
@@ -458,7 +516,7 @@ static func _unit_draw_reaching(dawn: DawnContext, reach: float) -> UnitDraw:
 			LocationFit.new(day, map, dawn.builder().without_todays_bodies(), ground),
 			dawn.rules(), ground, false, DawnDraw.ROUTES_STAY_ON_THE_RUN)
 	return UnitDraw.new(DayUnits.of(dawn.locations().all(), dawn.day_seed(), reach),
-			LocationDraw.new(dawn.locations(), rows, judged),
+			MarbleDraw.new(dawn.locations(), rows, judged),
 			EventScheduler.view_fills(rows, day, dawn.spec()), events.placements())
 
 ## How many of `routes` home reached among the day's closures (`reached_bare`) that it no longer
