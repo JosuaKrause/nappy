@@ -329,7 +329,8 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## streams in like any planned row, broadcasts on the one clock, is silenced by
 ## `EventStreaming.silence_mast()`, counts for `EventStreaming.silence_all_masts()`, and once
 ## silenced stands silenced on later days from its scar (`DawnMasts`). Null when no offered tile passes, which leaves day 11 to the
-## nearest live mast, or, when no live mast stands at all, with nowhere to go.
+## nearest live mast she can be sent to (`ResistanceDirector._nearest_confirmed_mast()`), or, where
+## there is none, with nowhere to go.
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventPlan:
 	if offered.is_empty():
 		return null
@@ -394,7 +395,9 @@ func draw_what_comes_near(at: Vector2, stream_radius: float) -> void:
 ## **Draws now every undrawn unit any part of which lies within `reach` of `at`**, each after every
 ## unit it waits for: what a placement made from her walk asks before its place stands, so
 ## nothing is sited on ground whose units have not drawn (a place the director sites ahead of her,
-## `WalkSiting.ahead_of()`; day 13's swap; the resistance's places; an area cleared of its rows;
+## `WalkSiting.ahead_of()`; day 13's swap; the ground round where she reads a mark, as far as
+## its task is looked for, and along a way from home to a place the resistance sends her to
+## beyond the ground drawn round her, `WayConfirmation`; an area cleared of its rows;
 ## the ground the streaming is about to look at, `EventManager.stream_around()`; the developer's
 ## spawn target). Answers whether it drew any unit.
 func draw_the_ground_round(at: Vector2, reach: float) -> bool:

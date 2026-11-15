@@ -14,22 +14,27 @@ of lower rank, so every unit's draw is the same whatever her path, what drawing 
 would give. A unit within the stream radius of her is drawn before the streaming looks there
 (`EventManager.stream_around()` and the manager's tick). What streams is the *instantiation*.
 
-**A place her walk sites has the units round it drawn before it stands, and no draw reads it.**
-Each placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEAD` of its place
+**A place her walk sites stands on ground whose units have drawn, and no draw reads it.**
+A placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEAD` of its place
 first (`EventsAhead.draw_the_ground_round()`): a place the director sites ahead of her, which gives
-up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`); a place the resistance fixes,
-with the units along a way from home to it (`WayConfirmation`), or, for a mast near where she read
-the mark, round where she read it (no way to that mast is confirmed, the ground within the circle
-round her and `Tuning.EVENT_DRAW_AHEAD` beyond holding the ground round it);
-the walk home day 10's neighbor is given, with the units along it; day 13's swap; an area cleared
-of its rows. So what it is judged against is whole, and nothing a
-unit draws later stands inside it. The one siting that draws nothing is the fire lit at dusk on a
-won day, after which nothing draws. A moment the director sends at her (a cat across her path, a
-pursuer; `EventsAhead.place_what_is_owed_ahead()`) is no place: it starts in her view or just off
-her screen, inside the stream radius, where every unit has drawn. A unit's draw is never judged
-among a plan her walk sites (`UnitDraw`), so where her walk put a thing changes no drawn row. **A
-new placement made from her walk draws the ground round its place first**, or it is judged
-against a walk that does not hold that ground's rows yet.
+up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`); the walk home day 10's
+neighbor is given, with the units along it; day 13's swap; an area cleared of its rows. **A place
+the resistance sends her to is asked by where it stands** (`WayConfirmation`, asked wherever a
+contact is stood or moved, `ResistanceDirector._she_can_be_sent_to()`): inside the ground already
+drawn round her (the stream radius, and round where she reads a mark as far as its task is looked
+for and `Tuning.EVENT_DRAW_AHEAD` beyond) it stands as it is, her own paths reaching it without
+coming within `WayConfirmation.CLEAR` of an undrawn unit; beyond that ground, the units along a
+way from home and round the place draw first. So what a place is judged against is whole, and
+nothing a unit draws later stands inside it. The one siting that draws nothing is the fire lit at
+dusk on a won day, after which nothing draws. A moment the director sends at her (a cat across her
+path, a pursuer; `EventsAhead.place_what_is_owed_ahead()`) is no place: it starts in her view or
+just off her screen, inside the stream radius, where every unit has drawn. The red arrow's choice
+among several places that answer a task is no place either: it is made again twice a second over
+the ground as it has drawn. A unit's draw is never judged among a plan her walk sites
+(`UnitDraw`), so where her walk put a thing changes no drawn row. **A new placement made from her
+walk draws the ground round its place first, and a new place the resistance sends her to is asked
+`_she_can_be_sent_to()`**, or it is judged against a walk that does not hold that ground's rows
+yet.
 
 - **Nothing may be seen to appear.** Both radii are wider than half the viewport diagonal.
 - **`EVENT_STREAM_RADIUS` must stay wider than the widest field in the catalogue.** Otherwise

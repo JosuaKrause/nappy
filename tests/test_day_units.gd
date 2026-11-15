@@ -175,6 +175,17 @@ func _test_the_undrawn_units_nearest_first(t: TestRunner) -> void:
 	near[0].record_draw(none)
 	t.check(units.undrawn_within(at, INF).size() == 10
 			and not units.undrawn_within(at, INF).has(near[0]), "and a drawn one is left out")
+	# How far the ground has drawn round a point is the distance to the nearest unit left: the
+	# box she stands in has drawn, so it is the street three tiles off, and with every unit drawn
+	# there is no end to it.
+	t.check(is_equal_approx(units.drawn_round(at), _distance(at, near[1]))
+			and units.drawn_round(at) > 0.0
+			and units.undrawn_within(at, units.drawn_round(at) - 1.0).is_empty(),
+			"the ground round the box's middle has drawn as far as the nearest undrawn unit (%.0fpx)"
+			% units.drawn_round(at))
+	for unit in units.undrawn_within(at, INF):
+		unit.record_draw(none)
+	t.check(is_inf(units.drawn_round(at)), "and without end once every unit has drawn")
 
 static func _distance(at: Vector2, unit: PlacementUnit) -> float:
 	var bounds := unit.bounds()
