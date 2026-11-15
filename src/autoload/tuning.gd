@@ -692,9 +692,9 @@ const EVENT_STREAM_HYSTERESIS := 260.0
 ## unit is wanted once any part of it is within `EVENT_STREAM_RADIUS` plus this of her, and drawn a
 ## unit a tick (`EventsAhead.draw_what_comes_near()`), so a draw is paid for well before the
 ## streaming looks there. It is also how far round its place a placement made from her walk
-## draws the units first (`EventsAhead.draw_the_ground_round()`; the way from home to a place the
-## resistance sends her to beyond the ground already drawn round her draws every eighth tile of
-## it, `WayConfirmation`): wider than the widest reach a placement rule asks (a lethal field of
+## draws the units first (`EventsAhead.draw_the_ground_round()`; round every eighth tile of the way
+## from home too, for a place the resistance sends her to beyond the ground already drawn round
+## her, `WayConfirmation`): wider than the widest reach a placement rule asks (a lethal field of
 ## 270px), so no unit drawn later can conflict with what was sited there.
 ## It changes when a draw is paid, never what a day holds: every unit draws the same whatever order
 ## the units are drawn in.
