@@ -576,7 +576,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t: TestRunner) -> void:
 	rig.add_child(camera)
 	_city.add_child(rig)
 	rig.set_physics_process(false)
-	RunCity.crowd(_city).use_player(rig)
+	RunCity.simulation(_city).meet_her(rig)
 	RunCity.crowd(_city).use_bus(EventBus)
 
 	# Halfway between the two watches, so a few pixels of separation correction cannot land the
@@ -821,7 +821,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t: TestRunner) -> v
 			first["loud"] = walker.mood().contribution_at(at)
 			first["push"] = walker.global_position - at
 	EventBus.crowd_bumped.connect(on_bump)
-	RunCity.crowd(_city).use_player(rig)
+	RunCity.simulation(_city).meet_her(rig)
 	RunCity.crowd(_city).use_bus(EventBus)
 	RunCity.crowd(_city).set_focus(here)
 	var frames := 0

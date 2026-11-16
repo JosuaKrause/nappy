@@ -609,7 +609,8 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
 						plan.kept_live = true
-	simulation.crowd().start_day(_run.header.day, _run.calendar.day_rng(_run.header.day, "crowd"), at,
+	simulation.crowd().start_day(_run.header.day,
+			_run.calendar.day_rng(_run.header.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
@@ -1268,7 +1269,8 @@ func _physics_process(_delta: float) -> void:
 		var step := _resistance.current_step() if _resistance else null
 		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
 				and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR else null
-		_draft.record(_player, _city, _simulation.events(), walking_home if is_instance_valid(walking_home) else null)
+		_draft.record(_player, _city, _simulation.events(),
+				walking_home if is_instance_valid(walking_home) else null)
 	if _capture_tick >= 0 and tick >= _capture_tick:
 		prepare_capture()
 		return
@@ -1619,7 +1621,8 @@ func _write_the_draft() -> int:
 	var errors: Array[String] = []
 	for field: String in data.get("setup", {}).get("task", {}):
 		pinned.append(position_of(data.setup.task[field], errors))
-	var drafted := _draft.compose(_written, _run, _city, _simulation.crowd(), start_position(), pinned, problems)
+	var drafted := _draft.compose(_written, _run, _city, _simulation.crowd(), start_position(),
+			pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
 	var path := _config.recipe_draft_path

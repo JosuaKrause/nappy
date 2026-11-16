@@ -7,10 +7,12 @@ extends RefCounted
 ##
 ## **Combined by composition, for this reason:** `RunConfig` is a plain value, and its own rules (what it
 ## reads on which build, that a resolved one cannot change, what a recipe puts on top) are checked on
-## parsed values with nothing built. What the rest holds is that `main` and the city hand each of
-## their parts the value it asks for, a guarantee between the configuration and the parts it reaches,
-## which only the real composition shows: a boot of `main`, and a built `City` for the one value
-## handed through the city's setup. Cities come from the cache (`tests/city_map_cache.gd`).
+## parsed values with nothing built. What the rest holds is that `main`, the city and the
+## simulation's builder hand each of their parts the value it asks for, a guarantee between the
+## configuration and the parts it reaches, which only the real composition shows: a boot of `main`,
+## and a built `City` with its simulation stood by a builder (`RunCity.build()`) for the values
+## handed through the city's and the builder's setup. Cities come from the cache
+## (`tests/city_map_cache.gd`).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const Boot := preload("res://tests/booted_main.gd")
@@ -221,12 +223,12 @@ func _her_excitement_rises(t: TestRunner, baby: Baby, own: WorldContext) -> bool
 	loud.free()
 	return rose
 
-## `main` is the one place the configuration is read: the baby and the city it builds are handed
-## plain values, and neither reads a flag of its own.
+## `main` is the one place the configuration is read: the baby, the city it builds and the parts
+## its builder stands in the city are handed plain values, and none reads a flag of its own.
 func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 	for invincible: bool in [false, true]:
 		var words := _words(["--skip", "shadows,motion", "--debug", "--ground-mode", "1",
-				"--blackout", "--pelican", "--force", "cyclist", "3"])
+				"--blackout", "--pelican", "--force", "cyclist", str(FORCED_INTERVAL)])
 		if invincible:
 			words.append("--invincible")
 		words.append_array(_words(["--no-save", "--no-telemetry"]))
@@ -262,6 +264,22 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 				and RunCity.events(city).pelican_rig == EventSpawner.PelicanRig.ALWAYS
 				and RunCity.crowd(city).skip_motion and not RunCity.crowd(city).skip_agent_drawing,
 				"and the events and the crowd it stands are handed theirs")
+		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
+		# that nothing but a win ends (`DayController.invincible`), so a walk can take its time.
+		if invincible and city != null:
+			var her := Boot.player(booted.main)
+			# Far from the station on day 1, with no sabotage done: the lights go out only if the
+			# blackout was handed `--blackout`.
+			var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+			her.set_physics_process(false)
+			her.global_position = Vector2(lot.get_center().x,
+					lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
+			await PhysicsTicks.pass_ticks(t, 2)
+			t.check(not city.traffic_signals().powered,
+					"the blackout is handed --blackout: far from the station the lights go out")
+			var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map)
+			t.check(first >= FORCED_INTERVAL - _walk_step() and first <= FORCED_WITHIN,
+					"the events are handed --force: the cyclist comes after its wait (%.1fs)" % first)
 		booted.free_all()
 		home.free()
 
@@ -388,27 +406,42 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1)
 	RigStreets.begin(city.streets(), city.map, spec)
 	RunCity.events(city).start_day(spec, rng, consumed)
-	var start := CrowdLanes.arterial_pavement(city.map)
-	start.y = city.map.world_size().y * 0.5
+	var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map)
+	t.check(first < INF and first >= FORCED_INTERVAL - _walk_step(),
+			"the forced cyclist comes after the wait the flag names, not before (%.1fs)" % first)
+	t.check(first <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")
+	her.free()
+	city.free()
+
+## One tick of `_first_cyclist_on_a_walk()`'s walk, in game seconds.
+static func _walk_step() -> float:
+	return 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
+
+## **How far into a walk the first cyclist comes**, in game seconds, or INF for none: her walked
+## south down the middle of the arterial's sidewalk by hand at `Tuning.WALK_SPEED`, on real physics
+## ticks `FORCED_SCALE` times real time, for `FORCED_WITHIN` seconds, the way the loose dog's suite
+## walks her, and read off the cyclists `events` puts in the world that it had not before. Her own
+## physics is off for it, so only the walk moves her.
+func _first_cyclist_on_a_walk(t: TestRunner, events: EventManager, her: Stroller,
+		map: CityMap) -> float:
+	her.set_physics_process(false)
+	var start := CrowdLanes.arterial_pavement(map)
+	start.y = map.world_size().y * 0.5
 	her.global_position = start
-	var step := 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
-	var before := RunCity.events(city).instances().duplicate()
+	var step := _walk_step()
+	var before := events.instances().duplicate()
 	var seen := {"first": INF}
 	var each := func(n: int) -> void:
 		her.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 		her.global_position += her.velocity * step
-		for instance in RunCity.events(city).instances():
+		for instance in events.instances():
 			if instance.def.id == "cyclist" and not before.has(instance) \
 					and seen["first"] == INF:
 				seen["first"] = n * step
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(FORCED_WITHIN, FORCED_SCALE), each,
 			FORCED_SCALE)
-	t.check(seen["first"] < INF and seen["first"] >= FORCED_INTERVAL - step,
-			"the forced cyclist comes after the wait the flag names, not before (%.1fs)"
-					% seen["first"])
-	t.check(seen["first"] <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")
-	her.free()
-	city.free()
+	var first: float = seen["first"]
+	return first
 
 ## The escape's clock is a day's: a section's spec carries the section length it is handed, and the
 ## day's clock runs it and stands still when it is handed `invincible`.

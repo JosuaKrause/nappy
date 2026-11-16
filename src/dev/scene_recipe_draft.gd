@@ -227,8 +227,8 @@ static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 ## (`Tuning.VIEW_HALF_EXTENT` round `start`): a scene's first frame is not a car already bearing
 ## down on a pram that has not taken a step — the start of a played day is her doorstep, on a street
 ## no car is in yet.
-static func _starting_crowd(run: RunState, city: City, crowd: Crowd, ground: Dictionary, start: Vector2,
-		problems: Array[String]) -> Array:
+static func _starting_crowd(run: RunState, city: City, crowd: Crowd, ground: Dictionary,
+		start: Vector2, problems: Array[String]) -> Array:
 	var map := city.map
 	var day := run.header.day
 	var box := Rect2i()

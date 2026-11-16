@@ -165,8 +165,8 @@ var trace := RunTrace.new()
 # ------------------------------------------------- handed in before build() reads them ---
 ## How this city draws and schedules its own ground and scenery, set by whoever builds it — `main`,
 ## from the run's configuration — before `build()` reads them. The defaults are an ordinary run's,
-## which is what a test's own city gets. What moves on the city is stood by `SimulationBuilder`, which
-## `main` hands its own settings.
+## which is what a test's own city gets. What moves on the city is stood by `SimulationBuilder`,
+## which `main` hands its own settings.
 
 ## How a needed nearby ground region is scheduled (`--ground-mode`). See `SceneryGround.Mode`.
 var ground_mode := SceneryGround.Mode.ONE

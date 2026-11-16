@@ -156,7 +156,7 @@ var _pelican_bag_seed := 0
 ## order it sends its cyclists in decide which of them is the pelican, the same way they decide
 ## everything else the director sends. Nothing but a cyclist draws from it. The count drawn is kept
 ## in `world.run.pelican` (saved, and set back to the day's dawn by a lost day), and the bag is
-## rebuilt from it. `--pelican` (`PelicanRig.ALWAYS`, set by the city) answers yes for every one
+## rebuilt from it. `--pelican` (`PelicanRig.ALWAYS`, set by `SimulationBuilder`) answers yes for every one
 ## without changing what is drawn.
 func rolls_a_pelican(def: EventDef) -> bool:
 	if not def.may_be_a_pelican:

@@ -74,7 +74,7 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 	_city.add_child(her)
 	her.set_physics_process(false)
 	her.global_position = _sidewalk_beside_the_spine()
-	RunCity.crowd(_city).use_player(her)
+	RunCity.simulation(_city).meet_her(her)
 	var totals := {"speed": 0.0, "stopped": 0, "samples": 0}
 	var sample := func(ticks: int) -> bool:
 		if ticks % 30 != 0:

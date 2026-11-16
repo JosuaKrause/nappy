@@ -799,6 +799,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 			PackedVector2Array([lane - along * 150.0, lane + along * 650.0]))
 	_already_driving(car)
 	var player := _her(t, lane, -along)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	_tell(RunCity.events(city).world.where_she_is(), player)
 	var baby := Baby.new()
 	baby.use_bus(EventBus)

@@ -68,26 +68,28 @@ var points_at := Callable():
 		points_at = value
 		world.points_at = value
 ## Where the manager, the day's planning and every instance it creates write their own account for
-## the run log — the city's, set before `setup()`; silent until then.
+## the run log — the run's, set before `setup()` by whoever stands it (`SimulationBuilder`); silent
+## until then.
 var trace := RunTrace.new():
 	set(value):
 		trace = value
 		world.trace = value
-## `--skip events`, handed in by the city before `setup()`: every instance this makes skips its
-## own drawing.
+## `--skip events`, handed in before `setup()` by whoever stands it (`SimulationBuilder`): every
+## instance this makes skips its own drawing.
 var skip_drawing := false:
 	set(value):
 		skip_drawing = value
 		world.skip_drawing = value
 ## Where the manager and every instance it creates charge their time to the frame record, handed in
-## before `setup()` by whoever builds it (the city, `main`); the null sink until then.
+## before `setup()` by whoever stands it (`SimulationBuilder`); the null sink until then.
 var timing := FrameTiming.new():
 	set(value):
 		timing = value
 		world.timing = value
 ## The baked atlas pages this manager holds the events' group on and every instance it creates
-## draws from (`AtlasLibrary`), handed in before it enters the tree by whoever builds it (the city,
-## `main`); a manager nobody handed one (a suite's) makes its own when it first enters the tree.
+## draws from (`AtlasLibrary`), handed in before it enters the tree by whoever stands it
+## (`SimulationBuilder`); a manager nobody handed one (a suite's) makes its own when it first enters
+## the tree.
 ## Each atlas comes with the one drawer every instance made here paints through (`EventDrawer`,
 ## `EventWorld.drawer`).
 var atlas: AtlasLibrary = null:

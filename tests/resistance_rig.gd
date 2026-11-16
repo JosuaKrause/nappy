@@ -217,7 +217,8 @@ func _all_but_the_finale() -> Array[int]:
 	return done
 
 ## Same shape `_build_pickup` uses for a bare `ContactPoint` — a real `Stroller`, physics off,
-## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does.
+## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does. The
+## test city's poster walls and blackout, where it stands, are handed her here, as a walk hands her.
 func _rig_player(t: TestRunner, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -227,6 +228,8 @@ func _rig_player(t: TestRunner, at: Vector2) -> Stroller:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = at
+	if _city != null:
+		RunCity.show_her_to_the_walls_and_the_blackout(_city, player)
 	return player
 
 ## The cities a sweep relocates a mark over every mark tile of (`_relocations_over_the_marks()`): the

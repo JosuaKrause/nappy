@@ -259,8 +259,9 @@ func _is_she_under(gate: RegionPlanner.GateState) -> bool:
 ## Hands the crowd the world it is drawn in, the map it walks and drives, the lights its traffic
 ## obeys (`TrafficSignals`), today's streets (`DayStreets`, or null for none) and the navigator a
 ## push moves a walker by — the city's own (`City.navigator`), or the map's own
-## (`WorldMap.navigator()`) for a rig that hands none. The city builds its crowd and hands it its
-## own; a test hands a bare `WorldContext` and a map of its own.
+## (`WorldMap.navigator()`) for a rig that hands none. The simulation's builder stands a city's
+## crowd and hands it the city's own (`SimulationBuilder`); a test hands a bare `WorldContext` and a
+## map of its own.
 func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: DayStreets,
 		navigator: Navigator = null) -> void:
 	_world = world

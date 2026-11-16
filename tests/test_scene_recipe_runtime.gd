@@ -116,6 +116,7 @@ func _probe_the_camera() -> void:
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
 	add_child(player)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure(loaded, _scripted(), _run)
 	add_child(runtime)
@@ -213,6 +214,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	city.start_day(state, 3, own_run.calendar.day_rng(3, "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	# Where the director would send the dog at her: the lead straight ahead of her, facing south, on
 	# ground the dog may stand on; she stands on the first sidewalk tile that gives one.
 	var row := EventCatalogue.by_id("charging_dog")
@@ -579,6 +581,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
 	t.add_child(player)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	var mark := map.tile_to_world(MARK)
 	var pinned := {"mark": [mark.x, mark.y]}
 	if task.get("neighbor", false):

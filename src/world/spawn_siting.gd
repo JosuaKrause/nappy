@@ -1,10 +1,11 @@
 class_name SpawnSiting
 extends RefCounted
 ## **Where something sent at her may start**: the rules a start is held to, each by its name
-## (`Rule`), and the searches that answer a start by them. One instance per city, built with the
-## city's map, its navigator, the day's view and the day's region (`City.spawn_siting`), and handed
-## to whatever sends something at her — the events' director half (`EventsAhead`) and the
-## resistance (`ResistanceDirector`) — rather than fetched; a rig builds its own over its own map.
+## (`Rule`), and the searches that answer a start by them. One instance per city, built by the
+## city's events with the city's map, its navigator, the day's view and the day's region
+## (`EventManager.spawn_siting()`), and handed to whatever sends something at her — the events'
+## director half (`EventsAhead`) and the resistance (`ResistanceDirector`) — rather than fetched; a
+## rig builds its own over its own map.
 ##
 ## **The rules** (`allows()`):
 ##

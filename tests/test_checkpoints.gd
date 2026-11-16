@@ -1960,6 +1960,7 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 				huts.append(body.live)
 	var stroller := _real_stroller(t)
 	RunCity.events(city).use_player(stroller)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, stroller)
 	t.check(gate != null and huts.size() == 2,
 			"the rig stood a gate and the two huts on its line (%d huts)" % huts.size())
 	return {"city": city, "gate": gate, "huts": huts, "stroller": stroller}

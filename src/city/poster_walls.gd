@@ -13,8 +13,8 @@ extends Node
 ## **What is on the walls is run state, and this only reads and writes it.** the run's `PosterState` (`RunState.posters`)
 ## holds it, so it survives a save and a lost day gives it back; this node is stood with every city
 ## (`SimulationBuilder`), handed the run, and hands each `Building` the cells it draws
-## (`Building.posters`) and whether the neighbor was taken (`Building.hand_over_posters()`). It draws nothing itself — the
-## sheets are part of the front, drawn in the building's own `_draw()` on the Buildings layer, under
+## (`Building.posters`) and whether the neighbor was taken (`Building.hand_over_posters()`). It
+## draws nothing itself — the sheets are part of the front, drawn in the building's own `_draw()` on the Buildings layer, under
 ## every entity, so a crew and she stand in front of them.
 ##
 ## What puts a sheet up:

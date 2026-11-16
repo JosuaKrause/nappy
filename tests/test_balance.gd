@@ -81,7 +81,8 @@ func _stand_at(at: Vector2) -> void:
 	var day := _city.run.header.day
 	RunCity.crowd(_city).start_day(day, _city.run.calendar.day_rng(day, "crowd"), at)
 
-## The rig, built once: her, walking on the spot, with the baby riding; the day's clock, set up the
+## The rig, built once: her, walking on the spot, with the baby riding, shown to the city's walls
+## and blackout as a walk shows her; the day's clock, set up the
 ## way `main` sets it up, so the calm she falls asleep on is remembered where the game remembers it
 ## (`DayController._remember_the_calm_she_found()`) and tomorrow reads it spent; the resistance the
 ## day places its mark for; and the day director handed all of them. The City is the world the baby
@@ -98,6 +99,7 @@ func _build_rig(t: TestRunner) -> void:
 	_stroller.add_child(camera)
 	t.add_child(_stroller)
 	_stroller.set_physics_process(false)
+	RunCity.show_her_to_the_walls_and_the_blackout(_city, _stroller)
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
 	_baby.set_world(_city)
