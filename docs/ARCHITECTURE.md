@@ -68,6 +68,8 @@ src/
   city/
 	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
 	city_generator.gd     seeded generation
+	through_roads.gd      the stretches of carriageway a car can drive into and go on from without
+	                      turning round, worked out once a walk from the map as it stands
 	held_streets.gd       today's held street segments and why each is held (closure, wall, door, home
 	                      street, seal), worked out once at dawn and asked by siting and the crowd
 	street_layout.gd      the street lattice painted onto a map's tiles; the generator lays every
@@ -163,7 +165,10 @@ src/
 	hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
 	day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
-	sent_ahead.gd         how the director sends a row ahead of her: warned first, from either end
+	sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
+	way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
+	                      junction box to junction box by the walk's through roads, a walker
+	                      straight on; made once a walk and handed to the director
 	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
 	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
 	abduction_spec.gd     the unmarked van's take of a bystander

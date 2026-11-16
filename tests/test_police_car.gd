@@ -24,6 +24,7 @@ func run(t: TestRunner) -> void:
 	_test_the_car_never_drives_into_her(t)
 	_test_an_investigating_car_never_leaves_the_carriageway(t)
 	_test_the_raids_car_never_reverses_onto_her(t)
+	_test_a_car_turning_a_corner_stands_while_she_is_round_it(t)
 	_test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t)
 	_test_it_gives_way_at_a_zebra_she_waits_at(t)
 	_test_it_stops_at_a_red_light(t)
@@ -534,6 +535,37 @@ func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 	t.check(struck_at > 0.0 and struck_at - warned_at >= Tuning.required_horn_time(),
 			"260px behind, it turns, comes back and strikes her only after %.2fs of warning"
 			% (struck_at - warned_at))
+	player.free()
+	car.free()
+
+## **A car whose route turns a corner stands at the corner while she is on the carriageway round it
+## within its warning, and turns once she is off it**: a sent patrol's route worked out as it goes
+## turns at a junction box (`WayOn`), and the turn that would newly put her in front of its nose is
+## refused like a step into her (`EventCarDriving.check()`, the fifth trap of the events skill's
+## `references/event-cars.md`), so it never strikes her from round a corner without its warning. Its
+## route runs east and turns south; she stands south of the corner, beside its first stretch, in
+## front of where it turns.
+func _test_a_car_turning_a_corner_stands_while_she_is_round_it(t: TestRunner) -> void:
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(240.0, 0.0), Vector2(240.0, 600.0)])
+	var where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), route, null, where)
+	_already_driving(car)
+	var player := _her(t, Vector2(240.0, 80.0), Vector2.UP)
+	var struck := false
+	for _i in int(8.0 / STEP):
+		_drive(car, where, player)
+		struck = struck or car.is_lethal_at(player.global_position)
+	t.check(not struck, "driving to the corner with her round it, it never strikes her")
+	t.check(_stands(car, where, player) and car.global_position.distance_to(route[1]) < 8.0
+			and car.facing_now().is_equal_approx(Vector2.RIGHT),
+			"it stands at the corner, still facing the way it drove (%v, %v)"
+			% [car.global_position, car.facing_now()])
+	player.global_position = Vector2(400.0, 80.0)
+	for _i in int(1.5 / STEP):
+		_drive(car, where, player)
+	t.check(car.facing_now().is_equal_approx(Vector2.DOWN) and car.global_position.y > 8.0,
+			"once she is off the street round the corner, it turns and drives on (%v)"
+			% car.global_position)
 	player.free()
 	car.free()
 

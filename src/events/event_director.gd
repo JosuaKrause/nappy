@@ -1405,9 +1405,9 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ##
 ## **The lane is the carriageway of the street she is beside**, read as `_toward_her_on_the_road()`
 ## reads it (`CityMap.pavement_inward()`, `CrowdLanes`). It drives toward her, against her heading
-## along the street, or, for a row that comes from either end (`EventDef.may_come_from_either_end()`),
-## the way a coin flip on the director's stream says, and from the other end where that one has no
-## room. **The place is level with her along the road and just out of sight up it**
+## along the street ("just spawn in the car just ahead of the player", inbox #1460), or, for a row
+## that comes from either end (`EventDef.may_come_from_either_end()`, which none does), the way a coin
+## flip on the director's stream says, and from the other end where that one has no room. **The place is level with her along the road and just out of sight up it**
 ## (`PendingWarning.in_its_lane()`, against `view`), and **the first leg runs down the lane past her
 ## to the far edge of the next junction box** (`leg_in_the_lane()`).
 ##
@@ -1426,9 +1426,12 @@ func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 	var along := Vector2(inward.y, inward.x)
 	var component := heading.dot(along)
 	var going := -along * signf(component) if not is_zero_approx(component) else along
-	if def.may_come_from_either_end() and _rng.randf() < 0.5:
-		going = -going
-	for _end in 2:
+	var ends := 1
+	if def.may_come_from_either_end():
+		ends = 2
+		if _rng.randf() < 0.5:
+			going = -going
+	for _end in ends:
 		var path := _down_the_lane(at, going, index, def, view)
 		if not path.is_empty():
 			return path

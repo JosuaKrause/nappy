@@ -87,6 +87,35 @@ off the street she starts on, and one sidewalk of every street of her routes sta
 bodies drawn on it (`OneSidewalkOpenRule`). The whole-city flood is no rule of the game; `tests/probes/walk_rows.gd` counts the route tiles a
 day's bodies cut off from home, expected to be none (record 2026-11-11-polite-tapir).
 
+**Everything that matters is drawn together.** The units draw as she walks, a marble drawn before it
+is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
+the day holds until step 3 (day-density) are answered, and the answers wait in the inbox for the
+next filing. The touching-reach answer is "everything that matters must be drawn together" (inbox
+#1461). On the three route rows the player said "neither of these should be drawn at the beginning.
+they all should be drawn when the player is close by to guarantee an encounter", then "just spawn in
+the car just ahead of the player? then you guarantee an encounter", "the same for the dog walker and
+the convoy", "the route only matters *after* it was spawned", "and then only if the player follows
+them around" and "so the route can be ad-hoc" (inbox #1460). **Read as** (the orchestrator's
+reading): the dog walker, the police patrol and the military convoy are to be put in the world just
+ahead of her when she comes near, and each one's route is worked out as it goes, from where it was
+put, so like the beats sited from her walk they depend on her path. Each is put just ahead of her on
+its first leg, and its route is worked out as it goes, from the end of each leg while she can see
+it: a car drives from junction box to junction box by the walk's through roads (`WayOn`,
+`ThroughRoads`), so it never comes to a precinct's paving, a closed street, a street a calm zone
+absorbed or the map's edge, a walker walks straight on, and each leaves by legs of the same, held to
+her sight (`EventInstance.go_on_by()`), so a sent car keeps to carriageway while she can see it (the
+game's rule for an event car, not the player's words). **Read as** (the orchestrator's, on the Nappy
+board and open to the player's correction): "just spawn in the car just ahead of the player" does
+not cover a convoy from behind her, so the convoy comes only from ahead of her. The free-line probe
+(`tests/probes/m129_zero_cost_line.gd`) asks whether rows that each leave her a free line together
+leave none; the line rule follows her line from a junction box onto the sidewalks she walks, the
+home street's included, and the probe shows every route keeping one. The player answered "sure" in
+chat to option C of free-line-density and to pick (c) of line-reach-close (inbox #1461). **Read
+as**: the draw gains a rule that follows her line from a junction box onto the sidewalk she walks,
+for every row that lands near her route, and a street that draws after its neighbours keeps one
+sidewalk open, given what they drew (with inbox #1465), which the player's correction on that note
+narrows to the streets a rule already keeps walkable, the streets of her routes.
+
 ## What is left, in order
 
 The steps are the design review's points, which the player approved: "agree on all design review
@@ -94,33 +123,6 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-2. **Everything that matters is drawn together.** The units draw as she walks, a marble drawn before it
-   is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
-   the day holds until step 3 (day-density) are answered, and the answers wait in the inbox for the next
-   filing. The touching-reach answer is "everything that matters must be drawn together" (inbox #1461).
-   On the three route rows the player said "neither of these should be drawn at the beginning. they all
-   should be drawn when the player is close by to guarantee an encounter", then "just spawn in the car
-   just ahead of the player? then you guarantee an encounter", "the same for the dog walker and the
-   convoy", "the route only matters *after* it was spawned", "and then only if the player follows them
-   around" and "so the route can be ad-hoc" (inbox #1460). **Read as** (the orchestrator's reading): the
-   dog walker, the police patrol and the military convoy are to be put in the world just ahead of her
-   when she comes near, and each one's route is worked out as it goes, from where it was put, so like
-   the beats sited from her walk they depend on her path. They are put just ahead of her now, each on
-   its first leg; the route worked out as it goes, from the end of that leg, is not built yet. The
-   free-line probe (`tests/probes/m129_zero_cost_line.gd`) asks whether
-   rows that each leave her a free line together leave none; the line rule follows her line from a
-   junction box onto the sidewalks she walks, the home street's included, and the probe shows every
-   route keeping one. The player answered "sure" in chat to option C of free-line-density and to pick (c) of
-   line-reach-close (inbox #1461). **Read as**: the draw gains a rule that follows her line from a
-   junction box onto the sidewalk she walks, for every row that lands near her route, and a street that
-   draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465), which
-   the player's correction on that note narrows to the streets a rule already keeps walkable, the
-   streets of her routes. So step
-   2 still owes only the three route rows' routes worked out as they go, and with them that a sent
-   car's departure keeps to carriageway while she can see it (the game's rule for an event car, not
-   the player's words): the sending holds that only for where
-   she stands as the car is sited, so a convoy from behind her that overtakes her as she walks on can
-   still leave over a precinct's paving in her view.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.

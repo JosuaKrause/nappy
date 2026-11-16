@@ -49,12 +49,16 @@ stands there.
 - **A heading change that newly brings her inside its warning's reach is refused like a step into
   her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
   the end of its beat turns her from behind a car driving away into the front of one, struck with
-  next to no warning. The car stands instead.
+  next to no warning. The car stands instead. **A sent patrol turns corners**: its route worked out
+  as it goes turns at a junction box where the street on is no through road (`WayOn`), and the same
+  check stands it at the corner while she is on the street round it within its warning, so it
+  stands in that box until she is off it, which is rare and short, and the crowd gives way to it.
 - **A car that stopped for her must not turn round on the spot, nor vanish beside her.** She is
   nearly always ahead of the investigating car, so "leave the way that does not run at her" is a
   180° turn in one frame in her view; once its man is back in it drives on along its route the way
   it was going instead, a car that has stood, so it waits while she is in its way. Any car leaving
-  is gone only once she could not be watching.
+  is gone only once she could not be watching, and a sent car leaves on through roads from box to
+  box, never turning round (`EventDeparture`, `WayOn.leg_to_leave_by()`).
 - **A car that stops where it noticed her stops in junction boxes**, standing in the crossing
   traffic's way for a whole chase. One that notices her with any of its body on a junction drives on
   until it is clear of the box (`EventInvestigation._stands_in_a_junction()`). A test on a hand-made

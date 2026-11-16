@@ -374,11 +374,10 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 			"the patrol comes down the road toward her, created at once")
 	var convoy := EventCatalogue.by_id("military_convoy").as_sent_ahead()
 	t.check(convoy.is_warned_in_its_lane() and convoy.warns_before_it_exists()
-			and convoy.may_come_from_either_end()
 			and is_equal_approx(convoy.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 			and convoy.warned_for() <= Tuning.WARNING_ALONE_MAX + 0.001
 			and convoy.warning_time() + 0.001 >= convoy.minimum_telegraph(),
-			"the convoy is warned of first in its lane, from either end, its badge alone %.2fs and "
+			"the convoy is warned of first in its lane, its badge alone %.2fs and "
 			% convoy.warned_for() + "owed the flat %.2fs" % Tuning.OFFSCREEN_WARNING_MIN)
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	t.check(not cafe.is_sent_ahead() and cafe.as_sent_ahead() == cafe and cafe.is_drawn_by_units(1, ""),
