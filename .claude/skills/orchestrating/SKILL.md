@@ -53,9 +53,10 @@ through the designer's report: it says whether it writes the code or hands it of
 hand-off the orchestrator briefs the lowest model able from the design (inbox #1436 in
 tiny-squirrel).
 
-**A design, and the evidence a later agent reads or reruns, is written to `.claude/briefs/designs/`
-from the start** (inbox #1474): the designer's brief names that path for the design and a folder
-beside it for its probe outputs and scripts. Never a session's scratch folder
+**A design, and the evidence a later agent reads or reruns, is written to the main checkout's
+`.claude/briefs/designs/` from the start** (inbox #1474): the designer's brief names that path,
+absolute, since a designer in an isolated worktree would otherwise write into its own, for the
+design and a folder beside it for its probe outputs and scripts. Never a session's scratch folder
 (`$CLAUDE_JOB_DIR/tmp` in a background job), which goes with the job. Where the orchestrator's own
 edit tools are refused in the shared checkout, it copies a file there by script, and never asks the
 player to. Scratch holds only what nobody reads after the turn: a one-off brief, probe output no
