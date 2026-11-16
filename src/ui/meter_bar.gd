@@ -5,33 +5,35 @@ extends Control
 const BAR_TOP := 15.0
 const BAR_HEIGHT := 16.0
 
-@export var label := "METER":
-	set(value):
-		label = value
-		queue_redraw()
-@export var fill_colour := Color("6f8fd0"):
-	set(value):
-		fill_colour = value
-		queue_redraw()
-## Colour the fill lerps toward as the bar approaches full. Leave equal to `fill_colour`
-## for a bar whose colour should not change.
-@export var full_colour := Color("6f8fd0"):
-	set(value):
-		full_colour = value
-		queue_redraw()
+var _label := "METER"
+var _fill_colour := Color("6f8fd0")
+## Colour the fill lerps toward as the bar approaches full. Equal to the fill colour for a bar
+## whose colour should not change.
+var _full_colour := Color("6f8fd0")
 ## Threshold positions in meter units (0-100) drawn as ticks across the bar.
-@export var markers: Array[float] = []:
-	set(value):
-		markers = value
-		queue_redraw()
+var _markers: Array[float] = []
+var _value := 0.0
 
-var value := 0.0:
-	set(new_value):
-		var clamped := clampf(new_value, 0.0, Tuning.METER_MAX)
-		if is_equal_approx(clamped, value):
-			return
-		value = clamped
-		queue_redraw()
+## Hands the bar its word and the two colours its fill lerps between as it approaches full
+## (`full` equal to `fill` for a bar whose colour should not change).
+func use_look(label: String, fill: Color, full: Color) -> void:
+	_label = label
+	_fill_colour = fill
+	_full_colour = full
+	queue_redraw()
+
+## Hands the bar the threshold positions, in meter units (0-100), it draws as ticks across it.
+func use_markers(markers: Array[float]) -> void:
+	_markers = markers
+	queue_redraw()
+
+## Sets what the bar shows, held to the meter's range; a value the bar already shows draws nothing.
+func show_value(new_value: float) -> void:
+	var clamped := clampf(new_value, 0.0, Tuning.METER_MAX)
+	if is_equal_approx(clamped, _value):
+		return
+	_value = clamped
+	queue_redraw()
 
 const _BACKGROUND := Color(0.06, 0.06, 0.09, 0.72)
 const _BORDER := Color(1, 1, 1, 0.28)
@@ -52,7 +54,7 @@ const _MAX_FILL_BEFORE_FULL := 0.99
 static func displayed_value(value: float) -> int:
 	return int(floorf(value))
 
-## The fraction of the bar's width the fill may draw, held at `_MAX_FILL_BEFORE_FULL` until `value`
+## The fraction of the bar's width the fill may draw, held at `_MAX_FILL_BEFORE_FULL` until the value
 ## genuinely reaches `max_value` — see that constant's own doc for why a bar that merely looks full
 ## is the same lie the printed number told, just quieter.
 static func displayed_fraction(value: float, max_value: float) -> float:
@@ -69,19 +71,19 @@ func _init() -> void:
 func _draw() -> void:
 	var width := size.x
 	var bar := Rect2(0.0, BAR_TOP, width, BAR_HEIGHT)
-	var fraction := displayed_fraction(value, Tuning.METER_MAX)
+	var fraction := displayed_fraction(_value, Tuning.METER_MAX)
 
 	draw_rect(bar, _BACKGROUND)
 	draw_rect(Rect2(bar.position, Vector2(width * fraction, BAR_HEIGHT)),
-			fill_colour.lerp(full_colour, fraction))
+			_fill_colour.lerp(_full_colour, fraction))
 
-	for marker in markers:
+	for marker in _markers:
 		var x := width * (marker / Tuning.METER_MAX)
 		draw_line(Vector2(x, BAR_TOP - 2.0), Vector2(x, BAR_TOP + BAR_HEIGHT + 2.0), _MARKER, 1.5)
 
 	draw_rect(bar, _BORDER, false, 1.0)
 
 	var font := ThemeDB.fallback_font
-	draw_string(font, Vector2(1.0, 11.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, _TEXT)
-	draw_string(font, Vector2(width - 32.0, 11.0), "%3.0f" % displayed_value(value),
+	draw_string(font, Vector2(1.0, 11.0), _label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, _TEXT)
+	draw_string(font, Vector2(width - 32.0, 11.0), "%3.0f" % displayed_value(_value),
 			HORIZONTAL_ALIGNMENT_RIGHT, 30, 11, _TEXT)

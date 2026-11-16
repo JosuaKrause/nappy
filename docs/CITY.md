@@ -769,8 +769,9 @@ player learns while the closures re-cut the map every morning.
 **The ground stops, and that is the whole difference from a zone's absorbed street.** An absorbed
 corridor is *calm ground rather than a closure* — the tiles are park and she walks over them, which
 is exactly right for a shortcut and exactly wrong for a hard blocker.
-`CityMap.dead_ends` is kept separate from the absent streets for that reason: the two are absent
-for opposite reasons, and anything reasoning about **why** a street is missing has to tell them
+`CityMap.streets_built_over()` (the dead ends' and the landmarks' streets, each with the rect
+built over) is kept separate from the absent streets for that reason: the two are absent for
+opposite reasons, and anything reasoning about **why** a street is missing has to tell them
 apart. Anything asking *can a route go this way* wants `blocked_segments()`, which is both and
 does not care.
 
@@ -866,8 +867,7 @@ answer.
 then the pair nearest industrial ground (`CityGenerator.power_station_rank`), the seed's own shuffle
 breaking ties. The industrial district is six blocks placed one at a time, so a free two-wide
 industrial pair that is also far enough out and outside the home's region is rare, and the station
-usually stands on one industrial block or beside the district. `CityMap.power_station_industrial_
-blocks` records which, since the blocks themselves become `BIG_BUILDING` once the mass is down.
+usually stands on one industrial block or beside the district.
 
 **On the day she is sent there, the corridor reaches the door, and on no other day.** On
 `Tuning.POWER_STATION_DAY` — the last day — `RouteTree.for_day` joins the door's pavement to the

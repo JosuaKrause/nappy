@@ -87,19 +87,15 @@ const _STATE_TEXT := {
 
 func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(_root)
-	_sleepiness.label = Texts.METER_SLEEPINESS
-	_sleepiness.fill_colour = Color("4a5f9e")
-	_sleepiness.full_colour = Color("8fb4d9")
+	_sleepiness.use_look(Texts.METER_SLEEPINESS, Color("4a5f9e"), Color("8fb4d9"))
 
-	_excitement.label = Texts.METER_EXCITEMENT
-	_excitement.fill_colour = Color("d9a648")
-	_excitement.full_colour = Color("cf4436")
-	_excitement.markers = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
+	_excitement.use_look(Texts.METER_EXCITEMENT, Color("d9a648"), Color("cf4436"))
+	var thresholds: Array[float] = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
+	_excitement.use_markers(thresholds)
 	_reposition_meters_for_touch()
 	# Colored here rather than in the scene so `Palette` stays the one place a runtime color is
 	# decided — the same call `_heading.add_theme_color_override()` makes in `DaySummary._ready()`.
-	_task_arrow.colour = Palette.TASK_ARROW
-	_task_arrow.label_when_near = Texts.ARROW_TASK
+	_task_arrow.use_look(Palette.TASK_ARROW, Texts.ARROW_TASK)
 
 	EventBus.sleepiness_changed.connect(_on_sleepiness_changed)
 	EventBus.excitement_changed.connect(_on_excitement_changed)
@@ -119,8 +115,8 @@ func _ready() -> void:
 
 	_baby = get_tree().get_first_node_in_group("baby") as Baby
 	if _baby:
-		_sleepiness.value = _baby.sleepiness_level()
-		_excitement.value = _baby.excitement_level()
+		_sleepiness.show_value(_baby.sleepiness_level())
+		_excitement.show_value(_baby.excitement_level())
 	_refresh_header()
 	_refresh_state()
 	_refresh_resistance()
@@ -348,10 +344,10 @@ func _process(delta: float) -> void:
 		_announcement_for = maxf(0.0, _announcement_for - delta)
 
 func _on_sleepiness_changed(value: float) -> void:
-	_sleepiness.value = value
+	_sleepiness.show_value(value)
 
 func _on_excitement_changed(value: float) -> void:
-	_excitement.value = value
+	_excitement.show_value(value)
 
 func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 	_refresh_state()
@@ -480,8 +476,8 @@ func _task_text(named: String) -> String:
 ## pinned anchors, so it needs to know when to correct for the rotation the same way `DangerEdge`
 ## does — see `ScreenOrientation`'s class doc. Both instances need it, home and task alike.
 func set_rotated(rotate: bool) -> void:
-	_home_arrow.rotated = rotate
-	_task_arrow.rotated = rotate
+	_home_arrow.use_rotated(rotate)
+	_task_arrow.use_rotated(rotate)
 
 ## The one moment the game says something out loud.
 ## Shown only while she is carrying a sleeping baby home.
