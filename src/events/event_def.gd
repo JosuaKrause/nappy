@@ -519,10 +519,10 @@ func is_sent_ahead() -> bool:
 	return _sent_ahead != null
 
 ## Whether the director warns of it first in the lane of the road beside her when it sends it
-## ahead of her (`SentAhead.is_warned_first()`, a row of the road): the convoy.
+## ahead of her (`SentAhead.is_warned_first()`, a row of the road, `keeps_to_the_carriageway()`):
+## the convoy.
 func is_warned_in_its_lane() -> bool:
-	return _sent_ahead != null and _sent_ahead.is_warned_first() \
-			and placement.has(GameEnums.TileType.ROAD)
+	return _sent_ahead != null and _sent_ahead.is_warned_first() and keeps_to_the_carriageway()
 
 ## **Whether it keeps to the carriageway as it goes**: a row of the road (`placement` names `ROAD`),
 ## the patrol and the convoy, whose route worked out as it goes drives from junction box to junction

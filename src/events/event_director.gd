@@ -1334,8 +1334,8 @@ func clear_to_go_on(path: PackedVector2Array, def: EventDef) -> bool:
 
 ## **Hands in the walk's way on** (`WayOn`), made once a walk over its through roads
 ## (`EventManager`), and tells it the day's rule (`clear_to_go_on()`).
-func use_way_on(roads: WayOn) -> void:
-	_way_on = roads
+func use_way_on(handed: WayOn) -> void:
+	_way_on = handed
 	_way_on.use_the_days_rule(clear_to_go_on)
 
 ## **What works out the route of a row it sends ahead of her as it goes** (`WayOn`): the one handed in
@@ -1471,8 +1471,8 @@ func leg_in_the_lane(def: EventDef, place: Vector2, her: Vector2,
 	if (far - level).dot(going) < 0.0:
 		return PackedVector2Array()
 	var leg := PackedVector2Array([place, far])
-	var roads := way_on()
-	if not roads.drives_clear(def, leg) or roads.next_leg(def, far, going, her).is_empty():
+	var way := way_on()
+	if not way.drives_clear(def, leg) or way.next_leg(def, far, going, her).is_empty():
 		return PackedVector2Array()
 	return leg
 
