@@ -1324,9 +1324,10 @@ Each item quotes the code on this branch.
    ends (`Location.run()`), so the dog walker's, the police patrol's and the military convoy's
    routes stay inside a street and its two boxes (a route starts on a tile of the street and goes
    one way, so at most 13 tiles; one drawn in a junction box stays in the box); that is how a
-   drawn route is laid now (inbox #1460). One case is left open and measured (`tests/probes/m129_zero_cost_line.gd`):
-   two rows in units at opposite ends of a route's street, neither touching the other, each
-   reaching into the street, are not asked together whether its walked sidewalk keeps a free line.
+   drawn route is laid now (inbox #1460). One case is left open and measured
+   (`tests/probes/m129_zero_cost_line.gd`): two rows in units at opposite ends of a route's
+   street, neither touching the other, each reaching into the street, are not asked together
+   whether its walked sidewalk keeps a free line.
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
 2. **The walk's sitings still roll a spot.** `WalkSiting` goes through `_best_of()`, which rolls
