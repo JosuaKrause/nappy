@@ -38,15 +38,16 @@ review; a builder runs it again):
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
 - The bus reaches each emitter that still fetches it from whoever builds that emitter, so the order
-  is the builders': `main` hands it to the resistance director and to the simulation's builder
+  is the builders'. **These hand-offs stand:** `main` hands it to the simulation's builder
   (`SimulationBuilder.use_bus()`), which hands the crowd, the poster walls and the blackout theirs
-  before each one's `setup()` and hands the event manager its own the same way, in the one place
-  it makes every manager (`_new_events()`); the manager hands it on to its encounter watch, its
-  spawner, `EventsAhead` and, through the spawner, each live event; the happenings hand it to the
-  park cordon. The event manager's chain and the resistance's are one pull request, after #1477,
-  which rewrites `events_ahead.gd` and `event_director.gd`. That each copies the
-  baby's shape is the orchestrator's reading, open to the player's overturn: the bus script preloaded
-  as the field's type, `use_bus()`, and one teller per signal that does nothing without a bus
+  before each one's `setup()`. **These are open, as one pull request after #1477, which rewrites
+  `events_ahead.gd` and `event_director.gd`:** `main` hands it to the resistance director, whose
+  happenings hand it to the park cordon; the builder hands the event manager its own the same way,
+  in the one place it makes every manager (`_new_events()`); and the manager hands it on to its
+  encounter watch, its spawner, `EventsAhead` and, through the spawner, each live event. Until then
+  each of those fetches the autoload itself (`check_layers.py --list` names the files). That each
+  copies the baby's shape is the orchestrator's reading, open to the player's overturn: the bus
+  script preloaded as the field's type, `use_bus()`, and one teller per signal that does nothing without a bus
   (minty-quail-fluffy-yak). The two classes already handed it, `ChargeRecord` and
   `CheckpointController`, take it in their constructor and emit with no guard.
 - The map interface's world half is split off or declared a permanent exception in

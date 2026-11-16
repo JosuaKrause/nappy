@@ -110,8 +110,6 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      start for every kind of day, the standing layer
      breaks, the baseline readings); its README gives their order and where each meets the items
      here.
-   - **Run flow:** `city-hand-ins.md`'s third pull request, which settles who builds the events and
-     the crowd together with the design review's one start for every kind of day.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene and the conversion of the run's parts (`field-reads.md`,
      "A run's parts") follow the third hand-ins pull request. **Every file under `src/` is typed

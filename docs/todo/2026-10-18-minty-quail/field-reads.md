@@ -68,8 +68,9 @@ own:
   `walk_ground.gd`, `event_director.gd`), which the placement rewrite
   rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
   row 3b's.
-- `src/main.gd` and the city scene (`src/city/city.gd`), which who builds the event manager and the
-  crowd rewrites (`city-hand-ins.md`), the city scene then row 3c.
+- `src/main.gd`, which waits for no other item now that who builds the event manager and the crowd
+  is built (the record 2026-11-11-polite-tapir-snowy-toad), and the city scene
+  (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
 - **The screen-edge badge** (`src/ui/danger_edge.gd`, the record 2026-10-18-minty-quail-tawny-toad)
@@ -124,8 +125,8 @@ Left, each its own design question:
 - **The lines the placement rewrite, the third hand-ins pull request and the events' interface
   touch** are converted after those land:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
-  - `main.gd`'s reads of the city's event manager and crowd, which wait for who builds them
-    (`city-hand-ins.md`); `day_director.gd`'s reads of other classes' fields (the map's block plans
+  - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
+    hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s reads of other classes' fields (the map's block plans
     and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
     passes; `run_session.gd`'s read of `Crowd.sources` waits for the crowd's pass (the record
     2026-10-18-minty-quail-dappled-chipmunk);

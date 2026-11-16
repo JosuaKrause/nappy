@@ -11,11 +11,10 @@ build a city. `DayStreets`, `CityFronts` and the hand-ins for the resistance dir
 happenings, day 12's park cordon, the crowd and the run log's observer are built; the design is in
 #1166's description, under "The step's design".
 
-**What is left, the third pull request.** One pull request cannot hold it, so it goes in as several
-small pull requests, each reviewed and merged on its own, the player's answer to the cut
+**What is left is the readers below.** The third pull request is cut into several small pull
+requests, each reviewed and merged on its own, the player's answer to the cut
 (inbox #1381 in gray-moose); the earlier answer was three pull requests ("yes three prs is fine",
-inbox #1173 in gray-dolphin). Left is who builds the event manager and the crowd (polite-tapir's
-`standing-layer-breaks.md`). The smaller cases of 3c's row in #1166's "Files it touches" take what
+inbox #1173 in gray-dolphin). The smaller cases of 3c's row in #1166's "Files it touches" take what
 they read: the event manager and its day planner since the record
 2026-10-18-minty-quail-crisp-otter, the scenery's residency and ground, the blackout and the poster
 walls since the record 2026-10-18-minty-quail-quiet-ibis, the still watch, the debug readout, the
@@ -23,9 +22,14 @@ frame recorder and the frame trace since the record 2026-10-18-minty-quail-calm-
 developer's rig, the route rig and its planner since the record
 2026-10-18-minty-quail-plush-chipmunk, and the day director and the run log's session since #1482,
 through the world the director stands (`DayWorld`) and the city scene's dressing for a walk
-(`CityDressing`). `main.gd` reads the city only to build it and hand its parts on; the developer
-settings it writes into the city's fields, and the city's event manager and crowd, wait for who
-builds them.
+(`CityDressing`). The city scene builds no event manager, crowd, poster walls or blackout: one
+builder stands them in the city and in the escape's building (`SimulationBuilder`, the record
+2026-11-11-polite-tapir-snowy-toad), and `main` hands it the developer settings that reached those
+parts through the city. `main.gd` reads the city only to build it and hand its parts on; the eight
+settings it still writes into the city's fields (`trace`, `run`, `ground_recipe`, `atlas`,
+`ground_mode`, `scenery_frame_locked`, `skip_shadows`, `frame_timing`) are the city's own, for its
+ground and scenery, and stay fields until the city scene's own pass (minty-quail's README, "The
+modules that do not wait for the events"), not this item.
 
 **Other readers of a whole `City` under `src/`**, which #1166's row does not list:
 
