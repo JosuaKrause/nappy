@@ -1,0 +1,31 @@
+on the route    seed 3.79 run 1.95 (x0.52): scaled
+   street    [2.9, 3.9, 4.8, 5.3] -> [4.3, 6.2, 9.3, 10.0]
+   junction  [3.4, 4.0, 3.2, 3.6] -> [9.6, 9.2, 7.7, 9.5]
+   alley     [0, 0, 0, 0] -> [0.0, 0.0, 0.0, 0.0]
+   open      [4.7, 7.1, 7.3, 9.6] -> [46.0, 50.0, 50.0, 50.0]
+route-adjacent  seed 7.22 run 8.98 (x1.24): scaled
+   street    [7.6, 8.1, 8.2, 10] -> [5.5, 6.0, 7.1, 8.1]
+   junction  [0.92, 0.92, 0.92, 0.92] -> [0.92, 0.92, 0.92, 0.92]
+   alley     [6, 5.8, 7.9, 7.3] -> [5.0, 4.9, 6.6, 6.1]
+   open      [24, 29, 34, 31] -> [40.0, 47.0, 50.0, 50.0]
+off the route   seed 5.80 run 5.07 (x0.87): scaled
+   street    [3.3, 4.7, 6.3, 6.6] -> [3.5, 5.0, 7.2, 7.5]
+   junction  [3.8, 6.5, 8.5, 18] -> [4.2, 7.3, 10.0, 25.0]
+   alley     [5.1, 4.6, 12, 12] -> [5.4, 4.7, 12.0, 9.7]
+   open      [27, 49, 49, 57] -> [35.0, 50.0, 50.0, 50.0]
+row abduction            on street    share 0.019 -> 0.076: weight there 1.0 -> 0.25
+row charging_dog         on street    share 0.018 -> 0.061: weight there 1.0 -> 0.29
+row chatting_mother      on street    share 0.030 -> 0.069: weight there 1.0 -> 0.43
+row delivery_van         on street    share 0.109 -> 0.041: weight there 1.0 -> 2.6
+row homeless_yeller      on street    share 0.109 -> 0.053: weight there 1.0 -> 2.0
+row poster_crew          on street    share 0.107 -> 0.040: weight there 1.0 -> 2.6
+row reversing_lorry      on street    share 0.051 -> 0.025: weight there 1.0 -> 2.0
+row roadblock            on street    share 0.115 -> 0.054: weight there 1.0 -> 2.1
+row chatting_mother      on junction  share 0.051 -> 0.185: weight there 1.0 -> 0.28
+row homeless_yeller      on junction  share 0.217 -> 0.108: weight there 1.0 -> 2.0
+row protest              on junction  share 0.581 -> 0.165: weight there 1.0 -> 3.5
+row charging_dog         on open      share 0.004 -> 0.024: weight there 0.0085 -> 0.0015
+row leaf_blower          on open      share 0.005 -> 0.035: weight there 0.0039 -> 0.0006
+row market_stall         on open      share 0.004 -> 0.028: weight there 0.0073 -> 0.00098
+row pigeon_flock         on open      share 0.009 -> 0.029: weight there 0.012 -> 0.0038
+row poster_crew_square   on open      share 0.012 -> 0.030: weight there 1.0 -> 0.39

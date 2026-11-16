@@ -1,0 +1,16 @@
+== M129: the zero-cost line, 6 seeds x one day per act [1, 5, 9, 13], used parks: none ==
+   act 1   89 of  89  100.0%
+   act 2   89 of  89  100.0%
+   act 3   75 of  75  100.0%
+   act 4   46 of  46  100.0%
+   all    299 of 299  100.0%
+   act 1   41 of  89   46.1%
+   act 2   49 of  89   55.1%
+   act 3   47 of  75   62.7%
+   act 4   32 of  46   69.6%
+   all    169 of 299   56.5%
+   act 1   89 of  89  100.0%
+   act 2   89 of  89  100.0%
+   act 3   75 of  75  100.0%
+   act 4   46 of  46  100.0%
+   all    299 of 299  100.0%
