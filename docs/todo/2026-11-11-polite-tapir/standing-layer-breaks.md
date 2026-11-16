@@ -22,8 +22,6 @@ review; a builder runs it again):
   autoload, where minty-quail's README has a component handed its event sink. The observers are
   already handed the bus; only the emitters fetch it. The crowd is handed it (`Crowd.use_bus()`,
   the record 2026-10-18-minty-quail-minty-osprey).
-- **The city scene as builder** (12 uses in `src/city/city.gd`): it builds the event manager, the
-  crowd, the blackout and the poster walls, and relays dev flags to them through its own fields.
 - **The map interface's world half** (5 uses in `world_map.gd`): it hands out the navigator and adds
   nodes on a draw layer, which follows from the map interface being the model's (inbox #904 in freckled-moose).
 - **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
@@ -34,32 +32,23 @@ review; a builder runs it again):
   texts' `HelpText` token; her class's type tests where she is not handed in
   (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
   of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; `DrawnView`,
-  named by two looks; the scheduler naming `City.BURNT_FRONTAGE_SCAR`; and the `player` group the
-  blackout and the poster walls find her through.
+  named by two looks; and the scheduler naming `City.BURNT_FRONTAGE_SCAR`.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
 - The bus reaches each emitter that still fetches it from whoever builds that emitter, so the order
-  is the builders': `main` hands it to the resistance director and to the event manager (as it hands
-  it to the crowd through `City.crowd`, until the city scene stops building them), the manager
-  hands it on to its encounter watch, its spawner, `EventsAhead` and, through the spawner, each
-  live event; the happenings hand it to the park cordon; the blackout and the poster walls take it
-  from whoever comes to build them (below). That each copies the
+  is the builders': `main` hands it to the resistance director and to the simulation's builder
+  (`SimulationBuilder.use_bus()`), which hands the crowd, the poster walls and the blackout theirs
+  before each one's `setup()` and hands the event manager its own the same way, in the one place
+  it makes every manager (`_new_events()`); the manager hands it on to its encounter watch, its
+  spawner, `EventsAhead` and, through the spawner, each live event; the happenings hand it to the
+  park cordon. The event manager's chain and the resistance's are one pull request, after #1477,
+  which rewrites `events_ahead.gd` and `event_director.gd`. That each copies the
   baby's shape is the orchestrator's reading, open to the player's overturn: the bus script preloaded
   as the field's type, `use_bus()`, and one teller per signal that does nothing without a bus
   (minty-quail-fluffy-yak). The two classes already handed it, `ChargeRecord` and
   `CheckpointController`, take it in their constructor and emit with no guard.
-- *Proposed, not asked for, the plainer alternative being that the builder of the third hand-ins
-  pull request decides these:* who builds the event manager and the crowd gets a planning pass of
-  its own, by Fable, reading `city.gd` and `main.gd` whole, once the third hand-ins step's other pull requests have taken the
-  readers under `src/` away (minty-quail's `city-hand-ins.md`), so the building and the city get their event
-  manager the same way (`one-start-for-every-spec.md`). Undecided until then: where the factory
-  lives and what it is called; whether the blackout and the poster walls, which `City.build()` also
-  builds, come with it; and how the developer settings `main.gd` writes into `City`'s fields reach the
-  parts. The suites ask the fixture `RunCity` for a city's event manager, crowd, spawn siting and
-  poster walls (`RunCity.events(city)` and the like), so only the fixture changes when the city
-  stops holding them.
 - The map interface's world half is split off or declared a permanent exception in
   designing-classes.
 - Dawn planning's reads of live-event geometry stand in `WalkSiting.could_be_in_her_view()` in
@@ -72,8 +61,7 @@ review; a builder runs it again):
   uses in the run log (`RunSession`'s edge field and `watch()`'s edge parameter,
   `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
   own, which hands the run log what its observer reads of the danger edge, the badges that are
-  announcing (the orchestrator's proposal). The `player` group goes with who
-  builds the event manager and the crowd, which hands her in; `interior_scene.gd`'s `Stroller` with the
+  announcing (the orchestrator's proposal). `interior_scene.gd`'s `Stroller` goes with the
   building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, after the
   third hand-ins step; `Prop` as a data constant, in a pull request of its own; `GameSave` and
   `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts (minty-quail's `field-reads.md`); the
