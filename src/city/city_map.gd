@@ -681,7 +681,8 @@ func add_recipe_closure(closure: RoadClosure) -> void:
 func set_recipe_tree_moves(moves: Dictionary) -> void:
 	_recipe_tree_moves = moves
 
-## Starts the stretch: no tile is its own yet (`stretch`).
+## Starts the stretch: no tile is its own yet (`stretch`). `add_stretch_tile()` follows it, since
+## it indexes the tiles this sizes, and `show_stretch()` follows the tiles.
 func begin_stretch() -> void:
 	stretch.resize(size.x * size.y)
 

@@ -25,6 +25,7 @@ func run(t: TestRunner) -> void:
 	_test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t)
 	_test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t)
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
+	_test_a_pending_warning_is_listed_closing_at_its_approach_speed(t)
 	_test_every_badge_is_listed_soonest_arrival_first(t)
 	_test_the_warning_with_less_time_left_is_listed_first(t)
 	_test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t)
@@ -40,7 +41,6 @@ static func _vehicle(key: int, at: Vector2, speed := 190.0) -> BadgeModel.Subjec
 	var s := BadgeModel.Subject.new()
 	s.key = key
 	s.position = at
-	s.speed = speed
 	s.approach_speed = speed
 	return s
 
@@ -62,7 +62,7 @@ func _test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(
 	var first_up := -1
 	var frames := 0
 	while truck.position.x > VIEW.end.x - 1.0 and frames < 2000:
-		truck.position.x -= truck.speed * STEP
+		truck.position.x -= truck.approach_speed * STEP
 		_step(model, [truck])
 		frames += 1
 		if first_up < 0 and _up(model, "fire_truck"):
@@ -86,7 +86,7 @@ func _test_the_lead_window_is_a_time_and_not_a_distance(t: TestRunner) -> void:
 		var thing := _vehicle(1, Vector2(case[1], 0.0), case[0])
 		thing.logged_name = "thing"
 		for i in 60:
-			thing.position.x -= thing.speed * STEP
+			thing.position.x -= thing.approach_speed * STEP
 			_step(model, [thing])
 		t.check(_up(model, "thing") == case[2],
 				"something doing %.0fpx/s with %.0fpx to go is %s" % [case[0], case[1],
@@ -97,8 +97,8 @@ func _test_a_danger_walking_away_or_too_slow_gets_none(t: TestRunner) -> void:
 	var away := _vehicle(1, Vector2(500.0, 0.0))
 	var slow := _vehicle(2, Vector2(0.0, 500.0), 10.0)
 	for i in 120:
-		away.position.x += away.speed * STEP
-		slow.position.y -= slow.speed * STEP
+		away.position.x += away.approach_speed * STEP
+		slow.position.y -= slow.approach_speed * STEP
 		_step(model, [away, slow])
 	t.check(not model.has_badges(), "a thing going away, and one closing slower than 20px/s, get no badge")
 
@@ -109,7 +109,7 @@ func _test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t: Te
 	var thing := _vehicle(1, Vector2(1000.0, 0.0))
 	thing.logged_name = "thing"
 	for i in 30:
-		thing.position.x -= thing.speed * STEP
+		thing.position.x -= thing.approach_speed * STEP
 		_step(model, [thing])
 	t.check(_up(model, "thing"), "up while closing")
 	var down := 0
@@ -118,7 +118,7 @@ func _test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t: Te
 		down += 0 if _up(model, "thing") else 1
 	t.check(down == 0, "still up after two seconds standing still (down on %d)" % down)
 	for i in 120:
-		thing.position.x += thing.speed * STEP  # turned away, running off
+		thing.position.x += thing.approach_speed * STEP  # turned away, running off
 		_step(model, [thing])
 		down += 0 if _up(model, "thing") else 1
 	t.check(down == 0, "and while it runs away (down on %d)" % down)
@@ -132,7 +132,7 @@ func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t: TestRunner) -
 		var truck := _vehicle(1, Vector2(1000.0, 0.0))
 		truck.logged_name = "truck"
 		for i in 30:
-			truck.position.x -= truck.speed * STEP
+			truck.position.x -= truck.approach_speed * STEP
 			_step(model, [truck])
 		t.check(_up(model, "truck"), "up while closing")
 		truck.finished = finished
@@ -152,7 +152,7 @@ func _test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t: TestR
 		subjects.append(v)
 	for f in 40:
 		for v: BadgeModel.Subject in subjects:
-			v.position.x -= v.speed * STEP
+			v.position.x -= v.approach_speed * STEP
 		_step(model, subjects)
 	t.check(model.announcing().size() == 3, "three raised while closing")
 	var missing := 0
@@ -173,7 +173,7 @@ func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t: TestRunner) 
 		subjects.append(v)
 	for f in 40:
 		for v: BadgeModel.Subject in subjects:
-			v.position.x -= v.speed * STEP
+			v.position.x -= v.approach_speed * STEP
 		_step(model, subjects)
 	t.check(model.announcing().size() == 6, "six drawn, not three (%d)" % model.announcing().size())
 	var short := 0
@@ -261,13 +261,13 @@ func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t: 
 	_step(model, [truck])
 	truck.position.x = VIEW.end.x + 30.0
 	for i in 5:
-		truck.position.x -= truck.speed * STEP
+		truck.position.x -= truck.approach_speed * STEP
 		_step(model, [truck])
 	t.check(not _up(model, "truck"), "a seen thing closing inside the band is not badged until it is past it")
 	model = BadgeModel.new()
 	truck.position.x = VIEW.end.x + 200.0
 	for i in 12:
-		truck.position.x -= truck.speed * STEP
+		truck.position.x -= truck.approach_speed * STEP
 		_step(model, [truck])
 	t.check(_up(model, "truck"), "past the band it is")
 
@@ -381,6 +381,19 @@ func _test_a_pending_warning_is_announced_for_its_whole_warning(t: TestRunner) -
 	model.step(STEP, Vector2.ZERO, [w], _sees)
 	t.check(_up(model, "cyclist"), "a warning with nothing in the world yet is up, on screen or off")
 
+## A warning with nothing in the world yet is listed closing at the approach its subject carries, not
+## at nothing: the run log reads this number for the day's charging dog.
+func _test_a_pending_warning_is_listed_closing_at_its_approach_speed(t: TestRunner) -> void:
+	var model := BadgeModel.new()
+	var w := _vehicle(0, Vector2(900.0, 0.0), 240.0)
+	w.pending = true
+	w.left = 1.5
+	w.logged_name = "dog"
+	model.step(STEP, Vector2.ZERO, [w], _sees)
+	var listed := model.announcing()
+	t.check(listed.size() == 1 and is_equal_approx(float(listed[0]["approach"]), 240.0),
+			"a pending warning is listed closing at its approach speed (%s)" % str(listed))
+
 ## A pending warning with 0.7s left is ranked against a live thing by when each arrives: the live
 ## one, still 0.6s off, is listed ahead of it, and once it is 0.75s off the warning is. A warning's
 ## arrival time that was read wrong by a tenth of a second would swap the second order.
@@ -395,9 +408,9 @@ func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t: Test
 	var before_it := []
 	var after_it := []
 	for i in 120:
-		live.position.x -= live.speed * STEP
+		live.position.x -= live.approach_speed * STEP
 		_step(model, [live, warning])
-		var arrives := live.position.x / live.speed
+		var arrives := live.position.x / live.approach_speed
 		var names := []
 		for b in model.announcing():
 			names.append(b["id"])
@@ -435,7 +448,7 @@ func _test_every_badge_is_listed_soonest_arrival_first(t: TestRunner) -> void:
 		subjects.append(v)
 	for f in 40:
 		for v: BadgeModel.Subject in subjects:
-			v.position.x -= v.speed * STEP
+			v.position.x -= v.approach_speed * STEP
 		_step(model, subjects)
 	var names := []
 	for b in model.announcing():
@@ -450,12 +463,12 @@ func _test_a_subject_no_longer_handed_over_is_forgotten(t: TestRunner) -> void:
 	truck.logged_name = "fire_truck"
 	var frames := 0
 	while not _up(model, "fire_truck") and frames < 2000:
-		truck.position.x -= truck.speed * STEP
+		truck.position.x -= truck.approach_speed * STEP
 		_step(model, [truck])
 		frames += 1
 	t.check(_up(model, "fire_truck"), "a truck closing from off screen is badged")
 	_step(model, [])
 	t.check(not _up(model, "fire_truck"), "one no longer handed over loses its badge")
-	truck.position.x -= truck.speed * STEP
+	truck.position.x -= truck.approach_speed * STEP
 	_step(model, [truck])
 	t.check(not _up(model, "fire_truck"), "handed over again it is a fresh thing, not badged on its first frame")
