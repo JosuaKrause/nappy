@@ -85,6 +85,17 @@ var _where_she_is := WhereSheIs.nowhere()
 func where_she_is() -> WhereSheIs:
 	return _where_she_is
 
+## What these events report to whoever listens (`reports()`): one for the world's whole life, never
+## replaced, so a part and a live event keep it. Silent until the manager is handed a bus
+## (`EventManager.use_bus()`).
+var _reports := EventReports.new()
+
+## **Where every part of these events says what happened** (`EventReports`): the manager, its
+## spawner, `EventsAhead` and the doors' controller ask it here, and the encounter watch, each live
+## event and its charge's record are handed the same one as they are made.
+func reports() -> EventReports:
+	return _reports
+
 ## **Today's streets as dawn left them** (`DayStreets`): the route tree, the region wall and doors
 ## and the closures a day is planned against (`DayPlanner`), and the region a siting reads. The
 ## city's own, handed in once and begun again every dawn; a rig that builds no city hands one it

@@ -135,8 +135,8 @@ func _init() -> void:
 	spawner = EventSpawner.new(world, warnings)
 	streaming = EventStreaming.new(world, spawner, _walk_events)
 	ahead = EventsAhead.new(world, streaming, spawner, warnings, _walk_events)
-	checkpoints = CheckpointController.new(world, spawner.spawn, EventBus,
-			EventCatalogue.door_guard())
+	checkpoints = CheckpointController.new(world, spawner.spawn, EventCatalogue.door_guard())
+	_encounters = EncounterWatch.new(world.reports())
 	sources = EventSources.new(world, checkpoints)
 	checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
 			door_crossed.emit(at, axis, inspected))
@@ -198,7 +198,6 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
 			streets.siting_region if streets else Callable())
 	ahead.use_director(director, _spawn_siting)
-	EventBus.return_phase_started.connect(_owe_the_return)
 
 ## **Where something sent at her may start in the city** (`SpawnSiting`): made once, in `setup()`,
 ## over the map against the navigator, this manager's own view of her and the day's region, and
@@ -225,6 +224,20 @@ func setup_world(map: WorldMap, run: RunState) -> void:
 	world.map = map
 	world.use_navigator(map.navigator())
 	world.run = run
+
+## The event bus script, so the bus handed in has a class.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
+## **Hands the manager the bus its events report on, and it hears the baby fall asleep on**
+## (`return_phase_started`, for the return leg's patrols: `_owe_the_return()`), or null for none.
+## Whoever stands the manager hands it once, as it makes it (`SimulationBuilder`). Every part says
+## what happened through the world's one `EventReports`, so the bus reaches all of them, a live
+## event already in the world included, and nothing has to be handed before `setup()`. A manager
+## handed none reports to nobody and is never told she is on her way home.
+func use_bus(bus: _BUS) -> void:
+	world.reports().use_bus(bus)
+	if bus and not bus.return_phase_started.is_connected(_owe_the_return):
+		bus.return_phase_started.connect(_owe_the_return)
 
 ## Hands the manager the run its events belong to, for a rig that never calls `setup()`.
 func use_run(run: RunState) -> void:
@@ -425,7 +438,7 @@ func clear() -> void:
 
 ## The page's counter's encounters and bouts of running — see `EncounterWatch`. Telemetry only: it
 ## reads and decides nothing gameplay reads.
-var _encounters := EncounterWatch.new()
+var _encounters: EncounterWatch
 
 ## Tells `_encounters` that `instance` has struck her, for the catch `_watch_the_encounters()` did
 ## not see: a door's release (`CheckpointController.check_detentions()`) sets her down within
@@ -624,8 +637,8 @@ func check_hard_fails() -> void:
 			instance.report_the_catch()
 			# Ahead of the hard fail, which ends the day and sends its loss.
 			if instance.is_pelican:
-				EventBus.pelican_struck_her.emit(instance)
-			EventBus.hard_fail_triggered.emit(instance.def.id)
+				world.reports().tell_pelican_struck_her(instance)
+			world.reports().tell_hard_fail_triggered(instance.def.id)
 			return
 
 # ------------------------------------------------------------ the doors' intents ---

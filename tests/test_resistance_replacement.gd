@@ -24,10 +24,16 @@ func run(t: TestRunner) -> void:
 	_test_the_raid_waits_until_none_of_it_would_be_drawn(t)
 	_free_city()
 
-## Day 6 in a city of a run of its own, its director started and the mark placed.
-func _on_day_six(t: TestRunner) -> ResistanceDirector:
+## The bus script, so a recording bus of the suite's own is the class the director takes.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
+## Day 6 in a city of a run of its own, its director started and the mark placed; handed `bus`
+## before the day starts where a test gives one.
+func _on_day_six(t: TestRunner, bus: _BUS = null) -> ResistanceDirector:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
+	if bus:
+		director.use_bus(bus)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
 	return director
 
@@ -545,8 +551,22 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 				"%s scheme: off camera, the raid arrives (%d)" % [scheme, raid.size()])
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
+##
+## **And the page hears both moments on the bus the director was handed**, each once with the
+## step's index: the day's contact put on offer as the day starts (`resistance_contact_available`)
+## and the mark noticed once the dwell completes (`resistance_mark_seen`), never before it.
 func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t: TestRunner) -> void:
-	var director := _on_day_six(t)
+	var bus: _BUS = _BUS.new()
+	var offered: Array[int] = []
+	var seen: Array[int] = []
+	bus.resistance_contact_available.connect(func(step: int) -> void: offered.append(step))
+	bus.resistance_mark_seen.connect(func(step: int) -> void: seen.append(step))
+	var director := _on_day_six(t, bus)
+	var step := director.current_step()
+	var told: Array[int] = [step.index]
+	t.check(step.is_pickup and offered == told,
+			"day 6's mark is told on the director's bus as on offer, once, by its step (%s)"
+			% [offered])
 	var mark_at := director.contact_position()
 	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6))
 	director.set_sight(RunCity.events(_city).sees)
@@ -560,9 +580,11 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t: Test
 	director.tick(ResistanceDirector.SEEN_DWELL_SECONDS - STEP)
 	t.check(director.contact_position().distance_to(mark_at) < 0.5,
 			"within SEEN_DISTANCE the whole time, so it has not moved regardless of being seen yet")
+	t.check(seen.is_empty(), "and nothing is told of it being seen yet (%s)" % [seen])
 
 	# The dwell completes on this frame.
 	director.tick(STEP)
+	t.check(seen == told, "the dwell completed, it is told as seen, by its step (%s)" % [seen])
 
 	# Walk her far away — seen does not chase, but it also does not relocate any more.
 	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
@@ -571,9 +593,11 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t: Test
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(mark_at) < 0.5,
 			"seen after the dwell window completes, so it stays put however far she walks after")
+	t.check(seen == told and offered == told, "and neither is told again (%s, %s)" % [offered, seen])
 
 	player.free()
 	director.free()
+	bus.free()
 
 # M177: "a mark does not return to an alley a step was already taken from while another is
 # within reach." Day 6 of playtest 116's own run put step 3's mark back on the exact alley step 1

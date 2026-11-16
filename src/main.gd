@@ -471,6 +471,7 @@ func _ready() -> void:
 		_pauses_with_the_game(_resistance)
 		_resistance.trace = _the_trace()
 		_resistance.use_atlas(_sitting.atlas)
+		_resistance.use_bus(EventBus)
 		var events := _city_simulation.events()
 		_resistance.setup(_city.map, _run, events, _city.streets(), _city.fronts(), _city,
 				_city.navigator, events.spawn_siting())

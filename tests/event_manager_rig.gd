@@ -24,10 +24,13 @@ const WALK_SCALE := 6.0
 ## events are the same whether or not the day is streamed. A test that streams sets the radius it
 ## needs (`Tuning.EVENT_STREAM_RADIUS`); streaming itself is checked in
 ## `test_event_manager.gd`'s `_test_an_event_waits_until_she_is_near_it`.
-static func build_city(t: TestRunner) -> City:
+##
+## `builder` stands the city's simulation where a test hands one (a bus of the test's own), or the
+## game's defaults where it hands none (`RunCity.build()`).
+static func build_city(t: TestRunner, builder: SimulationBuilder = null) -> City:
 	var city := RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED), builder)
 	RunCity.events(city).stream_radius = INF
 	return city
 

@@ -20,6 +20,8 @@ const STEP := 1.0 / 60.0
 const RUN_SEED := 2
 ## The long waits go at this many times real time (`PhysicsTicks`): each tick is that much longer.
 const WAIT_SCALE := 3.0
+## The bus script, so a recording bus of the suite's own is the class a manager takes.
+const _BUS := preload("res://src/autoload/event_bus.gd")
 
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
@@ -244,11 +246,17 @@ func _test_a_conversation_only_starts_inside_detain_radius(t: TestRunner) -> voi
 			"and the instance is untouched by it")
 	_free_the_cast(manager, mother, stroller)
 
+## **A conversation happens once an instance**, and the page hears the one hold once, by its row,
+## on the bus the manager was handed (`player_detained`, which `VisitCounter` counts as `chat`).
 func _test_a_conversation_happens_once_per_instance(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var manager := _chat_manager(t)
+	var bus: _BUS = _BUS.new()
+	var detained: Array[String] = []
+	bus.player_detained.connect(func(id: String) -> void: detained.append(id))
+	manager.use_bus(bus)
 	var mother := manager.spawn_extra(def, at, path)
 	mother.set_process(false)
 	var stroller := _chat_stroller(t)
@@ -270,7 +278,11 @@ func _test_a_conversation_happens_once_per_instance(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(not stroller.is_detained(), "a second approach to the same instance never re-triggers (the once-only rule: it is "
 			+ "spent and leaving, which stops it as much as the has_chatted() gate does)")
+	var once: Array[String] = ["chatting_mother"]
+	t.check(detained == once,
+			"and the one hold is told on the manager's bus once, by its row (%s)" % [detained])
 	_free_the_cast(manager, mother, stroller)
+	bus.free()
 
 ## **No second conversation across streaming**: a conversation ends with her leaving
 ## (`EventInstance._be_done()`), and a plan streamed out while its instance is leaving is spent

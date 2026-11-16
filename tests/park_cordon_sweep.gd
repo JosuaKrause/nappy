@@ -176,6 +176,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 		# hands it to its own when the swing is reached (`ResistanceReads.day_reachability()`), so the
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
+		happenings.use_bus(EventBus)
 		happenings.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city,
 				city.atlas, null, RunCity.spawn_siting(city))
 		happenings.start_day(day, false)
@@ -224,6 +225,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas,
 			park, RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
+	again.use_bus(EventBus)
 	her[0] = swing
 	_tick(city, again, her[0])
 	var walking := _play(city, again, her, shows, true, result.people == 0)
@@ -254,6 +256,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		return {"person_placed": false, "place": place[0]}
 	var cordon := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas, park,
 			RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
+	cordon.use_bus(EventBus)
 	var her := [swing]
 	var shows := _camera_on(her)
 	_tick(city, cordon, her[0])

@@ -44,6 +44,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	RunCity.events(city).stream_radius = INF
 
 	var resistance := ResistanceDirector.new()
+	resistance.use_bus(EventBus)
 	t.add_child(resistance)
 	resistance.set_process(false)
 	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,

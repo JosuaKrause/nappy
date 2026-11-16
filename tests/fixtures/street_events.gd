@@ -14,6 +14,7 @@ extends RefCounted
 static func over(t: TestRunner, map: CityMap, run: RunState, streets: DayStreets,
 		stream_radius := Tuning.EVENT_STREAM_RADIUS) -> EventManager:
 	var manager := EventManager.new()
+	manager.use_bus(EventBus)
 	var holder := WorldContext.new()
 	manager.add_child(holder)
 	map.world = holder

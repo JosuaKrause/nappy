@@ -274,8 +274,15 @@ var _body: EventBody
 ## or the band's while a guard walks away from his barrier.
 var _rim := Rim.new(self)
 
-func _init() -> void:
+## `reports` is where it says what happened to it (`EventReports`): its world's, which
+## `EventSpawner.create()` hands in; one made by hand is handed none and reports to nobody.
+func _init(reports: EventReports = null) -> void:
+	_reports = reports if reports else EventReports.new()
+	_charge = ChargeRecord.new(Callable(self, &"_charger_name"), _reports)
 	excitement.use_rim(_rim)
+
+## Where it says what happened to it: its world's, or a silent one of its own (`_init()`).
+var _reports: EventReports
 
 ## This event's own simulation clock, in seconds, advanced by `delta` in `step()` while the
 ## event is still live. `excitement.landed()` is measured against this rather than the wall clock so
@@ -401,7 +408,7 @@ func _ready() -> void:
 	# ticks as she is, and moves as smoothly as she does. Placed here, so drawn from where it stands
 	# rather than gliding in from the origin.
 	reset_physics_interpolation()
-	EventBus.event_telegraphed.emit(self)
+	_reports.tell_event_telegraphed(self)
 	_telegraph_announced = true
 	# `EventDef.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
 	# — see its own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
@@ -669,7 +676,7 @@ func _tick(delta: float) -> void:
 
 	if not _activation_announced and not is_telegraphing():
 		_activation_announced = true
-		EventBus.event_activated.emit(self)
+		_reports.tell_event_activated(self)
 
 	if is_leaving:
 		departure.leave(delta)
@@ -782,7 +789,7 @@ var _notice := Warning.new()
 ## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
 ## no wait (`is_waiting()` never true) starts chasing on its very first `EventPursuit` call rather than
 ## on a notice, so whether it has begun is the record's `began`.
-var _charge := ChargeRecord.new(Callable(self, &"_charger_name"), EventBus)
+var _charge: ChargeRecord
 ## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
 ## warning her and this hut is the one across the road from her, or this alley post's
 ## (`CheckpointController.warn_at_the_doors()`, which sets it every frame, through
