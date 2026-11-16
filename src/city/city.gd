@@ -967,7 +967,7 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## `streets().route_tree()` and `streets().region_plan()` answer `null` and
 ## `streets().closures()` is empty, which is what their own contract says about a city whose day
 ## has grown none); `spec.pastes_posters` says whether the crews paste at dawn
-## (`PosterWalls.start_day()`) or the walls only show what the run left
+## (`PosterWalls.dress_for()`) or the walls only show what the run left
 ## (`PosterWalls.show_only()`). The repaint, the door, the ground, the litter, the block
 ## dressing and the street trees happen either way, because the parks she walks through have to
 ## be the parks the run's seed built. The run flow hands `spec` in on every day and every

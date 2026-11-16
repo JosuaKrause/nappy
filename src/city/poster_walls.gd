@@ -173,11 +173,11 @@ func use_player(player: Stroller) -> void:
 	_player = player
 
 ## **Today's walls, as the city's dressing says the day** (`CityDressing.day_dressed`): pasted
-## against today's route tree where the walk pastes (`start_day()`), and only shown where it does
+## against today's route tree where the walk pastes (`_start_day()`), and only shown where it does
 ## not (`show_only()`, the escape's city).
 func dress_for(day: int, spec: DaySpec) -> void:
 	if spec.pastes_the_posters():
-		start_day(day, _streets.route_tree() if _streets else null)
+		_start_day(day, _streets.route_tree() if _streets else null)
 	else:
 		show_only()
 
@@ -232,7 +232,7 @@ func fronts() -> Dictionary:
 ## tree, what "the streets she uses most" is read against. Called on the city's word that the day
 ## is dressed (`dress_for()`), after the day's closures, which is after
 ## `RunState.calendar.begin_day()` photographed the walls, so a retry pastes the same dawn again.
-func start_day(day: int, tree: RouteTree) -> void:
+func _start_day(day: int, tree: RouteTree) -> void:
 	_day = day
 	_day_running = true
 	_jobs.clear()

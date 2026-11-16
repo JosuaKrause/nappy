@@ -164,7 +164,8 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 
 		var mother := manager.spawn_extra(def, at, path)
 		mother.set_process(false)
-		world.excitement_sources = [manager.sources]
+		var sets: Array[ExcitementSources] = [manager.sources]
+		world.use_excitement_sources(sets)
 		manager.use_player(stroller)
 		stroller.global_position = at
 

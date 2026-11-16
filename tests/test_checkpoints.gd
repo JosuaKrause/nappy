@@ -788,7 +788,8 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	# the instances itself.
 	var manager := _manager(t)
 	var world := manager.world.map.world
-	world.excitement_sources = [manager.sources]
+	var sets: Array[ExcitementSources] = [manager.sources]
+	world.use_excitement_sources(sets)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
 	var baby := stroller.get_node_or_null("Baby") as Baby

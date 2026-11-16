@@ -32,7 +32,9 @@ func run(t: TestRunner) -> void:
 func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: String) -> void:
 	city.run.posters.reset()
 	var tree := RouteTree.for_day(city.map, day)
-	RunCity.poster_walls(city).start_day(day, tree)
+	var no_closures: Array[RoadClosure] = []
+	city.streets().begin_day(tree, null, no_closures)
+	RunCity.poster_walls(city).dress_for(day, DaySpec.for_day(day))
 	var before := _pasted_cells(city)
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()

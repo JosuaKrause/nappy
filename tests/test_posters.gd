@@ -78,7 +78,7 @@ func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) ->
 	_run.header.day = day
 	_run.posters.pasted_through = day
 	_walls = RunCity.poster_walls(_city)
-	_walls.start_day(day, null)
+	_walls.dress_for(day, DaySpec.for_day(day))
 	_her = STROLLER_SCENE.instantiate()
 	t.add_child(_her)
 	RunCity.events(_city).use_player(_her)
@@ -393,7 +393,7 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 
 	_run.resistance.completed_steps = []
 	var from := art.asked.size()
-	_walls.start_day(day, null)
+	_walls.dress_for(day, DaySpec.for_day(day))
 	await _frames(t, 2)
 	var drawn := _drawn_since(art, from)
 	t.check(not drawn.is_empty() and drawn.all(_drawn_taken),
@@ -403,7 +403,7 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 
 	_run.resistance.completed_steps = [ResistanceSteps.warning_step().index]
 	from = art.asked.size()
-	_walls.start_day(day, null)
+	_walls.dress_for(day, DaySpec.for_day(day))
 	await _frames(t, 2)
 	drawn = _drawn_since(art, from)
 	t.check(not drawn.is_empty() and not drawn.any(_drawn_taken)
@@ -662,7 +662,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t: TestRunner) -> void:
 	await _wait(t, 0.5)
 	for joystick: bool in [true, false]:
 		# A day started again clears what the crews were working at.
-		_walls.start_day(DAY, null)
+		_walls.dress_for(DAY, DaySpec.for_day(DAY))
 		_run.posters.reset()
 		_run.posters.pasted_through = DAY
 		RunCity.events(_city).use_controls(TouchCover.joystick() if joystick else null)

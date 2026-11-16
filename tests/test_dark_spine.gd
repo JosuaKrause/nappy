@@ -45,7 +45,7 @@ func _test_the_dark_spine_keeps_moving(t: TestRunner) -> void:
 	_city.start_day(state, day, _rng("closures"))
 	var lit: Vector2 = await _spine_traffic(t)
 	var lit_samples := _sampled_cars
-	_city.signals.powered = false
+	_city.traffic_signals().powered = false
 	var dark: Vector2 = await _spine_traffic(t)
 	_sampled_cars = mini(_sampled_cars, lit_samples)
 	print("[test_dark_spine] spine traffic over 40s, lit: mean %.0f px/s, %.0f%% stopped; "

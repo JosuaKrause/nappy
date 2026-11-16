@@ -120,7 +120,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 					"", true),
 			own_run, func(code: int) -> void: ended.append(code))
 	viewport.add_child(runtime)
-	var errors := runtime.install(city, player, player.get_node("Baby"),
+	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
 			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
 	t.check(errors.is_empty(), "the sight scene is installed: %s" % [errors])
 	if errors.is_empty():

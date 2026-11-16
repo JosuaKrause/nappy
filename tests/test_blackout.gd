@@ -31,7 +31,7 @@ var _signals: TrafficSignals
 var _events: FakeEventManager
 var _buildings: Array[Building] = []
 var _blackout: Blackout
-## Her, once a test has stood her somewhere: a node in the group the blackout finds her through.
+## Her, once a test has stood her somewhere: a node handed to the blackout (`Blackout.use_player()`).
 var _her: Node2D
 ## How many times the city said it went dark (`EventBus.city_gone_dark`) and how many times it said
 ## it went quiet (`EventBus.city_went_quiet`) since `_begin()`.
@@ -46,8 +46,8 @@ func run(t: TestRunner) -> void:
 	await _test_a_retry_gives_the_power_back(t)
 	_test_the_escape_is_dark_from_its_first_frame(t)
 
-## A blackout over a city on the last day with the sabotage not yet done, handed its parts the way
-## `City.build()` hands them, and in the tree.
+## A blackout over a city on the last day with the sabotage not yet done, handed its parts and the
+## bus the way `SimulationBuilder` hands them, and in the tree.
 func _begin(t: TestRunner, from_the_start := false) -> void:
 	_resistance = ResistanceRunState.new()
 	_resistance.sabotage_done = false
@@ -64,9 +64,9 @@ func _begin(t: TestRunner, from_the_start := false) -> void:
 	EventBus.city_gone_dark.connect(_count_dark)
 	EventBus.city_went_quiet.connect(_count_quiet)
 	_blackout = Blackout.new()
-	_blackout.dark_from_the_start = from_the_start
+	_blackout.use_bus(EventBus)
 	t.add_child(_blackout)
-	_blackout.setup(_map, _buildings, _signals, _events, _resistance)
+	_blackout.setup(_map, _buildings, _signals, _events, _resistance, false, from_the_start)
 
 func _count_dark() -> void:
 	_went_dark += 1
@@ -102,12 +102,12 @@ func _go_dark(t: TestRunner) -> void:
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
 
 ## She stands at `point` for two physics ticks, which is how often the blackout looks at where she is:
-## a node in the `player` group, which is where the blackout finds her.
+## a node handed to it, as `WorldSimulation.meet_her()` hands her.
 func _she_stands_at(t: TestRunner, point: Vector2) -> void:
 	if not is_instance_valid(_her):
 		_her = Node2D.new()
-		_her.add_to_group("player")
 		t.add_child(_her)
+		_blackout.use_player(_her)
 	_her.global_position = point
 	await PhysicsTicks.pass_ticks(t, 2)
 

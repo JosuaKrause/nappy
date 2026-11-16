@@ -175,7 +175,8 @@ func _test_a_held_door_is_the_whole_answer(t: TestRunner) -> void:
 	door.pairs = [[ExcitementSource.new(door_body), 7.0]]
 	var street := Fixed.new()
 	street.pairs = [[ExcitementSource.new(street_body), 3.0]]
-	world.excitement_sources = [door, street]
+	var sets: Array[ExcitementSources] = [door, street]
+	world.use_excitement_sources(sets)
 	t.close_to(_total_at_the_origin(world), 10.0,
 			"with nobody held, every set's pairs are summed", 0.0001)
 	t.check(world.excitement_sources_at(Vector2.ZERO).size() == 2
@@ -184,7 +185,8 @@ func _test_a_held_door_is_the_whole_answer(t: TestRunner) -> void:
 	door.alone = true
 	t.close_to(_total_at_the_origin(world), 7.0,
 			"inside a held door its toll is the whole answer", 0.0001)
-	world.excitement_sources = [street, door]
+	var swapped: Array[ExcitementSources] = [street, door]
+	world.use_excitement_sources(swapped)
 	t.close_to(_total_at_the_origin(world), 7.0,
 			"whichever order the sets are handed in", 0.0001)
 	door_body.free()

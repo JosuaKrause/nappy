@@ -240,12 +240,6 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 			if node is City:
 				var c := node as City
 				entered["flags"] = {"ground_mode": c.ground_mode, "skip_shadows": c.skip_shadows,
-						"skip_crowd_motion": c.skip_crowd_motion,
-						"skip_event_drawing": c.skip_event_drawing,
-						"skip_crowd_drawing": c.skip_crowd_drawing,
-						"blackout_forced": c.blackout_forced,
-						"all_cyclists_pelicans": c.all_cyclists_pelicans,
-						"forced_row": c.forced_row, "forced_interval": c.forced_interval,
 						"scenery_frame_locked": c.scenery_frame_locked}
 		t.get_tree().node_added.connect(catch)
 		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true),
@@ -259,12 +253,15 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
 		var f: Dictionary = entered.get("flags", {})
 		t.check(not f.is_empty() and f["ground_mode"] == SceneryGround.Mode.ALL
-				and f["skip_shadows"]
-				and f["skip_crowd_motion"] and not f["skip_event_drawing"]
-				and not f["skip_crowd_drawing"] and f["blackout_forced"] and f["all_cyclists_pelicans"]
-				and f["forced_row"] == "cyclist" and is_equal_approx(f["forced_interval"], 3.0)
-				and not f["scenery_frame_locked"],
-				"the city is handed what the flags chose before it builds")
+				and f["skip_shadows"] and not f["scenery_frame_locked"],
+				"the city is handed what the flags chose for its own ground before it builds")
+		# The parts the builder stood are handed what the flags chose for each
+		# (`main._simulation_builder()`).
+		var city := Boot.city(booted.main)
+		t.check(city != null and not RunCity.events(city).skip_drawing
+				and RunCity.events(city).pelican_rig == EventSpawner.PelicanRig.ALWAYS
+				and RunCity.crowd(city).skip_motion and not RunCity.crowd(city).skip_agent_drawing,
+				"and the events and the crowd it stands are handed theirs")
 		booted.free_all()
 		home.free()
 
@@ -289,13 +286,14 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	city.ground_mode = SceneryGround.Mode.STEPPED
 	city.scenery_frame_locked = true
 	city.skip_shadows = true
-	city.skip_event_drawing = true
-	city.skip_crowd_drawing = true
-	city.skip_crowd_motion = true
-	city.blackout_forced = true
-	city.all_cyclists_pelicans = true
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	# The other seven are the simulation's, handed to its builder as `main._simulation_builder()`
+	# hands them.
+	var builder := RunCity.new_builder()
+	builder.leave_out(true, true, true)
+	builder.force_the_blackout()
+	builder.make_every_cyclist_a_pelican()
+	RunCity.build(city, MapCache.of(SEED), builder)
 	# The shadow layer is the scene's own child, found by the name the scene gives it. What it draws
 	# is read off a recording drawer handed to it the way the city hands its own, every chunk it
 	# stands asked to draw again: under `--skip shadows` none draws a tile.
@@ -322,10 +320,11 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	she.add_child(camera)
 	t.add_child(she)
 	she.set_physics_process(false)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, she)
 	she.global_position = Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
 	await PhysicsTicks.pass_ticks(t, 2)
 	she.free()
-	t.check(not city.signals.powered, "and the blackout, which puts the lights out with no sabotage done")
+	t.check(not city.traffic_signals().powered, "and the blackout, which puts the lights out with no sabotage done")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	RunCity.crowd(city).start_day(1, rng)
@@ -369,10 +368,10 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	city.forced_row = "cyclist"
-	city.forced_interval = FORCED_INTERVAL
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	var builder := RunCity.new_builder()
+	builder.force_a_row("cyclist", FORCED_INTERVAL)
+	RunCity.build(city, MapCache.of(SEED), builder)
 	RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var her := Stroller.new()
 	var camera := Camera2D.new()
