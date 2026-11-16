@@ -248,8 +248,8 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 			"--pelican reaches the events")
 	t.check(crowd.view == view and crowd.timing == timing, "the screen reaches the crowd")
 	t.check(events.trace == trace and events.atlas == atlas and events.timing == frames
-			and crowd.atlas == atlas and _simulation(made).poster_walls().trace == trace,
-			"and what every part is equipped with reaches each")
+			and crowd.atlas == atlas,
+			"and what the events and the crowd are equipped with reaches each")
 	_free(made)
 
 ## **Meeting her reaches the crowd, the walls and the blackout**, and nothing reaches them before:

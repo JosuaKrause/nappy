@@ -267,6 +267,13 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
 		# that nothing but a win ends (`DayController.invincible`), so a walk can take its time.
 		if invincible and city != null:
+			# Past the title and the day's brief, as a played day is, so she walks the city and its
+			# parts are handed her (`WorldSimulation.meet_her()`).
+			var title := Boot.title(booted.main)
+			if title and title.is_open():
+				await Boot.press_title(t, booted.main)
+			if t.get_tree().paused:
+				await Boot.press_continue(t, booted.main)
 			var her := Boot.player(booted.main)
 			# Far from the station on day 1, with no sabotage done: the lights go out only if the
 			# blackout was handed `--blackout`.
