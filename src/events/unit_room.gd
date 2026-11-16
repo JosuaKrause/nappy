@@ -40,7 +40,7 @@ func _init(whole: int, halves: int, untouched := false) -> void:
 static func of(unit: PlacementUnit) -> UnitRoom:
 	var locations := unit.locations()
 	var halves := 0
-	if unit.kind() != PlacementUnit.Kind.STREET:
+	if unit.kind() != PlacementGround.Kind.STREET:
 		for location in locations:
 			if location.is_open():
 				halves += 1

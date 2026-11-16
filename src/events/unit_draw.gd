@@ -22,20 +22,19 @@ extends RefCounted
 ## the plan has no place, since every rule passes over a plan that stands nowhere.
 ##
 ## Drawing one unit: one fresh bag, of the fill of the unit's view (the most permissive of its
-## locations', `PlacementUnit.view()`), on the unit's stream (`ViewBag`), so what a far unit drew
-## changes nothing here; the marbles drawn from it and laid out in the unit (`MarbleDraw.draw()`),
-## a marble drawn before it has a place. Model: no node.
+## locations', `PlacementUnit.view()`) and kind of ground (`UnitFills.of()`), on the unit's stream
+## (`ViewBag`), so what a far unit drew changes nothing here; the marbles drawn from it and laid
+## out in the unit (`MarbleDraw.draw()`), a marble drawn before it has a place. Model: no node.
 
 var _units: DayUnits
 var _drawing: MarbleDraw
-var _fills := {}
+var _fills: UnitFills
 var _dawn: Array[EventPlan] = []
 
-## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `fills` the
-## three views' bag fills (`view -> {marble -> count}`, `EventScheduler.view_fills()`); `dawn` the
-## plans the dawn placed, copied, a plan it left with no place left out (the class comment says
-## why).
-func _init(units: DayUnits, drawing: MarbleDraw, fills: Dictionary,
+## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `fills` the day's bag
+## fills, by view and kind of ground (`UnitFills`); `dawn` the plans the dawn placed, copied, a
+## plan it left with no place left out (the class comment says why).
+func _init(units: DayUnits, drawing: MarbleDraw, fills: UnitFills,
 		dawn: Array[EventPlan]) -> void:
 	_units = units
 	_drawing = drawing
@@ -99,7 +98,7 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 				among.append(plan)
 	var rng := unit.stream()
 	var view := unit.view()
-	var fill: Dictionary = _fills.get(view, {ViewBag.EMPTY: 1})
+	var fill := _fills.of(view as PlacementView.View, unit.kind())
 	var bag := ViewBag.new(fill, hash("%d:%s:bag:%d" % [rng.seed, unit.name(), view]))
 	var placed := _drawing.draw(unit, bag, among)
 	unit.record_draw(placed)

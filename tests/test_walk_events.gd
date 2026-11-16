@@ -41,7 +41,8 @@ func _test_everything_but_leaves_out_the_plan_being_placed(t: TestRunner) -> voi
 
 func _test_clearing_forgets_the_walk(t: TestRunner) -> void:
 	var walk := WalkEvents.new()
-	var draw := UnitDraw.new(DayUnits.of([] as Array[Location], 1), null, {}, [] as Array[EventPlan])
+	var draw := UnitDraw.new(DayUnits.of([] as Array[Location], 1), null,
+			UnitFills.new({}, 1, DaySpec.for_day(1)), [] as Array[EventPlan])
 	walk.take([_row("busker", Vector2(64, 64))] as Array[EventPlan], CalmAreas.new(),
 			PackedVector2Array([Vector2(640, 64)]), null, null, null, draw)
 	walk.clear()

@@ -55,7 +55,7 @@ static func of(locations: Array[Location], day_seed: int, reach := 0.0) -> DayUn
 		var tiles: Rect2i = kinds[key]
 		var bounds := Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE,
 				Vector2(tiles.size) * Tuning.TILE_SIZE)
-		var unit := PlacementUnit.new(key.x as PlacementUnit.Kind, tiles, bounds,
+		var unit := PlacementUnit.new(key.x as PlacementGround.Kind, tiles, bounds,
 				grouped[key] as Array[Location], day_seed)
 		units._units[unit.name()] = unit
 		units._order.append(unit)
@@ -106,16 +106,16 @@ func drawn_round(at: Vector2) -> float:
 	return nearest
 
 ## The unit kind a location's kind belongs to.
-static func _unit_kind(kind: int) -> PlacementUnit.Kind:
+static func _unit_kind(kind: int) -> PlacementGround.Kind:
 	match kind:
 		Location.Kind.SIDEWALK, Location.Kind.SECTION:
-			return PlacementUnit.Kind.STREET
+			return PlacementGround.Kind.STREET
 		Location.Kind.ALLEY:
-			return PlacementUnit.Kind.ALLEY
+			return PlacementGround.Kind.ALLEY
 		Location.Kind.OPEN:
-			return PlacementUnit.Kind.OPEN
+			return PlacementGround.Kind.OPEN
 		_:
-			return PlacementUnit.Kind.JUNCTION
+			return PlacementGround.Kind.JUNCTION
 
 static func _distance_to(at: Vector2, bounds: Rect2) -> float:
 	var nearest := Vector2(clampf(at.x, bounds.position.x, bounds.end.x),
@@ -130,13 +130,13 @@ func _work_out_touching(reach: float) -> void:
 	var bordering := {}
 	var boxes := {}
 	for unit in _order:
-		if unit.kind() == PlacementUnit.Kind.JUNCTION:
+		if unit.kind() == PlacementGround.Kind.JUNCTION:
 			boxes[_junction_of_box(unit.tiles())] = unit
 	for unit in _order:
 		match unit.kind():
-			PlacementUnit.Kind.JUNCTION:
+			PlacementGround.Kind.JUNCTION:
 				_add(meeting, _junction_of_box(unit.tiles()), unit.name())
-			PlacementUnit.Kind.STREET:
+			PlacementGround.Kind.STREET:
 				for junction in _boxes_covered(unit.tiles().grow(1), boxes):
 					_add(meeting, junction, unit.name())
 			_:

@@ -39,7 +39,7 @@ func run(context: DawnContext) -> void:
 		if not def.is_drawn_by_units(day, beside_id):
 			continue
 		rows[def.id] = def.for_day(day)
-	var fills := EventScheduler.view_fills(rows, day, context.spec())
+	var fills := UnitFills.new(rows, day, context.spec())
 	var units := DayUnits.of(context.locations().all(), context.day_seed())
 	var ground := context.ground()
 	var events := context.events()
