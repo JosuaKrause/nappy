@@ -196,9 +196,12 @@ func _the_pelican_bag() -> MarbleBag:
 func _ride_as_a_pelican(instance: EventInstance) -> void:
 	instance.is_pelican = true
 	_unseen_pelicans.append(instance)
+	# The world's reports as a local, so the callback an instance's source keeps holds neither this
+	# spawner nor the world.
+	var reports := world.reports()
 	instance.excitement.on_first_landing = func() -> void:
-		EventBus.pelican_excited_her.emit(instance)
-	EventBus.pelican_spawned.emit(instance)
+		reports.tell_pelican_excited_her(instance)
+	reports.tell_pelican_spawned(instance)
 
 ## Pelicans created and not yet on screen. Untyped, so a pelican freed before it was ever seen can
 ## be asked `is_instance_valid()` rather than read as a typed element. Empty on all but about one
@@ -221,7 +224,7 @@ func report_the_pelicans_in_view() -> void:
 		var box := instance.drawn_box()
 		var drawn := Rect2(box.position + instance.global_position, box.size)
 		if world.visible.share_of(drawn) >= Tuning.ENCOUNTER_SEEN_SHARE:
-			EventBus.pelican_sighted.emit(instance)
+			world.reports().tell_pelican_sighted(instance)
 		else:
 			still_unseen.append(instance)
 	_unseen_pelicans = still_unseen
@@ -232,7 +235,7 @@ func report_the_pelicans_in_view() -> void:
 func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
 		facing := Vector2.RIGHT) -> EventInstance:
 	show_the_bang(def)
-	var instance := EventInstance.new()
+	var instance := EventInstance.new(world.reports())
 	instance.skip_draw = world.skip_drawing
 	instance.timing = world.timing
 	instance.atlas = world.atlas
@@ -368,7 +371,7 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 		# not once per retry.
 		if not _sight_reported.get(plan, false):
 			_sight_reported[plan] = true
-			EventBus.event_sighted.emit(plan.def.id)
+			world.reports().tell_event_sighted(plan.def.id)
 		if _summon_the_sighted_row(plan.def, plan.live.global_position, plan):
 			_sighted[plan] = true
 

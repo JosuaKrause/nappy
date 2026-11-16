@@ -42,7 +42,8 @@ const RUN_SEED := 2
 var _lines: Array[String] = []
 
 func run(t: TestRunner) -> void:
-	# The director tells the observers of the tasks it offers and ends (`EventBus`), as in a run.
+	# The director is handed no bus, so it tells nobody which task is on offer or which mark was seen
+	# (a run hands it the autoload); a task's end is still said, by `RunState`.
 	var printed := 0
 	for seed_value in SEEDS:
 		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)

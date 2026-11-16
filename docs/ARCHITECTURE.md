@@ -355,6 +355,10 @@ src/
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
 	                       second: where its badge points, fixed against her, and where the
 	                       thing is then placed just out of sight on its own ground
+	event_reports.gd      what a day's events say happened, one teller a signal, on the bus the
+	                       manager is handed (`EventManager.use_bus()`); one for the world's life
+	                       (`EventWorld.reports()`), shared by every part, each live event and its
+	                       charge's record; with no bus handed in, it tells nobody
   day/
 	day_spec.gd           what one day is: its number, its words, its clock, its goal, who is on
 	                      its streets, what stands on them and how it is placed, and what losing
@@ -878,12 +882,15 @@ return patrols) are `tests/test_tuning_fairness.gd`'s checks, so an unfair numbe
 ### `EventBus`
 Global signal hub. Decouples systems that should not know about each other. The observers and the
 view listen on the autoload. The baby is handed it rather than fetching it (`Baby.use_bus()`, which
-`main._make_player()` calls), and a baby handed none tells nobody; the emitters `tools/layer_map.py`
-lists under `EventBus` still fetch it. Every signal is
-declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run state,
-events, bodies, resistance, the escape, presentation — read it directly for the current list and
-each signal's payload type; `event_telegraphed` and `event_activated` are deliberately untyped,
-since this autoload loads before `EventInstance`'s class does.
+`main._make_player()` calls), and a baby handed none tells nobody. Every emitter in the world and
+the simulation is handed its bus the same way: the events through `EventManager.use_bus()` and the
+one `EventReports` (`event_reports.gd`) their parts share, the resistance through
+`ResistanceDirector.use_bus()`, which hands it on to its happenings and their park cordon, and the
+crowd, the poster walls and the blackout through `SimulationBuilder.use_bus()`. Every
+signal is declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run
+state, events, bodies, resistance, the escape, presentation — read it directly for the current
+list and each signal's payload type; `event_telegraphed` and `event_activated` are deliberately
+untyped, since this autoload loads before `EventInstance`'s class does.
 
 ### `Telemetry`
 The run log: one plain-text file per run, written as it happens. **Inert until

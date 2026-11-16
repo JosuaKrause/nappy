@@ -7,6 +7,8 @@ extends RefCounted
 ## a suite is allowed.
 
 const Rig := preload("res://tests/event_manager_rig.gd")
+## The bus script, so a recording bus of the suite's own is the class a builder takes.
+const _BUS := preload("res://src/autoload/event_bus.gd")
 
 var _city: City
 
@@ -25,17 +27,25 @@ func run(t: TestRunner) -> void:
 		_test_the_fire_she_meets_is_seen_coming,
 		_test_the_engine_waits_on_its_road_to_the_fire,
 		_test_a_fire_that_was_never_lit_was_not_spent,
-		_test_a_won_day_with_the_fire_unmet_still_burns,
 	]
 	for test in tests:
 		_build_city(t)
 		await test.call(t)
 		_teardown()
+	# The won day's city is stood by a builder handed a bus of the suite's own, as `main` hands its
+	# builder the game's, so what the fire lit at dusk says is heard there and nowhere else.
+	var bus: _BUS = _BUS.new()
+	var builder := SimulationBuilder.new()
+	builder.use_bus(bus)
+	_build_city(t, builder)
+	_test_a_won_day_with_the_fire_unmet_still_burns(t, bus)
+	_teardown()
+	bus.free()
 
-func _build_city(t: TestRunner) -> void:
+func _build_city(t: TestRunner, builder: SimulationBuilder = null) -> void:
 	_walker_node = Rig.Walker.new()
 	t.add_child(_walker_node)
-	_city = Rig.build_city(t)
+	_city = Rig.build_city(t, builder)
 
 ## **A day 3 she wins with the fire never in the world still burns.** *"I agree with the fire fix"*
 ## (PLAYTEST-121). The row's only day is day 3 and it is spent where it enters the world, so a day
@@ -45,7 +55,12 @@ func _build_city(t: TestRunner) -> void:
 ##
 ## Nothing walks here, which is the case: a day nobody walked far enough into for a siting to be due
 ## is the cheapest way to produce exactly the state this is for.
-func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner) -> void:
+##
+## **And the page hears it was lit unmet**, once, on the bus the city's builder was handed
+## (`event_lit_unmet`, which `VisitCounter` counts as `fire-unmet`).
+func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -> void:
+	var lit_unmet: Array[String] = []
+	bus.event_lit_unmet.connect(func(id: String) -> void: lit_unmet.append(id))
 	var day := Tuning.RUN_TAUGHT_DAY
 	_start(day)
 	var plan := _fire_plan()
@@ -58,6 +73,9 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner) -> void:
 			"the end of a won day lights it")
 	t.check(plan.is_placed() and plan.was_live,
 			"and it has been in the world, which is what records what a fire does to a run")
+	var told: Array[String] = ["burning_building"]
+	t.check(lit_unmet == told,
+			"and it is told on the builder's bus as lit unmet, once, by its row (%s)" % [lit_unmet])
 	t.check(plan.position.distance_to(doorstep)
 			>= EventScheduler.WalkSiting.DUSK_CLEAR_OF_HER,
 			("it is lit %.0fpx from where she finished, past the %.0fpx streaming band, so it is "
@@ -77,6 +95,7 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner) -> void:
 	# A second call on the same day has nothing left to light: the one-shot is spent.
 	t.check(not RunCity.events(_city).light_what_she_never_met(doorstep),
 			"a run gets exactly one fire, however many times the day ends")
+	t.check(lit_unmet == told, "and nothing more is told of it (%s)" % [lit_unmet])
 
 func _teardown() -> void:
 	_city.free()

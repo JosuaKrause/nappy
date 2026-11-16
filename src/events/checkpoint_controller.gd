@@ -9,7 +9,8 @@ extends RefCounted
 ## **Handed what it works over, never fetching it**: the world the events stand in (`EventWorld`:
 ## the live instances it reads the door bodies from, the map its run-log lines name tiles on, the
 ## trace it writes them to, and where she stands), how a guard is put in the world (`_spawn`) and
-## which row he is (`_guard`), and the event sink it tells the observers through (`_bus`).
+## which row he is (`_guard`). What a door did it says through the world's reports
+## (`EventWorld.reports()`), the one `EventReports` every part of the events shares.
 ## **It reads her and never moves her**: what a door does to her — taken in, held, let out — it says
 ## as an intent (`takes_her_in`, `holds_her`, `lets_her_out`), which the manager carries out on the
 ## player it was handed, synchronously, on the same tick.
@@ -34,23 +35,16 @@ const CHECKPOINT_RELEASE_MARGIN := 8.0
 ## crossing".)* Measured the same way as `EventCatalogue.CHARGER_WARNING` (`tests/test_checkpoints.gd`).
 const CROSSING_WARNING := 2.0
 
-## The event bus script, so a signal this file emits is checked when the file is parsed.
-const _BUS := preload("res://src/autoload/event_bus.gd")
-
 ## The world the doors stand in: the live instances, the map, the trace and the player.
 var world: EventWorld
 ## `func(def: EventDef, at: Vector2) -> EventInstance`: puts a guard in the world.
 var _spawn: Callable
 ## The row a crossing sets on her (`EventCatalogue.door_guard()`).
 var _guard: EventDef
-## Where it tells the observers what a door did — a hold begun (`player_detained`), a guard's raised
-## hand (`pursuit_warned`): `EventBus`.
-var _bus: _BUS
 
-func _init(the_world: EventWorld, spawn: Callable, bus: _BUS, guard: EventDef) -> void:
+func _init(the_world: EventWorld, spawn: Callable, guard: EventDef) -> void:
 	world = the_world
 	_spawn = spawn
-	_bus = bus
 	_guard = guard
 
 ## A door takes her in for its inspection: she goes in out of sight, and the camera goes to the
@@ -219,7 +213,7 @@ func check_detentions() -> void:
 	holds_her.emit(nearest.detains_for())
 	# `VisitCounter`'s own "chat"/"checkpoint" — `nearest.row_id()` names which. See
 	# docs/TELEMETRY.md, "The page counts visits".
-	_bus.player_detained.emit(nearest.row_id())
+	world.reports().tell_player_detained(nearest.row_id())
 	var awake := world.where_she_is().baby_is_awake()
 	world.trace.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
 		nearest.row_id(), RunTrace.tile(world.map.world_to_tile(nearest.global_position)),
@@ -613,7 +607,7 @@ func warn_at_the_doors() -> void:
 			# `VisitCounter`'s own "door-guard-warned", each time a guard raises his hand: the
 			# warning level of the checkpoint guard, who is not in the world until she goes under.
 			if warns and not instance.is_its_guard_warning():
-				_bus.pursuit_warned.emit("door_guard")
+				world.reports().tell_pursuit_warned("door_guard")
 			instance.raise_its_guards_hand(warns)
 
 ## *(2026-09-24, the player, answering whether a hold should end the chase: "we can try b. if she
