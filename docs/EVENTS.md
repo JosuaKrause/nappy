@@ -1337,9 +1337,11 @@ Each item quotes the code on this branch.
    a day none of the sidewalk below its door can be reached: it stands where the run's fire
    burned, which passes unasked. The other siting that draws nothing is the fire lit at dusk on a
    won day, after which nothing draws. Today's placement rules are the invalidation,
-   one class each (`StreetRule`: the calm she has not used, a door's clear ground, a route's
-   junctions, its walked sidewalk, a pacing beat's opening and its ground off the streets, with the
-   escape's one notice at a time and its walk kept open), composed per walk (`StreetInvalidation`)
+   one class each (`StreetRule`: the calm she has not used, a door's clear ground, her line from a
+   route's junction box onto the sidewalks she walks, her walked sidewalk, a pacing beat's opening
+   and a route's ground off the streets, and on a day's walk one sidewalk of every street near the
+   routes kept open past the bodies drawn on it, with the escape's one notice at a time and its
+   walk kept open in place of that), composed per walk (`StreetInvalidation`)
    with a location's own ground (`LocationFit`), each asked against the dawn's plans and the draws
    of the unit and the units touching it; a row drawn takes the location of its unit that weighs
    it most and offers it, and a location the first tile no rule refuses
@@ -1351,9 +1353,10 @@ Each item quotes the code on this branch.
    ends (`Location.run()`), so the dog walker's, the police patrol's and the military convoy's
    routes stay inside a street and its two boxes (a route starts on a tile of the street and goes
    one way, so at most 13 tiles; one drawn in a junction box stays in the box), the player's
-   answer (inbox #1460). One case is left open and measured (`tests/probes/m129_zero_cost_line.gd`):
-   two rows in units at opposite ends of a route's street, neither touching the other, each
-   reaching into the street, are not asked together whether its walked sidewalk keeps a free line.
+   answer (inbox #1460). One case is left open and measured (`tests/probes/m129_zero_cost_line.gd`),
+   the player's condition on it (inbox #1461): two rows in units at the two ends of one walked
+   sidewalk, neither standing on that street, each reaching far into it from opposite sides, are
+   not asked together whether it keeps a free line.
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
 2. **The walk's sitings still roll a spot.** `WalkSiting` goes through `_best_of()`, which rolls
@@ -1520,13 +1523,13 @@ None of this is a weight: a closed or held street is not somewhere anyone can ge
 standing for something else, or is a tree, so nothing about the role table below ever sees it.
 
 **And one refusal is about what a candidate would *do* rather than about the ground it stands on**,
-so it is asked of the placement instead of the pool: a row may not take a crossing the day's routes
-depend on. `RouteJunctionsRule._leaves_the_route_junctions_open` asks, before the row is accepted,
-whether the junction box still carries a walk joining the route streets that meet there — with this
-row standing and everything already down standing too — and re-rolls where it does not. A junction
-is the only place a line may change pavement, so this is the one refusal a street's far side cannot
-answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and for the kinds of
-row that are outside it.
+so it is asked of the placement instead of the pool: a row may not cut her line through a crossing
+the day's routes depend on. `RouteLineRule` asks, before the row is accepted, whether the junction
+box and the sidewalks she walks to it and from it still carry one free walk joining the far ends of
+the route streets that meet there — with this row standing and everything already down standing
+too — and re-rolls where it does not. A junction is the only place a line may change pavement, so
+this is the one refusal a street's far side cannot answer; see `docs/CITY.md`, "Her line is
+followed through a route's junctions", for the rule and for the kinds of row that are outside it.
 
 **The stretch between two junctions is asked the same way, of the sidewalk the route is walked
 along.** `RouteSidewalkRule._leaves_the_routes_sidewalk_open` refuses a counted **standing** row whose
@@ -2351,8 +2354,8 @@ refused when, with the seals and everything already planned whose reach touches 
 would leave neither sidewalk of a chain street walkable from end to end
 (`WalkGround.leaves_a_sidewalk_open()`, which asks the day's own
 `closes_a_walked_sidewalk_band()` of both bands), or when the ground around it would no longer join
-up everything it joined without it (`WalkGround.keeps_the_walk_joined()`, the day's junction rule
-asked of a box round the placement, its whole rim the arms) — which is what keeps an alley's mouth
+up everything it joined without it (`WalkGround.keeps_the_walk_joined()`, the day's line rule at a
+junction asked of a box round the placement, its whole rim the arms) — which is what keeps an alley's mouth
 in the middle of a block open as well as the street it opens onto. The bodies are counted as they
 stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
 after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
@@ -2388,12 +2391,15 @@ unwinnable in a way the player cannot see coming, so **no body is placed that co
 the day's routes**, and the routes run to the calm. Nothing floods the city to see whether a route
 is still open: a route cannot be closed to begin with (gray-dolphin #1173). Every placement a day
 judges, at dawn or on her walk, is asked the day's route rules (`StreetInvalidation`) against
-everything already down, the seals and the region wall's bodies included. On a street, a route's
-junction box keeps a free crossing (`RouteJunctionsRule`), the sidewalk it walks keeps a line with
-room for her (`RouteSidewalkRule`), and nothing stands in the open end of a pacing beat
-(`PacingOpeningRule`). Off the streets, on an alley, a park cut or a square, no obstructing body's
-disc covers a tile a route runs along (`RouteGroundRule`), which is stricter than asking for a way
-round: a body never stands on a route tile there even where a detour exists. Hard-fail events count
+everything already down, the seals and the region wall's bodies included. On a street, her line is
+followed from a route's junction box onto the sidewalks she walks to it and from it, flooded as one
+piece of ground (`RouteLineRule`), the sidewalk she walks keeps a line with room for her
+(`RouteSidewalkRule`), and nothing stands in the open end of a pacing beat (`PacingOpeningRule`).
+Off the streets, on an alley, a park cut or a square, no obstructing body's disc and no counted
+row's line reach covers a tile a route runs along (`RouteGroundRule`), which is stricter than asking
+for a way round: a body or a cost never stands on a route tile there even where a detour exists.
+And on a day's walk, a street near the routes never has both its sidewalks closed by bodies a draw
+put on them (`OneSidewalkOpenRule`). Hard-fail events count
 as bodies for this rule, by their lethal inner disc: an abduction in progress is not something you
 walk through to reach the park behind it. The run's scars and the park spoilers, which the line
 rules are not asked of, are asked `RouteGroundRule` alone with a street's route tiles counted too,

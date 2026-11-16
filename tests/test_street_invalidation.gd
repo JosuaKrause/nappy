@@ -3,7 +3,20 @@ extends RefCounted
 ## a candidate a rule refuses has no room (`-INF`); one no rule refuses has the room round it, all
 ## of it (`INF`) where nothing stands near; the escape's flag adds one notice at a time; and a pacing
 ## man whose beat walls his sidewalk is given a wall's role. On a bare map with no route tree, so
-## the route rules ask nothing.
+## the route rules ask nothing. **Which rules a day and the escape compose**, on a hand-drawn map
+## (`StreetMap.full()`) under a fake corridor that names the routes, and with a fake walk's ground
+## that keeps nothing (the escape's own rule, `WalkGround`, has its suite): a day with a corridor
+## asks the line rule and the one-sidewalk rule, each naming itself among the refusals, and a walk
+## kept open asks the one-sidewalk rule nowhere.
+
+## A walk's ground that keeps nothing, so only the rules round it refuse.
+class _OpenWalk extends WalkGround:
+	func _init(map: CityMap) -> void:
+		super(map)
+
+	## Overrides WalkGround.accepts.
+	func accepts(_candidate: EventPlan) -> bool:
+		return true
 
 const NONE: Array[EventPlan] = []
 
@@ -29,3 +42,34 @@ func run(t: TestRunner) -> void:
 			"a day lets two waiting rows notice her from the same ground")
 	t.check(escape.room(beside, GameEnums.BlockerRole.FRICTION, Vector2i.ZERO, placed, placed) == -INF,
 			"the escape's walk, one notice at a time, does not")
+	_test_a_day_and_the_escape_compose_their_rules(t)
+
+## A route along the west street's south sidewalk of junction (3, 3), across its box and down the
+## south street's east sidewalk; the street east of the box beside it.
+func _test_a_day_and_the_escape_compose_their_rules(t: TestRunner) -> void:
+	var map := StreetMap.full()
+	var tiles: Array[Vector2i] = []
+	for x in range(34, 42):
+		tiles.append_array([Vector2i(x, 46), Vector2i(x, 47)] as Array[Vector2i])
+	for y in range(48, 56):
+		tiles.append_array([Vector2i(46, y), Vector2i(47, y)] as Array[Vector2i])
+	var corridor := FakeCorridor.new().set_routes(
+			[Vector3i(2, 3, 0), Vector3i(3, 3, 1)] as Array[Vector3i],
+			[Vector2i(3, 3)] as Array[Vector2i], tiles).set_beside([Vector3i(3, 3, 0)] as Array[Vector3i])
+	var none: Array[Rect2] = []
+	var day := StreetInvalidation.new(map, corridor, none, PackedVector2Array(), null)
+	var escape := StreetInvalidation.new(map, corridor, none, PackedVector2Array(), null,
+			_OpenWalk.new(map))
+	var stall := EventCatalogue.by_id("market_stall")
+	var first: Array[EventPlan] = [EventPlan.new(stall, map.tile_to_world(Vector2i(51, 42)))]
+	var across := EventPlan.new(stall, map.tile_to_world(Vector2i(51, 47)))
+	t.check(day.room(across, GameEnums.BlockerRole.WALL, Vector2i(51, 47), first, first) == -INF
+			and day.refusals().has("OneSidewalkOpenRule"),
+			"a day refuses a stall across from a stall beside the routes, by the one-sidewalk rule")
+	t.check(escape.room(across, GameEnums.BlockerRole.WALL, Vector2i(51, 47), first, first) != -INF,
+			"a walk kept open by its own rule does not ask it")
+	var blower := EventPlan.new(EventCatalogue.by_id("leaf_blower"),
+			map.tile_to_world(Vector2i(51, 46)))
+	t.check(day.room(blower, GameEnums.BlockerRole.WALL, Vector2i(51, 46), NONE, NONE) == -INF
+			and day.refusals().has("RouteLineRule"),
+			"a day refuses a leaf blower cutting her line at the box's seam, by the line rule")

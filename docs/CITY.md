@@ -224,11 +224,11 @@ bodies never seal it off:
 - **`ClosurePlanner` asks for it before accepting each closure**, beside the calm: a closure that
   would cut off every tile of it is refused. The second opinion, as it is for the calm.
 - **The catalogue's own bodies keep the tree open as they are placed**, since friction stands on the
-  corridor: every body a day judges, at dawn or on her walk, is judged by the rules that keep a
-  route's junctions, its walked sidewalk and a pacing beat's opening open (`RouteJunctionsRule`,
+  corridor: every body a day judges, at dawn or on her walk, is judged by the rules that keep her
+  line through its junctions, its walked sidewalk and a pacing beat's opening open (`RouteLineRule`,
   `RouteSidewalkRule`, `PacingOpeningRule`) and by the one that keeps its ground off the streets
-  free (`RouteGroundRule`: no obstructing body's disc, and no lethal row's inner disc, covers a tile
-  a route runs along on an alley, a park cut or a square), asked against everything already down,
+  free (`RouteGroundRule`: no obstructing body's disc, no lethal row's inner disc and no counted
+  row's line reach covers a tile a route runs along on an alley, a park cut or a square), asked against everything already down,
   the seals and the region wall's own bodies included. The run's scars and the park spoilers are
   asked `RouteGroundRule` alone, with a street's route tiles and the street she starts on counted
   too, since they stand where they stand rather than where a draw put them and the line rules are
@@ -1050,27 +1050,44 @@ at all — a hoarding, a parked van — denies exactly its body. `EventDef.line_
 the one place the answer lives, and `tests/probes/m129_zero_cost_line.gd` asks it rather than
 keeping a second copy, so what the probe measures is what the rules refuse.
 
-### A route's junctions stay clear
+### Her line is followed through a route's junctions
 
 **A junction is the only place a line along a route may change from one pavement to the other**, so
 it is the one piece of a route that nothing on either side of it can answer. A street with a van on
 one pavement still has the other; a crossing covered end to end has nowhere to turn, and the walk
 has to go back the way it came.
 
-So **the junctions the day's routes cross are kept crossable** — the junctions at each end of every
-street the tree runs along, plus any the tree cuts through from a park or an alley
-(`RouteTree.junctions()`). A row is refused ground where its reach, together with everything the
-morning has already put down, would leave the junction box with no walk joining the route streets
-that meet there. **Checked before the row is accepted, never repaired after**, the same shape the
-closure invariant has: the day is asked, one row at a time, whether the city it is joining still has
-a line through every crossing, so a closed one never exists even for a moment.
+So **her line is followed from a junction the day's routes cross onto the sidewalks she walks to it
+and from it** — the junctions at each end of every street the tree runs along, plus any the tree
+cuts through from a park or an alley (`RouteTree.junctions()`) — and the box and those sidewalks
+are flooded as one piece of ground (`RouteLineRule`). A row is refused ground where its reach,
+together with everything the morning has already put down, would leave no free walk from the far
+end of one route street meeting the box, through the box, to the far end of every other, and to
+every alley mouth or park cut a route runs into beside the box or a walked sidewalk. A row that
+leaves the box a free region and the sidewalk a free line is still refused if the two do not touch:
+the seam between them is where the free-line probe found most of the lines it lost. **Checked
+before the row is accepted, never repaired after**, the same shape the closure invariant has: the
+day is asked, one row at a time, whether the city it is joining still has a line through every
+crossing, so a closed one never exists even for a moment.
+
+**A man shouting is passed on the far side of his own street.** A pacing row denies only the
+ground its beat never leaves free, and on the street it paces the far sidewalk is part of the
+ground the flood may take, so his lens over the sidewalk she walks is answered by crossing; a body
+on that far sidewalk then closes his opening, and whichever of the two comes second is refused. A
+man on another street gets no such room: whoever could close the far sidewalk stands in a unit his
+own draw may not see.
 
 **Stating it over the pair rather than over the row is what makes it the rule the measurement asked
 for.** The crossing that breaks most routes is covered by two ordinary rows between them — a café on
 one corner and a yeller on the other — and a rule that only asked *does this one row take the whole
 box* would accept both of them.
 
-Six kinds of row are outside it, and each for a reason it already had. **A mast**, the six fixed ones and the two day 11 adds, is a fixture of the street it stands on and its field reaches the junction box at the end of any street, so none of the three line rules is asked of it. **Scenery** (a flock) is free already. **A pursuer, and anything
+**One case is left open, as the player's condition on it has it** (inbox #1461): two rows in units at
+the two ends of one walked sidewalk, neither standing on that street, each reaching far into it
+from opposite sides, are never judged together, since neither unit's draw sees the other's.
+`tests/probes/m129_zero_cost_line.gd` measures whether it ever happens.
+
+Six kinds of row are outside it, and each for a reason it already had. **A mast**, the six fixed ones and the two day 11 adds, is a fixture of the street it stands on and its field reaches the junction box at the end of any street, so none of the line rules is asked of it. **Scenery** (a flock) is free already. **A pursuer, and anything
 the director sites in front of her**, pay the telegraph contract instead and have no tile the day
 chose. **A city-wide row** has no place, so there is no other side of the street to be on. **A
 region door and a moving row that does not pace are not blocks at all** — a door costs by design,
@@ -1078,7 +1095,7 @@ and a row that travels is passed by crossing, waiting and crossing back.
 
 **A wall is not outside it.** It bounds the corridor and never stands on a route, but its field
 reaches in from one street out, and a corridor whose crossings are covered by the thing bounding it
-is guidance the player is being charged for. So a wall is asked the same three questions as
+is guidance the player is being charged for. So a wall is asked the same questions as
 everything else — and what makes that fair rather than a second tax on the wall pool is the disc
 the questions are asked over: what a wall may still put across a route junction is the part of its
 field under the walking decay, which is a crossing the walk takes without planning around it. The
@@ -1141,6 +1158,27 @@ she is standing and with **both fields taken as closed ground**, the home and a 
 used are still reachable. So the street she is on can be shut, and the day always has another way
 round it. Checked before accepting, never repaired — a refused siting is asked again a second later
 from wherever she has walked to.
+
+### A street near the routes keeps one sidewalk past its bodies
+
+**If one sidewalk of a street is blocked, the other draws no block** (inbox #1465). On a day's walk
+a body (a row she cannot pass, or one that ends the day, at the disc it blocks with) is refused
+where, for a street it reaches, neither sidewalk could then be walked from one junction to the other
+past the bodies standing round it, and one could without it (`OneSidewalkOpenRule`). A street draws
+all its locations at once and its touching units draw before or after it with what it drew in view,
+so the rule holds both ways round: a street's own second wall is refused, and so is a body in the
+box at its end reaching its last open sidewalk. It asks a body, never a cost: a row whose field
+alone covers the street is the line rules' question. A row that spans the street by design (the
+roadblock) is never asked, and a street a closure, a seal or the region wall already closes keeps
+no sidewalk to refuse anything for. The escape keeps its own, stricter rule
+(`DaySpec.keeps_the_walk_open`).
+
+**It covers the streets of her routes and the streets touching them** (`OneSidewalkOpenRule.COVERS`,
+`Corridor.view_of()`'s on the route and route-adjacent), and leaves the walls further off as they
+are drawn: the player's words name every street (inbox #1465), and the streets off the routes are
+where the player asked for blocking events all over, so that she stays out of them (PLAYTEST-17).
+Which of the two holds off the routes is the board's question open-sidewalk-reach; the setting is
+one constant.
 
 ### A pacing row is passed by waiting, or left at a crossing
 

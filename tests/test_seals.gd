@@ -750,7 +750,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 
 ## **A catalogue row's placement sees a seal or the region wall already reaching a route
 ## junction.** Before this, `EventScheduler.build_day`'s own three candidate-loop rules
-## (`RouteJunctionsRule` among them) only ever asked a new candidate about *other
+## (the junction rule, now `RouteLineRule`, among them) only ever asked a new candidate about *other
 ## catalogue rows*: `SealPlanner.plan_day` and `RegionPlanner.plan_day` both run before
 ## `build_day`, so their bodies were never in the `already` array the rules check against, and a
 ## seal or the wall reaching a crossing from one street out (`docs/DECISIONS.md`, M129, "the four
@@ -763,7 +763,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 ## **What this proves.** Once `build_day` is handed `standing` the way `EventManager.start_day`
 ## already does, every row **it places** leaves every route junction it reaches still open
 ## beside the day's seals and the region wall, asked the exact question
-## `RouteJunctionsRule` asks at placement time, over the day's whole final set
+## `RouteLineRule`'s flood implies at a junction, over the day's whole final set
 ## rather than only each row's own insertion moment: sound because nothing after insertion ever
 ## *adds* obstruction at a junction (no pass removes or moves a placed row, and every body any
 ## phase places is asked the same route rules), so a junction the rule kept open at every insertion is open in the finished set

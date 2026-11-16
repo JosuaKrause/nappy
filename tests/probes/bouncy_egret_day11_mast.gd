@@ -10,10 +10,10 @@ extends RefCounted
 ## Each city runs `tests/test_resistance_arrow.gd`'s own rig: day 11 planned in the real day order and its
 ## mark read, which rigs the mast onto her route (`ResistanceDirector._rig_her_route_for()`).
 ##
-## Every mast is exempt from the three line rules (inbox #684 in coral-lark), so the "junction" and "sidewalk"
+## Every mast is exempt from the line rules (inbox #684 in coral-lark), so the "junction" and "sidewalk"
 ## counts below stay empty; they are kept so a regression of the exemption shows here. First, before
 ## she walks, every tile of the mast's ground on the route tree that a mast site may take
-## (`WalkSiting._a_mast_may_stand()`) is asked the acceptance rules `EventScheduler._best_of()` asks, in order, and counted by the first that refuses it: the route junctions and the route
+## (`WalkSiting._a_mast_may_stand()`) is asked the acceptance rules `EventScheduler._best_of()` asks, in order, and counted by the first that refuses it: her line through the route junctions (`RouteLineRule`) and the route
 ## sidewalks with the mast standing alone, then with the day's plans, then the calm she has not
 ## used. "PASS" is a tile where a mast could be put down. Then 600s of walking the day's longest
 ## route back and forth (`_walk_until_the_route_mast()`), and whether the routed mast was put down,
@@ -71,7 +71,7 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 	var rng := RandomNumberGenerator.new()
 	var counts := {}
 	var passing: Array[Vector2i] = []
-	var junctions := RouteJunctionsRule.new(map, siting._corridor)
+	var junctions := RouteLineRule.new(map, siting._corridor)
 	for tile: Vector2i in siting._ground_as_a_set(def):
 		if siting._tree.branches_on(tile).is_empty():
 			continue
@@ -81,11 +81,11 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 			why = "not a mast site"
 		elif not candidate:
 			why = "no placement"
-		elif not junctions._leaves_the_route_junctions_open(candidate, none):
+		elif not junctions.allows(candidate, tile, none, none):
 			why = "junction, the mast alone"
 		elif not RouteSidewalkRule._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, none):
 			why = "sidewalk, the mast alone"
-		elif not junctions._leaves_the_route_junctions_open(candidate, plans):
+		elif not junctions.allows(candidate, tile, plans, plans):
 			why = "junction, with the day"
 		elif not RouteSidewalkRule._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, plans):
 			why = "sidewalk, with the day"

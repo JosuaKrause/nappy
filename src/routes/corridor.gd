@@ -111,9 +111,9 @@ static func of(tree: RouteTree) -> Corridor:
 ## placement decision is stated against a `Corridor` rather than against the tree itself.
 ##
 ## It is a list of **junction coordinates** rather than a question about a tile, which is the one
-## place this class answers in the tree's own units: the rule stated over it
-## (`RouteJunctionsRule._leaves_the_route_junctions_open`) is about a whole junction **box** staying
-## crossable, and a box is six tiles square. A per-tile answer would say *this tile is in a route
+## place this class answers in the tree's own units: the rule stated over it (`RouteLineRule`)
+## floods a whole junction **box** with the sidewalks she walks to it, and a box is six tiles
+## square. A per-tile answer would say *this tile is in a route
 ## junction* and could not say *that crossing is still open*, which is the whole question.
 func route_junctions() -> Array[Vector2i]:
 	return _junctions

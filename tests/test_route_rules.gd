@@ -1,17 +1,13 @@
 extends RefCounted
-## `RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule` and `RouteGroundRule`, the four
-## rules that keep the day's routes open. **Why the first three build a city:** each reads the route
-## tree's own geometry (which junction boxes the routes cross, which sidewalk a route is walked
-## along, the beat a pacing man walks), and a stand-in corridor would be the rule's own arithmetic
-## read back to it. The one combined suite is for that shared setup: seed 4242 on day 5, its route
-## tree and corridor, built once. **The ground rule reads only which tiles a route runs along and
-## what kind of ground each is**, so its cases are one interaction each on a hand-drawn map
-## (`StreetMap.full()` with one block painted alley) under a fake corridor that names the route's
-## tiles.
+## `RouteSidewalkRule`, `PacingOpeningRule` and `RouteGroundRule`, three of the rules that keep the
+## day's routes open (the line rule, `RouteLineRule`, has its own suite). **Why the first two build a
+## city:** each reads the route tree's own geometry (which sidewalk a route is walked along, the beat
+## a pacing man walks), and a stand-in corridor would be the rule's own arithmetic read back to it.
+## The one combined suite is for that shared setup: seed 4242 on day 5, its route tree and corridor,
+## built once. **The ground rule reads only which tiles a route runs along and what kind of ground
+## each is**, so its cases are one interaction each on a hand-drawn map (`StreetMap.full()` with one
+## block painted alley) under a fake corridor that names the route's tiles.
 ##
-## - **The junctions:** a burst water main, whose body reaches 96px each way, standing at the middle
-##   of a junction box the routes cross closes the crossing and is refused; the same body far from
-##   any route is allowed.
 ## - **The sidewalk:** the same body on the middle of a sidewalk a route is walked along closes the
 ##   route's line and is refused; on a street no route runs along it is allowed.
 ## - **The pacing opening:** with a man shouting pacing his beat on a route street, some tile of that
@@ -20,8 +16,13 @@ extends RefCounted
 ## - **The route's ground:** a barricade (a body 62px each way) on the alley a route runs down is
 ##   refused, and the same barricade on the same alley four tiles beside the route stands; an
 ##   abduction, whose 22px body stops short of the route a tile away and whose 54px lethal inner
-##   disc reaches it, standing there is refused; a man shouting, who has no body, stands on the
-##   route itself, and so does a region door's post, whose body does not block the way. With the
+##   disc reaches it, standing there is refused; a dog walker, who has no body and is passed by
+##   crossing, stands on the route itself, and so does a region door's post, whose body does not
+##   block the way.
+## - **The route's ground, at her line:** a man shouting, who has no body, pacing the alley four
+##   tiles beside the route, covers the route's tiles with his lens and is refused; pacing the far
+##   side of the street north of the block, where his lens stops short of the alley, he stands. With
+##   the streets counted, the scars' and spoilers' reading, his lens is not asked. With the
 ##   streets counted, the barricade across the sidewalk a route walks is refused and on the far
 ##   sidewalk stands, and on the street she starts on, which the tree does not carry, it is refused
 ##   too; with them not counted, the line rules' ground and the home street's hold, it stands on
@@ -43,11 +44,11 @@ func run(t: TestRunner) -> void:
 	_map.repaint(state)
 	_tree = RouteTree.for_day(_map, DAY)
 	_corridor = Corridor.of(_tree)
-	_test_a_body_closing_a_route_crossing_is_refused(t)
 	_test_a_body_closing_a_route_sidewalk_is_refused(t)
 	_test_a_body_closing_a_beats_opening_is_refused(t)
 	_test_a_body_on_a_routes_ground_off_the_streets_is_refused(t)
 	_test_a_body_on_a_routes_street_is_refused_where_the_streets_count(t)
+	_test_a_lens_over_a_routes_ground_off_the_streets_is_refused(t)
 
 ## `def` built at `tile`, given a counted role so it is asked about.
 func _at(id: String, tile: Vector2i) -> EventPlan:
@@ -65,20 +66,6 @@ func _far_from_the_routes() -> Vector2i:
 		if _corridor.depth(middle) >= 3 and _map.tile_at(middle) == GameEnums.TileType.ROAD:
 			return middle
 	return Vector2i(-1, -1)
-
-func _test_a_body_closing_a_route_crossing_is_refused(t: TestRunner) -> void:
-	var rule := RouteJunctionsRule.new(_map, _corridor)
-	var junction: Vector2i = _tree.junctions()[0]
-	var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
-	var at_the_box := _at("burst_water_main", box.get_center())
-	var far := _at("burst_water_main", _far_from_the_routes())
-	t.check(at_the_box != null and far != null, "the body stands at a route junction and far off")
-	if at_the_box == null or far == null:
-		return
-	t.check(not rule.allows(at_the_box, box.get_center(), NONE, NONE),
-			"a body across a junction box the routes cross is refused")
-	t.check(rule.allows(far, _far_from_the_routes(), NONE, NONE),
-			"the same body far from every route is allowed")
 
 func _test_a_body_closing_a_route_sidewalk_is_refused(t: TestRunner) -> void:
 	var rule := RouteSidewalkRule.new(_map, _corridor)
@@ -209,9 +196,10 @@ func _test_a_body_on_a_routes_ground_off_the_streets_is_refused(t: TestRunner) -
 			"the abduction's body stops short of the route a tile away, and its inner disc reaches it")
 	t.check(not rule.allows(abduction, lethal_at, NONE, NONE),
 			"a lethal row whose inner disc reaches the route's alley is refused")
-	var man := _standing(map, "homeless_yeller", on_it)
-	t.check(not man.obstructs(), "the man shouting has no body")
-	t.check(rule.allows(man, on_it, NONE, NONE), "a row with no body stands on the route itself")
+	var walker := _standing(map, "dog_walker", on_it)
+	t.check(not walker.obstructs() and not walker.counts_against_the_line(),
+			"the dog walker has no body and is passed by crossing")
+	t.check(rule.allows(walker, on_it, NONE, NONE), "a row with no body stands on the route itself")
 	var door := _standing(map, "checkpoint_post", on_it)
 	door.stand_as_a_door()
 	t.check(door.blocking_radius() >= Tuning.TILE_SIZE * 0.5 and not door.obstructs(),
@@ -245,3 +233,27 @@ func _test_a_body_on_a_routes_street_is_refused_where_the_streets_count(t: TestR
 			"with the streets counted, a body on the street she starts on is refused")
 	t.check(line_ground.allows(_standing(map, "barricade", home), home, NONE, NONE),
 			"with them not counted, it is left to the home street's own hold")
+
+func _test_a_lens_over_a_routes_ground_off_the_streets_is_refused(t: TestRunner) -> void:
+	var map := _alley_map()
+	var route := _alley_route()
+	var rule := RouteGroundRule.new(map, route)
+	var beside := ROUTE_COLUMNS[1] + 4
+	var man := _pacing(map, Vector2i(beside, ALLEY_ROW - 3), Vector2i(beside, ALLEY_ROW + 3))
+	t.check(not man.obstructs() and man.counts_against_the_line(),
+			"the man shouting has no body and counts against her line")
+	t.check(not rule.allows(man, Vector2i(beside, ALLEY_ROW - 3), NONE, NONE),
+			"pacing the alley beside the route, his lens over the route's tiles, he is refused")
+	var origin := ALLEY_BLOCK * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH
+	var far := _pacing(map, Vector2i(origin.x + 1, FAR_SIDEWALK_ROW),
+			Vector2i(origin.x + Tuning.BLOCK_SIZE - 2, FAR_SIDEWALK_ROW))
+	t.check(rule.allows(far, Vector2i(origin.x + 1, FAR_SIDEWALK_ROW), NONE, NONE),
+			"pacing the far side of the street north of the block, his lens short of the alley, he stands")
+	var counting := RouteGroundRule.new(map, route, true, _home_street(map))
+	t.check(counting.allows(man, Vector2i(beside, ALLEY_ROW - 3), NONE, NONE),
+			"with the streets counted, his lens is not asked")
+
+## A man shouting pacing from `from` to `to`.
+static func _pacing(map: CityMap, from: Vector2i, to: Vector2i) -> EventPlan:
+	return EventPlan.new(EventCatalogue.by_id("homeless_yeller"), map.tile_to_world(from),
+			PackedVector2Array([map.tile_to_world(from), map.tile_to_world(to)]))

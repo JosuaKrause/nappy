@@ -16,10 +16,10 @@ extends RefCounted
 ## **The two halves are the two things a day keeps a route by.** The sidewalk is the day's width
 ## rule (`RouteSidewalkRule._leaves_the_routes_sidewalk_open()`), asked of both of a street's sidewalks
 ## rather than the one a day's route is walked along — `leaves_a_sidewalk_open()`. The rest of the
-## walk is the day's junction rule (`RouteJunctionsRule._leaves_the_route_junctions_open()`), asked of the
-## ground around the candidate rather than of a junction box — `keeps_the_walk_joined()`. The day's
-## rules themselves are stated over a day's `Corridor`, which a walk that is not a tree has none of;
-## and the junction rule alone would not be enough if it could: a chain also joins a street in the
+## walk is the day's line rule at a junction (`RouteLineRule`), asked of the ground around the
+## candidate rather than of a junction box and the sidewalks to it — `keeps_the_walk_joined()`. The
+## day's rules themselves are stated over a day's `Corridor`, which a walk that is not a tree has
+## none of; and the line rule alone would not be enough if it could: a chain also joins a street in the
 ## middle of a block, out of an alley, a park or a courtyard, and a van and a roadblock either side
 ## of that mouth shut it while the street's far sidewalk stays open from junction to junction.
 ##
@@ -276,8 +276,8 @@ func leaves_a_sidewalk_open(own: Array[Solid]) -> bool:
 	return true
 
 ## **The ground around the candidate still joins up everything it joined without it.** The
-## day's junction rule asks whether a junction box still carries a walk between every route
-## street that meets it; this asks the same of a box drawn round the candidate's own reach, with
+## day's line rule asks whether a junction box still carries a walk between every route street
+## that meets it, out to each one's far end (`RouteLineRule`); this asks the same of a box drawn round the candidate's own reach, with
 ## the whole of the box's rim as its arms: every two points on the rim that a walk inside the
 ## box joined before the candidate must still be joined with it standing, and so must the
 ## walk's start and either end if the box holds them.
