@@ -71,6 +71,8 @@ func _manager(t: TestRunner) -> EventManager:
 	t.add_child(holder)
 	map.world = holder
 	var manager := EventManager.new()
+	# The game's bus, which this suite listens on, as whoever stands a manager hands it.
+	manager.use_bus(EventBus)
 	manager.setup_world(map, run)
 	t.add_child(manager)
 	return manager
@@ -82,7 +84,8 @@ func _free_manager(manager: EventManager) -> void:
 
 ## A watch for day `DAY`.
 func _watch() -> EncounterWatch:
-	var watch := EncounterWatch.new()
+	# Reporting on the game's bus, which this suite listens on.
+	var watch := EncounterWatch.new(ToldEvents.on(EventBus))
 	watch.day = DAY
 	return watch
 

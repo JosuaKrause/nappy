@@ -119,6 +119,7 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 		director.contact().complete_now()
 	else:
 		happenings = ResistanceHappenings.new()
+		happenings.use_bus(EventBus)
 		happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
 				_city.atlas, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day, false)

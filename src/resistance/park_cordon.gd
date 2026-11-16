@@ -285,6 +285,16 @@ var _trace := RunTrace.new()
 func use_trace(sink: RunTrace) -> void:
 	_trace = sink
 
+## The signals the cordon reports on (`EventBus`'s script), so the bus it is handed has a class.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+## The bus it says she is shut in on (`hard_fail_triggered`), the happenings' own, handed on as it
+## is built (`use_bus()`); none, and a closed cordon tells nobody.
+var _bus: _BUS
+
+## Hands the cordon the bus it says she is shut in on.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
+
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
 ## the day's obstruction the last gap is checked under (`DayReach.shut()`, as the director hands it).
@@ -1360,7 +1370,8 @@ func _close(her: Vector2) -> void:
 	if trapped:
 		_trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
 				% _elapsed + "swing, with her inside: she is shut in")
-		EventBus.hard_fail_triggered.emit(TRAPPED)
+		if _bus:
+			_bus.hard_fail_triggered.emit(TRAPPED)
 	else:
 		_trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
 				% [_park, _elapsed] + "with her outside")

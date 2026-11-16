@@ -126,6 +126,7 @@ var _handed_atlas: AtlasLibrary = null
 
 func _director(t: TestRunner) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
+	director.use_bus(EventBus)
 	t.add_child(director)
 	director.set_process(false)
 	if _handed_atlas != null:

@@ -7,8 +7,9 @@ extends RefCounted
 ## interacted/seen".)*
 ##
 ## **It only watches.** It reads where things are, what they have landed on her and whether she is
-## running, and says so on `EventBus` — `encounter_seen`, `encounter_influenced`, `run_bout_began` —
-## which `VisitCounter` turns into `nappy-day-N-seen-<event>`, `nappy-day-N-influenced-<event>` (or
+## running, and says so through the reports it is handed (`EventReports`), on the bus its manager
+## was handed — `encounter_seen`, `encounter_influenced`, `run_bout_began` — which `VisitCounter`
+## turns into `nappy-day-N-seen-<event>`, `nappy-day-N-influenced-<event>` (or
 ## `influenced-unseen-<event>`) and `nappy-day-N-ran`. No roll, no write to anything an event, the
 ## baby or the player reads, so the day plays the same with nobody listening.
 ##
@@ -89,6 +90,13 @@ class Record:
 	var influenced := false
 	## Influenced before it was seen: sent when it is seen, or as unseen when the encounter is over.
 	var influence_waiting := false
+
+## Where the watch says what it counted (`EventReports`), handed in by whoever makes it: the
+## manager's own.
+var _reports: EventReports
+
+func _init(reports: EventReports) -> void:
+	_reports = reports
 
 var _clock := 0.0
 var _frame := 0
@@ -181,14 +189,14 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 		return
 	if not record.seen and share >= Tuning.ENCOUNTER_SEEN_SHARE:
 		record.seen = true
-		EventBus.encounter_seen.emit(day, record.name)
+		_reports.tell_encounter_seen(day, record.name)
 		if record.influence_waiting:
 			record.influence_waiting = false
-			EventBus.encounter_influenced.emit(day, record.name, true)
+			_reports.tell_encounter_influenced(day, record.name, true)
 	if not record.influenced and _is_meaningful(instance, record, her):
 		record.influenced = true
 		if record.seen:
-			EventBus.encounter_influenced.emit(day, record.name, true)
+			_reports.tell_encounter_influenced(day, record.name, true)
 		else:
 			record.influence_waiting = true
 	record.landed_last = instance.source().landed_ever
@@ -256,11 +264,11 @@ func _close(record: Record) -> void:
 	record.open = false
 	if record.influence_waiting:
 		record.influence_waiting = false
-		EventBus.encounter_influenced.emit(day, record.name, false)
+		_reports.tell_encounter_influenced(day, record.name, false)
 
 func _watch_the_running(running: bool) -> void:
 	if running and not _running and _clock - _ran_last >= RUN_BOUT_GAP:
-		EventBus.run_bout_began.emit(day)
+		_reports.tell_run_bout_began(day)
 	_running = running
 	if running:
 		_ran_last = _clock

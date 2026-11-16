@@ -23,7 +23,8 @@ var _trace := RunTrace.new()
 var _atlas: AtlasLibrary = null
 ## Where the events charge their time to the frame record; the null sink until handed another.
 var _timing := FrameTiming.new()
-## The bus the crowd, the poster walls and the blackout report on; none, and they tell nobody.
+## The bus the events, the crowd, the poster walls and the blackout report on; none, and they tell
+## nobody.
 var _bus: _BUS = null
 ## The torn posters' textures, composed once a boot and handed to every city's walls.
 var _poster_art := PosterArt.new()
@@ -50,7 +51,7 @@ func equip(trace: RunTrace, atlas: AtlasLibrary, timing: FrameTiming) -> void:
 	_atlas = atlas
 	_timing = timing
 
-## Hands the builder the bus the crowd, the poster walls and the blackout report on.
+## Hands the builder the bus the events, the crowd, the poster walls and the blackout report on.
 func use_bus(bus: _BUS) -> void:
 	_bus = bus
 
@@ -164,8 +165,8 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 	return simulation
 
 ## **An event manager, equipped the one way for every world**: its trace, its atlas, its frame
-## timing, whether its instances skip their drawing, and the pelican rig, which only a cyclist
-## asks. Not yet in the tree: it takes its atlas page as it enters.
+## timing, whether its instances skip their drawing, the bus it reports on, and the pelican rig,
+## which only a cyclist asks. Not yet in the tree: it takes its atlas page as it enters.
 func _new_events() -> EventManager:
 	var events := EventManager.new()
 	events.name = "Events"
@@ -173,6 +174,7 @@ func _new_events() -> EventManager:
 	events.skip_drawing = _skip_event_drawing
 	events.timing = _timing
 	events.atlas = _atlas
+	events.use_bus(_bus)
 	if _every_cyclist_a_pelican:
 		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	return events

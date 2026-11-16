@@ -121,6 +121,7 @@ func _touch_the_swing(t: TestRunner, main: Node2D, through_the_director := false
 		return swing
 	var city := Boot.city(main)
 	_happenings = ResistanceHappenings.new()
+	_happenings.use_bus(EventBus)
 	_happenings.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city,
 			city.atlas, null, RunCity.spawn_siting(city))
 	_happenings.start_day(_run.header.day, false)

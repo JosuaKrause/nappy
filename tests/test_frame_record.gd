@@ -517,7 +517,7 @@ class _BucketLook extends EventLook:
 ## A live event standing alone, its process callback off until the test lets it draw, as
 ## `tests/test_acts.gd` builds one.
 func _event(t: TestRunner, def: EventDef) -> EventInstance:
-	var instance := EventInstance.new()
+	var instance := EventInstance.new(ToldEvents.on(EventBus))
 	instance.setup(def, Vector2.ZERO)
 	t.add_child(instance)
 	instance.set_process(false)
