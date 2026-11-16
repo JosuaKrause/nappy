@@ -56,7 +56,9 @@ it was told at spawn time.
   to the meter or the clock before the moment arrives; an agent not told about it will burn runs
   landing on the summary screen. Leave it off only for a capture whose subject is a cost or a loss.
 - **Scratch paths and who cleans them up**, for a task that writes outside the repository
-  (**session-cleanup**'s job-owned storage rules).
+  (**session-cleanup**'s job-owned storage rules). A designer's brief is the exception for
+  its design and the evidence behind it, which go to `.claude/briefs/designs/` and a folder beside
+  it (**orchestrating**, the model table's design paragraph).
 
 ## Sizing the task
 
