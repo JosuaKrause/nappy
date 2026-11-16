@@ -34,6 +34,7 @@ func run(t: TestRunner) -> void:
 	_test_the_building_stands_its_events_alone(t)
 	_test_the_world_answers_her_from_the_events_then_the_crowd(t)
 	_test_a_dark_city_says_so_on_the_bus_it_was_handed(t)
+	_test_both_worlds_events_report_on_the_bus_it_was_handed(t)
 	_test_the_dressed_day_pastes_the_walls(t)
 	_test_each_setting_reaches_its_part(t)
 	await _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t)
@@ -90,6 +91,7 @@ class RecordingBus extends "res://src/autoload/event_bus.gd":
 
 	func _init() -> void:
 		city_gone_dark.connect(func() -> void: _note("city_gone_dark"))
+		event_telegraphed.connect(func(_instance: Object) -> void: _note("event_telegraphed"))
 		crowd_bumped.connect(func(_at: Vector2) -> void: _note("crowd_bumped"))
 		poster_torn.connect(func() -> void: _note("poster_torn"))
 
@@ -218,6 +220,39 @@ func _test_a_dark_city_says_so_on_the_bus_it_was_handed(t: TestRunner) -> void:
 			"a city dark from the start says it went dark on its bus (%d)" % bus.times("city_gone_dark"))
 	t.check(not (made["signals"] as TrafficSignals).powered, "and its lights are out")
 	_free(made)
+	bus.free()
+
+## **Both worlds' events report on the bus the builder was handed**: a row put in a city's
+## simulation and one put in the building's each say on it that they are telegraphing, as the page
+## counts every event it saw coming. Both worlds, since the city's and the building's managers are
+## made in the one place (`_new_events()`), and a hand-in moved into the city's alone would leave
+## the building's events telling nobody.
+func _test_both_worlds_events_report_on_the_bus_it_was_handed(t: TestRunner) -> void:
+	var bus := RecordingBus.new()
+	var builder := SimulationBuilder.new()
+	builder.use_bus(bus)
+	var made := _city(t, builder)
+	var map: CityMap = made["map"]
+	var stretch: Vector2i = CrowdStreetRig.new().a_straight_run(map, Tuning.BLOCK_SIZE)
+	var at := map.tile_to_world(Vector2i(stretch.x * CityMap.period() + 1, stretch.y + 2))
+	var before := bus.times("event_telegraphed")
+	_simulation(made).events().spawn_extra(EventCatalogue.by_id("homeless_yeller"), at)
+	t.check(bus.times("event_telegraphed") == before + 1,
+			"a row put in a city's simulation says it is telegraphing on the builder's bus (%d)"
+			% (bus.times("event_telegraphed") - before))
+	_free(made)
+	var world := WorldContext.new()
+	t.add_child(world)
+	var building_map := StreetMap.full()
+	building_map.world = world
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
+	var building := builder.in_the_building(world, building_map, run)
+	before = bus.times("event_telegraphed")
+	building.events().spawn_extra(EventCatalogue.by_id("homeless_yeller"), at)
+	t.check(bus.times("event_telegraphed") == before + 1,
+			"and so does one put in the building's (%d)" % (bus.times("event_telegraphed") - before))
+	world.free()
 	bus.free()
 
 ## **The day the dressing says pastes the walls**: the walls paste every dawn up to the day said.
