@@ -1070,6 +1070,17 @@ before the row is accepted, never repaired after**, the same shape the closure i
 day is asked, one row at a time, whether the city it is joining still has a line through every
 crossing, so a closed one never exists even for a moment.
 
+**The home street is part of her line.** The street the front door opens onto is the first stretch
+of every route, and the tree does not carry it, since a door is not a route. So at each of its two
+junction boxes the rule takes it as an arm like a route street, with both its sidewalks as the
+sidewalks she walks, whether or not a route crosses that box: the free-line probe takes the home
+street as ground from the doorstep the same way. A row on a street beside the home that cuts the
+mouth of the alley or park her route leaves the home street by, or the home street's way to its
+boxes, is refused. *Read as* (the player's "sure" to a rule that follows her line the way the probe
+does, inbox #1461): the home street is part of her line. This widens the ground the line rule
+floods and nothing else: the doorstep's exemption from the route-redundancy guarantee, which is about
+counting distinct routes, is as it was.
+
 **A man shouting is passed on the far side of his own street.** A pacing row denies only the
 ground its beat never leaves free, and on the street it paces the far sidewalk is part of the
 ground the flood may take, so his lens over the sidewalk she walks is answered by crossing; a body
@@ -1168,10 +1179,14 @@ past the bodies standing round it, and one could without it (`OneSidewalkOpenRul
 all its locations at once and its touching units draw before or after it with what it drew in view,
 so the rule holds both ways round: a street's own second wall is refused, and so is a body in the
 box at its end reaching its last open sidewalk. It asks a body, never a cost: a row whose field
-alone covers the street is the line rules' question. A row that spans the street by design (the
-roadblock) is never asked, and a street a closure, a seal or the region wall already closes keeps
-no sidewalk to refuse anything for. The escape keeps its own, stricter rule
-(`DaySpec.keeps_the_walk_open`).
+alone covers the street is the line rules' question. A street a closure, a seal or the region wall
+already closes keeps no sidewalk to refuse anything for. **A roadblock is asked too**: it spans the
+street by design, and its band takes the sidewalk on its own side of the road and leaves the far
+one, so it is refused where a body already closes that far sidewalk (inbox #747 in woolly-penguin).
+Day 13's roadblock phase asks it as it asks every rule of the day, and stands the roadblock on
+another tile or section where it refuses one; the task's own swap, which puts a roadblock across a
+section where the day placed none close by, is not judged by the day's rules. The escape keeps its
+own, stricter rule (`DaySpec.keeps_the_walk_open`).
 
 **It covers the streets of her routes and the streets touching them** (`OneSidewalkOpenRule.COVERS`,
 `Corridor.view_of()`'s on the route and route-adjacent), and leaves the walls further off as they

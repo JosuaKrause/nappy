@@ -1526,7 +1526,7 @@ standing for something else, or is a tree, so nothing about the role table below
 so it is asked of the placement instead of the pool: a row may not cut her line through a crossing
 the day's routes depend on. `RouteLineRule` asks, before the row is accepted, whether the junction
 box and the sidewalks she walks to it and from it still carry one free walk joining the far ends of
-the route streets that meet there — with this row standing and everything already down standing
+the route streets that meet there, the home street counting as one — with this row standing and everything already down standing
 too — and re-rolls where it does not. A junction is the only place a line may change pavement, so
 this is the one refusal a street's far side cannot answer; see `docs/CITY.md`, "Her line is
 followed through a route's junctions", for the rule and for the kinds of row that are outside it.
