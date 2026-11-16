@@ -116,10 +116,11 @@ func _probe_the_camera() -> void:
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
 	add_child(player)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure(loaded, _scripted(), _run)
 	add_child(runtime)
-	var errors := runtime.install(city, player, player.get_node("Baby"),
+	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
 			DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
 	if not errors.is_empty():
 		print(errors)
@@ -213,6 +214,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	city.start_day(state, 3, own_run.calendar.day_rng(3, "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	# Where the director would send the dog at her: the lead straight ahead of her, facing south, on
 	# ground the dog may stand on; she stands on the first sidewalk tile that gives one.
 	var row := EventCatalogue.by_id("charging_dog")
@@ -232,7 +234,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 			"at": [at.x, at.y], "hold": true}], "player": {"at": [her.x, her.y]}}},
 			"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false), own_run)
 	t.add_child(runtime)
-	var errors := runtime.install(city, player, player.get_node("Baby"),
+	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
 			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
 	t.check(errors.is_empty(), "the held dog is installed: %s" % [errors])
 	runtime.begin()
@@ -386,7 +388,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		runtime.configure({"data": {"setup": {"day": own_run.header.day, "events": [entry],
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {}, "map": city.map},
 				_recipe_config(false), own_run)
-		var errors := runtime.install(city, player, baby,
+		var errors := runtime.install(city, RunCity.simulation(city), player, baby,
 				DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
 		for plan in RunCity.events(city).plans():
 			if plan.get_meta("recipe_name", "") == "car":
@@ -445,7 +447,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 		runtime.configure({"data": {"setup": {"day": own_run.header.day, "events": entries,
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {},
 				"map": city.map}, _recipe_config(false), own_run)
-		var errors := runtime.install(city, player, baby,
+		var errors := runtime.install(city, RunCity.simulation(city), player, baby,
 				DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
 		var capped := errors.any(func(e: String) -> bool:
 				return e.contains("exceeds the ordinary per-day cap"))
@@ -579,6 +581,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
 	t.add_child(player)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	var mark := map.tile_to_world(MARK)
 	var pinned := {"mark": [mark.x, mark.y]}
 	if task.get("neighbor", false):
@@ -591,7 +594,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 			"player": {"at": [start.x, start.y]}}}, "manifest": {}, "anchors": {}, "map": map},
 			_recipe_config(false), own_run)
 	t.add_child(runtime)
-	var errors := runtime.install(city, player, player.get_node("Baby"),
+	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
 			DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), director)
 	if errors.is_empty():
 		runtime.begin()

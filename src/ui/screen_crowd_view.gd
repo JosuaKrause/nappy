@@ -6,7 +6,8 @@ extends CrowdView
 ## turned a quarter, `ScreenOrientation.apply_to_camera()`).
 ##
 ## **Owned by `Main`**, which owns the window and so the viewport and its camera, and handed to the
-## city (`City.crowd_view`) that hands it to its crowd; the crowd itself names none of this.
+## simulation's builder (`SimulationBuilder.use_the_crowds_screen()`) that hands it to every city's
+## crowd; the crowd itself names none of this.
 ##
 ## **The viewport is the anchor's**, read at each ask rather than held, so a view made before the
 ## anchor is in the tree still answers once it is.

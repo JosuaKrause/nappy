@@ -108,6 +108,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	(player.get_node("Camera2D") as Camera2D).zoom = Vector2.ONE * zoom
 	viewport.add_child(player)
 	(player.get_node("Camera2D") as Camera2D).make_current()
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	var ended: Array[int] = []
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"name": "sight", "setup": {"day": 3, "player": {"at": [her.x, her.y]},
@@ -120,7 +121,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 					"", true),
 			own_run, func(code: int) -> void: ended.append(code))
 	viewport.add_child(runtime)
-	var errors := runtime.install(city, player, player.get_node("Baby"),
+	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
 			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
 	t.check(errors.is_empty(), "the sight scene is installed: %s" % [errors])
 	if errors.is_empty():
@@ -481,14 +482,14 @@ func _drafted(t: TestRunner, city: City, data: Dictionary, walked: Array[Vector2
 	var walker := Node2D.new()
 	for tile in walked:
 		walker.position = city.map.tile_to_world(tile)
-		draft.record(walker, city, null)
+		draft.record(walker, city, RunCity.events(city), null)
 	walker.free()
 	var own_run := RunState.new()
 	own_run.start_run(7)
 	own_run.header.day = 7
 	var problems: Array[String] = []
-	var drafted := draft.compose(data, own_run, city, city.map.tile_to_world(walked[0]), pinned,
-			problems)
+	var drafted := draft.compose(data, own_run, city, RunCity.crowd(city),
+			city.map.tile_to_world(walked[0]), pinned, problems)
 	return drafted
 
 ## The tiles a drafted recipe's `stretch.tiles` lists, as a set.

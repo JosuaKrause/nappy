@@ -3,9 +3,28 @@ extends RefCounted
 ## A `City` handed the run it stands in (`City.run`), which `City.build()` refuses to run without.
 ## A test or rig that builds a city outside a boot hands it a run of its own (`in_run`, or
 ## `with_own_run` for a run the city holds). A suite asks this class, never the city, for the parts
-## standing in a city it built: `build()` builds it, and `events()`, `crowd()`, `spawn_siting()` and
-## `poster_walls()` return its `EventManager`, `Crowd`, `SpawnSiting` and `PosterWalls`, so that
-## moving the parts out of `City` changes these bodies and no suite.
+## standing in a city it built: `build()` builds it and stands its simulation in it as `main` does
+## (`SimulationBuilder.in_the_city()`), and `simulation()`, `events()`, `crowd()`, `spawn_siting()`
+## and `poster_walls()` find its `WorldSimulation`, `EventManager`, `Crowd`, `SpawnSiting` and
+## `PosterWalls` in the tree, under the name the builder gives the simulation
+## (`WorldSimulation.NODE_NAME`), the way `tests/booted_main.gd` finds what a booted `main` built.
+##
+## **Every builder `build()` uses is equipped with the city's own trace, atlas and frame timing**,
+## after `City.build()` has made the city's library where the suite handed none, so the city and
+## its parts draw from one library as a booted city does. A suite that wants a part configured
+## otherwise makes a builder (`new_builder()`), hands it what `main` would (`leave_out()`,
+## `use_the_crowds_screen()` and the like) and hands it to `build()`; it hands the city its own
+## atlas, never the builder.
+##
+## **Nobody is handed her but by the suite.** A city's crowd, poster walls and blackout meet her
+## only when she is handed in, as the game hands her at the start of a walk
+## (`WorldSimulation.meet_her()`): a suite that walks her past the walls or away from the station
+## says when they see her (`show_her_to_the_walls_and_the_blackout()`), and one that wants the crowd
+## to meet her too calls `meet_her()`.
+
+## The name the builder gives a city's blackout under its simulation (`SimulationBuilder`), which
+## nothing reads back but a suite handing it her.
+const BLACKOUT_NODE := "Blackout"
 
 ## A city over a run the caller made (`RunState.new()` then `start_run(<seed>)`), where
 ## the test hands the code it exercises a run of its own.
@@ -21,23 +40,52 @@ static func with_own_run(scene: PackedScene, run_seed: int) -> City:
 	var city := in_run(scene, run)
 	return city
 
-## Builds `city` on `map` (`City.build()`), with its events and its crowd standing in it: what a
-## suite calls in place of `city.build(map)`.
-static func build(city: City, map: CityMap) -> void:
+## A builder as a suite configures one before `build()`: handed the game's bus, as `main` hands
+## it (`main._simulation_builder()`), and nothing else yet.
+static func new_builder() -> SimulationBuilder:
+	var made := SimulationBuilder.new()
+	made.use_bus(EventBus)
+	return made
+
+## Builds `city` on `map` (`City.build()`), then stands its simulation in it with `builder`
+## (`SimulationBuilder.in_the_city()`), or with a builder of the game's defaults where the suite
+## hands none: what a suite calls in place of `city.build(map)`. `dark_from_the_start` is the
+## escape's city, dark from its first frame.
+static func build(city: City, map: CityMap, builder: SimulationBuilder = null,
+		dark_from_the_start := false) -> void:
 	city.build(map)
+	var stands := builder if builder else new_builder()
+	stands.equip(city.trace, city.atlas, city.frame_timing)
+	stands.in_the_city(city, city.map, city.streets(), city.traffic_signals(), city.buildings(),
+			city.run, dark_from_the_start)
+
+## What stands in `city` (`WorldSimulation`): its events, its crowd, its poster walls and its
+## blackout.
+static func simulation(city: City) -> WorldSimulation:
+	return city.get_node(NodePath(WorldSimulation.NODE_NAME)) as WorldSimulation
 
 ## The day's events on `city`'s streets (`EventManager`).
 static func events(city: City) -> EventManager:
-	return city.events
+	return simulation(city).events()
 
 ## The crowd on `city`'s streets (`Crowd`).
 static func crowd(city: City) -> Crowd:
-	return city.crowd
+	return simulation(city).crowd()
 
 ## Where something sent at her may start in `city` (`SpawnSiting`).
 static func spawn_siting(city: City) -> SpawnSiting:
-	return city.spawn_siting
+	return events(city).spawn_siting()
 
 ## The posters on `city`'s fronts (`PosterWalls`).
 static func poster_walls(city: City) -> PosterWalls:
-	return city.poster_walls()
+	return simulation(city).poster_walls()
+
+## **Hands her to `city`'s poster walls and its blackout, and not to its crowd**: from here on a
+## crew pastes while she watches, her push tears a sheet and the blackout measures her distance
+## from the station (`PosterWalls.use_player()`, `Blackout.use_player()`), while the crowd keeps
+## the rig's own arrangement with her. `player` is her, or a rig body the blackout measures and the
+## walls, which only a `Stroller` can push, do not see.
+static func show_her_to_the_walls_and_the_blackout(city: City, player: Node2D) -> void:
+	poster_walls(city).use_player(player as Stroller)
+	var blackout := simulation(city).get_node(BLACKOUT_NODE) as Blackout
+	blackout.use_player(player)

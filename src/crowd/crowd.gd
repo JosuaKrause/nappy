@@ -148,7 +148,7 @@ var _atlas_held := false
 
 var _agents: Array[CrowdAgent] = []
 ## **The crowd as one set of things that charge the baby** (`CrowdSources`), handed to the world
-## this crowd walks (`WorldContext.excitement_sources`) and to the halo through it.
+## this crowd walks (`WorldContext.use_excitement_sources()`) and to the halo through it.
 var sources := CrowdSources.new(self)
 ## `_agents`' cars and its walkers, each in `_agents`' own order, sorted by `_sort_by_kind()` at
 ## the top of `_resolve_the_queues()` — the first thing every frame's traffic pass does — and read by
@@ -172,8 +172,8 @@ var _navigator: Navigator
 ## stationary body, and not by a precinct's posts, which the crowd walks between as it always does
 ## (it has no body, `CityMap.post_tiles()`).
 var _pushed := Mover.of(Mover.GROUND | Mover.TODAY)
-## Whom the crowd makes way for, bumps and strikes: handed in by whoever puts her into the city's world
-## (`use_player()`, `main._hand_the_crowd_her()`), none until then and in a rig that has none.
+## Whom the crowd makes way for, bumps and strikes: handed in once the world is live and she walks it
+## (`use_player()`, `WorldSimulation.meet_her()`), none until then and in a rig that has none.
 var _player: Stroller
 ## The signals the crowd reports on (`EventBus`'s script), preloaded so the bus it is handed has a
 ## type to be held as.
@@ -195,14 +195,14 @@ func use_traffic(index: TrafficIndex) -> void:
 	_traffic = index
 ## What the screen shows, handed to every agent so none of them reaches for the viewport. See
 ## `CrowdView`. None is a crowd with no screen: every agent drawn, and the day's own radius for
-## "out of sight". Handed in by `City` before the day's agents are made.
+## "out of sight". Handed in by its builder (`SimulationBuilder`) before the day's agents are made.
 var view: CrowdView = null
 ## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`; the null
-## sink until the city hands another.
+## sink until its builder (`SimulationBuilder`) hands another.
 var timing := CrowdTiming.new()
 ## The baked atlas pages the crowd holds `ATLAS_GROUP` on and every agent draws from
-## (`AtlasLibrary`), handed in by `City` before the first day and on to every agent it makes; a
-## crowd nobody handed one (a suite's) makes its own on its first day.
+## (`AtlasLibrary`), handed in by its builder (`SimulationBuilder`) before the first day and on to
+## every agent it makes; a crowd nobody handed one (a suite's) makes its own on its first day.
 var atlas: AtlasLibrary = null
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a
@@ -259,8 +259,9 @@ func _is_she_under(gate: RegionPlanner.GateState) -> bool:
 ## Hands the crowd the world it is drawn in, the map it walks and drives, the lights its traffic
 ## obeys (`TrafficSignals`), today's streets (`DayStreets`, or null for none) and the navigator a
 ## push moves a walker by — the city's own (`City.navigator`), or the map's own
-## (`WorldMap.navigator()`) for a rig that hands none. The city builds its crowd and hands it its
-## own; a test hands a bare `WorldContext` and a map of its own.
+## (`WorldMap.navigator()`) for a rig that hands none. The simulation's builder stands a city's
+## crowd and hands it the city's own (`SimulationBuilder`); a test hands a bare `WorldContext` and a
+## map of its own.
 func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: DayStreets,
 		navigator: Navigator = null) -> void:
 	_world = world
@@ -271,14 +272,14 @@ func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: 
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size_in_tiles())).get_center())
 
-## Hands the crowd the player it makes way for. Called whenever she is put into the city's world
-## (`main._hand_the_crowd_her()`); null takes her away.
+## Hands the crowd the player it makes way for. Called once the world is live and she walks it
+## (`WorldSimulation.meet_her()`); null takes her away.
 func use_player(player: Stroller) -> void:
 	_player = player
 
 ## Hands the crowd the bus it reports her bumps, a car's strike and a horn on. The game hands it
-## the `EventBus` autoload beside her (`main._hand_the_crowd_her()`), since all three are about
-## her.
+## the `EventBus` autoload as it stands the crowd (`SimulationBuilder`), before `setup()`; all three
+## reports are about her, so nothing is said before she is handed in.
 func use_bus(bus: _BUS) -> void:
 	_bus = bus
 

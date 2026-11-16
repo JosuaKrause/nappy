@@ -329,6 +329,7 @@ func _start_the_day(t: TestRunner, day: int, resistance: ResistanceDirector,
 	player.add_child(baby)
 	t.add_child(player)
 	player.set_physics_process(false)
+	RunCity.show_her_to_the_walls_and_the_blackout(_city, player)
 	var clock := DayController.new()
 	clock.set_process(false)
 	t.add_child(clock)

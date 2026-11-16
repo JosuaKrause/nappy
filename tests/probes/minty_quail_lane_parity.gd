@@ -34,8 +34,9 @@ func run(t: TestRunner) -> void:
 	for city_seed in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.crowd_view = ScreenCrowdView.new(t)
-		RunCity.build(city, CityGenerator.generate(city_seed))
+		var builder := RunCity.new_builder()
+		builder.use_the_crowds_screen(ScreenCrowdView.new(t), CrowdTiming.new())
+		RunCity.build(city, CityGenerator.generate(city_seed), builder)
 		for day in DAYS:
 			for walk in WALKS:
 				for repetition in reps:

@@ -135,8 +135,9 @@ The **corridor** is the ground a day's routes run through. **Do not reintroduce 
 Closures change the shape of the route and contribute nothing to the meter — the noise of a street
 is the crowd, the danger is the events, the shape is the closures. A noisy roadworks already exists
 as the `construction` event. **Do not let a closure emit**; it would be a third set in
-`WorldContext.excitement_sources` (`City` extends `WorldContext` and fills it with the events' and
-the crowd's, which `Baby` sums), and that list is exactly two long on purpose.
+the sets a world answers the baby from (`WorldContext.use_excitement_sources()`: `City` extends
+`WorldContext`, and `SimulationBuilder` hands it the events' and the crowd's, which `Baby` sums),
+and that list is exactly two long on purpose.
 
 **One seal is loud, and it is the shape of the exception that matters.** `car_accident` is solid
 only where its two cars are (PLAYTEST-63), so its picture's own gaps are walkable and

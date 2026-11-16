@@ -4,9 +4,9 @@ extends RefCounted
 ## Everything else in the event tests runs on plain data. This one builds an actual city
 ## and runs a day through it, because the bugs that live here are wiring bugs: an instance
 ## that is freed but left in the list, a successor that is spawned but never tracked. Both
-## of those are invisible to a data-level test and both happened. It also holds the one wiring the
-## events and the crowd share, which no suite of either can see: the city handing the events the
-## crowd's recycle of a car a body lands on (`_test_a_car_under_a_far_body_is_recycled_by_the_city_wiring`).
+## of those are invisible to a data-level test and both happened. The one wiring the events and the
+## crowd share, a body the events stand on a lane taking the car there away, is the builder's that
+## makes it (`tests/test_simulation_builder.gd`).
 
 const Rig := preload("res://tests/event_manager_rig.gd")
 
@@ -36,7 +36,6 @@ func run(t: TestRunner) -> void:
 		_test_the_walk_is_handed_the_ground_the_dawn_made,
 		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
 		_test_a_drawn_body_is_told_to_whoever_listens,
-		_test_a_car_under_a_far_body_is_recycled_by_the_city_wiring,
 	]
 	for test in tests:
 		_build_city(t)
@@ -250,58 +249,6 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	t.check(told.size() == told_so_far and RunCity.events(_city).plans().size() > drawn_before,
 			"with no listener a draw tells nobody and still stands its rows")
-
-## **The city hands the events the crowd's recycle** (`City.build()`, `EventManager.use_body_listener()`,
-## `Crowd.recycle_cars_on()`): the one line that makes a car under a body placed on her walk leave.
-## This suite combines the events and the crowd because that line is the only place they meet, and
-## it is the whole of the feature in the game. Day 8 drawn whole with a recording listener names a
-## far roadblock's lane tile; the city is built again with its own wiring, day 8 started at the
-## played stream radius so that unit is still undrawn, a car stood on that tile
-## (`Crowd.add_recipe_actor()`), and the draw round the start made: the car has moved.
-func _test_a_car_under_a_far_body_is_recycled_by_the_city_wiring(t: TestRunner) -> void:
-	var told: Array[Vector2i] = []
-	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
-	RunCity.events(_city).use_body_listener(func(tiles: Array[Vector2i]) -> void:
-		told.append_array(tiles))
-	_start(8)
-	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
-	var period := CityMap.period()
-	var candidates: Array[Vector2i] = []
-	for tile in told:
-		if tile.x % period in CrowdLanes.ROAD_OFFSETS \
-				and _city.map.tile_to_world(tile).length() > 2.0 * Tuning.OUT_OF_SIGHT:
-			candidates.append(tile)
-	t.check(not candidates.is_empty(),
-			"day 8's far bodies stand on a car lane (%d tiles told)" % told.size())
-	# The city again, with the wiring `City.build()` made and no listener of the test's own.
-	_teardown()
-	_build_city(t)
-	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
-	_start(8)
-	var crowd := RunCity.crowd(_city)
-	crowd.start_day(8, Rig.rng(8), Vector2.ZERO, false)
-	crowd.clear()
-	crowd.set_focus(Vector2.ZERO)
-	# The first of the lane tiles a car may stand on (the crowd refuses a place in a junction, at a
-	# crossing and the like).
-	var car: CrowdAgent = null
-	for lane_tile in candidates:
-		var offset := lane_tile.x % period
-		var placed := crowd.add_recipe_actor("car-under-a-body", CrowdAgent.Kind.CAR,
-				Vector2(CrowdLanes.lane_centre(lane_tile.x / period, offset),
-						float(lane_tile.y * Tuning.TILE_SIZE + 16)),
-				Vector2(0.0, CrowdLanes.road_direction(true, offset)), 130.0, 1)
-		if placed["error"] == "":
-			car = placed["actor"]
-			break
-	t.check(car != null, "a car stands on a lane tile a far body will cover")
-	if car == null:
-		return
-	var was := car.position
-	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
-	t.check(car.position.distance_to(was) > float(Tuning.TILE_SIZE),
-			"the draw that stands the body takes the car under it away (moved %.0fpx)"
-			% car.position.distance_to(was))
 
 ## Each of `plans` as its row and the place it was put, in order.
 static func _where_they_stand(plans: Array[EventPlan]) -> String:

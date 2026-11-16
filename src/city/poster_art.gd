@@ -88,7 +88,8 @@ static func _crossed(kind: int, neighbor_taken: bool) -> bool:
 	return kind == Kind.WANTED and neighbor_taken
 
 ## Composes every torn sheet from the baked page, once for this instance. Called by
-## `PosterWalls.setup()` from `City.build()`, which is a loading moment: the page image is a CPU copy
+## `PosterWalls.setup()` as `SimulationBuilder.in_the_city()` stands the walls, which is a loading
+## moment: the page image is a CPU copy
 ## of a whole page, which is nothing to want in the frame a tear happens.
 func prepare(atlas: AtlasLibrary) -> void:
 	if not _torn.is_empty():

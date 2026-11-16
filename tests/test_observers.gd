@@ -205,7 +205,7 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 
 	await _continue_while_paused(t, main)
 	_check_the_observer_runs_after(t, main, [Boot.day(main), _edge_of(main), Boot.interior(main),
-			main.get_node_or_null("BuildingEvents")], "the escape")
+			main.get_node_or_null("Interior/Simulation/Events")], "the escape")
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
 	t.check(summary.is_showing() and _words_on(summary).contains("He caught you on the stairs"),
 			"a lost section comes up on the day's outcome screen, with the reason it was lost")

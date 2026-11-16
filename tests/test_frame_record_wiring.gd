@@ -122,7 +122,8 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 ## `main` hands the sitting's record to every system that is timed, read by what each system
 ## charges to the record it was handed rather than by the hand-in itself: the baby charges
 ## `influence`, the city's events `events`, and the city's scenery queue `scenery`, counting each of
-## its updates (the city is handed the record for those two and hands it on), and the screen edge's
+## its updates (the simulation's builder is handed the record for the events and the city for its
+## scenery queue, each handing it on), and the screen edge's
 ## badges and the halo charge `cues`. Each bucket is charged by its system alone, so a bucket that
 ## fills is that system's. The two cues share theirs, so each is read with the other's process
 ## switched off, and with both off the bucket stays empty, which makes each reading that cue's own.

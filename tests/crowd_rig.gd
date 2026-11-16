@@ -576,7 +576,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t: TestRunner) -> void:
 	rig.add_child(camera)
 	_city.add_child(rig)
 	rig.set_physics_process(false)
-	RunCity.crowd(_city).use_player(rig)
+	RunCity.simulation(_city).meet_her(rig)
 	RunCity.crowd(_city).use_bus(EventBus)
 
 	# Halfway between the two watches, so a few pixels of separation correction cannot land the
@@ -821,7 +821,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t: TestRunner) -> v
 			first["loud"] = walker.mood().contribution_at(at)
 			first["push"] = walker.global_position - at
 	EventBus.crowd_bumped.connect(on_bump)
-	RunCity.crowd(_city).use_player(rig)
+	RunCity.simulation(_city).meet_her(rig)
 	RunCity.crowd(_city).use_bus(EventBus)
 	RunCity.crowd(_city).set_focus(here)
 	var frames := 0
@@ -1036,9 +1036,9 @@ func _test_a_main_road_is_kept_by_its_lights(t: TestRunner) -> void:
 			"the spine leaves a city on both sides of it (corridor %d of %d)" % [spine, corridors])
 	t.check(CrowdLanes.busyness_for(_city.map, true, spine, true) == CrowdLanes.ARTERIAL_BUSYNESS,
 			"and the busiest street and the main road are the same street")
-	t.check(_city.signals.is_signalled(Vector2i(spine, 3)),
+	t.check(_city.traffic_signals().is_signalled(Vector2i(spine, 3)),
 			"every junction on the spine is signalled")
-	t.check(not _city.signals.is_signalled(Vector2i(spine + 1, 3)),
+	t.check(not _city.traffic_signals().is_signalled(Vector2i(spine + 1, 3)),
 			"and a junction of two ordinary streets is not")
 
 	# A car on the spine, with somebody standing at the zebra it is coming to, does not slow for
@@ -1090,7 +1090,7 @@ func _test_a_signal_gives_her_time_to_cross(t: TestRunner) -> void:
 	# the spine **the way the wave runs** meets a green at every junction it comes to. The other
 	# direction is at chance and cannot be rescued on this geometry — see
 	# `Tuning.SIGNAL_PROGRESSION_BLOCKS`, which carries the derivation.
-	var signals := _city.signals
+	var signals := _city.traffic_signals()
 	var was := signals.elapsed
 	var travel := Tuning.signal_travel_seconds()
 	var greens := 0

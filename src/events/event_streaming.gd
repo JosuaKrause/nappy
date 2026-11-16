@@ -45,7 +45,8 @@ var _body_listener := Callable()
 ## holds that the director sites on her way, the first time or again (day 3's fire, a poster crew, a
 ## route's mast before it is in the world). The tiles are read and never changed: they are the
 ## map's own record of the body.
-## The city, which makes both the events and the crowd, hands it the crowd's call. A body spawned
+## The simulation's builder, which makes both the events and the crowd, hands it the crowd's call
+## (`SimulationBuilder`). A body spawned
 ## with no plan (`EventSpawner.spawn()`) is told to nobody: it has no plan to add, and what spawns
 ## one is a rig or a scripted moment, not the walk. With no listener nothing is told.
 func use_body_listener(listener: Callable) -> void:

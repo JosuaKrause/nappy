@@ -16,9 +16,15 @@ extends WorldContext
 ##
 ## **This base dresses nothing**: every method does nothing, as a world with no city to dress would.
 
+## **The city is dressed for `day` under `spec`, and its streets stand as the day's dawn left
+## them** (`start_day()`, `start_recipe_day()`, once the closures are placed): said for what the
+## simulation lays on the dressed city, the poster walls pasting the dawn's sheets
+## (`PosterWalls.dress_for()`). `spec` is the walk's, a day's where the caller handed none.
+signal day_dressed(day: int, spec: DaySpec)
+
 ## Today's city: the run's city state `state` brought to `day`, the streets closed on `rng` where
-## `spec` closes them, the street trees and the posters (`City.start_day()`). `spec` left out is a
-## day's (`DaySpec.for_day()`).
+## `spec` closes them and the street trees, then the day said dressed (`day_dressed`), which the
+## poster walls paste by (`City.start_day()`). `spec` left out is a day's (`DaySpec.for_day()`).
 func start_day(_state: CityState, _day: int, _rng: RandomNumberGenerator,
 		_spec: DaySpec = null) -> void:
 	pass

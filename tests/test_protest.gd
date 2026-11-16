@@ -78,9 +78,9 @@ func _test_plain_pose_with_no_objective(t: TestRunner) -> void:
 ## it is handed (`ResistanceDirector.setup()`'s `run`): the run starts fresh, with no step done and
 ## nothing carried, and goes with the city.
 ##
-## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires
-## the "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
-## `_exit_tree()` (`src/events/event_manager.gd`). Several tests here each call this once, so a
+## Freed rather than left standing: `RunCity.build()` stands an `EventManager` under the city's
+## simulation that acquires the "events" `AtlasLibrary` group in its own `_enter_tree()` and only
+## gives it back in `_exit_tree()` (`src/events/event_manager.gd`). Several tests here each call this once, so a
 ## `_city` never freed would leave the group resident for the rest of the process — a suite
 ## sharing a later shard with `tests/test_telemetry.gd` then finds "events" already held before
 ## its own load/release test even starts.

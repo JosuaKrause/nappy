@@ -31,6 +31,9 @@ var _run: RunState
 var _end_game := Callable()
 var _player: Stroller
 var _city: City
+## The simulation standing in `_city` (`WorldSimulation`): its events, its crowd and its poster
+## walls, handed in beside the city (`install()`).
+var _simulation: WorldSimulation
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
 var _plan: WalkPlan
 var _observations: Array = []
@@ -545,17 +548,18 @@ func plays_by_script() -> bool:
 ## recorded as failed in the manifest (`setup_failed`) as well as returned.
 ##
 ## Overrides AuthoredScene.install.
-func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
-		resistance: ResistanceDirector = null) -> Array[String]:
-	var errors := _install(city, player, baby, spec, resistance)
+func install(city: City, simulation: WorldSimulation, player: Stroller, baby: Baby,
+		spec: DaySpec, resistance: ResistanceDirector = null) -> Array[String]:
+	var errors := _install(city, simulation, player, baby, spec, resistance)
 	if not errors.is_empty():
 		manifest["setup_failed"] = true
 	return errors
 
-func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
-		resistance: ResistanceDirector) -> Array[String]:
+func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: Baby,
+		spec: DaySpec, resistance: ResistanceDirector) -> Array[String]:
 	_walk_spec = spec
 	_city = city
+	_simulation = simulation
 	_player = player
 	_resistance = resistance
 	named = {"player": player}
@@ -580,16 +584,16 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	_select_structures(errors)
 	# One set of calm areas for the recipe's walk: what its rows are placed against and what the walk
 	# sites against after.
-	var calm := city.events.calm_as_the_map_stands()
+	var calm := simulation.events().calm_as_the_map_stands()
 	var plans := _event_plans(at, errors, calm)
-	city.events.start_recipe(plans, spec, _run.header.day, at, calm)
+	simulation.events().start_recipe(plans, spec, _run.header.day, at, calm)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
 		return errors
 	_start_the_route(setup)
 	for entry: Dictionary in setup.get("events", []):
-		for plan in city.events.plans():
+		for plan in simulation.events().plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
 				if not plan.live:
 					errors.append("event %s is not live at its required initial position" % entry.name)
@@ -605,7 +609,8 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
 						plan.kept_live = true
-	city.crowd.start_day(_run.header.day, _run.calendar.day_rng(_run.header.day, "crowd"), at,
+	simulation.crowd().start_day(_run.header.day,
+			_run.calendar.day_rng(_run.header.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
@@ -614,11 +619,11 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		var act := Tuning.act_for_day(_run.header.day)
 		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
 				+ roundi(Tuning.crowd_cars(act) * area_scale)
-		if city.crowd.agent_count() != expected:
+		if simulation.crowd().agent_count() != expected:
 			errors.append("setup.background: too few eligible sidewalk positions for the requested uniform population")
 			return errors
 	if city.streets().region_plan():
-		city.crowd.set_gates(city.streets().region_plan().gates)
+		simulation.crowd().set_gates(city.streets().region_plan().gates)
 	for entry: Dictionary in setup.get("actors", []):
 		var actor_at := position_of(entry.at, errors)
 		if not errors.is_empty():
@@ -626,7 +631,7 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		if not _inside_extent(actor_at):
 			errors.append("actor %s is outside authored bounds" % entry.name)
 			continue
-		var placed := city.crowd.add_recipe_actor(entry.name,
+		var placed := simulation.crowd().add_recipe_actor(entry.name,
 				CrowdAgent.Kind.CAR if entry.kind == "car" else CrowdAgent.Kind.WALKER,
 				actor_at, DIRECTIONS[entry.direction], float(entry.get("speed", -1)),
 				hash("actor:%s" % entry.name))
@@ -635,10 +640,10 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		else:
 			named[entry.name] = placed.actor
 	if map.has_stretch():
-		city.crowd.use_stretch()
-	city.signals.elapsed = float(setup.get("signal_time", 0))
+		simulation.crowd().use_stretch()
+	city.traffic_signals().elapsed = float(setup.get("signal_time", 0))
 	if setup.get("progression", {}).get("blackout", false):
-		city.signals.powered = false
+		city.traffic_signals().powered = false
 	player.reset_at(at, DIRECTIONS[setup.get("player", {}).get("facing", "south")])
 	baby.reset()
 	var initial: Dictionary = setup.get("player", {})
@@ -653,7 +658,7 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = _snapshot()
 	manifest["installed_events"] = []
-	for plan in city.events.plans():
+	for plan in simulation.events().plans():
 		manifest.installed_events.append({"row": plan.def.id,
 				"position": [plan.position.x, plan.position.y], "facing": [plan.facing.x, plan.facing.y]})
 	return errors
@@ -769,8 +774,8 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 		return
 	var happening := ResistanceHappenings.new()
 	happening.trace = _city.trace
-	happening.setup(map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _city.spawn_siting)
+	happening.setup(map, _city.run, _simulation.events(), _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, _simulation.events().spawn_siting())
 	happening.start_day(_run.header.day)
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
 			bottom)
@@ -778,7 +783,7 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 		named["truck_%d" % (i + 1)] = happening.column[i]
 
 func _install_posters(entries: Array, errors: Array[String]) -> void:
-	var fronts := _city.poster_walls().fronts()
+	var fronts := _simulation.poster_walls().fronts()
 	var used := {}
 	var recorded: Array[Dictionary] = []
 	for entry: Dictionary in entries:
@@ -794,7 +799,7 @@ func _install_posters(entries: Array, errors: Array[String]) -> void:
 		var kind: int = PosterArt.Kind[str(entry.kind).to_upper()]
 		_run.posters.paste(tile, kind, false, 1)
 		recorded.append({"at": [at.x, at.y], "kind": entry.kind})
-	_city.poster_walls().refresh()
+	_simulation.poster_walls().refresh()
 	manifest["authored_posters"] = recorded
 
 func _inside_extent(at: Vector2) -> bool:
@@ -812,7 +817,7 @@ func _start_the_route(setup: Dictionary) -> void:
 	var bag: Dictionary = setup.route_bag
 	var marbles: Array = bag.get("marbles", [])
 	var pre_bag: Array = bag.get("pre_bag", [])
-	var owed := _city.events.start_recipe_route(marbles, pre_bag,
+	var owed := _simulation.events().start_recipe_route(marbles, pre_bag,
 			int(bag.get("owed", marbles.size() + pre_bag.size())), float(bag.get("first_after", -1.0)))
 	manifest["route_bag"] = {"marbles": marbles.size(), "pre_bag": pre_bag, "owed": owed}
 
@@ -1264,7 +1269,8 @@ func _physics_process(_delta: float) -> void:
 		var step := _resistance.current_step() if _resistance else null
 		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
 				and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR else null
-		_draft.record(_player, _city, walking_home if is_instance_valid(walking_home) else null)
+		_draft.record(_player, _city, _simulation.events(),
+				walking_home if is_instance_valid(walking_home) else null)
 	if _capture_tick >= 0 and tick >= _capture_tick:
 		prepare_capture()
 		return
@@ -1311,8 +1317,8 @@ func prepare_capture() -> void:
 	get_tree().paused = true
 
 func _record_crowd(key: String) -> void:
-	if _city and _city.crowd:
-		manifest[key] = _city.crowd.recipe_coverage()
+	if _simulation and _simulation.crowd():
+		manifest[key] = _simulation.crowd().recipe_coverage()
 		manifest[key.trim_suffix("_crowd") + "_activity"] = activity_snapshot()
 
 ## Counts only live subjects whose ground positions are in the current picture. A visual review
@@ -1324,7 +1330,7 @@ func activity_snapshot() -> Dictionary:
 			"visible_events": {}}
 	var view := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()
-	for agent in _city.crowd.agents():
+	for agent in _simulation.crowd().agents():
 		if not view.has_point(transform * agent.global_position):
 			continue
 		var key := "visible_cars" if agent.kind == CrowdAgent.Kind.CAR else "visible_walkers"
@@ -1339,7 +1345,7 @@ func activity_snapshot() -> Dictionary:
 					else "walkers_right"] += 1
 		if not agent.velocity().is_zero_approx():
 			result.moving_crowd += 1
-	for event in _city.events.instances():
+	for event in _simulation.events().instances():
 		if view.has_point(transform * event.global_position):
 			result.visible_events[event.def.id] = int(result.visible_events.get(event.def.id, 0)) + 1
 	return result
@@ -1491,7 +1497,7 @@ func _in_the_picture(at: Vector2) -> bool:
 ## page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
 	var at := actor.global_position
-	var covering := _city.events.world.visible.controls if _city else null
+	var covering := _simulation.events().world.visible.controls if _simulation else null
 	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
 	box.position += at
 	return VisibleView.visible_share(box, _camera_world_rect(), covering) > 0.0
@@ -1512,9 +1518,9 @@ func _camera_world_rect() -> Rect2:
 ## How many walkers and cars are moving in the picture now.
 func _moving_in_the_picture() -> Dictionary:
 	var counts := {"walkers": 0, "cars": 0}
-	if not _city or not _city.crowd:
+	if not _simulation or not _simulation.crowd():
 		return counts
-	for agent in _city.crowd.agents():
+	for agent in _simulation.crowd().agents():
 		if not agent.velocity().is_zero_approx() and _in_the_picture(agent.global_position):
 			counts["cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"] += 1
 	return counts
@@ -1524,9 +1530,9 @@ func _moving_in_the_picture() -> Dictionary:
 func subject_of(label: String) -> Node2D:
 	if not label.begins_with(ROW_SUBJECT):
 		return named[label] if is_instance_valid(named.get(label)) else null
-	if not _city or not _city.events:
+	if not _simulation or not _simulation.events():
 		return null
-	for instance in _city.events.instances():
+	for instance in _simulation.events().instances():
 		if instance.def.id == label.trim_prefix(ROW_SUBJECT) and not instance.is_finished:
 			return instance
 	return null
@@ -1567,7 +1573,7 @@ var _in_the_void := {}
 func _watch_the_void() -> void:
 	if not _city or not _city.map.has_stretch():
 		return
-	for instance in _city.events.instances():
+	for instance in _simulation.events().instances():
 		if _in_the_void.has(instance):
 			continue
 		var tile := _city.map.world_to_tile(instance.global_position)
@@ -1591,9 +1597,9 @@ const PICTURE_REACH := float(Tuning.TILE_SIZE)
 ## recorded in the manifest's `seen_to_jump`, which `tests/test_scene_recipe_stretch_crowd.gd` holds
 ## empty over every stretch scene.
 func _watch_the_crowd() -> void:
-	if not _city or not _city.map.has_stretch() or not _city.crowd:
+	if not _city or not _city.map.has_stretch() or not _simulation.crowd():
 		return
-	for agent in _city.crowd.agents():
+	for agent in _simulation.crowd().agents():
 		var at := agent.global_position
 		if _crowd_was.has(agent):
 			var was: Vector2 = _crowd_was[agent]
@@ -1615,7 +1621,8 @@ func _write_the_draft() -> int:
 	var errors: Array[String] = []
 	for field: String in data.get("setup", {}).get("task", {}):
 		pinned.append(position_of(data.setup.task[field], errors))
-	var drafted := _draft.compose(_written, _run, _city, start_position(), pinned, problems)
+	var drafted := _draft.compose(_written, _run, _city, _simulation.crowd(), start_position(),
+			pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
 	var path := _config.recipe_draft_path

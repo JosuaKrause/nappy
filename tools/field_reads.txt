@@ -48,10 +48,6 @@ src/dev/route_rig.gd state
 src/dev/scene_recipe_runtime.gd excitement
 src/dev/scene_recipe_runtime.gd sleepiness
 
-# [Blackout] src/city/blackout.gd
-src/city/city.gd dark_from_the_start
-src/city/city.gd forced
-
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
 src/city/city.gd condition
@@ -110,40 +106,20 @@ src/events/event_instance.gd ended
 src/events/event_instance.gd warned
 
 # [City] src/city/city.gd
-src/dev/scene_recipe_draft.gd crowd
-src/dev/scene_recipe_draft.gd events
 src/dev/scene_recipe_draft.gd map
 src/dev/scene_recipe_runtime.gd atlas
-src/dev/scene_recipe_runtime.gd crowd
-src/dev/scene_recipe_runtime.gd events
 src/dev/scene_recipe_runtime.gd map
 src/dev/scene_recipe_runtime.gd run
-src/dev/scene_recipe_runtime.gd signals
-src/dev/scene_recipe_runtime.gd spawn_siting
 src/dev/scene_recipe_runtime.gd trace
-src/main.gd all_cyclists_pelicans
 src/main.gd atlas
-src/main.gd blackout_forced
-src/main.gd crowd
-src/main.gd crowd_timing
-src/main.gd crowd_view
-src/main.gd dark_from_the_start
-src/main.gd events
-src/main.gd forced_interval
-src/main.gd forced_row
 src/main.gd frame_timing
 src/main.gd ground_mode
 src/main.gd ground_recipe
 src/main.gd map
 src/main.gd navigator
-src/main.gd poster_art
 src/main.gd run
 src/main.gd scenery_frame_locked
-src/main.gd skip_crowd_drawing
-src/main.gd skip_crowd_motion
-src/main.gd skip_event_drawing
 src/main.gd skip_shadows
-src/main.gd spawn_siting
 src/main.gd trace
 
 # [CityMap] src/city/city_map.gd
@@ -207,12 +183,12 @@ src/dev/scene_recipe_runtime.gd is_done
 src/dev/scene_recipe_runtime.gd step
 
 # [Crowd] src/crowd/crowd.gd
-src/city/city.gd atlas
-src/city/city.gd skip_agent_drawing
-src/city/city.gd skip_motion
-src/city/city.gd sources
-src/city/city.gd timing
-src/city/city.gd view
+src/day/world_simulation.gd sources
+src/simulation_builder.gd atlas
+src/simulation_builder.gd skip_agent_drawing
+src/simulation_builder.gd skip_motion
+src/simulation_builder.gd timing
+src/simulation_builder.gd view
 src/telemetry/run_session.gd sources
 
 # [CrowdAgent] src/crowd/crowd_agent.gd
@@ -690,20 +666,15 @@ src/resistance/resistance_director.gd path
 src/run/day_director.gd excitement
 
 # [EventManager] src/events/event_manager.gd
-src/city/city.gd atlas
-src/city/city.gd pelican_rig
-src/city/city.gd skip_drawing
-src/city/city.gd sources
-src/city/city.gd timing
-src/city/city.gd trace
+src/day/world_simulation.gd sources
 src/dev/scene_recipe_runtime.gd world
-src/main.gd atlas
-src/main.gd skip_drawing
-src/main.gd sources
-src/main.gd stream_radius
-src/main.gd timing
-src/main.gd trace
 src/resistance/resistance_director.gd points_at
+src/simulation_builder.gd atlas
+src/simulation_builder.gd pelican_rig
+src/simulation_builder.gd skip_drawing
+src/simulation_builder.gd stream_radius
+src/simulation_builder.gd timing
+src/simulation_builder.gd trace
 
 # [EventPlan] src/events/event_plan.gd
 src/dev/dev_rig.gd def
@@ -1223,6 +1194,7 @@ src/resistance/resistance_director.gd facts
 src/resistance/resistance_director.gd resistance
 src/run/summary_model.gd header
 src/run/summary_model.gd resistance
+src/simulation_builder.gd resistance
 src/telemetry/frame_recorder.gd header
 src/telemetry/frame_trace.gd header
 src/telemetry/run_session.gd header
@@ -1300,9 +1272,6 @@ src/world/spawn_siting.gd view
 src/events/behaviours/event_notice_run.gd cancel_if
 src/events/behaviours/event_notice_run.gd length
 src/events/behaviours/event_notice_run.gd on_expired
-
-# [WorldContext] src/world/world_context.gd
-src/main.gd excitement_sources
 
 # [WorldMap] src/world/world_map.gd
 src/city/city.gd world

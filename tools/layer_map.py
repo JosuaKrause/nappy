@@ -82,6 +82,7 @@ FILES: dict[str, str] = {
     "src/game_enums.gd": "data",
     "src/ground_shape.gd": "data",
     "src/main.gd": "root",
+    "src/simulation_builder.gd": "root",
     "src/offscreen.gd": "data",
     "src/palette.gd": "data",
     "src/run_config.gd": "data",
@@ -266,13 +267,6 @@ class Exception_:
 EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
-        "Blackout",
-        "the city scene builds the blackout itself, rather than the composition root handing it in",
-        ("src/city/city.gd",),
-        more=(("src/city/city.gd", 2),),
-    ),
-    Exception_(
-        "names",
         "BlockLayout",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
@@ -307,25 +301,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "CityMap",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "Crowd",
-        "the city scene builds the day's crowd itself, rather than the composition root handing it in",
-        ("src/city/city.gd",),
-        more=(("src/city/city.gd", 2),),
-    ),
-    Exception_(
-        "names",
-        "CrowdTiming",
-        "the city scene hands the crowd its timing sink, since it builds the crowd",
-        ("src/city/city.gd",),
-    ),
-    Exception_(
-        "names",
-        "CrowdView",
-        "the city scene hands the crowd its view, since it builds the crowd",
-        ("src/city/city.gd",),
     ),
     Exception_(
         "names",
@@ -380,19 +355,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "EventManager",
-        "the city scene builds the day's events itself, rather than the composition root handing them in",
-        ("src/city/city.gd",),
-        more=(("src/city/city.gd", 2),),
-    ),
-    Exception_(
-        "names",
-        "EventSpawner",
-        "placement rules live on the spawner the city reaches into",
-        ("src/city/city.gd",),
-    ),
-    Exception_(
-        "names",
         "HelpText",
         "the texts compose the controls' token",
         ("src/ui/texts.gd",),
@@ -403,13 +365,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "the map interface hands out its navigator, the world's half of it",
         ("src/world/world_map.gd",),
         more=(("src/world/world_map.gd", 3),),
-    ),
-    Exception_(
-        "names",
-        "PosterWalls",
-        "the city scene builds the posters itself, rather than the composition root handing them in",
-        ("src/city/city.gd",),
-        more=(("src/city/city.gd", 3),),
     ),
     Exception_(
         "names",
@@ -460,8 +415,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "EventBus",
         "the world and simulation report on the global signal bus, not a domain-event sink they are handed",
         (
-            "src/city/blackout.gd",
-            "src/city/poster_walls.gd",
             "src/events/encounter_watch.gd",
             "src/events/event_instance.gd",
             "src/events/event_manager.gd",
@@ -471,22 +424,12 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/resistance/resistance_director.gd",
         ),
         more=(
-            ("src/city/blackout.gd", 2),
             ("src/events/encounter_watch.gd", 5),
             ("src/events/event_instance.gd", 3),
             ("src/events/event_manager.gd", 4),
             ("src/events/event_spawner.gd", 4),
             ("src/events/events_ahead.gd", 2),
             ("src/resistance/resistance_director.gd", 2),
-        ),
-    ),
-    Exception_(
-        "group",
-        "player",
-        "the blackout and the posters find her through the player group, where the crowd is now handed her",
-        (
-            "src/city/blackout.gd",
-            "src/city/poster_walls.gd",
         ),
     ),
     Exception_(

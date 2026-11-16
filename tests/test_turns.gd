@@ -648,7 +648,7 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 ## A signal decides the box where there is one, and a planned turn does not argue with it. The car
 ## may not be inside the junction while its own arm is red.
 func _test_a_red_light_still_holds_a_car_that_is_turning(t: TestRunner) -> void:
-	var signals := _city.signals
+	var signals := _city.traffic_signals()
 	var box := Vector2i(_city.map.main_road, _junction.y)
 	t.check(signals != null and signals.is_signalled(box),
 			"the spine's junction in the rig is signalled, so there is a light to meet")

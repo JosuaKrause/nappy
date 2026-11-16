@@ -54,8 +54,7 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = day
 	t.add_child(city)
-	city.crowd_view = ScreenCrowdView.new(t)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
 	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
 	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
 			spec)
@@ -66,8 +65,9 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	rng.seed = hash("excitement-fingerprint-crowd:%d:%d" % [seed_value, day])
 	RunCity.crowd(city).start_day(day, rng, start)
 	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
-	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city, RunCity.events(city),
-			RunCity.crowd(city), start)
+	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city,
+			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
+			start)
 	RunCity.events(city).clear()
 	city.free()
 	return printed
@@ -79,15 +79,16 @@ func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = day
 	t.add_child(city)
-	city.crowd_view = ScreenCrowdView.new(t)
-	RunCity.build(city, CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
 	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
 	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
 	var none: Array[String] = []
 	RunCity.events(city).start_day(spec, city.run.calendar.day_rng(day, "finale"), none, start)
-	var printed := _walk(t, "escape seed %d" % seed_value, city, RunCity.events(city), RunCity.crowd(city), start)
+	var printed := _walk(t, "escape seed %d" % seed_value, city,
+			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
+			start)
 	RunCity.events(city).clear()
 	city.free()
 	return printed
@@ -101,16 +102,25 @@ func _the_building(t: TestRunner, seed_value: int) -> int:
 	t.add_child(scene)
 	var rng := own_run.calendar.day_rng(own_run.header.day, "finale-interior")
 	var events := BuildingEvents.events_in(t, scene, rng, own_run)
-	var printed := _walk(t, "building seed %d" % seed_value, scene, events, null,
+	var sets: Array[ExcitementSources] = [events.sources]
+	var printed := _walk(t, "building seed %d" % seed_value, scene, sets, events, null,
 			scene.map.start_world_position(), BUILDING_TICKS)
 	events.clear()
 	events.free()
 	scene.free()
 	return printed
 
-## One walk of `ticks` ticks in `world`, printing every source's line after every tick.
-func _walk(t: TestRunner, walk: String, world: WorldContext, events: EventManager, crowd: Crowd,
-		start: Vector2, ticks := TICKS) -> int:
+## The builder a day's city is stood with: the crowd handed the screen's view, as `main` hands it
+## (`main._simulation_builder()`).
+func _builder(t: TestRunner) -> SimulationBuilder:
+	var builder := RunCity.new_builder()
+	builder.use_the_crowds_screen(ScreenCrowdView.new(t), CrowdTiming.new())
+	return builder
+
+## One walk of `ticks` ticks in `world`, whose charges are the sets `sources` (the ones the world
+## answers the baby from, and the halo is handed), printing every source's line after every tick.
+func _walk(t: TestRunner, walk: String, world: WorldContext, sources: Array[ExcitementSources],
+		events: EventManager, crowd: Crowd, start: Vector2, ticks := TICKS) -> int:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -129,7 +139,7 @@ func _walk(t: TestRunner, walk: String, world: WorldContext, events: EventManage
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
 	halo.set_process(false)
-	halo.setup(world.excitement_sources, rig, baby)
+	halo.setup(sources, rig, baby)
 	events.use_player(rig)
 	events.stream_around(start)
 	if crowd:

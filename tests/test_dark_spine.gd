@@ -45,7 +45,7 @@ func _test_the_dark_spine_keeps_moving(t: TestRunner) -> void:
 	_city.start_day(state, day, _rng("closures"))
 	var lit: Vector2 = await _spine_traffic(t)
 	var lit_samples := _sampled_cars
-	_city.signals.powered = false
+	_city.traffic_signals().powered = false
 	var dark: Vector2 = await _spine_traffic(t)
 	_sampled_cars = mini(_sampled_cars, lit_samples)
 	print("[test_dark_spine] spine traffic over 40s, lit: mean %.0f px/s, %.0f%% stopped; "
@@ -74,7 +74,7 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 	_city.add_child(her)
 	her.set_physics_process(false)
 	her.global_position = _sidewalk_beside_the_spine()
-	RunCity.crowd(_city).use_player(her)
+	RunCity.simulation(_city).meet_her(her)
 	var totals := {"speed": 0.0, "stopped": 0, "samples": 0}
 	var sample := func(ticks: int) -> bool:
 		if ticks % 30 != 0:
