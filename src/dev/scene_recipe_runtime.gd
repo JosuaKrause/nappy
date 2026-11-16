@@ -443,8 +443,8 @@ static func _validate_route_bag(recipe: Dictionary, errors: Array[String]) -> vo
 		for id: Variant in bag.get(field, []):
 			var def := EventCatalogue.by_id(str(id)) if id is String else null
 			var mode := def.spawn_mode_on(day) if def else EventDef.SpawnMode.MAP
-			if not def or not def.available_on(day) or not mode in [
-					EventDef.SpawnMode.AHEAD_OF_PLAYER, EventDef.SpawnMode.TOWARD_PLAYER]:
+			if not def or not def.available_on(day) or not (def.is_sent_ahead() or mode in [
+					EventDef.SpawnMode.AHEAD_OF_PLAYER, EventDef.SpawnMode.TOWARD_PLAYER]):
 				errors.append("setup.route_bag.%s: %s is not a row the director sites on day %d"
 						% [field, id, day])
 	if bag.get("marbles", []) is Array and (bag.get("marbles", []) as Array).is_empty():

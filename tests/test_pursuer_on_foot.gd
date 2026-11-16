@@ -82,31 +82,44 @@ func _the_map_of_day_8(seed_value: int) -> CityMap:
 	map.repaint(state)
 	return map
 
-## Real `police_patrol` routes at full heat on `seed_value`'s map, those at least 400px long: from
-## where each patrol a real day-8 dawn (`EventScheduler.build_day()`) places stands, the route the
-## plan builder lays there with nothing bounding it (`PlanBuilder.build()`), as a patrol her walk
-## sites (the return's patrols) is laid. A patrol the units draw keeps its route on its street and
-## the boxes at its ends (`Location.run()`), at most 13 tiles (416px), so only the longest of them
-## is the 400px these checks keep. Planned once per seed for the suite, and only read by the
-## checks that drive a patrol down them.
+## Real `police_patrol` routes on `seed_value`'s day-8 map, those at least 400px long: the routes
+## the director sends a patrol ahead of her on (`EventDirector.due()`, the row forced, as the
+## `--force` flag forces it), down the carriageway lane that drives toward her and past her, for her
+## standing on sidewalk tiles spread over the map and walking along her street. Every patrol on an
+## ordinary day is one the director sends (`EventDef.is_sent_ahead()`). Worked out once per seed for
+## the suite, and only read by the checks that drive a patrol down them.
 func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	if _routes.has(seed_value):
 		return _routes[seed_value]
 	var map := _the_map_of_day_8(seed_value)
+	var director := EventDirector.new(map)
+	director.force("police_patrol", 0.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var plans := GameDawn.of(DaySpec.for_day(8), rng, map).on(RouteTree.for_day(map, 8)) \
-			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
-	var builder := GamePlanBuilder.over(map)
+	var no_plans: Array[EventPlan] = []
+	director.start_day(8, no_plans, rng)
 	var routes: Array[PackedVector2Array] = []
-	for plan in plans:
-		if plan.def.id != "police_patrol" or plan.path.size() < 2:
-			continue
-		var laid := builder.build(plan.def, map.world_to_tile(plan.path[0]), rng)
-		if laid and laid.path.size() >= 2 and laid.path[0].distance_to(laid.path[1]) >= 400.0:
-			routes.append(laid.path)
+	var size := map.size_in_tiles()
+	for y in range(3, size.y, PATROL_SPOT_STRIDE):
+		for x in range(1, size.x, PATROL_SPOT_STRIDE):
+			var tile := Vector2i(x, y)
+			var inward := map.pavement_inward(tile)
+			if inward == Vector2i.ZERO or routes.size() >= PATROL_ROUTES:
+				continue
+			var heading := Vector2(inward.y, inward.x) * (1.0 if (x + y) % 2 == 0 else -1.0)
+			var due := director.due(1.0, map.tile_to_world(tile), heading * Tuning.WALK_SPEED)
+			if due.size() < 2:
+				continue
+			var path := due[1] as PackedVector2Array
+			if path[0].distance_to(path[path.size() - 1]) >= 400.0:
+				routes.append(path)
 	_routes[seed_value] = routes
 	return routes
+
+## How many routes `_patrol_routes()` works out for a seed, and the stride in tiles of the sidewalk
+## spots it stands her on.
+const PATROL_ROUTES := 12
+const PATROL_SPOT_STRIDE := 5
 
 ## `_patrol_routes()`, by seed.
 var _routes := {}
@@ -321,18 +334,27 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 	for day in days:
 		_done(day["city"], day["her"])
 
-## What the director puts in front of her as she walks `seconds` north on the spot, a tick at a
-## time as the manager's tick asks it: `"id at x,y"` for each event that appears in the world, the
-## torn poster's pursuer left out.
+## What the director puts in front of her as she walks `seconds` along the east-west street she
+## stands on (`_a_sidewalk()`), turning at the map's edges, a tick at a time as the manager's tick
+## asks it: she walks rather than marking time, since a row the director sends ahead of her is
+## sent only where she is has ground for it (a sidewalk, a carriageway), its marble spent as it is
+## drawn and the row waiting for a later turn of the director's clock, and standing still turns no
+## clock at all. `"id at x,y"` for each event that appears in the world, the torn poster's pursuer
+## left out.
 func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) -> Array:
-	her.velocity = Vector2(0.0, -Tuning.WALK_SPEED)
+	her.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var seen := {}
 	for instance in RunCity.events(city).instances():
 		seen[instance] = true
 	var handed := []
 	var elapsed := 0.0
+	var width := city.map.world_size().x
 	while elapsed < seconds:
 		RunCity.events(city).ahead.place_what_is_owed_ahead(0.1)
+		her.global_position += her.velocity * 0.1
+		if her.global_position.x < Tuning.TILE_SIZE * 2.0 \
+				or her.global_position.x > width - Tuning.TILE_SIZE * 2.0:
+			her.velocity = -her.velocity
 		elapsed += 0.1
 		for instance in RunCity.events(city).instances():
 			if seen.has(instance):
@@ -722,8 +744,8 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 	return landed if finished else -1.0
 
 ## **It never stops in a junction box** *(sunny-finch: nothing enters a box it cannot leave)*, over
-## real patrol routes rather than a hand-made one: on three seeds, `police_patrol`'s own
-## `PlanBuilder._along_street_path()` routes at full heat, her standing on the sidewalk beside
+## real patrol routes rather than a hand-made one: on three seeds, the routes the director sends
+## `police_patrol` ahead of her on (`_patrol_routes()`), at full heat, her standing on the sidewalk beside
 ## the route at several places along it, the car driven until it stops for her. Wherever it stops,
 ## no part of its body — spine and width — is on a junction's tiles, the crossing street's
 ## corridor with its zebras; and some of those cars saw her from inside a box and drove on out of

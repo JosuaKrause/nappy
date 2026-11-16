@@ -21,8 +21,9 @@ extends RefCounted
 ## After the walk every unit left is drawn. A placed row counts once it comes within the stream
 ## radius of her, the moment it would stream in, under its row, its view and its kind of ground:
 ## a row the director sites on her way among them, once sited (day 3's fire), but not a place her
-## route's bag hands it. Prints `WD day seeds streamed`, `WV day row view count`, `WK day row kind
-## count` and `WM day met at-the-door late-out`, where the capped rows are met (`CAPPED`: within
+## route's bag hands it. Prints `WH day row count`, what the director hands out on her walk
+## (`EventDirector.due()`) row by row, summed over the seeds; `WD day seeds streamed`,
+## `WV day row view count`, `WK day row kind count` and `WM day met at-the-door late-out`, where the capped rows are met (`CAPPED`: within
 ## the stream radius of her door, and in the second half of the walk out), summed over the seeds,
 ## and per seed and day `WT day seed siting ticks median p99 worst total`, the director's siting's
 ## tick costs in microseconds, and `WP day seed microseconds`, the dawn's planning of each
@@ -55,12 +56,11 @@ extends RefCounted
 ## its pull and its cost only.
 ##
 ## **And how the units drew, marble by marble** (`MarbleDraw`): per day, summed over the seeds,
-## `WZ day streets sections locations marbles empty`, the rows every unit placed by what each took
+## `WZ day sections locations marbles empty`, the rows every unit placed by what each took
 ## of its unit (`EventDef.takes_of_a_street()` in a street, one location elsewhere, the rule
 ## `MarbleDraw` keeps private; a row handed to her walk counted), the marbles the units drew and
 ## how many of them were empty. A unit's marbles are worked out from its room before it draws
-## (`UnitRoom`, counted in small marbles: a section speaks for two, the whole street for all of
-## it), since every marble takes its share of it and a unit draws until it is spoken for;
+## (`UnitRoom`, counted in small marbles: a section speaks for two), since every marble takes its share of it and a unit draws until it is spoken for;
 ## `WZ all` sums the days.
 ##
 ## **And whether the day's routes stay open, which no rule floods the city to keep** (`RouteGroundRule`
@@ -140,9 +140,9 @@ class _Drawing extends RefCounted:
 			_room[unit.name()] = count
 
 	## **What the day's units placed, by share, and the marbles they drew**, every unit drawn:
-	## `[streets, sections, locations, marbles, empty]`.
+	## `[sections, locations, marbles, empty]`.
 	func marbles() -> Array[int]:
-		var counts: Array[int] = [0, 0, 0, 0, 0]
+		var counts: Array[int] = [0, 0, 0, 0]
 		for unit in _units:
 			var room := int(_room[unit.name()])
 			var spoken := 0
@@ -150,18 +150,15 @@ class _Drawing extends RefCounted:
 				var share := plan.row().takes_of_a_street() \
 						if unit.kind() == PlacementGround.Kind.STREET \
 						else EventDef.StreetShare.A_LOCATION
-				if share == EventDef.StreetShare.A_STREET:
+				if share == EventDef.StreetShare.A_SECTION:
 					counts[0] += 1
-					spoken += room
-				elif share == EventDef.StreetShare.A_SECTION:
-					counts[1] += 1
 					spoken += 2
 				else:
-					counts[2] += 1
+					counts[1] += 1
 					spoken += 1
 			var empty := room - spoken
-			counts[3] += unit.drawn().size() + empty
-			counts[4] += empty
+			counts[2] += unit.drawn().size() + empty
+			counts[3] += empty
 		return counts
 
 	## Takes the walk what is drawn joins, as `EventsAhead` has it: a placed row added to the
@@ -276,11 +273,13 @@ func _walk_every_day(reach: float) -> void:
 	var all_on_undrawn := 0
 	var all_gave_up := 0
 	var all_nearest := INF
-	var all_marbles: Array[int] = [0, 0, 0, 0, 0]
+	var all_marbles: Array[int] = [0, 0, 0, 0]
 	var all_both_closed: Array[int] = [0, 0, 0, 0, 0, 0]
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}
+		# What the director hands out on her walk (`EventDirector.due()`), by row.
+		var handed := {}
 		var placed := 0
 		# Where on her walk the capped rows are met: within the stream radius of her door at the
 		# start, and in the second half of the walk out.
@@ -297,7 +296,7 @@ func _walk_every_day(reach: float) -> void:
 		var gave_up := 0
 		var nearest := INF
 		# What the units placed by share, the marbles they drew and the empty ones.
-		var marbles: Array[int] = [0, 0, 0, 0, 0]
+		var marbles: Array[int] = [0, 0, 0, 0]
 		# What each of the day's rules refused, and the streets by view: counted, both closed.
 		var refused := {}
 		var both_closed: Array[int] = [0, 0, 0, 0, 0, 0]
@@ -424,7 +423,10 @@ func _walk_every_day(reach: float) -> void:
 					if not the_games:
 						continue
 					var t1 := Time.get_ticks_usec()
-					director.due(TICK, at, velocity)
+					var due := director.due(TICK, at, velocity)
+					if not due.is_empty():
+						var handed_id := (due[0] as EventDef).id
+						handed[handed_id] = int(handed.get(handed_id, 0)) + 1
 					var moved := director.site_what_is_on_her_way(TICK, at, velocity)
 					siting_ticks.append(Time.get_ticks_usec() - t1)
 					for plan in moved:
@@ -493,8 +495,7 @@ func _walk_every_day(reach: float) -> void:
 			continue
 		print("WD %d %d %d" % [day, SEEDS, placed])
 		print("WC %d %d %d" % [day, cut_at_dawn, cut_after_walk])
-		print("WZ %d %d %d %d %d %d" % [day, marbles[0], marbles[1], marbles[2], marbles[3],
-				marbles[4]])
+		print("WZ %d %d %d %d %d" % [day, marbles[0], marbles[1], marbles[2], marbles[3]])
 		for k in marbles.size():
 			all_marbles[k] += marbles[k]
 		all_cut_at_dawn += cut_at_dawn
@@ -515,12 +516,14 @@ func _walk_every_day(reach: float) -> void:
 			print("WV %d %s %d" % [day, key, by_view[key]])
 		for key: String in by_kind:
 			print("WK %d %s %d" % [day, key, by_kind[key]])
+		for key: String in handed:
+			print("WH %d %s %d" % [day, key, handed[key]])
 	print("WU all %d %d %d %d %d" % [reach, all_on_the_walk, all_after, all_pull, all_chain])
 	print("WQ all %d %s" % [reach, _quantiles(all_costs)])
 	if the_games:
 		print("WC all %d %d" % [all_cut_at_dawn, all_cut_after_walk])
-		print("WZ all %d %d %d %d %d" % [all_marbles[0], all_marbles[1], all_marbles[2],
-				all_marbles[3], all_marbles[4]])
+		print("WZ all %d %d %d %d" % [all_marbles[0], all_marbles[1], all_marbles[2],
+				all_marbles[3]])
 		print("WS all %d %d %d %.0f" % [all_sitings, all_on_undrawn, all_gave_up, all_nearest])
 		for view in 3:
 			print("WB all %d %d %d" % [view, all_both_closed[view * 2],

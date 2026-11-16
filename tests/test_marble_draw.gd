@@ -3,9 +3,8 @@ extends RefCounted
 ## with the unit's other rows (inbox #1466). A row lands on the location that takes it, not the
 ## first of the unit; no location has first pick; a larger row drawn later is laid out first and
 ## the smaller ones move; a row the layout cannot hold beside the drawn ones is refused as it comes
-## up, and one whose share does not fit the room left is refused without the ground being asked; a
-## row that takes the whole street ends the street's draw, and comes up refused after anything
-## else; one of a row in a unit; a row's weight the largest the locations it may stand on weigh it,
+## up, and one whose share does not fit the room left is refused without the ground being asked;
+## one of a row in a unit; a row's weight the largest the locations it may stand on weigh it,
 ## on a street built as the game builds one; a row handed to her walk recorded with no position and
 ## the next row judged without it; a row that travels a sidewalk taking one location of it, as any
 ## other sidewalk row; every open location ends recorded as drawn, one not open left alone; and the
@@ -26,8 +25,6 @@ func run(t: TestRunner) -> void:
 	_test_a_larger_row_drawn_later_is_laid_out_first(t)
 	_test_a_row_the_layout_cannot_hold_is_refused_as_it_comes_up(t)
 	_test_a_share_the_room_does_not_fit_is_refused_unasked(t)
-	_test_a_whole_street_marble_ends_the_streets_draw(t)
-	_test_a_whole_street_marble_after_another_is_refused_unasked(t)
 	_test_one_of_a_row_in_a_unit(t)
 	_test_a_rows_weight_is_the_largest_of_its_locations(t)
 	_test_a_row_handed_to_her_walk_is_recorded_unplaced(t)
@@ -150,8 +147,8 @@ static func _rows(ids: Array[String]) -> Dictionary:
 ## `unit` drawn from `bag` among `among`, its rows the marbles' and the catalogue's.
 static func _drawn(unit: PlacementUnit, bag: _Bag, ground: _Ground, locations: _Locations,
 		among: Array[EventPlan] = []) -> Array[EventPlan]:
-	var ids: Array[String] = ["cafe_tables", "busker", "roadblock", "dog_walker", "poster_crew",
-			"market_stall", "leaf_blower", "homeless_yeller", "police_patrol"]
+	var ids: Array[String] = ["cafe_tables", "busker", "roadblock", "chatting_mother",
+			"poster_crew", "market_stall", "leaf_blower", "homeless_yeller"]
 	return MarbleDraw.new(locations, _rows(ids), ground).draw(unit, bag, among)
 
 ## Where `id` was recorded, or null.
@@ -247,37 +244,6 @@ func _test_a_share_the_room_does_not_fit_is_refused_unasked(t: TestRunner) -> vo
 			"a roadblock after a cafe is refused (%s)" % [bag.said])
 	t.check(ground.asks_for("roadblock").is_empty(), "without the ground being asked")
 
-## A police patrol, which drives the whole street, drawn first: it is placed on a section, the bag
-## is asked for nothing more, and every other location of the street ends recorded as drawn.
-func _test_a_whole_street_marble_ends_the_streets_draw(t: TestRunner) -> void:
-	var street := _street()
-	var bag := _Bag.new(["police_patrol", "cafe_tables", "busker"] as Array[String])
-	var locations := _Locations.new()
-	var placed := _drawn(street, bag, _Ground.new(), locations)
-	t.check(placed.size() == 1 and placed[0].row_id() == "police_patrol",
-			"a street whose first marble is a patrol places the patrol alone (%d placed)"
-			% placed.size())
-	t.check(bag.said == [["police_patrol", true]],
-			"and draws no marble after it (%s)" % [bag.said])
-	var at := _where(locations, "police_patrol")
-	var rest_drawn := true
-	for location in street.locations():
-		if location != at:
-			rest_drawn = rest_drawn and locations.recorded.has(location) \
-					and locations.recorded[location] == null
-	t.check(at != null and at.kind() == Location.Kind.SECTION and rest_drawn,
-			"the patrol stands in a section and every other location is recorded as drawn")
-
-## After a small marble the whole street does not fit: a patrol that comes up next is refused, and
-## the ground is never asked about it.
-func _test_a_whole_street_marble_after_another_is_refused_unasked(t: TestRunner) -> void:
-	var ground := _Ground.new()
-	var bag := _Bag.new(["cafe_tables", "police_patrol"] as Array[String])
-	_drawn(_street(), bag, ground, _Locations.new())
-	t.check(bag.said == [["cafe_tables", true], ["police_patrol", false]],
-			"a patrol after a cafe is refused (%s)" % [bag.said])
-	t.check(ground.asks_for("police_patrol").is_empty(), "without the ground being asked")
-
 func _test_one_of_a_row_in_a_unit(t: TestRunner) -> void:
 	var bag := _Bag.new(["cafe_tables", "cafe_tables"] as Array[String])
 	var placed := _drawn(_street(), bag, _Ground.new(), _Locations.new())
@@ -287,9 +253,7 @@ func _test_one_of_a_row_in_a_unit(t: TestRunner) -> void:
 ## A street built as the game builds one with a sidewalk held: section 2's near sidewalk holds a
 ## busker, which closes section 2 (`DayLocations.assign_to()`). The cafe weighed 3 and 7 on two
 ## open sidewalk locations, 1000 on the held one and 100 on a section; the roadblock 4 on section 1
-## and 9 on the closed section 2; the patrol 8 on section 1. The cafe weighs 7 and the roadblock 4,
-## and the patrol nothing, since no section of a street with a sidewalk held may take the whole
-## street (`MarbleDraw._may_hold()`). On an untouched street the patrol weighs the 8 of section 1.
+## and 9 on the closed section 2. The cafe weighs 7 and the roadblock 4.
 func _test_a_rows_weight_is_the_largest_of_its_locations(t: TestRunner) -> void:
 	var street := _street()
 	var at := street.locations()
@@ -299,9 +263,8 @@ func _test_a_rows_weight_is_the_largest_of_its_locations(t: TestRunner) -> void:
 	ground.weights = {
 		"cafe_tables": {at[3]: 3.0, at[4]: 7.0, at[7]: 1000.0, at[0]: 100.0},
 		"roadblock": {at[1]: 4.0, at[2]: 9.0, at[5]: 50.0},
-		"police_patrol": {at[1]: 8.0},
 	}
-	var bag := _Bag.new(["cafe_tables", "roadblock", "police_patrol"] as Array[String])
+	var bag := _Bag.new(["cafe_tables", "roadblock"] as Array[String])
 	_drawn(street, bag, ground, _Locations.new())
 	t.check(is_equal_approx(float(bag.weighed.get("cafe_tables", 0.0)), 7.0),
 			"a sidewalk row weighs the most an open sidewalk location weighs it (%s)"
@@ -309,17 +272,6 @@ func _test_a_rows_weight_is_the_largest_of_its_locations(t: TestRunner) -> void:
 	t.check(is_equal_approx(float(bag.weighed.get("roadblock", 0.0)), 4.0),
 			"a row across the street the most an open section weighs it (%s)"
 			% bag.weighed.get("roadblock"))
-	t.check(is_equal_approx(float(bag.weighed.get("police_patrol", -1.0)), 0.0),
-			"and a row taking the whole street nothing on a street with a sidewalk held (%s)"
-			% bag.weighed.get("police_patrol"))
-	var untouched := _street()
-	var untouched_ground := _Ground.new()
-	untouched_ground.weights = {"police_patrol": {untouched.locations()[1]: 8.0}}
-	var untouched_bag := _Bag.new(["police_patrol"] as Array[String])
-	_drawn(untouched, untouched_bag, untouched_ground, _Locations.new())
-	t.check(is_equal_approx(float(untouched_bag.weighed.get("police_patrol", 0.0)), 8.0),
-			"but the most a section weighs it on an untouched street (%s)"
-			% untouched_bag.weighed.get("police_patrol"))
 
 ## A poster crew, a row her walk sites, then a cafe: the crew is answered and recorded with no
 ## position, and the cafe is judged among no placed crew.
@@ -340,12 +292,12 @@ func _test_a_row_handed_to_her_walk_is_recorded_unplaced(t: TestRunner) -> void:
 			without = without and not (plan.row_id() == "poster_crew" and plan.is_placed())
 	t.check(without, "the cafe is judged among no placed crew (%d asks)" % asks.size())
 
-## A dog walker, a row that travels its sidewalk, takes one sidewalk location and no more: drawn
+## A chatting mother, a row that paces its sidewalk, takes one sidewalk location and no more: drawn
 ## first, it leaves the street five more, so five more rows are placed beside it, each on a
 ## location of its own.
 func _test_a_row_that_travels_a_sidewalk_takes_one_location(t: TestRunner) -> void:
 	var locations := _Locations.new()
-	var ids: Array[String] = ["dog_walker", "cafe_tables", "busker", "market_stall",
+	var ids: Array[String] = ["chatting_mother", "cafe_tables", "busker", "market_stall",
 			"leaf_blower", "homeless_yeller"]
 	var placed := _drawn(_street(), _Bag.new(ids), _Ground.new(), locations)
 	var stood := {}
@@ -354,7 +306,7 @@ func _test_a_row_that_travels_a_sidewalk_takes_one_location(t: TestRunner) -> vo
 			if locations.recorded[location] == plan:
 				stood[location] = true
 	t.check(placed.size() == 6 and stood.size() == 6,
-			"a dog walker and five rows beside it stand on six locations of their own (%d placed)"
+			"a chatting mother and five rows beside it stand on six locations of their own (%d placed)"
 			% placed.size())
 
 ## A lot of three cells, one a dawn phase holds: drawing one cafe records both open cells, one with

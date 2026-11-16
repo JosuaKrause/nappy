@@ -280,8 +280,37 @@ func _test_the_summary_names_what_the_day_planned(t: TestRunner) -> void:
 			and summary.contains(RunCity.events(_city).plans()[0].row_id()),
 			"a planned day's summary names its rows (%s)" % [summary])
 
+## A dog walker laid on a sidewalk of the day's city at a tile, as a scene recipe lays one
+## (`EventScheduler.recipe_placement()`), walking six tiles along its street, and in the world:
+## the one row on a day that walks a route and runs out at its end, since the director sends every
+## other dog walker ahead of her (`EventDef.is_sent_ahead()`) rather than the day planning one. It
+## joins the walk as a placed row does (`EventStreaming.add()`). Null on a city with no such stretch.
+func _a_dog_walker_laid_in_the_world() -> EventPlan:
+	var map := _city.map
+	var size := map.size_in_tiles()
+	for y in range(Tuning.STREET_WIDTH, size.y - Tuning.STREET_WIDTH):
+		for x in range(Tuning.STREET_WIDTH, size.x - Tuning.STREET_WIDTH):
+			var tile := Vector2i(x, y)
+			var inward := map.pavement_inward(tile)
+			if inward == Vector2i.ZERO:
+				continue
+			var along := Vector2i(inward.y, inward.x).abs()
+			var clear := true
+			for step in range(1, 7):
+				clear = clear and map.pavement_inward(tile + along * step) == inward
+			if not clear:
+				continue
+			var start := map.tile_to_world(tile)
+			var plan := EventPlan.new(EventCatalogue.by_id("dog_walker"), start,
+					PackedVector2Array([start, map.tile_to_world(tile + along * 6)]))
+			RunCity.events(_city).streaming.add(plan)
+			RunCity.events(_city).stream_around(start)
+			return plan
+	return null
+
 func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 	_start(1)
+	_a_dog_walker_laid_in_the_world()
 	# One that leaves nothing behind and runs out on its own, stepped the way the manager steps it.
 	var victim: EventInstance = null
 	for instance in RunCity.events(_city).instances():
@@ -410,8 +439,9 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 	# Every unit drawn, as a walk that comes near each would draw it, so the day's whole plan is
 	# there to choose from (a unit draws as she comes near it, and she is nowhere yet).
 	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
+	_a_dog_walker_laid_in_the_world()
 	var plan: EventPlan = null
-	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's street
+	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's route
 	# ends; a parked van never does).
 	for candidate in RunCity.events(_city).plans():
 		if candidate.is_placed() and candidate.def.aftermath.on_finish == "" \

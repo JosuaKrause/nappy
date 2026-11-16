@@ -28,10 +28,10 @@ extends RefCounted
 ##
 ## Each kind of place below answers "its ground" differently: a cyclist on a sidewalk
 ## (`down_her_line()`), a pursuer sent down her heading on anything walkable (`along_her_heading()`),
-## the fire engine on the road on its way to the fire (`on_its_route()`), the day-13 column in its lane
-## of the main road (`in_its_lane()`); a pursuer sent at her from out of her sight — a task's trap,
-## the torn poster's man on foot — is placed by a `SpawnSiting` search
-## (`WarningBoard.send_from_out_of_sight()`).
+## the fire engine on the road on its way to the fire (`on_its_route()`), the day-13 column and a
+## convoy the director sends in their lane of the road (`in_its_lane()`); a pursuer sent at her from
+## out of her sight — a task's trap, the torn poster's man on foot — is placed by a `SpawnSiting`
+## search (`WarningBoard.send_from_out_of_sight()`).
 ## The owner of the warning (`EventManager`) decides what "arrive" does; this class holds the place,
 ## and its clock is the one every warning runs on (`Warning`), read against the time it has been up.
 
@@ -218,26 +218,40 @@ const ROUTE_STEP := Tuning.TILE_SIZE * 0.25
 
 # -------------------------------------------------------------- in its lane ---
 
-## Where a column in one lane of a road running north-south at `lane_x`, driving `going` (+1 south,
-## -1 north), is created: level with her along the road, just out of sight up it — the lane's own
-## column of the view, whatever street she is on. Held on the map (`top` to `bottom`), since the main
-## road leaves the map by a tunnel and a bridge and a place the map cannot hold starts at its edge —
-## and where holding it there would bring the front truck into view, `Vector2.INF`: she is too near
-## the road's end for it to come from there unseen, so the warning has no place (or is withdrawn)
+## Where a row in one lane of a road is created (day 13's column on the main road, a convoy the
+## director sends ahead of her, `EventDirector`): `lane` is a point of the lane and `going` the unit
+## way it drives along the road, north-south or east-west. Level with her along the road, just out
+## of sight up it — the lane's own column or row of the view, whatever street she is on, and never
+## nearer her than the row is ever created (`EventDef.nearest_it_is_created()`). Held on the
+## map between `low` and `high` along the road (`lane_ends()`), since a road may leave the map (the
+## main road by a tunnel and a bridge) and a place the map cannot hold starts at its edge — and
+## where holding it there would bring the front of it into view, `Vector2.INF`: she is too near the
+## road's end for it to come from there unseen, so the warning has no place (or is withdrawn)
 ## rather than a truck appearing on screen.
-static func in_its_lane(row: EventDef, her: Vector2, lane_x: float, going: float, top: float,
-		bottom: float, in_view: VisibleView = null) -> Vector2:
+static func in_its_lane(row: EventDef, her: Vector2, lane: Vector2, going: Vector2, low: float,
+		high: float, in_view: VisibleView = null) -> Vector2:
 	var siting := SpawnSiting.over(null, in_view)
 	var asked := siting.ask_in_sight(EventFootprints.footprint_of(row), null, her)
-	var toward_her := Vector2(0.0, -going)
-	var level := Vector2(lane_x, her.y)
+	var vertical := absf(going.y) > absf(going.x)
+	var toward_her := Vector2(0.0, -signf(going.y)) if vertical else Vector2(-signf(going.x), 0.0)
+	var level := Vector2(lane.x, her.y) if vertical else Vector2(her.x, lane.y)
 	var out := asked.view.clear_of_sight(level, toward_her, asked.box,
-			SpawnSiting.least_distance())
-	var at := Vector2(lane_x, clampf(her.y + toward_her.y * out, top, bottom))
-	if at.y != her.y + toward_her.y * out \
-			and not siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
+			row.nearest_it_is_created())
+	var along := her.y if vertical else her.x
+	var wanted := along + (toward_her.y if vertical else toward_her.x) * out
+	var held := clampf(wanted, low, high)
+	var at := Vector2(lane.x, held) if vertical else Vector2(held, lane.y)
+	if held != wanted and not siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
 		return Vector2.INF
 	return at
+
+## **The ends of a lane on `map`** driving along `going`, as the low and the high coordinate along
+## it: half a tile in from the map's edges, where `in_its_lane()` holds a place.
+static func lane_ends(map: CityMap, going: Vector2) -> Vector2:
+	var vertical := absf(going.y) > absf(going.x)
+	var size := map.size_in_tiles()
+	var tiles := size.y if vertical else size.x
+	return Vector2(Tuning.TILE_SIZE * 0.5, tiles * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5)
 
 # ------------------------------------------------------- what a caller asks ---
 

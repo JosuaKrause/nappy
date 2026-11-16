@@ -28,10 +28,10 @@ candidate loop, where the beat exists. A row that wants a role its data does not
 change to `EventScheduler.role_for()`, not a new field.
 
 **What a row takes of a street is not a decision either.** `EventDef.takes_of_a_street()` reads it
-off the row's ground and movement (the whole street where it drives the carriageway along the
-street on a route at least a street long, a section where it otherwise stands on the carriageway,
-else one sidewalk location), and a street draws a row only while it has that much room left
-(`UnitRoom`: the whole street only while nothing of it is taken).
+off the row's ground (a section where it stands on the carriageway, else one sidewalk location),
+and a street draws a row only while it has that much room left (`UnitRoom`). Nothing a street draws
+takes the whole street: the rows that drive a street's length, the police patrol and the military
+convoy, are sent ahead of her by the director (`EventDef.is_sent_ahead()`) and drawn by no unit.
 
 **`obstructs_radius` is not a decision.** If it stands still and it is drawn, it is solid at half
 its silhouette.

@@ -311,7 +311,8 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 				printed += 1
 		for going: float in [1.0, -1.0]:
 			_print("%s ahead at %s column going %s -> %s" % [label, tile, going,
-					_point(PendingWarning.in_its_lane(column, her, her.x - 40.0, going, 16.0,
+					_point(PendingWarning.in_its_lane(column, her, Vector2(her.x - 40.0, 0.0),
+							Vector2(0.0, going), 16.0,
 							map.size.y * Tuning.TILE_SIZE - 16.0, view))])
 			printed += 1
 		# The men a hunting van owes get out beside it.

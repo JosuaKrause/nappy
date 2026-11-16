@@ -66,10 +66,15 @@ unit by unit as she comes near it (`UnitDraw`, prepared by `DawnDraw`, drawn by 
 locations), a junction box, an alley, or one park or square (`PlacementUnit`, grouped by
 `DayUnits`), with its own stream and a fixed rank from the day's seed, and before a unit draws, every
 undrawn unit touching it (sharing a junction box, or bordering the same alley, park or square) with a
-lower rank draws first. Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
-is placed (the whole street, a section, or one location) and the unit's rows laid out together, at most one of a row in the
+lower rank draws first. A unit's bag fill is asked of one object by view and kind of ground
+(`UnitFills.of()`, answered by the view whatever the ground until step 3's declared table), and the
+four kinds of ground a unit is (a street, a junction box, an alley, a park or a square) are data
+(`PlacementGround.Kind`). Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
+is placed (a section, or one location) and the unit's rows laid out together, at most one of a row in the
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
-on the board, question long-routes, inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
+on the board, question long-routes, inbox #1460). The dog walker, the police patrol and the military
+convoy are drawn by no unit: the director sends each just ahead of her as a marble of her route's bag
+(inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. A place her walk
 sites stands on ground whose units have drawn, and no draw reads it. A body put down after dawn (drawn, swapped in or moved by the director) tells the crowd, which
 recycles a car standing under it where she cannot see it (`EventStreaming.use_body_listener()`,
@@ -100,8 +105,9 @@ full text names the files each step owns.
    around" and "so the route can be ad-hoc" (inbox #1460). **Read as** (the orchestrator's reading): the
    dog walker, the police patrol and the military convoy are to be put in the world just ahead of her
    when she comes near, and each one's route is worked out as it goes, from where it was put, so like
-   the beats sited from her walk they depend on her path; until that is built they stay drawn by a
-   street, cut to its run. The free-line probe (`tests/probes/m129_zero_cost_line.gd`) asks whether
+   the beats sited from her walk they depend on her path. They are put just ahead of her now, each on
+   its first leg; the route worked out as it goes, from the end of that leg, is not built yet. The
+   free-line probe (`tests/probes/m129_zero_cost_line.gd`) asks whether
    rows that each leave her a free line together leave none; the line rule follows her line from a
    junction box onto the sidewalks she walks, the home street's included, and the probe shows every
    route keeping one. The player answered "sure" in chat to option C of free-line-density and to pick (c) of
@@ -110,7 +116,11 @@ full text names the files each step owns.
    draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465), which
    the player's correction on that note narrows to the streets a rule already keeps walkable, the
    streets of her routes. So step
-   2 still owes only the three route rows sent just ahead of her.
+   2 still owes only the three route rows' routes worked out as they go, and with them that a sent
+   car's departure keeps to carriageway while she can see it (the game's rule for an event car, not
+   the player's words): the sending holds that only for where
+   she stands as the car is sited, so a convoy from behind her that overtakes her as she walks on can
+   still leave over a precinct's paving in her view.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.

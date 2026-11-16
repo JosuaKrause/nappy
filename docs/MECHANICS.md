@@ -26,8 +26,9 @@ At `sleepiness = 100` the baby falls asleep and the day enters its **return phas
 
 **In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
 fires the moment `EventBus.return_phase_started` does, owing `EventDirector.RETURN_PATROLS_PER_ACT`
-(`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so it comes within
-`EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
+(`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so its marble is drawn
+within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before (a patrol with no room
+then waits for a later turn that has some), and switching its pacing to
 `EventDirector.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
 — see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
 and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
@@ -1290,11 +1291,10 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 ### A beat rather than a journey
 
 `EventDef.paces` walks a route and turns round at the ends, for ever. It is the difference between
-a `dog_walker`, which is *going somewhere* and is gone at the end of its route, down its street
-to the far side of the junction box at its end, as a drawn route is laid now (inbox #1460), and a
-man shouting, who is **at** a place. Without it the only way to say the second thing is to make
-him stationary, and a stationary source on a fixed patch is a line you draw once rather than
-something to time.
+a `dog_walker`, which is *going somewhere* and is gone at the end of its route, sent down her
+sidewalk toward her and past her (inbox #1460), and a man shouting, who is **at** a place. Without
+it the only way to say the second thing is to make him stationary, and a stationary source on a
+fixed patch is a line you draw once rather than something to time.
 
 A paced event never reaches the end of its path, so it never departs and never expires: it is a
 fixture that moves. The price is its body — anything mobile is exempt from "solid things are solid",
@@ -1383,8 +1383,9 @@ escape_distance = outer_radius − inner_radius     for anything at or below wal
 ```
 
 The split matters for a row that is in the world while it telegraphs, not a row without a badge of
-its own — the map-placed `military_convoy` has a badge that rises as it comes and still keeps this
-split, because it exists and telegraphs in the world rather than being warned first. A stationary
+its own — the escape's `military_convoy` trucks, the one convoy placed on the map, have a badge that
+rises as they come and still keep this split, because they exist and telegraph in the world rather
+than being warned first. A stationary
 event, or one slower than the player (a dog walker at 32 px/s), only has to be walked away from, so
 clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough
@@ -1402,10 +1403,12 @@ the whole catalogue, so an unfair event fails loudly rather than quietly ruining
 fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard
 (PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy penalty not
 *only* lethal"). One that does not — the loose dog and the cat, the alley mouse, the pigeons, the
-patrol — is outside the screen-edge badge and warning-first placement, and is met as it comes.
-Its in-world telegraph still satisfies the fairness contract: the cat's crouch, the mouse's and
-flock's wait, and the patrol's approach. Only the loose dog, met with its telegraph already spent,
-has none to validate (`docs/EVENTS.md`, "What telegraphs").
+patrol, the dog walker the director sends ahead of her — is outside the screen-edge badge and
+warning-first placement, and is met as it comes. Its in-world telegraph still satisfies the fairness
+contract: the cat's crouch, the mouse's and flock's wait, and the patrol's approach. The two sent down
+her line at once, the loose dog and the dog walker the director sends ahead of her, are met with
+their telegraph already spent, so neither has one to validate (`docs/EVENTS.md`, "What
+telegraphs").
 
 ## Calm zones, and what every other ground does
 

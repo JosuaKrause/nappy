@@ -144,6 +144,7 @@ FILES: dict[str, str] = {
     "src/events/placement_ground.gd": "data",
     "src/events/placement_view.gd": "data",
     "src/events/pursuit_spec.gd": "data",
+    "src/events/sent_ahead.gd": "data",
     "src/events/vehicle_spec.gd": "data",
     "src/events/calm_areas.gd": "model",
     "src/events/dawn_context.gd": "model",

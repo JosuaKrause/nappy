@@ -212,7 +212,8 @@ func _gaps(handed: Array) -> Array[float]:
 ## the marble bag approach will properly fix this" · "they will need rigged bags".)* On a real act
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
 ## each comes within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
-## before it, so all of them are met within that many events each.
+## before it, so all of them are met within that many events each. A patrol is a marble of the
+## ordinary bag too (`EventDef.is_sent_ahead()`), so a window may hold a second one, never none.
 func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
@@ -231,7 +232,7 @@ func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 			met.append((due[0] as EventDef).id)
 	var spaced := met.size() == count * x
 	for i in count:
-		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") == 1
+		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") >= 1
 	t.check(spaced, "each of the %d patrols is one of the %d events after the one before (%s)"
 			% [count, x, met])
 
@@ -317,10 +318,10 @@ func _test_sited_on_driveable_road_toward_her(t: TestRunner) -> void:
 
 ## `pavement_inward()` answers `Vector2i.ZERO` off a plain sidewalk edge, which is exactly what a
 ## park, a square or a precinct pavement is for this purpose — nothing there has a carriageway to
-## drive on, or (for a precinct) a carriageway at all, so the siting must retry later rather than
-## invent a road. The patrol is the next event owed, she walks on the spot in a park and is handed
-## nothing for a long while, and it is still owed, not spent: it is handed out as soon as she
-## stands on a street.
+## drive on, or (for a precinct) a carriageway at all, so the siting must wait rather than invent a
+## road. The patrol is the next event owed, she walks on the spot in a park and is handed no patrol
+## for a long while (the marbles behind it come meanwhile, calm-pelican-6), and it is kept, not
+## lost: it is handed out as soon as she stands on a street.
 func _test_empty_in_a_park(t: TestRunner) -> void:
 	var map := _map()
 	var calm := map.calm_tiles()
@@ -332,10 +333,12 @@ func _test_empty_in_a_park(t: TestRunner) -> void:
 	director.rig_her_route(["police_patrol"], 1)
 	var in_the_park := Walk.new(director, map, map.tile_to_world(calm[0]))
 	in_the_park.on_the_spot = true
-	var handed := in_the_park.hand_outs(150.0)
-	t.check(handed.is_empty(),
-			"no carriageway to drive on in a park, so the patrol is handed out nowhere (%d events)"
-			% handed.size())
+	var patrols := 0
+	for hand_out: Array in in_the_park.hand_outs(150.0):
+		if (hand_out[1] as EventDef).id == "police_patrol":
+			patrols += 1
+	t.check(patrols == 0,
+			"no carriageway to drive on in a park, so no patrol is handed out (%d)" % patrols)
 	var on_the_street := Walk.new(director, map)
 	var found := false
 	while on_the_street.clock < 60.0 and not found:

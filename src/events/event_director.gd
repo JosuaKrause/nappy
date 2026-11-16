@@ -73,25 +73,32 @@ const RETURN_PATROL_INTERVAL := Vector2(9.0, 16.0)
 ## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
 ## this many as the one before it is handed out, so they come one after another inside the leg.
 ## *(inbox #561 in coral-bunny, of the return patrols: "they will need rigged bags".)* Two, with
-## `RETURN_PATROL_INTERVAL` between handouts, is a patrol every 18-32s of walking, which lands one or
-## two inside a return leg rather than all of them.
+## `RETURN_PATROL_INTERVAL` between handouts, draws a patrol's marble every 18-32s of walking, which
+## lands one or two inside a return leg rather than all of them; a patrol with no room when its
+## marble is drawn waits for a later turn that has some (`_sent_waiting`).
 const RETURN_PATROL_WITHIN_THE_NEXT := 2
-## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
+## Rows whose share of her route's bag is set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
 ## times their weight, because the weight is not only the bag's: the dawn's draw reads it on every
-## day the row is placed, as its share of the view bags and of the moments she is owed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
-## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
-## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
-## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
-## and takes none of these, so with the lesson and these two `max_per_day`'s 3 rarely binds.
-const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
+## day the row is placed, as its share of the view bags and of the moments she is owed. Each is the
+## share of the ordinary bag its marbles make, as near as whole marbles come
+## (`ordinary_route_marbles()`), so it holds whatever else the bag holds. *(inbox #566 in
+## feathery-stork, of day 3's bag of 16: "I'd say we could do 2 dogs -- we don't need the charging
+## dog that often and in 17 rolls there are two guaranteed ones", then "16 is fine".)*
+## `charging_dog`'s is two marbles in sixteen: with the dog walker the director sends ahead of her
+## in day 3's bag, three in twenty-six. It is in the bag only on day 3, the one day it is
+## director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`) and
+## takes none of these, so with the lesson these marbles rarely reach `max_per_day`'s 3.
+const ROUTE_BAG_SHARE_OF := {"charging_dog": 2.0 / 16.0}
 ## Marbles per unit of `EventDef.weight` in the bag the director draws her route's events from
 ## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
 ## statement 2: "events should use the marble bag approach as well. that way we can control what
-## the player sees on their route".)* The bag is the stretch over which the mix is exact, so it is
-## sized to about a day's worth of what she meets: at 2 the rows' weights (2.5, 1.5 and 3.0) make a
-## bag of 14 — 16 on day 3, with `ROUTE_BAG_MARBLES_OF`'s dogs — against the ten or so a whole day
-## of walking at `AHEAD_INTERVAL` hands out (`tests/probes/olive_badger_route_mix.gd` counts them),
-## and every weight comes out whole.
+## the player sees on their route".)* The bag is the stretch over which the mix is exact, and at 2
+## every weight comes out whole. With the rows the director sends ahead of her in it
+## (`EventDef.is_sent_ahead()`: the dog walker, the patrol and the convoy, the heaviest of its rows)
+## a bag holds more than a whole day of walking at `AHEAD_INTERVAL` hands out
+## (`tests/probes/olive_badger_route_mix.gd` counts both), so the mix is exact over a bag, never over
+## a day; and over a bag only where nothing waits for room, since a sent row that waits comes after
+## the marbles handed out meanwhile (`_sent_waiting`) and can fall past its bag's end.
 const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 
 ## How far to either side of the crossing point the run reaches at most. A street's width, so the
@@ -114,12 +121,15 @@ var _day := 0
 ## **What she meets on her route is drawn from a marble bag.** *(olive-koala, statement 2: "events
 ## should use the marble bag approach as well. that way we can control what the player sees on
 ## their route".)* Filled with each row the director sites today in proportion to its weight
-## (`ROUTE_BAG_MARBLES_PER_WEIGHT`), so over any stretch the length of a bag the mix she
-## meets is the rows' own rather than a roll's streaks. The marbles are row ids, looked up in
-## `_route_rows`. Its own stream, derived from the day's director stream rather than drawn from it,
-## so the bag draws nothing from the director's stream; which row a handout is still moves the
-## draws after it there (a crossing spends one on its side, a row down her line none), and the same
-## seed and the same walk are the same day. Null on a rig that has not started a day.
+## (`ROUTE_BAG_MARBLES_PER_WEIGHT`), so over any stretch the length of a bag in which nothing waits
+## for room the mix she meets is the rows' own rather than a roll's streaks; a sent row that waits
+## (`_sent_waiting`) comes after the marbles handed out meanwhile, which can carry it past its bag's
+## end. The marbles are row ids, looked up in `_route_rows`. Its own stream, derived from the day's
+## director stream rather than drawn from it, so the bag draws nothing from the director's stream;
+## which row a handout is still moves the draws after it there (a crossing spends one on its side,
+## the convoy one on the end it comes from each time it is sited, the dog walker one on the point of
+## its bark it is created at, `age_it_is_sent_at()`, and the patrol, a loose dog or a cyclist none),
+## and the same seed and the same walk are the same day. Null on a rig that has not started a day.
 var _route: MarbleBag = null
 ## Row id -> today's `EventDef` for it, heated like the day's own placements: every row the
 ## ordinary bag holds, and any a rig put in front of it (`rig_her_route()`).
@@ -145,6 +155,10 @@ var _return_owed := false
 ## for the rest of the day. Set by `owe_the_return()` and never cleared until `start_day()`: once
 ## the return owes its pressure, the pacing stays tight even if the phase drops back to walking.
 var _return_pacing := false
+## The walk's plans, as `start_day()` was handed them (the walk's own store, which a unit's draw
+## adds to as she walks): what a row the director sends ahead of her is kept clear of
+## (`_clear_of_the_plans()`).
+var _plans: Array[EventPlan] = []
 ## Where today's region-door bodies stand — a hut, a boom or an alley post. Read off the day's own
 ## plan in `start_day()` below, so the director needs no second channel to the region plan, and
 ## used by `due()` to refuse a siting whose path would run through a door's own clear ground. Empty
@@ -212,9 +226,11 @@ func start_day(day: int, plans: Array[EventPlan],
 	_doors.clear()
 	_on_her_way.clear()
 	_behind_her.clear()
+	_sent_waiting.clear()
 	_walked = 0.0
 	_since_the_last_look = 0.0
 	_siting = siting
+	_plans = plans
 	# Derived from the day stream's seed rather than drawn from the stream itself: the siting rolls
 	# a candidate tile and a re-siting rolls another, and a day on which she turned round would
 	# otherwise hand every cat after it a different interval than a day on which she did not.
@@ -234,7 +250,10 @@ func start_day(day: int, plans: Array[EventPlan],
 		if plan.def.on_her_way != null and not plan.is_placed():
 			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
-		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
+		# A row the director sends ahead of her is owed as a moment where the dawn left it unplaced
+		# (`DawnMoments`); placed, it is a place something else stood (the escape's bag, a recipe).
+		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
+				or (plan.def.is_sent_ahead() and not plan.is_placed()):
 			if plan.def.pursuit != null and not lesson:
 				lesson = plan.def
 			# The dawn decides how many the route is owed; the bag decides which each one is.
@@ -247,6 +266,31 @@ func start_day(day: int, plans: Array[EventPlan],
 	if _forced:
 		return
 	_teach_the_run(day, lesson)
+	_rig_day_one(day, heat)
+
+## How many dog walkers day one's first handouts hold (`_rig_day_one()`).
+const DAY_ONE_DOG_WALKERS := 2
+## Among how many of day one's first handouts they come (`_rig_day_one()`).
+const DAY_ONE_DOG_WALKERS_WITHIN := 3
+## The row day one's rigged bag holds (`_rig_day_one()`).
+const DAY_ONE_DOG_WALKER := "dog_walker"
+
+## **Day one's dog walkers come by construction**: two of the first three marbles drawn on her
+## route are dog walkers. *(PLAYTEST-05 6: the dog-walker decision has to be made at least twice on
+## day one; inbox #561 in coral-bunny, the player's own tool for a guarantee about her route, a
+## rigged bag.)* The dog walker is a marble of her route's bag (`EventDef.is_sent_ahead()`), so the
+## guarantee is about what she meets wherever she has a sidewalk ahead of her, and three handouts
+## are at most three of `AHEAD_INTERVAL`'s longest waits of walking. One drawn where she has none
+## waits for room (`_sent_waiting`) and is met after an event behind it, or never: the pace holds
+## over the guarantee, the orchestrator's reading of board question sent-ahead-pace. Nothing on any
+## other day, and nothing on a day whose bag holds no dog walker.
+func _rig_day_one(day: int, heat: int) -> void:
+	if day != 1 or not _route_rows.has(DAY_ONE_DOG_WALKER):
+		return
+	var ids: Array[String] = []
+	for _i in DAY_ONE_DOG_WALKERS:
+		ids.append(DAY_ONE_DOG_WALKER)
+	rig_her_route(ids, DAY_ONE_DOG_WALKERS_WITHIN, heat)
 
 ## The row `--force <id>` names, or `null` when the flag is absent — see `DevFlags.forced_row()`
 ## for what the flag is for.
@@ -282,10 +326,11 @@ func _take_the_forced_row() -> void:
 	if not def:
 		push_error("--force names no event in the catalogue: '%s'" % _force_id)
 		return
-	_forced = def
+	# A row the director sends ahead of her is forced as it sends it (`EventDef.as_sent_ahead()`).
+	_forced = def.as_sent_ahead()
 	_forced_interval = _force_interval
 	_owed.clear()
-	_owed.append(def)
+	_owed.append(_forced)
 
 ## Puts the day-3 lesson at the front of the queue: the day running becomes the answer opens with
 ## an incident that requires it.
@@ -307,7 +352,7 @@ func _take_the_forced_row() -> void:
 ## only the dog goes in front of the route's bag (`MarbleBag.rig()` at a size of one takes nothing
 ## from the bag behind it), and the first of the events the dawn owes her route is the one
 ## drawn from it. The ordinary bag after it keeps every dog marble it was filled with
-## (`ROUTE_BAG_MARBLES_OF`).
+## (`ROUTE_BAG_SHARE_OF`).
 ##
 ## It is *not* a scripted event, and that is deliberate: it is one of the day's own owed
 ## `AHEAD_OF_PLAYER` plans, so teaching the run cannot quietly make day 3 denser than the day's
@@ -398,13 +443,16 @@ func _owe_the_sprinkled_dog(day: int) -> void:
 	if _rng.randf() < CHARGING_DOG_SPRINKLE_CHANCE:
 		_owed.push_front(dog)
 
+## How many events she is still owed today: the queue's, and the rows sent ahead of her whose
+## marbles were drawn while she had no room for them (`_sent_waiting`), which are still to come.
 func owed() -> int:
-	return _owed.size()
+	return _owed.size() + _sent_waiting.size()
 
 # ------------------------------------------------------------ the route's bag ---
 
 ## Fills `_route` with every row the director sites on `day` — recurring, available, and
-## `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` that day — in proportion to its weight. **How many she is owed
+## `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` that day, or sent ahead of her (`EventDef.is_sent_ahead()`)
+## — in proportion to its weight. **How many she is owed
 ## is the day's** (`EventScheduler.MOMENTS_PER_DAY`, each drawn by weight under its cap by
 ## `DawnMoments`); the bag only decides which row each of those is, in the
 ## order she meets them. *(2026-09-27, asked how far the bags reach, the
@@ -418,24 +466,36 @@ func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> voi
 	_route = MarbleBag.new([], ordinary_route_marbles(day, heat), hash("%d:route-bag" % rng.seed))
 
 ## The rows the director sites on `day` — recurring, available, and `AHEAD_OF_PLAYER` or
-## `TOWARD_PLAYER` that day — at `heat`, in the catalogue's own order.
+## `TOWARD_PLAYER` that day, or sent ahead of her (`EventDef.is_sent_ahead()`, as the copy it sends,
+## `EventDef.as_sent_ahead()`) — at `heat`, in the catalogue's own order.
 static func _route_rows_on(day: int, heat: int) -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		var mode := def.spawn_mode_on(day)
-		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
+		if def.is_sent_ahead():
+			rows.append(def.as_sent_ahead())
+		elif mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
 			rows.append(def)
 	return rows
 
 ## The marbles of `day`'s ordinary route bag: each of `_route_rows_on()` in proportion to its weight
-## (`ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `ROUTE_BAG_MARBLES_OF` names comes as often
-## as it says rather than as its weight says: the weight is the dawn roll's too, on every day.
+## (`ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `ROUTE_BAG_SHARE_OF` names comes as often as its share
+## says rather than as its weight says (the weight is the dawn roll's too, on every day): the whole
+## marbles nearest that share of the bag the other rows make with it, at least one.
 static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
+	var other_weights := {}
 	for def in _route_rows_on(day, heat):
 		weights[def.id] = def.weight
-	return MarbleBag.in_proportion(weights, ROUTE_BAG_MARBLES_PER_WEIGHT,
-			ROUTE_BAG_MARBLES_OF)
+		if not ROUTE_BAG_SHARE_OF.has(def.id):
+			other_weights[def.id] = def.weight
+	var others := MarbleBag.in_proportion(other_weights, ROUTE_BAG_MARBLES_PER_WEIGHT).size()
+	var counts := {}
+	for id: String in ROUTE_BAG_SHARE_OF:
+		if weights.has(id):
+			var share: float = ROUTE_BAG_SHARE_OF[id]
+			counts[id] = maxi(1, roundi(others * share / (1.0 - share)))
+	return MarbleBag.in_proportion(weights, ROUTE_BAG_MARBLES_PER_WEIGHT, counts)
 
 ## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`).
 ## *(polite-dolphin, inbox #555: "the events should still spawn using the same rules but the marble
@@ -456,7 +516,7 @@ func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: 
 	_patrol_bag_left = 0
 	for id: String in marbles + pre_bag:
 		if not _route_rows.has(id):
-			_route_rows[id] = _with_ground(EventCatalogue.heated(EventCatalogue.by_id(id), heat))
+			_route_rows[id] = _routed(EventCatalogue.by_id(id), heat)
 	for id: String in marbles:
 		_ordinary_rows[id] = true
 	_route = MarbleBag.new(pre_bag, marbles, hash("%d:route-bag" % _rng.seed))
@@ -497,7 +557,7 @@ func rig_her_route(ids: Array[String], size: int, heat: int = 0,
 			push_error("a rigged route names no event in the catalogue: '%s'" % id)
 			continue
 		if not _route_rows.has(id):
-			_route_rows[id] = _with_ground(EventCatalogue.heated(def, heat))
+			_route_rows[id] = _routed(def, heat)
 		ensured.append(id)
 	_route.rig(ensured, size)
 	var rigged := _route.bag_in_front()
@@ -507,6 +567,13 @@ func rig_her_route(ids: Array[String], size: int, heat: int = 0,
 ## Today's row a marble names, or null — what a caller rigging her route prepares the siting for.
 func route_row(id: String) -> EventDef:
 	return _route_rows.get(id)
+
+## **Today's copy of `def` at `heat` as her route's bag hands it out**: the copy the director sends
+## (`EventDef.as_sent_ahead()`) for a row it sends ahead of her, otherwise the heated row, with
+## ground offered where it is a place whose row names none (`_with_ground()`).
+static func _routed(def: EventDef, heat: int) -> EventDef:
+	var heated := EventCatalogue.heated(def, heat)
+	return heated.as_sent_ahead() if heated.is_sent_ahead() else _with_ground(heated)
 
 ## A place whose own row names no ground — a loudspeaker mast, whose sites are the city's
 ## (`MastSites`) — is offered the sidewalk and the square when a marble puts it on her route, the
@@ -801,10 +868,10 @@ static func _siting_band() -> Vector2:
 
 ## Hands the day's return leg its own pressure — `docs/TODO.md`'s M98, pressure in the empty acts
 ## — the moment `EventManager` hears `EventBus.return_phase_started`. `Tuning.RETURN_PATROLS_PER_
-## ACT[act - 1]` copies of `police_patrol`, at the day's own heat, are owed on top of the day's own
-## events, each rigged into the route's bag in turn (`_rig_the_next_patrol()`) and sited
-## `TOWARD_PLAYER` down her own carriageway rather than crossed — see
-## `_toward_her_on_the_road()` — and the interval the queue rolls for the rest of the day switches
+## ACT[act - 1]` patrols are owed on top of the day's own events, each rigged into the route's bag
+## in turn (`_rig_the_next_patrol()`): the patrol the director sends ahead of her
+## (`EventDef.as_sent_ahead()`, at the day's own heat, a row of the bag from its first day), sited
+## down her own carriageway rather than crossed — see `_toward_her_on_the_road()` — and the interval the queue rolls for the rest of the day switches
 ## from `AHEAD_INTERVAL` to the tighter `RETURN_PATROL_INTERVAL`, so the extra rows
 ## land inside the leg rather than after she is home.
 ##
@@ -826,12 +893,15 @@ func owe_the_return(day: int, heat: int) -> void:
 	var count: int = RETURN_PATROLS_PER_ACT[act - 1]
 	if count <= 0:
 		return
-	var for_return := _patrol_toward_her(heat)
-	if not for_return:
-		return
+	# A scene's route holds only the rows its recipe names, so the patrol joins it here.
+	if not _route_rows.has(RETURN_PATROL):
+		var cold := EventCatalogue.by_id(RETURN_PATROL)
+		if not cold:
+			push_error("no '%s' row in the catalogue" % RETURN_PATROL)
+			return
+		_route_rows[RETURN_PATROL] = _routed(cold, heat)
 	# One more event owed for each patrol, as the patrols were always on top of what the day owes;
 	# each is the ensured marble of a rigged bag, rigged as the one before it is handed out.
-	_route_rows[RETURN_PATROL] = for_return
 	for i in count:
 		_owed.append(null)
 	_return_patrols_left = count
@@ -854,9 +924,12 @@ var _patrol_bag_left := 0
 
 ## **Each return patrol is a rigged bag** of `RETURN_PATROL_WITHIN_THE_NEXT` marbles, the
 ## patrol and the rest drawn from the bag she was drawing from, and the next is rigged once that bag
-## has been handed out — so each comes within its own bag's events and two never come back to back
-## unless the second bag starts with what the first ended on. *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the
-## route queue -- the marble bag approach will properly fix this" · "they will need rigged
+## has been handed out — so each marble comes within its own bag's events, and two are drawn back
+## to back only where the second bag starts with what the first ended on. A patrol with no room
+## waits for it (`_sent_waiting`) and is sent on a later turn that has room, so two can still be
+## met on two turns running: two that waited, or one that waited and the next as it is drawn.
+## *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of
+## the route queue -- the marble bag approach will properly fix this" · "they will need rigged
 ## bags".)* Behind the day's own events, the dozens the dawn owes and the pacing never drains, they
 ## would never come; rigged, each one comes within that many events of the last.
 func _rig_the_next_patrol() -> void:
@@ -876,27 +949,6 @@ func _handed_from_the_route() -> void:
 	if _patrol_bag_left == 0:
 		_rig_the_next_patrol()
 
-## A copy of `police_patrol` at `heat`, sited `TOWARD_PLAYER` down her own carriageway — the shape
-## the return leg's patrols are sent in. Null, with an error, if the
-## catalogue has no such row.
-##
-## The day's own heated copy — the same call `EventScheduler.build_day()` makes for every other
-## placement of the row today — duplicated once more rather than mutated, because `heated()` caches
-## its answer and shares it with every ordinary `MAP` placement of the row for the rest of the run:
-## setting `spawn_mode` on that shared copy would turn every later patrol into a director-sited
-## one, not just the ones sent here. See `EventCatalogue._hot` and `EventDef.at_heat()`'s own note
-## on why a heated row is a derived copy in the first place.
-func _patrol_toward_her(heat: int) -> EventDef:
-	var cold := EventCatalogue.by_id("police_patrol")
-	if not cold:
-		push_error("no 'police_patrol' row in the catalogue")
-		return null
-	var heated := EventCatalogue.heated(cold, heat)
-	var toward := heated.duplicate() as EventDef
-	toward.shape = heated.shape
-	toward.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
-	return toward
-
 ## Advances the clock and returns the event to place plus the path to place it on, or null when
 ## nothing is due. `heading` is the direction she is actually travelling, not the way she is
 ## facing: something that crosses in front of a player standing still is not in front of
@@ -907,18 +959,32 @@ func _patrol_toward_her(heat: int) -> EventDef:
 ## cut crossing), and the point on her line the run was sited to cross (a `Vector2`, or `null` for a
 ## `TOWARD_PLAYER` row, which has no crossing), or an empty array. A place the route's bag names is
 ## handed to her walk to site (`_place_on_her_route()`) and answers the empty array: it joins the
-## day's plan through `site_what_is_on_her_way()` once it has a site.
-func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
-	if _owed.is_empty():
+## day's plan through `site_what_is_on_her_way()` once it has a site. A row sent ahead of her that
+## found no room is answered here on a later turn of the clock that finds it some, ahead of the next
+## marble (`_send_what_waited()`). `view` is the camera's whole
+## view (`VisibleView`), which a row sent down a lane of the road is sited out of; null for a camera
+## on her.
+func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null) -> Array:
+	if _owed.is_empty() and _sent_waiting.is_empty():
 		return []
 	var speed := velocity.length()
 	# The clock only runs while she is going somewhere. A player who stops to let the meter
 	# recover is not owed a cat for waiting, and one who spends the day in a park should not
-	# come back to the pavement and be handed four of them at once.
+	# come back to the pavement and be handed four of them at once: nothing is sent but on the
+	# clock's turn, what waited for room included (`_send_what_waited()`).
 	if speed < Tuning.AHEAD_MIN_SPEED:
 		return []
+	var heading := velocity / speed
 	_next_in -= delta
 	if _next_in > 0.0:
+		return []
+	var waited := _send_what_waited(at, heading, view)
+	if not waited.is_empty():
+		return waited
+	if _owed.is_empty():
+		# Only rows that wait for room are owed, and none has any: asked again shortly, on this
+		# same turn of the clock.
+		_next_in = SENT_RETRY
 		return []
 
 	# Peeked rather than popped, because what it wants sited depends on what it is: a pursuer is
@@ -932,20 +998,89 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 			# The bag has nothing left to name today: the event is owed nothing.
 			_owed.pop_front()
 			return []
-	if from_the_bag and next.spawn_mode_on(_day) == EventDef.SpawnMode.MAP:
+	if from_the_bag and next.spawn_mode_on(_day) == EventDef.SpawnMode.MAP \
+			and not next.is_sent_ahead():
 		_place_on_her_route(next)
 		return []
-	var heading := velocity / speed
-	# A `TOWARD_PLAYER` row whose `placement` names `ROAD` is a car, not a bike — `police_patrol`
-	# is the one row `owe_the_return()` ever adds this way — and a car belongs on the carriageway
-	# lane that drives toward her rather than on her own pavement. `_toward_her()` is still what
-	# every `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`) gets; only the road-placed ones
-	# take the road-aware sibling.
+	var sited := _sited(next, at, heading, view)
+	var path: PackedVector2Array = sited[0]
+	if path.is_empty():
+		# **A marble of her route sent ahead of her that has no room never holds the route**: its
+		# slot and its marble are spent, and it waits for room (`_send_what_waited()`), as a place
+		# a marble names waits for its site. *(calm-pelican-6: a marble that cannot be sited never
+		# blocks the route.)* **Nor does it spend the turn**: nothing was sent, so the turn is asked
+		# again a second later, of the next marble, as a turn whose row found no room otherwise
+		# is. Rolled as a wait, every row that waited would cost her a thing met on her walk.
+		if from_the_bag and next.is_sent_ahead():
+			_hand_out(next, true)
+			_sent_waiting.append(next)
+			_next_in = SENT_RETRY
+			return []
+		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
+		# again shortly rather than burning the allowance on a place that would not read.
+		_next_in = 1.0
+		return []
+	var handed := _hand_out(next, from_the_bag)
+	# Refilled rather than seeded with a hundred copies, so the queue length stays honest and
+	# `owed()` — which the HUD reads — says "one more coming" rather than a number that means
+	# nothing under this flag.
+	if _forced and _owed.is_empty():
+		_owed.append(_forced)
+	return [handed, path, sited[1], sited[2]]
+
+## **How soon a turn of the clock that sent nothing is asked again**: a second of her walking, the
+## cadence every siting that waits for ground is asked again on. A turn sends nothing where only rows
+## waiting for room are owed (`_sent_waiting`) and none has any, or where the marble it drew is a row
+## sent ahead of her with no room, which then waits; the turn goes to the next marble a second later.
+const SENT_RETRY := 1.0
+
+## The rows sent ahead of her whose marbles were drawn while she had no room for them (no
+## carriageway beside her, no sidewalk ahead, a placed plan's room in the way), in the order they
+## were drawn: their slots and marbles spent, each sent on a later turn of the clock that finds it
+## room (`_send_what_waited()`). Emptied by `start_day()`.
+var _sent_waiting: Array[EventDef] = []
+
+## **What waited for room takes the clock's turn** (`due()`, once its wait is over): the first row of
+## `_sent_waiting` that has room now, asked in the order they were drawn, answered as `due()` answers
+## and the next wait rolled; the empty array where none has, and the turn goes to the next marble.
+## *(inbox #1460, board question sent-ahead-pace: the three come in place of what the director sends,
+## at its unchanged clock.)* Its slot was spent when it was drawn, so it takes a turn and no marble:
+## nothing is sent closer to the last than the clock allows, whatever waited, and a walk off the
+## streets for a minute ends in what waited coming one a turn, not in a burst.
+func _send_what_waited(at: Vector2, heading: Vector2, view: VisibleView) -> Array:
+	for i in _sent_waiting.size():
+		var sited := _sited(_sent_waiting[i], at, heading, view)
+		if not (sited[0] as PackedVector2Array).is_empty():
+			var waited := _sent_waiting[i]
+			_sent_waiting.remove_at(i)
+			_next_in = _roll_interval()
+			return [waited, sited[0], sited[1], sited[2]]
+	return []
+
+## **Where `next` goes, with her at `at` walking `heading`**: `[path, crouch, crossing point]`, the
+## path empty where it has no room — see `due()` for the shape. A `TOWARD_PLAYER` row whose
+## `placement` names `ROAD` is a car, not a bike — the patrol the director sends ahead of her — and
+## a car belongs on the carriageway lane that drives toward her rather than on her own pavement.
+## `_toward_her()` is still what every `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`, the sent
+## `dog_walker`) gets; only the road-placed ones take the road-aware sibling. A row warned of first
+## in the lane beside her (the convoy) is sited there (`_in_the_lane_beside_her()`). `view` is the
+## camera's whole view a row in a lane is sited out of, or null for a camera on her.
+##
+## **A region door keeps clear ground around itself, and a run sited in front of her is a placement
+## like any other** (`clear_to_send()`). The whole path is asked, not its start: a cyclist coming
+## down her own line *through* a door's gap is exactly what this refuses, and a row whose lead
+## happens to clear the gap while its run does not would slip past a check on the spawn point alone.
+## Refused rather than nudged, so the allowance is not burnt and the row arrives once she is past
+## the door. **A row sent ahead of her keeps the spacing every placement keeps** too: nothing else
+## happens inside a lethal event's field.
+func _sited(next: EventDef, at: Vector2, heading: Vector2, view: VisibleView) -> Array:
 	var path: PackedVector2Array
 	var crouch := 0.0
-	var crossing_point = null
-	if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
-		path = _toward_her_on_the_road(at, heading, next) \
+	var crossing_point: Variant = null
+	if next.is_warned_in_its_lane():
+		path = _in_the_lane_beside_her(at, heading, next, view)
+	elif next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
+		path = _toward_her_on_the_road(at, heading, next, view) \
 				if next.placement.has(GameEnums.TileType.ROAD) \
 				else _toward_her(at, heading, next)
 	else:
@@ -953,20 +1088,15 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 		path = crossing[0]
 		crouch = crossing[1]
 		crossing_point = crossing[2]
-	if path.is_empty():
-		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
-		# again shortly rather than burning the allowance on a place that would not read.
-		_next_in = 1.0
-		return []
-	# **A region door keeps clear ground around itself, and a run sited in front of her is a
-	# placement like any other.** The whole path is asked, not its start: a cyclist coming down her
-	# own line *through* a door's gap is exactly what this refuses, and a row whose lead happens to
-	# clear the gap while its run does not would slip past a check on the spawn point alone.
-	# Refused rather than nudged — the same "try again shortly" the branch above takes, so the
-	# allowance is not burnt and the row arrives once she is past the door.
-	if not DoorClearanceRule.clear_of_the_doors(path[0], path, _doors, next.field_reach()):
-		_next_in = 1.0
-		return []
+	if not path.is_empty() and not clear_to_send(path, next):
+		path = PackedVector2Array()
+	return [path, crouch, crossing_point]
+
+## Spends the event at the head of the queue on `next`: its slot, and its marble when it came from
+## the bag (`from_the_bag`), with today's count of the row. Answers the row handed out — the
+## lesson's own row in place of the day-3 lesson's (`EventCatalogue.lesson_of()`). The next wait is
+## rolled.
+func _hand_out(next: EventDef, from_the_bag: bool) -> EventDef:
 	_next_in = _roll_interval()
 	var handed := _owed.pop_front() as EventDef
 	if from_the_bag:
@@ -977,12 +1107,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	if _lesson and handed.id == _lesson.id:
 		handed = EventCatalogue.lesson_of(handed)
 		_lesson = null
-	# Refilled rather than seeded with a hundred copies, so the queue length stays honest and
-	# `owed()` — which the HUD reads — says "one more coming" rather than a number that means
-	# nothing under this flag.
-	if _forced and _owed.is_empty():
-		_owed.append(_forced)
-	return [handed, path, crouch, crossing_point]
+	return handed
 
 func _roll_interval() -> float:
 	# Fixed rather than rolled under `--force`, and it does not touch `_rng`: the flag is for
@@ -1150,14 +1275,46 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 		return PackedVector2Array()
 	return path
 
-## Whether a route stays out of the clear ground around today's region doors — the same refusal
-## `due()` makes of every siting, asked again by `EventManager` of a warned row's route when the
-## row is created, since its place has moved with her since it was sited.
-func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
-	return DoorClearanceRule.clear_of_the_doors(path[0], path, _doors, def.field_reach())
+## **How old a row the director sends ahead of her down her line is as it is created** (the dog
+## walker, `EventDef.is_sent_ahead()`; `EventsAhead._send_down_her_line()`): its telegraph spent, at
+## a point of its beat drawn on the director's stream. It is the row she would come upon, put just
+## ahead of her, so the point of its bark that reaches her is as free as it is for one she walks up
+## to, and a pass costs what `docs/COSTS.md` prices the row at (its pass averaged over its beat),
+## however far out it is created. Fixed by where it is created, as the loose dog's beat is
+## (`EventSpawner.age_when_warned()`), the price would follow the edge of the view: one figure on a
+## street running north-south and another on one running east-west. One draw, made as it is created.
+func age_it_is_sent_at(def: EventDef) -> float:
+	return def.age_at_a_point_of_its_beat(_rng.randf())
+
+## **Whether a row sent ahead of her on `path` stands clear of the walk's placed plans**: it starts
+## no nearer than `EventScheduler.EVENT_SPACING_ANY` to any of them, and no point of its route is
+## inside the field a plan keeps clear (`EventPlan.keeps_its_field_clear()`, measured as
+## `EventPlan.gap_to()` against the field's reach), the rule every dawn placement keeps
+## (`StreetInvalidation.room_around()`). A spent or unplaced plan is not asked.
+func _clear_of_the_plans(path: PackedVector2Array, def: EventDef) -> bool:
+	var sent := EventPlan.new(def, path[0], path)
+	for plan in _plans:
+		if plan.is_spent() or not plan.is_placed():
+			continue
+		if plan.distance_from(path[0]) < EventScheduler.EVENT_SPACING_ANY:
+			return false
+		if plan.keeps_its_field_clear() and sent.gap_to(plan) < plan.row().field_reach():
+			return false
+	return true
+
+## **Whether a route may be sent at her**: it stays out of the clear ground around today's region
+## doors, and, for a row sent ahead of her (`EventDef.is_sent_ahead()`), keeps the room every
+## placement keeps from the walk's placed plans (`_clear_of_the_plans()`). The refusal `due()` makes
+## of every siting, asked again by `EventsAhead` of a row's route when the row is created, since its
+## place has moved with her since it was sited.
+func clear_to_send(path: PackedVector2Array, def: EventDef) -> bool:
+	if not DoorClearanceRule.clear_of_the_doors(path[0], path, _doors, def.field_reach()):
+		return false
+	return not def.is_sent_ahead() or _clear_of_the_plans(path, def)
 
 ## The road-aware sibling of `_toward_her()`, for a `TOWARD_PLAYER` row whose `placement` names
-## `ROAD` — `owe_the_return()`'s own `police_patrol` copies, a car rather than a bike.
+## `ROAD` — the `police_patrol` the director sends ahead of her (`EventDef.as_sent_ahead()`), the
+## return leg's among them, a car rather than a bike.
 ## `_toward_her()` straightens the line onto *her* pavement; a car has no business on a pavement
 ## at all, so this runs it down the **carriageway lane that drives toward her** instead, using
 ## `CrowdLanes` for the lane geometry the same way `Crowd` sites one.
@@ -1173,18 +1330,24 @@ func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
 ## carriageway itself), her heading has no along-corridor component to pick a direction from, or
 ## the corridor there has no carriageway to drive on — a precinct is paved kerb to kerb, so its
 ## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
-## to: a park, a square, a precinct.
+## to: a park, a square, a precinct — or not for the car's leg and its way out to
+## `Tuning.OUT_OF_SIGHT` past where she stands (`leg_in_the_lane()`).
 ##
-## **Created at once, not warned first.** A row on foot that `_toward_her()` sites goes up as a
-## screen-edge warning before it exists (`EventDef.warns_before_it_exists()`); a patrol is sited
-## here in the world at the ordinary `Offscreen.lead()` margin instead, and telegraphs on its
-## way in (`telegraph_time` 1.97s) with no badge, since 74px/s is slower than a walk and it is never
+## **Created at once, not warned first, and wholly out of the camera's view on its first frame.**
+## *(M226 amendment 6, the player: "I don't want any pop in".)* Its place is in its lane just out of
+## sight up the road (`PendingWarning.in_its_lane()`, against `view`: everything the car draws, its
+## picture and its caret, outside the camera's whole view, the camera's lead included), as the
+## convoy's is, and its first leg runs past her by as far (`leg_in_the_lane()`). A row on foot that
+## `_toward_her()` sites goes up as a screen-edge warning before it exists
+## (`EventDef.warns_before_it_exists()`); a patrol is created in the world instead, and telegraphs on
+## its way in (`telegraph_time` 1.97s) with no badge, since 74px/s is slower than a walk and it is never
 ## `hard_fail` (`EventDef.at_heat()` states it for the `PRESSES` rung) — that is why
 ## `EventDef.announces_its_coming()` gives it no badge. Under the player's rule a thing telegraphs
 ## its coming only if it goes fast, comes toward her and carries a heavy penalty (PLAYTEST-145,
 ## statements 18-23), and a patrol is not fast; its strike in front of it on the carriageway is a
 ## car's, warned the way a car warns (`EventDef.vehicle`), not a badge from off screen.
-func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
+func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
+		view: VisibleView) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
 	if inward == Vector2i.ZERO:
 		return PackedVector2Array()
@@ -1193,32 +1356,158 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> Pa
 	var component := heading.dot(along)
 	if is_zero_approx(component):
 		return PackedVector2Array()
-	var site_heading := along * signf(component)
 	var index := CrowdLanes.corridor_at(at.x if vertical else at.y)
 	if index < 0:
 		return PackedVector2Array()
 	# The car drives opposite her own along-corridor heading — coming down the street as she
 	# walks up it — so its lane is the one `CrowdLanes.road_direction()` says legally runs that
 	# way, not merely a point somewhere in the road band.
-	var direction := -(site_heading.y if vertical else site_heading.x)
-	var lane_coordinate := CrowdLanes.lane_centre(index, CrowdLanes.road_lane(vertical, direction))
-	var closing := def.speed + Tuning.WALK_SPEED
-	var lead := Offscreen.lead(site_heading, closing, def.offscreen_notice)
-	var far := at + site_heading * lead
-	var behind := at - site_heading * lead
-	if vertical:
-		far.x = lane_coordinate
-		behind.x = lane_coordinate
+	return _down_the_lane(at, -along * signf(component), index, def, view)
+
+## **Where a row warned of first in the lane beside her is sited** (the convoy the director sends
+## ahead of her, `EventDef.is_warned_in_its_lane()`): returns its first leg, from where its badge
+## points to the leg's far end, which `EventsAhead` builds again from where she is once its warning
+## is over (`leg_in_the_lane()`). Day 13's column is its precedent (`ResistanceHappenings`).
+##
+## **The lane is the carriageway of the street she is beside**, read as `_toward_her_on_the_road()`
+## reads it (`CityMap.pavement_inward()`, `CrowdLanes`). It drives toward her, against her heading
+## along the street, or, for a row that comes from either end (`EventDef.may_come_from_either_end()`),
+## the way a coin flip on the director's stream says, and from the other end where that one has no
+## room. **The place is level with her along the road and just out of sight up it**
+## (`PendingWarning.in_its_lane()`, against `view`), and **the first leg runs down the lane past her
+## to the far edge of the next junction box** (`leg_in_the_lane()`).
+##
+## Empty where there is nothing to run it down: she is not beside a plain sidewalk edge, the
+## street there has no carriageway to drive on (a precinct, `CityMap.is_driveable_at()`) for its leg
+## and its way out to `Tuning.OUT_OF_SIGHT` past where she stands (`leg_in_the_lane()`), or no end
+## has a place out of sight. The caller waits and asks again.
+func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
+		view: VisibleView) -> PackedVector2Array:
+	var inward := _map.pavement_inward(_map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return PackedVector2Array()
+	var vertical := inward.x != 0
+	var index := CrowdLanes.corridor_at(at.x if vertical else at.y)
+	if index < 0:
+		return PackedVector2Array()
+	var along := Vector2(inward.y, inward.x)
+	var component := heading.dot(along)
+	var going := -along * signf(component) if not is_zero_approx(component) else along
+	if def.may_come_from_either_end() and _rng.randf() < 0.5:
+		going = -going
+	for _end in 2:
+		var path := _down_the_lane(at, going, index, def, view)
+		if not path.is_empty():
+			return path
+		going = -going
+	return PackedVector2Array()
+
+## The first leg of `def` in the lane of corridor `index` driving `going` (a unit along the street),
+## from its place just out of sight up the lane (`PendingWarning.in_its_lane()`, against `view`, the
+## camera's whole view, or a camera on her where there is none), or empty
+## (`leg_in_the_lane()`).
+func _down_the_lane(at: Vector2, going: Vector2, index: int, def: EventDef,
+		view: VisibleView) -> PackedVector2Array:
+	var vertical := absf(going.y) > absf(going.x)
+	var lane := CrowdLanes.lane_centre(index,
+			CrowdLanes.road_lane(vertical, going.y if vertical else going.x))
+	var lane_point := Vector2(lane, at.y) if vertical else Vector2(at.x, lane)
+	var ends := PendingWarning.lane_ends(_map, going)
+	var place := PendingWarning.in_its_lane(def, at, lane_point, going, ends.x, ends.y, view)
+	if place == Vector2.INF:
+		return PackedVector2Array()
+	return leg_in_the_lane(def, place, at, going)
+
+## **The first leg of a row sent down a lane of the road beside her** (the patrol and the convoy the
+## director sends ahead of her), from `place` in the lane driving `going` (a unit along the road),
+## with her at `her`: the one place the leg is built, asked as the row is sited (`due()`) and again
+## as a row warned of first is created a second later (`EventsAhead`), from where she is then.
+##
+## **It runs down the lane past her**: a row warned of first in its lane (the convoy, 120px/s) to the
+## far edge of the next junction box (`past_the_next_box()`), one created at once (the patrol, slower
+## than her walk) past her by as far as its place is up the road from her.
+##
+## **The car drives on past the leg's end, so its way out is asked as well as its leg.** A car whose
+## route has run out leaves straight on the way it was going (`EventDeparture.begin()`) until it is
+## `Tuning.OUT_OF_SIGHT` from her (`EventDeparture.leave()`). So the leg is sent only where the lane
+## from its place to `Tuning.OUT_OF_SIGHT` past where she stands now, or to the leg's end where that
+## is further, is carriageway every tile of the way (`_carriageway_all_along()`: not a precinct, nor
+## a junction box a precinct paves, `CityMap.is_driveable_at()`), and nothing on it stops a car
+## (`Navigator.trim()`: a solid, a closed street, the map's edge), where it would turn onto a way
+## out. The leg is never cut short of the paving: a car stopped there drives on over it as it leaves,
+## and one turned round there turns on the spot in her view (the events skill's
+## `references/event-cars.md`). Measured from where she is as it is sited, and again from where she
+## is when a row warned of first is created.
+##
+## **That keeps the whole drive on carriageway while she stands where she was, or walks toward the
+## car, and not while she walks the way it drives.** It leaves until it is `Tuning.OUT_OF_SIGHT` from
+## where she is by then, so a car she walks along with (the convoy from behind her, which overtakes
+## her, or a patrol she turns to walk beside) can still leave over a precinct's paving, or reach a
+## closed street or the map's edge, while she can see it. Keeping the departure itself on
+## carriageway while she can see it is the route worked out as it goes, not built yet.
+##
+## Empty where any of that fails, and the row waits for room as any sent row does. What it must keep
+## clear of is `clear_to_send()`'s, asked of the leg it answers.
+func leg_in_the_lane(def: EventDef, place: Vector2, her: Vector2,
+		going: Vector2) -> PackedVector2Array:
+	var vertical := absf(going.y) > absf(going.x)
+	var level := Vector2(place.x, her.y) if vertical else Vector2(her.x, place.y)
+	var ends := PendingWarning.lane_ends(_map, going)
+	var far := past_the_next_box(level, going, ends) if def.is_warned_in_its_lane() \
+			else _past_her_by(level, going, place.distance_to(level), ends)
+	if (far - level).dot(going) < 0.0:
+		return PackedVector2Array()
+	var gone := level + going * Tuning.OUT_OF_SIGHT
+	var drives_to := far if (far - gone).dot(going) > 0.0 else gone
+	if not _carriageway_all_along(place, drives_to, vertical):
+		return PackedVector2Array()
+	var drive := _navigator.trim(PackedVector2Array([place, drives_to]), EventInstance.mover_for(def))
+	if drive.size() < 2 or not drive[drive.size() - 1].is_equal_approx(drives_to):
+		return PackedVector2Array()
+	return PackedVector2Array([place, far])
+
+## **Whether a car may drive down a lane from `place` to `to`**, the two on one lane of a street
+## running north-south where `vertical` and east-west otherwise: every tile from the one under
+## `place` to the one under `to` is carriageway (`CityMap.is_driveable_at()`: a precinct is paved
+## kerb to kerb, and a precinct on either street paves the junction box between them). Asked a tile
+## at a time, since what is carriageway changes along a street.
+func _carriageway_all_along(place: Vector2, to: Vector2, vertical: bool) -> bool:
+	var from := _map.world_to_tile(place)
+	var last := _map.world_to_tile(to)
+	var tiles := absi(last.y - from.y) if vertical else absi(last.x - from.x)
+	var step := Vector2i(0, signi(last.y - from.y)) if vertical \
+			else Vector2i(signi(last.x - from.x), 0)
+	for i in tiles + 1:
+		if not _map.is_driveable_at(vertical, from + step * i):
+			return false
+	return true
+
+## The point `by` down a lane from `level` driving `going`, held between `ends` (the lane's ends on
+## the map, `PendingWarning.lane_ends()`).
+static func _past_her_by(level: Vector2, going: Vector2, by: float, ends: Vector2) -> Vector2:
+	var far := level + going * by
+	if absf(going.y) > absf(going.x):
+		far.y = clampf(far.y, ends.x, ends.y)
 	else:
-		far.y = lane_coordinate
-		behind.y = lane_coordinate
-	if not _map.is_driveable_at(vertical, _map.world_to_tile(far)) \
-			or not _map.is_driveable_at(vertical, _map.world_to_tile(behind)):
-		return PackedVector2Array()
-	var path := _navigator.trim(PackedVector2Array([far, behind]), EventInstance.mover_for(def))
-	if path.size() < 2 or path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
-		return PackedVector2Array()
-	return path
+		far.x = clampf(far.x, ends.x, ends.y)
+	return far
+
+## **The far edge of the next junction box down a lane** from `level` (a point of the lane level
+## with her), driving `going`: the box she stands beside or the first one ahead of her, the
+## corridors crossing the street every `CityMap.period()` tiles, held between `ends` (the lane's
+## ends on the map, `PendingWarning.lane_ends()`).
+static func past_the_next_box(level: Vector2, going: Vector2, ends: Vector2) -> Vector2:
+	var vertical := absf(going.y) > absf(going.x)
+	var at := level.y if vertical else level.x
+	var period := float(CityMap.period() * Tuning.TILE_SIZE)
+	var box := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
+	var far: float
+	if (going.y if vertical else going.x) > 0.0:
+		far = floorf((at - box) / period + 1.0) * period + box
+	else:
+		far = ceilf(at / period - 1.0) * period
+	far = clampf(far, ends.x, ends.y)
+	return Vector2(level.x, far) if vertical else Vector2(far, level.y)
 
 ## Swaps a heading with a lateral drift for the corridor's own axis, when she is standing on a plain
 ## pavement edge — `CityMap.pavement_inward()` names which side of a corridor a sidewalk tile is on,

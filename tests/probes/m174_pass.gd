@@ -139,14 +139,19 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 ## Whether the pass is met the moment the row is created — a row `EventDirector` sites down her
 ## own line, warned of before it exists, rather than one the day put on a tile at dawn. Stated
 ## over `spawn_mode` rather than over a list of ids, so a new row that comes at her is priced
-## honestly without anybody remembering to add it here.
+## honestly without anybody remembering to add it here. **A row the director sends ahead of her is
+## not included** (`EventDef.is_sent_ahead()`, the dog walker's copy): it is created past its
+## telegraph at a point of its beat drawn on the director's stream
+## (`EventDirector.age_it_is_sent_at()`), so the point that reaches her is as free as it is for a row
+## she walks up to, wherever it is created, and it is priced as that row is, over its beat.
 ##
 ## **`AHEAD_OF_PLAYER` is deliberately not included**, though the director sites it dynamically
 ## too: it is put *across* her line rather than down it, and this rig only knows how to walk two
 ## bodies at each other in a straight line. Measuring one here at a crossing row's lead would price
 ## a geometry the director does not produce, which is the error this whole branch exists to remove.
 static func sited_toward_her(def: EventDef) -> bool:
-	return def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER
+	return def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER \
+			and not def.is_sent_ahead()
 
 static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: float,
 		phase_delay: float) -> float:

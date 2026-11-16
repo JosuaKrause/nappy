@@ -60,9 +60,11 @@ ends it at `PURSUIT_SHAKEN_OFF`'s rate.
 
 ## What is not warned first
 
-**A patrol sent down the road and a `MAP` mover** (`military_convoy`). The patrol does not telegraph
-its coming at all (slower than a walk; its strike is a car's, warned the way a car warns, see
-`event-cars.md`); the planned convoy telegraphs in the world, with a badge because it is faster than
-a walk, as a place the day planned, not something sent at her. **Do not add a row to this list, and
-do not cite it as the reason something else is not warned first.** What stands in the way of it is
+**A patrol sent down the road and a `MAP` mover** (the escape's `military_convoy` trucks). The
+patrol does not telegraph its coming at all (slower than a walk; its strike is a car's, warned the
+way a car warns, see `event-cars.md`); the escape's trucks telegraph in the world, with a badge
+because they are faster than a walk, as places the escape planned, not things sent at her. A convoy
+on an ordinary day is sent at her and warned first, in the lane beside her as day 13's column is
+(`EventDef.as_sent_ahead()`). **Do not add a row to this list, and do not cite it as the reason
+something else is not warned first.** What stands in the way of it is
 `docs/EVENTS.md`, "Everything arrives from off screen".

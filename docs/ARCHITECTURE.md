@@ -163,6 +163,7 @@ src/
 	hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
 	day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
+	sent_ahead.gd         how the director sends a row ahead of her: warned first, from either end
 	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
 	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
 	abduction_spec.gd     the unmarked van's take of a bystander
@@ -268,9 +269,9 @@ src/
 	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
 	                      an alley, a park or a square (its kind of ground); its name, its rank and
 	                      its stream for the day, and its view, the most permissive of its locations'
-	unit_room.gd          what is left of a unit for its draw to speak for: whether a street is
-	                      untouched, its whole sections and half-filled ones, what share of a street
-	                      (the whole street, a section, a location) a marble may still take
+	unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
+	                      sections and half-filled ones, what share of a street (a section, a
+	                      location) a marble may still take
 	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
 	                      junction box, or a shared alley, park or square
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after

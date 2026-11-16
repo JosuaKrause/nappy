@@ -482,7 +482,6 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		var kerb: Vector2 = plan.position - Vector2(inward) \
 				* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 		# She stands where she first saw the fire while the warning runs on the manager's own ticks.
-		var before := RunCity.events(_city).instances().size()
 		var her_at := rig.global_position
 		while RunCity.events(_city).pending_warnings().has(warning) \
 				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
@@ -491,12 +490,15 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		# the first tick that takes it to a second, at most one tick past it.
 		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + Rig.WALK_STEP + 0.001,
 				"its badge is up alone for %.2fs, at most a second (to the tick)" % warning.shown)
+		# Counted by row, not by how many things are in the world: the day goes on round her while
+		# she stands, and a dog walker sent ahead of her can finish its leg and go in that second.
 		var arrived: EventInstance = null
+		var trucks := 0
 		for instance in RunCity.events(_city).instances():
 			if instance.def.id == "fire_truck":
 				arrived = instance
-		t.check(arrived != null and RunCity.events(_city).instances().size() == before + 1,
-				"and it is created once its warning is over")
+				trucks += 1
+		t.check(arrived != null and trucks == 1, "and it is created once its warning is over")
 		if arrived:
 			# **Where it is created and how long after its badge it can reach her, on the real
 			# siting.** Its forward reach (548px) is deeper than the view is from her, so standing on

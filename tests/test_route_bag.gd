@@ -5,11 +5,11 @@ extends RefCounted
 ## interrupted exactly as it was, that rigging a bag makes and loses no marble but the ensured one
 ## (inbox #561 in coral-bunny: "you will be left with two initialized bags: 1 with x elements and one with n-x+1
 ## elements"), that an inner bag of n marbles gives n events and is gone, that a stretch of her
-## route the length of a bag has the rows' own mix, that day 3's lesson is still first and paid for
-## by nothing in the bag, and that after day 6's and day 11's marks the task's row is one of the next
-## events placed on her route, where she can reach it, and in the world once she walks on: day 11's
-## mast ahead of her on the route band, day 6's man shouting on the street she walks (whose siting
-## `tests/test_day6_yeller_met.gd` holds).
+## route the length of a bag has the rows' own mix where nothing waits for room, that day 3's
+## lesson is still first and paid for by nothing in the bag, and that after day 6's and day 11's
+## marks the task's row is one of the next events placed on her route, where she can reach it, and
+## in the world once she walks on: day 11's mast ahead of her on the route band, day 6's man
+## shouting on the street she walks (whose siting `tests/test_day6_yeller_met.gd` holds).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -28,7 +28,10 @@ func run(t: TestRunner) -> void:
 	_test_an_inner_bag_of_n_gives_n_events_and_is_gone(t)
 	_test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t)
 	_test_day_3s_lesson_is_first_and_a_bag_of_its_own(t)
+	_test_day_3s_charging_dogs_keep_their_share(t)
 	_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t)
+	_test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t)
+	_test_day_one_hands_out_two_dog_walkers_among_the_first_three(t)
 	_test_after_the_mark_the_task_row_is_put_on_her_route(t)
 	_test_a_place_that_cannot_be_sited_holds_nothing_up(t)
 
@@ -240,8 +243,14 @@ func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t: TestRunn
 ## the bag holds it — `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight — whatever
 ## order they come in. A roll at the same weights misses that on most days (the probe
 ## `tests/probes/olive_badger_route_mix.gd` measures how far), so three seeds holding it is the bag.
+## Asked of day 2, a day whose dawn owes her more events than its bag holds marbles, with no rig in
+## front of the bag (day one's dog walkers, day 3's lesson) and no row owed as itself. **Nothing
+## waits for room here**: the director is handed the day's moments and none of its placed plans, so
+## no row sent ahead of her is refused room by a plan (`EventDirector.clear_to_send()`). A row that
+## waits is sent after the marbles behind it, which can carry it past the bag's end; that is
+## `tests/test_event_director.gd`'s.
 func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner) -> void:
-	var day := 5
+	var day := 2
 	for seed_value: int in [4242, 90210, 1234567]:
 		var map := CityGenerator.generate(seed_value)
 		var state := CityState.new()
@@ -250,7 +259,10 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 		var tree := RouteTree.for_day(map, day)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("route-bag:%d" % seed_value)
-		var plans := GameDawn.of(DaySpec.for_day(day), plan_rng, map).on(tree).plan().placements()
+		var plans: Array[EventPlan] = []
+		for plan in GameDawn.of(DaySpec.for_day(day), plan_rng, map).on(tree).plan().placements():
+			if not plan.is_placed():
+				plans.append(plan)
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
@@ -286,6 +298,65 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 			walked += STEP
 		t.check(met == expected, "seed %d: the first %d she meets are the bag's own mix (%s, bag %s)"
 				% [seed_value, length, met, expected])
+
+## **The dog walker, the patrol and the convoy are marbles of her route's bag** on every day each is
+## available (inbox #1460: "they all should be drawn when the player is close by to guarantee an
+## encounter"), the director sending each ahead of her (`EventDef.is_sent_ahead()`), and on no
+## day one is not.
+func _test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t: TestRunner) -> void:
+	var wrong: Array[String] = []
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		var marbles := EventDirector.ordinary_route_marbles(day, 0)
+		for id: String in ["dog_walker", "police_patrol", "military_convoy"]:
+			var def := EventCatalogue.by_id(id)
+			if def.is_sent_ahead() != true or marbles.has(id) != def.available_on(day):
+				wrong.append("%s on day %d" % [id, day])
+	t.check(wrong.is_empty(), "each of the three is sent ahead of her and a marble of her route on "
+			+ "exactly the days it is available%s" % ("" if wrong.is_empty()
+				else ": not " + ", ".join(wrong)))
+
+## **Day one's dog walkers come by construction** (PLAYTEST-05 6; inbox #561 in coral-bunny, a
+## rigged bag): walking a real day one's plan down the arterial's sidewalk, where a dog walker always
+## has a sidewalk ahead of her to come down, two of the first three events the director hands out on
+## her route are dog walkers, on every seed tried.
+func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner) -> void:
+	var day := 1
+	var short: Array[String] = []
+	var seeds: Array[int] = [4242, 90210, 1234567, 77, 1301, 31337]
+	for seed_value in seeds:
+		var map := CityGenerator.generate(seed_value)
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var plan_rng := RandomNumberGenerator.new()
+		plan_rng.seed = hash("route-bag:day-one:%d" % seed_value)
+		var plans := GameDawn.of(DaySpec.for_day(day), plan_rng, map).on(tree).plan().placements()
+		var director := EventDirector.new(map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("route-bag:day-one:ahead:%d" % seed_value)
+		director.start_day(day, plans, rng)
+		var handed: Array[String] = []
+		var at := CrowdLanes.arterial_pavement(map)
+		at.y = map.world_size().y * 0.5
+		var velocity := Vector2(0.0, -Tuning.WALK_SPEED)
+		var y_max: float = map.world_size().y
+		var walked := 0.0
+		while handed.size() < EventDirector.DAY_ONE_DOG_WALKERS_WITHIN and walked < 400.0:
+			var due := director.due(STEP, at, velocity)
+			if not due.is_empty():
+				handed.append((due[0] as EventDef).id)
+			at += velocity * STEP
+			if at.y < 0.0 or at.y > y_max:
+				velocity.y = -velocity.y
+				at.y = clampf(at.y, 0.0, y_max)
+			walked += STEP
+		if handed.size() < EventDirector.DAY_ONE_DOG_WALKERS_WITHIN \
+				or handed.count("dog_walker") < EventDirector.DAY_ONE_DOG_WALKERS:
+			short.append("seed %d: %s" % [seed_value, handed])
+	t.check(short.is_empty(), "on day one, %d of the first %d handed out are dog walkers on all %d "
+			% [EventDirector.DAY_ONE_DOG_WALKERS, EventDirector.DAY_ONE_DOG_WALKERS_WITHIN,
+			seeds.size()] + "seeds%s" % ("" if short.is_empty() else ": " + "; ".join(short)))
 
 ## Day 3's lesson through the director: on a real day's plan the dog is the first thing she meets,
 ## at `LESSON_DELAY`, out of a rigged bag of one in front of the route's bag, and the ordinary bag
@@ -334,10 +405,23 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 		# The next marble fills the ordinary bag: the lesson took none of it.
 		bag.peek()
 		var ordinary := bag.bag_in_front()
-		var dogs: int = EventDirector.ROUTE_BAG_MARBLES_OF["charging_dog"]
+		var dogs: int = EventDirector.ordinary_route_marbles(day, 0).count("charging_dog")
 		t.check(ordinary.count("charging_dog") == dogs,
 				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
 				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])
+
+## **Day 3's charging dogs keep the share of her route's bag the player set**, as near as whole
+## marbles come, whatever else the bag holds: within half a marble of
+## `EventDirector.ROUTE_BAG_SHARE_OF`'s share of the bag the director fills that day
+## (`ordinary_route_marbles()`). *(inbox #566 in feathery-stork: two dogs in day 3's bag of 16.)*
+func _test_day_3s_charging_dogs_keep_their_share(t: TestRunner) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	var marbles := EventDirector.ordinary_route_marbles(day, 0)
+	var dogs := marbles.count("charging_dog")
+	var share: float = EventDirector.ROUTE_BAG_SHARE_OF["charging_dog"]
+	t.check(dogs > 0 and absf(float(dogs) - share * float(marbles.size())) <= 0.5,
+			"day %d's bag holds %d charging dogs in %d marbles, within half a marble of its share %.3f"
+			% [day, dogs, marbles.size(), share])
 
 ## Day 6's man shouting and day 11's second mast, through a real city: reading the mark rigs her
 ## route with a bag of the task's size holding the row once; walking the day's route, its marble is
@@ -507,20 +591,20 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		RunCity.events(city).ahead.place_what_is_owed_ahead(STEP)
 		if RunCity.events(city).owed_ahead() < owed_before:
 			handed += 1
+		# Only the place her route's marble handed to her walk: a unit the siting drew round its
+		# pick may have drawn the same row, a place of its own.
 		for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
-			if plan.def.id == row:
+			if plan.def.id == row and RunCity.events(city).ahead.director().is_from_her_route(plan):
 				placed.append(plan)
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
 		player.global_position += player.velocity * STEP
 		walked += STEP
-	t.check(placed.size() == 1, "day %d: and one %s is put on her route (%d)"
+	t.check(placed.size() == 1, "day %d: and one %s is put on her route by her route's marble (%d)"
 			% [day, row, placed.size()])
 	if placed.size() == 1:
 		var plan := placed[0]
 		var map := city.map
-		t.check(RunCity.events(city).ahead.director().is_from_her_route(plan),
-				"day %d: and it is a place her route's marble handed to her walk" % day)
 		var tile := map.world_to_tile(plan.position)
 		# Day 6's man shouting is sited on the street she is walking, inside the streaming band and
 		# in the world at once (`WalkSiting.ahead_on_her_street()`), not on the day's route band:
