@@ -62,7 +62,11 @@ enum FrameClass { NORMAL, COSTLY, LETHAL }
 ## The readout's own text colour, `Color(1, 1, 1, 0.7)` on `_status` today — read off `_status`
 ## itself by `DebugReadout._add_frame_graph()` rather than duplicated here as a second literal, so the
 ## ordinary bars and the reference lines can never drift from what the label beside them reads in.
-var text_colour := Color(1.0, 1.0, 1.0, 0.7)
+var _text_colour := Color(1.0, 1.0, 1.0, 0.7)
+
+## Hands the graph the readout's text colour (see `_text_colour`).
+func use_text_colour(colour: Color) -> void:
+	_text_colour = colour
 
 ## Oldest first, newest last — a plain `Array` rather than an index-and-wrap ring, the same choice
 ## `FrameCost._sample_times` already makes for a window two orders of magnitude smaller than
@@ -161,7 +165,7 @@ func _draw() -> void:
 	_draw_reference_line(_LETHAL_MS, "30")
 	if count > 0:
 		var mean_y := _BOX_HEIGHT - clampf(window_mean * 1000.0 / _LETHAL_MS, 0.0, 1.0) * _BOX_HEIGHT
-		draw_line(Vector2(0.0, mean_y), Vector2(_BOX_WIDTH, mean_y), text_colour, 1.0)
+		draw_line(Vector2(0.0, mean_y), Vector2(_BOX_WIDTH, mean_y), _text_colour, 1.0)
 
 func _bar_colour(frame_class: int) -> Color:
 	match frame_class:
@@ -170,13 +174,13 @@ func _bar_colour(frame_class: int) -> Color:
 		FrameClass.COSTLY:
 			return Palette.MARK_COSTLY
 		_:
-			return Color(text_colour.r, text_colour.g, text_colour.b, text_colour.a * 0.5)
+			return Color(_text_colour.r, _text_colour.g, _text_colour.b, _text_colour.a * 0.5)
 
 ## A thin line at `ms` and its two-character label, drawn inside the box's own left edge rather
 ## than beyond its right one — the box stays exactly `_BOX_WIDTH` wide, one design pixel per frame,
 ## with nothing hanging off it for a neighbour to collide with.
 func _draw_reference_line(ms: float, label: String) -> void:
 	var y := _BOX_HEIGHT - clampf(ms / _LETHAL_MS, 0.0, 1.0) * _BOX_HEIGHT
-	draw_line(Vector2(0.0, y), Vector2(_BOX_WIDTH, y), text_colour, 1.0)
+	draw_line(Vector2(0.0, y), Vector2(_BOX_WIDTH, y), _text_colour, 1.0)
 	draw_string(get_theme_default_font(), Vector2(2.0, y + 9.0), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1.0, 9, text_colour)
+			HORIZONTAL_ALIGNMENT_LEFT, -1.0, 9, _text_colour)
