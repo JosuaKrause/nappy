@@ -24,8 +24,8 @@ extends DawnPhase
 
 ## **Whether a drawn row's route stays on its location's run** (`RuledLocationGround`'s
 ## `keeps_routes_on_the_run`, `Location.run()`): a route longer than its street is cut to the
-## street and the boxes at its ends, the player's answer (inbox #1460), and this is the one setting
-## that answer lives in.
+## street and the boxes at its ends, which is how a drawn route is laid now (inbox #1460), and this
+## is the one setting that holds it.
 const ROUTES_STAY_ON_THE_RUN := true
 
 ## Overrides DawnPhase.run.

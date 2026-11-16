@@ -1290,10 +1290,11 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 ### A beat rather than a journey
 
 `EventDef.paces` walks a route and turns round at the ends, for ever. It is the difference between
-a `dog_walker`, which is *going somewhere* and is gone at the end of thirty tiles, and a man
-shouting, who is **at** a place. Without it the only way to say the second thing is to make him
-stationary, and a stationary source on a fixed patch is a line you draw once rather than something
-to time.
+a `dog_walker`, which is *going somewhere* and is gone at the end of its route, down its street
+to the far side of the junction box at its end, as a drawn route is laid now (inbox #1460), and a
+man shouting, who is **at** a place. Without it the only way to say the second thing is to make
+him stationary, and a stationary source on a fixed patch is a line you draw once rather than
+something to time.
 
 A paced event never reaches the end of its path, so it never departs and never expires: it is a
 fixture that moves. The price is its body — anything mobile is exempt from "solid things are solid",

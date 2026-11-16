@@ -10,7 +10,7 @@ extends RefCounted
 ## of unit coverage does.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## Long enough for the slowest mobile one-shot to finish its route (the convoy takes ~17s).
+## Long enough for the slowest mobile one-shot to finish its route.
 const SIMULATED_SECONDS := 25.0
 ## How many times real time the engine runs the physics ticks of a played day (`PhysicsTicks.pass_ticks()`),
 ## so that a tick is a tenth of a second of game time, the step the suite always took by hand. A coarser
