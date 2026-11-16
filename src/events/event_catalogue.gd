@@ -726,6 +726,11 @@ static func _homeless_yeller() -> EventDef:
 	def.departs_at = 60.0
 	def.weight = 2.0
 	def.max_per_day = 18
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - open ground, 0.0042: rare on open ground, where the street musician is nine tenths of
+	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.0042)
 	return def
 
 ## Slow, and it owns the sidewalk it is on.
@@ -830,6 +835,10 @@ static func _cafe_tables() -> EventDef:
 	# single figures puts the expected number of cafes she *sees* in a day under one, and the day-1
 	# event built to force a crossing is absent from most day ones.
 	def.max_per_day = 24
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
 ## Parked at the kerb, hazards going, half unloaded. Constant and stationary: the plain obstacle the
@@ -862,6 +871,10 @@ static func _delivery_van() -> EventDef:
 	def.solid(GroundShape.band(VEHICLE_BODY))
 	def.weight = 2.0
 	def.max_per_day = 18
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply interesting,
@@ -938,6 +951,10 @@ static func _construction() -> EventDef:
 	def.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 	def.weight = 1.5
 	def.max_per_day = 15
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
 ## Audible from streets away, moving fast down an arterial road, and it parks at the fire
@@ -1183,6 +1200,13 @@ static func _market_stall() -> EventDef:
 	def.solid(GroundShape.band(28.0))
 	def.weight = 1.6
 	def.max_per_day = 13
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	# - open ground, 0.0073: rare on open ground, where the street musician is nine tenths of
+	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.0073)
 	return def
 
 ## The loudest thing in act I, and it is a man tidying a park.
@@ -1246,6 +1270,11 @@ static func _leaf_blower() -> EventDef:
 	# price of day 1 having exactly two rows a wall can be made of.
 	def.weight = 3.0
 	def.max_per_day = 24
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - open ground, 0.0039: rare on open ground, where the street musician is nine tenths of
+	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.0039)
 	return def
 
 ## Pigeons off the sidewalk all at once: standing on the ground long before she is near, then up as
@@ -1368,6 +1397,11 @@ static func _pigeon_flock() -> EventDef:
 	# every route; `Role.SCENERY` answers `NONE` first, so it lands on a route corridor exactly as
 	# it lands anywhere else.
 	def.role = EventDef.Role.SCENERY
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - open ground, 0.012: rare on open ground, where the street musician is nine tenths of
+	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.012)
 	return def
 
 ## **The first thing in the game that can end your day, and it arrives on day 2.**
@@ -1435,7 +1469,7 @@ static func _cyclist() -> EventDef:
 	def.weight = 1.5
 	# Well under the ordinary act I rows, and the cap does different work than its number suggests:
 	# `TOWARD_PLAYER` never puts it on a tile, so it cannot tile a street. What the cap bounds is how
-	# many of the moments she is owed (`EventScheduler.MOMENTS_PER_DAY`) are cyclists rather than cats
+	# many of the moments she is owed (`PlacementDensity.moments_on()`) are cyclists rather than cats
 	# and dogs, and `EventDirector.AHEAD_INTERVAL` (11-26s apart) throttles the rest: the director draws one
 	# owed row at a time from a shared queue with the cat and the dog, so how many she can meet is
 	# bounded by the day's length long before the cap is.
@@ -1475,6 +1509,10 @@ static func _ice_cream_van() -> EventDef:
 	def.solid(GroundShape.point(24.0))
 	def.weight = 1.5
 	def.max_per_day = 5
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
 ## A box lorry reversing across the sidewalk into a yard, beeper going. Act I's second lethal thing,
@@ -1519,6 +1557,10 @@ static func _reversing_lorry() -> EventDef:
 	# A lethal wall row, capped like `cyclist` for the same reason: the deep band off the corridor is
 	# where the deadly end of the gradient lives, and a handful across 121 blocks cannot fill it.
 	def.max_per_day = 12
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
 ## Another mother with a pram, on her own beat, with her own cost model: getting too close catches
@@ -1677,6 +1719,11 @@ static func _charging_dog() -> EventDef:
 	# Rare on purpose: it is the one thing running answers, and a street with three of them would
 	# turn the run button into a second walk speed.
 	def.max_per_day = 3
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - open ground, 0.0085: rare on open ground, where the street musician is nine tenths of
+	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.0085)
 	return def
 
 # ------------------------------------------------------- Act II: notices (4-7) ---
@@ -1780,6 +1827,10 @@ static func _poster_crew() -> EventDef:
 	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.5
 	def.max_per_day = 12
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
 ## The same crew, on a square, at a free-standing advertising column (PLAYTEST-107).
@@ -1973,6 +2024,10 @@ static func _roadblock() -> EventDef:
 	def.weight = 2.0
 	def.max_per_day = 6
 	def.heat_response = EventDef.HeatResponse.HUNTS
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
 # --------------------------------------------------------- Act III: vans (8-11) ---
@@ -2517,6 +2572,11 @@ static func _protest() -> EventDef:
 	# and pursues nothing, so this cap has no other cap to compete with, and this row's own cap is
 	# what binds where the bags would draw more.
 	def.max_per_day = 12
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - open ground, 0.074: rare on open ground, where the street musician is nine tenths of
+	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.074)
 	return def
 
 ## The last thing in the catalogue and the worst. Static, extreme, lethal at the centre, and it
