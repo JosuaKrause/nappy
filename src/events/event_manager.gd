@@ -436,16 +436,6 @@ func visible_view() -> VisibleView:
 func sees(world_position: Vector2, margin := 0.0) -> bool:
 	return world.visible.sees(world_position, margin)
 
-## Whether a world point is anywhere in the camera's whole view this frame, the corners the
-## joystick's controls cover included: `world.visible`'s view with no corners laid on it, the view
-## `SpawnSiting.seen_from()` places against. Only tests ask it; what the resistance
-## places and removes asks `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW` of the same view, since a thing
-## under a covered corner is still drawn there *(olive-hedgehog, inbox #598, the player: "off screen is not
-## the same as visible -- the corners get removed for visible not for off screen")*. `false` until
-## the view has been looked through, the same as `sees()`.
-func on_screen(world_position: Vector2) -> bool:
-	return world.visible.view.has_point(world_position)
-
 ## Tells `world.visible` this frame's view and scheme (`VisibleView.look_through()`): the camera's
 ## view, `Tuning.VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off
 ## her a little, and whether the on-screen controls are the joystick scheme, whose rings and buttons

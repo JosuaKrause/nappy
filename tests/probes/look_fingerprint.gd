@@ -49,7 +49,7 @@ extends RefCounted
 ## `give_up_the_chase()`, `raise_its_guards_hand()`, `start_chat()`, and the members the spawner,
 ## streaming and the checkpoint controller write today (`is_pelican`, `silenced`, `gate_state`,
 ## `points_at`). By string, so a rename shows as a difference in the labels rather than hiding one: a
-## slice's `index` read through `get()` and the far guard's node found by its name `FarGuard`.
+## slice's place in `SpreadLook.slices()` and the far guard's node found by its name `FarGuard`.
 ## Of the look: `drawn_rect_now()`, `mark_rect()`, `drawn_heading()`, `current_bob()`,
 ## `band_node()`, `redraw_if_the_picture_changed()`. Of the rows: `EventDef.id`, `look`,
 ## `speed`, `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`,
@@ -374,9 +374,10 @@ func _canvas_name(rig: Rig, canvas: Node, fallback := "other") -> String:
 		return "scenery%d" % rig.scenery_ids.find(id)
 	if canvas.name == &"FarGuard":
 		return "far_guard"
-	var slice_index: Variant = canvas.get(&"index")
-	if slice_index != null:
-		return "slice%d" % int(slice_index)
+	var slice_at := (rig.instance.look as SpreadLook).slices().find(canvas) \
+			if rig.instance.look is SpreadLook else -1
+	if slice_at >= 0:
+		return "slice%d" % slice_at
 	return fallback
 
 static func _h(value: float) -> String:

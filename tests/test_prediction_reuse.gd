@@ -210,8 +210,8 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		if not source.birds().is_empty():
 			flock_queries += 1
 			var runs := source.sampling_runs
-			source.birds()[0].at += Vector2(17.0, 4.0)
-			source.birds()[0].heading = Vector2.LEFT
+			source.birds()[0].place(source.birds()[0].at() + Vector2(17.0, 4.0))
+			source.birds()[0].face(Vector2.LEFT)
 			source.birds()[0].speed += 10.0
 			_event_parity(t, source, at, definition.id + " bird geometry")
 			t.check(source.sampling_runs > runs, "flock always samples its mutable birds")

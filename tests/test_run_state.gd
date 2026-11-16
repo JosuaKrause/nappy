@@ -135,17 +135,39 @@ func _first_difference(a: Dictionary, b: Dictionary) -> String:
 			return "missing " + key
 	return "same"
 
-## The names of `owner`'s script variables that hold a `RunSubState` which is not on `registry`,
-## read off the registry's public `parts()`: the check that a part declared and left off the list is
-## caught.
+## The run sub-states `owner` declares: its script variables that hold a `RunSubState`.
+static func _declared_parts(owner: Object) -> Array[RunSubState]:
+	var declared: Array[RunSubState] = []
+	for property in owner.get_property_list():
+		if not property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			continue
+		var value: Variant = owner.get(property["name"])
+		if value is RunSubState:
+			declared.append(value)
+	return declared
+
+## Whether `part`'s data is in what `registry` writes (`run_data()`), where its slot puts it: the
+## flat `"state"`, the riders beside it, or under its own key.
+static func _is_written_by(part: RunSubState, registry: RunStateRegistry) -> bool:
+	var written := registry.run_data()
+	var data := part.to_data()
+	if part.slot() == RunSubState.Slot.NESTED:
+		return written.has(part.save_key())
+	var where: Dictionary = written["state"] if part.slot() == RunSubState.Slot.STATE else written
+	for key: String in data:
+		if not where.has(key):
+			return false
+	return not data.is_empty()
+
+## The names of `owner`'s script variables that hold a `RunSubState` which `registry` does not
+## write, read off what it writes: the check that a part declared and left off the list is caught.
 static func _unregistered_in(owner: Object, registry: RunStateRegistry) -> Array[String]:
-	var registered := registry.parts()
 	var missing: Array[String] = []
 	for property in owner.get_property_list():
 		if not property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			continue
 		var value: Variant = owner.get(property["name"])
-		if value is RunSubState and value not in registered:
+		if value is RunSubState and not _is_written_by(value, registry):
 			missing.append(property["name"])
 	return missing
 
@@ -190,7 +212,7 @@ func _test_every_part_gives_back_what_it_photographed(t: TestRunner) -> void:
 ## its `to_data()` is the mistake the old six places made easy.
 func _test_every_part_declares_each_field_once_in_its_data(t: TestRunner) -> void:
 	var run := _fresh(1)
-	for part: RunSubState in run.run_parts.parts():
+	for part: RunSubState in _declared_parts(run):
 		var variables := 0
 		for property in part.get_property_list():
 			if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
@@ -205,7 +227,7 @@ func _test_every_part_declares_each_field_once_in_its_data(t: TestRunner) -> voi
 func _test_every_part_round_trips_through_json(t: TestRunner) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
-	for part: RunSubState in run.run_parts.parts():
+	for part: RunSubState in _declared_parts(run):
 		var data := part.to_data()
 		var through: Dictionary = JSON.parse_string(JSON.stringify(data))
 		var script: Script = part.get_script()

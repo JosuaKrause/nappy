@@ -1555,8 +1555,8 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 	var outer := flock.bird_outer()
 	var total := 0.0
 	for bird in birds():
-		var d := GroundShape.eccentric_distance(global_position + bird.at,
-				bird.heading * bird.speed,
+		var d := GroundShape.eccentric_distance(global_position + bird.at(),
+				bird.heading() * bird.speed,
 				world_position)
 		total += def.bird_emission_at(d, share, outer)
 	return total

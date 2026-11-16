@@ -756,11 +756,11 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t: TestRunner) -> vo
 
 	var before: Array[Vector2] = []
 	for bird in flock.flock.birds:
-		before.append(bird.at)
+		before.append(bird.at())
 	flock.step(STEP)
 	var moved := 0
 	for i in flock.flock.birds.size():
-		if not flock.flock.birds[i].at.is_equal_approx(before[i]):
+		if not flock.flock.birds[i].at().is_equal_approx(before[i]):
 			moved += 1
 	t.check(flock.flock.birds.size() > 0 and moved == flock.flock.birds.size(),
 			"every one of the %d birds is somewhere new one frame on, so the silhouette the rim "

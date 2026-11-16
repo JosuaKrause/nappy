@@ -555,7 +555,7 @@ func _robbers_on_the_street() -> int:
 ## Whether `at` would actually be in sight with the camera on `her` and led toward `at` the way
 ## `Stroller` leads it when she faces what she is walking toward — the worst-case lead, since a
 ## start behind her would only pull the camera the other way. Asked of the tap scheme's
-## `VisibleView`, whose whole view is what `EventManager.on_screen()` answers in either scheme — the
+## `VisibleView`, whose whole view is the one the director places against in either scheme — the
 ## test the director places against (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over the same view): the
 ## joystick's covered corners only ever take ground out of sight, so a point out of the whole view
 ## is out of both.
