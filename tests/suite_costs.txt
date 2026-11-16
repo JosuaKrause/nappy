@@ -66,11 +66,13 @@ test_drawn_view.gd 449
 test_encounters.gd 9781
 test_escape_invisible_wall.gd 2229
 test_event_behaviours.gd 54
+test_event_departure.gd 55
 test_event_manager.gd 38312
 test_event_manager_fire.gd 69534
 test_event_parts.gd 220
 test_event_phase.gd 31
 test_event_redraw.gd 769
+test_event_route_walk.gd 22
 test_event_spacing.gd 31
 test_event_strides.gd 612
 test_event_views.gd 289
@@ -185,6 +187,7 @@ test_scene_recipe_task.gd 7921
 test_scenery_animation.gd 702
 test_scenery_residency.gd 3132
 test_seals.gd 102610
+test_sent_rows_keep_to_the_road.gd 83150
 test_sentence_lines.gd 37
 test_sentence_lines_render.gd 35
 test_shapes.gd 409
@@ -198,6 +201,7 @@ test_stroller_gait.gd 5361
 test_summary_model.gd 38
 test_telemetry.gd 53696
 test_texts_catalogue.gd 1693
+test_through_roads.gd 37
 test_touch.gd 1022
 test_trailer_flags.gd 31
 test_tuning_fairness.gd 30
@@ -210,5 +214,6 @@ test_walk_plan.gd 50796
 test_walk_siting_spec.gd 2924
 test_walker_views.gd 394
 test_wall_shield.gd 8081
+test_way_on.gd 98
 test_web_display.gd 34
 test_world_passability.gd 11227
