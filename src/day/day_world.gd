@@ -26,6 +26,7 @@ var _player: Stroller
 var _baby: Baby
 var _start := Vector2.INF
 var _facing := Vector2.DOWN
+var _in_a_city := false
 var _city_map: CityMap
 var _streets: DayStreets
 var _crowd: Crowd
@@ -42,10 +43,17 @@ var _exits := {}
 ## walk with none. Its walk is planned on the spec's own stream of the run
 ## (`DaySpec.events_stream()`). `scene_city` is the city whole, handed only where an authored scene
 ## installs itself into it (`scene_city()`), null otherwise.
+##
+## **A city has all four of its parts**, so a world is a city or it is not (`is_in_a_city()`), and
+## nothing that walks it asks which parts it has. Refused, null, when the dressing, the map, the
+## streets or the crowd is missing: a half-city is a world nothing could walk.
 static func in_the_city(dressing: CityDressing, map: CityMap, streets: DayStreets, crowd: Crowd,
 		events: EventManager, player: Stroller, baby: Baby, start: Vector2, home_map: CityMap,
 		exits: Dictionary, facing := Vector2.DOWN, scene_city: City = null) -> DayWorld:
+	if dressing == null or map == null or streets == null or crowd == null:
+		return null
 	var world := DayWorld.new()
+	world._in_a_city = true
 	world._map = map
 	world._city_map = map
 	world._streets = streets
@@ -103,6 +111,11 @@ func start_position() -> Vector2:
 ## Which way she faces as she is put down.
 func start_facing() -> Vector2:
 	return _facing
+
+## Whether this world is a city, with all four of the city's parts (`in_the_city()`): the one answer
+## the director and the run log key every city branch on, rather than asking which parts it has.
+func is_in_a_city() -> bool:
+	return _in_a_city
 
 ## The city's map, with its streets, blocks and calm ground, or null in a world with no city.
 func city_map() -> CityMap:

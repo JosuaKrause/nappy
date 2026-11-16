@@ -412,8 +412,8 @@ func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	var planted := StreetTrees.planted(map)
 	var recorder := RecordingSceneryDrawer.new()
 	decals.draw_through(recorder)
-	city.scenery.update(Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
-			Tuning.VIEW_HALF_EXTENT * 2.0), true)
+	city.prepare_scenery_in(Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+			Tuning.VIEW_HALF_EXTENT * 2.0))
 	decals.refresh_street_tree_pits()
 	var whole := Rect2(Vector2.ZERO, map.world_size()).grow(
 			SceneryGround.CHUNK_TILES * Tuning.TILE_SIZE)

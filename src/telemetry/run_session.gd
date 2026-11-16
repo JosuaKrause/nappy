@@ -148,7 +148,7 @@ func _on_world_stood(spec: DaySpec, world: DayWorld, restarted: bool) -> void:
 		return
 	if not _observer:
 		_observer = _new_observer()
-	if world.city_map():
+	if world.is_in_a_city():
 		_observer.watch(world.map(), world.events(), world.player(), world.baby(),
 				world.city_map(), world.streets(), world.crowd().sources, _section_name(spec))
 	else:
@@ -175,11 +175,12 @@ static func _section_name(spec: DaySpec) -> String:
 ## no city map to draw.
 func _on_day_planned(spec: DaySpec, world: DayWorld) -> void:
 	var map := world.city_map()
-	if map and spec.closes_the_streets():
+	var in_a_city := world.is_in_a_city()
+	if in_a_city and spec.closes_the_streets():
 		_log.note("plan", "closed: %s" % world.streets().closure_summary())
 		_log.note("plan", "calm: %s" % map.calm_summary(_arcs))
 		_log.note("plan", "events: %s" % world.events().event_summary())
-	if map:
+	if in_a_city:
 		_log.write_map(map, spec.day_number(), world.streets().closures(),
 				world.streets().route_tree(), world.events().plans())
 	if _observer:
@@ -202,8 +203,7 @@ func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapse
 	if _observer:
 		trail = _observer.trail()
 		met = _observer.met_events()
-	var map := _world.city_map()
-	if map:
-		_log.write_map(map, day, _world.streets().closures(), _world.streets().route_tree(),
+	if _world.is_in_a_city():
+		_log.write_map(_world.city_map(), day, _world.streets().closures(), _world.streets().route_tree(),
 				_world.events().plans(), true, trail, met)
 	_log.end_day()

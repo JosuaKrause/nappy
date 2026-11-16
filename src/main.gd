@@ -887,13 +887,8 @@ func _city_map() -> CityMap:
 ## `exits()`).
 func _stand_the_world(spec: DaySpec) -> DayWorld:
 	var world := _the_world_of(spec)
-	_world = world
 	_watch_the_walk()
 	return world
-
-## The world the walk being walked stands in, as `_stand_the_world()` last stood it, or null before
-## the boot's first walk is started: what a director built to end the walk reads it from.
-var _world: DayWorld
 
 ## The world of `_stand_the_world()`, built where it is not yet and standing.
 func _the_world_of(spec: DaySpec) -> DayWorld:
@@ -1832,14 +1827,14 @@ func _start(spec: DaySpec, restarted := false) -> bool:
 		_interior.clear_fade()
 	return true
 
-## The director for the world as it stands now: the world last stood (none before the boot's first
-## walk, which stands its own), and the parts every day shares, with where each walk's world comes
+## The director for the world as it stands now: the world the flow last announced standing
+## (`RunFlow.world()`, none before the boot's first walk, which stands its own), and the parts every day shares, with where each walk's world comes
 ## from (`_worlds`), the authored scene this boot plays, if any, and the trace. Cheap and stateless,
 ## so built when a walk starts or ends rather than kept in step with a world that is rebuilt between
 ## sections.
 func _new_director() -> DayDirector:
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
-	director.use_the_world(_world, _resistance, _day)
+	director.use_the_world(_flow.world(), _resistance, _day)
 	director.use_worlds(_worlds)
 	director.use_the_scene(_flow.scene)
 	director.use_trace(_the_trace())

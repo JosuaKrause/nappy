@@ -14,21 +14,24 @@ happenings, day 12's park cordon, the crowd and the run log's observer are built
 **What is left, the third pull request.** One pull request cannot hold it, so it goes in as several
 small pull requests, each reviewed and merged on its own, the player's answer to the cut
 (inbox #1381 in gray-moose); the earlier answer was three pull requests ("yes three prs is fine",
-inbox #1173 in gray-dolphin). Left are the smaller cases, when they are ready: `day_director.gd`
-and `main.gd`, as 3c's row in #1166's "Files it touches" lists them (the event manager and its day
-planner take what they read since the record 2026-10-18-minty-quail-crisp-otter, the scenery's
-residency and ground, the blackout and the poster walls since the record
-2026-10-18-minty-quail-quiet-ibis, the still watch, the debug readout, the frame recorder and the
-frame trace since the record 2026-10-18-minty-quail-calm-wombat, and the developer's rig, the
-route rig and its planner since the record 2026-10-18-minty-quail-plush-chipmunk); and last, who
-builds the event manager and the crowd (polite-tapir's `standing-layer-breaks.md`).
+inbox #1173 in gray-dolphin). Left is who builds the event manager and the crowd (polite-tapir's
+`standing-layer-breaks.md`). The smaller cases of 3c's row in #1166's "Files it touches" take what
+they read: the event manager and its day planner since the record
+2026-10-18-minty-quail-crisp-otter, the scenery's residency and ground, the blackout and the poster
+walls since the record 2026-10-18-minty-quail-quiet-ibis, the still watch, the debug readout, the
+frame recorder and the frame trace since the record 2026-10-18-minty-quail-calm-wombat, the
+developer's rig, the route rig and its planner since the record
+2026-10-18-minty-quail-plush-chipmunk, and the day director and the run log's session since #1482,
+through the world the director stands (`DayWorld`) and the city scene's dressing for a walk
+(`CityDressing`). `main.gd` reads the city only to build it and hand its parts on; the developer
+settings it writes into the city's fields, and the city's event manager and crowd, wait for who
+builds them.
 
 **Other readers of a whole `City` under `src/`**, which #1166's row does not list:
 
-- `src/day/day_world.gd` holds the city and hands it out (`DayWorld.city()`), and the run log's
-  session (`src/telemetry/run_session.gd`) asks it for the city's map, its streets and its crowd's
-  sources, which it hands the observer and the run log's map; the day director takes it from there
-  too.
+- `src/day/day_world.gd` holds the city whole only for an authored scene to install itself into
+  (`DayWorld.scene_city()`): the main scene hands it only when a scene is played, and the day
+  director passes it to `AuthoredScene.install()`, which waits with the scene recipes below.
 - The scene recipes take the city whole: `SceneRecipeRuntime.install()` (and the `AuthoredScene`
   it extends, `src/run/authored_scene.gd`), and `SceneRecipeDraft.record()` and `compose()`
   (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 3 waits for `install()` to take a

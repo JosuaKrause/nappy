@@ -51,9 +51,12 @@ var resistance: ResistanceDirector
 var player: Stroller
 var baby: Baby
 var day: DayController
-## The city's parts in the world being walked, each null in a world with no city (the escape's
-## building), taken from the world `use_the_world()` hands: its map, today's streets, its crowd and
-## what dresses it for the day.
+## Whether the world being walked is a city (`DayWorld.is_in_a_city()`): the one answer every
+## city branch below keys on. False in the escape's building and before any world is handed.
+var _in_a_city := false
+## The city's parts in the world being walked, all four there in a city and null in any other world,
+## taken from the world `use_the_world()` hands: its map, today's streets, its crowd and what
+## dresses it for the day.
 var _city_map: CityMap
 var _streets: DayStreets
 var _crowd: Crowd
@@ -125,6 +128,7 @@ func use_the_world(world: DayWorld, the_resistance: ResistanceDirector,
 	events = world.events() if world else null
 	player = world.player() if world else null
 	baby = world.baby() if world else null
+	_in_a_city = world != null and world.is_in_a_city()
 	_city_map = world.city_map() if world else null
 	_streets = world.streets() if world else null
 	_crowd = world.crowd() if world else null
@@ -181,7 +185,7 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 	day.use_the_walk(world.home_map(), world.player())
 	# The city becomes today's city before anything is placed in it: the scheduler has to see the
 	# parks that are still parks, not yesterday's.
-	if _dressing:
+	if _in_a_city:
 		_dress_the_city(today)
 	var errors: Array[String] = []
 	if _scene:
@@ -247,7 +251,7 @@ func _plan_the_walk(world: DayWorld, today: int) -> void:
 	var none: Array[String] = []
 	events.start_day(spec, rng, spend.consumed_one_shots if spec.spends_the_one_shots() else none,
 			world.start_position())
-	if not _dressing:
+	if not _in_a_city:
 		return
 	# The day's seals are planned inside the call above, and a `fallen_tree_seal` takes a street
 	# tree's own pit. `City.start_day` already emptied the pits its own closures took, so this is
@@ -283,7 +287,7 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 	if flags_decide and not _flags_start.is_null():
 		start_at = _flags_start.call(config.spawn_target)
 	events.stream_around(start_at)
-	if _crowd:
+	if _in_a_city:
 		_start_the_crowd(start_at, today)
 		# The smallest wiring for the checkpoint gates: `DayStreets.region_plan()` is already valid
 		# by here (the dressing's `start_day()` built it above), so the crowd just needs to be told
@@ -305,7 +309,7 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 ## The console's line for a walk just started, `ms` after the start began: what was planned and, in a
 ## city, who is on its streets and what is calm and closed.
 func _print_the_start(ms: int) -> void:
-	if _crowd:
+	if _in_a_city:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
 				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
 				events.active_count(), events.owed_ahead(), _crowd.agent_count(), day.time_total]
@@ -351,7 +355,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# rather than after it, and before `RunCalendar.finish_day()`, which is what commits a won
 	# day's spending. A lost day gives everything back, so it is asked of a win only. See
 	# `EventManager.light_what_she_never_met()`. Only a day walked home has one.
-	if result == GameEnums.DayResult.WON and player and _dressing \
+	if result == GameEnums.DayResult.WON and player and _in_a_city \
 			and spec.goal_kind() == DaySpec.Goal.HOME:
 		events.light_what_she_never_met(player.global_position)
 	# What ended the day, read once in the frame it ended (see `landed_by_group()`).
@@ -426,7 +430,7 @@ func landed_by_group() -> Dictionary:
 			if points > 0.0:
 				var name := instance.logged_name()
 				by_group[name] = float(by_group.get(name, 0.0)) + points
-	if _crowd:
+	if _in_a_city:
 		for agent: CrowdAgent in _crowd.agents():
 			var points := agent.excitement.landed()
 			if points <= 0.0:
@@ -444,7 +448,7 @@ func landed_by_group() -> Dictionary:
 ## camera shows. Nothing to prepare for a world with no city, or a player outside the tree, which
 ## has no viewport to measure — never the case in the running game.
 func _prepare_the_scenery_round_her() -> void:
-	if not _dressing or not player or not player.is_inside_tree():
+	if not _in_a_city or not player or not player.is_inside_tree():
 		return
 	var camera: Camera2D = player.get_node("Camera2D")
 	camera.force_update_scroll()

@@ -1311,7 +1311,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 		var band := Rect2(Vector2.ZERO, size).grow(
 				CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
 		beyond_the_band = beyond_the_band or not band.encloses(window)
-		city.scenery.update(window, true)
+		city.prepare_scenery_in(window)
 		var lo := city.map.world_to_tile(window.position)
 		var hi := city.map.world_to_tile(window.end - Vector2.ONE)
 		var unpainted := 0

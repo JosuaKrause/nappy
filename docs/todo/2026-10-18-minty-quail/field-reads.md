@@ -68,9 +68,8 @@ own:
   `walk_ground.gd`, `event_director.gd`), which the placement rewrite
   rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
   row 3b's.
-- `src/main.gd` and the city scene (`src/city/city.gd`), which the third hand-ins pull request and
-  who builds the event manager and the crowd rewrite (`city-hand-ins.md`), the city scene then row
-  3c.
+- `src/main.gd` and the city scene (`src/city/city.gd`), which who builds the event manager and the
+  crowd rewrites (`city-hand-ins.md`), the city scene then row 3c.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's, and the map's capture and restore (`src/city/recipe_city_context.gd`), the design "The
   city's own classes" names below.
@@ -137,10 +136,10 @@ Left, each its own design question:
 - **The lines the placement rewrite, the third hand-ins pull request and the events' interface
   touch** are converted after those land:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
-  - `day_director.gd` and `main.gd`, the third hand-ins pull request's smaller cases still left, and
-    the reads of the city's event manager and crowd, which wait for who builds them
-    (`city-hand-ins.md`); `run_session.gd`'s reads of `City.map`, `City.crowd` and `Crowd.sources`
-    wait with them, for the city's and the crowd's passes (the record
+  - `main.gd`'s reads of the city's event manager and crowd, which wait for who builds them
+    (`city-hand-ins.md`); `day_director.gd`'s reads of other classes' fields (the map's block plans
+    and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
+    passes; `run_session.gd`'s read of `Crowd.sources` waits for the crowd's pass (the record
     2026-10-18-minty-quail-dappled-chipmunk);
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and

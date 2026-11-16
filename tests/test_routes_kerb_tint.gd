@@ -208,7 +208,7 @@ func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> V
 	var sources := {}
 	var atlas := {}
 	for key: Vector2i in keys:
-		city.scenery.update(SceneryGround.bounds(key), true)
+		city.prepare_scenery_in(SceneryGround.bounds(key))
 		t.check(city.scenery_ground.chunks().has(key), "visited neighborhood %s has a ground owner" % key)
 		for y in SceneryGround.CHUNK_TILES:
 			for x in SceneryGround.CHUNK_TILES:
