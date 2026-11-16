@@ -63,8 +63,8 @@ review; a builder runs it again):
   `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
   own, which hands the run log what its observer reads of the danger edge, the badges that are
   announcing (the orchestrator's proposal). `interior_scene.gd`'s `Stroller` goes with the
-  building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, after the
-  third hand-ins step; `Prop` as a data constant, in a pull request of its own; `GameSave` and
+  building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, wait
+  for no other item; `Prop` as a data constant, in a pull request of its own; `GameSave` and
   `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts (minty-quail's `field-reads.md`); the
   calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`; and `RowGround`'s
   `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`, read by `_burns_its_front()`) when placement

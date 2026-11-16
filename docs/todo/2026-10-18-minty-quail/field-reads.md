@@ -97,8 +97,8 @@ Left, each its own design question:
 - **A run's parts.** `RunState` hands out `header`, `calendar`, `resistance`, `attempt_spend`,
   `posters` and `facts`, and a read through one is two field reads (`RunHeader`, `RunCalendar`,
   `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
-  part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
-  request touches and the tests read them, so it waits for that pull request.
+  part's fields behind methods; the vars are renamed, and the tests read them, so the conversion
+  rewrites those reads with it; it waits for no other item.
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
   by class: the city map's (`CityMap`) in the routes (the region and seal planners), the blackout, the streamed ground and the city's generator, besides the
   events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
@@ -122,12 +122,11 @@ Left, each its own design question:
   name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
   failure. It becomes underscore-private with the tests-one-module item (`tests-one-module.md`), when
   that suite reads through a method the game also calls.
-- **The lines the placement rewrite, the third hand-ins pull request and the events' interface
-  touch** are converted after those land:
+- **The lines other work touches** are converted with that work:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
-    hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s reads of other classes' fields (the map's block plans
-    and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
+    hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
+    reads of other classes' fields (the map's block plans and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
     passes; `run_session.gd`'s read of `Crowd.sources` waits for the crowd's pass (the record
     2026-10-18-minty-quail-dappled-chipmunk);
   - the readers already handed their parts in place of the city (the records
