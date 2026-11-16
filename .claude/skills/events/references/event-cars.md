@@ -58,7 +58,8 @@ stands there.
   180° turn in one frame in her view; once its man is back in it drives on along its route the way
   it was going instead, a car that has stood, so it waits while she is in its way. Any car leaving
   is gone only once she could not be watching, and a sent car leaves on through roads from box to
-  box, never turning round (`EventDeparture`, `WayOn.leg_to_leave_by()`).
+  box (`EventDeparture`, `WayOn.leg_to_leave_by()`); it turns round only where a body put down on its
+  road since its leg was built leaves it no leg, and falls to the way out every event has.
 - **A car that stops where it noticed her stops in junction boxes**, standing in the crossing
   traffic's way for a whole chase. One that notices her with any of its body on a junction drives on
   until it is clear of the box (`EventInvestigation._stands_in_a_junction()`). A test on a hand-made

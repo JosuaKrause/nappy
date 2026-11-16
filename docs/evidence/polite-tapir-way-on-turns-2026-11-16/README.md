@@ -5,11 +5,13 @@ junction box while she is within `Tuning.OUT_OF_SIGHT` (420px) of it, and where 
 box is no through road it turns the corner in that box onto the crossing street, as a quarter turn
 of 16px radius driven as three straight pieces (`WayOn`). A military convoy the director sends is
 warned of first, comes down the road at her from ahead of her, drives past her and on down the
-street the same way, and is gone once it is past 420px from her.
+street the same way, turns the corner where the street on is no through road, and is gone once it
+is past 420px from her.
 
 **Limits.**
 
-- **`patrol-turning.png` and `convoy-leaving.png` are taken with `--follow`**, a camera parked on
+- **`patrol-turning.png`, `convoy-leaving.png` and `convoy-turning.png` are taken with
+  `--follow`**, a camera parked on
   the car wherever it goes, not her camera. She stands about 600px east of the box the patrol
   turns in, outside her own view (640 by 360 around her). So these frames show how the turn and the
   driving on look, and nothing about what she sees: the car is gone from the follow camera's last
@@ -48,9 +50,14 @@ their burst, first, second or third):
   --press snapshot_burst 15 --press snapshot_burst 18`; the first burst's frames 1, 8 and 15, the
   second's 1, 8 and 15, the third's 1 and 10, each a 400 by 300 crop round the follow camera's
   centre: the truck passing her (she is at the top left of the first two), driving on west, and
-  gone at the box where its route turns north.
+  gone at the box where its route turns north. Its turn falls between the two frames taken from
+  the third burst, so this sheet shows no truck turning.
+- `convoy-turning.png`: the same run's frames, the first burst's 1 and 8, the second's 1 and 15,
+  the third's 6, 7, 8 and 10, cropped the same way: the truck coming down the road from ahead of her
+  and passing her (she is at the top left of the first two), driving on west, entering the box,
+  swung part way round in it, driving north out of it, and gone.
 
-**Retained.** The three contact sheets (quantized to 256 colours), each selected burst's
+**Retained.** The four contact sheets (quantized to 256 colours), each selected burst's
 `burst.json` (its frame times, under `bursts/`), and `ahead-lines.txt`, the run log's `start`,
 `ahead`, `cue` and `shot` lines of the three runs, which say where each row was created and from
 which end. The other frames and the full logs stayed in scratch space.

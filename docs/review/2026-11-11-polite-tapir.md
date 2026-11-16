@@ -13,6 +13,10 @@ truck drives toward her in the lane beside her and past her.
 Watch whether each reads as someone coming her way rather than appearing beside her, whether the
 dog walker coming at her leaves you the time to step aside or cross that a dog walker already out in
 a street, which she walked up to, would leave you, and whether
-the convoy's badge, then its truck coming down the road at her, feels warned or sprung. The pictures of one arrival of
-each are in [the evidence folder](../evidence/polite-tapir-sent-ahead-arrivals-2026-11-16/README.md).
+the convoy's badge, then its truck coming down the road at her, feels warned or sprung. The pictures of the dog
+walker's and the patrol's arrivals are in
+[the arrivals folder](../evidence/polite-tapir-sent-ahead-arrivals-2026-11-16/README.md), whose convoy
+sheet shows a truck coming from behind her, which the director does not send; the first frames of
+[a convoy sheet in a second folder](../evidence/polite-tapir-way-on-turns-2026-11-16/convoy-turning.png)
+show its truck coming down the road from ahead of her and passing her.
 Does each of the three arrive as something you can see coming and walk around?
