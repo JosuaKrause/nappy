@@ -419,8 +419,8 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 		var at := walker.global_position
 		var view_at := at - corner_at - corner_size * 0.5
 		events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
-		t.check(not events.sees(at),
-				"the neighbor stands under the covered corner, which the view does not see")
+		t.check(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0).has_point(at) and not events.sees(at),
+				"the neighbor stands in the view, under the covered corner")
 		late.set_sight(events.sees)
 		late.tick(STEP)
 		t.check(not _said(lines, "taken with the raid") and is_instance_valid(walker)
@@ -461,7 +461,8 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) ->
 					Tuning.VIEW_HALF_EXTENT.y * 2.0 + 2.0)
 			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), covered)
 			var box := EventFootprints.box_of(walker.def)
-			t.check(events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
+			t.check(not Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0).has_point(feet)
+					and events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
 					"%s scheme: their feet are just below the view, their figure in it" % scheme)
 			late.tick(STEP)
 			t.check(not _said(lines, "taken with the raid") and not walker.is_finished,
