@@ -17,6 +17,8 @@ extends RefCounted
 ## each other leak at exit; `DayUnits` holds which touch which, by name. What it drew is written
 ## once, by `UnitDraw`. Model.
 
+## In `PlacementGround.Kind`'s order; a unit's name enters its rank and stream seeds, so a
+## member added to or reordered in that enum moves every draw.
 const _KIND_NAMES: Array[String] = ["street", "junction", "alley", "open"]
 
 var _kind := PlacementGround.Kind.STREET

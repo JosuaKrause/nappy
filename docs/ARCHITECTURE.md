@@ -268,11 +268,12 @@ src/
 	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
 	                      junction box, or a shared alley, park or square
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
-	                      every touching unit of lower rank, from one fresh bag of its view and kind
-	                      of ground, judged among the dawn's plans and the touching units' draws,
-	                      never a plan her walk sites
-	unit_fills.gd         the day's bag fills, one for each view and kind of ground, worked out the
-	                      first time a unit draws and kept for the day
+	                      every touching unit of lower rank, from one fresh bag of the fill
+	                      `UnitFills` answers for its view and kind of ground, judged among the
+	                      dawn's plans and the touching units' draws, never a plan her walk sites
+	unit_fills.gd         the day's bag fills, asked for by view and kind of ground and answered by
+	                      the view whatever the ground, worked out the first time a unit draws and
+	                      kept for the day
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
