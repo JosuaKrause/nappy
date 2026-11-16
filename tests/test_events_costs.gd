@@ -324,8 +324,8 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 ## The café playtest 05 named, and the reason it named it: the café that exists to force a crossing
 ## has to be findable at all. Counted over the whole map, since what she meets on a route is a
 ## fraction of it. The other decision it named, the dog walker's, arrives by construction: two of
-## the first three events the director hands out on day one are dog walkers, which
-## `tests/test_route_bag.gd` holds.
+## the first three marbles the director draws on day one are dog walkers, which
+## `tests/test_route_bag.gd` holds where she has a sidewalk ahead of her.
 ##
 ## Stated as a **per-seed floor**, since the density is a fixed number of events: every row added
 ## to the day-1 pool takes a share of it, and a single total across a few seeds is a tight enough

@@ -5,11 +5,11 @@ extends RefCounted
 ## interrupted exactly as it was, that rigging a bag makes and loses no marble but the ensured one
 ## (inbox #561 in coral-bunny: "you will be left with two initialized bags: 1 with x elements and one with n-x+1
 ## elements"), that an inner bag of n marbles gives n events and is gone, that a stretch of her
-## route the length of a bag has the rows' own mix, that day 3's lesson is still first and paid for
-## by nothing in the bag, and that after day 6's and day 11's marks the task's row is one of the next
-## events placed on her route, where she can reach it, and in the world once she walks on: day 11's
-## mast ahead of her on the route band, day 6's man shouting on the street she walks (whose siting
-## `tests/test_day6_yeller_met.gd` holds).
+## route the length of a bag has the rows' own mix where nothing waits for room, that day 3's
+## lesson is still first and paid for by nothing in the bag, and that after day 6's and day 11's
+## marks the task's row is one of the next events placed on her route, where she can reach it, and
+## in the world once she walks on: day 11's mast ahead of her on the route band, day 6's man
+## shouting on the street she walks (whose siting `tests/test_day6_yeller_met.gd` holds).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -316,8 +316,9 @@ func _test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t: TestRunner) ->
 				else ": not " + ", ".join(wrong)))
 
 ## **Day one's dog walkers come by construction** (PLAYTEST-05 6; inbox #561 in coral-bunny, a
-## rigged bag): walking a real day one's plan, two of the first three events the director hands
-## out on her route are dog walkers, on every seed tried.
+## rigged bag): walking a real day one's plan down the arterial's sidewalk, where a dog walker always
+## has a sidewalk ahead of her to come down, two of the first three events the director hands out on
+## her route are dog walkers, on every seed tried.
 func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner) -> void:
 	var day := 1
 	var short: Array[String] = []

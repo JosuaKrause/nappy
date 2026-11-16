@@ -31,7 +31,9 @@ func run(t: TestRunner) -> void:
 	for vertical: bool in [true, false]:
 		_test_the_patrol_comes_down_the_lane_that_drives_toward_her(t, vertical)
 		_test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t, vertical)
-		_test_a_leg_down_the_lane_keeps_off_the_paving(t, vertical)
+		_test_no_leg_where_the_car_would_drive_onto_paving_in_her_sight(t, vertical)
+	_test_no_leg_where_the_car_would_drive_into_a_closure_in_her_sight(t)
+	_test_no_leg_where_the_car_would_drive_off_the_map_in_her_sight(t)
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
 	_test_a_sent_row_starts_clear_of_a_placed_plan(t)
 	_test_a_sent_row_with_no_room_lets_the_next_marbles_through(t)
@@ -58,8 +60,13 @@ static func _street(vertical := true) -> CityMap:
 	return map
 
 static func _her(vertical := true) -> Vector2:
-	var tile := HER if vertical else Vector2i(HER.y, HER.x)
-	return (Vector2(tile) + Vector2(0.5, 0.5)) * TILE
+	return _turned(HER, vertical)
+
+## The middle of `tile` of the street running north-south, or of the same tile turned onto the
+## street running east-west.
+static func _turned(tile: Vector2i, vertical: bool) -> Vector2:
+	var turned := tile if vertical else Vector2i(tile.y, tile.x)
+	return (Vector2(turned) + Vector2(0.5, 0.5)) * TILE
 
 ## The way along the street she walks: north on the street running north-south, west on the one
 ## running east-west.
@@ -80,7 +87,11 @@ static func _director(map: CityMap, row: String, plans: Array[EventPlan],
 ## What the director hands out once its wait has passed, with her at her tile walking along the
 ## street (`_walking()`).
 static func _due(director: EventDirector, vertical := true) -> Array:
-	return director.due(10.0, _her(vertical), _walking(vertical) * Tuning.WALK_SPEED)
+	return _due_at(director, _her(vertical), vertical)
+
+## The same with her at `her`.
+static func _due_at(director: EventDirector, her: Vector2, vertical := true) -> Array:
+	return director.due(10.0, her, _walking(vertical) * Tuning.WALK_SPEED)
 
 ## How far `point` lies along the street from her, the way she walks.
 static func _ahead_of_her(point: Vector2, vertical := true) -> float:
@@ -180,49 +191,79 @@ func _test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t: TestRunner
 	t.check(with_her > 0 and at_her > 0,
 			"and it comes from either end (%d from behind her, %d toward her)" % [with_her, at_her])
 
-## **A leg down a lane of the road never runs onto ground no car may be on**: with the junction box
-## past her paved (the next box the way she does not walk, tiles 42 to 47 of her street, paved by a
-## precinct on the street that crosses there, `CityMap.add_precinct()`: its blocks -1 and 0, so it runs
-## through the box from off the map's edge, and a precinct on either street paves the box), the
-## patrol's and the convoy's legs keep to carriageway every tile of the way and still run past her.
-## On the street unpaved the same legs reach that box, so the check is not vacuous.
-func _test_a_leg_down_the_lane_keeps_off_the_paving(t: TestRunner, vertical: bool) -> void:
+## **No car is sent where its drive in her sight would run onto ground no car may be on**: with the
+## junction box past her paved (the next box the way she does not walk, tiles 42 to 47 of her street,
+## paved by a precinct on the street that crosses there, `CityMap.add_precinct()`: its blocks -1 and 0,
+## so it runs through the box from off the map's edge, and a precinct on either street paves the box),
+## no patrol or convoy is sited with her six tiles from it, since a car whose leg ended short of the
+## box would drive on over it as it left (`EventDeparture.begin()`). On the street unpaved the same
+## rows are sited, so the check is not vacuous. With her twenty tiles from the box, further than a
+## car leaving is in her sight (`Tuning.OUT_OF_SIGHT`), they are sited again, and every tile from the
+## leg's place to that far past her, or to the leg's end where that is further, is carriageway.
+func _test_no_leg_where_the_car_would_drive_onto_paving_in_her_sight(t: TestRunner,
+		vertical: bool) -> void:
 	var name := "north-south" if vertical else "east-west"
 	var paved := _street(vertical)
 	paved.add_precinct(Vector4i(0 if vertical else 1, 3, -1, 0))
-	var paving_from := 3 * CityMap.period()
+	var further := _turned(HER + Vector2i(0, -14), vertical)
 	for row: String in ["police_patrol", "military_convoy"]:
-		var reached := 0
-		for seed_value in range(1, 9):
-			var due := _due(_director(_street(vertical), row, _no_plans(), seed_value), vertical)
-			if due.size() >= 2 and _furthest_tile(due[1] as PackedVector2Array, vertical) >= paving_from:
-				reached += 1
-		t.check(reached > 0, "on the street running %s unpaved, a %s's leg reaches tile %d (%d of 8)"
-				% [name, row, paving_from, reached])
-		var sited := 0
+		var unpaved := 0
+		var beside := 0
+		var away := 0
 		var wrong: Array[String] = []
 		for seed_value in range(1, 9):
-			var due := _due(_director(paved, row, _no_plans(), seed_value), vertical)
+			if _due(_director(_street(vertical), row, _no_plans(), seed_value), vertical).size() >= 2:
+				unpaved += 1
+			if _due(_director(paved, row, _no_plans(), seed_value), vertical).size() >= 2:
+				beside += 1
+			var due := _due_at(_director(paved, row, _no_plans(), seed_value), further, vertical)
 			if due.size() < 2:
 				continue
-			sited += 1
+			away += 1
 			var path := due[1] as PackedVector2Array
 			var last := path[path.size() - 1]
 			var going := (last - path[0]).normalized()
-			if not _all_carriageway(paved, path, vertical) \
-					or (last - _her(vertical)).dot(going) <= 0.0:
+			var gone := further + going * Tuning.OUT_OF_SIGHT
+			var lane_gone := Vector2(path[0].x, gone.y) if vertical else Vector2(gone.x, path[0].y)
+			var drives_to := last if (last - lane_gone).dot(going) > 0.0 else lane_gone
+			if not _all_carriageway(paved, PackedVector2Array([path[0], drives_to]), vertical):
 				wrong.append("seed %d: %s" % [seed_value, path])
-		t.check(sited > 0 and wrong.is_empty(),
-				"with a precinct past her on the street running %s, every %s's leg keeps to " % [name, row]
-				+ "carriageway and runs past her (%d sited)%s" % [sited,
-					"" if wrong.is_empty() else ": " + "; ".join(wrong)])
+		t.check(unpaved > 0 and beside == 0,
+				"on the street running %s, a %s is sited %d of 8 times unpaved and " % [name, row, unpaved]
+				+ "%d with the box six tiles past her paved" % beside)
+		t.check(away > 0 and wrong.is_empty(),
+				"and %d of 8 times with her twenty tiles from it, its drive in her sight " % away
+				+ "all carriageway%s" % ("" if wrong.is_empty() else ": " + "; ".join(wrong)))
 
-## The furthest tile along the street, the way the map's coordinates grow, that `path` reaches.
-static func _furthest_tile(path: PackedVector2Array, vertical: bool) -> int:
-	var furthest := -1
-	for point in path:
-		furthest = maxi(furthest, int(floorf((point.y if vertical else point.x) / TILE)))
-	return furthest
+## **Nor where it would drive into a closed street in her sight**: with the carriageway closed four
+## tiles past her (`CityMap.closed_tiles`, which a car is stopped by, `Mover.vehicle()`), a car would
+## stop at the closure and turn onto a way out in her view, so no patrol or convoy is sited.
+func _test_no_leg_where_the_car_would_drive_into_a_closure_in_her_sight(t: TestRunner) -> void:
+	var map := _street()
+	var closed := {}
+	for x in range(Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH):
+		closed[Vector2i(x, HER.y + 4)] = true
+	map.closed_tiles = closed
+	for row: String in ["police_patrol", "military_convoy"]:
+		var sited := 0
+		for seed_value in range(1, 9):
+			if _due(_director(map, row, _no_plans(), seed_value)).size() >= 2:
+				sited += 1
+		t.check(sited == 0, "with the carriageway closed four tiles past her, no %s is sited (%d of 8)"
+				% [row, sited])
+
+## **Nor where it would drive off the map in her sight**: six tiles from the map's south end,
+## walking north, a car driving south would reach the end and turn onto a way out in her view, so no
+## patrol or convoy is sited.
+func _test_no_leg_where_the_car_would_drive_off_the_map_in_her_sight(t: TestRunner) -> void:
+	var map := _street()
+	var her := _turned(Vector2i(HER.x, LENGTH - 6), true)
+	for row: String in ["police_patrol", "military_convoy"]:
+		var sited := 0
+		for seed_value in range(1, 9):
+			if _due_at(_director(map, row, _no_plans(), seed_value), her, true).size() >= 2:
+				sited += 1
+		t.check(sited == 0, "six tiles from the map's end, no %s is sited (%d of 8)" % [row, sited])
 
 ## Whether every point of `path`, a half tile at a time, is on ground a car may be on.
 static func _all_carriageway(map: CityMap, path: PackedVector2Array, vertical: bool) -> bool:

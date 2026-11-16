@@ -26,8 +26,9 @@ At `sleepiness = 100` the baby falls asleep and the day enters its **return phas
 
 **In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
 fires the moment `EventBus.return_phase_started` does, owing `EventDirector.RETURN_PATROLS_PER_ACT`
-(`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so it comes within
-`EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
+(`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so its marble is drawn
+within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before (a patrol with no room
+then waits for a later turn that has some), and switching its pacing to
 `EventDirector.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
 — see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
 and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
@@ -1291,9 +1292,9 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 
 `EventDef.paces` walks a route and turns round at the ends, for ever. It is the difference between
 a `dog_walker`, which is *going somewhere* and is gone at the end of its route, sent down her
-sidewalk toward her and past her (inbox #1460), and a man shouting, who is **at** a place. Without it the only way to say the second thing is to make
-him stationary, and a stationary source on a fixed patch is a line you draw once rather than
-something to time.
+sidewalk toward her and past her (inbox #1460), and a man shouting, who is **at** a place. Without
+it the only way to say the second thing is to make him stationary, and a stationary source on a
+fixed patch is a line you draw once rather than something to time.
 
 A paced event never reaches the end of its path, so it never departs and never expires: it is a
 fixture that moves. The price is its body — anything mobile is exempt from "solid things are solid",

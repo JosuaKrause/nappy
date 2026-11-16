@@ -239,14 +239,18 @@ each of them is** is drawn from a bag when it is handed out: `EventDirector` fil
 dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`,
 or sent ahead of her (the dog walker, the patrol and the convoy, below) —
 `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
-bag the mix she meets is the rows' own rather than a roll's
-streaks. A row `EventDirector.ROUTE_BAG_SHARE_OF` names has the share of the bag it sets instead,
+bag in which nothing waits for room the mix she meets is the rows' own rather than a roll's
+streaks. A row sent ahead of her that has no room waits (below) and comes after the marbles handed
+out meanwhile, which can carry it past its bag's end, so where one waits the mix is the bag's over
+the stretch that holds them all, not over the bag's length. A row `EventDirector.ROUTE_BAG_SHARE_OF` names has the share of the bag it sets instead,
 as near as whole marbles come: day 3's `charging_dog` is two marbles in sixteen (inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "I'd say we could do 2 dogs -- we don't need the charging dog
 that often", then "16 is fine" to a bag of 16), three in day 3's bag of 26 with the dog walker in it,
 set in the bag because the dawn's count of the moments it owes reads the row's weight too. The bag has its own
 stream and draws nothing from the director's; the director's own draws still follow from which row
-each handout is — a crossing spends one on the side it comes from, a row down her line none — so the
-same seed and the same walk are the same day. A row met `max_per_day` times that day has its further
+each handout is — a crossing spends one on the side it comes from, the convoy one on the end it
+comes from each time it is sited, the dog walker one on the point of its bark it is created at
+(`EventDirector.age_it_is_sent_at()`), and the patrol, a loose dog or a cyclist none — so the same
+seed and the same walk are the same day. A row met `max_per_day` times that day has its further
 marbles spent unmet. A row owed as itself — a sprinkled dog, a forced row — is not a marble; the
 return's patrols are rigged marbles (below).
 `tests/probes/olive_badger_route_mix.gd` measures the mix against the rows' weights over many seeds.
@@ -258,13 +262,19 @@ new marble bag with x holdings place the ensured item in the bag fill the remain
 the rest. `EventDirector.rig_her_route()` moves that many of the owed events to the head of the
 list, so the ensured marble is one of the next `x` events handed out on her route. A moment's marble
 is met as it is handed out; a place's is handed to her walk, and the place is met once her walk
-finds it a site, which can be after an event behind it, or never. These rigs stand:
+finds it a site, which can be after an event behind it, or never; and a row sent ahead of her
+that has no room when its marble is drawn waits for a later turn that has some (below), so it too
+can be met after an event behind it, or never. These rigs stand:
 
-- **On day one, two of the first three events handed out are dog walkers**
+- **On day one, two of the first three marbles drawn are dog walkers**
   (`EventDirector.DAY_ONE_DOG_WALKERS` within `DAY_ONE_DOG_WALKERS_WITHIN`): the dog-walker decision
   is to be made at least twice on day one (PLAYTEST-05 6), and a rigged bag of the dog walker that
-  the director sends ahead of her makes it whatever her walk. Three handouts are at most three of
-  the director's longest waits of walking (`AHEAD_INTERVAL`).
+  the director sends ahead of her makes it wherever she has a sidewalk ahead of her. Three handouts
+  are at most three of the director's longest waits of walking (`AHEAD_INTERVAL`). A dog walker
+  drawn where she has none (a park, a square) waits for room, and is met after an event behind it
+  or, if she never has room that day, not at all: that the guarantee bends to the pace is the
+  orchestrator's reading of sent-ahead-pace, the player's "in place of, at the same clock", which
+  the player has accepted only for a place's marble (inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md)).
 
 - **After day 6's mark, a man shouting's marble is one of the next two** (`ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT`;
   inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
@@ -357,13 +367,20 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
   flip on the director's stream, from the other end where the first has no place out of sight.
 
 The patrol's and the convoy's first leg is built in one place (`EventDirector.leg_in_the_lane()`),
-as the row is sited and, for the convoy, again from where she is when its warning ends. It keeps to
-ground a car may be on, every tile of it: it ends at the last tile of carriageway before a precinct
-or a junction box a precinct paves (`CityMap.is_driveable_at()`), and a leg that so ends short of her
-is no leg.
+as the row is sited and, for the convoy, again from where she is when its warning ends. **What is
+asked is where the car drives while she could see it, not where its leg ends**: a car whose route
+has run out leaves straight on the way it was going until it is `Tuning.OUT_OF_SIGHT` from her
+("Going away"), so the lane from the leg's place to that far past her, or to the leg's end where
+that is further, must be ground a car may be on every tile of the way, never a precinct or a
+junction box a precinct paves (`CityMap.is_driveable_at()`), and nothing on it may stop a car (a
+solid, a closed street, the map's edge), where it would turn onto a way out in her view. Otherwise
+the row has no room and waits. The leg is never cut short at the paving, since a car stopped there
+drives on over it as it leaves, and none is turned round there, since a car must not turn on the
+spot in her view. The return's patrols are the same sent copy and are sited the same way.
 
 **A sent row has no room**, and is not put in the world, where there is no ground for it (no
-sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square), where
+sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square, or not
+for the whole of its drive in her sight, above), where
 its first leg runs through a region door's clear ground, where it starts within
 `EventScheduler.EVENT_SPACING_ANY` of a placed plan, or where any point of its first leg is inside a
 field a plan keeps clear (`EventPlan.keeps_its_field_clear()`): nothing else happens inside a lethal
@@ -384,9 +401,12 @@ go, the way every route that runs out leaves.
 **How often**: the dawn's count of moments is unchanged, and the director's clock binds
 (`AHEAD_INTERVAL`, one handout every 11 to 26 seconds of walking), so the three come in place of
 some of the cats, loose dogs and cyclists she met, by their share of the bag (two marbles per unit
-of weight). *Open to the player's answer on the board (sent-ahead-pace): the other reading is the
-three on top of what she meets, a faster clock, which is that one constant.* A row's `max_per_day`
-bounds what the director hands out of it, the return's patrols included.
+of weight). That is the reading the player chose on the board (sent-ahead-pace: in place of, at the
+same clock); the other, the three on top of what she meets, would be a faster clock, that one
+constant. A row's `max_per_day` bounds what the director hands out of it, the return's patrols
+included, and **a row's count for the day is taken when its marble is drawn**, as a place's is: a
+sent row that waits for room has been counted already, so a convoy that waits is the day's one
+convoy (`max_per_day` 1) whether or not it is ever sent.
 
 ### The return owes her patrols
 
@@ -398,9 +418,11 @@ stretch of a day nothing in the catalogue was ever pacing for. `EventDirector.RE
 `EventBus.return_phase_started` fires, at the day's own heat — the patrol the director sends ahead
 of her (`EventDef.as_sent_ahead()`), already a marble of her route's bag from its first day. **Each is a rigged bag** in her route's bag (inbox
 #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "they will need rigged bags"): the patrol and `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` less one
-drawn from the bag she was drawing from, the next rigged once that bag is handed out, so each comes
-within its own bag's events rather than behind the dozens the dawn owes her route, which the
-pacing never reaches. From then on the queue
+drawn from the bag she was drawing from, the next rigged once that bag is handed out, so each one's
+marble is drawn within its own bag's events rather than behind the dozens the dawn owes her route,
+which the pacing never reaches. A patrol with no room when its marble is drawn waits for a later
+turn that has some, as every sent row does, so it is met later than its bag, or not at all, and two
+can be met on two turns running. From then on the queue
 rolls `EventDirector.RETURN_PATROL_INTERVAL` (9–16s) instead of `EventDirector.AHEAD_INTERVAL` (11–26s) for the
 rest of the day, so the extra rows have a real chance of landing inside a 33–47s leg rather than
 after she is already home. Acts I and II carry nothing, so the teaching days and the return she
@@ -419,7 +441,8 @@ don't need telegraphing" · "loose dog, cat don't need telegraphing"; inbox #598
 rule was about heavy penalty not *only* lethal" · "fire truck has heavy penalty".)* **A thing that
 does not telegraph its coming is outside the screen-edge badge and warning-first placement**:
 nothing announces it before she can see it, and it is met as it comes. Its in-world telegraph still
-meets the contract below; only the loose dog, met with that telegraph already spent, has none. `EventDef.telegraphs` carries it. **A heavy hit is a quarter of the meter or
+meets the contract below; only the loose dog and the dog walker the director sends ahead of her,
+each created down her line with that telegraph already spent, have none. `EventDef.telegraphs` carries it. **A heavy hit is a quarter of the meter or
 more in one pass** at a walk (`docs/COSTS.md`): the fire engine's 32 points and the convoy's 30 are,
 the loose dog's 24 is not. Applied to every row by its numbers:
 
@@ -2744,13 +2767,17 @@ cannot actually be made through at all; see "Solid things are solid". It is stil
 price a **row**: it is what being close costs.
 
 **A row is priced at the point of its own life she meets it at, and for a `TOWARD_PLAYER` row that
-is the moment it is created.** A `MAP` placement was made before she came near it, so by the time she walks up to it
-the telegraph is hours over and the pass is the whole field at full strength. A row the director
-sites down her own line is warned of before it exists and created just off screen with its
-telegraph spent, so it meets her at its own intensity from its first frame; the pass columns of
-`docs/COSTS.md` are measured from that creation, at the closest it is ever made
-(`SpawnSiting.least_distance()`), and a pulsing one at the point of its beat it is created at
-(`EventSpawner.age_when_warned()`).
+is the moment it is created**, but for the dog walker the director sends ahead of her. A `MAP`
+placement was made before she came near it, so by the time she walks up to it the telegraph is
+hours over and the pass is the whole field at full strength. A row the director sites down her own
+line is warned of before it exists, or created at once where it does not telegraph its coming, and
+created just off screen with its telegraph spent, so it meets her at its own intensity from its
+first frame; the pass columns of `docs/COSTS.md` are measured from that creation, at the closest it
+is ever made (`SpawnSiting.least_distance()`), and a pulsing one at the point of its beat it is
+created at (`EventSpawner.age_when_warned()`). The dog walker the director sends is the row she
+would come upon, put just ahead of her, and is created at a point of its bark drawn on the
+director's stream, so it is priced as the row she walks up to is, its pass averaged over its bark
+("The dog walker, the patrol and the convoy are sent ahead of her").
 
 **Three kinds of row are priced differently from what a straight read of the field would suggest.**
 A `hard_fail` row's `walk_through_cost()` is notional, because nobody finishes the walk. `car_accident`

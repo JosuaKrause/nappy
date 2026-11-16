@@ -574,8 +574,8 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## from where she is then (`EventDirector.leg_in_the_lane()`). Day 13's column arrives the same way
 ## (`ResistanceHappenings`). **The leg it is created on is asked again what every sent route is
 ## asked** (`EventDirector.clear_to_send()`: the region doors, and the room a placed plan keeps),
-## since she has walked on since it was sited; a refusal, or a leg cut short of her, withdraws the
-## warning.
+## since she has walked on since it was sited; a refusal, or no leg from where she is then (the car's
+## drive in her sight off the carriageway, `EventDirector.leg_in_the_lane()`), withdraws the warning.
 func _warn_in_its_lane(def: EventDef, her: Vector2, heading: Vector2,
 		sited: PackedVector2Array) -> void:
 	var lane := sited[0]
