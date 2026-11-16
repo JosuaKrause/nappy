@@ -1,7 +1,7 @@
-== rig-005740-seed90210-v0.29.2-487-g383011822
+== rig-084738-seed90210-v0.29.2-507-g9a89991ec
    0.0  start    doorstep (57,80), facing 180°
    0.0  ahead    dog_walker comes at her from 210px in front of her at (57,68), unannounced
-   0.0  ahead    dog_walker comes at her from 209px in front of her at (57,57), unannounced
+   0.0  ahead    dog_walker comes at her from 210px in front of her at (57,57), unannounced
 == rig-005956-seed31337-v0.29.2-487-g383011822
    0.0  start    doorstep (85,80), facing 180°
    0.0  ahead    police_patrol comes at her from 227px in front of her at (85,68)
