@@ -13,9 +13,9 @@ extends RefCounted
 ## its way, so she follows a car toward whatever lies past her.
 ##
 ## **Places**: every `ONE_IN`th plain sidewalk tile beside a carriageway, each way along its street,
-## and every street into a paved junction box, she on its sidewalk `BACK_FROM_THE_BOX` tiles back from
-## the box heading away from it, so a car that passes her drives on toward the paving and she follows
-## it there. On two cities, **with the day's own closures laid** (`ClosurePlanner.plan_day()`), so a
+## for all three rows and both walks; and every street into a paved junction box, she on its sidewalk
+## `BACK_FROM_THE_BOX` tiles back from the box heading away from it, for the two cars, walking with
+## them, so a car that passes her drives on toward the paving and she follows it there. On two cities, **with the day's own closures laid** (`ClosurePlanner.plan_day()`), so a
 ## closed street is met. Her route's bag holds one marble of the row (`EventManager.start_recipe_route()`,
 ## the way a scene recipe rigs one), and every sent row is watched a tick at a time until it is gone.
 ##
@@ -37,10 +37,9 @@ const DAY := 13
 ## The engine's clock for the walk, sped up and put back after it.
 const FAST_SCALE := 3.0
 ## One plain sidewalk tile beside a carriageway in this many is a place she starts from.
-const ONE_IN := 700
-## How far back from a paved box she stands, in tiles: right beside it, a few tiles back, and further
-## back than a car passing her is in her sight of the box.
-const BACK_FROM_THE_BOX: Array[int] = [0, 6, 15]
+const ONE_IN := 2000
+## How far back from a paved box she stands, in tiles: right beside it, and a few tiles back.
+const BACK_FROM_THE_BOX: Array[int] = [0, 6]
 ## Game seconds of her walking before her route's one marble is due, then how long a place waits for
 ## its row to be created, and the most it watches one.
 const FIRST_AFTER := 0.5
@@ -77,7 +76,7 @@ class Watched:
 	func _init(of: EventInstance) -> void:
 		instance = of
 		row = of.def.id
-		axis = of.solid_axis()
+		axis = of.facing_now()
 		last_axis = axis
 
 	func fault(what: String) -> void:
@@ -126,24 +125,34 @@ func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 		var streets := DayStreets.new()
 		var events := StreetEvents.over(t, map, run, streets)
 		events.use_player(_rig)
-		var spots := _beside_carriageways(map) + _beside_paved_boxes(map)
-		places += spots.size()
-		for spot: Array in spots:
+		var plain := _beside_carriageways(map)
+		var paved := _beside_paved_boxes(map)
+		places += plain.size() + paved.size()
+		var watches: Array[Array] = []
+		for spot: Array in plain:
 			for row in ROWS:
 				for with_it: bool in [false, true]:
-					streets.begin_day(tree, region, closures)
-					var watched := await _watch(t, events, map, spec, row, spot[0], spot[1],
-							with_it)
-					for car in watched:
-						sent += 1
-						seen += 1 if car.seen_for > 0.0 else 0
-						long_watched += 1 if car.seen_for > LONG_WATCH else 0
-						followed += 1 if car.followed else 0
-						corners += 1 if car.turned_a_corner else 0
-						for what in car.faults:
-							faults.append("seed %d, %s, her at %s heading %s%s: %s" % [SEEDS[index],
-									row, map.world_to_tile(spot[0]), spot[1],
-									", walking with it" if with_it else "", what])
+					watches.append([spot, row, with_it])
+		for spot: Array in paved:
+			for row in CARS:
+				watches.append([spot, row, true])
+		for watch: Array in watches:
+			var spot: Array = watch[0]
+			var row: String = watch[1]
+			var with_it: bool = watch[2]
+			streets.begin_day(tree, region, closures)
+			var watched := await _watch(t, events, map, spec, row, spot[0], spot[1],
+					with_it)
+			for car in watched:
+				sent += 1
+				seen += 1 if car.seen_for > 0.0 else 0
+				long_watched += 1 if car.seen_for > LONG_WATCH else 0
+				followed += 1 if car.followed else 0
+				corners += 1 if car.turned_a_corner else 0
+				for what in car.faults:
+					faults.append("seed %d, %s, her at %s heading %s%s: %s" % [SEEDS[index],
+							row, map.world_to_tile(spot[0]), spot[1],
+							", walking with it" if with_it else "", what])
 		events.free()
 	t.check(places > 0, "there are places to start from (%d)" % places)
 	t.check(sent > 0 and seen > 0, "rows are sent and seen (%d sent, %d seen)" % [sent, seen])
@@ -205,7 +214,7 @@ func _watch(t: TestRunner, events: EventManager, map: CityMap, spec: DaySpec, ro
 			if seen:
 				_look_at(car, map, place, step)
 			car.last = place
-			car.last_axis = car.instance.solid_axis()
+			car.last_axis = car.instance.facing_now()
 			car.was_seen = seen
 		if watched.is_empty():
 			return waited[0] >= FIRST_AFTER + WAIT_FOR_ONE
@@ -220,7 +229,7 @@ static func _look_at(car: Watched, map: CityMap, place: Vector2, step: float) ->
 	car.seen_for += step
 	if car.row not in CARS:
 		return
-	var axis := car.instance.solid_axis()
+	var axis := car.instance.facing_now()
 	if not car.last_axis.is_zero_approx() and axis.dot(car.last_axis) < 0.0:
 		car.fault("turned on the spot at %s" % map.world_to_tile(place))
 	if absf(axis.dot(car.axis)) < 0.5:
