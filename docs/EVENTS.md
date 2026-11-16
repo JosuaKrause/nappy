@@ -1339,7 +1339,7 @@ Each item quotes the code on this branch.
    won day, after which nothing draws. Today's placement rules are the invalidation,
    one class each (`StreetRule`: the calm she has not used, a door's clear ground, her line from a
    route's junction box onto the sidewalks she walks, her walked sidewalk, a pacing beat's opening
-   and a route's ground off the streets, and on a day's walk one sidewalk of every street near the
+   and a route's ground off the streets, and on a day's walk one sidewalk of every street of her
    routes kept open past the bodies drawn on it, with the escape's one notice at a time and its
    walk kept open in place of that), composed per walk (`StreetInvalidation`)
    with a location's own ground (`LocationFit`), each asked against the dawn's plans and the draws

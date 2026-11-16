@@ -9,7 +9,8 @@ extends RefCounted
 ##   nothing across stands.
 ## - **A roadblock is asked too**: its band takes the sidewalk on its side of the road, so it is
 ##   refused across from a stall on the far one and stands alone, and a stall drawn after it is
-##   refused across from it.
+##   refused across from it. Its band is its body at every heat: where its guard hunts (heat 4
+##   and 5) it still stands alone.
 ## - **A street a seal already closes** refuses nothing.
 ## - **A body in the box at the street's end** reaching its last open sidewalk is refused.
 ## - **Only her routes' streets**: a street beside the routes and one off them keep their two
@@ -74,6 +75,14 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 	var stall := _standing("market_stall", NORTH_SIDE)
 	t.check(not rule.allows(stall, NORTH_SIDE, standing, standing),
 			"a stall drawn after the roadblock, on the sidewalk it left open, is refused")
+	for level: int in [EventDef.HEAT_HUNTS_LEVEL, Tuning.RESISTANCE_GOAL]:
+		var hunting := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), level)
+		var hot := EventPlan.new(hunting, _map.tile_to_world(at))
+		t.check(hunting.ends_the_day() and rule.allows(hot, at, NONE, NONE),
+				"at heat %d, where its guard hunts, a roadblock alone stands: its band is its body" % level)
+		var hot_standing: Array[EventPlan] = [hot]
+		t.check(not rule.allows(stall, NORTH_SIDE, hot_standing, hot_standing),
+				"at heat %d a stall across from it is still refused" % level)
 
 func _test_a_street_a_seal_closes_refuses_nothing(t: TestRunner) -> void:
 	var rule := _rule()

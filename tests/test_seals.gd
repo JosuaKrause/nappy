@@ -750,7 +750,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 
 ## **A catalogue row's placement sees a seal or the region wall already reaching a route
 ## junction.** Before this, `EventScheduler.build_day`'s own three candidate-loop rules
-## (the junction rule, now `RouteLineRule`, among them) only ever asked a new candidate about *other
+## (the line rule, `RouteLineRule`, among them) only ever asked a new candidate about *other
 ## catalogue rows*: `SealPlanner.plan_day` and `RegionPlanner.plan_day` both run before
 ## `build_day`, so their bodies were never in the `already` array the rules check against, and a
 ## seal or the wall reaching a crossing from one street out (`docs/DECISIONS.md`, M129, "the four

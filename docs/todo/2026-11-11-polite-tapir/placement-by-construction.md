@@ -101,10 +101,10 @@ full text names the files each step owns.
    dog walker, the police patrol and the military convoy are to be put in the world just ahead of her
    when she comes near, and each one's route is worked out as it goes, from where it was put, so like
    the beats sited from her walk they depend on her path; until that is built they stay drawn by a
-   street, cut to its run. The free-line probe (`tests/probes/m129_zero_cost_line.gd`) shows routes
-   losing her free line, at four of five places where rows that each leave one together leave none,
-   since each line rule checks one piece and none joins a junction box's free tiles to the sidewalk she
-   walks. The player answered "sure" in chat to option C of free-line-density and to pick (c) of
+   street, cut to its run. The free-line probe (`tests/probes/m129_zero_cost_line.gd`) asks whether
+   rows that each leave her a free line together leave none; the line rule follows her line from a
+   junction box onto the sidewalks she walks, the home street's included, and the probe shows every
+   route keeping one. The player answered "sure" in chat to option C of free-line-density and to pick (c) of
    line-reach-close (inbox #1461). **Read as**: the draw gains a rule that follows her line from a
    junction box onto the sidewalk she walks, for every row that lands near her route, and a street that
    draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465). So step

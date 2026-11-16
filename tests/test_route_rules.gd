@@ -1,8 +1,10 @@
 extends RefCounted
 ## `RouteSidewalkRule`, `PacingOpeningRule` and `RouteGroundRule`, three of the rules that keep the
-## day's routes open (the line rule, `RouteLineRule`, has its own suite). **Why the first two build a
-## city:** each reads the route tree's own geometry (which sidewalk a route is walked along, the beat
-## a pacing man walks), and a stand-in corridor would be the rule's own arithmetic read back to it.
+## day's routes open (the line rule, `RouteLineRule`, has its own suite, and is asked here once, of
+## the home street a real corridor carries). **Why the first two build a city:** each reads the
+## route tree's own geometry (which sidewalk a route is walked along, the beat a pacing man walks),
+## and a stand-in corridor would be the rule's own arithmetic read back to it; the line rule's case
+## here is about what the real corridor carries from the real tree, which no stand-in can say.
 ## The one combined suite is for that shared setup: seed 4242 on day 5, its route tree and corridor,
 ## built once. **The ground rule reads only which tiles a route runs along and what kind of ground
 ## each is**, so its cases are one interaction each on a hand-drawn map (`StreetMap.full()` with one
@@ -27,6 +29,10 @@ extends RefCounted
 ##   sidewalk stands, and on the street she starts on, which the tree does not carry, it is refused
 ##   too; with them not counted, the line rules' ground and the home street's hold, it stands on
 ##   both.
+## - **The home street, in the real corridor:** a burst water main in the middle of the street the
+##   front door opens onto, whose field crosses both its sidewalks and stops short of the junction
+##   boxes at its ends, cuts her line from the door and is refused by the line rule; the same burst
+##   in the middle of a street far from every route stands.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -49,6 +55,7 @@ func run(t: TestRunner) -> void:
 	_test_a_body_on_a_routes_ground_off_the_streets_is_refused(t)
 	_test_a_body_on_a_routes_street_is_refused_where_the_streets_count(t)
 	_test_a_lens_over_a_routes_ground_off_the_streets_is_refused(t)
+	_test_the_home_street_is_part_of_her_line_in_the_real_corridor(t)
 
 ## `def` built at `tile`, given a counted role so it is asked about.
 func _at(id: String, tile: Vector2i) -> EventPlan:
@@ -257,3 +264,23 @@ func _test_a_lens_over_a_routes_ground_off_the_streets_is_refused(t: TestRunner)
 static func _pacing(map: CityMap, from: Vector2i, to: Vector2i) -> EventPlan:
 	return EventPlan.new(EventCatalogue.by_id("homeless_yeller"), map.tile_to_world(from),
 			PackedVector2Array([map.tile_to_world(from), map.tile_to_world(to)]))
+
+func _test_the_home_street_is_part_of_her_line_in_the_real_corridor(t: TestRunner) -> void:
+	var rule := RouteLineRule.new(_map, _corridor)
+	var burst := EventCatalogue.by_id("burst_water_main")
+	var home := _tree.street_it_starts_in().tile_rect().get_center()
+	var far := _far_from_the_routes()
+	t.check(far != Vector2i(-1, -1), "there is a street far from every route")
+	var on_the_home_street := EventPlan.new(burst, _map.tile_to_world(home))
+	var off_the_routes := EventPlan.new(burst, _map.tile_to_world(far))
+	var half_a_street := Tuning.STREET_WIDTH * Tuning.TILE_SIZE / 2.0
+	var half_a_block := Tuning.BLOCK_SIZE * Tuning.TILE_SIZE / 2.0
+	t.check(on_the_home_street.counts_against_the_line()
+			and burst.line_reach() > half_a_street - Tuning.TILE_SIZE / 2.0
+			and burst.line_reach() < half_a_block - Tuning.TILE_SIZE / 2.0,
+			"the burst counts against her line, and its field crosses the street but stops short "
+			+ "of the boxes at its ends")
+	t.check(not rule.allows(on_the_home_street, home, NONE, NONE),
+			"in the middle of the home street, cutting her line from the door, it is refused")
+	t.check(rule.allows(off_the_routes, far, NONE, NONE),
+			"in the middle of a street far from every route it stands")

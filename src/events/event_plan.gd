@@ -363,7 +363,7 @@ func counts_against_the_line() -> bool:
 ## is exact rather than a sample: a disc is convex, so a point within `reach` of both ends of a
 ## straight run is within `reach` of every point of it.
 func denies(at: Vector2, reach: float) -> bool:
-	if def.paces and path.size() >= 2:
+	if walks_a_beat():
 		for point in path:
 			if at.distance_to(point) > reach:
 				return false

@@ -1065,7 +1065,8 @@ together with everything the morning has already put down, would leave no free w
 end of one route street meeting the box, through the box, to the far end of every other, and to
 every alley mouth or park cut a route runs into beside the box or a walked sidewalk. A row that
 leaves the box a free region and the sidewalk a free line is still refused if the two do not touch:
-the seam between them is where the free-line probe found most of the lines it lost. **Checked
+a free region and a free line that do not meet leave her no line, and no rule that checks one piece
+sees it. **Checked
 before the row is accepted, never repaired after**, the same shape the closure invariant has: the
 day is asked, one row at a time, whether the city it is joining still has a line through every
 crossing, so a closed one never exists even for a moment.
@@ -1195,7 +1196,13 @@ every body, not only the roadblock.
 
 **A roadblock is asked too**: it spans the street by design, and its band takes the sidewalk on its
 own side of the road and leaves the far one, so it is refused where a body already closes that far
-sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin). Day 13's
+sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin). **The band
+is its body at every heat.** From heat 4 its guard hunts and the row's lethal inner disc would take
+both sidewalks by itself, but that reach is a pursuit that warns before it charges, not a wall, and
+the escape reads the same hunting roadblock at its band (`WalkGround`); so a hunting roadblock
+stands on a route's street wherever a cold one does. *Read as*, the orchestrator's pick on the
+board's heated-roadblock-body, open to the player's correction; it is one function
+(`OneSidewalkOpenRule._closing_radius()`). Day 13's
 roadblock phase stands its roadblocks in sections beside the routes, which the rule does not cover,
 and the task's own swap, which puts a roadblock across such a section where the day placed none
 close by, is not judged by the day's rules, so neither loses one.
