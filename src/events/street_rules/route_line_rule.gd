@@ -9,6 +9,13 @@ extends StreetRule
 ## free-line probe does, from the crossing onto her sidewalk, for every row that lands near her
 ## route.)*
 ##
+## **The home street is part of her line**: the street the front door opens onto is the first
+## stretch of every route, though the tree does not carry it (a door is not a route), so at each of
+## its two junction boxes it is an arm of the line like a route street, both its sidewalks walked,
+## as the free-line probe takes the home street as ground from the doorstep. That is a question
+## about the ground her line crosses; which routes the day counts as distinct, and the doorstep's
+## exemption there, are not touched by it.
+##
 ## It reads what stands round the piece, seals and the region wall included, so what another street
 ## holds within its reach invalidates here too. Every unit whose rows can deny a tile of a box or of
 ## a sidewalk's first columns touches every other such unit (the box, its four streets and the lots
@@ -75,10 +82,10 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## round it standing too, checked before a row is accepted and never repaired after.
 ##
 ## 1. **The ground** is the box's open tiles; for each route street meeting it, the open tiles of
-##    the sidewalk she walks along it; **that street's far sidewalk too while a pacing row stands on
-##    the street**, the candidate included, since the man shouting is passed on the far side
-##    (PLAYTEST-71: "time pass, don't route around them"); and the off-street tiles a route runs
-##    along next to the box or a walked sidewalk.
+##    the sidewalk she walks along it (both of the home street's); **that street's far sidewalk
+##    too while a pacing row stands on the street**, the candidate included, since the man
+##    shouting is passed on the far side (PLAYTEST-71: "time pass, don't route around them"); and
+##    the off-street tiles a route runs along next to the box or a walked sidewalk.
 ## 2. **Free** is a tile no standing row denies at its line reach, a pacing row at its lens.
 ## 3. **Each route street's far end** is the free tiles of its outermost open column away from the
 ##    box, on each of its sidewalks in the ground. A street with no open ground there (built over,
@@ -167,7 +174,8 @@ func _a_beat_stands_on(street: StreetNetwork.Segment, standing: Array[EventPlan]
 # ---------------------------------------------------------------- the pieces ---
 
 ## The routes' junction boxes with the ground the rule floods round each, worked out once a rule:
-## a few dozen boxes, the rule's own facts about the routes.
+## a few dozen boxes, the rule's own facts about the routes. The home street's two boxes are among
+## them whether or not a route crosses one, since her line starts on that street.
 func _route_pieces() -> Array[_Piece]:
 	if not _pieces_are_known:
 		var walked := {}
@@ -178,15 +186,23 @@ func _route_pieces() -> Array[_Piece]:
 				walked[segment.key()] = [] as Array[Rect2i]
 			var bands: Array[Rect2i] = walked[segment.key()]
 			bands.append(band)
-		for junction in _corridor.route_junctions():
-			_pieces.append(_piece_at(junction, walked))
+		var junctions: Array[Vector2i] = _corridor.route_junctions().duplicate()
+		var home := _corridor.street_it_starts_in()
+		if home:
+			for junction: Vector2i in [home.a, home.b]:
+				if not junctions.has(junction):
+					junctions.append(junction)
+		for junction in junctions:
+			_pieces.append(_piece_at(junction, walked, home))
 		_pieces_are_known = true
 	return _pieces
 
-## The piece round one route junction. **The arms are the on-corridor streets and nothing else**: a
-## turning off the corridor is not ground the guarantee is about. `walked` is each route street's
-## walked bands, by its key (`Corridor.walked_sidewalks()`).
-func _piece_at(junction: Vector2i, walked: Dictionary) -> _Piece:
+## The piece round one route junction. **The arms are the on-corridor streets and the home street,
+## and nothing else**: a turning off the corridor is not ground the guarantee is about. `walked` is
+## each route street's walked bands, by its key (`Corridor.walked_sidewalks()`); the home street
+## (`home`, null for none) has both its sidewalks walked, since she leaves the door onto it with
+## no route drawn down either.
+func _piece_at(junction: Vector2i, walked: Dictionary, home: StreetNetwork.Segment) -> _Piece:
 	var piece := _Piece.new()
 	var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
 	var extent := box
@@ -195,9 +211,13 @@ func _piece_at(junction: Vector2i, walked: Dictionary) -> _Piece:
 			if _map.is_open(Vector2i(x, y)):
 				piece.box.append(Vector2i(x, y))
 	for segment in _map.street_network().at_junction(junction):
-		if _corridor.depth(segment.tile_rect().position) != 0 or not walked.has(segment.key()):
+		var bands: Array[Rect2i] = []
+		if home and segment.key() == home.key():
+			bands = Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)
+		elif _corridor.depth(segment.tile_rect().position) == 0 and walked.has(segment.key()):
+			bands = walked[segment.key()]
+		else:
 			continue
-		var bands: Array[Rect2i] = walked[segment.key()]
 		var arm := _Arm.new(segment)
 		var away := segment.other_end(junction) - junction
 		for band in bands:

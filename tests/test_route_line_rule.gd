@@ -27,6 +27,11 @@ extends RefCounted
 ## - **A mouth:** with the north street a park her route crosses from the box, café tables in the
 ##   box's corner, whose field stops short of the park, close the box tiles the park opens onto:
 ##   refused; one corner over they stand.
+## - **The home street:** with the east street the one the front door opens onto, and her route
+##   leaving it down an alley from its south sidewalk, a man shouting on the street south of its
+##   east box, pacing into the box, whose lens cuts the alley's mouth off the home street, is
+##   refused, though no route runs along the home street and no route crosses either of its boxes;
+##   with no home street named he stands, and further down his street he stands.
 
 const NONE: Array[EventPlan] = []
 const JUNCTION := Vector2i(3, 3)
@@ -50,6 +55,7 @@ func run(t: TestRunner) -> void:
 	_test_three_route_streets_stay_joined(t)
 	_test_a_box_no_street_uses_keeps_a_free_tile(t)
 	_test_the_box_keeps_its_way_into_a_mouth(t)
+	_test_the_home_street_is_part_of_her_line(t)
 
 ## `id` standing at the middle of `tile`, walking a beat to `to` where one is given.
 func _standing(id: String, tile: Vector2i, to := Vector2i(-1, -1)) -> EventPlan:
@@ -157,6 +163,32 @@ func _test_the_box_keeps_its_way_into_a_mouth(t: TestRunner) -> void:
 			"café tables closing the box tiles the park her route crosses opens onto are refused")
 	t.check(rule.allows(EventPlan.new(EventCatalogue.by_id("cafe_tables"), map.tile_to_world(other)),
 			other, NONE, NONE), "one corner over they stand")
+
+func _test_the_home_street_is_part_of_her_line(t: TestRunner) -> void:
+	var map := StreetMap.full()
+	var alley: Array[Vector2i] = []
+	for y in range(48, 56):
+		for x in range(52, 54):
+			map.set_tile(Vector2i(x, y), GameEnums.TileType.ALLEY)
+			alley.append(Vector2i(x, y))
+	var corridor := FakeCorridor.new().set_routes([] as Array[Vector3i], [] as Array[Vector2i],
+			alley).set_home_street(EAST)
+	var rule := RouteLineRule.new(map, corridor)
+	var at := Vector2i(56, 51)
+	var man := EventPlan.new(EventCatalogue.by_id("homeless_yeller"), map.tile_to_world(at),
+			PackedVector2Array([map.tile_to_world(at), map.tile_to_world(Vector2i(56, 43))]))
+	t.check(man.denies(map.tile_to_world(Vector2i(53, 47)), man.row().line_reach())
+			and not man.denies(map.tile_to_world(Vector2i(53, 48)), man.row().line_reach()),
+			"his lens covers the home street's sidewalk at the alley's mouth, not the alley")
+	t.check(not rule.allows(man, at, NONE, NONE),
+			"a man whose lens cuts her route's alley off the home street is refused")
+	var nameless := RouteLineRule.new(map, FakeCorridor.new().set_routes(
+			[] as Array[Vector3i], [] as Array[Vector2i], alley))
+	t.check(nameless.allows(man, at, NONE, NONE), "with no home street named, he stands")
+	var further := Vector2i(56, 55)
+	var down := EventPlan.new(EventCatalogue.by_id("homeless_yeller"), map.tile_to_world(further),
+			PackedVector2Array([map.tile_to_world(further), map.tile_to_world(Vector2i(56, 51))]))
+	t.check(rule.allows(down, further, NONE, NONE), "further down his street he stands")
 
 func _tiles_of(rect: Rect2i) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []

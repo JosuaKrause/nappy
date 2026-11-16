@@ -11,10 +11,13 @@ extends StreetRule
 ##   reaching into the street's last open sidewalk, whichever draws first. A street draws all its
 ##   locations at once and its touching units draw before it or after it with what it drew in view,
 ##   so a street drawing after its neighbours keeps one sidewalk open, given what they drew.
-## - **A street already closed is left alone**: one a seal, a closure, the region wall or a
-##   roadblock closes has no open sidewalk to keep, and nothing is refused there.
-## - **A row that spans the street by design is never asked** (`EventDef.spans_the_street()`, the
-##   roadblock): it takes its whole section, both sidewalks, which is what it is for.
+## - **A street already closed is left alone**: one a seal, a closure or the region wall closes
+##   has no open sidewalk to keep, and nothing is refused there.
+## - **A roadblock is asked too** (*inbox #747 in woolly-penguin: "roadblocks currently are
+##   impossible to get past. one sidewalk must be open if they're en-route."*). It spans the street
+##   by design (`EventDef.spans_the_street()`), and its band takes the sidewalk on its own side of
+##   the road and leaves the far one, so it is refused where a body already closes that far
+##   sidewalk, and a body drawn after it is refused across from it the same way.
 ##
 ## It asks a body, never a cost: a row whose field alone covers both sidewalks is the line rules'
 ## question, and on a street off the routes it may stand (the leaf blower, the man shouting). Which
@@ -51,7 +54,7 @@ func _init(map: CityMap, corridor: Corridor, streets := COVERS) -> void:
 ## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
 		_placed: Array[EventPlan], around: Array[EventPlan]) -> bool:
-	if not candidate.obstructs() or candidate.row().spans_the_street():
+	if not candidate.obstructs():
 		return true
 	for street in _streets_reached_by(candidate):
 		if _covers(street) and _closes_its_last_sidewalk(street, candidate, around):

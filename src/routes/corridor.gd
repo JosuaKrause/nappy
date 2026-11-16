@@ -81,6 +81,9 @@ var _segment_depth := {}
 var _gaps := {}
 ## The junctions today's routes cross. See `RouteTree.junctions()` and `route_junctions()`.
 var _junctions: Array[Vector2i] = []
+## The street the routes start in, the one the front door opens onto. See
+## `street_it_starts_in()`.
+var _home_street: StreetNetwork.Segment = null
 
 ## `walked_sidewalks()`'s answer and the map it was worked out for.
 var _walked_sidewalks: Array = []
@@ -105,6 +108,7 @@ static func of(tree: RouteTree) -> Corridor:
 	for key in tree.gaps():
 		corridor._gaps[key] = true
 	corridor._junctions = tree.junctions()
+	corridor._home_street = tree.street_it_starts_in()
 	return corridor
 
 ## The junctions today's routes cross — `RouteTree.junctions()`, carried here because every
@@ -117,6 +121,14 @@ static func of(tree: RouteTree) -> Corridor:
 ## junction* and could not say *that crossing is still open*, which is the whole question.
 func route_junctions() -> Array[Vector2i]:
 	return _junctions
+
+## **The street the routes start in**: the one the front door opens onto
+## (`RouteTree.street_it_starts_in()`), null for an empty tree. The tree does not carry it, since a
+## door is not a route and every branch ends on it; it is still the first stretch of every route
+## she walks, so the line rule takes it as an arm of her line at its two junction boxes
+## (`RouteLineRule`). Nothing that counts the day's distinct routes asks it.
+func street_it_starts_in() -> StreetNetwork.Segment:
+	return _home_street
 
 ## How many grid steps off the corridor a tile is. Zero is on it, one is the rim, and it counts
 ## outwards; `DEEP` is the answer for ground the day's routes cannot reach at all or for a tile off

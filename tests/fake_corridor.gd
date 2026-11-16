@@ -1,18 +1,20 @@
 class_name FakeCorridor
 extends Corridor
 ## A stand-in for the day's corridor whose answers a check sets: the streets her routes run along,
-## the junctions they cross, the tiles a route runs along and the streets beside the routes, on the
-## city's whole lattice (`StreetNetwork`), so a street rule is asked on a hand-drawn map without a
-## route tree grown on a city. Every street not set is one turning off the routes and off the
-## route; a tile on no street is on the routes only where its tile is set. What it answers from
-## those (`walked_sidewalks()`) is the real corridor's own reading. The real corridor is checked in
-## `tests/test_route_tree.gd`. A helper, not a suite: the runner loads only `test_*.gd`.
+## the junctions they cross, the tiles a route runs along, the streets beside the routes and the
+## street they start in, on the city's whole lattice (`StreetNetwork`), so a street rule is asked
+## on a hand-drawn map without a route tree grown on a city. Every street not set is one turning
+## off the routes and off the route; a tile on no street is on the routes only where its tile is
+## set. What it answers from those (`walked_sidewalks()`) is the real corridor's own reading. The
+## real corridor is checked in `tests/test_route_tree.gd`. A helper, not a suite: the runner loads
+## only `test_*.gd`.
 
 var _lattice := StreetNetwork.new()
 var _route_streets := {}
 var _beside := {}
 var _route_tiles := {}
 var _crossed: Array[Vector2i] = []
+var _home: StreetNetwork.Segment = null
 
 ## Sets the streets her routes run along (`StreetNetwork.Segment.key()`), the junctions they cross
 ## and the tiles a route runs along (a walked sidewalk's, an alley's).
@@ -30,6 +32,15 @@ func set_beside(streets: Array[Vector3i]) -> FakeCorridor:
 	for key in streets:
 		_beside[key] = true
 	return self
+
+## Sets the street the routes start in (`Corridor.street_it_starts_in()`), the home street.
+func set_home_street(key: Vector3i) -> FakeCorridor:
+	_home = _lattice.by_key(key)
+	return self
+
+## Overrides Corridor.street_it_starts_in.
+func street_it_starts_in() -> StreetNetwork.Segment:
+	return _home
 
 ## Overrides Corridor.depth.
 func depth(tile: Vector2i) -> int:

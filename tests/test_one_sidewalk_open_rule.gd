@@ -7,7 +7,9 @@ extends RefCounted
 ##
 ## - **A second body across from the first** is refused anywhere along the street, and a body with
 ##   nothing across stands.
-## - **A roadblock is never asked**: it spans the street by design.
+## - **A roadblock is asked too**: its band takes the sidewalk on its side of the road, so it is
+##   refused across from a stall on the far one and stands alone, and a stall drawn after it is
+##   refused across from it.
 ## - **A street a seal already closes** refuses nothing.
 ## - **A body in the box at the street's end** reaching its last open sidewalk is refused.
 ## - **The setting**: near the routes (the game's), a street off the routes keeps its two walls;
@@ -27,7 +29,7 @@ func run(t: TestRunner) -> void:
 	_map = StreetMap.full()
 	_corridor = FakeCorridor.new().set_beside([EAST] as Array[Vector3i])
 	_test_a_second_body_across_is_refused(t)
-	_test_a_roadblock_is_never_asked(t)
+	_test_a_roadblock_keeps_the_far_sidewalk(t)
 	_test_a_street_a_seal_closes_refuses_nothing(t)
 	_test_a_body_in_the_end_box_is_refused(t)
 	_test_which_streets_it_covers_is_a_setting(t)
@@ -54,15 +56,21 @@ func _test_a_second_body_across_is_refused(t: TestRunner) -> void:
 	t.check(rule.allows(_standing("market_stall", alone), alone, NONE, NONE),
 			"a stall with nothing across stands")
 
-func _test_a_roadblock_is_never_asked(t: TestRunner) -> void:
+func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 	var rule := _rule(OneSidewalkOpenRule.Streets.NEAR_THE_ROUTES)
 	var first: Array[EventPlan] = [_standing("market_stall", NORTH_SIDE)]
 	var at := Vector2i(51, 45)
 	var roadblock := _standing("roadblock", at)
 	t.check(roadblock.obstructs() and roadblock.row().spans_the_street(),
 			"the roadblock is a body that spans the street")
-	t.check(rule.allows(roadblock, at, first, first),
-			"a roadblock across from a stall stands, though its body closes the other sidewalk")
+	t.check(not rule.allows(roadblock, at, first, first),
+			"a roadblock across from a stall is refused: its band closes the other sidewalk")
+	t.check(rule.allows(roadblock, at, NONE, NONE),
+			"a roadblock alone stands: its band leaves the far sidewalk open")
+	var standing: Array[EventPlan] = [roadblock]
+	var stall := _standing("market_stall", NORTH_SIDE)
+	t.check(not rule.allows(stall, NORTH_SIDE, standing, standing),
+			"a stall drawn after the roadblock, on the sidewalk it left open, is refused")
 
 func _test_a_street_a_seal_closes_refuses_nothing(t: TestRunner) -> void:
 	var rule := _rule(OneSidewalkOpenRule.Streets.NEAR_THE_ROUTES)
