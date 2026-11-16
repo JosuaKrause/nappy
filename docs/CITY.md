@@ -1198,11 +1198,11 @@ every body, not only the roadblock.
 own side of the road and leaves the far one, so it is refused where a body already closes that far
 sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin). **The band
 is its body at every heat.** From heat 4 its guard hunts and the row's lethal inner disc would take
-both sidewalks by itself, but that reach is a pursuit that warns before it charges, not a wall, and
-the escape reads the same hunting roadblock at its band (`WalkGround`); so a hunting roadblock
-stands on a route's street wherever a cold one does. *Read as*, the orchestrator's pick on the
-board's heated-roadblock-body, open to the player's correction; it is one function
-(`OneSidewalkOpenRule._closing_radius()`). Day 13's
+both sidewalks by itself, where the other pursuers' discs (the alley robbery's, the charging dog's)
+take one, and the escape reads the same hunting roadblock at its band (`WalkGround`); so a hunting
+roadblock stands on a route's street wherever a cold one does, and the other pursuers stay read at
+their lethal disc. *Read as* (the orchestrator's, open to the player's correction): the band is
+the roadblock's body at every heat, held in one function (`OneSidewalkOpenRule._closing_radius()`). Day 13's
 roadblock phase stands its roadblocks in sections beside the routes, which the rule does not cover,
 and the task's own swap, which puts a roadblock across such a section where the day placed none
 close by, is not judged by the day's rules, so neither loses one.

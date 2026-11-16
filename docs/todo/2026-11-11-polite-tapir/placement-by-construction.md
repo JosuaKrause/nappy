@@ -107,7 +107,9 @@ full text names the files each step owns.
    route keeping one. The player answered "sure" in chat to option C of free-line-density and to pick (c) of
    line-reach-close (inbox #1461). **Read as**: the draw gains a rule that follows her line from a
    junction box onto the sidewalk she walks, for every row that lands near her route, and a street that
-   draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465). So step
+   draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465), which
+   the player's correction on that note narrows to the streets a rule already keeps walkable, the
+   streets of her routes. So step
    2 still owes only the three route rows sent just ahead of her.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground

@@ -101,12 +101,12 @@ func _closes_its_last_sidewalk(street: StreetNetwork.Segment, candidate: EventPl
 ## **The disc a body closes a sidewalk with, here: one place, so it is one change.** A body is read
 ## at `EventPlan.blocking_radius()`, its body or a row's lethal inner disc, whichever is wider; **a
 ## row that spans the street (`EventDef.spans_the_street()`, the roadblock) is read at its band,
-## its own body, at every heat**. From heat 4 the roadblock's copy hunts and its 86px inner radius
-## would take both sidewalks from either road row, so it would be refused on every route street by
-## itself; but that reach is its guard's pursuit, which warns before it charges, not a wall, and
-## the escape reads the same hunting roadblock at its band (`WalkGround`). *Read as, the
-## orchestrator's pick on the board question heated-roadblock-body and open to the player's
-## correction:* the band is the roadblock's body at every heat.
+## its own body, at every heat**. From heat 4 the roadblock's copy hunts and its lethal inner
+## radius would take both sidewalks from either road row, so it would be refused on every route
+## street by itself. The other pursuers (the alley robbery, the charging dog) have no body and stay
+## read at their lethal disc, which takes one sidewalk; the roadblock is the one exception, read at
+## its band as the escape reads the same hunting roadblock (`WalkGround`). *Read as (the
+## orchestrator's, open to the player's correction):* the band is the roadblock's body at every heat.
 static func _closing_radius(plan: EventPlan) -> float:
 	if plan.row().spans_the_street():
 		return plan.row().obstructs_within()

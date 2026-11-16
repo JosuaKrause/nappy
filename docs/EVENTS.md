@@ -2400,8 +2400,9 @@ row's line reach covers a tile a route runs along (`RouteGroundRule`), which is 
 for a way round: a body or a cost never stands on a route tile there even where a detour exists.
 And on a day's walk, a street of her routes never has both its sidewalks closed by bodies a draw
 put on them (`OneSidewalkOpenRule`). Hard-fail events count
-as bodies for this rule, by their lethal inner disc: an abduction in progress is not something you
-walk through to reach the park behind it. The run's scars and the park spoilers, which the line
+as bodies for both, by their lethal inner disc: an abduction in progress is not something you
+walk through to reach the park behind it. The one-sidewalk rule reads a roadblock at its band at
+every heat (`docs/CITY.md`, "A street of her routes keeps one sidewalk past its bodies"). The run's scars and the park spoilers, which the line
 rules are not asked of, are asked `RouteGroundRule` alone with a street's route tiles counted too,
 and the street she starts on, every route's first stretch, which the tree does not carry: a
 barricade the run left across a route's sidewalk or across her own street is not stood that day,
