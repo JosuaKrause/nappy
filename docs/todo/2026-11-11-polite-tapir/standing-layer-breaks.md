@@ -32,7 +32,7 @@ review; a builder runs it again):
   computing on the map; the city edge's kinds; the props' trees; the danger badge's class named by
   the run log (`RunSession`, `TelemetryObserver`); the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's constants and type tests where she is not handed in
-  (`city.gd`, `interior_scene.gd`, `visible_view.gd`); the run reading `ResistanceHappenings`' day
+  (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
   of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; `DrawnView`,
   named by two looks; the scheduler naming `City.BURNT_FRONTAGE_SCAR`; and the `player` group the
   blackout and the poster walls find her through.
