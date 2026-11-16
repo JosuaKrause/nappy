@@ -33,6 +33,17 @@ var _age := 0.0
 ## tell a fresh instance from one streamed back in.
 var came_under_a_warning := false
 
+## **Makes its route one worked out as it goes** (`WayOn`): at the end of its route it is given a
+## further leg while she could be watching it (`EventRouteWalk`), and once it is over it leaves by legs
+## of the same, held to her sight (`EventDeparture`). Told by whoever sends it ahead of her, after
+## `setup()` (`EventsAhead`), and never keyed on its row: every copy of a row the director sends carries
+## `EventDef.is_sent_ahead()`, day 13's column and the escape's trucks among them, and those end their
+## routes where they end.
+func go_on_by(way_on: WayOn) -> void:
+	if route != null:
+		route.go_on_by(way_on)
+	departure.go_on_by(way_on)
+
 ## **What this event does**, composed per catalogue row (`EventBehaviours.compose()`): each an
 ## `EventBehaviour` owning its own state, ticked in this order. The typed fields below are the same
 ## objects, null for a behaviour the row is not composed of.
@@ -1992,6 +2003,12 @@ class Figure:
 	## It covered `distance` px more of its way, the distance its stride bobs on.
 	func walk_on(distance: float) -> void:
 		_of._path_travelled += distance
+
+	## Its route goes on by `leg`, whose first point is where the route ends: the points after the
+	## first are added to it, and the distance it has travelled carries on down them.
+	func walk_further(leg: PackedVector2Array) -> void:
+		for i in range(1, leg.size()):
+			_of.path.append(leg[i])
 
 	## It stepped by `delta` in world space.
 	func step_by(delta: Vector2) -> void:

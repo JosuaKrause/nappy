@@ -328,6 +328,13 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day)
+	# What works out the route of a row the director sends ahead of her as it goes (`WayOn`): made
+	# once a walk, after the walk's bodies are recorded, so the dawn's seals, the region wall and its
+	# doors are in its through roads with the day's closures. A body put down later is asked of the
+	# ground leg by leg.
+	if world.city_map and ahead.director():
+		ahead.director().use_way_on(WayOn.new(world.city_map, world.navigator(),
+				ThroughRoads.over(world.city_map, Mover.vehicle())))
 	# The day's units round where she starts draw before anything streams in (`stream_around()`).
 	stream_around(focus)
 

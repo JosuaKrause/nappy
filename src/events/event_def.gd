@@ -510,7 +510,7 @@ func for_day(day: int) -> EventDef:
 @export var _sent_ahead: SentAhead = null
 
 ## Makes the row one the director sends ahead of her, the way `how` says (`_sent_ahead`:
-## `SentAhead.at_once()` or `SentAhead.warned_first_from_either_end()`).
+## `SentAhead.at_once()` or `SentAhead.warned_first()`).
 func send_ahead(how: SentAhead) -> void:
 	_sent_ahead = how
 
@@ -524,8 +524,14 @@ func is_warned_in_its_lane() -> bool:
 	return _sent_ahead != null and _sent_ahead.is_warned_first() \
 			and placement.has(GameEnums.TileType.ROAD)
 
+## **Whether it keeps to the carriageway as it goes**: a row of the road (`placement` names `ROAD`),
+## the patrol and the convoy, whose route worked out as it goes drives from junction box to junction
+## box (`WayOn`). Any other walks.
+func keeps_to_the_carriageway() -> bool:
+	return placement.has(GameEnums.TileType.ROAD)
+
 ## Whether the director may send it ahead of her from either end of her street
-## (`SentAhead.comes_from_either_end()`): the convoy.
+## (`SentAhead.comes_from_either_end()`): no row today, each coming toward her.
 func may_come_from_either_end() -> bool:
 	return _sent_ahead != null and _sent_ahead.comes_from_either_end()
 
