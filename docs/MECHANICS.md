@@ -318,7 +318,7 @@ two calls rather than a second camera.
 **An ease starts from where the camera was drawing, which is not where the camera is.** Three
 things sit between `Camera2D.global_position` and the point on screen — `position_smoothing_enabled`
 still catching up, the walking look-ahead in `offset`, and the city limits — so
-`Stroller.view_centre_of()` is what the ease reads. Two more belong to the switch itself:
+`Stroller._camera_screen_center()` is what the ease reads. Two more belong to the switch itself:
 taking the camera off her transform (`top_level`) leaves its *local* position, the world origin, as
 its new global one, so it is put back on the drawn point in the same call; and its own smoothing is
 switched off for the duration, because the ease is the smoothing and two of them in series make a

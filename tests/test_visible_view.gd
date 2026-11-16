@@ -12,7 +12,7 @@ func run(t: TestRunner) -> void:
 	_test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t)
 	_test_just_out_of_sight_may_be_a_covered_corner(t)
 	_test_just_out_of_sight_is_never_nearer_than_its_floor(t)
-	_test_the_view_follows_the_camera_and_the_scheme(t)
+	_test_the_view_is_about_the_centre_it_is_handed_and_follows_the_scheme(t)
 	_test_a_rotated_window_shows_the_same_world_under_the_same_corners(t)
 	await _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t)
 	await _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t)
@@ -191,7 +191,7 @@ func _test_just_out_of_sight_is_never_nearer_than_its_floor(t: TestRunner) -> vo
 
 ## `look_from()` lays the view about the centre it is handed, and reads the scheme of the controls it
 ## was handed: with no controls handed the scheme is the tap one.
-func _test_the_view_follows_the_camera_and_the_scheme(t: TestRunner) -> void:
+func _test_the_view_is_about_the_centre_it_is_handed_and_follows_the_scheme(t: TestRunner) -> void:
 	var body := Node2D.new()
 	body.global_position = Vector2(500.0, 300.0)
 	var centre := Vector2(540.0, 280.0)

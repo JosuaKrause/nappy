@@ -43,7 +43,7 @@ func _rig(t: TestRunner, day: int) -> Array:
 	her.set_physics_process(false)
 	return [city, her]
 
-## Her, standing where the test puts her and seeing from there, carrying the baby so no pram stands
+## Her, standing where the test puts her and seeing from there (her camera is never current), carrying the baby so no pram stands
 ## out in front of her, and running while `running` says so: the manager's tick reads all three off
 ## her (`VisibleView.look_from()`, `EventManager._tell_them_where_she_is()`) and tells the events
 ## before it steps them.
@@ -54,11 +54,9 @@ class _Her extends Stroller:
 		carrying = true
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
+		# Never current, so what she sees from is where she stands.
+		camera.enabled = false
 		add_child(camera)
-
-	## Overrides Stroller._camera_screen_center.
-	func _camera_screen_center() -> Vector2:
-		return global_position
 
 	## Overrides Stroller.run_excess_ratio.
 	func run_excess_ratio() -> float:
