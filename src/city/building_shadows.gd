@@ -74,7 +74,7 @@ func skip_drawing(skipped: bool) -> void:
 	_skip_draw = skipped
 
 ## Stores `rects` — a city's building footprints, in tile coordinates
-## (`CityMap.building_rects`) — as the source for shadow geometry. Non-streamed use also computes
+## (`CityMap.building_lots()`) — as the source for shadow geometry. Non-streamed use also computes
 ## and builds all drawing chunks here; streamed use prepares nearby chunks on demand.
 func set_buildings(rects: Array[Rect2i]) -> void:
 	_rects = rects

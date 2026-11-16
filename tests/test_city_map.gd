@@ -47,6 +47,7 @@ func run(t: TestRunner) -> void:
 		_test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original, seed_value)
 		_test_a_restored_map_captures_what_it_was_restored_from(t, original, seed_value)
 	_test_a_copy_of_an_authored_scene_map_carries_its_recipe(t)
+	_test_what_an_authored_scene_writes_is_what_the_map_answers(t)
 	_test_a_map_with_no_calm_ground_says_none(t)
 
 ## A generated map, and its copy, capture the same facts, and the map restored from them captures
@@ -182,7 +183,7 @@ func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t: TestRunner) -> 
 	t.check(map.stretch_active and map.has_recipe_dawn_ground(),
 			"the authored map has an active stretch and saved dawn ground")
 	var twin := map.copy()
-	t.check(twin.stretch_active and twin.recipe_dawn_tiles == map.recipe_dawn_tiles,
+	t.check(twin.stretch_active and twin.has_recipe_dawn_ground(),
 			"the copy of an authored map keeps its stretch active and its dawn ground")
 	_check_the_same(t, map, twin, "the authored scene map")
 
@@ -391,3 +392,56 @@ func _plain(value: Variant) -> Variant:
 			entries[key] = _plain(value[key])
 		return entries
 	return value
+
+## Each fact the scene recipes' builder writes through a method is what the matching question
+## answers, on a hand-drawn map: the window, the closures, the tree moves and trees, the stretch's
+## tiles, buildings, props, litter and cracks, the dawn ground and the lots of buildings. A
+## method that writes the wrong field, or none, fails its question.
+func _test_what_an_authored_scene_writes_is_what_the_map_answers(t: TestRunner) -> void:
+	var map := CityMap.new(Vector2i(50, 20))
+	var window := Rect2i(2, 3, 20, 10)
+	t.check(not map.has_recipe_exterior(), "a map shows no recipe window until it is handed one")
+	map.show_recipe_window(window)
+	t.check(map.has_recipe_exterior() and map.recipe_window() == window,
+			"the recipe window is the one it was handed")
+	var street := map.street_network().segments()[0]
+	var closure := RoadClosure.new(RoadClosure.Kind.ROADWORKS, street)
+	map.add_recipe_closure(closure)
+	var closures: Array[RoadClosure] = [closure]
+	t.check(map.recipe_road_closures() == closures,
+			"a recipe's closure is listed among the closures it hands the city")
+	var from := Vector2i(5, 6)
+	map.set_recipe_tree_moves({from: Vector2i(5, 9)})
+	var sources: Array[Vector2i] = [from]
+	t.check(map.tree_move_sources() == sources and map.has_tree_move_from(from)
+			and map.tree_move_from(from) == Vector2i(5, 9), "a tree move is asked from its source tile")
+	var trees: Array[Vector2i] = [Vector2i(7, 7)]
+	map.set_recipe_trees(trees)
+	t.check(map.recipe_tree_tiles() == trees, "a recipe's trees are the tiles it was handed")
+	var lots: Array[Rect2i] = [Rect2i(10, 10, 4, 4)]
+	map.set_building_lots(lots)
+	t.check(map.building_lots() == lots, "the lots of buildings are the ones it was handed")
+	t.check(not map.has_stretch() and not map.is_void(Vector2i.ZERO), "a map has no stretch until one begins")
+	map.begin_stretch()
+	var own := Vector2i(10, 5)
+	map.add_stretch_tile(own, GameEnums.TileType.SIDEWALK)
+	t.check(map.has_stretch() and map.in_stretch(own) and not map.in_stretch(Vector2i(11, 5))
+			and map.tile_at(own) == GameEnums.TileType.SIDEWALK, "a stretch holds the tiles added to it")
+	t.check(not map.is_void(Vector2i(11, 5)), "its void waits until it is shown")
+	map.show_stretch()
+	t.check(map.is_void(Vector2i(11, 5)) and not map.is_void(own),
+			"a shown stretch makes every other tile void")
+	var lot := Rect2i(33, 5, 3, 3)
+	map.add_stretch_building(lot, {"height": 2})
+	t.check(map.has_stretch_building_on(lot) and map.stretch_building_lots() == [lot],
+			"a stretch's building stands on the lot it was added for")
+	map.add_stretch_prop({"at": Vector2.ONE})
+	map.add_stretch_litter({"at": Vector2.ONE})
+	t.check(map.stretch_prop_list().size() == 1 and map.stretch_litter_list().size() == 1,
+			"a stretch's props and litter are the ones added to it")
+	map.add_stretch_crack(own, Vector2i(1, 2))
+	t.check(map.stretch_crack_at(own) == Vector2i(1, 2) and map.stretch_crack_at(from) == null,
+			"a stretch's crack is on the tile it was added for")
+	t.check(not map.has_recipe_dawn_ground(), "no dawn ground is kept until it is asked for")
+	map.keep_dawn_ground()
+	t.check(map.has_recipe_dawn_ground(), "the dawn ground is kept once it is asked for")

@@ -1,5 +1,5 @@
 extends RefCounted
-## M122, the shadow every building casts. The tile arithmetic over `CityMap.building_rects` is the
+## M122, the shadow every building casts. The tile arithmetic over `CityMap.building_lots()` is the
 ## shadows' own; this suite hands a `BuildingShadows` footprints and a recording drawer, as the city
 ## hands its real one, and reads which tiles each chunk is told to shade, rather than a built `City`
 ## scene — see the **writing-tests** skill, "test what a screenshot cannot see." The one realistic
@@ -52,7 +52,7 @@ func _drawn_over(t: TestRunner, rects: Array[Rect2i]) -> Dictionary:
 ## handed their footprints ask about none until a view prepares a chunk.
 func _test_resident_geometry_matches_the_complete_union(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
-	var whole_drawn: Dictionary = await _drawn_over(t, map.building_rects)
+	var whole_drawn: Dictionary = await _drawn_over(t, map.building_lots())
 	var expected := {}
 	for entry: Dictionary in whole_drawn.chunks:
 		var tiles: Array[Vector2i] = []
@@ -69,7 +69,7 @@ func _test_resident_geometry_matches_the_complete_union(t: TestRunner) -> void:
 		asked[0] += 1
 		return true
 	shadows.streamed = true
-	shadows.set_buildings(map.building_rects)
+	shadows.set_buildings(map.building_lots())
 	t.check(shadows.get_child_count() == 0 and asked[0] == 0,
 			"streaming keeps footprint facts without working out or preparing distant shadows"
 					+ " (%d tiles asked about)" % asked[0])
