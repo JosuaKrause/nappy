@@ -1,9 +1,13 @@
 extends RefCounted
 ## `PlacementDensity`, the declared table: every cell the draw asks for is there, a number of
 ## events in a hundred draw locations from nothing to under a hundred, and every day owes some
-## moments; and no cell and no act's moments fall from the first act to the last, the difficulty
-## ramp held between settings (writing-tests keeps "a late day holds more events than an early
-## one"). Plain data: nothing to mock.
+## moments; and no cell and no act's moments fall from the first act to the last, a relation
+## between the table's settings that a cell seeded or scaled below its first act breaks. It holds
+## the cells, what a unit's bag holds, and not what a day places, which the day's rules thin most
+## on her route and the region wall's half share of walls thins from day 9: the ramp over what a
+## day places (writing-tests keeps "a late day holds more events than an early one") is
+## `tests/test_events_costs.gd`'s, which plans days 1 and 14, and the probe
+## `tests/probes/placement_cells.gd` measures it day by day. Plain data: nothing to mock.
 
 func run(t: TestRunner) -> void:
 	_test_every_cell_the_draw_asks_for_is_there(t)
@@ -34,7 +38,8 @@ func _test_every_cell_the_draw_asks_for_is_there(t: TestRunner) -> void:
 
 ## **No cell falls from the first act to the last**: the last day's events per hundred draw
 ## locations are no fewer than the first day's in every view and ground, and the last day owes her
-## no fewer moments than the first.
+## no fewer moments than the first. It asks the first act and the last alone: a cell may still dip
+## below the act before it, and what a day places is not asked here (the suite's header).
 func _test_no_cell_falls_from_the_first_act_to_the_last(t: TestRunner) -> void:
 	var last := Tuning.RUN_LENGTH_DAYS
 	var fallen: Array[String] = []

@@ -1565,8 +1565,15 @@ for every hundred draw locations (a street's sidewalk locations, a junction box,
 alley, a cell of a park or a square). A unit draws from one fresh bag of the fill of its view and
 its kind of ground (`UnitFills.of()`): the cell's events in a hundred as row marbles and empty
 marbles for the rest, so a day's count varies more from seed to seed than one bag for the whole
-city would make it, and the empty marble takes one location of the unit's room. A later act's cells
-are higher, so late days are denser as well as nastier. **The rows share a cell's events by
+city would make it, and the empty marble takes one location of the unit's room. **No cell's last act
+is under its first, but the cells do not climb act by act, and neither do the days**: five cells
+are lower than the act before them (a junction box on her route from act II to III, and an alley
+route-adjacent and an alley off the route each from act I to II and from act III to IV), a
+route-adjacent junction box is the same in every act, and from day 9, the first day the region
+wall stands, a unit draws about half its walls (`DaySpec.wall_row_share`). So late days are nastier
+more than they are denser: on the table's acceptance run days 9 to 11 placed fewer events than
+day 1, and day 14 placed 1.11 times day 1, where the seed tree's day 14 placed 1.28 times its day 1
+(`docs/evidence/polite-tapir-declared-table-2026-11-16/`). **The rows share a cell's events by
 weight**: a row's own `weight`, times its weight on the unit's kind of ground (`EventDef.weight_on()`),
 times what the view is to its role on the day (the role-by-view weights `EVENT_CORRIDOR_WEIGHT`,
 `EVENT_WALL_RIM_WEIGHT` and `WALL_DEEP_WEIGHT`, which the day's ground hands the fill,

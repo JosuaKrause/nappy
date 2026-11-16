@@ -213,7 +213,8 @@ func _gaps(handed: Array) -> Array[float]:
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
 ## each comes within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
 ## before it, so all of them are met within that many events each. A patrol is a marble of the
-## ordinary bag too (`EventDef.is_sent_ahead()`), so a window may hold a second one, never none.
+## ordinary bag too (`EventDef.is_sent_ahead()`), so a patrol may come early in its bag: each is
+## counted from the one before it, never inside a fixed window of the events after the return.
 func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
