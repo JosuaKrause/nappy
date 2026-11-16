@@ -464,7 +464,7 @@ func _ready() -> void:
 		add_child(_resistance)
 		_pauses_with_the_game(_resistance)
 		_resistance.trace = _the_trace()
-		_resistance.use_atlas(_city.atlas)
+		_resistance.use_atlas(_sitting.atlas)
 		_resistance.setup(_city.map, _run, _city.events, _city.streets(), _city.fronts(), _city,
 				_city.navigator, _city.spawn_siting)
 		_resistance.use_player(_player)
@@ -920,8 +920,11 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 	var start_at := _city.map.doorstep_world_position()
 	if spec.start_point() == DaySpec.Start.SERVICE_EXIT:
 		start_at = _finale_start_position()
-	return DayWorld.in_the_city(_city, _city.map, _city.events, _player, _baby, start_at, home_map,
-			exits)
+	# The city's parts, each on its own, and the city whole only where an authored scene installs
+	# itself into it (`DayWorld.scene_city()`).
+	var scene_city: City = _city if _flow.authored else null
+	return DayWorld.in_the_city(_city, _city.map, _city.streets(), _city.crowd, _city.events,
+			_player, _baby, start_at, home_map, exits, Vector2.DOWN, scene_city)
 
 ## The first world a boot stands is where the run log's session is handed what it watches every
 ## walk with besides the walk's world — the day's clock, the resistance (none in the escape) and the
@@ -1824,14 +1827,14 @@ func _start(spec: DaySpec, restarted := false) -> bool:
 		_interior.clear_fade()
 	return true
 
-## The director for the world as it stands now: the city (none in the escape's building), whichever
-## world's events, and the parts every day shares, with where each walk's world comes from
-## (`_worlds`), the authored scene this boot plays, if any, and the trace. Cheap and stateless, so
-## built when a walk starts or ends rather than kept in step with a world that is rebuilt between
+## The director for the world as it stands now: the world the flow last announced standing
+## (`RunFlow.world()`, none before the boot's first walk, which stands its own), and the parts every day shares, with where each walk's world comes
+## from (`_worlds`), the authored scene this boot plays, if any, and the trace. Cheap and stateless,
+## so built when a walk starts or ends rather than kept in step with a world that is rebuilt between
 ## sections.
 func _new_director() -> DayDirector:
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
-	director.use_the_world(_city, _event_source(), _resistance, _player, _baby, _day)
+	director.use_the_world(_flow.world(), _resistance, _day)
 	director.use_worlds(_worlds)
 	director.use_the_scene(_flow.scene)
 	director.use_trace(_the_trace())

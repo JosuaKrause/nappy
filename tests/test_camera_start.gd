@@ -93,7 +93,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner)
 	# of a full day (`EventBus.day_time_changed`, which `DayController.start()` sends once she is
 	# put down) — before any frame.
 	var far := Rect2(Vector2(64, 64), Tuning.VIEW_HALF_EXTENT * 2)
-	city.scenery.update(far, true)
+	city.prepare_scenery_in(far)
 	player.reset_at(far.get_center())
 	var dawns: Array[int] = []
 	var at_dawn := func(remaining: float, total: float) -> void:
