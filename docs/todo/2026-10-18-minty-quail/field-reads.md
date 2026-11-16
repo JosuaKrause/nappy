@@ -124,16 +124,6 @@ Left, each its own design question:
   name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
   failure. It becomes underscore-private with the tests-one-module item (`tests-one-module.md`), when
   that suite reads through a method the game also calls.
-- **A public field with no reader under `src/` outside its own class.**
-  `SpreadLook.Slice.index` is read only by the look probe, by string (`canvas.get(&"index")` in
-  `tests/probes/look_fingerprint.gd`), which row 4a's scripted rewrite of `event-interface.md` would
-  not find; it goes private when the probe asks `SpreadLook.slices()` for a slice's place, with the
-  probe's `LK` hash shown unchanged and a released slice not yet freed taken care of.
-- **The flock's look reads a bird's fields.** `_draw_birds()` in `src/events/views/flock_look.gd`
-  reads `at`, `lift`, `heading` and `phase` off `EventFlock.Bird`, an inner class
-  `tools/check_field_reads.py` does not see, and four suites read the same fields. `Bird` gets its
-  methods and those suites ask them in one pull request, since row 4a of `event-interface.md`
-  changes no line under `src/`.
 - **The lines the placement rewrite, the third hand-ins pull request and the events' interface
   touch** are converted after those land:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);

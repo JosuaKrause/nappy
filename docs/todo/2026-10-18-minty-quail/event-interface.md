@@ -652,7 +652,7 @@ counted where it only writes.
 | `telegraphs` | 2 in | row `telegraphs_its_coming()`, `announces_its_coming(walk_speed)` ok |
 | `warned_first`, `offscreen_notice` | 1 in and 1 out (the park cordon); 2 in | row `warns_before_it_exists()` ok, `warned_for()` ok, `was_sent_at_her()`, `as_warned_first()` ok |
 | `mobile` | 10 in, 1 out (the route rig) | row `moves()`, `approach_speed()` ok |
-| `speed` | 7 in, 2 out (the resistance; the badge, for a warning with nothing in the world yet, which section 7's point 6 makes `approach_speed()`) | row `speed()` |
+| `speed` | 7 in, 1 out (the resistance) | row `speed()` |
 | `paces` | 4 in, 1 out (the happenings), the resistance untyped | row `paces_a_beat()`; live `beat()` |
 | `path_mode`, `path_length_tiles` | 3 and 2 in | the route part's `kind()`, `tiles()`, asked by the plan builder |
 | `stops_where_it_arrives` | 3 in, 1 out (the scene recipes) | row `parks_where_it_arrives()`; live `has_parked()` |
@@ -735,7 +735,7 @@ also shows a search for the field's old name read without parentheses, every rem
 
 | # | What | Files it owns | When |
 |---|---|---|---|
-| **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. The row's `speed`, read where a badge is made for a warning with nothing in the world yet, is the fourth of the slightly wrong answers (section 7, point 6): the pull request that makes it `approach_speed()` removes the read | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in point 6's pull request for it) | The run log's map with 3a. The badge's read waits for nothing in 3a: point 6's pull request for it (a warned badge listed at the row's `approach_speed()`, where `BadgeModel` lists it at `speed` today) may come at any time |
+| **1** | **One read left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. | `src/telemetry/telemetry_map.gd` (in 3a) | The run log's map with 3a |
 | **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `EventBody` taken out of `EventInstance` ok; the composer hands each behaviour its settings, the map, the navigator and its siblings ok; the eight existing specs get their methods as far as a converted reader asks them ok. Built (the records minty-quail-velvet-owl, -olive-finch, -tiny-alpaca, -tawny-swan, -striped-hawk, -striped-magpie and -silver-marmot). Left to later rows: the traffic lights, the gate's state and `_spread_is_vertical()`, handed in by the one setup call (3b); the specs' remaining methods, with the steps that convert their readers | `src/events/event_instance.gd`, `behaviours/*` (all ask through `Figure` ok), `event_excitement.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added) | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The third hand-ins pull request, which rewrites the manager's setup, meets `WhereSheIs` there: the events' world holds it and `EventSpawner.create()` hands it to each live event |
 | **2b** | **The looks ask the live event and are handed their settings.** Built but for `LookSpec`, which waits for 4b (the records minty-quail-polite-newt, -mossy-hedgehog, -tall-toad, -busy-badger, -merry-magpie and -calm-egret). Left listed, each because the natural name is a standing field's or the file is another track's: the live event's `age`, the row's `guard_sides`, `warning_picture`, `flock_spread` and `abduction`, `AbductionSpec.taken_over` and `standing_offset`, `WorldMap.world`. The flock's look's reads of a bird are in `field-reads.md`; the two statements of the 11px floor (`EventFootprints.drawn_box_of()`, `SpreadLook.NARROWEST_HALF_RUN`) wait for 4b's body part; and of the times section 6 asks for, four of 2a's seven pull requests hold theirs in their records, each its own base against its head (-velvet-owl, -olive-finch, -tiny-alpaca and -tawny-swan, every probe of section 6 that is timed); 2a's last three (-striped-hawk, -striped-magpie and -silver-marmot) and 2b's six took none, so what is owed is one reading of those probes from the merge of -tawny-swan to the merge of -calm-egret, and of `look_fingerprint.gd`'s `LK_COST` from the merge of -polite-newt, the probe's own, to -calm-egret. It holds other tracks' merges too, so it is listed for the end remeasure and holds no step (section 7, point 5) | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` (handed its atlas and its drawer ok) | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement closes |
@@ -912,8 +912,8 @@ each question as it was shown).
    #1278 in olive-ferret). **Read as:** every answer below is made correct. The timing is the
    read-back's, which is what the player answered: each is a pull request of its own after the step
    that gives it a name, not a change inside that step, saying what it changes in play and in the
-   run log, with its pictures. Playtests decide what then needs fixing. The fourth answer below was
-   found in review after the player answered, and the last three in building where she is as one
+   run log, with its pictures. Playtests decide what then needs fixing. The last three answers below were
+   found in building where she is as one
    object; *read as* (the orchestrator's, open to the player's correction) covered by the same
    words.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
@@ -925,10 +925,6 @@ each question as it was shown).
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
-   - A badge for a warning with nothing in the world yet is made with the row's plain `speed`,
-     which a pursuer warned of first does not set: the run log says the day-3 charging dog's badge
-     is "closing 0px/s" while the dog comes at its chase speed. The badge asks the row's
-     `approach_speed()` as a badge for a live event does.
    - A car made after the tick's word knows nothing of her in its first frame, so it puts its
      body down at once even where she stands, though the comment at that place promises it holds
      the body back round her.
