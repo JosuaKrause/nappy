@@ -1,8 +1,8 @@
 # The dog walker, the patrol and the convoy arriving ahead of her (polite-tapir, placement step 2)
 
 **Claim.** Each of the three rows the director sends ahead of her arrives from off screen on the
-street she walks: the dog walker down her sidewalk toward her, created at once with its own bark
-still to run; the police patrol down the carriageway lane that drives toward her, created at once
+street she walks: the dog walker down her sidewalk toward her, created at once just out of sight;
+the police patrol down the carriageway lane that drives toward her, created at once
 out of the camera's view and driving into it; the military convoy warned of first (its screen-edge
 badge alone for a second), then its trucks in the lane beside her, from behind her or from ahead
 of her.
@@ -17,7 +17,12 @@ pop-in is held by `tests/test_no_pop_in.gd`, not by these pictures.
 
 **Source.** Branch `feature-polite-tapir-sent-ahead` at `383011822`. The convoy run is marked
 `-dirty` only because two stray `.uid` files of throwaway probes were deleted in the working tree;
-no source file differed.
+no source file differed. **The dog walker's frames show that commit's bark, not the branch's
+later one.** At `383011822` the dog walker is created with its bark still to run, which is what the
+debug readout in its frames (`dog_walker telegraph`) says. From `ad98f35e7` on it is created at the
+same place and walks in the same way, but past its telegraph, at a point of its bark drawn on the
+director's stream (`EventDirector.age_it_is_sent_at()`). So these frames show where it comes from
+and how it walks in, and not the state of its bark when it is created. The run was not taken again.
 
 **Commands** (`tools/shot.sh`, burst frames at 12fps over 3s from the second given):
 

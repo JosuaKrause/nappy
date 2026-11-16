@@ -369,9 +369,11 @@ its first leg runs through a region door's clear ground, where it starts within
 field a plan keeps clear (`EventPlan.keeps_its_field_clear()`): nothing else happens inside a lethal
 event's field, for a row sent ahead of her as for any placement. The same is asked again of the leg
 a row is created on (`EventDirector.clear_to_send()`), since she has walked on since it was sited.
-**A marble with no room never holds the route** (calm-pelican-6): its turn of the director's clock,
-its slot and its marble are spent, and it waits on the director's list until it has room; the marbles
-behind it are handed out on the clock meanwhile. **What waited takes the clock's turn**: at each
+**A marble with no room never holds the route** (calm-pelican-6): its slot and its marble are spent,
+and it waits on the director's list until it has room. It does not spend the clock's turn, since
+nothing was sent on it: the turn is asked again a second later (`EventDirector.SENT_RETRY`), of the
+next marble, so a row that waits costs her nothing she would meet on her walk, and the marbles behind
+it are handed out on the clock meanwhile. **What waited takes the clock's turn**: at each
 turn the first row on the list with room is sent, ahead of the next marble, and the next wait is
 rolled (`EventDirector._send_what_waited()`), so nothing is sent closer to the last thing than the
 clock allows (sent-ahead-pace: in place of, at the same clock), and a walk off the streets ends in

@@ -277,7 +277,10 @@ func _test_a_sent_row_starts_clear_of_a_placed_plan(t: TestRunner) -> void:
 ## once the lethal row is spent the waiting patrols come. **And what waited takes the clock's turn**
 ## (board question sent-ahead-pace: in place of, at the same clock): nothing is handed out closer to
 ## the last than the clock's shortest wait (`EventDirector.AHEAD_INTERVAL`), before the lethal row is
-## spent or after.
+## spent or after. **And a patrol with no room does not spend the turn it was drawn on**: the turn is
+## asked again a second later (`EventDirector.SENT_RETRY`), so the first marble behind the two patrols
+## comes before three of the clock's shortest waits have passed, where three whole waits, the first and
+## one for each patrol, would come no sooner.
 func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) -> void:
 	var map := _street()
 	var lethal := EventDef.new()
@@ -301,11 +304,13 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	var closest := INF
 	var through := 0
 	var sent_while_blocked := 0
+	var first_at := INF
 	for _step in 1200:
 		walked += step
 		var due := director.due(step, _her(), Vector2.UP * Tuning.WALK_SPEED)
 		if due.is_empty():
 			continue
+		first_at = minf(first_at, walked)
 		closest = minf(closest, walked - last_at)
 		last_at = walked
 		if (due[0] as EventDef).is_sent_ahead():
@@ -315,6 +320,10 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	t.check(through > 0 and sent_while_blocked == 0,
 			"with no room for the two patrols at the front of her bag, %d marbles behind them are "
 			% through + "handed out and no sent row (%d)" % sent_while_blocked)
+	t.check(first_at < 3.0 * EventDirector.AHEAD_INTERVAL.x,
+			"and the first of them comes %.1fs into her walk, before three of the clock's shortest "
+			% first_at + "waits (%.1fs): a patrol with no room does not spend its turn"
+			% (3.0 * EventDirector.AHEAD_INTERVAL.x))
 	blocking.spend()
 	var patrols_came := 0
 	for _step in 800:

@@ -999,10 +999,13 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 		# **A marble of her route sent ahead of her that has no room never holds the route**: its
 		# slot and its marble are spent, and it waits for room (`_send_what_waited()`), as a place
 		# a marble names waits for its site. *(calm-pelican-6: a marble that cannot be sited never
-		# blocks the route.)*
+		# blocks the route.)* **Nor does it spend the turn**: nothing was sent, so the turn is asked
+		# again a second later, of the next marble, as a turn whose row found no room otherwise
+		# is. Rolled as a wait, every row that waited would cost her a thing met on her walk.
 		if from_the_bag and next.is_sent_ahead():
 			_hand_out(next, true)
 			_sent_waiting.append(next)
+			_next_in = SENT_RETRY
 			return []
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -1016,9 +1019,10 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 		_owed.append(_forced)
 	return [handed, path, sited[1], sited[2]]
 
-## **How soon a turn of the clock that found nothing with room is asked again**: a second of her
-## walking, the cadence every siting that waits for ground is asked again on. Only while nothing but
-## rows waiting for room is owed (`_sent_waiting`); otherwise the turn goes to the next marble.
+## **How soon a turn of the clock that sent nothing is asked again**: a second of her walking, the
+## cadence every siting that waits for ground is asked again on. A turn sends nothing where only rows
+## waiting for room are owed (`_sent_waiting`) and none has any, or where the marble it drew is a row
+## sent ahead of her with no room, which then waits; the turn goes to the next marble a second later.
 const SENT_RETRY := 1.0
 
 ## The rows sent ahead of her whose marbles were drawn while she had no room for them (no
