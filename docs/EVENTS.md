@@ -222,8 +222,8 @@ driving opposite her heading so it meets her, on tiles `CityMap.is_driveable_at(
 road, and its place is in that lane just out of sight up the road (`PendingWarning.in_its_lane()`,
 against the camera's whole view, as the convoy's is), so nothing it draws is in view on its first
 frame. Empty wherever there is no carriageway to
-drive on — a park, a square, a precinct — the same "retry later" the rest of the director's siting
-already does. It is created at once rather than warned first, for the reason "Everything arrives
+drive on — a park, a square, a precinct — and the marble then waits for room, as every sent row's
+does (see "The dog walker, the patrol and the convoy are sent ahead of her"). It is created at once rather than warned first, for the reason "Everything arrives
 from off screen" gives: nothing announces a patrol at the edge of the screen. The copy this hands
 out is its own duplicate (`EventDef.as_sent_ahead()`), never the shared, cached row every `MAP`
 placement of `police_patrol` reads (`EventCatalogue.heated()`): only its `spawn_mode` differs, so
@@ -337,10 +337,14 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
 - **The dog walker** is sent down her own sidewalk toward her, created at once just out of sight
   with no badge (`telegraphs` false on the copy: 32px/s is slower than a walk and it never ends the
   day, so the rule in "What telegraphs" gives it none), as the loose dog is; its route runs back down
-  her line and past her by the same distance. **Unlike the loose dog it keeps its own in-world
-  telegraph** (`EventDef.meets_her_with_its_telegraph_spent()`): it is the row she would come upon,
-  put just ahead of her, so its bark's phase when it reaches her is free and its price is the row's
-  in `docs/COSTS.md`.
+  her line and past her by the same distance. **It is created past its telegraph, at a point of its
+  bark drawn on the director's stream** (`EventDirector.age_it_is_sent_at()`): it is the row she would
+  come upon, put just ahead of her, so the point of its bark that reaches her is as free as it is for
+  one she walks up to, and a pass costs the row's price in `docs/COSTS.md` (its pass averaged over the
+  bark) on every street. Where it is created is the edge of the view, nearer her walking north than
+  south and furthest walking east or west, so a bark fixed by that distance would price it by the way
+  the street runs. The loose dog's beat is fixed instead, at the loud of it on her, which is what its
+  own line in that table prices.
 - **The police patrol** is sent down the carriageway lane that drives toward her
   (`_toward_her_on_the_road()`, above), created at once and standing, in its lane just out of sight
   up the road (`PendingWarning.in_its_lane()`, against the camera's whole view, its caret and the
@@ -353,7 +357,10 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
   flip on the director's stream, from the other end where the first has no place out of sight.
 
 The patrol's and the convoy's first leg is built in one place (`EventDirector.leg_in_the_lane()`),
-as the row is sited and, for the convoy, again from where she is when its warning ends.
+as the row is sited and, for the convoy, again from where she is when its warning ends. It keeps to
+ground a car may be on, every tile of it: it ends at the last tile of carriageway before a precinct
+or a junction box a precinct paves (`CityMap.is_driveable_at()`), and a leg that so ends short of her
+is no leg.
 
 **A sent row has no room**, and is not put in the world, where there is no ground for it (no
 sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square), where
@@ -362,11 +369,13 @@ its first leg runs through a region door's clear ground, where it starts within
 field a plan keeps clear (`EventPlan.keeps_its_field_clear()`): nothing else happens inside a lethal
 event's field, for a row sent ahead of her as for any placement. The same is asked again of the leg
 a row is created on (`EventDirector.clear_to_send()`), since she has walked on since it was sited.
-**A marble with no room never holds the route** (calm-pelican-6): its slot and its marble are spent,
-and it waits on the director's list until it has room, asked again once a second of her walking
-(`EventDirector.SENT_RETRY`), the first of the list only, so what waited comes no faster than one a
-second, in the order it was drawn; the marbles behind it are handed out on the director's clock
-meanwhile. A row that never finds room that day is not met. **Once one exists it walks or
+**A marble with no room never holds the route** (calm-pelican-6): its turn of the director's clock,
+its slot and its marble are spent, and it waits on the director's list until it has room; the marbles
+behind it are handed out on the clock meanwhile. **What waited takes the clock's turn**: at each
+turn the first row on the list with room is sent, ahead of the next marble, and the next wait is
+rolled (`EventDirector._send_what_waited()`), so nothing is sent closer to the last thing than the
+clock allows (sent-ahead-pace: in place of, at the same clock), and a walk off the streets ends in
+what waited coming one a turn. A row that never finds room that day is not met. **Once one exists it walks or
 drives its leg**, and a player who walks away leaves it to reach the leg's end out of her sight and
 go, the way every route that runs out leaves.
 
@@ -444,7 +453,7 @@ the loose dog's 24 is not. Applied to every row by its numbers:
 | `cat_dash` | 240 | Across her line | About free | No | Crosses rather than approaches; the player's explicit exception |
 | `alley_mouse` | 200 | Across its alley | 13% walked through | No | Crosses rather than approaches; keeps its in-world crouch |
 | `pigeon_flock` | Stationary | No | 45% walked through | No | Heavy hit, but she approaches it; keeps its in-world wait |
-| `dog_walker`, as the director sends it | 32 | Down her sidewalk | Under a heavy hit | No | Slower than a walk and never lethal; keeps its in-world telegraph |
+| `dog_walker`, as the director sends it | 32 | Down her sidewalk | Under a heavy hit | No | Slower than a walk and never lethal; created past its telegraph, outside its own field |
 | `police_patrol`, as the director sends it (the return's among them) and the investigating one | 74 | Along her road | About 3% a pass; ends the day in front of it on the carriageway while it drives | No | Slower than a walk; its strike is a car's, warned by its horn |
 | Reversing lorry, cold abduction and raid, firefight | 0 | No | Ends the day | In-world telegraph only | They stand; their fairness contract remains |
 

@@ -589,8 +589,9 @@ func as_sent_ahead() -> EventDef:
 ## walks in) and `police_patrol` (slower than a walk; warned as a car is, see `vehicle`). **The
 ## telegraph contract still holds its in-world telegraph** (the cat's crouch, the mouse's and the
 ## flock's wait, the patrol's approach) as it holds a standing row's (a lorry backing in, a
-## firefight, a raid). Only the loose dog, met with its telegraph already spent, has none for the
-## contract to hold (`validate()`).
+## firefight, a raid). The two rows sent down her line at once, the loose dog and the dog walker the
+## director sends ahead of her, are created with their telegraph already spent
+## (`EventsAhead._send_down_her_line()`), so neither has one for the contract to hold (`validate()`).
 @export var telegraphs := true
 
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
@@ -1575,9 +1576,10 @@ func validate() -> bool:
 		return true
 	# A thing that does not telegraph its coming loses only the coming's telegraph (the badge and
 	# warning first). Its in-world telegraph, where it has one, is still held by the contract. The
-	# one row with none is the loose dog, sent down her line and met with its telegraph already spent
-	# (`EventsAhead._send_down_her_line()`, `meets_her_with_its_telegraph_spent()`).
-	if not telegraphs and meets_her_with_its_telegraph_spent():
+	# rows with none are those sent down her line at once, the loose dog and the dog walker the
+	# director sends ahead of her: each is created just out of sight, outside its own field (held
+	# above), with its telegraph already spent (`EventsAhead._send_down_her_line()`).
+	if not telegraphs and comes_down_her_line():
 		return true
 	if warns_before_it_exists():
 		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())
@@ -1725,15 +1727,12 @@ func nearest_it_is_created() -> float:
 func comes_down_her_line() -> bool:
 	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
 
-## **Whether it meets her with its telegraph already spent**: a row down her own line
-## (`comes_down_her_line()`) the director creates from its own moments, the cyclist after its warning
-## and the loose dog at once, aged to the beat that reaches her (`EventSpawner.age_when_warned()`).
-## **Not a row the director sends ahead of her** (`is_sent_ahead()`, the dog walker): it is the row
-## she would come upon, put just ahead of her, so it is created with its own in-world telegraph to
-## run, the bark its price in `docs/COSTS.md` is averaged over, and the contract holds it
-## (`validate()`).
-func meets_her_with_its_telegraph_spent() -> bool:
-	return comes_down_her_line() and not is_sent_ahead()
+## **How old an instance of this row is at `point` of its beat** (0 at the beat's start, short of 1
+## at its end), its telegraph spent: what a row the director sends ahead of her down her line is
+## created at, the point drawn (`EventDirector.age_it_is_sent_at()`). Its telegraph alone for a row
+## that does not pulse.
+func age_at_a_point_of_its_beat(point: float) -> float:
+	return telegraph_time + point * maxf(pulse_period, 0.0)
 
 ## A copy of this row that enters the world only under a warning that runs first (`warned_first`),
 ## for a row otherwise placed some other way: day 13's column of `military_convoy` (a `MAP` place

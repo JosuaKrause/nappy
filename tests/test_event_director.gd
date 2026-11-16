@@ -31,6 +31,7 @@ func run(t: TestRunner) -> void:
 	for vertical: bool in [true, false]:
 		_test_the_patrol_comes_down_the_lane_that_drives_toward_her(t, vertical)
 		_test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t, vertical)
+		_test_a_leg_down_the_lane_keeps_off_the_paving(t, vertical)
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
 	_test_a_sent_row_starts_clear_of_a_placed_plan(t)
 	_test_a_sent_row_with_no_room_lets_the_next_marbles_through(t)
@@ -179,6 +180,61 @@ func _test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t: TestRunner
 	t.check(with_her > 0 and at_her > 0,
 			"and it comes from either end (%d from behind her, %d toward her)" % [with_her, at_her])
 
+## **A leg down a lane of the road never runs onto ground no car may be on**: with the junction box
+## past her paved (the next box the way she does not walk, tiles 42 to 47 of her street, paved by a
+## precinct on the street that crosses there, `CityMap.add_precinct()`: its blocks -1 and 0, so it runs
+## through the box from off the map's edge, and a precinct on either street paves the box), the
+## patrol's and the convoy's legs keep to carriageway every tile of the way and still run past her.
+## On the street unpaved the same legs reach that box, so the check is not vacuous.
+func _test_a_leg_down_the_lane_keeps_off_the_paving(t: TestRunner, vertical: bool) -> void:
+	var name := "north-south" if vertical else "east-west"
+	var paved := _street(vertical)
+	paved.add_precinct(Vector4i(0 if vertical else 1, 3, -1, 0))
+	var paving_from := 3 * CityMap.period()
+	for row: String in ["police_patrol", "military_convoy"]:
+		var reached := 0
+		for seed_value in range(1, 9):
+			var due := _due(_director(_street(vertical), row, _no_plans(), seed_value), vertical)
+			if due.size() >= 2 and _furthest_tile(due[1] as PackedVector2Array, vertical) >= paving_from:
+				reached += 1
+		t.check(reached > 0, "on the street running %s unpaved, a %s's leg reaches tile %d (%d of 8)"
+				% [name, row, paving_from, reached])
+		var sited := 0
+		var wrong: Array[String] = []
+		for seed_value in range(1, 9):
+			var due := _due(_director(paved, row, _no_plans(), seed_value), vertical)
+			if due.size() < 2:
+				continue
+			sited += 1
+			var path := due[1] as PackedVector2Array
+			var last := path[path.size() - 1]
+			var going := (last - path[0]).normalized()
+			if not _all_carriageway(paved, path, vertical) \
+					or (last - _her(vertical)).dot(going) <= 0.0:
+				wrong.append("seed %d: %s" % [seed_value, path])
+		t.check(sited > 0 and wrong.is_empty(),
+				"with a precinct past her on the street running %s, every %s's leg keeps to " % [name, row]
+				+ "carriageway and runs past her (%d sited)%s" % [sited,
+					"" if wrong.is_empty() else ": " + "; ".join(wrong)])
+
+## The furthest tile along the street, the way the map's coordinates grow, that `path` reaches.
+static func _furthest_tile(path: PackedVector2Array, vertical: bool) -> int:
+	var furthest := -1
+	for point in path:
+		furthest = maxi(furthest, int(floorf((point.y if vertical else point.x) / TILE)))
+	return furthest
+
+## Whether every point of `path`, a half tile at a time, is on ground a car may be on.
+static func _all_carriageway(map: CityMap, path: PackedVector2Array, vertical: bool) -> bool:
+	for i in path.size() - 1:
+		var length := path[i].distance_to(path[i + 1])
+		var steps := int(ceilf(length / (TILE * 0.5)))
+		for k in steps + 1:
+			var at := path[i].lerp(path[i + 1], float(k) / float(maxi(steps, 1)))
+			if not map.is_driveable_at(vertical, map.world_to_tile(at)):
+				return false
+	return true
+
 ## A lethal row standing on the dog walker's way keeps its field clear: the dog walker is refused
 ## while the plan stands, and handed out at the next ask once it is spent.
 func _test_a_sent_row_keeps_out_of_a_field_kept_clear(t: TestRunner) -> void:
@@ -218,7 +274,10 @@ func _test_a_sent_row_starts_clear_of_a_placed_plan(t: TestRunner) -> void:
 ## **A marble of her route sent ahead of her that has no room does not hold the route**
 ## (calm-pelican-6): with a lethal row's kept-clear field over the street round her, her bag rigged
 ## so its next two marbles are patrols, the patrols wait and the marbles behind them are handed out;
-## once the lethal row is spent the waiting patrols come, one a second at most.
+## once the lethal row is spent the waiting patrols come. **And what waited takes the clock's turn**
+## (board question sent-ahead-pace: in place of, at the same clock): nothing is handed out closer to
+## the last than the clock's shortest wait (`EventDirector.AHEAD_INTERVAL`), before the lethal row is
+## spent or after.
 func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) -> void:
 	var map := _street()
 	var lethal := EventDef.new()
@@ -236,12 +295,19 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	director.start_day(DAY, plans, rng)
 	var patrols: Array[String] = ["police_patrol", "police_patrol"]
 	director.rig_her_route(patrols, 2)
+	var step := 0.1
+	var walked := 0.0
+	var last_at := -INF
+	var closest := INF
 	var through := 0
 	var sent_while_blocked := 0
 	for _step in 1200:
-		var due := director.due(0.1, _her(), Vector2.UP * Tuning.WALK_SPEED)
+		walked += step
+		var due := director.due(step, _her(), Vector2.UP * Tuning.WALK_SPEED)
 		if due.is_empty():
 			continue
+		closest = minf(closest, walked - last_at)
+		last_at = walked
 		if (due[0] as EventDef).is_sent_ahead():
 			sent_while_blocked += 1
 		else:
@@ -251,17 +317,16 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 			% through + "handed out and no sent row (%d)" % sent_while_blocked)
 	blocking.spend()
 	var patrols_came := 0
-	var gaps_ok := true
-	var since := 99.0
-	for _step in 100:
-		since += 0.1
-		var due := director.due(0.1, _her(), Vector2.UP * Tuning.WALK_SPEED)
-		if due.is_empty() or (due[0] as EventDef).id != "police_patrol":
+	for _step in 800:
+		walked += step
+		var due := director.due(step, _her(), Vector2.UP * Tuning.WALK_SPEED)
+		if due.is_empty():
 			continue
-		patrols_came += 1
-		if since < EventDirector.SENT_RETRY - 0.05:
-			gaps_ok = false
-		since = 0.0
-	t.check(patrols_came >= 2 and gaps_ok,
-			"and once there is room the patrols that waited come, a second apart at least (%d)"
-			% patrols_came)
+		closest = minf(closest, walked - last_at)
+		last_at = walked
+		if (due[0] as EventDef).id == "police_patrol":
+			patrols_came += 1
+	t.check(patrols_came >= 2, "and once there is room the patrols that waited come (%d)" % patrols_came)
+	t.check(closest >= EventDirector.AHEAD_INTERVAL.x - step,
+			"and nothing is handed out closer to the last than the clock's shortest wait, %.1fs "
+			% EventDirector.AHEAD_INTERVAL.x + "(the closest two %.1fs apart)" % closest)

@@ -1404,9 +1404,10 @@ fast, comes toward her, and carries a heavy penalty — it can end the day or hi
 *only* lethal"). One that does not — the loose dog and the cat, the alley mouse, the pigeons, the
 patrol, the dog walker the director sends ahead of her — is outside the screen-edge badge and
 warning-first placement, and is met as it comes. Its in-world telegraph still satisfies the fairness
-contract: the cat's crouch, the mouse's and flock's wait, the patrol's approach and the dog walker's
-bark. Only the loose dog, met with its telegraph already spent,
-has none to validate (`docs/EVENTS.md`, "What telegraphs").
+contract: the cat's crouch, the mouse's and flock's wait, and the patrol's approach. The two sent down
+her line at once, the loose dog and the dog walker the director sends ahead of her, are met with
+their telegraph already spent, so neither has one to validate (`docs/EVENTS.md`, "What
+telegraphs").
 
 ## Calm zones, and what every other ground does
 

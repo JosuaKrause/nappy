@@ -28,6 +28,7 @@ func run(t: TestRunner) -> void:
 	_test_an_inner_bag_of_n_gives_n_events_and_is_gone(t)
 	_test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t)
 	_test_day_3s_lesson_is_first_and_a_bag_of_its_own(t)
+	_test_day_3s_charging_dogs_keep_their_share(t)
 	_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t)
 	_test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t)
 	_test_day_one_hands_out_two_dog_walkers_among_the_first_three(t)
@@ -400,6 +401,19 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 		t.check(ordinary.count("charging_dog") == dogs,
 				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
 				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])
+
+## **Day 3's charging dogs keep the share of her route's bag the player set**, as near as whole
+## marbles come, whatever else the bag holds: within half a marble of
+## `EventDirector.ROUTE_BAG_SHARE_OF`'s share of the bag the director fills that day
+## (`ordinary_route_marbles()`). *(inbox #566 in feathery-stork: two dogs in day 3's bag of 16.)*
+func _test_day_3s_charging_dogs_keep_their_share(t: TestRunner) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	var marbles := EventDirector.ordinary_route_marbles(day, 0)
+	var dogs := marbles.count("charging_dog")
+	var share: float = EventDirector.ROUTE_BAG_SHARE_OF["charging_dog"]
+	t.check(dogs > 0 and absf(float(dogs) - share * float(marbles.size())) <= 0.5,
+			"day %d's bag holds %d charging dogs in %d marbles, within half a marble of its share %.3f"
+			% [day, dogs, marbles.size(), share])
 
 ## Day 6's man shouting and day 11's second mast, through a real city: reading the mark rigs her
 ## route with a bag of the task's size holding the row once; walking the day's route, its marble is

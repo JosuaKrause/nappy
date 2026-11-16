@@ -334,18 +334,19 @@ static func encounters() -> Array[Dictionary]:
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, later_dog.notice_within() + 200.0),
 			"heading": up, "warm": 0.0})
 
-	# `police_patrol` on the return leg: `EventDirector._toward_her_on_the_road()` — the plain
-	# `Offscreen.lead()`, down the carriageway lane that drives toward her. She is on the kerb lane
+	# `police_patrol`, the return leg's among them: `EventDirector._toward_her_on_the_road()` — in its
+	# lane just out of sight up the road (`PendingWarning.in_its_lane()`, the camera on her), down the
+	# carriageway lane that drives toward her, its leg past her by as far. She is on the kerb lane
 	# of the north sidewalk (offset 1), walking east; the car is in whichever road lane
 	# `CrowdLanes.road_lane()` says runs west.
 	# The copy the director sends ahead of her (`EventDef.as_sent_ahead()`), at no heat.
 	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
 	var lane := CrowdLanes.road_lane(false, -1.0)
 	var lateral := float(lane - 1) * Tuning.TILE_SIZE
-	var patrol_lead := Offscreen.lead(right, patrol.speed + Tuning.WALK_SPEED,
-			patrol.offscreen_notice)
-	list.append({"def": patrol, "how": "return leg, director, down the road toward her",
-			"path": PackedVector2Array([Vector2(patrol_lead, lateral), Vector2(-patrol_lead, lateral)]),
+	var patrol_at := PendingWarning.in_its_lane(patrol, Vector2.ZERO, Vector2(0.0, lateral),
+			Vector2.LEFT, -INF, INF)
+	list.append({"def": patrol, "how": "director, down the road toward her",
+			"path": PackedVector2Array([patrol_at, Vector2(-patrol_at.x, lateral)]),
 			"her": Vector2.ZERO, "heading": right, "warm": 0.0})
 
 	# `door_guard`: steps out of the hut beside her, at the door geometry

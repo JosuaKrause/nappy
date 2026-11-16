@@ -610,11 +610,14 @@ func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
 ## A row the director sends down her own line that does not telegraph its coming (`loose_dog`, the
 ## dog walker it sends ahead of her; `EventDef.telegraphs`): no badge and no warning, so it is created
 ## at once just out of sight down her line on its own ground (`PendingWarning.down_her_line()`,
-## against what she can see). The loose dog's telegraph is spent at the age a warned row would have
-## (`EventSpawner.age_when_warned()`), so it meets her the same; the dog walker keeps its own
-## in-world telegraph (`EventDef.meets_her_with_its_telegraph_spent()`). Nothing is created where
-## there is no such ground, or its route would come through a region door or a placed plan's room
-## (`EventDirector.clear_to_send()`); the director has already spent the moment either way.
+## against what she can see), its telegraph spent. **Where its beat is as it is created differs.**
+## The dog walker is the row she would come upon, put just ahead of her, so its bark is at a point
+## drawn on the director's stream (`EventDirector.age_it_is_sent_at()`) and a pass costs the row's
+## price in `docs/COSTS.md` whichever way the street runs. The loose dog is aged as a warned row would
+## be (`EventSpawner.age_when_warned()`), so it meets her at the loud of its beat, the figure its line
+## in that table prices. Nothing is created where there is no such ground, or its route would come
+## through a region door or a placed plan's room (`EventDirector.clear_to_send()`); the director has
+## already spent the moment either way.
 func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
 	var place := PendingWarning.down_her_line(world.city_map, def, her, direction, world.visible)
 	if place == Vector2.INF:
@@ -623,7 +626,9 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	if path.size() < 2 or not _director.clear_to_send(path, def):
 		return
 	var instance := _spawner.spawn(def, path[0], path)
-	if def.meets_her_with_its_telegraph_spent():
+	if def.is_sent_ahead():
+		instance.resume(_director.age_it_is_sent_at(def), 0.0)
+	else:
 		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 	world.trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
 			% [def.id, place.distance_to(her), RunTrace.tile(world.map.world_to_tile(her))])

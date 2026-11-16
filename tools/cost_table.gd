@@ -381,7 +381,10 @@ func _header_text() -> String:
 	lines.append("")
 	lines.append("**Every other row is walked up to, and its telegraph is long over by then** — a " +
 			"`MAP` placement was made at dawn — so those passes start after the telegraph and " +
-			"nothing above changes what they say.")
+			"nothing above changes what they say. The dog walker the director sends ahead of her " +
+			"down her line is priced the same: it is created past its telegraph at a point of its " +
+			"beat drawn on the director's stream (`EventDirector.age_it_is_sent_at()`), so the point " +
+			"that reaches her is as free as for one she walks up to, wherever it is created.")
 	lines.append("")
 	lines.append("Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, " +
 			"a heading-free siting, no clock and no seed anywhere in the arithmetic — two runs on " +

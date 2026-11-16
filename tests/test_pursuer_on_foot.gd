@@ -336,10 +336,11 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 
 ## What the director puts in front of her as she walks `seconds` along the east-west street she
 ## stands on (`_a_sidewalk()`), turning at the map's edges, a tick at a time as the manager's tick
-## asks it: she walks rather than marking time, since a row the director sends ahead of her waits,
-## its marble unspent, until where she is has ground for it (a sidewalk, a carriageway), and holds
-## up the events behind it while it waits. `"id at x,y"` for each event that appears in the world,
-## the torn poster's pursuer left out.
+## asks it: she walks rather than marking time, since a row the director sends ahead of her is
+## sent only where she is has ground for it (a sidewalk, a carriageway), its marble spent as it is
+## drawn and the row waiting for a later turn of the director's clock, and standing still turns no
+## clock at all. `"id at x,y"` for each event that appears in the world, the torn poster's pursuer
+## left out.
 func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) -> Array:
 	her.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var seen := {}

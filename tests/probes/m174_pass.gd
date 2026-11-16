@@ -140,9 +140,10 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 ## own line, warned of before it exists, rather than one the day put on a tile at dawn. Stated
 ## over `spawn_mode` rather than over a list of ids, so a new row that comes at her is priced
 ## honestly without anybody remembering to add it here. **A row the director sends ahead of her is
-## not included** (`EventDef.is_sent_ahead()`, the dog walker's copy): it is created with its own
-## in-world telegraph to run (`EventDef.meets_her_with_its_telegraph_spent()`), so its phase is
-## free and it is priced as the row she comes upon.
+## not included** (`EventDef.is_sent_ahead()`, the dog walker's copy): it is created past its
+## telegraph at a point of its beat drawn on the director's stream
+## (`EventDirector.age_it_is_sent_at()`), so the point that reaches her is as free as it is for a row
+## she walks up to, wherever it is created, and it is priced as that row is, over its beat.
 ##
 ## **`AHEAD_OF_PLAYER` is deliberately not included**, though the director sites it dynamically
 ## too: it is put *across* her line rather than down it, and this rig only knows how to walk two
