@@ -121,8 +121,8 @@ func _touch_the_swing(t: TestRunner, main: Node2D, through_the_director := false
 		return swing
 	var city := Boot.city(main)
 	_happenings = ResistanceHappenings.new()
-	_happenings.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city,
-			city.atlas, null, city.spawn_siting)
+	_happenings.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city,
+			city.atlas, null, RunCity.spawn_siting(city))
 	_happenings.start_day(_run.header.day, false)
 	t.check(_happenings.take_the_park(ResistanceReads.day_reachability(Boot.city(main))[1]),
 			"reaching the swing takes the park")
@@ -141,7 +141,7 @@ func _camera_on(main: Node2D) -> Callable:
 ## the cordon's officers are placed out of sight of (`SpawnSiting`'s).
 func _look(main: Node2D, camera: bool) -> void:
 	var at: Vector2 = Boot.player(main).global_position
-	Boot.city(main).events.visible_view().look(
+	RunCity.events(Boot.city(main)).visible_view().look(
 			Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0) if camera
 			else Rect2(), null)
 

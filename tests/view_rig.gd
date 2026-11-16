@@ -23,7 +23,7 @@ var field: CrowdField
 func _init(host: Node) -> void:
 	city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	host.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, CityGenerator.generate(SEED))
 	field = CrowdField.new(city.map, city.map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, city.map.size_in_tiles())).get_center())
 	# The atlas page every crowd picture is drawn from, held on the city's library the way

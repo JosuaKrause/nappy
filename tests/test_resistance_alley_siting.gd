@@ -168,14 +168,14 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 
 	var feet := guard.global_position
 	_look_at(Rect2(feet - Vector2(40.0, 40.0), Vector2(80.0, 80.0)))
-	director.set_sight(_city.events.sees)
+	director.set_sight(RunCity.events(_city).sees)
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(old_at) < 0.5,
 			"with him on her screen, the mark stays where it is")
 	t.check(not guard.is_finished, "and he is not retired in front of her")
 
 	_look_at(Rect2())
-	_city.events.world.where_she_is().tell(feet + (old_at - feet).normalized() * 60.0)
+	RunCity.events(_city).world.where_she_is().tell(feet + (old_at - feet).normalized() * 60.0)
 	guard.step(STEP)
 	t.check(not guard.is_waiting(), "she stood within his notice as he stepped, and he is awake")
 	director.tick(STEP)
@@ -183,7 +183,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 			"off her screen but awake, the mark still stays where it is")
 	t.check(not guard.is_finished, "and he is not retired out of his chase")
 
-	_city.events.world.where_she_is().tell(far_alley)
+	RunCity.events(_city).world.where_she_is().tell(far_alley)
 	guard.step(STEP)
 	t.check(guard.is_waiting(), "she has stood out of his notice as he stepped, and he waits again")
 	director.tick(STEP)
@@ -646,7 +646,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 	var day := 7
 	_build_city_in_a_new_run(t, seed_value)
 	var city := _city
-	city.events.stream_radius = INF
+	RunCity.events(city).stream_radius = INF
 
 	var closure_state := CityState.new()
 	closure_state.begin_day(city.map.block_plans, day)
@@ -658,7 +658,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("%d:events:%d" % [seed_value, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events_rng, consumed, doorstep)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed, doorstep)
 
 	var director := _director(t)
 	var resistance_rng := RandomNumberGenerator.new()
@@ -685,7 +685,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 				"reach of the doorstep") % [seed_value, day])
 
 	var robbers_checked := 0
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id != "alley_robbery":
 			continue
 		robbers_checked += 1

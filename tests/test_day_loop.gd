@@ -748,7 +748,7 @@ func _test_the_retry_meets_the_same_mark_in_the_same_alley(t: TestRunner) -> voi
 	var run := city.run
 	run.header.day = 6
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED))
 
 	run.calendar.begin_day()
 	var first := _resistance_director(t, city)
@@ -776,8 +776,8 @@ func _resistance_director(t: TestRunner, city: City) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	return director
 
 ## **A lost day gives back what the attempt did to the city**, not only what it did to the

@@ -503,7 +503,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, size: int) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, CityGenerator.generate(SEED))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
 	var rng := RandomNumberGenerator.new()
@@ -512,7 +512,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("route-bag:%d:%d:events" % [SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
@@ -526,8 +526,8 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	resistance.trace = RecordingTrace.new(told)
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	var resistance_rng := RandomNumberGenerator.new()
 	resistance_rng.seed = hash("route-bag:%d:%d:resistance" % [SEED, day])
 	resistance.start_day(day, resistance_rng, 300.0)
@@ -538,7 +538,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	# Reading the mark is one frame of play, and the rig is part of it: a mast's siting must not be
 	# prepared over the whole city's ground, only over what a siting is offered. The work is counted
 	# in tiles asked, never in time.
-	var walk_siting := city.events.ahead.walk_siting()
+	var walk_siting := RunCity.events(city).ahead.walk_siting()
 	if walk_siting:
 		t.check(walk_siting.mast_checks == 0,
 				"day %d: the rig asks no tile whether a mast may stand there (%d)"
@@ -557,8 +557,8 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	city.events.use_player(player)
-	t.check(path.size() >= 2 and city.events.world.has_player(), "a route to walk and her on it")
+	RunCity.events(city).use_player(player)
+	t.check(path.size() >= 2 and RunCity.events(city).world.has_player(), "a route to walk and her on it")
 	if path.size() < 2:
 		player.free()
 		city.free()
@@ -583,17 +583,17 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		var owed_before := city.events.owed_ahead()
-		var plans_before := city.events.plans().size()
+		var owed_before := RunCity.events(city).owed_ahead()
+		var plans_before := RunCity.events(city).plans().size()
 		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-		city.events.ahead.site_what_is_on_her_way(STEP)
-		city.events.ahead.place_what_is_owed_ahead(STEP)
-		if city.events.owed_ahead() < owed_before:
+		RunCity.events(city).ahead.site_what_is_on_her_way(STEP)
+		RunCity.events(city).ahead.place_what_is_owed_ahead(STEP)
+		if RunCity.events(city).owed_ahead() < owed_before:
 			handed += 1
 		# Only the place her route's marble handed to her walk: a unit the siting drew round its
 		# pick may have drawn the same row, a place of its own.
-		for plan: EventPlan in city.events.plans().slice(plans_before):
-			if plan.def.id == row and city.events.ahead.director().is_from_her_route(plan):
+		for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
+			if plan.def.id == row and RunCity.events(city).ahead.director().is_from_her_route(plan):
 				placed.append(plan)
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
@@ -626,12 +626,12 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 			# walking holds no tile a mast site would refuse, out of a sidewalk and square that do
 			# hold some. Sited again and again from where she was, by streams of their own, every
 			# site a mast is offered is a tile a mast site may be.
-			var mast := city.events.ahead.director().route_row(row)
+			var mast := RunCity.events(city).ahead.director().route_row(row)
 			var ground := {}
 			for at: Vector2i in EventScheduler.row_ground(map, null,
-					city.events.ahead.holds_the_home_streets).tiles_for(mast, mast.pavement_side):
+					RunCity.events(city).ahead.holds_the_home_streets).tiles_for(mast, mast.pavement_side):
 				ground[at] = true
-			var siting := city.events.ahead.walk_siting()
+			var siting := RunCity.events(city).ahead.walk_siting()
 			t.check(siting.mast_checks > 0 and siting.mast_checks * 10 < ground.size(),
 					"siting it asked %d tiles whether a mast may stand there, of %d tiles of ground"
 					% [siting.mast_checks, ground.size()])
@@ -658,7 +658,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 					"a route mast is sited %d times ahead of her, none of them on the %d tiles of its ground a mast site refuses (%d)"
 					% [sited, refused_ground, refused_sited])
 		t.check(plan.live == null, "day %d: it is not in the world while she is far from it" % day)
-		city.events.stream_around(plan.position)
+		RunCity.events(city).stream_around(plan.position)
 		t.check(plan.live != null and is_instance_valid(plan.live),
 				"day %d: and it is in the world once she walks to it" % day)
 	player.free()
@@ -676,7 +676,7 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
-	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map,
+	var siting := EventScheduler.WalkSiting.new(RunCity.events(city).world.day, city.map,
 			city.streets().route_tree(), FakeWalkEvents.new(), EventScheduler.Verdicts.new(),
 			GamePlanBuilder.over(city.map), EventScheduler.row_ground(city.map))
 	var longest: Array = []

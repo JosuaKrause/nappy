@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),
 		"closures": _city.streets().closures().size(), "closed_map_tiles": _city.map.closed_tiles.size(),
-		"events_planned": _city.events.planned_count(),
+		"events_planned": RunCity.events(_city).planned_count(),
 		"ground_prepared": GroundCells.used_cells(_ground).size(),
 		"buildings_prepared": _city.buildings().size(),
 		"network": _coverage(network_tiles, 0), "network_and_home": _coverage(offered, 0),

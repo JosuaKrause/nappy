@@ -112,7 +112,7 @@ func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Arr
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	var day := city.run.header.day
 	t.add_child(city)
-	city.build(CityGenerator.generate(city.run.header.run_seed))
+	RunCity.build(city, CityGenerator.generate(city.run.header.run_seed))
 	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
 	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"), _city_spec())
 	var found: Array[Dictionary] = []

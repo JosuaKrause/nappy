@@ -54,7 +54,7 @@ func _ground_rates(t: TestRunner) -> void:
 		for city_seed: int in SEEDS:
 			var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 			t.add_child(city)
-			city.build(CityGenerator.generate(city_seed))
+			RunCity.build(city, CityGenerator.generate(city_seed))
 			for row: Dictionary in _legs(city):
 				var name: String = row["name"]
 				var result := _walk(city, row["from"], row["to"], day, city_seed)
@@ -113,7 +113,7 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("m117:%d:%d" % [city_seed, day])
 	var at := (from + to) * 0.5
-	city.crowd.start_day(day, rng, at)
+	RunCity.crowd(city).start_day(day, rng, at)
 
 	var toward := to
 	var crowd_total := 0.0
@@ -128,11 +128,11 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 			gap = at.distance_to(toward)
 		if gap > 0.0:
 			at += (toward - at) / gap * step
-		city.crowd.set_focus(at)
-		city.crowd.step(STEP)
+		RunCity.crowd(city).set_focus(at)
+		RunCity.crowd(city).step(STEP)
 
 		var multiplier := city.decay_multiplier(at)
-		var incoming := city.crowd.sources.total_at(at)
+		var incoming := RunCity.crowd(city).sources.total_at(at)
 		if city.is_alley(at):
 			incoming += Baby.EXCITEMENT_FROM_ALLEY
 		crowd_total += incoming

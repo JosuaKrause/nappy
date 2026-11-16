@@ -19,7 +19,7 @@ const DAY := 8
 func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, CityGenerator.generate(SEED))
 	var fronts := EventScheduler.row_ground(city.map).tiles_for(
 			EventCatalogue.by_id("burning_building"))
 	t.check(not fronts.is_empty(), "the city has fronts a fire can catch on")
@@ -105,12 +105,12 @@ func _task_on_offer(t: TestRunner, city: City) -> ResistanceDirector:
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng("closures"))
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_day(DAY), _rng("events"), none, city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng("events"), none, city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng("resistance"), 300.0)
 	director.contact().complete_now()
 	return director

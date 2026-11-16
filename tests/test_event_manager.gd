@@ -71,7 +71,7 @@ func _build_city(t: TestRunner) -> void:
 ## before he ever noticed her still answers `is_waiting()`, and the task setting him on her
 ## (`EventInstance.notice_her_at()`) leaves him leaving.
 func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var at := _city.map.doorstep_world_position()
 	var her := at + Vector2(200.0, 0.0)
 	var guard := events.spawn_extra(EventCatalogue.task_guard(), at)
@@ -102,7 +102,7 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t: TestRunner) -> voi
 ## visits", and `tests/test_visit_counter.gd` for what its counter sends). What the manager makes of
 ## each row is named by the row alone, on the day the run is taught as on any other.
 func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var dog := EventCatalogue.by_id("charging_dog")
 	var lesson := EventCatalogue.lesson_of(dog)
 	var at := _city.map.doorstep_world_position()
@@ -133,7 +133,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 ## walk east on the first start, plans from nothing the first start or the walk left in the city
 ## or the manager. That the units the walk draws are the same whatever her path is the next test's.
 func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var home := _city.map.doorstep_world_position()
 	var rig := Rig.walker(t, _city, home)
@@ -168,7 +168,7 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 ## against the day drawn whole. Neither covers the moments and the rows her route's bag rigs,
 ## which follow her walk on purpose.
 func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var home := _city.map.doorstep_world_position()
 	var rig := Rig.walker(t, _city, home)
@@ -210,17 +210,17 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	# Told tiles the map does not yet hold as a body's, asked as the listener is called: the body
 	# is recorded before the crowd is told, so every tile told is one the map already holds.
 	var not_yet_recorded: Array[Vector2i] = []
-	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
-	_city.events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
+	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).use_body_listener(func(tiles: Array[Vector2i]) -> void:
 		told.append(str(tiles))
 		for tile in tiles:
 			if not _city.map.is_obstructed(tile):
 				not_yet_recorded.append(tile))
 	_start(4)
-	var undrawn := _city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+	var undrawn := RunCity.events(_city).walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
 	told.clear()
 	not_yet_recorded.clear()
-	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	var expected: Array[String] = []
 	var placed := 0
 	for unit in undrawn:
@@ -244,11 +244,11 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 			"and each is told after the body is recorded: the map holds every tile told as a body's"
 			+ " (%d tiles it did not yet)" % not_yet_recorded.size())
 	var told_so_far := told.size()
-	_city.events.use_body_listener(Callable())
+	RunCity.events(_city).use_body_listener(Callable())
 	_start(4)
-	var drawn_before := _city.events.plans().size()
-	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
-	t.check(told.size() == told_so_far and _city.events.plans().size() > drawn_before,
+	var drawn_before := RunCity.events(_city).plans().size()
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
+	t.check(told.size() == told_so_far and RunCity.events(_city).plans().size() > drawn_before,
 			"with no listener a draw tells nobody and still stands its rows")
 
 ## **The city hands the events the crowd's recycle** (`City.build()`, `EventManager.use_body_listener()`,
@@ -260,11 +260,11 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 ## (`Crowd.add_recipe_actor()`), and the draw round the start made: the car has moved.
 func _test_a_car_under_a_far_body_is_recycled_by_the_city_wiring(t: TestRunner) -> void:
 	var told: Array[Vector2i] = []
-	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
-	_city.events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
+	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).use_body_listener(func(tiles: Array[Vector2i]) -> void:
 		told.append_array(tiles))
 	_start(8)
-	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	var period := CityMap.period()
 	var candidates: Array[Vector2i] = []
 	for tile in told:
@@ -276,9 +276,9 @@ func _test_a_car_under_a_far_body_is_recycled_by_the_city_wiring(t: TestRunner) 
 	# The city again, with the wiring `City.build()` made and no listener of the test's own.
 	_teardown()
 	_build_city(t)
-	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(8)
-	var crowd := _city.crowd
+	var crowd := RunCity.crowd(_city)
 	crowd.start_day(8, Rig.rng(8), Vector2.ZERO, false)
 	crowd.clear()
 	crowd.set_focus(Vector2.ZERO)
@@ -298,7 +298,7 @@ func _test_a_car_under_a_far_body_is_recycled_by_the_city_wiring(t: TestRunner) 
 	if car == null:
 		return
 	var was := car.position
-	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	t.check(car.position.distance_to(was) > float(Tuning.TILE_SIZE),
 			"the draw that stands the body takes the car under it away (moved %.0fpx)"
 			% car.position.distance_to(was))
@@ -318,19 +318,19 @@ func _start(day: int) -> void:
 
 func _test_day_populates_the_manager(t: TestRunner) -> void:
 	_start(1)
-	t.check(_city.events.active_count() > 0, "starting a day puts events in the world")
-	for instance in _city.events.instances():
+	t.check(RunCity.events(_city).active_count() > 0, "starting a day puts events in the world")
+	for instance in RunCity.events(_city).instances():
 		t.check(is_instance_valid(instance), "every tracked instance is a live node")
 		t.check(instance.def != null, "every tracked instance has a def")
 
 ## Before a day there is no plan to count, so the run log's `events:` line says none; once a day is
 ## planned it names each row the plan holds.
 func _test_the_summary_names_what_the_day_planned(t: TestRunner) -> void:
-	t.check(_city.events.event_summary() == "none", "with no day planned the summary says none")
+	t.check(RunCity.events(_city).event_summary() == "none", "with no day planned the summary says none")
 	_start(1)
-	var summary := _city.events.event_summary()
-	t.check(summary != "none" and not _city.events.plans().is_empty()
-			and summary.contains(_city.events.plans()[0].row_id()),
+	var summary := RunCity.events(_city).event_summary()
+	t.check(summary != "none" and not RunCity.events(_city).plans().is_empty()
+			and summary.contains(RunCity.events(_city).plans()[0].row_id()),
 			"a planned day's summary names its rows (%s)" % [summary])
 
 ## A dog walker laid on a sidewalk of the day's city at a tile, as a scene recipe lays one
@@ -356,8 +356,8 @@ func _a_dog_walker_laid_in_the_world() -> EventPlan:
 			var start := map.tile_to_world(tile)
 			var plan := EventPlan.new(EventCatalogue.by_id("dog_walker"), start,
 					PackedVector2Array([start, map.tile_to_world(tile + along * 6)]))
-			_city.events.streaming.add(plan)
-			_city.events.stream_around(start)
+			RunCity.events(_city).streaming.add(plan)
+			RunCity.events(_city).stream_around(start)
 			return plan
 	return null
 
@@ -366,15 +366,15 @@ func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 	_a_dog_walker_laid_in_the_world()
 	# One that leaves nothing behind and runs out on its own, stepped the way the manager steps it.
 	var victim: EventInstance = null
-	for instance in _city.events.instances():
+	for instance in RunCity.events(_city).instances():
 		if instance.def.aftermath.on_finish == "" and _run_to_its_end(instance):
 			victim = instance
 			break
 	t.check(victim != null, "there is an event that leaves nothing behind and runs out")
-	var before := _city.events.active_count()
+	var before := RunCity.events(_city).active_count()
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(_city.events.active_count() == before - 1, "a finished event is dropped")
-	for instance in _city.events.instances():
+	t.check(RunCity.events(_city).active_count() == before - 1, "a finished event is dropped")
+	for instance in RunCity.events(_city).instances():
 		t.check(is_instance_valid(instance),
 				"no freed node is left in the list after a retirement")
 
@@ -396,17 +396,17 @@ func _run_to_its_end(instance: EventInstance) -> bool:
 ## not a day's.
 func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	_start(12)
-	var burst := _city.events.spawner.spawn(EventCatalogue.by_id("finale_explosion"),
+	var burst := RunCity.events(_city).spawner.spawn(EventCatalogue.by_id("finale_explosion"),
 			Vector2(500, 500))
-	var before := _city.events.active_count()
+	var before := RunCity.events(_city).active_count()
 	t.check(_run_to_its_end(burst), "the burst runs out on its own")
 	var where := burst.global_position
 	await PhysicsTicks.pass_ticks(t, 1)
 
-	t.check(_city.events.active_count() == before,
+	t.check(RunCity.events(_city).active_count() == before,
 			"a one-for-one replacement keeps the count the same")
 	var crater: EventInstance = null
-	for instance in _city.events.instances():
+	for instance in RunCity.events(_city).instances():
 		t.check(is_instance_valid(instance), "no freed node survives a successor swap")
 		if instance.def.id == "impact_crater":
 			crater = instance
@@ -417,18 +417,18 @@ func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 
 func _test_excitement_sums_over_instances(t: TestRunner) -> void:
 	_start(5)
-	var instances := _city.events.instances()
+	var instances := RunCity.events(_city).instances()
 	t.check(instances.size() > 1, "day 5 has several events to sum")
 
 	var at: Vector2 = instances[0].global_position
 	var expected := 0.0
 	for instance in instances:
 		expected += instance.excitement.contribution_at(at)
-	t.close_to(_city.events.sources.total_at(at), expected,
+	t.close_to(RunCity.events(_city).sources.total_at(at), expected,
 			"the manager's total is the sum of the instances' contributions")
 
 	var far := Vector2(-10000.0, -10000.0)
-	t.close_to(_city.events.sources.total_at(far), 0.0,
+	t.close_to(RunCity.events(_city).sources.total_at(far), 0.0,
 			"nothing reaches a point outside every radius")
 
 # ---------------------------------------------------- the world near you (M27) ---
@@ -440,11 +440,11 @@ func _test_excitement_sums_over_instances(t: TestRunner) -> void:
 ## streaming radius has to be wider than the widest field in the catalogue, or an event would
 ## appear *already inside* its own outer radius and the fairness contract would be a lie.
 func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
-	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 
 	var plan: EventPlan = null
-	for candidate in _city.events.plans():
+	for candidate in RunCity.events(_city).plans():
 		# Not mobile: a route means the reach is measured to the nearest point of it, which is a
 		# different check.
 		if candidate.is_placed() and candidate.path.is_empty():
@@ -456,10 +456,10 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 
 	var at := plan.position
 	var away := at + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0)
-	_city.events.stream_around(away)
+	RunCity.events(_city).stream_around(away)
 	t.check(plan.live == null, "an event across the city is not in the world")
 
-	_city.events.stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS - 40.0, 0.0))
+	RunCity.events(_city).stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS - 40.0, 0.0))
 	t.check(plan.live != null, "walking into reach of it puts it there")
 	var arrived := plan.live
 	t.check(arrived.age <= 0.0 or arrived.is_telegraphing(),
@@ -467,9 +467,9 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 
 	# The hysteresis: a player pacing on the boundary must not rebuild it every other frame,
 	# because a rebuilt instance telegraphs again and would crouch at her forever.
-	_city.events.stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS + 40.0, 0.0))
+	RunCity.events(_city).stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS + 40.0, 0.0))
 	t.check(plan.live == arrived, "stepping just past the edge does not take it away again")
-	_city.events.stream_around(away)
+	RunCity.events(_city).stream_around(away)
 	t.check(plan.live == null, "walking properly away does")
 
 	t.check(Tuning.EVENT_STREAM_RADIUS > _widest_field(),
@@ -487,36 +487,36 @@ func _widest_field() -> float:
 ## happened must not happen again because she walked back past it. Streaming is allowed to take
 ## an event away and give it back while it is *running*; it is not allowed to rewind it.
 func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
-	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 	# Every unit drawn, as a walk that comes near each would draw it, so the day's whole plan is
 	# there to choose from (a unit draws as she comes near it, and she is nowhere yet).
-	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	_a_dog_walker_laid_in_the_world()
 	var plan: EventPlan = null
 	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's route
 	# ends; a parked van never does).
-	for candidate in _city.events.plans():
+	for candidate in RunCity.events(_city).plans():
 		if candidate.is_placed() and candidate.def.aftermath.on_finish == "" \
 				and candidate.path.size() > 1:
-			_city.events.stream_around(candidate.position)
+			RunCity.events(_city).stream_around(candidate.position)
 			if candidate.live != null and _run_to_its_end(candidate.live):
 				plan = candidate
 				break
 	if not plan:
 		t.check(false, "day 1 has an event that runs out on its own")
-		_city.events.stream_radius = INF
+		RunCity.events(_city).stream_radius = INF
 		return
 
-	_city.events.stream_around(plan.position)
+	RunCity.events(_city).stream_around(plan.position)
 	t.check(plan.live != null, "she walks up to it and it is there")
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(plan.spent and plan.live == null, "it runs its course and the plan is spent")
 
-	_city.events.stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
-	_city.events.stream_around(plan.position)
+	RunCity.events(_city).stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
+	RunCity.events(_city).stream_around(plan.position)
 	t.check(plan.live == null, "and coming back does not start it over")
-	_city.events.stream_radius = INF
+	RunCity.events(_city).stream_radius = INF
 
 ## The third case, and the one that was actually wrong. *(M31.)* An event that is still
 ## **running** may be taken away and given back — but it has to come back where it got to, not
@@ -527,20 +527,20 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 ## `plan.position` and teleported to the top of its street. At a third of her walking speed that
 ## is most times, so from outside it was an event that never went anywhere.
 func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
-	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 	var plan: EventPlan = null
-	for candidate in _city.events.plans():
+	for candidate in RunCity.events(_city).plans():
 		if candidate.is_placed() and candidate.def.mobile and candidate.path.size() > 1 \
 				and not candidate.def.still_while_telegraphing:
 			plan = candidate
 			break
 	t.check(plan != null, "day 1 has something walking down a street")
 	if not plan:
-		_city.events.stream_radius = INF
+		RunCity.events(_city).stream_radius = INF
 		return
 
-	_city.events.stream_around(plan.position)
+	RunCity.events(_city).stream_around(plan.position)
 	t.check(plan.live != null, "she comes near it and it is there")
 	var started := plan.live.global_position
 	for i in 120:
@@ -551,9 +551,9 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 			% started.distance_to(walked))
 	var aged := plan.live.age
 
-	_city.events.stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
+	RunCity.events(_city).stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
 	t.check(plan.live == null, "she walks away and it leaves the world")
-	_city.events.stream_around(walked)
+	RunCity.events(_city).stream_around(walked)
 	t.check(plan.live != null, "she comes back and it is there again")
 	if plan.live:
 		t.check(plan.live.global_position.distance_to(walked) < 1.0,
@@ -563,7 +563,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 		# twice — its telegraph, its pulse and its duration all carry on rather than restart.
 		t.check(absf(plan.live.age - aged) < 0.01,
 				"and it is as old as it was, so revisiting cannot restart its clock")
-	_city.events.stream_radius = INF
+	RunCity.events(_city).stream_radius = INF
 
 ## **A set piece is one plan, owed to her walk.** Every one-shot is sited from her walk
 ## (`EventDef.validate()` refuses one that is not), so the day plans it as one plan with no position
@@ -575,7 +575,7 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start(day)
 		var by_row := {}
-		for plan in _city.events.plans():
+		for plan in RunCity.events(_city).plans():
 			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 				continue
 			by_row[plan.def.id] = int(by_row.get(plan.def.id, 0)) + 1
@@ -606,9 +606,9 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 	closures_rng.seed = hash("m100-seals:closures:%d" % day)
 	_city.start_day(state, day, closures_rng)
 	var consumed: Array[String] = []
-	_city.events.start_day(DaySpec.for_day(day), Rig.rng(day), consumed)
+	RunCity.events(_city).start_day(DaySpec.for_day(day), Rig.rng(day), consumed)
 	var streets := _city.streets()
-	t.check(streets.route_tree() != null and _city.events.walk() == streets.route_tree(),
+	t.check(streets.route_tree() != null and RunCity.events(_city).walk() == streets.route_tree(),
 			"the day the manager planned walks the tree the city's dawn grew")
 	var held := _city.map.held_streets()
 	t.check(not streets.closures().is_empty(),
@@ -623,7 +623,7 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 	# The very bodies of the dawn's region plan are the day's, not those of a plan grown again from
 	# the same tree: the siting's region and the crowd's gates read the streets' plan.
 	var bodies: Array[EventPlan] = streets.region_plan().wall_bodies + streets.region_plan().door_bodies
-	var plans := _city.events.plans()
+	var plans := RunCity.events(_city).plans()
 	var among := 0
 	for body in bodies:
 		if plans.has(body):
@@ -652,27 +652,27 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var plan := EventPlan.new(def, Vector2(500.0, 500.0))
 
-	_city.events.streaming.stream_in(plan)
+	RunCity.events(_city).streaming.stream_in(plan)
 	t.check(plan.live != null, "the hand-built plan streams in like any other")
 	if not plan.live:
 		return
 
 	var her := plan.position + Vector2(def.notice_within() - 10.0, 0.0)
-	_city.events.world.where_she_is().tell(her)
+	RunCity.events(_city).world.where_she_is().tell(her)
 	plan.live.step(1.0 / 60.0)
 	t.check(not plan.live.is_waiting(), "she is inside the trigger, so it notices her")
 	for i in 60:
-		_city.events.world.where_she_is().tell(her)
+		RunCity.events(_city).world.where_she_is().tell(her)
 		plan.live.step(1.0 / 60.0)
 	t.check(not plan.live.is_waiting(), "and a second later it is still chasing, not patrolling")
 	var chase_age_before := plan.live.chase_age()
 
-	_city.events.streaming.stream_out(plan)
+	RunCity.events(_city).streaming.stream_out(plan)
 	t.check(plan.live == null, "streaming out through the manager clears the live instance")
 	t.check(plan.noticed_at != INF,
 			"and the plan itself remembers when it noticed her, not just the freed instance")
 
-	_city.events.streaming.stream_in(plan)
+	RunCity.events(_city).streaming.stream_in(plan)
 	t.check(plan.live != null, "streaming back in rebuilds it")
 	if plan.live:
 		t.check(not plan.live.is_waiting(),
@@ -696,7 +696,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner) -> void:
 	var map := _city.map
 	var checked: Array[String] = []
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var rig: Stroller = null
 	for def in EventCatalogue.all():
 		if not def.comes_down_her_line():
@@ -782,7 +782,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 ## and change no answer, so nothing else here would show the link dropped.
 func _test_the_walk_is_handed_the_ground_the_dawn_made(t: TestRunner) -> void:
 	_start(1)
-	t.check(_city.events.walk_events().ground() != null,
+	t.check(RunCity.events(_city).walk_events().ground() != null,
 			"a day started through the manager carries the ground the dawn made for its walk")
 
 ## **What is sited on her walk asks the ground the walk carries** (`EventsAhead.start_day()` hands
@@ -795,16 +795,16 @@ func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRun
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start(day)
 		var left_for_her_walk := false
-		for plan in _city.events.plans():
+		for plan in RunCity.events(_city).plans():
 			if plan.def.on_her_way != null and not plan.is_placed():
 				left_for_her_walk = true
 		if not left_for_her_walk:
 			continue
-		var walk := _city.events.walk_events()
+		var walk := RunCity.events(_city).walk_events()
 		var counting := _CountingGround.new(_city.map, null, true, RowGround.Weights.new(),
 				func(_row: EventDef) -> bool: return false)
 		walk.take(walk.plans(), walk.calm(), walk.doors(), walk.reach(), walk.locations(), counting)
-		_city.events.ahead.start_day(day, _city.events.walk())
+		RunCity.events(_city).ahead.start_day(day, RunCity.events(_city).walk())
 		asked = counting.asks
 		break
 	t.check(asked >= 0, "a day leaves a plan for her walk to site")

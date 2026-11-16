@@ -58,7 +58,7 @@ func run(t: TestRunner) -> void:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.crowd_view = ScreenCrowdView.new(t)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, CityGenerator.generate(city_seed))
 		for day in DAYS:
 			for walk in WALKS:
 				for repetition in REPETITIONS:
@@ -71,7 +71,7 @@ func run(t: TestRunner) -> void:
 					t.check(chains.whole == chains.split,
 							("seed %d, day %d, %s walk, repetition %d: the split tick moves every "
 							+ "agent exactly as the real one") % [city_seed, day, walk, repetition])
-		city.crowd._player = null
+		RunCity.crowd(city)._player = null
 		city.free()
 	rig.free()
 
@@ -83,7 +83,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
 	var start := city.map.doorstep_world_position()

@@ -105,7 +105,7 @@ func _walk_the_day(t: TestRunner, seed_value: int) -> void:
 	var day := Boot.day(main)
 	var swing := Boot.resistance(main).contact_position()
 	var seen := {}
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		seen[instance.get_instance_id()] = true
 	var last := {}
 	var counts := {"wrong": 0, "by_kind": {}, "turns": 0, "recycled": 0, "came": 0, "officers": 0, "ticks": 0}
@@ -164,7 +164,7 @@ func _stand_against_a_walker(main: Node2D) -> void:
 	var player := Boot.player(main)
 	var here: Vector2 = player.global_position
 	var nearest: CrowdAgent = null
-	for agent in Boot.city(main).crowd.agents():
+	for agent in RunCity.crowd(Boot.city(main)).agents():
 		if agent.kind != CrowdAgent.Kind.WALKER or not agent.is_inside_tree():
 			continue
 		if nearest == null or agent.global_position.distance_squared_to(here) \
@@ -178,7 +178,7 @@ func _check_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, co
 	var city := Boot.city(main)
 	# What each mover stands at, by what it is.
 	var poses: Array[Array] = []
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if not instance.is_inside_tree():
 			continue
 		var id := instance.get_instance_id()
@@ -186,7 +186,7 @@ func _check_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, co
 			seen[id] = true
 			counts["came"] += 1
 		poses.append(["event %s" % instance.def.id, instance.position])
-	for agent in city.crowd.agents():
+	for agent in RunCity.crowd(city).agents():
 		if not agent.is_inside_tree():
 			continue
 		var id := agent.get_instance_id()

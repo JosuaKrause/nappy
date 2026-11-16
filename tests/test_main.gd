@@ -1291,7 +1291,7 @@ func _ground_of(city: City) -> SceneryGround:
 func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED))
 	var ground := _ground_of(city)
 
 	var half := Tuning.VIEW_HALF_EXTENT
@@ -1333,7 +1333,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED))
 
 	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size)).grow(512.0)
 	var viewport := Vector2(

@@ -51,7 +51,7 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 				# among and the paths it is found by are not changed by a unit drawn later.
 				var looked_within: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back() if day == 13 \
 						else ResistanceDirector.NEAR_THE_MARK
-				t.check(_city.events.walk_events().unit_draw().units().undrawn_within(mark,
+				t.check(RunCity.events(_city).walk_events().unit_draw().units().undrawn_within(mark,
 						looked_within + Tuning.EVENT_DRAW_AHEAD).is_empty(),
 						("seed %d day %d: the units round where she read the mark have drawn, as " +
 						"far as its task is looked for (%.0fpx) and %.0fpx beyond")
@@ -268,7 +268,7 @@ func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked
 		reached: Dictionary) -> bool:
 	var swing := CityGenerator.swing_park(city.map)
 	var catalogue: Array[EventPlan] = []
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if plan.role != GameEnums.BlockerRole.NONE or plan.mast_id != "":
 			catalogue.append(plan)
 	for block in city.map.calm_blocks:

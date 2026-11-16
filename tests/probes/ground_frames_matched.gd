@@ -155,7 +155,7 @@ func _run() -> void:
 		_city.ground_mode = DevFlags.new(OS.get_cmdline_user_args(), "", true).ground_mode() \
 				as SceneryGround.Mode
 		add_child(_city)
-		_city.build(CityGenerator.generate(4242))
+		RunCity.build(_city, CityGenerator.generate(4242))
 		_city.scenery.set_process(false)
 		_city.scenery_ground.set_process(false)
 		_city.scenery_ground.elapsed = 0

@@ -56,14 +56,14 @@ func run(t: TestRunner) -> void:
 	for city_seed in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, CityGenerator.generate(city_seed))
 		for day in DAYS:
 			city.run.header.day = day
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("polite-rabbit-walls:%d:%d" % [city_seed, day])
 			city.start_day(CityState.new(), day, rng)
 			var consumed: Array[String] = []
-			city.events.start_day(DaySpec.for_day(day), rng, consumed, city.map.doorstep_world_position())
+			RunCity.events(city).start_day(DaySpec.for_day(day), rng, consumed, city.map.doorstep_world_position())
 			var events := [0.0, 0.0, 0.0]
 			var crowd := [0.0, 0.0, 0.0]
 			var seconds := 0.0
@@ -78,7 +78,7 @@ func run(t: TestRunner) -> void:
 					var walked := _walk(city, path, day, rng, events, crowd)
 					seconds += walked.x
 					mismatches += int(walked.y)
-			city.events.clear()
+			RunCity.events(city).clear()
 			print("  %6d %4d %6d %8.0f   %s   %s" % [city_seed, day, routes, seconds,
 					_three(events), _three(crowd)])
 			for i in 3:
@@ -126,7 +126,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 		events: Array, crowd: Array) -> Vector2:
 	var map := city.map
 	var here := path[0]
-	city.crowd.start_day(day, rng, here)
+	RunCity.crowd(city).start_day(day, rng, here)
 	var next := 1
 	var seconds := 0.0
 	var mismatches := 0
@@ -139,14 +139,14 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 		if next < path.size():
 			here += (path[next] - here).normalized() * step
 		seconds += STEP
-		city.events.stream_around(here)
-		city.crowd.set_focus(here)
-		city.crowd.step(STEP)
+		RunCity.events(city).stream_around(here)
+		RunCity.crowd(city).set_focus(here)
+		RunCity.crowd(city).step(STEP)
 		var rates := [0.0, 0.0, 0.0]
 		var barrier := [0.0, 0.0, 0.0]
 		var charged := 0.0
 		var charged_barrier := 0.0
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			var live := instance.caret_intensity_over_horizon()
 			var field := instance.field_at(here, live, Vector2.INF)
 			if field <= 0.0:
@@ -171,7 +171,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 			events[i] += (rates[i] + barrier[i]) * STEP
 		var heard := 0.0
 		var noise := [0.0, 0.0, 0.0]
-		for agent in city.crowd.agents():
+		for agent in RunCity.crowd(city).agents():
 			var field := agent.excitement._field(here)
 			if field <= 0.0:
 				continue

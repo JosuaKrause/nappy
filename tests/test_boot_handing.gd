@@ -84,11 +84,11 @@ func _test_the_crowd_does_not_meet_her_behind_the_title(t: TestRunner) -> void:
 static func _all_round(city: City, at: Vector2) -> bool:
 	var reach := CrowdField.new(city.map, at).half_extent() + CrowdAgent.ENTRY_SPREAD \
 			+ Tuning.TILE_SIZE
-	for agent in city.crowd.agents():
+	for agent in RunCity.crowd(city).agents():
 		var away := agent.global_position - at
 		if maxf(absf(away.x), absf(away.y)) > reach:
 			return false
-	return not city.crowd.agents().is_empty()
+	return not RunCity.crowd(city).agents().is_empty()
 
 func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 	var played := await _boot(t, func(run: RunState) -> void:
@@ -100,7 +100,7 @@ func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 	t.check(city != null and city.is_ancestor_of(Boot.player(main)),
 			"the escape's city is built, and she stands in it")
 	var controls := Boot.touch_controls(main)
-	var visible: VisibleView = city.events.world.visible
+	var visible: VisibleView = RunCity.events(city).world.visible
 	t.check(visible.controls == controls.covering,
 			"and its events hold the controls' cover")
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)

@@ -101,7 +101,7 @@ func run(t: TestRunner) -> void:
 func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
 	var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	var director := ResistanceDirector.new()
 	var player := _start_the_day(t, city, director, seed_value)
 	var day := {"city": city, "director": director, "player": player}
@@ -112,8 +112,8 @@ func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
 	var mark_at := director.contact_position()
 	player.global_position = mark_at
 	player.facing = Vector2.DOWN
-	city.events.visible_view().look(_view_of(player), null)
-	director.set_sight(city.events.sees)
+	RunCity.events(city).visible_view().look(_view_of(player), null)
+	director.set_sight(RunCity.events(city).sees)
 	director.contact().complete_now()
 	var step := director.current_step()
 	if step == null or step.task_event_id != "roadblock" or _task_guard(city) == null:
@@ -294,7 +294,7 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 
 ## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
 static func _task_guard(city: City) -> EventInstance:
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id == EventCatalogue.task_guard().id and not instance.is_finished:
 			return instance
 	return null
@@ -334,11 +334,11 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -346,7 +346,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	player.add_child(camera)
 	t.add_child(player)
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	director.use_player(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()

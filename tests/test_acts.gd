@@ -119,7 +119,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	city.run.header.day = 4
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, CityGenerator.generate(SEED))
 
 	var sites := {}
 	for tile in EventScheduler.row_ground(city.map).tiles_for(

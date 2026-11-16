@@ -28,10 +28,10 @@ func _process(delta: float) -> void:
 	var edge: DangerEdge = main.get("_edge")
 	if player == null or city == null or edge == null:
 		return
-	var view := city.events.visible_view()
+	var view := RunCity.events(city).visible_view()
 	# The scheme the view was last looked through in: the controls it is handed, while in force.
 	var joystick := view.controls != null and view.controls.is_in_force()
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id != "charging_dog":
 			continue
 		var on_camera := false

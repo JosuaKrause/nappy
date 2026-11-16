@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()
 		var player := _start_the_day(t, city, director, seed_value)
 		_count_the_dawn(city, seed_value)
@@ -65,7 +65,7 @@ func _count_the_dawn(city: City, seed_value: int) -> void:
 	var corridor := Corridor.of(city.streets().route_tree())
 	var standing := 0
 	var beside := 0
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if plan.def.id != "roadblock" or not plan.is_placed() or plan.is_door() or wall.has(plan):
 			continue
 		standing += 1
@@ -95,22 +95,22 @@ static func _beside(map: CityMap, corridor: Corridor, tile: Vector2i) -> bool:
 func _read_the_mark_at(city: City, director: ResistanceDirector, player: Stroller,
 		at: Vector2) -> Array:
 	player.global_position = at
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	var spent := {}
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		spent[plan] = plan.is_spent()
-	var before := city.events.plans().size()
+	var before := RunCity.events(city).plans().size()
 	director._step = _roadblock_step()
 	var placed := director._place_the_roadblock_near(at)
 	if placed == null:
 		return ["none", INF]
 	var newly_spent := 0
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if spent.has(plan) and plan.is_spent() and not spent[plan]:
 			newly_spent += 1
-	var added := city.events.plans().size() - before
+	var added := RunCity.events(city).plans().size() - before
 	var outcome := "found"
 	if added > 0:
 		outcome = "swapped" if newly_spent > 0 else "placed"
@@ -140,7 +140,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	player.add_child(camera)
 	t.add_child(player)
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	director.use_player(player)
 	player.set_physics_process(false)
 	return player
@@ -157,13 +157,13 @@ func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int,
 	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [],
 			city.map.doorstep_world_position())
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-				city.spawn_siting)
+		director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+				RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

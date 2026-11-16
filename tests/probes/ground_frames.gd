@@ -33,7 +33,7 @@ func _process(_delta: float) -> void:
 func _run() -> void:
 	_city = RunCity.with_own_run(CITY, 4242)
 	add_child(_city)
-	_city.build(CityGenerator.generate(4242))
+	RunCity.build(_city, CityGenerator.generate(4242))
 	_city.scenery.set_process(false)
 	_city.hide()
 	var trials: Array[Dictionary] = []

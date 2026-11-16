@@ -109,7 +109,7 @@ func _probe_the_camera() -> void:
 	var city: City = city_scene.instantiate()
 	city.run = _run
 	add_child(city)
-	city.build(loaded.map)
+	RunCity.build(city, loaded.map)
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	city.start_recipe_day(state, 1, _run.calendar.day_rng())
@@ -207,7 +207,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	city.run = own_run
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
+	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 3)
 	city.start_day(state, 3, own_run.calendar.day_rng(3, "closures"))
@@ -259,7 +259,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 		var placed := city.map.moves.all().any(func(move: MoveProposal) -> bool:
 				return move.from == dog.position and move.to == dog.position)
 		t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
-		city.events.retire(dog)
+		RunCity.events(city).retire(dog)
 	runtime.free()
 	player.free()
 	city.free()
@@ -370,7 +370,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	city.run = own_run
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
+	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, own_run.header.day)
 	city.start_day(state, own_run.header.day, own_run.calendar.day_rng(own_run.header.day, "closures"))
@@ -388,7 +388,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 				_recipe_config(false), own_run)
 		var errors := runtime.install(city, player, baby,
 				DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
-		for plan in city.events.plans():
+		for plan in RunCity.events(city).plans():
 			if plan.get_meta("recipe_name", "") == "car":
 				installed[heat] = plan.def
 		t.check(errors.is_empty(), "the patrol car is installed at heat %s: %s" % [heat, errors])
@@ -419,7 +419,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 	var city: City = CITY_SCENE.instantiate()
 	city.run = own_run
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
+	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, own_run.header.day)
 	city.start_day(state, own_run.header.day, own_run.calendar.day_rng(own_run.header.day, "closures"))
@@ -500,7 +500,7 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	var rider := director.rider()
 	t.check(rider != null, "the task rides on a live event")
 	if rider:
-		placed.city.events.retire(rider)
+		RunCity.events(placed.city).retire(rider)
 	director.tick(1.0 / Engine.physics_ticks_per_second)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(_task_record(runtime).get("expired_tick") == runtime.tick and not runtime.named.has("task")
@@ -569,13 +569,13 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var city: City = city_scene.instantiate()
 	city.run = own_run
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	city.start_recipe_day(state, day, own_run.calendar.day_rng(day, "closures"))
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
 	t.add_child(player)

@@ -89,14 +89,14 @@ func _build_city(t: TestRunner) -> void:
 		_city.free()
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	RunCity.build(_city, CityGenerator.generate(SEED))
 
 func _director(t: TestRunner) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
+	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+			RunCity.spawn_siting(_city))
 	return director
 
 func _rng(day: int) -> RandomNumberGenerator:
@@ -107,7 +107,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 ## Hands the city's events a recording drawer to give every instance they make from here on, as
 ## `tests/test_pelican.gd` does: a look is handed its drawer as it is made.
 func _record_the_drawing() -> void:
-	_city.events.world.drawer = RecordingEventDrawer.new()
+	RunCity.events(_city).world.drawer = RecordingEventDrawer.new()
 
 ## The pictures a protest the city's events made stands its rank in, drawn: it was handed the
 ## recording drawer its manager's spawner hands every instance (`_record_the_drawing()`), and real
@@ -134,9 +134,9 @@ func _test_plain_pose_on_a_mark_step(t: TestRunner) -> void:
 	director.start_day(6, _rng(6), 300.0)
 	var step := director.current_step()
 	t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
-	t.check(_city.events.points_at.call() == Vector2.INF,
+	t.check(RunCity.events(_city).points_at.call() == Vector2.INF,
 			"a mark step gives a protester nothing to point at")
-	t.check(EventPictures.protester_texture(Vector2.ZERO, _city.events.points_at.call())
+	t.check(EventPictures.protester_texture(Vector2.ZERO, RunCity.events(_city).points_at.call())
 			== EventPictures.PROTESTER,
 			"...so a protester anywhere in the city draws the plain rank")
 
@@ -152,7 +152,7 @@ func _test_pointing_pose_on_a_perform_step(t: TestRunner) -> void:
 	var step := director.current_step()
 	t.check(step != null and not step.is_pickup, "the yeller perform is active")
 
-	var objective: Vector2 = _city.events.points_at.call()
+	var objective: Vector2 = RunCity.events(_city).points_at.call()
 	t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
 	t.check(objective == director.contact_position(),
 			"before its first arrow choice, it is the step's own contact")
@@ -171,14 +171,14 @@ func _test_a_protest_the_city_makes_points_where_its_director_does(t: TestRunner
 	var director := _director(t)
 	director.start_day(6, _rng(6), 300.0)
 	director.contact().complete_now()
-	var objective: Vector2 = _city.events.points_at.call()
+	var objective: Vector2 = RunCity.events(_city).points_at.call()
 	t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
 	_record_the_drawing()
-	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
+	var protest := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("protest"),
 			objective + Vector2(0.0, 300.0))
 	t.check(protest.points_at.call() == objective,
 			"a protest the city's events make asks the director it was handed")
-	t.check(protest.drawer != null and protest.drawer == _city.events.world.drawer,
+	t.check(protest.drawer != null and protest.drawer == RunCity.events(_city).world.drawer,
 			"and draws through the drawer its manager's spawner hands every instance it makes")
 	var expected := EventPictures.protester_texture(protest.global_position, objective)
 	var rank: Array[String] = await _rank_drawn(t, protest)
@@ -193,7 +193,7 @@ func _test_a_protest_the_city_makes_points_where_its_director_does(t: TestRunner
 func _test_a_protest_with_no_director_points_at_nothing(t: TestRunner) -> void:
 	_build_city(t)
 	_record_the_drawing()
-	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
+	var protest := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
 	t.check(not protest.points_at.is_valid() or protest.points_at.call() == Vector2.INF,
 			"a protest with no director handed in has nothing to point at")
 	var rank: Array[String] = await _rank_drawn(t, protest)

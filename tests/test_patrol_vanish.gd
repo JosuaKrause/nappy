@@ -32,11 +32,11 @@ func _rig(t: TestRunner, day: int) -> Array:
 	# so a red one cannot hold a car where the probe wants it to run.
 	city.dark_from_the_start = true
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the
 	# checks plant what they watch themselves.
 	var no_plans: Array[EventPlan] = []
-	city.events.start_recipe(no_plans, DaySpec.for_day(day), day, Vector2.ZERO)
+	RunCity.events(city).start_recipe(no_plans, DaySpec.for_day(day), day, Vector2.ZERO)
 	var her := _Her.new()
 	t.add_child(her)
 	her.set_process(false)
@@ -101,14 +101,14 @@ func _lane_rig(t: TestRunner, def: EventDef) -> Array:
 	var route := PackedVector2Array([spot[0], spot[1]])
 	her.global_position = spot[2]
 	var plan := EventPlan.new(def, route[0], route)
-	city.events.streaming.add(plan)
-	city.events.use_player(her)
+	RunCity.events(city).streaming.add(plan)
+	RunCity.events(city).use_player(her)
 	return [city, her, plan, route]
 
 ## One real physics tick, the manager's own (`EventManager._physics_process()`), which steps every
 ## instance, with her running while `running` says so; it covers `SPEED` times `STEP`.
 func _frame(t: TestRunner, city: City, running := false) -> void:
-	(city.events.world.player as _Her).running = running
+	(RunCity.events(city).world.player as _Her).running = running
 	await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), SPEED)
 
 ## Whether `car` is out of the world: finished, or handed to `queue_free()` by a retirement or a
@@ -159,7 +159,7 @@ func _test_an_investigating_car_leaves_out_of_her_sight(t: TestRunner) -> void:
 		car = car if car != null else plan.live
 		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
-			officer = MenLetOut.first_of(city.events, car)
+			officer = MenLetOut.first_of(RunCity.events(city), car)
 			let_out = let_out or officer != null
 		gave_up = gave_up or (is_instance_valid(officer) and officer.gave_up)
 		if car != null and _removed(car):
@@ -190,7 +190,7 @@ func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(
 		car = car if car != null else plan.live
 		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
-			officer = MenLetOut.first_of(city.events, car)
+			officer = MenLetOut.first_of(RunCity.events(city), car)
 			let_out = let_out or officer != null
 		gave_up = gave_up or (is_instance_valid(officer) and officer.gave_up)
 		if car != null and _removed(car):
@@ -266,7 +266,7 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t: TestRunner) -> void:
 	while her.global_position.y > home.y:
 		her.global_position.y = maxf(her.global_position.y - Tuning.WALK_SPEED * STEP * SPEED, home.y)
 		await _frame(t, city)
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			seen = seen or _seen(instance.global_position, her.global_position)
 	for i in 30:
 		await _frame(t, city)

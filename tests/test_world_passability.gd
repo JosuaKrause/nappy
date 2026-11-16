@@ -48,7 +48,7 @@ func run(t: TestRunner) -> void:
 ## navigator: a director that builds its own `Navigator.new(map)` passes.
 func _test_every_mover_on_a_map_shares_its_one_navigator(t: TestRunner, city: City) -> void:
 	t.check(city.map.navigator() == city.navigator
-			and city.events.world.navigator() == city.navigator,
+			and RunCity.events(city).world.navigator() == city.navigator,
 			"the city and its events move by the map's one navigator")
 
 # ---------------------------------------------------------------------- ground ---
@@ -343,12 +343,12 @@ func _in_a_day(t: TestRunner, check: Callable) -> void:
 	run_state.start_run(SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run_state)
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED))
 	var state := CityState.new()
 	run_state.attempt_spend.city_state = state
 	state.begin_day(city.map.plans_by_block(), WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
-	city.events.start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
 	check.call(t, city)
 	city.free()
 
@@ -364,7 +364,7 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 	var map := city.map
 	var compared := 0
 	var differ := 0
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
 				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_radius <= 0.0:
 			continue
@@ -506,7 +506,7 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 	t.check(start != Vector2.INF, "there is a pavement against a building to stand the dog on")
 	if start == Vector2.INF:
 		return
-	var instance := city.events.spawn_extra(dog, start)
+	var instance := RunCity.events(city).spawn_extra(dog, start)
 	instance.set_process(false)
 	instance.excitement.set_player_at(start - into * 80.0)
 	instance.give_up_the_chase()
@@ -526,7 +526,7 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 	t.check(instance.is_finished or instance.global_position.distance_to(start) > 2.0 * TILE,
 			"and it gets away rather than standing against the wall (%.0fpx)"
 			% instance.global_position.distance_to(start))
-	city.events.retire(instance)
+	RunCity.events(city).retire(instance)
 
 ## **The walker**: every catalogue row that moves, on seed 4242's day 9, started on its own ground
 ## nearest her doorstep, given a route straight north through whatever stands there — her own
@@ -550,7 +550,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 		var route := PackedVector2Array()
 		if def.mobile and def.pursuit == null:
 			route = PackedVector2Array([at, at + Vector2(0.0, -12.0 * TILE)])
-		var instance := city.events.spawn_extra(def, at, route)
+		var instance := RunCity.events(city).spawn_extra(def, at, route)
 		instance.set_process(false)
 		var her := at + Vector2(0.0, -6.0 * TILE)
 		var asked := Mover.of(mover.layers_blocked())
@@ -588,7 +588,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 		if left_from != Vector2.INF and not instance.is_finished \
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id)
-		city.events.retire(instance)
+		RunCity.events(city).retire(instance)
 	# What the remeasuring step reads: a departure that a solid holds within a tile of where it
 	# began, which the contract that nothing vanishes in her view keeps standing there.
 	print("WALKER day %d seed %d: %d rows, %d steps asked, departures held within a tile: %s"

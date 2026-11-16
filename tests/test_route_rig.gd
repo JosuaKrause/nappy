@@ -120,27 +120,27 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	var city: City = CITY_SCENE.instantiate()
 	city.run = run
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
-	city.events.stream_radius = INF
+	RunCity.build(city, MapCache.of(SEED))
+	RunCity.events(city).stream_radius = INF
 
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(day, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
 
 	var stroller: Stroller = STROLLER_SCENE.instantiate()
 	(stroller.get_node("Baby") as Baby).use_bus(EventBus)
 	t.add_child(stroller)
 	stroller.global_position = city.map.doorstep_world_position()
 	if her:
-		city.events.use_player(stroller)
+		RunCity.events(city).use_player(stroller)
 
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	if her:
 		resistance.use_player(stroller)
 	resistance.start_day(day, _rng(day, "resistance"), Tuning.day_length(day) if her else 300.0)
@@ -176,7 +176,7 @@ func _free_day() -> void:
 
 ## The planner the rig builds in its `setup()`, over the suite's day 6 and her.
 func _planner(resistance: ResistanceDirector = _resistance) -> RouteRigPlanner:
-	return RouteRigPlanner.new(_city.map, _city.events, _no_spawn, _stroller, resistance, _clock)
+	return RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, resistance, _clock)
 
 ## A spawn lookup that places nothing, for a planner whose checks never resolve a `spawn:` word.
 func _no_spawn(_name: String) -> Vector2:
@@ -185,7 +185,7 @@ func _no_spawn(_name: String) -> Vector2:
 ## A fixture's planner, the same shape.
 func _fixture_planner(fixture: Dictionary) -> RouteRigPlanner:
 	var city: City = fixture["city"]
-	return RouteRigPlanner.new(city.map, city.events, _no_spawn, fixture["stroller"],
+	return RouteRigPlanner.new(city.map, RunCity.events(city), _no_spawn, fixture["stroller"],
 			fixture["resistance"], _clock)
 
 func _release() -> void:
@@ -240,9 +240,9 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	var trace := RecordingTrace.new(_lines)
 	rig.trace = trace
 	_rig_city = city
-	_city_trace = city.events.trace
-	city.events.trace = trace
-	rig.setup(city.map, city.events, _no_spawn, stroller, baby, resistance, day, targets, run)
+	_city_trace = RunCity.events(city).trace
+	RunCity.events(city).trace = trace
+	rig.setup(city.map, RunCity.events(city), _no_spawn, stroller, baby, resistance, day, targets, run)
 	rig.start_day(day.spec)
 	return rig
 
@@ -329,7 +329,7 @@ func _steps(t: TestRunner, count: int) -> void:
 
 ## Gives the city's events back their trace and frees what a rig test built.
 func _end_rig(rig: RouteRig, day: DayController) -> void:
-	_rig_city.events.trace = _city_trace
+	RunCity.events(_rig_city).trace = _city_trace
 	_rig_city = null
 	rig.free()
 	day.free()
@@ -524,7 +524,7 @@ func _find_kerb_site(t: TestRunner, planner: RouteRigPlanner) -> Vector2i:
 ## no way round the van's clearance: crossing a tile of it is then the right answer and not a fault.
 func _site_is_quiet(kerb: Vector2i) -> bool:
 	var at := _city.map.tile_to_world(kerb)
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in RunCity.events(_city).instances():
 		if instance.global_position.distance_to(at) < QUIET_SITE_TILES * Tuning.TILE_SIZE:
 			return false
 	return true
@@ -573,7 +573,7 @@ func _check_clearance_beside_a_kerbed_van(t: TestRunner, planner: RouteRigPlanne
 		return
 	var inward := _city.map.pavement_inward(kerb)
 	var along := Vector2i(inward.y, inward.x)
-	var van := _city.events.spawn_extra(EventCatalogue.by_id("delivery_van"),
+	var van := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("delivery_van"),
 			_city.map.tile_to_world(kerb))
 	t.check(van.is_solid(), "the van stands with a solid body")
 	var frontage := kerb + inward
@@ -602,7 +602,7 @@ func _check_clearance_beside_a_kerbed_van(t: TestRunner, planner: RouteRigPlanne
 			pressed += 1
 	t.check(pressed == 0, "no step of the plan past the van is one she cannot stand in the middle"
 			+ " of (%d found)" % pressed)
-	_city.events.retire(van)
+	RunCity.events(_city).retire(van)
 	_city.map.release_obstruction(van.get_instance_id())
 
 ## **A tile of a body's clearance the plan chose to cross is walked at its roomiest point, not its
@@ -618,7 +618,7 @@ func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunne
 		return
 	var inward := _city.map.pavement_inward(kerb)
 	var along := Vector2i(inward.y, inward.x)
-	var van := _city.events.spawn_extra(EventCatalogue.by_id("delivery_van"),
+	var van := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("delivery_van"),
 			_city.map.tile_to_world(kerb))
 	var lane := kerb - inward
 	var surface := func(point: Vector2) -> float:
@@ -641,7 +641,7 @@ func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunne
 				and surface.call(moved) >= Tuning.PLAYER_BODY_RADIUS,
 				"and is walked at a point of its tile clear of the van by her radius (%.1fpx)"
 				% surface.call(moved))
-	_city.events.retire(van)
+	RunCity.events(_city).retire(van)
 	_city.map.release_obstruction(van.get_instance_id())
 
 ## Every tile a walk down `waypoints` passes through, in order — a plan keeps only the ends of a
@@ -768,7 +768,7 @@ func _test_resolve_target_home_is_the_home_rects_centre(t: TestRunner) -> void:
 ## goes in, and what it answers is the word's place.
 func _test_resolve_target_spawn_hands_its_name_to_the_spawn_lookup(t: TestRunner) -> void:
 	var asked: Array[String] = []
-	var planner := RouteRigPlanner.new(_city.map, _city.events,
+	var planner := RouteRigPlanner.new(_city.map, RunCity.events(_city),
 			func(name: String) -> Vector2:
 				asked.append(name)
 				return Vector2(7.0, 9.0),
@@ -783,7 +783,7 @@ func _test_resolve_target_spawn_hands_its_name_to_the_spawn_lookup(t: TestRunner
 func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestRunner) -> void:
 	var clock := DayController.new()
 	t.add_child(clock)
-	var planner := RouteRigPlanner.new(_city.map, _city.events, _no_spawn, _stroller, _resistance,
+	var planner := RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, _resistance,
 			clock)
 	t.check(planner.resolve("tunnel") == Vector2.INF and planner.resolve("bridge") \
 			== Vector2.INF, "a day has no tunnel or bridge to walk to")
@@ -793,7 +793,7 @@ func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestR
 	clock.spec.exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
 	t.check(planner.resolve("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
 	t.check(planner.resolve("bridge") == bridge, "'bridge' resolves to the spec's bridge")
-	var escape := RouteRigPlanner.new(_city.map, _city.events, _no_spawn, _stroller, null, clock)
+	var escape := RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, null, clock)
 	t.check(escape.resolve("mark") == Vector2.INF and escape.resolve("task") \
 			== Vector2.INF, "with no resistance director, 'mark' and 'task' are unavailable")
 	clock.free()
@@ -1403,12 +1403,12 @@ func _build_day_with_doors(t: TestRunner) -> Dictionary:
 	var city: City = fixture["city"]
 	var gate: EventInstance = null
 	var hut: EventInstance = null
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and not gate:
 			gate = instance
 	if gate:
 		var axis := gate.facing_now()
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			if instance.def.id == "checkpoint_hut" and absf(
 					(instance.global_position - gate.global_position).dot(axis)) <= 1.0:
 				hut = instance
@@ -1596,11 +1596,11 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	# not have counted anything.
 	var lane := gate.global_position + Vector2(-axis.y, axis.x) * 16.0
 	var told: Array[String] = []
-	city.events.trace = RecordingTrace.new(told)
+	RunCity.events(city).trace = RecordingTrace.new(told)
 	stroller.reset_at(lane - axis * 20.0)
-	city.events.checkpoints.watch_the_door_lines()
+	RunCity.events(city).checkpoints.watch_the_door_lines()
 	stroller.global_position = lane + axis * 20.0
-	city.events.checkpoints.watch_the_door_lines()
+	RunCity.events(city).checkpoints.watch_the_door_lines()
 	t.check(_walks_told_in(told) == 1,
 			"while walking straight along the carriageway under it is counted (%d)"
 			% _walks_told_in(told))

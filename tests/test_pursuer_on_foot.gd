@@ -50,14 +50,14 @@ func _city_with_her(t: TestRunner, day: int, seed_value := SEED, on_map: CityMap
 	var map := on_map if on_map else MapCache.of(seed_value)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the
 	# checks plant what they watch themselves, and no day's seals or doors come with it.
 	var no_plans: Array[EventPlan] = []
-	city.events.start_recipe(no_plans, DaySpec.for_day(day), day, Vector2.ZERO)
+	RunCity.events(city).start_recipe(no_plans, DaySpec.for_day(day), day, Vector2.ZERO)
 	var her := CharacterBody2D.new()
 	her.add_to_group("player")
-	city.events.use_player(her)
+	RunCity.events(city).use_player(her)
 	t.add_child(her)
 	her.global_position = _a_sidewalk(map)
 	return [city, her]
@@ -131,7 +131,7 @@ func _done(city: City, her: Node2D) -> void:
 ## The pursuer a torn poster sent, in the world, or null: the instance of either on-foot row, which no
 ## scheduler places, so it is the one a pursuit marble sent.
 func _the_pursuer_sent(city: City) -> EventInstance:
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id in ["policeman_giving_chase", "guardsman_giving_chase"]:
 			return instance
 	return null
@@ -139,8 +139,8 @@ func _the_pursuer_sent(city: City) -> EventInstance:
 ## Runs his warning down, a frame at a time, with her standing at `her`.
 func _run_the_warning(city: City, her: Node2D) -> void:
 	for i in int(1.0 / STEP):
-		city.events.warnings.run(STEP, her.global_position)
-		if city.events.pending_warnings().is_empty():
+		RunCity.events(city).warnings.run(STEP, her.global_position)
+		if RunCity.events(city).pending_warnings().is_empty():
 			return
 
 # ------------------------------------------------------------------ the rows ---
@@ -196,7 +196,7 @@ func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t: TestRunner) -> void:
 		var rig := _city_with_her(t, day)
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
-		city.events.send_a_pursuer()
+		RunCity.events(city).send_a_pursuer()
 		_run_the_warning(city, her)
 		var sent := _the_pursuer_sent(city)
 		var expected: EventDef.Look = EventDef.Look.GUARDSMAN_GIVING_CHASE if day == 9 \
@@ -219,15 +219,15 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 	var told := [0]
 	var on_sent := func() -> void: told[0] += 1
 	EventBus.poster_pursuit_sent.connect(on_sent)
-	var before := city.events.instances().size()
+	var before := RunCity.events(city).instances().size()
 	var account: Array[String] = []
-	city.events.trace = RecordingTrace.new(account)
-	city.events.send_a_pursuer()
+	RunCity.events(city).trace = RecordingTrace.new(account)
+	RunCity.events(city).send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
-	var warnings := city.events.pending_warnings()
+	var warnings := RunCity.events(city).pending_warnings()
 	t.check(warnings.size() == 1 and warnings[0].def.id == "policeman_giving_chase",
 			"the badge is up the moment the marble is drawn, with her standing still")
-	t.check(city.events.instances().size() == before and _the_pursuer_sent(city) == null,
+	t.check(RunCity.events(city).instances().size() == before and _the_pursuer_sent(city) == null,
 			"and nothing is in the world yet")
 	t.check(told[0] == 1, "the counter's poster-pursuit goes out as he is sent (%d)" % told[0])
 	_run_the_warning(city, her)
@@ -239,14 +239,14 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 	t.check(account.any(starts_clear),
 			"and, from a sidewalk in the city, his start has a clear run at her (%s)" % [account])
 	if sent:
-		var view := SpawnSiting.seen_from(city.events.visible_view(), her.global_position)
+		var view := SpawnSiting.seen_from(RunCity.events(city).visible_view(), her.global_position)
 		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(sent.def),
 				her.global_position, sent.global_position),
 				"created wholly out of her sight (%.0fpx off)"
 				% sent.global_position.distance_to(her.global_position))
 		t.check(sent.came_under_a_warning and not sent.is_telegraphing() and not sent.is_waiting(),
 				"already chasing from his first frame, with no closing in")
-		t.check(not city.events.plans().any(func(plan: EventPlan) -> bool:
+		t.check(not RunCity.events(city).plans().any(func(plan: EventPlan) -> bool:
 				return plan.live == sent), "and outside the day's plan")
 	_done(city, her)
 
@@ -259,20 +259,20 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 	var told := [0]
 	var on_sent := func() -> void: told[0] += 1
 	EventBus.poster_pursuit_sent.connect(on_sent)
-	city.events.send_a_pursuer()
-	city.events.send_a_pursuer()
-	t.check(city.events.pending_warnings().size() == 1 and told[0] == 1,
+	RunCity.events(city).send_a_pursuer()
+	RunCity.events(city).send_a_pursuer()
+	t.check(RunCity.events(city).pending_warnings().size() == 1 and told[0] == 1,
 			"a second marble while his badge is up sends nobody (%d warnings, %d told)"
-			% [city.events.pending_warnings().size(), told[0]])
+			% [RunCity.events(city).pending_warnings().size(), told[0]])
 	_run_the_warning(city, her)
 	var first := _the_pursuer_sent(city)
-	city.events.send_a_pursuer()
-	t.check(city.events.pending_warnings().is_empty() and told[0] == 1,
+	RunCity.events(city).send_a_pursuer()
+	t.check(RunCity.events(city).pending_warnings().is_empty() and told[0] == 1,
 			"nor while he is after her")
 	if first:
 		first.give_up_the_chase()
-	city.events.send_a_pursuer()
-	t.check(city.events.pending_warnings().size() == 1 and told[0] == 2,
+	RunCity.events(city).send_a_pursuer()
+	t.check(RunCity.events(city).pending_warnings().size() == 1 and told[0] == 2,
 			"once he has given up, the next marble sends the next one")
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	_done(city, her)
@@ -281,10 +281,10 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 	rig = _city_with_her(t, 6)
 	city = rig[0]
 	her = rig[1]
-	city.events.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY,
+	RunCity.events(city).use_the_spec(DaySpec.for_section(DaySpec.Section.CITY,
 			RunConfig.FINALE_LENGTH_SECONDS))
-	city.events.send_a_pursuer()
-	t.check(city.events.pending_warnings().is_empty(), "and during the escape nobody is sent")
+	RunCity.events(city).send_a_pursuer()
+	t.check(RunCity.events(city).pending_warnings().is_empty(), "and during the escape nobody is sent")
 	_done(city, her)
 
 ## **"nothing influences across them"**: on a planned day, sending him and running his warning
@@ -307,18 +307,18 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 		var consumed: Array[String] = []
 		var spec := DaySpec.for_day(6)
 		RigStreets.begin(city.streets(), city.map, spec)
-		city.events.start_day(spec, rng, consumed, her.global_position)
-		var owed_at_dawn := city.events.ahead.owed_ahead()
-		var plans := city.events.plans().size()
+		RunCity.events(city).start_day(spec, rng, consumed, her.global_position)
+		var owed_at_dawn := RunCity.events(city).ahead.owed_ahead()
+		var plans := RunCity.events(city).plans().size()
 		var state := rng.state
 		if sends:
-			city.events.send_a_pursuer()
+			RunCity.events(city).send_a_pursuer()
 			_run_the_warning(city, her)
 			t.check(_the_pursuer_sent(city) != null, "on a planned day he is sent")
-			t.check(city.events.ahead.owed_ahead() == owed_at_dawn and rng.state == state,
+			t.check(RunCity.events(city).ahead.owed_ahead() == owed_at_dawn and rng.state == state,
 					"the day's owed queue and its stream are untouched at once")
 		days.append({"city": city, "her": her, "handed": _what_the_walk_hands_her(city, her, 120.0),
-				"owed": city.events.ahead.owed_ahead(), "plans": city.events.plans().size(),
+				"owed": RunCity.events(city).ahead.owed_ahead(), "plans": RunCity.events(city).plans().size(),
 				"stream": rng.state, "plans_at_dawn": plans})
 	var plain: Dictionary = days[0]
 	var torn: Dictionary = days[1]
@@ -344,19 +344,19 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) -> Array:
 	her.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var seen := {}
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		seen[instance] = true
 	var handed := []
 	var elapsed := 0.0
 	var width := city.map.world_size().x
 	while elapsed < seconds:
-		city.events.ahead.place_what_is_owed_ahead(0.1)
+		RunCity.events(city).ahead.place_what_is_owed_ahead(0.1)
 		her.global_position += her.velocity * 0.1
 		if her.global_position.x < Tuning.TILE_SIZE * 2.0 \
 				or her.global_position.x > width - Tuning.TILE_SIZE * 2.0:
 			her.velocity = -her.velocity
 		elapsed += 0.1
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			if seen.has(instance):
 				continue
 			seen[instance] = true
@@ -577,8 +577,8 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 		var route := PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)])
 		for end in route:
 			t.check(Tile.is_road(city.map.tile_type_at_world(end)), "its route is on the road")
-		var car := city.events.spawn_extra(hot, route[0], route)
-		var events := city.events
+		var car := RunCity.events(city).spawn_extra(hot, route[0], route)
+		var events := RunCity.events(city)
 		var off_its_lane := 0.0
 		var officer: EventInstance = null
 		var door := Vector2.INF
@@ -719,7 +719,7 @@ const ENCOUNTER_MARGIN := 10.0
 ## retired.
 func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 		route: PackedVector2Array) -> float:
-	var events := city.events
+	var events := RunCity.events(city)
 	var car := events.spawn_extra(hot, route[0], route)
 	car.signals = null
 	events.use_player(her)
@@ -942,9 +942,9 @@ func _test_a_hunting_van_stops_and_lets_men_out(t: TestRunner) -> void:
 			_done(city, her)
 			return
 		var hot := EventCatalogue.heated(EventCatalogue.by_id(id), Tuning.RESISTANCE_GOAL)
-		var van := city.events.spawn_extra(hot, map.tile_to_world(van_tile))
+		var van := RunCity.events(city).spawn_extra(hot, map.tile_to_world(van_tile))
 		var where := van.global_position
-		var events := city.events
+		var events := RunCity.events(city)
 		var men: Array[EventInstance] = []
 		var moved := 0.0
 		var struck := [""]

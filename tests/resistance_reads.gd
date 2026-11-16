@@ -70,7 +70,7 @@ static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Ar
 	var region_plan: RegionPlanner.RegionPlan = city.streets().region_plan()
 	var door_bodies: Array[EventPlan] = region_plan.door_bodies if region_plan else []
 	var blockers: Array[EventPlan] = []
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if not plan.is_placed() or plan in door_bodies:
 			continue
 		var excepted := false

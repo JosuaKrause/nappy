@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	RunCity.build(_city, CityGenerator.generate(SEED))
 	_build_rig(t)
 
 	await _test_a_calm_park_still_settles_her(t)
@@ -77,9 +77,9 @@ func _start_day(t: TestRunner, day: int) -> void:
 ## `DayDirector.start()` starts it), rebuilt round `at` rather than round the doorstep the day began
 ## at.
 func _stand_at(at: Vector2) -> void:
-	_city.events.stream_around(at)
+	RunCity.events(_city).stream_around(at)
 	var day := _city.run.header.day
-	_city.crowd.start_day(day, _city.run.calendar.day_rng(day, "crowd"), at)
+	RunCity.crowd(_city).start_day(day, _city.run.calendar.day_rng(day, "crowd"), at)
 
 ## The rig, built once: her, walking on the spot, with the baby riding; the day's clock, set up the
 ## way `main` sets it up, so the calm she falls asleep on is remembered where the game remembers it
@@ -108,8 +108,8 @@ func _build_rig(t: TestRunner) -> void:
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
+	_resistance.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+			RunCity.spawn_siting(_city))
 	_days = DayDirector.new(_city.run.calendar, _city.run.facts, _city.run.attempt_spend, _config)
 	_days.use_the_world(null, _resistance, _clock)
 	_days.use_worlds(StandingCity.new(_city, _stroller, _baby))
@@ -239,8 +239,8 @@ func _quietest_park() -> Vector2:
 		var spot := CalmSpot.of(_city.map, block)
 		if spot == Vector2.INF:
 			continue
-		_city.events.stream_around(spot)
-		var here := _city.events.sources.total_at(spot)
+		RunCity.events(_city).stream_around(spot)
+		var here := RunCity.events(_city).sources.total_at(spot)
 		if here < quietest:
 			quietest = here
 			best = spot

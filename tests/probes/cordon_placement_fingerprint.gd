@@ -37,20 +37,20 @@ func run(t: TestRunner) -> void:
 func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	var day := ResistanceSteps.swing_day()
 	city.run.header.day = day
 	var state := CityState.new()
 	city.run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	director._on_contact_completed(mark.index if mark else -1)
@@ -109,5 +109,5 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 
 ## The city's own view looked through about `at`, as the game's camera does.
 func _look(city: City, at: Vector2) -> void:
-	city.events.visible_view().look(
+	RunCity.events(city).visible_view().look(
 			Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)

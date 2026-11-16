@@ -52,7 +52,7 @@ func _sample() -> void:
 	var moved_cars := 0
 	var viewport := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()
-	for agent: CrowdAgent in city.crowd.agents():
+	for agent: CrowdAgent in RunCity.crowd(city).agents():
 		var k := int(agent.kind)
 		counts[k] += 1
 		if agent.is_visible_in_tree() and viewport.has_point(transform * agent.global_position):
@@ -62,7 +62,7 @@ func _sample() -> void:
 			if previous_cars.has(id) and previous_cars[id] != agent.global_position:
 				moved_cars += 1
 			previous_cars[id] = agent.global_position
-	for event: Node2D in city.events.instances():
+	for event: Node2D in RunCity.events(city).instances():
 		counts[4] += 1
 		if event.is_visible_in_tree() and viewport.has_point(transform * event.global_position):
 			counts[5] += 1

@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.crowd_view = ScreenCrowdView.new(t)
-	city.build(CityGenerator.generate(CITY_SEED))
+	RunCity.build(city, CityGenerator.generate(CITY_SEED))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	var closures := RandomNumberGenerator.new()
@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 	var focus := city.map.doorstep_world_position()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-frames")
-	city.crowd.start_day(1, rng, focus)
+	RunCity.crowd(city).start_day(1, rng, focus)
 	var camera := Camera2D.new()
 	camera.zoom = ZOOM
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -51,7 +51,7 @@ func run(t: TestRunner) -> void:
 	camera.make_current()
 	for _tick in WARMUP_TICKS:
 		await t.get_tree().physics_frame
-	var car := _moving_car_nearest(city.crowd, focus)
+	var car := _moving_car_nearest(RunCity.crowd(city), focus)
 	var window := Vector2(t.get_viewport().get_visible_rect().size)
 	var images: Array[Image] = []
 	var rows: Array[Dictionary] = []

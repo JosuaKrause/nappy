@@ -21,8 +21,8 @@ func run(t: TestRunner) -> void:
 	for seed_value: int in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
-		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 		for day: int in DAYS:
 			for walk_name: String in ["out and back", "turns back"]:
 				_walk_one(t, city, seed_value, day, walk_name)
@@ -32,16 +32,16 @@ func run(t: TestRunner) -> void:
 func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: String) -> void:
 	city.run.posters.reset()
 	var tree := RouteTree.for_day(city.map, day)
-	city.poster_walls().start_day(day, tree)
+	RunCity.poster_walls(city).start_day(day, tree)
 	var before := _pasted_cells(city)
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	var spec := DaySpec.for_day(day)
 	RigStreets.begin(city.streets(), city.map, spec)
-	city.events.start_day(spec, rng, consumed)
+	RunCity.events(city).start_day(spec, rng, consumed)
 	var crews: Array[EventPlan] = []
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if plan.def.id == "poster_crew":
 			crews.append(plan)
 	var route := _the_walk(city, day, walk_name)
@@ -49,7 +49,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 		print("%-6d %3d %-13s no route or no crews" % [seed_value, day, walk_name])
 		return
 	var rig := _walker(t, route[0])
-	city.events.use_player(rig)
+	RunCity.events(city).use_player(rig)
 	var clock := 0.0
 	var first_sited := -1.0
 	for i in range(1, route.size()):
@@ -58,8 +58,8 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 			var heading := toward.normalized()
 			rig.velocity = heading * Tuning.WALK_SPEED
 			rig.global_position += heading * Tuning.WALK_SPEED * STEP
-			city.events._physics_process(STEP)
-			city.poster_walls()._physics_process(STEP)
+			RunCity.events(city)._physics_process(STEP)
+			RunCity.poster_walls(city)._physics_process(STEP)
 			clock += STEP
 			if first_sited < 0.0:
 				for plan in crews:
@@ -71,7 +71,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	for plan in crews:
 		sited += 1 if plan.is_placed() else 0
 		met += 1 if plan.was_live else 0
-	var siting := city.events.ahead.walk_siting()
+	var siting := RunCity.events(city).ahead.walk_siting()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
 			sited, met, first_sited, _pasted_cells(city) - before,
 			_refusal_summary(siting.waits if siting else {})])

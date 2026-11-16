@@ -179,7 +179,7 @@ func _ask_the_arrows_mast(t: TestRunner, seed_value: int, held: Dictionary) -> v
 	var reach := ResistanceReads.day_reachability(_city)
 	var far_foot := Vector2.INF
 	var beside := Vector2i(-1, -1)
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.def.id != "loudspeaker" or plan.silenced or not plan.is_placed() \
 				or plan.position.distance_to(first) < 0.5:
 			continue
@@ -231,7 +231,7 @@ func _ask_a_look_alike(t: TestRunner, seed_value: int, held: Dictionary) -> void
 			far = at
 	var step := director.current_step()
 	if far != Vector2.INF and step != null and not step.is_pickup:
-		var decoy := _city.events.spawn_extra(EventCatalogue.by_id(step.task_event_id), far)
+		var decoy := RunCity.events(_city).spawn_extra(EventCatalogue.by_id(step.task_event_id), far)
 		player.global_position = far
 		director.tick(STEP)
 		if director.rider() == decoy:
@@ -281,7 +281,7 @@ func _how_a_way_stands(director: ResistanceDirector, her: Vector2) -> String:
 		if from_her.has(ground):
 			return INSIDE
 	var from_home := _walked_over_clear_ground(map.home_tile(), blocked, unclear, Vector2.ZERO, INF)
-	var units := _city.events.walk_events().unit_draw().units()
+	var units := RunCity.events(_city).walk_events().unit_draw().units()
 	for ground in grounds:
 		if from_home.has(ground) and units.undrawn_within(map.tile_to_world(ground),
 				Tuning.EVENT_DRAW_AHEAD).is_empty():
@@ -303,7 +303,7 @@ func _the_tasks_own_bodies(director: ResistanceDirector) -> Array[Vector2]:
 ## How far round `at` the day's ground has drawn: the distance to the nearest undrawn unit, `INF`
 ## with none left.
 func _drawn_round(at: Vector2) -> float:
-	var undrawn := _city.events.walk_events().unit_draw().units().undrawn_within(at, INF)
+	var undrawn := RunCity.events(_city).walk_events().unit_draw().units().undrawn_within(at, INF)
 	if undrawn.is_empty():
 		return INF
 	var bounds := undrawn[0].bounds()
@@ -317,7 +317,7 @@ func _the_ground_near_an_undrawn_unit() -> PackedByteArray:
 	var near := PackedByteArray()
 	near.resize(size.x * size.y)
 	var tile_size := float(Tuning.TILE_SIZE)
-	for unit in _city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF):
+	for unit in RunCity.events(_city).walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF):
 		var bounds := unit.bounds()
 		var low := Vector2i(((bounds.position - Vector2(CLEAR, CLEAR)) / tile_size).floor())
 		var high := Vector2i(((bounds.end + Vector2(CLEAR, CLEAR)) / tile_size).floor())

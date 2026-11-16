@@ -48,8 +48,8 @@ func run(t: TestRunner) -> void:
 	for seed_value: int in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
-		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+		RunCity.build(city, CityGenerator.generate(seed_value))
+		RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 		for walk_name: String in ["out and back", "turns back", "off the path", "stays near home"]:
 			var result := _walk_one(t, city, seed_value, walk_name)
 			walks += 1
@@ -87,9 +87,9 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	var spec := DaySpec.for_day(day)
 	RigStreets.begin(city.streets(), city.map, spec)
-	city.events.start_day(spec, rng, consumed)
+	RunCity.events(city).start_day(spec, rng, consumed)
 	var plan: EventPlan = null
-	for candidate in city.events.plans():
+	for candidate in RunCity.events(city).plans():
 		if candidate.def.id == "burning_building":
 			plan = candidate
 	if not plan:
@@ -102,14 +102,14 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 		return {}
 
 	var rig := _walker(t, route[0])
-	city.events.use_player(rig)
+	RunCity.events(city).use_player(rig)
 	var state := {
 		"clock": 0.0, "sited_at": -1.0, "lead": 0.0, "seen_at": -1.0,
 		"refusals": {}, "worst_frame": 0.0, "attempt_frames": [] as Array[float],
 	}
 	_follow(city, rig, route, plan, state)
 
-	var siting := city.events.ahead.walk_siting()
+	var siting := RunCity.events(city).ahead.walk_siting()
 	var widened := siting.widened if siting else 0
 	state["refusals"] = siting.waits.duplicate() if siting else {}
 	var met: bool = float(state["seen_at"]) >= 0.0
@@ -129,7 +129,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	var never_real := not plan.was_live
 	var lit := false
 	if never_real:
-		lit = city.events.light_what_she_never_met(rig.global_position)
+		lit = RunCity.events(city).light_what_she_never_met(rig.global_position)
 		if lit:
 			print("      lit at dusk at %s, %.0fpx from where she finished"
 					% [RunTrace.tile(city.map.world_to_tile(plan.position)),
@@ -156,7 +156,7 @@ func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventPl
 			rig.velocity = heading * Tuning.WALK_SPEED
 			rig.global_position += heading * Tuning.WALK_SPEED * STEP
 			var before := Time.get_ticks_usec()
-			city.events._physics_process(STEP)
+			RunCity.events(city)._physics_process(STEP)
 			var spent := (Time.get_ticks_usec() - before) / 1000.0
 			state["worst_frame"] = maxf(float(state["worst_frame"]), spent)
 			# A frame that cost more than a tenth of a physics frame while the fire was still owed
@@ -167,7 +167,7 @@ func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventPl
 			if not was_placed and plan.is_placed():
 				state["sited_at"] = state["clock"]
 				state["lead"] = plan.position.distance_to(here)
-			if plan.is_placed() and city.events.sees(plan.position):
+			if plan.is_placed() and RunCity.events(city).sees(plan.position):
 				state["seen_at"] = state["clock"]
 				return
 			toward = route[i] - rig.global_position
@@ -196,7 +196,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 	for i in int(round(SETTLE_SECONDS / STEP)):
 		# The manager's tick steps every instance, so the engine leaves the top of its street and
 		# the fire finishes its telegraph.
-		city.events._physics_process(STEP)
+		RunCity.events(city)._physics_process(STEP)
 	var engine_at := EventSpawner._where_the_summoned_row_stops(city.map, plan.position)
 	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT
@@ -209,9 +209,9 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 	var steps := int(from.distance_to(to) / (Tuning.WALK_SPEED * STEP))
 	for i in steps:
 		var at: Vector2 = from.lerp(to, float(i) / float(maxi(steps - 1, 1)))
-		cost += city.events.sources.total_at(at) * STEP
+		cost += RunCity.events(city).sources.total_at(at) * STEP
 	var parked := 0
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		parked += 1 if instance.def.id == "fire_truck" and instance.is_parked else 0
 	var straight := from.distance_to(to)
 	var round_about := _the_way_round(city, from, to, plan, engine, engine_at)

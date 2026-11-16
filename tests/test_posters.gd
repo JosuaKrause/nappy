@@ -71,14 +71,14 @@ func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) ->
 		_city.poster_art = art
 	_run = _city.run
 	t.add_child(_city)
-	_city.build(_map)
+	RunCity.build(_city, _map)
 	_run.header.day = day
 	_run.posters.pasted_through = day
-	_walls = _city.poster_walls()
+	_walls = RunCity.poster_walls(_city)
 	_walls.start_day(day, null)
 	_her = STROLLER_SCENE.instantiate()
 	t.add_child(_her)
-	_city.events.use_player(_her)
+	RunCity.events(_city).use_player(_her)
 	_seen = {"torn": 0, "pursuit": 0}
 
 func _close() -> void:
@@ -319,8 +319,8 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 	_city.atlas = atlas
 	_city.poster_art = art
 	t.add_child(_city)
-	_city.build(_map)
-	_walls = _city.poster_walls()
+	RunCity.build(_city, _map)
+	_walls = RunCity.poster_walls(_city)
 	var fronts: Array = _walls.fronts().keys()
 	var dressed := not fronts.is_empty()
 	for tile: Vector2i in fronts:
@@ -489,8 +489,8 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 		var city := RunCity.with_own_run(CITY_SCENE, seed_value)
 		var run := city.run
 		t.add_child(city)
-		city.build(map)
-		var walls := city.poster_walls()
+		RunCity.build(city, map)
+		var walls := RunCity.poster_walls(city)
 		t.check(walls.fronts().size() > 0, "seed %d: there are fronts to paste on (%d)"
 				% [seed_value, walls.fronts().size()])
 		_check_every_front_is_blank_wall(t, city, map, seed_value)
@@ -574,7 +574,7 @@ func _check_every_front_is_blank_wall(t: TestRunner, city: City, map: CityMap, s
 			var front := map.world_to_tile(building.global_position
 					+ Vector2(rect.get_center().x, Building.TILE * 0.5))
 			blank[front] = building
-	var fronts := city.poster_walls().fronts()
+	var fronts := RunCity.poster_walls(city).fronts()
 	var wrong: Array[String] = []
 	for tile: Vector2i in fronts:
 		var building: Building = blank.get(tile)
@@ -649,7 +649,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t: TestRunner) -> void:
 		return
 	var tile: Vector2i = tiles[0]
 	var at := _map.tile_to_world(tile)
-	var crew := _city.events.spawn_extra(EventCatalogue.by_id("poster_crew"), at)
+	var crew := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("poster_crew"), at)
 	# She stands where the camera's view puts the crew only under the left corner the controls cover.
 	var corner := TouchCover.joystick().left_corner().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	_her.teleport_to(at - corner * 0.5)
@@ -659,9 +659,9 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t: TestRunner) -> void:
 		_walls.start_day(DAY, null)
 		_run.posters.reset()
 		_run.posters.pasted_through = DAY
-		_city.events.use_controls(TouchCover.joystick() if joystick else null)
+		RunCity.events(_city).use_controls(TouchCover.joystick() if joystick else null)
 		await _wait(t, 0.2)
-		t.check(_city.events.sees(at) != joystick,
+		t.check(RunCity.events(_city).sees(at) != joystick,
 				"%s scheme: the crew is %s from where she stands" % ["joystick" if joystick else "tap",
 				"under the corner" if joystick else "in view"])
 		# The tap scheme's crew is done with its first sheet at `FIRST_PASTE_AFTER`; the joystick's is
@@ -672,7 +672,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t: TestRunner) -> void:
 		t.check((pasted == 0) == joystick,
 				"%s scheme: a crew only under the left corner pasted %d sheets"
 				% ["joystick" if joystick else "tap", pasted])
-	_city.events.retire(crew)
+	RunCity.events(_city).retire(crew)
 	_close()
 
 ## A push tears nothing that is not a push: walking along the wall, even drifting into it, along a
@@ -779,8 +779,8 @@ func _test_the_tears_draw_the_marbles(t: TestRunner) -> void:
 	t.check(again == first_marbles, "a lost day gives the tears back and the retry draws the same marbles")
 	await _let_the_pursuer_go(t)
 	var before: int = _seen["pursuit"]
-	_city.events.send_a_pursuer()
-	_city.events.send_a_pursuer()
+	RunCity.events(_city).send_a_pursuer()
+	RunCity.events(_city).send_a_pursuer()
 	t.check(_seen["pursuit"] == before + 1,
 			"a second marble while the pursuer is on his way sends nobody, told to the counter once")
 	EventBus.poster_torn.disconnect(_count_a_tear)
@@ -806,16 +806,16 @@ func _tear_one_sheet_each(t: TestRunner, tiles: Array, count: int) -> Array[bool
 ## Waits for the pursuer a tear sent to be in the world, takes him out of it, and lets a tick pass.
 ## `expected` says one was sent, so that he must come into the world within the wait.
 func _let_the_pursuer_go(t: TestRunner, expected := false) -> void:
-	var def := EventCatalogue.on_foot_on(DaySpec.for_day(_city.events.world.day))
+	var def := EventCatalogue.on_foot_on(DaySpec.for_day(RunCity.events(_city).world.day))
 	var found: Array[EventInstance] = []
 	await _wait_until(t, func() -> bool:
-		found.assign(_city.events.instances().filter(func(e: EventInstance) -> bool:
+		found.assign(RunCity.events(_city).instances().filter(func(e: EventInstance) -> bool:
 				return e.def == def))
 		return not found.is_empty(), 3.0)
 	if expected:
 		t.check(not found.is_empty(), "the pursuer a tear sent comes into the world")
 	for pursuer in found:
-		_city.events.retire(pursuer)
+		RunCity.events(_city).retire(pursuer)
 	await PhysicsTicks.pass_ticks(t, 2, Callable(), SCALE)
 
 # ---------------------------------------------------------------- the slide ---
