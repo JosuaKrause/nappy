@@ -141,14 +141,19 @@ func _test_a_city_stands_its_four_parts_in_its_tree(t: TestRunner) -> void:
 			"a city's events site what is sent at her")
 	_free(made)
 
-## **The building's simulation is its events alone, with the whole plan in the world at once** and
-## nothing sited from out of her sight, and meeting her there reaches nothing.
+## **The building's simulation is its events alone, with the whole plan in the world at once**;
+## the building answers her from its events' set, and meeting her there hands her to nothing, the
+## events being handed her when she is put into the world (`EventManager.use_player()`).
 func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
+	var map := StreetMap.full()
+	# The map is drawn in this world, as the building's is in its scene, so what the events stand
+	# has somewhere to stand.
+	map.world = world
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
-	var simulation := SimulationBuilder.new().in_the_building(world, StreetMap.full(), run)
+	var simulation := SimulationBuilder.new().in_the_building(world, map, run)
 	var events_alone: Array[String] = ["Events"]
 	t.check(simulation.get_parent() == world and _children_of(simulation) == events_alone
 			and simulation.events() == simulation.get_child(0),
@@ -157,10 +162,17 @@ func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 			"with no crowd and no walls")
 	t.check(simulation.events().stream_radius == INF,
 			"its events stream the whole plan, since the building is walked through doors")
-	t.check(simulation.events().spawn_siting() == null, "and site nothing from out of her sight")
+	var stretch: Vector2i = CrowdStreetRig.new().a_straight_run(map, Tuning.BLOCK_SIZE)
+	var at := map.tile_to_world(Vector2i(stretch.x * CityMap.period() + 1, stretch.y + 2))
+	var yeller := simulation.events().spawn_extra(EventCatalogue.by_id("homeless_yeller"), at)
+	var answered := false
+	for pair: Array in world.excitement_sources_at(at):
+		answered = answered or pair[0] == yeller.source()
+	t.check(answered, "the building answers her from its events' set")
 	var her := _her(t, Vector2.ZERO)
 	simulation.meet_her(her)
-	t.check(simulation.crowd() == null, "meeting her in the building reaches nothing")
+	t.check(not simulation.events().world.has_player(),
+			"meeting her in the building hands her to nothing")
 	her.free()
 	world.free()
 

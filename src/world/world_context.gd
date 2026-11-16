@@ -20,10 +20,11 @@ extends Node2D
 ## there.
 ##
 ## **How loud it is here is answered by what stands in the world, never summed by the world**: the
-## sets of things that charge her (`excitement_sources`, each an `ExcitementSources`), the events'
-## and the crowd's where there is one, each handed to the world by whoever builds it — the city
-## hands over both, the run flow hands the building its events. The city and the building answer the
-## baby the same way, through this one combination, and the halo reads the same sets.
+## sets of things that charge her (each an `ExcitementSources`), the events' and the crowd's where
+## there is one, handed to the world by the simulation's builder as it stands them
+## (`use_excitement_sources()`, from `SimulationBuilder`): the city's both, the building's its
+## events. The city and the building answer the baby the same way, through this one combination,
+## and the halo reads the same sets.
 ##
 ## Whether a point is calm ground at all is the map's question (`CityMap.is_calm_zone()`), for the
 ## debug overlay and the telemetry, which genuinely do want the yes/no. It is not on this interface

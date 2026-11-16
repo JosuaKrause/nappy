@@ -385,7 +385,8 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED, false)
 	run_log.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
-	# The manager's own lines reach the run log through the trace a booted city hands it.
+	# The manager's own lines reach the run log through the trace a booted run hands it
+	# (`SimulationBuilder.equip()`).
 	events.trace = RunTrace.new(run_log.note)
 	# The observer is handed what `main` hands it, and hears the pelican's moments as they happen.
 	var baby := stroller.get_node("Baby") as Baby

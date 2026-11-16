@@ -74,8 +74,8 @@ func use_player(player: Node2D) -> void:
 ## the signals and the events exist. `forced` is `--blackout`; a city `dark_from_the_start`, the
 ## escape's, goes dark here, before its first frame is drawn.
 func setup(map: CityMap, buildings: Array[Building], signals: TrafficSignals,
-		events: EventManager, resistance: ResistanceRunState, forced := false,
-		dark_from_the_start := false) -> void:
+		events: EventManager, resistance: ResistanceRunState, forced: bool,
+		dark_from_the_start: bool) -> void:
 	_buildings = buildings
 	_signals = signals
 	_events = events

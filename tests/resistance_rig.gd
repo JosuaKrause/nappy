@@ -72,9 +72,9 @@ func _step_a_frame(t: TestRunner) -> void:
 
 var _city: City
 
-## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
-## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
-## `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
+## Freed rather than left standing: `RunCity.build()` stands an `EventManager` under the city's
+## simulation that acquires the "events" `AtlasLibrary` group in its own `_enter_tree()` and only
+## gives it back in `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
 ## `_city` never freed between two builds would leave every earlier one standing, each holding
 ## "events" resident for the rest of the process; `run()` frees whichever one is still around after
 ## the last.

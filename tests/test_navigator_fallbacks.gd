@@ -1,9 +1,10 @@
 extends RefCounted
 ## **A crowd handed no navigator moves by its map's own** (`Crowd.setup()`, `WorldMap.navigator()`):
-## the game's city hands its crowd the city's navigator, and a rig that hands none gets the map's,
-## over which a walker she bumps into is pushed aside. No city: the crowd is handed a bare world, a
-## map with nothing but its streets (`StreetMap.full()`), the lights over that map and today's
-## streets with no day begun (`DayStreets.new()`), so no wall and no door holds anybody.
+## the game's crowd is handed it by its builder (`SimulationBuilder`), the one the city holds, and a
+## rig that hands none gets the same, over which a walker she bumps into is pushed aside. No city:
+## the crowd is handed a bare world, a map with nothing but its streets (`StreetMap.full()`), the
+## lights over that map and today's streets with no day begun (`DayStreets.new()`), so no wall and
+## no door holds anybody.
 
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 const SEED := 4242

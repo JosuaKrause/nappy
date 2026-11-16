@@ -195,14 +195,14 @@ func use_traffic(index: TrafficIndex) -> void:
 	_traffic = index
 ## What the screen shows, handed to every agent so none of them reaches for the viewport. See
 ## `CrowdView`. None is a crowd with no screen: every agent drawn, and the day's own radius for
-## "out of sight". Handed in by `City` before the day's agents are made.
+## "out of sight". Handed in by its builder (`SimulationBuilder`) before the day's agents are made.
 var view: CrowdView = null
 ## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`; the null
-## sink until the city hands another.
+## sink until its builder (`SimulationBuilder`) hands another.
 var timing := CrowdTiming.new()
 ## The baked atlas pages the crowd holds `ATLAS_GROUP` on and every agent draws from
-## (`AtlasLibrary`), handed in by `City` before the first day and on to every agent it makes; a
-## crowd nobody handed one (a suite's) makes its own on its first day.
+## (`AtlasLibrary`), handed in by its builder (`SimulationBuilder`) before the first day and on to
+## every agent it makes; a crowd nobody handed one (a suite's) makes its own on its first day.
 var atlas: AtlasLibrary = null
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a

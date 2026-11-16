@@ -292,7 +292,8 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 
 ## **An atlas library that counts the crowd's pictures it hands out**, the `crowd/` regions a walker's
 ## or a car's look asks for as it draws (`CrowdAgent.picture_region()`). Handed to the city the way
-## `main` hands it the sitting's library (`City.atlas`), which the city hands its crowd and the crowd
+## `main` hands it the sitting's library (`City.atlas`); the simulation's builder is equipped with
+## the same library (`RunCity.build()`, as `main` equips its own), hands it the crowd, and the crowd
 ## every agent it makes.
 class CrowdPictureCount extends AtlasLibrary:
 	var asked := 0

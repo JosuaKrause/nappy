@@ -177,7 +177,7 @@ func use_player(player: Stroller) -> void:
 ## not (`show_only()`, the escape's city).
 func dress_for(day: int, spec: DaySpec) -> void:
 	if spec.pastes_the_posters():
-		_start_day(day, _streets.route_tree() if _streets else null)
+		_start_day(day, _streets.route_tree())
 	else:
 		show_only()
 
@@ -185,7 +185,7 @@ func dress_for(day: int, spec: DaySpec) -> void:
 ## simulation (`SimulationBuilder`), the buildings being fixed for the run; `streets` are today's,
 ## whose route tree a dawn's pasting reads (`dress_for()`).
 func setup(buildings: Array[Building], map: CityMap, run: RunState,
-		streets: DayStreets = null) -> void:
+		streets: DayStreets) -> void:
 	_streets = streets
 	_run = run
 	posters = run.posters
