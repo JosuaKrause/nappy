@@ -95,7 +95,7 @@ func _test_locations_are_grouped_by_kind_and_what_they_are_part_of(t: TestRunner
 	t.check(all.size() == 5 + 6 + 2, "five streets, six boxes, an alley and a square (%d units)"
 			% all.size())
 	var street := _unit_named(units, _street_name(Vector2i(1, 1), true))
-	t.check(street != null and street.kind() == PlacementUnit.Kind.STREET
+	t.check(street != null and street.kind() == PlacementGround.Kind.STREET
 			and street.locations().size() == 3,
 			"a street's section and its two sidewalks are one street unit")
 	var alley_rect := Rect2i(CityMap.block_rect(Vector2i(1, 1)).position + Vector2i(3, 0),
@@ -105,7 +105,7 @@ func _test_locations_are_grouped_by_kind_and_what_they_are_part_of(t: TestRunner
 	t.check(alley != null and alley.locations().size() == 3 and alley.tiles() == alley_rect,
 			"an alley's three locations are one unit, the alley's tiles")
 	var box := _unit_named(units, _box_name(Vector2i(2, 1)))
-	t.check(box != null and box.kind() == PlacementUnit.Kind.JUNCTION
+	t.check(box != null and box.kind() == PlacementGround.Kind.JUNCTION
 			and box.locations().size() == 1, "and a junction box is a unit of its own")
 
 func _test_a_street_touches_its_boxes_and_the_streets_meeting_there(t: TestRunner) -> void:

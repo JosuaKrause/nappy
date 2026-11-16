@@ -123,7 +123,7 @@ static func _street(day_seed := 7) -> PlacementUnit:
 		for band in Corridor.sidewalk_bands(Rect2i(rect.position + Vector2i(starts[section], 0),
 				Vector2i(lengths[section], rect.size.y)), true):
 			locations.append(_at(segment, section, band, Location.Kind.SIDEWALK))
-	return PlacementUnit.new(PlacementUnit.Kind.STREET, rect, Rect2(), locations, day_seed)
+	return PlacementUnit.new(PlacementGround.Kind.STREET, rect, Rect2(), locations, day_seed)
 
 static func _at(segment: StreetNetwork.Segment, section: int, tiles: Rect2i,
 		kind: Location.Kind) -> Location:
@@ -138,7 +138,7 @@ static func _lot(cells: int) -> PlacementUnit:
 		var tiles := Rect2i(whole.position + Vector2i(4 * x, 0), Vector2i(4, 4))
 		locations.append(Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
 				ON, true, Location.Kind.OPEN, whole))
-	return PlacementUnit.new(PlacementUnit.Kind.OPEN, whole, Rect2(), locations, 7)
+	return PlacementUnit.new(PlacementGround.Kind.OPEN, whole, Rect2(), locations, 7)
 
 ## The rows the marbles `ids` name.
 static func _rows(ids: Array[String]) -> Dictionary:

@@ -38,7 +38,7 @@ static func _street() -> PlacementUnit:
 		for band in Corridor.sidewalk_bands(Rect2i(rect.position + Vector2i(starts[section], 0),
 				Vector2i(lengths[section], rect.size.y)), true):
 			locations.append(_at(segment, section, band, Location.Kind.SIDEWALK))
-	return PlacementUnit.new(PlacementUnit.Kind.STREET, rect, Rect2(), locations, 7)
+	return PlacementUnit.new(PlacementGround.Kind.STREET, rect, Rect2(), locations, 7)
 
 static func _at(segment: StreetNetwork.Segment, section: int, tiles: Rect2i,
 		kind: Location.Kind) -> Location:
@@ -46,7 +46,7 @@ static func _at(segment: StreetNetwork.Segment, section: int, tiles: Rect2i,
 			true, kind)
 
 ## A unit off the streets of `kind` with `open` open locations and `closed` unavailable ones.
-static func _ground(kind: PlacementUnit.Kind, location_kind: Location.Kind, open: int,
+static func _ground(kind: PlacementGround.Kind, location_kind: Location.Kind, open: int,
 		closed := 0) -> PlacementUnit:
 	var whole := Rect2i(Vector2i(40, 40), Vector2i(4 * (open + closed), 4))
 	var locations: Array[Location] = []
@@ -139,16 +139,16 @@ func _test_a_street_part_of_which_is_held_starts_with_what_is_left(t: TestRunner
 	t.check(_draws(room, SMALL) == 5, "and draws five small marbles")
 
 func _test_off_the_streets_each_open_location_takes_one_marble(t: TestRunner) -> void:
-	var box := UnitRoom.of(_ground(PlacementUnit.Kind.JUNCTION, Location.Kind.JUNCTION, 1))
+	var box := UnitRoom.of(_ground(PlacementGround.Kind.JUNCTION, Location.Kind.JUNCTION, 1))
 	t.check(not box.fits(SECTION) and _draws(box, SMALL) == 1,
 			"a junction box draws one small marble and fits no larger one")
-	var alley := UnitRoom.of(_ground(PlacementUnit.Kind.ALLEY, Location.Kind.ALLEY, 2, 1))
+	var alley := UnitRoom.of(_ground(PlacementGround.Kind.ALLEY, Location.Kind.ALLEY, 2, 1))
 	t.check(_draws(alley, SMALL) == 2, "an alley with two of its three open draws two")
-	var lot := UnitRoom.of(_ground(PlacementUnit.Kind.OPEN, Location.Kind.OPEN, 5))
+	var lot := UnitRoom.of(_ground(PlacementGround.Kind.OPEN, Location.Kind.OPEN, 5))
 	t.check(_draws(lot, SMALL) == 5, "and a lot of five open cells five")
 
 func _test_a_unit_with_nothing_open_has_no_room(t: TestRunner) -> void:
-	var closed := UnitRoom.of(_ground(PlacementUnit.Kind.ALLEY, Location.Kind.ALLEY, 0, 3))
+	var closed := UnitRoom.of(_ground(PlacementGround.Kind.ALLEY, Location.Kind.ALLEY, 0, 3))
 	t.check(not closed.is_open() and not closed.fits(SMALL),
 			"an alley none of whose locations is open has no room")
 	var street := _street()

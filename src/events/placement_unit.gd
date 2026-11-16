@@ -17,11 +17,11 @@ extends RefCounted
 ## each other leak at exit; `DayUnits` holds which touch which, by name. What it drew is written
 ## once, by `UnitDraw`. Model.
 
-enum Kind { STREET, JUNCTION, ALLEY, OPEN }
-
+## In `PlacementGround.Kind`'s order; a unit's name enters its rank and stream seeds, so a
+## member added to or reordered in that enum moves every draw.
 const _KIND_NAMES: Array[String] = ["street", "junction", "alley", "open"]
 
-var _kind := Kind.STREET
+var _kind := PlacementGround.Kind.STREET
 var _tiles := Rect2i()
 var _bounds := Rect2()
 var _locations: Array[Location] = []
@@ -35,8 +35,8 @@ var _view: int = PlacementView.View.OFF_THE_ROUTE
 ## `tiles` is the ground the unit is: its street's rect, its box, its alley's rect, its lot's
 ## bounds (`Location.part_of()`); `bounds` the same in world space; `locations` its locations, a
 ## street's sections first, then its sidewalks, as laid out.
-func _init(kind: Kind, tiles: Rect2i, bounds: Rect2, locations: Array[Location],
-		day_seed: int) -> void:
+func _init(kind: PlacementGround.Kind, tiles: Rect2i, bounds: Rect2,
+		locations: Array[Location], day_seed: int) -> void:
 	_kind = kind
 	_tiles = tiles
 	_bounds = bounds
@@ -48,8 +48,8 @@ func _init(kind: Kind, tiles: Rect2i, bounds: Rect2, locations: Array[Location],
 	for location in locations:
 		_view = mini(_view, location.view())
 
-## What ground the unit is (`Kind`).
-func kind() -> Kind:
+## What kind of ground the unit is (`PlacementGround.Kind`).
+func kind() -> PlacementGround.Kind:
 	return _kind
 
 ## The unit's name for the day: its kind and its tiles, the same on every start of the day.

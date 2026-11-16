@@ -15,7 +15,7 @@ const STREET := Rect2i(Vector2i(6, 0), Vector2i(8, 6))
 
 static func _unit(day_seed: int, tiles := STREET) -> PlacementUnit:
 	var locations: Array[Location] = []
-	return PlacementUnit.new(PlacementUnit.Kind.STREET, tiles,
+	return PlacementUnit.new(PlacementGround.Kind.STREET, tiles,
 			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE, Vector2(tiles.size) * Tuning.TILE_SIZE),
 			locations, day_seed)
 
@@ -88,7 +88,7 @@ static func _lot(views: Array[int]) -> PlacementUnit:
 		var tiles := Rect2i(lot.position + Vector2i(x * 4, 0), Vector2i(4, 4))
 		locations.append(Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
 				views[x], true, Location.Kind.OPEN, lot))
-	return PlacementUnit.new(PlacementUnit.Kind.OPEN, lot,
+	return PlacementUnit.new(PlacementGround.Kind.OPEN, lot,
 			Rect2(Vector2(lot.position) * Tuning.TILE_SIZE, Vector2(lot.size) * Tuning.TILE_SIZE),
 			locations, 3)
 

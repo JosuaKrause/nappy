@@ -24,8 +24,8 @@ extends DawnPhase
 
 ## **Whether a drawn row's route stays on its location's run** (`RuledLocationGround`'s
 ## `keeps_routes_on_the_run`, `Location.run()`): a route longer than its street is cut to the
-## street and the boxes at its ends, the player's answer (inbox #1460), and this is the one setting
-## that answer lives in.
+## street and the boxes at its ends, which is how a drawn route is laid now (inbox #1460), and this
+## is the one setting that holds it.
 const ROUTES_STAY_ON_THE_RUN := true
 
 ## Overrides DawnPhase.run.
@@ -39,7 +39,7 @@ func run(context: DawnContext) -> void:
 		if not def.is_drawn_by_units(day, beside_id):
 			continue
 		rows[def.id] = def.for_day(day)
-	var fills := EventScheduler.view_fills(rows, day, context.spec())
+	var fills := UnitFills.new(rows, day, context.spec())
 	var units := DayUnits.of(context.locations().all(), context.day_seed())
 	var ground := context.ground()
 	var events := context.events()

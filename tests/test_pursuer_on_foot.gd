@@ -86,9 +86,9 @@ func _the_map_of_day_8(seed_value: int) -> CityMap:
 ## where each patrol a real day-8 dawn (`EventScheduler.build_day()`) places stands, the route the
 ## plan builder lays there with nothing bounding it (`PlanBuilder.build()`), as a patrol her walk
 ## sites (the return's patrols) is laid. A patrol the units draw keeps its route on its street and
-## the boxes at its ends (`Location.run()`), at most 13 tiles, too short to drive up to her and let
-## a man out. Planned once per seed for the suite, and only read by the checks that drive a patrol
-## down them.
+## the boxes at its ends (`Location.run()`), at most 13 tiles (416px), so only the longest of them
+## is the 400px these checks keep. Planned once per seed for the suite, and only read by the
+## checks that drive a patrol down them.
 func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	if _routes.has(seed_value):
 		return _routes[seed_value]
