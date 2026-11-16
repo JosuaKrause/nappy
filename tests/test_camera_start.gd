@@ -79,12 +79,12 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner)
 	await Boot.until_booted(t, main)
 	var player := Boot.player(main)
 	var her_position: Vector2 = player.global_position
-	t.check(player.camera_screen_center().distance_to(her_position) < Tuning.TILE_SIZE,
+	t.check(Stroller.view_centre_of(player).distance_to(her_position) < Tuning.TILE_SIZE,
 			"on the first drawn frame with the run started, the camera is already within a tile "
 			+ "of her")
 
 	await Boot.press_title(t, main, "Tap")
-	t.check(player.camera_screen_center().distance_to(player.global_position)
+	t.check(Stroller.view_centre_of(player).distance_to(player.global_position)
 				< Tuning.TILE_SIZE,
 			"and the same holds on the first frame after the title's disc is pressed")
 	# A dawn after finishing far away must prepare home before the next process callback: she is

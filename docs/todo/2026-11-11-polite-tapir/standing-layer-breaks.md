@@ -31,8 +31,8 @@ review; a builder runs it again):
 - **The rest**, small misplacements: the task calendar
   computing on the map; the city edge's kinds; the props' trees; the danger badge's class named by
   the run log (`RunSession`, `TelemetryObserver`); the save indicator reading `GameSave`; the
-  texts' `HelpText` token; her class's constants and type tests where she is not handed in
-  (`city.gd`, `interior_scene.gd`, `visible_view.gd`); the run reading `ResistanceHappenings`' day
+  texts' `HelpText` token; her class's type tests where she is not handed in
+  (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
   of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; `DrawnView`,
   named by two looks; the scheduler naming `City.BURNT_FRONTAGE_SCAR`; and the `player` group the
   blackout and the poster walls find her through.
@@ -70,8 +70,8 @@ review; a builder runs it again):
   uses in the run log (`RunSession`'s edge field and `watch()`'s edge parameter,
   `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
   own, which hands the run log what its observer reads of the danger edge, the badges that are
-  announcing (the orchestrator's proposal). The `player` group, and `city.gd`'s and `visible_view.gd`'s `Stroller`, go with who
-  builds the event manager and the crowd, which hands her in; `interior_scene.gd`'s with the
+  announcing (the orchestrator's proposal). The `player` group goes with who
+  builds the event manager and the crowd, which hands her in; `interior_scene.gd`'s `Stroller` with the
   building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, after the
   third hand-ins step; `Prop` as a data constant, in a pull request of its own; `GameSave` and
   `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts (minty-quail's `field-reads.md`); the

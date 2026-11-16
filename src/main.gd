@@ -525,7 +525,7 @@ func _ready() -> void:
 	_retire_the_boot_camera()
 
 	if config.overview_requested and _city:
-		DevRig.make_overview_camera(self, _city.camera_bounds(), get_viewport_rect().size)
+		DevRig.make_overview_camera(self, _city.camera_bounds(Stroller.CAMERA_LOOK_AHEAD), get_viewport_rect().size)
 	if walks_a_day:
 		_dev_rig.setup_follow_camera(self, config.follow_target, config.zoom_override)
 	_add_trailer_rigs()
@@ -788,7 +788,7 @@ func _add_trailer_rigs() -> void:
 	var seconds := config.zoom_out_seconds
 	var bounds := Rect2()
 	if _city:
-		bounds = _city.camera_bounds()
+		bounds = _city.camera_bounds(Stroller.CAMERA_LOOK_AHEAD)
 	elif _interior:
 		bounds = _interior.camera_bounds()
 	if seconds > 0.0 and bounds.has_area():

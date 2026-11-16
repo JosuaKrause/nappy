@@ -442,10 +442,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "Stroller",
         "her class's constants (the camera's look-ahead) and type tests are read where she is not handed in",
         (
-            "src/city/city.gd",
             "src/events/event_scheduler.gd",
             "src/interior/interior_scene.gd",
-            "src/world/visible_view.gd",
         ),
         more=(
             ("src/events/event_scheduler.gd", 3),

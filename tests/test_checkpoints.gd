@@ -1513,7 +1513,7 @@ func _test_the_whole_hold_reads_as_one_move(t: TestRunner) -> void:
 	# `force_update_scroll()` is what asks for the screen centre a drawn frame would have computed.
 	camera.reset_smoothing()
 	camera.force_update_scroll()
-	var drawn_before := stroller.camera_screen_center()
+	var drawn_before := Stroller.view_centre_of(stroller)
 	t.check(drawn_before.distance_to(stroller.global_position) < Tuning.TILE_SIZE,
 			"the rig's camera is looking at her (%s against %s) — otherwise the continuity check "
 			% [drawn_before, stroller.global_position] + "below has nothing to be continuous with")

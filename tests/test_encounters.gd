@@ -591,7 +591,7 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	events.use_controls(controls.covering)
-	var view := _view(stroller.camera_screen_center())
+	var view := _view(Stroller.view_centre_of(stroller))
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
 	var corner := view.position + TouchCover.joystick().left_corner().get_center() * scale
 	var def := EventCatalogue.by_id("homeless_yeller")

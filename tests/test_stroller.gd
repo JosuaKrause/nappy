@@ -24,6 +24,7 @@ func run(t: TestRunner) -> void:
 	await _test_north_diagonal_contact_adjustment(t)
 	await _test_the_pram_has_its_own_trailing_body(t)
 	await _test_her_family_comes_from_its_baked_pages(t)
+	await _test_the_view_centre_is_her_camera_or_a_bodys_position(t)
 
 func _rig(t: TestRunner) -> Stroller:
 	var rig := Stroller.new()
@@ -276,3 +277,25 @@ func _test_the_pram_has_its_own_trailing_body(t: TestRunner) -> void:
 	var carrying_collision := carrying_rig.get_node("PramCollisionShape2D") as CollisionShape2D
 	t.check(carrying_collision.disabled, "and disabled for the carrying rig, which has no pram")
 	carrying_rig.free()
+
+## `view_centre_of()` answers the body's own position for a node with no camera, and for her where
+## her current camera is drawing from, which the limits, the smoothing and the look-ahead move off
+## her: a rig whose camera is current, limited to a rectangle and standing in its corner is seen
+## from the camera's centre, not from her.
+func _test_the_view_centre_is_her_camera_or_a_bodys_position(t: TestRunner) -> void:
+	var body := Node2D.new()
+	t.add_child(body)
+	body.global_position = Vector2(500.0, 300.0)
+	t.check(Stroller.view_centre_of(body) == body.global_position,
+			"a body with no camera is viewed from where it stands")
+	body.free()
+	var rig := _rig(t)
+	var camera := rig.get_node("Camera2D") as Camera2D
+	camera.make_current()
+	rig.set_camera_limits(Rect2(0.0, 0.0, 4000.0, 4000.0))
+	rig.reset_at(Vector2(100.0, 100.0), Vector2.RIGHT)
+	camera.reset_smoothing()
+	camera.force_update_scroll()
+	t.check(Stroller.view_centre_of(rig).distance_to(rig.global_position) > 100.0,
+			"she is viewed from her current camera's centre, which the limits hold off her")
+	rig.free()
