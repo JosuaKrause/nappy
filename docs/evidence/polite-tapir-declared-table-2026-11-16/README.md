@@ -48,6 +48,11 @@ was made once; and the probes on `origin/main` beside the branch's.
 | `escape_roadblock_spacing.txt` | `escape_roadblock_spacing.gd` on the branch; main's output is the same but for its time line |
 | `row_shares.py` | a row's share of a ground's events, a seed beside a run |
 | `design_table_pass_cap95_rejected.json` | the design's rejected trial: a scaled cell capped at 95 instead of 50, which handed a park to the rows rare there once the street musician is refused |
+| `whole_seed_reading_catalogue.diff` | the other reading's row weights, as applied to the catalogue in a throwaway copy of the branch (`pass_rows_against_the_whole_seed_not_applied.log`, the abduction left unset as option D asks) |
+| `whole_seed_reading_cells.txt`, `whole_seed_reading_compare.txt` | `placement_cells.gd` on that copy (`CL`, `CE`, `CP` lines), and it beside the seed (`--rows`) |
+| `whole_seed_reading_rows.txt` | `placement_rows.gd`'s `RD`, `RV`, `RK` lines on that copy |
+| `whole_seed_reading_table.py`, `whole_seed_reading_table.txt` | the seed tree, the branch and the other reading side by side, row by row and view by view |
+| `whole_seed_reading_costs.txt` | `test_events_costs.gd`'s day check and ramp check on that copy and on the branch, their counts printed |
 
 ## The commands
 
@@ -79,6 +84,21 @@ python3 -I $E/seed_table.py $E/seed_main_1109.txt
 python3 -I $E/one_pass.py $E/seed_main_1109.txt $E/cells_seed.txt $E/table_seed.json \
 	"$OUT/table_pass_raw.json" $E/seed_unit_rows.txt
 python3 -I $E/compare_cells.py $E/seed_main_1109.txt $E/cells_pass.txt --rows
+
+# The other reading, measured: a throwaway copy of the branch at 2bb74d6b7 with its row weights.
+tools/agent-setup.sh --detach 2bb74d6b770055371e71c3c690baeb25c215a101 whole-seed
+(cd .claude/worktrees/whole-seed && git apply "$OLDPWD/$E/whole_seed_reading_catalogue.diff" \
+	&& ./tools/check.sh \
+	&& ./tools/test.sh probes/placement_cells.gd > "$OUT/whole_cells.txt" \
+	&& ./tools/test.sh probes/placement_rows.gd > "$OUT/whole_rows.txt")
+python3 -I $E/compare_cells.py $E/seed_main_1109.txt $E/whole_seed_reading_cells.txt --rows
+python3 -I $E/whole_seed_reading_table.py $E/seed_main_1109.txt $E/cells_pass.txt \
+	$E/whole_seed_reading_cells.txt $E/branch_placement_rows_lines.txt $E/whole_seed_reading_rows.txt
+# The costs suite's counts: a print of `real` before its day check and of `early`, `late` before its
+# ramp check (the two lines are in whole_seed_reading_costs.txt), then the suite on the copy, and
+# again with the catalogue diff reverted for the branch.
+(cd .claude/worktrees/whole-seed && ./tools/test.sh events_costs > "$OUT/whole_costs.txt")
+tools/agent-setup.sh --remove whole-seed   # after `git checkout .` in it
 ```
 
 ## The procedure, as run
@@ -103,12 +123,16 @@ python3 -I $E/compare_cells.py $E/seed_main_1109.txt $E/cells_pass.txt --rows
 4. **The pass, once**: `one_pass.py` on that run, `pass.log`. Every view was off by more than a
    tenth (on the route x0.49, route-adjacent x1.21, off the route x0.83), so every view's cells were
    scaled, each by its own ratio, at most 50. **A row's share of a ground's events is compared among
-   the rows a bag holds** (`one_pass.py`'s fifth argument, `seed_unit_rows.txt`): read against the
-   whole seed, the three rows a bag no longer holds sit in the seed's denominator alone, so every
-   row in a junction box, where they were half the events, would read as twice its share without
-   placing any more (`pass_rows_against_the_whole_seed_not_applied.log`: it cuts the abduction, the
-   charging dog, the chatting mother and the leaf blower in a box for that reason alone). Fourteen
-   row weights moved by more than a factor of two. By the player's answer on the board (option D:
+   the rows a bag holds** (`one_pass.py`'s fifth argument, `seed_unit_rows.txt`), the builder's
+   reading. The cells count the three rows a bag no longer holds, which were half of a junction
+   box's events, and a bag hands their share to the rows it still holds, so those rows do place
+   more than on the seed tree: in a box the charging dog, the chatting mother and the leaf blower 3
+   to 4 times the seed tree's count after the pass. Read against the whole seed instead, the pass
+   cuts those three in a box and sets no weight on the delivery van, the poster crew, the reversing
+   lorry and the roadblock on a street, which the seed run had at about half the seed tree's count
+   (`pass_rows_against_the_whole_seed_not_applied.log`, printed and not
+   applied; measured below, "The other reading, measured"). Fourteen row weights moved by more than
+   a factor of two. By the player's answer on the board (option D:
    the pass's row weights as designed, the abduction's not set) the abduction's street weight (0.23)
    is left out, so thirteen are set; `table_pass.json` holds them, and nothing else differs from
    `table_pass_raw.json`. **No cell's last act came out under its first**, so no cell is floored
@@ -153,6 +177,62 @@ with the moments, a city-day: the seed tree 102.8, main today 201.8, the branch 
   either way.
 - **A day inside an act**: day 1 runs 3% over the seed tree, day 7 a fifth under and day 11 23%
   under.
+- **The ramp is flatter.** Day 14 places 1.11 times day 1, where the seed tree's placed 1.28 times,
+  and days 9, 10 and 11 place fewer events than day 1 (76, 76 and 75 against 88): from day 9, the
+  first day the region wall stands, a unit draws half its walls, and five cells are lower than the
+  act before them. `tests/test_events_costs.gd`'s bar, day 14 a fifth over day 1, passes on its
+  city; planned the same way on seven other cities by the review of #1488 (a throwaway probe),
+  four of the seven were under it (0.93, 0.99, 1.12 and 1.15 times).
+- **The mix.** The units place 91.2 events a city-day against the 73.3 the seed tree's units placed
+  without the three rows now sent ahead of her, so every other row is about a quarter more common
+  on average, the most where the old daily caps held a row down.
+
+## The other reading, measured
+
+The pass's row rule read against the whole seed (`pass_rows_against_the_whole_seed_not_applied.log`)
+was applied in a throwaway copy of the branch at `2bb74d6b7` in place of the branch's row weights,
+the cells unchanged and the abduction left unset as option D asks (`whole_seed_reading_catalogue.diff`:
+no street weight on the delivery van, the poster crew, the reversing lorry and the roadblock; the
+charging dog 0.22 on a street and 0.29 in a junction box, the chatting mother 0.29 and 0.1, the leaf
+blower 0.3 in a box, the protest 2.8 in a box). Then `placement_cells.gd` and `placement_rows.gd`
+exactly as the acceptance run, and `test_events_costs.gd`. A measurement, not a pass: nothing on
+the branch moves for it, and which reading stands is the player's question
+(`box-rows-after-the-pass`).
+
+Events a city-day on the row's days, seed tree / branch / the other reading
+(`whole_seed_reading_table.txt`):
+
+| Row | Junction box | Street | Her route | The city |
+|---|---|---|---|---|
+| charging dog | 1.22 / 3.91 / 1.92 | 0.94 / 1.07 / 1.01 | 0.18 / 0.73 / 0.40 | 2.19 / 4.99 / 2.93 |
+| chatting mother | 0.43 / 1.71 / 1.31 | 1.57 / 2.48 / 2.27 | 0.96 / 2.96 / 2.50 | 2.00 / 4.20 / 3.58 |
+| leaf blower | 0.81 / 2.52 / 1.36 | 5.81 / 6.36 / 7.57 | 0.28 / 0.75 / 0.42 | 6.67 / 8.96 / 9.01 |
+| abduction | 1.35 / 3.40 / 5.02 | 0.94 / 4.29 / 5.76 | 0 / 0 / 0 | 2.29 / 7.69 / 10.79 |
+| delivery van | | 5.73 / 7.40 / 4.21 | 2.46 / 4.05 / 2.32 | 5.73 / 7.40 / 4.21 |
+| poster crew | | 5.61 / 7.38 / 4.82 | 3.16 / 4.39 / 2.86 | 5.61 / 7.38 / 4.82 |
+| reversing lorry | | 2.67 / 2.78 / 1.86 | 0 / 0 / 0 | 2.67 / 2.78 / 1.86 |
+| roadblock | | 5.90 / 7.44 / 4.93 | 2.89 / 3.35 / 2.27 | 5.90 / 7.44 / 4.93 |
+| protest | 8.96 / 9.28 / 8.69 | | 0.02 / 0.09 / 0.09 | 9.67 / 10.07 / 9.48 |
+
+What the units place, events a city-day, seed tree / branch / the other reading: on the route
+32.0 / 27.4 / 27.7, route-adjacent 27.4 / 26.8 / 28.1, off the route 39.8 / 36.9 / 38.4, the city
+99.2 / 91.2 / 94.2 (events per hundred draw locations x0.87, x1.02, x0.96 and x0.95 the seed tree
+on the other reading, `whole_seed_reading_compare.txt`). The whole day with the moments
+(`placement_rows.gd`): 102.8 / 93.3 / 98.4. Day 1 87.6 and day 14 99.9 on the other reading, 1.14
+times, days 9 to 11 80.6, 78.1 and 78.4.
+
+So the other reading cuts the charging dog, the chatting mother and the leaf blower in a junction
+box to about half, three quarters and half of what they place on the branch, still 1.6, 3.0 and 1.7
+times the seed tree's count there; the four street rows it leaves unweighed place 0.69 to 0.86 of
+the seed tree's count on a street where the branch has them at 1.04 to 1.32; and what it takes from
+the box rows goes to the rest of the bag, the abduction most (10.8 a city-day over the city, against
+7.7 on the branch and 2.3 on the seed tree), the cafes on her route 6.5 against 4.9, so the units
+place 94.2 events a city-day against the branch's 91.2.
+
+**One event per block holds under it.** `test_events_costs.gd` passes on the copy
+(`whole_seed_reading_costs.txt`): on the suite's city, 121 blocks and a bar of 96, the day check
+counts 115, 138, 174 and 174 events on days 1, 3, 7 and 14 (the branch 109, 140, 161 and 177), and
+the ramp check 89 placed on day 1 and 134 on day 14 (the branch 83 and 135).
 
 ## The first re-seed, tried and replaced
 
@@ -210,8 +290,9 @@ eight tiles, `path_length_tiles`, as far as the unit's ground runs, `Location.ru
 
 - The seed tree is main on 2026-11-09, not `v0.29.0` (the design's pick, open to overturn).
 - A row's share compared among the rows a bag holds, not against the whole seed, is this build's
-  reading of the design's row rule once the seed counts rows no bag holds; open to overturn, with
-  the other reading's output beside it.
+  reading of the design's row rule once the seed counts rows no bag holds; open to overturn, the
+  player's question on the board (`box-rows-after-the-pass`), with the other reading measured
+  beside it.
 - Every number is over 18 cities and one stream per city-day; a cell with a hundred events moves
   by about a tenth from one sample to the next, which is why the pass is not repeated.
 - A cell is what a unit's bag holds; what she meets on her walk is `walk_rows.gd`'s `WD`, `WV`,

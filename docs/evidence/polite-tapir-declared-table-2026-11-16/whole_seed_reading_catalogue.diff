@@ -1,0 +1,78 @@
+diff --git i/src/events/event_catalogue.gd w/src/events/event_catalogue.gd
+index d9e08be20..cc4df6a5f 100644
+--- i/src/events/event_catalogue.gd
++++ w/src/events/event_catalogue.gd
+@@ -876,7 +876,7 @@ static func _delivery_van() -> EventDef:
+ 	# - a street, 2.3: set by the scaling pass: its share of a street's events was off by more
+ 	#   than a factor of two.
+ 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+-	def.weigh_on(PlacementGround.Kind.STREET, 2.3)
++	pass
+ 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
+ 	return def
+ 
+@@ -1278,6 +1278,7 @@ static func _leaf_blower() -> EventDef:
+ 	# - open ground, 0.0006: rare on open ground (its share there against the street
+ 	#   musician's), and moved by the scaling pass.
+ 	def.weigh_on(PlacementGround.Kind.OPEN, 0.0006)
++	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.3)
+ 	return def
+ 
+ ## Pigeons off the sidewalk all at once: standing on the ground long before she is near, then up as
+@@ -1565,7 +1566,7 @@ static func _reversing_lorry() -> EventDef:
+ 	# - a street, 2.2: set by the scaling pass: its share of a street's events was off by more
+ 	#   than a factor of two.
+ 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+-	def.weigh_on(PlacementGround.Kind.STREET, 2.2)
++	pass
+ 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
+ 	return def
+ 
+@@ -1628,8 +1629,8 @@ static func _chatting_mother() -> EventDef:
+ 	#   than a factor of two.
+ 	# - a junction box, 0.21: set by the scaling pass: its share of a junction box's events was
+ 	#   off by more than a factor of two.
+-	def.weigh_on(PlacementGround.Kind.STREET, 0.39)
+-	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.21)
++	def.weigh_on(PlacementGround.Kind.STREET, 0.29)
++	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.1)
+ 	return def
+ 
+ ## **The one thing in the game you have to run from, and it arrives on day 3.**
+@@ -1739,7 +1740,8 @@ static func _charging_dog() -> EventDef:
+ 	#   than a factor of two.
+ 	# - open ground, 0.0015: rare on open ground (its share there against the street
+ 	#   musician's), and moved by the scaling pass.
+-	def.weigh_on(PlacementGround.Kind.STREET, 0.3)
++	def.weigh_on(PlacementGround.Kind.STREET, 0.22)
++	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.29)
+ 	def.weigh_on(PlacementGround.Kind.OPEN, 0.0015)
+ 	return def
+ 
+@@ -1849,7 +1851,7 @@ static func _poster_crew() -> EventDef:
+ 	# - a street, 2.2: set by the scaling pass: its share of a street's events was off by more
+ 	#   than a factor of two.
+ 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+-	def.weigh_on(PlacementGround.Kind.STREET, 2.2)
++	pass
+ 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
+ 	return def
+ 
+@@ -2054,7 +2056,7 @@ static func _roadblock() -> EventDef:
+ 	# - a street, 2.2: set by the scaling pass: its share of a street's events was off by more
+ 	#   than a factor of two.
+ 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+-	def.weigh_on(PlacementGround.Kind.STREET, 2.2)
++	pass
+ 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
+ 	return def
+ 
+@@ -2606,7 +2608,7 @@ static func _protest() -> EventDef:
+ 	#   off by more than a factor of two.
+ 	# - open ground, 0.074: rare on open ground, where the street musician is nine tenths of
+ 	#   what stands: its share there against his.
+-	def.weigh_on(PlacementGround.Kind.JUNCTION, 4.5)
++	def.weigh_on(PlacementGround.Kind.JUNCTION, 2.8)
+ 	def.weigh_on(PlacementGround.Kind.OPEN, 0.074)
+ 	return def
+ 
