@@ -87,8 +87,8 @@ static func _blocks(plans: Dictionary, layouts: Dictionary) -> Array:
 		var plan: BlockPlan = plans[block]
 		var steps: Array = []
 		for step in plan.steps_in_order():
-			steps.append([str(GameEnums.BlockPurpose.keys()[step.purpose]).to_lower(),
-					step.from_day, str(GameEnums.BlockCause.keys()[step.cause]).to_lower()])
+			steps.append([str(GameEnums.BlockPurpose.keys()[step.becomes()]).to_lower(),
+					step.earliest_day(), str(GameEnums.BlockCause.keys()[step.needs()]).to_lower()])
 		var layout := {}
 		if layouts.has(block):
 			var carves: Dictionary = layouts[block]

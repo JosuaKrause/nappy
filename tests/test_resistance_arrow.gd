@@ -549,7 +549,7 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 		ResistanceSteps.TargetKind.MAST:
 			return _city.events.mast_foot(ResistanceReads.mast_at(director, _city.events))
 		ResistanceSteps.TargetKind.PARK_SWING:
-			var layout: BlockLayout = _city.map.block_layouts.get(CityGenerator.swing_park(_city.map))
+			var layout: BlockLayout = _city.map.layout_of(CityGenerator.swing_park(_city.map))
 			return _city.map.swing_position(layout.playground_rect()) if layout else Vector2.INF
 		ResistanceSteps.TargetKind.STATION_DOOR:
 			var door := _city.map.power_station_door_position()

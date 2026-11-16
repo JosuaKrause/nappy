@@ -174,7 +174,7 @@ static func source_for(map: CityMap, tile: Vector2i, day: int) -> int:
 ## gradient in time the milestone asked for; the pattern (`a`/`b`) is a second, independent roll,
 ## so which half of a level's variety a tile gets does not correlate with how bad the crack is.
 ##
-## **A stretch draws the recipe's cracks instead** (`CityMap.stretch_cracks`): a task scene is
+## **A stretch draws the recipe's cracks instead** (`CityMap.stretch_crack_at()`): a task scene is
 ## authored, so which tiles are cracked and how badly is what the recipe lists, not a roll on the
 ## seed. `crack_at()` is the roll, for the tool that drafts the list.
 static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain: int,
@@ -205,7 +205,7 @@ static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain:
 
 ## The crack the seeded roll gives `tile` today, as `Vector2i(level, pattern)` into the damage
 ## levels `_cracked()` picks from, or `Vector2i(-1, -1)` for a tile it leaves whole — what a
-## stretch recipe lists for the tile (`CityMap.stretch_cracks`). Asked of the witness, never of
+## stretch recipe lists for the tile (`CityMap.stretch_crack_at()`). Asked of the witness, never of
 ## the recipe's own list.
 static func crack_at(map: CityMap, tile: Vector2i, day: int) -> Vector2i:
 	var source := source_for(map, tile, day)

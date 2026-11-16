@@ -233,7 +233,7 @@ func _test_the_guard_never_lands_inside_a_building(t: TestRunner) -> void:
 					"seed %d: the guard for the mark at %s is not on held or home-block ground"
 					% [seed_value, tile])
 			var inside_a_building := false
-			for rect in map.building_rects:
+			for rect in map.building_lots():
 				if rect.has_point(guard_tile):
 					inside_a_building = true
 					break

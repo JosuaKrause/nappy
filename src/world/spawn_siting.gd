@@ -277,7 +277,7 @@ func draws_on_the_view(box: Rect2, at: Vector2) -> bool:
 ## draw, so a pool with nothing obstructed in it draws exactly what it would.
 ##
 ## **On the map.** A tile off the map reads as an alley in a scene recipe's exterior
-## (`CityMap.recipe_exterior`) and is refused here like any other ground off the map.
+## (`CityMap.has_recipe_exterior()`) and is refused here like any other ground off the map.
 static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
 		allow_held := false) -> bool:
 	return map.in_bounds(tile) \

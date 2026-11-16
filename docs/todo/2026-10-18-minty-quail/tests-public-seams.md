@@ -8,10 +8,7 @@ second counts its lines that call a frame function or emit the frame signal by h
 `rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/*.gd`.
 Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
 well as the suites), and neither sees access through a variable holding the name, so
-`tests-unseen-reads.md` covers what they cannot see. The first takes a private member to start
-with a lower-case letter after its underscore, so it misses a private constant:
-`tests/test_touch.gd`'s reads of `TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS`, in the
-open list below, are not counted. Outside the two files below they print one breach still open: `tests/test_event_manager_fire.gd` and
+`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print one breach still open: `tests/test_event_manager_fire.gd` and
 `tests/test_fire_truck_body.gd` each call the private `EventSpawner._where_the_summoned_row_stops()`. A test or
 helper that makes them print anything else is a breach.
 
@@ -88,10 +85,8 @@ ticks give, and is kept with its reason:
   resistance director to answer what is in front of her.
 - **`WalkSiting.offers_worked_out`** is a public counter only `test_siting_judges_once.gd` reads,
   which wants the offer handed in.
-- **`RouteLines.routes()`**, a public member no game class calls, is read by `test_route_lines.gd`'s
-  picture sweep.
-- **`test_touch.gd`** reads `TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS` (the knob
-  drawn inside its ring has no reader but the drawing).
+- **`RouteLines.routes()`** is kept in `tools/test_only_members.txt` as the only handle on the drawn
+  polylines, as `EventRouteLines.routes()` is.
 - **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
   `test_observers.gd`: the counter's gate reads the platform, which a headless run cannot fake.
 - **The scene recipe suites leave untested:** the director's own use of the arrow ground (it wants a
