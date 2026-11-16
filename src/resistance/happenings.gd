@@ -109,11 +109,9 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 ## cordon is built; none, and it tells nobody.
 var _bus: _BUS
 
-## Hands the happenings the bus their park cordon reports on, and on to a cordon already standing.
+## Hands the happenings the bus their park cordon reports on.
 func use_bus(bus: _BUS) -> void:
 	_bus = bus
-	if cordon:
-		cordon.use_bus(bus)
 
 ## Whether today still owes the column, and its trucks once it has come. Kept for the tests.
 var _column_owed := false

@@ -881,7 +881,8 @@ view listen on the autoload. The baby is handed it rather than fetching it (`Bab
 `main._make_player()` calls), and a baby handed none tells nobody. Every emitter in the world and
 the simulation is handed its bus the same way: the events through `EventManager.use_bus()` and the
 one `EventReports` (`event_reports.gd`) their parts share, the resistance through
-`ResistanceDirector.use_bus()`, which hands it on to its happenings and their park cordon. Every
+`ResistanceDirector.use_bus()`, which hands it on to its happenings and their park cordon, and the
+crowd, the poster walls and the blackout through `SimulationBuilder.use_bus()`. Every
 signal is declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run
 state, events, bodies, resistance, the escape, presentation — read it directly for the current
 list and each signal's payload type; `event_telegraphed` and `event_activated` are deliberately
