@@ -9,7 +9,11 @@ writes the table scaled once.
   a factor of two has its weight on that ground multiplied by (seed share / run share), to two
   figures.
 
-Usage: python3 -I one_pass.py <seed> <cells run> <table in.json> <table out.json>
+A row's share is read from <row seed> where it is given, else from <seed>: the seed of the rows a
+unit draws, when the seed's cells count rows no unit draws (whose events the cells hand to the
+rest), so that a row's share is compared among the rows a bag holds on both sides.
+
+Usage: python3 -I one_pass.py <seed> <cells run> <table in.json> <table out.json> [<row seed>]
 """
 import collections, json, sys
 from math import floor, log10
@@ -79,6 +83,8 @@ def shares(ev, tag_days, r, g):
     s_all = sum(n for k, n in ev.items() if k[2] == g and k[0] in days)
     return s_r / s_all if s_all else 0.0
 
+if len(sys.argv) > 5:
+    _, se = read(sys.argv[5], "SL", "SE")
 rows = sorted({k[3] for k in se} | {k[3] for k in ce})
 for gi, g in enumerate(GROUNDS):
     for r in rows:
