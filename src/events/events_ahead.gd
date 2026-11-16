@@ -471,7 +471,7 @@ func place_what_is_owed_ahead(delta: float) -> void:
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
 	if def.is_warned_in_its_lane():
-		_warn_in_its_lane(def, body.global_position, body.velocity.normalized(), path)
+		_warn_in_its_lane(def, body.global_position, path)
 		return
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
@@ -571,7 +571,7 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 
 ## A row the director sends ahead of her warned of first in the lane of the road beside her (the
 ## convoy, `EventDef.is_warned_in_its_lane()`), sited on `sited` (`EventDirector.due()`: its first
-## leg) with her walking `heading`: the badge goes up at once, pointing level with her along the
+## leg), coming toward her: the badge goes up at once, pointing level with her along the
 ## road and just out of sight up it (`PendingWarning.in_its_lane()`), and once its second is up the
 ## thing is created there, its telegraph spent (`EventSpawner.spawn_warned()`), on its first leg
 ## from where she is then (`EventDirector.leg_in_the_lane()`). Day 13's column arrives the same way
@@ -580,16 +580,12 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## since she has walked on since it was sited; a refusal, or no leg from where she is then (none a
 ## car may drive and go on from, `EventDirector.leg_in_the_lane()`), withdraws the warning. Once
 ## created its route is worked out as it goes (`EventInstance.go_on_by()`).
-func _warn_in_its_lane(def: EventDef, her: Vector2, heading: Vector2,
-		sited: PackedVector2Array) -> void:
+func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -> void:
 	var lane := sited[0]
 	var going := (sited[sited.size() - 1] - lane).normalized()
 	if going == Vector2.ZERO:
 		return
 	var ends := PendingWarning.lane_ends(world.city_map, going)
-	# Where it comes from, against the way she was walking as it was sent: the coin flip
-	# (`EventDef.may_come_from_either_end()`) sends half of them from behind her.
-	var from := "from behind her" if going.dot(heading) > 0.0 else "from ahead of her"
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(def, at, lane, going, ends.x, ends.y, world.visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
@@ -597,8 +593,9 @@ func _warn_in_its_lane(def: EventDef, her: Vector2, heading: Vector2,
 		if path.is_empty() or not _director.clear_to_send(path, def):
 			return false
 		_spawner.spawn_warned(def, path).go_on_by(_director.way_on())
-		world.trace.note("ahead", "%s comes down the road at her %s, %.0fpx up it, at %s, its warning over"
-				% [def.id, from, place.distance_to(at), RunTrace.tile(world.map.world_to_tile(at))])
+		world.trace.note("ahead",
+				"%s comes down the road at her from ahead of her, %.0fpx up it, at %s, its warning over"
+				% [def.id, place.distance_to(at), RunTrace.tile(world.map.world_to_tile(at))])
 		return true
 	_warnings.warn_first(def, her, where, arrive)
 

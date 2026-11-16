@@ -1405,15 +1405,14 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ##
 ## **The lane is the carriageway of the street she is beside**, read as `_toward_her_on_the_road()`
 ## reads it (`CityMap.pavement_inward()`, `CrowdLanes`). It drives toward her, against her heading
-## along the street ("just spawn in the car just ahead of the player", inbox #1460), or, for a row
-## that comes from either end (`EventDef.may_come_from_either_end()`, which none does), the way a coin
-## flip on the director's stream says, and from the other end where that one has no room. **The place is level with her along the road and just out of sight up it**
+## along the street, and never from behind her ("just spawn in the car just ahead of the player",
+## inbox #1460). **The place is level with her along the road and just out of sight up it**
 ## (`PendingWarning.in_its_lane()`, against `view`), and **the first leg runs down the lane past her
 ## to the far edge of the next junction box** (`leg_in_the_lane()`).
 ##
 ## Empty where there is nothing to run it down: she is not beside a plain sidewalk edge, the
-## street there has no leg a car may drive and go on from (`leg_in_the_lane()`), or no end has a
-## place out of sight. The caller waits and asks again.
+## street there has no leg a car may drive and go on from (`leg_in_the_lane()`), or the end ahead of
+## her has no place out of sight. The caller waits and asks again.
 func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
@@ -1426,17 +1425,7 @@ func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 	var along := Vector2(inward.y, inward.x)
 	var component := heading.dot(along)
 	var going := -along * signf(component) if not is_zero_approx(component) else along
-	var ends := 1
-	if def.may_come_from_either_end():
-		ends = 2
-		if _rng.randf() < 0.5:
-			going = -going
-	for _end in ends:
-		var path := _down_the_lane(at, going, index, def, view)
-		if not path.is_empty():
-			return path
-		going = -going
-	return PackedVector2Array()
+	return _down_the_lane(at, going, index, def, view)
 
 ## The first leg of `def` in the lane of corridor `index` driving `going` (a unit along the street),
 ## from its place just out of sight up the lane (`PendingWarning.in_its_lane()`, against `view`, the

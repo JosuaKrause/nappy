@@ -17,11 +17,6 @@ extends Resource
 ## just out of sight in its lane (the convoy, as day 13's column is). False for a row created at once
 ## (the dog walker, slower than a walk; the patrol, warned the way a car warns).
 @export var warned := false
-## Whether it may come from either end of her street, a coin flip on the director's stream, so that
-## half of them overtake her from behind. False for every row the director sends: each comes toward
-## her, "just ahead of the player" (inbox #1460). A convoy from behind her, faster than her walk and
-## loud for as long as she can see it, costs well over the meter's length to a her who walks on.
-@export var from_either_end := false
 
 ## **Created at once just ahead of her, coming toward her** (the dog walker down her sidewalk, the
 ## patrol down the carriageway lane that drives toward her): no warning first, and never from
@@ -39,7 +34,3 @@ static func warned_first() -> SentAhead:
 ## Whether it is warned of first (`warned`).
 func is_warned_first() -> bool:
 	return warned
-
-## Whether it may come from either end of her street (`from_either_end`).
-func comes_from_either_end() -> bool:
-	return from_either_end

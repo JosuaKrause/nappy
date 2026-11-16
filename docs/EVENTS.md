@@ -367,11 +367,9 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
   level with her along the road and just out of sight up it (`PendingWarning.in_its_lane()`), then
   created there with its telegraph spent, driving down the lane past her to the far edge of the next
   junction box (`EventDirector.past_the_next_box()`). **It comes toward her**, as the patrol does,
-  never from behind her ("just spawn in the car just ahead of the player", inbox #1460), and from
-  the other end only for a row the director sends from either end (`SentAhead.from_either_end`),
-  which none is: a truck from behind her, faster than her walk, would stay loud beside her for as
-  long as she could see it, and costs a her who walks on well over the meter's length where one met
-  head on costs about 30 points.
+  never from behind her ("just spawn in the car just ahead of the player", inbox #1460): a truck
+  from behind her, faster than her walk, would stay loud beside her for as long as she could see
+  it.
 
 The patrol's and the convoy's first leg is built in one place (`EventDirector.leg_in_the_lane()`),
 as the row is sited and, for the convoy, again from where she is when its warning ends. **Nothing is

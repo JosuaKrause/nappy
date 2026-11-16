@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 	_test_the_car_never_drives_into_her(t)
 	_test_an_investigating_car_never_leaves_the_carriageway(t)
 	_test_the_raids_car_never_reverses_onto_her(t)
-	_test_a_car_turning_a_corner_stands_while_she_is_round_it(t)
+	_test_a_sent_patrol_refused_its_turn_stands_in_the_box_and_goes_on(t)
 	_test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t)
 	_test_it_gives_way_at_a_zebra_she_waits_at(t)
 	_test_it_stops_at_a_red_light(t)
@@ -538,34 +538,54 @@ func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 	player.free()
 	car.free()
 
-## **A car whose route turns a corner stands at the corner while she is on the carriageway round it
-## within its warning, and turns once she is off it**: a sent patrol's route worked out as it goes
-## turns at a junction box (`WayOn`), and the turn that would newly put her in front of its nose is
-## refused like a step into her (`EventCarDriving.check()`, the fifth trap of the events skill's
-## `references/event-cars.md`), so it never strikes her from round a corner without its warning. Its
-## route runs east and turns south; she stands south of the corner, beside its first stretch, in
-## front of where it turns.
-func _test_a_car_turning_a_corner_stands_while_she_is_round_it(t: TestRunner) -> void:
-	var route := PackedVector2Array([Vector2.ZERO, Vector2(240.0, 0.0), Vector2(240.0, 600.0)])
+## **A sent patrol whose way on turns it toward her stands in the junction box while she is on the
+## carriageway round the corner within its warning, and goes on round it once she is off it**: its
+## route worked out as it goes turns at a box where the street straight on is no through road
+## (`WayOn`), and the turn that would newly put her in front of its nose is refused like a step into
+## her (`EventCarDriving.check()`, the fifth trap of the events skill's `references/event-cars.md`),
+## so it never strikes her from round a corner without its warning, and it stands no longer than she
+## stays there. The stand is where the way on's turn and the car's check meet (the turn's three
+## pieces decide where in the box the check refuses it), so this case drives a real `WayOn` over a
+## hand-drawn lattice of three by three boxes (`StreetLayout.lay()`), the middle box's streets east
+## and north closed so that the only way on from it is south: the patrol drives east toward it, and
+## she stands on the street south of it, in the lane the patrol would turn into. Fails with
+## `turns_onto_her` removed from the check.
+func _test_a_sent_patrol_refused_its_turn_stands_in_the_box_and_goes_on(t: TestRunner) -> void:
+	var tile := float(Tuning.TILE_SIZE)
+	var period := CityMap.period()
+	var map := CityMap.new(Vector2i.ONE * (2 * Tuning.BLOCK_SIZE + 3 * Tuning.STREET_WIDTH))
+	map.index_posts()
+	StreetLayout.lay(map)
+	var closed := {}
+	for lane: int in CrowdLanes.ROAD_OFFSETS:
+		closed[Vector2i(period + Tuning.STREET_WIDTH + 2, period + lane)] = true
+		closed[Vector2i(period + lane, Tuning.STREET_WIDTH + 2)] = true
+	map.closed_tiles = closed
+	var way_on := WayOn.new(map, map.navigator(), ThroughRoads.over(map, Mover.vehicle()))
+	var east := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(false, 1.0))
+	var south := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(true, 1.0))
+	var route := PackedVector2Array([Vector2(7.0 * tile, east), Vector2(10.0 * tile, east)])
+	var box := Rect2(Vector2.ONE * period * tile, Vector2.ONE * Tuning.STREET_WIDTH * tile)
 	var where := WhereSheIs.nowhere()
-	var car := _car(t, _patrol(), route, null, where)
+	var car := _car(t, _patrol(), route, map, where)
+	car.go_on_by(way_on)
 	_already_driving(car)
-	var player := _her(t, Vector2(240.0, 80.0), Vector2.UP)
+	var player := _her(t, Vector2(south, box.end.y + 3.0 * tile), Vector2.UP)
 	var struck := false
 	for _i in int(8.0 / STEP):
 		_drive(car, where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
-	t.check(not struck, "driving to the corner with her round it, it never strikes her")
-	t.check(_stands(car, where, player) and car.global_position.distance_to(route[1]) < 8.0
-			and car.facing_now().is_equal_approx(Vector2.RIGHT),
-			"it stands at the corner, still facing the way it drove (%v, %v)"
+	t.check(not struck, "driving to the box with her round its corner, it never strikes her")
+	t.check(_stands(car, where, player) and box.has_point(car.global_position)
+			and not car.is_leaving,
+			"it stands in the junction box, still the event it was (%v, facing %v)"
 			% [car.global_position, car.facing_now()])
-	player.global_position = Vector2(400.0, 80.0)
-	for _i in int(1.5 / STEP):
+	player.global_position = Vector2(26.0 * tile, 25.0 * tile)
+	for _i in int(3.0 / STEP):
 		_drive(car, where, player)
-	t.check(car.facing_now().is_equal_approx(Vector2.DOWN) and car.global_position.y > 8.0,
-			"once she is off the street round the corner, it turns and drives on (%v)"
-			% car.global_position)
+	t.check(car.global_position.y > box.end.y and absf(car.global_position.x - south) < 4.0,
+			"once she is off the street round the corner, it turns and drives on south out of the "
+			+ "box (%v)" % car.global_position)
 	player.free()
 	car.free()
 

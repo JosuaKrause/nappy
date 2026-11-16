@@ -530,11 +530,6 @@ func is_warned_in_its_lane() -> bool:
 func keeps_to_the_carriageway() -> bool:
 	return placement.has(GameEnums.TileType.ROAD)
 
-## Whether the director may send it ahead of her from either end of her street
-## (`SentAhead.comes_from_either_end()`): no row today, each coming toward her.
-func may_come_from_either_end() -> bool:
-	return _sent_ahead != null and _sent_ahead.comes_from_either_end()
-
 ## **The copy the director sends** (`send_ahead()`): one created at once comes `TOWARD_PLAYER`, down
 ## her sidewalk on foot (the dog walker) or down the carriageway beside her (the patrol), with no
 ## badge (`telegraphs` false: a row the director creates at once just out of sight is met as it
