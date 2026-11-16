@@ -2398,7 +2398,7 @@ piece of ground (`RouteLineRule`), the sidewalk she walks keeps a line with room
 Off the streets, on an alley, a park cut or a square, no obstructing body's disc and no counted
 row's line reach covers a tile a route runs along (`RouteGroundRule`), which is stricter than asking
 for a way round: a body or a cost never stands on a route tile there even where a detour exists.
-And on a day's walk, a street near the routes never has both its sidewalks closed by bodies a draw
+And on a day's walk, a street of her routes never has both its sidewalks closed by bodies a draw
 put on them (`OneSidewalkOpenRule`). Hard-fail events count
 as bodies for this rule, by their lethal inner disc: an abduction in progress is not something you
 walk through to reach the park behind it. The run's scars and the park spoilers, which the line

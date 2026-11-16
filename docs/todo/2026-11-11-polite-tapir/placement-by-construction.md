@@ -78,7 +78,7 @@ route's junctions onto the sidewalks she walks (`RouteLineRule`), its walked sid
 beat's opening, the route's ground rule (`RouteGroundRule`) keeps every body's disc, every lethal
 row's inner disc and every counted row's line reach off a tile a route runs along off the streets
 (an alley, a park cut, a square), and keeps the scars and the park spoilers off every route tile and
-off the street she starts on, and one sidewalk of every street near the routes stays open past the
+off the street she starts on, and one sidewalk of every street of her routes stays open past the
 bodies drawn on it (`OneSidewalkOpenRule`). The whole-city flood is no rule of the game; `tests/probes/walk_rows.gd` counts the route tiles a
 day's bodies cut off from home, expected to be none (record 2026-11-11-polite-tapir).
 

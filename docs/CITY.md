@@ -1170,30 +1170,35 @@ used are still reachable. So the street she is on can be shut, and the day alway
 round it. Checked before accepting, never repaired — a refused siting is asked again a second later
 from wherever she has walked to.
 
-### A street near the routes keeps one sidewalk past its bodies
+### A street of her routes keeps one sidewalk past its bodies
 
-**If one sidewalk of a street is blocked, the other draws no block** (inbox #1465). On a day's walk
-a body (a row she cannot pass, or one that ends the day, at the disc it blocks with) is refused
-where, for a street it reaches, neither sidewalk could then be walked from one junction to the other
-past the bodies standing round it, and one could without it (`OneSidewalkOpenRule`). A street draws
-all its locations at once and its touching units draw before or after it with what it drew in view,
-so the rule holds both ways round: a street's own second wall is refused, and so is a body in the
-box at its end reaching its last open sidewalk. It asks a body, never a cost: a row whose field
-alone covers the street is the line rules' question. A street a closure, a seal or the region wall
-already closes keeps no sidewalk to refuse anything for. **A roadblock is asked too**: it spans the
-street by design, and its band takes the sidewalk on its own side of the road and leaves the far
-one, so it is refused where a body already closes that far sidewalk (inbox #747 in woolly-penguin).
-Day 13's roadblock phase asks it as it asks every rule of the day, and stands the roadblock on
-another tile or section where it refuses one; the task's own swap, which puts a roadblock across a
-section where the day placed none close by, is not judged by the day's rules. The escape keeps its
-own, stricter rule (`DaySpec.keeps_the_walk_open`).
+**Where a street has to keep a sidewalk she can walk, the draw makes sure of it.** The player, on
+the board: "what I said was *if* a street needs to have one sidewalk walkable *then* the placement
+of the drawn events needs to make sure of that" (inbox #1465). *Read as:* no street is newly
+required to keep one; the streets that already are, her routes' own streets, keep it by
+construction. On a day's walk a body (a row she cannot pass, or one that ends the day, at the disc
+it blocks with) is refused where, for a street of her routes it reaches, neither sidewalk could then
+be walked from one junction to the other past the bodies standing round it, and one could without
+it (`OneSidewalkOpenRule`). A street draws all its locations at once and its touching units draw
+before or after it with what it drew in view, so the rule holds both ways round: a street's own
+second wall is refused, and so is a body in the box at its end reaching its last open sidewalk. It
+asks a body, never a cost: a row whose field alone covers the street is the line rules' question. A
+street a closure, a seal or the region wall already closes keeps no sidewalk to refuse anything for.
+The streets beside the routes and off them keep their blocking events all over (PLAYTEST-17), and
+the escape keeps its own, stricter rule (`DaySpec.keeps_the_walk_open`).
 
-**It covers the streets of her routes and the streets touching them** (`OneSidewalkOpenRule.COVERS`,
-`Corridor.view_of()`'s on the route and route-adjacent), and leaves the walls further off as they
-are drawn: the player's words name every street (inbox #1465), and the streets off the routes are
-where the player asked for blocking events all over, so that she stays out of them (PLAYTEST-17).
-Which of the two holds off the routes is the board's question open-sidewalk-reach; the setting is
-one constant.
+**The line rules do not already hold it on a route's street.** They ask only a row that counts
+against her line, and a pursuer (the alley robbery, the charging dog) does not, since it follows her
+rather than holding a tile, yet it stands as a body. A pursuer on one sidewalk and a roadblock or
+another pursuer on the other close the street with every line rule satisfied, so this rule asks
+every body, not only the roadblock.
+
+**A roadblock is asked too**: it spans the street by design, and its band takes the sidewalk on its
+own side of the road and leaves the far one, so it is refused where a body already closes that far
+sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin). Day 13's
+roadblock phase stands its roadblocks in sections beside the routes, which the rule does not cover,
+and the task's own swap, which puts a roadblock across such a section where the day placed none
+close by, is not judged by the day's rules, so neither loses one.
 
 ### A pacing row is passed by waiting, or left at a crossing
 

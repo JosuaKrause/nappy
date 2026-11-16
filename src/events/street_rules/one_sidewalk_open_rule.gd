@@ -1,11 +1,25 @@
 class_name OneSidewalkOpenRule
 extends StreetRule
-## **No street has both its sidewalks closed by bodies a draw put on them** (inbox #1465: "if one
-## sidewalk is blocked then the other sidewalk cannot draw a block again"): a candidate that blocks
-## the way (`EventPlan.obstructs()`, at `EventPlan.blocking_radius()`) is refused where, for a
-## street its body reaches, neither sidewalk can be walked junction to junction with it standing
-## (`RouteSidewalkRule.closes_a_walked_sidewalk_band()`, asked of both of the street's bands against
-## the bodies standing round it), and one could without it.
+## **No street of her routes has both its sidewalks closed by bodies a draw put on them**: a
+## candidate that blocks the way (`EventPlan.obstructs()`, at `EventPlan.blocking_radius()`) is
+## refused where, for a street of her routes its body reaches, neither sidewalk can be walked
+## junction to junction with it standing (`RouteSidewalkRule.closes_a_walked_sidewalk_band()`,
+## asked of both of the street's bands against the bodies standing round it), and one could
+## without it.
+##
+## **Only her routes' own streets** (`Corridor.view_of()` on the route). *(Inbox #1465, the
+## player's answer on the board: "what I said was *if* a street needs to have one sidewalk walkable
+## *then* the placement of the drawn events needs to make sure of that".)* No street is newly
+## required to keep a sidewalk; a route's street already is, and the draw makes sure of it. The
+## streets beside the routes and off them keep their blocking events all over (PLAYTEST-17:
+## "areas that outside the paths should have blocking events all over"), and the escape's walk
+## keeps its own rule.
+##
+## **Why the line rules do not already hold it there**: they ask only a row that counts against
+## the line (`EventPlan.counts_against_the_line()`), and a pursuer (the alley robbery, the charging
+## dog) does not, since it follows her rather than holding a tile, yet it stands as a body. So a
+## pursuer on one sidewalk and a roadblock, or another pursuer, on the other close the street with
+## every line rule satisfied, and this rule is the one that sees the pair.
 ##
 ## - **Both ways round**: the street's own second body is refused, and so is a neighbour's body
 ##   reaching into the street's last open sidewalk, whichever draws first. A street draws all its
@@ -20,36 +34,16 @@ extends StreetRule
 ##   sidewalk, and a body drawn after it is refused across from it the same way.
 ##
 ## It asks a body, never a cost: a row whose field alone covers both sidewalks is the line rules'
-## question, and on a street off the routes it may stand (the leaf blower, the man shouting). Which
-## streets it covers is one setting (`COVERS`). Model: no node.
-
-## Which streets the rule keeps a sidewalk open on.
-enum Streets {
-	## The streets of her routes and the streets touching them (`Corridor.view_of()`: on the route
-	## and route-adjacent). Further off, nothing is refused.
-	NEAR_THE_ROUTES,
-	## Every street of the day.
-	EVERY_STREET,
-}
-
-## **The streets the day's rule covers.** The player's words say every street (inbox #1465); the
-## streets off the routes are also where the player asked for blocking events all over, so she
-## stays out of them (PLAYTEST-17, "areas that outside the paths should have blocking events all
-## over"). Until the board's question open-sidewalk-reach settles which holds off the routes, the
-## rule keeps a sidewalk open near the routes, where she walks, and leaves the walls further off
-## as they are drawn.
-const COVERS := Streets.NEAR_THE_ROUTES
+## question. Model: no node.
 
 var _map: CityMap
 var _corridor: Corridor
-var _streets: Streets
 
-## The rule on `map` for the routes `corridor` runs (null for a walk with no route tree: nothing is
-## near a route then), covering `streets`.
-func _init(map: CityMap, corridor: Corridor, streets := COVERS) -> void:
+## The rule on `map` for the routes `corridor` runs (null for a walk with no route tree: no street
+## is on a route then).
+func _init(map: CityMap, corridor: Corridor) -> void:
 	_map = map
 	_corridor = corridor
-	_streets = streets
 
 ## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
@@ -57,7 +51,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 	if not candidate.obstructs():
 		return true
 	for street in _streets_reached_by(candidate):
-		if _covers(street) and _closes_its_last_sidewalk(street, candidate, around):
+		if _is_on_her_routes(street) and _closes_its_last_sidewalk(street, candidate, around):
 			return false
 	return true
 
@@ -78,14 +72,10 @@ func _streets_reached_by(plan: EventPlan) -> Array[StreetNetwork.Segment]:
 			found.append(street)
 	return found
 
-## Whether the setting covers `street`.
-func _covers(street: StreetNetwork.Segment) -> bool:
-	if _streets == Streets.EVERY_STREET:
-		return true
-	if _corridor == null:
-		return false
-	var view := _corridor.view_of(street)
-	return view == PlacementView.View.ON_THE_ROUTE or view == PlacementView.View.ROUTE_ADJACENT
+## Whether a route of the day runs along `street`.
+func _is_on_her_routes(street: StreetNetwork.Segment) -> bool:
+	return _corridor != null \
+			and _corridor.view_of(street) == PlacementView.View.ON_THE_ROUTE
 
 ## Whether `candidate` closes the last sidewalk of `street` that the bodies of `around` leave
 ## walkable from one junction to the other.

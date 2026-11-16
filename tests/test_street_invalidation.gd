@@ -45,7 +45,8 @@ func run(t: TestRunner) -> void:
 	_test_a_day_and_the_escape_compose_their_rules(t)
 
 ## A route along the west street's south sidewalk of junction (3, 3), across its box and down the
-## south street's east sidewalk; the street east of the box beside it.
+## south street's east sidewalk; the street east of the box beside it. A robbery on the walked
+## sidewalk is a body no line rule asks, so a stall across from it is the one-sidewalk rule's.
 func _test_a_day_and_the_escape_compose_their_rules(t: TestRunner) -> void:
 	var map := StreetMap.full()
 	var tiles: Array[Vector2i] = []
@@ -60,13 +61,17 @@ func _test_a_day_and_the_escape_compose_their_rules(t: TestRunner) -> void:
 	var day := StreetInvalidation.new(map, corridor, none, PackedVector2Array(), null)
 	var escape := StreetInvalidation.new(map, corridor, none, PackedVector2Array(), null,
 			_OpenWalk.new(map))
-	var stall := EventCatalogue.by_id("market_stall")
-	var first: Array[EventPlan] = [EventPlan.new(stall, map.tile_to_world(Vector2i(51, 42)))]
-	var across := EventPlan.new(stall, map.tile_to_world(Vector2i(51, 47)))
-	t.check(day.room(across, GameEnums.BlockerRole.WALL, Vector2i(51, 47), first, first) == -INF
+	var robbery := EventPlan.new(EventCatalogue.by_id("alley_robbery"),
+			map.tile_to_world(Vector2i(37, 47)))
+	var first: Array[EventPlan] = [robbery]
+	var across := EventPlan.new(EventCatalogue.by_id("market_stall"),
+			map.tile_to_world(Vector2i(37, 42)))
+	t.check(robbery.obstructs() and not robbery.counts_against_the_line(),
+			"the robbery is a body the line rules do not ask")
+	t.check(day.room(across, GameEnums.BlockerRole.WALL, Vector2i(37, 42), first, first) == -INF
 			and day.refusals().has("OneSidewalkOpenRule"),
-			"a day refuses a stall across from a stall beside the routes, by the one-sidewalk rule")
-	t.check(escape.room(across, GameEnums.BlockerRole.WALL, Vector2i(51, 47), first, first) != -INF,
+			"a day refuses a stall across her route's street from a robbery, by the one-sidewalk rule")
+	t.check(escape.room(across, GameEnums.BlockerRole.WALL, Vector2i(37, 42), first, first) != -INF,
 			"a walk kept open by its own rule does not ask it")
 	var blower := EventPlan.new(EventCatalogue.by_id("leaf_blower"),
 			map.tile_to_world(Vector2i(51, 46)))

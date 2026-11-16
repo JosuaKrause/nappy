@@ -6,7 +6,7 @@ extends RefCounted
 ## are stated once. A walk composes them from its spec: every walk's route rules (her line followed
 ## from a route's junction box onto the sidewalks she walks, her walked sidewalk, a beat's opening,
 ## and a route's ground off the streets kept free of bodies and of cost), the calm she has not used
-## and the doors' clear ground; on a day's walk, one sidewalk of every street near the routes kept
+## and the doors' clear ground; on a day's walk, one sidewalk of every street of her routes kept
 ## open past the bodies drawn on it (`OneSidewalkOpenRule`); the escape's on top, one notice at a
 ## time (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`), its
 ## own stricter rule in place of the one sidewalk.

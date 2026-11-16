@@ -298,7 +298,7 @@ src/
 	street_rules/         one file per rule: the unused calm, a door's clear ground, her line from a
 	                      route's junction box onto the sidewalks she walks, her walked sidewalk, a
 	                      pacing beat's opening, a route's ground off the streets kept free of
-	                      bodies and of cost, one sidewalk of a street near the routes kept open
+	                      bodies and of cost, one sidewalk of a street of her routes kept open
 	                      past its bodies, and the escape's one notice at a time and its walk kept
 	                      open
 	street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room

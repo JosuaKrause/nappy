@@ -84,7 +84,7 @@ extends RefCounted
 ## `EventPlan.blocking_radius()`, `RouteSidewalkRule.closes_a_walked_sidewalk_band()`) once every
 ## unit has drawn, leaving out the streets a closure, a seal, the region wall or a roadblock closes
 ## by itself; `WB all view ...` sums the days. The one-sidewalk rule (`OneSidewalkOpenRule`) keeps
-## that count at none near the routes.
+## that count at none on the route.
 
 const SEEDS := 18
 const BASE := 90210
