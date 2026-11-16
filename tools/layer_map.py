@@ -412,28 +412,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         ("src/world/world_map.gd",),
     ),
     Exception_(
-        "autoload",
-        "EventBus",
-        "the world and simulation report on the global signal bus, not a domain-event sink they are handed",
-        (
-            "src/events/encounter_watch.gd",
-            "src/events/event_instance.gd",
-            "src/events/event_manager.gd",
-            "src/events/event_spawner.gd",
-            "src/events/events_ahead.gd",
-            "src/resistance/park_cordon.gd",
-            "src/resistance/resistance_director.gd",
-        ),
-        more=(
-            ("src/events/encounter_watch.gd", 5),
-            ("src/events/event_instance.gd", 3),
-            ("src/events/event_manager.gd", 4),
-            ("src/events/event_spawner.gd", 4),
-            ("src/events/events_ahead.gd", 2),
-            ("src/resistance/resistance_director.gd", 2),
-        ),
-    ),
-    Exception_(
         "names",
         "GameSave",
         "the save indicator reads the save's state, rather than being handed it",

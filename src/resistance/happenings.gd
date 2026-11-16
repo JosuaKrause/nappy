@@ -103,6 +103,18 @@ var trace := RunTrace.new()
 func use_trace(sink: RunTrace) -> void:
 	trace = sink
 
+## The signals the park's cordon reports on (`EventBus`'s script), so the bus handed on has a class.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+## The bus the park's cordon says she is shut in on, the director's (`use_bus()`), handed on as the
+## cordon is built; none, and it tells nobody.
+var _bus: _BUS
+
+## Hands the happenings the bus their park cordon reports on, and on to a cordon already standing.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
+	if cordon:
+		cordon.use_bus(bus)
+
 ## Whether today still owes the column, and its trucks once it has come. Kept for the tests.
 var _column_owed := false
 var column: Array[EventInstance] = []
@@ -405,6 +417,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	var siting := _spawn_siting if _spawn_siting else SpawnSiting.new(_map, _navigator)
 	cordon = ParkCordon.new(_map, _navigator, _events, _world, _atlas, park, siting, blocked)
 	cordon.use_trace(trace)
+	cordon.use_bus(_bus)
 	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)
 	return true

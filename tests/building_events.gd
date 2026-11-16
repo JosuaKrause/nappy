@@ -12,6 +12,7 @@ extends RefCounted
 static func events_in(parent: Node, scene: InteriorScene,
 		rng: RandomNumberGenerator, run: RunState) -> EventManager:
 	var events := EventManager.new()
+	events.use_bus(EventBus)
 	events.stream_radius = INF
 	parent.add_child(events)
 	events.setup_world(scene.map, run)

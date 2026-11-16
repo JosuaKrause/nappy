@@ -232,7 +232,7 @@ func send_a_pursuer() -> void:
 				+ "at %s" % RunTrace.tile(world.map.world_to_tile(her)))
 		return
 	# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
-	EventBus.poster_pursuit_sent.emit()
+	world.reports().tell_poster_pursuit_sent()
 
 ## **The men an investigating vehicle lets out.** *(merry-stork, the player: "an investigating
 ## police car should not leave the street. it should stop if close to her and a policeman should
@@ -757,7 +757,7 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		world.map.release_obstruction(plan.get_instance_id())
 		# `VisitCounter`'s own "fire-unmet" — a won day on which this row was lit off her path
 		# rather than met. See docs/TELEMETRY.md, "The page counts visits".
-		EventBus.event_lit_unmet.emit(plan.def.id)
+		world.reports().tell_event_lit_unmet(plan.def.id)
 		# Where and why, because nothing else records it: which site a dusk fire took depends on
 		# where she finished the day, and no seed reproduces that from outside.
 		world.trace.note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "

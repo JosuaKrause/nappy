@@ -254,6 +254,18 @@ var _steps: Array[ResistanceSteps.Step] = ResistanceSteps.all()
 ## in before `setup()`, which passes it on to the happenings; silent until then.
 var trace := RunTrace.new()
 
+## The signals the resistance reports on (`EventBus`'s script), so the bus it is handed has a class.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+## The bus a contact on offer and a chalk mark noticed are said on, handed in by `use_bus()`; none,
+## and the director tells nobody.
+var _bus: _BUS
+
+## Hands the director the bus it reports on, and on to its happenings, whose park cordon says she
+## is shut in on it: `main` hands the `EventBus` autoload, before `setup()` or after.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
+	_happenings.use_bus(bus)
+
 ## Where she can get to from home today, for a walk the events started with none (`_reach()`): a
 ## rig's, which places on a map no walk was started over. Built the first time it is asked, and
 ## cleared in `start_day()`.
@@ -320,6 +332,20 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
 	_happenings.use_trace(trace)
 	_happenings.setup(map, _run, events, streets, fronts, world, _atlas, moves_by, _spawn_siting)
+
+# -------------------------------------------------------------------- telling ---
+# What the director says on its bus, one place a signal: with no bus handed (`use_bus()`) it tells
+# nobody.
+
+## That today's step has a contact on offer somewhere in the city.
+func _tell_a_contact_is_on_offer() -> void:
+	if _bus:
+		_bus.resistance_contact_available.emit(_step.index)
+
+## That she has noticed today's chalk mark.
+func _tell_the_mark_was_seen() -> void:
+	if _bus:
+		_bus.resistance_mark_seen.emit(_step.index)
 
 ## Hands the director the player, and the contact she touches: whose position a mark is read from,
 ## a neighbor placed out of sight of and a task's arrow pointed from.
@@ -593,7 +619,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# `tick()` moves it to the closest on foot once the first sweep has finished.
 	if ResistanceSteps.answers_at_several_places(_step):
 		_arrow_key = _contact_key()
-	EventBus.resistance_contact_available.emit(_step.index)
+	_tell_a_contact_is_on_offer()
 	trace.note("contact", "step %d on offer at %s" % [
 		_step.index, RunTrace.tile(_map.world_to_tile(at))])
 	if mark != Vector2.INF:
@@ -3210,7 +3236,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 				# `VisitCounter`'s own "mark-seen" — a perform step's own contact runs through this
 				# same tracking and never fires it, since the counter asks about the chalk mark, not
 				# about whatever the task rides on. See docs/TELEMETRY.md, "The page counts visits".
-				EventBus.resistance_mark_seen.emit(_step.index)
+				_tell_the_mark_was_seen()
 			trace.note("contact", "step %d seen at %s after %.1fs within %.0fpx" % [
 				_step.index, RunTrace.tile(_map.world_to_tile(at)),
 				SEEN_DWELL_SECONDS, SEEN_DISTANCE])
