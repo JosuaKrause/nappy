@@ -61,17 +61,20 @@ func run(t: TestRunner) -> void:
 
 # ----------------------------------------------------------------- the rig ---
 
-## A real city on `seed_value`'s map in the tree, over a run of its own on day `day`, and a real
-## `Stroller` in it that the events are handed, as `main` hands them (`EventManager.use_player()`).
-## The day is started with every dawn already pasted, so the walls hold what a test puts on them.
+## A real city on `seed_value`'s map in the tree, over a run of its own on day `day`, its walls
+## handed `art` where a test hands one (`SimulationBuilder.use_poster_art()`), and a real `Stroller`
+## in it that the events and the walls are handed, as `main` hands them (`EventManager.use_player()`,
+## `WorldSimulation.meet_her()`), the crowd keeping out of it. The day is started with every dawn
+## already pasted, so the walls hold what a test puts on them.
 func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) -> void:
 	_map = MapCache.of(seed_value)
 	_city = RunCity.with_own_run(CITY_SCENE, seed_value)
+	var builder := RunCity.new_builder()
 	if art != null:
-		_city.poster_art = art
+		builder.use_poster_art(art)
 	_run = _city.run
 	t.add_child(_city)
-	RunCity.build(_city, _map)
+	RunCity.build(_city, _map, builder)
 	_run.header.day = day
 	_run.posters.pasted_through = day
 	_walls = RunCity.poster_walls(_city)
@@ -79,6 +82,7 @@ func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) ->
 	_her = STROLLER_SCENE.instantiate()
 	t.add_child(_her)
 	RunCity.events(_city).use_player(_her)
+	RunCity.show_her_to_the_walls_and_the_blackout(_city, _her)
 	_seen = {"torn": 0, "pursuit": 0}
 
 func _close() -> void:
@@ -317,9 +321,10 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 	_map = MapCache.of(SEEDS[0])
 	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	_city.atlas = atlas
-	_city.poster_art = art
 	t.add_child(_city)
-	RunCity.build(_city, _map)
+	var builder := RunCity.new_builder()
+	builder.use_poster_art(art)
+	RunCity.build(_city, _map, builder)
 	_walls = RunCity.poster_walls(_city)
 	var fronts: Array = _walls.fronts().keys()
 	var dressed := not fronts.is_empty()
@@ -358,8 +363,9 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t: TestRunner) -> void
 ## with its cells, at dawn and after a tear, and the building draws its sheets through
 ## `PosterArt.texture_for()` with that flag. So a taken neighbor in the run is a crossed notice on
 ## the wall, intact at dawn and torn after a tear, and a warned one is the plain notice. What the
-## fronts draw is read off an art that records what each sheet was drawn with, handed to the city as
-## `main` hands it its own (`City.poster_art`) and by the walls to every front. The tear is made by
+## fronts draw is read off an art that records what each sheet was drawn with, handed to the walls
+## as `main` hands them its own (`SimulationBuilder.use_poster_art()`) and by the walls to every
+## front. The tear is made by
 ## a push, on real ticks.
 func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()

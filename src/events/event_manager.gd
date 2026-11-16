@@ -172,15 +172,15 @@ func _notification(what: int) -> void:
 ## (`DayStreets`), the city's own, which a day is planned against and a siting reads its region off;
 ## the lights a car that drives stops at (`TrafficSignals`); the run its events belong to; the
 ## navigator its figures move by, or the map's own (`WorldMap.navigator()`) for a rig that hands
-## none; where something sent at her may start, or, for a rig that hands none, one over `map`
-## against this manager's own view and the streets' region; and the poster walls a crew pastes on.
-## The city's plan builder is made here, once a city, over `map` (`EventWorld.plan_builder()`).
+## none; and the poster walls a crew pastes on. The city's plan builder is made here, once a city,
+## over `map` (`EventWorld.plan_builder()`), and so is where something sent at her may start
+## (`spawn_siting()`).
 ## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
 ## against the streets it hands, so it hands streets whose day it began (`DayStreets.begin_day()`).
 ##
 ## The map is already drawn in its world (`WorldMap.world`): the caller sets it first.
 func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = null,
-		run: RunState = null, navigator: Navigator = null, spawn_siting: SpawnSiting = null,
+		run: RunState = null, navigator: Navigator = null,
 		poster_walls: PosterWalls = null) -> void:
 	world.map = map
 	world.city_map = map
@@ -193,10 +193,20 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 	world.run = run
 	world.use_navigator(navigator if navigator else map.navigator())
 	var director := EventDirector.new(map, world.navigator())
-	ahead.use_director(director, spawn_siting if spawn_siting
-			else SpawnSiting.new(map, world.navigator(), visible_view,
-					streets.siting_region if streets else Callable()))
+	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
+			streets.siting_region if streets else Callable())
+	ahead.use_director(director, _spawn_siting)
 	EventBus.return_phase_started.connect(_owe_the_return)
+
+## **Where something sent at her may start in the city** (`SpawnSiting`): made once, in `setup()`,
+## over the map against the navigator, this manager's own view of her and the day's region, and
+## handed to the director here and to the resistance by whoever builds both. Null in a world that
+## is not the city.
+func spawn_siting() -> SpawnSiting:
+	return _spawn_siting
+
+## The siting `spawn_siting()` answers, made by `setup()` and dropped by `setup_world()`.
+var _spawn_siting: SpawnSiting
 
 ## Hands the manager a world that is not the city — the escape's building — whose events stand on
 ## `map` and move by its navigator, belonging to `run`: no city to plan a day over, no director
@@ -204,6 +214,7 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 ## (`start_day()` with the building's spec).
 func setup_world(map: WorldMap, run: RunState) -> void:
 	world.city_map = null
+	_spawn_siting = null
 	world.use_plan_builder(null)
 	world.use_streets(null)
 	world.use_poster_walls(null)
@@ -470,8 +481,8 @@ func instances() -> Array[EventInstance]:
 
 ## **These events as one set of things that charge the baby** (`EventSources`): the door's toll
 ## alone inside a held door, a region boundary's structures as their strongest, everything else
-## summed. Handed to the world the events stand in (`WorldContext.excitement_sources`), which hands
-## it to the baby and the halo.
+## summed. Handed to the world the events stand in (`WorldContext.use_excitement_sources()`),
+## which hands it to the baby and the halo.
 var sources: EventSources
 
 ## The region door whose hold is running right now and whose trigger circle `world_position` lies

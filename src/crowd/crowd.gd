@@ -148,7 +148,7 @@ var _atlas_held := false
 
 var _agents: Array[CrowdAgent] = []
 ## **The crowd as one set of things that charge the baby** (`CrowdSources`), handed to the world
-## this crowd walks (`WorldContext.excitement_sources`) and to the halo through it.
+## this crowd walks (`WorldContext.use_excitement_sources()`) and to the halo through it.
 var sources := CrowdSources.new(self)
 ## `_agents`' cars and its walkers, each in `_agents`' own order, sorted by `_sort_by_kind()` at
 ## the top of `_resolve_the_queues()` — the first thing every frame's traffic pass does — and read by
@@ -172,8 +172,8 @@ var _navigator: Navigator
 ## stationary body, and not by a precinct's posts, which the crowd walks between as it always does
 ## (it has no body, `CityMap.post_tiles()`).
 var _pushed := Mover.of(Mover.GROUND | Mover.TODAY)
-## Whom the crowd makes way for, bumps and strikes: handed in by whoever puts her into the city's world
-## (`use_player()`, `main._hand_the_crowd_her()`), none until then and in a rig that has none.
+## Whom the crowd makes way for, bumps and strikes: handed in once the world is live and she walks it
+## (`use_player()`, `WorldSimulation.meet_her()`), none until then and in a rig that has none.
 var _player: Stroller
 ## The signals the crowd reports on (`EventBus`'s script), preloaded so the bus it is handed has a
 ## type to be held as.
@@ -271,14 +271,14 @@ func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: 
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size_in_tiles())).get_center())
 
-## Hands the crowd the player it makes way for. Called whenever she is put into the city's world
-## (`main._hand_the_crowd_her()`); null takes her away.
+## Hands the crowd the player it makes way for. Called once the world is live and she walks it
+## (`WorldSimulation.meet_her()`); null takes her away.
 func use_player(player: Stroller) -> void:
 	_player = player
 
 ## Hands the crowd the bus it reports her bumps, a car's strike and a horn on. The game hands it
-## the `EventBus` autoload beside her (`main._hand_the_crowd_her()`), since all three are about
-## her.
+## the `EventBus` autoload as it stands the crowd (`SimulationBuilder`), before `setup()`; all three
+## reports are about her, so nothing is said before she is handed in.
 func use_bus(bus: _BUS) -> void:
 	_bus = bus
 

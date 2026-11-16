@@ -150,66 +150,37 @@ const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
 var map: CityMap
-## How everything that moves over `map` moves (`Navigator`), built once with the map and handed to
-## the event manager, the crowd and whatever else this city's world puts in motion — never fetched.
+## How everything that moves over `map` moves (`Navigator`): the map's own (`WorldMap.navigator()`),
+## held here for as long as the city stands, so the events, the crowd and whatever else moves over
+## the map share the one.
 var navigator: Navigator
-## Where something sent at her may start (`SpawnSiting`): built once with the map, against the
-## navigator, the events' view of her (`EventManager.visible_view()`) and the day's region
-## (`DayStreets.siting_region()`), and handed to the events and the resistance — never fetched.
-var spawn_siting: SpawnSiting
 ## Today's streets as dawn left them (`DayStreets`): the route tree, the region wall and doors, the
 ## closures and the region a siting reads. Made with the city, written only by the city's dawn
 ## (`_close_streets()`, `start_recipe_day()`), and handed to whoever asks (`streets()`).
 var _streets := DayStreets.new()
-## Where the city, its posters, its events and the day's closures write their own account for the
-## run log — set before `build()`, which hands it on; silent until then.
+## Where the city and the day's closures write their own account for the run log — set before
+## `build()`, which hands it on to the fronts; silent until then.
 var trace := RunTrace.new()
 
 # ------------------------------------------------- handed in before build() reads them ---
-## How this city draws and schedules itself, set by whoever builds it — `main`, from the run's
-## configuration — before `build()` hands each to the part it belongs to. The defaults are an
-## ordinary run's, which is what a test's own city gets.
+## How this city draws and schedules its own ground and scenery, set by whoever builds it — `main`,
+## from the run's configuration — before `build()` reads them. The defaults are an ordinary run's,
+## which is what a test's own city gets. What moves on the city is stood by `SimulationBuilder`, which
+## `main` hands its own settings.
 
 ## How a needed nearby ground region is scheduled (`--ground-mode`). See `SceneryGround.Mode`.
 var ground_mode := SceneryGround.Mode.ONE
 ## A scripted recipe's frame-locked playback. See `SceneryResidency.frame_locked`.
 var scenery_frame_locked := false
-## `--skip shadows`, `--skip events`, `--skip crowd` and `--skip motion`: what a frame reading
-## leaves out. See `DevFlags.skip_words()`.
+## `--skip shadows`: what a frame reading leaves out of the city's own drawing. See
+## `DevFlags.skip_words()`.
 var skip_shadows := false
-var skip_event_drawing := false
-var skip_crowd_drawing := false
-var skip_crowd_motion := false
-## What the crowd is handed of the screen (`CrowdView`) and of the frame record (`CrowdTiming`),
-## set by whoever builds the city (`main._new_city()`) before `build()` and handed on to the crowd
-## it makes: this layer names neither the viewport nor the telemetry. None for the view means a crowd
-## with no screen (always drawn); the timing is the null sink unless handed another.
-var crowd_view: CrowdView = null
-var crowd_timing := CrowdTiming.new()
-## Where the scenery queue and the events charge their time to the frame record, handed in by
-## whoever builds the city (`main`) before `build()`; the null sink until then.
+## Where the scenery queue charges its time to the frame record, handed in by whoever builds the
+## city (`main`) before `build()`; the null sink until then.
 var frame_timing := FrameTiming.new()
-## `--blackout`: the city counts as sabotaged. See `Blackout.forced`.
-var blackout_forced := false
-## Dark from its first frame, every power off — the escape's city, which is the same night as the
-## blackout (`DaySpec.dark_from_the_start`). Set before `build()`; see `Blackout`.
-var dark_from_the_start := false
-## `--pelican`: every cyclist is drawn as the pelican. See `EventSpawner.rolls_a_pelican()`.
-var all_cyclists_pelicans := false
-## `--force <id> [seconds]`: the one row the director hands out, and how often. See
-## `EventDirector.force()`.
-var forced_row := ""
-var forced_interval := 0.0
 ## The lights on the spine. Held here because both the traffic and the signal heads read it, and
 ## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
 var signals: TrafficSignals
-## The day's events on this city's streets (`EventManager`), built with the city: what the run flow,
-## the resistance and the observers ask about events here.
-var events: EventManager
-## The crowd on this city's streets (`Crowd`), built with the city.
-var crowd: Crowd
-## The last night's blackout, which puts out every window, light and mast at once. See `Blackout`.
-var _blackout: Blackout
 var _daylight: CanvasModulate
 var _act := 1
 ## Today's day number, read by `_paint_ground()` for the crack level `GroundTiles` picks —
@@ -230,9 +201,6 @@ var _props: Array[Node2D] = []
 var _closure_nodes: Array[Node] = []
 ## Fixed for the run — only their condition changes.
 var _buildings: Array[Building] = []
-## The posters on the fronts: which cells can carry one and what is pasted on them. Built once
-## with the buildings, pasted each dawn. See `PosterWalls`.
-var _posters: PosterWalls
 ## The run the city stands in, handed in rather than reached for through a global: what is
 ## pasted on the walls (`posters`), the scars and block arcs a lost day gives back
 ## (`attempt_spend`), whether the pram carries the package (`resistance`), and the seed and day
@@ -244,13 +212,10 @@ var run: RunState = null
 ## one the sitting holds, so every day's city composes from the same read. A city nobody handed one
 ## (a suite's) reads the file itself, once.
 var ground_recipe := GroundRecipe.new()
-## The torn posters' textures, composed once: `main._new_city()` hands the one it holds, so
-## every day's city draws the same fifteen. A city nobody handed one (a suite's) composes its own.
-var poster_art := PosterArt.new()
 ## The baked atlas pages this city and everything it builds draw from (`AtlasLibrary`):
 ## `main._new_city()` hands the sitting's, and the city hands it on to its buildings, props,
-## exits, lights, markers, ground, decals, crowd and events. A city nobody handed one (a suite's)
-## makes its own in `build()`.
+## exits, lights, markers, ground and decals. A city nobody handed one (a suite's) makes its own in
+## `build()`.
 var atlas: AtlasLibrary = null
 ## What the decals and every vent's turning rotor lay their pictures through (`SceneryDrawer`):
 ## the one drawer, handed to the decals and, inside the roof drawer, to every building.
@@ -358,12 +323,6 @@ func build(city_map: CityMap) -> void:
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
 	# or the wall draws over it.
 	_spawn_buildings()
-	# Right after the buildings, whose blank ground-floor cells are what it reads. See `PosterWalls`.
-	_posters = PosterWalls.new()
-	_posters.name = "Posters"
-	_posters.equip(trace, poster_art, atlas)
-	add_child(_posters)
-	_posters.setup(_buildings, map, run)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
 	# their geometry from this source as they become resident.
 	var shown_rects: Array[Rect2i] = []
@@ -384,38 +343,6 @@ func build(city_map: CityMap) -> void:
 		_spawn_the_edge_of_the_city()
 	signals = TrafficSignals.new(map)
 	_spawn_signal_heads()
-	events = EventManager.new()
-	events.name = "Events"
-	events.trace = trace
-	events.skip_drawing = skip_event_drawing
-	events.timing = frame_timing
-	events.atlas = atlas
-	if all_cyclists_pelicans:
-		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
-	add_child(events)
-	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, _streets.siting_region)
-	events.setup(map, _streets, signals, run, navigator, spawn_siting, _posters)
-	events.force(forced_row, forced_interval)
-	_posters.watch_events(events)
-	crowd = Crowd.new()
-	crowd.name = "Crowd"
-	crowd.skip_agent_drawing = skip_crowd_drawing
-	crowd.skip_motion = skip_crowd_motion
-	crowd.view = crowd_view
-	crowd.timing = crowd_timing
-	crowd.atlas = atlas
-	add_child(crowd)
-	crowd.setup(self, map, signals, _streets, navigator)
-	# A body placed on her walk that stands on a lane takes the car there away, where she cannot see.
-	events.use_body_listener(crowd.recycle_cars_on)
-	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
-	excitement_sources = [events.sources, crowd.sources]
-	_blackout = Blackout.new()
-	_blackout.name = "Blackout"
-	_blackout.forced = blackout_forced
-	_blackout.dark_from_the_start = dark_from_the_start
-	add_child(_blackout)
-	_blackout.setup(map, _buildings, signals, events, run.resistance)
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
 	add_child(_daylight)
@@ -1061,12 +988,10 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. The day's start
 	# runs it once more after the day's seals are planned — see `refresh_street_trees()`.
 	refresh_street_trees()
-	if spec.pastes_the_posters():
-		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
-		# off, and after `_dress_blocks()`, which is what says a front has burnt.
-		_posters.start_day(day, _streets.route_tree())
-	else:
-		_posters.show_only()
+	# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
+	# off, and after `_dress_blocks()`, which is what says a front has burnt: the walls paste on
+	# this word (`PosterWalls.dress_for()`).
+	day_dressed.emit(day, spec)
 	scenery.update(_home_scenery_view(), true)
 
 ## Everything a day does to the city before its streets are closed: the repaint, the door, the
@@ -1101,7 +1026,6 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 	if spec == null:
 		spec = DaySpec.for_day(day)
 	_dress(state, day)
-	_posters.show_only()
 	scenery.update(_home_scenery_view(), true)
 	var edges := map.witness_only()
 	var tree := RouteTree.for_day(map, day)
@@ -1114,7 +1038,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 		_spawn_closure(closure)
 	if map.has_stretch():
 		run.posters.pasted_through = maxi(run.posters.pasted_through, day)
-	_posters.start_day(day, tree)
+	day_dressed.emit(day, spec)
 
 ## The closed streets of the day `spec` describes. The whole street comes out of the network; the
 ## barriers stand at its two mouths, where they can be seen from the junction rather than found half
@@ -1205,10 +1129,6 @@ func buildings() -> Array[Building]:
 ## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
 ## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
 ## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
-## The posters on the fronts — see `PosterWalls`.
-func poster_walls() -> PosterWalls:
-	return _posters
-
 ## The lights on the spine (`TrafficSignals`), for whoever reads which junction shows red.
 func traffic_signals() -> TrafficSignals:
 	return signals

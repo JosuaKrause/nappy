@@ -32,6 +32,7 @@ var _streets: DayStreets
 var _crowd: Crowd
 var _dressing: CityDressing
 var _scene_city: City
+var _scene_simulation: WorldSimulation
 var _plan_rng: RandomNumberGenerator
 var _home_map: CityMap
 var _exits := {}
@@ -49,7 +50,8 @@ var _exits := {}
 ## streets or the crowd is missing: a half-city is a world nothing could walk.
 static func in_the_city(dressing: CityDressing, map: CityMap, streets: DayStreets, crowd: Crowd,
 		events: EventManager, player: Stroller, baby: Baby, start: Vector2, home_map: CityMap,
-		exits: Dictionary, facing := Vector2.DOWN, scene_city: City = null) -> DayWorld:
+		exits: Dictionary, facing := Vector2.DOWN, scene_city: City = null,
+		scene_simulation: WorldSimulation = null) -> DayWorld:
 	if dressing == null or map == null or streets == null or crowd == null:
 		return null
 	var world := DayWorld.new()
@@ -60,6 +62,7 @@ static func in_the_city(dressing: CityDressing, map: CityMap, streets: DayStreet
 	world._crowd = crowd
 	world._dressing = dressing
 	world._scene_city = scene_city
+	world._scene_simulation = scene_simulation
 	world._events = events
 	world._player = player
 	world._baby = baby
@@ -138,6 +141,12 @@ func dressing() -> CityDressing:
 ## in.
 func scene_city() -> City:
 	return _scene_city
+
+## The city's simulation whole, for an authored scene to install itself into beside the city
+## (`scene_city()`): its events, its crowd and its poster walls. Null in any world no authored scene
+## is played in.
+func scene_simulation() -> WorldSimulation:
+	return _scene_simulation
 
 ## The stream the walk is planned on when the world has one of its own, or null for the spec's own
 ## stream of the run (`DaySpec.events_stream()`).

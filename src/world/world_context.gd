@@ -49,7 +49,12 @@ func is_alley(_world_position: Vector2) -> bool:
 ## standing in this world first (`EventSources`), then the crowd on its streets where there is one
 ## (`CrowdSources`). Empty where nothing stands, as while the building is walked empty or in the
 ## debug world.
-var excitement_sources: Array[ExcitementSources] = []
+var _excitement_sources: Array[ExcitementSources] = []
+
+## Hands the world the sets of things that charge her in it, in the order their pairs are summed
+## (`SimulationBuilder`, as it stands the world's simulation).
+func use_excitement_sources(sets: Array[ExcitementSources]) -> void:
+	_excitement_sources = sets
 
 ## Every active source contributing at this point, as `[source, contribution]` pairs
 ## (`ExcitementSource`), so `Baby` can sum them for the meter and trace each point that lands on it
@@ -57,7 +62,7 @@ var excitement_sources: Array[ExcitementSources] = []
 ## concatenate, **unless she is inside a held door, where its toll is the whole answer**
 ## (`ExcitementSources.all_at()`, which states that rule once). Empty for a world with no sets.
 func excitement_sources_at(world_position: Vector2) -> Array:
-	return ExcitementSources.all_at(excitement_sources, world_position)
+	return ExcitementSources.all_at(_excitement_sources, world_position)
 
 # ------------------------------------------------------------ the draw layers ---
 # Not a question the baby asks: the world's own service to whatever it is handed to — an event

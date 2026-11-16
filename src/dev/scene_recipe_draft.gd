@@ -62,11 +62,11 @@ var _at_the_start := {}
 
 ## One tick of the walk: her tile, and the tile of a neighbor walking home (`neighbor`, or null).
 ## The first tick also takes the dawn's tiles and what stands in the world.
-func record(player: Node2D, city: City, neighbor: Node2D) -> void:
+func record(player: Node2D, city: City, events: EventManager, neighbor: Node2D) -> void:
 	if _dawn_tiles.is_empty():
 		_dawn_tiles = city.map.tiles.duplicate()
 		_context = RecipeCityContext.capture(city.map)
-		for instance in city.events.instances():
+		for instance in events.instances():
 			_at_the_start[city.map.world_to_tile(instance.global_position)] = true
 	_walked[city.map.world_to_tile(player.global_position)] = true
 	if neighbor:
@@ -75,7 +75,7 @@ func record(player: Node2D, city: City, neighbor: Node2D) -> void:
 ## The drafted recipe, built from `recipe` (the file as written, not `base_of()`'s copy) and the
 ## world `run` has left behind, `pinned` the places `setup.task` names. Fills `problems` with
 ## anything the draft could not place.
-func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
+func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start: Vector2,
 		pinned: Array[Vector2], problems: Array[String]) -> Dictionary:
 	var map := city.map
 	var day := run.header.day
@@ -135,7 +135,7 @@ func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
 	drafted["context"] = _context
 	var setup: Dictionary = drafted.get("setup", {})
 	setup["posters"] = _posters(run, map, ground)
-	setup["actors"] = _starting_crowd(run, city, ground, start, problems)
+	setup["actors"] = _starting_crowd(run, city, crowd, ground, start, problems)
 	# A route bag the author has already rigged is theirs: it is about what she meets, not about
 	# where the stretch runs, so drafting the stretch again keeps it.
 	if not setup.has("route_bag"):
@@ -227,7 +227,7 @@ static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 ## (`Tuning.VIEW_HALF_EXTENT` round `start`): a scene's first frame is not a car already bearing
 ## down on a pram that has not taken a step — the start of a played day is her doorstep, on a street
 ## no car is in yet.
-static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start: Vector2,
+static func _starting_crowd(run: RunState, city: City, crowd: Crowd, ground: Dictionary, start: Vector2,
 		problems: Array[String]) -> Array:
 	var map := city.map
 	var day := run.header.day
@@ -235,9 +235,9 @@ static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start
 	for tile: Vector2i in ground:
 		box = Rect2i(tile, Vector2i.ONE) if not box.has_area() else box.expand(tile).expand(tile + Vector2i.ONE)
 	var centre := map.tile_rect_to_world(box).get_center()
-	city.crowd.start_day(day, run.calendar.day_rng(day, "crowd"), centre, true)
+	crowd.start_day(day, run.calendar.day_rng(day, "crowd"), centre, true)
 	var found: Array[Dictionary] = []
-	for agent in city.crowd.agents():
+	for agent in crowd.agents():
 		if not ground.has(map.world_to_tile(agent.position)):
 			continue
 		var vertical: bool = agent.get("_vertical")
@@ -253,7 +253,7 @@ static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start
 				else ("east" if direction > 0.0 else "west"))
 		found.append({"kind": "car" if agent.kind == CrowdAgent.Kind.CAR else "walker",
 				"at": at, "direction": heading, "speed": snappedf(float(agent.get("_speed")), 0.0001)})
-	city.crowd.clear()
+	crowd.clear()
 	found.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 			return a.kind < b.kind or (a.kind == b.kind and (a.at.y < b.at.y
 			or (a.at.y == b.at.y and a.at.x < b.at.x))))
@@ -273,7 +273,7 @@ static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start
 		if entry.kind == "car" and view.has_point(at):
 			problems.append("left out a car at %s: it would start in her view" % at)
 			continue
-		var placed := city.crowd.add_recipe_actor(label,
+		var placed := crowd.add_recipe_actor(label,
 				CrowdAgent.Kind.CAR if entry.kind == "car" else CrowdAgent.Kind.WALKER, at,
 				SceneRecipeRuntime.DIRECTIONS[entry.direction], float(entry.speed),
 				hash("actor:%s" % label))

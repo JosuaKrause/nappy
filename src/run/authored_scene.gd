@@ -20,8 +20,8 @@ func lessons_learned() -> bool:
 ## day director stood and dressed for it, under `spec`, the walk its clock and HUD run on, over the
 ## clock already started (`DayDirector.start()`, in place of the plan, the resistance's day and her
 ## being put down). Returns the problems that kept the setup from standing, empty when it stands.
-func install(_city: City, _player: Stroller, _baby: Baby, _spec: DaySpec,
-		_resistance: ResistanceDirector = null) -> Array[String]:
+func install(_city: City, _simulation: WorldSimulation, _player: Stroller, _baby: Baby,
+		_spec: DaySpec, _resistance: ResistanceDirector = null) -> Array[String]:
 	return []
 
 ## The scene starts playing: called once the world stands and her own camera is the current one.

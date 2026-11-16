@@ -71,8 +71,9 @@ func run(t: TestRunner) -> void:
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.crowd_view = ScreenCrowdView.new(t)
-		RunCity.build(city, CityGenerator.generate(seed_value))
+		var builder := RunCity.new_builder()
+		builder.use_the_crowds_screen(ScreenCrowdView.new(t), CrowdTiming.new())
+		RunCity.build(city, CityGenerator.generate(seed_value), builder)
 		for day: int in [3, 12, 13]:
 			_a_day(t, city, seed_value, day)
 		RunCity.crowd(city)._player = null

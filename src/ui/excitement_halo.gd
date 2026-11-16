@@ -30,8 +30,8 @@ extends Node2D
 ## `set_expected_total_gross()`).
 ##
 ## **Its candidates are every source of the sets it is handed** (`ExcitementSources`, the world's
-## own `WorldContext.excitement_sources`): the events and the whole crowd in the city, the events
-## alone in the building.
+## own, `WorldContext.use_excitement_sources()`): the events and the whole crowd in the city, the
+## events alone in the building.
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
