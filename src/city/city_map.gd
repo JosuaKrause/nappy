@@ -138,9 +138,6 @@ var _absent_segments := {}
 ## care. This is for the things that do: the telemetry map's legend, and any test whose sentence is
 ## about zones.
 var _built_over := {}
-## Which of `_built_over` are **dead ends** — a street with one end walled — as a set of keys. The
-## rest belong to a big building, which took its street whole.
-var _dead_ends := {}
 ## The landmarks, each as the **pair of blocks** it joins. A big building builds over the one street
 ## between two neighbouring blocks and leaves every other street around them alone; a type that
 ## closes all four is a different type and does not exist yet. See
@@ -160,10 +157,6 @@ var _power_station_door_key := Vector3i(-1, -1, -1)
 ## wide, one deep, on the first sidewalk row of `_power_station_door_key`'s street. Where she stands
 ## to reach the door. See `power_station_door_position()`.
 var _power_station_door := Rect2i()
-## How many of the power station's two blocks were `INDUSTRIAL` before it was built over them — the
-## district preference it was placed under, kept because the blocks' own purpose becomes
-## `BIG_BUILDING` the moment the mass goes down and nothing else remembers what they were.
-var _power_station_industrial_blocks := 0
 
 ## How wide the power station's front door is, in tiles.
 const POWER_STATION_DOOR_TILES := 2
@@ -725,10 +718,6 @@ func record_built_over(key: Vector3i, rect: Rect2i) -> void:
 func forget_built_over(key: Vector3i) -> void:
 	_built_over.erase(key)
 
-## Records that the street `key` is a dead end (`_dead_ends`).
-func mark_dead_end(key: Vector3i) -> void:
-	_dead_ends[key] = true
-
 ## Plans `block`'s arc (`block_plans`).
 func plan_block(block: Vector2i, plan: BlockPlan) -> void:
 	block_plans[block] = plan
@@ -761,16 +750,13 @@ func add_big_building(pair: Rect2i) -> void:
 func drop_last_big_building() -> void:
 	big_buildings.pop_back()
 
-## Records the power station: the pair of blocks it stands over, the street its door opens onto, the
-## pavement tiles in front of the door, and how many of its blocks were industrial
-## (`power_station`, `_power_station_door_key`, `_power_station_door`,
-## `_power_station_industrial_blocks`).
-func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i,
-		industrial_blocks: int) -> void:
+## Records the power station: the pair of blocks it stands over, the street its door opens onto and
+## the pavement tiles in front of the door (`power_station`, `_power_station_door_key`,
+## `_power_station_door`).
+func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i) -> void:
 	power_station = pair
 	_power_station_door_key = door_key
 	_power_station_door = door_rect
-	_power_station_industrial_blocks = industrial_blocks
 
 ## A copy of the tile bytes, to put back with `restore_tiles()` (`tiles`).
 func tiles_snapshot() -> PackedByteArray:
@@ -913,12 +899,10 @@ func copy() -> CityMap:
 	twin._zone_anchor = _zone_anchor.duplicate()
 	twin._absent_segments = _absent_segments.duplicate()
 	twin._built_over = _built_over.duplicate()
-	twin._dead_ends = _dead_ends.duplicate()
 	twin.big_buildings = big_buildings.duplicate()
 	twin.power_station = power_station
 	twin._power_station_door_key = _power_station_door_key
 	twin._power_station_door = _power_station_door
-	twin._power_station_industrial_blocks = _power_station_industrial_blocks
 	twin.region_of_junction = region_of_junction.duplicate()
 	twin.region_has_calm = region_has_calm.duplicate()
 	twin.boundary_wall_at_a = boundary_wall_at_a.duplicate()
@@ -954,7 +938,7 @@ func copy() -> CityMap:
 ## - `size` (`Vector2i`), `seed` and `main_road` (`int`);
 ## - the home, `home_block` (`Vector2i`) and `home_rect` (`Rect2i`);
 ## - the power station, `power_station` and `power_station_door` (`Rect2i`),
-##   `power_station_door_key` (`Vector3i`) and `power_station_industrial_blocks` (`int`);
+##   and `power_station_door_key` (`Vector3i`);
 ## - the ground, `tiles` (`PackedByteArray`, one byte per tile);
 ## - the lots, `building_rects`, `big_buildings`, `alley_rects`, `square_rects` and
 ##   `courtyard_rects`, and the multi-block lots, `zones`, each the rect of blocks it spans (each
@@ -962,8 +946,8 @@ func copy() -> CityMap:
 ## - each anchor block's arc, `block_plans` (block -> `BlockPlan`), and its carves,
 ##   `block_layouts` (block -> `BlockLayout.capture()`);
 ## - the precincts, `precincts` (`Array[Vector4i]`);
-## - the streets the lattice lacks, `absent_segments` and `dead_ends` (`Array[Vector3i]`), and
-##   `built_over` (segment key -> `Rect2i`);
+## - the streets the lattice lacks, `absent_segments` (`Array[Vector3i]`), and `built_over`
+##   (segment key -> `Rect2i`);
 ## - the regions, `region_of_junction` (`PackedInt32Array`), `region_has_calm`
 ##   (`PackedByteArray`) and `boundary_wall_at_a` (segment key -> `bool`);
 ## - the street trees where they stand, `trees` (`Array[Vector2i]`, `StreetTrees.planted()`'s
@@ -984,8 +968,6 @@ func capture() -> Dictionary:
 		zones.append(zone_rects[anchor])
 	var absent: Array[Vector3i] = []
 	absent.assign(_absent_segments.keys())
-	var walled: Array[Vector3i] = []
-	walled.assign(_dead_ends.keys())
 	var trees: Array[Vector2i] = []
 	for tree in StreetTrees.planted(self):
 		trees.append(tree.tile)
@@ -993,12 +975,11 @@ func capture() -> Dictionary:
 			"home_rect": home_rect, "power_station": power_station,
 			"power_station_door": _power_station_door,
 			"power_station_door_key": _power_station_door_key,
-			"power_station_industrial_blocks": _power_station_industrial_blocks,
 			"tiles": tiles.duplicate(), "building_rects": building_rects.duplicate(),
 			"big_buildings": big_buildings.duplicate(), "alley_rects": alley_rects.duplicate(),
 			"square_rects": square_rects.duplicate(), "courtyard_rects": courtyard_rects.duplicate(),
 			"zones": zones, "block_plans": plans, "block_layouts": layouts,
-			"precincts": precinct_spans.duplicate(), "absent_segments": absent, "dead_ends": walled,
+			"precincts": precinct_spans.duplicate(), "absent_segments": absent,
 			"built_over": _built_over.duplicate(), "region_of_junction": region_of_junction.duplicate(),
 			"region_has_calm": region_has_calm.duplicate(),
 			"boundary_wall_at_a": boundary_wall_at_a.duplicate(), "trees": trees}
@@ -1016,7 +997,6 @@ static func restored(facts: Dictionary) -> CityMap:
 	map.power_station = facts["power_station"]
 	map._power_station_door = facts["power_station_door"]
 	map._power_station_door_key = facts["power_station_door_key"]
-	map._power_station_industrial_blocks = facts["power_station_industrial_blocks"]
 	map.tiles = (facts["tiles"] as PackedByteArray).duplicate()
 	# Assigned into the typed arrays: an untyped `Array` put in an `Array[T]` field is dropped.
 	map.building_rects.assign(facts["building_rects"])
@@ -1040,9 +1020,6 @@ static func restored(facts: Dictionary) -> CityMap:
 	var absent: Array = facts["absent_segments"]
 	for key: Vector3i in absent:
 		map._absent_segments[key] = true
-	var walled: Array = facts["dead_ends"]
-	for key: Vector3i in walled:
-		map._dead_ends[key] = true
 	map._built_over = (facts["built_over"] as Dictionary).duplicate()
 	map.boundary_wall_at_a = (facts["boundary_wall_at_a"] as Dictionary).duplicate()
 	map.region_of_junction = (facts["region_of_junction"] as PackedInt32Array).duplicate()

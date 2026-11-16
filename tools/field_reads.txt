@@ -627,7 +627,6 @@ src/routes/seal_planner.gd obstructs_radius
 src/routes/seal_planner.gd pavement_side
 src/routes/seal_planner.gd shape
 src/routes/seal_planner.gd solid_parts
-src/ui/danger_edge.gd speed
 
 # [EventFlock] src/events/behaviours/event_flock.gd
 src/events/event_instance.gd birds
@@ -892,9 +891,6 @@ src/main.gd timing
 src/events/encounter_watch.gd landed_ever
 src/events/event_spawner.gd on_first_landing
 
-# [FrameGraph] src/ui/frame_graph.gd
-src/dev/debug_readout.gd text_colour
-
 # [GameSave] src/autoload/game_save.gd
 src/main.gd trace
 
@@ -916,11 +912,6 @@ src/events/walk_ground.gd radius
 src/resistance/resistance_director.gd half_length
 src/resistance/resistance_director.gd radius
 
-# [HomeArrow] src/ui/home_arrow.gd
-src/ui/hud.gd colour
-src/ui/hud.gd label_when_near
-src/ui/hud.gd rotated
-
 # [HuntSpec] src/events/hunt_spec.gd
 src/events/event_def.gd ends_the_day
 src/events/event_def.gd lets_out
@@ -941,13 +932,6 @@ src/run/day_director.gd kind
 # [MarbleBag] src/city/marble_bag.gd
 src/events/event_scheduler.gd drawn
 src/events/event_spawner.gd drawn
-
-# [MeterBar] src/ui/meter_bar.gd
-src/ui/hud.gd fill_colour
-src/ui/hud.gd full_colour
-src/ui/hud.gd label
-src/ui/hud.gd markers
-src/ui/hud.gd value
 
 # [MoveProposal] src/world/move_proposal.gd
 src/events/event_instance.gd open
