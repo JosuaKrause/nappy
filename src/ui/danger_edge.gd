@@ -210,7 +210,6 @@ static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	subject.payload = def
 	subject.announces = def.announces_its_coming(Tuning.WALK_SPEED)
 	subject.approach_speed = def.approach_speed()
-	subject.speed = def.speed
 	subject.heard_within = def.heard_within()
 	return subject
 
