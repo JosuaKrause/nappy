@@ -1549,7 +1549,7 @@ func _test_the_finale_city_grows_no_corridor(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	var run := city.run
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
+	RunCity.build(city, MapCache.of(SEEDS[0]))
 	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(run.attempt_spend.city_state, 1, run.calendar.day_rng(1, "closures"), spec)
@@ -1578,7 +1578,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 	var city := Boot.city(main)
 	# *"No regular cars or regular people on the street"*: a crowd the start had started would be a
 	# day's, hundreds strong.
-	t.check(city.crowd.agent_count() == 0, "the escape's city, started as its spec says, has nobody in it")
+	t.check(RunCity.crowd(city).agent_count() == 0, "the escape's city, started as its spec says, has nobody in it")
 	var day := escape.run.header.day
 	var corridor := Corridor.of(RouteTree.for_day(city.map, day))
 	var plan := FinalePlanner.route(city.map)
@@ -1664,17 +1664,17 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	# was, through the row's `aftermath.on_finish`.
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
-	city.events.stream_radius = INF
+	RunCity.build(city, MapCache.of(SEEDS[0]))
+	RunCity.events(city).stream_radius = INF
 	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
 	var plans: Array[EventPlan] = [
 		EventPlan.new(burst, city.map.tile_to_world(road))]
-	GivenPlanner.hand_in(city.events, plans)
+	GivenPlanner.hand_in(RunCity.events(city), plans)
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
+	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 			RandomNumberGenerator.new(), none)
-	t.check(city.events.instances().size() == 1, "the burst is in the world")
-	var live := city.events.instances()[0]
+	t.check(RunCity.events(city).instances().size() == 1, "the burst is in the world")
+	var live := RunCity.events(city).instances()[0]
 	var steps := 0
 	while not live.is_finished and steps < 400:
 		live.step(0.05)
@@ -1685,7 +1685,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
 	var craters := 0
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id == crater.id:
 			craters += 1
 			t.check(instance.is_solid(), "and the crater it left is solid")
@@ -1841,7 +1841,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t: TestRunner) -> v
 	EventBus.day_ended.connect(on_ended)
 	var her := Boot.player(main)
 	var city := Boot.city(main)
-	var guard := city.events.spawn_extra(EventCatalogue.by_id("masked_pursuer"), her.global_position,
+	var guard := RunCity.events(city).spawn_extra(EventCatalogue.by_id("masked_pursuer"), her.global_position,
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
 	guard.set_process(false)
 	guard.resume(0.01, 0.0, 0.0)
@@ -1992,16 +1992,16 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
+	RunCity.build(city, MapCache.of(SEEDS[0]))
 	city.run.header.day = an_act_iv_day
-	GivenPlanner.hand_in(city.events, [] as Array[EventPlan])
+	GivenPlanner.hand_in(RunCity.events(city), [] as Array[EventPlan])
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
+	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 			RandomNumberGenerator.new(), none)
 	EventBus.return_phase_started.emit()
-	t.check(city.events.owed_ahead() == 0,
+	t.check(RunCity.events(city).owed_ahead() == 0,
 			"and the escape owes nothing to a return it does not have (got %d)"
-					% city.events.owed_ahead())
+					% RunCity.events(city).owed_ahead())
 	city.free()
 
 ## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
@@ -2012,7 +2012,7 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
 	var an_act_iv_day := 13
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
-	city.build(MapCache.of(SEEDS[0]))
+	RunCity.build(city, MapCache.of(SEEDS[0]))
 	city.run.header.day = an_act_iv_day
 	var owed := {}
 	for owes: bool in [true, false]:
@@ -2020,10 +2020,10 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
 		spec.owes_a_return = owes
 		var consumed: Array[String] = []
 		RigStreets.begin(city.streets(), city.map, spec)
-		city.events.start_day(spec, city.run.calendar.day_rng(an_act_iv_day), consumed)
-		var before := city.events.owed_ahead()
+		RunCity.events(city).start_day(spec, city.run.calendar.day_rng(an_act_iv_day), consumed)
+		var before := RunCity.events(city).owed_ahead()
 		EventBus.return_phase_started.emit()
-		owed[owes] = city.events.owed_ahead() - before
+		owed[owes] = RunCity.events(city).owed_ahead() - before
 	t.check(int(owed[true]) > 0, "a day's spec owes its return rows (%d)" % owed[true])
 	t.check(int(owed[false]) == 0,
 			"and a spec that owes none is owed none on the same day (%d)" % owed[false])

@@ -56,7 +56,7 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 	for seed_value in SEEDS:
 		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		var director: ResistanceDirector = FallbackDirector.new() if fallback \
 				else ResistanceDirector.new()
 		var player := _start_the_day(t, city, director, seed_value)
@@ -67,10 +67,10 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 			continue
 		var mark_at := director.contact_position()
 		player.global_position = mark_at
-		city.events.visible_view().look(Rect2(player.global_position - Tuning.VIEW_HALF_EXTENT,
+		RunCity.events(city).visible_view().look(Rect2(player.global_position - Tuning.VIEW_HALF_EXTENT,
 				Tuning.VIEW_HALF_EXTENT * 2.0), null)
-		director.set_sight(city.events.sees)
-		var plans_before := city.events.plans().size()
+		director.set_sight(RunCity.events(city).sees)
+		var plans_before := RunCity.events(city).plans().size()
 		var started := Time.get_ticks_usec()
 		director.contact().complete_now()
 		reading.append((Time.get_ticks_usec() - started) / 1000.0)
@@ -81,8 +81,8 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 			_tear_down(player, director, city)
 			continue
 		tasks += 1
-		var newest: EventPlan = city.events.plans().back()
-		var by_rules: bool = city.events.plans().size() > plans_before and newest.live == own
+		var newest: EventPlan = RunCity.events(city).plans().back()
+		var by_rules: bool = RunCity.events(city).plans().size() > plans_before and newest.live == own
 		if by_rules:
 			placed_by_rules += 1
 		var distance := own.body_position().distance_to(mark_at)
@@ -129,11 +129,11 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -141,7 +141,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	player.add_child(camera)
 	t.add_child(player)
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	director.use_player(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()

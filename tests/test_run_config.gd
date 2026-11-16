@@ -295,7 +295,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	city.blackout_forced = true
 	city.all_cyclists_pelicans = true
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED))
 	# The shadow layer is the scene's own child, found by the name the scene gives it. What it draws
 	# is read off a recording drawer handed to it the way the city hands its own, every chunk it
 	# stands asked to draw again: under `--skip shadows` none draws a tile.
@@ -310,10 +310,10 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 	t.check(city.scenery_ground.mode() == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
 			and chunks > 0 and shade.draws.is_empty(), "the ground, the scenery and the shadows")
-	t.check(city.events.skip_drawing
-			and city.events.pelican_rig == EventSpawner.PelicanRig.ALWAYS,
+	t.check(RunCity.events(city).skip_drawing
+			and RunCity.events(city).pelican_rig == EventSpawner.PelicanRig.ALWAYS,
 			"the events")
-	t.check(city.crowd.skip_motion and city.crowd.skip_agent_drawing, "the crowd")
+	t.check(RunCity.crowd(city).skip_motion and RunCity.crowd(city).skip_agent_drawing, "the crowd")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
 	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
 	var she := Stroller.new()
@@ -328,8 +328,8 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	t.check(not city.signals.powered, "and the blackout, which puts the lights out with no sabotage done")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
-	city.crowd.start_day(1, rng)
-	var agents := city.crowd.agents()
+	RunCity.crowd(city).start_day(1, rng)
+	var agents := RunCity.crowd(city).agents()
 	var at: Array[Vector2] = []
 	for agent in agents:
 		at.append(agent.global_position)
@@ -345,7 +345,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	t.check(moved == 0, "and the crowd's physics frames under its skip_motion move none of them (%d moved)" % moved)
 	# The control: the same crowd without the flags does move and draw on the same frames, so the
 	# frames above really ran the crowd and would have drawn it.
-	city.crowd.skip_motion = false
+	RunCity.crowd(city).skip_motion = false
 	for agent in agents:
 		agent.skip_drawing(false)
 		agent.queue_redraw()
@@ -372,8 +372,8 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	city.forced_row = "cyclist"
 	city.forced_interval = FORCED_INTERVAL
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
-	city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.build(city, MapCache.of(SEED))
+	RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var her := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -382,23 +382,23 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	her.add_child(camera)
 	t.add_child(her)
 	her.set_physics_process(false)
-	city.events.use_player(her)
+	RunCity.events(city).use_player(her)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var consumed: Array[String] = []
 	var spec := DaySpec.for_day(1)
 	RigStreets.begin(city.streets(), city.map, spec)
-	city.events.start_day(spec, rng, consumed)
+	RunCity.events(city).start_day(spec, rng, consumed)
 	var start := CrowdLanes.arterial_pavement(city.map)
 	start.y = city.map.world_size().y * 0.5
 	her.global_position = start
 	var step := 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var seen := {"first": INF}
 	var each := func(n: int) -> void:
 		her.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 		her.global_position += her.velocity * step
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			if instance.def.id == "cyclist" and not before.has(instance) \
 					and seen["first"] == INF:
 				seen["first"] = n * step

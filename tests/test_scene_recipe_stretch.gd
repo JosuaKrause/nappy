@@ -81,7 +81,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.run = own_run
 	viewport.add_child(city)
-	city.build(CityGenerator.generate(4242))
+	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
 	own_run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, 3)
@@ -290,7 +290,7 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 				"authored ground survives dawn repaint")
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		city.start_day(state, 7, RandomNumberGenerator.new(),
 				DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
@@ -340,7 +340,7 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: D
 	if _diagnostics(built).is_empty():
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(built.map)
+		RunCity.build(city, built.map)
 		var back: Building = null
 		var front: Building = null
 		for building: Building in city.buildings():
@@ -378,7 +378,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 	if _diagnostics(built).is_empty():
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(built.map)
+		RunCity.build(city, built.map)
 		var tint_source: Building = null
 		var visible_sibling: Building = null
 		for building: Building in city.buildings():
@@ -448,7 +448,7 @@ func _test_the_draft_takes_whole_streets(t: TestRunner, data: Dictionary) -> voi
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(witness)
+	RunCity.build(city, witness)
 	var segment := witness.network.by_key(Vector3i(5, 5, 1))
 	var drafted := _drafted(t, city, data, [Vector2i(segment.tile_rect().get_center())], [])
 	var ground := _listed(drafted)
@@ -548,7 +548,7 @@ func _test_the_route_bag(t: TestRunner, map: CityMap, data: Dictionary) -> void:
 func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	t.check(city.buildings().size() == map.stretch_building_lots().size(),
 			"only the recipe's buildings stand (%d)" % city.buildings().size())
 	var edge := city.get_node_or_null("VoidEdge")

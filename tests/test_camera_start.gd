@@ -5,7 +5,7 @@ extends RefCounted
 ## unless something else is already current and looking at the doorstep by then.
 ##
 ## **Only a real boot of `scenes/main.tscn` reaches the frame that matters.** No hand-built rig
-## gets there: the gap is between `_city.build()` and `_player` existing at all, which is inside
+## gets there: the gap is between `City.build()` and `_player` existing at all, which is inside
 ## `main._ready()` itself, either side of `await _warm_the_pictures()`.
 ##
 ## `t.add_child(main)` runs `_ready()` synchronously up to its first suspension, the canvas warm-up
@@ -17,7 +17,7 @@ extends RefCounted
 ##
 ## **This suite boots `main` and keeps the real city, player, camera and screens, for a stated reason**:
 ## its subject is `main`'s own boot, the order it builds the boot camera, the city, the title and her in
-## (the frame between `_city.build()` and `_player` existing), and the one thing no stand-in can hold is
+## (the frame between `City.build()` and `_player` existing), and the one thing no stand-in can hold is
 ## that order. The city comes from the cache of generated maps (`tests/city_map_cache.gd`) and is not
 ## generated for the boot. It is `main`'s composition, which `tests/test_main.gd` also holds.
 

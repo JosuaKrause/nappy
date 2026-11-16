@@ -41,7 +41,7 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
+			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 
 			var director := _director(t)

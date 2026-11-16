@@ -49,7 +49,7 @@ func run(t: TestRunner) -> void:
 		var map := CityGenerator.generate(city_seed)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		for day: int in DAYS:
 			_one_day(city, map, city_seed, day)
 		city.free()
@@ -65,9 +65,9 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m156-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events, consumed)
 
-	var bodies := _bodies(map, city.events.plans())
+	var bodies := _bodies(map, RunCity.events(city).plans())
 	var owner_of := {}
 	for index in bodies.size():
 		var body: Dictionary = bodies[index]
@@ -83,13 +83,13 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var at := map.doorstep_world_position()
 	var crowd_rng := RandomNumberGenerator.new()
 	crowd_rng.seed = hash("m156-crowd:%d:%d" % [city_seed, day])
-	city.crowd.start_day(day, crowd_rng, at)
-	city.crowd.set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).start_day(day, crowd_rng, at)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
 
 	for frame in int(round(SECONDS / STEP)):
-		city.crowd.set_focus(at)
-		city.crowd.step(STEP)
-		for agent: CrowdAgent in city.crowd.agents():
+		RunCity.crowd(city).set_focus(at)
+		RunCity.crowd(city).step(STEP)
+		for agent: CrowdAgent in RunCity.crowd(city).agents():
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
 			if agent._blocked_in > CrowdAgent.LOOKAHEAD_TILES:

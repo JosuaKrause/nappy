@@ -41,11 +41,11 @@ func run(t: TestRunner) -> void:
 		var player: Stroller = read[2]
 		var where := _where_a_mast_may_stand(suite._city)
 		var at_the_mark := {}
-		for plan in suite._city.events.plans():
+		for plan in RunCity.events(suite._city).plans():
 			if plan.mast_id != "":
 				at_the_mark[plan.mast_id] = true
 		var result: String = suite._walk_until_the_route_mast(at_the_mark, player)
-		var siting: EventScheduler.WalkSiting = suite._city.events.ahead._siting
+		var siting: EventScheduler.WalkSiting = RunCity.events(suite._city).ahead._siting
 		var waits: Dictionary = siting.waits if siting else {}
 		print("  seed %10d  %-6s  tree tiles %s  passing %s" % [seed_value,
 				"PUT" if result != "" else "never", where[0], where[1]])
@@ -62,7 +62,7 @@ func run(t: TestRunner) -> void:
 ## `[counts by the first rule that refuses a tile, the tiles no rule refuses]`, over every tile of
 ## the routed mast's ground on the day's route tree. See the file's own doc.
 static func _where_a_mast_may_stand(city: City) -> Array:
-	var events: EventManager = city.events
+	var events: EventManager = RunCity.events(city)
 	var siting: EventScheduler.WalkSiting = events.ahead._siting
 	var def: EventDef = events.ahead._director.route_row(EventCatalogue.mast().id)
 	var map: CityMap = city.map

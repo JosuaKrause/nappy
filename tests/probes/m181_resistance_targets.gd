@@ -42,18 +42,18 @@ func run(t: TestRunner) -> void:
 	for seed_value in seeds:
 		var city: City = RunCity.in_run(CITY_SCENE, own_run)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:
 			var state := CityState.new()
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-					city.spawn_siting)
+			director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+					RunCity.spawn_siting(city))
 			var step: ResistanceSteps.Step = _step_for(day)
 			var candidates := _candidates(city, day)
 			var region_plan := city.streets().region_plan()
@@ -61,7 +61,7 @@ func run(t: TestRunner) -> void:
 			var door_bodies: Array[EventPlan] = \
 					region_plan.door_bodies if region_plan else []
 			var blockers: Array[EventPlan] = []
-			for plan in city.events.plans():
+			for plan in RunCity.events(city).plans():
 				if not plan.is_placed() or plan in door_bodies:
 					continue
 				if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:

@@ -56,7 +56,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day in _listed("PROBE_DAYS", DAYS):
 			_a_day(t, city, seed_value, day)
 		city.free()
@@ -86,7 +86,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	city.run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -97,14 +97,14 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	player.set_physics_process(false)
 	player.add_to_group("player")
 	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.use_player(player)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	_trace.clear()
@@ -144,8 +144,8 @@ func _a_row(city: City, player: Stroller, def: EventDef, spot: Vector2, mode: St
 	var at := her + Vector2(OFFSET, 0.0)
 	if not city.map.is_walkable(city.map.world_to_tile(at)):
 		at = her + Vector2(0.0, OFFSET)
-	var before := city.events.instances().duplicate()
-	var made := city.events.spawn_extra(def, at)
+	var before := RunCity.events(city).instances().duplicate()
+	var made := RunCity.events(city).spawn_extra(def, at)
 	if made == null:
 		_print("%s not made" % label)
 		return
@@ -177,7 +177,7 @@ func _the_trap(city: City, director: ResistanceDirector, player: Stroller,
 	if not city.map.is_walkable(city.map.world_to_tile(her)):
 		her += Vector2(0.0, Tuning.TILE_SIZE)
 	_stand(city, player, her)
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	if day == 13:
 		director._set_the_task_guard_on_her()
 	elif ResistanceDirector._sets_a_trap_on_her(task):
@@ -185,7 +185,7 @@ func _the_trap(city: City, director: ResistanceDirector, player: Stroller,
 	else:
 		_print("%s trap none" % label)
 		return
-	var sent := city.events.pending_warnings().size()
+	var sent := RunCity.events(city).pending_warnings().size()
 	# Day 13's task guard is in the world already when he is set on her: followed with what comes.
 	var known: Array = []
 	# Read as a Variant: an instance may be freed by now (the validity test), and a typed loop
@@ -198,7 +198,7 @@ func _the_trap(city: City, director: ResistanceDirector, player: Stroller,
 			known.append(instance)
 	var run := Run.new(known)
 	for tick in TICKS + 300:
-		city.events.warnings.run(STEP, her)
+		RunCity.events(city).warnings.run(STEP, her)
 		_tick(city)
 		run.observe(city, her, tick)
 	_print("%s trap warnings %d %s | %s" % [label, sent, run.report(), " / ".join(_trace)])
@@ -214,22 +214,22 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var her := [swing]
 	var camera := Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	_stand(city, player, swing)
-	city.events.visible_view().look(camera, null)
+	RunCity.events(city).visible_view().look(camera, null)
 	happenings.tick(STEP, swing, Vector2.ZERO)
 	var park := CityGenerator.swing_park(city.map)
 	happenings.cordon.clear()
 	var area := city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map, park))
-	var before := city.events.instances().duplicate()
-	var busker := city.events.spawn_extra(EventCatalogue.by_id("busker"),
+	var before := RunCity.events(city).instances().duplicate()
+	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"),
 			area.position + area.size * Vector2(0.25, 0.3))
-	var cordon := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas, park,
-			city.spawn_siting, city.events.walk_events().reach().shut())
+	var cordon := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas, park,
+			RunCity.spawn_siting(city), RunCity.events(city).walk_events().reach().shut())
 	var run := Run.new(before)
 	var chain := HashingContext.new()
 	chain.start(HashingContext.HASH_SHA256)
 	for tick in CORDON_TICKS:
 		_tick(city)
-		city.events.visible_view().look(camera, null)
+		RunCity.events(city).visible_view().look(camera, null)
 		cordon.tick(STEP, swing)
 		run.observe(city, swing, tick)
 		var line := "%d" % tick
@@ -251,14 +251,14 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		label: String) -> void:
 	var her := city.map.doorstep_world_position()
 	_stand(city, player, her)
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var happenings: ResistanceHappenings = director._happenings
 	if happenings._send_the_column(her) == null:
 		_print("%s column none" % label)
 		return
 	var run := Run.new(before)
 	for tick in TICKS * 2:
-		city.events.warnings.run(STEP, her)
+		RunCity.events(city).warnings.run(STEP, her)
 		_tick(city)
 		run.observe(city, her, tick)
 	_print("%s column trucks %d %s" % [label, happenings.column.size(), run.report()])
@@ -267,7 +267,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 ## The movers' half of the event manager's tick (`EventManager._tick_the_events()`), without the
 ## streaming and the siting, so only what the probe made moves.
 func _tick(city: City) -> void:
-	var events := city.events
+	var events := RunCity.events(city)
 	events._tell_them_where_she_is()
 	if _running:
 		var where := events.world.where_she_is()
@@ -280,15 +280,15 @@ func _tick(city: City) -> void:
 func _take_out(city: City, before: Array) -> void:
 	# Each element is read as a Variant: one may be freed by the time it is reached (the
 	# validity test), and a typed loop variable fails on a freed instance.
-	for item: Variant in city.events.instances().duplicate():
+	for item: Variant in RunCity.events(city).instances().duplicate():
 		if not before.has(item) and is_instance_valid(item):
-			city.events.retire(item as EventInstance)
-	city.events.streaming.retire_finished()
+			RunCity.events(city).retire(item as EventInstance)
+	RunCity.events(city).streaming.retire_finished()
 
 ## Stands her at `at`, the day's view looked through about her as the camera would.
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order, off the home block.
@@ -331,7 +331,7 @@ class Run extends RefCounted:
 		_chain.start(HashingContext.HASH_SHA256)
 
 	func observe(city: City, her: Vector2, tick: int) -> void:
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			if _before.has(instance) or _seen.has(instance):
 				continue
 			_seen.append(instance)

@@ -72,10 +72,10 @@ func run(t: TestRunner) -> void:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.crowd_view = ScreenCrowdView.new(t)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day: int in [3, 12, 13]:
 			_a_day(t, city, seed_value, day)
-		city.crowd._player = null
+		RunCity.crowd(city)._player = null
 		city.free()
 	t.check(_lines > 0, "there were runs to print (%d)" % _lines)
 
@@ -101,7 +101,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	city.run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -113,14 +113,14 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	player.set_process(false)
 	player.add_to_group("player")
 	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.use_player(player)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := {"seed": seed_value, "day": day}
 	if day == 3:
@@ -149,10 +149,10 @@ func _a_row(city: City, player: Stroller, def: EventDef, spot: Vector2, label: D
 	var at := her + Vector2(OFFSET, 0.0)
 	if not city.map.is_walkable(city.map.world_to_tile(at)):
 		at = her + Vector2(0.0, OFFSET)
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var made := city.events.spawn_extra(def, at)
+	var made := RunCity.events(city).spawn_extra(def, at)
 	if made == null:
 		_take_out(city, before)
 		return
@@ -180,18 +180,18 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var her := [swing]
 	var camera := Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	_stand(city, player, swing)
-	city.events.visible_view().look(camera, null)
+	RunCity.events(city).visible_view().look(camera, null)
 	happenings.tick(STEP, swing, Vector2.ZERO)
 	var park := CityGenerator.swing_park(city.map)
 	happenings.cordon.clear()
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var cordon := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas, park,
-			city.spawn_siting, city.events.walk_events().reach().shut())
+	var cordon := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas, park,
+			RunCity.spawn_siting(city), RunCity.events(city).walk_events().reach().shut())
 	for tick in CORDON_TICKS:
 		_tick_events(city)
-		city.events.visible_view().look(camera, null)
+		RunCity.events(city).visible_view().look(camera, null)
 		cordon.tick(STEP, swing)
 		meeting.tick_the_crowd()
 		meeting.observe(before, cordon._officers)
@@ -204,7 +204,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		label: Dictionary) -> void:
 	var her := city.map.doorstep_world_position()
 	_stand(city, player, her)
-	var before := city.events.instances().duplicate()
+	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
 	var happenings: ResistanceHappenings = director._happenings
@@ -212,7 +212,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 		_take_out(city, before)
 		return
 	for tick in TICKS * 2:
-		city.events.warnings.run(STEP, her)
+		RunCity.events(city).warnings.run(STEP, her)
 		_tick_events(city)
 		meeting.tick_the_crowd()
 		meeting.observe(before, [])
@@ -222,7 +222,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 ## The movers' half of the event manager's tick, without the streaming and the siting, so only what
 ## the probe made moves.
 func _tick_events(city: City) -> void:
-	var events := city.events
+	var events := RunCity.events(city)
 	events._tell_them_where_she_is()
 	events._step_them(STEP)
 	events.ahead.let_the_officers_out()
@@ -231,14 +231,14 @@ func _tick_events(city: City) -> void:
 func _take_out(city: City, before: Array) -> void:
 	# Each element is read as a Variant: one may be freed by the time it is reached (the
 	# validity test), and a typed loop variable fails on a freed instance.
-	for item: Variant in city.events.instances().duplicate():
+	for item: Variant in RunCity.events(city).instances().duplicate():
 		if not before.has(item) and is_instance_valid(item):
-			city.events.retire(item as EventInstance)
-	city.events.streaming.retire_finished()
+			RunCity.events(city).retire(item as EventInstance)
+	RunCity.events(city).streaming.retire_finished()
 
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order, off the home block.
@@ -312,14 +312,14 @@ class Meeting extends RefCounted:
 	func start_the_crowd(player: Stroller) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("crowd-yields:%s" % JSON.stringify(_label))
-		_city.crowd.start_day(int(_label.day), rng, player.global_position)
-		_city.crowd.set_gates(_city.streets().region_plan().gates)
-		_city.crowd._player = player
-		_city.crowd.use_bus(EventBus)
+		RunCity.crowd(_city).start_day(int(_label.day), rng, player.global_position)
+		RunCity.crowd(_city).set_gates(_city.streets().region_plan().gates)
+		RunCity.crowd(_city)._player = player
+		RunCity.crowd(_city).use_bus(EventBus)
 
 	func tick_the_crowd() -> void:
 		var started := Time.get_ticks_usec()
-		_city.crowd._physics_process(STEP)
+		RunCity.crowd(_city)._physics_process(STEP)
 		_crowd_usec += Time.get_ticks_usec() - started
 
 	## Counts this tick: `before` is the instances standing before the run began, `officers` the
@@ -327,7 +327,7 @@ class Meeting extends RefCounted:
 	func observe(before: Array, officers: Array) -> void:
 		_ticks += 1
 		var line := "%d" % _ticks
-		for instance in _city.events.instances():
+		for instance in RunCity.events(_city).instances():
 			if before.has(instance) or not is_instance_valid(instance):
 				continue
 			line += "|%s:%s,%s,%d" % [instance.def.id, var_to_str(instance.position.x),
@@ -363,7 +363,7 @@ class Meeting extends RefCounted:
 				figures.append(move)
 		_most_figures = maxi(_most_figures, figures.size())
 		var now := {}
-		for agent in _city.crowd.agents():
+		for agent in RunCity.crowd(_city).agents():
 			var is_car := agent.kind == CrowdAgent.Kind.CAR
 			var here := agent.global_position
 			var forward := agent.heading()

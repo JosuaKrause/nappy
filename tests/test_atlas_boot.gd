@@ -76,7 +76,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t: TestRunner) -> void:
 		var theirs_read := pages.loads(theirs)
 		for day: int in [1, 2, 3]:
 			var city := _city(t, atlas)
-			city.crowd.start_day(day, _rng("parent-%s-%d" % [male, day]))
+			RunCity.crowd(city).start_day(day, _rng("parent-%s-%d" % [male, day]))
 			var rig := _rig(t, male, atlas)
 			t.check(pages.loads(theirs) == theirs_read,
 					"day %d builds a city, a crowd and the rig without ever asking for '%s'"
@@ -104,7 +104,7 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 			pages.boot_log(), false, MapCache.source())).free_all()
 
 	var city := _city(t, atlas)
-	city.crowd.start_day(1, _rng("day-1"))
+	RunCity.crowd(city).start_day(1, _rng("day-1"))
 	var rig := _rig(t, false, atlas)
 	var first := _page_objects(atlas, pages)
 	t.check(first.size() >= MAIN_SCRIPT.RESIDENT_GROUPS.size(),
@@ -112,14 +112,14 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 	# The whole day torn down the way quitting to the title tears it down: the rig out of the
 	# tree, the city freed, every consumer's `_exit_tree()` release run.
 	rig.free()
-	city.crowd.clear()
+	RunCity.crowd(city).clear()
 	city.free()
 	for group: StringName in first.keys():
 		t.check(pages.held(group),
 				"'%s' survives the day it was drawn in" % group)
 
 	var tomorrow := _city(t, atlas)
-	tomorrow.crowd.start_day(2, _rng("day-2"))
+	RunCity.crowd(tomorrow).start_day(2, _rng("day-2"))
 	var rig_tomorrow := _rig(t, false, atlas)
 	var second := _page_objects(atlas, pages)
 	var reloaded: Array[String] = []
@@ -130,7 +130,7 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 			"the next day draws the very same page objects, none re-read from disk (%s)"
 			% ", ".join(reloaded))
 	rig_tomorrow.free()
-	tomorrow.crowd.clear()
+	RunCity.crowd(tomorrow).clear()
 	tomorrow.free()
 	pages.stop()
 	seat.end()
@@ -330,7 +330,7 @@ func _city(t: TestRunner, atlas: AtlasLibrary) -> City:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED))
 	return city
 
 ## A hand-built rig, the shape `tests/test_stroller.gd` uses: a `Camera2D` named for the lookup

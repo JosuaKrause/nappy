@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 func _test_the_bounding_box_layer_draws_every_enabled_body(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, 5551212)
 	t.add_child(city)
-	city.build(MapCache.of(5551212))
+	RunCity.build(city, MapCache.of(5551212))
 
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var state := CityState.new()
@@ -36,16 +36,16 @@ func _test_the_bounding_box_layer_draws_every_enabled_body(t: TestRunner) -> voi
 	closures_rng.seed = hash("m100-debug-layers:closures:%d" % day)
 	city.start_day(state, day, closures_rng)
 
-	city.events.stream_radius = INF
+	RunCity.events(city).stream_radius = INF
 	var consumed: Array[String] = []
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("m100-debug-layers:events:%d" % day)
-	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
 	t.add_child(stroller)
-	city.events.use_player(stroller)
+	RunCity.events(city).use_player(stroller)
 	stroller.set_physics_process(false)
 
 	var expected := _count_enabled_bodies(city) + _count_enabled_bodies(stroller)

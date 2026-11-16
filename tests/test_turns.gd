@@ -77,7 +77,7 @@ func run(t: TestRunner) -> void:
 	for scenario in scenarios:
 		_city = RunCity.with_own_run(CITY_SCENE, SEED)
 		t.add_child(_city)
-		_city.build(MapCache.of(SEED))
+		RunCity.build(_city, MapCache.of(SEED))
 		_junction = _plain_junction()
 		t.check(_junction.x >= 0, "this city has an ordinary four-way junction to turn at")
 		if _junction.x >= 0:
@@ -236,7 +236,7 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t: TestRunner) -> voi
 	# Put into the index before the car is ever asked, because `TrafficIndex` is rebuilt at the *end*
 	# of a frame: a car that asks on the very first one reads an empty index and commits to a spot
 	# the rig has already filled.
-	_city.crowd.space_out_the_traffic(STEP)
+	RunCity.crowd(_city).space_out_the_traffic(STEP)
 
 	var waited := false
 	var flipped := false
@@ -244,9 +244,9 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t: TestRunner) -> voi
 	for frame in int(round(14.0 / STEP)):
 		if frame == 2:
 			figure.place(figure_at)
-		_city.crowd.set_focus(car.position)
+		RunCity.crowd(_city).set_focus(car.position)
 		var facing := _direction_of(car)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).step(STEP)
 		flipped = flipped or _direction_of(car) != facing
 		if car.is_turning():
 			turned = true
@@ -296,10 +296,10 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t: TestRu
 	var swings := 0.0
 	var turned := false
 	for frame in int(round(6.0 / STEP)):
-		_city.crowd.set_focus(car.position)
+		RunCity.crowd(_city).set_focus(car.position)
 		var was := _direction_of(car)
 		var across := car.position.x
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).step(STEP)
 		if _direction_of(car) != was:
 			flips += 1
 		swings = maxf(swings, absf(car.position.x - across))
@@ -341,8 +341,8 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t: TestRunner) -> void:
 	leader.nudge_back(4.0 * Tuning.CAR_GAP_MIN - 20.0)
 	for car: CrowdAgent in [follower, leader]:
 		car.crashed_into()
-	_city.crowd.set_focus(follower.position)
-	_city.crowd.step(STEP)
+	RunCity.crowd(_city).set_focus(follower.position)
+	RunCity.crowd(_city).step(STEP)
 	var first := follower.position.y
 	t.check(first <= past_the_barrier + 1.0,
 			"the frame the overlap arises, the follower goes back as far as the barrier lets it "
@@ -353,9 +353,9 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t: TestRunner) -> void:
 	var worst := 0.0
 	var leader_went := 0.0
 	for frame in int(round(3.0 / STEP)):
-		_city.crowd.set_focus(follower.position)
+		RunCity.crowd(_city).set_focus(follower.position)
 		var was := follower.position
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).step(STEP)
 		worst = maxf(worst, was.distance_to(follower.position))
 		leader_went = leader.position.y - past_the_barrier
 	t.check(leader_went > Tuning.CAR_GAP_MIN,
@@ -438,8 +438,8 @@ func _test_a_queue_keeps_its_distance_behind_a_turning_car(t: TestRunner) -> voi
 		var before: Array[Vector2] = []
 		for car in followers:
 			before.append(car.position)
-		_city.crowd.set_focus(leader.position)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).set_focus(leader.position)
+		RunCity.crowd(_city).step(STEP)
 		turned = turned or leader.is_turning()
 		for i in followers.size():
 			worst_jump = maxf(worst_jump, before[i].distance_to(followers[i].position))
@@ -498,8 +498,8 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t: TestRunner) -> void
 				queue.append(_place_a_car_in_lane(turner.turn_lane_key(),
 						booked - 150.0 - float(i) * Tuning.CAR_GAP_MIN * 1.6))
 			break
-		_city.crowd.set_focus(turner.position)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).set_focus(turner.position)
+		RunCity.crowd(_city).step(STEP)
 	t.check(booked != INF, "the car booked a place in a lane it was not already in")
 
 	var worst_jump := 0.0
@@ -515,8 +515,8 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t: TestRunner) -> void
 		for car in queue:
 			before.append(car.position)
 			positions.append(car.queue_position())
-		_city.crowd.set_focus(turner.position)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).set_focus(turner.position)
+		RunCity.crowd(_city).step(STEP)
 		if turner.is_turning():
 			var follower := _nearest_behind(queue, turner.turn_landing())
 			if follower:
@@ -562,7 +562,7 @@ func _place_a_car_in_lane(key: int, at: float) -> CrowdAgent:
 	var vertical: bool = parts[0]
 	var direction := float(parts[3])
 	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
-	var placed := _city.crowd.add_recipe_actor("queued-%d" % _city.crowd.agent_count(),
+	var placed := RunCity.crowd(_city).add_recipe_actor("queued-%d" % RunCity.crowd(_city).agent_count(),
 			CrowdAgent.Kind.CAR,
 			CarTurn.world(vertical, at * direction, CrowdLanes.lane_centre(parts[1], parts[2])),
 			heading, Tuning.CAR_SPEED.x, 7)
@@ -609,8 +609,8 @@ func _test_two_cars_arriving_together_do_not_share_the_box(t: TestRunner) -> voi
 	var closest := INF
 	var turned := false
 	for frame in int(round(12.0 / STEP)):
-		_city.crowd.set_focus(turner.position)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).set_focus(turner.position)
+		RunCity.crowd(_city).step(STEP)
 		turned = turned or turner.is_turning()
 		closest = minf(closest, turner.position.distance_to(crossing.position))
 	t.check(turned, "the turning car took the box")
@@ -631,9 +631,9 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 	var stopped := false
 	var on_the_paint := 0
 	for frame in int(round(6.0 / STEP)):
-		_city.crowd.set_focus(car.position)
+		RunCity.crowd(_city).set_focus(car.position)
 		car.lane().see_a_pedestrian_at(waiting)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).step(STEP)
 		if car.speed() < 1.0:
 			stopped = true
 		if stopped and _city.map.tile_type_at_world(car.position) \
@@ -669,8 +669,8 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t: TestRunner) -> void:
 	var crept_in_on_red := 0
 	var turned := false
 	for frame in int(round(20.0 / STEP)):
-		_city.crowd.set_focus(car.position)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).set_focus(car.position)
+		RunCity.crowd(_city).step(STEP)
 		turned = turned or car.is_turning()
 		var red := not signals.green_for(box, true)
 		var inside := car.junction_occupied() == box
@@ -736,8 +736,8 @@ func _watch(car: CrowdAgent, seconds: float, over_the_kerb := false) -> Manoeuvr
 	for frame in int(round(seconds / STEP)):
 		var before := car.position
 		var facing := car.heading()
-		_city.crowd.set_focus(car.position)
-		_city.crowd.step(STEP)
+		RunCity.crowd(_city).set_focus(car.position)
+		RunCity.crowd(_city).step(STEP)
 		var moved := before.distance_to(car.position)
 		watched.worst_step = maxf(watched.worst_step, moved)
 		watched.worst_swing = maxf(watched.worst_swing, absf(facing.angle_to(car.heading())))
@@ -808,12 +808,12 @@ func _place_a_car(vertical: bool, direction: float, corridor := -1, back := 0.0,
 	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
 	# The entry a task scene's pinned actor takes (`Crowd.add_recipe_actor()`): the lane, the
 	# street under it and the traffic queue are checked as a rolled morning's are.
-	var placed := _city.crowd.add_recipe_actor("turner-%d" % _city.crowd.agent_count(),
+	var placed := RunCity.crowd(_city).add_recipe_actor("turner-%d" % RunCity.crowd(_city).agent_count(),
 			CrowdAgent.Kind.CAR, CarTurn.world(vertical, along, CrowdLanes.lane_centre(street, lane)),
 			heading, Tuning.CAR_SPEED.x, 7)
 	assert(placed["error"] == "", "the scenario's car is placed: %s" % placed["error"])
 	var car: CrowdAgent = placed["actor"]
-	_city.crowd.set_focus(car.position)
+	RunCity.crowd(_city).set_focus(car.position)
 	return car
 
 ## A figure standing at `at` on the map's list of moves, the radius an event figure walks at
@@ -859,10 +859,10 @@ func _hold(key: Vector3i) -> void:
 
 func _clear_the_holds() -> void:
 	_city.map.clear_day_holds()
-	_city.crowd.clear()
+	RunCity.crowd(_city).clear()
 	# The day's pockets (`CrowdPockets`) are refreshed by a tick, so a tick of no time lets the last
 	# scenario's holds stop deciding which ground is a pocket the entry refuses.
-	_city.crowd.step(0.0)
+	RunCity.crowd(_city).step(0.0)
 
 ## Somebody standing on the first zebra this car is coming up to: the pavement band of the
 ## crossing corridor, on the car's own line, which is the gesture the give-way rule answers.

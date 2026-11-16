@@ -126,14 +126,14 @@ func _yeller_arrow_case(t: TestRunner, before: int, after: int, offsets: Array) 
 		men.append(_put_a_yeller(tile + Vector2i(offset, 0)))
 	player.global_position = men[0].global_position
 	director.tick(STEP)
-	for instance in _city.events.instances():
+	for instance in RunCity.events(_city).instances():
 		if instance.def.id == "homeless_yeller" and instance not in men:
-			_city.events.retire(instance)
+			RunCity.events(_city).retire(instance)
 	player.global_position = _city.map.tile_to_world(tile)
 	return [director, player, tile, men]
 
 func _put_a_yeller(tile: Vector2i) -> EventInstance:
-	return _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+	return RunCity.events(_city).spawn_extra(EventCatalogue.by_id("homeless_yeller"),
 			_city.map.tile_to_world(tile))
 
 ## plush-moose, "closest here always means path closeness not crow closeness": a wall of standing
@@ -164,7 +164,7 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t: TestRunner
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 				"behind a wall the arrow points at the one she can walk to sooner")
-		t.check(_city.events.points_at.call() == director.red_arrow_target(),
+		t.check(RunCity.events(_city).points_at.call() == director.red_arrow_target(),
 				"and the protest cue points at the same chosen objective as the arrow")
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 				"and not at the nearer as the crow flies")
@@ -239,8 +239,8 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t: TestRunner) -> void:
 				"the arrow is on the nearer man")
 		# Retired as the manager retires one, taken out of its list by the sweep, and then freed
 		# at once rather than at the frame's end: the arrow is asked about a freed man.
-		_city.events.retire(near)
-		_city.events.streaming.retire_finished()
+		RunCity.events(_city).retire(near)
+		RunCity.events(_city).streaming.retire_finished()
 		near.free()
 		var asked := director.red_arrow_target()
 		t.check(asked == director.contact_position() and asked != Vector2.ZERO,
@@ -280,7 +280,7 @@ var _seconds_walked_to_the_route_mast := 0.0
 func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> String:
 	_seconds_walked_to_the_route_mast = 0.0
 	var path := _longest_route_points()
-	_city.events.use_player(player)
+	RunCity.events(_city).use_player(player)
 	if path.size() < 2:
 		return ""
 	var index := 0
@@ -289,7 +289,7 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 	var walked := 0.0
 	var step := 0.1
 	while walked < 600.0:
-		for plan in _city.events.plans():
+		for plan in RunCity.events(_city).plans():
 			if plan.def.role == EventDef.Role.MAST and plan.mast_id != "" \
 					and not at_the_mark.has(plan.mast_id):
 				_seconds_walked_to_the_route_mast = walked
@@ -305,8 +305,8 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		_city.events.ahead.site_what_is_on_her_way(step)
-		_city.events.ahead.place_what_is_owed_ahead(step)
+		RunCity.events(_city).ahead.site_what_is_on_her_way(step)
+		RunCity.events(_city).ahead.place_what_is_owed_ahead(step)
 		player.global_position += player.velocity * step
 		walked += step
 	return ""
@@ -355,8 +355,8 @@ func _test_day_eleven_answers_at_any_live_mast(t: TestRunner) -> void:
 ## Whether `WalkSiting.ahead_of()` finds the routed mast a place from some point along the day's
 ## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
 func _a_mast_can_be_sited_along_her_route() -> bool:
-	var siting: EventScheduler.WalkSiting = _city.events.ahead.walk_siting()
-	var def: EventDef = _city.events.ahead.director().route_row(EventCatalogue.mast().id)
+	var siting: EventScheduler.WalkSiting = RunCity.events(_city).ahead.walk_siting()
+	var def: EventDef = RunCity.events(_city).ahead.director().route_row(EventCatalogue.mast().id)
 	# The band the director sites the walk's events in: from the streaming edge to the sight of a
 	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
@@ -383,17 +383,17 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 	var director: ResistanceDirector = read[0]
 	var player: Stroller = read[2]
 	var step := director.current_step()
-	var near := ResistanceReads.mast_at(director, _city.events)
+	var near := ResistanceReads.mast_at(director, RunCity.events(_city))
 	t.check(step != null and near != "", "day 11's task is on offer at the mast near the mark")
-	var before := [director.red_arrow_target(), ResistanceReads.mast_at(director, _city.events),
+	var before := [director.red_arrow_target(), ResistanceReads.mast_at(director, RunCity.events(_city)),
 			director.contact_position()]
 	var asked := director.red_arrow_target()
 	t.check(asked == director.contact_position()
-			and [director.red_arrow_target(), ResistanceReads.mast_at(director, _city.events),
+			and [director.red_arrow_target(), ResistanceReads.mast_at(director, RunCity.events(_city)),
 			director.contact_position()] == before,
 			"asking for the arrow chooses nothing and moves no contact")
 	var at_the_mark := {}
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.mast_id != "":
 			at_the_mark[plan.mast_id] = true
 	var routed := _walk_until_the_route_mast(at_the_mark, player)
@@ -407,15 +407,15 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 	# being where the task was put; each other live mast she can stand beside is asked in turn.
 	var answering: Array[String] = [near]
 	var third := ""
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.mast_id == "" or plan.mast_id == near or plan.silenced:
 			continue
-		var beside := _beside_the_mast(director, _city.events.mast_foot(plan.mast_id))
+		var beside := _beside_the_mast(director, RunCity.events(_city).mast_foot(plan.mast_id))
 		if beside == Vector2.INF:
 			continue
 		player.global_position = beside
 		director.tick(STEP)
-		if ResistanceReads.mast_at(director, _city.events) == plan.mast_id:
+		if ResistanceReads.mast_at(director, RunCity.events(_city)) == plan.mast_id:
 			answering.append(plan.mast_id)
 			if plan.mast_id != routed:
 				third = plan.mast_id
@@ -425,24 +425,24 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 		player.free()
 		director.free()
 		return
-	var third_foot := _city.events.mast_foot(third)
+	var third_foot := RunCity.events(_city).mast_foot(third)
 	# The task is on the routed mast, with her beside it, and the next choice is not yet made.
-	var routed_foot := _city.events.mast_foot(routed)
+	var routed_foot := RunCity.events(_city).mast_foot(routed)
 	player.global_position = _beside_the_mast(director, routed_foot)
 	director.tick(STEP)
 	player.global_position = _beside_the_mast(director, third_foot)
 	t.check(director.red_arrow_target().distance_to(routed_foot) < 1.0
-			and ResistanceReads.mast_at(director, _city.events) == routed,
+			and ResistanceReads.mast_at(director, RunCity.events(_city)) == routed,
 			"before the next choice the arrow and task still point at the mast they were on")
 	director.tick(STEP)
 	t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
-			and ResistanceReads.mast_at(director, _city.events) == third,
+			and ResistanceReads.mast_at(director, RunCity.events(_city)) == third,
 			"following her between masts moves the task to the one she actually touches")
 	await _step_a_frame(t)
 	t.check(step.index in _city.run.resistance.completed_steps,
 			"touching the third mast completes the task")
 	var silenced := {}
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.mast_id in [near, routed, third]:
 			silenced[plan.mast_id] = plan.silenced
 	t.check(silenced.get(third, false) and not silenced.get(near, true)
@@ -523,7 +523,7 @@ func _start_the_finale(t: TestRunner, seed_value: int) -> Array:
 	_city.run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
@@ -547,7 +547,7 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 					nearest = body.position
 			return nearest
 		ResistanceSteps.TargetKind.MAST:
-			return _city.events.mast_foot(ResistanceReads.mast_at(director, _city.events))
+			return RunCity.events(_city).mast_foot(ResistanceReads.mast_at(director, RunCity.events(_city)))
 		ResistanceSteps.TargetKind.PARK_SWING:
 			var layout: BlockLayout = _city.map.layout_of(CityGenerator.swing_park(_city.map))
 			return _city.map.swing_position(layout.playground_rect()) if layout else Vector2.INF

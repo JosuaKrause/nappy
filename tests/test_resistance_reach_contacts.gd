@@ -35,7 +35,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 	lorry.role = GameEnums.BlockerRole.FRICTION
 	# Planned after dawn, the way the day adds a plan it places late: it streams in like any
 	# planned row and its body is recorded where it stands.
-	_city.events.streaming.add(lorry)
+	RunCity.events(_city).streaming.add(lorry)
 	var inside: Array[Vector2i] = []
 	var clear: Array[Vector2i] = []
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -51,11 +51,11 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 			% [inside.size(), clear.size()])
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var refused := _city.events.queue_a_mast(inside, rng)
+	var refused := RunCity.events(_city).queue_a_mast(inside, rng)
 	t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
-	var placed := _city.events.queue_a_mast(clear, rng)
+	var placed := RunCity.events(_city).queue_a_mast(clear, rng)
 	t.check(placed != null and placed.mast_id.begins_with("added-")
-			and placed in _city.events.plans(),
+			and placed in RunCity.events(_city).plans(),
 			"offered ground clear of it, a mast is generated into the day's plan")
 	player.free()
 	director.free()
@@ -157,7 +157,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
+			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 
 			var director := _director(t)
@@ -259,7 +259,7 @@ func _dawn_mark_tile(t: TestRunner, day: int, bodies: Array[Vector2i]) -> Vector
 	run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", SEED))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", SEED), [],
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", SEED), [],
 			_city.map.doorstep_world_position())
 	if not bodies.is_empty():
 		_city.map.obstruct_tiles(get_instance_id(), bodies)

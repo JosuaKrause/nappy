@@ -18,7 +18,7 @@ func run(t: TestRunner) -> void:
 	city.skip_event_drawing = true
 	city.skip_crowd_drawing = true
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
+	RunCity.build(city, MapCache.of(SEED))
 	_test_a_live_event_charges_the_spot_it_stands_on(t, city)
 	_test_calm_ground_fills_sleepiness_faster_than_the_street(t, city)
 	_test_the_camera_framing_is_less_the_look_ahead_it_is_handed(t, city)
@@ -33,7 +33,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City)
 	var def := EventCatalogue.by_id("cyclist")
 	var instance := EventInstance.new()
 	instance.setup(def, spot)
-	city.events.world.instances.append(instance)
+	RunCity.events(city).world.instances.append(instance)
 	var charged := 0.0
 	for pair: Array in city.excitement_sources_at(spot):
 		charged += pair[1]
@@ -41,7 +41,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City)
 			"the event's own field reaches the spot it stands on")
 	t.check(charged > 0.0,
 			"and the city lists it among what charges her there (%.2f/s)" % charged)
-	city.events.world.instances.erase(instance)
+	RunCity.events(city).world.instances.erase(instance)
 	instance.free()
 
 ## On a calm tile the city answers the calm curve for the lot the tile lies in (more than the street's

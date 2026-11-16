@@ -575,13 +575,13 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	_clear()
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var spec := DaySpec.for_day(DAY)
 	RigStreets.begin(city.streets(), city.map, spec)
-	city.events.start_day(spec, rng, [] as Array[String])
-	var events := city.events
+	RunCity.events(city).start_day(spec, rng, [] as Array[String])
+	var events := RunCity.events(city)
 	var stroller: Stroller = (STROLLER_SCENE.instantiate() as Stroller)
 	t.add_child(stroller)
 	var her := CrowdLanes.arterial_pavement(city.map)
@@ -635,13 +635,13 @@ func _test_the_manager_tells_the_encounter_under_its_day(t: TestRunner) -> void:
 	_clear()
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var spec := DaySpec.for_day(DAY)
 	RigStreets.begin(city.streets(), city.map, spec)
-	city.events.start_day(spec, rng, [] as Array[String])
-	var events := city.events
+	RunCity.events(city).start_day(spec, rng, [] as Array[String])
+	var events := RunCity.events(city)
 	var stroller: Stroller = (STROLLER_SCENE.instantiate() as Stroller)
 	t.add_child(stroller)
 	var her := CrowdLanes.arterial_pavement(city.map)

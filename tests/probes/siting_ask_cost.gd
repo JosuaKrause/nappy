@@ -17,14 +17,14 @@ const ROUNDS := 5
 func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(CITY_SEED))
+	RunCity.build(city, CityGenerator.generate(CITY_SEED))
 	for day in DAYS:
 		var state := CityState.new()
 		state.begin_day(city.map.block_plans, day)
 		var closures := RandomNumberGenerator.new()
 		closures.seed = hash("siting-ask-cost:%d" % day)
 		city.start_day(state, day, closures)
-		var siting := city.spawn_siting
+		var siting := RunCity.spawn_siting(city)
 		var per_call: Array[float] = []
 		for round in ROUNDS:
 			var began := Time.get_ticks_usec()

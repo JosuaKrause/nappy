@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 	var city: City = packed.instantiate()
 	city.run = own_run
 	t.add_child(city)
-	city.build(built.map)
+	RunCity.build(city, built.map)
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 13)
 	city.start_recipe_day(state, 13, own_run.calendar.day_rng())
@@ -138,7 +138,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 	# since a body on a sidewalk is centred on its band as it is set up, in a recipe as on a day.
 	var centre := city.map.tile_rect_to_world(street.tile_rect()).get_center()
 	var stood: Array[Vector2] = []
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id == "cafe_tables":
 			stood.append(_along_and_side(street, centre, instance.position))
 	var where: Array[Vector2] = []
@@ -172,30 +172,30 @@ func _along_and_side(street: StreetNetwork.Segment, centre: Vector2, at: Vector2
 func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState) -> void:
 	player.global_position = city.map.tile_to_world(Vector2i(16, 16))
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var errors := runtime.install(city, player, baby, escape)
-	t.check(errors.is_empty() and not city.events.ahead.holds_the_home_streets,
+	t.check(errors.is_empty() and not RunCity.events(city).ahead.holds_the_home_streets,
 			"an escape scene is installed into the spec it is handed, whose siting keeps off no home street: %s"
 			% [errors])
-	t.check(not city.events.ahead.sends_poster_pursuits,
+	t.check(not RunCity.events(city).ahead.sends_poster_pursuits,
 			"and its events send no poster pursuer")
-	city.events.send_a_pursuer()
-	t.check(city.events.pending_warnings().is_empty(), "so a torn poster there sends nobody")
+	RunCity.events(city).send_a_pursuer()
+	t.check(RunCity.events(city).pending_warnings().is_empty(), "so a torn poster there sends nobody")
 
 	var configured := RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true)
 	var day := DaySpec.for_day(own_run.header.day, configured.day_length_for(own_run.header.day))
 	t.check(is_equal_approx(day.length, 77.0),
 			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
 	errors = runtime.install(city, player, baby, day)
-	t.check(errors.is_empty() and city.events.ahead.holds_the_home_streets
-			and city.events.ahead.sends_poster_pursuits,
+	t.check(errors.is_empty() and RunCity.events(city).ahead.holds_the_home_streets
+			and RunCity.events(city).ahead.sends_poster_pursuits,
 			"and the same spec, with a day's settings, is the one its events run under: %s" % [errors])
-	city.events.send_a_pursuer()
-	t.check(city.events.pending_warnings().size() == 1,
+	RunCity.events(city).send_a_pursuer()
+	t.check(RunCity.events(city).pending_warnings().size() == 1,
 			"so a torn poster on a day scene sends its pursuer (%d warnings)"
-			% city.events.pending_warnings().size())
-	city.events.warnings.clear()
+			% RunCity.events(city).pending_warnings().size())
+	RunCity.events(city).warnings.clear()
 
 ## The street trees' pits the day has emptied (`CityMap.is_tree_pit_emptied()`, what the city reads
 ## to hide a tree).

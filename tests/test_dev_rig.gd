@@ -56,20 +56,20 @@ func _rng(stream: String) -> RandomNumberGenerator:
 func _build_day(t: TestRunner) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
-	_city.build(MapCache.of(SEED))
-	_city.events.stream_radius = INF
+	RunCity.build(_city, MapCache.of(SEED))
+	RunCity.events(_city).stream_radius = INF
 
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, DAY)
 	_city.start_day(state, DAY, _rng("closures"))
 	var consumed: Array[String] = []
-	_city.events.start_day(DaySpec.for_day(DAY), _rng("events"), consumed)
+	RunCity.events(_city).start_day(DaySpec.for_day(DAY), _rng("events"), consumed)
 
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
+	_resistance.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+			RunCity.spawn_siting(_city))
 	_resistance.start_day(DAY, _rng("resistance"), 300.0)
 
 func _teardown(t: TestRunner) -> void:
@@ -81,16 +81,16 @@ func _teardown(t: TestRunner) -> void:
 ## actually stand, which is the whole promise `for_spawn_target()` makes for every named target.
 func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 	for target: String in ["park", "alley"]:
-		var at := DevRig.for_spawn_target(target, _city.map, _city.events, _city.streets(),
+		var at := DevRig.for_spawn_target(target, _city.map, RunCity.events(_city), _city.streets(),
 				_resistance, _city.run.header, _city.trace)
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 				"--spawn %s lands on a walkable tile (%s)" % [target, at])
 
-## `event` takes the first non-ambient placed plan — `_city.events.stream_radius = INF` in
+## `event` takes the first non-ambient placed plan — `RunCity.events(_city).stream_radius = INF` in
 ## `_build_day()` places every plan without a player to stream one in, so day 4's set is
 ## guaranteed to have at least one.
 func _test_event_target_lands_near_a_placed_event(t: TestRunner) -> void:
-	var at := DevRig.for_spawn_target("event", _city.map, _city.events, _city.streets(),
+	var at := DevRig.for_spawn_target("event", _city.map, RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header, _city.trace)
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 			"--spawn event lands on a walkable tile (%s)" % at)
@@ -99,7 +99,7 @@ func _test_event_target_lands_near_a_placed_event(t: TestRunner) -> void:
 ## generated day actually has one and that the lookup does not fall back to the doorstep.
 func _test_closure_target_lands_near_the_first_closure(t: TestRunner) -> void:
 	t.check(not _city.streets().closures().is_empty(), "day %d has a closure to look at" % DAY)
-	var at := DevRig.for_spawn_target("closure:0", _city.map, _city.events, _city.streets(),
+	var at := DevRig.for_spawn_target("closure:0", _city.map, RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header, _city.trace)
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 			"--spawn closure:0 lands on a walkable tile (%s)" % at)
@@ -110,7 +110,7 @@ func _test_closure_target_lands_near_the_first_closure(t: TestRunner) -> void:
 func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> void:
 	var contact := _resistance.contact_position()
 	t.check(contact != Vector2.INF, "day %d has a resistance mark placed" % DAY)
-	var at := DevRig.for_spawn_target("contact", _city.map, _city.events, _city.streets(),
+	var at := DevRig.for_spawn_target("contact", _city.map, RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header, _city.trace)
 	t.check(is_equal_approx(at.distance_to(contact), Vector2(70.0, 30.0).length()),
 			"--spawn contact stands off to the side of the mark rather than on top of it (%s)" % at)
@@ -119,7 +119,7 @@ func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> voi
 ## `for_spawn_target()` — this is what exercises them: a target matching nothing rolls all the way
 ## through and lands on the doorstep, with a warning rather than a silent wrong answer.
 func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
-	var at := DevRig.for_spawn_target("not-a-real-target", _city.map, _city.events, _city.streets(),
+	var at := DevRig.for_spawn_target("not-a-real-target", _city.map, RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header, _city.trace)
 	t.check(at == _city.map.home_world_position(),
 			"an unrecognised --spawn target falls back to the doorstep rather than guessing")
@@ -134,7 +134,7 @@ func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
 ## fallback an unrecognised target reaches apply.
 func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 	var lines: Array[String] = []
-	var at := DevRig.for_spawn_target("event:cat_dash", _city.map, _city.events, _city.streets(),
+	var at := DevRig.for_spawn_target("event:cat_dash", _city.map, RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header, RecordingTrace.new(lines))
 	t.check(at == _city.map.home_world_position(),
 			"a queue-fed row still leaves her somewhere to stand: the doorstep")
@@ -150,14 +150,14 @@ func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 ## trigger. The fixed offset has to clear the larger of the two plus a tile's margin.
 func _test_a_waiting_row_stands_outside_its_trigger(t: TestRunner) -> void:
 	var found: EventPlan = null
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.def.id == "pigeon_flock" and plan.is_placed():
 			found = plan
 			break
 	t.check(found != null, "day %d has a placed pigeon_flock to stand outside of" % DAY)
 	if found == null:
 		return
-	var at := DevRig.for_spawn_target("event:pigeon_flock", _city.map, _city.events, _city.streets(),
+	var at := DevRig.for_spawn_target("event:pigeon_flock", _city.map, RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header, _city.trace)
 	var dist := at.distance_to(found.position)
 	t.check(dist > found.def.notice_within(),
@@ -205,7 +205,7 @@ const _CHECKPOINT_SEED := 771103
 func _test_no_door_before_the_region_wall_starts(t: TestRunner) -> void:
 	t.check(DAY < Tuning.REGION_WALL_FIRST_DAY,
 			"day %d is before the region wall starts (day %d)" % [DAY, Tuning.REGION_WALL_FIRST_DAY])
-	var at := DevRig.for_spawn_target("door", _city.map, _city.events, _city.streets(),
+	var at := DevRig.for_spawn_target("door", _city.map, RunCity.events(_city), _city.streets(),
 			_resistance, _city.run.header, _city.trace)
 	t.check(at == _city.map.home_world_position(),
 			"no checkpoint exists yet, so --spawn door falls back to the doorstep")
@@ -217,13 +217,13 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 	var map := MapCache.of(_CHECKPOINT_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
-	city.events.stream_radius = INF
+	RunCity.build(city, map)
+	RunCity.events(city).stream_radius = INF
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	city.start_day(state, day, _rng("checkpoint-closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), _rng("checkpoint-events"), consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng("checkpoint-events"), consumed)
 
 	var huts: Array[EventPlan] = []
 	for body in city.streets().region_plan().door_bodies:
@@ -234,7 +234,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 		city.free()
 		return
 
-	var at := DevRig.for_spawn_target("door:0", city.map, city.events, city.streets(),
+	var at := DevRig.for_spawn_target("door:0", city.map, RunCity.events(city), city.streets(),
 			_resistance, city.run.header, city.trace)
 	t.check(city.map.is_walkable(city.map.world_to_tile(at)), "--spawn door:0 lands on a walkable tile (%s)" % at)
 	var hut := huts[0]

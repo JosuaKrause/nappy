@@ -37,17 +37,17 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	var run := city.run
 	t.add_child(city)
-	city.build(CityGenerator.generate(run.header.run_seed))
+	RunCity.build(city, CityGenerator.generate(run.header.run_seed))
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is
 	# about a run's whole chain — one-shots, successors, scars — which is a property of the
 	# fourteen *plans*, so it puts every day in the world at once. See `EventManager`.
-	city.events.stream_radius = INF
+	RunCity.events(city).stream_radius = INF
 
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 
 	# Her, in the tree as the scene has her, so the baby takes the stroller she rides in from her
 	# parent; and the day's clock, handed the run the way `main` hands it, so falling asleep on calm
@@ -97,11 +97,11 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 					% [seed_value, day, block, used])
 		if not city.map.shut_calm().is_empty():
 			days_with_a_used_area_shut += 1
-		if city.crowd.agent_count() > 0:
+		if RunCity.crowd(city).agent_count() > 0:
 			days_with_a_crowd += 1
-		t.check(city.events.active_count() > 0, "seed %d day %d has events" % [seed_value, day])
+		t.check(RunCity.events(city).active_count() > 0, "seed %d day %d has events" % [seed_value, day])
 
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			t.check(is_instance_valid(instance),
 					"seed %d day %d: every event is a live node" % [seed_value, day])
 			if instance.def.kind == GameEnums.EventKind.ONE_SHOT:
@@ -123,7 +123,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 		# finish their routes, so the fire engine never reaches its fire — and the whole
 		# successor-and-scar chain goes untested.
 		var placed := {}
-		for instance in city.events.instances():
+		for instance in RunCity.events(city).instances():
 			placed[instance] = instance.global_position
 		await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(SIMULATED_SECONDS, SIMULATION_SCALE),
 				TICK_FACTOR, Callable(), SIMULATION_SCALE)

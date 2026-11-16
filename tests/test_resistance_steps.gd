@@ -400,12 +400,12 @@ func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Arra
 	run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var player := _rig_player(t, her)
 	var director := _director(t)
 	director.use_player(player)
 	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if seen else Rect2())
-	director.set_sight(_city.events.sees)
+	director.set_sight(RunCity.events(_city).sees)
 	var mark_guard := EventCatalogue.mark_guard().id
 	var task_guard := EventCatalogue.task_guard().id
 	var marks_before := _live(mark_guard)
@@ -530,7 +530,7 @@ func _test_a_perform_step_expires_when_its_rider_is_gone(t: TestRunner) -> void:
 	var rider := director.rider()
 	t.check(rider != null, "the perform step rides on a live instance")
 
-	_city.events.retire(rider)
+	RunCity.events(_city).retire(rider)
 	director.tick(0.1)
 	t.check(director.current_step() == null, "and it is gone once the rider is")
 	t.check(2 in run.resistance.failed_steps, "recorded as failed for the run")
@@ -628,7 +628,7 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 	var rider := director.rider()
 	t.check(rider != null and not rider.is_leaving, "the seeded rider is shouting, not leaving")
 
-	var decoy := _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+	var decoy := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("homeless_yeller"),
 			_open_ground_near(rider.global_position + Vector2(600.0, 0.0)))
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(decoy.global_position))
 			and decoy.global_position.distance_to(rider.global_position) > 400.0,
@@ -816,11 +816,11 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, Tuning.RUN_LENGTH_DAYS)
 	_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
-	_city.events.stream_radius = INF
-	_city.events.start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
+	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
 			_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot)
 	var mast_plan: EventPlan = null
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.mast_id == site.id and plan.def.id == "loudspeaker":
 			mast_plan = plan
 	t.check(mast_plan != null and mast_plan.live != null,

@@ -51,7 +51,7 @@ func agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, la
 		along: float, direction: float, vertical := true,
 		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS, speed := -1.0,
 		seed_value := 1) -> CrowdAgent:
-	return place_on(city.crowd, map, kind, corridor, lane, along, direction, vertical, offsets,
+	return place_on(RunCity.crowd(city), map, kind, corridor, lane, along, direction, vertical, offsets,
 			speed, seed_value)
 
 ## A crowd on `map` in a bare world held under `t`, built the way a task scene's rig builds it (the

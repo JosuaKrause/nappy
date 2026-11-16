@@ -71,7 +71,7 @@ func _the_guard(t: TestRunner, seed_value: int, walks: bool) -> void:
 			her = her.move_toward(route[next], Tuning.WALK_SPEED * FRAME)
 			if her.distance_to(route[next]) < 0.01:
 				next += 1
-		city.events.world.where_she_is().tell(her)
+		RunCity.events(city).world.where_she_is().tell(her)
 		guard.step(FRAME)
 		clock += FRAME
 		print("%s tick %d: at (%.3f, %.3f) heading (%.5f, %.5f) arrow tile %s" % [label, tick,
@@ -151,13 +151,13 @@ func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> Res
 	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _day_rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _day_rng(seed_value, day, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(day), _day_rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.start_day(day, _day_rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	if mark != null and mark.is_pickup:

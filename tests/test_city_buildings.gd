@@ -39,7 +39,7 @@ func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	var before: Array[Building] = city.buildings().duplicate()
 	var shapes: Dictionary = {}
 	for building in before:
@@ -84,7 +84,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		for building: Building in city.buildings():
 			if building.roof_extension_rows.any(func(e: int) -> bool: return e > 0):
 				continue
@@ -130,7 +130,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var fronts := await _watch_the_fronts(t, city)
 		var buildings := city.buildings()
 		for building: Building in buildings:
@@ -182,7 +182,7 @@ func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t: Test
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var fronts := await _watch_the_fronts(t, city)
 		var station: Building = null
 		for building: Building in city.buildings():
@@ -243,7 +243,7 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 				courtyard_lots.append(map.lot_rect(block))
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var fronts := await _watch_the_fronts(t, city)
 		var buildings := city.buildings()
 		for building: Building in buildings:
@@ -311,7 +311,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var fronts := await _watch_the_fronts(t, city)
 		for building: Building in city.buildings():
 			if building.power_station:
@@ -352,7 +352,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var fronts := await _watch_the_fronts(t, city)
 		for building: Building in city.buildings():
 			var front := _front_of(fronts, building)

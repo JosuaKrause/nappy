@@ -34,7 +34,7 @@ func run(t: TestRunner) -> void:
 		var counts := {"on": 0, "adjacent": 0, "deep": 0, "spine": 0}
 		var adjacent: Array[EventPlan] = []
 		var ids := {}
-		for plan in city.events.plans():
+		for plan in RunCity.events(city).plans():
 			if fixed.has(plan) or not plan.obstructs():
 				continue
 			var kind := _where(map, corridor, plan)
@@ -122,12 +122,12 @@ func _start(t: TestRunner, seed_value: int) -> City:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = DAY
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, DAY)
 	city.start_day(city.run.attempt_spend.city_state, DAY, city.run.calendar.day_rng(DAY, "closures"),
 			spec)
 	var consumed: Array[String] = []
-	city.events.start_day(spec, city.run.calendar.day_rng(DAY), consumed,
+	RunCity.events(city).start_day(spec, city.run.calendar.day_rng(DAY), consumed,
 			city.map.doorstep_world_position())
 	return city
 

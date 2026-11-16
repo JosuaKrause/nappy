@@ -54,7 +54,7 @@ static func _city_for(t: TestRunner, seed_value: int) -> City:
 	var map := CityGenerator.generate(seed_value)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	return city
 
 ## The window picture drawn on each wall cell of `building`, row by row: the building's window style

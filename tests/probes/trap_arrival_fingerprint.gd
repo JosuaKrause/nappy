@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day in DAYS:
 			printed += _a_day(t, city, seed_value, day)
 		city.free()
@@ -62,7 +62,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	city.run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -73,16 +73,16 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	player.set_physics_process(false)
 	player.add_to_group("player")
 	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
 	_lines.clear()
 	director.trace = RecordingTrace.new(_lines)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.use_player(player)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	var printed := 0
@@ -127,7 +127,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 ## Stands her at `at`, the day's view looked through about her as the camera would.
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## Runs every warning up to its end, her stepping `drift` halfway through its time, and prints what
@@ -135,7 +135,7 @@ func _stand(city: City, player: Stroller, at: Vector2) -> void:
 ## and the director's stream. The pursuer is then taken out of the world.
 func _run_out(city: City, director: ResistanceDirector, player: Stroller, label: String,
 		drift: Vector2) -> int:
-	var warnings := city.events.pending_warnings().duplicate()
+	var warnings := RunCity.events(city).pending_warnings().duplicate()
 	if warnings.is_empty():
 		_print("%s nothing sent | %s | rng %d" % [label, " / ".join(_lines), director._rng.state])
 		return 1
@@ -145,17 +145,17 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 	var half := warning.left * 0.5
 	var shown := 0.0
 	var drifted := false
-	while not city.events.pending_warnings().is_empty() and shown < 5.0:
+	while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
 		if not drifted and shown >= half and drift != Vector2.ZERO:
 			drifted = true
 			var stepped := her + drift
 			if city.map.is_walkable(city.map.world_to_tile(stepped)):
 				her = stepped
 				_stand(city, player, her)
-		city.events.warnings.run(STEP, her)
+		RunCity.events(city).warnings.run(STEP, her)
 		shown += STEP
 	var sent: EventInstance = null
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id == warning.def.id and not instance.is_finished:
 			sent = instance
 	var made := "nobody (withdrawn)" if warning.withdrawn else "nobody"
@@ -165,7 +165,7 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 	_print("%s %s badge %s -> %s | %s | rng %d" % [label, warning.def.id, _point(pointed), made,
 			" / ".join(_lines), director._rng.state])
 	if sent != null and is_instance_valid(sent):
-		city.events.retire(sent)
+		RunCity.events(city).retire(sent)
 	return 1
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.
