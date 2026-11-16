@@ -22,11 +22,19 @@ extends Resource
 ## her (a patrol slower than her walk never catches her from behind).
 @export var from_either_end := false
 
-## A value of the two.
-static func of(warned_first: bool, either_end: bool) -> SentAhead:
+## **Created at once just ahead of her, coming toward her** (the dog walker down her sidewalk, the
+## patrol down the carriageway lane that drives toward her): no warning first, and never from
+## behind her.
+static func at_once() -> SentAhead:
+	return SentAhead.new()
+
+## **Warned of first in the lane beside her, from either end of her street** (the convoy): its
+## badge alone for its own second, then created just out of sight up the lane, as day 13's column
+## is, driving toward her or overtaking her as a coin flip says.
+static func warned_first_from_either_end() -> SentAhead:
 	var sent := SentAhead.new()
-	sent.warned = warned_first
-	sent.from_either_end = either_end
+	sent.warned = true
+	sent.from_either_end = true
 	return sent
 
 ## Whether it is warned of first (`warned`).

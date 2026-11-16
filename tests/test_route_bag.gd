@@ -396,7 +396,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 		# The next marble fills the ordinary bag: the lesson took none of it.
 		bag.peek()
 		var ordinary := bag.bag_in_front()
-		var dogs: int = EventDirector.ROUTE_BAG_MARBLES_OF["charging_dog"]
+		var dogs: int = EventDirector.ordinary_route_marbles(day, 0).count("charging_dog")
 		t.check(ordinary.count("charging_dog") == dogs,
 				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
 				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])

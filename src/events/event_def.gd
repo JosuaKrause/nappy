@@ -509,10 +509,10 @@ func for_day(day: int) -> EventDef:
 ## escape's bag, a scene recipe, a happening) reads none of it. Set by `send_ahead()`.
 @export var _sent_ahead: SentAhead = null
 
-## Makes the row one the director sends ahead of her (`_sent_ahead`, `SentAhead.of()`): warned of
-## first in its lane where `warned_first`, and from either end of her street where `either_end`.
-func send_ahead(warned_first: bool, either_end: bool) -> void:
-	_sent_ahead = SentAhead.of(warned_first, either_end)
+## Makes the row one the director sends ahead of her, the way `how` says (`_sent_ahead`:
+## `SentAhead.at_once()` or `SentAhead.warned_first_from_either_end()`).
+func send_ahead(how: SentAhead) -> void:
+	_sent_ahead = how
 
 ## Whether the director sends it ahead of her on an ordinary day (`send_ahead()`).
 func is_sent_ahead() -> bool:
@@ -1580,8 +1580,8 @@ func validate() -> bool:
 	# A thing that does not telegraph its coming loses only the coming's telegraph (the badge and
 	# warning first). Its in-world telegraph, where it has one, is still held by the contract. The
 	# one row with none is the loose dog, sent down her line and met with its telegraph already spent
-	# (`EventsAhead._send_down_her_line()`).
-	if not telegraphs and comes_down_her_line():
+	# (`EventsAhead._send_down_her_line()`, `meets_her_with_its_telegraph_spent()`).
+	if not telegraphs and meets_her_with_its_telegraph_spent():
 		return true
 	if warns_before_it_exists():
 		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())
@@ -1715,6 +1715,16 @@ func warns_before_it_exists() -> bool:
 ## does not.
 func comes_down_her_line() -> bool:
 	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
+
+## **Whether it meets her with its telegraph already spent**: a row down her own line
+## (`comes_down_her_line()`) the director creates from its own moments, the cyclist after its warning
+## and the loose dog at once, aged to the beat that reaches her (`EventSpawner.age_when_warned()`).
+## **Not a row the director sends ahead of her** (`is_sent_ahead()`, the dog walker): it is the row
+## she would come upon, put just ahead of her, so it is created with its own in-world telegraph to
+## run, the bark its price in `docs/COSTS.md` is averaged over, and the contract holds it
+## (`validate()`).
+func meets_her_with_its_telegraph_spent() -> bool:
+	return comes_down_her_line() and not is_sent_ahead()
 
 ## A copy of this row that enters the world only under a warning that runs first (`warned_first`),
 ## for a row otherwise placed some other way: day 13's column of `military_convoy` (a `MAP` place

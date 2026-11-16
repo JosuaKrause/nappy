@@ -777,7 +777,7 @@ static func _dog_walker() -> EventDef:
 	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "the same for
 	# the dog walker"): the director creates it at once just out of sight down her own sidewalk,
 	# walking toward her, as the loose dog comes, so the dog-walker decision is one she always meets.
-	def.send_ahead(false, false)
+	def.send_ahead(SentAhead.at_once())
 	# The heaviest weight in act I, and it goes **up** whenever rows are added around it. The density
 	# is a fixed number of events, so every new type takes a share of it, and this is one of the two
 	# that cannot be allowed to thin out: dog walkers and cafe frontages are what an ordinary street
@@ -1730,7 +1730,7 @@ static func _police_patrol() -> EventDef:
 	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "just spawn in
 	# the car just ahead of the player? then you guarantee an encounter"): created at once down the
 	# carriageway lane that drives toward her, the return leg's patrols among them.
-	def.send_ahead(false, false)
+	def.send_ahead(SentAhead.at_once())
 	def.weight = 3.0
 	def.max_per_day = 12
 	def.heat_response = EventDef.HeatResponse.PRESSES
@@ -2437,7 +2437,7 @@ static func _military_convoy() -> EventDef:
 	# [...] the convoy"): warned of first, its badge alone for a second, then created in the lane
 	# beside her just out of sight up the road, from either end, as day 13's column is. The escape's
 	# trucks are the planned ones.
-	def.send_ahead(true, true)
+	def.send_ahead(SentAhead.warned_first_from_either_end())
 	def.weight = 2.0
 	return def
 
