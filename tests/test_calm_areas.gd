@@ -30,7 +30,7 @@ func _map() -> CityMap:
 	map.set_tile(Vector2i(25, 11), GameEnums.TileType.BUILDING)
 	var layout := BlockLayout.new()
 	layout.carve_open_ground(court)
-	map.block_layouts[COURT] = layout
+	map.carve_block(COURT, layout)
 	map.calm_blocks = [PARK, COURT] as Array[Vector2i]
 	return map
 

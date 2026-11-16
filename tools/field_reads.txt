@@ -157,27 +157,6 @@ src/city/blackout.gd power_station
 src/city/city_generator.gd courtyard_rects
 src/city/city_generator.gd home_block
 src/city/city_generator.gd home_rect
-src/city/recipe_city_builder.gd block_layouts
-src/city/recipe_city_builder.gd block_plans
-src/city/recipe_city_builder.gd building_rects
-src/city/recipe_city_builder.gd main_road
-src/city/recipe_city_builder.gd network
-src/city/recipe_city_builder.gd precinct_spans
-src/city/recipe_city_builder.gd recipe_bounds
-src/city/recipe_city_builder.gd recipe_closures
-src/city/recipe_city_builder.gd recipe_dawn_tiles
-src/city/recipe_city_builder.gd recipe_diagnostics
-src/city/recipe_city_builder.gd recipe_exterior
-src/city/recipe_city_builder.gd recipe_tree_moves
-src/city/recipe_city_builder.gd recipe_trees
-src/city/recipe_city_builder.gd seed_used
-src/city/recipe_city_builder.gd stretch
-src/city/recipe_city_builder.gd stretch_active
-src/city/recipe_city_builder.gd stretch_buildings
-src/city/recipe_city_builder.gd stretch_cracks
-src/city/recipe_city_builder.gd stretch_litter
-src/city/recipe_city_builder.gd stretch_props
-src/city/recipe_city_builder.gd tiles
 src/city/scenery_ground.gd seed_used
 src/dev/dev_rig.gd big_buildings
 src/dev/dev_rig.gd main_road
@@ -1079,7 +1058,6 @@ src/main.gd locked_out
 # [RoadClosure] src/routes/road_closure.gd
 src/city/city.gd kind
 src/city/city_map.gd segment
-src/city/recipe_city_builder.gd segment
 src/events/day_planner.gd segment
 src/resistance/park_cordon.gd segment
 src/telemetry/telemetry_map.gd segment

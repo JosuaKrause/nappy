@@ -704,7 +704,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	city.free()
 	_test_the_fence_pieces_stand_in_draw_order(t, fenced)
 
-## The fence's pictures, drawn for the closures a recipe hands the city (`recipe_closures`, which
+## The fence's pictures, drawn for the closures a recipe hands the city (`CityMap.recipe_road_closures()`, which
 ## `start_recipe_day()` stands): the park's own runs and a short archway besides. End-on terminal
 ## panels share the post's exact anchor: subpixel drift can reverse their draw order. The mounted
 ## sign has its own midpoint support on either axis.
@@ -716,8 +716,9 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[Roa
 	var map := CityGenerator.generate(BASE_SEED)
 	var short_run := ParkClosure.new(Vector2i.ZERO, Rect2i(117, 121, 4, 4),
 			Rect2i(120, 122, 1, 1), Vector2i.RIGHT)
-	map.recipe_closures.append_array(fenced)
-	map.recipe_closures.append(short_run)
+	for closure in fenced:
+		map.add_recipe_closure(closure)
+	map.add_recipe_closure(short_run)
 	city.build(map)
 	var day := 9
 	var state := CityState.new()

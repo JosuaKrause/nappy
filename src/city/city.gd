@@ -822,7 +822,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 	return result
 
 ## `Building.roof_extension_rows`, `roof_extension_seamless` and `seamless_cover_cols` for every
-## building in `buildings` (parallel to `map.building_rects`): wherever a building's own
+## building in `buildings` (parallel to `map.building_lots()`): wherever a building's own
 ## `covered_ground_cols` marks a column covered, the tile directly south of it belongs to some
 ## other lot's rect — the one whose roof now has to reach up to meet the covered building's own
 ## roof — found by a tile lookup over every rect rather than a spatial search, since the whole set
@@ -919,7 +919,7 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 ## complete-context courtyard, so its first authored piece in the same canonical rectangle order
 ## supplies the tint instead; a hidden witness piece must not choose the visible colour. A tint
 ## rather than a shared `variant`, which would erase the other authored rolls the buildings keep.
-## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_rects`.
+## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_lots()`.
 func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var first_variant := {}
 	if map.has_stretch():
@@ -1342,7 +1342,7 @@ func _dress_blocks(state: CityState) -> void:
 		building.day = _day
 	_fronts.mark_the_burnt_frontage()
 
-## A stretch's props are its recipe's (`CityMap.stretch_props`): every tree, swing frame, bollard
+## A stretch's props are its recipe's (`CityMap.stretch_prop_list()`): every tree, swing frame, bollard
 ## and sack where the recipe puts it, in place of the rolls a day's blocks and streets would make.
 func _dress_the_stretch() -> void:
 	for listed in map.stretch_prop_list():
@@ -1537,7 +1537,7 @@ func _recipe_contains(at: Vector2) -> bool:
 	return not map.has_recipe_exterior() or map.recipe_window().has_point(map.world_to_tile(at))
 
 ## Whether a building on `lot` is shown: every one in a city, those inside a bounded recipe's
-## rectangle, and in a stretch only the recipe's own (`CityMap.stretch_buildings`).
+## rectangle, and in a stretch only the recipe's own (`CityMap.stretch_building_lots()`).
 func _recipe_shows_building(lot: Rect2i) -> bool:
 	if map.has_stretch():
 		return map.has_stretch_building_on(lot)

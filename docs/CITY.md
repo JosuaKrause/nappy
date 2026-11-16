@@ -2258,7 +2258,7 @@ Top-down camera with a fake vertical extrusion:
   Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's own
   ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
   anything drawn and never from a day's own closures — a covered column stays covered for the whole
-  run, the same fixed fact `CityMap.building_rects` already is. A power station's yard is fenced
+  run, the same fixed fact `CityMap.building_lots()` already is. A power station's yard is fenced
   ground with no roof to extend, so a column facing it keeps its facade (below). A partly covered
   front keeps every other column's ordinary ground floor untouched:
   its storefront span only lands

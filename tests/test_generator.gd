@@ -63,7 +63,7 @@ func run(t: TestRunner) -> void:
 
 ## **Cutting a hole out of a block leaves the building pieces the cut shape implies.** The cut is
 ## the generator's own business (`_subtract` is called by no other game class), so it is read off
-## what a generated city holds: `building_rects` inside each single-block lot, against the holes
+## what a generated city holds: `building_lots()` inside each single-block lot, against the holes
 ## the block's layout and the home name. A block with no hole is one building, the lot itself; a
 ## through-alley splits it into two slabs either side; a corner square leaves an L of two rects;
 ## the home's notch in the middle of the south edge leaves three. A block a big building spans

@@ -78,6 +78,10 @@ func summary_words() -> String:
 func tiles(map: CityMap) -> Array[Vector2i]:
 	return map.rect_tiles(segment.tile_rect())
 
+## Whether the whole street this closure's segment covers lies inside `window` (a tile rectangle).
+func fits_within(window: Rect2i) -> bool:
+	return window.encloses(segment.tile_rect())
+
 ## Where the two barriers stand: the middle of each mouth, on the ground plane.
 func mouth_centres(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
