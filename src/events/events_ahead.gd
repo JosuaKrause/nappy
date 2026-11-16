@@ -535,7 +535,8 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)
 	for id in ids:
 		var row := _director.route_row(id)
-		if row and row.spawn_mode_on(world.day) == EventDef.SpawnMode.MAP:
+		if row and row.spawn_mode_on(world.day) == EventDef.SpawnMode.MAP \
+				and not row.is_sent_ahead():
 			_siting.prepare(row)
 	return rigged
 

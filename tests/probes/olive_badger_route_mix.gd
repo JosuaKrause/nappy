@@ -62,7 +62,8 @@ func _measure() -> void:
 			for plan in planned:
 				var mode := plan.def.spawn_mode_on(day)
 				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
-						or mode == EventDef.SpawnMode.TOWARD_PLAYER:
+						or mode == EventDef.SpawnMode.TOWARD_PLAYER \
+						or (plan.def.is_sent_ahead() and not plan.is_placed()):
 					bought += 1
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
@@ -188,13 +189,15 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 		t += step
 	return met
 
-## Each director-sited row's share of the day by `weight`, among the rows available that day.
+## Each director-sited row's share of the day by `weight`, among the rows available that day, the
+## rows the director sends ahead of her among them (`EventDef.is_sent_ahead()`).
 func _intended_shares(day: int) -> Dictionary:
 	var shares := {}
 	var total := 0.0
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day):
 		var mode := def.spawn_mode_on(day)
-		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER:
+		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER \
+				and not def.is_sent_ahead():
 			continue
 		shares[def.id] = def.weight
 		total += def.weight

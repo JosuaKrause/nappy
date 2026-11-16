@@ -334,18 +334,26 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 	for day in days:
 		_done(day["city"], day["her"])
 
-## What the director puts in front of her as she walks `seconds` north on the spot, a tick at a
-## time as the manager's tick asks it: `"id at x,y"` for each event that appears in the world, the
-## torn poster's pursuer left out.
+## What the director puts in front of her as she walks `seconds` along the east-west street she
+## stands on (`_a_sidewalk()`), turning at the map's edges, a tick at a time as the manager's tick
+## asks it: she walks rather than marking time, since a row the director sends ahead of her waits,
+## its marble unspent, until where she is has ground for it (a sidewalk, a carriageway), and holds
+## up the events behind it while it waits. `"id at x,y"` for each event that appears in the world,
+## the torn poster's pursuer left out.
 func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) -> Array:
-	her.velocity = Vector2(0.0, -Tuning.WALK_SPEED)
+	her.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var seen := {}
 	for instance in city.events.instances():
 		seen[instance] = true
 	var handed := []
 	var elapsed := 0.0
+	var width := city.map.world_size().x
 	while elapsed < seconds:
 		city.events.ahead.place_what_is_owed_ahead(0.1)
+		her.global_position += her.velocity * 0.1
+		if her.global_position.x < Tuning.TILE_SIZE * 2.0 \
+				or her.global_position.x > width - Tuning.TILE_SIZE * 2.0:
+			her.velocity = -her.velocity
 		elapsed += 0.1
 		for instance in city.events.instances():
 			if seen.has(instance):

@@ -157,6 +157,7 @@ src/
 	hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
 	day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
+	sent_ahead.gd         how the director sends a row ahead of her: warned first, from either end
 	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
 	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
 	abduction_spec.gd     the unmarked van's take of a bystander

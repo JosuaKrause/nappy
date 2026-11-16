@@ -212,7 +212,8 @@ func _gaps(handed: Array) -> Array[float]:
 ## the marble bag approach will properly fix this" · "they will need rigged bags".)* On a real act
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
 ## each comes within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
-## before it, so all of them are met within that many events each.
+## before it, so all of them are met within that many events each. A patrol is a marble of the
+## ordinary bag too (`EventDef.is_sent_ahead()`), so a window may hold a second one, never none.
 func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
@@ -231,7 +232,7 @@ func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 			met.append((due[0] as EventDef).id)
 	var spaced := met.size() == count * x
 	for i in count:
-		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") == 1
+		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") >= 1
 	t.check(spaced, "each of the %d patrols is one of the %d events after the one before (%s)"
 			% [count, x, met])
 

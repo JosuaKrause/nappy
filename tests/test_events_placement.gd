@@ -492,15 +492,15 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 	t.check(refused > 100, "and refused it sidewalk ground (%d tiles asked)" % refused)
 
 ## **A scene recipe lays a row the units draw as the day lays it: its route stays on its
-## location's run** (`Location.run()`, `EventScheduler.recipe_placement()`), so an authored dog
-## walker or patrol has the route a played day gives one and never a longer one. Asked over a few
-## cities for each of the two moving rows: every point of a placed route is a tile of the run of the
+## location's run** (`Location.run()`, `EventScheduler.recipe_placement()`), so an authored man
+## shouting or chatting mother has the beat a played day gives one and never a longer one. Asked
+## over a few cities for each of the two moving rows a unit draws: every point of a placed route is a tile of the run of the
 ## location holding the row's tile, and the count of placements whose uncut route would have left
 ## the run is what stops the check passing on routes that were short anyway.
 func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void:
 	var placed := 0
 	var would_leave := 0
-	for id: String in ["dog_walker", "police_patrol"]:
+	for id: String in ["homeless_yeller", "chatting_mother"]:
 		var def := EventCatalogue.by_id(id)
 		var day := maxi(def.first_day, 6)
 		for i in 3:

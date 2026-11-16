@@ -505,7 +505,8 @@ func _test_along_street_paths_stay_in_bounds(t: TestRunner) -> void:
 	var extent := map.world_size()
 	for day in range(1, 15):
 		for plan in _planned(day):
-			if plan.def.path_mode != EventDef.PathMode.ALONG_STREET:
+			# A moment the director is owed has no route yet (`DawnMoments`).
+			if plan.def.path_mode != EventDef.PathMode.ALONG_STREET or not plan.is_placed():
 				continue
 			t.check(plan.path.size() == 2, "an along-street route has two waypoints")
 			# The route must not finish jammed against the boundary along the axis it

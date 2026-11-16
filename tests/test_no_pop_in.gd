@@ -2,8 +2,9 @@ extends RefCounted
 ## **Nothing that arrives from off screen is ever drawn on the frame it exists.** *(Amendment 6 of
 ## M226, the player: "objects don't spawn \"at the edge of the screen\" they spawn *offscreen*" · "I
 ## don't want any pop in".)* Every place a thing arriving from off screen is created at —
-## `PendingWarning.down_her_line()` (the cyclist, the loose dog), `along_her_heading()` (the day-3
-## dog), `on_its_route()` (the fire engine), `in_its_lane()` (day 13's column) and
+## `PendingWarning.down_her_line()` (the cyclist, the loose dog, the dog walker the director sends),
+## `along_her_heading()` (the day-3 dog), `on_its_route()` (the fire engine), `in_its_lane()` (day
+## 13's column and the convoy the director sends) and
 ## `just_out_of_sight()` (the resistance's robber and guard) — puts the thing wholly outside the
 ## camera's whole view.
 ##
@@ -105,16 +106,18 @@ func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 			% [placed, marked] + "first frame%s" % ("" if popped.is_empty() else ": " + "; ".join(popped)))
 	t.check(marked > 0, "and some of them are marked, so the caret was measured (%d)" % marked)
 
-## Her own sidewalk on several real cities: the cyclist and the loose dog sent down her line from
-## points along the arterial, every way along it, through every camera — moved sideways or further
-## onto their ground, never back into the view.
+## Her own sidewalk on several real cities: the cyclist, the loose dog and the dog walker the
+## director sends (`EventDef.as_sent_ahead()`) sent down her line from points along the arterial,
+## every way along it, through every camera — moved sideways or further onto their ground, never
+## back into the view.
 func _test_her_own_sidewalk_on_real_cities(t: TestRunner) -> void:
 	var placed := 0
 	var popped: Array[String] = []
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var start := CrowdLanes.arterial_pavement(map)
-		for row: EventDef in [EventCatalogue.by_id("cyclist"), EventCatalogue.by_id("loose_dog")]:
+		for row: EventDef in [EventCatalogue.by_id("cyclist"), EventCatalogue.by_id("loose_dog"),
+				EventCatalogue.by_id("dog_walker").as_sent_ahead()]:
 			for k in 12:
 				var her := start + Vector2(0.0, float(k) * Tuning.TILE_SIZE * 7.0)
 				if not map.in_bounds(map.world_to_tile(her)):
@@ -135,11 +138,13 @@ func _test_her_own_sidewalk_on_real_cities(t: TestRunner) -> void:
 			"on real cities, nothing any of %d sidewalk arrivals draws is in view on its first frame%s"
 			% [placed, "" if popped.is_empty() else ": " + "; ".join(popped)])
 
-## The fire engine on its road, from every point up its street she may stand at, and day 13's column
-## in its lane, through every camera.
+## The fire engine on its road, from every point up its street she may stand at, day 13's column
+## in its lane, and the convoy the director sends in the lane of an east-west street beside her,
+## through every camera.
 func _test_the_road_and_the_lane(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
+	var sent := EventCatalogue.by_id("military_convoy").as_sent_ahead()
 	var kerb := Vector2(2000.0, 4000.0)
 	var placed := 0
 	var popped: Array[String] = []
@@ -163,6 +168,16 @@ func _test_the_road_and_the_lane(t: TestRunner) -> void:
 				if _drawn_in(view, truck_in_lane) and popped.size() < 3:
 					popped.append("column at %v with her at %v" % [lane, her])
 				truck_in_lane.free()
+				# The convoy the director sends, in the lane of a street running east-west beside
+				# her as well as north-south.
+				var across := PendingWarning.in_its_lane(sent, her, Vector2(0.0, her.y - 40.0),
+						Vector2(going, 0.0), -1.0e6, 1.0e6, view)
+				var sent_truck := _arrival(sent, across, her,
+						PackedVector2Array([across, across + Vector2(going * 4000.0, 0.0)]))
+				placed += 1
+				if _drawn_in(view, sent_truck) and popped.size() < 3:
+					popped.append("sent convoy at %v with her at %v" % [across, her])
+				sent_truck.free()
 	t.check(placed > 0 and popped.is_empty(),
 			"on the road and in the lane, nothing any of %d arrivals draws is in view on its first "
 			% placed + "frame%s" % ("" if popped.is_empty() else ": " + "; ".join(popped)))

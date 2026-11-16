@@ -86,7 +86,9 @@ func run(t: TestRunner) -> void:
 					.doors(doors).standing(standing) \
 					.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan().placements():
 				var mode := plan.def.spawn_mode_on(day)
-				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
+				# A row the director sends ahead of her is a moment where the dawn left it unplaced.
+				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
+						or (plan.def.is_sent_ahead() and not plan.is_placed()):
 					moments += 1
 					continue
 				if not plan.is_placed():

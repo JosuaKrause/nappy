@@ -21,8 +21,9 @@ extends RefCounted
 ## After the walk every unit left is drawn. A placed row counts once it comes within the stream
 ## radius of her, the moment it would stream in, under its row, its view and its kind of ground:
 ## a row the director sites on her way among them, once sited (day 3's fire), but not a place her
-## route's bag hands it. Prints `WD day seeds streamed`, `WV day row view count`, `WK day row kind
-## count` and `WM day met at-the-door late-out`, where the capped rows are met (`CAPPED`: within
+## route's bag hands it. Prints `WH day row count`, what the director hands out on her walk
+## (`EventDirector.due()`) row by row, summed over the seeds; `WD day seeds streamed`,
+## `WV day row view count`, `WK day row kind count` and `WM day met at-the-door late-out`, where the capped rows are met (`CAPPED`: within
 ## the stream radius of her door, and in the second half of the walk out), summed over the seeds,
 ## and per seed and day `WT day seed siting ticks median p99 worst total`, the director's siting's
 ## tick costs in microseconds, and `WP day seed microseconds`, the dawn's planning of each
@@ -264,6 +265,8 @@ func _walk_every_day(reach: float) -> void:
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}
+		# What the director hands out on her walk (`EventDirector.due()`), by row.
+		var handed := {}
 		var placed := 0
 		# Where on her walk the capped rows are met: within the stream radius of her door at the
 		# start, and in the second half of the walk out.
@@ -404,7 +407,10 @@ func _walk_every_day(reach: float) -> void:
 					if not the_games:
 						continue
 					var t1 := Time.get_ticks_usec()
-					director.due(TICK, at, velocity)
+					var due := director.due(TICK, at, velocity)
+					if not due.is_empty():
+						var handed_id := (due[0] as EventDef).id
+						handed[handed_id] = int(handed.get(handed_id, 0)) + 1
 					var moved := director.site_what_is_on_her_way(TICK, at, velocity)
 					siting_ticks.append(Time.get_ticks_usec() - t1)
 					for plan in moved:
@@ -484,6 +490,8 @@ func _walk_every_day(reach: float) -> void:
 			print("WV %d %s %d" % [day, key, by_view[key]])
 		for key: String in by_kind:
 			print("WK %d %s %d" % [day, key, by_kind[key]])
+		for key: String in handed:
+			print("WH %d %s %d" % [day, key, handed[key]])
 	print("WU all %d %d %d %d %d" % [reach, all_on_the_walk, all_after, all_pull, all_chain])
 	print("WQ all %d %s" % [reach, _quantiles(all_costs)])
 	if the_games:
