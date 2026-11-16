@@ -1,0 +1,13 @@
+row abduction            on street    share 0.014 -> 0.083: weight there 1.0 -> 0.17
+row charging_dog         on street    share 0.013 -> 0.060: weight there 1.0 -> 0.22
+row chatting_mother      on street    share 0.022 -> 0.077: weight there 1.0 -> 0.29
+row abduction            on junction  share 0.068 -> 0.238: weight there 1.0 -> 0.28
+row charging_dog         on junction  share 0.064 -> 0.219: weight there 1.0 -> 0.29
+row chatting_mother      on junction  share 0.025 -> 0.238: weight there 1.0 -> 0.1
+row leaf_blower          on junction  share 0.047 -> 0.155: weight there 1.0 -> 0.3
+row protest              on junction  share 0.361 -> 0.129: weight there 1.0 -> 2.8
+row charging_dog         on open      share 0.004 -> 0.024: weight there 0.0085 -> 0.0015
+row leaf_blower          on open      share 0.005 -> 0.035: weight there 0.0039 -> 0.0006
+row market_stall         on open      share 0.004 -> 0.028: weight there 0.0073 -> 0.00098
+row pigeon_flock         on open      share 0.009 -> 0.029: weight there 0.012 -> 0.0038
+row poster_crew_square   on open      share 0.012 -> 0.030: weight there 1.0 -> 0.39
