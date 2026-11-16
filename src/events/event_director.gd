@@ -436,8 +436,10 @@ func _owe_the_sprinkled_dog(day: int) -> void:
 	if _rng.randf() < CHARGING_DOG_SPRINKLE_CHANCE:
 		_owed.push_front(dog)
 
+## How many events she is still owed today: the queue's, and the rows sent ahead of her whose
+## marbles were drawn while she had no room for them (`_sent_waiting`), which are still to come.
 func owed() -> int:
-	return _owed.size()
+	return _owed.size() + _sent_waiting.size()
 
 # ------------------------------------------------------------ the route's bag ---
 

@@ -1712,11 +1712,11 @@ func warns_before_it_exists() -> bool:
 ## own closing speed and notice either, since nothing warns of it first and the camera may be led
 ## away from it. `validate()` holds a `TOWARD_PLAYER` row's field short of it.
 func nearest_it_is_created() -> float:
+	var out_of_sight := SpawnSiting.least_distance()
 	if spawn_mode == SpawnMode.TOWARD_PLAYER and not comes_down_her_line() \
 			and not warns_before_it_exists():
-		return maxf(SpawnSiting.least_distance(),
-				Offscreen.min_lead(speed + Tuning.WALK_SPEED, offscreen_notice))
-	return SpawnSiting.least_distance()
+		return maxf(out_of_sight, Offscreen.min_lead(speed + Tuning.WALK_SPEED, offscreen_notice))
+	return out_of_sight
 
 ## Whether the director sends this row down her own line on foot: a `TOWARD_PLAYER` row whose
 ## ground is not the road (`cyclist`, `loose_dog`), created just out of sight on her sidewalk

@@ -53,8 +53,9 @@ coming* are claims about the thing's own course.
   its coming only if it goes fast, comes toward her (PLAYTEST-145 18-23), and carries a heavy
   penalty (olive-hedgehog #598), ending the day or a heavy hit. One that does not
   (`EventDef.telegraphs`) — the loose dog and the cat, the player's own — is outside the badge and
-  warning-first placement rather than exempted from them, as are `alley_mouse`, `pigeon_flock` and
-  `police_patrol` by the rule's numbers (`docs/EVENTS.md`, "What telegraphs")
+  warning-first placement rather than exempted from them, as are `alley_mouse`, `pigeon_flock`,
+  `police_patrol` and the `dog_walker` the director sends ahead of her by the rule's numbers
+  (`docs/EVENTS.md`, "What telegraphs")
 - above the **player**, a flashing exclamation mark for a soon-to-be-bad spot, doubled and red for
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself

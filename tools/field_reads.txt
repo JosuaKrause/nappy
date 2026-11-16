@@ -506,7 +506,6 @@ src/events/event_director.gd placement
 src/events/event_director.gd pursuit
 src/events/event_director.gd shape
 src/events/event_director.gd spawn_mode
-src/events/event_director.gd speed
 src/events/event_director.gd still_while_telegraphing
 src/events/event_director.gd weight
 src/events/event_excitement.gd core_intensity

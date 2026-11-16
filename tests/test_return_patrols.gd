@@ -318,10 +318,10 @@ func _test_sited_on_driveable_road_toward_her(t: TestRunner) -> void:
 
 ## `pavement_inward()` answers `Vector2i.ZERO` off a plain sidewalk edge, which is exactly what a
 ## park, a square or a precinct pavement is for this purpose — nothing there has a carriageway to
-## drive on, or (for a precinct) a carriageway at all, so the siting must retry later rather than
-## invent a road. The patrol is the next event owed, she walks on the spot in a park and is handed
-## nothing for a long while, and it is still owed, not spent: it is handed out as soon as she
-## stands on a street.
+## drive on, or (for a precinct) a carriageway at all, so the siting must wait rather than invent a
+## road. The patrol is the next event owed, she walks on the spot in a park and is handed no patrol
+## for a long while (the marbles behind it come meanwhile, calm-pelican-6), and it is kept, not
+## lost: it is handed out as soon as she stands on a street.
 func _test_empty_in_a_park(t: TestRunner) -> void:
 	var map := _map()
 	var calm := map.calm_tiles()
@@ -333,10 +333,12 @@ func _test_empty_in_a_park(t: TestRunner) -> void:
 	director.rig_her_route(["police_patrol"], 1)
 	var in_the_park := Walk.new(director, map, map.tile_to_world(calm[0]))
 	in_the_park.on_the_spot = true
-	var handed := in_the_park.hand_outs(150.0)
-	t.check(handed.is_empty(),
-			"no carriageway to drive on in a park, so the patrol is handed out nowhere (%d events)"
-			% handed.size())
+	var patrols := 0
+	for hand_out: Array in in_the_park.hand_outs(150.0):
+		if (hand_out[1] as EventDef).id == "police_patrol":
+			patrols += 1
+	t.check(patrols == 0,
+			"no carriageway to drive on in a park, so no patrol is handed out (%d)" % patrols)
 	var on_the_street := Walk.new(director, map)
 	var found := false
 	while on_the_street.clock < 60.0 and not found:

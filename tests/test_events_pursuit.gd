@@ -71,7 +71,7 @@ class _RetryDirector extends EventDirector:
 	var elapsed := 0.0
 	var handed := false
 	## Overrides EventDirector.due.
-	func due(delta: float, _at: Vector2, _velocity: Vector2) -> Array:
+	func due(delta: float, _at: Vector2, _velocity: Vector2, _view: VisibleView = null) -> Array:
 		elapsed += delta
 		if handed:
 			return []
