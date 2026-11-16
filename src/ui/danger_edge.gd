@@ -171,7 +171,7 @@ func _measure(delta: float) -> void:
 	if not _events or not _player or delta <= 0.0:
 		return
 	if not (_events.has_method("visible_view")):
-		_own_view.look_through(_player)
+		_own_view.look_from(Stroller.view_centre_of(_player))
 	var subjects: Array = []
 	for instance in _live():
 		if not instance.is_gone():

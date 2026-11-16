@@ -36,7 +36,7 @@ extends RefCounted
 ## a button moves what it covers and this class names no UI class or group.
 ##
 ## **The view is the world the camera shows**, `Tuning.VIEW_HALF_EXTENT` either side of where the
-## camera is drawing from (`Stroller.camera_screen_center()`, which carries her look-ahead and the
+## camera is drawing from (`Stroller.view_centre_of()`, which carries her look-ahead and the
 ## camera's smoothing), and its corners are the design box's own whether or not a portrait touch
 ## window presents the game rotated: `main._apply_orientation()` turns the world through the camera
 ## and every layer of screen furniture through the same quarter turn, so the controls stay over the
@@ -45,7 +45,7 @@ extends RefCounted
 ## (`ScreenOrientation.to_design_space()`); a world box needs no undoing.
 ##
 ## Two ways to ask. `visible_share()` is the one-off question. A caller asking about many things in
-## one frame keeps an instance, sets it once a frame — `look_through()` from the camera (given the
+## one frame keeps an instance, sets it once a frame — `look_from()` the camera's centre (given the
 ## controls' `ScreenCover` in `controls`), or `look()` from a view a rig chose — which lays the two
 ## corners onto the view there and then, and asks
 ## `sees()`, `share_of()` or `clear_of_sight()` for each thing, so the corners are worked out once a
@@ -61,7 +61,7 @@ var _joystick := false
 var _left := Rect2()
 var _right := Rect2()
 ## What the on-screen controls cover and whether their scheme is in force, **handed in** by whoever
-## owns the controls (`EventManager.use_controls()`, from `main`) for `look_through()` to read the
+## owns the controls (`EventManager.use_controls()`, from `main`) for `look_from()` to read the
 ## scheme from each frame. `null` where nothing built them (a rig, a test), which is the tap scheme's
 ## whole view.
 var controls: ScreenCover = null
@@ -85,13 +85,10 @@ func look(at_view: Rect2, covering: ScreenCover) -> void:
 		_left = _onto(covering.left_corner(), view, scale)
 		_right = _onto(covering.right_corner(), view, scale)
 
-## Sets this frame's view from the camera on `player`: `Tuning.VIEW_HALF_EXTENT` about where it is
-## drawing from — `Stroller.camera_screen_center()`, or the player's own position for a body with no
-## camera (a rig) — and the corners from the controls handed in `controls`, while their scheme is in
-## force.
-func look_through(player: Node2D) -> void:
-	var stroller := player as Stroller
-	var centre := stroller.camera_screen_center() if stroller else player.global_position
+## Sets this frame's view from the point the camera is drawing from, `centre` (what
+## `Stroller.view_centre_of()` answers): `Tuning.VIEW_HALF_EXTENT` about it, and the corners from the
+## controls handed in `controls`, while their scheme is in force.
+func look_from(centre: Vector2) -> void:
 	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), controls)
 
 ## `visible_share()` for `rect` against what `look()` was last told.

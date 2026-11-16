@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 static func _view_through(rig: Node2D, controls: TouchControls) -> VisibleView:
 	var made := VisibleView.new()
 	made.controls = controls.covering
-	made.look_through(rig)
+	made.look_from(Stroller.view_centre_of(rig))
 	return made
 
 ## A view of the world about `centre` that a rig chose, in the scheme `joystick` says.

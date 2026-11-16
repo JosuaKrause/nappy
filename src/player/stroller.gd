@@ -621,10 +621,17 @@ func _force_reset_camera_interpolation() -> void:
 ## `offset`, clamped to the city limits. Every one of the three can be worth a screenful. A camera
 ## that is not the current one has no screen centre at all — Godot only recomputes it for the one
 ## being drawn — so its transform is the honest answer there.
-func camera_screen_center() -> Vector2:
+func _camera_screen_center() -> Vector2:
 	if _camera.is_current():
 		return _camera.get_screen_center_position()
 	return _camera.global_position
+
+## Where the camera is drawing from for `player`, the one rule everything that asks what she can
+## see shares: her own camera's `_camera_screen_center()` for a `Stroller`, and the body's own
+## position for anything with no camera (a rig).
+static func view_centre_of(player: Node2D) -> Vector2:
+	var stroller := player as Stroller
+	return stroller._camera_screen_center() if stroller else player.global_position
 
 ## Eases the camera onto `point` instead of following her — a checkpoint's hut, gate or post,
 ## currently the only caller — over `CAMERA_EASE_SECONDS`, smooth-stepped rather than
@@ -642,7 +649,7 @@ func camera_screen_center() -> Vector2:
 ## camera exactly there, and switch smoothing off for the duration — the ease *is* the smoothing,
 ## and two of them in series is what made a half-second move read as a cut.
 func focus_camera_on(point: Vector2) -> void:
-	var drawn_from := camera_screen_center()
+	var drawn_from := _camera_screen_center()
 	_camera_smoothing_when_free = _camera.position_smoothing_enabled
 	_camera.position_smoothing_enabled = false
 	_camera.top_level = true
@@ -668,7 +675,7 @@ func focus_camera_on(point: Vector2) -> void:
 ## release that teleports her mid-ease (`teleport_to()`, the same frame a checkpoint's hold ends)
 ## still arrives at where she actually ends up rather than where she was caught.
 func release_camera_focus() -> void:
-	_camera_ease_from = camera_screen_center()
+	_camera_ease_from = _camera_screen_center()
 	_camera_ease_elapsed = 0.0
 	_camera_focused = false
 	_camera_easing_back = true

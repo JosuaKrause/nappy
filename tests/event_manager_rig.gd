@@ -58,8 +58,8 @@ static func walker(t: TestRunner, city: City, at: Vector2) -> Stroller:
 	# overridden to the physics callback with a warning, and a warning in a test run is a failure.
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	# Never the current camera: this camera is not the viewport's, so it works out nothing about where
-	# it is drawing from, and what she can see (`VisibleView.look_through()`) is about her,
-	# `Stroller.camera_screen_center()`'s own answer for a camera that is not current.
+	# it is drawing from, and what she can see (`VisibleView.look_from()`) is about her,
+	# `Stroller.view_centre_of()`'s own answer for a camera that is not current.
 	camera.enabled = false
 	rig.add_child(camera)
 	t.add_child(rig)

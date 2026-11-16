@@ -21,6 +21,7 @@ func run(t: TestRunner) -> void:
 	city.build(MapCache.of(SEED))
 	_test_a_live_event_charges_the_spot_it_stands_on(t, city)
 	_test_calm_ground_fills_sleepiness_faster_than_the_street(t, city)
+	_test_the_camera_framing_is_less_the_look_ahead_it_is_handed(t, city)
 	city.free()
 
 ## An event placed in the city's own manager, whose field reaches the spot it stands on, is in what
@@ -74,3 +75,15 @@ func _test_calm_ground_fills_sleepiness_faster_than_the_street(t: TestRunner, ci
 ## The blocks of the calm lot the tile lies in.
 static func lots(map: CityMap, tile: Vector2i) -> int:
 	return map.calm_lot_blocks(map.block_at(map.tile_to_world(tile)))
+
+## The framing of the whole city is the map grown by the band painted outside it, less the reach of
+## a glance the caller hands in: a longer look-ahead pulls each edge in by exactly the difference.
+func _test_the_camera_framing_is_less_the_look_ahead_it_is_handed(t: TestRunner, city: City) -> void:
+	var none := city.camera_bounds(0.0)
+	var led := city.camera_bounds(46.0)
+	t.check(none.size.is_equal_approx(city.map.world_size()
+			+ Vector2.ONE * 2.0 * CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)),
+			"with no look-ahead the framing is the map and its whole border band")
+	t.check(led.position.is_equal_approx(none.position + Vector2.ONE * 46.0)
+			and led.size.is_equal_approx(none.size - Vector2.ONE * 92.0),
+			"each edge comes in by the look-ahead it is handed")

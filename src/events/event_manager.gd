@@ -436,13 +436,13 @@ func visible_view() -> VisibleView:
 func sees(world_position: Vector2, margin := 0.0) -> bool:
 	return world.visible.sees(world_position, margin)
 
-## Tells `world.visible` this frame's view and scheme (`VisibleView.look_through()`): the camera's
+## Tells `world.visible` this frame's view and scheme (`VisibleView.look_from()`): the camera's
 ## view, `Tuning.VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off
 ## her a little, and whether the on-screen controls are the joystick scheme, whose rings and buttons
 ## cover the view's bottom corners *(inbox #581, the player: "yes, everything should follow this
 ## (and treat it depending on the input mode)")*.
 func _look_through_the_camera() -> void:
-	world.visible.look_through(world.player)
+	world.visible.look_from(Stroller.view_centre_of(world.player))
 
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
