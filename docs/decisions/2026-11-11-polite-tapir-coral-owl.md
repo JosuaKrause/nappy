@@ -67,8 +67,8 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
 ## Decided, with its source
 
 - **Option D: the abduction's two weights are not set.** The pass's row weights stand as designed, except the abduction's
-  street weight (0.23) and junction-box weight (0.45): the player's answer on the board on 2026-11-15, where they answered
-  the design's open picks as the design's, option D being the exception. So thirteen of the pass's fourteen moved weights
+  street weight (0.23) and junction-box weight (0.45): the player's answer on the board on 2026-11-15 (inbox #1464), where they
+  answered the design's open picks as the design's, option D being the exception. So thirteen of the pass's fourteen moved weights
   are set.
 - **The seed counts every row the seed tree placed.** The cells are the design's section 6.4 seed exactly, including the
   dog walker, the police patrol and the military convoy, 25.9 of the seed tree's 99.2 events a city-day; their share of
