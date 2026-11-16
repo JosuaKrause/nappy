@@ -189,19 +189,18 @@ func _draw_the_spread(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 ## the freed event, alive until the slice goes, and the slice would draw from it.
 class Slice extends Node2D:
 	var _look: WeakRef
-	## Which slice of the picture it is, far end first. Set once, by its constructor; no class
-	## reads it, and the look-picture probe (`tests/probes/look_fingerprint.gd`) names a slice by it.
-	var index: int
+	## Which slice of the picture it is, far end first. Set once, by its constructor.
+	var _index: int
 
 	## Handed, as the look makes it, the look that draws it and which slice it is.
 	func _init(look: SpreadLook, at: int) -> void:
 		_look = weakref(look)
-		index = at
+		_index = at
 
 	func _draw() -> void:
 		var look := _look.get_ref() as SpreadLook
 		if look != null:
-			look.draw_the_slice(self, index)
+			look.draw_the_slice(self, _index)
 
 ## The slices the event's picture is drawn in, far end first, and where each stands from the
 ## body (`body_position()`), index for index.

@@ -72,7 +72,7 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 	var widest := 0.0
 	for a in instance.flock.birds:
 		for b in instance.flock.birds:
-			widest = maxf(widest, a.at.distance_to(b.at))
+			widest = maxf(widest, a.at().distance_to(b.at()))
 	return widest
 
 ## **The birds move, one at a time, and they stay inside their own event.** *(M38: "the birds are
@@ -123,7 +123,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 		if instance.is_leaving:
 			break
 		for bird in instance.flock.birds:
-			furthest = maxf(furthest, bird.at.length())
+			furthest = maxf(furthest, bird.at().length())
 	t.check(furthest <= def.flock_spread + 2.0,
 			"every bird stayed inside the %.0fpx flock for the whole burst (furthest %.0fpx)"
 			% [def.flock_spread, furthest])
@@ -257,7 +257,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 			"five seconds out of reach and the flock is still standing there")
 	var still_grounded := true
 	for bird in instance.flock.birds:
-		still_grounded = still_grounded and is_zero_approx(bird.lift)
+		still_grounded = still_grounded and is_zero_approx(bird.lift())
 	t.check(still_grounded, "every bird is on the pavement, which is what she can see from there")
 	t.close_to(instance.current_intensity(),
 			def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
@@ -269,7 +269,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	t.check(not instance.is_waiting() and instance.is_telegraphing(),
 			"walking up to it is what starts it")
 	for bird in instance.flock.birds:
-		still_grounded = still_grounded and is_zero_approx(bird.lift)
+		still_grounded = still_grounded and is_zero_approx(bird.lift())
 	t.check(still_grounded, "and the telegraph is still eleven birds on the ground")
 	# Read at the flock's own middle rather than at her: every bird is inside `flock_spread` of it
 	# whatever the wheel is doing, so the two readings differ by the damping rather than by where
@@ -279,7 +279,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	_advance(instance, def.telegraph_time + 0.2)
 	var up := 0
 	for bird in instance.flock.birds:
-		if bird.lift > 0.0:
+		if bird.lift() > 0.0:
 			up += 1
 	t.check(up == instance.flock.birds.size(), "then all %d of them are up" % instance.flock.birds.size())
 	t.check(instance.excitement.contribution_at(Vector2.ZERO) > on_the_ground * 3.0,

@@ -143,13 +143,15 @@ const _ICON_PAINTED_RADIUS := 62.5
 const _ICON_HALF_SIZE := 64.0
 ## The dot `_draw_focus_circles()` draws at the steering focus while she stands, offset toward her
 ## heading while she walks: a third of `PAUSE_RADIUS` (about 8.7px), so even the larger running knob
-## at `_FOCUS_KNOB_OFFSET` stays inside the ring rather than crowding the rim.
-const _FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
+## at `FOCUS_KNOB_OFFSET` stays inside the ring rather than crowding the rim.
+const FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
 ## How far the knob sits from the focus while she walks, 36px: just inside the ring's 48px with the
 ## larger running knob still within it. **Unrelated to `DEAD_ZONE_RADIUS`** *(2026-10-10, pebbly-alpaca:
 ## "the position where the dot it drawn should be independent of the deadzone -- those two have no
 ## relation")*; it keeps the value it had when the dead zone was 32px.
-const _FOCUS_KNOB_OFFSET := 36.0
+const FOCUS_KNOB_OFFSET := 36.0
+## How much larger the knob is drawn while she runs.
+const FOCUS_KNOB_RUNNING_SCALE := 1.3
 
 ## Hardware only — see the class doc's own paragraph on what this decides and what it no longer
 ## does. Read once into a member the same way `TouchInput.available()` already is everywhere else
@@ -954,9 +956,9 @@ func _draw_focus_circles() -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	var running := Input.is_action_pressed(&"run")
-	var knob_radius := _FOCUS_KNOB_RADIUS * (1.3 if running else 1.0)
+	var knob_radius := FOCUS_KNOB_RADIUS * (FOCUS_KNOB_RUNNING_SCALE if running else 1.0)
 	var knob_colour := Color(1.0, 1.0, 1.0, 1.0 if running else 0.8)
-	var offset := current_heading(_rig) * _FOCUS_KNOB_OFFSET
+	var offset := current_heading(_rig) * FOCUS_KNOB_OFFSET
 	draw_arc(_steering_focus, RING_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35),
 			FOCUS_STROKE_WIDTH, true)
 	draw_circle(_steering_focus + offset, knob_radius, knob_colour)

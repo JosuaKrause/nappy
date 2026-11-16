@@ -24,26 +24,26 @@ func _draw_birds(canvas: CanvasItem) -> void:
 	for i in birds.size():
 		order.append(i)
 	order.sort_custom(func(a: int,
-			b: int) -> bool: return birds[a].at.y < birds[b].at.y)
+			b: int) -> bool: return birds[a].at().y < birds[b].at().y)
 	for i in order:
 		var bird := birds[i]
-		if bird.lift < BIRD_SHADOW_CEILING:
+		if bird.lift() < BIRD_SHADOW_CEILING:
 			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
-			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
-			_draw_shadow(canvas, bird.at, 5.0 * faded)
+			var faded := 1.0 - bird.lift() / BIRD_SHADOW_CEILING
+			_draw_shadow(canvas, bird.at(), 5.0 * faded)
 		# Each bird holds its own sector — a flock is eleven bodies wheeling independently, not one
 		# actor with one facing — through the same hold `select_view()` gives the instance itself.
-		_held_sectors[i] = EightDirection.update(_held_sectors[i], bird.heading)
+		_held_sectors[i] = EightDirection.update(_held_sectors[i], bird.heading())
 		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[_held_sectors[i]]
 		var mirror := EightDirection.is_mirrored(_held_sectors[i])
-		var wings: String = EventPictures.PIGEON_BY_VIEW[view] if sin(bird.phase) >= 0.0 \
+		var wings: String = EventPictures.PIGEON_BY_VIEW[view] if sin(bird.phase()) >= 0.0 \
 				else EventPictures.PIGEON_DOWN_BY_VIEW[view]
-		if bird.lift <= 0.0:
+		if bird.lift() <= 0.0:
 			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
 			# that has already gone — which is the thing the wait and the telegraph before it exist
 			# to show her instead.
 			wings = EventPictures.PIGEON_DOWN_BY_VIEW[view]
-		_drawer.stand(canvas, wings, bird.at - Vector2(0.0, bird.lift),
+		_drawer.stand(canvas, wings, bird.at() - Vector2(0.0, bird.lift()),
 				Vector2.ZERO, mirror)
 
 ## The eight-view sector each bird is held at, parallel to the flock's birds: one per bird rather
@@ -56,7 +56,7 @@ var _held_sectors: Array[int] = []
 ## instance itself (`EightDirection.nearest()`).
 func _see_every_bird(birds: Array[EventFlock.Bird]) -> void:
 	while _held_sectors.size() < birds.size():
-		_held_sectors.append(EightDirection.nearest(birds[_held_sectors.size()].heading))
+		_held_sectors.append(EightDirection.nearest(birds[_held_sectors.size()].heading()))
 
 ## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
 ## the pavement to cast one onto that the player can see.

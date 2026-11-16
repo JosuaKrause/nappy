@@ -10,6 +10,7 @@
 # [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
 # confirm what it does (inbox #1095 and #1098 in curly-rabbit; writing-tests). The reason is on each line.
 src/city/prop.gd body_shape  # the post's collision shape, the only way to confirm the body is the circle its shadow is drawn from and that no other prop has one; the body is a child the physics engine reads, nothing under src/ asks it
+src/dev/route_lines.gd routes  # the polylines the route layer draws, one per route of the day's tree; they exist only as the arguments of draw_polyline() in _draw(), which a headless run draws to nothing and no node exposes, so the list is the only handle on what the layer shows; tests/test_route_lines.gd's picture sweep reads it over several seeds and days (the same exception EventRouteLines.routes has)
 src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
 src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
 src/events/event_def.gd is_a_one_shot_off_her_way  # validate() refuses a one-shot not sited from her walk with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
@@ -20,6 +21,7 @@ src/events/event_instance.gd transition  # the one place a live event's phase ch
 src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the danger-caret suite reads the caret's colour and chevrons off a recording drawer, but the arrival sweep (tests/test_no_pop_in.gd, hundreds of arrivals) and the redraw suite ask only whether a mark has an area, and drawing each of those arrivals through a recording drawer would add a real frame and a drawer per arrival to the slowest suites for a check that reads only the area
 src/events/views/event_look.gd drawn_rect_now  # the rectangle the whole drawing covers on this frame (pictures, shadow, danger caret, halo margin, a fire's front), which the game asks only in pieces (_drawn_reach(), mark_rect()); the no-pop-in, drawn-view and resistance-trap suites hold that a thing that arrives is wholly off screen on the frame it exists against it, and a headless run draws no pixels and the caret is drawn straight onto the event, so no recording drawer or node holds the extent
+src/events/views/spread_look.gd slices  # the nodes a long picture is drawn in, which the look builds, stands beside its event in the world's entity layer, moves and frees; a slice holds its look by a weak reference and nothing else says which slice belongs to which event, so test_draw_layers, test_halo_behind, test_protest and test_scenery_animation find an event's slices through it, and so do the look-picture probes
 src/resistance/contact_point.gd would_complete_at  # the contact's pure touch question, which the game asks every physics frame through `_physics_process()` in this class; a contact completes once and for all, so the suites that ask it of many places (`tests/contact_touches.gd`) ask it directly of the day's own contact; no other game code asks a contact whether a body at a place would complete it, so there is no second caller to give it
 src/main.gd configure  # a hand-in: the game's boot reads the process's own flags (RunConfig.at_boot()) and a scene recipe's boot hands itself the run's with the recipe on top, but no outward act of a test can set the command line a boot reads, so the suites that boot the real main.tscn hand it the flags they test (--seed, --no-save, --touch) the way the game's process hands them (dependency injection; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/run_config.gd parse  # the one builder of a run's configuration besides the process's own (at_boot(), in its own file, which reads the command line, the page's query and the display server, none of which a test can set); a RunConfig is data, built as it is rather than mocked (writing-tests: plain values and data are built as they are), and the suites that hand a configuration in where the game hands its own (main.configure(), GameSave.configure(), the screens and rigs that take one) build it here from the words a player would type, so underscoring it leaves them no configuration to hand in
@@ -28,13 +30,8 @@ src/run_config.gd parse  # the one builder of a run's configuration besides the 
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
-src/dev/route_lines.gd routes
-src/events/behaviours/event_abduction.gd stop
-src/events/event_manager.gd on_screen
 src/events/events_ahead.gd walk_siting
 src/events/pending_warning.gd left
-src/events/views/spread_look.gd slices
-src/run/run_state_registry.gd parts
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
