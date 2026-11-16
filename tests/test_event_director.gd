@@ -31,15 +31,20 @@ const DAY := 13
 
 ## **A way on whose answers the test sets** (`WayOn`): whether a car may drive a leg
 ## (`drives_clear()`) and whether it has a next leg from where it stands (`next_leg()`), recording
-## what it was asked.
+## what it was asked and the day's rule it was told (`use_the_days_rule()`).
 class FakeWayOn extends WayOn:
 	var drives := true
 	var goes_on := true
 	var asked_to_drive: Array[PackedVector2Array] = []
 	var asked_on_from: Array[Array] = []
+	var told_rule := Callable()
 
 	func _init() -> void:
 		super(null, null, null)
+
+	## Overrides WayOn.use_the_days_rule.
+	func use_the_days_rule(may_take: Callable) -> void:
+		told_rule = may_take
 
 	## Overrides WayOn.drives_clear.
 	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
@@ -59,6 +64,7 @@ func run(t: TestRunner) -> void:
 		_test_the_convoy_comes_in_the_lane_beside_her_toward_her(t, vertical)
 	_test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t)
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
+	_test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t)
 	_test_a_sent_row_starts_clear_of_a_placed_plan(t)
 	_test_a_sent_row_with_no_room_lets_the_next_marbles_through(t)
 
@@ -275,6 +281,47 @@ func _test_a_sent_row_keeps_out_of_a_field_kept_clear(t: TestRunner) -> void:
 			"the dog walker, whose way runs through that field, is refused")
 	plan.spend()
 	t.check(not _due(director).is_empty(), "and handed out once the plan is spent")
+
+## **A further leg keeps out of a field a placed plan keeps clear and out of a region door's ground**
+## (`EventDirector.clear_to_go_on()`), the day's rule the director tells the walk's way on as it is
+## handed it (`use_way_on()`), asked here through the rule the fake way on was told, as `WayOn` asks
+## it of every leg: a leg past a lethal row's field is refused while the plan stands and taken once it
+## is spent, one clear of it is taken, and the same for a leg past a door and one clear of it. A placed
+## plan that keeps no field clear (a café) refuses no leg, however near: the start's spacing is not
+## this rule's.
+func _test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t: TestRunner) -> void:
+	var map := _street()
+	var lethal := EventDef.new()
+	lethal.id = "lethal_by_hand"
+	lethal.hard_fail = true
+	lethal.inner_radius = 30.0
+	lethal.outer_radius = 120.0
+	# North of her is up the street; every place and leg below is in tiles north of her.
+	var north := func(tiles: float, across := 0.0) -> Vector2:
+		return _her() + Vector2(across, -tiles * TILE)
+	var field := EventPlan.new(lethal, north.call(20.0, TILE))
+	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), north.call(31.0, TILE))
+	var door := EventPlan.new(EventCatalogue.by_id("checkpoint_hut"), north.call(-40.0, TILE))
+	door.stand_as_a_door()
+	var plans: Array[EventPlan] = [field, cafe, door]
+	var way_on := FakeWayOn.new()
+	var director := _director(map, "police_patrol", plans, 1, way_on)
+	t.check(director != null and way_on.told_rule.is_valid(), "the director tells the way on it is handed the day's rule")
+	if not way_on.told_rule.is_valid():
+		return
+	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
+	var lane := -2.0 * TILE
+	var takes := func(from_tiles: float, to_tiles: float) -> bool:
+		var path := PackedVector2Array([north.call(from_tiles, lane), north.call(to_tiles, lane)])
+		return bool(way_on.told_rule.call(path, patrol))
+	t.check(not takes.call(14.0, 26.0) and takes.call(0.0, 10.0),
+			"a leg past a lethal row's field is refused, and one clear of it taken")
+	t.check(not takes.call(-34.0, -46.0) and takes.call(-4.0, -20.0),
+			"a leg past a region door is refused, and one clear of its ground taken")
+	t.check(takes.call(28.0, 34.0),
+			"a leg past a café is taken: a plan that keeps no field clear refuses no further leg")
+	field.spend()
+	t.check(takes.call(14.0, 26.0), "and the leg past the lethal row's is taken once it is spent")
 
 ## A sent row starts no nearer a placed plan than `EventScheduler.EVENT_SPACING_ANY`: a café right
 ## by the place the dog walker starts refuses it, and one further off does not.
