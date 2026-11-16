@@ -60,10 +60,9 @@ class Subject extends RefCounted:
 	## handed over, so the adapter asks once.
 	var announces := true
 	## How fast it comes at her under its own steam (`EventDef.approach_speed()`): what a thing
-	## that arrives under its warning starts closing at.
+	## that arrives under its warning starts closing at, and the approach a warning with nothing in
+	## the world yet is listed with.
 	var approach_speed := 0.0
-	## Its row's own speed, the approach a warning with nothing in the world yet is listed with.
-	var speed := 0.0
 	## How far from its centre its field reaches her (`EventDef.heard_within()`): the badge's gap is
 	## measured to there.
 	var heard_within := 0.0
@@ -129,7 +128,7 @@ func _announce_the_warnings(here: Vector2, subjects: Array) -> void:
 		if not subject.pending or not subject.announces:
 			continue
 		coming.append([maxf(subject.left, 0.0), subject.position.distance_to(here), subject.payload,
-				subject.position, subject.speed, subject.logged_name])
+				subject.position, subject.approach_speed, subject.logged_name])
 
 ## The in-the-world path: see `step()`.
 func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array,

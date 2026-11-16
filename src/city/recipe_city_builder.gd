@@ -64,14 +64,14 @@ static func build(data: Dictionary) -> Dictionary:
 		if map.lot_blocks(footprint.position) != footprint or map.starting_purpose(footprint.position) != purpose:
 			errors.append("lot.replaced: requested purpose or footprint did not survive construction")
 	if choices.has("precincts"):
-		var inland: Vector4i = map.precinct_spans[1]
-		if inland.x == 1 and absi(inland.y - map.main_road) <= 1:
+		var inland: Vector4i = map.precinct_stretches()[1]
+		if inland.x == 1 and absi(inland.y - map.main_road_corridor()) <= 1:
 			errors.append("precinct.spine: inland precinct cannot occupy the spine or its neighbor")
 	for pin: Dictionary in choices.get("layouts", []):
 		var block := Vector2i(int(pin["block"][0]), int(pin["block"][1]))
-		if not map.block_layouts.has(block) or map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING:
+		if map.layout_of(block) == null or map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING:
 			errors.append("layout.unused: requested layout belongs to an absorbed or replaced lot")
-	errors.append_array(map.recipe_diagnostics)
+	errors.append_array(map.recipe_diagnostics())
 	if not errors.is_empty():
 		return result
 	var violations: Array[String] = []
@@ -94,17 +94,16 @@ static func build(data: Dictionary) -> Dictionary:
 		bounds = SceneRecipe.rect(extent["bounds"])
 		# A bounded view must retain whole footprints. Cutting a building at a camera-sized
 		# rectangle would leave its collider, roof and floor disagreeing at the seam.
-		for footprint in map.building_rects:
+		for footprint in map.building_lots():
 			if footprint.intersects(bounds) and not bounds.encloses(footprint):
 				errors.append("extent.cuts_building: %s" % [footprint])
-		for closure in map.recipe_closures:
-			if not bounds.encloses(closure.segment.tile_rect()):
+		for closure in map.recipe_road_closures():
+			if not closure.fits_within(bounds):
 				errors.append("extent.closure: authored closure must fit inside the bounds")
-		for source: Vector2i in map.recipe_tree_moves:
-			if not bounds.has_point(source) or not bounds.has_point(map.recipe_tree_moves[source]):
+		for source: Vector2i in map.tree_move_sources():
+			if not bounds.has_point(source) or not bounds.has_point(map.tree_move_from(source)):
 				errors.append("extent.tree_moves: both sides of a selected tree move must fit inside bounds")
-		map.recipe_bounds = bounds
-		map.recipe_exterior = true
+		map.show_recipe_window(bounds)
 	var anchors := {}
 	for name: String in data.get("anchors", {}):
 		var spec: Variant = data["anchors"][name]
@@ -153,7 +152,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 	var map := RecipeCityContext.restore(data["context"])
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
 	var stretch: Dictionary = data["stretch"]
-	map.stretch.resize(map.size_in_tiles().x * map.size_in_tiles().y)
+	map.begin_stretch()
 	var tiles: Dictionary = stretch["tiles"]
 	for type_name: String in tiles:
 		var type: int = GameEnums.TileType[type_name.to_upper()]
@@ -163,18 +162,16 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 				if not map.in_bounds(tile):
 					errors.append("stretch.tiles: %s outside the map" % tile)
 					continue
-				var index := tile.y * map.size_in_tiles().x + tile.x
-				if map.stretch[index] != 0:
+				if map.in_stretch(tile):
 					errors.append("stretch.tiles: %s listed twice" % tile)
-				map.stretch[index] = 1
-				map.tiles[index] = type
+				map.add_stretch_tile(tile, type)
 	# The saved context's fronting lots are not a second authority for the visible buildings.
 	# Remove them, then install precisely the authored list, including a moved or newly added lot.
 	var retained: Array[Rect2i] = []
-	for lot in map.building_rects:
+	for lot in map.building_lots():
 		if not _fronts_the_stretch(map, lot):
 			retained.append(lot)
-	map.building_rects = retained
+	map.set_building_lots(retained)
 	for listed: Dictionary in stretch.get("buildings", []):
 		var lot := SceneRecipe.rect(listed["lot"])
 		if not Rect2i(Vector2i.ZERO, map.size_in_tiles()).encloses(lot) or not lot.has_area():
@@ -186,41 +183,41 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 			if map.in_stretch(tile):
 				errors.append("stretch.buildings: lot overlaps authored ground at %s" % tile)
 		map.fill_rect(lot, GameEnums.TileType.BUILDING)
-		map.building_rects.append(lot)
-		map.stretch_buildings[lot] = {"district": GameEnums.BlockPurpose[str(listed["district"]).to_upper()],
+		map.add_building_lot(lot)
+		map.add_stretch_building(lot, {"district": GameEnums.BlockPurpose[str(listed["district"]).to_upper()],
 				"variant": int(listed["variant"]), "height": int(listed["height"]),
-				"condition": Building.Condition[str(listed["condition"]).to_upper()]}
+				"condition": Building.Condition[str(listed["condition"]).to_upper()]})
 	var trees: Array[Vector2i] = []
-	for tile in map.recipe_trees:
+	for tile in map.recipe_tree_tiles():
 		if not map.in_stretch(tile):
 			trees.append(tile)
 	for listed: Array in stretch.get("trees", []):
 		var tile := RecipeCityContext.point(listed)
 		if not map.in_stretch(tile) or not map.is_walkable(tile) \
-				or not map.network.segment_containing(tile) or trees.has(tile):
+				or not map.street_network().segment_containing(tile) or trees.has(tile):
 			errors.append("stretch.trees: duplicate tree or no street ground at %s" % tile)
 		else:
 			trees.append(tile)
-	map.recipe_trees = trees
+	map.set_recipe_trees(trees)
 	for listed: Dictionary in stretch.get("props", []):
 		var at := Vector2(float(listed["at"][0]), float(listed["at"][1]))
 		if not map.in_stretch(map.world_to_tile(at)):
 			errors.append("stretch.props: placement outside the stretch")
-		map.stretch_props.append({"kind": Prop.Kind[str(listed["kind"]).to_upper()], "at": at,
+		map.add_stretch_prop({"kind": Prop.Kind[str(listed["kind"]).to_upper()], "at": at,
 				"variant": int(listed.get("variant", 0)), "scale": float(listed.get("scale", 1.0))})
 	for listed: Dictionary in stretch.get("litter", []):
 		var at := Vector2(float(listed["at"][0]), float(listed["at"][1]))
 		if not map.in_stretch(map.world_to_tile(at)):
 			errors.append("stretch.litter: placement outside the stretch")
-		map.stretch_litter.append({"at": at, "texture": SceneRecipe.litter_names().find(str(listed["kind"]))})
+		map.add_stretch_litter({"at": at, "texture": SceneRecipe.litter_names().find(str(listed["kind"]))})
 	for crack: Array in stretch.get("cracks", []):
 		var tile := Vector2i(int(crack[0]), int(crack[1]))
 		if not map.in_stretch(tile):
 			errors.append("stretch.cracks: placement outside the stretch")
-		map.stretch_cracks[tile] = Vector2i(int(crack[2]), int(crack[3]))
-	map.recipe_dawn_tiles = map.tiles.duplicate()
+		map.add_stretch_crack(tile, Vector2i(int(crack[2]), int(crack[3])))
+	map.keep_dawn_ground()
 	_plan_closures(data, map, errors)
-	map.stretch_active = true
+	map.show_stretch()
 	for label: String in data.get("anchors", {}):
 		var spec: Variant = data["anchors"][label]
 		var at := Vector2.ZERO
@@ -257,7 +254,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 static func _on_the_stretch(map: CityMap, tile: Vector2i) -> bool:
 	if map.in_stretch(tile):
 		return true
-	for lot: Rect2i in map.stretch_buildings:
+	for lot: Rect2i in map.stretch_building_lots():
 		if lot.has_point(tile):
 			return true
 	return false
@@ -284,12 +281,12 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 		errors.append("closure.count: exceeds the ordinary day's closure budget")
 		return
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day)
 	var regions := RegionPlanner.plan_day(map, spec, tree)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = map.seed_used
+	rng.seed = map.city_seed()
 	var home := ClosurePlanner.home_street(map)
 	var areas := ClosurePlanner.calm_areas(map)
 	var candidates := ClosurePlanner._shuffled_candidates(map, home, areas, tree, regions, rng)
@@ -299,7 +296,7 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 	var emptied: Array[Vector2i] = []
 	for pin: Dictionary in pins:
 		var key := Vector3i(int(pin["segment"][0]), int(pin["segment"][1]), int(pin["segment"][2]))
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		var eligible := false
 		for candidate in candidates:
 			if candidate.key() == key:
@@ -321,7 +318,7 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 		if not ClosurePlanner._invariant_holds(map, grid, areas, closed, places):
 			errors.append("closure.reachability: %s" % [key])
 			return
-		map.recipe_closures.append(RoadClosure.new(kind as RoadClosure.Kind, segment))
+		map.add_recipe_closure(RoadClosure.new(kind as RoadClosure.Kind, segment))
 	map.set_closure_tree_pits(emptied)
 
 ## Move a real pit to the opposite curb of its same street. Planning and scenery read
@@ -342,7 +339,7 @@ static func _move_street_trees(map: CityMap, moves: Array, errors: Array[String]
 		if not original:
 			errors.append("tree_moves.from: no existing street tree at %s" % source)
 			continue
-		var segment := map.network.by_key(original.segment_key)
+		var segment := map.street_network().by_key(original.segment_key)
 		var opposite := source
 		var axis := 1 if segment.horizontal else 0
 		var offset := CityMap.corridor_offset(source[axis])
@@ -364,4 +361,4 @@ static func _move_street_trees(map: CityMap, moves: Array, errors: Array[String]
 			if map.tile_to_world(tile).distance_to(map.tile_to_world(other_tile)) < StreetTrees.footprint_radius() * 2:
 				errors.append("tree_moves.to: overlaps an existing street tree")
 	if errors.is_empty():
-		map.recipe_tree_moves = selected
+		map.set_recipe_tree_moves(selected)

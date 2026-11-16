@@ -1163,7 +1163,6 @@ static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 		map.mark_street_absent(segment.key())
 		if _the_calm_survives(map, home, areas):
 			map.record_built_over(segment.key(), _wall_off_one_end(map, segment, rng, ends.get(segment.key(), -1)))
-			map.mark_dead_end(segment.key())
 			made += 1
 		else:
 			map.restore_street(segment.key())
@@ -1346,7 +1345,6 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 			map.restore_street(between.key())
 			continue
 		var before := _Undo.new(map, purposes, block_rects, pair)
-		var industrial_count := _industrial_count(pair, industrial)
 		_make_the_pair_solid(map, purposes, block_rects, pair, between)
 		_assign_regions(map)
 		var home_region := RegionPlanner.home_region(map)
@@ -1354,7 +1352,7 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 			var street := map.street_network().beside_block(block, StreetNetwork.Side.SOUTH)
 			if RegionPlanner.ground_region_of(map, street) == home_region:
 				continue
-			map.record_power_station(pair, street.key(), _door_rect(block), industrial_count)
+			map.record_power_station(pair, street.key(), _door_rect(block))
 			return
 		before.restore(map, purposes, block_rects, between)
 

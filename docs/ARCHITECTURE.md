@@ -70,6 +70,9 @@ src/
 	street_layout.gd      the street lattice painted onto a map's tiles; the generator lays every
 	                      city's streets through it, and a test's street map does too
 	city.gd               the scene: ground, buildings, props, boundary, queries (is_alley)
+	city_dressing.gd      what the day director asks of the city a walk starts in (dress it for
+	                      the day, the act and the light, the street trees, the kerb tint, the
+	                      scenery round her); the city extends it, a test hands a fake
 	day_streets.gd        today's streets as dawn left them: the route tree, the region wall and
 	                      doors, the closures, the region a siting reads; the city writes it
 	city_fronts.gd        the building fronts the story changes (the burnt frontage, a block
@@ -356,8 +359,8 @@ src/
 	day_world_source.gd   where the day director gets the world a spec is walked in: stands it and
 	                      answers it standing; `main` implements it, a test hands a fake
 	day_world.gd          a world standing for one spec: the scene, its events, her and the baby,
-	                      where she is put down, and the city with its streets and crowd where it
-	                      is one
+	                      where she is put down, and the city's parts where it is one (its map,
+	                      streets, crowd and dressing), never the city but for an authored scene
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
 	                         perform step the moment the mark that unlocks it is touched; ticked
@@ -1021,7 +1024,9 @@ question of which walk it is. The world comes from a `DayWorldSource` it is hand
 (`src/day/day_world_source.gd`, which `main` implements): asked to stand a spec's world, it answers
 a `DayWorld` (`src/day/day_world.gd`) — the map of the ground she walks, its events, her and the
 baby in it, where she is
-put down and facing which way, the city with its streets and crowd where the world is one, the
+put down and facing which way, the city's parts where the world is one (its map, today's streets, its
+crowd and what dresses it for the day, `CityDressing`; the whole city only for an authored scene to
+install itself into), the
 walk's own random stream where it has one (the building's), and what the walk is won at in it: the
 map her front door is on for a walk home, the ways out of the city for the escape's. The director
 hands those on, the ways out to the spec and her and the home's map to the day's clock
@@ -1029,7 +1034,7 @@ hands those on, the ways out to the spec and her and the home's map to the day's
 the won last night's fire, the cause (`LossCause`), the charges still running closed, `day_ended`, and for an
 ordinary day the calendar's move. It returns a `DayEnd`; the save and the summary screen are
 `main`'s. `finish_day()` requires only the clock and the run, since the escape's building has no
-city, crowd or resistance, and reads the events, city, player and baby where there are some. It
+city, crowd or resistance, and reads the events, the crowd, player and baby where there are some. It
 calls no observer: every observer and the view hear the walk from `RunFlow`. It is handed
 the run's parts rather than reading them off a global.
 

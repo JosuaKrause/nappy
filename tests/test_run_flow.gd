@@ -196,7 +196,8 @@ func _test_the_escape_screens_hold_esc_back_only_in_a_section(t: TestRunner) -> 
 ## The spec begun is the one the observers hear, at the moments the day director tells the flow of:
 ## begun, its world as it stands with whether it is a retry, and planned with that world once the
 ## director has started it. An authored scene's walk is never announced planned, and what its setup
-## could not stand is handed back.
+## could not stand is handed back. The world announced standing is the one the flow answers after
+## (`world()`, what the director that ends the walk is handed), and none before.
 func _test_the_observers_hear_the_spec_begun_and_planned(t: TestRunner) -> void:
 	var run := RunState.new()
 	var scene := AuthoredScene.new()
@@ -208,11 +209,13 @@ func _test_the_observers_hear_the_spec_begun_and_planned(t: TestRunner) -> void:
 			heard.append(["stood", spec, world, restarted]))
 		flow.day_planned.connect(func(spec: DaySpec, world: DayWorld) -> void:
 			heard.append(["planned", spec, world]))
+		t.check(flow.world() == null, "before a walk starts the flow answers no world")
 		var director := _HeardDirector.new(run, heard)
 		var spec := DaySpec.for_section(DaySpec.Section.CITY, 60.0) if authored \
 				else DaySpec.for_day(5, 210.0)
 		var errors := flow.start(director, spec, authored)
 		var world := director.world
+		t.check(flow.world() == world, "and once it starts, the world its start stood")
 		if authored:
 			t.check(flow.spec == spec and heard == [["started", spec], ["stood", spec, world, true],
 					["director", spec]] and errors == director.problems, "an authored walk is "

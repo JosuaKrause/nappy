@@ -333,7 +333,7 @@ func _start_the_day(t: TestRunner, day: int, resistance: ResistanceDirector,
 	clock.set_process(false)
 	t.add_child(clock)
 	var days := DayDirector.new(run.calendar, run.facts, run.attempt_spend, config)
-	days.use_the_world(_city, _city.events, resistance, player, baby, clock)
+	days.use_the_world(null, resistance, clock)
 	days.use_worlds(StandingCity.new(_city, player, baby))
 	_clock = clock
 	days.start(DaySpec.for_day(day, config.day_length_for(day)), started)
@@ -646,7 +646,7 @@ func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 			break
 	t.check(on_a_swing, "exactly at one open park's own swing")
 	var park := CityGenerator.swing_park(_city.map)
-	var layout: BlockLayout = _city.map.block_layouts.get(park)
+	var layout: BlockLayout = _city.map.layout_of(park)
 	t.check(layout != null and _city.map.world_to_tile(_city.map.swing_position(
 			layout.playground_rect())) == _city.map.world_to_tile(at),
 			"and it is the park the city chose for day 12")
@@ -685,7 +685,7 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 				% [seed_value, GameEnums.BlockPurpose.keys()[before]])
 		var step := _perform_on(day)
 		var pool := ResistanceSteps.target_candidates(step, map, null)
-		var layout: BlockLayout = map.block_layouts[park]
+		var layout: BlockLayout = map.layout_of(park)
 		t.check(pool.size() == 1 and pool[0] == map.world_to_tile(map.swing_position(
 				layout.playground_rect())), "seed %d: its swing is the task's only place" %
 				seed_value)

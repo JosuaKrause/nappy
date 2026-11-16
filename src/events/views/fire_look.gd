@@ -100,7 +100,7 @@ func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
 		_drawer.stand(canvas, EventPictures.FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
 
 ## The facade a fire sited at `at` burns on, as the stretches of it the city draws, each as its
-## west and east ends in local x measured from `at`: the lot (`CityMap.building_rects`, one per
+## west and east ends in local x measured from `at`: the lot (`CityMap.building_lots()`, one per
 ## `Building`) holding the tile the sidewalk's `pavement_inward()` points at, less every column
 ## whose ground in front is not walkable — the column another building's roof reaches up to cover
 ## (`City._covered_ground_cols()`, the same lattice fact), whose facade is not drawn, so a flame

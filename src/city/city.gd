@@ -1,6 +1,6 @@
 @warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name City
-extends WorldContext
+extends CityDressing
 ## Turns a CityMap into a scene: ground, buildings, props, boundary, and the answers the
 ## baby needs about the ground it is standing on.
 ##
@@ -432,11 +432,15 @@ func _exit_tree() -> void:
 		atlas.release(CityDecals.DECORATION_ATLAS)
 
 ## Which act's cast the city is under. See Palette.act_tint.
+##
+## Overrides CityDressing.set_act.
 func set_act(act: int) -> void:
 	_act = act
 
 ## 1.0 at dawn, 0.0 at dusk. The day timer is shown as the light going, with the clock in
 ## the HUD as the precise version for anyone who wants it.
+##
+## Overrides CityDressing.set_daylight.
 func set_daylight(fraction: float) -> void:
 	if not _daylight:
 		return
@@ -615,6 +619,8 @@ func _spawn_street_trees() -> void:
 ## because a `fallen_tree_seal` is chosen later and takes a pit of its own. Reading
 ## `CityMap.is_tree_pit_emptied` rather than keeping a list here is what lets the second call be a
 ## plain refresh rather than a second bookkeeping path.
+##
+## Overrides CityDressing.refresh_street_trees.
 func refresh_street_trees() -> void:
 	for tile: Vector2i in _street_tree_pits:
 		var tree: Prop = _street_tree_pits[tile]
@@ -822,7 +828,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 	return result
 
 ## `Building.roof_extension_rows`, `roof_extension_seamless` and `seamless_cover_cols` for every
-## building in `buildings` (parallel to `map.building_rects`): wherever a building's own
+## building in `buildings` (parallel to `map.building_lots()`): wherever a building's own
 ## `covered_ground_cols` marks a column covered, the tile directly south of it belongs to some
 ## other lot's rect — the one whose roof now has to reach up to meet the covered building's own
 ## roof — found by a tile lookup over every rect rather than a spatial search, since the whole set
@@ -919,7 +925,7 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 ## complete-context courtyard, so its first authored piece in the same canonical rectangle order
 ## supplies the tint instead; a hidden witness piece must not choose the visible colour. A tint
 ## rather than a shared `variant`, which would erase the other authored rolls the buildings keep.
-## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_rects`.
+## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_lots()`.
 func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var first_variant := {}
 	if map.has_stretch():
@@ -1041,6 +1047,8 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## section (`DayDirector.start()`, the same object the day's event manager is handed); left out, as a rig that
 ## builds a city with no run flow leaves it, it is a day's (`DaySpec.for_day()`). `day` is the
 ## calendar's — the escape is walked on the last day's — and `rng` the closures' stream.
+##
+## Overrides CityDressing.start_day.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 		spec: DaySpec = null) -> void:
 	if spec == null:
@@ -1086,6 +1094,8 @@ func _dress(state: CityState, day: int) -> void:
 ##
 ## `spec` is the walk's, as `start_day()` takes it (whether the region wall stands is its answer);
 ## left out, it is a day's (`DaySpec.for_day()`).
+##
+## Overrides CityDressing.start_recipe_day.
 func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 		spec: DaySpec = null) -> void:
 	if spec == null:
@@ -1169,9 +1179,19 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 ## only the paint here asks the wider one, so nothing about where a body may stand moves with the
 ## mark. `_paint_ground()` paints every kerb cell its plain source first, so a twin from yesterday's
 ## walk cannot survive into today's.
+##
+## Overrides CityDressing.tint_the_route.
 func tint_the_route(route: RouteSource) -> void:
 	_tinted_route = route
 	scenery_ground.repaint()
+
+## The scenery's residency (`SceneryResidency.update()`) brought to `view` at once, every chunk and
+## building within it prepared now: the day's start asks it round where she is put down, so the
+## first frame there draws a whole street.
+##
+## Overrides CityDressing.prepare_scenery_in.
+func prepare_scenery_in(view: Rect2) -> void:
+	scenery.update(view, true)
 
 ## Whether a kerb tile is on today's tinted walk.
 func _is_on_the_tinted_route(tile: Vector2i) -> bool:
@@ -1342,7 +1362,7 @@ func _dress_blocks(state: CityState) -> void:
 		building.day = _day
 	_fronts.mark_the_burnt_frontage()
 
-## A stretch's props are its recipe's (`CityMap.stretch_props`): every tree, swing frame, bollard
+## A stretch's props are its recipe's (`CityMap.stretch_prop_list()`): every tree, swing frame, bollard
 ## and sack where the recipe puts it, in place of the rolls a day's blocks and streets would make.
 func _dress_the_stretch() -> void:
 	for listed in map.stretch_prop_list():
@@ -1537,7 +1557,7 @@ func _recipe_contains(at: Vector2) -> bool:
 	return not map.has_recipe_exterior() or map.recipe_window().has_point(map.world_to_tile(at))
 
 ## Whether a building on `lot` is shown: every one in a city, those inside a bounded recipe's
-## rectangle, and in a stretch only the recipe's own (`CityMap.stretch_buildings`).
+## rectangle, and in a stretch only the recipe's own (`CityMap.stretch_building_lots()`).
 func _recipe_shows_building(lot: Rect2i) -> bool:
 	if map.has_stretch():
 		return map.has_stretch_building_on(lot)

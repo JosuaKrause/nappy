@@ -66,7 +66,7 @@ static func _window_pictures(building: Building) -> Array[StringName]:
 ## Every home-block building rect, sorted so two independently-collected lists compare directly.
 static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 	var rects: Array[Rect2i] = []
-	for rect in map.building_rects:
+	for rect in map.building_lots():
 		if City.block_of(rect) == map.home_block:
 			rects.append(rect)
 	rects.sort_custom(func(a: Rect2i, b: Rect2i) -> bool: return a.position < b.position)
@@ -76,7 +76,7 @@ static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 ## of, since a wider, shallower notch never outgrows it on any lot `CityGenerator` carves.
 static func _deepest_home_block_rect(map: CityMap) -> Rect2i:
 	var deepest := Rect2i()
-	for rect in map.building_rects:
+	for rect in map.building_lots():
 		if City.block_of(rect) == map.home_block and rect.size.y > deepest.size.y:
 			deepest = rect
 	return deepest

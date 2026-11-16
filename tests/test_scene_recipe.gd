@@ -22,6 +22,7 @@ func run(t: TestRunner) -> void:
 	var map: CityMap = original.map
 	_test_station_pins(t)
 	_test_closures(t, map)
+	_test_a_closure_must_fit_a_bounded_window(t, map)
 	var pinned := _recipe()
 	pinned.city.dead_ends = [{"segment": [9, 1, 0], "end": "a"}]
 	pinned.city.power_station = {"blocks": [8, 1, 2, 1], "door_block": [8, 1]}
@@ -43,10 +44,10 @@ func run(t: TestRunner) -> void:
 		var first_map: CityMap = first_context.map
 		var other_map: CityMap = other_context.map
 		var lot := first_map.lot_rect(Vector2i(5, 5))
-		for footprint: Rect2i in first_map.building_rects:
+		for footprint: Rect2i in first_map.building_lots():
 			if lot.encloses(footprint):
 				first.append(footprint)
-		for footprint: Rect2i in other_map.building_rects:
+		for footprint: Rect2i in other_map.building_lots():
 			if lot.encloses(footprint):
 				other.append(footprint)
 		t.check(not first.is_empty() and first == other,
@@ -151,6 +152,30 @@ func _test_closures(t: TestRunner, map: CityMap) -> void:
 	t.check(not _errors(RecipeCityBuilder.build(input)).is_empty(), "late-game closure cannot be pinned on day one")
 	input.city.closures[0] = {"segment": [5, 6, 0], "kind": "roadworks"}
 	t.check(not _errors(RecipeCityBuilder.build(input)).is_empty(), "the home closure exclusion still rejects an exact recipe pin")
+
+## A bounded scene shows a window of the map, and a closure it pins must lie wholly inside it: the
+## same pin passes in a window that holds its street and is refused as `extent.closure` in one that
+## stops short of it.
+func _test_a_closure_must_fit_a_bounded_window(t: TestRunner, map: CityMap) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 23
+	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng)
+	if planned.is_empty():
+		return
+	var street := planned[0].segment.tile_rect()
+	var key := planned[0].segment.key()
+	var whole := Rect2i(Vector2i.ZERO, map.size_in_tiles())
+	var short := Rect2i(street.position, street.size - Vector2i.ONE)
+	for window: Rect2i in [whole, short]:
+		var input := _recipe()
+		input.extent = {"scope": "bounded",
+				"bounds": [window.position.x, window.position.y, window.size.x, window.size.y]}
+		input.setup.day = 1
+		input.city.closures = [{"segment": [key.x, key.y, key.z], "kind": "roadworks"}]
+		var refused := "\n".join(_errors(RecipeCityBuilder.build(input))).contains("extent.closure")
+		t.check(refused == (window == short),
+				"a closure's street %s a window %s (%s)" % ["outside" if window == short else "inside",
+				"it is refused by" if window == short else "it passes", window])
 
 func _test_examples(t: TestRunner) -> void:
 	for side: String in ["hall", "yard"]:

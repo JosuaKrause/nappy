@@ -30,11 +30,9 @@ extends EventBehaviour
 ## picture that one `EventLook.draw()` produces correctly. `RefCounted` rather than `Node` so it
 ## cannot leak.
 class Bird extends RefCounted:
-	## Where it is on the ground plane, relative to the flock's own origin.
-	var at := Vector2.ZERO
-	## How far off that ground, in px. Zero while it is standing on the pavement.
-	var lift := 0.0
-	var heading := Vector2.RIGHT
+	var _at := Vector2.ZERO
+	var _lift := 0.0
+	var _heading := Vector2.RIGHT
 	var speed := 0.0
 	## Radians per second, signed. What makes it wheel instead of flying out of its own event.
 	var turn := 0.0
@@ -43,7 +41,39 @@ class Bird extends RefCounted:
 	var climb := 0.0
 	## Wingbeats per second, and where in one it currently is.
 	var beat := 0.0
-	var phase := 0.0
+	var _phase := 0.0
+
+	## Where it is on the ground plane, relative to the flock's own origin.
+	func at() -> Vector2:
+		return _at
+
+	## How far off that ground, in px. Zero while it is standing on the pavement.
+	func lift() -> float:
+		return _lift
+
+	## The way it is flying or pecking, a unit vector.
+	func heading() -> Vector2:
+		return _heading
+
+	## Where in its wingbeat it is, in radians.
+	func phase() -> float:
+		return _phase
+
+	## Puts it at `at` on the ground plane, relative to the flock's own origin.
+	func place(at: Vector2) -> void:
+		_at = at
+
+	## Turns it to fly toward `heading`.
+	func face(heading: Vector2) -> void:
+		_heading = heading
+
+	## Sets how far off the ground it is, in px.
+	func rise_to(lift: float) -> void:
+		_lift = lift
+
+	## Sets where in its wingbeat it is.
+	func flap_to(phase: float) -> void:
+		_phase = phase
 
 ## Its birds, each its own body.
 var birds: Array[Bird] = []
@@ -77,15 +107,15 @@ func build() -> void:
 		# flock rather than as eleven birds who happen to be near each other.
 		var angle := TAU * (float(i) + 0.35 * _roll(i, 1)) / float(count)
 		var reach: float = _row.flock_spread * (0.3 + 0.7 * _roll(i, 2))
-		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
-		bird.heading = Vector2.from_angle(TAU * _roll(i, 3))
+		bird.place(Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach)
+		bird.face(Vector2.from_angle(TAU * _roll(i, 3)))
 		bird.speed = GROUND_SPEED
 		# Half of them wheel each way, or the flock rotates as a body and reads as a carousel.
 		bird.turn = (1.2 + 1.4 * _roll(i, 4)) * (1.0 if i % 2 == 0 else -1.0)
 		bird.ceiling = 20.0 + 34.0 * _roll(i, 5)
 		bird.climb = 34.0 + 40.0 * _roll(i, 6)
 		bird.beat = 6.0 + 5.0 * _roll(i, 7)
-		bird.phase = TAU * _roll(i, 8)
+		bird.flap_to(TAU * _roll(i, 8))
 		birds.append(bird)
 
 ## The oblique view: a circle on the ground is drawn as an ellipse, so the flock's footprint is
@@ -115,25 +145,25 @@ func _fly(delta: float) -> void:
 		return
 	var grounded: bool = _figure.is_waiting() or _figure.is_telegraphing()
 	for bird in birds:
-		bird.phase += bird.beat * TAU * delta
+		bird.flap_to(bird.phase() + bird.beat * TAU * delta)
 		if grounded:
 			# Pecking about. It has to move — a bird standing perfectly still is the bug being
 			# fixed, one phase earlier — but slowly enough that the flock is plainly still on the
 			# ground and plainly still avoidable.
 			bird.speed = GROUND_SPEED
-			bird.heading = bird.heading.rotated(bird.turn * 0.5 * delta)
-			bird.lift = 0.0
+			bird.face(bird.heading().rotated(bird.turn * 0.5 * delta))
+			bird.rise_to(0.0)
 		elif _figure.is_on_its_way_out():
 			# Everybody the same way now, and climbing hard. What is over says so by leaving, and a
 			# flock that was still wheeling would read as still happening.
-			bird.heading = _steer(bird.heading, _figure.heading(), TURN_IN, delta)
+			bird.face(_steer(bird.heading(), _figure.heading(), TURN_IN, delta))
 			bird.speed = move_toward(bird.speed, FLIGHT_SPEED * DEPARTURE_GAIN,
 					260.0 * delta)
-			bird.lift += bird.climb * delta
+			bird.rise_to(bird.lift() + bird.climb * delta)
 		else:
-			bird.heading = bird.heading.rotated(bird.turn * delta)
+			bird.face(bird.heading().rotated(bird.turn * delta))
 			bird.speed = move_toward(bird.speed, FLIGHT_SPEED, 320.0 * delta)
-			bird.lift = move_toward(bird.lift, bird.ceiling, bird.climb * delta)
+			bird.rise_to(move_toward(bird.lift(), bird.ceiling, bird.climb * delta))
 			# Turned back before the edge of its own event, not at it. A bird's own wheel is wider
 			# than the flock at every speed either of them wants, so without this they simply fly
 			# out of the field they are supposed to be, and take the fairness contract with them.
@@ -143,16 +173,16 @@ func _fly(delta: float) -> void:
 			# of about 21px, so a bird that is still heading outwards when it reaches the edge is
 			# already outside by the time it has come round. Starting at half the spread leaves it
 			# the room the turn costs.
-			if bird.at.length() > _row.flock_spread * 0.5:
-				bird.heading = _steer(bird.heading, -bird.at.normalized(), TURN_IN, delta)
-		bird.at += bird.heading * bird.speed * Vector2(1.0, GROUND_SQUASH) * delta
-		if not _figure.is_on_its_way_out() and bird.at.length() > _row.flock_spread:
+			if bird.at().length() > _row.flock_spread * 0.5:
+				bird.face(_steer(bird.heading(), -bird.at().normalized(), TURN_IN, delta))
+		bird.place(bird.at() + bird.heading() * bird.speed * Vector2(1.0, GROUND_SQUASH) * delta)
+		if not _figure.is_on_its_way_out() and bird.at().length() > _row.flock_spread:
 			# The steering above is what a bird turning back *looks* like; this is the line that
 			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
 			# `bird_outer()` is `outer_radius - flock_spread` precisely so that a bird at the rim
 			# reaches exactly as far as the event was validated to. Steering from half way out means
 			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
-			bird.at = bird.at.normalized() * _row.flock_spread
+			bird.place(bird.at().normalized() * _row.flock_spread)
 
 ## Turns `heading` toward `wanted` at up to `rate` radians a second.
 ##
@@ -192,14 +222,14 @@ func step_leaving(delta: float) -> void:
 func offsets() -> Array[Vector2]:
 	var out: Array[Vector2] = []
 	for bird in birds:
-		out.append(bird.at)
+		out.append(bird.at())
 	return out
 
 ## Each live bird's own `heading * speed`, parallel to `offsets()`.
 func velocities() -> Array[Vector2]:
 	var out: Array[Vector2] = []
 	for bird in birds:
-		out.append(bird.heading * bird.speed)
+		out.append(bird.heading() * bird.speed)
 	return out
 
 ## Every bird's state, as plain values.
@@ -208,8 +238,8 @@ func velocities() -> Array[Vector2]:
 func save() -> Dictionary:
 	var out: Array = []
 	for bird in birds:
-		out.append([bird.at, bird.lift, bird.heading, bird.speed, bird.turn, bird.ceiling,
-				bird.climb, bird.beat, bird.phase])
+		out.append([bird.at(), bird.lift(), bird.heading(), bird.speed, bird.turn, bird.ceiling,
+				bird.climb, bird.beat, bird.phase()])
 	return {"birds": out}
 
 ## Puts back what `save()` gave: the birds a plan carried replace the ones `build()` scattered from
@@ -223,13 +253,13 @@ func restore(state: Dictionary) -> void:
 	birds.clear()
 	for one: Array in saved:
 		var bird := Bird.new()
-		bird.at = one[0]
-		bird.lift = one[1]
-		bird.heading = one[2]
+		bird.place(one[0])
+		bird.rise_to(one[1])
+		bird.face(one[2])
 		bird.speed = one[3]
 		bird.turn = one[4]
 		bird.ceiling = one[5]
 		bird.climb = one[6]
 		bird.beat = one[7]
-		bird.phase = one[8]
+		bird.flap_to(one[8])
 		birds.append(bird)

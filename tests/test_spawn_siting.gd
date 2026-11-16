@@ -255,8 +255,7 @@ func _test_the_ground_a_contact_stands_on(t: TestRunner) -> void:
 			and not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _centre(body)),
 			"so is a tile with a body on it")
 	var off := Vector2i(-3, 5)
-	map.recipe_exterior = true
-	map.recipe_bounds = Rect2i(Vector2i.ZERO, map.size)
+	map.show_recipe_window(Rect2i(Vector2i.ZERO, map.size))
 	t.check(Tile.is_walkable(map.tile_at(off)),
 			"a recipe's exterior reads a tile off the map as an alley")
 	t.check(not siting.allows(SpawnSiting.Rule.LEGAL_GROUND, ground, _centre(off))

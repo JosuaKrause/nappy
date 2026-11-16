@@ -303,7 +303,7 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 	first.height = int(first.height) + 1
 	var rebuilt := RecipeCityBuilder.build(building)
 	var rebuilt_map: CityMap = rebuilt.map
-	t.check(_diagnostics(rebuilt).is_empty() and rebuilt_map.building_rects.has(SceneRecipe.rect(first.lot)),
+	t.check(_diagnostics(rebuilt).is_empty() and rebuilt_map.building_lots().has(SceneRecipe.rect(first.lot)),
 			"a resized lot becomes the live building footprint without matching a generator: %s" % [rebuilt.errors])
 	var tree := data.duplicate(true)
 	var run: Array = tree.stretch.tiles.sidewalk[0]
@@ -549,12 +549,14 @@ func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
-	t.check(city.buildings().size() == map.stretch_buildings.size(),
+	t.check(city.buildings().size() == map.stretch_building_lots().size(),
 			"only the recipe's buildings stand (%d)" % city.buildings().size())
 	var edge := city.get_node_or_null("VoidEdge")
 	t.check(edge != null and edge.get_child_count() > 0, "and the void round the stretch is walled off")
 	var cracked := 0
-	for tile: Vector2i in map.stretch_cracks:
+	for tile: Vector2i in map.rect_tiles(Rect2i(Vector2i.ZERO, map.size)):
+		if map.stretch_crack_at(tile) == null:
+			continue
 		var plain := GroundTiles.source_for(map, tile, 7)
 		cracked += int(plain != GroundTiles.SIDEWALK and plain != GroundTiles.ROAD
 				and plain != GroundTiles.ALLEY)

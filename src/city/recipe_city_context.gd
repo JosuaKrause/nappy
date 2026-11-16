@@ -11,7 +11,7 @@ extends RefCounted
 const RECTS := ["home_rect", "power_station", "power_station_door"]
 const RECT_LISTS := ["building_rects", "big_buildings", "alley_rects", "square_rects", "courtyard_rects"]
 const LAYOUT_RECTS := ["open_rect", "playground", "square", "alley", "passage"]
-const SETS := ["absent_segments", "dead_ends"]
+const SETS := ["absent_segments"]
 
 ## The saved form of `map`'s spatial context, as a recipe's `context` holds it.
 static func capture(map: CityMap) -> Dictionary:
@@ -22,7 +22,6 @@ static func capture(map: CityMap) -> Dictionary:
 	var data := {"size": pair(size), "seed": facts["seed"], "main_road": facts["main_road"],
 			"home_block": pair(facts["home_block"]),
 			"power_station_door_key": triple(facts["power_station_door_key"]),
-			"power_station_industrial_blocks": facts["power_station_industrial_blocks"],
 			"tiles": _runs(facts["tiles"], size), "blocks": _blocks(facts["block_plans"],
 					facts["block_layouts"]),
 			"zones": [], "precincts": [], "built_over": [],
@@ -88,8 +87,8 @@ static func _blocks(plans: Dictionary, layouts: Dictionary) -> Array:
 		var plan: BlockPlan = plans[block]
 		var steps: Array = []
 		for step in plan.steps_in_order():
-			steps.append([str(GameEnums.BlockPurpose.keys()[step.purpose]).to_lower(),
-					step.from_day, str(GameEnums.BlockCause.keys()[step.cause]).to_lower()])
+			steps.append([str(GameEnums.BlockPurpose.keys()[step.becomes()]).to_lower(),
+					step.earliest_day(), str(GameEnums.BlockCause.keys()[step.needs()]).to_lower()])
 		var layout := {}
 		if layouts.has(block):
 			var carves: Dictionary = layouts[block]
@@ -119,7 +118,7 @@ static func key_of(value: Array) -> Vector3i:
 static func validate(data: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
 	var allowed: Array = ["size", "seed", "main_road", "home_block", "power_station_door_key",
-			"power_station_industrial_blocks", "tiles", "blocks", "zones", "precincts", "built_over",
+			"tiles", "blocks", "zones", "precincts", "built_over",
 			"region_of_junction", "region_has_calm", "boundary_wall_at_a", "trees"]
 	allowed.append_array(RECTS)
 	allowed.append_array(RECT_LISTS)
@@ -137,7 +136,7 @@ static func validate(data: Dictionary) -> Array[String]:
 			errors.append("context.%s: expected integer pair" % field)
 	if not SceneRecipe.tuple(data["power_station_door_key"], 3, true):
 		errors.append("context.power_station_door_key: expected segment key")
-	for field: String in ["seed", "main_road", "power_station_industrial_blocks"]:
+	for field: String in ["seed", "main_road"]:
 		if not SceneRecipe.integer(data[field]):
 			errors.append("context.%s: expected integer" % field)
 	for field: String in RECTS:
@@ -145,7 +144,7 @@ static func validate(data: Dictionary) -> Array[String]:
 			errors.append("context.%s: expected tile rectangle" % field)
 	for field: String in allowed:
 		if field in RECTS or field in ["size", "home_block", "power_station_door_key", "seed",
-				"main_road", "power_station_industrial_blocks"]:
+				"main_road"]:
 			continue
 		if not data[field] is Array:
 			errors.append("context.%s: expected array" % field)
@@ -285,7 +284,6 @@ static func restore(data: Dictionary) -> CityMap:
 	var facts := {"size": size, "seed": int(data["seed"]), "main_road": int(data["main_road"]),
 			"home_block": point(data["home_block"]),
 			"power_station_door_key": key_of(data["power_station_door_key"]),
-			"power_station_industrial_blocks": int(data["power_station_industrial_blocks"]),
 			"tiles": tiles, "region_of_junction": PackedInt32Array(region_of_junction),
 			"region_has_calm": PackedByteArray(region_has_calm)}
 	for field: String in RECTS:

@@ -335,7 +335,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t: TestRunner) -> void:
 ## **Nothing the resistance places appears under a covered corner** *(olive-hedgehog, inbox #598, the
 ## player: "off screen is not the same as visible -- the corners get removed for visible not for
 ## off screen" · "I don't want any pop in")*. Joystick scheme, asked through the day's own view as
-## `main` wires it (`EventManager.sees()` for the notice, `EventManager.on_screen()` for placing):
+## `main` wires it (`EventManager.sees()` for the notice):
 ## **a relocation to a mouth under the bottom-left corner is refused.** For each mark tile of the
 ## test city, its mark's picture laid at several places inside the corner, she stands where the view
 ## would put it there; a case is kept where, with the view nowhere near, her tick moves the mark onto
@@ -419,7 +419,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 		var at := walker.global_position
 		var view_at := at - corner_at - corner_size * 0.5
 		events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
-		t.check(events.on_screen(at) and not events.sees(at),
+		t.check(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0).has_point(at) and not events.sees(at),
 				"the neighbor stands in the view, under the covered corner")
 		late.set_sight(events.sees)
 		late.tick(STEP)
@@ -461,7 +461,7 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) ->
 					Tuning.VIEW_HALF_EXTENT.y * 2.0 + 2.0)
 			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), covered)
 			var box := EventFootprints.box_of(walker.def)
-			t.check(not events.on_screen(feet)
+			t.check(not Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0).has_point(feet)
 					and events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
 					"%s scheme: their feet are just below the view, their figure in it" % scheme)
 			late.tick(STEP)
@@ -530,7 +530,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		var start: Vector2 = beat[0]
 		var any_feet := false
 		for at: Vector2 in Array(vans) + Array(beat):
-			any_feet = any_feet or events.on_screen(at)
+			any_feet = any_feet or view.has_point(at)
 		t.check(not any_feet and view.intersects(Rect2(start + car.position, car.size)),
 				"%s scheme: no feet of the raid are in view, the car's picture is" % scheme)
 		before = _street()

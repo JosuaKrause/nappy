@@ -111,7 +111,7 @@ func _build_rig(t: TestRunner) -> void:
 	_resistance.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
 			_city.spawn_siting)
 	_days = DayDirector.new(_city.run.calendar, _city.run.facts, _city.run.attempt_spend, _config)
-	_days.use_the_world(_city, _city.events, _resistance, _stroller, _baby, _clock)
+	_days.use_the_world(null, _resistance, _clock)
 	_days.use_worlds(StandingCity.new(_city, _stroller, _baby))
 
 ## Puts her at `at`, walking on the spot: the day's start stood her still on the doorstep.

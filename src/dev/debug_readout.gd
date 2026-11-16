@@ -243,7 +243,7 @@ func _add_frame_graph() -> void:
 		return
 	_frame_graph = FrameGraph.new()
 	_frame_graph.name = "FrameGraph"
-	_frame_graph.text_colour = _status.get_theme_color("font_color")
+	_frame_graph.use_text_colour(_status.get_theme_color("font_color"))
 	_frame_graph.position = Vector2(_status.offset_left, GRAPH_TOP)
 	_layer_graph_on = _graph_starts_on(_spikes_requested, _layers_override)
 	_frame_graph.visible = _layer_graph_on

@@ -34,14 +34,14 @@ var tiles: PackedByteArray
 ## A recipe keeps its construction witness for global placement checks. Only this declared
 ## rectangle is presented; the exterior is experimental ground, never a generated street.
 var recipe_bounds := Rect2i()
-var recipe_exterior := false
-var recipe_diagnostics: Array[String] = []
-var recipe_closures: Array[RoadClosure] = []
-var recipe_tree_moves := {}
+var _recipe_exterior := false
+var _recipe_diagnostics: Array[String] = []
+var _recipe_closures: Array[RoadClosure] = []
+var _recipe_tree_moves := {}
 ## Saved dawn ground and tree positions for an authored scene. Empty dawn ground means ordinary
 ## generated play. Repainting the authored day never replaces manual placement with block carves.
-var recipe_dawn_tiles := PackedByteArray()
-var recipe_trees: Array[Vector2i] = []
+var _recipe_dawn_tiles := PackedByteArray()
+var _recipe_trees: Array[Vector2i] = []
 ## A task scene's **stretch**: the tiles of the streets she walks, read off the recipe
 ## (`docs/SCENE_RECIPES.md`, "The task scenes"), one byte per tile, 1 inside it. Empty for every
 ## other city. While `stretch_active` is on, every single-tile question — `tile_at()`,
@@ -57,15 +57,15 @@ var stretch := PackedByteArray()
 var stretch_active := false
 ## The recipe's own cracks, tile -> `Vector2i(level, pattern)`, which `GroundTiles` draws in a
 ## stretch in place of its seeded roll; a tile not listed is uncracked.
-var stretch_cracks := {}
+var _stretch_cracks := {}
 ## The recipe's buildings, lot `Rect2i` -> `{"district", "variant", "height", "condition"}`: the
 ## only buildings a stretch builds, each drawn as the recipe says rather than as the seed rolls it.
-var stretch_buildings := {}
+var _stretch_buildings := {}
 ## The recipe's props, `[{"kind", "at", "variant", "scale"}]`, which a stretch stands in place of
 ## the dressing a day's blocks and streets would roll.
-var stretch_props: Array[Dictionary] = []
+var _stretch_props: Array[Dictionary] = []
 ## The recipe's litter, `[{"at", "texture"}]`, in place of `Litter.placed()`'s roll.
-var stretch_litter: Array[Dictionary] = []
+var _stretch_litter: Array[Dictionary] = []
 
 func has_stretch() -> bool:
 	return not stretch.is_empty()
@@ -88,13 +88,13 @@ func is_cut_off(tile: Vector2i) -> bool:
 ## rule stated over the whole lattice reads the saved spatial context, and answers what to hand
 ## `restore_edges()` once it is done.
 func witness_only() -> Array[bool]:
-	var was: Array[bool] = [recipe_exterior, stretch_active]
-	recipe_exterior = false
+	var was: Array[bool] = [_recipe_exterior, stretch_active]
+	_recipe_exterior = false
 	stretch_active = false
 	return was
 
 func restore_edges(was: Array[bool]) -> void:
-	recipe_exterior = was[0]
+	_recipe_exterior = was[0]
 	stretch_active = was[1]
 ## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
 ##
@@ -106,7 +106,7 @@ func restore_edges(was: Array[bool]) -> void:
 var block_plans := {}
 ## Block coordinate -> BlockLayout. The carves, also fixed at generation. Anchors only, for the
 ## same reason as `block_plans`: an absorbed block has no ground of its own.
-var block_layouts := {}
+var _block_layouts := {}
 ## Anchor block -> the rect of *blocks* its lot spans. Only multi-block lots appear here; a
 ## plain block's lot is itself and is not worth a dictionary entry. See `lot_blocks()`.
 var zone_rects := {}
@@ -138,9 +138,6 @@ var _absent_segments := {}
 ## care. This is for the things that do: the telemetry map's legend, and any test whose sentence is
 ## about zones.
 var _built_over := {}
-## Which of `_built_over` are **dead ends** — a street with one end walled — as a set of keys. The
-## rest belong to a big building, which took its street whole.
-var _dead_ends := {}
 ## The landmarks, each as the **pair of blocks** it joins. A big building builds over the one street
 ## between two neighbouring blocks and leaves every other street around them alone; a type that
 ## closes all four is a different type and does not exist yet. See
@@ -160,10 +157,6 @@ var _power_station_door_key := Vector3i(-1, -1, -1)
 ## wide, one deep, on the first sidewalk row of `_power_station_door_key`'s street. Where she stands
 ## to reach the door. See `power_station_door_position()`.
 var _power_station_door := Rect2i()
-## How many of the power station's two blocks were `INDUSTRIAL` before it was built over them — the
-## district preference it was placed under, kept because the blocks' own purpose becomes
-## `BIG_BUILDING` the moment the mass goes down and nothing else remembers what they were.
-var _power_station_industrial_blocks := 0
 
 ## How wide the power station's front door is, in tiles.
 const POWER_STATION_DOOR_TILES := 2
@@ -227,7 +220,7 @@ var main_road := -1
 ## sidewalk band is paving too, which is what keeps the crossing street from painting a zebra over
 ## a road that stops a pavement's width later. That is where the bollards stand.
 var precinct_spans: Array[Vector4i] = []
-var building_rects: Array[Rect2i] = []
+var _building_rects: Array[Rect2i] = []
 ## Blocks that are calm ground *right now*. Recomputed by `repaint()`, because which ground
 ## is calm is the thing that changes over a run.
 var calm_blocks: Array[Vector2i] = []
@@ -518,9 +511,9 @@ func home_tile_rect() -> Rect2i:
 func home_block_coordinate() -> Vector2i:
 	return home_block
 
-## The lot of every building the city stands, in the order the buildings are built (`building_rects`).
+## The lot of every building the city stands, in the order the buildings are built (`_building_rects`).
 func building_lots() -> Array[Rect2i]:
-	return building_rects
+	return _building_rects
 
 ## The blocks that are calm ground right now, anchor blocks only (`calm_blocks`).
 func calm_blocks_now() -> Array[Vector2i]:
@@ -594,69 +587,144 @@ func has_plan_for(block: Vector2i) -> bool:
 func blocks_with_plans() -> Array:
 	return block_plans.keys()
 
-## The carves of `block`, or null for a block that is not an anchor (`block_layouts`).
+## The carves of `block`, or null for a block that is not an anchor (`_block_layouts`).
 func layout_of(block: Vector2i) -> BlockLayout:
-	return block_layouts.get(block)
+	return _block_layouts.get(block)
 
-## The blocks that have a layout (`block_layouts`).
+## The blocks that have a layout (`_block_layouts`).
 func blocks_with_layouts() -> Array:
-	return block_layouts.keys()
+	return _block_layouts.keys()
 
-## Whether a scripted recipe shows its declared rectangle and nothing round it (`recipe_exterior`).
+## Whether a scripted recipe shows its declared rectangle and nothing round it (`_recipe_exterior`).
 func has_recipe_exterior() -> bool:
-	return recipe_exterior
+	return _recipe_exterior
 
 ## The rectangle a recipe declares, the only part of the map shown when `has_recipe_exterior()`
 ## (`recipe_bounds`).
 func recipe_window() -> Rect2i:
 	return recipe_bounds
 
-## The road closures a recipe lists (`recipe_closures`).
+## The road closures a recipe lists (`_recipe_closures`).
 func recipe_road_closures() -> Array[RoadClosure]:
-	return recipe_closures
+	return _recipe_closures
 
 ## A stretch's building on `lot`, `{"district", "variant", "height", "condition"}`, or an empty
-## dictionary where the recipe lists none (`stretch_buildings`).
+## dictionary where the recipe lists none (`_stretch_buildings`).
 func stretch_building_on(lot: Rect2i) -> Dictionary:
-	return stretch_buildings.get(lot, {})
+	return _stretch_buildings.get(lot, {})
 
-## Whether a stretch lists a building on `lot` (`stretch_buildings`).
+## Whether a stretch lists a building on `lot` (`_stretch_buildings`).
 func has_stretch_building_on(lot: Rect2i) -> bool:
-	return stretch_buildings.has(lot)
+	return _stretch_buildings.has(lot)
 
-## The lot of every building a stretch lists (`stretch_buildings`).
+## The lot of every building a stretch lists (`_stretch_buildings`).
 func stretch_building_lots() -> Array:
-	return stretch_buildings.keys()
+	return _stretch_buildings.keys()
 
-## Whether an authored scene saved its dawn ground (`recipe_dawn_tiles`), as opposed to ordinary
+## Whether an authored scene saved its dawn ground (`_recipe_dawn_tiles`), as opposed to ordinary
 ## generated play.
 func has_recipe_dawn_ground() -> bool:
-	return not recipe_dawn_tiles.is_empty()
+	return not _recipe_dawn_tiles.is_empty()
 
-## The tiles of the street trees an authored scene lists (`recipe_trees`).
+## The tiles of the street trees an authored scene lists (`_recipe_trees`).
 func recipe_tree_tiles() -> Array[Vector2i]:
-	return recipe_trees
+	return _recipe_trees
 
-## Whether an authored scene moves the street tree on `tile` to the other curb (`recipe_tree_moves`).
+## Whether an authored scene moves the street tree on `tile` to the other curb (`_recipe_tree_moves`).
 func has_tree_move_from(tile: Vector2i) -> bool:
-	return recipe_tree_moves.has(tile)
+	return _recipe_tree_moves.has(tile)
 
 ## The tile the street tree on `tile` is moved to, where `has_tree_move_from(tile)`.
 func tree_move_from(tile: Vector2i) -> Vector2i:
-	return recipe_tree_moves[tile]
+	return _recipe_tree_moves[tile]
 
 ## The crack a stretch lists for `tile`, `Vector2i(level, pattern)`, or null where it lists none
-## (`stretch_cracks`).
+## (`_stretch_cracks`).
 func stretch_crack_at(tile: Vector2i) -> Variant:
-	return stretch_cracks.get(tile)
+	return _stretch_cracks.get(tile)
 
-## A stretch's props, `[{"kind", "at", "variant", "scale"}]` (`stretch_props`).
+## A stretch's props, `[{"kind", "at", "variant", "scale"}]` (`_stretch_props`).
 func stretch_prop_list() -> Array[Dictionary]:
-	return stretch_props
+	return _stretch_props
 
-## A stretch's litter, `[{"at", "texture"}]` (`stretch_litter`).
+## A stretch's litter, `[{"at", "texture"}]` (`_stretch_litter`).
 func stretch_litter_list() -> Array[Dictionary]:
-	return stretch_litter
+	return _stretch_litter
+
+## The pinned choices the generator could not honor, as the recipe reports them
+## (`_recipe_diagnostics`).
+func recipe_diagnostics() -> Array[String]:
+	return _recipe_diagnostics
+
+## The tile of every street tree an authored scene moves to the other curb (`_recipe_tree_moves`).
+func tree_move_sources() -> Array[Vector2i]:
+	var sources: Array[Vector2i] = []
+	sources.assign(_recipe_tree_moves.keys())
+	return sources
+
+# ------------------------------------------------------ what an authored scene fixes in it ---
+# The scene recipes' city builder fills a map in as it reads each fact off a recipe; each fact has a
+# method of its own here, so the builder writes none of the fields they are kept in.
+
+## Shows the rectangle `window` and nothing round it: ground off the map reads as alley
+## (`recipe_bounds`, `_recipe_exterior`).
+func show_recipe_window(window: Rect2i) -> void:
+	recipe_bounds = window
+	_recipe_exterior = true
+
+## Lists the road closure `closure` among those a recipe hands the city (`_recipe_closures`).
+func add_recipe_closure(closure: RoadClosure) -> void:
+	_recipe_closures.append(closure)
+
+## Records the street trees a recipe moves to the other curb, source tile -> destination tile
+## (`_recipe_tree_moves`).
+func set_recipe_tree_moves(moves: Dictionary) -> void:
+	_recipe_tree_moves = moves
+
+## Starts the stretch: no tile is its own yet (`stretch`). `add_stretch_tile()` follows it, since
+## it indexes the tiles this sizes, and `show_stretch()` follows the tiles.
+func begin_stretch() -> void:
+	stretch.resize(size.x * size.y)
+
+## Makes `tile` one of the stretch's own, standing as `type` (`stretch`, `tiles`).
+func add_stretch_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
+	var index := tile.y * size.x + tile.x
+	stretch[index] = 1
+	tiles[index] = type
+
+## Replaces the lots of buildings the city stands (`_building_rects`).
+func set_building_lots(lots: Array[Rect2i]) -> void:
+	_building_rects = lots
+
+## Lists the building a stretch stands on `lot`, `{"district", "variant", "height", "condition"}`
+## (`_stretch_buildings`).
+func add_stretch_building(lot: Rect2i, look: Dictionary) -> void:
+	_stretch_buildings[lot] = look
+
+## Replaces the tiles of the street trees an authored scene lists (`_recipe_trees`).
+func set_recipe_trees(trees: Array[Vector2i]) -> void:
+	_recipe_trees = trees
+
+## Lists a prop a stretch stands, `{"kind", "at", "variant", "scale"}` (`_stretch_props`).
+func add_stretch_prop(prop: Dictionary) -> void:
+	_stretch_props.append(prop)
+
+## Lists a piece of litter a stretch lays, `{"at", "texture"}` (`_stretch_litter`).
+func add_stretch_litter(litter: Dictionary) -> void:
+	_stretch_litter.append(litter)
+
+## Lists the crack on `tile`, `Vector2i(level, pattern)` (`_stretch_cracks`).
+func add_stretch_crack(tile: Vector2i, crack: Vector2i) -> void:
+	_stretch_cracks[tile] = crack
+
+## Keeps the ground as it stands as the authored scene's dawn ground, which repainting puts back
+## in place of the block carves (`_recipe_dawn_tiles`).
+func keep_dawn_ground() -> void:
+	_recipe_dawn_tiles = tiles.duplicate()
+
+## Makes the stretch what the single-tile questions answer (`stretch_active`).
+func show_stretch() -> void:
+	stretch_active = true
 
 # ------------------------------------------------------ what the generator fixes in it ---
 # The generator and the recipe builders fill a map in as they decide each fact; each fact has a
@@ -678,18 +746,18 @@ func clear_precincts() -> void:
 func add_precinct(span: Vector4i) -> void:
 	precinct_spans.append(span)
 
-## Records the lots of buildings the city stands (`building_rects`).
+## Records the lots of buildings the city stands (`_building_rects`).
 func add_building_lots(rects: Array[Rect2i]) -> void:
-	building_rects.append_array(rects)
+	_building_rects.append_array(rects)
 
-## Records the lot of one more building (`building_rects`).
+## Records the lot of one more building (`_building_rects`).
 func add_building_lot(rect: Rect2i) -> void:
-	building_rects.append(rect)
+	_building_rects.append(rect)
 
 ## Notes a pinned choice the generator could not honor, for the recipe to report
-## (`recipe_diagnostics`).
+## (`_recipe_diagnostics`).
 func note_diagnostic(text: String) -> void:
-	recipe_diagnostics.append(text)
+	_recipe_diagnostics.append(text)
 
 ## Records a multi-block lot: the rect of blocks it spans, by its anchor block (`zone_rects`).
 func record_zone(anchor: Vector2i, footprint: Rect2i) -> void:
@@ -725,10 +793,6 @@ func record_built_over(key: Vector3i, rect: Rect2i) -> void:
 func forget_built_over(key: Vector3i) -> void:
 	_built_over.erase(key)
 
-## Records that the street `key` is a dead end (`_dead_ends`).
-func mark_dead_end(key: Vector3i) -> void:
-	_dead_ends[key] = true
-
 ## Plans `block`'s arc (`block_plans`).
 func plan_block(block: Vector2i, plan: BlockPlan) -> void:
 	block_plans[block] = plan
@@ -737,9 +801,9 @@ func plan_block(block: Vector2i, plan: BlockPlan) -> void:
 func plan_of(block: Vector2i) -> BlockPlan:
 	return block_plans[block]
 
-## Gives `block` its carves (`block_layouts`).
+## Gives `block` its carves (`_block_layouts`).
 func carve_block(block: Vector2i, layout: BlockLayout) -> void:
-	block_layouts[block] = layout
+	_block_layouts[block] = layout
 
 ## Records a plaza (`square_rects`).
 func add_square(rect: Rect2i) -> void:
@@ -761,16 +825,13 @@ func add_big_building(pair: Rect2i) -> void:
 func drop_last_big_building() -> void:
 	big_buildings.pop_back()
 
-## Records the power station: the pair of blocks it stands over, the street its door opens onto, the
-## pavement tiles in front of the door, and how many of its blocks were industrial
-## (`power_station`, `_power_station_door_key`, `_power_station_door`,
-## `_power_station_industrial_blocks`).
-func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i,
-		industrial_blocks: int) -> void:
+## Records the power station: the pair of blocks it stands over, the street its door opens onto and
+## the pavement tiles in front of the door (`power_station`, `_power_station_door_key`,
+## `_power_station_door`).
+func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i) -> void:
 	power_station = pair
 	_power_station_door_key = door_key
 	_power_station_door = door_rect
-	_power_station_industrial_blocks = industrial_blocks
 
 ## A copy of the tile bytes, to put back with `restore_tiles()` (`tiles`).
 func tiles_snapshot() -> PackedByteArray:
@@ -893,38 +954,36 @@ func copy() -> CityMap:
 	twin.blocked = blocked.copy()
 	twin.day_record_version = day_record_version
 	twin.recipe_bounds = recipe_bounds
-	twin.recipe_exterior = recipe_exterior
-	twin.recipe_diagnostics = recipe_diagnostics.duplicate()
-	twin.recipe_closures = recipe_closures.duplicate()
-	twin.recipe_tree_moves = recipe_tree_moves.duplicate()
-	twin.recipe_dawn_tiles = recipe_dawn_tiles.duplicate()
-	twin.recipe_trees = recipe_trees.duplicate()
+	twin._recipe_exterior = _recipe_exterior
+	twin._recipe_diagnostics = _recipe_diagnostics.duplicate()
+	twin._recipe_closures = _recipe_closures.duplicate()
+	twin._recipe_tree_moves = _recipe_tree_moves.duplicate()
+	twin._recipe_dawn_tiles = _recipe_dawn_tiles.duplicate()
+	twin._recipe_trees = _recipe_trees.duplicate()
 	twin.stretch = stretch.duplicate()
 	twin.stretch_active = stretch_active
-	twin.stretch_cracks = stretch_cracks.duplicate()
-	twin.stretch_buildings = stretch_buildings.duplicate(true)
-	twin.stretch_props = stretch_props.duplicate(true)
-	twin.stretch_litter = stretch_litter.duplicate(true)
+	twin._stretch_cracks = _stretch_cracks.duplicate()
+	twin._stretch_buildings = _stretch_buildings.duplicate(true)
+	twin._stretch_props = _stretch_props.duplicate(true)
+	twin._stretch_litter = _stretch_litter.duplicate(true)
 	for block: Vector2i in block_plans:
 		twin.block_plans[block] = (block_plans[block] as BlockPlan).copy()
-	for block: Vector2i in block_layouts:
-		twin.block_layouts[block] = (block_layouts[block] as BlockLayout).copy()
+	for block: Vector2i in _block_layouts:
+		twin._block_layouts[block] = (_block_layouts[block] as BlockLayout).copy()
 	twin.zone_rects = zone_rects.duplicate()
 	twin._zone_anchor = _zone_anchor.duplicate()
 	twin._absent_segments = _absent_segments.duplicate()
 	twin._built_over = _built_over.duplicate()
-	twin._dead_ends = _dead_ends.duplicate()
 	twin.big_buildings = big_buildings.duplicate()
 	twin.power_station = power_station
 	twin._power_station_door_key = _power_station_door_key
 	twin._power_station_door = _power_station_door
-	twin._power_station_industrial_blocks = _power_station_industrial_blocks
 	twin.region_of_junction = region_of_junction.duplicate()
 	twin.region_has_calm = region_has_calm.duplicate()
 	twin.boundary_wall_at_a = boundary_wall_at_a.duplicate()
 	twin.main_road = main_road
 	twin.precinct_spans = precinct_spans.duplicate()
-	twin.building_rects = building_rects.duplicate()
+	twin._building_rects = _building_rects.duplicate()
 	twin.calm_blocks = calm_blocks.duplicate()
 	twin.playgrounds = playgrounds.duplicate()
 	twin.home_block = home_block
@@ -954,7 +1013,7 @@ func copy() -> CityMap:
 ## - `size` (`Vector2i`), `seed` and `main_road` (`int`);
 ## - the home, `home_block` (`Vector2i`) and `home_rect` (`Rect2i`);
 ## - the power station, `power_station` and `power_station_door` (`Rect2i`),
-##   `power_station_door_key` (`Vector3i`) and `power_station_industrial_blocks` (`int`);
+##   and `power_station_door_key` (`Vector3i`);
 ## - the ground, `tiles` (`PackedByteArray`, one byte per tile);
 ## - the lots, `building_rects`, `big_buildings`, `alley_rects`, `square_rects` and
 ##   `courtyard_rects`, and the multi-block lots, `zones`, each the rect of blocks it spans (each
@@ -962,8 +1021,8 @@ func copy() -> CityMap:
 ## - each anchor block's arc, `block_plans` (block -> `BlockPlan`), and its carves,
 ##   `block_layouts` (block -> `BlockLayout.capture()`);
 ## - the precincts, `precincts` (`Array[Vector4i]`);
-## - the streets the lattice lacks, `absent_segments` and `dead_ends` (`Array[Vector3i]`), and
-##   `built_over` (segment key -> `Rect2i`);
+## - the streets the lattice lacks, `absent_segments` (`Array[Vector3i]`), and `built_over`
+##   (segment key -> `Rect2i`);
 ## - the regions, `region_of_junction` (`PackedInt32Array`), `region_has_calm`
 ##   (`PackedByteArray`) and `boundary_wall_at_a` (segment key -> `bool`);
 ## - the street trees where they stand, `trees` (`Array[Vector2i]`, `StreetTrees.planted()`'s
@@ -977,15 +1036,13 @@ func capture() -> Dictionary:
 	for block: Vector2i in block_plans:
 		plans[block] = (block_plans[block] as BlockPlan).copy()
 	var layouts := {}
-	for block: Vector2i in block_layouts:
-		layouts[block] = (block_layouts[block] as BlockLayout).capture()
+	for block: Vector2i in _block_layouts:
+		layouts[block] = (_block_layouts[block] as BlockLayout).capture()
 	var zones: Array[Rect2i] = []
 	for anchor: Vector2i in zone_rects:
 		zones.append(zone_rects[anchor])
 	var absent: Array[Vector3i] = []
 	absent.assign(_absent_segments.keys())
-	var walled: Array[Vector3i] = []
-	walled.assign(_dead_ends.keys())
 	var trees: Array[Vector2i] = []
 	for tree in StreetTrees.planted(self):
 		trees.append(tree.tile)
@@ -993,12 +1050,11 @@ func capture() -> Dictionary:
 			"home_rect": home_rect, "power_station": power_station,
 			"power_station_door": _power_station_door,
 			"power_station_door_key": _power_station_door_key,
-			"power_station_industrial_blocks": _power_station_industrial_blocks,
-			"tiles": tiles.duplicate(), "building_rects": building_rects.duplicate(),
+			"tiles": tiles.duplicate(), "building_rects": _building_rects.duplicate(),
 			"big_buildings": big_buildings.duplicate(), "alley_rects": alley_rects.duplicate(),
 			"square_rects": square_rects.duplicate(), "courtyard_rects": courtyard_rects.duplicate(),
 			"zones": zones, "block_plans": plans, "block_layouts": layouts,
-			"precincts": precinct_spans.duplicate(), "absent_segments": absent, "dead_ends": walled,
+			"precincts": precinct_spans.duplicate(), "absent_segments": absent,
 			"built_over": _built_over.duplicate(), "region_of_junction": region_of_junction.duplicate(),
 			"region_has_calm": region_has_calm.duplicate(),
 			"boundary_wall_at_a": boundary_wall_at_a.duplicate(), "trees": trees}
@@ -1016,10 +1072,9 @@ static func restored(facts: Dictionary) -> CityMap:
 	map.power_station = facts["power_station"]
 	map._power_station_door = facts["power_station_door"]
 	map._power_station_door_key = facts["power_station_door_key"]
-	map._power_station_industrial_blocks = facts["power_station_industrial_blocks"]
 	map.tiles = (facts["tiles"] as PackedByteArray).duplicate()
 	# Assigned into the typed arrays: an untyped `Array` put in an `Array[T]` field is dropped.
-	map.building_rects.assign(facts["building_rects"])
+	map._building_rects.assign(facts["building_rects"])
 	map.big_buildings.assign(facts["big_buildings"])
 	map.alley_rects.assign(facts["alley_rects"])
 	map.square_rects.assign(facts["square_rects"])
@@ -1029,7 +1084,7 @@ static func restored(facts: Dictionary) -> CityMap:
 		map.block_plans[block] = (plans[block] as BlockPlan).copy()
 	var layouts: Dictionary = facts["block_layouts"]
 	for block: Vector2i in layouts:
-		map.block_layouts[block] = BlockLayout.restored(layouts[block])
+		map._block_layouts[block] = BlockLayout.restored(layouts[block])
 	var zones: Array = facts["zones"]
 	for zone: Rect2i in zones:
 		map.zone_rects[zone.position] = zone
@@ -1040,20 +1095,17 @@ static func restored(facts: Dictionary) -> CityMap:
 	var absent: Array = facts["absent_segments"]
 	for key: Vector3i in absent:
 		map._absent_segments[key] = true
-	var walled: Array = facts["dead_ends"]
-	for key: Vector3i in walled:
-		map._dead_ends[key] = true
 	map._built_over = (facts["built_over"] as Dictionary).duplicate()
 	map.boundary_wall_at_a = (facts["boundary_wall_at_a"] as Dictionary).duplicate()
 	map.region_of_junction = (facts["region_of_junction"] as PackedInt32Array).duplicate()
 	map.region_has_calm = (facts["region_has_calm"] as PackedByteArray).duplicate()
-	map.recipe_trees.assign(facts["trees"])
+	map._recipe_trees.assign(facts["trees"])
 	return map
 
 func tile_at(tile: Vector2i) -> GameEnums.TileType:
 	if stretch_active and not in_stretch(tile):
 		return GameEnums.TileType.BUILDING
-	if recipe_exterior and not recipe_bounds.has_point(tile):
+	if _recipe_exterior and not recipe_bounds.has_point(tile):
 		return GameEnums.TileType.ALLEY
 	if not in_bounds(tile):
 		return GameEnums.TileType.BUILDING
@@ -1181,7 +1233,7 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 ##
 ## Overrides WorldMap._open.
 func _open(x: int, y: int) -> bool:
-	if recipe_exterior or stretch_active:
+	if _recipe_exterior or stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))
 	return x >= 0 and y >= 0 and x < size.x and y < size.y \
 			and _WALKABLE[tiles[y * size.x + x]] == 1
@@ -1193,7 +1245,7 @@ func _open(x: int, y: int) -> bool:
 ##
 ## Overrides WorldMap.is_street.
 func is_street(tile: Vector2i) -> bool:
-	if recipe_exterior and not recipe_bounds.has_point(tile):
+	if _recipe_exterior and not recipe_bounds.has_point(tile):
 		return false
 	var type := tile_at(tile)
 	return type == GameEnums.TileType.SIDEWALK or type == GameEnums.TileType.ROAD \
@@ -1233,11 +1285,11 @@ func alley_at(tile: Vector2i) -> Rect2i:
 			return rect
 	return Rect2i()
 
-## The `building_rects` entry holding `tile`, or an empty rect.
+## The `_building_rects` entry holding `tile`, or an empty rect.
 ##
 ## Overrides WorldMap.lot_at.
 func lot_at(tile: Vector2i) -> Rect2i:
-	for rect in building_rects:
+	for rect in _building_rects:
 		if rect.has_point(tile):
 			return rect
 	return Rect2i()
@@ -1465,8 +1517,8 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## all plan around it. A shut area's ground is left exactly as its purpose paints it — it stays
 ## calm, walkable ground; only `fenced_park`, if one is chosen today, is actually closed.
 func repaint(state: CityState, trace: RunTrace = null) -> void:
-	if not recipe_dawn_tiles.is_empty():
-		tiles = recipe_dawn_tiles.duplicate()
+	if not _recipe_dawn_tiles.is_empty():
+		tiles = _recipe_dawn_tiles.duplicate()
 		_tiles_by_type.clear()
 		closed_tiles.clear()
 		_shut_calm.clear()
@@ -1551,7 +1603,7 @@ func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 	day_record_version += 1
 
 func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
-	var layout: BlockLayout = block_layouts.get(block)
+	var layout: BlockLayout = _block_layouts.get(block)
 	if not layout:
 		return
 	if layout.has_open_ground():
@@ -1596,7 +1648,7 @@ func _recompute_calm(state: CityState) -> void:
 	for block in calm_blocks:
 		if state.purpose_of(block_plans, block) != GameEnums.BlockPurpose.PARK:
 			continue
-		var layout: BlockLayout = block_layouts.get(block)
+		var layout: BlockLayout = _block_layouts.get(block)
 		if layout and layout.has_playground():
 			playgrounds.append(layout.playground_rect())
 

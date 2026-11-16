@@ -35,10 +35,6 @@ func is_taking() -> bool:
 func walked_for() -> float:
 	return _figure.age() - _taken_at
 
-## Stops the walk, for a rig that drives the scene by hand.
-func stop() -> void:
-	_taken_at = INF
-
 ## **Begins the first time she can see it happen**, where the van's field reaches her
 ## (`EventInstance.Figure.field_reaches()`, within its `outer_radius`): a van she never came near
 ## never runs it. **Never starts without enough of the van's life left to finish in**: a take cut

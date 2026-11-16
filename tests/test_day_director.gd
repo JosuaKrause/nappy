@@ -3,12 +3,14 @@ extends RefCounted
 ## place a day ends (`finish_day()`).
 ##
 ## **The start on fakes.** The world comes from a `DayWorldSource` the director is handed, so a start
-## here is handed a fake one standing a world of fakes — a city that records how it is dressed, events
-## that record how they are planned, a crowd, a resistance, her and the baby — with the day's clock
-## and the run's calendar real, since they are plain state. No city is generated and no day is
-## planned: what is checked is the director's own order, what each of the spec's settings makes it
-## do, for a day, an authored scene's day and both sections of the escape, and that what the world
-## says the walk is won at reaches the spec and the clock. That the real worlds start
+## here is handed a fake one standing a world of fakes — the city's dressing that records how it is
+## dressed, a small map of its own, events that record how they are planned, a crowd, a resistance,
+## her and the baby — with today's streets, the day's clock and the run's calendar real, since they
+## are plain state. No city is generated and no day is planned, and the director is handed no
+## `City`: an authored scene alone is handed one, a stand-in never built, to install itself into.
+## What is checked is the director's own order, what each of the spec's settings makes it do, for a
+## day, an authored scene's day and both sections of the escape, and that what the world says the
+## walk is won at reaches the spec and the clock. That the real worlds start
 ## (the escape's building and city booted, the day's city through its fourteen days) is the finale
 ## and full-run suites' to show.
 ##
@@ -63,7 +65,9 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	events.setup_world(map, _run)
 	t.add_child(events)
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
-	director.use_the_world(null, events, null, null, null, clock)
+	# A world with no city: the open ground and its events, nobody in it.
+	director.use_the_world(DayWorld.in_the_building(map, events, null, null, Vector2.ZERO,
+			Vector2.DOWN, null), null, clock)
 	director.spec = spec
 	_ended.clear()
 	EventBus.day_ended.connect(_on_day_ended)
@@ -208,11 +212,13 @@ func _start(director: DayDirector, spec: DaySpec) -> Array[String]:
 				_stood = world
 				_asked.append("stood"))
 
-## A director handed a fake world source standing a world of fakes for `spec`: a city world, or with
-## `in_building` the building's, which has no city. A city world is won where `spec`'s goal says, as
-## the main scene's answers it: at her front door on the city's map on a walk home, at the two ways
-## out (`EXITS`) on a walk out of the city. `scene` is an authored scene to play, or null. Returns the
-## director and the parts a check reads.
+## A director handed a fake world source standing a world of fakes for `spec`: a city world, its
+## parts each a fake of its own (the dressing, the map, the crowd) and today's streets as data, or
+## with `in_building` the building's, which has no city. A city world is won where `spec`'s goal
+## says, as the main scene's answers it: at her front door on the city's map on a walk home, at the
+## two ways out (`EXITS`) on a walk out of the city. `scene` is an authored scene to play, or null;
+## a city world it is played in hands it a stand-in for the whole city, as the main scene hands the
+## real one only where a scene is played. Returns the director and the parts a check reads.
 func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: AuthoredScene = null) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
@@ -225,22 +231,29 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	var player := _FakeStroller.new(_asked)
 	var baby := _FakeBaby.new(_asked)
 	var resistance := _FakeResistance.new(_asked)
-	var city: _FakeCity = null
+	var city: _FakeDressing = null
+	var map: _FakeMap = null
+	var crowd: _FakeCrowd = null
+	var scene_city: _SceneCity = null
 	var world: DayWorld
 	if in_building:
 		world = DayWorld.in_the_building(WorldMap.open_ground(), events, player, baby,
 				Vector2(30.0, 40.0), Vector2.UP, _run.calendar.day_rng(1, "a seed of its own"))
 	else:
-		city = _FakeCity.new(_asked)
+		city = _FakeDressing.new(_asked)
 		city.name = "City"
-		var home_map: CityMap = city.map if spec.goal_kind() == DaySpec.Goal.HOME else null
+		map = _FakeMap.new(Vector2i(8, 8))
+		crowd = _FakeCrowd.new(_asked)
+		if scene:
+			scene_city = _SceneCity.new()
+		var home_map: CityMap = map if spec.goal_kind() == DaySpec.Goal.HOME else null
 		var exits: Dictionary = EXITS if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
-		world = DayWorld.in_the_city(city, city.map, events, player, baby, Vector2(100.0, 200.0),
-				home_map, exits)
+		world = DayWorld.in_the_city(city, map, DayStreets.new(), crowd, events, player, baby,
+				Vector2(100.0, 200.0), home_map, exits, Vector2.DOWN, scene_city)
 	var worlds := _FakeWorlds.new(world, _asked)
 	var config := RunConfig.parse(PackedStringArray(), "", true)
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
-	director.use_the_world(null, null, resistance, null, null, clock)
+	director.use_the_world(null, resistance, clock)
 	director.use_worlds(worlds)
 	director.use_the_scene(scene)
 	var lines: Array[String] = []
@@ -250,15 +263,18 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	# change to the bars.
 	# The meters callable notes itself with whether the day's clock is already running.
 	director.use_the_flags(
-			func(_target: String) -> Vector2: return city.map.doorstep_world_position(),
+			func(_target: String) -> Vector2: return map.doorstep_world_position(),
 			func(_the_baby: Baby, _override: Vector2) -> void:
 				_asked.append("meters %s" % (clock.time_total > 0.0)))
 	var nodes: Array[Node] = [clock, events, player, baby, resistance]
 	if city:
-		nodes.append_array([city, city.crowd])
+		nodes.append_array([city, crowd])
+	if scene_city:
+		nodes.append(scene_city)
 	return {"director": director, "events": events, "player": player, "baby": baby,
-			"resistance": resistance, "city": city, "world": world, "clock": clock,
-			"worlds": worlds, "lines": lines, "nodes": nodes, "spec": spec}
+			"resistance": resistance, "city": city, "map": map, "scene_city": scene_city,
+			"world": world, "clock": clock, "worlds": worlds, "lines": lines, "nodes": nodes,
+			"spec": spec}
 
 func _put_the_start_away(rig: Dictionary) -> void:
 	for node: Node in rig["nodes"]:
@@ -333,7 +349,7 @@ func _test_the_city_section_starts_on_its_settings(t: TestRunner) -> void:
 			"its events are planned on the escape's own stream of the run's day")
 	t.check(not is_same(events.one_shots_spent, _run.attempt_spend.consumed_one_shots)
 			and events.one_shots_spent.is_empty(), "from a list of its own, empty")
-	var city: _FakeCity = rig["city"]
+	var city: _FakeDressing = rig["city"]
 	t.check(city.tinted == events.walk(), "the kerb tint is the walk it planned")
 	var lines: Array[String] = rig["lines"]
 	t.check(lines == ["plan finale: 0 open streets, 0 placements"],
@@ -381,8 +397,9 @@ func _test_an_authored_scene_installs_in_place_of_the_plan(t: TestRunner) -> voi
 	t.check(_asked_in_order(["started 1", "stood", "dress start_recipe_day", "install running"]),
 			"the city is dressed with the recipe's closures and the scene installs over a running "
 			+ "clock (%s)" % [_asked])
-	t.check(scene.installed_with == [rig["city"], rig["player"], rig["baby"], spec, rig["resistance"]],
-			"into the world stood for it, under the walk's spec")
+	t.check(rig["scene_city"] != null and scene.installed_with == [rig["scene_city"], rig["player"],
+			rig["baby"], spec, rig["resistance"]],
+			"into the world stood for it, the city whole among it, under the walk's spec")
 	t.check(not _asked_any(["plan", "resistance", "reset_at"]),
 			"and nothing is planned, started or put down for it (%s)" % [_asked])
 	_put_the_start_away(rig)
@@ -431,7 +448,7 @@ func _started_on(t: TestRunner, spec: DaySpec) -> Dictionary:
 	_run.resistance.carrying_package = true
 	director.start(spec)
 	var events: _FakeEvents = rig["events"]
-	var city: _FakeCity = rig["city"]
+	var map: _FakeMap = rig["map"]
 	var seen := {
 		"photographs_the_dawn": not _run.resistance.carrying_package,
 		"runs_the_resistance": _asked_any(["resistance"]),
@@ -439,7 +456,7 @@ func _started_on(t: TestRunner, spec: DaySpec) -> Dictionary:
 		"spends_the_one_shots": is_same(events.one_shots_spent,
 				_run.attempt_spend.consumed_one_shots),
 		"events_stream": events.planned_on.seed == _run.calendar.day_rng(1, "events").seed,
-		"shuts_the_spent_calm": (city.map as _FakeMap).handed_spent,
+		"shuts_the_spent_calm": map.handed_spent,
 		"runs_the_daylight_down": not _asked.has("daylight 0.0"),
 	}
 	_put_the_start_away(rig)
@@ -455,8 +472,8 @@ func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t: TestRunner) -
 		director.first_day = true
 		director.start(spec)
 		var player: _FakeStroller = rig["player"]
-		var city: _FakeCity = rig["city"]
-		var doorstep := city.map.doorstep_world_position()
+		var map: _FakeMap = rig["map"]
+		var doorstep := map.doorstep_world_position()
 		var meters := _asked.filter(func(line: String) -> bool: return line.begins_with("meters"))
 		if spec.start_point() == DaySpec.Start.DOORSTEP:
 			t.check(meters == ["meters true"], "the bars' override is asked once, with the day "
@@ -511,9 +528,9 @@ func _test_the_start_hands_the_clock_her_and_her_front_door(t: TestRunner) -> vo
 		won.append(result)
 	clock.day_finished.connect(note_won)
 	director.start(spec)
-	var city: _FakeCity = rig["city"]
+	var map: _FakeMap = rig["map"]
 	var player: _FakeStroller = rig["player"]
-	(city.map as _FakeMap).home = Vector2(40.0, 40.0)
+	map.home = Vector2(40.0, 40.0)
 	player.position = Vector2(40.0, 40.0)
 	EventBus.return_phase_started.emit()
 	t.check(won == [GameEnums.DayResult.WON],
@@ -537,40 +554,38 @@ class _FakeWorlds extends DayWorldSource:
 		_asked.append("stand %d" % spec.number)
 		return _world
 
-## A city that notes how it is dressed and tinted, on a small map of its own and a crowd that notes
-## how it is started. Never built or put in a world.
-class _FakeCity extends City:
+## The city's dressing, noting how it is dressed and tinted. No `City`: what the director asks of
+## the city scene is all it answers.
+class _FakeDressing extends CityDressing:
 	var _asked: Array[String]
 	var tinted: RouteSource
 
 	func _init(asked: Array[String]) -> void:
 		_asked = asked
-		map = _FakeMap.new(Vector2i(8, 8))
-		crowd = _FakeCrowd.new(asked)
 
-	## Overrides City.start_day.
+	## Overrides CityDressing.start_day.
 	func start_day(_state: CityState, _day: int, _rng: RandomNumberGenerator,
 			_spec: DaySpec = null) -> void:
 		_asked.append("dress start_day")
 
-	## Overrides City.start_recipe_day.
+	## Overrides CityDressing.start_recipe_day.
 	func start_recipe_day(_state: CityState, _day: int, _rng: RandomNumberGenerator,
 			_spec: DaySpec = null) -> void:
 		_asked.append("dress start_recipe_day")
 
-	## Overrides City.set_act.
+	## Overrides CityDressing.set_act.
 	func set_act(act: int) -> void:
 		_asked.append("set_act %d" % act)
 
-	## Overrides City.set_daylight.
+	## Overrides CityDressing.set_daylight.
 	func set_daylight(fraction: float) -> void:
 		_asked.append("daylight %.1f" % fraction)
 
-	## Overrides City.refresh_street_trees.
+	## Overrides CityDressing.refresh_street_trees.
 	func refresh_street_trees() -> void:
 		_asked.append("refresh_street_trees")
 
-	## Overrides City.tint_the_route.
+	## Overrides CityDressing.tint_the_route.
 	func tint_the_route(route: RouteSource) -> void:
 		tinted = route
 		_asked.append("tint")
@@ -691,6 +706,11 @@ class _FakeBaby extends Baby:
 	## Overrides Baby.force_sleep.
 	func force_sleep() -> void:
 		_asked.append("baby force_sleep")
+
+## The city whole an authored scene is installed into, standing for the real one the main scene
+## hands a scene; never built or put in a world, and asked nothing by the director.
+class _SceneCity extends City:
+	pass
 
 ## An authored scene noting what it was installed into, and whether the clock was running then.
 class _FakeScene extends AuthoredScene:

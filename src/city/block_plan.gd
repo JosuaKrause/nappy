@@ -27,6 +27,18 @@ class Step extends RefCounted:
 		from_day = day
 		cause = step_cause
 
+	## What the block becomes (`purpose`).
+	func becomes() -> GameEnums.BlockPurpose:
+		return purpose
+
+	## The earliest day this step may be taken (`from_day`).
+	func earliest_day() -> int:
+		return from_day
+
+	## What has to happen for the step to be taken (`cause`).
+	func needs() -> GameEnums.BlockCause:
+		return cause
+
 ## Step 0 is what the block starts as, and is always reached on day 1.
 var _steps: Array[Step] = []
 

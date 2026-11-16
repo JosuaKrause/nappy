@@ -21,9 +21,6 @@ func register(part: RunSubState) -> RunSubState:
 	_parts.append(part)
 	return part
 
-func parts() -> Array[RunSubState]:
-	return _parts.duplicate()
-
 func reset() -> void:
 	for part in _parts:
 		part.reset()

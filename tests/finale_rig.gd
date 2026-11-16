@@ -1944,7 +1944,7 @@ func _hands_over(t: TestRunner, result: GameEnums.DayResult, day: int, progress:
 	clock.set_process(false)
 	t.add_child(clock)
 	clock.start(300.0)
-	director.use_the_world(null, null, null, null, null, clock)
+	director.use_the_world(null, null, clock)
 	var handed := director.finish_day(result).hands_over_to_the_escape
 	clock.free()
 	return handed

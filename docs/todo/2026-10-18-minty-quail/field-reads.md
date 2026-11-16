@@ -68,12 +68,10 @@ own:
   `walk_ground.gd`, `event_director.gd`), which the placement rewrite
   rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
   row 3b's.
-- `src/main.gd` and the city scene (`src/city/city.gd`), which the third hand-ins pull request and
-  who builds the event manager and the crowd rewrite (`city-hand-ins.md`), the city scene then row
-  3c.
+- `src/main.gd` and the city scene (`src/city/city.gd`), which who builds the event manager and the
+  crowd rewrites (`city-hand-ins.md`), the city scene then row 3c.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
-  row 3c's, and the map's capture and restore (`src/city/recipe_city_context.gd`), the design "The
-  city's own classes" names below.
+  row 3c's.
 - **The screen-edge badge** (`src/ui/danger_edge.gd`, the record 2026-10-18-minty-quail-tawny-toad)
   holds its event source as a `Node` and asks it with `has_method()`, since three stand-ins for it
   extend a bare `Node`: `_Source` in `tests/test_badge_model.gd` and `tests/test_visible_view.gd`, and
@@ -104,11 +102,10 @@ Left, each its own design question:
   by class: the city map's (`CityMap`) in the routes (the region and seal planners), the blackout, the streamed ground and the city's generator, besides the
   events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
   previews and the scene recipes. Two groups have a home of their own:
-  - The authored-scene builder (`RecipeCityBuilder`) is the scene recipes' city. The scene recipes are placed by
-    location (polite-tapir's `placement-by-construction.md`, "What is built"), so it waits for nothing there; its
-    reads of the map are what is left, now that the map captures and restores itself (`CityMap.capture()`,
-    `CityMap.restored()`). The map's recipe side (`RecipeCityContext`) still reads a block plan's steps
-    (`BlockPlan.Step`), an inner class the check does not see.
+  - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
+    a closure's segment go through `BlockPlan.Step`'s and `RoadClosure`'s methods. It is no longer a
+    `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
+    private.
   - A field only a test still reads outside its own class and the code that writes it
     (`CityMap.home_rect`, `courtyard_rects`,
     `Building.scenery_clock`, `door_world_x_range`, `station_door_col`, `station_yard_cols`,
@@ -124,23 +121,13 @@ Left, each its own design question:
   name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
   failure. It becomes underscore-private with the tests-one-module item (`tests-one-module.md`), when
   that suite reads through a method the game also calls.
-- **A public field with no reader under `src/` outside its own class.**
-  `SpreadLook.Slice.index` is read only by the look probe, by string (`canvas.get(&"index")` in
-  `tests/probes/look_fingerprint.gd`), which row 4a's scripted rewrite of `event-interface.md` would
-  not find; it goes private when the probe asks `SpreadLook.slices()` for a slice's place, with the
-  probe's `LK` hash shown unchanged and a released slice not yet freed taken care of.
-- **The flock's look reads a bird's fields.** `_draw_birds()` in `src/events/views/flock_look.gd`
-  reads `at`, `lift`, `heading` and `phase` off `EventFlock.Bird`, an inner class
-  `tools/check_field_reads.py` does not see, and four suites read the same fields. `Bird` gets its
-  methods and those suites ask them in one pull request, since row 4a of `event-interface.md`
-  changes no line under `src/`.
 - **The lines the placement rewrite, the third hand-ins pull request and the events' interface
   touch** are converted after those land:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
-  - `day_director.gd` and `main.gd`, the third hand-ins pull request's smaller cases still left, and
-    the reads of the city's event manager and crowd, which wait for who builds them
-    (`city-hand-ins.md`); `run_session.gd`'s reads of `City.map`, `City.crowd` and `Crowd.sources`
-    wait with them, for the city's and the crowd's passes (the record
+  - `main.gd`'s reads of the city's event manager and crowd, which wait for who builds them
+    (`city-hand-ins.md`); `day_director.gd`'s reads of other classes' fields (the map's block plans
+    and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
+    passes; `run_session.gd`'s read of `Crowd.sources` waits for the crowd's pass (the record
     2026-10-18-minty-quail-dappled-chipmunk);
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and

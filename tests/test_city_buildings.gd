@@ -238,7 +238,7 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var courtyard_lots: Array[Rect2i] = []
-		for block: Vector2i in map.block_layouts.keys():
+		for block: Vector2i in map.blocks_with_layouts():
 			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
 				courtyard_lots.append(map.lot_rect(block))
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
