@@ -1,6 +1,6 @@
 extends RefCounted
-## **A car the director sends ahead of her never drives on a precinct's paving while she stands
-## where it was sited and could see it** (`EventDirector.leg_in_the_lane()`): the police patrol and
+## **A car the director sends ahead of her never drives on a precinct's paving while she could see
+## it from where she stood when the car was sited** (`EventDirector.leg_in_the_lane()`): the police patrol and
 ## the military convoy it sends down a lane of the road beside her (`EventDef.is_sent_ahead()`), from
 ## the moment each is created until it is gone. A car that has run out of route leaves straight on
 ## until it is `Tuning.OUT_OF_SIGHT` from her (`EventDeparture.begin()`), so what is asked is where

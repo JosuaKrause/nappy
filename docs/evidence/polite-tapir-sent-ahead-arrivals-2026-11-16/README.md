@@ -25,8 +25,8 @@ files of throwaway probes were deleted in the working tree, and no source file d
 taken again: where each is created and how it drives in are worked out as they were then, and the
 sitings these runs show are still made at `9a89991ec` (a throwaway probe asked the director at the
 same tiles, walking north: the patrol from ahead of her on 20 streams of 20, the convoy from either
-end at both of its tiles). What `9a89991ec` changed, that a car is not sent where its drive in her
-sight would leave the carriageway, refuses none of them.
+end at both of its tiles). What `9a89991ec` changed, that a car is not sent where its drive, in her
+sight from where she stands as it is sited, would leave the carriageway, refuses none of them.
 
 **Commands** (`tools/shot.sh`, burst frames at 12fps over 3s from the second given):
 

@@ -198,7 +198,8 @@ func _test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t: TestRunner
 	t.check(with_her > 0 and at_her > 0,
 			"and it comes from either end (%d from behind her, %d toward her)" % [with_her, at_her])
 
-## **No car is sent where its drive in her sight would run onto ground no car may be on**: with the
+## **No car is sent where its drive, in her sight from where she stands as it is sited, would run onto
+## ground no car may be on**: with the
 ## junction box past her paved (the next box the way she does not walk, tiles 42 to 47 of her street,
 ## paved by a precinct on the street that crosses there, `CityMap.add_precinct()`: its blocks -1 and 0,
 ## so it runs through the box from off the map's edge, and a precinct on either street paves the box),
