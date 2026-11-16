@@ -1,14 +1,20 @@
 extends RefCounted
-## **A car the director sends ahead of her never drives on a precinct's paving while she could see
-## it** (`EventDirector.leg_in_the_lane()`): the police patrol and the military convoy it sends down
-## a lane of the road beside her (`EventDef.is_sent_ahead()`), from the moment each is created until
-## it is gone. A car that has run out of route leaves straight on until it is `Tuning.OUT_OF_SIGHT`
-## from her (`EventDeparture.begin()`), so what is asked is where the car is, on its leg and on its
-## way out alike, not where its leg ends.
+## **A car the director sends ahead of her never drives on a precinct's paving while she stands
+## where it was sited and could see it** (`EventDirector.leg_in_the_lane()`): the police patrol and
+## the military convoy it sends down a lane of the road beside her (`EventDef.is_sent_ahead()`), from
+## the moment each is created until it is gone. A car that has run out of route leaves straight on
+## until it is `Tuning.OUT_OF_SIGHT` from her (`EventDeparture.begin()`), so what is asked is where
+## the car is, on its leg and on its way out alike, not where its leg ends.
+##
+## **She stands still, so this does not hold for a her who walks the way the car drives.** A car
+## leaves until it is `Tuning.OUT_OF_SIGHT` from where she is by then, and the convoy from behind
+## her, which overtakes her as she walks on, can still leave over paving, or reach a closed street or
+## the map's edge, in her view (`leg_in_the_lane()`'s comment). Keeping the departure itself on
+## carriageway while she can see it is the route worked out as it goes, not built yet.
 ##
 ## Every street of a generated city that runs into a paved junction box (a precinct on either street
 ## paves the box, `CityMap.is_driveable_at()`) is asked: she stands on its sidewalk at a few
-## distances back from the box (`BACK_FROM_THE_BOX`), walking away from it, so the patrol comes down
+## distances back from the box (`BACK_FROM_THE_BOX`), heading away from it, so the patrol comes down
 ## the lane toward her and on toward the box, and the convoy comes from either end. Her route's bag
 ## holds one marble of the row (`EventManager.start_recipe_route()`, the way a scene recipe rigs
 ## one), and every car of it is watched a tick at a time until it is gone: the tiles under its middle
@@ -81,7 +87,7 @@ func _test_no_sent_car_is_on_paving_in_her_view(t: TestRunner) -> void:
 	t.check(cars > 0 and seen_ticks > 0,
 			"cars are sent there and driven through her view (%d cars, %d ticks in view)"
 			% [cars, seen_ticks])
-	t.check(on_paving.is_empty(), "no sent car is on paving while she could see it%s"
+	t.check(on_paving.is_empty(), "no sent car is on paving while she stands and could see it%s"
 			% ("" if on_paving.is_empty() else ": " + "; ".join(on_paving.slice(0, 8))
 			+ (" and %d more" % (on_paving.size() - 8) if on_paving.size() > 8 else "")))
 

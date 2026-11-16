@@ -272,9 +272,12 @@ can be met after an event behind it, or never. These rigs stand:
   the director sends ahead of her makes it wherever she has a sidewalk ahead of her. Three handouts
   are at most three of the director's longest waits of walking (`AHEAD_INTERVAL`). A dog walker
   drawn where she has none (a park, a square) waits for room, and is met after an event behind it
-  or, if she never has room that day, not at all: that the guarantee bends to the pace is the
-  orchestrator's reading of sent-ahead-pace, the player's "in place of, at the same clock", which
-  the player has accepted only for a place's marble (inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md)).
+  or, if she never has room that day, not at all. That a rigged marble that waits is met later or
+  never is a narrowing the player has accepted for a place's marble (inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md));
+  for a row sent ahead of her it is the orchestrator's reading of the player's answer on the board
+  to sent-ahead-pace, "yes, that's correct" (inbox #1460), given to the board's proposal that the
+  three come in place of some of what the director sends, at its unchanged clock: pace kept over
+  the rig's order.
 
 - **After day 6's mark, a man shouting's marble is one of the next two** (`ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT`;
   inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
@@ -364,23 +367,33 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
   level with her along the road and just out of sight up it (`PendingWarning.in_its_lane()`), then
   created there with its telegraph spent, driving down the lane past her to the far edge of the next
   junction box (`EventDirector.past_the_next_box()`). It comes toward her or from behind her, a coin
-  flip on the director's stream, from the other end where the first has no place out of sight.
+  flip on the director's stream, and from the other end where the first end has no room: no place
+  out of sight, or a leg or way out that `leg_in_the_lane()`, below, refuses.
 
 The patrol's and the convoy's first leg is built in one place (`EventDirector.leg_in_the_lane()`),
 as the row is sited and, for the convoy, again from where she is when its warning ends. **What is
-asked is where the car drives while she could see it, not where its leg ends**: a car whose route
-has run out leaves straight on the way it was going until it is `Tuning.OUT_OF_SIGHT` from her
-("Going away"), so the lane from the leg's place to that far past her, or to the leg's end where
-that is further, must be ground a car may be on every tile of the way, never a precinct or a
+asked is the car's leg and its way out, not the leg alone**: a car whose route has run out leaves
+straight on the way it was going until it is `Tuning.OUT_OF_SIGHT` from her ("Going away"), so the
+lane from the leg's place to that far past where she stands as it is sited, or to the leg's end
+where that is further, must be ground a car may be on every tile of the way, never a precinct or a
 junction box a precinct paves (`CityMap.is_driveable_at()`), and nothing on it may stop a car (a
 solid, a closed street, the map's edge), where it would turn onto a way out in her view. Otherwise
 the row has no room and waits. The leg is never cut short at the paving, since a car stopped there
 drives on over it as it leaves, and none is turned round there, since a car must not turn on the
 spot in her view. The return's patrols are the same sent copy and are sited the same way.
 
+**That keeps the car's whole drive on carriageway while she stands where she was, or walks toward
+it, and not while she walks the way it drives.** It leaves until it is `Tuning.OUT_OF_SIGHT` from
+where she is by then, so a car she walks along with can still leave over a precinct's paving, or
+reach a closed street or the map's edge, while she can see it: the convoy from behind her, faster
+than her walk, which overtakes her and stays beside her for many seconds, and a patrol she turns to
+walk beside. It is rare, since the convoy comes at most once a day and from behind her on half of
+them. Keeping the departure itself on carriageway while she can see it is the route worked out as
+it goes, which placement step 2 still owes.
+
 **A sent row has no room**, and is not put in the world, where there is no ground for it (no
 sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square, or not
-for the whole of its drive in her sight, above), where
+for its leg and its way out past her, above), where
 its first leg runs through a region door's clear ground, where it starts within
 `EventScheduler.EVENT_SPACING_ANY` of a placed plan, or where any point of its first leg is inside a
 field a plan keeps clear (`EventPlan.keeps_its_field_clear()`): nothing else happens inside a lethal

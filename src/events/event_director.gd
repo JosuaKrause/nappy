@@ -1330,8 +1330,8 @@ func clear_to_send(path: PackedVector2Array, def: EventDef) -> bool:
 ## carriageway itself), her heading has no along-corridor component to pick a direction from, or
 ## the corridor there has no carriageway to drive on — a precinct is paved kerb to kerb, so its
 ## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
-## to: a park, a square, a precinct — or not for the whole of the car's drive in her sight, its way
-## out included (`leg_in_the_lane()`).
+## to: a park, a square, a precinct — or not for the car's leg and its way out to
+## `Tuning.OUT_OF_SIGHT` past where she stands (`leg_in_the_lane()`).
 ##
 ## **Created at once, not warned first, and wholly out of the camera's view on its first frame.**
 ## *(M226 amendment 6, the player: "I don't want any pop in".)* Its place is in its lane just out of
@@ -1378,9 +1378,9 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ## to the far edge of the next junction box** (`leg_in_the_lane()`).
 ##
 ## Empty where there is nothing to run it down: she is not beside a plain sidewalk edge, the
-## street there has no carriageway to drive on (a precinct, `CityMap.is_driveable_at()`) for the
-## whole of its drive in her sight (`leg_in_the_lane()`), or no end has a place out of sight. The
-## caller waits and asks again.
+## street there has no carriageway to drive on (a precinct, `CityMap.is_driveable_at()`) for its leg
+## and its way out to `Tuning.OUT_OF_SIGHT` past where she stands (`leg_in_the_lane()`), or no end
+## has a place out of sight. The caller waits and asks again.
 func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
@@ -1427,17 +1427,24 @@ func _down_the_lane(at: Vector2, going: Vector2, index: int, def: EventDef,
 ## far edge of the next junction box (`past_the_next_box()`), one created at once (the patrol, slower
 ## than her walk) past her by as far as its place is up the road from her.
 ##
-## **The car drives on past the leg's end, so the whole of its drive in her sight is asked, not the
-## leg.** A car whose route has run out leaves straight on the way it was going
-## (`EventDeparture.begin()`) until it is `Tuning.OUT_OF_SIGHT` from her (`EventDeparture.leave()`).
-## So the leg is sent only where the lane from its place to `Tuning.OUT_OF_SIGHT` past her, or to the
-## leg's end where that is further, is carriageway every tile of the way (`_carriageway_all_along()`:
-## not a precinct, nor a junction box a precinct paves, `CityMap.is_driveable_at()`), and nothing
-## on it stops a car (`Navigator.trim()`: a solid, a closed street, the map's edge), where it would
-## turn onto a way out. The leg is never cut short of the paving: a car stopped there drives on over
-## it as it leaves, and one turned round there turns on the spot in her view (the events skill's
+## **The car drives on past the leg's end, so its way out is asked as well as its leg.** A car whose
+## route has run out leaves straight on the way it was going (`EventDeparture.begin()`) until it is
+## `Tuning.OUT_OF_SIGHT` from her (`EventDeparture.leave()`). So the leg is sent only where the lane
+## from its place to `Tuning.OUT_OF_SIGHT` past where she stands now, or to the leg's end where that
+## is further, is carriageway every tile of the way (`_carriageway_all_along()`: not a precinct, nor
+## a junction box a precinct paves, `CityMap.is_driveable_at()`), and nothing on it stops a car
+## (`Navigator.trim()`: a solid, a closed street, the map's edge), where it would turn onto a way
+## out. The leg is never cut short of the paving: a car stopped there drives on over it as it leaves,
+## and one turned round there turns on the spot in her view (the events skill's
 ## `references/event-cars.md`). Measured from where she is as it is sited, and again from where she
 ## is when a row warned of first is created.
+##
+## **That keeps the whole drive on carriageway while she stands where she was, or walks toward the
+## car, and not while she walks the way it drives.** It leaves until it is `Tuning.OUT_OF_SIGHT` from
+## where she is by then, so a car she walks along with (the convoy from behind her, which overtakes
+## her, or a patrol she turns to walk beside) can still leave over a precinct's paving, or reach a
+## closed street or the map's edge, while she can see it. Keeping the departure itself on
+## carriageway while she can see it is the route worked out as it goes, not built yet.
 ##
 ## Empty where any of that fails, and the row waits for room as any sent row does. What it must keep
 ## clear of is `clear_to_send()`'s, asked of the leg it answers.

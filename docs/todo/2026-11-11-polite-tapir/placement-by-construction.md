@@ -116,7 +116,10 @@ full text names the files each step owns.
    draws after its neighbours keeps one sidewalk open, given what they drew (with inbox #1465), which
    the player's correction on that note narrows to the streets a rule already keeps walkable, the
    streets of her routes. So step
-   2 still owes only the three route rows' routes worked out as they go.
+   2 still owes only the three route rows' routes worked out as they go, and with them that a sent
+   car's departure keeps to carriageway while she can see it: the sending holds that only for where
+   she stands as the car is sited, so a convoy from behind her that overtakes her as she walks on can
+   still leave over a precinct's paving in her view.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.
