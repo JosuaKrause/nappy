@@ -11,9 +11,8 @@ of her.
 the row's own arrival and nothing about how often a day hands it out. The rigs walk north from the
 doorstep up the arterial. `--invincible` holds the day still (the clock reads 3:30 throughout), so
 nothing here shows a cost. The convoy is forced on day 2 to keep day 13's column and the region
-doors out of the frame; the force bypasses its first day. The patrol's car is in the frame before
-the burst reaches the frames shown here only as it drives in at the top edge
-(`patrol-entering.png`, frames 10 to 15, the top of the view cropped). Whether a frame is not a
+doors out of the frame; the force bypasses its first day. The patrol's car first shows at the top edge,
+driving in (`patrol-entering.png`, the top of frames 10 to 15). Whether a frame is not a
 pop-in is held by `tests/test_no_pop_in.gd`, not by these pictures.
 
 **Source.** Branch `feature-polite-tapir-sent-ahead` at `383011822`. The convoy run is marked
