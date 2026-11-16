@@ -322,9 +322,9 @@ func gap_to(other: EventPlan) -> float:
 ##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
 ##   on her route, are exempt too (inbox #684 in coral-lark, "Exempt like fixed masts"), because a mast's field
 ##   reaches the junction box at the end of whatever street it stands on, so held to the line it
-##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
-##   a line along her routes (`RouteJunctionsRule._leaves_the_route_junctions_open`, `RouteSidewalkRule._leaves_the_routes_sidewalk_open`
-##   and `PacingOpeningRule._leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites.is_eligible()`: off the home
+##   would have almost no place on a route tree. A mast is asked none of the rules that keep a line
+##   along her routes (`RouteLineRule`, `RouteSidewalkRule._leaves_the_routes_sidewalk_open`,
+##   `PacingOpeningRule._leaves_a_pacing_beats_opening` and the cost half of `RouteGroundRule`). What every mast keeps is its site check (`MastSites.is_eligible()`: off the home
 ##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
 ## - **`Role.SCENERY`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
 ##   count it as block, just count is scenery"* — which is the same exemption `EventScheduler.role_for` makes.
@@ -363,12 +363,18 @@ func counts_against_the_line() -> bool:
 ## is exact rather than a sample: a disc is convex, so a point within `reach` of both ends of a
 ## straight run is within `reach` of every point of it.
 func denies(at: Vector2, reach: float) -> bool:
-	if def.paces and path.size() >= 2:
+	if walks_a_beat():
 		for point in path:
 			if at.distance_to(point) > reach:
 				return false
 		return true
 	return at.distance_to(position) <= reach
+
+## **Whether this plan walks a beat**: its row paces (`EventDef.paces`) and a beat is laid, so what
+## it denies is the ground the beat never leaves free (`denies()`), and the street it paces is one
+## the line rule lets her pass him on by its far sidewalk (`RouteLineRule`).
+func walks_a_beat() -> bool:
+	return def.paces and path.size() >= 2
 
 ## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
 ## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every

@@ -3,10 +3,13 @@ extends RefCounted
 ## **The day's placement rules a walk asks of a candidate** (`StreetRule`, one class per rule): the
 ## invalidation the design's draw leaves a refused row out by (inbox #1185 in gentle-owl, `docs/EVENTS.md`, "The
 ## three views and the placement order"), and the judge every other placement asks too, so the rules
-## are stated once. A walk composes them from its spec: every walk's route rules (its junctions, its
-## walked sidewalk, a beat's opening, and no body on a route's ground off the streets), the calm
-## she has not used and the doors' clear ground; the escape's on top, one notice at a time
-## (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`).
+## are stated once. A walk composes them from its spec: every walk's route rules (her line followed
+## from a route's junction box onto the sidewalks she walks, her walked sidewalk, a beat's opening,
+## and a route's ground off the streets kept free of bodies and of cost), the calm she has not used
+## and the doors' clear ground; on a day's walk, one sidewalk of every street of her routes kept
+## open past the bodies drawn on it (`OneSidewalkOpenRule`); the escape's on top, one notice at a
+## time (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`), its
+## own stricter rule in place of the one sidewalk.
 ##
 ## `room()` answers what a placement weighs a candidate by: `-INF` where a rule refuses it, else the
 ## room round it among what the walk has placed (`room_around()`, `INF` where it
@@ -15,6 +18,8 @@ extends RefCounted
 var _map: CityMap
 var _corridor: Corridor
 var _rules: Array[StreetRule] = []
+## How many times each rule has refused a candidate, by the rule's class name (`refusals()`).
+var _refusals := {}
 
 ## The rules for a walk on `map` routed by `corridor` (null for a walk with no route tree, which
 ## asks none of the route rules): `leave_alone` the calm ground she
@@ -27,10 +32,12 @@ func _init(map: CityMap, corridor: Corridor, leave_alone: Array[Rect2],
 	_corridor = corridor
 	_rules.append(UnusedCalmRule.new(leave_alone))
 	_rules.append(DoorClearanceRule.new(doors))
-	_rules.append(RouteJunctionsRule.new(map, corridor))
+	_rules.append(RouteLineRule.new(map, corridor))
 	_rules.append(RouteSidewalkRule.new(map, corridor))
 	_rules.append(PacingOpeningRule.new(map, corridor))
 	_rules.append(RouteGroundRule.new(map, corridor))
+	if corridor and not walk:
+		_rules.append(OneSidewalkOpenRule.new(map, corridor))
 	if one_notice:
 		_rules.append(OneNoticeRule.new(one_notice))
 	if walk:
@@ -51,8 +58,17 @@ func room(candidate: EventPlan, role: GameEnums.BlockerRole, tile: Vector2i,
 			return -INF
 	for rule in _rules:
 		if not rule.allows(candidate, tile, placed, around):
+			var script: Script = rule.get_script()
+			var name := String(script.get_global_name())
+			_refusals[name] = int(_refusals.get(name, 0)) + 1
 			return -INF
 	return room_around(candidate, placed)
+
+## **How many times each rule has refused a candidate**, by the rule's class name, counted since
+## the rules were made: the first rule to refuse a candidate counts it, and a candidate asked again
+## counts again. A measurement of what each rule costs a day's draw, which no placement carries.
+func refusals() -> Dictionary:
+	return _refusals
 
 ## **Whether *this* pacing placement is a wall**: its field leaves no line along a sidewalk, and its
 ## beat reaches nowhere she can leave that sidewalk.

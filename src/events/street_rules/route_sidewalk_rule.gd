@@ -30,7 +30,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## this asks for is from one junction to the other **along the band the tree runs down**, over that
 ## band's own tiles and no others.
 ##
-## **Cumulatively with everything already down**, the way the junction rule reads and for the same
+## **Cumulatively with everything already down**, the way the line rule reads and for the same
 ## reason: the street the probe names most often is closed by a pair rather than by one row, and a
 ## rule that only asked *does this row alone take the band* would accept both of them. Checked
 ## before the row is accepted and never repaired after — each row in turn is asked whether the day
@@ -38,8 +38,9 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ##
 ## **Only a street has sidewalks.** Where a route's cells stand on an alley, a park cut or a square
 ## there is no band to walk along and no two ends to walk between, so the rule says nothing about
-## that ground rather than inventing an answer for it — a row there is answered by the junction rule
-## and by the walkability guarantee. A **precinct** is paved frontage to frontage with no
+## that ground rather than inventing an answer for it — a row there is answered by the route's
+## ground rule (`RouteGroundRule`) and by the line rule where the ground opens off a route's box or
+## walked sidewalk (`RouteLineRule`). A **precinct** is paved frontage to frontage with no
 ## carriageway, so a band of it is walkable like any other and the arithmetic is unchanged.
 ##
 ## **It subsumes the whole-street question it replaces**: the two bands of a street are not
@@ -118,7 +119,7 @@ static func closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
 			var tile := Vector2i(x, y)
-			if not map.is_open(tile) or _is_a_carriageway_tile(map, tile, horizontal):
+			if not map.is_open(tile) or is_a_carriageway_tile(map, tile, horizontal):
 				continue
 			var at := map.tile_to_world(tile)
 			var taken := false
@@ -157,8 +158,9 @@ static func closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 ## painted over the streets between its blocks, so those tiles sit at a road offset and are grass
 ## somebody walks on — *"an absorbed street is calm ground, not a closure"*. A precinct is paving
 ## frontage to frontage with no carriageway at all, and its middle tiles are not `ROAD` either, so
-## the same test covers it without naming it.
-static func _is_a_carriageway_tile(map: CityMap, tile: Vector2i, horizontal: bool) -> bool:
+## the same test covers it without naming it. Public because the line rule takes a street's ground
+## the same way (`RouteLineRule`), and one reading asked twice is stated once.
+static func is_a_carriageway_tile(map: CityMap, tile: Vector2i, horizontal: bool) -> bool:
 	if not CityMap.is_road_offset(CityMap.corridor_offset(tile.y if horizontal else tile.x)):
 		return false
 	var type := map.tile_at(tile)

@@ -73,6 +73,18 @@ extends RefCounted
 ## `WC all dawn walk` sums the days. Each such tile prints `WX day seed half tile kind rows`, the
 ## rows being the bodies whose taking away alone gives it back (`jointly` where none does). The
 ## expected count is none.
+##
+## **And what the street rules refuse, and whether a street ends with both sidewalks closed**: per
+## day, summed over the seeds, `WL day rule refusals`, how many times each of the day's rules
+## refused a candidate of the dawn's judge, which every unit's draw asks
+## (`StreetInvalidation.refusals()`: the first rule to refuse a candidate counts it), and per day
+## and view (`Corridor.view_of()`: 0 on the route, 1 route-adjacent, 2 off the route) `WB day view
+## streets both-closed`, the streets of the city and how many of them have neither sidewalk
+## walkable junction to junction past the obstructing bodies (`EventPlan.obstructs()`, at
+## `EventPlan.blocking_radius()`, `RouteSidewalkRule.closes_a_walked_sidewalk_band()`) once every
+## unit has drawn, leaving out the streets a closure, a seal, the region wall or a roadblock closes
+## by itself; `WB all view ...` sums the days. The one-sidewalk rule (`OneSidewalkOpenRule`) keeps
+## that count at none on the route.
 
 const SEEDS := 18
 const BASE := 90210
@@ -265,6 +277,7 @@ func _walk_every_day(reach: float) -> void:
 	var all_gave_up := 0
 	var all_nearest := INF
 	var all_marbles: Array[int] = [0, 0, 0, 0, 0]
+	var all_both_closed: Array[int] = [0, 0, 0, 0, 0, 0]
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}
@@ -285,6 +298,9 @@ func _walk_every_day(reach: float) -> void:
 		var nearest := INF
 		# What the units placed by share, the marbles they drew and the empty ones.
 		var marbles: Array[int] = [0, 0, 0, 0, 0]
+		# What each of the day's rules refused, and the streets by view: counted, both closed.
+		var refused := {}
+		var both_closed: Array[int] = [0, 0, 0, 0, 0, 0]
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
@@ -468,6 +484,10 @@ func _walk_every_day(reach: float) -> void:
 				by_kind[kk] = int(by_kind.get(kk, 0)) + 1
 			cut_after_walk += _report_cut_off(map, grid, routes, reached_bare, walk.plans(), day, i,
 					"walk")
+			var by_rule := dawn.rules().refusals()
+			for name: String in by_rule:
+				refused[name] = int(refused.get(name, 0)) + int(by_rule[name])
+			_count_both_closed(map, corridor, walk.plans(), both_closed)
 			print("WT %d %d siting %s" % [day, i, _costs(siting_ticks)])
 		if not the_games:
 			continue
@@ -480,6 +500,12 @@ func _walk_every_day(reach: float) -> void:
 		all_cut_at_dawn += cut_at_dawn
 		all_cut_after_walk += cut_after_walk
 		print("WM %d %d %d %d" % [day, capped_met, capped_at_the_door, capped_late_out])
+		for name: String in refused:
+			print("WL %d %s %d" % [day, name, refused[name]])
+		for view in 3:
+			print("WB %d %d %d %d" % [day, view, both_closed[view * 2], both_closed[view * 2 + 1]])
+			all_both_closed[view * 2] += both_closed[view * 2]
+			all_both_closed[view * 2 + 1] += both_closed[view * 2 + 1]
 		print("WS %d %d %d %d %.0f" % [day, sitings, on_undrawn, gave_up, nearest])
 		all_sitings += sitings
 		all_on_undrawn += on_undrawn
@@ -496,6 +522,40 @@ func _walk_every_day(reach: float) -> void:
 		print("WZ all %d %d %d %d %d" % [all_marbles[0], all_marbles[1], all_marbles[2],
 				all_marbles[3], all_marbles[4]])
 		print("WS all %d %d %d %.0f" % [all_sitings, all_on_undrawn, all_gave_up, all_nearest])
+		for view in 3:
+			print("WB all %d %d %d" % [view, all_both_closed[view * 2],
+					all_both_closed[view * 2 + 1]])
+
+## Adds, per view of `corridor` (`counts[view * 2]` the streets counted, `counts[view * 2 + 1]` those
+## both closed), the streets of `map` with neither sidewalk walkable past the obstructing bodies of
+## `plans`, leaving out a street a closure, a seal, the region wall or a roadblock closes by itself.
+static func _count_both_closed(map: CityMap, corridor: Corridor, plans: Array[EventPlan],
+		counts: Array[int]) -> void:
+	var bodies: Array = []
+	var fixed: Array = []
+	for plan in plans:
+		if not plan.obstructs():
+			continue
+		var body := Vector3(plan.placed_at().x, plan.placed_at().y, plan.blocking_radius())
+		bodies.append(body)
+		if plan.is_a_fixed_part() or plan.row().spans_the_street():
+			fixed.append(body)
+	for segment in map.street_segments():
+		var bands := Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)
+		if _closes_both(map, bands, segment.horizontal, fixed):
+			continue
+		var view := corridor.view_of(segment)
+		counts[view * 2] += 1
+		if _closes_both(map, bands, segment.horizontal, bodies):
+			counts[view * 2 + 1] += 1
+
+## Whether `bodies` leave neither of `bands` walkable junction to junction.
+static func _closes_both(map: CityMap, bands: Array[Rect2i], horizontal: bool,
+		bodies: Array) -> bool:
+	for band in bands:
+		if not RouteSidewalkRule.closes_a_walked_sidewalk_band(map, band, horizontal, bodies):
+			return false
+	return true
 
 ## **The dawn's unit draw with the touching relation widened to `reach`**: the draw `DawnDraw.run()`
 ## prepares, its parts made as it makes them, over units grouped with `reach` (`DayUnits.of()`).

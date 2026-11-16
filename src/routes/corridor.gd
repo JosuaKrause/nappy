@@ -81,6 +81,9 @@ var _segment_depth := {}
 var _gaps := {}
 ## The junctions today's routes cross. See `RouteTree.junctions()` and `route_junctions()`.
 var _junctions: Array[Vector2i] = []
+## The street the routes start in, the one the front door opens onto. See
+## `street_it_starts_in()`.
+var _home_street: StreetNetwork.Segment = null
 
 ## `walked_sidewalks()`'s answer and the map it was worked out for.
 var _walked_sidewalks: Array = []
@@ -105,18 +108,27 @@ static func of(tree: RouteTree) -> Corridor:
 	for key in tree.gaps():
 		corridor._gaps[key] = true
 	corridor._junctions = tree.junctions()
+	corridor._home_street = tree.street_it_starts_in()
 	return corridor
 
 ## The junctions today's routes cross — `RouteTree.junctions()`, carried here because every
 ## placement decision is stated against a `Corridor` rather than against the tree itself.
 ##
 ## It is a list of **junction coordinates** rather than a question about a tile, which is the one
-## place this class answers in the tree's own units: the rule stated over it
-## (`RouteJunctionsRule._leaves_the_route_junctions_open`) is about a whole junction **box** staying
-## crossable, and a box is six tiles square. A per-tile answer would say *this tile is in a route
+## place this class answers in the tree's own units: the rule stated over it (`RouteLineRule`)
+## floods a whole junction **box** with the sidewalks she walks to it, and a box is six tiles
+## square. A per-tile answer would say *this tile is in a route
 ## junction* and could not say *that crossing is still open*, which is the whole question.
 func route_junctions() -> Array[Vector2i]:
 	return _junctions
+
+## **The street the routes start in**: the one the front door opens onto
+## (`RouteTree.street_it_starts_in()`), null for an empty tree. The tree does not carry it, since a
+## door is not a route and every branch ends on it; it is still the first stretch of every route
+## she walks, so the line rule takes it as an arm of her line at its two junction boxes
+## (`RouteLineRule`). Nothing that counts the day's distinct routes asks it.
+func street_it_starts_in() -> StreetNetwork.Segment:
+	return _home_street
 
 ## How many grid steps off the corridor a tile is. Zero is on it, one is the rim, and it counts
 ## outwards; `DEEP` is the answer for ground the day's routes cannot reach at all or for a tile off
