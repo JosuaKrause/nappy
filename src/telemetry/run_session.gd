@@ -143,15 +143,14 @@ func _on_world_stood(spec: DaySpec, world: DayWorld, restarted: bool) -> void:
 		_log.begin_section(day, spec.title, _run.header.run_seed, spec.seconds_on_the_clock())
 	else:
 		_log.begin_day(day, Tuning.act_for_day(day), _run.header.run_seed,
-				world.city().map.city_seed(), _config.day_length_for(day))
+				world.city_map().city_seed(), _config.day_length_for(day))
 	if not _log.is_active():
 		return
 	if not _observer:
 		_observer = _new_observer()
-	var city := world.city()
-	if city:
-		_observer.watch(world.map(), world.events(), world.player(), world.baby(), city.map,
-				city.streets(), city.crowd.sources, _section_name(spec))
+	if world.is_in_a_city():
+		_observer.watch(world.map(), world.events(), world.player(), world.baby(),
+				world.city_map(), world.streets(), world.crowd().sources, _section_name(spec))
 	else:
 		_observer.watch(world.map(), world.events(), world.player(), world.baby(), null, null,
 				null, _section_name(spec))
@@ -175,14 +174,15 @@ static func _section_name(spec: DaySpec) -> String:
 ## line. The escape's city writes its own `plan finale:` line as it is planned, and the building has
 ## no city map to draw.
 func _on_day_planned(spec: DaySpec, world: DayWorld) -> void:
-	var city := world.city()
-	if city and spec.closes_the_streets():
-		_log.note("plan", "closed: %s" % city.streets().closure_summary())
-		_log.note("plan", "calm: %s" % city.map.calm_summary(_arcs))
+	var map := world.city_map()
+	var in_a_city := world.is_in_a_city()
+	if in_a_city and spec.closes_the_streets():
+		_log.note("plan", "closed: %s" % world.streets().closure_summary())
+		_log.note("plan", "calm: %s" % map.calm_summary(_arcs))
 		_log.note("plan", "events: %s" % world.events().event_summary())
-	if city:
-		_log.write_map(city.map, spec.day_number(), city.streets().closures(),
-				city.streets().route_tree(), world.events().plans())
+	if in_a_city:
+		_log.write_map(map, spec.day_number(), world.streets().closures(),
+				world.streets().route_tree(), world.events().plans())
 	if _observer:
 		_observer.start(_restarted)
 
@@ -203,8 +203,7 @@ func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapse
 	if _observer:
 		trail = _observer.trail()
 		met = _observer.met_events()
-	var city := _world.city()
-	if city:
-		_log.write_map(city.map, day, city.streets().closures(), city.streets().route_tree(),
+	if _world.is_in_a_city():
+		_log.write_map(_world.city_map(), day, _world.streets().closures(), _world.streets().route_tree(),
 				_world.events().plans(), true, trail, met)
 	_log.end_day()

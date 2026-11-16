@@ -148,6 +148,11 @@ func authored_map() -> CityMap:
 func lessons_learned() -> bool:
 	return authored and scene.lessons_learned()
 
+## The world the day or section being walked stands in, as its start stood it (`world_stood`), or
+## null before the boot's first walk is started: what the director built to end the walk is handed.
+func world() -> DayWorld:
+	return _world
+
 func in_the_title() -> bool:
 	return mode == Mode.TITLE
 

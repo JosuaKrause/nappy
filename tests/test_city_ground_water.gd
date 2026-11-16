@@ -24,9 +24,9 @@ func _test_water_ownership(t: TestRunner) -> void:
 	var shore_reach := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
 	# Inspect the complete shore explicitly, corners under the forest bands included; an ordinary
 	# home boot retains none of this water.
-	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
+	city.prepare_scenery_in(Rect2(Vector2(-shore_reach, city.map.world_size().y),
 			Vector2(city.map.world_size().x + 2.0 * shore_reach,
-					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)))
 	# Out of view, the city keeps the residency it was given: its own process frame would otherwise
 	# follow the camera home and release the shore this inspects.
 	city.visible = false
