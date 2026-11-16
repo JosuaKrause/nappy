@@ -2,8 +2,9 @@
 
 
 **The ask.** A component is handed what it depends on rather than fetching it from an autoload
-(minty-lemur #794), and the refactor does not close while a listed layer break has no decision
-behind it (inbox #1268 in olive-ferret). The signal-bus group of the standing layer breaks was the
+(minty-lemur #794), and the listed layer breaks are not forgotten (inbox #1268 in olive-ferret).
+**Read as:** the refactor does not close while a listed layer break has no decision behind it,
+which is how `standing-layer-breaks.md` files it, the orchestrator's reading. The signal-bus group of the standing layer breaks was the
 simulation reporting on the global `EventBus` autoload: the baby, the crowd, the poster walls and
 the blackout were already handed it, and the events and the resistance still fetched it. The
 queue item's text said each remaining emitter copies the baby's shape: a nullable bus typed by the
@@ -36,12 +37,13 @@ coding was handed off (inbox #1432 in minty-rabbit). Opus built it; Fable review
   already standing, since `main` hands the director its bus before any cordon exists.
 - **The layer map's whole `EventBus` entry is deleted**, and `docs/ARCHITECTURE.md` says who is
   handed the bus.
-- **Checks**, each listening on a recording bus of its own and each failing with its `src/` line
-  removed: the builder's hand-in for both worlds (`test_simulation_builder`), `event_lit_unmet`
+- **Checks**, each failing with its `src/` line removed, the new ones listening on a recording bus
+  of their own and the resistance's hand-ons held by the existing booted check on the autoload: the builder's hand-in for both worlds (`test_simulation_builder`), `event_lit_unmet`
   (`test_event_manager_fire`), `player_detained` (`test_events_chat`), every teller
   (`test_event_reports`, its table checked against the class's own `tell_` methods), the director's
   two tellers (`test_resistance_replacement`), and the three hand-ons of the resistance's chain
-  (`test_park_return`, 14 checks fail with any one removed). Existing suites that make an emitter by
+  (`test_park_return`, the existing booted check `_test_shut_in_with_the_baby_asleep`, where `main`
+  hands the director the autoload; 14 checks fail with any one removed). Existing suites that make an emitter by
   hand hand it the autoload through the fixture `tests/fixtures/told_events.gd` and keep their
   listening lines.
 
@@ -64,15 +66,15 @@ coding was handed off (inbox #1432 in minty-rabbit). Opus built it; Fable review
 ## Options not taken
 
 - **`use_bus()` on each part, the baby's shape seven times** (the manager, the watch, the spawner,
-  `EventsAhead`, the live event and its record). The manager would forward the bus to four parts by
-  hand and the spawner to every instance it makes, each line one whose omission mutes a part
+  `EventsAhead`, the live event, its record and the doors' controller). The manager would forward
+  the bus to four parts by hand and the spawner to every instance it makes, each line one whose omission mutes a part
   silently. `CheckpointController` and `ChargeRecord` would lose constructor injection for a setter
   and a guard on every emit, since they are built before a bus can be handed in. A live event made
   before the hand-in would never hear of the bus. And "is there a bus" would be decided in seven
   places, where designing-classes wants a fact derived once.
-- **The tellers on `EventWorld` itself.** Two of the seven emitters are not handed the world:
-  `EncounterWatch` takes everything in `tick()`, and `EventInstance` is handed pieces and never the
-  world. They would need the whole world, which widens what an instance depends on from a point to
+- **The tellers on `EventWorld` itself.** Three of the seven emitters are not handed the world:
+  `EncounterWatch` takes everything in `tick()`, `EventInstance` is handed pieces and never the
+  world, and `ChargeRecord` knows only a name. They would need the whole world, which widens what an instance depends on from a point to
   everything the manager has, and puts nineteen tellers on a class every part receives for its map,
   run and player.
 - **A teller named exactly as its signal.** `tools/check_field_reads.py` takes `_bus.hard_fail_triggered`
@@ -113,3 +115,7 @@ coding was handed off (inbox #1432 in minty-rabbit). Opus built it; Fable review
 5. **A manager is handed one bus for its life.**
 6. **Existing suites hand the autoload and keep their listening lines.**
 7. **One pull request for the events and the resistance.**
+8. **The resistance copies the baby's shape along the trace's chain** (`main` to the director, the
+   director to its happenings, the happenings to the park cordon), rather than sharing one object
+   or having the cordon tell its owner by a signal of its own. The alternatives and their reason
+   are under "Options not taken".

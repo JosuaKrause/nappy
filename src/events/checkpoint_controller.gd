@@ -9,7 +9,8 @@ extends RefCounted
 ## **Handed what it works over, never fetching it**: the world the events stand in (`EventWorld`:
 ## the live instances it reads the door bodies from, the map its run-log lines name tiles on, the
 ## trace it writes them to, and where she stands), how a guard is put in the world (`_spawn`) and
-## which row he is (`_guard`), and the event sink it tells the observers through (`_bus`).
+## which row he is (`_guard`). What a door did it says through the world's reports
+## (`EventWorld.reports()`), the one `EventReports` every part of the events shares.
 ## **It reads her and never moves her**: what a door does to her — taken in, held, let out — it says
 ## as an intent (`takes_her_in`, `holds_her`, `lets_her_out`), which the manager carries out on the
 ## player it was handed, synchronously, on the same tick.

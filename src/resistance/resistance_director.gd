@@ -261,7 +261,8 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 var _bus: _BUS
 
 ## Hands the director the bus it reports on, and on to its happenings, whose park cordon says she
-## is shut in on it: `main` hands the `EventBus` autoload, before `setup()` or after.
+## is shut in on it: `main` hands the `EventBus` autoload, before `setup()`. A bus is handed
+## before the park is taken, since a cordon already standing is not handed one.
 func use_bus(bus: _BUS) -> void:
 	_bus = bus
 	_happenings.use_bus(bus)
