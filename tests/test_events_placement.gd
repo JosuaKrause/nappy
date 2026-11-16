@@ -51,8 +51,8 @@ func run(t: TestRunner) -> void:
 ## (`EVENT_CORRIDOR_WEIGHT`, four copies of an on-corridor tile in the roll). Its upper bound is
 ## asserted: a corridor carrying nearly all of it would mean every street off the route is empty,
 ## which reads as a set rather than as a city. **The floor is a relation, not a number**: the share
-## depends on the city (three rules take corridor ground away from a row: one covering a whole
-## crossing is refused it, `RouteJunctionsRule`; one that would close the route's sidewalk,
+## depends on the city (three rules take corridor ground away from a row: one cutting her line
+## through a crossing is refused it, `RouteLineRule`; one that would close the route's sidewalk,
 ## `RouteSidewalkRule`; a pacing row with no way off its sidewalk,
 ## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk`), so the costly rows placed on the corridor are compared with
 ## what a draw without the weight would put there: for each, the corridor's share of the ground
@@ -80,8 +80,8 @@ func run(t: TestRunner) -> void:
 ## answers about a city that no longer existed if this repainted underneath them.
 ## Half the width of a junction box (`Tuning.STREET_WIDTH` tiles square, 192px), which is the reach
 ## below which a row standing on a street beside a crossing cannot cover the box's own six-tile arm
-## however close it stands. Used to split the friction into the rows the junction rule can refuse
-## corridor ground and the rows it cannot.
+## however close it stands. Used to split the friction into the rows the box's half of the line
+## rule (`RouteLineRule`) can refuse corridor ground and the rows it cannot.
 const _A_JUNCTION_BOXES_HALF_WIDTH := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5
 
 func _rng(day: int) -> RandomNumberGenerator:
@@ -678,7 +678,7 @@ func _beat_tiles(map: CityMap, plan: EventPlan) -> Array[Vector2i]:
 ## every other shape put together.
 ##
 ## **The assertion is about the finished day rather than about the refusal**, which is what keeps it
-## from being the rule read back to itself. `RouteJunctionsRule._leaves_the_route_junctions_open` refuses
+## from being the rule read back to itself. `RouteLineRule` refuses
 ## one candidate at a time, against what is already down; what has to be true afterwards is that
 ## nothing *else* the morning does — a scar prepended, an ambient placed, a park spoiled — has
 ## left a crossing closed. Measured over the five sampled days of seed 4242:
