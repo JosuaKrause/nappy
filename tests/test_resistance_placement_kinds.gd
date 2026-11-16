@@ -1081,7 +1081,7 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) 
 	t.check(_raid_since(before).is_empty(), "and only on day 10")
 
 ## Sealed on day 11 and after a save/load: `City.build()` reads the run's scars once, at boot,
-## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `_city.build()`
+## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `City.build()`
 ## call sites, both after the run has already loaded.
 func _test_the_sealed_door_stands_after_a_reload(t: TestRunner) -> void:
 	var run := RunState.new()

@@ -525,6 +525,6 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 
 # A mark and every contact stand on ground clear of a solid body, or on the item itself, and are
 # reached from such ground — `CityMap.is_obstructed()`, filled by `EventManager.start_day()` from
-# the day's whole plan before this director places anything (`main.gd`'s own day order:
-# `RunCity.events(_city).start_day()` runs before `_resistance.start_day()`), and `_pick_reachable()`
+# the day's whole plan before this director places anything (the day's order:
+# `EventManager.start_day()` runs before `ResistanceDirector.start_day()`), and `_pick_reachable()`
 # refuses a drawn tile with a body on it.

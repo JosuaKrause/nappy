@@ -54,7 +54,7 @@ const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; ne
 ##
 ## **One busker, alone, at the centre of a real one-block `PARK` block.** No crowd
 ## (`Crowd.start_day()` is never called, so `_agents` stays empty) and no other event
-## (`RunCity.events(city)` never plans a day; the one instance under test is the only body appended to
+## (the city's `EventManager` never plans a day; the one instance under test is the only body appended to
 ## `_instances`) — so the only two things she is standing between are this one field and the
 ## ground's own 12.0/s. The rig stands exactly `inner_radius` from the busker's own centre,
 ## starting at `EXCITEMENT_CALM_THRESHOLD` with an empty sleep meter, matching the question

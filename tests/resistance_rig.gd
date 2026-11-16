@@ -99,7 +99,7 @@ func _free_city() -> void:
 	_city = null
 
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
-## `set_sight(RunCity.events(_city).sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
+## `ResistanceDirector.set_sight()` (handed `EventManager.sees`) and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
 func _look_at(rect: Rect2) -> void:
 	RunCity.events(_city).visible_view().look(rect, null)
 

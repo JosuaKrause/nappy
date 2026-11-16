@@ -56,8 +56,10 @@ review; a builder runs it again):
   readers under `src/` away (minty-quail's `city-hand-ins.md`), so the building and the city get their event
   manager the same way (`one-start-for-every-spec.md`). Undecided until then: where the factory
   lives and what it is called; whether the blackout and the poster walls, which `City.build()` also
-  builds, come with it; how the developer settings `main.gd` writes into `City`'s fields reach the
-  parts; and what the tests ask in place of `city.events` and `city.crowd`.
+  builds, come with it; and how the developer settings `main.gd` writes into `City`'s fields reach the
+  parts. The suites ask the fixture `RunCity` for a city's event manager, crowd, spawn siting and
+  poster walls (`RunCity.events(city)` and the like), so only the fixture changes when the city
+  stops holding them.
 - The map interface's world half is split off or declared a permanent exception in
   designing-classes.
 - Dawn planning's reads of live-event geometry stand in `WalkSiting.could_be_in_her_view()` in
