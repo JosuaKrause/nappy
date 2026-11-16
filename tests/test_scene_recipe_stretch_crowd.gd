@@ -77,7 +77,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	var view := ScreenCrowdView.new(t)
 	city.crowd_view = view
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	city.start_recipe_day(state, 1, run.calendar.day_rng())
@@ -86,7 +86,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	camera.zoom = Vector2.ONE * HER_ZOOM
 	t.add_child(camera)
 	camera.make_current()
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	crowd.start_day(1, run.calendar.day_rng(1, "crowd"), map.world_size() * 0.5, false)
 	crowd.use_stretch()
 	# The stretch's ends as the crowd enters it, which a field over the same map reads off the map's

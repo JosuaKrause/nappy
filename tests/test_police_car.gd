@@ -786,7 +786,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	var city := RunCity.with_own_run(preload("res://scenes/world/city.tscn"), 4242)
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
+	RunCity.build(city, CityGenerator.generate(4242))
 	var kerb := _a_kerb(city.map)
 	t.check(kerb.size() == 3, "found a carriageway lane beside a sidewalk")
 	if kerb.size() != 3:
@@ -795,19 +795,19 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	var lane: Vector2 = kerb[0]
 	var outward: Vector2 = kerb[1]
 	var along: Vector2 = kerb[2]
-	var car := city.events.spawn_extra(_patrol(), lane - along * 150.0,
+	var car := RunCity.events(city).spawn_extra(_patrol(), lane - along * 150.0,
 			PackedVector2Array([lane - along * 150.0, lane + along * 650.0]))
 	_already_driving(car)
 	var player := _her(t, lane, -along)
-	_tell(city.events.world.where_she_is(), player)
+	_tell(RunCity.events(city).world.where_she_is(), player)
 	var baby := Baby.new()
 	baby.use_bus(EventBus)
 	var clock := DayController.new()
 	var run_log := RecordingLog.new()
 	var observer := TelemetryObserver.new(run_log)
 	observer.setup(city.run, clock, null, false)
-	observer.watch(city.map, city.events, player, baby, city.map, city.streets(),
-			city.crowd.sources, "")
+	observer.watch(city.map, RunCity.events(city), player, baby, city.map, city.streets(),
+			RunCity.crowd(city).sources, "")
 	t.add_child(observer)
 	clock.start(180.0)
 	t.check(car.car.closes_on(player.global_position), "the car is closing on her in its lane")
@@ -818,7 +818,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	t.check(in_lane.contains("| police_patrol "),
 			"the log names the patrol for the mark (%s)" % in_lane)
 	player.global_position = lane + outward * float(Tuning.TILE_SIZE * 2)
-	_tell(city.events.world.where_she_is(), player)
+	_tell(RunCity.events(city).world.where_she_is(), player)
 	var out_of_lane := await _the_mark_cue(t, player, run_log)
 	t.check(out_of_lane != "" and not out_of_lane.contains("| police_patrol"),
 			"and out of its lane it names nothing of it (%s)" % out_of_lane)

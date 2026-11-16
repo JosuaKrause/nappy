@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 		var map := CityGenerator.generate(city_seed)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		for day: int in DAYS:
 			_one_day(city, map, city_seed, day)
 		city.free()
@@ -41,7 +41,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m110-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events, consumed)
 
 	var tiles := map.obstructed_tiles.size()
 	var kept := map.obstructed_tiles.duplicate()
@@ -65,8 +65,8 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var at := map.doorstep_world_position()
 	var crowd_rng := RandomNumberGenerator.new()
 	crowd_rng.seed = hash("m110-crowd:%d:%d" % [city_seed, day])
-	city.crowd.start_day(day, crowd_rng, at)
-	city.crowd.set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).start_day(day, crowd_rng, at)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
 
 	var inside_walkers := 0
 	var inside_cars := 0
@@ -75,9 +75,9 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var car_frames := 0
 	var stopped := 0
 	for frame in int(round(SECONDS / STEP)):
-		city.crowd.set_focus(at)
-		city.crowd.step(STEP)
-		for agent in city.crowd.agents():
+		RunCity.crowd(city).set_focus(at)
+		RunCity.crowd(city).step(STEP)
+		for agent in RunCity.crowd(city).agents():
 			var caught := map.is_obstructed(map.world_to_tile(agent.position))
 			if agent.kind == CrowdAgent.Kind.WALKER:
 				walker_frames += 1

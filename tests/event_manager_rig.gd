@@ -27,8 +27,8 @@ const WALK_SCALE := 6.0
 static func build_city(t: TestRunner) -> City:
 	var city := RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(MapCache.of(SEED))
-	city.events.stream_radius = INF
+	RunCity.build(city, MapCache.of(SEED))
+	RunCity.events(city).stream_radius = INF
 	return city
 
 ## The stream a day's events are planned from.
@@ -46,7 +46,7 @@ static func start(city: City, day: int, consumed: Array[String] = [],
 		focus := Vector2.ZERO) -> void:
 	var spec := DaySpec.for_day(day)
 	RigStreets.begin(city.streets(), city.map, spec)
-	city.events.start_day(spec, rng(day), consumed, focus)
+	RunCity.events(city).start_day(spec, rng(day), consumed, focus)
 
 ## A player the manager can find, out of the physics loop (its own physics is off) and moved by
 ## hand or by a walking node. A camera is under it, as the manager looks through her camera.
@@ -65,7 +65,7 @@ static func walker(t: TestRunner, city: City, at: Vector2) -> Stroller:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig.global_position = at
-	city.events.use_player(rig)
+	RunCity.events(city).use_player(rig)
 	return rig
 
 ## Takes her down a route on its own physics tick, at `Tuning.WALK_SPEED`: a point is walked to
@@ -115,7 +115,7 @@ static func longest_route_out(city: City, day: int) -> PackedVector2Array:
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
-	var siting := EventScheduler.WalkSiting.new(day, city.map, tree, city.events.walk_events(),
+	var siting := EventScheduler.WalkSiting.new(day, city.map, tree, RunCity.events(city).walk_events(),
 			EventScheduler.Verdicts.new(), GamePlanBuilder.over(city.map), null)
 	var points := PackedVector2Array()
 	for i in best.size():

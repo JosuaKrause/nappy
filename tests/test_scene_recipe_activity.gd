@@ -27,7 +27,7 @@ func _ready() -> void:
 	var background: Dictionary = setup.get("background", {})
 	var multiplier: float = background.get("walker_multiplier", 1)
 	var pins: Array = setup.get("actors", [])
-	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():
+	if RunCity.crowd(city).agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():
 		fail("background population differs from ordinary day density")
 		return
 	for pin: Dictionary in pins:
@@ -40,20 +40,20 @@ func _ready() -> void:
 	var gates: Array = setup.get("gates", [])
 	var barriers: Array = setup.get("barriers", [])
 	var expected := events.size() + seals.size() * 2 + gates.size() * 3 + barriers.size() * 3
-	if city.events.plans().size() != expected:
+	if RunCity.events(city).plans().size() != expected:
 		fail("an unselected event, seal or region body is installed")
 		return
 	# No ordinary filling above, and the director owes nothing more on the walk: the baby falling
 	# asleep turns the day to its return, which a played day answers with patrols owed on the way
 	# back (acts III and IV), and a scene's day owes none beyond what its own events are.
-	var owed_before: int = city.events.owed_ahead()
+	var owed_before: int = RunCity.events(city).owed_ahead()
 	BootedMain.baby(main).force_sleep()
-	if city.events.owed_ahead() != owed_before:
+	if RunCity.events(city).owed_ahead() != owed_before:
 		fail("authored scene enables ordinary event filling or director")
 		return
 	for entry: Dictionary in setup.get("events", []):
 		var matched := false
-		for plan in city.events.plans():
+		for plan in RunCity.events(city).plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
 				matched = plan.position.is_equal_approx(position_of(entry.at, anchors, city))
 		if not matched:
@@ -68,12 +68,12 @@ func _ready() -> void:
 			fail("authored fixtures did not reach the real production building")
 			return
 	if setup.has("seals"):
-		for plan in city.events.plans():
+		for plan in RunCity.events(city).plans():
 			if plan.def.id == "cafe_tables" and not is_equal_approx(plan.position.x, 2576):
 				fail("restaurant guests did not move exactly one block east")
 				return
 	if setup.has("barriers"):
-		for plan in city.events.plans():
+		for plan in RunCity.events(city).plans():
 			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1552)
 					or plan.position.y < 2240 or plan.position.y > 2432):
 				fail("truck barrier is not a vertical band across the left street")
@@ -81,7 +81,7 @@ func _ready() -> void:
 	if setup.has("posters"):
 		for entry: Dictionary in setup.posters:
 			var tile := city.map.world_to_tile(Vector2(entry.at[0], entry.at[1]))
-			if not city.poster_walls().fronts().has(tile) or run.posters.cells[tile].kind \
+			if not RunCity.poster_walls(city).fronts().has(tile) or run.posters.cells[tile].kind \
 					!= PosterArt.Kind[str(entry.kind).to_upper()]:
 				fail("authored poster is not a real eligible wall cell")
 				return

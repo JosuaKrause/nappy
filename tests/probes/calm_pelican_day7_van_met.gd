@@ -43,12 +43,12 @@ func run(t: TestRunner) -> void:
 func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> String:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
@@ -58,8 +58,8 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	resistance.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -69,7 +69,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	var walk := Walk.new()
 	walk.city = city
 	walk.row = row
@@ -143,7 +143,7 @@ class Walk extends RefCounted:
 			waited += STEP
 
 	func _tick(player: Stroller) -> void:
-		var events := city.events
+		var events := RunCity.events(city)
 		events.ahead.site_what_is_on_her_way(STEP)
 		events.ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
@@ -193,7 +193,7 @@ class Walk extends RefCounted:
 					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when put there %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
-		var waits: Dictionary = city.events.ahead._siting.waits if city.events.ahead._siting else {}
+		var waits: Dictionary = RunCity.events(city).ahead._siting.waits if RunCity.events(city).ahead._siting else {}
 		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,
 				drawn_at, drawn_phase, sited_phase, where, waits,
 				"%.0fs" % seen_at if seen_at >= 0.0 else "never"]

@@ -306,7 +306,7 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t: TestRunn
 func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
-	city.build(MapCache.of(BASE_SEED))
+	RunCity.build(city, MapCache.of(BASE_SEED))
 	var entities: Node2D = city.get_node("Entities")
 	var buildings: Node2D = city.get_node("Buildings")
 	t.check(entities.y_sort_enabled and entities.z_index > buildings.z_index,

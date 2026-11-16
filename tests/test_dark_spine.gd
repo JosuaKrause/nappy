@@ -35,7 +35,7 @@ func _rng(label: String) -> RandomNumberGenerator:
 func _test_the_dark_spine_keeps_moving(t: TestRunner) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
-	_city.build(MapCache.of(SEED))
+	RunCity.build(_city, MapCache.of(SEED))
 	# Day 14's city as the game starts it, then the crowd on its streets: a quiet day, with no
 	# events started, so no row the day's draw puts on the spine's crossings can jam it. What is
 	# measured is the lights, not the day's density.
@@ -65,7 +65,7 @@ func _test_the_dark_spine_keeps_moving(t: TestRunner) -> void:
 ## spine for the crowd to make way for, so the field is over the spine and the cars there are the
 ## ones being simulated. The spine is lit or dark as the city has it.
 func _spine_traffic(t: TestRunner) -> Vector2:
-	_city.crowd.start_day(Tuning.RUN_LENGTH_DAYS, _rng("traffic"))
+	RunCity.crowd(_city).start_day(Tuning.RUN_LENGTH_DAYS, _rng("traffic"))
 	var her := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -74,12 +74,12 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 	_city.add_child(her)
 	her.set_physics_process(false)
 	her.global_position = _sidewalk_beside_the_spine()
-	_city.crowd.use_player(her)
+	RunCity.crowd(_city).use_player(her)
 	var totals := {"speed": 0.0, "stopped": 0, "samples": 0}
 	var sample := func(ticks: int) -> bool:
 		if ticks % 30 != 0:
 			return false
-		for agent in _city.crowd.agents():
+		for agent in RunCity.crowd(_city).agents():
 			if agent.kind != CrowdAgent.Kind.CAR or not agent.travelling_vertically() \
 					or not _city.map.is_main_road(true, CrowdLanes.corridor_at(agent.position.x)):
 				continue
@@ -89,7 +89,7 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 				totals.stopped += 1
 		return false
 	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(40.0, 1.0), PhysicsTicks.FASTER, sample)
-	_city.crowd.use_player(null)
+	RunCity.crowd(_city).use_player(null)
 	her.free()
 	_sampled_cars = totals.samples
 	return Vector2(totals.speed / maxf(1.0, totals.samples),

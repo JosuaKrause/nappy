@@ -51,7 +51,7 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()
-	city.build(map)
+	RunCity.build(city, map)
 	var built_spans: Dictionary = city.get("spans")
 	var row := built_spans.duplicate()
 	row.merge({"seed": seed_value, "trial": trial, "stage": "build",

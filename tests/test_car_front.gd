@@ -26,7 +26,7 @@ func run(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	var street: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(street.x >= 0, "this city has a straight stretch of ordinary street for a car")
 	if street.x >= 0:
@@ -46,8 +46,8 @@ func _on_hard_fail(reason: String) -> void:
 ## A car of the run's own on the carriageway of `street`, going down it at `speed`, in a crowd of
 ## nobody else (a day started and emptied, as the rig's other suites do).
 func _a_car(city: City, map: CityMap, street: Vector2i, lane: int, speed: float) -> CrowdAgent:
-	city.crowd.start_day(1, _rng(), Vector2.ZERO)
-	city.crowd.clear()
+	RunCity.crowd(city).start_day(1, _rng(), Vector2.ZERO)
+	RunCity.crowd(city).clear()
 	return _rig.agent_on(city, map, CrowdAgent.Kind.CAR, street.x, lane,
 			float(street.y + 2) * Tuning.TILE_SIZE, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS, speed)
 
@@ -109,12 +109,12 @@ func _the_day_ends_with_her_ahead(city: City, car: CrowdAgent, gap: float, secon
 	city.add_child(her)
 	her.set_physics_process(false)
 	her.global_position = car.global_position + car.heading() * gap
-	city.crowd.use_player(her)
-	city.crowd.use_bus(EventBus)
+	RunCity.crowd(city).use_player(her)
+	RunCity.crowd(city).use_bus(EventBus)
 	_fails.clear()
 	for frame in int(round(seconds / STEP)):
 		await city.get_tree().physics_frame
-	city.crowd.use_player(null)
+	RunCity.crowd(city).use_player(null)
 	her.free()
 	return _fails.has("car_strike")
 

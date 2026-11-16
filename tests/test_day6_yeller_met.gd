@@ -58,15 +58,15 @@ func run(t: TestRunner) -> void:
 func _walk(t: TestRunner, seed_value: int) -> String:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 	# The units draw as she walks; a man one of them drew is told from the man her route is
 	# handed by the row it holds as drawn (`_a_unit_drew()`).
-	var units := city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+	var units := RunCity.events(city).walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
@@ -74,8 +74,8 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	resistance.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -85,7 +85,7 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	var map := city.map
 	var outcome := "no mark"
 	var mark := resistance.current_step()
@@ -93,7 +93,7 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 		var seen := {"man": null, "standing": [], "read": false, "owed": 0, "outcome": "never sited",
 				"to_stream": false}
 		var tick := func() -> void:
-			var events := city.events
+			var events := RunCity.events(city)
 			events.ahead.site_what_is_on_her_way(STEP)
 			var sited_now := false
 			if seen["man"] == null and seen["read"]:
@@ -113,9 +113,9 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 				resistance.contact_position())]), tick)
 		resistance.contact().complete_now()
 		# The dawn's rows and the task's own man; a man not among them was put on her route.
-		seen["standing"] = city.events.plans().duplicate()
+		seen["standing"] = RunCity.events(city).plans().duplicate()
 		seen["read"] = true
-		seen["owed"] = city.events.owed_ahead()
+		seen["owed"] = RunCity.events(city).owed_ahead()
 		var task_man: EventInstance = resistance.rider()
 		if task_man:
 			_along(player, _path(map, player.global_position, _beside(map,

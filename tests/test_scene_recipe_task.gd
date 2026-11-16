@@ -113,20 +113,20 @@ func _day(t: TestRunner, day: int) -> Array:
 	var city: City = CITY_SCENE.instantiate()
 	city.run = own_run
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	city.start_recipe_day(state, day, own_run.calendar.day_rng(day, "closures"))
 	# A recipe that selects no gate or barrier stands no region wall either, the way
 	# `SceneRecipeRuntime._select_structures()` leaves the day's plan.
 	if city.streets().region_plan():
 		city.streets().replace_region_plan(RegionPlanner.RegionPlan.new())
 	var empty: Array[EventPlan] = []
-	city.events.start_recipe(empty, DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), day,
+	RunCity.events(city).start_recipe(empty, DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), day,
 			map.tile_to_world(MOUTH))
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	return [city, director, own_run]
 
 func _free_day(made: Array) -> void:
@@ -210,7 +210,7 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t: TestRunn
 	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, at_mark)
 	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
 	var guards: Array[Vector2] = []
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id == EventCatalogue.mark_guard().id and not instance.is_finished:
 			guards.append(instance.global_position)
 	var robbery := EventCatalogue.mark_guard()
@@ -287,8 +287,8 @@ func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t: TestRunner) 
 	t.check(director.scene_task_errors().is_empty() and director.current_step() != null
 			and not director.current_step().is_pickup,
 			"and its task finds a mast with none standing: %s" % [director.scene_task_errors()])
-	var mast := ResistanceReads.mast_at(director, city.events)
-	var foot := city.events.mast_foot(mast)
+	var mast := ResistanceReads.mast_at(director, RunCity.events(city))
+	var foot := RunCity.events(city).mast_foot(mast)
 	t.check(mast != "" and foot != Vector2.INF
 			and foot.distance_to(mark) >= ResistanceDirector.NEAR_THE_MARK,
 			"a mast put up for it on the circle round her")

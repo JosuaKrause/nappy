@@ -42,12 +42,12 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 		run.attempt_spend.city_state = state
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
-		_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+		RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-				_city.spawn_siting)
+		director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+				RunCity.spawn_siting(_city))
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var offered := director.current_step()
 		if not finale:
@@ -76,7 +76,7 @@ func _build_city(t: TestRunner) -> void:
 		_city.free()
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
-	_city.build(MapCache.of(SEED))
+	RunCity.build(_city, MapCache.of(SEED))
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

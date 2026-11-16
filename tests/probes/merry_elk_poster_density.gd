@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var state := CityState.new()
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.block_plans, day)

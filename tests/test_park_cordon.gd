@@ -79,7 +79,7 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	_run.start_run(SEED)
 	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
-	_city.build(MapCache.of(SEED))
+	RunCity.build(_city, MapCache.of(SEED))
 	_run.resistance.completed_steps = []
 	_run.resistance.failed_steps = []
 	_run.resistance.progress = 0
@@ -94,12 +94,12 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	# home is worked out (`DayReach`).
 	if before_the_day.is_valid():
 		before_the_day.call()
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
+	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+			RunCity.spawn_siting(_city))
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
 	director.contact().complete_now()
@@ -119,8 +119,8 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 		director.contact().complete_now()
 	else:
 		happenings = ResistanceHappenings.new()
-		happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-				_city.atlas, null, _city.spawn_siting)
+		happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+				_city.atlas, null, RunCity.spawn_siting(_city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
 	return {"director": director, "happenings": happenings, "state": state,
@@ -160,7 +160,7 @@ func _line() -> Rect2:
 	return _line_rect
 
 static func _look(city: City, at: Variant) -> void:
-	var view := city.events.visible_view()
+	var view := RunCity.events(city).visible_view()
 	if at == null:
 		view.look(Rect2(), null)
 	else:
@@ -215,7 +215,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
 		var siting := SpawnSiting.new(_city.map, _city.navigator,
 				func() -> VisibleView: return view)
-		var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city, _city.atlas,
+		var cordon := ParkCordon.new(_city.map, _city.navigator, RunCity.events(_city), _city, _city.atlas,
 				fixture.park, siting,
 				ResistanceReads.day_reachability(_city)[1])
 		cordon.tick(STEP, swing)
@@ -248,8 +248,8 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 	var swing: Vector2 = fixture.swing
 	happenings.cordon.clear()
 	var recording := RecordingAtlas.new()
-	var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city, recording,
-			fixture.park, _city.spawn_siting, ResistanceReads.day_reachability(_city)[1])
+	var cordon := ParkCordon.new(_city.map, _city.navigator, RunCity.events(_city), _city, recording,
+			fixture.park, RunCity.spawn_siting(_city), ResistanceReads.day_reachability(_city)[1])
 	var waited := 0.0
 	while waited < PATIENCE and (CordonInTheWorld.tapes(_city).is_empty()
 			or CordonInTheWorld.posts(_city).is_empty()):
@@ -634,8 +634,8 @@ func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city,
-					_city.atlas, fixture.park, _city.spawn_siting,
+			var cordon := ParkCordon.new(_city.map, _city.navigator, RunCity.events(_city), _city,
+					_city.atlas, fixture.park, RunCity.spawn_siting(_city),
 					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
@@ -678,7 +678,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 	var fixture := _at_the_swing(t, func() -> void:
 		var park := CityGenerator.swing_park(_city.map)
 		var area := _city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map, park))
-		person[0] = _city.events.spawn_extra(EventCatalogue.by_id("busker"),
+		person[0] = RunCity.events(_city).spawn_extra(EventCatalogue.by_id("busker"),
 				area.position + area.size * Vector2(0.25, 0.3)))
 	var happenings: ResistanceHappenings = fixture.happenings
 	var busker: EventInstance = person[0]
@@ -704,7 +704,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 	var waited := 0.0
 	while waited < PATIENCE and not escort.is_queued_for_deletion():
 		if is_instance_valid(busker) and not busker.is_finished:
-			_city.events.world.where_she_is().tell(her[0])
+			RunCity.events(_city).world.where_she_is().tell(her[0])
 			busker.step(STEP)
 		var was_closed := cordon.is_closed()
 		_tick(happenings, her[0], shows.is_valid())
@@ -768,7 +768,7 @@ func _busker_in_the_park(pace := 0.0) -> EventInstance:
 		walking.solid_parts = row.solid_parts
 		walking.departs_at = pace
 		row = walking
-	return _city.events.spawn_extra(row, area.position + area.size * Vector2(0.25, 0.3))
+	return RunCity.events(_city).spawn_extra(row, area.position + area.size * Vector2(0.25, 0.3))
 
 ## **Spends the rows the day's units drew within twice `Tuning.OUT_OF_SIGHT` of `person`**
 ## (`EventDef.is_drawn_by_units()`), the units there drawn first so none draws a row there later,
@@ -782,8 +782,8 @@ func _busker_in_the_park(pace := 0.0) -> EventInstance:
 func _clear_the_drawn_rows_round(person: EventInstance) -> void:
 	var day := ResistanceSteps.swing_day()
 	var beside := ResistanceSteps.guarded_row_on(day)
-	_city.events.draw_the_ground_round(person.global_position, Tuning.OUT_OF_SIGHT * 2.0)
-	for plan in _city.events.plans():
+	RunCity.events(_city).draw_the_ground_round(person.global_position, Tuning.OUT_OF_SIGHT * 2.0)
+	for plan in RunCity.events(_city).plans():
 		if plan.is_placed() and plan.row().is_drawn_by_units(day, beside) \
 				and plan.placed_at().distance_to(person.global_position) < Tuning.OUT_OF_SIGHT * 2.0:
 			plan.spend()
@@ -827,7 +827,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t: TestRunner) -> void:
 				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
 				if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 					way.remove_at(0)
-			_city.events.world.where_she_is().tell(her[0])
+			RunCity.events(_city).world.where_she_is().tell(her[0])
 			busker.step(STEP)
 			_tick(happenings, her[0], shows.is_valid())
 			clock += STEP
@@ -882,7 +882,7 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t: TestRunner) 
 		while clock < PATIENCE and is_instance_valid(busker) and not busker.is_finished:
 			if after_the_touch >= 0.0 and clock >= after_the_touch and not busker.is_leaving:
 				_set_off_on_their_own(busker, her[0])
-			_city.events.world.where_she_is().tell(her[0])
+			RunCity.events(_city).world.where_she_is().tell(her[0])
 			busker.step(STEP)
 			_tick(happenings, her[0], shows.is_valid())
 			cordon = happenings.cordon
@@ -905,7 +905,7 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t: TestRunner) 
 ## Sends `person` off on a departure of their own, straight away from `her`, at the pace their row
 ## leaves at (`_busker_in_the_park()` gives a busker one).
 func _set_off_on_their_own(person: EventInstance, her: Vector2) -> void:
-	_city.events.world.where_she_is().tell(her)
+	RunCity.events(_city).world.where_she_is().tell(her)
 	person.leave_for_a_completed_task()
 
 ## **An escort sent back out alone is let out before the gap shuts.** His person goes before he
@@ -935,7 +935,7 @@ func _test_an_escort_sent_back_alone_is_let_out_before_the_gap_shuts(t: TestRunn
 	if escort == null:
 		_end(fixture)
 		return
-	_city.events.retire(busker)
+	RunCity.events(_city).retire(busker)
 	var last := escort.global_position
 	var through_tape := 0
 	var inside_at_the_close := false
@@ -977,7 +977,7 @@ func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t: Tes
 	var cordon: ParkCordon = null
 	var gap_tiles: Array[Vector2i] = []
 	while clock < PATIENCE * 2.0 and is_instance_valid(busker) and not busker.is_finished:
-		_city.events.world.where_she_is().tell(her[0])
+		RunCity.events(_city).world.where_she_is().tell(her[0])
 		busker.step(STEP)
 		_tick(happenings, her[0], shows.is_valid())
 		cordon = happenings.cordon

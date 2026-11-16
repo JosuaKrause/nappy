@@ -54,7 +54,7 @@ func run(t: TestRunner) -> void:
 		for seed_value in SEEDS:
 			var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 			t.add_child(city)
-			city.build(CityGenerator.generate(seed_value))
+			RunCity.build(city, CityGenerator.generate(seed_value))
 			var director := _read_the_mark(t, city, day, seed_value)
 			var player := _rig_player(t, director.contact_position())
 			director.use_player(player)
@@ -130,13 +130,13 @@ func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> Res
 	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	if mark != null and mark.is_pickup:
@@ -155,8 +155,8 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 	var direction := 1
 	player.global_position = path[0]
 	var walked := 0.0
-	city.events.use_player(player)
-	var bag := city.events.ahead.director().route_bag()
+	RunCity.events(city).use_player(player)
+	var bag := RunCity.events(city).ahead.director().route_bag()
 	while walked < 600.0 and bag and not bag.bag_in_front().is_empty():
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
@@ -169,8 +169,8 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		city.events.ahead.site_what_is_on_her_way(STEP)
-		city.events.ahead.place_what_is_owed_ahead(STEP)
+		RunCity.events(city).ahead.site_what_is_on_her_way(STEP)
+		RunCity.events(city).ahead.place_what_is_owed_ahead(STEP)
 		player.global_position += player.velocity * STEP
 		walked += STEP
 

@@ -43,7 +43,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 		var map := CityGenerator.generate(city_seed)
 		var city: City = RunCity.with_own_run(CITY_SCENE, city_seed)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		for day: int in [1, 6]:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
@@ -53,7 +53,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 			var events := RandomNumberGenerator.new()
 			events.seed = hash("bodies-events:%d:%d" % [city_seed, day])
 			var consumed: Array[String] = []
-			city.events.start_day(DaySpec.for_day(day), events, consumed)
+			RunCity.events(city).start_day(DaySpec.for_day(day), events, consumed)
 			t.check(map.obstructed_tiles.size() > 0,
 					"seed %d day %d stands solid bodies somewhere to be asked about (%d tiles)"
 					% [city_seed, day, map.obstructed_tiles.size()])
@@ -61,9 +61,9 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 			var at := map.doorstep_world_position()
 			var crowd_rng := RandomNumberGenerator.new()
 			crowd_rng.seed = hash("bodies-crowd:%d:%d" % [city_seed, day])
-			city.crowd.start_day(day, crowd_rng, at)
-			city.crowd.set_gates(city.streets().region_plan().gates)
-			var cars := _car_bodies(map, city.events)
+			RunCity.crowd(city).start_day(day, crowd_rng, at)
+			RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+			var cars := _car_bodies(map, RunCity.events(city))
 			cars_seen += cars.size()
 			# The cars as an instance stands them are where the record put them: the middle of
 			# each is on ground the day marked as a body.
@@ -78,9 +78,9 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 			var in_a_car := 0
 			var reached_a_car := 0
 			for frame in int(round(20.0 / STEP)):
-				city.crowd.set_focus(at)
-				city.crowd.step(STEP)
-				for agent in city.crowd.agents():
+				RunCity.crowd(city).set_focus(at)
+				RunCity.crowd(city).step(STEP)
+				for agent in RunCity.crowd(city).agents():
 					if map.is_obstructed(map.world_to_tile(agent.position)):
 						inside += 1
 					for car: Array in cars:

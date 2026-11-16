@@ -376,10 +376,10 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	# No player in this rig, so nothing would ever stream in on its own — see
 	# `test_event_manager.gd`'s own `_build_city()` for the same reasoning.
-	city.events.stream_radius = INF
+	RunCity.events(city).stream_radius = INF
 	# `city.start_day()` first, unlike `test_event_manager.gd`'s own rigs, which begin the city's
 	# streets themselves (`RigStreets.begin()`) — this test is specifically about
 	# `EventManager.start_day()` placing the doors off the region plan the city's own dawn grew
@@ -394,7 +394,7 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("checkpoint-wiring-events:%d:%d" % [BASE_SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var region_plan := city.streets().region_plan()
 	t.check(region_plan.door_bodies.size() > 0,
@@ -402,7 +402,7 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 			% [day, region_plan.door_bodies.size()])
 
 	var planned_ids: Dictionary[String, int] = {}
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if plan.def.id.begins_with("checkpoint_"):
 			planned_ids[plan.def.id] = planned_ids.get(plan.def.id, 0) + 1
 	t.check(int(planned_ids.get("checkpoint_hut", 0)) > 0,
@@ -412,7 +412,7 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 
 	var live_gate: EventInstance = null
 	var live_hut: EventInstance = null
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id == "checkpoint_gate" and not live_gate:
 			live_gate = instance
 		if instance.def.id == "checkpoint_hut" and not live_hut:
@@ -1764,13 +1764,13 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("checkpoint-gate-rig:%d" % BASE_SEED)
-	city.crowd.start_day(1, rng, CrowdLanes.arterial_pavement(map))
+	RunCity.crowd(city).start_day(1, rng, CrowdLanes.arterial_pavement(map))
 
 	var car: CrowdAgent = null
-	for agent in city.crowd.agents():
+	for agent in RunCity.crowd(city).agents():
 		if agent.kind == CrowdAgent.Kind.CAR:
 			car = agent
 			break
@@ -1778,12 +1778,12 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 	if not car:
 		city.free()
 		return
-	city.crowd.set_focus(car.global_position)
+	RunCity.crowd(city).set_focus(car.global_position)
 
 	var gate := RegionPlanner.GateState.new()
 	gate.position = car.global_position + car.heading() * 150.0
 	var gates: Array[RegionPlanner.GateState] = [gate]
-	city.crowd.set_gates(gates)
+	RunCity.crowd(city).set_gates(gates)
 
 	var stopped_seconds := 0.0
 	var ever_stopped := false
@@ -1791,7 +1791,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 	var raised_while_passing := false
 	var elapsed := 0.0
 	while elapsed < 20.0 and passed_at == INF:
-		city.crowd.step(STEP)
+		RunCity.crowd(city).step(STEP)
 		elapsed += STEP
 		var ahead := (gate.position - car.global_position).dot(car.heading())
 		if ahead > 0.0 and ahead < Tuning.CAR_STOP_LINE_SETBACK + 20.0:
@@ -1813,7 +1813,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 	var cleared := false
 	elapsed = 0.0
 	while elapsed < 5.0 and not cleared:
-		city.crowd.step(STEP)
+		RunCity.crowd(city).step(STEP)
 		elapsed += STEP
 		cleared = not gate.raised
 	t.check(cleared, "and lowers again once the road either side of it is clear")
@@ -1871,21 +1871,21 @@ func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	var stroller := _real_stroller(t)
-	city.crowd.use_player(stroller)
+	RunCity.crowd(city).use_player(stroller)
 
 	var gate := RegionPlanner.GateState.new()
 	gate.position = Vector2(-5000.0, -5000.0)
 	gate.raised = true
 	var gates: Array[RegionPlanner.GateState] = [gate]
-	city.crowd.set_gates(gates)
+	RunCity.crowd(city).set_gates(gates)
 
 	stroller.global_position = gate.position + Vector2(40.0, 10.0)
-	city.crowd.step(STEP)
+	RunCity.crowd(city).step(STEP)
 	t.check(gate.raised, "with no car anywhere near it, the arm stays up while she is under it")
 	stroller.global_position = gate.position + Vector2(200.0, 0.0)
-	city.crowd.step(STEP)
+	RunCity.crowd(city).step(STEP)
 	t.check(not gate.raised, "and comes down once she is out from under it")
 
 	stroller.free()
@@ -1936,7 +1936,7 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	_repaint_for(map, day)
 	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
 	t.check(not plan.gates.is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
@@ -1948,17 +1948,17 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 			if body.gate_state == state:
 				# The planner's own plan, put in by the city's streaming with its facing and the
 				# door's shared boom state, as a door day puts it in.
-				city.events.streaming.add(body)
-				city.events.stream_around(body.position)
+				RunCity.events(city).streaming.add(body)
+				RunCity.events(city).stream_around(body.position)
 				gate = body.live
 		for body in plan.door_bodies:
 			if gate and body.def.id == "checkpoint_hut" \
 					and absf((body.position - gate.global_position).dot(body.facing)) <= 1.0:
-				city.events.streaming.add(body)
-				city.events.stream_around(body.position)
+				RunCity.events(city).streaming.add(body)
+				RunCity.events(city).stream_around(body.position)
 				huts.append(body.live)
 	var stroller := _real_stroller(t)
-	city.events.use_player(stroller)
+	RunCity.events(city).use_player(stroller)
 	t.check(gate != null and huts.size() == 2,
 			"the rig stood a gate and the two huts on its line (%d huts)" % huts.size())
 	return {"city": city, "gate": gate, "huts": huts, "stroller": stroller}
@@ -1971,7 +1971,7 @@ func _free_street_door_rig(rig: Dictionary) -> void:
 ## tick runs.
 func _step_her_to(rig: Dictionary, at: Vector2) -> void:
 	(rig["stroller"] as Stroller).global_position = at
-	(rig["city"] as City).events.checkpoints.watch_the_door_lines()
+	RunCity.events((rig["city"] as City)).checkpoints.watch_the_door_lines()
 
 ## How many walks across a door's line the run log told of: the `checkpoint` line
 ## `CheckpointController.watch_the_door_lines()` writes for each, none for a release through it.
@@ -1991,7 +1991,7 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	city.events.trace = RecordingTrace.new(walks_told)
+	RunCity.events(city).trace = RecordingTrace.new(walks_told)
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])
@@ -2014,15 +2014,15 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 	var hut := huts[0]
 	var side := (hut.global_position - gate.global_position).normalized()
 	_step_her_to(rig, hut.global_position - axis * 60.0 + side * 8.0)
-	city.events.checkpoints.check_detentions()
+	RunCity.events(city).checkpoints.check_detentions()
 	t.check(hut.is_chatting(), "walking up the sidewalk to a hut starts its inspection")
 	for i in int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 5:
 		hut.step(STEP)
-		city.events.checkpoints.watch_the_door_lines()
-		city.events.checkpoints.check_detentions()
+		RunCity.events(city).checkpoints.watch_the_door_lines()
+		RunCity.events(city).checkpoints.check_detentions()
 	var released := (rig["stroller"] as Stroller).global_position
 	t.check((released - hut.global_position).dot(axis) > 0.0, "the release sets her across the line")
-	city.events.checkpoints.watch_the_door_lines()
+	RunCity.events(city).checkpoints.watch_the_door_lines()
 	t.check(_walks_under(walks_told) == before,
 			"and being let through is not a walk under (%d, %d before)"
 			% [_walks_under(walks_told), before])
@@ -2033,8 +2033,8 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 func _stand_for(rig: Dictionary, seconds: float) -> void:
 	var city: City = rig["city"]
 	for i in int(round(seconds / STEP)):
-		city.events.checkpoints.warn_at_the_doors()
-		city.events.checkpoints.watch_the_door_lines(STEP)
+		RunCity.events(city).checkpoints.warn_at_the_doors()
+		RunCity.events(city).checkpoints.watch_the_door_lines(STEP)
 
 ## **A walk under the boom warns first, on a clock: going back calls it off, staying across sets
 ## the guard on her.** *(2026-09-24: "Or guards that pursue her should spawn at the huts" · "One
@@ -2051,7 +2051,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	city.events.trace = RecordingTrace.new(walks_told)
+	RunCity.events(city).trace = RecordingTrace.new(walks_told)
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])
@@ -2077,24 +2077,24 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 0.5)
 	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"the frame she crosses, the guard across the road raises his hand")
-	t.check(_door_guard_after_her(city.events) == null, "and nobody is after her yet")
+	t.check(_door_guard_after_her(RunCity.events(city)) == null, "and nobody is after her yet")
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 2.0)
-	t.check(_door_guard_after_her(city.events) == null and not far_hut.is_its_guard_warning(),
+	t.check(_door_guard_after_her(RunCity.events(city)) == null and not far_hut.is_its_guard_warning(),
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
 	_step_her_to(rig, lane + axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING - 0.1)
-	t.check(_door_guard_after_her(city.events) == null, "staying across, nobody comes before it runs")
+	t.check(_door_guard_after_her(RunCity.events(city)) == null, "staying across, nobody comes before it runs")
 	_stand_for(rig, 0.2)
 	EventBus.pursuit_warned.disconnect(on_warned)
 	t.check(warned == ["door_guard", "door_guard"],
 			"and the page counts each crossing's warning once (%s)" % [warned])
-	var guard := _door_guard_after_her(city.events)
+	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.def.id == "door_guard",
 			"once it has run, a door_guard is set on her")
 	if guard:
-		t.check(city.events.instances().has(guard), "a live event, like anything else in the day")
+		t.check(RunCity.events(city).instances().has(guard), "a live event, like anything else in the day")
 		t.check(guard.global_position.distance_to(far_hut.global_position)
 				<= far_hut.def.obstructs_radius + 0.5,
 				"stepping out of the wall of the hut across the road (%.1fpx from it)"
@@ -2108,7 +2108,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	var walks := _walks_under(walks_told)
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING + 0.2)
-	t.check(_walks_under(walks_told) == walks + 1 and _door_guard_after_her(city.events) == guard,
+	t.check(_walks_under(walks_told) == walks + 1 and _door_guard_after_her(RunCity.events(city)) == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
 
@@ -2145,7 +2145,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 			> far_lane.distance_to(far_hut.global_position),
 			"walked on to the far lane, the hut that warned her is now the nearer one")
 	_stand_for(rig, CheckpointController.CROSSING_WARNING)
-	var guard := _door_guard_after_her(city.events)
+	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
 			<= far_hut.def.obstructs_radius + 0.5,
 			"once the warning has run, the guard steps out of the hut that warned her (%s)"

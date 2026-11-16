@@ -42,13 +42,13 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	var size := ResistanceSteps.VAN_WITHIN_THE_NEXT
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	var units := city.events.walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
+	var units := RunCity.events(city).walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
 
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
@@ -57,13 +57,13 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	resistance.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	resistance.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == DAY,
 			"seed %d: day %d opens on its mark" % [seed_value, DAY])
-	var bag := city.events.ahead.director().route_bag()
+	var bag := RunCity.events(city).ahead.director().route_bag()
 	if mark:
 		resistance.contact().complete_now()
 	var task_van: EventInstance = resistance.rider()
@@ -72,7 +72,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	var task_van_at := task_van.global_position if task_van else Vector2.INF
 	# The plans standing once the mark is read: the dawn's rows and the task's own van. A van that
 	# is not among them was put on her route (it joins the day's plan when it is first sited).
-	var standing := city.events.plans().duplicate()
+	var standing := RunCity.events(city).plans().duplicate()
 	var rigged := bag.bag_in_front()
 	t.check(rigged.size() == size and rigged.count(ROW) == 1,
 			"seed %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
@@ -86,8 +86,8 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	city.events.use_player(player)
-	t.check(path.size() >= 2 and city.events.world.has_player(), "a route to walk and her on it")
+	RunCity.events(city).use_player(player)
+	t.check(path.size() >= 2 and RunCity.events(city).world.has_player(), "a route to walk and her on it")
 	var placed: Array[EventPlan] = []
 	var drawn_within := false
 	var her_at_siting := Vector2.INF
@@ -113,25 +113,25 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 				index += direction
 				continue
 			player.velocity = toward.normalized() * Tuning.WALK_SPEED
-			var owed_before := city.events.owed_ahead()
-			var plans_before := city.events.plans().size()
+			var owed_before := RunCity.events(city).owed_ahead()
+			var plans_before := RunCity.events(city).plans().size()
 			var obstructed_before := city.map.obstructed_tiles.duplicate()
 			# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-			city.events.ahead.site_what_is_on_her_way(STEP)
-			city.events.ahead.place_what_is_owed_ahead(STEP)
-			city.events.stream_around(player.global_position)
-			if city.events.owed_ahead() < owed_before and handed < size:
+			RunCity.events(city).ahead.site_what_is_on_her_way(STEP)
+			RunCity.events(city).ahead.place_what_is_owed_ahead(STEP)
+			RunCity.events(city).stream_around(player.global_position)
+			if RunCity.events(city).owed_ahead() < owed_before and handed < size:
 				handed += 1
 				if handed == size:
-					drawn_within = _a_place_from_her_route(city.events, standing, units) != null
-			for plan: EventPlan in city.events.plans().slice(plans_before):
+					drawn_within = _a_place_from_her_route(RunCity.events(city), standing, units) != null
+			for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
 				if plan.def.id == ROW and not standing.has(plan) \
 						and not _a_unit_drew(units, plan):
 					placed.append(plan)
 					her_at_siting = player.global_position
 					where_sited = plan.position
 					heading_at_siting = player.velocity.normalized()
-					city.events.stream_around(player.global_position)
+					RunCity.events(city).stream_around(player.global_position)
 					live_at_once = plan.live != null
 					for tile: Vector2i in city.map.obstructed_tiles:
 						if not obstructed_before.has(tile):
@@ -200,12 +200,12 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t: TestRunner) -> void
 	var seed_value: int = SEEDS[0]
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 	var siting := _siting_of(city)
 	var def := EventCatalogue.by_id(ROW)
 	var box := EventFootprints.footprint_of(def)
@@ -345,7 +345,7 @@ func _a_place_from_her_route(events: EventManager, standing: Array[EventPlan],
 ## constructor the game calls, on a ground under the day's own home-street rule.
 func _siting_of(city: City) -> EventScheduler.WalkSiting:
 	return EventScheduler.WalkSiting.new(DAY, city.map, city.streets().route_tree(),
-			city.events.walk_events(), EventScheduler.Verdicts.new(),
+			RunCity.events(city).walk_events(), EventScheduler.Verdicts.new(),
 			GamePlanBuilder.over(city.map), EventScheduler.row_ground(city.map, null,
 					DaySpec.for_day(DAY).holds_the_home_streets))
 

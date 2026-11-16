@@ -54,7 +54,7 @@ const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; ne
 ##
 ## **One busker, alone, at the centre of a real one-block `PARK` block.** No crowd
 ## (`Crowd.start_day()` is never called, so `_agents` stays empty) and no other event
-## (`city.events` never plans a day; the one instance under test is the only body appended to
+## (`RunCity.events(city)` never plans a day; the one instance under test is the only body appended to
 ## `_instances`) — so the only two things she is standing between are this one field and the
 ## ground's own 12.0/s. The rig stands exactly `inner_radius` from the busker's own centre,
 ## starting at `EXCITEMENT_CALM_THRESHOLD` with an empty sleep meter, matching the question
@@ -70,7 +70,7 @@ func _busker_never_fills_the_day(t: TestRunner) -> void:
 	var block: Vector2i = found["block"]
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 
 	var busker_at: Vector2 = map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 	var real := EventCatalogue.by_id("busker")
@@ -140,7 +140,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	instance.setup(def, busker_at)
 	t.add_child(instance)
 	instance.set_process(false)
-	city.events.world.instances.append(instance)
+	RunCity.events(city).world.instances.append(instance)
 
 	var step := 1.0 / 60.0
 	var warm_up := int(ceil((def.telegraph_time + 0.1) / step))
@@ -152,7 +152,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	camera.name = "Camera2D"
 	stroller.add_child(camera)
 	t.add_child(stroller)
-	city.events.use_player(stroller)
+	RunCity.events(city).use_player(stroller)
 	stroller.set_physics_process(false)
 	stroller.global_position = standing_at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -174,7 +174,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 			result = elapsed
 			break
 
-	city.events.world.instances.erase(instance)
+	RunCity.events(city).world.instances.erase(instance)
 	stroller.free()
 	instance.free()
 	return result
@@ -323,21 +323,21 @@ func _playground_settles(t: TestRunner) -> void:
 	for city_seed in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []
 		var spec := DaySpec.for_day(1)
 		RigStreets.begin(city.streets(), city.map, spec)
-		city.events.start_day(spec, _rng(city_seed), consumed)
+		RunCity.events(city).start_day(spec, _rng(city_seed), consumed)
 		for rect in city.map.playgrounds:
 			var at: Vector2 = city.map.tile_rect_to_world(rect).get_center()
-			city.events.stream_around(at)
-			city.crowd.start_day(1, _rng(city_seed), at)
+			RunCity.events(city).stream_around(at)
+			RunCity.crowd(city).start_day(1, _rng(city_seed), at)
 			var stroller := Stroller.new()
 			var camera := Camera2D.new()
 			camera.name = "Camera2D"
 			stroller.add_child(camera)
 			t.add_child(stroller)
-			city.events.use_player(stroller)
+			RunCity.events(city).use_player(stroller)
 			stroller.set_physics_process(false)
 			stroller.global_position = at
 			stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -349,8 +349,8 @@ func _playground_settles(t: TestRunner) -> void:
 			var settled := -1.0
 			var duration := Tuning.day_length(1)
 			for i in int(round(duration / step)):
-				city.crowd.step(step)
-				for instance in city.events.instances():
+				RunCity.crowd(city).step(step)
+				for instance in RunCity.events(city).instances():
 					if not instance.is_finished:
 						instance.step(step)
 				baby._physics_process(step)

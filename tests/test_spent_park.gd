@@ -654,7 +654,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	run.start_run(BASE_SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
-	city.build(CityGenerator.generate(BASE_SEED))
+	RunCity.build(city, CityGenerator.generate(BASE_SEED))
 	var day := 9
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
@@ -719,7 +719,7 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[Roa
 	for closure in fenced:
 		map.add_recipe_closure(closure)
 	map.add_recipe_closure(short_run)
-	city.build(map)
+	RunCity.build(city, map)
 	var day := 9
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)

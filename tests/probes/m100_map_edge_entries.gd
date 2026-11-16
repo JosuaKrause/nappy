@@ -112,14 +112,14 @@ func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 		var at: Vector2 = edges[name]
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m100-probe-day-start:%s" % name)
-		city.crowd.start_day(1, rng, at)
+		RunCity.crowd(city).start_day(1, rng, at)
 		var total := 0
 		var unsafe := 0
 		var out_of_bounds := 0
-		for agent in city.crowd.agents():
+		for agent in RunCity.crowd(city).agents():
 			total += 1
 			var limit: float = size.y if agent._vertical else size.x
 			var clearance := _picture_clearance(agent.kind, agent._vertical)

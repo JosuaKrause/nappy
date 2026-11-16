@@ -35,7 +35,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(90210))
+	RunCity.build(city, CityGenerator.generate(90210))
 
 	var day := 1
 	var state := CityState.new()

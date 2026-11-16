@@ -65,7 +65,7 @@ func run(t: TestRunner) -> void:
 	for city_seed in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, CityGenerator.generate(city_seed))
 		for day in DAYS:
 			for walk in WALKS:
 				for repetition in REPETITIONS:
@@ -79,8 +79,8 @@ func run(t: TestRunner) -> void:
 							("seed %d, day %d, %s walk, repetition %d: the split step changes every "
 							+ "event, agent and meter exactly as the real one")
 							% [city_seed, day, walk, repetition])
-		city.events.clear()
-		city.crowd._player = null
+		RunCity.events(city).clear()
+		RunCity.crowd(city)._player = null
 		city.free()
 	rig.free()
 
@@ -96,10 +96,10 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	city.start_day(state, day, _rng("closures", city_seed, day))
 	var start := city.map.doorstep_world_position()
 	var consumed: Array[String] = []
-	var events := city.events
+	var events := RunCity.events(city)
 	events.start_day(DaySpec.for_day(day), _rng("events", city_seed, day), consumed, start)
 	events.stream_around(start)
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)
 	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
@@ -238,11 +238,11 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 ## microseconds in `SWEEP_PARTS` order.
 func _split_sweep(city: City, baby: Baby, her: Vector2) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	city.events.sources.sources_at(her)
+	RunCity.events(city).sources.sources_at(her)
 	stamps.append(Time.get_ticks_usec())
-	city.events.door_holding_her_at(her)
+	RunCity.events(city).door_holding_her_at(her)
 	stamps.append(Time.get_ticks_usec())
-	city.crowd.sources.sources_at(her)
+	RunCity.crowd(city).sources.sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	baby._physics_process(STEP)
 	stamps.append(Time.get_ticks_usec())
@@ -285,7 +285,7 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 	context.start(HashingContext.HASH_SHA256)
 	context.update(previous)
 	var state := PackedFloat64Array()
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		context.update(instance.def.id.to_utf8_buffer())
 		state.append(instance.global_position.x)
 		state.append(instance.global_position.y)
@@ -294,9 +294,9 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 		state.append(float(instance.is_leaving))
 		state.append(float(instance.is_telegraphing()))
 		state.append(instance.excitement.landed())
-	state.append(float(city.events.pending_warnings().size()))
-	state.append(float(city.events.active_count()))
-	for agent in city.crowd.agents():
+	state.append(float(RunCity.events(city).pending_warnings().size()))
+	state.append(float(RunCity.events(city).active_count()))
+	for agent in RunCity.crowd(city).agents():
 		state.append(agent.global_position.x)
 		state.append(agent.global_position.y)
 		state.append(agent.speed())

@@ -22,10 +22,10 @@ func run(t: TestRunner) -> void:
 ## her handed to the city's events as the game does. Frees what an earlier attempt left standing.
 func _day_nine(t: TestRunner) -> Array:
 	_build_city_in_a_new_run(t)
-	_city.events.stream_radius = INF
+	RunCity.events(_city).stream_radius = INF
 	var read := _read_the_mark_on(t, 9, SEED)
 	var player: Stroller = read[2]
-	_city.events.use_player(player)
+	RunCity.events(_city).use_player(player)
 	return [read[0], player]
 
 func _end_the_attempt(director: ResistanceDirector, player: Stroller) -> void:
@@ -48,7 +48,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		var day := _day_nine(t)
 		var director: ResistanceDirector = day[0]
 		var player: Stroller = day[1]
-		var events := _city.events
+		var events := RunCity.events(_city)
 		var walks_told: Array[String] = []
 		events.trace = RecordingTrace.new(walks_told)
 		var step := director.current_step()
@@ -143,7 +143,7 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t: TestRunner) -> void:
 		var day := _day_nine(t)
 		var director: ResistanceDirector = day[0]
 		var player: Stroller = day[1]
-		var events := _city.events
+		var events := RunCity.events(_city)
 		if _door_position(director) == Vector2.INF:
 			t.check(false, "day 9's door is named")
 			_end_the_attempt(director, player)
@@ -185,7 +185,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: Tes
 			var day := _day_nine(t)
 			var director: ResistanceDirector = day[0]
 			var player: Stroller = day[1]
-			var events := _city.events
+			var events := RunCity.events(_city)
 			var b_at := _door_position(director)
 			var b_axis := _door_axis(director)
 			var a_at := Vector2.INF
@@ -240,7 +240,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 		var day := _day_nine(t)
 		var director: ResistanceDirector = day[0]
 		var player: Stroller = day[1]
-		var events := _city.events
+		var events := RunCity.events(_city)
 		if _door_position(director) == Vector2.INF:
 			t.check(false, "day 9's door is named")
 			_end_the_attempt(director, player)
@@ -317,7 +317,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 		var day := _day_nine(t)
 		var director: ResistanceDirector = day[0]
 		var player: Stroller = day[1]
-		var events := _city.events
+		var events := RunCity.events(_city)
 		if _door_position(director) == Vector2.INF:
 			t.check(false, "day 9's door is named")
 			_end_the_attempt(director, player)
@@ -381,7 +381,7 @@ func _test_the_frames_see_a_crossing(t: TestRunner) -> void:
 	var day := _day_nine(t)
 	var director: ResistanceDirector = day[0]
 	var player: Stroller = day[1]
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var walks_told: Array[String] = []
 	events.trace = RecordingTrace.new(walks_told)
 	if _door_position(director) == Vector2.INF:
@@ -494,7 +494,7 @@ func _a_guard_warns_her(events: EventManager) -> bool:
 
 ## The named door's `checkpoint_hut` in the street, or null.
 func _hut_of_the_named_door(director: ResistanceDirector) -> EventInstance:
-	for instance in _city.events.instances():
+	for instance in RunCity.events(_city).instances():
 		if instance.def.id == "checkpoint_hut" and _on_the_named_door(director, instance):
 			return instance
 	return null
@@ -507,13 +507,13 @@ func _step_to(player: Stroller, at: Vector2, jump := false) -> void:
 		player.teleport_to(at)
 	else:
 		player.global_position = at
-	_city.events.checkpoints.watch_the_door_lines(STEP)
+	RunCity.events(_city).checkpoints.watch_the_door_lines(STEP)
 
 ## Walks her across a door's line at `at`, along `axis` in `direction`, in one step the way
 ## `CheckpointController.watch_the_door_lines()` reads a frame: from 40px on one side to 40px on
 ## the other, and stands there while the crossing's warning runs.
 func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Stroller) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	player.teleport_to(at - axis * 40.0 * direction)
 	events.checkpoints.watch_the_door_lines()
 	player.global_position = at + axis * 40.0 * direction
@@ -526,5 +526,5 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 # A mark and every contact stand on ground clear of a solid body, or on the item itself, and are
 # reached from such ground — `CityMap.is_obstructed()`, filled by `EventManager.start_day()` from
 # the day's whole plan before this director places anything (`main.gd`'s own day order:
-# `_city.events.start_day()` runs before `_resistance.start_day()`), and `_pick_reachable()`
+# `RunCity.events(_city).start_day()` runs before `_resistance.start_day()`), and `_pick_reachable()`
 # refuses a drawn tile with a body on it.

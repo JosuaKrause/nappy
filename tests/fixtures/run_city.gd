@@ -17,3 +17,24 @@ static func with_own_run(scene: PackedScene, run_seed: int) -> City:
 	run.start_run(run_seed)
 	var city := in_run(scene, run)
 	return city
+
+## Builds `city` on `map` (`City.build()`), with its events and its crowd standing in it: what a
+## suite calls in place of `city.build(map)`.
+static func build(city: City, map: CityMap) -> void:
+	city.build(map)
+
+## The day's events on `city`'s streets (`EventManager`).
+static func events(city: City) -> EventManager:
+	return city.events
+
+## The crowd on `city`'s streets (`Crowd`).
+static func crowd(city: City) -> Crowd:
+	return city.crowd
+
+## Where something sent at her may start in `city` (`SpawnSiting`).
+static func spawn_siting(city: City) -> SpawnSiting:
+	return city.spawn_siting
+
+## The posters on `city`'s fronts (`PosterWalls`).
+static func poster_walls(city: City) -> PosterWalls:
+	return city.poster_walls()

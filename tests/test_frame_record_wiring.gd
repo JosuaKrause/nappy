@@ -102,11 +102,11 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 	await UI.frames(t)
 	t.check(ledger.rows().size() > kept, "a played frame is kept")
 	var row: PackedInt64Array = ledger.rows().back()
-	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS] == city.crowd.agent_count()
+	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS] == RunCity.crowd(city).agent_count()
 			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == run.header.day,
 			"with the world's counters read at the end of its process step")
 	t.check(await _the_readout_shows(t, main, recorder), "the readout carries the record's line")
-	await _check_the_crowd_is_timed_once(t, city.crowd, record, ledger)
+	await _check_the_crowd_is_timed_once(t, RunCity.crowd(city), record, ledger)
 	record.start(ledger)
 	booted.free_all()
 	t.check(not record.is_on(), "leaving the tree switches the timing off")

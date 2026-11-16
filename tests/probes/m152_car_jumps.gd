@@ -106,7 +106,7 @@ func run(t: TestRunner) -> void:
 		var map := CityGenerator.generate(city_seed)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		for day: int in rig[1]:
 			var result := _watch(city, map, city_seed, day)
 			cars_seen += int(result["cars"])
@@ -179,13 +179,13 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m152-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(day), events, consumed)
+	RunCity.events(city).start_day(DaySpec.for_day(day), events, consumed)
 
 	var at := map.doorstep_world_position()
 	var crowd_rng := RandomNumberGenerator.new()
 	crowd_rng.seed = hash("m152-crowd:%d:%d" % [city_seed, day])
-	city.crowd.start_day(day, crowd_rng, at)
-	city.crowd.set_gates(city.streets().region_plan().gates)
+	RunCity.crowd(city).start_day(day, crowd_rng, at)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
 
 	var stops := _places_cars_turn(city, map, at)
 	var extent := map.world_size()
@@ -223,7 +223,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 		focus.y = clampf(focus.y, FOCUS_MARGIN, extent.y - FOCUS_MARGIN)
 
 		before.clear()
-		for agent: CrowdAgent in city.crowd.agents():
+		for agent: CrowdAgent in RunCity.crowd(city).agents():
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
 			var id := agent.get_instance_id()
@@ -237,10 +237,10 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 					agent._speed, car._room_to_stop_in(), car._distance_to_the_blockage(),
 					agent._blocked_in, car._turned_on_this_approach]
 
-		city.crowd.set_focus(focus)
-		city.crowd.step(STEP)
+		RunCity.crowd(city).set_focus(focus)
+		RunCity.crowd(city).step(STEP)
 
-		for agent: CrowdAgent in city.crowd.agents():
+		for agent: CrowdAgent in RunCity.crowd(city).agents():
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
 			var was: Array = before.get(agent.get_instance_id(), [])
@@ -495,7 +495,7 @@ func _why_it_was_shunted(city: City, agent: CrowdAgent, was: Array, before: Dict
 	var key := agent.lane_key()
 	var ahead: CrowdAgent = null
 	var nearest := INF
-	for other: CrowdAgent in city.crowd.agents():
+	for other: CrowdAgent in RunCity.crowd(city).agents():
 		if other == agent or other.kind != CrowdAgent.Kind.CAR or other.lane_key() != key:
 			continue
 		var offset := other.queue_position() - agent.queue_position()
@@ -557,7 +557,7 @@ func _why_the_landing_retreated(city: City, landed: CrowdAgent, from: Vector2,
 	var key := landed.lane_key()
 	var at := (from.y if landed._vertical else from.x) * landed._direction
 	var nearest := INF
-	for other: CrowdAgent in city.crowd.agents():
+	for other: CrowdAgent in RunCity.crowd(city).agents():
 		if other == landed or other.kind != CrowdAgent.Kind.CAR or other.lane_key() != key:
 			continue
 		var offset := other.queue_position() - at

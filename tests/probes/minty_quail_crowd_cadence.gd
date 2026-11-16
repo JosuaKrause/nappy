@@ -76,13 +76,13 @@ func run(t: TestRunner) -> void:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.crowd_view = ScreenCrowdView.new(t)
-		city.build(CityGenerator.generate(city_seed))
+		RunCity.build(city, CityGenerator.generate(city_seed))
 		for day in DAYS:
 			for walk in WALKS:
 				for per_tick in frames:
 					print("CROWD_CADENCE_JSON " + JSON.stringify(
 							_run_once(city, rig, city_seed, day, walk, per_tick)))
-		city.crowd._player = null
+		RunCity.crowd(city)._player = null
 		city.free()
 	rig.free()
 	t.check(true, "ran")
@@ -94,7 +94,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)
-	var crowd := city.crowd
+	var crowd := RunCity.crowd(city)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
 	var start := city.map.doorstep_world_position()
@@ -107,8 +107,8 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	if with_events:
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("crowd-cadence-events:%d:%d" % [city_seed, day])
-		city.events.start_day(DaySpec.for_day(day), events_rng, [], start)
-		city.events.use_player(rig)
+		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, [], start)
+		RunCity.events(city).use_player(rig)
 		meeting = YIELDS.Meeting.new(null, city, {"seed": city_seed, "day": day, "walk": walk})
 	var steps_its_agents := crowd.has_method("_step_the_agents")
 	var across := _crossing(city.map, start)
@@ -145,7 +145,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		recorded.append(rig.global_position)
 		recorded.append(rig.velocity)
 		if with_events:
-			city.events._tick_the_events(STEP)
+			RunCity.events(city)._tick_the_events(STEP)
 		crowd._physics_process(STEP)
 		if with_events and tick >= WARMUP:
 			meeting.observe([], [])
@@ -184,9 +184,9 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	var figures := {}
 	if with_events:
 		figures = meeting.report()
-		city.events.use_player(null)
+		RunCity.events(city).use_player(null)
 		# The next run on this city starts with none of this run's events on the map's list.
-		city.events.clear()
+		RunCity.events(city).clear()
 	return figures.merged({"seed": city_seed, "day": day, "walk": walk, "frames_per_tick": per_tick,
 		"steps_on_the_tick": steps_its_agents, "agents": crowd.agent_count(),
 		"window_seconds": WINDOW * STEP,

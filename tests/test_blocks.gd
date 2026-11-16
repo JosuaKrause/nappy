@@ -206,7 +206,7 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), 1)
 		var rng := RandomNumberGenerator.new()
@@ -380,7 +380,7 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> 
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	var checked := 0
 	for node in city.props():
 		var prop := node as Prop
@@ -407,7 +407,7 @@ func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
-	city.build(map)
+	RunCity.build(city, map)
 	var decals: CityDecals = city.get_node("Decals")
 	var planted := StreetTrees.planted(map)
 	var recorder := RecordingSceneryDrawer.new()

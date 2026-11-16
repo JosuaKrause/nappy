@@ -33,7 +33,7 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 	var local: CityMap = bounded.map
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(local)
+	RunCity.build(city, local)
 	t.check(city.scenery_ground_source(Vector2i(-100, -100)) == GroundTiles.ALLEY,
 			"exterior uses the plain documented ground texture")
 	var station: Building = null
@@ -59,7 +59,7 @@ func _test_the_examples(t: TestRunner) -> void:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		city.scenery_frame_locked = true
 		t.add_child(city)
-		city.build(map)
+		RunCity.build(city, map)
 		var wall_tile := Vector2i(118 if side == "hall" else 132, 14)
 		var found := false
 		for building in city.buildings():

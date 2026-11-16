@@ -47,8 +47,8 @@ func _test_an_escape_scene_runs_under_the_sections_spec(t: TestRunner) -> void:
 ## The scene's events took their settings from the spec the clock runs on, and the clock was
 ## started for that spec's length.
 func _check_the_events_run_under(t: TestRunner, day: DayController, city: City, scene: String) -> void:
-	t.check(city.events.ahead.sends_poster_pursuits == day.spec.poster_pursuits
-			and city.events.ahead.holds_the_home_streets == day.spec.holds_the_home_streets,
+	t.check(RunCity.events(city).ahead.sends_poster_pursuits == day.spec.poster_pursuits
+			and RunCity.events(city).ahead.holds_the_home_streets == day.spec.holds_the_home_streets,
 			"%s's events run under the spec its clock runs on" % scene)
 	t.check(is_equal_approx(day.time_total, day.spec.length),
 			"%s's clock is started for that spec's length (%.1fs of %.1fs)"

@@ -20,7 +20,7 @@ func run(t: TestRunner) -> void:
 func _test_water_ownership(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, WATER_SEED)
 	t.add_child(city)
-	city.build(MapCache.of(WATER_SEED))
+	RunCity.build(city, MapCache.of(WATER_SEED))
 	var shore_reach := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
 	# Inspect the complete shore explicitly, corners under the forest bands included; an ordinary
 	# home boot retains none of this water.

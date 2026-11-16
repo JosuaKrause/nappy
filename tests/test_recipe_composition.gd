@@ -38,7 +38,7 @@ func run(t: TestRunner) -> void:
 	t.check(not pits.has(source) and pits.has(destination), "planning moves the original tree pit across the road")
 	var city: City = RunCity.with_own_run(CITY_SCENE, 11)
 	t.add_child(city)
-	city.build(built.map)
+	RunCity.build(city, built.map)
 	var trees := {}
 	for node in city.props():
 		var prop := node as Prop
@@ -51,19 +51,19 @@ func run(t: TestRunner) -> void:
 			"relocation retains a real existing street-tree component")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	city.crowd.start_day(1, rng, Vector2(1952, 1936), true, false, true, 2)
-	var existing: CrowdAgent = city.crowd.agents()[0]
-	var population := city.crowd.agent_count()
-	var duplicate := city.crowd.add_recipe_actor("overlap", CrowdAgent.Kind.WALKER,
+	RunCity.crowd(city).start_day(1, rng, Vector2(1952, 1936), true, false, true, 2)
+	var existing: CrowdAgent = RunCity.crowd(city).agents()[0]
+	var population := RunCity.crowd(city).agent_count()
+	var duplicate := RunCity.crowd(city).add_recipe_actor("overlap", CrowdAgent.Kind.WALKER,
 			existing.position, existing.heading(), -1, 1)
 	t.check(str(duplicate.error).contains("overlaps an existing walker")
-			and city.crowd.agent_count() == population,
+			and RunCity.crowd(city).agent_count() == population,
 			"authored walker overlapping background crowd is rejected without losing population")
 	var counts := {}
 	var before := {}
 	var cars := 0
 	var lane_directions := {}
-	for agent in city.crowd.agents():
+	for agent in RunCity.crowd(city).agents():
 		if agent.kind == CrowdAgent.Kind.CAR:
 			cars += 1
 			continue
@@ -90,7 +90,7 @@ func run(t: TestRunner) -> void:
 	t.check(main_count > 0 and ordinary_max > 0 and main_count < ordinary_max * 2,
 			"uniform pedestrian selection does not concentrate the field on the main road")
 	for frame in 30:
-		city.crowd.step(1.0 / 30.0)
+		RunCity.crowd(city).step(1.0 / 30.0)
 	var moving := 0
 	for agent: CrowdAgent in before:
 		var distance := agent.position.distance_to(before[agent])
@@ -99,8 +99,8 @@ func run(t: TestRunner) -> void:
 	# The ordinary day round the same point: its walkers are weighed by the street hierarchy again, so
 	# the main road holds clearly more of them against the busiest ordinary corridor than it did on
 	# the uniform day above, where the two stood level.
-	city.crowd.start_day(1, rng, Vector2(1952, 1936))
-	var ordinary_counts := _walkers_by_corridor(city.crowd)
+	RunCity.crowd(city).start_day(1, rng, Vector2(1952, 1936))
+	var ordinary_counts := _walkers_by_corridor(RunCity.crowd(city))
 	var ordinary_main := int(ordinary_counts.get("v%d" % city.map.main_road, 0))
 	var ordinary_rest := 0
 	for key: String in ordinary_counts:
@@ -109,7 +109,7 @@ func run(t: TestRunner) -> void:
 	var uniform_share := float(main_count) / float(maxi(ordinary_max, 1))
 	var ordinary_share := float(ordinary_main) / float(maxi(ordinary_rest, 1))
 	t.check(ordinary_share > uniform_share * 1.25
-			and city.crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
+			and RunCity.crowd(city).agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
 			("ordinary day restores its density and street hierarchy (the main road holds %.2f of the "
 			+ "busiest other corridor's walkers, against %.2f on the uniform day)")
 			% [ordinary_share, uniform_share])

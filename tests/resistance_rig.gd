@@ -89,7 +89,7 @@ func _build_city_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
 	_city = CITY_SCENE.instantiate()
 	_city.run = run
 	t.add_child(_city)
-	_city.build(MapCache.of(seed_value))
+	RunCity.build(_city, MapCache.of(seed_value))
 	return run
 
 ## Frees the test city when the suite built it one.
@@ -99,15 +99,15 @@ func _free_city() -> void:
 	_city = null
 
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
-## `set_sight(_city.events.sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
+## `set_sight(RunCity.events(_city).sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
 func _look_at(rect: Rect2) -> void:
-	_city.events.visible_view().look(rect, null)
+	RunCity.events(_city).visible_view().look(rect, null)
 
 ## Looks the day's view at the unrotated 640x360 screen round `her` (in the tap scheme the visible
 ## area is the whole view) and hands the director what she can see.
 func _watch_the_screen_round(director: ResistanceDirector, her: Vector2) -> void:
 	_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
-	director.set_sight(_city.events.sees)
+	director.set_sight(RunCity.events(_city).sees)
 
 ## Today's walled-off crossing alleys, as the city's streets derive them and hand them to its siting
 ## (`tests/test_resistance_replacement.gd` holds the handing).
@@ -117,8 +117,8 @@ func _walled_alleys() -> Array[Rect2i]:
 
 ## Whether a drawing of `box` about its feet, standing at `at`, would be drawn in the camera's view.
 func _would_show(box: Rect2, at: Vector2) -> bool:
-	return not _city.spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
-			_city.spawn_siting.ask_of_drawing(box), at)
+	return not RunCity.spawn_siting(_city).allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
+			RunCity.spawn_siting(_city).ask_of_drawing(box), at)
 
 ## The library the directors this rig builds are handed (`ResistanceDirector.use_atlas()`), or none
 ## for a rig that hands nothing.
@@ -130,8 +130,8 @@ func _director(t: TestRunner) -> ResistanceDirector:
 	director.set_process(false)
 	if _handed_atlas != null:
 		director.use_atlas(_handed_atlas)
-	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
+	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+			RunCity.spawn_siting(_city))
 	return director
 
 func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator:
@@ -175,7 +175,7 @@ func _read_the_mark(director: ResistanceDirector) -> void:
 ## guards and pursuers the director has put there, read from the world rather than its fields.
 func _live(id: String) -> Array[EventInstance]:
 	var found: Array[EventInstance] = []
-	for instance in _city.events.instances():
+	for instance in RunCity.events(_city).instances():
 		if instance.def.id == id and not instance.is_finished:
 			found.append(instance)
 	return found
@@ -192,7 +192,7 @@ func _new_one(id: String, before: Array[EventInstance]) -> EventInstance:
 ## difference what the happening put there (`_raid_since()`).
 func _street() -> Array[EventInstance]:
 	var found: Array[EventInstance] = []
-	for instance in _city.events.instances():
+	for instance in RunCity.events(_city).instances():
 		if not instance.is_finished:
 			found.append(instance)
 	return found
@@ -409,11 +409,11 @@ static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 ## `her`, the way `EventManager._physics_process` runs it. Returns how long it was up, or `INF` when
 ## none was.
 func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
-	var warning := _warning_for(_city.events, row_id)
+	var warning := _warning_for(RunCity.events(_city), row_id)
 	if warning == null:
 		return INF
-	while _city.events.pending_warnings().has(warning) and warning.shown < 5.0:
-		_city.events.warnings.run(STEP, her)
+	while RunCity.events(_city).pending_warnings().has(warning) and warning.shown < 5.0:
+		RunCity.events(_city).warnings.run(STEP, her)
 	return warning.shown
 
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned
@@ -423,7 +423,7 @@ func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -537,7 +537,7 @@ func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: floa
 ## over the walk's reach (`DayReach.way_from_home()`), nor of `tile` itself. False where the walk's
 ## reach has no way to it.
 func _the_way_has_drawn(tile: Vector2i) -> bool:
-	var walk := _city.events.walk_events()
+	var walk := RunCity.events(_city).walk_events()
 	var units := walk.unit_draw().units()
 	var way := walk.reach().way_from_home(tile)
 	if way.is_empty():
@@ -564,7 +564,7 @@ func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
 	run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 	var director := _director(t)
 	director.trace = RecordingTrace.new(trace_into)
@@ -585,7 +585,7 @@ func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Arr
 		_watch_the_screen_round(director, mark)
 	else:
 		_look_at(Rect2(mark - view_half, view_half * 2.0))
-		director.set_sight(_city.events.sees)
+		director.set_sight(RunCity.events(_city).sees)
 	var step := director.current_step()
 	if step != null and step.is_pickup:
 		_read_the_mark(director)

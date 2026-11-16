@@ -46,7 +46,7 @@ func _task_guards(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day: int in [13]:
 			city.run.facts.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
@@ -56,13 +56,13 @@ func _task_guards(t: TestRunner) -> void:
 			city.run.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-					city.spawn_siting)
+			director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var mark := director.current_step()
 			if mark == null or not mark.is_pickup:
@@ -74,12 +74,12 @@ func _task_guards(t: TestRunner) -> void:
 			camera.name = "Camera2D"
 			player.add_child(camera)
 			t.add_child(player)
-			city.events.use_player(player)
+			RunCity.events(city).use_player(player)
 			player.set_physics_process(false)
 			player.global_position = her
-			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+			RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 					Tuning.VIEW_HALF_EXTENT * 2.0), null)
-			director.set_sight(city.events.sees)
+			director.set_sight(RunCity.events(city).sees)
 			director._on_contact_completed(mark.index)
 			placed += 1
 			var guard: EventInstance = director._task_guard

@@ -38,7 +38,7 @@ func run(t: TestRunner) -> void:
 		_walker = Rig.Walker.new()
 		t.add_child(_walker)
 		_city = Rig.build_city(t)
-		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+		RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 		await test.call(t)
 		_city.free()
 		_walker.free()
@@ -63,13 +63,13 @@ func _home() -> Vector2:
 	return _city.map.doorstep_world_position()
 
 func _units() -> DayUnits:
-	return _city.events.walk_events().unit_draw().units()
+	return RunCity.events(_city).walk_events().unit_draw().units()
 
 ## **The day drawn whole**: started at her door and every unit drawn at once. Answers what each
 ## unit the start left undrawn drew, and leaves `_whole` reading the same as one string.
 func _the_day_drawn_whole() -> Array[_Drew]:
 	var kept := _start()
-	_city.events.draw_the_ground_round(Vector2.ZERO, INF)
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	_whole = Rig.what_the_units_drew(_city.map, kept)
 	var drew: Array[_Drew] = []
 	for unit in kept:
@@ -128,7 +128,7 @@ func _their_rows_are_in_the_world(units: Array[PlacementUnit], at: Vector2,
 ## any part of which lies within the stream radius of her has drawn, and every row those units
 ## drew within the radius is in the world, none of it left for a later tick.
 func _test_a_unit_near_her_draws_before_the_streaming_looks(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var far_row := _a_far_row(_the_day_drawn_whole(), func(_one: _Drew, _k: int) -> bool:
 		return true, _home())
 	t.check(not far_row.is_empty(), "the day drawn whole holds a row far from her door")
@@ -156,7 +156,7 @@ func _test_a_unit_near_her_draws_before_the_streaming_looks(t: TestRunner) -> vo
 ## developer's `--spawn` moved (`DayDirector`), every unit within the stream radius of the place
 ## draws and its rows are in the world when the call returns.
 func _test_streaming_round_a_place_draws_its_units_first(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var far_row := _a_far_row(_the_day_drawn_whole(), func(_one: _Drew, _k: int) -> bool:
 		return true, _home())
 	t.check(not far_row.is_empty(), "the day drawn whole holds a row far from her door")
@@ -190,7 +190,7 @@ const WALK_SECONDS := 170.0
 ## day drawn after the walk, every unit drew what it draws on the day drawn whole, and nothing a
 ## unit drew stands within `EventScheduler.EVENT_SPACING_ANY` of a sited crew.
 func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	_the_day_drawn_whole()
 	var kept := _start()
 	var told: Array[String] = []
@@ -264,7 +264,7 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 ## before the unit has drawn, each take-away draws the unit, takes the row it drew, and leaves
 ## none of that row standing there once the rest of the day is drawn.
 func _test_an_area_cleared_of_its_rows_draws_first(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var drew := _the_day_drawn_whole()
 	var not_ambient := func(one: _Drew, k: int) -> bool:
 		return EventCatalogue.by_id(one.ids[k]).kind != GameEnums.EventKind.AMBIENT
@@ -299,7 +299,7 @@ func _test_an_area_cleared_of_its_rows_draws_first(t: TestRunner) -> void:
 ## and with the rest of the day drawn every unit drew what it draws on the day drawn whole, the
 ## rows the section held spent.
 func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var map := _city.map
 	var drew := _the_day_drawn_whole()
 	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
@@ -358,7 +358,7 @@ func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
 ## until the unit draws, and shut once it has, so whoever asks whether she can be sent somewhere
 ## is answered over the bodies drawn so far.
 func _test_the_walks_reach_is_told_what_a_unit_draws(t: TestRunner) -> void:
-	var events := _city.events
+	var events := RunCity.events(_city)
 	var map := _city.map
 	var a_body := func(one: _Drew, k: int) -> bool:
 		return one.obstructs[k]

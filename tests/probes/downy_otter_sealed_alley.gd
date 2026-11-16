@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day in range(6, 14):
 			city.run.facts.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
@@ -37,13 +37,13 @@ func run(t: TestRunner) -> void:
 			city.run.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-					city.spawn_siting)
+			director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var step := director.current_step()
 			if step == null or not step.is_pickup:
@@ -83,7 +83,7 @@ func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2,
 
 func _doors_shut(city: City) -> Array:
 	var blockers: Array[EventPlan] = []
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if plan.is_placed() and (plan.def.obstructs_radius > 0.0 or plan.def.hard_fail):
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)

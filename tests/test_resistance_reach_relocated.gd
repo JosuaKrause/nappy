@@ -35,12 +35,12 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 		var reach := ResistanceReads.day_reachability(_city)
 		# The task's mast, by the public link: the contact stands on its foot.
 		var added_plan: EventPlan = null
-		for plan in _city.events.plans():
+		for plan in RunCity.events(_city).plans():
 			if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-") \
-					and _city.events.mast_foot(plan.mast_id).distance_to(
+					and RunCity.events(_city).mast_foot(plan.mast_id).distance_to(
 					director.contact_position()) < 0.5:
 				added_plan = plan
-		for plan in _city.events.plans():
+		for plan in RunCity.events(_city).plans():
 			if plan.def.id != "loudspeaker" or plan.mast_id.begins_with("added-") or plan.silenced:
 				continue
 			var foot_tile := _city.map.world_to_tile(plan.position)
@@ -58,7 +58,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 		if not site_near and added_plan != null:
 			added[0] += 1
 			var mast_id := added_plan.mast_id
-			var foot := _city.events.mast_foot(mast_id)
+			var foot := RunCity.events(_city).mast_foot(mast_id)
 			t.check(foot != Vector2.INF and edge.has(_city.map.world_to_tile(foot)),
 					"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
 					% seed_value)
@@ -75,18 +75,18 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 					"seed %d: reaching it silences it and records its scar" % seed_value)
 			# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
 			# with the others — it is that one mast's plan this asks about.
-			t.check(_city.events.plans().has(added_plan),
+			t.check(RunCity.events(_city).plans().has(added_plan),
 					"seed %d: the task went to the mast put up for it, one of the day's plans"
 					% seed_value)
 			added_plan.silenced = false
-			_city.events.silence_all_masts()
+			RunCity.events(_city).silence_all_masts()
 			t.check(added_plan.silenced,
 					"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
 			# The same night as the game plans it: the mast is there unless that night's
 			# closures, holds or district doors leave it no room, and then it is absent.
 			_plan_the_day(14, seed_value)
 			var on_day_14 := false
-			for plan in _city.events.plans():
+			for plan in RunCity.events(_city).plans():
 				if plan.mast_id == mast_id and plan.silenced:
 					on_day_14 = true
 			var no_room := _the_day_leaves_no_room_for(foot)
@@ -97,7 +97,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 					% [seed_value, "room" if not no_room else "no room"])
 			_plan_the_day(12, seed_value)
 			var stands_again := false
-			for plan in _city.events.plans():
+			for plan in RunCity.events(_city).plans():
 				if plan.mast_id == mast_id and plan.silenced \
 						and plan.position.distance_to(foot) < 1.0:
 					stands_again = true
@@ -107,10 +107,10 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			# The scheduler may refuse every tile it was offered — its acceptance, not the
 			# director's — and then the nearest live mast is the task's, which the director says.
 			var generated := 0
-			for plan in _city.events.plans():
+			for plan in RunCity.events(_city).plans():
 				if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-"):
 					generated += 1
-			var stands_on := ResistanceReads.mast_at(director, _city.events)
+			var stands_on := ResistanceReads.mast_at(director, RunCity.events(_city))
 			t.check(generated == 0 and stands_on != "" and not stands_on.begins_with("added-"),
 					"seed %d: no mast near the mark, none generated (%d), and the nearest stands in"
 					% [seed_value, generated])
@@ -144,7 +144,7 @@ func _plan_the_day(day: int, seed_value: int) -> void:
 	_city.run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 
 ## downy-otter, "a mark is never placed in an alley she cannot reach" (*"also a mark should never
@@ -174,7 +174,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-			city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
+			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 
 			var director := _director(t)

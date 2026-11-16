@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()
 		var player := _start_the_day(t, city, director, seed_value)
 		var marks := _legal_marks(city, director)
@@ -106,7 +106,7 @@ func _took(what: String, ms: float) -> void:
 ## The mark tiles the day's draw could pick, in `_marks()`'s order: those `_pick_reachable()` takes,
 ## legal ground and open to it and reachable from home.
 func _legal_marks(city: City, director: ResistanceDirector) -> Array[Vector2i]:
-	var siting: SpawnSiting = city.spawn_siting
+	var siting: SpawnSiting = RunCity.spawn_siting(city)
 	var ground := siting.ask_of_ground()
 	var legal: Array[Vector2i] = []
 	for tile in director._marks():
@@ -120,7 +120,7 @@ func _legal_marks(city: City, director: ResistanceDirector) -> Array[Vector2i]:
 ## How many roadblocks the day placed (not a region door's or the wall's own bodies).
 static func _roadblocks(city: City) -> int:
 	var count := 0
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if plan.row_id() == "roadblock" and plan.is_placed() and not plan.is_door() \
 				and not plan.is_in_the_wall():
 			count += 1
@@ -140,10 +140,10 @@ static func _spaced(tiles: Array[Vector2i], most: int) -> Array[Vector2i]:
 func _read_the_mark_at(city: City, director: ResistanceDirector, player: Stroller,
 		at: Vector2, seed_value: int) -> Array:
 	player.global_position = at
-	city.events.stream_around(at)
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).stream_around(at)
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	var step := _roadblock_step()
 	director._step = step
 	var def := EventCatalogue.by_id(step.task_event_id)
@@ -156,7 +156,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 			ring = reach
 			break
 	var before := {}
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		before[plan] = true
 	var started := Time.get_ticks_usec()
 	var placed := director._place_the_roadblock_near(at)
@@ -165,7 +165,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 		print("RM_MISS seed %d at %s" % [seed_value, city.map.world_to_tile(at)])
 		_misses += 1
 		return ["missed", INF]
-	for plan in city.events.plans():
+	for plan in RunCity.events(city).plans():
 		if not before.has(plan) and plan.instance() == placed:
 			_took("swapped", took)
 			# The swap's fallback walk alone, her paths over the whole city, timed apart.
@@ -191,7 +191,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	player.add_child(camera)
 	t.add_child(player)
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	director.use_player(player)
 	player.set_physics_process(false)
 	return player
@@ -208,13 +208,13 @@ func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int,
 	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [],
 			city.map.doorstep_world_position())
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-				city.spawn_siting)
+		director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+				RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

@@ -80,7 +80,7 @@ func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void
 	# if `scar_at` is inside the streaming radius of the doorstep.
 	var spec := DaySpec.for_day(8)
 	RigStreets.begin(_city.streets(), _city.map, spec)
-	_city.events.start_day(spec, _rng(8, "events"), [], doorstep)
+	RunCity.events(_city).start_day(spec, _rng(8, "events"), [], doorstep)
 
 	var director := _director(t)
 	director.start_day(8, _rng(8, "resistance"), 300.0)
@@ -100,16 +100,16 @@ func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void
 	await _check_the_task_is_at_the_burnt_buildings_door(t, director)
 
 	# She walks off across the city: the shell stays under its contact.
-	_city.events.stream_around(scar_at + Vector2(1.0, 1.0) * 4.0
+	RunCity.events(_city).stream_around(scar_at + Vector2(1.0, 1.0) * 4.0
 			* (Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS))
 	# `instances()` rather than `rider_alive()` alone: a streamed-out instance is only queued
 	# for deletion, and still valid until the frame ends.
-	t.check(director.contact().rider_alive() and _city.events.instances().has(shell),
+	t.check(director.contact().rider_alive() and RunCity.events(_city).instances().has(shell),
 			"%s: the shell stays in the world when she walks far away from it" % label)
 	# And back: still one shell there, so its field is counted once.
-	_city.events.stream_around(scar_at)
+	RunCity.events(_city).stream_around(scar_at)
 	var shells := 0
-	for instance in _city.events.instances():
+	for instance in RunCity.events(_city).instances():
 		if instance.def.id == "burnt_shell" \
 				and instance.global_position.distance_to(scar_at) < 1.0:
 			shells += 1
@@ -352,7 +352,7 @@ class OrderRecordingResistance extends ResistanceDirector:
 
 	## Overrides ResistanceDirector.start_day.
 	func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
-		planned_when_started = watched.events.planned_count()
+		planned_when_started = RunCity.events(watched).planned_count()
 		super.start_day(day, rng, day_length)
 
 ## **The order `DayDirector.start()` builds a day in**, on the light real world this suite builds,
@@ -367,19 +367,19 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
-			_city.spawn_siting)
+	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+			RunCity.spawn_siting(_city))
 	director.watched = _city
 	var seen := {}
 	var on_started := func() -> void:
 		# A photograph taken after the progress was set: nothing differs from the dawn.
 		seen["dawn_photographed"] = not run.resistance.differs_from_dawn()
 		seen["no_mark_yet"] = director.contact_position() == Vector2.INF
-		seen["no_events_yet"] = _city.events.planned_count() == 0
+		seen["no_events_yet"] = RunCity.events(_city).planned_count() == 0
 	var the_day := _start_the_day(t, 9, director,
 			func() -> void: run.resistance.progress = 2, on_started)
 	seen["clock_running"] = _clock.is_running()
-	seen["crowd_placed"] = _city.crowd.agent_count() > 0
+	seen["crowd_placed"] = RunCity.crowd(_city).agent_count() > 0
 	seen["mark_on_offer"] = director.contact_position() != Vector2.INF
 
 	t.check(seen.get("dawn_photographed", false),
@@ -517,7 +517,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 	# The same day given back with the lost day places its own mark, with a guard of its own: a
 	# fresh one, once the old one is retired as the real game's clear does.
 	for guard in guards:
-		_city.events.retire(guard)
+		RunCity.events(_city).retire(guard)
 	_city.run.resistance.give_back()
 	var before := _live("alley_robbery")
 	director.start_day(9, _rng(9, "resistance"), 300.0)
@@ -586,7 +586,7 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 		city.start_day(closure_state, day, closure_rng)
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-		city.events.start_day(DaySpec.for_day(day), events_rng, [], city.map.doorstep_world_position())
+		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, [], city.map.doorstep_world_position())
 
 		var home_border := city.map.network.around_blocks(
 				Rect2i(city.map.home_block, Vector2i.ONE))
@@ -605,7 +605,7 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 			director.start_day(day, door_rng, 300.0)
 			_read_the_mark(director)
 			for guard in _live("alley_robbery"):
-				city.events.retire(guard)
+				RunCity.events(city).retire(guard)
 			var step := director.current_step()
 			if step == null or step.target_kind != ResistanceSteps.TargetKind.DOOR:
 				continue
@@ -712,7 +712,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -723,8 +723,8 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 			"touching it sends her to a mast")
 	# The mast the contact stands at the foot of, read off the day's plans.
 	var mast_id := ""
-	for plan in _city.events.plans():
-		var foot := _city.events.mast_foot(plan.mast_id) if plan.mast_id != "" else Vector2.INF
+	for plan in RunCity.events(_city).plans():
+		var foot := RunCity.events(_city).mast_foot(plan.mast_id) if plan.mast_id != "" else Vector2.INF
 		if foot != Vector2.INF and director.contact_position().distance_to(foot) < 0.5:
 			mast_id = plan.mast_id
 	t.check(mast_id != "", "the contact stands on the foot of a live mast")
@@ -733,12 +733,12 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 
 	director.contact().complete_now()
 	var silenced_today := true
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.mast_id == mast_id and not plan.silenced:
 			silenced_today = false
 	t.check(silenced_today, "reaching it silences that mast today")
 	var others_live := false
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.mast_id != "" and plan.mast_id != mast_id and not plan.silenced:
 			others_live = true
 	t.check(others_live, "and only that mast")
@@ -748,11 +748,11 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	run.attempt_spend.city_state = next_state
 	next_state.begin_day(_city.map.block_plans, day + 1)
 	_city.start_day(next_state, day + 1, _rng(day + 1, "closures"))
-	_city.events.start_day(DaySpec.for_day(day + 1), _rng(day + 1, "events"), [],
+	RunCity.events(_city).start_day(DaySpec.for_day(day + 1), _rng(day + 1, "events"), [],
 			_city.map.doorstep_world_position())
 	var quiet_tomorrow := false
 	var live_tomorrow := false
-	for plan in _city.events.plans():
+	for plan in RunCity.events(_city).plans():
 		if plan.mast_id == "":
 			continue
 		if plan.mast_id == mast_id:
@@ -783,7 +783,7 @@ func _test_the_mast_task_favors_the_near_mast(t: TestRunner) -> void:
 	var plans: Array[EventPlan] = [found[1], found[2]]
 	plans[0].mast_id = "near"
 	plans[1].mast_id = "far"
-	_city.events.start_recipe(plans, DaySpec.for_day(11), 11, mark)
+	RunCity.events(_city).start_recipe(plans, DaySpec.for_day(11), 11, mark)
 	var director := _director(t)
 	var player := _rig_player(t, mark)
 	director.use_player(player)
@@ -797,7 +797,7 @@ func _test_the_mast_task_favors_the_near_mast(t: TestRunner) -> void:
 			t.check(false, "draw %d: the pinned mark is offered: %s" % [i, errors])
 			continue
 		director.contact().complete_now()
-		var id := ResistanceReads.mast_at(director, _city.events)
+		var id := ResistanceReads.mast_at(director, RunCity.events(_city))
 		drawn[id] = int(drawn.get(id, 0)) + 1
 	var near_drawn: int = drawn.get("near", 0)
 	var far_drawn: int = drawn.get("far", 0)
@@ -877,7 +877,7 @@ func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 					"day %d: and walking off along her street" % day)
 			t.check(director.red_arrow_target() == Vector2.INF,
 					"day %d: and nothing points at them" % day)
-			_city.events.retire(neighbor)
+			RunCity.events(_city).retire(neighbor)
 		director.free()
 	for day: int in [ResistanceHappenings.NEIGHBOR_DAY, ResistanceHappenings.NEIGHBOR_DAY + 1, 13]:
 		var director := _director(t)
@@ -900,7 +900,7 @@ func _test_the_morning_neighbors_way_is_over_drawn_ground(t: TestRunner) -> void
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], door)
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], door)
 	var director := _director(t)
 	var before := _live("neighbor")
 	director.start_day(day, _rng(day, "resistance"), 300.0)
@@ -908,7 +908,7 @@ func _test_the_morning_neighbors_way_is_over_drawn_ground(t: TestRunner) -> void
 	t.check(neighbor != null and neighbor.path.size() == 2,
 			"day %d: the neighbor leaves for work along her street" % day)
 	if neighbor:
-		var units := _city.events.walk_events().unit_draw().units()
+		var units := RunCity.events(_city).walk_events().unit_draw().units()
 		var from := neighbor.path[0]
 		var to := neighbor.path[1]
 		var undrawn := 0
@@ -924,7 +924,7 @@ func _test_the_morning_neighbors_way_is_over_drawn_ground(t: TestRunner) -> void
 				% [Tuning.EVENT_DRAW_AHEAD, undrawn])
 		t.check(not units.undrawn_within(Vector2.ZERO, INF).is_empty(),
 				"while the day's other units are still to draw")
-		_city.events.retire(neighbor)
+		RunCity.events(_city).retire(neighbor)
 	director.free()
 
 ## Day 10: the red arrow points at the neighbor, out in the city and walking home along a real walk
@@ -1003,7 +1003,7 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 		var state := CityState.new()
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures", seed_value))
-		_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+		RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 				_city.map.doorstep_world_position())
 		var director := _director(t)
 		director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
@@ -1014,8 +1014,8 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 		if neighbor == null:
 			director.free()
 			continue
-		var units := _city.events.walk_events().unit_draw().units()
-		var reach := _city.events.walk_events().reach()
+		var units := RunCity.events(_city).walk_events().unit_draw().units()
+		var reach := RunCity.events(_city).walk_events().reach()
 		var stride := float(WayConfirmation.STEP * Tuning.TILE_SIZE)
 		var undrawn := 0
 		var shut := 0
@@ -1044,8 +1044,8 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _city.spawn_siting)
+	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, RunCity.spawn_siting(_city))
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var before := _street()
 	var door := _city.map.doorstep_world_position()
@@ -1074,7 +1074,7 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) 
 	t.check(vans == 2 and patrols == 1, "two vans and a patrol at her building (%d, %d)"
 			% [vans, patrols])
 	for instance in raid:
-		_city.events.retire(instance)
+		RunCity.events(_city).retire(instance)
 	before = _street()
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY + 1)
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
@@ -1090,7 +1090,7 @@ func _test_the_sealed_door_stands_after_a_reload(t: TestRunner) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	city.run = run
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	RunCity.build(city, CityGenerator.generate(SEED))
 	t.check(HomeDoorReads.is_sealed(city),
 			"a boot whose scars already carry the seal starts the door sealed")
 	city.free()
@@ -1102,15 +1102,15 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.header.day = ResistanceHappenings.NEIGHBOR_DAY
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _city.spawn_siting)
+	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, RunCity.spawn_siting(_city))
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
 	var before := _street()
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(HomeDoorReads.is_sealed(_city), "sealed once the raid arrives")
 	for instance in _raid_since(before):
-		_city.events.retire(instance)
+		RunCity.events(_city).retire(instance)
 	# The loss: the attempt's own scar is given back, the same way
 	# the run's `run_parts.give_back()` restores every scar a lost day left.
 	run.attempt_spend.scars.clear()
@@ -1129,8 +1129,8 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
 func _test_the_neighbor_window_is_boarded_from_day_eleven(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _city.spawn_siting)
+	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, RunCity.spawn_siting(_city))
 	var building := HomeDoorReads.building(_city)
 	t.check(building != null, "the door notch stands in front of exactly one home-block building")
 	t.check(building.wall_tiles() >= 4,
@@ -1153,7 +1153,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t: TestRunner) -> void
 	var reloaded: City = CITY_SCENE.instantiate()
 	reloaded.run = run
 	t.add_child(reloaded)
-	reloaded.build(CityGenerator.generate(SEED))
+	RunCity.build(reloaded, CityGenerator.generate(SEED))
 	reloaded.fronts().board_neighbor_window()
 	var reloaded_building := HomeDoorReads.building(reloaded)
 	t.check(reloaded_building.neighbor_window_col == col, "and the same cell on a fresh load")
@@ -1168,10 +1168,10 @@ func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
 	run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _city.spawn_siting)
+	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, RunCity.spawn_siting(_city))
 	happenings.start_day(day)
 	return happenings
 
@@ -1221,7 +1221,7 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 						"every building of it shuttered")
 				shuttered += 1
 		t.check(shuttered > 0, "and it has buildings to shutter")
-		for plan in _city.events.plans():
+		for plan in RunCity.events(_city).plans():
 			if plan.def.id == "market_stall" and frontage.has_point(plan.position):
 				t.check(plan.spent or (plan.live and plan.live.is_finished),
 						"no market stall of it is left in the day")
@@ -1294,7 +1294,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	happenings.tick(STEP, her, Vector2.ZERO)
 	t.check(happenings.column.is_empty(),
 			"near it, the column's warning goes up with no truck in the world yet")
-	var warning := _warning_for(_city.events, "military_convoy")
+	var warning := _warning_for(RunCity.events(_city), "military_convoy")
 	t.check(warning != null, "and its badge has somewhere to point")
 	var lead := SpawnSiting.least_distance()
 	if warning:
@@ -1305,13 +1305,13 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 		# She walks along the road while it is coming: the badge keeps its offset from her.
 		var was := warning.place - her
 		her.y += Tuning.WALK_SPEED * 0.5
-		_city.events.warnings.run(STEP, her)
+		RunCity.events(_city).warnings.run(STEP, her)
 		t.check((warning.place - her).is_equal_approx(was),
 				"and it holds still against her rather than coming sooner or jumping")
 	# The rest of the warning, frame by frame, the way `EventManager._physics_process` runs it.
-	while warning and _city.events.pending_warnings().has(warning) \
+	while warning and RunCity.events(_city).pending_warnings().has(warning) \
 			and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
-		_city.events.warnings.run(STEP, her)
+		RunCity.events(_city).warnings.run(STEP, her)
 	var trucks := happenings.column
 	t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
 			"once the warning is over, a column of %d trucks comes (%d)"
@@ -1345,7 +1345,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 				"its front truck is created just out of sight, up the lane the badge pointed")
 		var to_reach := 0.0
 		while front.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
-			_city.events.world.where_she_is().tell(her)
+			RunCity.events(_city).world.where_she_is().tell(her)
 			front.step(STEP)
 			to_reach += STEP
 		t.check(warning.shown + to_reach + 0.001 >= warning.def.minimum_telegraph(),
@@ -1355,12 +1355,12 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	happenings.tick(STEP, her, Vector2.ZERO)
 	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
 	for truck in trucks:
-		_city.events.retire(truck)
+		RunCity.events(_city).retire(truck)
 
 	happenings.start_day(ResistanceHappenings.COLUMN_DAY)
 	happenings.tick(ResistanceHappenings.COLUMN_BY, far_from_it, Vector2.ZERO)
-	_city.events.warnings.run(convoy.telegraph_time + STEP, far_from_it)
+	RunCity.events(_city).warnings.run(convoy.telegraph_time + STEP, far_from_it)
 	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
 			"at COLUMN_BY it comes wherever she is")
 	for truck in happenings.column:
-		_city.events.retire(truck)
+		RunCity.events(_city).retire(truck)

@@ -47,7 +47,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day in DAYS:
 			printed += _a_day(t, city, seed_value, day)
 		city.free()
@@ -70,7 +70,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
+	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -81,16 +81,16 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	player.set_physics_process(false)
 	player.add_to_group("player")
 	player.global_position = city.map.doorstep_world_position()
-	city.events.use_player(player)
+	RunCity.events(city).use_player(player)
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
 	_lines.clear()
 	director.trace = RecordingTrace.new(_lines)
-	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
-			city.spawn_siting)
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			RunCity.spawn_siting(city))
 	director.use_player(player)
-	director.set_sight(city.events.sees)
+	director.set_sight(RunCity.events(city).sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	var printed := 0
@@ -147,7 +147,7 @@ func _the_guard_spots(city: City, director: ResistanceDirector, label: String, a
 		for on_screen: bool in [false, true]:
 			var rng := _rng(0, 0, "guard-spot")
 			if on_screen and her != Vector2.INF:
-				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+				RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0), null)
 			var approach := Vector2.ZERO if her == Vector2.INF else her - at
 			var spot := director._guard_position(rng, at, for_mark, her, on_screen,
@@ -197,7 +197,7 @@ func _the_extras(city: City, director: ResistanceDirector, player: Stroller, lab
 		if neighbor != null:
 			_print("%s neighbor starts at %s rng %d" % [label,
 					_point(neighbor.global_position), director._rng.state])
-			city.events.retire(neighbor)
+			RunCity.events(city).retire(neighbor)
 		else:
 			_print("%s neighbor starts nowhere rng %d" % [label, director._rng.state])
 		printed += 1
@@ -230,7 +230,7 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 			beat[0] if not beat.is_empty() else far,
 			beat[beat.size() - 1] if not beat.is_empty() else far]:
 		_stand(city, player, far)
-		city.events.visible_view().look(Rect2(focus - Tuning.VIEW_HALF_EXTENT * 0.5,
+		RunCity.events(city).visible_view().look(Rect2(focus - Tuning.VIEW_HALF_EXTENT * 0.5,
 				Tuning.VIEW_HALF_EXTENT), null)
 		happenings.tick(STEP, far, Vector2.ZERO)
 		_print("%s raid with her screen on %s: %d" % [label, _point(focus),
@@ -265,14 +265,14 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 			continue
 		var pointed := warning.place
 		var shown := 0.0
-		while not city.events.pending_warnings().is_empty() and shown < 5.0:
-			city.events.warnings.run(STEP, her)
+		while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
+			RunCity.events(city).warnings.run(STEP, her)
 			shown += STEP
 		var trucks: Array[String] = []
 		for truck in happenings.column:
 			if is_instance_valid(truck):
 				trucks.append(_point(truck.global_position))
-				city.events.retire(truck)
+				RunCity.events(city).retire(truck)
 		happenings.column.clear()
 		_print("%s column from %s: badge %s withdrawn %s trucks %s (rng %d -> %d)" % [label,
 				_point(her), _point(pointed), warning.withdrawn, trucks, before,
@@ -283,7 +283,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 ## Where the events' director half puts a row, from a few places she may stand.
 func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 	var printed := 0
-	var view := city.events.visible_view()
+	var view := RunCity.events(city).visible_view()
 	var map := city.map
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var dog := EventCatalogue.by_id("loose_dog")
@@ -317,16 +317,16 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 		# The men a hunting van owes get out beside it.
 		var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"),
 				Tuning.RESISTANCE_GOAL)
-		var van := city.events.spawn_extra(hot, her + Vector2(hot.notice_within() - 10.0, 0.0))
-		city.events.world.where_she_is().tell(her)
+		var van := RunCity.events(city).spawn_extra(hot, her + Vector2(hot.notice_within() - 10.0, 0.0))
+		RunCity.events(city).world.where_she_is().tell(her)
 		van.step(STEP)
 		var owed := van.officers_owed()
-		city.events.ahead.let_the_officers_out()
+		RunCity.events(city).ahead.let_the_officers_out()
 		var men: Array[String] = []
-		for man in MenLetOut.of(city.events, van):
+		for man in MenLetOut.of(RunCity.events(city), van):
 			men.append(_point(man.global_position))
-			city.events.retire(man)
-		city.events.retire(van)
+			RunCity.events(city).retire(man)
+		RunCity.events(city).retire(van)
 		_print("%s ahead at %s van owes %d, men at %s" % [label, tile, owed, men])
 		printed += 1
 	return printed
@@ -339,7 +339,7 @@ func _guard_at(guard: EventInstance) -> String:
 ## Stands her at `at`, the day's view looked through about her as the camera would.
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
-	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
+	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.
@@ -369,7 +369,7 @@ func _print(line: String) -> void:
 
 ## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
 static func _task_guard(city: City) -> EventInstance:
-	for instance in city.events.instances():
+	for instance in RunCity.events(city).instances():
 		if instance.def.id == EventCatalogue.task_guard().id and not instance.is_finished:
 			return instance
 	return null

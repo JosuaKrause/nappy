@@ -55,20 +55,20 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	city.run.header.day = day
 	t.add_child(city)
 	city.crowd_view = ScreenCrowdView.new(t)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
 	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
 			spec)
 	var start := city.map.doorstep_world_position()
 	var consumed: Array[String] = []
-	city.events.start_day(spec, city.run.calendar.day_rng(day), consumed, start)
+	RunCity.events(city).start_day(spec, city.run.calendar.day_rng(day), consumed, start)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("excitement-fingerprint-crowd:%d:%d" % [seed_value, day])
-	city.crowd.start_day(day, rng, start)
-	city.crowd.set_gates(city.streets().region_plan().gates)
-	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city, city.events,
-			city.crowd, start)
-	city.events.clear()
+	RunCity.crowd(city).start_day(day, rng, start)
+	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
+	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city, RunCity.events(city),
+			RunCity.crowd(city), start)
+	RunCity.events(city).clear()
 	city.free()
 	return printed
 
@@ -80,15 +80,15 @@ func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	city.run.header.day = day
 	t.add_child(city)
 	city.crowd_view = ScreenCrowdView.new(t)
-	city.build(CityGenerator.generate(seed_value))
+	RunCity.build(city, CityGenerator.generate(seed_value))
 	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
 	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
 	var none: Array[String] = []
-	city.events.start_day(spec, city.run.calendar.day_rng(day, "finale"), none, start)
-	var printed := _walk(t, "escape seed %d" % seed_value, city, city.events, city.crowd, start)
-	city.events.clear()
+	RunCity.events(city).start_day(spec, city.run.calendar.day_rng(day, "finale"), none, start)
+	var printed := _walk(t, "escape seed %d" % seed_value, city, RunCity.events(city), RunCity.crowd(city), start)
+	RunCity.events(city).clear()
 	city.free()
 	return printed
 

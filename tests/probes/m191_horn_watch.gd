@@ -76,12 +76,12 @@ func run(t: TestRunner) -> void:
 func _measure_cost(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
-	city.crowd.start_day(1, RandomNumberGenerator.new())
-	city.crowd.use_bus(EventBus)
+	RunCity.build(city, CityGenerator.generate(4242))
+	RunCity.crowd(city).start_day(1, RandomNumberGenerator.new())
+	RunCity.crowd(city).use_bus(EventBus)
 	var live_cars := 0
 	var sample: CrowdAgent = null
-	for agent in city.crowd.agents():
+	for agent in RunCity.crowd(city).agents():
 		if agent.kind != CrowdAgent.Kind.CAR:
 			continue
 		live_cars += 1
@@ -96,7 +96,7 @@ func _measure_cost(t: TestRunner) -> void:
 	var at: Vector2 = sample.global_position + sample.heading() * 250.0
 	var start := Time.get_ticks_usec()
 	for i in _HORN_CALLS:
-		city.crowd._horn(sample, at)
+		RunCity.crowd(city)._horn(sample, at)
 	var per_call_us := float(Time.get_ticks_usec() - start) / float(_HORN_CALLS)
 	var frame_budget_us := 1000000.0 / 60.0
 	print("_horn() costs %.3fus a call (measured over %d calls)" % [per_call_us, _HORN_CALLS])
