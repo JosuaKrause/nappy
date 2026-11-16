@@ -581,7 +581,7 @@ static func _unit_draw_reaching(dawn: DawnContext, reach: float) -> UnitDraw:
 			dawn.rules(), ground, false, DawnDraw.ROUTES_STAY_ON_THE_RUN)
 	return UnitDraw.new(DayUnits.of(dawn.locations().all(), dawn.day_seed(), reach),
 			MarbleDraw.new(dawn.locations(), rows, judged),
-			UnitFills.new(rows, day, dawn.spec().wall_row_share, ground.weights(),
+			UnitFills.new(rows, day, dawn.spec().share_of_walls_drawn(), ground.weights(),
 					ground.is_a_wall_by_cost), events.placements())
 
 ## How many of `routes` home reached among the day's closures (`reached_bare`) that it no longer

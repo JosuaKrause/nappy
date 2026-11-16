@@ -32,6 +32,6 @@ func _test_neither_section_of_the_escape_has_the_region_wall(t: TestRunner) -> v
 func _test_the_walls_kept_follow_the_region_wall(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var spec := DaySpec.for_day(day)
-		t.check((spec.wall_row_share < 1.0) == spec.region_wall_stands(),
+		t.check((spec.share_of_walls_drawn() < 1.0) == spec.region_wall_stands(),
 				"day %d keeps a share %.2f of its walls, and the region wall %s"
-				% [day, spec.wall_row_share, "stands" if spec.region_wall_stands() else "does not"])
+				% [day, spec.share_of_walls_drawn(), "stands" if spec.region_wall_stands() else "does not"])

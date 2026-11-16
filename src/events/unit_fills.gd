@@ -12,7 +12,8 @@ extends RefCounted
 ## role on the day (the role-by-view weights, `RowGround.Weights`), times the draw locations its
 ## marble speaks for. **A wall share takes walls away and gives their place to empty**: the rows
 ## are measured against every wall weighed in full, so a halved wall row holds half its marbles
-## and every other row keeps its count (azure-puffin 4; `DaySpec.wall_row_share`). Model: no node.
+## and every other row keeps its count (azure-puffin 4; `DaySpec.share_of_walls_drawn()`). Model:
+## no node.
 
 ## How many marbles one fill holds: enough that the lightest row of the thinnest cell is still
 ## several marbles and not one rounded up (`ViewBag` weighs by counts per kind of marble, so the
@@ -28,7 +29,7 @@ var _wall_by_cost: Callable
 var _fills := {}
 
 ## `rows` the rows a unit draws today (id -> EventDef, as the day and its heat give them); `day`
-## the day; `wall_share` the share of its walls the day draws (`DaySpec.wall_row_share`);
+## the day; `wall_share` the share of its walls the day draws (`DaySpec.share_of_walls_drawn()`);
 ## `weights` the day's ground's (`RowGround.weights()`), whose role-by-view weights a fill reads;
 ## `wall_by_cost` whether a row is a wall by what it costs (`RowGround.is_a_wall_by_cost`).
 func _init(rows: Dictionary, day: int, wall_share: float, weights: RowGround.Weights,
@@ -99,7 +100,7 @@ func _in_view(def: EventDef, view: PlacementView.View, wall_share: float) -> flo
 			var by_cost: bool = _wall_by_cost.call(def)
 			if not by_cost:
 				times = float(_weights.on_the_routes()) if on else 1.0
-			elif def.hard_fail:
+			elif def.ends_the_day():
 				times = float(_weights.deep()) if off else 1.0
 			else:
 				times = 1.0 if off else float(_weights.rim())

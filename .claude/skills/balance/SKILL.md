@@ -1,6 +1,6 @@
 ---
 name: balance
-description: Rules for changing any balance or density number — event density, crowd density, Tuning constants — and the measured facts about what a route actually costs. Load this BEFORE editing src/autoload/tuning.gd, max_per_day, the view bags' shares (VIEW_SHARES), CROWD_*_PER_ACT, or any number a player can feel.
+description: Rules for changing any balance or density number — event density, crowd density, Tuning constants — and the measured facts about what a route actually costs. Load this BEFORE editing src/autoload/tuning.gd, max_per_day, the declared table of the event density (PlacementDensity) or a row's weight, CROWD_*_PER_ACT, or any number a player can feel.
 ---
 
 # Balance
@@ -35,19 +35,20 @@ A test never asserts what a setting is, and the relationship tests that encode a
 
 ## Never derive a density — measure it
 
-**Change the event density:** each view's share of locations holding an event
-(`EventScheduler.VIEW_SHARES`, and `VIEW_SHARE_SCALES`, fitted per view and per day, for the
-draws the rules leave empty, with `GROUND_WEIGHTS`, each row's weight per kind of ground, fitted
-beside them so the mix holds), and the rows' weights. **`max_per_day` does not move a row the units
-draw**: no daily cap bounds one, a unit holding at most one of a row instead (`docs/EVENTS.md`,
-"The density, and why it is shares and bags"); it still bounds the moments, the director's marbles
-and the rows of a scene recipe that no unit draws, and is changed first for those, because **a share the
-catalogue cannot fill is not density**. Then **measure what
-a day places**, over several seeds (`tests/probes/placement_view_mix.gd` per view,
-`tests/probes/placement_rows.gd` row by row, on main and on the branch), since the day's rules
-leave out whatever would close a route or reach unused calm (`StreetInvalidation`).
+**Change the event density:** the cells of the declared table (`PlacementDensity`: the events a
+unit's bag holds for every hundred draw locations, by view, kind of ground and act, and the
+moments an act owes her), then a row's `weight` and its weight on a kind of ground
+(`EventDef.weigh_on()`, on the catalogue row). A cell is what the bag holds, not what the day
+places, and no number corrects another (`docs/EVENTS.md`, "The density, and why it is a declared
+table"). **`max_per_day` does not move a row the units draw**: no daily cap bounds one, a unit
+holding at most one of a row instead; it still bounds the moments, the director's marbles and the
+rows of a scene recipe that no unit draws, and is changed first for those, because **a share the
+catalogue cannot fill is not density**. Then **measure what a day places**, over several seeds
+(`tests/probes/placement_cells.gd` by cell, `tests/probes/placement_rows.gd` row by row, on main
+and on the branch), since the day's rules leave out whatever would close a route or reach unused
+calm (`StreetInvalidation`).
 
-Each probe runs by its path, `tools/test.sh probes/placement_view_mix.gd`. A probe that prints
+Each probe runs by its path, `tools/test.sh probes/placement_cells.gd`. A probe that prints
 per-day counts is the only honest way to set a density; where neither checked-in probe prints the
 count in question, a temporary one takes two minutes to write. **Measure four things and not one:**
 
@@ -68,8 +69,8 @@ density" at the other end.
 
 ## Ask what a number is *per*
 
-The bags' shares are per location, because the target is per block: a bigger lattice lays out
-more locations and draws more events. A flat count would be a statement about one lattice size and
+The declared table's cells are per location, because the target is per block: a bigger lattice
+lays out more locations and draws more events. A flat count would be a statement about one lattice size and
 nothing else: grow the city and the same events spread thinner, which is the density silently
 falling while every constant still reads as correct.
 

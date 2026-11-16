@@ -16,7 +16,10 @@ extends RefCounted
 ##
 ## - `CL day view ground units room`: the units of that view and ground and their draw locations;
 ## - `CE day view ground row count`: the rows the units drew there, a row handed to her walk among
-##   them.
+##   them;
+## - `CP day ground row tiles count`: the pacing rows drawn on that ground (`EventDef.paces`: the man
+##   shouting and the chatting mother), by the length of their beat in whole tiles, which a junction
+##   box cuts short (`Location.run()`).
 ##
 ## The view and the ground are the unit's (`PlacementUnit.view()`, `kind()`): 0 on the route, 1
 ## route-adjacent, 2 off the route; `street`, `junction`, `alley`, `open`. The evidence folder
@@ -33,6 +36,7 @@ func run(t: TestRunner) -> void:
 		var room_by := {}
 		var units_by := {}
 		var events_by := {}
+		var beats_by := {}
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
@@ -110,8 +114,21 @@ func run(t: TestRunner) -> void:
 				for plan in unit.drawn():
 					var ek := "%s %s" % [key, plan.row_id()]
 					events_by[ek] = int(events_by.get(ek, 0)) + 1
+					if plan.row().paces and plan.is_placed():
+						var bk := "%s %s %d" % [GROUNDS[unit.kind()], plan.row_id(),
+								_beat_in_tiles(plan.path)]
+						beats_by[bk] = int(beats_by.get(bk, 0)) + 1
 		for key: String in room_by:
 			print("CL %d %s %d %d" % [day, key, units_by[key], room_by[key]])
 		for key: String in events_by:
 			print("CE %d %s %d" % [day, key, events_by[key]])
+		for key: String in beats_by:
+			print("CP %d %s %d" % [day, key, beats_by[key]])
 	t.check(true, "placement_cells probe ran")
+
+## How long a pacing row's beat is, in whole tiles: the length of its path end to end.
+static func _beat_in_tiles(path: PackedVector2Array) -> int:
+	var length := 0.0
+	for i in range(1, path.size()):
+		length += path[i].distance_to(path[i - 1])
+	return roundi(length / Tuning.TILE_SIZE)

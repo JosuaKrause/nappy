@@ -67,9 +67,14 @@ locations), a junction box, an alley, or one park or square (`PlacementUnit`, gr
 `DayUnits`), with its own stream and a fixed rank from the day's seed, and before a unit draws, every
 undrawn unit touching it (sharing a junction box, or bordering the same alley, park or square) with a
 lower rank draws first. A unit's bag fill is asked of one object by view and kind of ground
-(`UnitFills.of()`, answered by the view whatever the ground until step 3's declared table), and the
-four kinds of ground a unit is (a street, a junction box, an alley, a park or a square) are data
-(`PlacementGround.Kind`). Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
+(`UnitFills.of()`), worked out from one declared table (`PlacementDensity`: the events a bag holds
+for every hundred draw locations, by view, kind of ground and act, and the moments an act owes her),
+the role-by-view weights the day's ground hands it, and each row's own weight, with its weight on a
+kind of ground set on its catalogue row where it is rare there or never stands there
+(`EventDef.weigh_on()`); empty marbles make up the rest of a bag, so a row the unit's earlier draws
+make invalid leaves empty likelier, and no fitted table is left (`docs/EVENTS.md`, "The density,
+and why it is a declared table"). The four kinds of ground a unit is (a street, a junction box,
+an alley, a park or a square) are data (`PlacementGround.Kind`). Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
 is placed (a section, or one location) and the unit's rows laid out together, at most one of a row in the
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
 on the board, question long-routes, inbox #1460). The dog walker, the police patrol and the military
@@ -121,15 +126,6 @@ full text names the files each step owns.
    the player's words): the sending holds that only for where
    she stands as the car is sited, so a convoy from behind her that overtakes her as she walks on can
    still leave over a precinct's paving in her view.
-3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
-   `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
-   and act; the moments per act; and the role-by-view weights that are already declared constants.
-   A row's mix stays on its catalogue row, with an optional weight per kind of ground where it is
-   rare there. The table is seeded once from main's measured placements (planned as the game plans
-   a day), each cell rounded to two figures; if a view's total is off by more than about a tenth on
-   one probe run, that view's cells are scaled once. Empty marbles make up the rest of a bag, and a
-   row the street's earlier draws make invalid is left out of the draw, so empty gets likelier
-   across from a drawn event, as the player's restaurant example has it.
 4. **The beats become rigged marbles, and the old siting roll goes.** The walk's sitings
    (`WalkSiting`: day 3's fire, the poster crews, day 6's man shouting, day 7's route van, day 11's
    added mast, the dusk fire) take a location in the next undrawn unit ahead of her, before it
@@ -155,7 +151,7 @@ full text names the files each step owns.
    vans > barriers > empty", inbox #785 in minty-lemur), while about a third of the streets stand empty today; this
    step keeps today's share and `tests/probes/escape_winnable.gd` shows the before and after.
 
-Steps 3, 4 and 5 touch different files and run in parallel once step 2 is in. The dawn draw step 2
+Steps 4 and 5 touch different files and run in parallel once step 2 is in. The dawn draw step 2
 edits is a small file of its own (`src/events/dawn_phases/dawn_draw.gd`).
 
 **How a step is accepted.** Its suites pass, as for every step of the refactor ("for the refactor

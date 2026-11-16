@@ -44,7 +44,7 @@ func run(context: DawnContext) -> void:
 			continue
 		rows[def.id] = def.for_day(day)
 	var ground := context.ground()
-	var fills := UnitFills.new(rows, day, context.spec().wall_row_share, ground.weights(),
+	var fills := UnitFills.new(rows, day, context.spec().share_of_walls_drawn(), ground.weights(),
 			ground.is_a_wall_by_cost)
 	var units := DayUnits.of(context.locations().all(), context.day_seed())
 	var events := context.events()
