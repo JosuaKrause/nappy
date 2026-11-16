@@ -245,6 +245,8 @@ func _test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t: TestRunner
 			sited += 1
 			var leg := due[1] as PackedVector2Array
 			var going := (leg[leg.size() - 1] - leg[0]).normalized()
+			if both.asked_on_from.is_empty():
+				continue
 			var last_asked: Array = both.asked_on_from[both.asked_on_from.size() - 1]
 			if both.asked_to_drive.has(leg) and (last_asked[0] as Vector2).is_equal_approx(
 					leg[leg.size() - 1]) and (last_asked[1] as Vector2).is_equal_approx(going):

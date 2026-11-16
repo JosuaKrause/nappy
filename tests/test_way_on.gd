@@ -19,7 +19,7 @@ var _walker := EventCatalogue.by_id("dog_walker").as_sent_ahead()
 func run(t: TestRunner) -> void:
 	_test_straight_on_to_the_far_edge_of_the_next_box(t)
 	_test_a_turn_in_the_next_box_away_from_her(t)
-	_test_a_stub_has_no_leg(t)
+	_test_a_closed_street_has_no_leg_and_a_stub_goes_on(t)
 	_test_a_body_straight_on_takes_the_turn(t)
 	_test_the_days_rule_asks_a_live_leg_and_not_a_leaving_one(t)
 	_test_what_a_car_may_drive(t)
@@ -109,13 +109,24 @@ func _test_a_turn_in_the_next_box_away_from_her(t: TestRunner) -> void:
 		t.check(_on_carriageway(map, leg) and way_on.drives_clear(_patrol, leg),
 				"and the turn stays on carriageway")
 
-## On the closed stretch itself, a stub with no box to go on from, there is no leg.
-func _test_a_stub_has_no_leg(t: TestRunner) -> void:
+## On the closed stretch itself, short of the closure, a car cannot drive to the next box and has no
+## leg. On a stub that drives into the through roads (the north-west box's street south closed, so
+## its street east is left a stub the survey drops, though every tile of it is a car's), a car driving
+## east goes on straight through the next box, since nothing is asked of the stretch it is on but
+## that it drives it clear.
+func _test_a_closed_street_has_no_leg_and_a_stub_goes_on(t: TestRunner) -> void:
 	var map := _lattice()
 	_close(map, Vector2i(1, 1), Vector2i.DOWN)
 	var leg := _way_on(map).next_leg(_patrol, Vector2(_lane(1, Vector2i.DOWN), 21.5 * TILE),
 			Vector2.DOWN, Vector2.INF)
-	t.check(leg.is_empty(), "on a street that is no through road there is no leg: %s" % leg)
+	t.check(leg.is_empty(), "on a closed street short of the closure there is no leg: %s" % leg)
+	var stubbed := _lattice()
+	_close(stubbed, Vector2i(0, 0), Vector2i.DOWN)
+	var east := _lane(0, Vector2i.RIGHT)
+	var on := _way_on(stubbed).next_leg(_patrol, Vector2(9.5 * TILE, east), Vector2.RIGHT,
+			Vector2.INF)
+	t.check(on.size() == 2 and on[1].is_equal_approx(Vector2(20.0 * TILE, east)),
+			"on a stub into the through roads it goes on into them: %s" % on)
 
 ## A body put down after the walk's through roads were worked out, on the car's lane in the far half
 ## of the next box: straight on is refused, as `drives_clear()` asks each leg of the ground, and it

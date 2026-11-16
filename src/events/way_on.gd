@@ -93,7 +93,10 @@ func drives_clear(row: EventDef, path: PackedVector2Array) -> bool:
 ## straight out of it, so the stretch it is on or entering runs from box `from` the way it drives:
 ## the box behind it, or, driving toward the low end and not inside a box, the next one up. Every leg
 ## ends where the car leaves a box, so the next leg starts at the start of the stretch this one
-## chose.
+## chose. **Nothing is asked of that stretch but that the leg drives it clear**: the box it comes to
+## is left by a through road, whose far box has another that is not the way back, so a car that has
+## taken one never runs out of road, and asking that the stretch it is on be one too would only
+## refuse a car driving off a stub into the through roads.
 func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
 		her: Vector2, may_take: Callable) -> PackedVector2Array:
 	var vertical := absf(heading.y) > absf(heading.x)
@@ -110,8 +113,6 @@ func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
 	var forward := (way.y if vertical else way.x) > 0
 	var from_index := behind if (forward or inside) else behind + 1
 	var from := Vector2i(corridor, from_index) if vertical else Vector2i(from_index, corridor)
-	if not _roads.goes_on(from, way):
-		return PackedVector2Array()
 	var box := from + way
 	# Straight on first, then the two turns, the one that leads away from her first.
 	var outs: Array[Vector2i] = [way]

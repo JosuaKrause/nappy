@@ -4,8 +4,8 @@ extends RefCounted
 ## carriageway between two junction boxes, the ones that are a car's from the middle of one box to
 ## the middle of the next, and whose two boxes each keep a second such stretch to leave by once
 ## every box with fewer than two has been dropped, with its stretches, until none is left to drop
-## (the 2-core of the graph of boxes and stretches). A car that only ever takes these, at each box by
-## a way that is not the one it came in by, always has a stretch to leave by, so it never comes to a
+## (the 2-core of the graph of boxes and stretches). A car that leaves every box it comes to by one
+## of these, never by the way it came in, always has a stretch to leave by, so it never comes to a
 ## precinct's paving, a closed street, a street a calm zone absorbed or the map's edge, and never
 ## turns round. `WayOn` drives a row sent ahead of her by it.
 ##
