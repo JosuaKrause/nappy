@@ -1791,8 +1791,8 @@ is, landing on the far side of a route street through `EVENT_CORRIDOR_WEIGHT` ra
 the rim. A pacing wall's own reach is wide enough that it answers the cost question too, so its own
 landing on the far side (above) is unchanged.
 
-The role weighting moves *where* the events stand and never how many there are, since each view's
-share of locations holding an event is its bag's empty marbles' to set: the count of lethal rows is
+The role weighting moves *where* the events stand and never how many there are, since how many
+events a bag holds is the declared table's to set (`PlacementDensity`): the count of lethal rows is
 unaffected too —
 the one the rule could have broken, since a `hard_fail` event must clear its whole outer radius of
 everything else with no fallback, and refusing it a quarter of the city could have quietly stopped

@@ -230,9 +230,20 @@ func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
 			met.append((due[0] as EventDef).id)
+	# Each patrol within `x` events of the one before it (the return, for the first), counted from
+	# where the one before came: a run of fixed windows would ask more than the rig promises, since a
+	# patrol may come early in its bag and the next bag starts after it.
 	var spaced := met.size() == count * x
-	for i in count:
-		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") >= 1
+	var before := -1
+	var patrols := 0
+	for i in met.size():
+		if patrols == count:
+			break
+		if met[i] == "police_patrol":
+			spaced = spaced and i - before <= x
+			before = i
+			patrols += 1
+	spaced = spaced and patrols == count
 	t.check(spaced, "each of the %d patrols is one of the %d events after the one before (%s)"
 			% [count, x, met])
 
