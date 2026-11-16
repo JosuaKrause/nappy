@@ -73,7 +73,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 
 	var config := RunConfig.parse(PackedStringArray(), "", true)
 	var days := DayDirector.new(run.calendar, run.facts, run.attempt_spend, config)
-	days.use_the_world(city, city.events, resistance, player, baby, clock)
+	days.use_the_world(null, resistance, clock)
 	days.use_worlds(StandingCity.new(city, player, baby))
 
 	var one_shots_seen := {}

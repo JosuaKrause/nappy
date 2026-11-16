@@ -2,10 +2,18 @@ class_name DayWorld
 extends RefCounted
 ## A world standing for one spec, as the day director and the run log are handed it
 ## (`DayWorldSource.stand()`, `RunFlow.world_stood`): the map of the ground she walks, the events
-## walked among, her and the baby in it, where she is put down and which way she faces, the city
-## whose streets and crowd she walks where the world is one, and what the walk is won at in it — the map her front door is on, or the ways out of it. The fourteen days and
-## the escape's city section stand in a city; the escape's building has no streets and no crowd,
-## only its events.
+## walked among, her and the baby in it, where she is put down and which way she faces, the city's
+## parts where the world is one (its map, today's streets, its crowd and what dresses it for the
+## day), and what the walk is won at in it — the map her front door is on, or the ways out of it.
+## The fourteen days and the escape's city section stand in a city; the escape's building has no
+## streets and no crowd, only its events.
+##
+## **The city's parts, never the city.** *(inbox #1156 in gray-dolphin: "the city should never be
+## built for tests that don't test the actual city".)* The director and the run log are handed only
+## what they read of the city, each a part of its own: the map (`CityMap`), today's streets
+## (`DayStreets`), the crowd and the city scene's own dressing (`CityDressing`), so a test stands a
+## world of fakes with no city. The one reader of the whole city is an authored scene, which
+## installs itself into it (`scene_city()`).
 ##
 ## Built by whoever stood the world, with everything it answers worked out there; the director and
 ## the run log only ask, and the director hands on what the walk's goal is read from (the ways out to the spec, the home's map to
@@ -18,22 +26,32 @@ var _player: Stroller
 var _baby: Baby
 var _start := Vector2.INF
 var _facing := Vector2.DOWN
-var _city: City
+var _city_map: CityMap
+var _streets: DayStreets
+var _crowd: Crowd
+var _dressing: CityDressing
+var _scene_city: City
 var _plan_rng: RandomNumberGenerator
 var _home_map: CityMap
 var _exits := {}
 
-## A city's world: `city`, its map `map` and its events, her and the baby in it, put down at `start`
-## facing `facing`. Its walk is won at her front door on `home_map` — the city's own map on a walk
-## home, null on one that is not — or at `exits`, the ways out of the city by `CityEdge.Kind`, empty
-## on a walk with none. Its walk is planned on the spec's own stream of the run
-## (`DaySpec.events_stream()`).
-static func in_the_city(city: City, map: CityMap, events: EventManager, player: Stroller,
-		baby: Baby, start: Vector2, home_map: CityMap, exits: Dictionary,
-		facing := Vector2.DOWN) -> DayWorld:
+## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, what dresses the
+## city for the day `dressing` and its events, her and the baby in it, put down at `start` facing
+## `facing`. Its walk is won at her front door on `home_map` — the city's own map on a walk home,
+## null on one that is not — or at `exits`, the ways out of the city by `CityEdge.Kind`, empty on a
+## walk with none. Its walk is planned on the spec's own stream of the run
+## (`DaySpec.events_stream()`). `scene_city` is the city whole, handed only where an authored scene
+## installs itself into it (`scene_city()`), null otherwise.
+static func in_the_city(dressing: CityDressing, map: CityMap, streets: DayStreets, crowd: Crowd,
+		events: EventManager, player: Stroller, baby: Baby, start: Vector2, home_map: CityMap,
+		exits: Dictionary, facing := Vector2.DOWN, scene_city: City = null) -> DayWorld:
 	var world := DayWorld.new()
 	world._map = map
-	world._city = city
+	world._city_map = map
+	world._streets = streets
+	world._crowd = crowd
+	world._dressing = dressing
+	world._scene_city = scene_city
 	world._events = events
 	world._player = player
 	world._baby = baby
@@ -86,9 +104,27 @@ func start_position() -> Vector2:
 func start_facing() -> Vector2:
 	return _facing
 
-## The city she walks, with its streets and its crowd, or null in a world with neither.
-func city() -> City:
-	return _city
+## The city's map, with its streets, blocks and calm ground, or null in a world with no city.
+func city_map() -> CityMap:
+	return _city_map
+
+## Today's streets as dawn left them (`DayStreets`), or null in a world with no city.
+func streets() -> DayStreets:
+	return _streets
+
+## The crowd on the city's streets, or null in a world with no city.
+func crowd() -> Crowd:
+	return _crowd
+
+## What dresses the city for the day (`CityDressing`), or null in a world with no city to dress.
+func dressing() -> CityDressing:
+	return _dressing
+
+## The city whole, for an authored scene to install itself into (`AuthoredScene.install()`, whose
+## scene recipe playback reads the city whole), or null in any world no authored scene is played
+## in.
+func scene_city() -> City:
+	return _scene_city
 
 ## The stream the walk is planned on when the world has one of its own, or null for the spec's own
 ## stream of the run (`DaySpec.events_stream()`).

@@ -145,12 +145,6 @@ src/main.gd skip_event_drawing
 src/main.gd skip_shadows
 src/main.gd spawn_siting
 src/main.gd trace
-src/run/day_director.gd crowd
-src/run/day_director.gd events
-src/run/day_director.gd map
-src/run/day_director.gd scenery
-src/telemetry/run_session.gd crowd
-src/telemetry/run_session.gd map
 
 # [CityMap] src/city/city_map.gd
 src/city/blackout.gd power_station
