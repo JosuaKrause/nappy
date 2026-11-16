@@ -2,7 +2,7 @@ class_name ExcitementSources
 extends RefCounted
 ## **A set of things that charge the baby**, answered as one: a day's events (`EventSources`) or
 ## the crowd on the streets (`CrowdSources`). The world hands the baby every set it holds
-## (`WorldContext.excitement_sources`) and the halo is handed the same sets
+## (`WorldContext.use_excitement_sources()`) and the halo is handed the same sets
 ## (`ExcitementHalo.setup()`), so the city and the building answer the same way, and a set the world
 ## does not have — the building's crowd — is simply not in the list.
 ##

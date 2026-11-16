@@ -138,7 +138,7 @@ var poster_pursuits := true
 ## (`Tuning.crowd_pedestrians()`, `crowd_cars()`): all of them on a day, and nobody in either of the
 ## escape's sections — *"no regular cars or regular people on the street"*.
 var crowd_density := 1.0
-## Whether the poster crews paste at dawn and the posters can be torn (`PosterWalls.start_day()`),
+## Whether the poster crews paste at dawn and the posters can be torn (`PosterWalls.dress_for()`),
 ## or the walls only show what the run left on them (`PosterWalls.show_only()`): a day pastes, and
 ## the escape shows.
 var pastes_posters := true

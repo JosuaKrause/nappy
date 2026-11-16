@@ -28,11 +28,10 @@ func run(t: TestRunner) -> void:
 func _rig(t: TestRunner, day: int) -> Array:
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	t.add_child(city)
 	# The lights are off from the first frame, as the escape's city is built (`DaySpec.dark_from_the_start`),
 	# so a red one cannot hold a car where the probe wants it to run.
-	city.dark_from_the_start = true
-	t.add_child(city)
-	RunCity.build(city, map)
+	RunCity.build(city, map, null, true)
 	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the
 	# checks plant what they watch themselves.
 	var no_plans: Array[EventPlan] = []

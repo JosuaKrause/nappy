@@ -193,7 +193,8 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 		# sleep at its start has her owe the walk home on a day.
 		day.start(spec.seconds_on_the_clock())
 		# The scene's events run under the very spec the clock and the HUD were just handed.
-		errors = _scene.install(world.scene_city(), player, baby, spec, resistance)
+		errors = _scene.install(world.scene_city(), world.scene_simulation(), player, baby, spec,
+				resistance)
 		if errors.is_empty():
 			_prepare_the_scenery_round_her()
 	else:

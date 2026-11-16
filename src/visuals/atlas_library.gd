@@ -12,8 +12,9 @@ extends RefCounted
 ## **One library per sitting, handed to whoever draws.** The `Sitting` holds it (`Sitting.atlas`),
 ## so the pages held for the life of the process (`hold_for_the_process()`) and the loading moments
 ## outlive the scene reload a held restart makes, and `main` hands it to everything that acquires a
-## group or draws a region: the city hands it on to its furniture, its crowd and its events, the
-## screens to their buttons. Nothing fetches it. A node built with none handed (a suite's
+## group or draws a region: the city hands it on to its furniture, the simulation's builder
+## (`SimulationBuilder`) to the crowd, the events and the poster walls it stands, the screens to
+## their buttons. Nothing fetches it. A node built with none handed (a suite's
 ## hand-built city, stroller or button) makes its own when it first acquires, and its counts are
 ## its own; a test hands the nodes it compares one fresh library instead.
 ##

@@ -72,9 +72,9 @@ func _step_a_frame(t: TestRunner) -> void:
 
 var _city: City
 
-## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
-## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
-## `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
+## Freed rather than left standing: `RunCity.build()` stands an `EventManager` under the city's
+## simulation that acquires the "events" `AtlasLibrary` group in its own `_enter_tree()` and only
+## gives it back in `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
 ## `_city` never freed between two builds would leave every earlier one standing, each holding
 ## "events" resident for the rest of the process; `run()` frees whichever one is still around after
 ## the last.
@@ -217,7 +217,8 @@ func _all_but_the_finale() -> Array[int]:
 	return done
 
 ## Same shape `_build_pickup` uses for a bare `ContactPoint` — a real `Stroller`, physics off,
-## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does.
+## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does. The
+## test city's poster walls and blackout, where it stands, are handed her here, as a walk hands her.
 func _rig_player(t: TestRunner, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -227,6 +228,8 @@ func _rig_player(t: TestRunner, at: Vector2) -> Stroller:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = at
+	if _city != null:
+		RunCity.show_her_to_the_walls_and_the_blackout(_city, player)
 	return player
 
 ## The cities a sweep relocates a mark over every mark tile of (`_relocations_over_the_marks()`): the

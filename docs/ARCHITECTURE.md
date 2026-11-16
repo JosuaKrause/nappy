@@ -19,6 +19,9 @@ scenes/
   ui/touch_controls.tscn  the pointer scheme's overlay
 src/
   main.gd                 boot: generate the city, drop the player on the doorstep, then the HUD
+  simulation_builder.gd   the one place an event manager and a crowd are made: stands what moves
+                          and happens in a world already built (the city's poster walls, events,
+                          crowd and blackout; the building's events), handed by `main`
   run_config.gd           the run's configuration: every dev flag and the page's query, resolved
                           once at boot and never changed (see "Dev flags and release builds")
   build_info.gd           which build is running: git's answer, or what an export baked
@@ -363,6 +366,9 @@ src/
 	day_world.gd          a world standing for one spec: the scene, its events, her and the baby,
 	                      where she is put down, and the city's parts where it is one (its map,
 	                      streets, crowd and dressing), never the city but for an authored scene
+	world_simulation.gd   what moves or happens in one world, as `SimulationBuilder` stood it: a
+	                      node under the world (`Simulation`) holding its events, and in a city
+	                      the crowd, the poster walls and the blackout; hands her to them
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
 	                         perform step the moment the mark that unlocks it is touched; ticked
@@ -683,9 +689,10 @@ day and the baby the plain values they need out of it: a day's length
 (`RunConfig.day_length_for()`, the one place it is decided) to `DayController.start()`, the
 resistance and the run log, and an escape section's length (`RunConfig.escape_section_length()`)
 to its `DaySpec`; `DayController.invincible` and the baby's frozen meter
-(`Baby.freeze_excitement()`); and, on `City` before `build()`, the ground mode,
-the frame lock, the four `--skip` words, the forced blackout, `--pelican` and `--force`, which the
-city passes to the part each belongs to. Nothing in the simulation reads a flag, the command line
+(`Baby.freeze_excitement()`); on `City` before `build()`, the ground mode, the frame lock and
+`--skip shadows`, which are the city's own drawing; and to the simulation's builder
+(`SimulationBuilder`), the other three `--skip` words, the forced blackout, `--pelican` and
+`--force`, which it hands the part each belongs to as it stands it. Nothing in the simulation reads a flag, the command line
 or the address bar, and nothing asks for them every frame. A test builds the run it wants with
 `RunConfig.parse(words, query, debug_build)` and hands it in (`main.configure()`), or hands a
 component its plain value directly.
@@ -1082,8 +1089,8 @@ is the entire surface between the meters and the world. Whether a point is calm 
 the map's question (`CityMap.is_calm_zone()`), asked by the run log and the debug readout.
 The debug world answers with hand-placed test data; the generated
 city and the event manager answer for real. **No world sums its events itself**: it is handed the
-sets of things that charge her (`WorldContext.excitement_sources`, each an `ExcitementSources` in the
-world layer) — the manager's events (`EventSources`) and the crowd's walkers and cars
+sets of things that charge her (`WorldContext.use_excitement_sources()`, by whoever stands its
+simulation, `SimulationBuilder`; each an `ExcitementSources` in the world layer) — the manager's events (`EventSources`) and the crowd's walkers and cars
 (`CrowdSources`) — and `WorldContext.excitement_sources_at()` hands the baby every set's pairs, the
 door rule stated once (`ExcitementSources.all_at()`). The world names no event and no crowd, so it
 depends on nothing above it. `InteriorScene` (the escape's building) is a third implementor: its

@@ -3,9 +3,10 @@ extends RefCounted
 ## and how much faster the calm ground fills her sleepiness than the street does.
 ##
 ## **A real `City`, built over a map from the cache** (`tests/city_map_cache.gd`), because the
-## guarantees are the city's own wiring: `City.build()` lists the events' bodies among what charges
-## her (`excitement_sources = [events.sources, crowd.sources]`), and `City.sleepiness_multiplier()`
-## maps a calm tile to the calm curve through the lot it lies in. Everything the baby asks of her
+## guarantees are the city's own wiring: the city answers the baby from the sets its simulation was
+## stood with (`SimulationBuilder.in_the_city()`, `WorldContext.use_excitement_sources()`), the
+## events' among them, and `City.sleepiness_multiplier()` maps a calm tile to the calm curve
+## through the lot it lies in. Everything the baby asks of her
 ## world, a suite on `Baby` answers with a stand-in (`tests/test_baby_world.gd`); a stand-in cannot
 ## drop a line the city wires. What the meter does with the answers is `tests/test_meters.gd`'s.
 
@@ -15,10 +16,10 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 
 func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	city.skip_event_drawing = true
-	city.skip_crowd_drawing = true
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	var builder := RunCity.new_builder()
+	builder.leave_out(true, true, false)
+	RunCity.build(city, MapCache.of(SEED), builder)
 	_test_a_live_event_charges_the_spot_it_stands_on(t, city)
 	_test_calm_ground_fills_sleepiness_faster_than_the_street(t, city)
 	_test_the_camera_framing_is_less_the_look_ahead_it_is_handed(t, city)

@@ -32,7 +32,9 @@ func run(t: TestRunner) -> void:
 func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: String) -> void:
 	city.run.posters.reset()
 	var tree := RouteTree.for_day(city.map, day)
-	RunCity.poster_walls(city).start_day(day, tree)
+	var no_closures: Array[RoadClosure] = []
+	city.streets().begin_day(tree, null, no_closures)
+	RunCity.poster_walls(city).dress_for(day, DaySpec.for_day(day))
 	var before := _pasted_cells(city)
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
@@ -50,6 +52,8 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 		return
 	var rig := _walker(t, route[0])
 	RunCity.events(city).use_player(rig)
+	# The crews paste only while the walls have her, which the walk steps by hand.
+	RunCity.show_her_to_the_walls_and_the_blackout(city, rig)
 	var clock := 0.0
 	var first_sited := -1.0
 	for i in range(1, route.size()):

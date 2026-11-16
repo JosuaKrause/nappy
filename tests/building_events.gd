@@ -15,7 +15,8 @@ static func events_in(parent: Node, scene: InteriorScene,
 	events.stream_radius = INF
 	parent.add_child(events)
 	events.setup_world(scene.map, run)
-	scene.excitement_sources = [events.sources]
+	var sets: Array[ExcitementSources] = [events.sources]
+	scene.use_excitement_sources(sets)
 	events.set_meta(&"building_seed", rng.randi())
 	restart(events, scene)
 	return events

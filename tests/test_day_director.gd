@@ -723,8 +723,8 @@ class _FakeScene extends AuthoredScene:
 		_asked = asked
 
 	## Overrides AuthoredScene.install.
-	func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
-			resistance: ResistanceDirector = null) -> Array[String]:
+	func install(city: City, _simulation: WorldSimulation, player: Stroller, baby: Baby,
+			spec: DaySpec, resistance: ResistanceDirector = null) -> Array[String]:
 		installed_with = [city, player, baby, spec, resistance]
 		_asked.append("install %s" % ("running" if clock.is_running() else "stopped"))
 		return problems

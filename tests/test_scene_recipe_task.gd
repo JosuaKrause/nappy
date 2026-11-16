@@ -384,7 +384,7 @@ func _mast_installs(t: TestRunner, made: Array, at: Vector2) -> bool:
 			"events": [{"name": "mast", "row": "loudspeaker", "at": [at.x, at.y], "mast_id": "m"}]}},
 			"manifest": {}, "anchors": {}, "map": city.map},
 			RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), own_run)
-	var errors := runtime.install(city, player, player.get_node("Baby"),
+	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
 			DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
 	runtime.free()
 	player.free()

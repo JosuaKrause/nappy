@@ -98,10 +98,17 @@ var _facts: RunFacts
 ## building stays on its own map with nobody on it. On an ordinary run `_interior` is null and
 ## `_city` is the only world there is.
 var _interior: InteriorScene
-## The events inside the building — the fire, the masked man, the mouse, the steam and the
-## explosions outside — run by the day's own `EventManager` on the building's map, from the
-## building's own placements (`BuildingPlan`).
-var _building_events: EventManager
+## **What stands the simulation in every world this boot builds** (`SimulationBuilder`): made once
+## a boot (`_simulation_builder()`), handed what every part is equipped with and what the
+## developer's flags decide, and asked for the city's simulation and the building's.
+var _simulations: SimulationBuilder
+## The simulation standing in `_city` (`WorldSimulation`): the day's events, the crowd, the poster
+## walls and the blackout. Stood with the city, by `_build_the_city()`; null before.
+var _city_simulation: WorldSimulation
+## The simulation standing in the escape's building: its events — the fire, the masked man, the
+## mouse, the steam and the explosions outside — run by the day's own `EventManager` on the
+## building's map, from the building's own placements (`BuildingPlan`).
+var _building_simulation: WorldSimulation
 ## The seed the building's placements and its night are drawn from, once a boot
 ## (`RunCalendar.day_rng(day, "finale-interior")`), so every attempt is the same building.
 var _building_seed := 0
@@ -428,9 +435,8 @@ func _ready() -> void:
 	var walks_a_day := first.section_kind() == DaySpec.Section.NONE
 	var ground := Vector2.ZERO
 	if walks_a_day:
-		_city = _new_city()
 		var elapsed := Time.get_ticks_msec()
-		_city.build(_city_map())
+		_build_the_city()
 		print("[Main] city generated in %d ms (seed %d)" % [
 			Time.get_ticks_msec() - elapsed, _city.map.seed_used])
 		ground = _city.map.doorstep_world_position()
@@ -465,14 +471,15 @@ func _ready() -> void:
 		_pauses_with_the_game(_resistance)
 		_resistance.trace = _the_trace()
 		_resistance.use_atlas(_sitting.atlas)
-		_resistance.setup(_city.map, _run, _city.events, _city.streets(), _city.fronts(), _city,
-				_city.navigator, _city.spawn_siting)
+		var events := _city_simulation.events()
+		_resistance.setup(_city.map, _run, events, _city.streets(), _city.fronts(), _city,
+				_city.navigator, events.spawn_siting())
 		_resistance.use_player(_player)
 		# The director's own question about her view — no camera of its own, so it asks the day's
 		# one view (`VisibleView`) rather than growing a second one: "has she seen this" for a
 		# mark's notice. Whether anything it places or removes is anywhere on screen, covered
 		# corners included, is the city's siting's, over the same view.
-		_resistance.set_sight(_city.events.sees)
+		_resistance.set_sight(events.sees)
 
 	_day = DayController.new()
 	_day.name = "Day"
@@ -576,7 +583,7 @@ func _ready() -> void:
 		return
 	if config.skips_the_title():
 		_flow.engage()
-		_hand_the_crowd_her()
+		_hand_the_streets_her()
 		return
 	_open_the_title()
 
@@ -823,28 +830,48 @@ func _make_player() -> Stroller:
 			_touch_controls.stand_still_after_hold())
 	return player
 
-## A city node in the tree, handed the dev choices that decide how it draws and schedules itself
-## before `build()` reads them — a day's city and the escape's are both built through here.
+## **The city, built, with its simulation standing in it**: a day's city and the escape's are both
+## built through here. The city scene draws the map (`City.build()`), and the builder stands what
+## moves and happens on it (`SimulationBuilder.in_the_city()`), handed the city's parts each part
+## reads. `dark_from_the_start` is the escape's city (`DaySpec.is_dark_from_the_start()`).
+func _build_the_city(dark_from_the_start := false) -> void:
+	_city = _new_city()
+	_city.build(_city_map())
+	_city_simulation = _simulation_builder().in_the_city(_city, _city.map, _city.streets(),
+			_city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
+
+## **The boot's simulation builder**, made the first time a world needs one: equipped with this
+## boot's trace, atlas and frame timing, the bus, the torn posters' textures, the crowd's view of
+## the screen and its timing, and what the developer's flags decide.
+func _simulation_builder() -> SimulationBuilder:
+	if _simulations:
+		return _simulations
+	_simulations = SimulationBuilder.new()
+	_simulations.equip(_the_trace(), _sitting.atlas, _sitting.frame_timing)
+	_simulations.use_bus(EventBus)
+	_simulations.use_poster_art(_poster_art)
+	_simulations.use_the_crowds_screen(ScreenCrowdView.new(self),
+			FrameRecordTiming.new(_sitting.frame_timing))
+	_simulations.leave_out(config.skip_events, config.skip_crowd, config.skip_motion)
+	if config.pelican:
+		_simulations.make_every_cyclist_a_pelican()
+	_simulations.force_a_row(config.forced_row, config.forced_interval)
+	if config.blackout_requested:
+		_simulations.force_the_blackout()
+	return _simulations
+
+## A city node in the tree, handed what decides how it draws and schedules its own ground and
+## scenery before `build()` reads it.
 func _new_city() -> City:
 	var city: City = CITY.instantiate()
 	city.trace = _the_trace()
 	city.run = _run
 	city.ground_recipe = _sitting.ground_recipe
-	city.poster_art = _poster_art
 	city.atlas = _sitting.atlas
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows
-	city.skip_event_drawing = config.skip_events
-	city.skip_crowd_drawing = config.skip_crowd
-	city.skip_crowd_motion = config.skip_motion
-	city.crowd_view = ScreenCrowdView.new(self)
-	city.crowd_timing = FrameRecordTiming.new(_sitting.frame_timing)
 	city.frame_timing = _sitting.frame_timing
-	city.blackout_forced = config.blackout_requested
-	city.all_cyclists_pelicans = config.pelican
-	city.forced_row = config.forced_row
-	city.forced_interval = config.forced_interval
 	add_child(city)
 	_pauses_with_the_game(city)
 	return city
@@ -902,7 +929,8 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 		# The same seed on every entry, so a retry is the same building.
 		var building_rng := RandomNumberGenerator.new()
 		building_rng.seed = _building_seed
-		return DayWorld.in_the_building(_interior.map, _building_events, _player, _baby, start_at,
+		return DayWorld.in_the_building(_interior.map, _building_simulation.events(), _player,
+				_baby, start_at,
 				Vector2.UP, building_rng)
 	if not _city:
 		if _interior:
@@ -911,8 +939,8 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 		if _interior:
 			_interior.put_the_pictures_away()
 		_add_the_route_rig_in_the_city()
-	if _building_events:
-		_building_events.stand_down()
+	if _building_simulation:
+		_building_simulation.events().stand_down()
 	if _interior:
 		_interior.stop_the_night()
 	var home_map: CityMap = _city.map if spec.goal_kind() == DaySpec.Goal.HOME else null
@@ -923,8 +951,10 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 	# The city's parts, each on its own, and the city whole only where an authored scene installs
 	# itself into it (`DayWorld.scene_city()`).
 	var scene_city: City = _city if _flow.authored else null
-	return DayWorld.in_the_city(_city, _city.map, _city.streets(), _city.crowd, _city.events,
-			_player, _baby, start_at, home_map, exits, Vector2.DOWN, scene_city)
+	var scene_simulation: WorldSimulation = _city_simulation if _flow.authored else null
+	return DayWorld.in_the_city(_city, _city.map, _city.streets(), _city_simulation.crowd(),
+			_city_simulation.events(), _player, _baby, start_at, home_map, exits, Vector2.DOWN,
+			scene_city, scene_simulation)
 
 ## The first world a boot stands is where the run log's session is handed what it watches every
 ## walk with besides the walk's world — the day's clock, the resistance (none in the escape) and the
@@ -947,23 +977,22 @@ var _walk_watched := false
 func _put_her_in(map: WorldMap) -> void:
 	_player.set_map(map)
 	_baby.set_world(map.world)
-	if _city:
-		_city.events.use_player(_player)
+	if _city_simulation:
+		_city_simulation.events().use_player(_player)
 	_hand_the_controls_cover_to_the_events()
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
-## Hands the city's crowd the player, **from the moment she is in the `player` group and the world
-## is live**, which is when the crowd's old lookup by that group would first have found her: not
-## behind the title (`Stroller.stand_aside()` takes her out of the group, so a crowd handed her
-## then would step round and bump a pram nobody sees), but at `_engage_the_day()`, and where a day
-## is walked with no title in front of it. Never taken back, as the lookup's result never was. With
-## her, the bus the crowd reports her bumps, a car's strike and its horn on (`Crowd.use_bus()`):
-## all three are about her, so the crowd says nothing before it has her.
-func _hand_the_crowd_her() -> void:
-	if _city and _city.crowd and _player:
-		_city.crowd.use_player(_player)
-		_city.crowd.use_bus(EventBus)
+## Hands her to what meets her on the city's streets (`WorldSimulation.meet_her()`: the crowd, the
+## poster walls and the blackout), **from the moment the world is live and she walks it**: not
+## behind the title, where she stands aside (`Stroller.stand_aside()`), so a crowd handed her then
+## would step round and bump a pram nobody sees and a crew would paste for nobody, but at
+## `_engage_the_day()`, and where a day or an escape scene is walked with no title in front of it.
+## Never taken back. The crowd's bus is handed at build (`SimulationBuilder`), and every one of its
+## reports is about her, so the crowd says nothing before it has her.
+func _hand_the_streets_her() -> void:
+	if _city_simulation and _player:
+		_city_simulation.meet_her(_player)
 
 ## Hands each world's events what the on-screen controls cover of the screen, for their view of what
 ## she can see (`VisibleView`, `EventManager.use_controls()`). Idempotent, and called wherever either
@@ -973,10 +1002,10 @@ func _hand_the_crowd_her() -> void:
 func _hand_the_controls_cover_to_the_events() -> void:
 	if not _touch_controls:
 		return
-	if _city:
-		_city.events.use_controls(_touch_controls.covering)
-	if _building_events:
-		_building_events.use_controls(_touch_controls.covering)
+	if _city_simulation:
+		_city_simulation.events().use_controls(_touch_controls.covering)
+	if _building_simulation:
+		_building_simulation.events().use_controls(_touch_controls.covering)
 
 ## The map of the world the current spec is walked in — the building's in the escape's first
 ## section, the city's otherwise — the one the run flow hands down to her and asks each walking
@@ -1007,19 +1036,9 @@ func _build_the_escape_building() -> void:
 
 	# The building's events are the day's own manager, handed the building's map: no city, and the
 	# whole plan in the world at once, since the building is walked part by part through doors.
-	_building_events = EventManager.new()
-	_building_events.name = "BuildingEvents"
-	_building_events.skip_drawing = config.skip_events
-	_building_events.timing = _sitting.frame_timing
-	_building_events.atlas = _sitting.atlas
-	_building_events.trace = _the_trace()
-	_building_events.stream_radius = INF
-	add_child(_building_events)
-	_pauses_with_the_game(_building_events)
-	_building_events.setup_world(_interior.map, _run)
-	_building_events.use_player(_player)
+	_building_simulation = _simulation_builder().in_the_building(_interior, _interior.map, _run)
+	_building_simulation.events().use_player(_player)
 	_hand_the_controls_cover_to_the_events()
-	_interior.excitement_sources = [_building_events.sources]
 	_building_seed = _run.calendar.day_rng(_run.header.day, "finale-interior").randi()
 	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map, _sitting.atlas)
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
@@ -1041,9 +1060,7 @@ func _build_the_escape_building() -> void:
 ## It is dark from its first frame (`is_dark_from_the_start()`, which the city is built with) and
 ## stays at night (`runs_the_daylight_down()`).
 func _build_the_escape_city(spec: DaySpec) -> void:
-	_city = _new_city()
-	_city.dark_from_the_start = spec.is_dark_from_the_start()
-	_city.build(_city_map())
+	_build_the_city(spec.is_dark_from_the_start())
 	if not _player:
 		_player = _make_player()
 		_player.carrying = true
@@ -1123,7 +1140,8 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	add_child(_route_rig)
 	_pauses_with_the_game(_route_rig)
 	_route_rig.trace = _the_trace()
-	_route_rig.setup(_city.map, _city.events, _spawn_start, _player, _baby, resistance, _day,
+	_route_rig.setup(_city.map, _city_simulation.events(), _spawn_start, _player, _baby,
+			resistance, _day,
 			config.route_targets, _run)
 	_flow.day_planned.connect(_route_rig.start_day.unbind(1))
 	_route_rig.use_continue(_on_summary_continued)
@@ -1374,7 +1392,7 @@ func _resume_gate_note() -> String:
 func _engage_the_day() -> void:
 	_flow.engage()
 	_player.step_back_in()
-	_hand_the_crowd_her()
+	_hand_the_streets_her()
 	if _city:
 		_pauses_with_the_game(_city)
 	_hud.visible = true
@@ -1450,23 +1468,24 @@ func _add_excitement_halo() -> void:
 ## once there is a city — a day's, or the escape's second section, which the building never comes
 ## back after. Each is an `EventManager`.
 func _event_source() -> EventManager:
-	if _city:
-		return _city.events
-	return _building_events
+	if _city_simulation:
+		return _city_simulation.events()
+	return _building_simulation.events() if _building_simulation else null
 
 ## The crowd, or null in the escape's building, which has nobody in it but its events.
 func _crowd_now() -> Crowd:
-	return _city.crowd if _city else null
+	return _city_simulation.crowd() if _city_simulation else null
 
-## What the halo reads the world's charges from (`WorldContext.excitement_sources`): a `City`'s
-## events and crowd once there is a city, and the building's events alone before.
+## What the halo reads the world's charges from (`WorldSimulation.excitement_sources()`, the sets
+## the world answers the baby from): the city's events and crowd once there is a city, and the
+## building's events alone before.
 func _excitement_now() -> Array[ExcitementSources]:
-	if _city:
-		return _city.excitement_sources
-	var sets: Array[ExcitementSources] = []
-	if _building_events:
-		sets.append(_building_events.sources)
-	return sets
+	if _city_simulation:
+		return _city_simulation.excitement_sources()
+	if _building_simulation:
+		return _building_simulation.excitement_sources()
+	var none: Array[ExcitementSources] = []
+	return none
 
 ## The world whose subtree holds the bodies the debug view's bounding boxes trace.
 func _world_now() -> Node2D:
@@ -1847,7 +1866,7 @@ func _new_director() -> DayDirector:
 ## Where the `--spawn` `target` starts her (`DevRig.for_spawn_target()`), asked by the day director
 ## on the boot's first walk from her doorstep and by the route rig for a `spawn:<name>` word.
 func _spawn_start(target: String) -> Vector2:
-	return DevRig.for_spawn_target(target, _city.map, _city.events, _city.streets(),
+	return DevRig.for_spawn_target(target, _city.map, _city_simulation.events(), _city.streets(),
 			_resistance, _run.header, _the_trace())
 
 ## `--recipe`: loads the scene recipe, lays its seed, day, escape part and parent on the run's
@@ -1877,7 +1896,7 @@ func _begin_the_scene(walks_a_day: bool) -> void:
 	_flow.scene.begin()
 	if not walks_a_day:
 		_flow.engage()
-		_hand_the_crowd_her()
+		_hand_the_streets_her()
 
 ## The authored scene could not be set up: its problems are printed and the game quits non-zero.
 func _scene_failed(errors: Array) -> void:
@@ -2249,7 +2268,7 @@ func _physics_process(delta: float) -> void:
 		_day.tick(delta)
 
 func _process(delta: float) -> void:
-	_dev_rig.update_follow_camera(_city.events if _city else null)
+	_dev_rig.update_follow_camera(_city_simulation.events() if _city_simulation else null)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
 	# `get_window()` is null for a script-only instance a test drives straight through `_process()`
@@ -2266,7 +2285,7 @@ func _process(delta: float) -> void:
 		# of her is not placed, because it is placed in front of somebody walking somewhere. Only a
 		# city left running behind the title needs it: an escape's stays paused there.
 		if _city and _city.process_mode == Node.PROCESS_MODE_ALWAYS:
-			_city.events.stream_around(_player.global_position)
+			_city_simulation.events().stream_around(_player.global_position)
 		return
 	# The world's ground is asked what it does to her while she is walking it — the building's doors
 	# and its service exit; nothing in the city. Nothing of the walk is asked while a screen stands

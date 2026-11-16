@@ -111,7 +111,8 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 ## `progress_at_dawn` is the run's resistance progress as the director's `start_day()` reads it — 0
 ## for every ordinary day, `Tuning.RESISTANCE_GOAL` for the last night's finale, which needs
 ## `RunState.sabotage_available()` to hold before the step is on offer at all. `her` hands the
-## director and the events her (`use_player()`), as `main` does. Freed by `_free_fixture()`.
+## director, the events, the poster walls and the blackout her (`use_player()`), as `main` does.
+## Freed by `_free_fixture()`.
 func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 		run_seed := RUN_SEED) -> Dictionary:
 	var run := RunState.new()
@@ -135,6 +136,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	stroller.global_position = city.map.doorstep_world_position()
 	if her:
 		RunCity.events(city).use_player(stroller)
+		RunCity.show_her_to_the_walls_and_the_blackout(city, stroller)
 
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)

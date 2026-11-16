@@ -75,9 +75,10 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	run.start_run(STRETCH_SEED)
 	var city := RunCity.in_run(CITY_SCENE, run)
 	var view := ScreenCrowdView.new(t)
-	city.crowd_view = view
 	t.add_child(city)
-	RunCity.build(city, map)
+	var builder := RunCity.new_builder()
+	builder.use_the_crowds_screen(view, CrowdTiming.new())
+	RunCity.build(city, map, builder)
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	city.start_recipe_day(state, 1, run.calendar.day_rng())

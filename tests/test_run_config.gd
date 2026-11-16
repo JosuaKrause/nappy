@@ -7,10 +7,12 @@ extends RefCounted
 ##
 ## **Combined by composition, for this reason:** `RunConfig` is a plain value, and its own rules (what it
 ## reads on which build, that a resolved one cannot change, what a recipe puts on top) are checked on
-## parsed values with nothing built. What the rest holds is that `main` and the city hand each of
-## their parts the value it asks for, a guarantee between the configuration and the parts it reaches,
-## which only the real composition shows: a boot of `main`, and a built `City` for the one value
-## handed through the city's setup. Cities come from the cache (`tests/city_map_cache.gd`).
+## parsed values with nothing built. What the rest holds is that `main`, the city and the
+## simulation's builder hand each of their parts the value it asks for, a guarantee between the
+## configuration and the parts it reaches, which only the real composition shows: a boot of `main`,
+## and a built `City` with its simulation stood by a builder (`RunCity.build()`) for the values
+## handed through the city's and the builder's setup. Cities come from the cache
+## (`tests/city_map_cache.gd`).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const Boot := preload("res://tests/booted_main.gd")
@@ -221,12 +223,12 @@ func _her_excitement_rises(t: TestRunner, baby: Baby, own: WorldContext) -> bool
 	loud.free()
 	return rose
 
-## `main` is the one place the configuration is read: the baby and the city it builds are handed
-## plain values, and neither reads a flag of its own.
+## `main` is the one place the configuration is read: the baby, the city it builds and the parts
+## its builder stands in the city are handed plain values, and none reads a flag of its own.
 func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 	for invincible: bool in [false, true]:
 		var words := _words(["--skip", "shadows,motion", "--debug", "--ground-mode", "1",
-				"--blackout", "--pelican", "--force", "cyclist", "3"])
+				"--blackout", "--pelican", "--force", "cyclist", str(FORCED_INTERVAL)])
 		if invincible:
 			words.append("--invincible")
 		words.append_array(_words(["--no-save", "--no-telemetry"]))
@@ -240,12 +242,6 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 			if node is City:
 				var c := node as City
 				entered["flags"] = {"ground_mode": c.ground_mode, "skip_shadows": c.skip_shadows,
-						"skip_crowd_motion": c.skip_crowd_motion,
-						"skip_event_drawing": c.skip_event_drawing,
-						"skip_crowd_drawing": c.skip_crowd_drawing,
-						"blackout_forced": c.blackout_forced,
-						"all_cyclists_pelicans": c.all_cyclists_pelicans,
-						"forced_row": c.forced_row, "forced_interval": c.forced_interval,
 						"scenery_frame_locked": c.scenery_frame_locked}
 		t.get_tree().node_added.connect(catch)
 		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true),
@@ -259,18 +255,45 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
 		var f: Dictionary = entered.get("flags", {})
 		t.check(not f.is_empty() and f["ground_mode"] == SceneryGround.Mode.ALL
-				and f["skip_shadows"]
-				and f["skip_crowd_motion"] and not f["skip_event_drawing"]
-				and not f["skip_crowd_drawing"] and f["blackout_forced"] and f["all_cyclists_pelicans"]
-				and f["forced_row"] == "cyclist" and is_equal_approx(f["forced_interval"], 3.0)
-				and not f["scenery_frame_locked"],
-				"the city is handed what the flags chose before it builds")
+				and f["skip_shadows"] and not f["scenery_frame_locked"],
+				"the city is handed what the flags chose for its own ground before it builds")
+		# The parts the builder stood are handed what the flags chose for each
+		# (`main._simulation_builder()`).
+		var city := Boot.city(booted.main)
+		t.check(city != null and not RunCity.events(city).skip_drawing
+				and RunCity.events(city).pelican_rig == EventSpawner.PelicanRig.ALWAYS
+				and RunCity.crowd(city).skip_motion and not RunCity.crowd(city).skip_agent_drawing,
+				"and the events and the crowd it stands are handed theirs")
+		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
+		# that nothing but a win ends (`DayController.invincible`), so a walk can take its time.
+		if invincible and city != null:
+			# Past the title and the day's brief, as a played day is, so she walks the city and its
+			# parts are handed her (`WorldSimulation.meet_her()`).
+			var title := Boot.title(booted.main)
+			if title and title.is_open():
+				await Boot.press_title(t, booted.main)
+			if t.get_tree().paused:
+				await Boot.press_continue(t, booted.main)
+			var her := Boot.player(booted.main)
+			# Far from the station on day 1, with no sabotage done: the lights go out only if the
+			# blackout was handed `--blackout`.
+			var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+			her.set_physics_process(false)
+			her.global_position = Vector2(lot.get_center().x,
+					lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
+			await PhysicsTicks.pass_ticks(t, 2)
+			t.check(not city.traffic_signals().powered,
+					"the blackout is handed --blackout: far from the station the lights go out")
+			var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map)
+			t.check(first >= FORCED_INTERVAL - _walk_step() and first <= FORCED_WITHIN,
+					"the events are handed --force: the cyclist comes after its wait (%.1fs)" % first)
 		booted.free_all()
 		home.free()
 
 ## **An atlas library that counts the crowd's pictures it hands out**, the `crowd/` regions a walker's
 ## or a car's look asks for as it draws (`CrowdAgent.picture_region()`). Handed to the city the way
-## `main` hands it the sitting's library (`City.atlas`), which the city hands its crowd and the crowd
+## `main` hands it the sitting's library (`City.atlas`); the simulation's builder is equipped with
+## the same library (`RunCity.build()`, as `main` equips its own), hands it the crowd, and the crowd
 ## every agent it makes.
 class CrowdPictureCount extends AtlasLibrary:
 	var asked := 0
@@ -289,13 +312,14 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	city.ground_mode = SceneryGround.Mode.STEPPED
 	city.scenery_frame_locked = true
 	city.skip_shadows = true
-	city.skip_event_drawing = true
-	city.skip_crowd_drawing = true
-	city.skip_crowd_motion = true
-	city.blackout_forced = true
-	city.all_cyclists_pelicans = true
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	# The other seven are the simulation's, handed to its builder as `main._simulation_builder()`
+	# hands them.
+	var builder := RunCity.new_builder()
+	builder.leave_out(true, true, true)
+	builder.force_the_blackout()
+	builder.make_every_cyclist_a_pelican()
+	RunCity.build(city, MapCache.of(SEED), builder)
 	# The shadow layer is the scene's own child, found by the name the scene gives it. What it draws
 	# is read off a recording drawer handed to it the way the city hands its own, every chunk it
 	# stands asked to draw again: under `--skip shadows` none draws a tile.
@@ -322,10 +346,11 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	she.add_child(camera)
 	t.add_child(she)
 	she.set_physics_process(false)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, she)
 	she.global_position = Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
 	await PhysicsTicks.pass_ticks(t, 2)
 	she.free()
-	t.check(not city.signals.powered, "and the blackout, which puts the lights out with no sabotage done")
+	t.check(not city.traffic_signals().powered, "and the blackout, which puts the lights out with no sabotage done")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	RunCity.crowd(city).start_day(1, rng)
@@ -369,10 +394,10 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	city.forced_row = "cyclist"
-	city.forced_interval = FORCED_INTERVAL
 	t.add_child(city)
-	RunCity.build(city, MapCache.of(SEED))
+	var builder := RunCity.new_builder()
+	builder.force_a_row("cyclist", FORCED_INTERVAL)
+	RunCity.build(city, MapCache.of(SEED), builder)
 	RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var her := Stroller.new()
 	var camera := Camera2D.new()
@@ -389,27 +414,42 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1)
 	RigStreets.begin(city.streets(), city.map, spec)
 	RunCity.events(city).start_day(spec, rng, consumed)
-	var start := CrowdLanes.arterial_pavement(city.map)
-	start.y = city.map.world_size().y * 0.5
+	var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map)
+	t.check(first < INF and first >= FORCED_INTERVAL - _walk_step(),
+			"the forced cyclist comes after the wait the flag names, not before (%.1fs)" % first)
+	t.check(first <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")
+	her.free()
+	city.free()
+
+## One tick of `_first_cyclist_on_a_walk()`'s walk, in game seconds.
+static func _walk_step() -> float:
+	return 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
+
+## **How far into a walk the first cyclist comes**, in game seconds, or INF for none: her walked
+## south down the middle of the arterial's sidewalk by hand at `Tuning.WALK_SPEED`, on real physics
+## ticks `FORCED_SCALE` times real time, for `FORCED_WITHIN` seconds, the way the loose dog's suite
+## walks her, and read off the cyclists `events` puts in the world that it had not before. Her own
+## physics is off for it, so only the walk moves her.
+func _first_cyclist_on_a_walk(t: TestRunner, events: EventManager, her: Stroller,
+		map: CityMap) -> float:
+	her.set_physics_process(false)
+	var start := CrowdLanes.arterial_pavement(map)
+	start.y = map.world_size().y * 0.5
 	her.global_position = start
-	var step := 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
-	var before := RunCity.events(city).instances().duplicate()
+	var step := _walk_step()
+	var before := events.instances().duplicate()
 	var seen := {"first": INF}
 	var each := func(n: int) -> void:
 		her.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 		her.global_position += her.velocity * step
-		for instance in RunCity.events(city).instances():
+		for instance in events.instances():
 			if instance.def.id == "cyclist" and not before.has(instance) \
 					and seen["first"] == INF:
 				seen["first"] = n * step
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(FORCED_WITHIN, FORCED_SCALE), each,
 			FORCED_SCALE)
-	t.check(seen["first"] < INF and seen["first"] >= FORCED_INTERVAL - step,
-			"the forced cyclist comes after the wait the flag names, not before (%.1fs)"
-					% seen["first"])
-	t.check(seen["first"] <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")
-	her.free()
-	city.free()
+	var first: float = seen["first"]
+	return first
 
 ## The escape's clock is a day's: a section's spec carries the section length it is handed, and the
 ## day's clock runs it and stands still when it is handed `invincible`.

@@ -587,6 +587,7 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	var her := CrowdLanes.arterial_pavement(city.map)
 	stroller.reset_at(her)
 	events.use_player(stroller)
+	RunCity.show_her_to_the_walls_and_the_blackout(city, stroller)
 	var controls: TouchControls = (CONTROLS_SCENE.instantiate() as TouchControls)
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)

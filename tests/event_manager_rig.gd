@@ -48,8 +48,9 @@ static func start(city: City, day: int, consumed: Array[String] = [],
 	RigStreets.begin(city.streets(), city.map, spec)
 	RunCity.events(city).start_day(spec, rng(day), consumed, focus)
 
-## A player the manager can find, out of the physics loop (its own physics is off) and moved by
-## hand or by a walking node. A camera is under it, as the manager looks through her camera.
+## A player the manager, the poster walls and the blackout are handed, out of the physics loop (its
+## own physics is off) and moved by hand or by a walking node. A camera is under it, as the manager
+## looks through her camera.
 static func walker(t: TestRunner, city: City, at: Vector2) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
@@ -66,6 +67,8 @@ static func walker(t: TestRunner, city: City, at: Vector2) -> Stroller:
 	rig.set_physics_process(false)
 	rig.global_position = at
 	RunCity.events(city).use_player(rig)
+	# The walls paste and the blackout measures only for her, handed in as a walk hands her.
+	RunCity.show_her_to_the_walls_and_the_blackout(city, rig)
 	return rig
 
 ## Takes her down a route on its own physics tick, at `Tuning.WALK_SPEED`: a point is walked to

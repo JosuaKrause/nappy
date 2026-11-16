@@ -47,36 +47,54 @@ var _buildings: Array[Building] = []
 ## The station's lot in world space, which the distance is measured from, or an empty rect on a
 ## city with no station — where "far enough from it" is true everywhere.
 var _station := Rect2()
+## Her, whose distance from the station is watched: handed in once the world is live and she walks
+## it (`use_player()`); none before, and nothing is decided without her.
 var _player: Node2D
-## `--blackout`, handed in by the city before `setup()`: the city counts as sabotaged.
-var forced := false
-## Handed in by the city before `setup()`: the city is dark from its first frame and stays dark,
-## whatever the sabotage and wherever she is — the escape's.
-var dark_from_the_start := false
+## `--blackout`, handed to `setup()`: the city counts as sabotaged.
+var _forced := false
+## Handed to `setup()`: the city is dark from its first frame and stays dark, whatever the sabotage
+## and wherever she is — the escape's.
+var _dark_from_the_start := false
+## The signals the blackout reports on (`EventBus`'s script), so the bus it is handed has a class.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+## The bus it says the city went dark and went quiet on, handed in before `setup()` (`use_bus()`);
+## none, and it tells nobody.
+var _bus: _BUS
 
-## Called once by `City.build()`, after the buildings, the signals and the events exist. A city
-## built for the escape goes dark here, before its first frame is drawn.
+## Hands the blackout the bus it reports on. Before `setup()`, which may already go dark.
+func use_bus(bus: _BUS) -> void:
+	_bus = bus
+
+## Hands the blackout her, from the moment the world is live and she walks it
+## (`WorldSimulation.meet_her()`).
+func use_player(player: Node2D) -> void:
+	_player = player
+
+## Called once by whoever stands the city's simulation (`SimulationBuilder`), after the buildings,
+## the signals and the events exist. `forced` is `--blackout`; a city `dark_from_the_start`, the
+## escape's, goes dark here, before its first frame is drawn.
 func setup(map: CityMap, buildings: Array[Building], signals: TrafficSignals,
-		events: EventManager, resistance: ResistanceRunState) -> void:
+		events: EventManager, resistance: ResistanceRunState, forced: bool,
+		dark_from_the_start: bool) -> void:
 	_buildings = buildings
 	_signals = signals
 	_events = events
 	_resistance = resistance
+	_forced = forced
+	_dark_from_the_start = dark_from_the_start
 	if map.has_power_station():
 		_station = map.tile_rect_to_world(CityMap.blocks_tile_rect(map.power_station))
-	if dark_from_the_start:
+	if _dark_from_the_start:
 		_go_dark()
 
 func _physics_process(_delta: float) -> void:
 	if not _player or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group("player") as Node2D
-		if not _player:
-			return
+		return
 	_update(_player.global_position)
 
 ## One frame's decision, with her at `at`.
 func _update(at: Vector2) -> void:
-	if dark_from_the_start:
+	if _dark_from_the_start:
 		if not _is_dark:
 			_go_dark()
 		return
@@ -102,12 +120,13 @@ func _go_dark() -> void:
 	_is_dark = true
 	# `VisitCounter`'s own "blackout" — every go-dark, unlike `city_went_quiet` below, which only
 	# fires when there was a mast to silence. See docs/TELEMETRY.md, "The page counts visits".
-	EventBus.city_gone_dark.emit()
+	if _bus:
+		_bus.city_gone_dark.emit()
 	for building in _buildings:
 		building.powered = false
 	_signals.powered = false
-	if _events.silence_all_masts() > 0:
-		EventBus.city_went_quiet.emit()
+	if _events.silence_all_masts() > 0 and _bus:
+		_bus.city_went_quiet.emit()
 
 ## Power back on — only ever a retried day, whose dawn gave the sabotage back. The masts need
 ## nothing: a day's masts are that day's own plans, and a retry plans them afresh.
@@ -118,4 +137,4 @@ func restore() -> void:
 	_signals.powered = true
 
 func _sabotaged() -> bool:
-	return _resistance.sabotage_done or forced
+	return _resistance.sabotage_done or _forced

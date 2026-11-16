@@ -67,6 +67,9 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	t.add_child(player)
 	player.set_physics_process(false)
 	baby.set_physics_process(false)
+	# The walls and the blackout see her for the whole run: crews paste for her and the last
+	# night's sabotage puts the lights out once she is clear of the station.
+	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	var clock := DayController.new()
 	t.add_child(clock)
 	clock.setup(run)
