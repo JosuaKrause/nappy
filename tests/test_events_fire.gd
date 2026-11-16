@@ -168,7 +168,8 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 		EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
 		EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
 	]
-	director.start_day(1, plans, rng)
+	# Day 2: day one's first handouts are rigged to hold its dog walkers (`EventDirector`).
+	director.start_day(2, plans, rng)
 	t.check(director.owed() == 2, "the day's budget is what the director gets to spend")
 	# The dawn decides how many she is owed and the route's bag decides which row each one is, so
 	# the cat this test is about is put in front of the bag on purpose rather than left to its draw.
