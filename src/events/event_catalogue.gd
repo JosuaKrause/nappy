@@ -728,8 +728,14 @@ static func _homeless_yeller() -> EventDef:
 	def.max_per_day = 18
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
+	# - a street, 2: set by the scaling pass: its share of a street's events was off by more
+	#   than a factor of two.
+	# - a junction box, 2: set by the scaling pass: its share of a junction box's events was off
+	#   by more than a factor of two.
 	# - open ground, 0.0042: rare on open ground, where the street musician is nine tenths of
 	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.STREET, 2.0)
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 2.0)
 	def.weigh_on(PlacementGround.Kind.OPEN, 0.0042)
 	return def
 
@@ -873,7 +879,10 @@ static func _delivery_van() -> EventDef:
 	def.max_per_day = 18
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
+	# - a street, 2.6: set by the scaling pass: its share of a street's events was off by more
+	#   than a factor of two.
 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.STREET, 2.6)
 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
@@ -1203,10 +1212,10 @@ static func _market_stall() -> EventDef:
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
-	# - open ground, 0.0073: rare on open ground, where the street musician is nine tenths of
-	#   what stands: its share there against his.
+	# - open ground, 0.00098: rare on open ground (its share there against the street
+	#   musician's), and moved by the scaling pass.
 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
-	def.weigh_on(PlacementGround.Kind.OPEN, 0.0073)
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.00098)
 	return def
 
 ## The loudest thing in act I, and it is a man tidying a park.
@@ -1272,9 +1281,9 @@ static func _leaf_blower() -> EventDef:
 	def.max_per_day = 24
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
-	# - open ground, 0.0039: rare on open ground, where the street musician is nine tenths of
-	#   what stands: its share there against his.
-	def.weigh_on(PlacementGround.Kind.OPEN, 0.0039)
+	# - open ground, 0.0006: rare on open ground (its share there against the street
+	#   musician's), and moved by the scaling pass.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.0006)
 	return def
 
 ## Pigeons off the sidewalk all at once: standing on the ground long before she is near, then up as
@@ -1399,9 +1408,9 @@ static func _pigeon_flock() -> EventDef:
 	def.role = EventDef.Role.SCENERY
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
-	# - open ground, 0.012: rare on open ground, where the street musician is nine tenths of
-	#   what stands: its share there against his.
-	def.weigh_on(PlacementGround.Kind.OPEN, 0.012)
+	# - open ground, 0.0038: rare on open ground (its share there against the street
+	#   musician's), and moved by the scaling pass.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.0038)
 	return def
 
 ## **The first thing in the game that can end your day, and it arrives on day 2.**
@@ -1559,7 +1568,10 @@ static func _reversing_lorry() -> EventDef:
 	def.max_per_day = 12
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
+	# - a street, 2: set by the scaling pass: its share of a street's events was off by more
+	#   than a factor of two.
 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.STREET, 2.0)
 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
@@ -1616,6 +1628,14 @@ static func _chatting_mother() -> EventDef:
 	def.max_per_day = 2
 	def.detain_seconds = 5.0
 	def.detain_radius = 48.0
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - a street, 0.43: set by the scaling pass: its share of a street's events was off by more
+	#   than a factor of two.
+	# - a junction box, 0.28: set by the scaling pass: its share of a junction box's events was
+	#   off by more than a factor of two.
+	def.weigh_on(PlacementGround.Kind.STREET, 0.43)
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.28)
 	return def
 
 ## **The one thing in the game you have to run from, and it arrives on day 3.**
@@ -1721,9 +1741,12 @@ static func _charging_dog() -> EventDef:
 	def.max_per_day = 3
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
-	# - open ground, 0.0085: rare on open ground, where the street musician is nine tenths of
-	#   what stands: its share there against his.
-	def.weigh_on(PlacementGround.Kind.OPEN, 0.0085)
+	# - a street, 0.29: set by the scaling pass: its share of a street's events was off by more
+	#   than a factor of two.
+	# - open ground, 0.0015: rare on open ground (its share there against the street
+	#   musician's), and moved by the scaling pass.
+	def.weigh_on(PlacementGround.Kind.STREET, 0.29)
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.0015)
 	return def
 
 # ------------------------------------------------------- Act II: notices (4-7) ---
@@ -1829,7 +1852,10 @@ static func _poster_crew() -> EventDef:
 	def.max_per_day = 12
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
+	# - a street, 2.6: set by the scaling pass: its share of a street's events was off by more
+	#   than a factor of two.
 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.STREET, 2.6)
 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
@@ -1865,6 +1891,11 @@ static func _poster_crew_square() -> EventDef:
 	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 0.03
 	def.max_per_day = 1
+	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
+	# density, and why it is a declared table"):
+	# - open ground, 0.39: set by the scaling pass: its share of open ground's events was off by
+	#   more than a factor of two.
+	def.weigh_on(PlacementGround.Kind.OPEN, 0.39)
 	return def
 
 ## A mast on a street, with a field around it: six of them, planted by `MastSites` and placed every
@@ -2026,7 +2057,10 @@ static func _roadblock() -> EventDef:
 	def.heat_response = EventDef.HeatResponse.HUNTS
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
+	# - a street, 2.1: set by the scaling pass: its share of a street's events was off by more
+	#   than a factor of two.
 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
+	def.weigh_on(PlacementGround.Kind.STREET, 2.1)
 	def.weigh_on(PlacementGround.Kind.JUNCTION, 0.0)
 	return def
 
@@ -2574,8 +2608,11 @@ static func _protest() -> EventDef:
 	def.max_per_day = 12
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
+	# - a junction box, 3.5: set by the scaling pass: its share of a junction box's events was
+	#   off by more than a factor of two.
 	# - open ground, 0.074: rare on open ground, where the street musician is nine tenths of
 	#   what stands: its share there against his.
+	def.weigh_on(PlacementGround.Kind.JUNCTION, 3.5)
 	def.weigh_on(PlacementGround.Kind.OPEN, 0.074)
 	return def
 

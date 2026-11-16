@@ -15,26 +15,26 @@ extends RefCounted
 ## **The events a bag holds for every hundred draw locations**, `[view][ground][act - 1]`
 ## (`PlacementView.View`, `PlacementGround.Kind`, the acts of `Tuning.ACT_START_DAYS`). Seeded once
 ## from what main placed on 2026-11-09, each cell to two figures, and scaled once by one probe
-## run where a view's total was off by more than a tenth (`docs/EVENTS.md`, "The density, and
-## why it is a declared table").
+## run where a view's total was off by more than a tenth, a scaled cell at most fifty and its last
+## act no lower than its first (`docs/EVENTS.md`, "The density, and why it is a declared table").
 const EVENTS_PER_HUNDRED := [
 	[
-		[2.9, 3.9, 4.8, 5.3],
-		[3.4, 4.0, 3.2, 3.6],
+		[4.3, 6.2, 9.3, 10.0],
+		[9.6, 9.2, 7.7, 9.6],
 		[0.0, 0.0, 0.0, 0.0],
-		[4.7, 7.1, 7.3, 9.6],
+		[46.0, 50.0, 50.0, 50.0],
 	],
 	[
-		[7.6, 8.1, 8.2, 10.0],
+		[5.5, 6.0, 7.1, 8.1],
 		[0.92, 0.92, 0.92, 0.92],
-		[6.0, 5.8, 7.9, 7.3],
-		[24.0, 29.0, 34.0, 31.0],
+		[5.0, 4.9, 6.6, 6.1],
+		[40.0, 47.0, 50.0, 50.0],
 	],
 	[
-		[3.3, 4.7, 6.3, 6.6],
-		[3.8, 6.5, 8.5, 18.0],
-		[5.1, 4.6, 12.0, 12.0],
-		[27.0, 49.0, 49.0, 57.0],
+		[3.5, 5.0, 7.2, 7.5],
+		[4.2, 7.3, 10.0, 25.0],
+		[5.4, 4.7, 12.0, 9.7],
+		[35.0, 50.0, 50.0, 50.0],
 	],
 ]
 

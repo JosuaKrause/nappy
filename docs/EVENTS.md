@@ -19,7 +19,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `kind` | `RECURRING`, `ONE_SHOT`, `SCRIPTED`, `AMBIENT` |
 | `first_day` | Earliest day it can appear (1-based) |
 | `last_day` | Latest day it can appear (`0` = never expires) |
-| `weight` | Relative likelihood when the scheduler picks recurring events |
+| `weight` | How often the row is drawn against the others: in a unit's bag (`UnitFills`), in the moments (`DawnMoments`) and in her route's bag (`EventDirector`) |
+| `weigh_on()` | A row's weight on one kind of ground (`PlacementGround.Kind`), as a multiple of its `weight`: set by the catalogue where the row is rare there or never stands there though its tiles lie there; one elsewhere on ground its `placement` lists, nothing on ground it does not (`weight_on()`). Exported, so every copy of the row keeps it |
 | `max_per_day` | Cap on simultaneous instances |
 | `placement` | Which tile types it may spawn on |
 | `intensity` | Peak excitement per second at the centre |
@@ -233,8 +234,8 @@ the row's cost and picture are the row's own.
 
 *(olive-koala, statement 2: "events should use the marble bag approach as well. that way we can
 control what the player sees on their route".)* The dawn decides how many director-sited
-events the day owes her: `EventScheduler.MOMENTS_PER_DAY` of them, as many as the day bought before
-the bags. **Which row
+events the day owes her: `PlacementDensity.moments_on()` of them, a number an act of the declared
+table. **Which row
 each of them is** is drawn from a bag when it is handed out: `EventDirector` fills a `MarbleBag` at
 dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`,
 or sent ahead of her (the dog walker, the patrol and the convoy, below) —
@@ -1515,14 +1516,7 @@ Each item quotes the code on this branch.
    per street, so a square holds one street musician. Nothing asks the spacing between two of a row
    (`EVENT_SPACING_SAME`) of a drawn row; two of a row may stand in two touching units as near as
    the 64px between any two events allows.
-6. **Each row's draw is weighed by a fitted weight per kind of ground** (`GROUND_WEIGHTS`), on top
-   of the largest weight among the unit's locations the row may stand on. The weights were fitted
-   to a draw of one marble a location, to hold each row's count on each kind of ground at what the
-   day placed before the bags; under the marble draw the counts move (more rows stand on the
-   sidewalks, `tests/probes/walk_rows.gd`), and they move until the weights are fitted again. The
-   design has the view's bag alone decide; the weights are what holds the refactor near the old
-   mix while the rules are still today's (item 1), and are fitted again when the rules change.
-7. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
+6. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
    only the cells a route runs along (`Corridor.carries_a_route()`, in `RowGround.offers_for_role()`), so on a
    route street a wall stands only on the sidewalk across from the route, and the ground beyond the
    streets is told its view by the grid's own depth (`Corridor.view_of_ground()`).
@@ -1565,48 +1559,43 @@ EventScheduler.build_day(context):
    their own planners' guarantees. Nothing is checked or repaired after.
 ```
 
-**The day's density is the bags' empty marbles**, set per view and per day (each unit draws from a
-fresh bag of its view's fill, so a day's count varies more from seed to seed than one bag for the
-whole city would make it, and the empty marble takes one location of the unit's room) so each
-view's share of
-locations holding an event is the share the day placed before the bags
-(`EventScheduler.VIEW_SHARES`, measured with `tests/probes/placement_view_mix.gd`, and scaled for the
-draws the rules leave empty, `VIEW_SHARE_SCALES`, fitted per view and per day so what each view
-places on each day comes out as the share measured, the route's above all, since what stands on her
-route is what the route decision is about). A later day's shares are higher, so late days
-are denser as well as nastier. A row's weight in a view is its own `weight` times what the view is
-to its role (`EventScheduler.view_weight()`), and the unit scales it by the largest weight among
-the locations the row may stand on (`RuledLocationGround.scale()`, `MarbleDraw`): a precinct's
-four times over, the street between two strands of
-the routes six times over for a costly wall, an alley beside a sack pile five times over for the
-mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights,
-inbox #1185 in gentle-owl.)*
+**The day's density is the declared table** (`PlacementDensity`; "The density, and why it is a
+declared table", below): for each view, kind of ground and act, how many events a unit's bag holds
+for every hundred draw locations (a street's sidewalk locations, a junction box, a third of an
+alley, a cell of a park or a square). A unit draws from one fresh bag of the fill of its view and
+its kind of ground (`UnitFills.of()`): the cell's events in a hundred as row marbles and empty
+marbles for the rest, so a day's count varies more from seed to seed than one bag for the whole
+city would make it, and the empty marble takes one location of the unit's room. A later act's cells
+are higher, so late days are denser as well as nastier. **The rows share a cell's events by
+weight**: a row's own `weight`, times its weight on the unit's kind of ground (`EventDef.weight_on()`),
+times what the view is to its role on the day (the role-by-view weights `EVENT_CORRIDOR_WEIGHT`,
+`EVENT_WALL_RIM_WEIGHT` and `WALL_DEEP_WEIGHT`, which the day's ground hands the fill,
+`RowGround.Weights`), times the draw locations its marble speaks for (two for a row that takes a
+section, since a section is its two sidewalk locations; one for every other). Inside a unit a
+row's share is scaled again by the largest weight among the locations it may stand on
+(`RuledLocationGround.scale()`, `MarbleDraw`): a precinct's four times over, the street between two
+strands of the routes six times over for a costly wall, an alley beside a sack pile five times over
+for the mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes"
+to a weight per location that scales its view bag's weights, inbox #1185 in gentle-owl.)*
 
-**And each row is weighed by the kind of ground the location is** (`EventScheduler.GROUND_WEIGHTS`,
-a weight per row per `Location.Kind`), so the mix inside each view starts from what the day placed before the bags, and the marble draw
-moves it until step 3 replaces the tables (item 6 of "Where the code differs from the design").
-A unit off the streets draws one marble for each of its open locations, and a street three to six
-(a small marble speaks for one sidewalk location, a section marble for two), or one where its
-first marble takes it whole, so a row whose own ground is
-rare (a square's cells, an alley's three locations, the junction boxes) would be drawn only as
-often as its share of the bag times the few locations that take it, and the sidewalk rows would
-take the share it lost: the street musician
-would all but leave the squares, and day 12's protest the crossings. The weights are fitted, with
-the view scales, until each row's daily count on each kind of ground is what the day placed before the bags
-(`tests/probes/placement_rows.gd`, run on main and on the branch over the same cities and streams);
-they are measured, not derived, and are fitted again whenever the draw's rules change. **And each
-role is weighed per view and act** (`EventScheduler.WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`),
-fitted the same way, since a weight per kind of ground scales a row the same in every view: without
-them the draw moves walls off her route onto the ground off it, and what her route holds is what the
-route decision faces. *(The
-player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
-view's bag; inbox #1185 in gentle-owl.)*
+**And a row may be weighed on a kind of ground** (`EventDef.weigh_on()`, set on the catalogue row
+beside its `weight`): a row stands on a ground whose tiles its `placement` lists, at its own weight,
+unless the catalogue sets it lower there. It does so where the row never stands though its tiles
+lie there (a cafe, a market stall, a delivery van in a junction box, which the box's ground never
+takes), where it is rare (a row beside the street musician on a square, who is most of what stands
+on open ground), and where the one scaling pass found its share of a ground's events off by more
+than a factor of two. `EventDef.validate()` refuses a weight on ground the row cannot stand on. *(The player:
+"yes" to a group of locations per kind of ground, and to a weight per location scaling its view's
+bag; inbox #1185 in gentle-owl.)*
 
-The share is **not** the count: the day's rules leave out whatever would close a route or reach
-calm ground nothing may reach (`StreetInvalidation`), so a location can draw empty where its view's
-share says a row. Measure what a day *places*, over several seeds. The moments she is owed take no location:
-the day owes her `EventScheduler.MOMENTS_PER_DAY` of them, as many as the day bought before the bags,
-so a day's `plan` line reads as *n sited, m ahead*.
+A cell is **what the bag holds, not what the day places**: the day's rules leave out whatever
+would close a route or reach calm ground nothing may reach (`StreetInvalidation`), and a row left
+out of a draw makes empty likelier there, so the day places fewer events than its cells hold, and
+fewest on her route, whose rules refuse the most. That gap is the player's own design, a refused
+row out of the draw and the bag unchanged (inbox #1185 in gentle-owl), not a factor to correct.
+Measure what a day *places*, over several seeds (`tests/probes/placement_cells.gd`, by cell). The
+moments she is owed take no location: the day owes her `PlacementDensity.moments_on()` of them, a
+number an act, so a day's `plan` line reads as *n sited, m ahead*.
 
 ### Where in the city, and why
 
@@ -1816,9 +1805,9 @@ share drifting down over the run as it fills up and the day's rules push the ove
 the hard blocking events in that case"; "fewer of all three", to a question that listed the
 wall-type events.)* On a day the region wall stands (`DaySpec.region_wall_stands()`), every
 wall-role row's weight in every view's bag is scaled by `DaySpec.wall_row_share`
-(`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`; `EventScheduler.view_weight()`), so a unit draws one
-that much less often. The empty marbles are counted against the walls weighed in full, so what a
-wall gives up is not respent on friction: the day holds fewer walls. Only the bags' walls are scaled; a scripted
+(`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`; `UnitFills`), so a unit draws one that much less often.
+A fill's row marbles are measured against the walls weighed in full, so what a wall gives up goes
+to empty and is not respent on friction: the day holds fewer walls. Only the bags' walls are scaled; a scripted
 row, a one-shot and the spoilers in a park she used are placed for a reason that is not density. The
 seals and the road closures are thinned from the same day: see `docs/CITY.md`, "How heavy" and
 "Sealing the tree".
@@ -2159,16 +2148,34 @@ standing at the kerb or a heated roadblock still manned can be brushed past for 
 comes inside its own trigger — the same shape `alley_robbery` already has, now arriving in both
 once they hunt. A heated raid's van is never lethal itself; its men are.
 
-### The density, and why it is shares and bags
+### The density, and why it is a declared table
 
 The target is about **one event per block**, and it is set per location rather than as a number for
-the day: each view's bag holds empty marbles enough that its share of locations holding an event is
-the day's share (`EventScheduler.VIEW_SHARES`), so a bigger city lays out more locations and draws
-more events, and the density holds.
+the day: the declared table (`PlacementDensity.EVENTS_PER_HUNDRED`) says how many events a unit's
+bag holds for every hundred draw locations, by view, kind of ground and act, so a bigger city lays
+out more locations and draws more events, and the density holds. **Each number means one thing a
+person can say out loud** ("so many events for every hundred sidewalk locations on a route street
+in act II"), and no number exists to correct another. *(inbox #1268 in olive-ferret: "(b) also the
+real test will come from playtests -- so it's not super important that the numbers are exactly the
+same", to "Show parity once, then replace the tables with one declared table inside the
+refactor".)*
+
+**How the cells were set, once.** Each was seeded from what main placed on 2026-11-09 (planned as
+the game plans a day; `docs/evidence/minty-quail-baseline-2026-11-09/`), the rows the units draw
+counted over the draw locations open to them, at the full share of the walls, to two figures; a
+view and ground with fewer than a hundred events in the sample takes its rate over every act. Then
+one probe run (`tests/probes/placement_cells.gd`): a view whose events per hundred draw locations
+came out more than a tenth off the seed's had each of its cells scaled by its own ratio, at most
+fifty (a bag at least half empty, so a refused street musician does not hand a park to the rows
+rare there) and its last act no lower than its first (the difficulty ramp), and a row whose share
+of a ground's events was off by more than a factor of two had its weight there scaled once. Nothing is fitted after that run; what is still off is listed for the
+end remeasure. The procedure, the runs and the scripts are
+`docs/evidence/polite-tapir-declared-table-2026-11-16/`. The moments are a number an act
+(`PlacementDensity.MOMENTS_PER_ACT`), the moments a day of the act owed her on the same tree.
 
 **No daily cap bounds a row the units draw**: a cap binds whoever draws last, so it would make what
 a unit draws depend on the order the units are drawn in, and so on her path. In its place a unit
-holds at most one of a row (`MarbleDraw`), and the day places what its shares and weights give.
+holds at most one of a row (`MarbleDraw`), and the day places what its cells and weights give.
 Repeats are fine — the same event several times over is what a street is — so density needs no new
 catalogue rows. `max_per_day` still bounds what no unit draws: the moments she is owed
 (`DawnMoments`, where the spec keeps the caps), the director's marbles and the rows of a scene
@@ -2188,7 +2195,7 @@ Two things a low cap did quietly, and who has them now:
 
 The one cap deliberately kept low is `cat_dash`. A cat is sited by the director while she walks and
 `AHEAD_INTERVAL` spreads them over the day, so past a certain count there is nowhere left for one
-to happen; the day owes her `EventScheduler.MOMENTS_PER_DAY` moments, the cat among them.
+to happen; the day owes her `PlacementDensity.moments_on()` moments, the cat among them.
 
 ## Catalogue
 
