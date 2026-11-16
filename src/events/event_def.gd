@@ -560,7 +560,7 @@ func as_sent_ahead() -> EventDef:
 ##   `telegraph_time` is then the approach she watches.
 ## - **A row created at once from off screen** (the patrol the director sends ahead of her down
 ##   the road, `EventDirector._toward_her_on_the_road()`): seconds of closing beyond the edge of the
-##   view where it is created (`Offscreen.lead()`).
+##   view it is never created nearer than (`nearest_it_is_created()`, `Offscreen.min_lead()`).
 ##
 ## A non-pursuer warned of before it exists (`cyclist`, the fire engine, day 13's column) does not
 ## read it: its badge is its `telegraph_time` (`warned_for()`).
@@ -1442,15 +1442,11 @@ func validate() -> bool:
 	if solid_when == SolidWhen.ONCE_IT_STARTS and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
-	# A `TOWARD_PLAYER` row is created at least `SpawnSiting.least_distance()` from her when it is
-	# warned of first — just out of sight, never nearer than the view's half height, whatever she is
-	# facing and in either control scheme — and at least `Offscreen.min_lead()` at its own
-	# closing speed and notice when it is created at once (a patrol down the road). So a row whose own
-	# field reaches that far would be created already on her on the one heading and moment the
+	# A `TOWARD_PLAYER` row is created no nearer her than `nearest_it_is_created()`. So a row whose
+	# own field reaches that far would be created already on her on the one heading and moment the
 	# director cannot avoid.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
-		var floor_lead := SpawnSiting.least_distance() if comes_down_her_line() \
-				else Offscreen.min_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
+		var floor_lead := nearest_it_is_created()
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
 					% [id, outer_radius] + "%.0fpx it is created at on the worst axis: it would arrive "
@@ -1708,6 +1704,19 @@ func warns_quietly() -> bool:
 ## arrives from off screen".
 func warns_before_it_exists() -> bool:
 	return warned_first or (comes_down_her_line() and telegraphs)
+
+## **The nearest to her this row is ever created arriving from off screen**: just out of sight,
+## never nearer than `SpawnSiting.least_distance()` (the view's half height), whatever she is facing
+## and in either control scheme; and a row created at once down a lane of the road (the patrol the
+## director sends, `PendingWarning.in_its_lane()`) never nearer than `Offscreen.min_lead()` at its
+## own closing speed and notice either, since nothing warns of it first and the camera may be led
+## away from it. `validate()` holds a `TOWARD_PLAYER` row's field short of it.
+func nearest_it_is_created() -> float:
+	if spawn_mode == SpawnMode.TOWARD_PLAYER and not comes_down_her_line() \
+			and not warns_before_it_exists():
+		return maxf(SpawnSiting.least_distance(),
+				Offscreen.min_lead(speed + Tuning.WALK_SPEED, offscreen_notice))
+	return SpawnSiting.least_distance()
 
 ## Whether the director sends this row down her own line on foot: a `TOWARD_PLAYER` row whose
 ## ground is not the road (`cyclist`, `loose_dog`), created just out of sight on her sidewalk

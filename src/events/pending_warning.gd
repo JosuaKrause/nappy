@@ -221,7 +221,8 @@ const ROUTE_STEP := Tuning.TILE_SIZE * 0.25
 ## Where a row in one lane of a road is created (day 13's column on the main road, a convoy the
 ## director sends ahead of her, `EventDirector`): `lane` is a point of the lane and `going` the unit
 ## way it drives along the road, north-south or east-west. Level with her along the road, just out
-## of sight up it — the lane's own column or row of the view, whatever street she is on. Held on the
+## of sight up it — the lane's own column or row of the view, whatever street she is on, and never
+## nearer her than the row is ever created (`EventDef.nearest_it_is_created()`). Held on the
 ## map between `low` and `high` along the road (`lane_ends()`), since a road may leave the map (the
 ## main road by a tunnel and a bridge) and a place the map cannot hold starts at its edge — and
 ## where holding it there would bring the front of it into view, `Vector2.INF`: she is too near the
@@ -235,7 +236,7 @@ static func in_its_lane(row: EventDef, her: Vector2, lane: Vector2, going: Vecto
 	var toward_her := Vector2(0.0, -signf(going.y)) if vertical else Vector2(-signf(going.x), 0.0)
 	var level := Vector2(lane.x, her.y) if vertical else Vector2(her.x, lane.y)
 	var out := asked.view.clear_of_sight(level, toward_her, asked.box,
-			SpawnSiting.least_distance())
+			row.nearest_it_is_created())
 	var along := her.y if vertical else her.x
 	var wanted := along + (toward_her.y if vertical else toward_her.x) * out
 	var held := clampf(wanted, low, high)

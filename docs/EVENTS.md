@@ -216,10 +216,12 @@ and it arrives" cannot mean.
 pavement.** The patrol the director sends ahead of her is the one row that does (see "The dog
 walker, the patrol and the convoy are sent ahead of her"; the return leg's patrols are the same
 copy, owed by `EventDirector.owe_the_return()` in acts III and IV), sited `TOWARD_PLAYER` by
-`_toward_her_on_the_road()` rather than `_toward_her()` — the same offscreen margin and the same
-"straighten onto the corridor's own axis" idea, but the lane it straightens onto is
-`CrowdLanes.road_lane()`'s own carriageway lane, driving opposite her heading so it meets her, on
-tiles `CityMap.is_driveable_at()` actually calls a road. Empty wherever there is no carriageway to
+`_toward_her_on_the_road()` rather than `_toward_her()` — the same "straighten onto the corridor's
+own axis" idea, but the lane it straightens onto is `CrowdLanes.road_lane()`'s own carriageway lane,
+driving opposite her heading so it meets her, on tiles `CityMap.is_driveable_at()` actually calls a
+road, and its place is in that lane just out of sight up the road (`PendingWarning.in_its_lane()`,
+against the camera's whole view, as the convoy's is), so nothing it draws is in view on its first
+frame. Empty wherever there is no carriageway to
 drive on — a park, a square, a precinct — the same "retry later" the rest of the director's siting
 already does. It is created at once rather than warned first, for the reason "Everything arrives
 from off screen" gives: nothing announces a patrol at the edge of the screen. The copy this hands
@@ -238,9 +240,10 @@ dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER
 or sent ahead of her (the dog walker, the patrol and the convoy, below) —
 `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
 bag the mix she meets is the rows' own rather than a roll's
-streaks. A row `EventDirector.ROUTE_BAG_MARBLES_OF` names has the marbles it sets instead: day 3's
-`charging_dog` has 2 (inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "I'd say we could do 2 dogs -- we don't need the charging dog
-that often"), set in the bag because the dawn's count of the moments it owes reads the row's weight too. The bag has its own
+streaks. A row `EventDirector.ROUTE_BAG_SHARE_OF` names has the share of the bag it sets instead,
+as near as whole marbles come: day 3's `charging_dog` is two marbles in sixteen (inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "I'd say we could do 2 dogs -- we don't need the charging dog
+that often", then "16 is fine" to a bag of 16), three in day 3's bag of 26 with the dog walker in it,
+set in the bag because the dawn's count of the moments it owes reads the row's weight too. The bag has its own
 stream and draws nothing from the director's; the director's own draws still follow from which row
 each handout is — a crossing spends one on the side it comes from, a row down her line none — so the
 same seed and the same walk are the same day. A row met `max_per_day` times that day has its further
@@ -334,10 +337,14 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
 - **The dog walker** is sent down her own sidewalk toward her, created at once just out of sight
   with no badge (`telegraphs` false on the copy: 32px/s is slower than a walk and it never ends the
   day, so the rule in "What telegraphs" gives it none), as the loose dog is; its route runs back down
-  her line and past her by the same distance.
+  her line and past her by the same distance. **Unlike the loose dog it keeps its own in-world
+  telegraph** (`EventDef.meets_her_with_its_telegraph_spent()`): it is the row she would come upon,
+  put just ahead of her, so its bark's phase when it reaches her is free and its price is the row's
+  in `docs/COSTS.md`.
 - **The police patrol** is sent down the carriageway lane that drives toward her
-  (`_toward_her_on_the_road()`, above), created at once and standing, `Offscreen.lead()` ahead of
-  her, its route along the lane past her by the same lead.
+  (`_toward_her_on_the_road()`, above), created at once and standing, in its lane just out of sight
+  up the road (`PendingWarning.in_its_lane()`, against the camera's whole view, its caret and the
+  camera's lead included), its route along the lane past her by as far.
 - **The military convoy** is warned of first, in the lane beside her, as day 13's column is: its
   badge alone for a second (the copy's `telegraph_time` cut to `Tuning.WARNING_ALONE_MAX`), pointing
   level with her along the road and just out of sight up it (`PendingWarning.in_its_lane()`), then
@@ -345,12 +352,21 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
   junction box (`EventDirector.past_the_next_box()`). It comes toward her or from behind her, a coin
   flip on the director's stream, from the other end where the first has no place out of sight.
 
-**A siting is refused, and asked again a second later with the marble unspent**, where there is no
-ground for it (no sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or
-a square), where its first leg runs through a region door's clear ground, where it starts within
+The patrol's and the convoy's first leg is built in one place (`EventDirector.leg_in_the_lane()`),
+as the row is sited and, for the convoy, again from where she is when its warning ends.
+
+**A sent row has no room**, and is not put in the world, where there is no ground for it (no
+sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square), where
+its first leg runs through a region door's clear ground, where it starts within
 `EventScheduler.EVENT_SPACING_ANY` of a placed plan, or where any point of its first leg is inside a
 field a plan keeps clear (`EventPlan.keeps_its_field_clear()`): nothing else happens inside a lethal
-event's field, for a row sent ahead of her as for any placement. **Once one exists it walks or
+event's field, for a row sent ahead of her as for any placement. The same is asked again of the leg
+a row is created on (`EventDirector.clear_to_send()`), since she has walked on since it was sited.
+**A marble with no room never holds the route** (calm-pelican-6): its slot and its marble are spent,
+and it waits on the director's list until it has room, asked again once a second of her walking
+(`EventDirector.SENT_RETRY`), the first of the list only, so what waited comes no faster than one a
+second, in the order it was drawn; the marbles behind it are handed out on the director's clock
+meanwhile. A row that never finds room that day is not met. **Once one exists it walks or
 drives its leg**, and a player who walks away leaves it to reach the leg's end out of her sight and
 go, the way every route that runs out leaves.
 
@@ -677,7 +693,7 @@ exists so a pursuer stuck against a wall lets go in the end.
 
 **Two kinds of thing that come from off screen are not warned first:**
 
-- **A patrol sent toward her on the road** (the director's, the return leg's among them) **is created at once**, `Offscreen.lead()` ahead of her, and telegraphs on its way in (1.97s) with no badge:
+- **A patrol sent toward her on the road** (the director's, the return leg's among them) **is created at once**, in its lane just out of sight up the road, and telegraphs on its way in (1.97s) with no badge:
   the badge goes only to something `hard_fail` or faster than a walk, and a patrol is neither
   (slower than a walk, never `hard_fail` at any heat — its strike is a car's, in front of it on the
   carriageway, and warned as a car warns, "Solid things are solid"). It does not telegraph its

@@ -4,7 +4,7 @@ extends RefCounted
 ## don't want any pop in".)* Every place a thing arriving from off screen is created at —
 ## `PendingWarning.down_her_line()` (the cyclist, the loose dog, the dog walker the director sends),
 ## `along_her_heading()` (the day-3 dog), `on_its_route()` (the fire engine), `in_its_lane()` (day
-## 13's column and the convoy the director sends) and
+## 13's column, and the convoy and the patrol the director sends) and
 ## `just_out_of_sight()` (the resistance's robber and guard) — puts the thing wholly outside the
 ## camera's whole view.
 ##
@@ -25,6 +25,7 @@ func run(t: TestRunner) -> void:
 	_test_open_ground_over_every_bearing_and_camera(t)
 	_test_her_own_sidewalk_on_real_cities(t)
 	_test_the_road_and_the_lane(t)
+	_test_the_patrol_sent_down_the_road(t)
 	_test_the_lane_at_the_ends_of_the_road(t)
 	_test_a_turned_window_shows_nothing_either(t)
 
@@ -181,6 +182,90 @@ func _test_the_road_and_the_lane(t: TestRunner) -> void:
 	t.check(placed > 0 and popped.is_empty(),
 			"on the road and in the lane, nothing any of %d arrivals draws is in view on its first "
 			% placed + "frame%s" % ("" if popped.is_empty() else ": " + "; ".join(popped)))
+
+## **The patrol the director sends** (`EventDef.as_sent_ahead()`, the return leg's patrols among
+## them), sited by the director itself (`EventDirector.due()`, handed each camera as the view)
+## beside streets running north-south and east-west on real cities, her walking either way along
+## each, and created as the game creates it there (`EventsAhead.place_what_is_owed_ahead()`): at
+## once, standing, its telegraph still to run, and never with her already inside its field
+## (`EventDef.nearest_it_is_created()`), since nothing warns of it first.
+func _test_the_patrol_sent_down_the_road(t: TestRunner) -> void:
+	var placed := 0
+	var down_the_column := 0
+	var down_the_row := 0
+	var popped: Array[String] = []
+	var inside: Array[String] = []
+	var none: Array[EventPlan] = []
+	for seed_value in SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		var director := EventDirector.new(map)
+		director.force("police_patrol", 1.0)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		director.start_day(int(Tuning.ACT_START_DAYS[1]), none, rng)
+		for her in _beside_the_streets(map):
+			var inward := map.pavement_inward(map.world_to_tile(her))
+			var along := Vector2(inward.y, inward.x)
+			for way: Vector2 in [along, -along]:
+				for view in _views(her):
+					var due := director.due(10.0, her, way * Tuning.WALK_SPEED, view)
+					if due.size() < 2:
+						continue
+					var path := due[1] as PackedVector2Array
+					var row := due[0] as EventDef
+					var car := _created_at_once(row, path, her)
+					placed += 1
+					if path[0].distance_to(her) <= row.outer_radius and inside.size() < 3:
+						inside.append("seed %d, patrol %.0fpx from her at %v" % [seed_value,
+								path[0].distance_to(her), her])
+					if inward.x != 0:
+						down_the_column += 1
+					else:
+						down_the_row += 1
+					if _drawn_in(view, car) and popped.size() < 3:
+						popped.append("seed %d, patrol at %v with her at %v walking %v, camera at %v"
+								% [seed_value, path[0], her, way, view.view.get_center() - her])
+					car.free()
+	t.check(down_the_column > 0 and down_the_row > 0 and popped.is_empty(),
+			"nothing any of %d patrols sent down the road (%d beside a street running north-south, "
+			% [placed, down_the_column] + "%d east-west) draws is in view on its first frame%s"
+			% [down_the_row, "" if popped.is_empty() else ": " + "; ".join(popped)])
+	t.check(placed > 0 and inside.is_empty(),
+			"and none is created with her already inside its field%s"
+			% ("" if inside.is_empty() else ": " + "; ".join(inside)))
+
+## Points on a sidewalk beside the carriageway of a street (`CityMap.pavement_inward()`), up to six
+## running each way on `map`, at least a block apart.
+static func _beside_the_streets(map: CityMap) -> Array[Vector2]:
+	var points: Array[Vector2] = []
+	var counts := {true: 0, false: 0}
+	var size := map.size_in_tiles()
+	for y in range(0, size.y, 3):
+		for x in range(0, size.x, 3):
+			var tile := Vector2i(x, y)
+			var inward := map.pavement_inward(tile)
+			var vertical := inward.x != 0
+			if inward == Vector2i.ZERO or int(counts[vertical]) >= 6:
+				continue
+			var at := map.tile_to_world(tile)
+			var apart := true
+			for other in points:
+				if other.distance_to(at) < Tuning.BLOCK_SIZE * Tuning.TILE_SIZE:
+					apart = false
+			if apart:
+				points.append(at)
+				counts[vertical] = int(counts[vertical]) + 1
+	return points
+
+## A real instance of `row` created at once at the start of `path` the way the director creates a
+## row sent down the road (`EventSpawner.spawn()`: no warning first, its telegraph still to run),
+## told where she is. Freed by the caller.
+static func _created_at_once(row: EventDef, path: PackedVector2Array, her: Vector2) -> EventInstance:
+	var instance_where := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(row, path[0], path, Vector2.RIGHT, null, null, instance_where)
+	instance_where.tell(her)
+	return instance
 
 ## **The column at the main road's ends**: the lane is held on the map (`top` to `bottom`), and
 ## where holding it would bring the front truck into view she is too near the road's end for it to

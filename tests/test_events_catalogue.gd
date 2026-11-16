@@ -349,7 +349,8 @@ func _test_as_warned_first_carries_solid_parts_too(t: TestRunner) -> void:
 ## **The dog walker, the patrol and the convoy are sent ahead of her** (inbox #1460), and drawn by no
 ## unit on any day. The copy the director sends (`EventDef.as_sent_ahead()`) validates: the dog
 ## walker comes down her line created at once, with no badge, its field short of where it is
-## created; the patrol comes down the road created at once; the convoy is warned of first in its
+## created, its in-world telegraph still to run (so its price is the row's, `docs/COSTS.md`); the
+## patrol comes down the road created at once; the convoy is warned of first in its
 ## lane, held to the flat minimum a warning first owes and its badge alone at most the ceiling. A
 ## row the director does not send is its own copy.
 func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> void:
@@ -368,6 +369,10 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 			and not walker.announces_its_coming(Tuning.WALK_SPEED)
 			and walker.outer_radius < SpawnSiting.least_distance(),
 			"the dog walker comes down her line created at once, with no badge, outside its own field")
+	t.check(not walker.meets_her_with_its_telegraph_spent()
+			and EventCatalogue.by_id("loose_dog").meets_her_with_its_telegraph_spent(),
+			"and it keeps its own in-world telegraph, as the row she comes upon does, where the loose "
+			+ "dog meets her with its telegraph spent")
 	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
 	t.check(patrol.spawn_mode_on(Tuning.RUN_LENGTH_DAYS) == EventDef.SpawnMode.TOWARD_PLAYER
 			and not patrol.comes_down_her_line() and not patrol.warns_before_it_exists(),
