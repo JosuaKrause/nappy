@@ -1,0 +1,78 @@
+{
+	"context": "asked for an animation burst at (63,84) | exc 0, sleep 2 | playing",
+	"duration_seconds": 3.061104,
+	"frames": [
+		{
+			"elapsed_seconds": 0.036626,
+			"file": "frame-0001.png"
+		},
+		{
+			"elapsed_seconds": 0.229186,
+			"file": "frame-0002.png"
+		},
+		{
+			"elapsed_seconds": 0.42119,
+			"file": "frame-0003.png"
+		},
+		{
+			"elapsed_seconds": 0.615429,
+			"file": "frame-0004.png"
+		},
+		{
+			"elapsed_seconds": 0.807675,
+			"file": "frame-0005.png"
+		},
+		{
+			"elapsed_seconds": 0.99144,
+			"file": "frame-0006.png"
+		},
+		{
+			"elapsed_seconds": 1.173857,
+			"file": "frame-0007.png"
+		},
+		{
+			"elapsed_seconds": 1.348174,
+			"file": "frame-0008.png"
+		},
+		{
+			"elapsed_seconds": 1.525274,
+			"file": "frame-0009.png"
+		},
+		{
+			"elapsed_seconds": 1.706174,
+			"file": "frame-0010.png"
+		},
+		{
+			"elapsed_seconds": 1.877057,
+			"file": "frame-0011.png"
+		},
+		{
+			"elapsed_seconds": 2.052051,
+			"file": "frame-0012.png"
+		},
+		{
+			"elapsed_seconds": 2.223255,
+			"file": "frame-0013.png"
+		},
+		{
+			"elapsed_seconds": 2.403083,
+			"file": "frame-0014.png"
+		},
+		{
+			"elapsed_seconds": 2.57577,
+			"file": "frame-0015.png"
+		},
+		{
+			"elapsed_seconds": 2.747806,
+			"file": "frame-0016.png"
+		},
+		{
+			"elapsed_seconds": 2.921621,
+			"file": "frame-0017.png"
+		}
+	],
+	"reason": "duration",
+	"schema_version": 1,
+	"status": "complete",
+	"target_fps": 12
+}
