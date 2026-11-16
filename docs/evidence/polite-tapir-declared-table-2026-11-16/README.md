@@ -175,9 +175,13 @@ once, above.
 
 - **`walk_rows.gd`** (`branch_walk_rows_lines.txt`, `main_walk_rows_lines.txt`): `WC all`, the
   route tiles cut off from home after the dawn and at the end of her walk, is `0 0` on both. `WU
-  all`'s longest chain of touching units each ranked below the last, at reach 0: WALK_WU_BRANCH on
-  the branch, 28 on main. `WS all`, what her walk sited: WALK_WS_BRANCH on the branch, 128 sitings,
-  none on undrawn ground, on main.
+  all`, the units drawn on her walk and the longest chain of touching units each ranked below the
+  last, is the same line on both (at reach 0, a chain of 28): the table changes no rank and no
+  relation. `WS all`, what her walk sited: 126 places on the branch and 128 on main, none with an
+  undrawn unit near it when sited, and the smallest gap to a row a unit drew 72px and 64px (no less
+  than `EventScheduler.EVENT_SPACING_ANY`, 64px, on either). What streams in within her radius on
+  her walk (`WD`, `WV`): 11,835 rows over the 252 city-days on the branch, 26,295 on main; on her
+  route 3,442 and 8,291, route-adjacent 4,378 and 5,753, off it 4,015 and 12,251.
 - **`m129_zero_cost_line.gd`**: 299 of 299 routes keep a zero-cost line on both (the primary
   reading, and the catalogue's rows alone). Over a pacing row's whole beat: 176 of 299 on the
   branch, 138 on main. Placed rows a day a line has to avoid: 321.7 on the branch, 326.2 on main.
