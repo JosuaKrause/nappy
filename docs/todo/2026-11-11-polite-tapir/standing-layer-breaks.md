@@ -70,7 +70,8 @@ review; a builder runs it again):
   uses in the run log (`RunSession`'s edge field and `watch()`'s edge parameter,
   `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
   own, which hands the run log what its observer reads of the danger edge, the badges that are
-  announcing (the orchestrator's proposal). The `player` group, and `city.gd`'s and `visible_view.gd`'s `Stroller`, go with who
+  announcing (the orchestrator's proposal). `city.gd`'s and `visible_view.gd`'s `Stroller` are gone, the camera's reach and the view's centre
+  handed in as values (`City.camera_bounds()`, `VisibleView.look_from()`). The `player` group goes with who
   builds the event manager and the crowd, which hands her in; `interior_scene.gd`'s with the
   building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, after the
   third hand-ins step; `Prop` as a data constant, in a pull request of its own; `GameSave` and

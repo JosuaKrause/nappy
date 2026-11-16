@@ -1487,12 +1487,13 @@ func _add_prop(prop: Node2D) -> void:
 ## player's own camera has no limits, so it follows her centered with the look-ahead wherever she
 ## stands, and the ground past the edge is painted for whatever view asks
 ## (`scenery_ground_source()`). The rectangle is the map grown by the band painted outside it,
-## less the reach a glance toward a corner costs.
-func camera_bounds() -> Rect2:
+## less `look_ahead`, the reach a glance toward a corner costs, which the caller hands in because it
+## is the player camera's own number (`Stroller.CAMERA_LOOK_AHEAD`), not the city's.
+func camera_bounds(look_ahead: float) -> Rect2:
 	if map.has_recipe_exterior() or map.has_stretch():
 		return Rect2(-100000000, -100000000, 200000000, 200000000)
 	var depth := CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
-	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - Stroller.CAMERA_LOOK_AHEAD)
+	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - look_ahead)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
 func _spawn_boundary() -> void:

@@ -49,7 +49,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 					else TouchControls.FOCUS_RIGHT
 			t.check(controls.run_button_center() == other,
 					"the title's side puts Run on the opposite focus, rotated=%s" % rotated)
-			source.view.look_through(player)
+			source.view.look_from(player.global_position)
 			for design: Vector2 in [Vector2(350.0, 620.0), Vector2(930.0, 620.0)]:
 				at = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
 				t.check(await _badge_sees(t, edge, source, row, at),
@@ -66,7 +66,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 				t.check(not source.view.view.intersects(Rect2(arrival + box.position, box.size)),
 						"the same covered bearing places the whole arrival outside the camera")
 		controls.set_mode(ControlsMode.Mode.TAP)
-		source.view.look_through(player)
+		source.view.look_from(player.global_position)
 		t.check(await _badge_sees(t, edge, source, row, at)
 				and controls.run_button_center() == Vector2.INF,
 				"tap mode reveals the corner and removes the Run disc")
@@ -189,15 +189,16 @@ func _test_just_out_of_sight_is_never_nearer_than_its_floor(t: TestRunner) -> vo
 				"%s: the nearest place over every direction is %.0fpx, at least the %.0fpx floor"
 				% ["joystick" if joystick else "tap", nearest, floor_px])
 
-## `look_through()` reads the camera on her and the scheme of the controls it was handed: a body with
-## no camera is the view about her, and with no controls handed the scheme is the tap one.
+## `look_from()` lays the view about the centre it is handed, and reads the scheme of the controls it
+## was handed: with no controls handed the scheme is the tap one.
 func _test_the_view_follows_the_camera_and_the_scheme(t: TestRunner) -> void:
 	var body := Node2D.new()
 	body.global_position = Vector2(500.0, 300.0)
+	var centre := Vector2(540.0, 280.0)
 	var view := VisibleView.new()
-	view.look_through(body)
-	t.check(view.view.get_center().is_equal_approx(body.global_position) and _sees_the_corners(view),
-			"a body with no camera and no controls is the tap scheme's view about her")
+	view.look_from(centre)
+	t.check(view.view.get_center().is_equal_approx(centre) and _sees_the_corners(view),
+			"the view is about the centre it is handed, in the tap scheme with no controls")
 	# With the game's own controls handed in, the scheme they are in decides the corners.
 	t.add_child(body)
 	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
@@ -205,15 +206,15 @@ func _test_the_view_follows_the_camera_and_the_scheme(t: TestRunner) -> void:
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	var joystick_view := VisibleView.new()
-	joystick_view.look_through(body)
+	joystick_view.look_from(body.global_position)
 	t.check(_sees_the_corners(joystick_view),
 			"controls that were not handed in are not read from her tree")
 	joystick_view.controls = controls.covering
-	joystick_view.look_through(body)
+	joystick_view.look_from(body.global_position)
 	t.check(not _sees_the_corners(joystick_view),
 			"the controls in the joystick scheme turn the covered corners on")
 	controls.set_mode(ControlsMode.Mode.TAP)
-	joystick_view.look_through(body)
+	joystick_view.look_from(body.global_position)
 	t.check(_sees_the_corners(joystick_view),
 			"and in the tap scheme off again, following the scheme")
 	controls.free()

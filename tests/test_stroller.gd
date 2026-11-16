@@ -24,6 +24,7 @@ func run(t: TestRunner) -> void:
 	await _test_north_diagonal_contact_adjustment(t)
 	await _test_the_pram_has_its_own_trailing_body(t)
 	await _test_her_family_comes_from_its_baked_pages(t)
+	await _test_the_view_centre_is_her_camera_or_a_bodys_position(t)
 
 func _rig(t: TestRunner) -> Stroller:
 	var rig := Stroller.new()
@@ -276,3 +277,14 @@ func _test_the_pram_has_its_own_trailing_body(t: TestRunner) -> void:
 	var carrying_collision := carrying_rig.get_node("PramCollisionShape2D") as CollisionShape2D
 	t.check(carrying_collision.disabled, "and disabled for the carrying rig, which has no pram")
 	carrying_rig.free()
+
+## `view_centre_of()` answers the body's own position for a node with no camera, so every reader of
+## what she can see shares the one rule; for her it is her camera's, which a rig of her has none
+## current to tell apart from her position.
+func _test_the_view_centre_is_her_camera_or_a_bodys_position(t: TestRunner) -> void:
+	var body := Node2D.new()
+	t.add_child(body)
+	body.global_position = Vector2(500.0, 300.0)
+	t.check(Stroller.view_centre_of(body) == body.global_position,
+			"a body with no camera is viewed from where it stands")
+	body.free()
