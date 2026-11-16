@@ -27,6 +27,7 @@ func run(t: TestRunner) -> void:
 	_test_the_loose_dog_and_the_cat_do_not_telegraph(t)
 	_test_a_row_says_whether_its_coming_is_announced_and_how_fast(t)
 	_test_as_warned_first_carries_solid_parts_too(t)
+	_test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t)
 	_test_spread_classification_follows_every_look_and_copy(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
@@ -344,6 +345,44 @@ func _test_as_warned_first_carries_solid_parts_too(t: TestRunner) -> void:
 	t.check(warned.solid_parts.size() == crash.solid_parts.size(),
 			("as_warned_first() copies %d solid part(s), the row's own %d"
 			% [warned.solid_parts.size(), crash.solid_parts.size()]))
+
+## **The dog walker, the patrol and the convoy are sent ahead of her** (inbox #1460), and drawn by no
+## unit on any day. The copy the director sends (`EventDef.as_sent_ahead()`) validates: the dog
+## walker comes down her line created at once, with no badge, its field short of where it is
+## created; the patrol comes down the road created at once; the convoy is warned of first in its
+## lane, held to the flat minimum a warning first owes and its badge alone at most the ceiling. A
+## row the director does not send is its own copy.
+func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> void:
+	for id: String in ["dog_walker", "police_patrol", "military_convoy"]:
+		var def := EventCatalogue.by_id(id)
+		var drawn := false
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			drawn = drawn or def.is_drawn_by_units(day, "")
+		t.check(def.is_sent_ahead() and not drawn,
+				"'%s' is sent ahead of her and drawn by no unit on any day" % id)
+		var sent := def.as_sent_ahead()
+		t.check(sent != def and sent.validate() and sent.is_sent_ahead(),
+				"and the copy the director sends of '%s' is its own and gives what it owes" % id)
+	var walker := EventCatalogue.by_id("dog_walker").as_sent_ahead()
+	t.check(walker.comes_down_her_line() and not walker.warns_before_it_exists()
+			and not walker.announces_its_coming(Tuning.WALK_SPEED)
+			and walker.outer_radius < SpawnSiting.least_distance(),
+			"the dog walker comes down her line created at once, with no badge, outside its own field")
+	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
+	t.check(patrol.spawn_mode_on(Tuning.RUN_LENGTH_DAYS) == EventDef.SpawnMode.TOWARD_PLAYER
+			and not patrol.comes_down_her_line() and not patrol.warns_before_it_exists(),
+			"the patrol comes down the road toward her, created at once")
+	var convoy := EventCatalogue.by_id("military_convoy").as_sent_ahead()
+	t.check(convoy.is_warned_in_its_lane() and convoy.warns_before_it_exists()
+			and convoy.may_come_from_either_end()
+			and is_equal_approx(convoy.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
+			and convoy.warned_for() <= Tuning.WARNING_ALONE_MAX + 0.001
+			and convoy.warning_time() + 0.001 >= convoy.minimum_telegraph(),
+			"the convoy is warned of first in its lane, from either end, its badge alone %.2fs and "
+			% convoy.warned_for() + "owed the flat %.2fs" % Tuning.OFFSCREEN_WARNING_MIN)
+	var cafe := EventCatalogue.by_id("cafe_tables")
+	t.check(not cafe.is_sent_ahead() and cafe.as_sent_ahead() == cafe and cafe.is_drawn_by_units(1, ""),
+			"a row the director does not send is its own copy, and a unit draws it")
 
 ## **A body on a pavement has to fit on the pavement — the whole of it, not the lane it happened to
 ## be planned on.** `_draw_spread` and its cousins draw a body at exactly the width `obstructs_radius`

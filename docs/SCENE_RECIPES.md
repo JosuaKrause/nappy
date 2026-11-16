@@ -81,7 +81,8 @@ meets on her route, by the director's own rules from a bag the recipe rigs
 first, `owed` is how many events her route is owed (both bags' marbles by default) and
 `first_after` the seconds of walking before the first is due (the ordinary 11–26s roll by
 default). Every marble names a row the director sites that day (`AHEAD_OF_PLAYER` or
-`TOWARD_PLAYER`); the pacing after the first, where each is sited, the region doors' clear ground,
+`TOWARD_PLAYER`, or a row it sends ahead of her, `EventDef.is_sent_ahead()`: the dog walker, the
+police patrol and the military convoy, each sent as the director sends it); the pacing after the first, where each is sited, the region doors' clear ground,
 a row's `max_per_day` over the ordinary bag's rows and a rig a task asks for later are all the
 game's own. A route bag also switches on the rest of what the director does while she walks, as in
 a played day: a place a marble puts on her route is sited on her way, and on days 8 to 14, once the

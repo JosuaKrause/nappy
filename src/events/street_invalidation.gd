@@ -129,10 +129,8 @@ static func _a_side_route_opens_off(map: CityMap, tile: Vector2i) -> bool:
 ## `EventScheduler.EVENT_SPACING_SAME`, which is the only rule that bends.
 ##
 ## "Room" is measured against the whole of an event rather than the tile it starts on: a
-## drawn dog walker's route runs on to the far side of its street's end box, up to 13 tiles (how
-## a drawn route is laid now, so that everything near it stands in a unit whose draw sees its
-## street's, inbox #1460), and a start point with room around it can still walk the length of
-## somebody else's field.
+## drawn man shouting paces 8 tiles of his street, and a start point with room around it can
+## still walk the length of somebody else's field.
 ##
 ## **Two of the rules are absolute and one is a preference**, and the split is what each one is
 ## protecting:

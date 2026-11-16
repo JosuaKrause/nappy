@@ -321,15 +321,16 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 				"'%s' warns for %.2fs before it can reach her against a required %.2fs"
 				% [id, def.warning_time(), def.minimum_telegraph()])
 
-## The two events playtest 05 named, and the reason it named them: the dog-walker decision
-## has to arrive more than once, and the café that exists to force a crossing has to be
-## findable at all. Both are counted over the whole map, since what she meets on a route is
-## a fraction of it.
+## The café playtest 05 named, and the reason it named it: the café that exists to force a crossing
+## has to be findable at all. Counted over the whole map, since what she meets on a route is a
+## fraction of it. The other decision it named, the dog walker's, arrives by construction: two of
+## the first three events the director hands out on day one are dog walkers, which
+## `tests/test_route_bag.gd` holds.
 ##
 ## Stated as a **per-seed floor**, since the density is a fixed number of events: every row added
 ## to the day-1 pool takes a share of it, and a single total across a few seeds is a tight enough
-## sample to fail on noise. Their weights went up to compensate — dog walkers and café frontages
-## are what an ordinary street is mostly made of.
+## sample to fail on noise. Its weight went up to compensate — café frontages are what an ordinary
+## street is mostly made of.
 func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 	var map := _map()
 	for city_seed: int in [4242, 77, 1301]:
@@ -340,11 +341,8 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 		var counts := {}
 		for plan in GameDawn.of(DaySpec.for_day(1), rng, seeded).spent(consumed).plan().placements():
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-		# No day-1 map may be without either of them at all, which is the failure the player
-		# actually reported: *"a restaurant — I never saw one."*
-		t.check(int(counts.get("dog_walker", 0)) >= 4,
-				"seed %d: day 1 carries %s dog walkers"
-				% [city_seed, counts.get("dog_walker", 0)])
+		# No day-1 map may be without one at all, which is the failure the player actually
+		# reported: *"a restaurant — I never saw one."*
 		t.check(int(counts.get("cafe_tables", 0)) >= 2,
 				"seed %d: day 1 carries %s cafés" % [city_seed, counts.get("cafe_tables", 0)])
 	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")

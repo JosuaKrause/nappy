@@ -7,17 +7,17 @@ extends RefCounted
 ## marbles)"; inbox #1466.)*
 ##
 ## A street counts its sections that are whole (the section and both its sidewalk locations open)
-## and the open halves of the others (one sidewalk location each), and whether it is untouched
-## (every section whole, nothing taken yet). The player's three sizes are three answers:
+## and the open halves of the others (one sidewalk location each). Of the player's three sizes, the
+## two a street draws are two answers (nothing a street draws takes the whole street,
+## `EventDef.StreetShare`):
 ##
-## - **The whole street** fits only an untouched street, and takes all of it: the draw is done.
 ## - **A section** fits only while no section is half filled and one is whole, so a half-open
 ##   section admits small marbles until it is full; a section marble leaves the other two
 ##   sections, at least two more draws.
 ## - **A small marble**, the empty one among them, takes a half where one is left, else halves a
 ##   whole section.
 ##
-## So a whole street draws one marble, or three to six. **Every other unit** (a junction box, an
+## So a whole street draws three to six marbles. **Every other unit** (a junction box, an
 ## alley, a park or a square) **is all halves**: each of its open locations takes one marble,
 ## whatever the row.
 ##
@@ -27,14 +27,11 @@ extends RefCounted
 
 var _whole := 0
 var _halves := 0
-var _untouched := false
 
-## A room of `whole` whole sections and `halves` open halves, `untouched` where it is a street
-## nothing of which is taken (`of()` works them out).
-func _init(whole: int, halves: int, untouched := false) -> void:
+## A room of `whole` whole sections and `halves` open halves (`of()` works them out).
+func _init(whole: int, halves: int) -> void:
 	_whole = whole
 	_halves = halves
-	_untouched = untouched
 
 ## **The room of `unit` as it stands**, from its open locations.
 static func of(unit: PlacementUnit) -> UnitRoom:
@@ -46,11 +43,9 @@ static func of(unit: PlacementUnit) -> UnitRoom:
 				halves += 1
 		return UnitRoom.new(0, halves)
 	var whole := 0
-	var sections := 0
 	for section in locations:
 		if section.kind() != Location.Kind.SECTION:
 			continue
-		sections += 1
 		var open_halves := 0
 		var sidewalks := 0
 		for sidewalk in locations:
@@ -62,31 +57,23 @@ static func of(unit: PlacementUnit) -> UnitRoom:
 			whole += 1
 		else:
 			halves += open_halves
-	return UnitRoom.new(whole, halves, sections > 0 and whole == sections)
+	return UnitRoom.new(whole, halves)
 
 ## Whether anything is left to draw for.
 func is_open() -> bool:
 	return _halves > 0 or _whole > 0
 
-## **Whether a marble taking `share` fits what is left**: the whole street only while it is
-## untouched, a section only while no section is half filled and one is whole, anything smaller
-## while anything is left.
+## **Whether a marble taking `share` fits what is left**: a section only while no section is half
+## filled and one is whole, anything smaller while anything is left.
 func fits(share: EventDef.StreetShare) -> bool:
-	if share == EventDef.StreetShare.A_STREET:
-		return _untouched
 	if share == EventDef.StreetShare.A_SECTION:
 		return _halves == 0 and _whole > 0
 	return is_open()
 
-## **Takes `share` out of what is left**; the empty marble takes `A_LOCATION`. The whole street
-## takes everything; a section takes a whole one; anything smaller takes a half where one is left,
-## else halves a whole section.
+## **Takes `share` out of what is left**; the empty marble takes `A_LOCATION`. A section takes a
+## whole one; anything smaller takes a half where one is left, else halves a whole section.
 func take(share: EventDef.StreetShare) -> void:
-	_untouched = false
-	if share == EventDef.StreetShare.A_STREET:
-		_whole = 0
-		_halves = 0
-	elif share == EventDef.StreetShare.A_SECTION:
+	if share == EventDef.StreetShare.A_SECTION:
 		_whole -= 1
 	elif _halves > 0:
 		_halves -= 1

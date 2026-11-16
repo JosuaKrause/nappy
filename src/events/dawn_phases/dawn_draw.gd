@@ -23,9 +23,12 @@ extends DawnPhase
 ## Model: no node.
 
 ## **Whether a drawn row's route stays on its location's run** (`RuledLocationGround`'s
-## `keeps_routes_on_the_run`, `Location.run()`): a route longer than its street is cut to the
-## street and the boxes at its ends, which is how a drawn route is laid now (inbox #1460), and this
-## is the one setting that holds it.
+## `keeps_routes_on_the_run`, `Location.run()`): a route longer than its street would be cut to
+## the street and the boxes at its ends (inbox #1460), and this is the one setting that holds it.
+## The rows a unit draws that move are a pacing beat (the man shouting and the chatting mother,
+## 8 tiles from a tile mid-street) and the alley mouse; the long routes, the dog walker's, the
+## patrol's and the convoy's, are the director's, which sends those rows ahead of her
+## (`EventDef.is_sent_ahead()`) and draws none of them by a unit.
 const ROUTES_STAY_ON_THE_RUN := true
 
 ## Overrides DawnPhase.run.

@@ -470,6 +470,9 @@ func place_what_is_owed_ahead(delta: float) -> void:
 		return
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
+	if def.is_warned_in_its_lane():
+		_warn_in_its_lane(def, body.global_position, path)
+		return
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
@@ -561,6 +564,39 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var warning := _warnings.warn_first(def, her, where, arrive)
 	if warning:
 		warning.is_pelican = pelican
+
+## A row the director sends ahead of her warned of first in the lane of the road beside her (the
+## convoy, `EventDef.is_warned_in_its_lane()`), sited on `sited` (`EventDirector.due()`: its place,
+## then the far end of its first leg): the badge goes up at once, pointing level with her along the
+## road and just out of sight up it (`PendingWarning.in_its_lane()`), and once its second is up the
+## thing is created there, its telegraph spent (`EventSpawner.spawn_warned()`), on a leg down the
+## lane past her to the far edge of the next junction box from where she is then
+## (`EventDirector.past_the_next_box()`), cut at the first solid. Day 13's column arrives the same
+## way (`ResistanceHappenings`). **The route is asked of the region doors again when it is
+## created**, as a row down her line is; a refusal, or a leg cut short of her, withdraws the
+## warning.
+func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -> void:
+	var lane := sited[0]
+	var going := (sited[sited.size() - 1] - lane).normalized()
+	if going == Vector2.ZERO:
+		return
+	var vertical := absf(going.y) > absf(going.x)
+	var ends := PendingWarning.lane_ends(world.city_map, going)
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.in_its_lane(def, at, lane, going, ends.x, ends.y, world.visible)
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var level := Vector2(lane.x, at.y) if vertical else Vector2(at.x, lane.y)
+		var far := EventDirector.past_the_next_box(level, going, ends)
+		var path := world.navigator().trim(PackedVector2Array([place, far]),
+				EventInstance.mover_for(def))
+		if path.size() < 2 or (path[path.size() - 1] - level).dot(going) < 0.0 \
+				or not _director.clear_of_the_doors(path, def):
+			return false
+		_spawner.spawn_warned(def, path)
+		world.trace.note("ahead", "%s comes down the road at her from %.0fpx in front of her at %s, its warning over"
+				% [def.id, place.distance_to(at), RunTrace.tile(world.map.world_to_tile(at))])
+		return true
+	_warnings.warn_first(def, her, where, arrive)
 
 ## The route a row coming down her line is created on (`PendingWarning.route_down_her_line()`), cut
 ## to the ground the row can run on (`Navigator.trim()`), so a bike or a dog never comes through a

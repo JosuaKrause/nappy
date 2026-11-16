@@ -154,7 +154,8 @@ func _test_the_road_and_the_lane(t: TestRunner) -> void:
 					popped.append("engine at %v with her at %v" % [at, her])
 				engine.free()
 			for going: float in [1.0, -1.0]:
-				var lane := PendingWarning.in_its_lane(column, her, her.x - 40.0, going, -1.0e6, 1.0e6,
+				var lane := PendingWarning.in_its_lane(column, her, Vector2(her.x - 40.0, 0.0),
+						Vector2(0.0, going), -1.0e6, 1.0e6,
 						view)
 				var truck_in_lane := _arrival(column, lane, her,
 						PackedVector2Array([lane, lane + Vector2(0.0, going * 4000.0)]))
@@ -182,7 +183,8 @@ func _test_the_lane_at_the_ends_of_the_road(t: TestRunner) -> void:
 			var her := Vector2(500.0, float(case[0]))
 			var going: float = case[1]
 			for view in _views(her):
-				var lane := PendingWarning.in_its_lane(column, her, 460.0, going, top, bottom, view)
+				var lane := PendingWarning.in_its_lane(column, her, Vector2(460.0, 0.0),
+						Vector2(0.0, going), top, bottom, view)
 				if lane == Vector2.INF:
 					none += 1
 					continue

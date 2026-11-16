@@ -466,8 +466,8 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 				going = -going
 	var lane_x := CrowdLanes.lane_centre(_map.main_road_corridor(), CrowdLanes.road_lane(true, going))
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.in_its_lane(def, at, lane_x, going, top, bottom,
-				_events.visible_view())
+		return PendingWarning.in_its_lane(def, at, Vector2(lane_x, 0.0), Vector2(0.0, going), top,
+				bottom, _events.visible_view())
 	var arrive := func(place: Vector2, _at: Vector2) -> bool:
 		_bring_the_column(def, place, lane_x, going, top, bottom)
 		return true

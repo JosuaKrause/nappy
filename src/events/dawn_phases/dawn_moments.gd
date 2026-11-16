@@ -1,9 +1,11 @@
 class_name DawnMoments
 extends DawnPhase
 ## **The moments' dawn phase**: the moments the day owes her (`AHEAD_OF_PLAYER` and
-## `TOWARD_PLAYER` rows, the cat that bolts across, the cyclist, the loose dog): sited in front of
-## her by the director, on its own clock and from its own bag (`EventDirector`; the orchestrator's
-## reading of fork 9: a moment is not a place), so the day only says how many.
+## `TOWARD_PLAYER` rows, the cat that bolts across, the cyclist, the loose dog, and the rows the
+## director sends ahead of her, `EventDef.is_sent_ahead()`: the dog walker, the police patrol, the
+## military convoy): sited in front of her by the director, on its own clock and from its own bag
+## (`EventDirector`; the orchestrator's reading of fork 9: a moment is not a place), so the day
+## only says how many.
 ## `EventScheduler.MOMENTS_PER_DAY` of them, as today's placement bought on that day, each a row
 ## drawn by weight among today's, at most its `max_per_day` where the spec keeps the caps.
 ##
@@ -21,7 +23,8 @@ func run(context: DawnContext) -> void:
 	var rows: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, context.heat()):
 		var mode := def.spawn_mode_on(day)
-		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
+		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
+				or def.is_sent_ahead():
 			rows.append(def)
 	var owed := {}
 	for _i in int(EventScheduler.MOMENTS_PER_DAY[clampi(day, 1, 14) - 1]):

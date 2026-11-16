@@ -502,6 +502,55 @@ func for_day(day: int) -> EventDef:
 ## **Where her walk sites this row**, or null for a row the dawn places — see `OnHerWay`.
 @export var on_her_way: OnHerWay = null
 
+## **How the director sends this row ahead of her on an ordinary day**, or null for a row it does
+## not send (`SentAhead`): the dog walker, the police patrol and the military convoy. A row with one
+## is drawn by no unit (`is_drawn_by_units()`), is a marble of her route's bag (`EventDirector`) and
+## counts among the moments the dawn owes her (`DawnMoments`). Whatever else places the row (the
+## escape's bag, a scene recipe, a happening) reads none of it. Set by `send_ahead()`.
+@export var _sent_ahead: SentAhead = null
+
+## Makes the row one the director sends ahead of her (`_sent_ahead`, `SentAhead.of()`): warned of
+## first in its lane where `warned_first`, and from either end of her street where `either_end`.
+func send_ahead(warned_first: bool, either_end: bool) -> void:
+	_sent_ahead = SentAhead.of(warned_first, either_end)
+
+## Whether the director sends it ahead of her on an ordinary day (`send_ahead()`).
+func is_sent_ahead() -> bool:
+	return _sent_ahead != null
+
+## Whether the director warns of it first in the lane of the road beside her when it sends it
+## ahead of her (`SentAhead.is_warned_first()`, a row of the road): the convoy.
+func is_warned_in_its_lane() -> bool:
+	return _sent_ahead != null and _sent_ahead.is_warned_first() \
+			and placement.has(GameEnums.TileType.ROAD)
+
+## Whether the director may send it ahead of her from either end of her street
+## (`SentAhead.comes_from_either_end()`): the convoy.
+func may_come_from_either_end() -> bool:
+	return _sent_ahead != null and _sent_ahead.comes_from_either_end()
+
+## **The copy the director sends** (`send_ahead()`): one created at once comes `TOWARD_PLAYER`, down
+## her sidewalk on foot (the dog walker) or down the carriageway beside her (the patrol), with no
+## badge (`telegraphs` false: a row the director creates at once just out of sight is met as it
+## comes, which the rule gives both anyway, each slower than a walk and neither lethal,
+## PLAYTEST-145 18-23); one warned of first is its `as_warned_first()` copy, still `MAP`, since its
+## 300px field is wider than a `TOWARD_PLAYER` row may be (the convoy). Validated as it is made.
+## Itself for a row the director does not send.
+func as_sent_ahead() -> EventDef:
+	if _sent_ahead == null:
+		return self
+	if _sent_ahead.is_warned_first():
+		return as_warned_first()
+	var variant: EventDef = duplicate()
+	# `shape` and `solid_parts` are carried across by hand, as every copy of a row does (see
+	# `at_heat()`).
+	variant.shape = shape
+	variant.solid_parts = solid_parts
+	variant.spawn_mode = SpawnMode.TOWARD_PLAYER
+	variant.telegraphs = false
+	variant.validate()
+	return variant
+
 ## Seconds of notice this row gives from off screen before it can be seen: `Tuning.OFFSCREEN_NOTICE`
 ## (0.2) unless a row overrides it. Two readings, by how the row arrives:
 ##
@@ -509,7 +558,7 @@ func for_day(day: int) -> EventDef:
 ##   run, the resistance's own `robber_giving_chase` and `van_guard_giving_chase`): its badge, up
 ##   alone with nothing in the world, before it is placed just out of sight (`warned_for()`). Its
 ##   `telegraph_time` is then the approach she watches.
-## - **A row created at once from off screen** (the patrol a torn poster or the return sends down
+## - **A row created at once from off screen** (the patrol the director sends ahead of her down
 ##   the road, `EventDirector._toward_her_on_the_road()`): seconds of closing beyond the edge of the
 ##   view where it is created (`Offscreen.lead()`).
 ##
@@ -525,7 +574,8 @@ func for_day(day: int) -> EventDef:
 ## before it exists (`EventManager.warn_first()`): the fire engine, which the fire summons, the
 ## resistance's own `robber_giving_chase` and `van_guard_giving_chase`, and the copies
 ## `EventSpawner.as_warned()` makes of any row that comes through a warning first (day 13's column of
-## `military_convoy`, `charging_dog` sent at her down her heading). Read by
+## `military_convoy`, the convoy the director sends ahead of her, `charging_dog` sent at her down her
+## heading). Read by
 ## `warns_before_it_exists()`, and so by the fairness contract, which holds such a row to the flat
 ## `Tuning.OFFSCREEN_WARNING_MIN` rather than to a floor worked out from its field and speed, and
 ## its badge alone to `Tuning.WARNING_ALONE_MAX`.
@@ -557,12 +607,10 @@ func for_day(day: int) -> EventDef:
 
 ## Walks its route and turns round at the ends, for ever.
 ##
-## The difference between a **journey** and a **beat**. A dog walker is going somewhere: its route
-## runs down its street to the far side of the junction box at the street's end, it is gone at
-## the end of it, and it costs the stretch of sidewalk it owns while you are there. (That is how a
-## drawn row's route is laid now, inbox #1460: its street draws as she comes near it, and a route
-## kept to the street and its boxes has everything that could come near it in a unit whose draw
-## sees the street's; `Location.run()`, `DawnDraw.ROUTES_STAY_ON_THE_RUN`.) A man shouting is
+## The difference between a **journey** and a **beat**. A dog walker is going somewhere: sent
+## ahead of her (`send_ahead()`), it walks down her sidewalk toward her and past her, it is gone at
+## the end of its route, and it costs the stretch of sidewalk it owns while you are there. A man
+## shouting is
 ## *at* a place, and without this the only way to say so is to make him stationary, which reads
 ## from the street as "it didn't move". A paced event never reaches the end of its path, so it
 ## never departs and never expires.
@@ -674,12 +722,13 @@ func is_a_one_shot_off_her_way() -> bool:
 
 ## **Whether a unit's draw can draw the row on `day`** (`DawnDraw`, and a scene recipe's
 ## placement, which lays a row as the day does): a recurring row placed on the map, so one a day's
-## dawn gives a marble in its view's bag. The moments' rows (director-sited) and the one-shots are
-## not, and neither is the row the roadblock phase stands that day, `beside_the_routes` (its id,
-## `""` for none: the phase's alone, `ResistanceSteps.guarded_row_on()`).
+## dawn gives a marble in its view's bag. The moments' rows (director-sited), the rows the director
+## sends ahead of her (`is_sent_ahead()`) and the one-shots are not, and neither is the row the
+## roadblock phase stands that day, `beside_the_routes` (its id, `""` for none: the phase's alone,
+## `ResistanceSteps.guarded_row_on()`).
 func is_drawn_by_units(day: int, beside_the_routes: String) -> bool:
 	return kind == GameEnums.EventKind.RECURRING and spawn_mode_on(day) == SpawnMode.MAP \
-			and (beside_the_routes == "" or id != beside_the_routes)
+			and not is_sent_ahead() and (beside_the_routes == "" or id != beside_the_routes)
 
 ## **Whether a recurring row the day draws is handed to her walk to site** (`on_her_way`, the
 ## sidewalk poster crew): a unit draws it like any other and hands it on with no position for
@@ -995,24 +1044,20 @@ func spans_the_street() -> bool:
 func span_the_street() -> void:
 	_spans_the_street = true
 
-## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`), the
-## player's three sizes (inbox #1466: a marble that takes the whole street ends its draw, one that
-## takes a segment leaves at least two more draws, and one smaller than a segment is followed by
-## another small one): one sidewalk location, one whole section, or the whole street.
-enum StreetShare { A_LOCATION, A_SECTION, A_STREET }
+## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`), of
+## the player's three sizes (inbox #1466: a marble that takes the whole street ends its draw, one
+## that takes a segment leaves at least two more draws, and one smaller than a segment is followed
+## by another small one): one sidewalk location or one whole section. Nothing a street draws takes
+## the whole street: the rows that would, the police patrol and the military convoy, are sent ahead
+## of her by the director (`is_sent_ahead()`) and drawn by no unit.
+enum StreetShare { A_LOCATION, A_SECTION }
 
-## **What the row takes of a street**, read off its ground and its movement, never set: the whole
-## street where it drives the carriageway along the street on a route at least a street long
-## (`Tuning.BLOCK_SIZE` tiles), as the police patrol and the military convoy do, their routes cut
-## to their street's run (`Location.run()`); a section where it otherwise stands on the
-## carriageway (it spans the street); else one sidewalk location, whatever its path along it. A
-## row a street draws takes a section only while the street has that much room left, and the
-## whole street only while nothing of it is taken (`UnitRoom`).
+## **What the row takes of a street**, read off its ground, never set: a section where it stands on
+## the carriageway (it spans the street), else one sidewalk location, whatever its path along it. A
+## row a street draws takes a section only while the street has that much room left (`UnitRoom`).
 func takes_of_a_street() -> StreetShare:
 	if not placement.has(GameEnums.TileType.ROAD):
 		return StreetShare.A_LOCATION
-	if mobile and path_mode == PathMode.ALONG_STREET and path_length_tiles >= Tuning.BLOCK_SIZE:
-		return StreetShare.A_STREET
 	return StreetShare.A_SECTION
 
 ## Entering the lethal radius ends the day immediately.
@@ -1659,7 +1704,7 @@ func warns_quietly() -> bool:
 ## `warned_for()` is over (see `PendingWarning`). Two kinds are: a `TOWARD_PLAYER` row on foot that
 ## `telegraphs` (`cyclist`), which the director warns of down her line, and a row flagged
 ## `warned_first`, which the caller that sends it warns of. A road-going `TOWARD_PLAYER` copy
-## (`police_patrol`'s return leg) is created at once instead; see docs/EVENTS.md, "Everything
+## (the patrol the director sends ahead of her) is created at once instead; see docs/EVENTS.md, "Everything
 ## arrives from off screen".
 func warns_before_it_exists() -> bool:
 	return warned_first or (comes_down_her_line() and telegraphs)

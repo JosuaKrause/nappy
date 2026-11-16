@@ -232,13 +232,13 @@ func _test_the_ground_beyond_the_streets_has_its_own_locations(t: TestRunner) ->
 		views_right = views_right and location.view() == PlacementView.View.ROUTE_ADJACENT
 	t.check(views_right, "each told the view the corridor gives its ground")
 
-## An event drawn into a section, one that drives the carriageway, takes the section's two sidewalk
+## An event drawn into a section, one that spans the carriageway, takes the section's two sidewalk
 ## locations with it (`DayLocations.record()`); an event drawn on a sidewalk takes only its own.
 func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	var middle := sections[1]
-	locations.record(middle, EventPlan.new(EventCatalogue.by_id("police_patrol"),
+	locations.record(middle, EventPlan.new(EventCatalogue.by_id("roadblock"),
 			middle.centre()))
 	var sidewalks: Array[Location] = []
 	for location in locations.all():
@@ -250,7 +250,7 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 			taken += 1
 			t.check(sidewalk.section() == 1, "only the section's own sidewalks are taken")
 	t.check(middle.is_drawn() and middle.is_taken() and taken == 2,
-			"a patrol drawn into a section takes it and its two sidewalk locations (%d)" % taken)
+			"a roadblock drawn into a section takes it and its two sidewalk locations (%d)" % taken)
 	var first := sidewalks[0]
 	if first.section() == 1:
 		first = sidewalks[sidewalks.size() - 1]

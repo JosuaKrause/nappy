@@ -16,9 +16,9 @@ extends LocationGround
 ## - **A route is built inside its location's run where the setting says**
 ##   (`keeps_routes_on_the_run`, the unit draw's): a moving row's route stops at the far edge of
 ##   the junction boxes at its own street's ends (`Location.run()`), so everything that could come
-##   near it stands in a unit its draw sees (a route longer than its street is cut, which is how a
-##   drawn route is laid now, inbox #1460: the dog walker's, the patrol's and the convoy's routes
-##   are cut to it).
+##   near it stands in a unit its draw sees (a route longer than its street would be cut, inbox
+##   #1460; the drawn rows that move are the pacing beats, the man shouting and the chatting
+##   mother, and the alley mouse, each within its run already).
 ## - **The weight** (the player's "yes" to a weight per location, inbox #1185 in gentle-owl): a
 ##   precinct street as many times over as the walk's ground offers a precinct tile
 ##   (`RowGround.Weights.precinct()`, four), the street between two strands of the routes as many

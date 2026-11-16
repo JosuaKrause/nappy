@@ -305,7 +305,8 @@ static func encounters() -> Array[Dictionary]:
 	# warning first owes.
 	var column := EventSpawner.as_warned(convoy)
 	var lane_where := func(her: Vector2) -> Vector2:
-		return PendingWarning.in_its_lane(column, her, lane_x, 1.0, -1.0e6, 1.0e6)
+		return PendingWarning.in_its_lane(column, her, Vector2(lane_x, 0.0), Vector2.DOWN,
+				-1.0e6, 1.0e6)
 	var lane_route := func(place: Vector2, _her: Vector2) -> PackedVector2Array:
 		return PackedVector2Array([place, place + Vector2(0.0, 4000.0)])
 	list.append(_warned(column, "day 13's column, warned in its lane", lane_where, lane_route, up))
@@ -337,10 +338,8 @@ static func encounters() -> Array[Dictionary]:
 	# `Offscreen.lead()`, down the carriageway lane that drives toward her. She is on the kerb lane
 	# of the north sidewalk (offset 1), walking east; the car is in whichever road lane
 	# `CrowdLanes.road_lane()` says runs west.
-	# The copy `EventDirector._patrol_toward_her()` makes, at no heat.
-	var patrol: EventDef = EventCatalogue.by_id("police_patrol").duplicate()
-	patrol.shape = EventCatalogue.by_id("police_patrol").shape
-	patrol.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
+	# The copy the director sends ahead of her (`EventDef.as_sent_ahead()`), at no heat.
+	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
 	var lane := CrowdLanes.road_lane(false, -1.0)
 	var lateral := float(lane - 1) * Tuning.TILE_SIZE
 	var patrol_lead := Offscreen.lead(right, patrol.speed + Tuning.WALK_SPEED,

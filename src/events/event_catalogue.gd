@@ -774,6 +774,10 @@ static func _dog_walker() -> EventDef:
 	def.speed = 32.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 30
+	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "the same for
+	# the dog walker"): the director creates it at once just out of sight down her own sidewalk,
+	# walking toward her, as the loose dog comes, so the dog-walker decision is one she always meets.
+	def.send_ahead(false, false)
 	# The heaviest weight in act I, and it goes **up** whenever rows are added around it. The density
 	# is a fixed number of events, so every new type takes a share of it, and this is one of the two
 	# that cannot be allowed to thin out: dog walkers and cafe frontages are what an ordinary street
@@ -1696,8 +1700,8 @@ static func _police_patrol() -> EventDef:
 	def.id = "police_patrol"
 	# It does not telegraph its coming (`EventDef.telegraphs`): 74px/s is slower than a walk, and
 	# its strike is a car's, warned the way a car warns (`EventDef.vehicle`) rather than with a
-	# badge from off screen. Its copies (the return's down the road, the raid's pacing car and the
-	# investigating one at heat) carry it with them.
+	# badge from off screen. Its copies (the one the director sends ahead of her, the raid's pacing
+	# car and the investigating one at heat) carry it with them.
 	def.telegraphs = false
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICE_CAR
@@ -1723,6 +1727,10 @@ static func _police_patrol() -> EventDef:
 	def.speed = 74.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 40
+	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "just spawn in
+	# the car just ahead of the player? then you guarantee an encounter"): created at once down the
+	# carriageway lane that drives toward her, the return leg's patrols among them.
+	def.send_ahead(false, false)
 	def.weight = 3.0
 	def.max_per_day = 12
 	def.heat_response = EventDef.HeatResponse.PRESSES
@@ -2425,6 +2433,11 @@ static func _military_convoy() -> EventDef:
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
+	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "the same for
+	# [...] the convoy"): warned of first, its badge alone for a second, then created in the lane
+	# beside her just out of sight up the road, from either end, as day 13's column is. The escape's
+	# trucks are the planned ones.
+	def.send_ahead(true, true)
 	def.weight = 2.0
 	return def
 
