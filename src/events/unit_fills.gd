@@ -1,11 +1,12 @@
 class_name UnitFills
 extends UnitBags
 ## **The day's bag fills, one for each view and kind of ground**, each worked out the first time a
-## unit of that view and ground draws and kept for the day (`UnitDraw`), and each unit's fresh bag of
-## its fill (`bag_for()`). A fill is a marble -> how many of it
-## (`ViewBag`), a marble a row's id or `ViewBag.EMPTY`: the declared table's events per hundred
-## draw locations as row marbles (`PlacementDensity`), the rows among themselves by weight, and empty marbles for the rest of the bag (inbox #1185 in gentle-owl: a view's bag
-## holds every event possible in that view, each as many times as its weight, empty among them).
+## unit of that view and ground draws and kept for the day (`UnitDraw`), and each unit's fresh
+## bag of its fill (`bag_for()`). A fill is a marble -> how many of it (`ViewBag`), a marble a
+## row's id or `ViewBag.EMPTY`: the declared table's events per hundred draw locations as row
+## marbles (`PlacementDensity`), the rows among themselves by weight, and empty marbles for the
+## rest of the bag (inbox #1185 in gentle-owl: a view's bag holds every event possible in that
+## view, each as many times as its weight, empty among them).
 ##
 ## A row's weight in a fill is its own (`EventDef.drawn_as_often()`, raised on a heated day), times
 ## its weight on the unit's ground (`EventDef.weight_on()`), times what the view is to the row's

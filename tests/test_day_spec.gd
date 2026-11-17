@@ -9,8 +9,8 @@ func run(t: TestRunner) -> void:
 	_test_the_walls_kept_follow_the_region_wall(t)
 	_test_every_marble_of_a_walk_bag_names_a_row(t)
 
-## Every marble of a walk's bag but the empty one names a row, for every spec the run builds, and the
-## empty marble is the string the bag itself calls empty, one string two layers each name.
+## Every marble of a walk's bag but the empty one names a row, for every spec the run builds, and
+## the empty marble is the string the bag itself calls empty, one string two layers each name.
 func _test_every_marble_of_a_walk_bag_names_a_row(t: TestRunner) -> void:
 	var specs: Array[DaySpec] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):

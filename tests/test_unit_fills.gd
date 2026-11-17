@@ -79,7 +79,7 @@ static func _fills(rows: Dictionary, day: int, share := 1.0,
 		by_cost: Callable = func(def: EventDef) -> bool: return def.hard_fail) -> UnitFills:
 	return UnitFills.new(rows, day, share, _weights(), by_cost)
 
-## A street unit of one sidewalk location on the route, `x` blocks along, on the day seed `day_seed`.
+## A street unit of one sidewalk location on the route, `x` blocks along, on seed `day_seed`.
 static func _street_unit(x: int, day_seed: int) -> PlacementUnit:
 	return _unit_of(STREET, ON, x, day_seed)
 
@@ -112,10 +112,11 @@ static func _total(fill: Dictionary) -> int:
 
 ## **A unit is made a fresh bag of its fill** (`bag_for()`): asked twice it answers two bags, not
 ## one, that draw the same first ten marbles, each a marble of the fill of the unit's view and
-## ground; a unit of other tiles draws on a stream of its own, so its first ten differ from the first
-## unit's on at least one of three day seeds. **Which fill** is pinned by drawing a whole fill's worth of
-## marbles, a bag being drawn without putting back: the counts are the fill's own, for two units
-## whose fills differ, so the view and the kind of ground the bag is made of are the unit's.
+## ground; a unit of other tiles draws on a stream of its own, so its first ten differ from the
+## first unit's on at least one of three day seeds. **Which fill** is pinned by drawing a whole
+## fill's worth of marbles, a bag being drawn without putting back: the counts are the fill's own,
+## for two units whose fills differ, so the view and the kind of ground the bag is made of are the
+## unit's.
 func _test_a_unit_is_made_a_fresh_bag_of_its_fill(t: TestRunner) -> void:
 	var day := 8
 	var fills := _fills(_catalogue(day), day)
