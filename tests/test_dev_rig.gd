@@ -144,21 +144,24 @@ func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 			named = true
 	t.check(named, "the refusal names the row in the run log (got %s)" % [lines])
 
-## `pigeon_flock` waits (`EventDef.notice`) and on day 6 of seed 4242 has a copy placed whose
-## `outer_radius` (168px) sits *under* its own `EventDef.notice` (150px is under 168, but the old
-## `outer_radius * 0.6` = 100.8px offset was under both) — so the old offset stood her inside the
-## trigger. The fixed offset has to clear the larger of the two plus a tile's margin.
+## A row that waits (`EventDef.notice`: the pigeon flock, the charging dog) and has a copy placed
+## on the suite's day: `event:<row>` stands her outside both its wait trigger and its field. A
+## fixed offset of a share of `outer_radius` stood her inside the flock's trigger (its 150px notice
+## under its 168px field, and the old 100.8px offset under both), so the offset has to clear the
+## larger of the two plus a tile's margin. The first such row the day placed is asked, since which
+## rows a day places moves with the declared table (`PlacementDensity`).
 func _test_a_waiting_row_stands_outside_its_trigger(t: TestRunner) -> void:
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	var found: EventPlan = null
 	for plan in RunCity.events(_city).plans():
-		if plan.def.id == "pigeon_flock" and plan.is_placed():
+		if plan.def.notice_within() > 0.0 and plan.is_placed():
 			found = plan
 			break
-	t.check(found != null, "day %d has a placed pigeon_flock to stand outside of" % DAY)
+	t.check(found != null, "day %d has a placed row that waits to stand outside of" % DAY)
 	if found == null:
 		return
-	var at := DevRig.for_spawn_target("event:pigeon_flock", _city.map, RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header, _city.trace)
+	var at := DevRig.for_spawn_target("event:" + found.def.id, _city.map, RunCity.events(_city),
+			_city.streets(), _resistance, _city.run.header, _city.trace)
 	var dist := at.distance_to(found.position)
 	t.check(dist > found.def.notice_within(),
 			"stands outside the wait trigger, %.0fpx > its notice's %.0fpx"

@@ -5,7 +5,7 @@ extends RefCounted
 ## every row possible in the view as many times as its weight, and the empty event, drawn without
 ## putting back and filled again once it runs empty, as every marble bag of the game is
 ## (`MarbleBag`, PLAYTEST-125). Each unit's draw makes its own, one bag of the fill of the unit's
-## view that `EventScheduler.view_fills()` answers (`UnitDraw`).
+## view and kind of ground that `UnitFills.of()` answers (`UnitDraw`).
 ##
 ## **A draw considers only what the unit drawing accepts** (`draw()`): a row the unit's earlier
 ## draws or its locations' own ground leave invalid is not considered, and stays in the bag for the

@@ -1,6 +1,6 @@
 extends RefCounted
-## Measurement probe for the walk's mix (`docs/EVENTS.md`, "The density, and why it is shares and
-## bags"): **what each day puts in the world as she walks, row by row, by view and by kind of
+## Measurement probe for the walk's mix (`docs/EVENTS.md`, "The density, and why it is a declared
+## table"): **what each day puts in the world as she walks, row by row, by view and by kind of
 ## ground.** Not a suite: it prints rather than asserting, so it lives here under `tests/probes/`,
 ## where the runner never discovers it, and runs only by name:
 ##
@@ -581,7 +581,8 @@ static func _unit_draw_reaching(dawn: DawnContext, reach: float) -> UnitDraw:
 			dawn.rules(), ground, false, DawnDraw.ROUTES_STAY_ON_THE_RUN)
 	return UnitDraw.new(DayUnits.of(dawn.locations().all(), dawn.day_seed(), reach),
 			MarbleDraw.new(dawn.locations(), rows, judged),
-			UnitFills.new(rows, day, dawn.spec()), events.placements())
+			UnitFills.new(rows, day, dawn.spec().share_of_walls_drawn(), ground.weights(),
+					ground.is_a_wall_by_cost), events.placements())
 
 ## How many of `routes` home reached among the day's closures (`reached_bare`) that it no longer
 ## reaches among the bodies of `plans` and that no body's disc covers, each printed as a `WX` line

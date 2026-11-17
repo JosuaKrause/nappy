@@ -3,7 +3,9 @@ extends RefCounted
 ## with the unit's other rows (inbox #1466). A row lands on the location that takes it, not the
 ## first of the unit; no location has first pick; a larger row drawn later is laid out first and
 ## the smaller ones move; a row the layout cannot hold beside the drawn ones is refused as it comes
-## up, and one whose share does not fit the room left is refused without the ground being asked;
+## up, so across from a row the rest refuse a real bag's draw is mostly empty (the player's
+## restaurant example), and one whose share does not fit the room left is refused without the
+## ground being asked;
 ## one of a row in a unit; a row's weight the largest the locations it may stand on weigh it,
 ## on a street built as the game builds one; a row handed to her walk recorded with no position and
 ## the next row judged without it; a row that travels a sidewalk taking one location of it, as any
@@ -13,7 +15,9 @@ extends RefCounted
 ## Run with stand-ins for what it is handed: the day's locations (`_Locations`, which records each
 ## draw), the ground (`_Ground`, whose refusals, refusals among a named row and weights a check
 ## sets, and which records each ask) and the bag (`_Bag`, which answers a scripted run of marbles
-## and records what each `accepts` said and what each marble weighed); the units and their
+## and records what each `accepts` said and what each marble weighed; the restaurant example draws
+## from a real `ViewBag`, plain state, since what it holds is how a bag's empty marbles and its
+## refusals add up); the units and their
 ## locations are state, built by hand, and the rows come from the catalogue. `UnitRoom` is real:
 ## `MarbleDraw` makes its own from the unit as part of the draw (`UnitRoom.of()`), with nothing to
 ## hand a stand-in to, and it is pure arithmetic on the unit's open locations, checked in its own
@@ -24,6 +28,7 @@ func run(t: TestRunner) -> void:
 	_test_no_location_has_first_pick(t)
 	_test_a_larger_row_drawn_later_is_laid_out_first(t)
 	_test_a_row_the_layout_cannot_hold_is_refused_as_it_comes_up(t)
+	_test_across_from_a_drawn_row_the_draw_is_mostly_empty(t)
 	_test_a_share_the_room_does_not_fit_is_refused_unasked(t)
 	_test_one_of_a_row_in_a_unit(t)
 	_test_a_rows_weight_is_the_largest_of_its_locations(t)
@@ -233,6 +238,53 @@ func _test_a_row_the_layout_cannot_hold_is_refused_as_it_comes_up(t: TestRunner)
 			"the musician is refused as it comes up (%s)" % [bag.said])
 	t.check(placed.size() == 1 and placed[0].row_id() == "cafe_tables"
 			and _where(locations, "cafe_tables") != null, "and the cafe keeps a place")
+
+## **Across from a drawn row the draw is mostly empty** *(inbox #1185 in gentle-owl: "if a
+## restaurant is drawn the other side is drawn with only a subset of valid restaurant adjacent
+## events (most likely just 'empty' but could have 'yeller' with a low chance for later days)", and
+## "the bag itself doesn't change just that the invalid events don't get considered when
+## drawing")*: a real bag of a cafe, a market stall and a leaf blower ten marbles each, a man shouting
+## two and thirty empty, drawn on 60 streets with a chatting mother standing across (among the plans
+## judged), the ground refusing every row but the man shouting beside her, and on the same 60
+## streets with nothing across. Across from her the sidewalks end empty more often than with
+## nothing there, and hold nothing but the man shouting, who still stands on some of them.
+func _test_across_from_a_drawn_row_the_draw_is_mostly_empty(t: TestRunner) -> void:
+	var fill := {"cafe_tables": 10, "market_stall": 10, "leaf_blower": 10, "homeless_yeller": 2,
+			ViewBag.EMPTY: 30}
+	var mother := EventPlan.new(EventCatalogue.by_id("chatting_mother"), Vector2(-640, -640))
+	var empty := {true: 0, false: 0}
+	var sidewalks := 0
+	var only_the_yeller := true
+	var yellers := 0
+	for seed_value in 60:
+		for across: bool in [true, false]:
+			var street := _street(3000 + seed_value)
+			var ground := _Ground.new()
+			ground.refused_among = {"cafe_tables": "chatting_mother",
+					"market_stall": "chatting_mother", "leaf_blower": "chatting_mother"}
+			var locations := _Locations.new()
+			var among: Array[EventPlan] = []
+			if across:
+				among.append(mother)
+			MarbleDraw.new(locations, _rows(["cafe_tables", "market_stall", "leaf_blower",
+					"homeless_yeller"] as Array[String]), ground).draw(street,
+					ViewBag.new(fill, seed_value), among)
+			for location in street.locations():
+				if location.kind() != Location.Kind.SIDEWALK:
+					continue
+				var plan: EventPlan = locations.recorded.get(location)
+				if across:
+					sidewalks += 1
+				if plan == null:
+					empty[across] = int(empty[across]) + 1
+				elif across:
+					only_the_yeller = only_the_yeller and plan.row_id() == "homeless_yeller"
+					yellers += 1
+	t.check(sidewalks > 0 and int(empty[true]) > int(empty[false]),
+			"across from her the sidewalks end empty more often (%d of %d) than with nothing there "
+			% [empty[true], sidewalks] + "(%d)" % [empty[false]])
+	t.check(only_the_yeller and yellers > 0,
+			"and hold nothing but the man shouting, who stands on %d of them" % yellers)
 
 ## After a small marble a section does not fit (`UnitRoom`): the roadblock that comes up next is
 ## refused and the ground is never asked about it.

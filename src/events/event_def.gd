@@ -33,7 +33,7 @@ const HEAT_INVESTIGATE_WITHIN := 150.0
 ## player feels without seeing anything change.
 const HEAT_PRESSES_INTENSITY := 1.35
 ## What the population of a pressing row is multiplied by at full heat: its cap and its weight in the
-## day's bags (`EventScheduler.view_weight()`). `police_patrol` is capped at twelve a day cold, so
+## day's bags (`UnitFills`, `DawnMoments`, `EventDirector`). `police_patrol` is capped at twelve a day cold, so
 ## nineteen hot, and drawn 1.6 times as often: on an 11x11 lattice a patrol on one block in six rather
 ## than one in ten.
 ##
@@ -168,7 +168,7 @@ enum SpawnMode {
 	## Placed in front of the player, while she walks, by `EventDirector`. For the few events whose
 	## whole content is *the moment it happens to you*: a cat bolting out of a doorway is nothing if
 	## it does it two blocks away. The day owes it rather than placing it: the scheduler counts the
-	## day's moments (`EventScheduler.MOMENTS_PER_DAY`) instead of putting one on a tile.
+	## day's moments (`PlacementDensity.moments_on()`) instead of putting one on a tile.
 	AHEAD_OF_PLAYER,
 	## Sited on her own line, ahead of her, by `EventDirector` like `AHEAD_OF_PLAYER`, but
 	## travelling *down* that line toward her rather than crossing it: a bike on the sidewalk she is
@@ -392,14 +392,55 @@ func moves() -> bool:
 ## For SCRIPTED events: the exact day it fires.
 @export var scripted_day := 0
 
-## Relative likelihood: how many marbles of the row a view's bag holds, before the view's own weight
-## for its role (`EventScheduler.view_weight()`). Read through `drawn_as_often()`.
+## Relative likelihood: how often the row is drawn against the others, in a unit's bag (before
+## the view's own weight for its role and the row's weight on the unit's ground, `UnitFills`), in
+## the moments (`DawnMoments`) and in her route's bag (`EventDirector`). Read through
+## `drawn_as_often()`.
 @export var weight := 1.0
 
-## **How often the row is drawn against the others**, its `weight`: how many marbles of it a view's
-## bag holds before the view's own weight for its role (`EventScheduler.view_weight()`).
+## **How often the row is drawn against the others**, its `weight`: in a unit's bag, before the
+## view's own weight for its role and the row's weight on the unit's ground (`UnitFills`).
 func drawn_as_often() -> float:
 	return weight
+
+## **How many times its `weight` the row weighs on each kind of ground it is set for**
+## (`PlacementGround.Kind` -> times), set by the catalogue (`weigh_on()`). **Exported so that
+## every copy keeps it**: `Resource.duplicate()` copies only stored properties, and a row this
+## sets is copied as a matter of course (`for_day()`, `at_heat()`), so a plain `var` would hand
+## the copy an empty dictionary and the row its full weight back, with no error.
+@export var _ground_weights := {}
+
+## **Sets how often the row is drawn on `ground`**, as a multiple of its `weight`: under one where
+## it is rare there, nothing where it does not stand there at all though its tiles lie there.
+## Called by the catalogue as it builds the row.
+func weigh_on(ground: PlacementGround.Kind, times: float) -> void:
+	_ground_weights[ground] = times
+
+## **How many times its `weight` the row weighs on `ground`** (`UnitFills`): what the catalogue
+## set (`weigh_on()`), else one where the row's `placement` holds a tile of that ground
+## (`PlacementGround.holds()`), else nothing.
+func weight_on(ground: PlacementGround.Kind) -> float:
+	if _ground_weights.has(ground):
+		var times: float = _ground_weights[ground]
+		return times
+	return 1.0 if _stands_on(ground) else 0.0
+
+## Whether the row's `placement` holds a tile of `ground` (`PlacementGround.holds()`).
+func _stands_on(ground: PlacementGround.Kind) -> bool:
+	for type in placement:
+		if PlacementGround.holds(ground, type as GameEnums.TileType):
+			return true
+	return false
+
+## **Whether the row is weighed on ground none of its `placement` tiles lies on**, which
+## `validate()` refuses: a weight there would read as a row drawn on that ground and draw nothing.
+## Public so a test can ask it of a bad row, as `is_a_one_shot_off_her_way()` is, since
+## `validate()`'s refusal is a `push_error`, which fails the whole run.
+func is_weighed_on_ground_it_cannot_stand_on() -> bool:
+	for ground: int in _ground_weights:
+		if not _stands_on(ground as PlacementGround.Kind):
+			return true
+	return false
 
 ## **The most of the row a day stands** (`max_per_day`) where something counts it across the day:
 ## the moments the dawn owes her (`DawnMoments`, where the spec keeps the caps), the director's
@@ -1345,6 +1386,12 @@ func validate() -> bool:
 		push_error("event '%s' is a one-shot not sited from her walk: a set piece has to be met " % id
 				+ "wherever she goes, and one placed at dawn is met only if she walks there")
 		return false
+	# **A row is weighed only on ground it can stand on** (`weigh_on()`): a weight on ground none of
+	# its tiles lies on would read as a row drawn there and draw nothing.
+	if is_weighed_on_ground_it_cannot_stand_on():
+		push_error("event '%s' is weighed on a kind of ground none of its placement tiles lies on"
+				% id)
+		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
 	# `DawnOneShots` and a unit's draw (`MarbleDraw`) leave a plan unplaced
 	# for it, and only `EventDirector` sites what they leave. The siting is a tile with the
@@ -1858,7 +1905,7 @@ func stands_on_its_band_middle() -> bool:
 
 ## Whether the row stands in alleys and on no other ground: the robber and the mouse. Such a row is
 ## refused an alley the day's routes run down (`RowGround.offers_for_role()`) and has no marble on
-## the route (`EventScheduler.view_weight()`), since that alley is ground she has no way around
+## the route (`UnitFills`), since that alley is ground she has no way around
 ## rather than one she may choose to detour into. Stated over the ground the row lists rather than
 ## its id, so a row that shares the shape inherits the refusal.
 func stands_only_in_alleys() -> bool:

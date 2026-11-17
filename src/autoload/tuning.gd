@@ -755,9 +755,9 @@ const AHEAD_MIN_SPEED := 40.0
 
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
-# happens several times a day rather than once. The density itself lives in
-# the view bags' shares (`EventScheduler.VIEW_SHARES`) and the rows' weights, both **measured**
-# rather than derived.
+# happens several times a day rather than once. The density itself lives in the declared table
+# (`PlacementDensity`: events per hundred draw locations by view, kind of ground and act) and the
+# rows' weights, both **measured** rather than derived.
 #
 # What lives here is what the density needs in order to be legible. Placement is a uniform random
 # tile, so a low per-type cap is the only thing keeping two of the same event off one pavement —
@@ -768,9 +768,9 @@ const AHEAD_MIN_SPEED := 40.0
 # **corridor** — the ways from the doorstep to the calm areas still worth reaching — and what each
 # of these numbers does is pull one kind of thing toward one part of it.
 #
-# Both are stated as **how many times over a row weighs in a view's bag**, which
-# `EventScheduler.view_weight()` reads for a row's role: friction four times over on the route, a
-# costly wall four times over beside it. The precinct weight above is a location's own weight, which
+# Both are stated as **how many times over a row weighs in a view's bag**, which a unit's bag fill
+# reads for a row's role (`UnitFills`, handed them by the day's ground, `RowGround.Weights`):
+# friction four times over on the route, a costly wall four times over beside it. The precinct weight above is a location's own weight, which
 # scales every row a precinct's location draws (`RuledLocationGround.scale()`), so a
 # friction row on a precinct route street weighs sixteen times over.
 #

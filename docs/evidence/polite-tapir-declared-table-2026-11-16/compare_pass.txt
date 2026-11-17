@@ -1,0 +1,112 @@
+days in the cells run: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+== per view: events per hundred draw locations, seed -> new (ratio); events a city-day
+  on the route      6.69 ->   5.80  (x0.87)   locations a city-day   478.7 ->   478.6
+  route-adjacent    7.92 ->   8.12  (x1.02)   locations a city-day   346.0 ->   345.9
+  off the route     7.63 ->   7.36  (x0.96)   locations a city-day   521.3 ->   521.3
+  all               7.37 ->   7.00  (x0.95)   events a city-day   99.2 ->   94.2
+== per view and ground, all days: seed -> new (ratio)
+  on the route    street      6.05 ->   5.57  (x0.92)  events  5891 ->  5423
+  on the route    junction   12.06 ->   9.30  (x0.77)  events  1753 ->  1352
+  on the route    alley       0.00 ->   0.00  (x0.00)  events     0 ->     0
+  on the route    open        6.96 ->   3.51  (x0.50)  events   431 ->   217
+  route-adjacent  street      7.60 ->   7.92  (x1.04)  events  6224 ->  6490
+  route-adjacent  junction    2.46 ->   0.62  (x0.25)  events     8 ->     2
+  route-adjacent  alley       6.15 ->   6.39  (x1.04)  events   206 ->   214
+  route-adjacent  open       29.38 ->  23.33  (x0.79)  events   471 ->   374
+  off the route   street      5.75 ->   5.61  (x0.98)  events  5501 ->  5364
+  off the route   junction   12.90 ->  13.41  (x1.04)  events  2600 ->  2703
+  off the route   alley       7.07 ->   6.98  (x0.99)  events   949 ->   938
+  off the route   open       46.57 ->  31.80  (x0.68)  events   971 ->   663
+== per view, ground and act: new (seed)
+  on the route    street      4.4 (  4.8)    6.3 (  6.6)    5.7 (  6.3)    5.6 (  6.3)
+  on the route    junction    7.1 (  9.7)   13.0 ( 14.3)    9.6 ( 11.5)    4.8 ( 11.8)
+  on the route    alley       0.0 (  0.0)    0.0 (  0.0)    0.0 (  0.0)    0.0 (  0.0)
+  on the route    open        3.6 (  4.7)    3.3 (  7.1)    3.2 (  7.2)    4.2 (  9.5)
+  route-adjacent  street      8.7 (  8.2)    9.5 (  8.9)    6.4 (  6.3)    6.5 (  6.5)
+  route-adjacent  junction    1.1 (  2.3)    1.1 (  1.1)    0.0 (  3.9)    0.0 (  2.9)
+  route-adjacent  alley       4.9 (  6.0)    4.9 (  5.8)    6.7 (  7.3)   10.2 (  5.6)
+  route-adjacent  open       23.4 ( 23.6)   22.2 ( 29.1)   23.7 ( 34.0)   25.0 ( 30.6)
+  off the route   street      4.2 (  4.2)    5.8 (  6.0)    6.0 (  6.2)    6.1 (  6.3)
+  off the route   junction    6.2 (  6.4)   11.5 ( 11.2)   12.1 ( 12.1)   23.3 ( 21.4)
+  off the route   alley       5.0 (  5.1)    4.6 (  4.6)    9.3 (  9.4)    8.8 (  9.0)
+  off the route   open       25.3 ( 26.5)   33.5 ( 48.6)   31.8 ( 48.8)   35.1 ( 57.2)
+== per day: events a city, seed -> new
+  day  1   86.1 ->   87.6 (x1.02)
+  day  2   88.1 ->   87.7 (x1.00)
+  day  3   90.2 ->   83.3 (x0.92)
+  day  4   97.7 ->  105.1 (x1.08)
+  day  5  103.9 ->  104.0 (x1.00)
+  day  6  110.4 ->  102.2 (x0.93)
+  day  7  111.1 ->   97.7 (x0.88)
+  day  8  119.4 ->  122.8 (x1.03)
+  day  9   84.7 ->   80.6 (x0.95)
+  day 10   88.3 ->   78.1 (x0.88)
+  day 11   96.5 ->   78.4 (x0.81)
+  day 12  100.1 ->   96.6 (x0.96)
+  day 13  102.5 ->   95.0 (x0.93)
+  day 14  110.2 ->   99.9 (x0.91)
+== per row and ground: events a city-day on the row's days, seed -> new (ratio)
+  -- street
+     abduction              0.937 ->   5.762  (x6.15)
+     cafe_tables           10.401 ->  18.742  (x1.80)
+     charging_dog           0.939 ->   1.005  (x1.07)
+     chatting_mother        1.567 ->   2.266  (x1.45)
+     construction           3.560 ->   5.355  (x1.50)
+     delivery_van           5.734 ->   4.214  (x0.73)
+     dog_walker            12.881 ->   0.000  (x0.00)
+     homeless_yeller        5.750 ->   5.651  (x0.98)
+     ice_cream_van          2.859 ->   3.376  (x1.18)
+     leaf_blower            5.813 ->   7.571  (x1.30)
+     market_stall           4.099 ->   7.321  (x1.79)
+     military_convoy        0.194 ->   0.000  (x0.00)
+     pigeon_flock           2.639 ->   3.171  (x1.20)
+     police_patrol          5.318 ->   0.000  (x0.00)
+     poster_crew            5.611 ->   4.823  (x0.86)
+     reversing_lorry        2.671 ->   1.856  (x0.69)
+     roadblock              5.897 ->   4.929  (x0.84)
+  -- junction
+     abduction              1.349 ->   5.024  (x3.72)
+     charging_dog           1.217 ->   1.919  (x1.58)
+     chatting_mother        0.433 ->   1.313  (x3.04)
+     dog_walker             5.464 ->   0.000  (x0.00)
+     homeless_yeller        1.841 ->   3.429  (x1.86)
+     leaf_blower            0.813 ->   1.357  (x1.67)
+     military_convoy        0.056 ->   0.000  (x0.00)
+     pigeon_flock           1.845 ->   4.119  (x2.23)
+     police_patrol          4.263 ->   0.000  (x0.00)
+     protest                8.963 ->   8.685  (x0.97)
+  -- alley
+     alley_mouse            3.623 ->   3.385  (x0.93)
+     alley_robbery          1.921 ->   2.373  (x1.24)
+  -- open
+     busker                 7.551 ->   4.603  (x0.61)
+     charging_dog           0.035 ->   0.010  (x0.29)
+     homeless_yeller        0.032 ->   0.139  (x4.38)
+     leaf_blower            0.040 ->   0.079  (x2.00)
+     market_stall           0.028 ->   0.083  (x3.00)
+     pigeon_flock           0.067 ->   0.175  (x2.59)
+     poster_crew_square     0.096 ->   0.061  (x0.63)
+     protest                0.704 ->   0.796  (x1.13)
+== per row and view (all grounds): events a city-day on the row's days, seed -> new
+     abduction              0.00->  0.00     0.07->  0.40     2.21-> 10.39
+     alley_mouse            0.00->  0.00     0.71->  0.76     2.91->  2.62
+     alley_robbery          0.00->  0.00     0.21->  0.17     1.71->  2.20
+     busker                 1.74->  0.77     1.91->  1.37     3.90->  2.47
+     cafe_tables            2.19->  6.52     6.72->  9.12     1.49->  3.11
+     charging_dog           0.18->  0.40     0.09->  0.08     1.92->  2.45
+     chatting_mother        0.96->  2.50     0.27->  0.23     0.78->  0.86
+     construction           0.63->  1.67     2.28->  2.59     0.65->  1.09
+     delivery_van           2.46->  2.32     1.19->  0.58     2.08->  1.31
+     dog_walker            10.34->  0.00     1.86->  0.00     6.15->  0.00
+     homeless_yeller        3.81->  4.52     0.87->  0.62     2.94->  4.08
+     ice_cream_van          0.00->  0.00     2.16->  2.42     0.70->  0.95
+     leaf_blower            0.28->  0.42     4.44->  5.24     1.94->  3.35
+     market_stall           0.86->  2.54     2.64->  3.78     0.63->  1.09
+     military_convoy        0.03->  0.00     0.06->  0.00     0.17->  0.00
+     pigeon_flock           1.29->  2.92     0.66->  0.62     2.61->  3.92
+     police_patrol          4.54->  0.00     0.74->  0.00     4.30->  0.00
+     poster_crew            3.16->  2.86     0.73->  0.49     1.72->  1.47
+     poster_crew_square     0.03->  0.04     0.03->  0.01     0.04->  0.02
+     protest                0.02->  0.09     0.09->  0.17     9.56->  9.22
+     reversing_lorry        0.00->  0.00     0.31->  0.21     2.36->  1.65
+     roadblock              2.89->  2.27     0.93->  0.56     2.08->  2.10

@@ -23,6 +23,8 @@ func run(t: TestRunner) -> void:
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
 	_test_a_one_shot_is_sited_on_her_way(t)
+	_test_a_row_is_weighed_only_on_ground_it_stands_on(t)
+	_test_every_copy_of_a_row_keeps_its_ground_weights(t)
 	_test_a_warning_first_is_owed_a_flat_minimum(t)
 	_test_the_loose_dog_and_the_cat_do_not_telegraph(t)
 	_test_a_row_says_whether_its_coming_is_announced_and_how_fast(t)
@@ -925,3 +927,47 @@ func _test_a_one_shot_is_sited_on_her_way(t: TestRunner) -> void:
 			"the same one-shot not sited from her walk is refused")
 	t.check(not EventCatalogue.by_id("delivery_van").is_a_one_shot_off_her_way(),
 			"a recurring row with no on_her_way keeps it")
+
+## **A row is weighed only on ground it stands on**
+## (`EventDef.is_weighed_on_ground_it_cannot_stand_on()`, which `EventDef.validate()` refuses a row
+## for): every catalogue row keeps the rule, and a row standing on the sidewalk alone weighed on an
+## alley breaks it.
+func _test_a_row_is_weighed_only_on_ground_it_stands_on(t: TestRunner) -> void:
+	var stray: Array[String] = []
+	for def in EventCatalogue.all():
+		if def.is_weighed_on_ground_it_cannot_stand_on():
+			stray.append(def.id)
+	t.check(stray.is_empty(), "every catalogue row is weighed only where it stands (%s)" % [stray])
+	var bad := EventDef.new()
+	bad.id = "bad"
+	bad.placement = [GameEnums.TileType.SIDEWALK] as Array[int]
+	bad.weigh_on(PlacementGround.Kind.ALLEY, 0.5)
+	t.check(bad.is_weighed_on_ground_it_cannot_stand_on(),
+			"a sidewalk row weighed on an alley is refused")
+
+## **Every copy of a row keeps its weights on the kinds of ground** (`EventDef.weight_on()`): the
+## charging dog's copy from day 4 on (`for_day()`, which hands a placement past its day switch a
+## copy) and a heated copy (`at_heat()`) of a pressing row weighed on a street answer the row's own
+## weight on every ground, and each row's weight on some ground is one the catalogue set, under one,
+## not the one its tiles alone would give.
+func _test_every_copy_of_a_row_keeps_its_ground_weights(t: TestRunner) -> void:
+	var grounds: Array[PlacementGround.Kind] = [PlacementGround.Kind.STREET,
+			PlacementGround.Kind.JUNCTION, PlacementGround.Kind.ALLEY, PlacementGround.Kind.OPEN]
+	var dog := EventCatalogue.by_id("charging_dog")
+	var pressing := EventDef.new()
+	pressing.id = "pressing"
+	pressing.placement = [GameEnums.TileType.SIDEWALK] as Array[int]
+	pressing.heat_response = EventDef.HeatResponse.PRESSES
+	pressing.weigh_on(PlacementGround.Kind.STREET, 0.25)
+	for pair: Array in [[dog, dog.for_day(4)], [pressing, pressing.at_heat(Tuning.RESISTANCE_GOAL)]]:
+		var row: EventDef = pair[0]
+		var copy: EventDef = pair[1]
+		var set_under_one := false
+		var kept := true
+		for ground in grounds:
+			set_under_one = set_under_one or (row.weight_on(ground) > 0.0
+					and row.weight_on(ground) < 1.0)
+			kept = kept and copy.weight_on(ground) == row.weight_on(ground)
+		t.check(copy != row and set_under_one, "'%s' is copied, and weighed under one on a ground"
+				% row.id)
+		t.check(kept, "and its copy keeps its weight on every kind of ground")

@@ -149,8 +149,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    on `DayPlanner`'s planning: `placement_rows.gd` plans each day's closures, region wall and seals
    and hands the seals and the wall's bodies in as standing since placement step 3c, which moved
    main's own route-adjacent walls from 30.54 to 19.41 a city a day, and
-   `tests/probes/placement_view_mix.gd`, which `VIEW_SHARES` is measured with, still plans no
-   closures or seals.
+   `tests/probes/placement_view_mix.gd` still plans no closures or seals.
 
    The "before" it compares with is the design review's baseline readings, on `v0.29.0`
    (polite-tapir's `baseline-measurements.md`).

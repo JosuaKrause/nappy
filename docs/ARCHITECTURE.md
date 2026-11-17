@@ -262,7 +262,9 @@ src/
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
 	placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a
-	                      park or a square
+	                      park or a square, and which tile types each holds for a row to stand on
+	placement_density.gd  the declared table: the events a bag holds for every hundred draw
+	                      locations, by view, kind of ground and act, and the moments an act owes her
 	day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
 	                      lots, junction boxes), laid out at dawn and handed round: each one's view,
 	                      what a fixed part holds, what is taken or drawn,
@@ -283,15 +285,17 @@ src/
 	                      every touching unit of lower rank, from one fresh bag of the fill
 	                      `UnitFills` answers for its view and kind of ground, judged among the
 	                      dawn's plans and the touching units' draws, never a plan her walk sites
-	unit_fills.gd         the day's bag fills, asked for by view and kind of ground and answered by
-	                      the view whatever the ground, worked out the first time a unit draws and
-	                      kept for the day
+	unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
+	                      table's events per hundred as row marbles, the rows among themselves by
+	                      weight (their own, on the ground, for their role in the view), empty for
+	                      the rest; each worked out the first time a unit of it draws, kept for the day
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
 	                      the row's role, offered the row and assigned what it took
-	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
-	                      the empty event, drawn without putting back, only what the unit accepts
+	view_bag.gd           one unit's bag, of its view's and ground's fill: every row possible there as
+	                      often as its weight, and the empty event, drawn without putting back, only
+	                      what the unit accepts
 	marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
 	                      out again largest first as each is added, what the room left or the
 	                      layout cannot hold left out, at most one of a row in the unit

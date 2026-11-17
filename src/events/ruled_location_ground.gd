@@ -25,10 +25,10 @@ extends LocationGround
 ##   (`RowGround.Weights.precinct()`, four), the street between two strands of the routes as many
 ##   times over for a costly wall as the ground offers a gap (`RowGround.Weights.gap()`, six), and
 ##   five times over for the mouse in an alley beside a sack pile (`_MOUSE_PILE_EXTRA_COPIES` and
-##   one); then the row's weight on the location's kind of ground
-##   (`EventScheduler.ground_weight()`). And the mouse a location draws is offered the location's
-##   tiles beside a pile first (`_beside_a_pile_first()`), so it stands by the sacks where the
-##   location reaches them.
+##   one): the location's own ground alone. A row's weight on a kind of ground is in the bag's
+##   fill already (`EventDef.weight_on()`, `UnitFills`) and is not counted again here. And the
+##   mouse a location draws is offered the location's tiles beside a pile first
+##   (`_beside_a_pile_first()`), so it stands by the sacks where the location reaches them.
 ##
 ## Handed the day, the day's seed, the map, the bodies the day stands (the seals and the region
 ## wall's, `DayEvents.standing()`), the walk's corridor, the fit (`LocationFit`), the day's rules,
@@ -124,7 +124,7 @@ func scale(def: EventDef, location: Location) -> float:
 		times *= float(_ground.weights().gap())
 	if def.id == _MOUSE_ID and _beside_a_pile(location.tiles()):
 		times *= float(_MOUSE_PILE_EXTRA_COPIES + 1)
-	return times * EventScheduler.ground_weight(def, location.kind())
+	return times
 
 ## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
 ## it was handed.

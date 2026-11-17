@@ -27,6 +27,12 @@ its beat runs, so `StreetInvalidation._a_pacing_beat_walls_a_sidewalk()` decides
 candidate loop, where the beat exists. A row that wants a role its data does not imply needs a
 change to `EventScheduler.role_for()`, not a new field.
 
+**A row's weight on a kind of ground is one number, set on the row.** `EventDef.weigh_on()` sets
+it beside the row's `weight` in the catalogue, as a multiple of it, where the row is rare on a
+ground or never stands there though its tiles lie there; every other ground its `placement` lists
+weighs one (`EventDef.weight_on()`, which a unit's bag fill reads, `UnitFills`). It is no table
+beside the catalogue, and `EventDef.validate()` refuses a weight on ground the row cannot stand on.
+
 **What a row takes of a street is not a decision either.** `EventDef.takes_of_a_street()` reads it
 off the row's ground (a section where it stands on the carriageway, else one sidewalk location),
 and a street draws a row only while it has that much room left (`UnitRoom`). Nothing a street draws
