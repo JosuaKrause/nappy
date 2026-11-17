@@ -1573,11 +1573,15 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 	var outer := flock.bird_outer()
 	var total := 0.0
 	for bird in birds():
-		var d := GroundShape.eccentric_distance(global_position + bird.at(),
-				bird.heading() * bird.speed,
-				world_position)
-		total += def.bird_emission_at(d, share, outer)
+		total += def.bird_emission_at(_bird_distance(bird, world_position), share, outer)
 	return total
+
+## The distance a bird's own kernel prices `world_position` at: eccentric about where the bird is by
+## its own `heading * speed`. The one place a bird's datum is worked out, for the flock's field
+## (`_flock_contribution_at()`) and its reach (`field_reaches()`) alike.
+func _bird_distance(bird: EventFlock.Bird, world_position: Vector2) -> float:
+	return GroundShape.eccentric_distance(global_position + bird.at(), bird.heading() * bird.speed,
+			world_position)
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
 ## no longer merely telegraphing.
@@ -2161,11 +2165,20 @@ func ends_the_day() -> bool:
 func closes_on(point: Vector2) -> bool:
 	return car != null and car.closes_on(point)
 
-## Whether its field reaches `point`: the distance from where it stands to `point` against how far
-## its row is heard (`EventDef.heard_within()`). **Measured from its centre**, as every caller has
-## always measured it, though the field of a row with a long body runs along that body.
+## **Whether its field reaches `point`**, in the shape the field is priced in: the distance
+## `field_at()` prices (`_field_distance()`, a stationary body's capsule about its spine, a mover's
+## ellipse stretched ahead of it) against how far its row is heard (`EventDef.heard_within()`), so
+## the answer is the edge of the field the meter is charged from and not a disc about the centre.
+## A flock is its birds: it reaches `point` where any one bird's own point kernel does, over
+## `Flock.bird_outer()`. Geometry only: what the field is worth now (a telegraph's damping, a
+## finished event's zero) is `field_at()`'s.
 func field_reaches(point: Vector2) -> bool:
-	return global_position.distance_to(point) <= def.heard_within()
+	if not birds().is_empty():
+		for bird in birds():
+			if _bird_distance(bird, point) <= flock.bird_outer():
+				return true
+		return false
+	return _field_distance(point, travel_velocity()) <= def.heard_within()
 
 ## Whether its chase ended because she shook it off rather than because the clock ran out
 ## (`gave_up`).
