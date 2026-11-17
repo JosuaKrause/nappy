@@ -318,11 +318,8 @@ func _longest_route(day: int) -> PackedVector2Array:
 			if route.size() > best.size():
 				best = route
 	var points := PackedVector2Array()
-	var siting := EventScheduler.WalkSiting.new(day, _map(), tree, FakeWalkEvents.new(),
-			EventScheduler.Verdicts.new(), GamePlanBuilder.over(_map()),
-			EventScheduler.row_ground(_map()))
 	for i in best.size():
-		points.append(siting.cell_centre(best[best.size() - 1 - i]))
+		points.append(tree.cell_centre(best[best.size() - 1 - i]))
 	return points
 
 ## A crew accepted inside a look, and then a crew of the same row standing where it was put: the

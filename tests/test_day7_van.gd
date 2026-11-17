@@ -78,7 +78,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 			"seed %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
 			% [seed_value, size, ROW, rigged])
 
-	var path := _the_longest_route(city, _siting_of(city))
+	var path := _the_longest_route(city)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -209,7 +209,7 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t: TestRunner) -> void
 	var siting := _siting_of(city)
 	var def := EventCatalogue.by_id(ROW)
 	var box := EventFootprints.footprint_of(def)
-	var path := _the_longest_route(city, siting)
+	var path := _the_longest_route(city)
 	var sited := 0
 	var seen: Array[String] = []
 	var rng := _rng(seed_value, "sited")
@@ -350,15 +350,16 @@ func _siting_of(city: City) -> EventScheduler.WalkSiting:
 					DaySpec.for_day(DAY).holds_the_home_streets))
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
-func _the_longest_route(city: City, siting: EventScheduler.WalkSiting) -> Array[Vector2]:
+func _the_longest_route(city: City) -> Array[Vector2]:
+	var tree := city.streets().route_tree()
 	var longest: Array = []
-	for branch in city.streets().route_tree().branches:
+	for branch in tree.branches:
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(siting.cell_centre(longest[i]))
+		points.append(tree.cell_centre(longest[i]))
 	return points
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

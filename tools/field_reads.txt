@@ -1015,8 +1015,6 @@ src/main.gd trace
 
 # [RouteTree] src/routes/route_tree.gd
 src/dev/route_lines.gd branches
-src/events/event_scheduler.gd branches
-src/events/event_scheduler.gd grid
 
 # [RunCalendar] src/run/run_calendar.gd
 src/autoload/game_save.gd checkpoint

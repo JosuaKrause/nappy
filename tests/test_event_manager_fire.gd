@@ -258,19 +258,11 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
-	var siting := _a_siting(day)
 	var points := PackedVector2Array()
 	for i in best.size():
 		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
-		points.append(siting.cell_centre(cell))
+		points.append(tree.cell_centre(cell))
 	return points
-
-## A siting of the test's own over the day's tree, to ask what the director's own is asked: where a
-## cell of a route stands, and whether a point is still ahead of her along the branch she walks.
-func _a_siting(day: int) -> EventScheduler.WalkSiting:
-	return EventScheduler.WalkSiting.new(day, _city.map, _days_tree(day),
-			RunCity.events(_city).walk_events(), EventScheduler.Verdicts.new(),
-			GamePlanBuilder.over(_city.map), EventScheduler.row_ground(_city.map))
 
 ## Which cells of the day's routes carry `position`, as the branch colours `RouteTree` records —
 ## empty for a point off the tree. What "on the path" means, asked of a placement.
@@ -330,7 +322,7 @@ func _fire_plan() -> EventPlan:
 ##
 ## The three properties checked on the siting itself are the ones the design is stated in. It is
 ## **on the tree** — the day's own `RouteTree` carries the tile it stands on. It is **ahead on the
-## branch she is walking**, which is `WalkSiting.still_ahead_of()`'s own question asked from where
+## branch she is walking**, which is `RouteTree.is_ahead()`'s own question asked from where
 ## she was standing. And it is **off screen**: outside the streaming band, so nothing about it is
 ## visible and nothing about it is real yet.
 func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
@@ -370,7 +362,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 				("walking %s: %.0fpx out, past the %.0fpx streaming band, so it is neither visible "
 				% [leg, plan.position.distance_to(sited_from), Tuning.EVENT_STREAM_RADIUS])
 				+ "nor real when it is placed")
-		t.check(_a_siting(day).still_ahead_of(sited_from, heading, plan.position),
+		t.check(_days_tree(day).is_ahead(sited_from, heading, plan.position),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
 		await _walk(t, rig, route, func() -> bool: return RunCity.events(_city).sees(plan.position))

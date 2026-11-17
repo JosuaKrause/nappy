@@ -111,7 +111,7 @@ static func nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 
 ## The longest route of day `day`'s tree as the line she walks out from the doorstep: a route is
 ## grown from the calm area to the doorstep, so the walk out is the route reversed, each cell at
-## its centre (`EventScheduler.WalkSiting.cell_centre()`). The tree is the city's own where a dawn
+## its centre (`RouteTree.cell_centre()`). The tree is the city's own where a dawn
 ## of the city grew one, and one grown for the day otherwise, as the manager chooses it.
 static func longest_route_out(city: City, day: int) -> PackedVector2Array:
 	var grown := city.streets().route_tree()
@@ -121,11 +121,9 @@ static func longest_route_out(city: City, day: int) -> PackedVector2Array:
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
-	var siting := EventScheduler.WalkSiting.new(day, city.map, tree, RunCity.events(city).walk_events(),
-			EventScheduler.Verdicts.new(), GamePlanBuilder.over(city.map), null)
 	var points := PackedVector2Array()
 	for i in best.size():
-		points.append(siting.cell_centre(best[best.size() - 1 - i]))
+		points.append(tree.cell_centre(best[best.size() - 1 - i]))
 	return points
 
 ## Each of `units`' draws as `name: row@tile, ...`, one line a unit, a row handed to her walk as

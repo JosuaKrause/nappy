@@ -1862,9 +1862,10 @@ lesson — `EventDirector.site_what_is_on_her_way()` puts it on a building face 
 day's `RouteTree` she is walking**, and nowhere else: *"valid spawn locations are only on the path"*
 (PLAYTEST-119).
 
-The window is the day's own route rather than a line from her. `EventScheduler.WalkSiting.ahead_of()`
-walks the cells of every route through the cell she is standing on, in the direction that agrees
-with the way she is travelling, and offers the tiles of the row's own ground standing on them — a
+The window is the day's own route rather than a line from her. The route tree answers the cells of
+every route through the cell she is standing on (`RouteTree.cells_ahead()`), in the direction that
+agrees with the way she is travelling, and `EventScheduler.WalkSiting.ahead_of()` offers the tiles of
+the row's own ground standing on them — a
 building face for the fire and the poster crews, a mast's site for a mast
 (`WalkSiting._its_ground_on()`); day 7's route van and a man shouting a bag hands her (day 6's rigged
 one) are sited on the street she is walking instead (`ahead_on_her_street()`). **The far end of the

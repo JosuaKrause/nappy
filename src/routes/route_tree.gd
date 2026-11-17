@@ -123,7 +123,7 @@ var branches: Array[Branch] = []
 
 ## The grid the tree was grown on. Kept rather than rebuilt, because `Corridor` and the telemetry
 ## map both need to translate a cell or a tile against the same one the tree used.
-var grid: ReachabilityGrid
+var _grid: ReachabilityGrid
 
 ## The city the tree is grown against. Kept for the two facts about the lattice the growth needs
 ## beyond plain walkability: which cells are the main road, so the growth can leave the spine out of
@@ -278,7 +278,7 @@ static func _grow_into(tree: RouteTree, map: CityMap, home: StreetNetwork.Segmen
 	tree._home_street = home
 	if not home or areas.is_empty():
 		return tree
-	tree.grid = grid
+	tree._grid = grid
 	tree._absent = closed
 	for tile in _rect_tiles(home.tile_rect()):
 		var node := grid.node_at(tile)
@@ -356,7 +356,7 @@ func _access_nodes(map: CityMap, area: ClosurePlanner.CalmArea) -> Array[int]:
 			var neighbour := tile + offset
 			if area.rect.has_point(neighbour):
 				continue
-			var node := grid.node_at(neighbour)
+			var node := _grid.node_at(neighbour)
 			if node >= 0:
 				found[node] = true
 	var result: Array[int] = []
@@ -482,7 +482,7 @@ func _ways(node: int) -> Array:
 ## cache while sharing the production growth algorithm.
 func _ways_uncached(node: int) -> Array:
 	var found: Array = []
-	for edge: Array in grid.neighbours(node):
+	for edge: Array in _grid.neighbours(node):
 		if not _is_off_the_growths_graph(edge[2], true):
 			found.append(edge)
 	return found
@@ -502,7 +502,7 @@ func _ways_including_the_spine(node: int) -> Array:
 	if cached != null:
 		return cached
 	var found: Array = []
-	for edge: Array in grid.neighbours(node):
+	for edge: Array in _grid.neighbours(node):
 		if not _is_off_the_growths_graph(edge[2], false):
 			found.append(edge)
 	_kerb_only_cache[node] = found
@@ -585,7 +585,7 @@ func _adopt(path: Array[int], colour: int) -> Array:
 	# Bounded rather than trusted. The chain cannot cycle — a node's parent is set once, when it
 	# joins, and always points at something already on the way home — but a hang here would be a
 	# suite that prints nothing, so the one impossible case is the one worth bounding.
-	while not _home.has(at) and _parent.has(at) and nodes.size() <= grid.node_count():
+	while not _home.has(at) and _parent.has(at) and nodes.size() <= _grid.node_count():
 		at = _parent[at] as int
 		nodes.append(at)
 
@@ -596,7 +596,7 @@ func _adopt(path: Array[int], colour: int) -> Array:
 		var carried: Dictionary = _colours.get(node, {})
 		carried[colour] = true
 		_colours[node] = carried
-		route.append(grid.cell_of(node))
+		route.append(_grid.cell_of(node))
 	_resettle_the_tails()
 	return route
 
@@ -692,11 +692,11 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 ## `CityGenerator.validation_problems()` accepted, since every walkable tile is reachable from the
 ## home.
 func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:
-	if _colours.is_empty() or not grid:
+	if _colours.is_empty() or not _grid:
 		return
 	var sources: Array[int] = []
 	for tile in tiles:
-		var node := grid.node_at(tile)
+		var node := _grid.node_at(tile)
 		if node >= 0 and not sources.has(node):
 			sources.append(node)
 	if sources.is_empty():
@@ -760,7 +760,7 @@ func _any_colour_of(node: int) -> int:
 func cells() -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	for node: int in _colours:
-		found.append(grid.cell_of(node))
+		found.append(_grid.cell_of(node))
 	return found
 
 ## Builds `_street_keys` the first time anything asks a segment-level question. A node's cell
@@ -771,7 +771,7 @@ func _ensure_street_keys() -> void:
 	if _street_keys_built:
 		return
 	for node: int in _colours:
-		var segment := _map.street_network().segment_containing(grid.any_tile_of(node))
+		var segment := _map.street_network().segment_containing(_grid.any_tile_of(node))
 		if segment:
 			_street_keys[segment.key()] = true
 	_street_keys_built = true
@@ -824,9 +824,9 @@ func reaches_the_alley(map: CityMap, rect: Rect2i) -> bool:
 ##
 ## Overrides RouteSource.carries_a_route.
 func carries_a_route(tile: Vector2i) -> bool:
-	if not grid:
+	if not _grid:
 		return false
-	var node := grid.node_at(tile)
+	var node := _grid.node_at(tile)
 	return node >= 0 and _colours.has(node)
 
 ## **The street grain, where a tile has a street**: every tile of a street the tree runs along, and
@@ -852,10 +852,10 @@ func street_it_starts_in() -> StreetNetwork.Segment:
 func network() -> StreetNetwork:
 	return _map.street_network()
 
-## The grid the tree was grown on (`grid`), null for a tree grown with no home street or no calm
+## The grid the tree was grown on (`_grid`), null for a tree grown with no home street or no calm
 ## area to reach, which is how `Corridor.of()` tells an empty tree.
 func reachability_grid() -> ReachabilityGrid:
-	return grid
+	return _grid
 
 ## The tree's own corridor, built afresh: what every placement of the day is stated against.
 ##
@@ -892,7 +892,7 @@ func junctions() -> Array[Vector2i]:
 			found[segment.a] = true
 			found[segment.b] = true
 	for node: int in _colours:
-		var junction := CityMap.junction_at(grid.any_tile_of(node))
+		var junction := CityMap.junction_at(_grid.any_tile_of(node))
 		if junction != Vector2i(-1, -1):
 			found[junction] = true
 	var result: Array[Vector2i] = []
@@ -943,7 +943,7 @@ func node_depths() -> Dictionary:
 		hop += 1
 		var next: Array[int] = []
 		for node in frontier:
-			for edge: Array in grid.neighbours(node):
+			for edge: Array in _grid.neighbours(node):
 				var neighbour: int = edge[0]
 				if found.has(neighbour):
 					continue
@@ -1036,10 +1036,116 @@ func _crossed_by_the_tree(junction: Vector2i, along: int) -> bool:
 ## count could not tell it apart from *she left the corridor*.
 func branches_on(tile: Vector2i) -> Array[int]:
 	var found: Array[int] = []
-	var node := grid.node_at(tile)
+	var node := _grid.node_at(tile)
 	if node >= 0 and _colours.has(node):
 		for colour: int in (_colours[node] as Dictionary):
 			found.append(colour)
 	found.sort()
 	return found
+
+
+## **Every cell of the tree ahead of `at` along the branch through it**, as `cell -> how far she
+## walks down the route to reach it`, out to `limit` pixels: every route through the cell holding
+## `at`, walked the way that agrees with `heading`. Empty where `at` is off the tree.
+##
+## Empty when she is not standing on the tree at all, which is a real answer rather than a
+## failure: a route is the ground she is offered, and she is allowed to be off it.
+##
+## **Which way is "ahead" is read off her heading against the route itself**, not assumed to be
+## outbound. A route runs from the calm area to the doorstep (`Branch.routes`), so the walk out is
+## toward the head of the array and the walk home is toward its tail, and the one that agrees with
+## the direction she is actually travelling is the one taken. At a corner both neighbours can be
+## off her heading; the better of the two is still the way the route goes, which is what puts a
+## place round the corner she is about to turn.
+func cells_ahead(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
+	var found := {}
+	if not _grid or not _map:
+		return found
+	var her_tile := _map.world_to_tile(at)
+	if branches_on(her_tile).is_empty():
+		return found
+	var her_cell := _grid.cell_of(_grid.node_at(her_tile))
+	for branch in branches:
+		for route: Array in branch.routes:
+			var index := route.find(her_cell)
+			if index < 0:
+				continue
+			var step := _onward_from(route, index, heading)
+			if step == 0:
+				continue
+			var travelled := 0.0
+			var from := at
+			var i := index + step
+			while i >= 0 and i < route.size():
+				var cell: Vector2i = route[i]
+				var centre := cell_centre(cell)
+				travelled += from.distance_to(centre)
+				if travelled > limit:
+					break
+				from = centre
+				if not found.has(cell) or travelled < float(found[cell]):
+					found[cell] = travelled
+				i += step
+	return found
+
+## **Whether `position` is ahead of `at` along the branch through `at`**, by any distance. True
+## where the answer cannot be had (`at` is off the tree), so a place is left alone for a corner cut.
+##
+## **Ahead by any distance, not inside a band.** She is walking toward it, so the distance shrinks
+## with every step; asking a band again would move a place she is about to reach.
+##
+## **True when the answer cannot be had.** Off the tree — a park cut, an alley, a thinned seal —
+## there is no branch to be ahead on, and the honest answer there is to leave the place alone
+## rather than to re-site it for a corner she is cutting.
+func is_ahead(at: Vector2, heading: Vector2, position: Vector2) -> bool:
+	var ahead := cells_ahead(at, heading, INF)
+	if ahead.is_empty():
+		return true
+	return ahead.has(_cell_of(position))
+
+## The world centre of a cell `cells_ahead()` names. A cell is two tiles square and
+## `CityMap.tile_to_world` answers the centre of a tile, so the cell's centre is half a tile
+## further along both axes than its first tile's.
+func cell_centre(cell: Vector2i) -> Vector2:
+	return _map.tile_to_world(cell * ReachabilityGrid.CELL) \
+			+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
+
+## The cell of the grid that holds `position`, or `(-1, -1)` off the grid.
+func _cell_of(position: Vector2) -> Vector2i:
+	if not _grid or not _map:
+		return Vector2i(-1, -1)
+	var node := _grid.node_at(_map.world_to_tile(position))
+	if node < 0:
+		return Vector2i(-1, -1)
+	return _grid.cell_of(node)
+
+## How many cells down a route each way is looked at to tell which way she is going
+## (`_onward_from()`).
+const _ONWARD_LOOKAHEAD := 8
+
+## Which way along `route` from `index` agrees with the direction she is travelling: `-1` toward
+## the calm area, `+1` toward the doorstep, or `0` where the route has no neighbour to go to at
+## all (a route one cell long, which is a calm area on the doorstep's own street).
+##
+## **Asked over `_ONWARD_LOOKAHEAD` cells rather than the next one**, because a route is a
+## loop-erased walk and its next step is as often sideways as onward: a single-cell tangent flips
+## from one direction to the other at every wiggle, so a place would read as ahead of her on one
+## frame and behind her on the next. Looking a block down each way asks the question the walk is
+## actually about — which end of this route is she heading for.
+func _onward_from(route: Array, index: int, heading: Vector2) -> int:
+	var here := cell_centre(route[index])
+	var step := 0
+	var best := -INF
+	for candidate: int in [-1, 1]:
+		var i: int = clampi(index + candidate * _ONWARD_LOOKAHEAD, 0, route.size() - 1)
+		if i == index or (i - index) * candidate < 0:
+			continue
+		var toward: Vector2 = cell_centre(route[i]) - here
+		if toward.length_squared() < 1.0:
+			continue
+		var score := toward.normalized().dot(heading)
+		if score > best:
+			best = score
+			step = candidate
+	return step
 
