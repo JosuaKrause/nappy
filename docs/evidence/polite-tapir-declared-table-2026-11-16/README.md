@@ -56,7 +56,7 @@ was made once; and the probes on `origin/main` beside the branch's.
 | `builders_reading_placement_rows_lines.txt`, `builders_reading_walk_rows_lines.txt`, `builders_reading_m129_totals.txt` | `placement_rows.gd`, `walk_rows.gd` and `m129_zero_cost_line.gd` on the builder's reading |
 | `two_readings_table.py`, `two_readings_table.txt` | the seed tree, the branch and the builder's reading side by side, row by row and view by view |
 | `two_readings_costs.txt` | `test_events_costs.gd`'s day check and ramp check on the branch and on the builder's reading, their counts printed |
-| `ramp_cities.gd`, `ramp_cities.txt` | the costs suite's ramp check (day 14 placed over day 1) planned the same way on ten cities, on both readings |
+| `ramp_cities.txt` | the output of `tests/probes/ramp_cities.gd`, the costs suite's ramp check (day 14 placed over day 1) planned the same way on ten cities, on both readings |
 
 ## The commands
 
@@ -105,8 +105,8 @@ python3 -I $E/two_readings_table.py $E/seed_main_1109.txt $E/cells_pass.txt \
 # ramp check (the patch is in two_readings_costs.txt), then the suite on the branch and on the copy.
 ./tools/test.sh events_costs > "$OUT/costs.txt"
 (cd .claude/worktrees/builders && ./tools/test.sh events_costs > "$OUT/builders_costs.txt")
-# The ramp on ten cities: the probe copied into tests/probes/, then on the branch and on the copy.
-cp $E/ramp_cities.gd tests/probes/ && ./tools/test.sh probes/ramp_cities.gd > "$OUT/ramp.txt"
+# The ramp on ten cities: the probe in tests/probes/, on the branch and on the copy.
+./tools/test.sh probes/ramp_cities.gd > "$OUT/ramp.txt"
 tools/agent-setup.sh --remove builders   # after `git checkout .` in it
 ```
 
@@ -193,7 +193,7 @@ with the moments, a city-day: the seed tree 102.8, main today 201.8, the branch 
   and days 9, 10 and 11 place fewer events than day 1 (80.6, 78.1 and 78.4 against 87.6): from day
   9, the first day the region wall stands, a unit draws half its walls, and five cells are lower
   than the act before them. `tests/test_events_costs.gd`'s bar, day 14 a fifth over day 1, passes on
-  its city (134 placed against 89). On nine other cities planned the same way (`ramp_cities.gd`,
+  its city (134 placed against 89). On nine other cities planned the same way (`tests/probes/ramp_cities.gd`,
   `ramp_cities.txt`), three are over the bar and six under it (0.95 to 1.19 times); on the
   builder's reading one of the nine is over it.
 - **The mix.** The units place 94.2 events a city-day against the 73.3 the seed tree's units placed
