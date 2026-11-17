@@ -29,8 +29,7 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 `booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 5, 7 and 8 have had their
 pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
 -curly-hawk, -merry-goose and -dotted-pelican), and what each lists is what is left of it; entry 6 is row 5 of
-`event-interface.md`, after its row 4b; entry 7 left none, and its number is kept so the others
-keep theirs:
+`event-interface.md`, after its row 4b; entry 7 lists what is left of its pass:
 
 1. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
@@ -54,7 +53,13 @@ keep theirs:
 6. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
    `park_cordon`, `burnt_door`);
-7. (none left);
+7. the routes, city and regions suites: `test_route_bag`'s four cases that plan a whole real day
+   through `GameDawn` (the scheduler's dawn, on generated maps) only to hand `EventDirector.start_day()`
+   its moments (`_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix`,
+   `_test_day_one_hands_out_two_dog_walkers_among_the_first_three`,
+   `_test_day_3s_lesson_is_first_and_a_bag_of_its_own`,
+   `_test_a_place_that_cannot_be_sited_holds_nothing_up`) are handed moments read once off a real plan,
+   committed as the mock (writing-tests: a realistic mock is made in two steps);
 8. run flow, save and pause: `test_day_loop`'s retry case (the same mark in the same alley from the
    same seed) is the resistance director's placement answer, to move to the resistance suites
    after placement by construction; `test_dev_rig`'s `--spawn` event, closure and door cases read

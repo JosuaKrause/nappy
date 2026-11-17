@@ -16,7 +16,9 @@ extends RefCounted
 ## else. The director's reading of a mark rigs a bag (its run-log line), the events' walk sites what
 ## the bag draws on the route she walks, and the city streams the place in once she walks to it;
 ## a stand-in for any one of them would hand the others back the answer the case asks whether they
-## agree on. Every other case here is the bag or the director over a cached map, with no city.
+## agree on. No other case builds a city. Four plan a whole real day through `GameDawn` on a
+## generated map only to hand the director its moments: the scheduler is not this suite's subject,
+## and those four are what is left of the item's pass over this suite (`docs/todo/`, minty-quail).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242

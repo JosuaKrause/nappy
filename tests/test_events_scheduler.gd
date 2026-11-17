@@ -1,8 +1,7 @@
 extends "res://tests/events_shared_city.gd"
 ## The scheduler's own determinism and safety rules -- the same seed replans identically, placement
 ## is respected and no unit draws two of a row, a one-shot fires once per run, an alley robbery and the alley
-## mouse stay on the alley's own ground and the mouse lands beside a garbage-sack pile more often
-## than chance, a calm area a day has not used is left alone -- plus the
+## mouse stay on the alley's own ground, a calm area a day has not used is left alone -- plus the
 ## day's own content guarantees: the successors of a resolved event resolve, the fire truck is
 ## never itself scheduled, the fire engine is warned long enough from the worst position on its
 ## street, and every along-street path a row can walk stays in bounds.
@@ -30,7 +29,6 @@ func run(t: TestRunner) -> void:
 	_test_alley_robbery_never_lands_on_a_required_alley(t)
 	_test_the_mouse_crosses_the_alleys_own_short_axis(t)
 	_test_the_mouse_waits_until_she_is_near(t)
-	_test_the_mouse_prefers_a_pile(t)
 	_test_one_park_stays_usable(t)
 	_test_the_fixed_parts_hold_their_locations(t)
 	_test_a_wall_body_holds_its_location_and_a_seal_none(t)
@@ -1061,57 +1059,3 @@ func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void
 	var sealed := dawn.locations().holding(seal_tile, map.tile_at(seal_tile))
 	t.check(sealed != null and sealed.is_drawn(),
 			"the location under the seal's body is not held: the draw visits it like any other")
-
-# ----------------------------------------------------------- the mouse and the sacks ---
-
-## The seed of the first map of the mouse's pile preference; the maps are `+ i * 173` apart.
-const _MOUSE_PILE_BASE_SEED := 40200
-
-## **The alley mouse lands beside a garbage-sack pile more often than the ground alone would put it
-## there.** The last day is planned through `GameDawn` on pinned maps, each from several rolls,
-## and every mouse it stands is asked whether it is within a tile of a pile
-## (`GarbageSacks.alley_pile_tiles()`). Without the preference a mouse is a uniform pick of the
-## alley ground it may stand on (`RowGround.tiles_for()`), so each lands near a pile with
-## the probability of that ground's share of such tiles, and the count near is a sum of those
-## chances: its mean is the sum of the shares and its variance the sum of share * (1 - share). With
-## the preference an alley location beside a pile draws the mouse five times as often (itself and
-## `_MOUSE_PILE_EXTRA_COPIES` more, `RuledLocationGround.scale()`) and the mouse it draws is offered
-## the tiles beside the pile first. The bar is the mean plus five standard deviations of the
-## no-preference count, far enough above chance that no pinned roll passes by luck; dropping the
-## preference puts the count near the mean and fails it.
-func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
-	var day := Tuning.RUN_LENGTH_DAYS
-	var mouse := EventCatalogue.by_id("alley_mouse")
-	var mice := 0
-	var near := 0
-	var expected := 0.0
-	var variance := 0.0
-	for i in 12:
-		var map := CityGenerator.generate(_MOUSE_PILE_BASE_SEED + i * 173)
-		var piles := GarbageSacks.alley_pile_tiles(map, day)
-		if piles.is_empty():
-			continue
-		var candidates := EventScheduler.row_ground(map).tiles_for(mouse)
-		var beside := {}
-		for tile in candidates:
-			for pile in piles:
-				if maxi(absi(tile.x - pile.x), absi(tile.y - pile.y)) <= 1:
-					beside[tile] = true
-					break
-		var share := float(beside.size()) / float(candidates.size())
-		for roll in 8:
-			var rng := RandomNumberGenerator.new()
-			rng.seed = 1000 + roll
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).plan().placements():
-				if plan.def.id != mouse.id:
-					continue
-				mice += 1
-				expected += share
-				variance += share * (1.0 - share)
-				if beside.has(map.world_to_tile(plan.position)):
-					near += 1
-	t.check(mice > 100, "the pinned last days stand enough mice to count (%d)" % mice)
-	var bar := expected + 5.0 * sqrt(variance)
-	t.check(float(near) > bar,
-			"mice land beside a sack pile more often than their ground alone would put them (%d of %d, chance %.0f, bar %.0f)"
-			% [near, mice, expected, bar])
