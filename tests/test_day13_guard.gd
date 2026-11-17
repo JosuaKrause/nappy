@@ -275,9 +275,12 @@ func _test_the_guard_stands_on_the_far_side_from_her(t: TestRunner, seed_value: 
 		var rider := director.rider()
 		if not _on_the_far_side(first.global_position, rider.body_position(), player.global_position):
 			near_side.append("%s from where she read the mark" % map.world_to_tile(rider.body_position()))
-	# Her view on him while the arrow settles, so its choices on the way leave him where he stands.
+	# Her view on him while the arrow settles, so its choices on the way leave him where he stands:
+	# on his own figure and no wider, so the roadblock he guards, its rider's box reaching
+	# `ResistanceDirector.TASK_BOX` about its body, does not come on screen and decide its side
+	# from where she read the mark.
 	if first != null:
-		_view = Rect2(first.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
+		_view = Rect2(first.global_position + Vector2(-16.0, -50.0), Vector2(32.0, 56.0))
 	_settle_the_arrow(director)
 	_view = Rect2()
 	for out: int in [8, 11, 14]:
