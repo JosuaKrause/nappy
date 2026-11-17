@@ -142,7 +142,7 @@ func scale(def: EventDef, location: Location) -> float:
 		times *= float(_ground.weights().precinct())
 	if segment and _ground.is_a_wall_by_cost(def) and not def.hard_fail \
 			and EventScheduler.role_for(def, _day) == GameEnums.BlockerRole.WALL \
-			and _corridor.is_in_a_gap(middle):
+			and _corridor != null and _corridor.is_in_a_gap(middle):
 		times *= float(_ground.weights().gap())
 	if def.id == _MOUSE_ID and _beside_a_pile(location.tiles()):
 		times *= float(_MOUSE_PILE_EXTRA_COPIES + 1)

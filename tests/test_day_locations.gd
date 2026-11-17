@@ -32,6 +32,7 @@ func run(t: TestRunner) -> void:
 	_test_each_location_is_part_of_its_whole(t)
 	_test_a_location_is_open_while_nothing_holds_it(t)
 	_test_a_beat_takes_a_location_and_gives_it_back(t)
+	_test_a_walk_with_no_corridor_is_laid_out_along_its_streets(t)
 
 const ON := Vector3i(2, 2, 0)
 const BESIDE := Vector3i(3, 2, 1)
@@ -483,3 +484,37 @@ func _test_a_beat_takes_a_location_and_gives_it_back(t: TestRunner) -> void:
 	locations.assign_to(sidewalks[0], other)
 	locations.give_back(sidewalks[0], beat)
 	t.check(sidewalks[0].is_taken(), "a beat that does not stand there gives back nothing of another plan's")
+
+## **A walk with no corridor is laid out along its streets** (`DayLocations.along()`): two streets of
+## the lattice handed in the reverse of its order answer their locations, the first handed's first,
+## and no other, each street as many as `lay_out()` gives it, every one on the route, none an alley,
+## a lot or a junction box.
+func _test_a_walk_with_no_corridor_is_laid_out_along_its_streets(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var lattice := map.street_segments()
+	var streets: Array[StreetNetwork.Segment] = [lattice[lattice.size() - 1], lattice[0]]
+	var laid := DayLocations.along(map, streets)
+	var whole := DayLocations.lay_out(map, _views())
+	var expected_counts := {}
+	for location in whole.all():
+		if location.segment():
+			var key := location.segment().key()
+			expected_counts[key] = int(expected_counts.get(key, 0)) + 1
+	var found := laid.all()
+	var expected := int(expected_counts[streets[0].key()]) + int(expected_counts[streets[1].key()])
+	t.check(found.size() == expected and found.size() > 0,
+			"the two streets' locations are laid out and nothing beyond them (%d, expected %d)"
+			% [found.size(), expected])
+	var order: Array[Vector3i] = []
+	var on_the_route := true
+	var streets_only := true
+	for location in found:
+		streets_only = streets_only and location.segment() != null \
+				and location.kind() in [Location.Kind.SECTION, Location.Kind.SIDEWALK]
+		on_the_route = on_the_route and location.view() == PlacementView.View.ON_THE_ROUTE
+		if location.segment() and (order.is_empty() or order.back() != location.segment().key()):
+			order.append(location.segment().key())
+	t.check(order == ([streets[0].key(), streets[1].key()] as Array[Vector3i]),
+			"the first street handed comes first, then the second (%s)" % [order])
+	t.check(on_the_route, "every location is on the route")
+	t.check(streets_only, "and none is an alley, a lot or a junction box")

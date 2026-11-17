@@ -50,7 +50,9 @@ func run(context: DawnContext) -> void:
 	var events := context.events()
 	var judged := RuledLocationGround.new(day, context.day_seed(), map, events.standing(),
 			context.corridor(),
-			LocationFit.new(day, map, context.builder().without_todays_bodies(), ground),
+			LocationFit.new(day, map, context.builder().without_todays_bodies(), ground,
+					context.ground_she_starts_on()),
 			context.rules(), ground, false, ROUTES_STAY_ON_THE_RUN)
 	context.hold_the_draw(UnitDraw.new(units,
-			MarbleDraw.new(context.locations(), rows, judged), fills, events.placements()))
+			MarbleDraw.new(context.locations(), rows, judged,
+					context.spec().stands_one_event_a_street()), fills, events.placements()))

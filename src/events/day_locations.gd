@@ -9,7 +9,7 @@ extends RefCounted
 ##
 ## **Laid out every day at dawn**, by the dawn's context (`DawnContext.locations()`) the first time
 ## `EventScheduler.build_day()` asks, after the routes are established and the day's holds are on
-## the map. On day 13 the roadblock
+## the map. A walk with no corridor is laid out along its own streets (`along()`). On day 13 the roadblock
 ## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn, a unit
 ## at a time, from the bag of its unit's view (`UnitDraw`, `MarbleDraw`; the units are grouped from
 ## `all()`).
@@ -40,6 +40,17 @@ static func lay_out(map: CityMap, corridor: Corridor) -> DayLocations:
 	day._grounds.append_array(_cells_of(map, corridor, [GameEnums.TileType.PARK,
 			GameEnums.TileType.SQUARE], Location.Kind.OPEN))
 	day._grounds.append_array(_junction_boxes(map, corridor))
+	return day
+
+## **The locations of a walk with no corridor** (the escape's chains): each of `streets`, in the
+## order handed, as its three sections and their sidewalk locations (`StreetLocations.of()`), every
+## one on the route. Nothing beyond the streets is laid out: such a walk names the streets it has,
+## and what it stands, it stands on them.
+static func along(map: CityMap, streets: Array[StreetNetwork.Segment]) -> DayLocations:
+	var day := DayLocations.new()
+	for segment in streets:
+		day._streets[segment.key()] = StreetLocations.of(map, segment,
+				PlacementView.View.ON_THE_ROUTE)
 	return day
 
 ## **Every location**, open or not: street by street in the lattice's order, each street's sections

@@ -268,7 +268,8 @@ src/
 	day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
 	                      lots, junction boxes), laid out at dawn and handed round: each one's view,
 	                      what a fixed part holds, what is taken or drawn,
-	                      and the open section of a view nearest along her paths
+	                      and the open section of a view nearest along her paths; for a walk with no
+	                      corridor, the streets the walk names and nothing beyond them
 	street_locations.gd   one street's locations: three sections along it, two sidewalk locations
 	                      in each, a section taken whole by an event that spans the street
 	location.gd           one location: its street, section, tiles, view, what stands on it, the whole
