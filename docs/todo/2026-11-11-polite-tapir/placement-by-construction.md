@@ -128,7 +128,7 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-4. **The beats become rigged marbles, and the old siting roll goes.** The walk's sitings
+4. **The beats become rigged marbles.** The walk's sitings
    (`WalkSiting`: day 3's fire, the poster crews, day 6's man shouting, day 7's route van, day 11's
    added mast, the dusk fire) take a location in the next undrawn unit ahead of her, before it
    draws. **Read as** (the orchestrator's reading): a rigged marble, such as the day-6 man shouting
@@ -138,12 +138,12 @@ full text names the files each step owns.
    (M50-the-city-points-somewhere). These stay dependent on her path on purpose. `WalkSiting` leaves the event scheduler for a
    file of its own as this step rewrites it: "yes, and make it so you can inject it which will
    allow for it to be mocked easily" (the player on the board, question walksiting-lift, 2026-11-13;
-   inbox #1456 in silky-lemur). **Read as** (the orchestrator's reading): `EventsAhead` is handed a maker of its walk's
-   siting (`SitingMaker`, the record polite-tapir-coral-egret), and `EventDirector` the day's siting,
-   so a test of either can pass a mock in its place, and `WalkSiting` is a file of its own that lays
-   a beat on the nearest free location (the record polite-tapir-busy-toad). What is left is the beat laid
-   in the next undrawn unit ahead of her before it draws, and that unit's draw told of it (the design's
-   pull request 4, waiting on the board questions `beats-on-her-street` and `beat-changes-its-unit`). The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
+   inbox #1456 in silky-lemur). **Read as** (the orchestrator's reading): `WalkSiting` is a file of its own, handed to
+   `EventsAhead` through a maker and to `EventDirector` as the day's siting, so a test of either can
+   pass a mock in its place (the records polite-tapir-coral-egret and polite-tapir-busy-toad). What is
+   left is the beat laid in the next undrawn unit ahead of her before it draws, and that unit's draw
+   told of it (the design's pull request 4, waiting on the board questions `beats-on-her-street` and
+   `beat-changes-its-unit`). The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
    tree where she is going and is handed no siting (step 4's first pull request, the record
    polite-tapir-tall-marmot): *proposed, not asked for*, the design's pick, open to the player. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
    ground still needs it.
