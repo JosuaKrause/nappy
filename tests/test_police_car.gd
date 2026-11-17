@@ -123,7 +123,7 @@ func _test_her_walk_into_a_standing_car_stops_at_its_side(t: TestRunner) -> void
 	car.free()
 
 ## **A car made after the tick's word is handed where she is before its first frame**
-## (`WhereSheIs.heard_so_far()`): made where she stands it holds its body back round her, and puts
+## (`WhereSheIs.handle_for_an_event()`): made where she stands it holds its body back round her, and puts
 ## it down the first frame she is not there; made with her elsewhere its body is down at once.
 func _test_a_car_made_where_she_stands_holds_its_body_back_from_its_first_frame(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])

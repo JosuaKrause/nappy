@@ -28,6 +28,7 @@ func run(t: TestRunner) -> void:
 		_test_a_set_piece_is_one_plan_owed_to_her_walk,
 		_test_a_day_started_through_the_manager_is_planned_on_its_streets,
 		_test_a_streamed_pursuer_resumes_the_chase,
+		_test_a_walk_starts_with_nobody_told_where_she_is,
 		_test_a_row_warned_down_her_line_arrives_at_its_own_intensity,
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
@@ -42,6 +43,19 @@ func run(t: TestRunner) -> void:
 		_build_city(t)
 		await test.call(t)
 		_teardown()
+
+## **A walk begins with nobody told where she is**: the world's word is forgotten as the walk
+## starts (`EventManager.clear()`), so an event streamed in before the walk's first word does not hear
+## where she stood at the end of the last one.
+func _test_a_walk_starts_with_nobody_told_where_she_is(t: TestRunner) -> void:
+	var events := RunCity.events(_city)
+	events.world.where_she_is().tell(Vector2(700.0, 700.0), Vector2(714.0, 700.0),
+			Rect2(0.0, 0.0, 9.0, 9.0), true, false, true)
+	var handle := events.world.where_she_is().handle_for_an_event()
+	var no_plans: Array[EventPlan] = []
+	events.start_recipe(no_plans, DaySpec.for_day(2), 2, Vector2.ZERO)
+	t.check(handle.at() == Vector2.INF and not handle.is_running() and handle.baby_is_awake(),
+			"a walk begun forgets the last walk's word for every handle")
 
 ## A ground that counts what it is asked, for the siting's hand-on to be seen.
 class _CountingGround extends RowGround:

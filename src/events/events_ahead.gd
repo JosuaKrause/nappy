@@ -264,7 +264,6 @@ func let_the_officers_out() -> void:
 			if not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, stands, at):
 				at = vehicle.global_position
 			var officer := _spawner.spawn(def, at)
-			officer.see_her_at(world.player.global_position)
 			vehicle.let_out(officer)
 		# Under `ahead`: men put down from her walk, where she stood — no seed says where a vehicle
 		# noticed her. See docs/TELEMETRY.md, "The entry kinds".

@@ -421,6 +421,9 @@ func end_the_charges_still_running() -> void:
 			instance.report_the_charge_cut_short()
 
 func clear() -> void:
+	# The last walk's word is nobody's now: an event streamed in before the new walk's first word
+	# hears nowhere, not where she stood at the end of the last one.
+	world.where_she_is().forget()
 	end_the_charges_still_running()
 	ahead.clear()
 	for instance in world.instances:
@@ -585,8 +588,7 @@ func _step_them(delta: float) -> void:
 			instance.step(delta)
 
 ## **Tells where she is, once a tick** (`WhereSheIs.tell()`, `EventWorld.where_she_is()`), which
-## every instance was handed when it was made and hears from the word after (a car hears the
-## word told so far, `WhereSheIs.heard_so_far()`).
+## every instance was handed when it was made and hears from then on.
 ##
 ## Here rather than in the instance for the same reason `Crowd` finds who stands ahead of a car
 ## (`LaneMover.Lane.see_a_pedestrian_at()`) rather than letting each car look: the player is found

@@ -12,20 +12,19 @@ extends RefCounted
 ## live event is handed where nobody names one (a rig): no position (`Vector2.INF`), no pram, an
 ## empty view, not running, the baby awake, no door holding her.
 ##
-## **A live event hears the word through a handle of its own** (`heard_from_now()`), with the
-## timing every event's reads are built on:
+## **A live event hears the word through a handle of its own** (`handle_for_an_event()`), made
+## when the event is set up, **whatever made it and whenever in the tick**:
 ##
-## - **it knows nothing of her until the next word after it was made**, but for a car, which
-##   hears the word told so far (`heard_so_far()`) so that, made where she stands, it holds its
+## - **it hears the word told so far and every word after.** A car made where she stands holds its
 ##   body back round her from its first frame (`EventInstance._ready()`), and an officer let out
-##   after the tick's word, who is told where she stands by hand
-##   (`EventsAhead.let_the_officers_out()`);
+##   after the tick's word, a successor set off inside an event's step and a door's guard know all
+##   six facts before the next word;
 ## - **a point it is told itself** (`see_her_at()`: the halo once a drawn frame, a pursuer set on
-##   her from outside, an officer let out) **is its own until the next word**, and reaches no
-##   other event;
+##   her from outside) **is its own until the next word**, and reaches no other event;
 ## - **with nobody in the world nothing is told**, and a handle keeps answering the last word.
 ##
-## The count of words and the point a handle saw are that timing's only state.
+## The count of words and the point a handle saw are that timing's only state; `forget()` starts a
+## walk over.
 
 var _at := Vector2.INF
 var _pram_at := Vector2.INF
@@ -36,12 +35,9 @@ var _held := false
 ## How many words it has been told (`tell()`).
 var _words := 0
 
-## The word a handle hears (`heard_from_now()`), or null for the one the manager tells, which
-## answers from its own.
+## The word a handle hears (`handle_for_an_event()`), or null for the one the manager tells,
+## which answers from its own.
 var _word: WhereSheIs = null
-## How many words its word had been told when the handle was made: until there are more it
-## answers nowhere.
-var _heard_from := 0
 ## A point its own event was told itself (`see_her_at()`), and how many words its word had been
 ## told then: answered in place of the word's own point until the next word.
 var _seen_at := Vector2.INF
@@ -65,21 +61,25 @@ func tell(at: Vector2, pram_at := Vector2.INF, view := Rect2(), running := false
 	_held = held
 	_words += 1
 
-## **A handle for one live event**, on the same word: it answers nowhere until the word after this
-## one, and a point its event sees itself (`see_her_at()`) until the next word.
-func heard_from_now() -> WhereSheIs:
+## **A handle for one live event**, on the same word: it answers the word told so far and every
+## word after it (nowhere until the first is told), and a point its event sees itself
+## (`see_her_at()`) until the next word.
+func handle_for_an_event() -> WhereSheIs:
 	var handle := WhereSheIs.new()
 	handle._word = _told()
-	handle._heard_from = handle._word._words
 	return handle
 
-## **A handle for a live event that hears the word told so far** and every word after it, rather
-## than from the word after this one (`heard_from_now()`): a car made mid-tick, whose first frame
-## already holds its body back round where she stands. Nowhere until the first word is told.
-func heard_so_far() -> WhereSheIs:
-	var handle := WhereSheIs.new()
-	handle._word = _told()
-	return handle
+## **Forgets every word as a walk begins** (`EventManager.clear()`): back to nowhere in place, since
+## every handle keeps this object, so an event streamed in before the walk's first word does not
+## hear the last walk's. A point an event saw itself expires with it.
+func forget() -> void:
+	_at = Vector2.INF
+	_pram_at = Vector2.INF
+	_view = Rect2()
+	_running = false
+	_awake = true
+	_held = false
+	_words += 1
 
 ## **Its event has seen her at `at` itself**, ahead of the next word: what it answers for `at()`
 ## until then. Every other event, and every other fact, keeps the word.
@@ -92,34 +92,34 @@ func at() -> Vector2:
 	var word := _told()
 	if _seen_on == word._words:
 		return _seen_at
-	return word._at if word._words > _heard_from else Vector2.INF
+	return word._at
 
 ## Where her pram's own body is (`Stroller.PRAM_BODY_RADIUS`, on her circumference along her
 ## facing), or `Vector2.INF` with no pram: nowhere, or the escape's carrying.
 func pram_at() -> Vector2:
 	var word := _told()
-	return word._pram_at if word._words > _heard_from else Vector2.INF
+	return word._pram_at
 
 ## The camera's whole view this tick (`VisibleView.view`), empty where nothing has looked through
 ## a camera.
 func view() -> Rect2:
 	var word := _told()
-	return word._view if word._words > _heard_from else Rect2()
+	return word._view
 
 ## Whether she is running right now.
 func is_running() -> bool:
 	var word := _told()
-	return word._running and word._words > _heard_from
+	return word._running
 
 ## Whether the baby is awake right now: awake with nobody to ask.
 func baby_is_awake() -> bool:
 	var word := _told()
-	return word._awake or word._words <= _heard_from
+	return word._awake
 
 ## Whether a district door's hold has her this tick (`EventManager.door_holding_her_at()`).
 func is_held_at_a_door() -> bool:
 	var word := _told()
-	return word._held and word._words > _heard_from
+	return word._held
 
 func _told() -> WhereSheIs:
 	return _word if _word else self
