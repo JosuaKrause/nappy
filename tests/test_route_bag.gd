@@ -300,7 +300,7 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 				% [seed_value, length, met, expected])
 
 ## **The dog walker, the patrol and the convoy are marbles of her route's bag** on every day each is
-## available (inbox #1460: "they all should be drawn when the player is close by to guarantee an
+## available (inbox #1460 in silky-lemur: "they all should be drawn when the player is close by to guarantee an
 ## encounter"), the director sending each ahead of her (`EventDef.is_sent_ahead()`), and on no
 ## day one is not.
 func _test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t: TestRunner) -> void:

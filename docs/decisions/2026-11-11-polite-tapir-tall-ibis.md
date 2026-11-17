@@ -2,7 +2,7 @@
 
 **The ask.** The dog walker, the police patrol and the military convoy are put in the world just
 ahead of her when she comes near, and the route of each matters only once it exists, and then only
-if she follows it, so it can be worked out as it goes (inbox #1460). **Read as** (the
+if she follows it, so it can be worked out as it goes (inbox #1460 in silky-lemur). **Read as** (the
 orchestrator's reading, kept from #1477's step): a sent row has no route planned ahead. It has the
 leg it was created on, and while she could be watching it at the end of a leg it is given another,
 worked out from where it stands; once she could not be watching, it is gone. That a sent car keeps
@@ -165,12 +165,12 @@ Its mutation table, on the final head of the pull request (each line removed in 
 
 ## Readings and answers
 
-- **"Just ahead of the player"** (inbox #1460): the sent rows are created just ahead of her on the
+- **"Just ahead of the player"** (inbox #1460 in silky-lemur): the sent rows are created just ahead of her on the
   street she walks, coming toward her. A reading, open to the player.
 - **The convoy comes only from ahead of her**, the orchestrator's reading on the Nappy board, open
   to the player: the player's words do not cover a convoy from behind her, so none is sent.
 - **The followed convoy, settled by the player** (the Nappy board's question followed-convoy,
-  inbox #1460): a sent convoy stays loud while she can see it, as the dog walker and the patrol do,
+  inbox #1460 in silky-lemur): a sent convoy stays loud while she can see it, as the dog walker and the patrol do,
   so following it can end the day; stepping away is the lesson, as with the fire engine. The
   reviewer's rows above say what following it costs, and stepping off its street stops the cost.
   Turning it would be one setting: the convoy's

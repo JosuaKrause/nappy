@@ -4,7 +4,7 @@ extends RefCounted
 ## draws again until its room is spoken for.** *(The player: "don't immediately tie a draw to a
 ## position. like if you always draw the top left first there will be a bias for that position.
 ## what you should do instead is do the draw and then depending on what it is place it in the
-## street and draw more"; inbox #1466.)*
+## street and draw more"; inbox #1466 in silky-lemur.)*
 ##
 ## - **Each marble is drawn from the unit's one bag** (`ViewBag`, of the unit's view,
 ##   `PlacementUnit.view()`), among the rows the unit may still take: **a row is left out of the

@@ -6,7 +6,7 @@ extends DawnPhase
 ## its view, the most permissive of its locations' (`PlacementUnit.view()`), and its kind of ground
 ## (`UnitFills`: every recurring row the catalogue places on the map today, the declared table's
 ## events per hundred draw locations among them by weight, and the empty event for the rest of the
-## bag), each marble drawn before it has a place and its rows laid out in the unit (inbox #1466),
+## bag), each marble drawn before it has a place and its rows laid out in the unit (inbox #1466 in silky-lemur),
 ## at most one of a row in a unit, after every touching unit of lower rank. The day's ground answers which row is valid where and how much each location weighs it
 ## (`RuledLocationGround`), judged among the dawn's plans and the draws of the units touching the
 ## one drawing, on the first tile no rule refuses, a route kept on its location's run
@@ -24,7 +24,7 @@ extends DawnPhase
 
 ## **Whether a drawn row's route stays on its location's run** (`RuledLocationGround`'s
 ## `keeps_routes_on_the_run`, `Location.run()`): a route that would leave its street's run is cut
-## at the far edge of the boxes at its ends (inbox #1460), and this is the one setting that holds
+## at the far edge of the boxes at its ends (inbox #1460 in silky-lemur), and this is the one setting that holds
 ## it. The rows a unit draws that move are a pacing beat (the man shouting and the chatting mother,
 ## 8 tiles from their tile, which from a tile near a street's end runs through the box and on past
 ## it, and is cut) and the alley mouse; the long routes, the dog walker's, the

@@ -77,9 +77,9 @@ and why it is a declared table"). The four kinds of ground a unit is (a street, 
 an alley, a park or a square) are data (`PlacementGround.Kind`). Each unit draws from one fresh bag of its most permissive view, a marble drawn before it
 is placed (a section, or one location) and the unit's rows laid out together, at most one of a row in the
 unit, with no daily cap on a drawn row, and a drawn row's route stays on its street's run (the player
-on the board, question long-routes, inbox #1460). The dog walker, the police patrol and the military
+on the board, question long-routes, inbox #1460 in silky-lemur). The dog walker, the police patrol and the military
 convoy are drawn by no unit: the director sends each just ahead of her as a marble of her route's bag
-(inbox #1460). A poster crew is handed to her walk as it is drawn, and a sidewalk
+(inbox #1460 in silky-lemur). A poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. A place her walk
 sites stands on ground whose units have drawn, and no draw reads it. A body put down after dawn (drawn, swapped in or moved by the director) tells the crowd, which
 recycles a car standing under it where she cannot see it (`EventStreaming.use_body_listener()`,
@@ -96,11 +96,11 @@ day's bodies cut off from home, expected to be none (record 2026-11-11-polite-ta
 is placed (above). The board questions on how far a unit's draw looks (touching-reach) and on what
 the day holds until step 3 (day-density) are answered, and the answers wait in the inbox for the
 next filing. The touching-reach answer is "everything that matters must be drawn together" (inbox
-#1461). On the three route rows the player said "neither of these should be drawn at the beginning.
+#1461 in silky-lemur). On the three route rows the player said "neither of these should be drawn at the beginning.
 they all should be drawn when the player is close by to guarantee an encounter", then "just spawn in
 the car just ahead of the player? then you guarantee an encounter", "the same for the dog walker and
 the convoy", "the route only matters *after* it was spawned", "and then only if the player follows
-them around" and "so the route can be ad-hoc" (inbox #1460). **Read as** (the orchestrator's
+them around" and "so the route can be ad-hoc" (inbox #1460 in silky-lemur). **Read as** (the orchestrator's
 reading): the dog walker, the police patrol and the military convoy are to be put in the world just
 ahead of her when she comes near, and each one's route is worked out as it goes, from where it was
 put, so like the beats sited from her walk they depend on her path. Each is put just ahead of her on
@@ -115,7 +115,7 @@ not cover a convoy from behind her, so the convoy comes only from ahead of her. 
 (`tests/probes/m129_zero_cost_line.gd`) asks whether rows that each leave her a free line together
 leave none; the line rule follows her line from a junction box onto the sidewalks she walks, the
 home street's included, and the probe shows every route keeping one. The player answered "sure" in
-chat to option C of free-line-density and to pick (c) of line-reach-close (inbox #1461). **Read
+chat to option C of free-line-density and to pick (c) of line-reach-close (inbox #1461 in silky-lemur). **Read
 as**: the draw gains a rule that follows her line from a junction box onto the sidewalk she walks,
 for every row that lands near her route, and a street that draws after its neighbours keeps one
 sidewalk open, given what they drew (with inbox #1465 in spry-plover), which the player's correction on that note
@@ -138,7 +138,7 @@ full text names the files each step owns.
    (M50-the-city-points-somewhere). These stay dependent on her path on purpose. `WalkSiting` leaves the event scheduler for a
    file of its own as this step rewrites it: "yes, and make it so you can inject it which will
    allow for it to be mocked easily" (the player on the board, question walksiting-lift, 2026-11-13;
-   inbox #1456). **Read as** (the orchestrator's reading): the classes that make one today with
+   inbox #1456 in silky-lemur). **Read as** (the orchestrator's reading): the classes that make one today with
    `WalkSiting.new()`, `EventsAhead` (in `start_day()`, `queue_a_mast()` and `rig_her_route()`) and
    `ResistanceHappenings` (in `_market_ahead_of()`), are handed it, or a maker of it, as
    `EventDirector` already is, so a test of any of them can pass a mock in its place. With the last
