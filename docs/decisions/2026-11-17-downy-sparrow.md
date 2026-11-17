@@ -28,13 +28,13 @@ statement 2 holds for every design Fable writes or only for work under the `fabl
 
 **Asked for and overturned.** Asked for X · overturned to Y on 2026-11-17, because Z:
 
-- Asked for (inbox #1501 in silky-lemur, read by the orchestrator as about the label): on `fable-only` work, Opus
-  reviews and Fable only writes the design; a Fable design outside the label stayed reviewed by
-  Fable, the rule of inbox #1299 in grassy-trout. · Overturned to: the rule holds for every piece of
-  work Fable takes part in, under the label or not, and Opus reviews every Fable design, because the
-  player answered the board question "every fable work item" (inbox #1504 in silky-lemur). The older rule that
-  Fable reviews what Fable designed (inbox #1299 in grassy-trout statement 9, kept in inbox #1303 in
-  grassy-trout) is overturned by that answer and nothing is left of it.
+- Asked for: "and we can do a third rule that if fable designed something fable needs to review"
+  (inbox #1299 in grassy-trout statement 9, confirmed as permanent in inbox #1303 in grassy-trout) ·
+  overturned to: Fable never reviews, and Opus reviews every Fable design, under the `fable-only`
+  label or not, on 2026-11-17, because the player answered the board question
+  `fable-outside-the-label` with "every fable work item" (inbox #1504 in silky-lemur), after
+  inbox #1501 in silky-lemur had said "let's change the fable only label to let opus do the review".
+  Nothing is left of the older rule.
 
 **What the rule says now.** In every piece of work Fable takes part in, labelled `fable-only` or
 not, Fable's part is the written design alone. It never writes the code and never reviews it, and it
