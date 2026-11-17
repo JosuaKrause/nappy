@@ -16,6 +16,5 @@ run with comments stripped, since a first survey that counted them missed four m
 (minty-quail-misty-ferret). Each deletion says in its pull request what reached
 the code last, or that nothing ever did.
 
-**Where the rest is:** every finding of the last survey (`check_test_only_members.py` and a scan
-for members named nowhere in `src/`, `tests/`, `tools/` or `scenes/`) is deleted; the next pass
-runs the survey again.
+**Where the rest is:** the next pass runs the survey again (`check_test_only_members.py` and a scan
+for members named nowhere in `src/`, `tests/`, `tools/` or `scenes/`) and deletes what it finds.

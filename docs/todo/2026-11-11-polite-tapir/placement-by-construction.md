@@ -138,10 +138,10 @@ full text names the files each step owns.
    (M50-the-city-points-somewhere). These stay dependent on her path on purpose. `WalkSiting` leaves the event scheduler for a
    file of its own as this step rewrites it: "yes, and make it so you can inject it which will
    allow for it to be mocked easily" (the player on the board, question walksiting-lift, 2026-11-13;
-   inbox #1456 in silky-lemur). **Read as** (the orchestrator's reading): the class that makes one today with
-   `WalkSiting.new()`, `EventsAhead` (in `start_day()`, `queue_a_mast()` and `rig_her_route()`), is
-   handed it, or a maker of it, as `EventDirector` already is, so a test of it can pass a mock in its
-   place. The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
+   inbox #1456 in silky-lemur). **Read as** (the orchestrator's reading): `EventsAhead` is handed a maker of its walk's
+   siting (`SitingMaker`, the record polite-tapir-coral-egret), and `EventDirector` the day's siting,
+   so a test of either can pass a mock in its place; what is left is `WalkSiting` in a file of its
+   own, laying a beat by location. The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
    tree where she is going and is handed no siting (step 4's first pull request, the record
    polite-tapir-tall-marmot): *proposed, not asked for*, the design's pick, open to the player. With the last
    caller gone, `EventScheduler._best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES` and whatever only
