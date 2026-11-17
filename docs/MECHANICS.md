@@ -1797,10 +1797,10 @@ so the line on the screen and the line in the HUD are one instruction rather tha
 **Section two is the city she knows with the men in it.** Army trucks, off-screen explosions,
 unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
 drawn from one marble bag for the whole escape: each street draws one marble and holds one row at
-most, and the bag holds the most trucks, then explosions, then vans, then roadblocks, and fewest of
-all the empty marbles that leave a street with nothing
-(`DaySpec.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
-none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
+most, and the bag holds the most trucks, then explosions, then vans, then roadblocks
+(`DaySpec.FINALE_BAG_TRUCKS` and the three after it), beside the empty marbles that leave a street
+with nothing (`FINALE_BAG_EMPTY`). A danger a street has no room for stays in the bag for a later
+street, so most streets stand one danger and the rest stand none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
 barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk filled before she sets off". A roadblock
 is a barrier with a guard standing at it from
@@ -1811,7 +1811,7 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
-charge. Walking in until he charges and running back until he gives up takes him off for good, and
+charge on most walks. Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
 (`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk
 past at any time, manned or not, as every roadblock's band, a day's included

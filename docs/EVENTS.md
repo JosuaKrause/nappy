@@ -1521,9 +1521,9 @@ Each item quotes the code on this branch.
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
      owes her walk, each laid ahead of her (`WalkSiting.lay_ahead()`).
-   - **The escape's bag** (`_draw_the_walk()`): each street of the walk draws one marble from one
-     bag, empty marbles among them, and a drawn row is offered at the street's locations under the
-     walk's rules; a row no location takes is spent unmet rather than kept in the bag.
+   - **The escape's bag** is one bag for the whole walk (`WholeWalkBag`), not a view's: every
+     street of the walk draws one marble from it, empty marbles among them, by the same unit draw
+     as a day's, and a marble a street refuses stays in it.
 4. **The roadblock phase judges a section's roadblock with today's placement rules**
    (`RuledRoadblockGround.offer()` asks `StreetInvalidation`, and takes only a tile with room all
    round), asked of the whole day rather than of a street's other draws. It passes over a section
@@ -2215,9 +2215,9 @@ a unit draws depend on the order the units are drawn in, and so on her path. In 
 holds at most one of a row (`MarbleDraw`), and the day places what its cells and weights give.
 Repeats are fine — the same event several times over is what a street is — so density needs no new
 catalogue rows. `max_per_day` still bounds what no unit draws: the moments she is owed
-(`DawnMoments`, where the spec keeps the caps), the director's marbles and the rows of a scene
-recipe that no unit draws (`SceneRecipeRuntime`); the escape's bag does not, since the escape's
-spec turns the caps off, and no other spec walks a bag. **So heat does not
+(`DawnMoments`), the director's marbles and the rows of a scene
+recipe that no unit draws (`SceneRecipeRuntime`). The escape's streets are units, so none bounds
+them. **So heat does not
 bound a drawn row**: heat raises a row's `max_per_day` (`EventDef.heated()`), which a drawn row no
 longer meets.
 
@@ -2226,7 +2226,7 @@ Two things a low cap did quietly, and who has them now:
 - **Separation.** `EVENT_SPACING_ANY` (64px) between any two events at all is a rule of the day's
   ground (`RuledLocationGround.offer()`) and never bends. Between two of a kind, a drawn row has the
   one of a row per unit; the rows placed by a phase of their own (the scripted rows, the roadblock
-  phase, the escape's bag) keep `EVENT_SPACING_SAME` (256px, a block), which bends to the roomiest
+  phase) keep `EVENT_SPACING_SAME` (256px, a block), which bends to the roomiest
   tile of a location.
 - **Keeping a lethal field uncluttered.** See the telegraph contract below.
 
@@ -2296,7 +2296,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `military_convoy` | RECURRING, sent ahead of her | 13 | Leaves nothing: nothing a convoy does during the walk closes a street. **A convoy on a day is sent ahead of her by the director**, warned of first in the lane beside her, toward her, and drives down the lane past her to the far edge of the next junction box, then on from box to box while she can see it (see "The dog walker, the patrol and the convoy are sent ahead of her"). **The escape's trucks** are this row too, placed by `EventScheduler._draw_the_walk()`, which does not keep a route on its run, so each keeps the full `path_length_tiles` (50) route, as far as the first tile that stops a truck. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
+| `military_convoy` | RECURRING, sent ahead of her | 13 | Leaves nothing: nothing a convoy does during the walk closes a street. **A convoy on a day is sent ahead of her by the director**, warned of first in the lane beside her, toward her, and drives down the lane past her to the far edge of the next junction box, then on from box to box while she can see it (see "The dog walker, the patrol and the convoy are sent ahead of her"). **The escape's trucks** are this row too, drawn by `DawnDraw` over the whole walk, which does not cut a route to its street's run, so each keeps the full `path_length_tiles` (50) route, as far as the first tile that stops a truck. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
 | `barricade` | — | — | Never scheduled directly by the ordinary catalogue roll — `scripted_day` 0 never equals a real day. It is placed fresh, without a scar, every morning from act IV onward as a **hard seal** on a street off the day's route tree (`SealPlanner`, `obstructs_radius` 62 repeated across the street's whole width so nothing gets past it, the outer two flush with the street's edges so no cart stands over the buildings either side) — see docs/CITY.md, "Sealing the tree". |
 | `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own `inner_radius` on purpose — the loudest part of a protest is something you stand in rather than bump into. **A wide field at a moderate rate loses more of its price to the walking decay than any other row**, netted off as that is over the whole of a long crossing, which is why its intensity is set high against `EventScheduler.WALL_WORTH_OF_COST` rather than comfortably under it: a little more and `walk_through_cost()` crosses that line, `EventScheduler.role_for()` calls it a `WALL` and it is pulled off every route the day carries — and a protest is where a resistance task sends her. [COSTS.md](COSTS.md) has where it actually sits. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |
@@ -2397,25 +2397,28 @@ feasibly work at all. that is why the density is so high that it's impossible to
 a marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
 mix"; "frequency order is trucks > explosions > vans > barriers > empty". Of how many a street
 holds, inbox #1185 in gentle-owl's board answer: "one per street. fill empty in if any segment or location in the
-street has an event".)* Every open street of the walk draws one marble from a bag for the whole
-escape (`EventScheduler._street_bag()`): `DaySpec.FINALE_BAG_TRUCKS` army trucks (10),
-`FINALE_BAG_EXPLOSIONS` explosions (8), `FINALE_BAG_VANS` vans (3), `FINALE_BAG_ROADBLOCKS`
-roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble is offered at the street's
-locations in the street's own order, under every placement rule below, and the first location it
-stands at takes it, the rest of the street empty; an empty marble leaves the street with nothing; a
-row's marble no location takes is spent unmet, so a refused danger never moves on to the next street
-(the builder's reading, open to correction: kept rather than leaving the marble in the bag, which
-would raise the escape's density by about the third of its streets that stand nothing). The bag has its own stream off the plan's seed, so a lost section replans the same
-streets. The two rows that take her, the van and the roadblock's guard, have the fewest marbles the
-player's order allows, and the counts were chosen by walking the shortest walk from the service
-exit to each exit through the plan's own events on two sets of 24 seeds: a walk meets about three
-trucks, three explosions, one van and one roadblock, and a plain walk gets out on 95 of 96.
-`tests/probes/escape_winnable.gd` walks the game's own plan with the game's own walker (`RouteRig`,
-`--start-escape city --route tunnel`) to measure it again. **The bag is a draw of the day's own
-scheduler**: the city section's `DaySpec` holds the bag and the rows (`DaySpec.Draw.BAG_PER_STREET`,
-`bag`, `bag_rows`), `EventScheduler.build_day()` draws them (`_draw_the_walk()`) along the streets of
-the walk `FinalePlanner` hands it (`RouteSource`), onto each street's locations (`StreetLocations`),
-and every candidate is asked of the same rules a day's is (`StreetInvalidation`).
+street has an event".)* Every open street of the walk is a unit of the day's draw (`UnitDraw`), and the city section's
+spec sets three things about it: the whole walk draws from one bag (`DaySpec.walk_bag()`), a
+street draws one marble and stands one event at most (`stands_one_event_a_street()`), and every
+street is drawn before she sets off, in the order the walk names its streets, each judged among
+everything drawn before it (`draws_before_she_sets_off()`). The bag holds
+`DaySpec.FINALE_BAG_TRUCKS` army trucks, `FINALE_BAG_EXPLOSIONS` explosions, `FINALE_BAG_VANS`
+vans, `FINALE_BAG_ROADBLOCKS` roadblocks and `FINALE_BAG_EMPTY` empty marbles. A row's marble
+stands on the location of the street that takes it, under every placement rule below, the rest
+of the street empty; an empty marble leaves the street with nothing. **A marble the street's
+rules refuse stays in the bag**, and the street draws again among the marbles left
+(`ViewBag.draw()`), so a danger one street cannot hold is met on a later one. The four rows are
+in the player's order of how many. The empty marbles are counted apart: with a refused marble
+staying in the bag, they are what leaves a street with nothing, and their count holds the share
+of streets that stand nothing where it stood when a refused marble was spent; the entry
+lilac-marten (the fuller escape) sets it from there. The bag has its own stream off the plan's
+seed, so a lost section replans the same streets. `tests/probes/escape_winnable.gd` prints
+what the plan stands and walks the game's own plan with the game's own walker (`RouteRig`,
+`--start-escape city --route tunnel`). **The draw is the day's own**: `EventScheduler.build_day()`
+runs the same dawn phases for the escape as for a day, the phases that place the catalogue's
+rows find none for a walk with a bag of its own (`DawnContext.catalogue_rows()`), and
+`DawnDraw` draws the walk's streets (`DayLocations.along()`, `DayUnits`, `MarbleDraw`) with
+every candidate asked of the same rules a day's is (`StreetInvalidation`).
 
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds
@@ -2458,10 +2461,12 @@ obstacle survivable")* Four things make that true:
   raised-hand picture at his post is inside the camera's view, and he charges only if she is still
   inside his radius once his 2.0s warning has run.
 
-So walking straight past a posted band is caught, and walking in until his hand goes up, standing
+So walking straight past a posted band meets his charge and is caught on most walks (the probe
+`tests/probes/escape_roadblock_cost.gd` prints the walks that are not; the entry azure-squirrel,
+a posted guard that charges a straight walker and misses her on some streets, investigates why), and walking in until his hand goes up, standing
 until he charges, running back until he gives up and then walking past costs what the run costs
 and nothing more, awake or asleep. `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) walks exactly that on every roadblock street of two seeds' plans,
-in both directions, and on seed 4216201080 booted from the building through `main.tscn`; it walks
+in both directions (it requires at least half of the straight walks past a posted guard caught, a floor and not a promise of each), and on seed 4216201080 booted from the building through `main.tscn`; it walks
 her in at every band from all round it and requires his warning to start in her view and above the
 street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over more seeds, and
 `tests/probes/escape_roadblock_spacing.gd` how many bands a plan stands and how near the nearest
@@ -2485,7 +2490,7 @@ below, and is never offered the ground she starts on.
 **Three of a day's rules are not the escape's, each by the player's word** *(inbox #785 in minty-lemur, asked
 which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's
 streets and the caps)*, each a setting the city section's spec turns off
-(`DaySpec.keeps_unused_calm_clear`, `holds_the_home_streets`, `caps_per_day`):
+(`DaySpec.keeps_unused_calm_clear`, `holds_the_home_streets`, and the walk's own bag, `walk_bag()`):
 
 - **The calm a day leaves alone** (`CalmAreas.unused_ground()`: nothing's field may reach a calm
   area she has not used yet). The escape is the climax and the chains pass a calm area at every
@@ -2495,9 +2500,10 @@ streets and the caps)*, each a setting the city section's spec turns off
   the streets round the home block, because she sets off from that door. The escape sets off from
   the service exit on the side of the block (`docs/CITY.md`, "The escape"), and that exit opens onto
   one of the streets round the home block, so holding them would empty the street she starts on.
-- **The bags and `max_per_day` caps**: a day draws every location from the bag of its unit's view,
-  a unit at a time, and holds the moments it owes her to their caps; the escape stands what its
-  slots draw from its bag (above).
+- **The bags and the day's own rows**: a day's unit draws from a fresh bag of its view's fill until
+  its room is spoken for, no cap across the day, and the dawn owes her the day's moments at their
+  caps; the escape's streets each draw one marble from the walk's one bag, no cap across the walk,
+  and the catalogue's rows are not the escape's (above).
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
 (`EventScheduler.clearance_around_her`), because *"the spawning shouldn't be a check. the pathing

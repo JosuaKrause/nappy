@@ -913,7 +913,9 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 ## The share of walks straight past a posted guard that are caught, at least: the walk is the
 ## control that shows the lure walk beside it is not walking past nothing. A posted guard does not
 ## catch every straight walker (the probe `tests/probes/escape_roadblock_cost.gd` prints which are
-## not), so this is a floor over the walks and not a promise of each.
+## not; the queue entry azure-squirrel, a posted roadblock guard that charges a straight walker and
+## misses her on some streets, investigates why), so this is a floor over the walks and not a
+## promise of each.
 const POSTED_WALKS_CAUGHT_AT_LEAST := 0.5
 
 static func _check_posted_walks_are_caught(t: TestRunner, walks: int, caught: int) -> void:

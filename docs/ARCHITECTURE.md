@@ -226,9 +226,8 @@ src/
 	                      under a raised boom, the crossing's warning and the guard it sets on her;
 	                      what a door does to her it says as an intent the manager carries out
 	event_catalogue.gd    every event, defined in code
-	event_scheduler.gd    the dawn as an ordered list of phases over the dawn's context, or the escape
-	                      city's streets from its marble bag; a row's role, the walk's ground and
-	                      the view bags
+	event_scheduler.gd    the dawn as an ordered list of phases over the dawn's context, the escape
+	                      city's as well; a row's role, the walk's ground and the view bags
 	dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
 	                      builds once, the corridor, the day's events, locations, ground and rules;
 	                      handed to every phase, and what a phase asks it to record or judge: a fixed
@@ -288,7 +287,10 @@ src/
 	                      every touching unit of lower rank, from the bag the walk's bags answer
 	                      for it (`UnitBags`: on a day, one fresh bag of the fill `UnitFills`
 	                      answers for its view and kind of ground), judged among the dawn's plans
-	                      and the touching units' draws, never a plan her walk sites
+	                      and the touching units' draws, never a plan her walk sites; a walk drawn
+	                      whole is drawn at dawn in its units' order, each among everything before it
+	whole_walk_bag.gd     one bag every unit of a walk draws from, a refused marble left in it for the
+	                      next unit: the escape's
 	unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
 	                      table's events per hundred as row marbles, the rows among themselves by
 	                      weight (their own, on the ground, for their role in the view), empty for
@@ -298,9 +300,9 @@ src/
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
 	                      the row's role, offered the row and assigned what it took
-	view_bag.gd           one unit's bag, of its view's and ground's fill: every row possible there as
-	                      often as its weight, and the empty event, drawn without putting back, only
-	                      what the unit accepts
+	view_bag.gd           a bag of marbles drawn without putting back: a unit's, of its view's and
+	                      ground's fill, or a whole walk's; every row possible there as often as its
+	                      weight, and the empty event, only what the unit accepts
 	marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
 	                      out again largest first as each is added, what the room left or the
 	                      layout cannot hold left out, at most one of a row in the unit
