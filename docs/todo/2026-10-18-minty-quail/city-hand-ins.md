@@ -48,4 +48,3 @@ of one interaction or edge case, never for a booted day or a measurement.
 
 **Fields are not API** (designing-classes, inbox #1173 in gray-dolphin): new state is kept in underscore fields
 behind methods, and a read this work rewrites goes through a method.
-

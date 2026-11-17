@@ -12,4 +12,4 @@ check passes. Among them `_test_each_patrol_comes_within_its_rigged_bag`, whose 
 the rigged bag, passes without the rig, since #1477 the ordinary bag hands out enough patrols that
 the suite meets one anyway (checked by the review of #1505 with the call removed).
 
-**Item:** `suite-holds-the-rig.md`. `suite-holds-the-rig.md`.
+**Item:** `suite-holds-the-rig.md`.
