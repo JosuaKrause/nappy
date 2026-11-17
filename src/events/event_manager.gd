@@ -298,7 +298,7 @@ func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Ar
 	_begin(spec)
 	streaming.consumed = consumed_one_shots
 	var plan := planner.plan(spec, rng, consumed_one_shots)
-	_take(spec, plan, focus)
+	_take(spec, plan, focus, plan.is_a_day)
 
 ## **The first half of every walk's start**, before anything is planned: clears whatever was here
 ## (so the planning sees the map without yesterday's holds and bodies) and takes the walk's settings.
@@ -312,10 +312,11 @@ func _begin(spec: DaySpec) -> void:
 
 ## **The second half, which every walk shares** (a day, a section of the escape, a scene's recipe):
 ## takes `plan`'s placements, draws the day's units round `focus` (a day's alone has a unit draw)
-## and streams the events around `focus`. A day's plan records its bodies and hands the director
-## what the day owes her; a walk planned whole hands it nothing. `world.day` is the plan's: the
-## day's own number for a day, the run's last day for the escape's sections.
-func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
+## and streams the events around `focus`. A day's plan, and a scene recipe's
+## (`records_its_bodies`), records its bodies; a day's hands the director what the day owes her, and
+## a walk planned whole hands it nothing. `world.day` is the plan's: the day's own number for a day,
+## the run's last day for the escape's sections.
+func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bodies: bool) -> void:
 	world.day = spec.number if plan.is_a_day else world.run.header.day
 	_encounters.day = spec.number
 	_walk = plan.walk
@@ -324,23 +325,31 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
 	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations(),
 			plan.ground(), plan.unit_draw())
-	if plan.is_a_day:
-		# Every stationary solid body the day has sited, recorded per tile so the crowd goes round
-		# it — see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live
-		# instances because a body is a body whether or not the player has come near enough to
-		# stream it in, and the crowd is placed and steered across the whole map. After the whole
-		# plan is assembled, so that everything the dawn places — its rows, the seals, the wall and
-		# the door structure — is in it, and every held segment the record refuses against is
-		# already on the map; a unit's draws are recorded as each unit draws
-		# (`EventStreaming.add()`).
+	# Every stationary solid body the walk has sited, where `records_its_bodies` (a day, a scene
+	# recipe), recorded per tile so the crowd goes round it — see `CityMap.obstructed_tiles`. Taken
+	# from the **plan** rather than from the live instances because a body is a body whether or not
+	# the player has come near enough to stream it in, and the crowd is placed and steered across
+	# the whole map. After the whole plan is assembled, so that everything the dawn places — its
+	# rows, the seals, the wall and the door structure — is in it, and every held segment the record
+	# refuses against is already on the map; a unit's draws are recorded as each unit draws
+	# (`EventStreaming.add()`).
+	if records_its_bodies:
 		for placed in plan.placements:
 			if placed.is_placed():
 				spawner.record_the_body(placed.get_instance_id(), placed.def, placed.position,
 						placed.facing)
+	if plan.is_a_day:
 		ahead.start_day(world.day, plan.walk as RouteTree)
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day)
+	# What works out the route of a row the director sends ahead of her as it goes (`WayOn`): made
+	# once a walk, after the walk's bodies are recorded, so the dawn's seals, the region wall and its
+	# doors, or a scene recipe's rows, are in its through roads with the day's closures. A body put
+	# down later is asked of the ground leg by leg.
+	if world.city_map and ahead.director():
+		ahead.director().use_way_on(WayOn.new(world.city_map, world.navigator(),
+				ThroughRoads.over(world.city_map, Mover.vehicle())))
 	# The day's units round where she starts draw before anything streams in (`stream_around()`).
 	stream_around(focus)
 
@@ -371,11 +380,9 @@ func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
 	elif world.city_map:
 		plan.use_calm(planner.calm_as_the_map_stands())
 	_begin(spec)
-	_take(spec, plan, focus)
-	for placed in plans:
-		if placed.is_placed():
-			spawner.record_the_body(placed.get_instance_id(), placed.def, placed.position,
-					placed.facing)
+	# Its rows' bodies are recorded as a day's are, before its way on is made, so its through roads
+	# have them (`_take()`).
+	_take(spec, plan, focus, true)
 	world.day = day
 	_encounters.day = day
 	_recipe_plan = true

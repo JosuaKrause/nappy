@@ -510,7 +510,7 @@ func for_day(day: int) -> EventDef:
 @export var _sent_ahead: SentAhead = null
 
 ## Makes the row one the director sends ahead of her, the way `how` says (`_sent_ahead`:
-## `SentAhead.at_once()` or `SentAhead.warned_first_from_either_end()`).
+## `SentAhead.at_once()` or `SentAhead.warned_first()`).
 func send_ahead(how: SentAhead) -> void:
 	_sent_ahead = how
 
@@ -519,15 +519,16 @@ func is_sent_ahead() -> bool:
 	return _sent_ahead != null
 
 ## Whether the director warns of it first in the lane of the road beside her when it sends it
-## ahead of her (`SentAhead.is_warned_first()`, a row of the road): the convoy.
+## ahead of her (`SentAhead.is_warned_first()`, a row of the road, `keeps_to_the_carriageway()`):
+## the convoy.
 func is_warned_in_its_lane() -> bool:
-	return _sent_ahead != null and _sent_ahead.is_warned_first() \
-			and placement.has(GameEnums.TileType.ROAD)
+	return _sent_ahead != null and _sent_ahead.is_warned_first() and keeps_to_the_carriageway()
 
-## Whether the director may send it ahead of her from either end of her street
-## (`SentAhead.comes_from_either_end()`): the convoy.
-func may_come_from_either_end() -> bool:
-	return _sent_ahead != null and _sent_ahead.comes_from_either_end()
+## **Whether it keeps to the carriageway as it goes**: a row of the road (`placement` names `ROAD`),
+## the patrol and the convoy, whose route worked out as it goes drives from junction box to junction
+## box (`WayOn`). Any other walks.
+func keeps_to_the_carriageway() -> bool:
+	return placement.has(GameEnums.TileType.ROAD)
 
 ## **The copy the director sends** (`send_ahead()`): one created at once comes `TOWARD_PLAYER`, down
 ## her sidewalk on foot (the dog walker) or down the carriageway beside her (the patrol), with no

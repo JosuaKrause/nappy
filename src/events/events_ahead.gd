@@ -471,7 +471,7 @@ func place_what_is_owed_ahead(delta: float) -> void:
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
 	if def.is_warned_in_its_lane():
-		_warn_in_its_lane(def, body.global_position, body.velocity.normalized(), path)
+		_warn_in_its_lane(def, body.global_position, path)
 		return
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
@@ -483,6 +483,9 @@ func place_what_is_owed_ahead(delta: float) -> void:
 		_warn_down_her_heading(def, body.global_position, path[0])
 		return
 	var crossing := _spawner.spawn(def, path[0], path)
+	# A patrol sent ahead of her goes on while she can see it (`EventInstance.go_on_by()`).
+	if def.is_sent_ahead():
+		crossing.go_on_by(_director.way_on())
 	# A run cut short by a solid crouches longer by the run it lost, as the director worked it out
 	# with the run (`EventDef.crouch_for_a_run()`).
 	if due.size() > 2:
@@ -568,34 +571,31 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 
 ## A row the director sends ahead of her warned of first in the lane of the road beside her (the
 ## convoy, `EventDef.is_warned_in_its_lane()`), sited on `sited` (`EventDirector.due()`: its first
-## leg) with her walking `heading`: the badge goes up at once, pointing level with her along the
+## leg), coming toward her: the badge goes up at once, pointing level with her along the
 ## road and just out of sight up it (`PendingWarning.in_its_lane()`), and once its second is up the
 ## thing is created there, its telegraph spent (`EventSpawner.spawn_warned()`), on its first leg
 ## from where she is then (`EventDirector.leg_in_the_lane()`). Day 13's column arrives the same way
 ## (`ResistanceHappenings`). **The leg it is created on is asked again what every sent route is
 ## asked** (`EventDirector.clear_to_send()`: the region doors, and the room a placed plan keeps),
-## since she has walked on since it was sited; a refusal, or no leg from where she is then (the car's
-## leg or its way out past her off the carriageway, `EventDirector.leg_in_the_lane()`), withdraws the
-## warning.
-func _warn_in_its_lane(def: EventDef, her: Vector2, heading: Vector2,
-		sited: PackedVector2Array) -> void:
+## since she has walked on since it was sited; a refusal, or no leg from where she is then (none a
+## car may drive and go on from, `EventDirector.leg_in_the_lane()`), withdraws the warning. Once
+## created its route is worked out as it goes (`EventInstance.go_on_by()`).
+func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -> void:
 	var lane := sited[0]
 	var going := (sited[sited.size() - 1] - lane).normalized()
 	if going == Vector2.ZERO:
 		return
 	var ends := PendingWarning.lane_ends(world.city_map, going)
-	# Where it comes from, against the way she was walking as it was sent: the coin flip
-	# (`EventDef.may_come_from_either_end()`) sends half of them from behind her.
-	var from := "from behind her" if going.dot(heading) > 0.0 else "from ahead of her"
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(def, at, lane, going, ends.x, ends.y, world.visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := _director.leg_in_the_lane(def, place, at, going)
 		if path.is_empty() or not _director.clear_to_send(path, def):
 			return false
-		_spawner.spawn_warned(def, path)
-		world.trace.note("ahead", "%s comes down the road at her %s, %.0fpx up it, at %s, its warning over"
-				% [def.id, from, place.distance_to(at), RunTrace.tile(world.map.world_to_tile(at))])
+		_spawner.spawn_warned(def, path).go_on_by(_director.way_on())
+		world.trace.note("ahead",
+				"%s comes down the road at her from ahead of her, %.0fpx up it, at %s, its warning over"
+				% [def.id, place.distance_to(at), RunTrace.tile(world.map.world_to_tile(at))])
 		return true
 	_warnings.warn_first(def, her, where, arrive)
 
@@ -618,7 +618,8 @@ func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
 ## be (`EventSpawner.age_when_warned()`), so it meets her at the loud of its beat, the figure its line
 ## in that table prices. Nothing is created where there is no such ground, or its route would come
 ## through a region door or a placed plan's room (`EventDirector.clear_to_send()`); the director has
-## already spent the moment either way.
+## already spent the moment either way. The dog walker's route is then worked out as it goes
+## (`EventInstance.go_on_by()`): it walks on down the street while she can see it.
 func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
 	var place := PendingWarning.down_her_line(world.city_map, def, her, direction, world.visible)
 	if place == Vector2.INF:
@@ -629,6 +630,7 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var instance := _spawner.spawn(def, path[0], path)
 	if def.is_sent_ahead():
 		instance.resume(_director.age_it_is_sent_at(def), 0.0)
+		instance.go_on_by(_director.way_on())
 	else:
 		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 	world.trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"

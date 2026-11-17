@@ -1,9 +1,10 @@
 extends RefCounted
 ## `EventDirector`'s siting of the rows it sends ahead of her (`EventDef.is_sent_ahead()`; inbox
 ## #1460): the dog walker down her own sidewalk toward her, the patrol down the carriageway lane
-## that drives toward her, and the convoy in the lane beside her from either end, its first leg
+## that drives toward her, and the convoy in the lane beside her coming toward her, its first leg
 ## running past her to the far edge of the next junction box, on a street running north-south and
-## on one running east-west; a sent row refused, and asked again, where its first leg starts within
+## on one running east-west; a car's first leg sent only where the day's way on says a car may drive
+## it and go on from its end; a sent row refused, and asked again, where its first leg starts within
 ## `EventScheduler.EVENT_SPACING_ANY` of a placed plan or runs through a field a plan keeps clear;
 ## and a marble of her route sent ahead of her that has no room, which waits for room and lets the
 ## marbles behind it through (calm-pelican-6).
@@ -11,7 +12,9 @@ extends RefCounted
 ## On a hand-drawn map, one street running the whole length of the map (`_street()`, north-south or
 ## the same map turned), with plans made by hand: plans and rows are data, built as they are, and
 ## the director is handed the map alone and moves by the map's navigator, as
-## `tests/test_world_passability.gd` hands it. Each siting check owes its row through `force()` (the
+## `tests/test_world_passability.gd` hands it. It is handed a fake way on (`FakeWayOn`), whose
+## answers the test sets: on one street no stretch is a through road, and whether a car may drive a
+## leg and go on from it is `WayOn`'s own suite's, `tests/test_way_on.gd`. Each siting check owes its row through `force()` (the
 ## `--force` flag, which `start_day()` takes up and which forces a sent row as the director sends
 ## it), so a check sees the siting of the one row it asks about; the waiting check rigs her route's
 ## bag instead, since a forced row is not a marble.
@@ -25,23 +28,43 @@ const LENGTH := 84
 const HER := Vector2i(4, 36)
 ## The day the rows are owed on: one the convoy comes on.
 const DAY := 13
-## The first tile along the street of the junction box the paving checks pave: the next box past her
-## the way she does not walk.
-const PAVED_BOX_TILE := 42
-## Her tile along the street running north-south where the paved box begins between half of
-## `Tuning.OUT_OF_SIGHT` and the whole of it past her, beyond where the patrol's leg toward it ends.
-const WAY_OUT_TILE := 34
+
+## **A way on whose answers the test sets** (`WayOn`): whether a car may drive a leg
+## (`drives_clear()`) and whether it has a next leg from where it stands (`next_leg()`), recording
+## what it was asked and the day's rule it was told (`use_the_days_rule()`).
+class FakeWayOn extends WayOn:
+	var drives := true
+	var goes_on := true
+	var asked_to_drive: Array[PackedVector2Array] = []
+	var asked_on_from: Array[Array] = []
+	var told_rule := Callable()
+
+	func _init() -> void:
+		super(null, null, null)
+
+	## Overrides WayOn.use_the_days_rule.
+	func use_the_days_rule(may_take: Callable) -> void:
+		told_rule = may_take
+
+	## Overrides WayOn.drives_clear.
+	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
+		asked_to_drive.append(path)
+		return drives
+
+	## Overrides WayOn.next_leg.
+	func next_leg(_row: EventDef, at: Vector2, heading: Vector2,
+			_her: Vector2) -> PackedVector2Array:
+		asked_on_from.append([at, heading])
+		return PackedVector2Array([at, at + heading * TILE]) if goes_on else PackedVector2Array()
 
 func run(t: TestRunner) -> void:
 	_test_the_dog_walker_comes_down_her_sidewalk_toward_her(t)
 	for vertical: bool in [true, false]:
 		_test_the_patrol_comes_down_the_lane_that_drives_toward_her(t, vertical)
-		_test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t, vertical)
-		_test_no_leg_where_the_car_would_drive_onto_paving_in_her_sight(t, vertical)
-	_test_no_leg_whose_way_out_runs_onto_paving_in_her_sight(t)
-	_test_no_leg_where_the_car_would_drive_into_a_closure_in_her_sight(t)
-	_test_no_leg_where_the_car_would_drive_off_the_map_in_her_sight(t)
+		_test_the_convoy_comes_in_the_lane_beside_her_toward_her(t, vertical)
+	_test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t)
 	_test_a_sent_row_keeps_out_of_a_field_kept_clear(t)
+	_test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t)
 	_test_a_sent_row_starts_clear_of_a_placed_plan(t)
 	_test_a_sent_row_with_no_room_lets_the_next_marbles_through(t)
 
@@ -81,10 +104,11 @@ static func _walking(vertical := true) -> Vector2:
 	return Vector2.UP if vertical else Vector2.LEFT
 
 ## A director over `map` owing `row` and nothing else, its day started over `plans` on a stream of
-## `seed_value`.
+## `seed_value`, handed `way_on` (a fake that lets every leg go on unless one is handed).
 static func _director(map: CityMap, row: String, plans: Array[EventPlan],
-		seed_value := 1) -> EventDirector:
+		seed_value := 1, way_on: WayOn = null) -> EventDirector:
 	var director := EventDirector.new(map)
+	director.use_way_on(way_on if way_on else FakeWayOn.new())
 	director.force(row, 1.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -156,8 +180,9 @@ func _test_the_patrol_comes_down_the_lane_that_drives_toward_her(t: TestRunner,
 
 ## The convoy is warned of first in the lane beside her: its place is up the road out of sight,
 ## level with the lane its way drives in; its first leg runs past her to the far edge of the next
-## junction box; and over the director's streams it comes from either end.
-func _test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t: TestRunner,
+## junction box; and over the director's streams it always comes toward her, never from behind
+## ("just ahead of the player", inbox #1460).
+func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 		vertical: bool) -> void:
 	var map := _street(vertical)
 	var half := Tuning.VIEW_HALF_EXTENT.y if vertical else Tuning.VIEW_HALF_EXTENT.x
@@ -195,108 +220,49 @@ func _test_the_convoy_comes_in_the_lane_beside_her_from_either_end(t: TestRunner
 	t.check(wrong.is_empty(), "on a street running %s, every convoy is warned of in its lane up "
 			% name + "the road, out of sight, its leg past her to the far edge of the next box%s" % (
 				"" if wrong.is_empty() else ": " + "; ".join(wrong)))
-	t.check(with_her > 0 and at_her > 0,
-			"and it comes from either end (%d from behind her, %d toward her)" % [with_her, at_her])
+	t.check(with_her == 0 and at_her > 0,
+			"and it comes toward her (%d toward her, %d from behind her)" % [at_her, with_her])
 
-## **No car is sent where its drive, in her sight from where she stands as it is sited, would run onto
-## ground no car may be on**: with the
-## junction box past her paved (the next box the way she does not walk, tiles 42 to 47 of her street,
-## paved by a precinct on the street that crosses there, `CityMap.add_precinct()`: its blocks -1 and 0,
-## so it runs through the box from off the map's edge, and a precinct on either street paves the box),
-## no patrol or convoy is sited with her six tiles from it, since a car whose leg ended short of the
-## box would drive on over it as it left (`EventDeparture.begin()`). On the street unpaved the same
-## rows are sited, so the check is not vacuous. With her twenty tiles from the box, further than a
-## car leaving is in her sight (`Tuning.OUT_OF_SIGHT`), they are sited again: the refusal reaches
-## only as far as that.
-func _test_no_leg_where_the_car_would_drive_onto_paving_in_her_sight(t: TestRunner,
-		vertical: bool) -> void:
-	var name := "north-south" if vertical else "east-west"
-	var paved := _street(vertical)
-	paved.add_precinct(Vector4i(0 if vertical else 1, 3, -1, 0))
-	var further := _turned(HER + Vector2i(0, -14), vertical)
+## **A car's first leg is sent only where the day's way on says a car may drive it and go on from its
+## end** (`EventDirector.leg_in_the_lane()`): for the patrol and the convoy, a way on that refuses
+## every leg (`drives_clear()` false) sites none, one with no next leg from any leg's end
+## (`next_leg()` empty) sites none, and one that answers both sites one; and what it was asked is the
+## leg handed out, and a next leg from that leg's end, going the way the leg goes.
+func _test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t: TestRunner) -> void:
+	var map := _street()
 	for row: String in ["police_patrol", "military_convoy"]:
-		var unpaved := 0
-		var beside := 0
-		var away := 0
+		var undriven := 0
+		var no_way_on := 0
+		var sited := 0
+		var asked_right := 0
 		for seed_value in range(1, 9):
-			if _due(_director(_street(vertical), row, _no_plans(), seed_value), vertical).size() >= 2:
-				unpaved += 1
-			if _due(_director(paved, row, _no_plans(), seed_value), vertical).size() >= 2:
-				beside += 1
-			if _due_at(_director(paved, row, _no_plans(), seed_value), further,
-					vertical).size() >= 2:
-				away += 1
-		t.check(unpaved > 0 and beside == 0,
-				"on the street running %s, a %s is sited %d of 8 times unpaved and " % [name, row, unpaved]
-				+ "%d with the box six tiles past her paved" % beside)
-		t.check(away > 0, "and %d of 8 times with her twenty tiles from it" % away)
-
-## **Nor where the leg ends short of the paving and the car's way out runs onto it in her sight**:
-## on the street running north-south, with her at `WAY_OUT_TILE`, the paved box (from
-## `PAVED_BOX_TILE`, as above) begins further past her than half of `Tuning.OUT_OF_SIGHT` and
-## nearer than the whole of it. On the street unpaved the patrol is sited, its leg ending short of
-## where the box begins, so the check is about the way out and not the leg. With the box paved none
-## is sited: its way out, straight on until it is `Tuning.OUT_OF_SIGHT` from her
-## (`EventDeparture.leave()`), would cross the box while she stands there. It is asked of the patrol
-## on a street running north-south because only there does a leg end short of a box its way out
-## reaches: on a street running east-west the patrol's place, and so its leg past her, reaches past
-## the next box, and the convoy's leg always runs on to that box's far edge, from where the box after
-## it is further than `Tuning.OUT_OF_SIGHT` from her.
-func _test_no_leg_whose_way_out_runs_onto_paving_in_her_sight(t: TestRunner) -> void:
-	var paved := _street()
-	paved.add_precinct(Vector4i(0, 3, -1, 0))
-	var her := _turned(Vector2i(HER.x, WAY_OUT_TILE), true)
-	var box_begins := float(PAVED_BOX_TILE * TILE)
-	var from_her := box_begins - her.y
-	t.check(from_her > Tuning.OUT_OF_SIGHT * 0.5 and from_her < Tuning.OUT_OF_SIGHT,
-			"the box begins %.0fpx past her" % from_her)
-	var ends_short := 0
-	var ends_past := 0
-	var sited := 0
-	for seed_value in range(1, 9):
-		var unpaved := _due_at(_director(_street(), "police_patrol", _no_plans(), seed_value), her)
-		if unpaved.size() >= 2:
-			var leg := unpaved[1] as PackedVector2Array
-			if leg[leg.size() - 1].y < box_begins:
-				ends_short += 1
-			else:
-				ends_past += 1
-		if _due_at(_director(paved, "police_patrol", _no_plans(), seed_value), her).size() >= 2:
+			var refuses := FakeWayOn.new()
+			refuses.drives = false
+			if _due(_director(map, row, _no_plans(), seed_value, refuses)).size() >= 2:
+				undriven += 1
+			var stub := FakeWayOn.new()
+			stub.goes_on = false
+			if _due(_director(map, row, _no_plans(), seed_value, stub)).size() >= 2:
+				no_way_on += 1
+			var both := FakeWayOn.new()
+			var due := _due(_director(map, row, _no_plans(), seed_value, both))
+			if due.size() < 2:
+				continue
 			sited += 1
-	t.check(ends_short > 0 and ends_past == 0,
-			"unpaved, a patrol is sited %d of 8 times, its leg ending short of the box " % ends_short
-			+ "(%d past it)" % ends_past)
-	t.check(sited == 0, "and paved, %d of 8 times, its way out in her sight onto the box" % sited)
-
-## **Nor where it would drive into a closed street in her sight**: with the carriageway closed four
-## tiles past her (`CityMap.closed_tiles`, which a car is stopped by, `Mover.vehicle()`), a car would
-## stop at the closure and turn onto a way out in her view, so no patrol or convoy is sited.
-func _test_no_leg_where_the_car_would_drive_into_a_closure_in_her_sight(t: TestRunner) -> void:
-	var map := _street()
-	var closed := {}
-	for x in range(Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH):
-		closed[Vector2i(x, HER.y + 4)] = true
-	map.closed_tiles = closed
-	for row: String in ["police_patrol", "military_convoy"]:
-		var sited := 0
-		for seed_value in range(1, 9):
-			if _due(_director(map, row, _no_plans(), seed_value)).size() >= 2:
-				sited += 1
-		t.check(sited == 0, "with the carriageway closed four tiles past her, no %s is sited (%d of 8)"
-				% [row, sited])
-
-## **Nor where it would drive off the map in her sight**: six tiles from the map's south end,
-## walking north, a car driving south would reach the end and turn onto a way out in her view, so no
-## patrol or convoy is sited.
-func _test_no_leg_where_the_car_would_drive_off_the_map_in_her_sight(t: TestRunner) -> void:
-	var map := _street()
-	var her := _turned(Vector2i(HER.x, LENGTH - 6), true)
-	for row: String in ["police_patrol", "military_convoy"]:
-		var sited := 0
-		for seed_value in range(1, 9):
-			if _due_at(_director(map, row, _no_plans(), seed_value), her, true).size() >= 2:
-				sited += 1
-		t.check(sited == 0, "six tiles from the map's end, no %s is sited (%d of 8)" % [row, sited])
+			var leg := due[1] as PackedVector2Array
+			var going := (leg[leg.size() - 1] - leg[0]).normalized()
+			if both.asked_on_from.is_empty():
+				continue
+			var last_asked: Array = both.asked_on_from[both.asked_on_from.size() - 1]
+			if both.asked_to_drive.has(leg) and (last_asked[0] as Vector2).is_equal_approx(
+					leg[leg.size() - 1]) and (last_asked[1] as Vector2).is_equal_approx(going):
+				asked_right += 1
+		t.check(undriven == 0 and no_way_on == 0,
+				"no %s is sited on a leg a car may not drive (%d of 8) or go on from (%d of 8)"
+				% [row, undriven, no_way_on])
+		t.check(sited > 0 and asked_right == sited,
+				"and %d of 8 are where both answer, each asked of its own leg and a way on from its "
+				% sited + "end (%d)" % asked_right)
 
 ## A lethal row standing on the dog walker's way keeps its field clear: the dog walker is refused
 ## while the plan stands, and handed out at the next ask once it is spent.
@@ -315,6 +281,47 @@ func _test_a_sent_row_keeps_out_of_a_field_kept_clear(t: TestRunner) -> void:
 			"the dog walker, whose way runs through that field, is refused")
 	plan.spend()
 	t.check(not _due(director).is_empty(), "and handed out once the plan is spent")
+
+## **A further leg keeps out of a field a placed plan keeps clear and out of a region door's ground**
+## (`EventDirector.clear_to_go_on()`), the day's rule the director tells the walk's way on as it is
+## handed it (`use_way_on()`), asked here through the rule the fake way on was told, as `WayOn` asks
+## it of every leg: a leg past a lethal row's field is refused while the plan stands and taken once it
+## is spent, one clear of it is taken, and the same for a leg past a door and one clear of it. A placed
+## plan that keeps no field clear (a café) refuses no leg, however near: the start's spacing is not
+## this rule's.
+func _test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t: TestRunner) -> void:
+	var map := _street()
+	var lethal := EventDef.new()
+	lethal.id = "lethal_by_hand"
+	lethal.hard_fail = true
+	lethal.inner_radius = 30.0
+	lethal.outer_radius = 120.0
+	# North of her is up the street; every place and leg below is in tiles north of her.
+	var north := func(tiles: float, across := 0.0) -> Vector2:
+		return _her() + Vector2(across, -tiles * TILE)
+	var field := EventPlan.new(lethal, north.call(20.0, TILE))
+	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), north.call(31.0, TILE))
+	var door := EventPlan.new(EventCatalogue.by_id("checkpoint_hut"), north.call(-40.0, TILE))
+	door.stand_as_a_door()
+	var plans: Array[EventPlan] = [field, cafe, door]
+	var way_on := FakeWayOn.new()
+	var director := _director(map, "police_patrol", plans, 1, way_on)
+	t.check(director != null and way_on.told_rule.is_valid(), "the director tells the way on it is handed the day's rule")
+	if not way_on.told_rule.is_valid():
+		return
+	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
+	var lane := -2.0 * TILE
+	var takes := func(from_tiles: float, to_tiles: float) -> bool:
+		var path := PackedVector2Array([north.call(from_tiles, lane), north.call(to_tiles, lane)])
+		return bool(way_on.told_rule.call(path, patrol))
+	t.check(not takes.call(14.0, 26.0) and takes.call(0.0, 10.0),
+			"a leg past a lethal row's field is refused, and one clear of it taken")
+	t.check(not takes.call(-34.0, -46.0) and takes.call(-4.0, -20.0),
+			"a leg past a region door is refused, and one clear of its ground taken")
+	t.check(takes.call(28.0, 34.0),
+			"a leg past a café is taken: a plan that keeps no field clear refuses no further leg")
+	field.spend()
+	t.check(takes.call(14.0, 26.0), "and the leg past the lethal row's is taken once it is spent")
 
 ## A sent row starts no nearer a placed plan than `EventScheduler.EVENT_SPACING_ANY`: a café right
 ## by the place the dog walker starts refuses it, and one further off does not.
@@ -356,6 +363,7 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	for _i in 12:
 		plans.append(EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF))
 	var director := EventDirector.new(map)
+	director.use_way_on(FakeWayOn.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	director.start_day(DAY, plans, rng)

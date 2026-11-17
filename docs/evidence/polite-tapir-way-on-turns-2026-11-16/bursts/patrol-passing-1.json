@@ -1,0 +1,114 @@
+{
+	"context": "asked for an animation burst at (64,84) | exc 0, sleep 4 | playing",
+	"duration_seconds": 3.022895,
+	"frames": [
+		{
+			"elapsed_seconds": 0.014823,
+			"file": "frame-0001.png"
+		},
+		{
+			"elapsed_seconds": 0.135719,
+			"file": "frame-0002.png"
+		},
+		{
+			"elapsed_seconds": 0.257531,
+			"file": "frame-0003.png"
+		},
+		{
+			"elapsed_seconds": 0.37109,
+			"file": "frame-0004.png"
+		},
+		{
+			"elapsed_seconds": 0.4853,
+			"file": "frame-0005.png"
+		},
+		{
+			"elapsed_seconds": 0.605695,
+			"file": "frame-0006.png"
+		},
+		{
+			"elapsed_seconds": 0.722766,
+			"file": "frame-0007.png"
+		},
+		{
+			"elapsed_seconds": 0.842036,
+			"file": "frame-0008.png"
+		},
+		{
+			"elapsed_seconds": 0.961289,
+			"file": "frame-0009.png"
+		},
+		{
+			"elapsed_seconds": 1.075294,
+			"file": "frame-0010.png"
+		},
+		{
+			"elapsed_seconds": 1.187325,
+			"file": "frame-0011.png"
+		},
+		{
+			"elapsed_seconds": 1.30326,
+			"file": "frame-0012.png"
+		},
+		{
+			"elapsed_seconds": 1.415087,
+			"file": "frame-0013.png"
+		},
+		{
+			"elapsed_seconds": 1.530699,
+			"file": "frame-0014.png"
+		},
+		{
+			"elapsed_seconds": 1.644423,
+			"file": "frame-0015.png"
+		},
+		{
+			"elapsed_seconds": 1.761839,
+			"file": "frame-0016.png"
+		},
+		{
+			"elapsed_seconds": 1.874857,
+			"file": "frame-0017.png"
+		},
+		{
+			"elapsed_seconds": 1.996533,
+			"file": "frame-0018.png"
+		},
+		{
+			"elapsed_seconds": 2.110553,
+			"file": "frame-0019.png"
+		},
+		{
+			"elapsed_seconds": 2.229235,
+			"file": "frame-0020.png"
+		},
+		{
+			"elapsed_seconds": 2.342928,
+			"file": "frame-0021.png"
+		},
+		{
+			"elapsed_seconds": 2.461296,
+			"file": "frame-0022.png"
+		},
+		{
+			"elapsed_seconds": 2.576704,
+			"file": "frame-0023.png"
+		},
+		{
+			"elapsed_seconds": 2.700473,
+			"file": "frame-0024.png"
+		},
+		{
+			"elapsed_seconds": 2.815263,
+			"file": "frame-0025.png"
+		},
+		{
+			"elapsed_seconds": 2.934446,
+			"file": "frame-0026.png"
+		}
+	],
+	"reason": "duration",
+	"schema_version": 1,
+	"status": "complete",
+	"target_fps": 12
+}

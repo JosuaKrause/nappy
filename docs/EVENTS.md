@@ -366,34 +366,51 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
   badge alone for a second (the copy's `telegraph_time` cut to `Tuning.WARNING_ALONE_MAX`), pointing
   level with her along the road and just out of sight up it (`PendingWarning.in_its_lane()`), then
   created there with its telegraph spent, driving down the lane past her to the far edge of the next
-  junction box (`EventDirector.past_the_next_box()`). It comes toward her or from behind her, a coin
-  flip on the director's stream, and from the other end where the first end has no room: no place
-  out of sight, or a leg or way out that `leg_in_the_lane()`, below, refuses.
+  junction box (`EventDirector.past_the_next_box()`). **It comes toward her**, as the patrol does,
+  never from behind her ("just spawn in the car just ahead of the player", inbox #1460): a truck
+  from behind her, faster than her walk, would stay loud beside her for as long as she could see
+  it.
+  **A convoy she follows stays loud while she can see it**, as the dog walker and the patrol do,
+  so following it can end the day; stepping away is the lesson, as with the fire engine (the
+  player's answer, inbox #1460). It is given a further leg while she is within
+  `Tuning.OUT_OF_SIGHT`, and a row given none ends its route and leaves quiet, which is not what
+  was asked.
 
 The patrol's and the convoy's first leg is built in one place (`EventDirector.leg_in_the_lane()`),
-as the row is sited and, for the convoy, again from where she is when its warning ends. **What is
-asked is the car's leg and its way out, not the leg alone**: a car whose route has run out leaves
-straight on the way it was going until it is `Tuning.OUT_OF_SIGHT` from her ("Going away"), so the
-lane from the leg's place to that far past where she stands as it is sited, or to the leg's end
-where that is further, must be ground a car may be on every tile of the way, never a precinct or a
-junction box a precinct paves (`CityMap.is_driveable_at()`), and nothing on it may stop a car (a
-solid, a closed street, the map's edge), where it would turn onto a way out in her view. Otherwise
-the row has no room and waits. The leg is never cut short at the paving, since a car stopped there
-drives on over it as it leaves, and none is turned round there, since a car must not turn on the
-spot in her view. The return's patrols are the same sent copy and are sited the same way.
+as the row is sited and, for the convoy, again from where she is when its warning ends. **Nothing is
+sent on a leg it could not go on from**: the leg is sent only where a car may drive it, carriageway
+every half tile, no precinct's paving and no street a calm zone absorbed, and nothing on it that
+stops the row (`WayOn.drives_clear()`), and where it has a next leg from its end (`WayOn.next_leg()`).
+Otherwise the row has no room and waits. The return's patrols are the same sent copy and are sited
+the same way.
 
-**That keeps the car's whole drive on carriageway while she stands where she was, or walks toward
-it, and not while she walks the way it drives.** It leaves until it is `Tuning.OUT_OF_SIGHT` from
-where she is by then, so a car she walks along with can still leave over a precinct's paving, or
-reach a closed street or the map's edge, while she can see it: the convoy from behind her, faster
-than her walk, which overtakes her and stays beside her for many seconds, and a patrol she turns to
-walk beside. It is rare, since the convoy comes at most once a day and from behind her on half of
-them. Keeping the departure itself on carriageway while she can see it is the route worked out as
-it goes, which placement step 2 still owes.
+**Once one exists its route is worked out as it goes** *(inbox #1460: "the route only matters
+*after* it was spawned", "and then only if the player follows them around", "so the route can be
+ad-hoc")*. At the end of each leg, while she is within `Tuning.OUT_OF_SIGHT` of it, it is given
+another from where it stands (`EventRouteWalk`, asking the walk's `WayOn`), and goes on, still the
+event it was: it emits, carries its cue and, for the patrol, strikes as a car does. **A car drives
+from junction box to junction box**: straight through the next box where the street beyond it is a
+through road (`ThroughRoads`: a stretch a car can drive into and go on from without turning round,
+worked out once a walk from the map, the day's closures and the bodies standing at dawn), otherwise
+round the corner in that box onto the crossing street, the turn that leads away from her first, a
+quarter turn the radius of the crowd's cars' near-side turn. So it never comes to a precinct's
+paving, a closed street, a street a calm zone absorbed or the map's edge, and never turns round. A
+turn that would newly put her in front of the patrol's nose within its warning is refused like a
+step into her, and the car stands at the corner until she is off it (`references/event-cars.md`'s
+fifth trap, in the events skill). **The dog walker walks straight on** down the street it is on, a
+street and a box at a time, as far as its ground lets it. A further leg keeps out of a region door's
+clear ground and every field a placed plan keeps clear (`EventDirector.clear_to_go_on()`), and not
+the 64px from a placed plan the start keeps, which would refuse a dog walker its walk past a café's
+tables. **Where it has no further leg, or she is out of sight, it ends its route**, and leaves by
+legs of the same, held to her sight ("Going away"); one she has left behind is past
+`Tuning.OUT_OF_SIGHT` and gone on the first tick of its departure. **Only a row the director sends
+goes on**: going on is told to the instance by whoever sends it (`EventInstance.go_on_by()`), never
+read off its row, since day 13's column, the escape's trucks and a scene recipe's dog walker are
+copies of the same rows and end their routes where they end.
 
 **A sent row has no room**, and is not put in the world, where there is no ground for it (no
-sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square, or not
-for its leg and its way out past her, above), where
+sidewalk for the dog walker; no carriageway for a car, on a precinct, in a park or a square, or no
+first leg a car may drive and go on from, above), where
 its first leg runs through a region door's clear ground, where it starts within
 `EventScheduler.EVENT_SPACING_ANY` of a placed plan, or where any point of its first leg is inside a
 field a plan keeps clear (`EventPlan.keeps_its_field_clear()`): nothing else happens inside a lethal
@@ -408,8 +425,8 @@ turn the first row on the list with room is sent, ahead of the next marble, and 
 rolled (`EventDirector._send_what_waited()`), so nothing is sent closer to the last thing than the
 clock allows (sent-ahead-pace: in place of, at the same clock), and a walk off the streets ends in
 what waited coming one a turn. A row that never finds room that day is not met. **Once one exists it walks or
-drives its leg**, and a player who walks away leaves it to reach the leg's end out of her sight and
-go, the way every route that runs out leaves.
+drives its legs** while she can see it, and a player who walks away leaves it to reach a leg's end
+out of her sight and go, the way every route that runs out leaves.
 
 **How often**: the dawn's count of moments is unchanged, and the director's clock binds
 (`AHEAD_INTERVAL`, one handout every 11 to 26 seconds of walking), so the three come in place of
@@ -1257,7 +1274,13 @@ Four things worth keeping straight:
   seconds it took to reach the kerb would be a worse bug than vanishing.
 - **Anything `mobile` leaves at its own `speed` and needs no data.** The cat runs on the way it was
   going; the dog walker carries on down the street. `departs_at` is for the rest — a flock, which
-  has to fly, and a pursuer that has lost interest and trots off.
+  has to fly, and a pursuer that has lost interest and trots off. **A row the director sent ahead of
+  her leaves by legs of its route worked out as it goes** (`EventDeparture`, `WayOn.leg_to_leave_by()`):
+  a car through roads from junction box to junction box, turning at a box as a live one does, the
+  dog walker straight on, each leg asked of nothing about the day since it is over; and it is held
+  to her sight, since she may be walking beside it. Only where it has no leg does it fall to a way
+  out planned over the ground it may stand on, which for the dog walker is the ordinary case (it
+  turns and walks off) and for a car only a body put down on its road after the leg was built.
 - **Three things never leave**, and each would break something that reads the finishing position:
   an event with an `aftermath.on_finish` stops **where the thing it leaves belongs** (the escape's
   explosion leaves its crater where it went off, not two streets past it); anything with no departure
@@ -2252,7 +2275,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `military_convoy` | RECURRING, sent ahead of her | 13 | Leaves nothing: nothing a convoy does during the walk closes a street. **A convoy on a day is sent ahead of her by the director**, warned of first in the lane beside her, toward her or from behind her, and drives down the lane past her to the far edge of the next junction box and leaves (see "The dog walker, the patrol and the convoy are sent ahead of her"). **The escape's trucks** are this row too, placed by `EventScheduler._draw_the_walk()`, which does not keep a route on its run, so each keeps the full `path_length_tiles` (50) route, as far as the first tile that stops a truck. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
+| `military_convoy` | RECURRING, sent ahead of her | 13 | Leaves nothing: nothing a convoy does during the walk closes a street. **A convoy on a day is sent ahead of her by the director**, warned of first in the lane beside her, toward her, and drives down the lane past her to the far edge of the next junction box, then on from box to box while she can see it (see "The dog walker, the patrol and the convoy are sent ahead of her"). **The escape's trucks** are this row too, placed by `EventScheduler._draw_the_walk()`, which does not keep a route on its run, so each keeps the full `path_length_tiles` (50) route, as far as the first tile that stops a truck. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
 | `barricade` | — | — | Never scheduled directly by the ordinary catalogue roll — `scripted_day` 0 never equals a real day. It is placed fresh, without a scar, every morning from act IV onward as a **hard seal** on a street off the day's route tree (`SealPlanner`, `obstructs_radius` 62 repeated across the street's whole width so nothing gets past it, the outer two flush with the street's edges so no cart stands over the buildings either side) — see docs/CITY.md, "Sealing the tree". |
 | `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own `inner_radius` on purpose — the loudest part of a protest is something you stand in rather than bump into. **A wide field at a moderate rate loses more of its price to the walking decay than any other row**, netted off as that is over the whole of a long crossing, which is why its intensity is set high against `EventScheduler.WALL_WORTH_OF_COST` rather than comfortably under it: a little more and `walk_through_cost()` crosses that line, `EventScheduler.role_for()` calls it a `WALL` and it is pulled off every route the day carries — and a protest is where a resistance task sends her. [COSTS.md](COSTS.md) has where it actually sits. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |

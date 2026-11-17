@@ -57,7 +57,6 @@ src/events/event_manager.gd spawner
 src/events/event_manager.gd streaming
 src/events/event_manager.gd warnings
 src/events/event_plan.gd ends
-src/events/events_ahead.gd director
 src/events/location.gd section
 src/events/pending_warning.gd place
 src/events/views/event_look.gd drawn_heading
