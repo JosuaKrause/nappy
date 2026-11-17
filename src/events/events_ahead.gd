@@ -46,6 +46,10 @@ func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawn
 	_spawner = spawner
 	_warnings = warnings
 
+## Takes the maker every siting here is made by (`EventManager._init()` hands the game's).
+func use_sitings(maker: SitingMaker) -> void:
+	_sitings = maker
+
 ## Takes the director that sites rows ahead of her (`EventManager.setup()` makes it over the city's
 ## map, its figures moving by the world's navigator), handed the forced row a director made before it
 ## had, and keeps `spawn_siting`, where the pursuer a torn poster sends may start.
@@ -94,18 +98,13 @@ func _siting_for(day: int, plan: EventPlan) -> EventScheduler.WalkSiting:
 	_siting.prepare(plan.def)
 	return _siting
 
-## **A placement context for the rows her walk sites ahead of her**, over `tree`: the walk's
-## events, a store of verdicts of its own, the walk's ground (`_ground_of_the_walk()`), the fronts
-## a crew may paste, and **what draws the ground round a site it picks** (`draw_the_ground_round()`,
+## **A placement context for the rows her walk sites ahead of her**, over `tree`: what the maker
+## it was handed makes (`use_sitings()`) on the walk's ground (`_ground_of_the_walk()`), and **what
+## draws the ground round a site it picks** (`draw_the_ground_round()`,
 ## `WalkSiting.use_the_ground_drawer()`), so nothing it sites stands on ground whose units have not
 ## drawn.
 func _a_siting(day: int, tree: RouteTree) -> EventScheduler.WalkSiting:
-	var siting := EventScheduler.WalkSiting.new(day, world.city_map, tree, _walk,
-			EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
-	# Where a crew may paste: only the city's buildings know their blank walls, and the walls
-	# paste every dawn, so the fronts are asked for today's, here.
-	if world.poster_walls():
-		siting.fronts = world.poster_walls().fronts()
+	var siting := _sitings.make(day, tree, _ground_of_the_walk())
 	siting.use_the_ground_drawer(draw_the_ground_round)
 	return siting
 
@@ -157,6 +156,9 @@ var _spawn_siting: SpawnSiting
 ## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
 ## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
 var _siting: EventScheduler.WalkSiting = null
+## What makes a siting (`SitingMaker`), handed in by the manager (`use_sitings()`): this class makes
+## none itself, so a suite hands in a maker that answers a stand-in, or keeps what it made.
+var _sitings: SitingMaker
 ## The day's own route tree, as `start_day()` handed it to `build_day`, kept for a placement made
 ## later in the day that has no `_siting` to read it from (`queue_a_mast()`).
 var _day_tree: RouteTree = null
@@ -337,8 +339,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 			world.run.resistance.progress)
 	var siting := _siting
 	if not siting:
-		siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree, _walk,
-				EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
+		siting = _sitings.make(world.day, _day_tree, _ground_of_the_walk())
 	var plan := siting.among(def, rng, offered)
 	if not plan:
 		return null
@@ -762,18 +763,6 @@ func light_what_she_never_met(at: Vector2) -> bool:
 				plan.position.distance_to(at)] + "finished the day")
 		return true
 	return false
-
-## The day's placement context for the row it left for her walk, or `null` on a day that left none.
-## **Public though no game class asks, because nothing else can say what the day's siting did.**
-## `EventsAhead` makes the siting itself from the day's tree and the walk's events and
-## keeps it to itself, so a test cannot hand it one; and the suites that read this confirm the work
-## it did: how many tiles it asked whether a mast may stand there (`WalkSiting.mast_checks`, which
-## `tests/test_route_bag.gd` holds to a few of a route's tiles, never the city's ground), and the
-## refusals a long wait was made of (`tests/probes/m179_fire_on_her_way.gd`). A suite that asks a
-## siting a question of its own (where a cell stands, whether a point is still ahead of her) builds
-## one over the day's tree.
-func walk_siting() -> EventScheduler.WalkSiting:
-	return _siting
 
 ## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`). A
 ## recipe's day starts with nothing owed and with everything the director does while she walks

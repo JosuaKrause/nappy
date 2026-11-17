@@ -125,6 +125,11 @@ func use_poster_walls(walls: PosterWalls) -> void:
 func plan_builder() -> PlanBuilder:
 	return _plan_builder
 
+## The city's own map (`city_map`), asked through a method by a class that makes something over it
+## (`SitingMaker`), or null where the world is not the city.
+func the_city_map() -> CityMap:
+	return city_map
+
 ## Hands the world the city's plan builder. See `plan_builder()`.
 func use_plan_builder(builder: PlanBuilder) -> void:
 	_plan_builder = builder

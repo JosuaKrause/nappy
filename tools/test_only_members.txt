@@ -33,7 +33,6 @@ src/run_config.gd parse  # the one builder of a run's configuration besides the 
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
-src/events/events_ahead.gd walk_siting
 src/events/pending_warning.gd left
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant

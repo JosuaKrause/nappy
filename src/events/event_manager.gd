@@ -135,6 +135,7 @@ func _init() -> void:
 	spawner = EventSpawner.new(world, warnings)
 	streaming = EventStreaming.new(world, spawner, _walk_events)
 	ahead = EventsAhead.new(world, streaming, spawner, warnings, _walk_events)
+	ahead.use_sitings(SitingMaker.new(world, _walk_events))
 	checkpoints = CheckpointController.new(world, spawner.spawn, EventCatalogue.door_guard())
 	_encounters = EncounterWatch.new(world.reports())
 	sources = EventSources.new(world, checkpoints)
