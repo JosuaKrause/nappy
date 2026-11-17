@@ -315,13 +315,16 @@ before spawning:
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
 - **A defect a refactor step finds is filed to be fixed, never only noted** (silky-lemur #1450). When a
-  step of a refactor (minty-quail, polite-tapir or any other) finds that the code does something the
-  player's decisions say it should not, the defect is filed at once as an entry of its own, never left
-  only as a line in a record, a report or a pull request, and is built like any other entry. It is
+  step of a refactor finds that code it carries over unchanged does something the player's decisions
+  say it should not, the defect is filed at once as an entry of its own, never left only as a line in
+  a record, a report or a pull request, and is built like any other entry, waiting where the queue
+  puts it (an entry the player put first keeps the fence above, inbox #1210 in gentle-owl). It is
   fixed to the player's decision for the thing, found in the records and playtests that built it
-  (`tools/decisions.sh --in all <noun>`), not to whichever of the code or the doc reads better. Its
-  band is `now`; the player moves one to `bug` when they want it ahead of everything, and nothing
-  is filed `bug` on a reading (**playtest-feedback**, mossy-ferret #710).
+  (`tools/decisions.sh --in all <noun>`), not to whichever of the code or the doc reads better. A
+  defect the step introduces, or one a review finds in the step's open pull request, is fixed inside
+  that pull request (**pr-review**). The entry's band is `now`; the player moves one to `bug` when
+  they want it ahead of everything, and nothing is filed `bug` on a reading (**playtest-feedback**,
+  mossy-ferret #710).
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
@@ -421,8 +424,8 @@ to the player's correction:
   words are that such bugs are fixed (silky-lemur #1450).
 - **The band of an entry filed for such a defect**, `now`, with `bug` only where the player moves
   it there: the orchestrator's pick on the board question `refactor-bug-band`, open to the
-  player's answer there.
-
+  player's answer there. A flat band for every such defect also sets aside `docs/TODO.md`'s rule that
+  a band is chosen on what the entry does to the route decision.
 - **Every row of the model table that carries no citation**, the merging row among them, to be
   revised once the agent counter holds enough entries (inbox #900 in freckled-moose). The player
   asked for a granular table revised after experiments or statistics, and for Haiku to be tried on

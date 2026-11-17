@@ -85,9 +85,10 @@ Each "no" is a finding:
   defect that was already found: a finding from a playtest, a review or the player about work
   whose PR is still open is built into that PR, never queued against it (`tools/decisions.sh M90`,
   the controls do what the hand does, the record of PLAYTEST-35's findings built into the open
-  branch). A defect the pull request finds outside its own work, in code it only passes through,
-  goes where **orchestrating** says ("What the orchestrator keeps", the bullet on a defect a refactor
-  step finds): filed as an entry of its own, and named in the review so the orchestrator files it.
+  branch). Where the code does something the player's decisions say it should not and the change only carries
+  it over unchanged, the defect is not the change's own: it goes where **orchestrating** says ("What
+  the orchestrator keeps", the bullet on a defect a refactor step finds), filed as an entry of its
+  own.
 
 ## Then the code
 
@@ -289,6 +290,9 @@ still follows **committing**'s permission rule.
 These rules above are the filer's proposals and readings, not the player's words, and hold until
 the player corrects them. The citation is the player's word each one extends, or the record that
 proposes it:
+
+- **That a review names a carried-over defect it finds, so the orchestrator files it** ("Semantic
+  correctness first", the defect question): the filer's addition to the rule of silky-lemur #1450.
 
 - **A refused reviewer spawn or review post is reported to the player and never worked around**
   ("The findings go on the PR"; curly-rabbit #1094).
