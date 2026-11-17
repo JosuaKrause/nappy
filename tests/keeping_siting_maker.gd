@@ -16,7 +16,10 @@ static func on(events: EventManager) -> KeepingSitingMaker:
 	events.ahead.use_sitings(keeper)
 	return keeper
 
-## The siting made last, which is the day's where the day made one, or null where none was made.
+## The siting made last: the day's once the day has one; else the one a queued mast made (a day with
+## none of its own makes it, keeps it nowhere and asks again for the next mast); null where none
+## was made since `on()`. A keeper left on across two days answers the earlier day's siting on a day
+## that made none, so a caller installs it before the day it reads.
 func latest() -> EventScheduler.WalkSiting:
 	return made.back() if not made.is_empty() else null
 

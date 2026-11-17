@@ -15,6 +15,10 @@ extends RefCounted
 ## the maker it is handed, with the walk's ground. It builds a real `EventManager` over a generated
 ## city for the parts it hands `EventsAhead` (the world, streaming, spawner and board), which a
 ## hand-made one would only restate: `EventsAhead` is the module under test, the maker is a fake.
+## **The director and the siting it answers are real**, over that map (`EventDirector`,
+## `EventScheduler.WalkSiting`): the fake siting a stand-in needs (`FakeWalkSiting`) arrives with
+## pull request 3b, which also makes `WalkSiting` a file of its own, and until then a siting cannot
+## be built without a map; this suite then hands the fake and builds no city.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 
@@ -44,6 +48,10 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void
 ## itself, which this holds cannot happen.
 func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
+	var def := EventCatalogue.by_id("burning_building")
+	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
+	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
+	t.check(holds_it != leaves_it, "the two rules differ on this city's ground (there was a rule to keep)")
 	var manager := EventManager.new()
 	manager.setup(map, null, null, RunState.new())
 	var tree := FakeRouteTree.new(map)
@@ -66,6 +74,8 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	if maker.made.size() == 1:
 		t.check(maker.made[0][0] == DAY and maker.made[0][1] == tree,
 				"for that day, over the day's tree")
+		t.check((maker.made[0][2] as RowGround).tiles_for(def) == holds_it,
+				"on a ground that keeps off the home street, the spec holding the home's streets")
 	var rigged := ahead.rig_her_route([EventCatalogue.mast().id], 4)
 	t.check(not rigged.is_empty() and maker.made.size() == 1,
 			"a rigged route asks no second siting while the day has one (%d asks, %d marbles)"
@@ -78,6 +88,17 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	t.check(maker.made.size() == before + 1,
 			"a rigged route of a day with none asks the maker for one (%d asks, %d before)"
 			% [maker.made.size(), before])
+	t.check(maker.made.size() == before + 1
+			and (maker.made.back()[2] as RowGround).tiles_for(def) == holds_it,
+			"on a ground that keeps off the home street where the spec holds the home's streets")
+	ahead.holds_the_home_streets = false
+	ahead.start_day(DAY, tree)
+	before = maker.made.size()
+	ahead.rig_her_route([EventCatalogue.mast().id], 4)
+	t.check(maker.made.size() == before + 1
+			and (maker.made.back()[2] as RowGround).tiles_for(def) == leaves_it,
+			"and on one that offers it where the spec does not")
+	ahead.holds_the_home_streets = true
 	ahead.start_day(DAY, tree)
 	before = maker.made.size()
 	var offered: Array[Vector2i] = [Vector2i(1, 1)]
@@ -87,7 +108,6 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 			"a mast queued on a day with none asks the maker for one (%d asks, %d before)"
 			% [maker.made.size(), before])
 	# The ground each ask was given: the walk's where it carries one, else the home-street rule's.
-	var def := EventCatalogue.by_id("burning_building")
 	var carried := EventScheduler.row_ground(map, null, true)
 	var carrying := _CarryingWalk.new(carried)
 	var carried_asks := FakeSitingMaker.new(siting)
@@ -101,9 +121,6 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 			"a walk that carries a ground has it handed, whatever the spec holds")
 	var holding := _the_ground_asked_of(maker, ahead, true, offered, rng)
 	var not_holding := _the_ground_asked_of(maker, ahead, false, offered, rng)
-	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
-	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
-	t.check(holds_it != leaves_it, "the two rules differ on this city's ground (there was a rule to keep)")
 	t.check(holding.tiles_for(def) == holds_it,
 			"a walk of a spec that holds the home's streets is handed a ground that keeps off the home street")
 	t.check(not_holding.tiles_for(def) == leaves_it,
