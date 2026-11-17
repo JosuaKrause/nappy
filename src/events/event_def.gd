@@ -1898,9 +1898,24 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 	return maxf(field, Field.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
 
 ## Whether the row is a stationary solid body the pavement does not pin to an edge
-## (`pavement_side` `ANY`): the body a pavement band's middle is where it stands
-## (`EventFootprints.stands_at()`).
+## (`pavement_side` `ANY`) and that does not span the street: the body a pavement band's middle is
+## where it stands (`EventFootprints.stands_at()`). A row that spans the street stands at its kerb
+## instead (`stands_at_its_kerb()`); the two never both hold.
 func stands_on_its_band_middle() -> bool:
+	return _is_an_unpinned_standing_body() and not _spans_the_street
+
+## Whether the row's body stands on the kerb beside the carriageway lane it is placed in rather
+## than on the lane (`CityMap.kerb_beside()`): a stationary solid body that spans the street
+## (`spans_the_street()`) and that `pavement_side` does not pin, the roadblock. From the kerb its
+## band reaches across its own sidewalk and the road and stops at the far kerb, so the far sidewalk
+## stays whole. A region wall's bodies are pinned (`SealPlanner.sealed_variant()`) and stand where
+## they are put. Read by `EventPlan.stands_without_a_map()`, the one place that moves a body there.
+func stands_at_its_kerb() -> bool:
+	return _is_an_unpinned_standing_body() and _spans_the_street
+
+## A stationary solid body that `pavement_side` does not pin to an edge: the bodies that are moved
+## from where they are placed to where they stand, onto a band's middle or onto a kerb.
+func _is_an_unpinned_standing_body() -> bool:
 	return not mobile and obstructs_radius > 0.0 and pavement_side == Pavement.ANY
 
 ## Whether the row stands in alleys and on no other ground: the robber and the mouse. Such a row is

@@ -179,7 +179,7 @@ func _nearest_live_instance(event_id: String) -> Vector2:
 	return _reachable_point_near(_task_instance.global_position)
 
 ## How far outward `_reachable_point_near()` searches, in tiles, before giving up and handing back
-## `centre` unchanged — past `roadblock`'s own solid reach (`obstructs_radius` 60px, under two
+## `centre` unchanged — past `roadblock`'s own solid reach (`obstructs_radius` 64px, two
 ## tiles) with room to spare, so a body this catalogue actually places is always found well inside
 ## the budget and only a malformed future row would ever exhaust it.
 const _NEAREST_OPEN_SEARCH_RADIUS := 6
@@ -189,7 +189,7 @@ const _NEAREST_OPEN_SEARCH_RADIUS := 6
 ## `obstructs_radius` is 0), so this is a no-op for them and changes nothing about how they resolve.
 ##
 ## **A solid row's own centre is exactly the ground `plan()` refuses.** `roadblock` carries
-## `def.solid(GroundShape.band(60.0))`, so `EventManager` rasterises its footprint into
+## `def.solid(GroundShape.band(EventCatalogue.ROADBLOCK_REACH))`, so `EventManager` rasterises its footprint into
 ## `CityMap.obstructed_tiles` the same way any parked body is (`_blocked_for_phase()`'s own doc),
 ## and unlike a hazard's own margin — which `_cheapest()` explicitly drops for the tile a leg is
 ## walking to — an obstructed tile is never exempted for either end of a plan, because a body is
@@ -200,8 +200,8 @@ const _NEAREST_OPEN_SEARCH_RADIUS := 6
 ## **Walking to the nearest open ground next to the body reaches the row exactly as reliably as
 ## the real game's own random-bearing offset does, without reproducing its RNG draw.**
 ## `ResistanceDirector._touch_reach()` completes an any-instance task from `obstructs_radius +
-## Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH` of the instance's centre (110px for `roadblock`,
-## 60 + 14 + 36) — comfortably past where the solid edge itself sits (60px) — so standing on the
+## Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH` of the instance's centre (114px for `roadblock`,
+## 64 + 14 + 36) — comfortably past where the solid edge itself sits (64px) — so standing on the
 ## closest ground the body actually leaves open is always well inside that reach, whichever side
 ## of it she approaches from.
 ##
@@ -534,7 +534,8 @@ func _planned_parts(plan: EventPlan) -> Array:
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
-## stationary solid row that `pavement_side` does not pin to an edge.
+## stationary solid row that `pavement_side` does not pin to an edge, or onto the kerb beside its
+## lane for a row that stands at its kerb (`EventFootprints.stands_at()`).
 func _planned_position(plan: EventPlan) -> Vector2:
 	return EventFootprints.stands_at(_map, plan.def,
 			plan.path[0] if plan.path.size() > 0 else plan.position)

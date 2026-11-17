@@ -2,10 +2,10 @@ class_name RouteGroundRule
 extends StreetRule
 ## **No body and no cost stands on the ground a route runs along off the streets**: a candidate
 ## that blocks the way (`EventPlan.obstructs()`: a body she cannot pass, or a row that ends the day)
-## is refused when its disc (`EventPlan.blocking_radius()` round `EventPlan.placed_at()`, painted as
-## `EventScheduler.block_a_disc()` paints it) covers a tile a route runs along
-## (`Corridor.carries_a_route()`) that is off the streets (`is_ground_off_the_street()`: an alley, a
-## park cut, a square); and a row that counts against her line is refused when its line reach
+## is refused when its disc (`EventPlan.blocking_radius()` round where its body stands,
+## `EventPlan.body_at()`, painted as `EventScheduler.block_a_disc()` paints it) covers a tile a
+## route runs along (`Corridor.carries_a_route()`) that is off the streets
+## (`is_ground_off_the_street()`: an alley, a park cut, a square); and a row that counts against her line is refused when its line reach
 ## covers one (`_denies_a_route_off_the_streets()`).
 ##
 ## **With it a route cannot be closed, so nothing floods the city to see whether one is.** On a
@@ -56,7 +56,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 		return true
 	if candidate.obstructs():
 		var disc := {}
-		EventScheduler.block_a_disc(_map, disc, candidate.placed_at(), candidate.blocking_radius())
+		EventScheduler.block_a_disc(_map, disc, candidate.body_at(), candidate.blocking_radius())
 		for tile: Vector2i in disc:
 			if _is_route_ground(tile):
 				return false

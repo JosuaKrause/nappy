@@ -135,6 +135,25 @@ func row_id() -> String:
 func placed_at() -> Vector2:
 	return position
 
+## **Where its body stands, as far as the lattice says**: `stands_without_a_map()` of where it was
+## placed. Every reading of its geometry here asks it, and so do the day's disc readings of a body
+## (`OneSidewalkOpenRule`, `RouteSidewalkRule`, `RouteGroundRule`, `DoorClearanceRule`,
+## `EventScheduler.blocked_by()`, the roadblock phase, the day-13 swap), so a roadblock's band is
+## read where it is drawn and solid, leaving the far sidewalk whole.
+func body_at() -> Vector2:
+	return stands_without_a_map(def, position)
+
+## **Where a body of `row` built at `at` stands, as far as the lattice says without a map**: on the
+## kerb beside its carriageway lane when the row stands at its kerb (`EventDef.stands_at_its_kerb()`,
+## the roadblock, `CityMap.kerb_beside()`), otherwise `at`. The one place that decides the kerb:
+## `EventFootprints.stands_at()` asks it for the built body, which with a map also moves a sidewalk
+## body onto its band's middle. **A plan's own reading stays without that move**: the move needs the
+## pavement, which a plan holds no map to read, keeps a body on its own sidewalk, at most half a tile
+## across it, and the day's rules have always read a sidewalk body where it was placed; the kerb
+## changes what a band covers, the street's far sidewalk, and so is read here.
+static func stands_without_a_map(row: EventDef, at: Vector2) -> Vector2:
+	return CityMap.kerb_beside(at) if row.stands_at_its_kerb() else at
+
 ## **Whether this body is one of a region door's**: a `checkpoint_hut` or the `checkpoint_gate`
 ## at a street door's mouth, or a `checkpoint_post` at an alley door's. What makes a body a door
 ## is `RegionPlanner` standing it at one, not anything on its def, so the placement says it once
@@ -226,17 +245,17 @@ func clearance(her_reach: float) -> float:
 		reach = maxf(reach, def.lethal_reach() + her_reach)
 	return reach
 
-## Where this event stands now: its instance's position while it is in the world, the plan's
-## own otherwise.
+## Where this event stands now: its instance's position while it is in the world, where it stands
+## as placed otherwise (`body_at()`).
 func where_it_stands_now() -> Vector2:
-	return live.global_position if live and is_instance_valid(live) else position
+	return live.global_position if live and is_instance_valid(live) else body_at()
 
 ## Whether this event's field touches `rect` at all: grown by `field_reach()` rather than
 ## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
 ## question the way it would be from a disc's.
 func reaches(rect: Rect2) -> bool:
 	var grown := rect.grow(def.field_reach())
-	if grown.has_point(position):
+	if grown.has_point(body_at()):
 		return true
 	for point in path:
 		if grown.has_point(point):
@@ -274,7 +293,7 @@ func blocking_radius() -> float:
 
 ## The points that bound this event — the corners of its route, or the one place it stands.
 func ends() -> PackedVector2Array:
-	return path if path.size() >= 2 else PackedVector2Array([position])
+	return path if path.size() >= 2 else PackedVector2Array([body_at()])
 
 ## Distance from a point to the nearest part of this event — the point it stands at, or the
 ## nearest point of the route it will travel. A fire engine two streets away that is going
@@ -284,7 +303,7 @@ func distance_from(at: Vector2) -> float:
 	if not is_placed():
 		return INF
 	if path.size() < 2:
-		return position.distance_to(at)
+		return body_at().distance_to(at)
 	var best := INF
 	for i in range(1, path.size()):
 		best = minf(best, at.distance_to(
@@ -299,9 +318,9 @@ func gap_to(other: EventPlan) -> float:
 	# A point's distance to the whole other route already includes its endpoints, so the symmetric
 	# endpoint pass cannot make the answer smaller when either side is stationary.
 	if path.size() < 2:
-		return other.distance_from(position)
+		return other.distance_from(body_at())
 	if other.path.size() < 2:
-		return distance_from(other.position)
+		return distance_from(other.body_at())
 	var gap := INF
 	for point in ends():
 		gap = minf(gap, other.distance_from(point))
@@ -368,7 +387,7 @@ func denies(at: Vector2, reach: float) -> bool:
 			if at.distance_to(point) > reach:
 				return false
 		return true
-	return at.distance_to(position) <= reach
+	return at.distance_to(body_at()) <= reach
 
 ## **Whether this plan walks a beat**: its row paces (`EventDef.paces`) and a beat is laid, so what
 ## it denies is the ground the beat never leaves free (`denies()`), and the street it paces is one
@@ -382,7 +401,7 @@ func walks_a_beat() -> bool:
 ## inside each of those discs.
 func reach_touches(rect: Rect2, reach: float) -> bool:
 	var grown := rect.grow(reach)
-	if grown.has_point(position):
+	if grown.has_point(body_at()):
 		return true
 	for point in path:
 		if grown.has_point(point):

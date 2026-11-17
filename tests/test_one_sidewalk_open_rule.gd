@@ -7,9 +7,10 @@ extends RefCounted
 ##
 ## - **A second body across from the first** is refused anywhere along the street, and a body with
 ##   nothing across stands.
-## - **A roadblock is asked too**: its band takes the sidewalk on its side of the road, so it is
-##   refused across from a stall on the far one and stands alone, and a stall drawn after it is
-##   refused across from it. Its band is its body at every heat: where its guard hunts (heat 4
+## - **A roadblock is asked too**: its band takes the sidewalk on its side of the road and the road,
+##   read on its kerb, so it is refused across from a stall on the far one and stands alone, and a
+##   stall drawn after it is refused across from it; beside a pole on the far sidewalk's outer row
+##   it stands, where read at its lane it would close the inner row too. Its band is its body at every heat: where its guard hunts (heat 4
 ##   and 5) it still stands alone.
 ## - **A street a seal already closes** refuses nothing.
 ## - **A body in the box at the street's end** reaching its last open sidewalk is refused.
@@ -83,6 +84,17 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 		var hot_standing: Array[EventPlan] = [hot]
 		t.check(not rule.allows(stall, NORTH_SIDE, hot_standing, hot_standing),
 				"at heat %d a stall across from it is still refused" % level)
+	# **Read where its body stands, on the kerb.** A mast's pole on the far sidewalk's outer row,
+	# level with the roadblock, closes that row beside it and not the inner row. The band read on
+	# its kerb leaves the inner row's tiles clear past it, so the far sidewalk stays walkable and
+	# the roadblock stands; read 16px across at its lane, the same band takes the inner row's
+	# tile beside the pole and closes both sidewalks.
+	var pole := EventPlan.new(EventCatalogue.by_id("loudspeaker"),
+			_map.tile_to_world(Vector2i(at.x, NORTH_SIDE.y)))
+	var with_the_pole: Array[EventPlan] = [pole]
+	t.check(pole.obstructs() and rule.allows(roadblock, at, with_the_pole, with_the_pole),
+			"a roadblock level with a pole on the far sidewalk's outer row stands: read on its "
+			+ "kerb, its band leaves the inner row open past the pole")
 
 func _test_a_street_a_seal_closes_refuses_nothing(t: TestRunner) -> void:
 	var rule := _rule()

@@ -649,13 +649,13 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## The wall's own body at one mouth of a crossing alley — `SealPlanner.alley_mouth_wall()`'s own
 ## placement, with its def's shape then overridden to a point of half the alley's own width
 ## (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0`, 32px) rather than left at the catalogue
-## row's own 60px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
+## row's own 64px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
 ## duplicated the def, so this touches nothing the catalogue or another instance shares.
 ##
 ## **The same reach `place_hard_on` already overrides, at the alley's own mouth this time.** The
-## catalogue `roadblock` row's band (`GroundShape.band(60.0)`) draws and collides at 120px across
-## — nearly double an alley's own `ALLEY_WIDTH_TILES` × `Tuning.TILE_SIZE` (64px) — so the barrier
-## used to lie across the roof edges of the lots either side of the mouth
+## catalogue `roadblock` row's band (`EventCatalogue.ROADBLOCK_REACH`) draws and collides at 128px
+## across — double an alley's own `ALLEY_WIDTH_TILES` × `Tuning.TILE_SIZE` (64px) — so the barrier
+## would lie across the roof edges of the lots either side of the mouth
 ## (`docs/playtests/PLAYTEST-57.md`, "Roofs": *"the barrier looks on top of the roof in those
 ## pictures"*). A point of 32px draws and collides at exactly 64px, edge to edge with the mouth's
 ## own paving and no further — measured in `tests/test_regions.gd`,

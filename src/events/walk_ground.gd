@@ -198,8 +198,9 @@ func held_by(plan: EventPlan) -> Array[Solid]:
 	return found
 
 ## Where a placement stands once it is built: the first point of its path when it has one,
-## recentred on the pavement band when it has a body `pavement_side` does not pin — the reading
-## `EventInstance.setup()` makes.
+## recentred on the pavement band when it has a body `pavement_side` does not pin, or on the kerb
+## beside its lane for a row that stands at its kerb (the roadblock) — the reading
+## `EventInstance.setup()` makes (`EventFootprints.stands_at()`).
 func _stands_at(plan: EventPlan) -> Vector2:
 	return EventFootprints.stands_at(_map, plan.def,
 			plan.path[0] if plan.path.size() > 0 else plan.position)
@@ -207,7 +208,8 @@ func _stands_at(plan: EventPlan) -> Vector2:
 ## A placement's pieces as they stand for the whole walk — its own body, and its successor's
 ## where it leaves a solid one — with nothing for a mobile row or one with no body. The same
 ## reading `EventInstance.setup()` makes of a stationary body: the first point of its path when
-## it has one, recentred on the pavement band unless `pavement_side` pins it, its pieces laid
+## it has one, recentred on the pavement band unless `pavement_side` pins it or on the kerb beside
+## its lane for a row that stands at its kerb (`EventFootprints.stands_at()`), its pieces laid
 ## by `EventInstance._spread_is_vertical()` and its spine along `EventFootprints.body_axis()`.
 func solids_of(plan: EventPlan) -> Array[Solid]:
 	var found: Array[Solid] = []

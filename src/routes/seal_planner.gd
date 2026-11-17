@@ -556,7 +556,7 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## bounds two regions from one end, and the whole of the segment's ground on the far side of the
 ## wall stays walkable right up to the one-tile band the wall itself occupies. The row's own shape
 ## is overridden to a point of `Tuning.TILE_SIZE` (32px) for the same reason — the catalogue row's
-## own 60px reaches roughly two tiles along the street each way, which reaches clean over a through-
+## own 64px reaches two tiles along the street each way, which reaches clean over a through-
 ## alley's mouth at the next street along if the wall's body sits at the row's own width. The copy
 ## count across the street's `STREET_WIDTH` is still derived from the radius (`positions_across`)
 ## rather than chosen by hand; at 32px it comes out at three — the same three positions the

@@ -1370,13 +1370,14 @@ static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 	return ClosurePlanner.calm_area_rect(map, block)
 
-## Today's closures plus every blocker's own obstruction circle, as the `blocked` set
+## Today's closures plus every blocker's own obstruction circle, each where its body stands
+## (`EventPlan.body_at()`: a roadblock's band on the kerb beside its lane), as the `blocked` set
 ## `ReachabilityGrid.flood()` takes. Public because `WalkSiting` builds the same set and then adds
 ## two fields to it, and a second copy of this loop would be a second answer to the same question.
 static func blocked_by(map: CityMap, blockers: Array[EventPlan]) -> Dictionary:
 	var blocked := map.closed_tiles.duplicate()
 	for plan in blockers:
-		block_a_disc(map, blocked, plan.position, plan.blocking_radius())
+		block_a_disc(map, blocked, plan.body_at(), plan.blocking_radius())
 	return blocked
 
 ## Paints one disc of ground into a `blocked` set — a body's obstruction, or a field treated as

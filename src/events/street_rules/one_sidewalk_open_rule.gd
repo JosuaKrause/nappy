@@ -7,11 +7,11 @@ extends StreetRule
 ## asked of both of the street's bands against the bodies standing round it), and one could
 ## without it.
 ##
-## **Only her routes' own streets** (`Corridor.view_of()` on the route). *(Inbox #1465, the
-## player's answer on the board: "what I said was *if* a street needs to have one sidewalk walkable
-## *then* the placement of the drawn events needs to make sure of that".)* No street is newly
-## required to keep a sidewalk; a route's street already is, and the draw makes sure of it. The
-## streets beside the routes and off them keep their blocking events all over (PLAYTEST-17:
+## **Only her routes' own streets** (`Corridor.view_of()` on the route). *(Inbox #1465 in
+## spry-plover, the player's answer on the board: "what I said was *if* a street needs to have one
+## sidewalk walkable *then* the placement of the drawn events needs to make sure of that".)* No
+## street is newly required to keep a sidewalk; a route's street already is, and the draw makes
+## sure of it. The streets beside the routes and off them keep their blocking events all over (PLAYTEST-17:
 ## "areas that outside the paths should have blocking events all over"), and the escape's walk
 ## keeps its own rule.
 ##
@@ -30,9 +30,10 @@ extends StreetRule
 ## - **A roadblock is asked too** (*inbox #747 in woolly-penguin: "roadblocks currently are
 ##   impossible to get past. one sidewalk must be open if they're en-route."*). It spans the street
 ##   by design (`EventDef.spans_the_street()`), and its band, at every heat (`_closing_radius()`),
-##   takes the sidewalk on its own side of the road and leaves the far one, so it is refused where
-##   a body already closes that far sidewalk, and a body drawn after it is refused across from it
-##   the same way.
+##   stands on the kerb beside its lane (`EventPlan.body_at()`) and takes the sidewalk on its own
+##   side of the road and the road, leaving the far sidewalk whole, so it is refused where a body
+##   already closes that far sidewalk, and a body drawn after it is refused across from it the same
+##   way.
 ##
 ## It asks a body, never a cost: a row whose field alone covers both sidewalks is the line rules'
 ## question. Model: no node.
@@ -60,8 +61,9 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## `_closing_radius() + PLAYER_BODY_RADIUS` from where it stands. The streets this city has only.
 func _streets_reached_by(plan: EventPlan) -> Array[StreetNetwork.Segment]:
 	var reach := _closing_radius(plan) + Tuning.PLAYER_BODY_RADIUS
-	var from := _map.world_to_tile(plan.placed_at() - Vector2.ONE * reach)
-	var to := _map.world_to_tile(plan.placed_at() + Vector2.ONE * reach)
+	var at := plan.body_at()
+	var from := _map.world_to_tile(at - Vector2.ONE * reach)
+	var to := _map.world_to_tile(at + Vector2.ONE * reach)
 	var found: Array[StreetNetwork.Segment] = []
 	var seen := {}
 	for y in range(from.y, to.y + 1):
@@ -89,13 +91,14 @@ func _closes_its_last_sidewalk(street: StreetNetwork.Segment, candidate: EventPl
 		if plan == candidate or not plan.obstructs():
 			continue
 		var radius := _closing_radius(plan)
-		if world.grow(radius + Tuning.PLAYER_BODY_RADIUS).has_point(plan.placed_at()):
-			bodies.append(Vector3(plan.placed_at().x, plan.placed_at().y, radius))
+		var at := plan.body_at()
+		if world.grow(radius + Tuning.PLAYER_BODY_RADIUS).has_point(at):
+			bodies.append(Vector3(at.x, at.y, radius))
 	var bands := Corridor.sidewalk_bands(rect, street.horizontal)
 	if not _one_is_open(bands, street.horizontal, bodies):
 		return false
-	bodies.append(Vector3(candidate.placed_at().x, candidate.placed_at().y,
-			_closing_radius(candidate)))
+	var stands := candidate.body_at()
+	bodies.append(Vector3(stands.x, stands.y, _closing_radius(candidate)))
 	return not _one_is_open(bands, street.horizontal, bodies)
 
 ## **The disc a body closes a sidewalk with, here: one place, so it is one change.** A body is read

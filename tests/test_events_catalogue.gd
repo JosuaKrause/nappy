@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 	_test_spread_classification_follows_every_look_and_copy(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
+	_test_a_roadblock_covers_its_own_sidewalk_and_the_road(t)
 	_test_a_spread_rotates_with_the_street(t)
 	_test_stationary_vehicles_face_their_street(t)
 	_test_a_spread_never_lands_on_a_corner(t)
@@ -102,9 +103,10 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	t.check(hot.has_a_spread, "and so does a heated copy")
 
 ## **Where a body stands once built is `EventFootprints.stands_at()`'s one answer**, which a body
-## moved after dawn (`EventInstance.move_to()`) takes as a new body does: a stationary solid row
-## the pavement does not pin is stood on the middle of its band, a mobile row, a pinned one or one
-## with no body where it is put.
+## moved after dawn (`EventInstance.move_to()`) takes as a new body does: on a pavement lane, a
+## stationary solid row the pavement does not pin is stood on the middle of its band; on a
+## carriageway lane, a row that spans the street is stood on the kerb beside it; a mobile row, a
+## pinned one or one with no body where it is put.
 func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var lane := Vector2i(-1, -1)
@@ -124,6 +126,24 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 		t.check((stands != at) == is_centred,
 				"%s stands %s" % [def.id, "on the middle of its band, off its lane" if is_centred else "where it is put"])
 	t.check(solid_unpinned > 0, "the catalogue has a stationary solid row the pavement does not pin")
+	var road := Vector2i(-1, -1)
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if road == Vector2i(-1, -1) and map.tile_at(tile) == GameEnums.TileType.ROAD \
+					and CityMap.kerb_beside(map.tile_to_world(tile)) != map.tile_to_world(tile):
+				road = tile
+	t.check(road != Vector2i(-1, -1), "the city has a carriageway lane beside a kerb")
+	var on_the_road := map.tile_to_world(road)
+	var at_the_kerb := 0
+	for def in EventCatalogue.all():
+		var stands := EventFootprints.stands_at(map, def, on_the_road)
+		var kerbed := def.stands_at_its_kerb()
+		if kerbed:
+			at_the_kerb += 1
+		t.check(stands == (CityMap.kerb_beside(on_the_road) if kerbed else on_the_road),
+				"%s stands %s" % [def.id, "on the kerb beside its lane" if kerbed else "where it is put on the road"])
+	t.check(at_the_kerb > 0, "the catalogue has a row that spans the street and stands at its kerb")
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
 ## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside
@@ -133,11 +153,14 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 const _SIDEWALK_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 ## A `ROAD` or `CROSSING` tile sits much further from a building line: `(SIDEWALK_WIDTH + 0.5) *
 ## TILE_SIZE`, worst case, because it is one of the carriageway tiles in the middle of the
-## corridor rather than at either edge of it — which is why a street-spanning row like
-## `roadblock` is allowed a far wider body than a sidewalk obstruction is. Nothing re-centres a
-## `ROAD`/`CROSSING` body — `CityMap.pavement_inward()` answers zero for either, by design, so
-## `_centred_on_the_pavement_band()` leaves them exactly where the scheduler put them.
+## corridor rather than at either edge of it. `CityMap.pavement_inward()` answers zero for either,
+## by design, so `_centred_on_the_pavement_band()` leaves such a body where the scheduler put it.
 const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TILE_SIZE
+## A row that spans the street stands on the kerb beside its carriageway lane
+## (`EventDef.stands_at_its_kerb()`), so its band has one sidewalk's width to the frontage on its
+## own side and the road's to the far kerb, the same 64px each way: the widest it may be and leave
+## the far sidewalk whole.
+const _KERB_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
 
 ## **A protest has to stay `FRICTION`, and its intensity sits close enough to the line that this
 ## is the check rather than a formality.** *(2026-09-20: "also protesters have very little
@@ -417,6 +440,8 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 			var clearance := INF
 			if tile_type == GameEnums.TileType.SIDEWALK:
 				clearance = _SIDEWALK_SPREAD_CLEARANCE
+			elif def.stands_at_its_kerb() and tile_type == GameEnums.TileType.ROAD:
+				clearance = _KERB_SPREAD_CLEARANCE
 			elif tile_type == GameEnums.TileType.ROAD or tile_type == GameEnums.TileType.CROSSING:
 				clearance = _CARRIAGEWAY_SPREAD_CLEARANCE
 			if clearance == INF:
@@ -477,6 +502,62 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 			"a centred 'construction' (%.0fpx + %.0fpx pram) reaches past either edge of the %.0fpx "
 			% [barrier.obstructs_radius, Tuning.PLAYER_BODY_RADIUS, half_band * 2.0]
 			+ "band, so it seals the whole pavement rather than one lane of it")
+
+## **A roadblock covers its own sidewalk and the road, and leaves the far sidewalk whole** ("okay
+## let's use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road",
+## inbox #1465 in spry-plover). On a hand-drawn street of each axis, a roadblock put on either
+## carriageway lane is solid from the frontage on its own side to the far kerb and nowhere past it,
+## read along the band's own line through where its body stands (`EventFootprints.stands_at()`) and
+## the shape the row collides as. The map is real because the guarantee is the row's width and
+## where the map stands it together: neither alone says where the band ends.
+func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> void:
+	var row := EventCatalogue.by_id("roadblock")
+	var shape := row.ground_shape()
+	var map := CityMap.new()
+	var off_the_corridor := Tuning.STREET_WIDTH + 3
+	var street := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
+	var sidewalk := float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+	for across_x: bool in [true, false]:
+		for offset: int in Tuning.STREET_WIDTH:
+			var tile := Vector2i(offset, off_the_corridor) if across_x \
+					else Vector2i(off_the_corridor, offset)
+			map.set_tile(tile, GameEnums.TileType.ROAD if CityMap.is_road_offset(offset)
+					else GameEnums.TileType.SIDEWALK)
+		var across := Vector2.RIGHT if across_x else Vector2.DOWN
+		for lane: int in [Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH - 1]:
+			var tile := Vector2i(lane, off_the_corridor) if across_x \
+					else Vector2i(off_the_corridor, lane)
+			var placed := map.tile_to_world(tile)
+			var stands := EventFootprints.stands_at(map, row, placed)
+			var axis := EventFootprints.body_axis(map, row, stands, Vector2.RIGHT)
+			var own_low := lane * 2 < Tuning.STREET_WIDTH
+			var own_edge := 0.0 if own_low else street
+			var far_kerb := street - sidewalk if own_low else sidewalk
+			var far_edge := street if own_low else 0.0
+			var toward_far := 1.0 if own_low else -1.0
+			var name := "a roadblock in the lane at %.0fpx across %s street" \
+					% [placed.dot(across), "a north-south" if across_x else "an east-west"]
+			t.check(_solid_across(shape, stands, axis, placed, across, own_edge + toward_far * 0.5),
+					"%s covers its own sidewalk to the frontage" % name)
+			t.check(_solid_across(shape, stands, axis, placed, across, far_kerb - toward_far * 0.5),
+					"%s covers the road to the far kerb" % name)
+			var open := 0.0
+			var at_across := far_kerb + toward_far * 0.5
+			while (far_edge - at_across) * toward_far > 0.0:
+				if not _solid_across(shape, stands, axis, placed, across, at_across):
+					open += 1.0
+				at_across += toward_far
+			t.check(open >= sidewalk,
+					"%s leaves the far sidewalk whole: %.0f of its %.0fpx open" % [name, open, sidewalk])
+
+## Whether `shape`, standing at `stands` with its spine along `axis`, is solid at the point on the
+## line across the street through `placed` that lies `at_across` along `across`.
+func _solid_across(shape: GroundShape, stands: Vector2, axis: Vector2, placed: Vector2,
+		across: Vector2, at_across: float) -> bool:
+	var point := placed + across * (at_across - placed.dot(across))
+	var local := point - stands
+	var spine := Vector2(local.dot(axis), local.dot(axis.orthogonal()))
+	return shape.distance_to_spine(spine) <= shape.rounding_radius()
 
 ## **A spread's rotation is a property of the street it stands on.** Playtest 13 and 19 both report
 ## it from play: *"they're always horizontal even when they should be vertical."* A tile whose `x`

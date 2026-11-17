@@ -1762,7 +1762,7 @@ var _circle_edge := {}
 var _circle_inside := {}
 
 ## Half the box a task's rider is kept out of her view by when it is placed, around the tile it
-## stands on: three tiles either side and four up and down — more than a roadblock's 60px band and
+## stands on: three tiles either side and four up and down — more than a roadblock's 64px band and
 ## its guards, a van, or the burnt building the day-8 fallback burns behind its front, whose wall
 ## rises above the tile. She reads the mark standing on it, so a task placed near it could
 ## otherwise be put in the world, or a building burnt, in front of her. `docs/EVENTS.md`'s rule,
@@ -1957,7 +1957,8 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 ## `DayLocations.nearest_section_in()`), with no cap on how far: `paths`, the paths the close-by
 ## search walked, first, then her paths over the whole city where those reach none. Of those, the
 ## first where the roadblock `def` stands across it (`EventScheduler.across_the_section()`: off the
-## main road, on its carriageway), with neither it nor anything the section holds in her view
+## main road, on its carriageway), with neither it, drawn where its body stands
+## (`EventPlan.body_at()`, on its kerb), nor anything the section holds in her view
 ## (`_drawing_shows()`), and holding none of the city's fixed parts (`EventPlan.is_a_fixed_part()`).
 ## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
 ## draws nothing. **And it is one she can be sent to** (`_she_can_be_sent_to()`, asked of the
@@ -1982,7 +1983,7 @@ func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Section
 		# Stationary, so it draws nothing from a stream: a fresh one, never the director's.
 		var across := EventScheduler.across_the_section(row, _builder, _map, section,
 				RandomNumberGenerator.new())
-		if across == null or _drawing_shows(row, across.placed_at()):
+		if across == null or _drawing_shows(row, across.body_at()):
 			return false
 		var ground := _ground_she_can_be_sent_to_in(section, searched, her)
 		if ground == NO_TILE:
@@ -2050,11 +2051,12 @@ class SectionToSwap extends RefCounted:
 		return _ground
 
 ## **The nearest ground along her paths she can touch `plan` from** (`paths`, `tile -> its distance
-## from her`): a tile within a tile and a half of its body, reachable from home and closer along
-## her paths than `reach`, or `NO_TILE` when none is.
+## from her`): a tile within a tile and a half of its body where it stands (`EventPlan.body_at()`),
+## reachable from home and closer along her paths than `reach`, or `NO_TILE` when none is.
 func _touched_from(plan: EventPlan, paths: Dictionary, reach: float) -> Vector2i:
 	var touch := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
-	var centre := _map.world_to_tile(plan.placed_at())
+	var body := plan.body_at()
+	var centre := _map.world_to_tile(body)
 	var span := ceili(touch / Tuning.TILE_SIZE)
 	var from := NO_TILE
 	var nearest := INF
@@ -2065,7 +2067,7 @@ func _touched_from(plan: EventPlan, paths: Dictionary, reach: float) -> Vector2i
 				continue
 			var distance: float = paths[tile]
 			if distance >= reach or distance >= nearest \
-					or _map.tile_to_world(tile).distance_to(plan.placed_at()) > touch \
+					or _map.tile_to_world(tile).distance_to(body) > touch \
 					or not _reachable_from_home(tile):
 				continue
 			nearest = distance

@@ -1297,6 +1297,35 @@ func lot_at(tile: Vector2i) -> Rect2i:
 func is_closed(tile: Vector2i) -> bool:
 	return closed_tiles.has(tile)
 
+## **Where the kerb runs beside the carriageway lane `at` stands in**: `at` moved across its street
+## onto the line between that lane and the sidewalk on the lane's own side, kept where it is along
+## the street. A corridor is sidewalk | road | sidewalk, 64px each, so a point in the lane 80px
+## from the corridor's outer edge goes to the kerb at 64px, and one in the lane at 112px to the kerb
+## at 128px.
+##
+## **`at` itself where it is in no one corridor's carriageway lanes**: a junction box, which is in
+## both corridors at once and has no one kerb beside it, a sidewalk's offsets, or ground off the
+## streets. A point already on a kerb line is kept, so asking twice answers what asking once did:
+## the kerb at 64px is the lane's own edge, and the one at 128px is the edge of the sidewalk beyond
+## it. The lattice's geometry, like `corridor_offset()`, so a plan asks it without a map
+## (`EventPlan.body_at()`); what is painted on the ground is not read, and the one caller places
+## only on a carriageway (`EventDef.stands_at_its_kerb()`, the roadblock).
+static func kerb_beside(at: Vector2) -> Vector2:
+	var tile := WorldMap.tile_of(at)
+	var x_offset := corridor_offset(tile.x)
+	var y_offset := corridor_offset(tile.y)
+	if (x_offset >= 0) == (y_offset >= 0):
+		return at
+	var across_x := x_offset >= 0
+	if not is_road_offset(x_offset if across_x else y_offset):
+		return at
+	var coordinate := at.x if across_x else at.y
+	var into := float(x_offset if across_x else y_offset) \
+			+ fposmod(coordinate, float(Tuning.TILE_SIZE)) / float(Tuning.TILE_SIZE)
+	var kerb := float(Tuning.SIDEWALK_WIDTH) if into < Tuning.STREET_WIDTH * 0.5 \
+			else float(Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH)
+	return at + (Vector2.RIGHT if across_x else Vector2.DOWN) * (kerb - into) * Tuning.TILE_SIZE
+
 ## Which way is *away from the carriageway* from a pavement tile, as a unit tile step. Zero
 ## where the question has no single answer.
 ##

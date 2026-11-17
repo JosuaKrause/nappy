@@ -1,0 +1,89 @@
+# downy-llama measurements: main 86505121f against the branch (src as at 2c12503a6; walk_rows's WB read at body_at() as at cd6bbc7fb)
+# Each probe run by path from the tree it measures: tools/test.sh probes/<name>.gd
+# downy_llama_route_roadblocks.gd ran on main as an untracked copy of the branch's file.
+
+## downy_llama_route_roadblocks: RB heat day on-route adjacent off junction (18 seeds)
+RB 0 7 49 12 20 0   ->   RB 0 7 52 12 21 0
+RB 0 8 51 14 31 0   ->   RB 0 8 52 14 31 0
+RB 0 9 43 11 50 0   ->   RB 0 9 43 11 50 0
+RB 0 10 26 7 36 0   ->   RB 0 10 26 7 36 0
+RB 0 11 44 12 28 0   ->   RB 0 11 47 12 28 0
+RB 0 12 46 3 49 0   ->   RB 0 12 46 3 49 0
+RB 0 13 0 353 0 0   ->   RB 0 13 0 360 0 0
+RB 0 14 27 11 51 0   ->   RB 0 14 28 11 51 0
+RB 4 7 12 12 53 0   ->   RB 4 7 14 12 54 0
+RB 4 8 20 14 87 0   ->   RB 4 8 21 14 87 0
+RB 4 9 9 7 75 0   ->   RB 4 9 9 7 75 0
+RB 4 10 6 1 56 0   ->   RB 4 10 6 1 56 0
+RB 4 11 2 6 45 0   ->   RB 4 11 2 6 45 0
+RB 4 12 7 3 73 0   ->   RB 4 12 7 3 73 0
+RB 4 13 0 353 0 0   ->   RB 4 13 0 361 0 0
+RB 4 14 5 6 64 0   ->   RB 4 14 6 6 64 0
+
+## m129_zero_cost_line: the three totals (main, then branch)
+   all    299 of 299  100.0%
+   all    146 of 299   48.8%
+   all    299 of 299  100.0%
+   all    299 of 299  100.0%
+   all    146 of 299   48.8%
+   all    299 of 299  100.0%
+
+## placement_fingerprint: every differing FP line (< main, > branch)
+< FP escape seed 5 day 14 | 619 | roadblock | tile (50, 115) | at (1616.0, 3696.0) 
+> FP escape seed 5 day 14 | 619 | roadblock | tile (49, 115) | at (1584.0, 3696.0) 
+< FP_WALK day seed 4242 day 10 | 324 placements
+> FP_WALK day seed 4242 day 10 | 325 placements
+> FP day seed 4242 day 10 | 299 | roadblock | tile (23, 73) | at (752.0, 2352.0) 
+< FP day seed 77 day 10 | 333 | construction | tile (117, 92) | at (3760.0, 2960.0) 
+> FP day seed 77 day 10 | 333 | construction | tile (117, 90) | at (3760.0, 2896.0) 
+< FP day seed 77 day 14 | 312 | roadblock | tile (68, 45) | at (2192.0, 1456.0) 
+> FP day seed 77 day 14 | 312 | roadblock | tile (69, 45) | at (2224.0, 1456.0) 
+< FP_TOTAL 14619 placements
+> FP_TOTAL 14620 placements
+# (the other differing lines are seed 4242 day 10's placements after index 299, shifted one by the roadblock added there)
+
+## escape_roadblock_spacing: summary (main, then branch); 15 seeds' nearest pair moved by under 15px, counts and tiles unchanged
+ESCAPE_SPACING | 40 seeds | 62 roadblocks | 34 pairs, 0 nearer than their two notices | nearest 373px
+ESCAPE_SPACING | 40 seeds | 62 roadblocks | 34 pairs, 0 nearer than their two notices | nearest 385px
+
+## placement_rows: the roadblock lines and day totals that differ (< main, > branch)
+< RD 11 18 1463 522
+> RD 11 18 1466 522
+< RD 13 18 2100 576
+> RD 13 18 2105 576
+< RD 7 18 1821 486
+> RD 7 18 1824 486
+< RK 11 roadblock carriageway 84
+> RK 11 roadblock carriageway 87
+< RK 13 roadblock carriageway 353
+< RK 14 roadblock carriageway 89
+< RK 7 roadblock carriageway 81
+< RK 8 roadblock carriageway 96
+> RK 13 roadblock carriageway 360
+> RK 14 roadblock carriageway 90
+> RK 7 roadblock carriageway 85
+> RK 8 roadblock carriageway 97
+< RV 11 roadblock 0 44
+> RV 11 roadblock 0 47
+< RV 13 roadblock 1 353
+< RV 14 roadblock 0 27
+> RV 13 roadblock 1 360
+> RV 14 roadblock 0 28
+< RV 7 roadblock 0 49
+> RV 7 roadblock 0 52
+< RV 7 roadblock 2 20
+< RV 8 roadblock 0 51
+> RV 7 roadblock 2 21
+> RV 8 roadblock 0 52
+# other rows: day 13 sidewalk rows beside the routes move by 1-3 (market_stall +3, construction -2), and single-count shifts on days 7, 8 and 14
+
+## walk_rows: WC (route tiles cut off) and WB (streets both-closed), main then branch
+WC all 0 0
+WB all 0 17492 0
+WB all 1 5401 247
+WB all 2 6889 155
+WC all 0 0
+WB all 0 17492 0
+WB all 1 5403 243
+WB all 2 6890 155
+# branch's WB read at placed_at() (the probe before cd6bbc7fb): WB all 0 17490 2, the two being the band read at its lane

@@ -612,8 +612,8 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 ## A crossing alley's own wall bodies draw and collide no wider than the alley's own paving — the
 ## defect `docs/playtests/PLAYTEST-57.md`, "Roofs" reported: a barrier band drawn over the roof
 ## edges of the lots either side of an alley mouth, because the wall's body kept the catalogue
-## `roadblock` row's own 120px reach (`GroundShape.band(60.0)`) rather than the alley's own 64px
-## width (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE`).
+## `roadblock` row's own reach (`GroundShape.band(EventCatalogue.ROADBLOCK_REACH)`, 128px across)
+## rather than the alley's own 64px width (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE`).
 ## `RegionPlanner._alley_mouth_wall_body()` trims it to a point that draws and collides at exactly
 ## the alley's own width, so this checks the drawn extent (`2 * obstructs_radius`, what
 ## `SpreadLook._draw_spread` actually paints) stays within the alley's own tile rect on the

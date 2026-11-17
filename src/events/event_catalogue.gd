@@ -133,6 +133,13 @@ const MASKED_PURSUER_CATCH := 23.5
 ## `_test_a_spread_body_fits_the_ground_it_stands_on`, checks it over the whole catalogue.
 const SIDEWALK_SPREAD_MAX := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 
+## **How far the roadblock's band reaches either way across its street from the kerb it stands on**
+## (`EventDef.stands_at_its_kerb()`): half of one sidewalk and the road, 64px, so the band covers
+## its own sidewalk and the road, 128px of the 192px street, and stops at the far kerb, leaving the
+## far sidewalk whole ("okay let's use the one sidewalk has to be open and match the roadblocks size
+## to one sidewalk + road", inbox #1465 in spry-plover). Its picture is drawn at the same width.
+const ROADBLOCK_REACH := (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE * 0.5
+
 ## `mast.svg` is thinner than a person: a pole, not a body to edge past. Solid enough that she
 ## cannot walk through it; the field, not the pole, is what a route goes round.
 const MAST_BODY := 6.0
@@ -1947,13 +1954,13 @@ static func _curfew_announce() -> EventDef:
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
-## Closes a street and is loud about it. The first event that takes a route away rather than making
-## it expensive.
+## Holds a street: a concrete band across its own sidewalk and the road, with a guard posted at
+## it, so the one way past is the far sidewalk, under the guard's eye.
 ##
 ## **Named `roadblock`, not `checkpoint`.** The region door took that word (a hut, a gate and guards
-## on the sidewalks you can pass at a price), and this row means the opposite: a street you cannot
-## pass at all. Two rows drawing armed men across a street and meaning opposite things cannot share
-## a name, any more than a silhouette.
+## on the sidewalks you can pass at a price), and this row means something else: a barrier you walk
+## round on the far side, never through. Two rows drawing armed men across a street and meaning
+## different things cannot share a name, any more than a silhouette.
 ##
 ## **Drawn as one continuous barrier, not a row of blocks** (PLAYTEST-55).
 ## `RoadblockLook._draw_roadblock()` repeats one segment capped by `EventPictures.ROADBLOCK_END`
@@ -1963,11 +1970,18 @@ static func _curfew_announce() -> EventDef:
 ## icon (`EventPictures.icon_for()`): a badge is read small, and the concrete-block silhouette is
 ## the clearest single frame of "a street being held".
 ##
-## **Radii derived from the body, not carried across.** The field is a capsule about the body's own
-## spine, so the along-axis reach from centre stays what it was and both radii lose the segment's
-## own `half_length` (36, from `band(60)`): `outer_radius` 215 → 179. `inner_radius` is 86 and is
-## bounded by nothing: it is where full strength ends and the falloff begins, and what the cost
-## table is stated against.
+## **Its band covers its own sidewalk and the road, and leaves the far sidewalk whole** ("okay let's
+## use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road", inbox
+## #1465 in spry-plover). It is placed on a carriageway lane and its body stands on the kerb beside
+## that lane (`EventDef.stands_at_its_kerb()`, `CityMap.kerb_beside()`), from where its band
+## reaches `ROADBLOCK_REACH` (64px) either way across the street: to the frontage on its own side
+## and to the far kerb. So a roadblock on one of her routes' streets leaves her the far sidewalk to
+## pass on (`OneSidewalkOpenRule`), baiting the guard away if he hunts.
+##
+## **Radii measured from the body's spine.** The field is a capsule about the band, so
+## `outer_radius` (179) is how far it reaches from the band along the street, the way she comes at
+## it. `inner_radius` is 86 and is bounded by nothing: it is where full strength ends and the
+## falloff begins, and what the cost table is stated against.
 ##
 ## **`heat_response = HUNTS`, the rung `abduction` and `night_raid` climb**, and **two guards stand
 ## at the barrier from the moment it is placed**, one on each side of the band and clear of its
@@ -1976,7 +1990,7 @@ static func _curfew_announce() -> EventDef:
 ## off from his own post (the other cannot, being blocked) while the other stays standing at his:
 ## the instance becomes the man, and `PursuitSpec.leaves_its_body` pins the barrier's body and
 ## picture where it was built for the rest of the event's life. Nothing appears, nothing
-## disappears, and the street he abandoned stays shut behind him.
+## disappears, and the sidewalk and road he abandoned stay shut behind him.
 ##
 ## **His one radius is measured from the band's centre, and he charges on his warning's clock.** The
 ## radius stays on the band because it may not reach past the field, which is cored there. His post
@@ -1989,11 +2003,11 @@ static func _curfew_announce() -> EventDef:
 ## `masked_pursuer`: the same fiction, the same distance at which a masked man takes the baby. It is
 ## separate from `inner_radius` because the field is a street being held, cored on the band, while
 ## what ends the day is a pair of arms. `EventDef.validate()` has nothing to say about the band's
-## 60px body, as about any pursuer's: the man walks out of it before he can kill.
+## body, as about any pursuer's: the man walks out of it before he can kill.
 ##
 ## **Intensity 0: the band costs nothing, manned or not, on a day and in the escape alike; the guard
-## is the danger** (inbox #788 in minty-lemur). The band is concrete: it shuts the street with its
-## 60px body and costs nothing to walk beside, while the guard posted at it warns her with his
+## is the danger** (inbox #788 in minty-lemur). The band is concrete: it shuts its own sidewalk and
+## the road with its body and costs nothing to walk beside, while the guard posted at it warns her with his
 ## raised hand and catches her if she walks on into his charge. A region wall stands as hard seals
 ## of this row (`RegionPlanner._WALL_DEF_ID`), so a wall's bands cost nothing either; a door's own
 ## structures (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) keep their rates. The row
@@ -2024,12 +2038,12 @@ static func _roadblock() -> EventDef:
 	def.has_a_spread = true
 	def.first_day = 7
 	def.act_tag = 2
-	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
+	def.placement = [GameEnums.TileType.ROAD]
 	def.intensity = 0.0
 	def.inner_radius = 86.0
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
-	def.solid(GroundShape.band(60.0))
+	def.solid(GroundShape.band(ROADBLOCK_REACH))
 	# **How his hunting copy pursues** (`EventDef.hunts`, `HuntSpec.pursuing()`, a catch that ends
 	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
 	# this post and the masked man are the same figure, and warns at his post with his hand raised

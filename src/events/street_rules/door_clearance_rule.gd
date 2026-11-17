@@ -12,7 +12,7 @@ func _init(doors: PackedVector2Array) -> void:
 ## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
 		_placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
-	return clear_of_the_doors(candidate.placed_at(), candidate.walks(), _doors,
+	return clear_of_the_doors(candidate.body_at(), candidate.walks(), _doors,
 			candidate.row().field_reach())
 
 ## Whether a placement keeps `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around every one of

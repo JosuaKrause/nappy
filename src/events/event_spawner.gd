@@ -67,7 +67,8 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 ##
 ## **The placement and the axis are read back out of `EventInstance`'s own statics rather than
 ## worked out again here.** Where a body actually stands is not `EventPlan.position`: a stationary,
-## unpinned body is shifted onto the middle of its pavement band, and a segment body lies along
+## unpinned body is shifted onto the middle of its pavement band, or onto the kerb beside its lane
+## for a row that stands at its kerb (the roadblock), and a segment body lies along
 ## whichever axis the street it stands on gives it. Both are decided in exactly one place, and a
 ## second copy of that arithmetic would agree with it right up to the first time one of the two
 ## took an argument — which would leave the crowd avoiding ground no body is on and walking

@@ -13,6 +13,7 @@ func run(t: TestRunner) -> void:
 	_test_which_plans_are_fixed_parts(t)
 	_test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t)
 	_test_what_its_field_reaches(t)
+	_test_where_its_body_stands(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventPlan:
@@ -123,3 +124,22 @@ func _test_what_its_field_reaches(t: TestRunner) -> void:
 			"its field reaches a point just inside where its row is heard")
 	t.check(not plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() + 1.0, 0.0)),
 			"and not one just outside")
+
+## **Where a plan's body stands** (`EventPlan.body_at()`): a roadblock placed in a carriageway lane
+## stands on the kerb beside it (`CityMap.kerb_beside()`), and its geometry reads it there; a
+## sidewalk row and the region wall's pinned roadblock stand where they were placed. The lane is the
+## inner one of a north-south street, three blocks of tiles past a corridor along it.
+func _test_where_its_body_stands(t: TestRunner) -> void:
+	var tile := float(Tuning.TILE_SIZE)
+	var lane := Vector2((Tuning.SIDEWALK_WIDTH + 0.5) * tile, (Tuning.STREET_WIDTH + 3.5) * tile)
+	var kerb := CityMap.kerb_beside(lane)
+	t.check(kerb != lane, "the lane point has a kerb beside it")
+	var roadblock := EventPlan.new(EventCatalogue.by_id("roadblock"), lane)
+	t.check(roadblock.body_at() == kerb and roadblock.placed_at() == lane,
+			"a roadblock placed in the lane stands on the kerb beside it, placed where it was put")
+	t.check(roadblock.where_it_stands_now() == kerb and is_equal_approx(roadblock.distance_from(kerb), 0.0),
+			"and its geometry reads it at the kerb")
+	t.check(EventPlan.new(EventCatalogue.by_id("market_stall"), lane).body_at() == lane,
+			"a sidewalk row stands where it was placed")
+	t.check(_sealed("roadblock", lane).body_at() == lane,
+			"and so does the region wall's pinned roadblock")
