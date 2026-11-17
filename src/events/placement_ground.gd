@@ -2,8 +2,8 @@ class_name PlacementGround
 extends RefCounted
 ## **The four kinds of ground a unit of the day's locations is** (`PlacementUnit`): a street
 ## (its sidewalks and its carriageway), a junction box, an alley, a park or a square. What the
-## declared table is keyed by beside the view and the act (`PlacementDensity`), what a unit's draw
-## names beside its view when it asks for its fill (`UnitFills.of()`), since a unit draws from one
+## declared table is keyed by beside the view and the act (`PlacementDensity`), what a unit's bag is
+## made by beside its view (`UnitFills.bag_for()`, `of()`), since a unit draws from one
 ## bag and a street's sidewalks and sections draw from it together, and what a catalogue row may
 ## weigh itself on (`EventDef.weigh_on()`). A value and nothing else.
 ##

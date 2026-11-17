@@ -180,6 +180,7 @@ FILES: dict[str, str] = {
     "src/events/street_rules/route_sidewalk_rule.gd": "model",
     "src/events/street_rules/unused_calm_rule.gd": "model",
     "src/events/street_rules/walk_open_rule.gd": "model",
+    "src/events/unit_bags.gd": "model",
     "src/events/unit_draw.gd": "model",
     "src/events/unit_fills.gd": "model",
     "src/events/unit_room.gd": "model",

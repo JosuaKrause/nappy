@@ -23,7 +23,7 @@ func run(context: DawnContext) -> void:
 		return _weight_in(def, location, day, map, ground)
 	var phase := ScriptedPhase.new(context.locations(), events, phase_ground, weigh)
 	var rng := context.stream(SALT)
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, context.heat()):
+	for def in context.catalogue_rows(GameEnums.EventKind.SCRIPTED):
 		# A row sited while she walks is owed here with no position, as every such row is.
 		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 			events.add(EventPlan.new(def, Vector2.INF))

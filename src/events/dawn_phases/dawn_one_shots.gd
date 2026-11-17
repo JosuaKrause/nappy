@@ -22,7 +22,7 @@ func run(context: DawnContext) -> void:
 	var day := context.day()
 	var events := context.events()
 	var consumed := context.spent_one_shots()
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, context.heat()):
+	for def in context.catalogue_rows(GameEnums.EventKind.ONE_SHOT):
 		if def.id in consumed:
 			continue
 		var owed := EventPlan.new(def, Vector2.INF)

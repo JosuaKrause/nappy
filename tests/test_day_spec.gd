@@ -7,6 +7,26 @@ func run(t: TestRunner) -> void:
 	_test_the_region_wall_stands_from_its_first_day(t)
 	_test_neither_section_of_the_escape_has_the_region_wall(t)
 	_test_the_walls_kept_follow_the_region_wall(t)
+	_test_every_marble_of_a_walk_bag_names_a_row(t)
+
+## Every marble of a walk's bag but the empty one names a row, for every spec the run builds, and
+## the empty marble is the string the bag itself calls empty, one string two layers each name.
+func _test_every_marble_of_a_walk_bag_names_a_row(t: TestRunner) -> void:
+	var specs: Array[DaySpec] = []
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		specs.append(DaySpec.for_day(day))
+	for which: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
+		specs.append(DaySpec.for_section(which, 60.0))
+	var named := 0
+	for spec in specs:
+		for marble: String in spec.walk_bag():
+			if marble == DaySpec.EMPTY_MARBLE:
+				continue
+			named += 1
+			t.check(spec.walk_bag_rows().has(marble),
+					"day %d's walk bag marble %s names a row" % [spec.number, marble])
+	t.check(named > 0, "some spec walks a bag with rows in it (%d marbles named)" % named)
+	t.check(DaySpec.EMPTY_MARBLE == ViewBag.EMPTY, "the spec's empty marble is the bag's")
 
 func _test_the_region_wall_stands_from_its_first_day(t: TestRunner) -> void:
 	var first := Tuning.REGION_WALL_FIRST_DAY

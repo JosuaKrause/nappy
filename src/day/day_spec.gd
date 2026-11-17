@@ -164,10 +164,15 @@ enum Draw {
 	BAG_PER_STREET,
 }
 var draw := Draw.CATALOGUE
-## `Draw.BAG_PER_STREET`'s marbles: a marble -> how many of it one fill of the bag holds. One bag for
-## the whole walk, so the mix is exact over each fill of it rather than over each street.
+## **The one bag the whole walk draws from** (`Draw.BAG_PER_STREET`'s marbles): a marble -> how many
+## of it one fill holds, `EMPTY_MARBLE` among them, so the mix is exact over each fill of it rather
+## than over each street. Empty where the walk has no such bag and each of its units draws from a
+## fresh bag of its view's fill: every one of the fourteen days. Set by
+## `_place_the_escape_city()`; a suite or a probe sets another mix to plan with. The dawn's context
+## reads it through `walk_bag()`.
 var bag := {}
-## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none.
+## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none. Read
+## through `walk_bag_rows()`.
 var bag_rows := {}
 ## Whether nothing dangerous may reach a calm area she has not used yet, and one stays usable
 ## (`CalmAreas.unused_ground()`, `DawnCalmKeptClean`): every day's rule. The
@@ -415,6 +420,16 @@ func is_dark_from_the_start() -> bool:
 ## each wall by (`UnitFills`).
 func share_of_walls_drawn() -> float:
 	return wall_row_share
+
+## **The walk's one bag** (`bag`): empty for a walk with none, and an empty bag is the only way a
+## walk says so, so no yes-or-no beside it can disagree with it.
+func walk_bag() -> Dictionary:
+	return bag
+
+## The rows the walk bag's marbles stand, a marble -> its row; `EMPTY_MARBLE` has none
+## (`bag_rows`).
+func walk_bag_rows() -> Dictionary:
+	return bag_rows
 
 ## Hands the walk its ways out, as the world it is walked in answers them (`DayWorld.exits()`): a
 ## `Goal.CITY_EDGE` walk's two, and none for any other (`exits`).
