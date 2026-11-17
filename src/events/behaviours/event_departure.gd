@@ -9,19 +9,26 @@ extends EventBehaviour
 ## last gap), back along a man's trail to the vehicle that let him out (`EventOfficer`), or on the
 ## way it was going; **something solid straight ahead turns it onto a way out** planned over walkable
 ## ground from where she is now, rather than holding it against the solid in her view.
+##
+## **A row whose route is worked out as it goes leaves by legs of the same** (`go_on_by()`, a row the
+## director sent ahead of her): a car drives on through roads from junction box to junction box,
+## turning at a box as a live one does, and a walker walks straight on, each leg its `WayOn` gives,
+## until it is out of her sight; only where it gives none does it fall to the way out every event has.
 
 ## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
 ## of sight of — a headless rig, a streamed-out day — nothing else would ever end it. **Not a
 ## backstop for a departure she is standing next to** (`_must_clear_sight`).
 const LEAVING_GIVES_UP := 6.0
+## The most legs a departure by legs asks for in one tick's step (`_walk_the_way()`).
+const LEGS_IN_A_STEP := 2
 
 ## How long it has been leaving, in seconds.
 var _leaving_for := 0.0
 ## **Whether `LEAVING_GIVES_UP` may not end it while she could still be watching**: a completed
 ## task's departure, which starts with her beside it, a car that drives (whose body she can stand
 ## against, so a departure can be held up beside her), a guard walking away from his barrier, who is
-## in her view as he goes, the man a vehicle let out walking back to it, and a walk down a way it was
-## given.
+## in her view as he goes, the man a vehicle let out walking back to it, a walk down a way it was
+## given, and a row whose route is worked out as it goes, which she may be walking beside.
 var _must_clear_sight := false
 ## The way `along()` gave, each point dropped as it is reached; the way planned on from its end, the
 ## same, and the tiles that one never enters; whether this departure walks one; and its pace, 0 for
@@ -44,6 +51,10 @@ var _mover: Mover
 ## the vehicle that let him out (`EventOfficer`); null for a row with neither.
 var _barrier_post: EventBarrierPost
 var _on_foot: EventOfficer
+## What gives it the legs it leaves by (`WayOn`), or null for a departure that is not by legs. Not
+## saved: a row whose route is worked out as it goes is sent outside the streaming
+## (`EventSpawner.spawn()`), so it is never streamed out and back.
+var _goes_on_by: WayOn = null
 
 ## Handed, as its event is set up, the figure it moves, where she is, its row, the ground and how it
 ## moves over it, and the two behaviours its way out depends on.
@@ -76,6 +87,14 @@ func begin() -> void:
 		# could not be watching. An investigating car reaches here only at the end of its route,
 		# which it drives on to once its man is back in, so it leaves the way it was going.
 		_must_clear_sight = true
+	if _goes_on_by != null:
+		# **It leaves by legs, and is gone only once she could not be watching**: she may be walking
+		# beside it, so the backstop never deletes it in her view, and a car keeps to carriageway as
+		# it goes (`_walk_the_way()`).
+		_must_clear_sight = true
+		_walks_a_way = true
+		_way = PackedVector2Array()
+		_way_on = PackedVector2Array()
 	if _barrier_post and _barrier_post.has_left_its_body():
 		# **He is in her view as he goes**, and **he walks off over walkable ground**, by the way
 		# planned on from here, never in a straight line across a roof — and never through his own
@@ -92,6 +111,11 @@ func begin() -> void:
 		# **A man a vehicle let out walks back to it** rather than away from her, in her view as he
 		# goes, so he is gone only at its door or out of her sight.
 		_must_clear_sight = true
+
+## **Makes its departure one by legs** (`WayOn`), told by whoever sends its row ahead of her
+## (`EventInstance.go_on_by()`).
+func go_on_by(way_on: WayOn) -> void:
+	_goes_on_by = way_on
 
 ## **A departure that is a task's answer** (`EventInstance.leave_for_a_completed_task()`): she is
 ## standing right next to it when it starts, so it is held to her sight, and it turns away from her
@@ -204,21 +228,37 @@ func avoids() -> Rect2i:
 	return _way_avoids
 
 ## Puts its event where a walk (`Navigator.walk()`) ended, facing the way it last walked toward a
-## point it did not reach, and counts the ground it covered.
+## point it did not reach, and counts the ground it covered. **A departure by legs faces the way it
+## last walked toward any point**, since a leg's last point is reached exactly and the next leg is
+## asked from the way it faces.
 func take_the_walk(walked: Navigator.Walked) -> void:
 	if walked.heading != Vector2.ZERO:
 		_figure.turn_to(walked.heading)
+	elif _goes_on_by != null and walked.toward != Vector2.ZERO:
+		_figure.turn_to(walked.toward)
 	_figure.arrive_at(walked.at)
 	_figure.walk_on(walked.travelled)
 
-## Walks `step` pixels of the way it was given; past its end, of a way planned on from where it
-## stands (again each time one runs out while she could still be watching); and only where none is
-## found, or one is walked to its end inside this step, away from her over ground it may walk.
+## Walks `step` pixels of the way it was given; past its end, for a departure by legs, of the next
+## leg its `WayOn` gives (`WayOn.leg_to_leave_by()`), asked again each time one is walked; where it
+## gives none, of a way planned on from where it stands (again each time one runs out while she could
+## still be watching); and only where none is found, or one is walked to its end inside this step,
+## away from her over ground it may walk.
 func _walk_the_way(step: float) -> void:
 	var left := _walk_points(false, step)
 	if left <= 0.0:
 		return
 	var her: Vector2 = _where.at()
+	if _goes_on_by != null and _way_on.is_empty():
+		# A leg is at least the rest of a junction box, so a tick's step walks two at the most.
+		for _leg in LEGS_IN_A_STEP:
+			var leg := _goes_on_by.leg_to_leave_by(_row, _figure.place(), _figure.heading(), her)
+			if leg.size() < 2:
+				break
+			_way = leg.slice(1)
+			left = _walk_points(false, left)
+			if left <= 0.0:
+				return
 	if _way_on.is_empty() and her != Vector2.INF:
 		_way_on = way_out_from(_figure.place())
 	left = _walk_points(true, left)

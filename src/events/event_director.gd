@@ -164,6 +164,9 @@ var _plans: Array[EventPlan] = []
 ## used by `due()` to refuse a siting whose path would run through a door's own clear ground. Empty
 ## on every day before `Tuning.REGION_WALL_FIRST_DAY`.
 var _doors := PackedVector2Array()
+## What works out the route of a row it sends ahead of her as it goes (`way_on()`), null until handed
+## one or until it makes its own.
+var _way_on: WayOn = null
 
 ## Today's plans that the day made and left for her walk to site — `EventDef.on_her_way`,
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
@@ -1312,6 +1315,37 @@ func clear_to_send(path: PackedVector2Array, def: EventDef) -> bool:
 		return false
 	return not def.is_sent_ahead() or _clear_of_the_plans(path, def)
 
+## **Whether a row sent ahead of her may take a further leg on `path`** (`WayOn.next_leg()`): it stays
+## out of the clear ground around today's region doors and out of every field a placed plan keeps
+## clear (`EventPlan.keeps_its_field_clear()`), the two halves of `clear_to_send()` that are about
+## where a row goes. Not the start's `EventScheduler.EVENT_SPACING_ANY` from a placed plan: that keeps
+## one thing from being created on top of another, and would refuse a dog walker its next leg past a
+## cafe's tables.
+func clear_to_go_on(path: PackedVector2Array, def: EventDef) -> bool:
+	if not DoorClearanceRule.clear_of_the_doors(path[0], path, _doors, def.field_reach()):
+		return false
+	var going_on := EventPlan.new(def, path[0], path)
+	for plan in _plans:
+		if plan.is_spent() or not plan.is_placed():
+			continue
+		if plan.keeps_its_field_clear() and going_on.gap_to(plan) < plan.row().field_reach():
+			return false
+	return true
+
+## **Hands in the walk's way on** (`WayOn`), made once a walk over its through roads
+## (`EventManager`), and tells it the day's rule (`clear_to_go_on()`).
+func use_way_on(handed: WayOn) -> void:
+	_way_on = handed
+	_way_on.use_the_days_rule(clear_to_go_on)
+
+## **What works out the route of a row it sends ahead of her as it goes** (`WayOn`): the one handed in
+## (`use_way_on()`), or, handed none, one of its own over its map as the map stands now, the way it
+## takes the map's navigator where it is handed none.
+func way_on() -> WayOn:
+	if _way_on == null:
+		use_way_on(WayOn.new(_map, _navigator, ThroughRoads.over(_map, Mover.vehicle())))
+	return _way_on
+
 ## The road-aware sibling of `_toward_her()`, for a `TOWARD_PLAYER` row whose `placement` names
 ## `ROAD` — the `police_patrol` the director sends ahead of her (`EventDef.as_sent_ahead()`), the
 ## return leg's among them, a car rather than a bike.
@@ -1330,8 +1364,8 @@ func clear_to_send(path: PackedVector2Array, def: EventDef) -> bool:
 ## carriageway itself), her heading has no along-corridor component to pick a direction from, or
 ## the corridor there has no carriageway to drive on — a precinct is paved kerb to kerb, so its
 ## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
-## to: a park, a square, a precinct — or not for the car's leg and its way out to
-## `Tuning.OUT_OF_SIGHT` past where she stands (`leg_in_the_lane()`).
+## to: a park, a square, a precinct — or where its leg could not be driven or gone on from
+## (`leg_in_the_lane()`).
 ##
 ## **Created at once, not warned first, and wholly out of the camera's view on its first frame.**
 ## *(M226 amendment 6, the player: "I don't want any pop in".)* Its place is in its lane just out of
@@ -1371,16 +1405,14 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ##
 ## **The lane is the carriageway of the street she is beside**, read as `_toward_her_on_the_road()`
 ## reads it (`CityMap.pavement_inward()`, `CrowdLanes`). It drives toward her, against her heading
-## along the street, or, for a row that comes from either end (`EventDef.may_come_from_either_end()`),
-## the way a coin flip on the director's stream says, and from the other end where that one has no
-## room. **The place is level with her along the road and just out of sight up it**
+## along the street, and never from behind her ("just spawn in the car just ahead of the player",
+## inbox #1460). **The place is level with her along the road and just out of sight up it**
 ## (`PendingWarning.in_its_lane()`, against `view`), and **the first leg runs down the lane past her
 ## to the far edge of the next junction box** (`leg_in_the_lane()`).
 ##
 ## Empty where there is nothing to run it down: she is not beside a plain sidewalk edge, the
-## street there has no carriageway to drive on (a precinct, `CityMap.is_driveable_at()`) for its leg
-## and its way out to `Tuning.OUT_OF_SIGHT` past where she stands (`leg_in_the_lane()`), or no end
-## has a place out of sight. The caller waits and asks again.
+## street there has no leg a car may drive and go on from (`leg_in_the_lane()`), or the end ahead of
+## her has no place out of sight. The caller waits and asks again.
 func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
@@ -1393,14 +1425,7 @@ func _in_the_lane_beside_her(at: Vector2, heading: Vector2, def: EventDef,
 	var along := Vector2(inward.y, inward.x)
 	var component := heading.dot(along)
 	var going := -along * signf(component) if not is_zero_approx(component) else along
-	if def.may_come_from_either_end() and _rng.randf() < 0.5:
-		going = -going
-	for _end in 2:
-		var path := _down_the_lane(at, going, index, def, view)
-		if not path.is_empty():
-			return path
-		going = -going
-	return PackedVector2Array()
+	return _down_the_lane(at, going, index, def, view)
 
 ## The first leg of `def` in the lane of corridor `index` driving `going` (a unit along the street),
 ## from its place just out of sight up the lane (`PendingWarning.in_its_lane()`, against `view`, the
@@ -1427,24 +1452,12 @@ func _down_the_lane(at: Vector2, going: Vector2, index: int, def: EventDef,
 ## far edge of the next junction box (`past_the_next_box()`), one created at once (the patrol, slower
 ## than her walk) past her by as far as its place is up the road from her.
 ##
-## **The car drives on past the leg's end, so its way out is asked as well as its leg.** A car whose
-## route has run out leaves straight on the way it was going (`EventDeparture.begin()`) until it is
-## `Tuning.OUT_OF_SIGHT` from her (`EventDeparture.leave()`). So the leg is sent only where the lane
-## from its place to `Tuning.OUT_OF_SIGHT` past where she stands now, or to the leg's end where that
-## is further, is carriageway every tile of the way (`_carriageway_all_along()`: not a precinct, nor
-## a junction box a precinct paves, `CityMap.is_driveable_at()`), and nothing on it stops a car
-## (`Navigator.trim()`: a solid, a closed street, the map's edge), where it would turn onto a way
-## out. The leg is never cut short of the paving: a car stopped there drives on over it as it leaves,
-## and one turned round there turns on the spot in her view (the events skill's
-## `references/event-cars.md`). Measured from where she is as it is sited, and again from where she
-## is when a row warned of first is created.
-##
-## **That keeps the whole drive on carriageway while she stands where she was, or walks toward the
-## car, and not while she walks the way it drives.** It leaves until it is `Tuning.OUT_OF_SIGHT` from
-## where she is by then, so a car she walks along with (the convoy from behind her, which overtakes
-## her, or a patrol she turns to walk beside) can still leave over a precinct's paving, or reach a
-## closed street or the map's edge, while she can see it. Keeping the departure itself on
-## carriageway while she can see it is the route worked out as it goes, not built yet.
+## **Nothing is sent on a leg it could not go on from.** The leg is sent only where the day's
+## `WayOn` says a car may drive it (`WayOn.drives_clear()`: carriageway every half tile, no
+## precinct's paving and no street a calm zone absorbed, and nothing on it that stops the row) and
+## gives it a next leg from its end (`WayOn.next_leg()`). Once it exists its route is worked out as it
+## goes and it leaves by legs of the same (`EventInstance.go_on_by()`), so it keeps to carriageway for
+## as long as she can see it, whichever way she walks.
 ##
 ## Empty where any of that fails, and the row waits for room as any sent row does. What it must keep
 ## clear of is `clear_to_send()`'s, asked of the leg it answers.
@@ -1457,30 +1470,11 @@ func leg_in_the_lane(def: EventDef, place: Vector2, her: Vector2,
 			else _past_her_by(level, going, place.distance_to(level), ends)
 	if (far - level).dot(going) < 0.0:
 		return PackedVector2Array()
-	var gone := level + going * Tuning.OUT_OF_SIGHT
-	var drives_to := far if (far - gone).dot(going) > 0.0 else gone
-	if not _carriageway_all_along(place, drives_to, vertical):
+	var leg := PackedVector2Array([place, far])
+	var way := way_on()
+	if not way.drives_clear(def, leg) or way.next_leg(def, far, going, her).is_empty():
 		return PackedVector2Array()
-	var drive := _navigator.trim(PackedVector2Array([place, drives_to]), EventInstance.mover_for(def))
-	if drive.size() < 2 or not drive[drive.size() - 1].is_equal_approx(drives_to):
-		return PackedVector2Array()
-	return PackedVector2Array([place, far])
-
-## **Whether a car may drive down a lane from `place` to `to`**, the two on one lane of a street
-## running north-south where `vertical` and east-west otherwise: every tile from the one under
-## `place` to the one under `to` is carriageway (`CityMap.is_driveable_at()`: a precinct is paved
-## kerb to kerb, and a precinct on either street paves the junction box between them). Asked a tile
-## at a time, since what is carriageway changes along a street.
-func _carriageway_all_along(place: Vector2, to: Vector2, vertical: bool) -> bool:
-	var from := _map.world_to_tile(place)
-	var last := _map.world_to_tile(to)
-	var tiles := absi(last.y - from.y) if vertical else absi(last.x - from.x)
-	var step := Vector2i(0, signi(last.y - from.y)) if vertical \
-			else Vector2i(signi(last.x - from.x), 0)
-	for i in tiles + 1:
-		if not _map.is_driveable_at(vertical, from + step * i):
-			return false
-	return true
+	return leg
 
 ## The point `by` down a lane from `level` driving `going`, held between `ends` (the lane's ends on
 ## the map, `PendingWarning.lane_ends()`).

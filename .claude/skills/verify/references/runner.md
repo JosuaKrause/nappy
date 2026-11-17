@@ -8,7 +8,8 @@ count, a file `check.sh` says it reverted), and before changing the runner or it
 
 **After every suite the runner compares the shared state with what it was before, and fails the
 suite that changed it** (`tests/shared_state.gd`): the tree's `paused`, `Engine.time_scale`,
-`Engine.max_physics_steps_per_frame`, `Engine.physics_ticks_per_second`, `Input.mouse_mode`, the
+`Engine.max_physics_steps_per_frame`, `Engine.physics_ticks_per_second`,
+`OS.low_processor_usage_mode_sleep_usec` (the sleep a headless frame takes), `Input.mouse_mode`, the
 nodes under the root and the runner, each `InputMap` action's events and deadzone, which actions
 `Input` holds pressed, every autoload's variables, those of each `RefCounted` an autoload holds (one level deep, named
 `<autoload>.<field>.<its field>`), the connections on its signals, and every `static var` under

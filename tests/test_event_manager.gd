@@ -36,6 +36,7 @@ func run(t: TestRunner) -> void:
 		_test_the_walk_is_handed_the_ground_the_dawn_made,
 		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
 		_test_a_drawn_body_is_told_to_whoever_listens,
+		_test_a_recipes_bodies_are_in_its_way_on,
 	]
 	for test in tests:
 		_build_city(t)
@@ -249,6 +250,48 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	t.check(told.size() == told_so_far and RunCity.events(_city).plans().size() > drawn_before,
 			"with no listener a draw tells nobody and still stands its rows")
+
+## **A scene recipe's bodies are in the through roads its walk's way on drives by** (`WayOn`,
+## `ThroughRoads`, made as the walk is taken): a sent patrol in the lane of a street running
+## east-west, short of a junction box, drives straight through it with nothing planned; a recipe whose
+## one row is a barricade standing on the street beyond that box turns it in the box instead, since
+## that street is no through road once the barricade is on it. Its leg never reaches the barricade, so
+## only the through roads can turn it: they are made after the recipe's bodies are recorded.
+func _test_a_recipes_bodies_are_in_its_way_on(t: TestRunner) -> void:
+	var map := _city.map
+	var events := RunCity.events(_city)
+	var day := 13
+	var nothing: Array[EventPlan] = []
+	events.start_recipe(nothing, DaySpec.for_day(day), day, Vector2.ZERO)
+	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
+	var period := CityMap.period()
+	var tile := float(Tuning.TILE_SIZE)
+	var boxes := (map.size_in_tiles().x - Tuning.STREET_WIDTH) / period + 1
+	var at := Vector2.INF
+	var beyond := Vector2.INF
+	var far_edge := 0.0
+	for row in range(1, boxes - 1):
+		for column in range(0, boxes - 3):
+			var lane := CrowdLanes.lane_centre(row, CrowdLanes.road_lane(false, 1.0))
+			var from := Vector2((column * period + Tuning.STREET_WIDTH + 2.5) * tile, lane)
+			var leg := events.ahead.director().way_on().next_leg(patrol, from, Vector2.RIGHT,
+					Vector2.INF)
+			far_edge = ((column + 1) * period + Tuning.STREET_WIDTH) * tile
+			if leg.size() == 2 and is_equal_approx(leg[1].x, far_edge):
+				at = from
+				beyond = Vector2(far_edge + 4.5 * tile, lane)
+				break
+		if at != Vector2.INF:
+			break
+	t.check(at != Vector2.INF, "with nothing planned a sent patrol drives straight through a box")
+	if at == Vector2.INF:
+		return
+	var barricade: Array[EventPlan] = [EventPlan.new(EventCatalogue.by_id("barricade"), beyond)]
+	events.start_recipe(barricade, DaySpec.for_day(day), day, Vector2.ZERO)
+	var leg := events.ahead.director().way_on().next_leg(patrol, at, Vector2.RIGHT, Vector2.INF)
+	t.check(map.is_obstructed(map.world_to_tile(beyond))
+			and not (leg.size() == 2 and is_equal_approx(leg[1].x, far_edge)),
+			"and with a recipe's barricade on the street beyond it, it no longer does (%s)" % leg)
 
 ## Each of `plans` as its row and the place it was put, in order.
 static func _where_they_stand(plans: Array[EventPlan]) -> String:

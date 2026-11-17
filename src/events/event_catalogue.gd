@@ -2511,10 +2511,10 @@ static func _military_convoy() -> EventDef:
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
 	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "the same for
-	# [...] the convoy"): warned of first, its badge alone for a second, then created in the lane
-	# beside her just out of sight up the road, from either end, as day 13's column is. The escape's
-	# trucks are the planned ones.
-	def.send_ahead(SentAhead.warned_first_from_either_end())
+	# [...] the convoy"; "just spawn in the car just ahead of the player"): warned of first, its badge
+	# alone for a second, then created in the lane beside her just out of sight up the road ahead of
+	# her, as day 13's column is. The escape's trucks are the planned ones.
+	def.send_ahead(SentAhead.warned_first())
 	def.weight = 2.0
 	return def
 

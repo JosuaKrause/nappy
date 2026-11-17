@@ -6,17 +6,26 @@ extends EventBehaviour
 ## event's own, asked of the figure it moves (`EventInstance.Figure.walks()`, `travelled()`), and
 ## streaming carries them; this is how it moves along it.
 ## A pursuer, an investigating vehicle and a row that waits walk their routes through this too.
+##
+## **A row whose route is worked out as it goes** (`go_on_by()`: a row the director sent ahead of
+## her) is given a further leg at the end of its route while she could be watching it, and goes on,
+## still the event it was; out of her sight, or with no way on, it ends its route as any row does.
 
 ## Its row: its speed, and whether it paces a beat.
 var _row: EventDef
 ## How it moves along its route: every step through the navigator, as what it walks as.
 var _navigator: Navigator
 var _mover: Mover
+## What gives it a further leg at the end of its route (`WayOn`), or null for a row whose route ends
+## where it ends.
+var _way_on: WayOn = null
 
-## Handed, as its event is set up, the figure it moves, its row, and how it moves over the ground.
-func _init(figure: EventInstance.Figure, row: EventDef, navigator: Navigator,
+## Handed, as its event is set up, the figure it moves, where she is, its row, and how it moves over
+## the ground.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, navigator: Navigator,
 		mover: Mover) -> void:
 	_figure = figure
+	_where = where
 	_row = row
 	_navigator = navigator
 	_mover = mover
@@ -67,6 +76,8 @@ func advance(delta: float) -> void:
 		return
 	if _row.paces:
 		return
+	if _goes_on():
+		return
 	# A mobile event that has driven off the end of its route is done, whatever its
 	# nominal duration says — and it keeps going until it is out of sight, rather than stopping
 	# dead on the pavement she is walking down. See `EventInstance._end_its_route()`.
@@ -86,6 +97,26 @@ func _keep_to(on_the_route: Vector2) -> bool:
 	if not _row.paces:
 		_figure.end_its_route()
 	return false
+
+## **Makes its route one worked out as it goes** (`WayOn`), told by whoever sends its row ahead of her
+## (`EventInstance.go_on_by()`).
+func go_on_by(way_on: WayOn) -> void:
+	_way_on = way_on
+
+## **Whether it was given a further leg at the end of its route**: only where its route is worked out
+## as it goes, and only while she could be watching it, within `Tuning.OUT_OF_SIGHT`, so a row she
+## has left behind ends its route out of her sight and goes.
+func _goes_on() -> bool:
+	if _way_on == null:
+		return false
+	var her: Vector2 = _where.at()
+	if her == Vector2.INF or _figure.place().distance_to(her) > Tuning.OUT_OF_SIGHT:
+		return false
+	var leg := _way_on.next_leg(_row, _figure.place(), _figure.heading(), her)
+	if leg.size() < 2:
+		return false
+	_figure.walk_further(leg)
+	return true
 
 ## The length of the whole route, in px.
 func length() -> float:

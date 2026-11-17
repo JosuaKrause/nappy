@@ -17,10 +17,6 @@ extends Resource
 ## just out of sight in its lane (the convoy, as day 13's column is). False for a row created at once
 ## (the dog walker, slower than a walk; the patrol, warned the way a car warns).
 @export var warned := false
-## Whether it may come from either end of her street, a coin flip on the director's stream (the
-## convoy, which overtakes her as readily as it meets her). False for a row that only comes toward
-## her (a patrol slower than her walk never catches her from behind).
-@export var from_either_end := false
 
 ## **Created at once just ahead of her, coming toward her** (the dog walker down her sidewalk, the
 ## patrol down the carriageway lane that drives toward her): no warning first, and never from
@@ -28,19 +24,13 @@ extends Resource
 static func at_once() -> SentAhead:
 	return SentAhead.new()
 
-## **Warned of first in the lane beside her, from either end of her street** (the convoy): its
-## badge alone for its own second, then created just out of sight up the lane, as day 13's column
-## is, driving toward her or overtaking her as a coin flip says.
-static func warned_first_from_either_end() -> SentAhead:
+## **Warned of first in the lane beside her** (the convoy): its badge alone for its own second, then
+## created just out of sight up the lane ahead of her, as day 13's column is, driving toward her.
+static func warned_first() -> SentAhead:
 	var sent := SentAhead.new()
 	sent.warned = true
-	sent.from_either_end = true
 	return sent
 
 ## Whether it is warned of first (`warned`).
 func is_warned_first() -> bool:
 	return warned
-
-## Whether it may come from either end of her street (`from_either_end`).
-func comes_from_either_end() -> bool:
-	return from_either_end

@@ -27,7 +27,7 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		barrier_post = EventBarrierPost.new(figure, where, row, map, navigator, mover)
 	var route: EventRouteWalk = null
 	if row.mobile:
-		route = EventRouteWalk.new(figure, row, navigator, mover)
+		route = EventRouteWalk.new(figure, where, row, navigator, mover)
 		event.route = route
 	var investigation: EventInvestigation = null
 	if row.investigates():
