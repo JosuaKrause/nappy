@@ -40,6 +40,7 @@ const _ALLOWED_FILES := {
 	"res://src/visuals/ground_layers.gd": "atlas and ground-layer errors reported to a developer",
 	"res://src/events/event_scheduler.gd": "placement reasons written to the run log",
 	"res://src/events/events_ahead.gd": "log notes about what is placed while she walks",
+	"res://src/events/walk_siting.gd": "the reasons her walk's siting waited, written to the run log",
 	"res://src/events/warning_board.gd": "log notes about a warning withdrawn",
 	"res://src/events/event_spawner.gd": "log notes about scars and summons",
 	"res://src/events/checkpoint_controller.gd": "log notes about the doors' crossings",
