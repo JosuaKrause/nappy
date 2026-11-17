@@ -71,7 +71,7 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
     11 place fewer events than day 1 (80.6, 78.1 and 78.4 against 87.6), since from day 9 a unit draws half its walls
     and five cells are lower than the act before them (`docs/EVENTS.md`). `test_events_costs`'s bar, day 14 a fifth
     over day 1, passes on its city (134 placed against 89). On nine other cities planned the same way (`ramp_cities.gd`
-    in the evidence folder), three are over the bar and six under it (0.95 to 1.19 times); on the builder's reading one
+    in `tests/probes/`), three are over the bar and six under it (0.95 to 1.19 times); on the builder's reading one
     of the nine was over it. Whether the bar or the table is wrong is a question for the orchestrator to put, under the
     balance skill's rule that a test pushing back asks which of the two is wrong.
 - **The pacing rows**: 902 chatting mothers drawn, 571 on a street (421 at eight tiles), 331 in a box at one to five;
@@ -89,7 +89,7 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
   included. The player's answer on the board's question `box-rows-after-the-pass` on 2026-11-16, "okay" to the
   orchestrator's pick of this reading (inbox #1464). The question as shown set the two readings side by side with their
   figures: the builder's reading, a row's share compared among the rows a bag holds, which the branch was first built
-  on ("Rejected"), and this one. The pick's reasons, as the question gave them:
+  on ("Rejected"), and this one. The pick's reasons, the first being the orchestrator's and the other two as the question gave them:
   - the board reply the player picked option D from said that under it the abduction stands higher and "the convoy, the
     protest and the rest come back to main's share", and it named the charging dog and the chatting mother in junction
     boxes among the rows off by more than a factor of two (inbox #1464); the review of #1488 found that the builder's
@@ -173,7 +173,10 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
 
 Main places about twice the seed tree's events, six times over in the junction boxes: a doubled day. This step brings the
 total back to near the seed tree's, one event per block again, and her route a little thinner than it was (0.87 of it,
-its junction boxes 0.77). The mix is not the seed tree's:
+its junction boxes 0.77). That 0.87 counts the dog walkers and patrols the units used to place on her route, which the
+director now sends; what a unit still draws there is half again what it was (27.7 events a city-day against 18.1 on the
+seed tree), and 2.7 times in her route's junction boxes (5.4 against 2.0) (`compare_cells.py seed_unit_rows.txt
+cells_pass.txt` in the evidence folder). The mix is not the seed tree's:
 
 - the dog walker, the patrol and the convoy no longer stand in the city (the director sends them ahead of her), so every
   other row is nearly a third more common on average; on her route cafes go from 2.2 to 6.5 a city-day, the market stall

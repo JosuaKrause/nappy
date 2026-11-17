@@ -153,8 +153,8 @@ full text names the files each step owns.
    vans > barriers > empty", inbox #785 in minty-lemur), while about a third of the streets stand empty today; this
    step keeps today's share and `tests/probes/escape_winnable.gd` shows the before and after.
 
-Steps 4 and 5 touch different files and run in parallel once step 2 is in. The dawn draw step 2
-edits is a small file of its own (`src/events/dawn_phases/dawn_draw.gd`).
+Steps 4 and 5 touch different files and run in parallel. The dawn draw is a small file of its own
+(`src/events/dawn_phases/dawn_draw.gd`).
 
 **How a step is accepted.** Its suites pass, as for every step of the refactor ("for the refactor
 test parity is enough", inbox #813 in curly-moose), with the tests that held main's exact counts changed to hold
