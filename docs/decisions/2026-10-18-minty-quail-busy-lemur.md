@@ -44,10 +44,14 @@ manager's word until its next one.
 - **No event loses a first-frame position.** An event made after the tick's word hears the word
   so far, and `forget()` clears it at a walk's start (minty-quail-olive-finch and the officer's
   facts after it); the halo's word was never what gave an event its first position.
-- **The checks.** `tests/test_excitement_source.gd`: the halo's frame leaves the caret where the
-  manager's word put it (at main the caret read 2, the doubled red, from the halo's point; now
-  0). `tests/test_where_she_is.gd`: a pursuer set on a far point still hears her where the tick
-  put her, and the next word moves it. Six suites that put her somewhere for an event through the
+- **The checks.** The split of the method holds the halo's half of the guarantee by its
+  signature: the halo hands a source only her motion (`set_her_motion()`, which takes no point),
+  and only a crowd body is told her position (`CrowdExcitement.set_her_at()`), so no check can
+  state it. The check that fails at main is `tests/test_where_she_is.gd`: a robber set on a far
+  point (`notice_her_at()`) read that point back through `sight_line_to_her()`; now a pursuer
+  set on a far point still hears her where the tick put her, and the next word moves it.
+  `tests/test_excitement_source.gd` holds that an event's caret reads the point its instance's
+  handle says. Six suites that put her somewhere for an event through the
   halo's call (`test_danger`, `test_event_redraw`, `test_drawn_view`, `test_tutorial_dog`,
   `test_resistance_steps`, `test_world_passability`) now tell the event's `WhereSheIs`, as the
   game does; the crowd's tests tell `set_her_at()`.
