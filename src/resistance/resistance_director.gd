@@ -2277,7 +2277,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 				near_plans.append(offered[i])
 				near_beside.append(beside[i])
 		if near_plans.is_empty():
-			var added := _add_a_mast_near(mark, rng)
+			var added := _add_a_mast_near(mark)
 			if not added.is_empty():
 				_mast_id = DawnMasts.added_mast_id(_map.tile_to_world(added[0]))
 				_ground = added[1]
@@ -2365,7 +2365,7 @@ func _ground_beside_a_mast(plan: EventPlan, ground: SpawnSiting.Ask) -> Array[Ve
 ##   from home);
 ## - ground a site would be offered on (`MastSites.is_eligible()`: off the home street, its field
 ##   off a calm interior and off every place a region door could stand).
-func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector2i]:
+func _add_a_mast_near(mark: Vector2) -> Array[Vector2i]:
 	var added: Array[Vector2i] = []
 	if not _events:
 		return added
@@ -2390,7 +2390,7 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 					feet.append(tile)
 					beside_of[tile] = next
 					break
-	var plan := _events.queue_a_mast(feet, rng)
+	var plan := _events.queue_a_mast(feet)
 	if not plan:
 		trace.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
 				% NEAR_THE_MARK)
