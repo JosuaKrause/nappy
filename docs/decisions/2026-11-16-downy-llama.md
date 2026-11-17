@@ -37,7 +37,11 @@ its own rather than a width that depends on where a roadblock stands.
   from its own frontage to the far kerb with all 64px of the far sidewalk open; against the old
   `band(60)` centred on its lane it fails nine checks ("52 of its 64px open"). The new suite
   `tests/test_city_map_kerb.gd` holds `kerb_beside()`, and `_test_where_a_body_stands_is_read_from_one_place`
-  gains the kerb case.
+  gains the kerb case. `tests/test_day13_guard.gd`'s far-side test looked at a 128px box round
+  the task's first guard while the arrow settled, which on seed 314159, with the body on its kerb,
+  took in the rider's box and so decided the roadblock's side from where she read the mark, as the
+  decided-once rule (inbox #1185 in gentle-owl) says; the test rests on no roadblock coming on
+  screen, so its view is now the guard's own figure, and it passes on main and on the branch.
 - **Docs**: `docs/EVENTS.md`'s roadblock row and its pursuit note, and `docs/CITY.md`'s one-sidewalk
   passage, name the open kind; M199's `README.md` gains one line naming it beside the closing kind.
 
