@@ -1,0 +1,25 @@
+events a city-day on the row's days: seed tree / branch / builder's reading
+  row               junction box           street                 her route              city                  
+  charging_dog       1.22 /  1.92 /  3.91   0.94 /  1.01 /  1.07   0.18 /  0.40 /  0.73   2.19 /  2.93 /  4.99 
+  chatting_mother    0.43 /  1.31 /  1.71   1.57 /  2.27 /  2.48   0.96 /  2.50 /  2.96   2.00 /  3.58 /  4.20 
+  leaf_blower        0.81 /  1.36 /  2.52   5.81 /  7.57 /  6.36   0.28 /  0.42 /  0.75   6.67 /  9.01 /  8.96 
+  abduction          1.35 /  5.02 /  3.40   0.94 /  5.76 /  4.29   0.00 /  0.00 /  0.00   2.29 / 10.79 /  7.69 
+  delivery_van       0.00 /  0.00 /  0.00   5.73 /  4.21 /  7.40   2.46 /  2.32 /  4.05   5.73 /  4.21 /  7.40 
+  poster_crew        0.00 /  0.00 /  0.00   5.61 /  4.82 /  7.38   3.16 /  2.86 /  4.39   5.61 /  4.82 /  7.38 
+  reversing_lorry    0.00 /  0.00 /  0.00   2.67 /  1.86 /  2.78   0.00 /  0.00 /  0.00   2.67 /  1.86 /  2.78 
+  roadblock          0.00 /  0.00 /  0.00   5.90 /  4.93 /  7.44   2.89 /  2.27 /  3.35   5.90 /  4.93 /  7.44 
+  protest            8.96 /  8.69 /  9.28   0.00 /  0.00 /  0.00   0.02 /  0.09 /  0.09   9.67 /  9.48 / 10.07 
+what the units place, events a city-day: seed tree / branch / builder's reading
+  on the route     32.0 /  27.7 /  27.4
+  route-adjacent   27.4 /  28.1 /  26.8
+  off the route    39.8 /  38.4 /  36.9
+  the city         99.2 /  94.2 /  91.2
+the whole day with the moments (placement_rows.gd), a city-day: seed tree / branch / builder's reading
+  102.8 /  98.4 /  93.3
+what the units place a city, by day: seed tree / branch / builder's reading
+  day  1   86.1 /  87.6 /  88.3
+  day  9   84.7 /  80.6 /  76.3
+  day 10   88.3 /  78.1 /  75.9
+  day 11   96.5 /  78.4 /  74.5
+  day 14  110.2 /  99.9 /  98.4
+  day 14 over day 1  x1.28 / x1.14 / x1.11

@@ -22,8 +22,8 @@ the pull request is its second half, #1488, after #1473, the seam. The evidence 
 - **`EventDef.weigh_on()` / `weight_on()`**: a row's weight on a kind of ground, a multiple of its `weight`, kept in an
   exported field so every copy of the row keeps it. A kind of ground the row's `placement` holds weighs one; `validate()`
   refuses a weight on ground the row cannot stand on. `PlacementGround.holds()` says which tile types each kind holds.
-- **23 weights on fifteen rows**: the design's seed set 14; the one pass moved four of them and set nine more. The pass
-  also set the abduction's street weight, which is left unset by the player's answer (below).
+- **21 weights on fifteen rows**: the design's seed set 14; the one pass moved four of them and set seven more. The
+  pass also set the abduction's two weights, which are left unset by the player's answer (below).
 - **Deleted**: `VIEW_SHARES`, `VIEW_SHARE_SCALES`, `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and
   `MOMENTS_PER_DAY`, and with them `EventScheduler.view_weight()`, `view_fills()` and `ground_weight()`.
 - **Reads that changed**: `RuledLocationGround.scale()` no longer counts a row's weight on its ground (a location's weight is
@@ -44,51 +44,68 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
   `f8860c8c152c925d`.
 - **The seed run against the seed tree, events per hundred draw locations**: on the route 6.69, run x0.49; route-adjacent
   7.92, x1.21; off the route 7.63, x0.83; the units place 99.2 events a city-day on the seed tree, 81.8 on the run. Every
-  view was more than a tenth off, so the one pass scaled each view's cells by its own ratio, at most 50, and moved fourteen
-  row weights.
-- **The acceptance run, after the pass**: on the route x0.85, route-adjacent x0.98, off the route x0.93, 91.2 events a
+  view was more than a tenth off, so the one pass scaled each view's cells by its own ratio, at most 50, and moved
+  thirteen row weights.
+- **The acceptance run, after the pass**: on the route x0.87, route-adjacent x1.02, off the route x0.96, 94.2 events a
   city-day (the director's three rows on top). Main today is x2.34, x1.12, x2.36 and 199.6, twice the seed tree.
-- **The whole day, moments included**, a city-day: the seed tree 102.8, main today 201.8, the branch 93.3; on day 1, 88.5,
-  181.7 and 90.7.
+- **The whole day, moments included**, a city-day: the seed tree 102.8, main today 201.8, the branch 98.4; on day 1, 88.5,
+  181.7 and 90.0.
 - **One event per block holds**: `test_events_costs` passes on days 1, 3, 7 and 14.
 - **Free line**: `m129_zero_cost_line.gd` 299 of 299 routes keep a zero-cost line on both branch and main; over a pacing row's
   whole beat 176 of 299 on the branch, 138 on main.
 - **The escape and building placement fingerprints** (`^FP escape `, `^FP building `, 9,864 lines) are identical on both,
   `8cc1a28243816a83`; `escape_roadblock_spacing.gd` is identical. The `FP day` lines move, as a table moves a day.
 - **Her walk**: `WC all` is `0 0` on both; what streams in within her radius is 11,835 rows on the branch and 26,295 on main.
-- **Still off, listed for the end remeasure and fitted to nothing**: on her route the units place 0.85 of the seed tree
-  (junction boxes 0.71, parks and squares 0.51, since the rules that keep her route open refuse more of a box's rows the
-  later the act); days 7 and 11 are a fifth under; the abduction is 0.94 to 4.29 a city-day on a street on its days. The
+- **Still off, listed for the end remeasure and fitted to nothing**: on her route the units place 0.87 of the seed tree
+  (junction boxes 0.77, parks and squares 0.50, since the rules that keep her route open refuse more of a box's rows the
+  later the act); day 11 is a fifth under and days 7 and 10 an eighth; the abduction is 0.94 to 5.76 a city-day on a
+  street on its days; the four street rows the pass set no weight on place 0.69 to 0.86 of the seed tree's count on a
+  street (the delivery van 0.73, the poster crew 0.86, the reversing lorry 0.69, the roadblock 0.84). The
   design's seed-run hash does not match, since #1476 and #1477 moved the tree; the fill itself is the prototype's, 336 of
   336 fills identical.
-  - **The mix**: the units place 91.2 events a city-day against the 73.3 the seed tree's units placed without the three
-    rows now sent ahead of her, so every other row is about a quarter more common on average, and most of all the rows
-    the old daily caps held down (the charging dog, the chatting mother, the leaf blower and the abduction in a junction
-    box, 2.5 to 4 times the seed tree's count).
-  - **The ramp is flatter**: day 14 places 1.11 times day 1, where the seed tree's placed 1.28 times, and days 9, 10 and
-    11 place fewer events than day 1 (76, 76 and 75 against 88), since from day 9 a unit draws half its walls and five
-    cells are lower than the act before them (`docs/EVENTS.md`). `test_events_costs`'s bar, day 14 a fifth over day 1,
-    passes on its city; on seven other cities planned the same way by the review of #1488, four were under it (0.93,
-    0.99, 1.12 and 1.15 times). Whether the bar or the table is wrong is a question for the orchestrator to put, under
-    the balance skill's rule that a test pushing back asks which of the two is wrong.
-- **The pacing rows**: 1,058 chatting mothers drawn, 626 on a street (450 at eight tiles), 432 in a box at one to five;
-  1,625 men shouting, 1,039 on a street, 551 in a box, 35 on a square.
+  - **The mix**: the units place 94.2 events a city-day against the 73.3 the seed tree's units placed without the three
+    rows now sent ahead of her, so every other row is nearly a third more common on average, and most of all the rows
+    the old daily caps held down: in a junction box the abduction 3.7 times the seed tree's count, the chatting mother
+    3.0 times, the pigeon flock 2.2, the man shouting 1.9, the leaf blower 1.7 and the charging dog 1.6.
+  - **The ramp is flatter**: day 14 places 1.14 times day 1, where the seed tree's placed 1.28 times, and days 9, 10 and
+    11 place fewer events than day 1 (80.6, 78.1 and 78.4 against 87.6), since from day 9 a unit draws half its walls
+    and five cells are lower than the act before them (`docs/EVENTS.md`). `test_events_costs`'s bar, day 14 a fifth
+    over day 1, passes on its city (134 placed against 89); RAMPCITIES Whether the bar or the table is wrong is a
+    question for the orchestrator to put, under the balance skill's rule that a test pushing back asks which of the two
+    is wrong.
+- **The pacing rows**: 902 chatting mothers drawn, 571 on a street (421 at eight tiles), 331 in a box at one to five;
+  2,323 men shouting, 1,424 on a street, 864 in a box, 35 on a square.
 
 ## Decided, with its source
 
 - **Option D: the pass sets the row weights, and none on the abduction.** The player's answer on the board's row-weights
-  question on 2026-11-15 (inbox #1464), the one question of this step they answered: they have never seen an abduction in
-  play and do not mind a higher rate, and they picked option D, the pass's row weights as designed without the abduction's.
-  The design's table had two for it (a street 0.23, a junction box 0.45); this branch's pass set one, its street weight
-  (0.23), and it is left out, so thirteen of the pass's fourteen moved weights are set.
-- **What option D was told, and what the pass left.** The board reply the player picked from said that under option D
-  the abduction stands higher and "the convoy, the protest and the rest come back to main's share", and it named the
-  charging dog and the chatting mother in junction boxes among the rows off by more than a factor of two (inbox #1464).
-  The charging dog and the chatting mother did not come back: on the reading this branch is built on, in a junction box
-  the charging dog places 3.2 times the seed tree's count and the chatting mother 4.0 times, and over the whole city 2.3
-  and 2.1 times ("The felt change", below). Which of the two readings of the row rule stands goes to the player on the
-  board as `box-rows-after-the-pass`, with both readings' costs ("Choices open to overturn"); until they answer, the
-  branch is built on the builder's reading.
+  question on 2026-11-15 (inbox #1464), one of the two questions of this step they answered (the other is the reading of
+  the row rule, below): they have never seen an abduction in play and do not mind a higher rate, and they picked option
+  D, the pass's row weights as designed without the abduction's.
+  The design's table had two for it (a street 0.23, a junction box 0.45); this branch's pass set two (a street 0.17, a
+  junction box 0.28), and both are left out, so eleven of the pass's thirteen moved weights are set.
+- **A row's share is read against the whole seed** (`one_pass.py` without its fifth argument), every row the seed counts
+  included. The player's answer on the board's question `box-rows-after-the-pass` on 2026-11-16, "okay" to the
+  orchestrator's pick of this reading (inbox #1464). The question as shown set the two readings side by side with their
+  figures: the builder's reading, a row's share compared among the rows a bag holds, which the branch was first built
+  on ("Rejected"), and this one. The pick's reasons, as the question gave them:
+  - the board reply the player picked option D from said that under it the abduction stands higher and "the convoy, the
+    protest and the rest come back to main's share", and it named the charging dog and the chatting mother in junction
+    boxes among the rows off by more than a factor of two (inbox #1464); the review of #1488 found that the builder's
+    reading left those rows three to four times the seed tree's count in a junction box;
+  - this reading brings the charging dog, which ends the day, from 5.0 to 2.9 a city-day (the seed tree 2.2), and in a
+    junction box from 3.9 to 1.9 (1.2);
+  - the whole day comes from 93.3 events a city-day to 98.4 (the seed tree 102.8), and day 14 over day 1 from 1.11 to 1.14
+    times (1.28).
+
+  Its costs, which the question named: the abduction rises to 10.8 a city-day on its days (7.7 on the builder's reading,
+  2.3 on the seed tree), which the player had accepted higher; and the delivery van, the poster crew, the reversing lorry
+  and the roadblock, on which it sets no street weight, place 0.69 to 0.86 of the seed tree's count on a street. It is
+  not a refit: it is the one pass's other output, printed by the same run, with option D still holding. One event per
+  block holds under it: `test_events_costs` on its city (121 blocks, a bar of 96) counts COSTSAPPLIED.
+- **What option D was told, and what is left of it.** The charging dog and the chatting mother come nearer main's share
+  on this reading but not back to it: in a junction box the charging dog places 1.6 times the seed tree's count and the
+  chatting mother 3.0 times, over the whole city 1.3 and 1.8 times ("The felt change", below).
 - **The seed counts every row the seed tree placed.** The cells are the design's section 6.4 seed exactly, including the
   dog walker, the police patrol and the military convoy, 25.9 of the seed tree's 99.2 events a city-day; their share of
   the density goes to the rows a unit still draws. The orchestrator's decision, to keep the player's "one event per block"
@@ -108,30 +125,25 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
   without that error, and the cells would still be the wrong ones.
 - **Options A, B and C of the row-weights question**: A set the abduction's weights too, B touched no row, C seeded every
   row's weight from main (some forty fitted numbers on the catalogue); the player picked D (inbox #1464).
+- **The builder's reading: a row's share compared among the rows a bag holds** (`one_pass.py`'s fifth argument,
+  `seed_unit_rows.txt`; `pass_rows_among_the_rows_a_bag_holds_not_applied.log`), the reading the branch was first built
+  on, since it compares like with like once the seed counts rows no bag holds; the player answered
+  `box-rows-after-the-pass` for the other (inbox #1464). The cells count the dog walker, the police patrol and the
+  military convoy, which were half of a junction box's events, and a bag hands their share to the rows it still holds,
+  so on either reading those rows place more than on the seed tree. Its acceptance run, made exactly as the branch's on
+  the same 18 cities by 14 days (`builders_reading_*` and `two_readings_table.txt` in the evidence folder), events a
+  city-day on the row's days, the seed tree's / the builder's reading / the reading applied:
+  - it set the delivery van 2.3 on a street and the poster crew, the reversing lorry and the roadblock 2.2, which
+    brought them to 1.04 to 1.32 times the seed tree's count there (0.69 to 0.86 on the reading applied);
+  - it left the rows the old caps held down high in a junction box: the charging dog 1.22 / 3.91 / 1.92, the chatting
+    mother 0.43 / 1.71 / 1.31, the leaf blower 0.81 / 2.52 / 1.36; over the city the charging dog 2.19 / 4.99 / 2.93
+    and the chatting mother 2.00 / 4.20 / 3.58;
+  - the units placed 91.2 events a city-day (94.2), the whole day with the moments 93.3 (98.4), the abduction 7.7
+    (10.8), cafes on her route 4.9 (6.5), and day 14 1.11 times day 1 (1.14);
+  - one event per block held under it too: `test_events_costs` counted COSTSBUILDER.
 
 ## Choices open to overturn
 
-- **A row's share is compared among the rows a bag holds** (`one_pass.py`'s fifth argument), the builder's reading of the
-  design's row rule once the seed counts rows no bag holds; the question goes to the player on the board as
-  `box-rows-after-the-pass`. The cells count the dog walker, the police patrol and the military convoy, which were half of
-  a junction box's events, and a bag hands their share to the rows it still holds, so on either reading those rows place
-  more than on the seed tree. The two readings, each applied and measured on the same 18 cities by 14 days
-  (`whole_seed_reading_*.txt` in the evidence folder), events a city-day on the row's days against the seed tree's:
-  - **This reading** (applied): it sets the delivery van, the poster crew, the reversing lorry and the roadblock at 2.2
-    to 2.3 on a street, which the seed run had at about half the seed tree's count, and they come back to 1.0 to 1.3
-    times it. It leaves the rows the old caps held down high in a junction box: the charging dog 1.22 / 3.91, the
-    chatting mother 0.43 / 1.71, the leaf blower 0.81 / 2.52. Over the city the charging dog is 2.19 / 4.99 and the
-    chatting mother 2.00 / 4.20.
-  - **The other reading** (`pass_rows_against_the_whole_seed_not_applied.log`, applied in a throwaway copy with the
-    abduction left unset as option D asks): it sets no weight on those four street rows, which then place 0.69 to 0.86
-    of the seed tree on a street, and cuts the charging dog, the chatting mother and the leaf blower in a box: 1.92, 1.31
-    and 1.36 there, still 1.6, 3.0 and 1.7 times the seed tree's count; over the city the charging dog 2.93 and the
-    chatting mother 3.58. What it takes from them goes to the rest: the units place 94.2 events a city-day against this
-    reading's 91.2 (the whole day with the moments 98.4 against 93.3), the abduction 10.8 a city-day against 7.7 (2.3 on
-    the seed tree), cafes on her route 6.5 against 4.9. `test_events_costs` passes under it: one event per block holds on
-    days 1, 3, 7 and 14 (115 events on day 1 of the suite's city against the bar's 96; this reading 109), and day 14
-    places 134 against day 1's 89 (this reading 135 and 83).
-  The README's "The other reading, measured" has the whole table.
 - **The design's picks, not answered by the player** (section 14); each with its alternative:
   - the seed is main on 2026-11-09; *alternative*: `v0.29.0`'s density, every cell multiplied once;
   - each cell of a view that is off is scaled by its own ratio; *alternative*: one factor a view, which leaves act I half
@@ -157,18 +169,20 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
 ## The felt change
 
 Main places about twice the seed tree's events, six times over in the junction boxes: a doubled day. This step brings the
-total back to about the seed tree's, one event per block again, and her route a little thinner than it was (0.85 of it,
-its junction boxes 0.71). The mix is not the seed tree's:
+total back to near the seed tree's, one event per block again, and her route a little thinner than it was (0.87 of it,
+its junction boxes 0.77). The mix is not the seed tree's:
 
 - the dog walker, the patrol and the convoy no longer stand in the city (the director sends them ahead of her), so every
-  other row is about a quarter more common; on her route cafes go from 2.2 to 4.9 a city-day, the delivery van from 2.5
-  to 4.1;
-- the abduction is 7.7 a city-day on its days against 2.3, nearly all off her route (option D);
-- **the charging dog, which ends the day**, is 3.91 a city-day in a junction box against 1.22 and 4.99 over the city
-  against 2.19, 0.73 on her route against 0.18; **the chatting mother** is 1.71 in a box against 0.43 and 4.20 over the
-  city against 2.00, 2.96 on her route against 0.96. These are the two rows option D's reply said would come back to
-  main's share; they did not, and `box-rows-after-the-pass` asks the player which reading stands;
-- late days are not much denser than early ones: day 14 places 1.11 times day 1 where the seed tree placed 1.28, and
+  other row is nearly a third more common on average; on her route cafes go from 2.2 to 6.5 a city-day, the market stall
+  from 0.9 to 2.5;
+- the abduction is 10.8 a city-day on its days against 2.3, nearly all off her route (option D);
+- **the charging dog, which ends the day**, is 1.92 a city-day in a junction box against 1.22 and 2.93 over the city
+  against 2.19, 0.40 on her route against 0.18; **the chatting mother** is 1.31 in a box against 0.43 and 3.58 over the
+  city against 2.00, 2.50 on her route against 0.96. These are the two rows option D's reply said would come back to
+  main's share: on the reading the player settled (`box-rows-after-the-pass`) they come nearer it;
+- the delivery van, the poster crew, the reversing lorry and the roadblock are a little rarer on a street than on the seed
+  tree, 0.69 to 0.86 of it;
+- late days are not much denser than early ones: day 14 places 1.14 times day 1 where the seed tree placed 1.28, and
   days 9 to 11 fewer than day 1.
 
 ## What is left of the item

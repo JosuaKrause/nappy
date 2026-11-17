@@ -9,9 +9,11 @@ writes the table scaled once.
   a factor of two has its weight on that ground multiplied by (seed share / run share), to two
   figures.
 
-A row's share is read from <row seed> where it is given, else from <seed>: the seed of the rows a
-unit draws, when the seed's cells count rows no unit draws (whose events the cells hand to the
-rest), so that a row's share is compared among the rows a bag holds on both sides.
+A row's share is read against the whole seed, <seed>, every row it counts included: the reading
+applied. Given <row seed>, the seed of the rows a unit draws (when the seed's cells count rows no
+unit draws, whose events the cells hand to the rest), a row's share is read from it instead, so
+that it is compared among the rows a bag holds on both sides: the other reading, printed and not
+applied (`pass_rows_among_the_rows_a_bag_holds_not_applied.log`).
 
 Usage: python3 -I one_pass.py <seed> <cells run> <table in.json> <table out.json> [<row seed>]
 """

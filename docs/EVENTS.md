@@ -1572,7 +1572,7 @@ route-adjacent and an alley off the route each from act I to II and from act III
 route-adjacent junction box is the same in every act, and from day 9, the first day the region
 wall stands, a unit draws about half its walls (`DaySpec.wall_row_share`). So late days are nastier
 more than they are denser: on the table's acceptance run days 9 to 11 placed fewer events than
-day 1, and day 14 placed 1.11 times day 1, where the seed tree's day 14 placed 1.28 times its day 1
+day 1, and day 14 placed 1.14 times day 1, where the seed tree's day 14 placed 1.28 times its day 1
 (`docs/evidence/polite-tapir-declared-table-2026-11-16/`). **The rows share a cell's events by
 weight**: a row's own `weight`, times its weight on the unit's kind of ground (`EventDef.weight_on()`),
 times what the view is to its role on the day (the role-by-view weights `EVENT_CORRIDOR_WEIGHT`,
@@ -2178,9 +2178,9 @@ their share of a cell goes to the rows a unit still draws. Then one probe run
 (`tests/probes/placement_cells.gd`): a view whose events per hundred draw locations came out more
 than a tenth off the seed's had each of its cells scaled by its own ratio, at most fifty (a bag at
 least half empty, so a refused street musician does not hand a park to the rows rare there), and
-a row whose share of a ground's events, among the rows a bag holds, was off by more than a factor
-of two had its weight there scaled once. Nothing is fitted after that run; what is still off is
-listed for the end remeasure. The procedure, the runs and the scripts are
+a row whose share of a ground's events, read against every row the seed counts, was off by more
+than a factor of two had its weight there scaled once. Nothing is fitted after that run; what is
+still off is listed for the end remeasure. The procedure, the runs and the scripts are
 `docs/evidence/polite-tapir-declared-table-2026-11-16/`. The moments are a number an act
 (`PlacementDensity.MOMENTS_PER_ACT`), the moments a day of the act owed her on the same tree.
 

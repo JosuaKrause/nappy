@@ -1,6 +1,7 @@
 """The two readings of the pass's row rule side by side: the seed tree, the branch (a row's share
-compared among the rows a bag holds) and the other reading (a row's share read against the whole
-seed, `pass_rows_against_the_whole_seed_not_applied.log`, applied in a throwaway copy).
+read against the whole seed, the reading applied) and the builder's reading (a row's share compared
+among the rows a bag holds, `pass_rows_among_the_rows_a_bag_holds_not_applied.log`, the branch's
+catalogue with `builders_reading_catalogue.diff` applied).
 
 Reads the seed probe's output (SL/SE/RD lines), the two cells runs (CL/CE lines) and the two
 placement_rows runs (RD lines), and prints, events a city-day:
@@ -8,8 +9,8 @@ placement_rows runs (RD lines), and prints, events a city-day:
 - for each view and for the city, what the units place;
 - the whole day with the moments, and day 1, days 9 to 11 and day 14 of what the units place.
 
-Usage: python3 -I whole_seed_reading_table.py <seed> <branch cells> <whole-seed cells>
-       <branch placement_rows> <whole-seed placement_rows>
+Usage: python3 -I two_readings_table.py <seed> <branch cells> <builder's cells>
+       <branch placement_rows> <builder's placement_rows>
 """
 import collections
 import sys
@@ -39,11 +40,11 @@ def whole_day(path):
     return placed / seeds
 
 
-def main(seed, branch, whole, branch_rows, whole_rows):
+def main(seed, branch, builders, branch_rows, builders_rows):
     runs = [("seed tree", events(seed, "SE")), ("branch", events(branch, "CE")),
-            ("whole seed", events(whole, "CE"))]
+            ("builder's", events(builders, "CE"))]
     days = sorted({k[0] for _, ev in runs for k in ev})
-    print("events a city-day on the row's days: seed tree / branch / whole-seed reading")
+    print("events a city-day on the row's days: seed tree / branch / builder's reading")
     print("  %-17s %-22s %-22s %-22s %-22s" % ("row", "junction box", "street", "her route", "city"))
     for r in ROWS:
         ds = {k[0] for _, ev in runs for k in ev if k[3] == r}
@@ -53,15 +54,15 @@ def main(seed, branch, whole, branch_rows, whole_rows):
             cols.append(" / ".join("%5.2f" % (sum(n for k, n in ev.items() if k[3] == r and pred(k))
                                                / (SEEDS * len(ds))) for _, ev in runs))
         print("  %-17s %-22s %-22s %-22s %-22s" % (r, *cols))
-    print("what the units place, events a city-day: seed tree / branch / whole-seed reading")
+    print("what the units place, events a city-day: seed tree / branch / builder's reading")
     for v in range(3):
         print("  %-15s %s" % (VIEWS[v], " / ".join(
             "%5.1f" % (sum(n for k, n in ev.items() if k[1] == v) / (SEEDS * len(days))) for _, ev in runs)))
     print("  %-15s %s" % ("the city", " / ".join(
         "%5.1f" % (sum(ev.values()) / (SEEDS * len(days))) for _, ev in runs)))
-    print("the whole day with the moments (placement_rows.gd), a city-day: seed tree / branch / whole-seed reading")
-    print("  %5.1f / %5.1f / %5.1f" % (whole_day(seed), whole_day(branch_rows), whole_day(whole_rows)))
-    print("what the units place a city, by day: seed tree / branch / whole-seed reading")
+    print("the whole day with the moments (placement_rows.gd), a city-day: seed tree / branch / builder's reading")
+    print("  %5.1f / %5.1f / %5.1f" % (whole_day(seed), whole_day(branch_rows), whole_day(builders_rows)))
+    print("what the units place a city, by day: seed tree / branch / builder's reading")
     for d in (1, 9, 10, 11, 14):
         print("  day %2d  %s" % (d, " / ".join(
             "%5.1f" % (sum(n for k, n in ev.items() if k[0] == d) / SEEDS) for _, ev in runs)))
