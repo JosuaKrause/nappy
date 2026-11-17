@@ -5,7 +5,7 @@ extends StreetRule
 ## pacing row at the ground its beat never leaves free, `EventPlan.denies()`): the box and those
 ## sidewalks are flooded as one piece of ground, so rows that each leave a free tile at the box and
 ## a free row along the sidewalk, and between them leave the two unjoined, are refused
-## (`_her_line_survives()`). *(inbox #1461: "sure", to a rule that follows her line the way the
+## (`_her_line_survives()`). *(inbox #1461 in silky-lemur: "sure", to a rule that follows her line the way the
 ## free-line probe does, from the crossing onto her sidewalk, for every row that lands near her
 ## route.)*
 ##
@@ -22,7 +22,7 @@ extends StreetRule
 ## of its four corner blocks: the next box is nine tiles off, past the widest reach), so every pair
 ## that can close a seam between them is judged together, whichever draws first.
 ##
-## **One case is left open, by the player's condition on it** (inbox #1461: leave it open and close
+## **One case is left open, by the player's condition on it** (inbox #1461 in silky-lemur: leave it open and close
 ## it only if the free-line probe shows free lines lost): two rows in units at the two ends of one
 ## walked sidewalk, neither on that street, each reaching far into it from opposite sides, do not
 ## see each other, and each alone leaves the line. `tests/probes/m129_zero_cost_line.gd` measures

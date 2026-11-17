@@ -5,7 +5,7 @@ of the far sidewalk's 64px open, the player answered: "okay let's use the one si
 open and match the roadblocks size to one sidewalk + road" (inbox #1465 in spry-plover). Asked then
 whether a roadblock off her routes should still close its whole street, as M199 (the roadblock
 closes its whole street) asks, they answered: "there are two kinds of roadblocks. one that is open
-and one that is closing the street" (inbox #1491). **Read as** (the orchestrator's): the catalogue
+and one that is closing the street" (inbox #1491 in silky-lemur). **Read as** (the orchestrator's): the catalogue
 `roadblock` is the open kind and is built here; the closing kind stays queued as M199, a kind of
 its own rather than a width that depends on where a roadblock stands.
 
@@ -97,4 +97,4 @@ the pictures are `docs/evidence/downy-llama-roadblock-band-2026-11-16/`.
 
 ## Open
 
-- **The closing roadblock** is M199, queued (inbox #1491).
+- **The closing roadblock** is M199, queued (inbox #1491 in silky-lemur).

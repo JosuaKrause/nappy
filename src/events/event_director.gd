@@ -1046,7 +1046,7 @@ var _sent_waiting: Array[EventDef] = []
 ## **What waited for room takes the clock's turn** (`due()`, once its wait is over): the first row of
 ## `_sent_waiting` that has room now, asked in the order they were drawn, answered as `due()` answers
 ## and the next wait rolled; the empty array where none has, and the turn goes to the next marble.
-## *(inbox #1460, board question sent-ahead-pace: the three come in place of what the director sends,
+## *(inbox #1460 in silky-lemur, board question sent-ahead-pace: the three come in place of what the director sends,
 ## at its unchanged clock.)* Its slot was spent when it was drawn, so it takes a turn and no marble:
 ## nothing is sent closer to the last than the clock allows, whatever waited, and a walk off the
 ## streets for a minute ends in what waited coming one a turn, not in a burst.
@@ -1406,7 +1406,7 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ## **The lane is the carriageway of the street she is beside**, read as `_toward_her_on_the_road()`
 ## reads it (`CityMap.pavement_inward()`, `CrowdLanes`). It drives toward her, against her heading
 ## along the street, and never from behind her ("just spawn in the car just ahead of the player",
-## inbox #1460). **The place is level with her along the road and just out of sight up it**
+## inbox #1460 in silky-lemur). **The place is level with her along the road and just out of sight up it**
 ## (`PendingWarning.in_its_lane()`, against `view`), and **the first leg runs down the lane past her
 ## to the far edge of the next junction box** (`leg_in_the_lane()`).
 ##

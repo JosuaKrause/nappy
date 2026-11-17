@@ -1,6 +1,6 @@
 class_name WayOn
 extends RefCounted
-## **The next leg of a route that is worked out as it goes** *(inbox #1460: "the route only matters
+## **The next leg of a route that is worked out as it goes** *(inbox #1460 in silky-lemur: "the route only matters
 ## *after* it was spawned", "and then only if the player follows them around", "so the route can be
 ## ad-hoc")*: from where a row the director sent ahead of her stands, the way it goes on, or nothing
 ## where it has none.

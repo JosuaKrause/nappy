@@ -2,7 +2,7 @@ class_name SentAhead
 extends Resource
 ## **How the director sends a row ahead of her on an ordinary day** (`EventDef.send_ahead()`): the
 ## dog walker, the police patrol and the military convoy, drawn when she is close by and put just
-## ahead of her on the street she is walking. *(inbox #1460: "neither of these should be drawn at
+## ahead of her on the street she is walking. *(inbox #1460 in silky-lemur: "neither of these should be drawn at
 ## the beginning. they all should be drawn when the player is close by to guarantee an encounter",
 ## "just spawn in the car just ahead of the player? then you guarantee an encounter", "the same for
 ## the dog walker and the convoy".)*

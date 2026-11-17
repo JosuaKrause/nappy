@@ -20,13 +20,13 @@ market stalls from 0.9 to 2.5. Three rows are asked about here. The figures are 
 on a day the row is out, which is more than one walk meets, from the decision record
 `docs/decisions/2026-11-11-polite-tapir-coral-owl.md`, for the table as it stands when this item is
 written: the rows' weights read against everything the 2026-11-09 city placed, your answer to the
-board's question `box-rows-after-the-pass` (inbox #1464).
+board's question `box-rows-after-the-pass` (inbox #1464 in silky-lemur).
 
 The **unmarked van** (the abduction: a van that takes a passer-by while she watches, and whose two
 men get out and hunt her once the resistance's heat is high enough; a catch ends the day) is out
 from day 8, nearly always off her route, so it is met on a detour, on day 8 or 12. A city holds
 about 10.8 of them a day where it held 2.3; you said you have never seen one and do not mind a
-higher rate (inbox #1464).
+higher rate (inbox #1464 in silky-lemur).
 
 The **charging dog** (a dog off its lead that waits on a street or in a crossing and runs at her
 when she comes near; a catch ends the day) is out from day 3, so it is met on days 3, 8 and 12. A

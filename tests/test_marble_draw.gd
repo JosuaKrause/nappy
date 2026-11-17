@@ -1,6 +1,6 @@
 extends RefCounted
 ## `MarbleDraw`, one unit's draw: a marble drawn before it has a place, then laid out in the unit
-## with the unit's other rows (inbox #1466). A row lands on the location that takes it, not the
+## with the unit's other rows (inbox #1466 in silky-lemur). A row lands on the location that takes it, not the
 ## first of the unit; no location has first pick; a larger row drawn later is laid out first and
 ## the smaller ones move; a row the layout cannot hold beside the drawn ones is refused as it comes
 ## up, so across from a row the rest refuse a real bag's draw is mostly empty (the player's

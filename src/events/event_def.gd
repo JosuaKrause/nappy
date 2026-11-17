@@ -641,7 +641,7 @@ func as_sent_ahead() -> EventDef:
 @export var speed := 0.0
 @export var path_mode := PathMode.NONE
 ## Route length for ALONG_STREET, in tiles, at most: a route a unit draws is also bounded by its
-## location's run (`Location.run()`, inbox #1460: such as the far side of the junction box at its
+## location's run (`Location.run()`, inbox #1460 in silky-lemur: such as the far side of the junction box at its
 ## street's end, the box itself for a row drawn in a box, or a square's lot), so a long row always
 ## stops sooner there. A short beat (the shouting man, the chatting mother, 8 tiles) keeps its
 ## length only where the run's edge is that far off: one drawn in a junction box is at most 5
@@ -1088,7 +1088,7 @@ func span_the_street() -> void:
 	_spans_the_street = true
 
 ## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`), of
-## the player's three sizes (inbox #1466: a marble that takes the whole street ends its draw, one
+## the player's three sizes (inbox #1466 in silky-lemur: a marble that takes the whole street ends its draw, one
 ## that takes a segment leaves at least two more draws, and one smaller than a segment is followed
 ## by another small one): one sidewalk location or one whole section. Nothing a street draws takes
 ## the whole street: the rows that would, the police patrol and the military convoy, are sent ahead

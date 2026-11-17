@@ -1,6 +1,6 @@
 extends RefCounted
 ## `UnitRoom`, what is left of a unit for its draw to speak for, in the two of the player's three
-## sizes a street draws (inbox #1466): a whole street fits a section or a small marble first; after
+## sizes a street draws (inbox #1466 in silky-lemur): a whole street fits a section or a small marble first; after
 ## a section at least two more draws; after a small marble only small ones until its section is
 ## full; a street part of which a dawn phase holds starts with what is left; every unit off the
 ## streets draws one small marble per open location; and a unit with nothing open has no room. Built of plain

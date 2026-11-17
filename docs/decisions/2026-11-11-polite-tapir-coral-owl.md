@@ -80,19 +80,19 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
 ## Decided, with its source
 
 - **Option D: the pass sets the row weights, and none on the abduction.** The player's answer on the board's row-weights
-  question on 2026-11-15 (inbox #1464), one of the two questions of this step they answered (the other is the reading of
+  question on 2026-11-15 (inbox #1464 in silky-lemur), one of the two questions of this step they answered (the other is the reading of
   the row rule, below): they have never seen an abduction in play and do not mind a higher rate, and they picked option
   D, the pass's row weights as designed without the abduction's.
   The design's table had two for it (a street 0.23, a junction box 0.45); this branch's pass set two (a street 0.17, a
   junction box 0.28), and both are left out, so eleven of the pass's thirteen moved weights are set.
 - **A row's share is read against the whole seed** (`one_pass.py` without its fifth argument), every row the seed counts
   included. The player's answer on the board's question `box-rows-after-the-pass` on 2026-11-16, "okay" to the
-  orchestrator's pick of this reading (inbox #1464). The question as shown set the two readings side by side with their
+  orchestrator's pick of this reading (inbox #1464 in silky-lemur). The question as shown set the two readings side by side with their
   figures: the builder's reading, a row's share compared among the rows a bag holds, which the branch was first built
   on ("Rejected"), and this one. The pick's reasons, the first being the orchestrator's and the other two as the question gave them:
   - the board reply the player picked option D from said that under it the abduction stands higher and "the convoy, the
     protest and the rest come back to main's share", and it named the charging dog and the chatting mother in junction
-    boxes among the rows off by more than a factor of two (inbox #1464); the review of #1488 found that the builder's
+    boxes among the rows off by more than a factor of two (inbox #1464 in silky-lemur); the review of #1488 found that the builder's
     reading left those rows three to four times the seed tree's count in a junction box;
   - this reading brings the charging dog, which ends the day, from 5.0 to 2.9 a city-day (the seed tree 2.2), and in a
     junction box from 3.9 to 1.9 (1.2);
@@ -126,11 +126,11 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
   days (26, 27, 29, 32). Raising them would hide a seed that dropped the three sent-ahead rows behind a number measured
   without that error, and the cells would still be the wrong ones.
 - **Options A, B and C of the row-weights question**: A set the abduction's weights too, B touched no row, C seeded every
-  row's weight from main (some forty fitted numbers on the catalogue); the player picked D (inbox #1464).
+  row's weight from main (some forty fitted numbers on the catalogue); the player picked D (inbox #1464 in silky-lemur).
 - **The builder's reading: a row's share compared among the rows a bag holds** (`one_pass.py`'s fifth argument,
   `seed_unit_rows.txt`; `pass_rows_among_the_rows_a_bag_holds_not_applied.log`), the reading the branch was first built
   on, since it compares like with like once the seed counts rows no bag holds; the player answered
-  `box-rows-after-the-pass` for the other (inbox #1464). The cells count the dog walker, the police patrol and the
+  `box-rows-after-the-pass` for the other (inbox #1464 in silky-lemur). The cells count the dog walker, the police patrol and the
   military convoy, which were half of a junction box's events, and a bag hands their share to the rows it still holds,
   so on either reading those rows place more than on the seed tree. Its acceptance run, made exactly as the branch's on
   the same 18 cities by 14 days (`builders_reading_*` and `two_readings_table.txt` in the evidence folder), events a

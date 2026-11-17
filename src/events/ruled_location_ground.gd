@@ -16,7 +16,7 @@ extends LocationGround
 ## - **A route is built inside its location's run where the setting says**
 ##   (`keeps_routes_on_the_run`, the unit draw's): a moving row's route stops at the far edge of
 ##   the junction boxes at its own street's ends (`Location.run()`), so everything that could come
-##   near it stands in a unit its draw sees (inbox #1460). The drawn rows that move are the pacing
+##   near it stands in a unit its draw sees (inbox #1460 in silky-lemur). The drawn rows that move are the pacing
 ##   beats, the man shouting and the chatting mother, and the alley mouse: a beat of 8 tiles from a
 ##   tile near a street's end would run through the junction box and on past it, and is cut at the
 ##   box's far edge.

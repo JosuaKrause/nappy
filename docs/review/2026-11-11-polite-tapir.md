@@ -4,7 +4,7 @@ Play days 2 to 5 on the desktop build (`tools/run.sh --seed 90210 --day 2`, then
 and 5), walking her routes as you would. The dog walker, the police patrol and, from day 13 or with
 `--force military_convoy`, the military convoy are no longer standing where a street drew them; the
 director sends each one just ahead of her on the street she walks, as a thing handed out from her
-route's bag (inbox #1460). The dog walker comes down her sidewalk toward her, its dog
+route's bag (inbox #1460 in silky-lemur). The dog walker comes down her sidewalk toward her, its dog
 already barking on and off as it would be for one she walked up to; the patrol car drives toward her
 in the lane of the road that runs her way, the near lane or the far one by which sidewalk she is on,
 coming into view from the edge of the screen; the convoy is warned of first by its screen-edge badge, then its army
