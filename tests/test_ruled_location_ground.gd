@@ -4,6 +4,7 @@ extends RefCounted
 ## it true the first with room all round, else the roomiest; and with `keeps_routes_on_the_run` a
 ## route is built inside its location's run (`Location.run()`), with it false on no bound. And a
 ## location's weight is its own ground's alone, a row's weight on a kind of ground left to the bag.
+## And tiles a caller brings (`offer_on()`, a beat her walk lays) are asked in the order handed.
 ##
 ## Run with stand-ins for what it is handed: the fit (`_Fit`, whose tiles a check sets and which
 ## records each build and its bound), the day's rules (`_Rules`, the room of each tile set by
@@ -16,6 +17,7 @@ func run(t: TestRunner) -> void:
 	_test_the_first_allowed_tile_or_the_roomiest(t)
 	_test_a_route_is_built_inside_its_run(t)
 	_test_a_locations_weight_is_its_grounds_alone(t)
+	_test_tiles_brought_are_asked_in_the_order_handed(t)
 
 const ROOMY := INF
 const CRAMPED := 100.0
@@ -140,3 +142,30 @@ func _test_a_locations_weight_is_its_grounds_alone(t: TestRunner) -> void:
 	t.check(judge.scale(row, _location()) == 1.0,
 			"a row weighed at a half on a street scales at one on an ordinary sidewalk (%.2f)"
 			% judge.scale(row, _location()))
+
+## **Tiles a caller brings are asked in the order it hands them** (`offer_on()`, for a beat her walk
+## lays): the first the rules leave valid answers whatever the rooms of the ones after it, no tile
+## after it is tried, none is shuffled, and tiles every rule refuses answer null.
+func _test_tiles_brought_are_asked_in_the_order_handed(t: TestRunner) -> void:
+	var cafe := EventCatalogue.by_id("cafe_tables")
+	var refused := Vector2i(20, 14)
+	var cramped := Vector2i(21, 14)
+	var roomy := Vector2i(22, 14)
+	var rules := _Rules.new()
+	rules.rooms = {refused: -INF, cramped: CRAMPED, roomy: ROOMY}
+	var fit := _Fit.new()
+	var handed: Array[Vector2i] = [refused, cramped, roomy]
+	var asked := _judge(fit, rules, false).offer_on(cafe, _location(), handed, NONE)
+	t.check(asked != null and _tile_of(asked) == cramped and fit.built == ([refused, cramped] as Array[Vector2i]),
+			"the first tile no rule refuses answers, in the order handed, and none after it is tried (%s)"
+			% [fit.built])
+	var backwards: Array[Vector2i] = [roomy, cramped]
+	fit.built.clear()
+	var other := _judge(fit, rules, false).offer_on(cafe, _location(), backwards, NONE)
+	t.check(other != null and _tile_of(other) == roomy and fit.built == ([roomy] as Array[Vector2i]),
+			"and a different order answers a different tile")
+	rules.rooms = {refused: -INF, cramped: -INF, roomy: -INF}
+	t.check(_judge(fit, rules, false).offer_on(cafe, _location(), handed, NONE) == null,
+			"tiles every rule refuses answer nothing")
+	t.check(_judge(fit, rules, false).offer_on(cafe, _location(), [] as Array[Vector2i], NONE) == null,
+			"and no tiles answer nothing")

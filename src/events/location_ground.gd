@@ -17,6 +17,14 @@ func offer(_def: EventDef, _location: Location, _among: Array[EventPlan]) -> Eve
 	assert(false, "LocationGround.offer() is overridden by every implementation")
 	return null
 
+## **The event `def` would be at `location` on the first of `tiles` the day's rules leave valid** among
+## `among`, in the order handed, or null where none is: for a caller that brings the tiles, a beat
+## her walk lays (`WalkSiting`). `tiles` are tiles of `location`.
+func offer_on(_def: EventDef, _location: Location, _tiles: Array[Vector2i],
+		_among: Array[EventPlan]) -> EventPlan:
+	assert(false, "LocationGround.offer_on() is overridden by every implementation")
+	return null
+
 ## How many times over `location` weighs `def` against its view bag's weight for it: 1 for an
 ## ordinary location (the player's "yes" to a weight per location, inbox #1185 in gentle-owl).
 func scale(_def: EventDef, _location: Location) -> float:
