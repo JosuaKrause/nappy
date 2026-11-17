@@ -8,7 +8,11 @@ extends RefCounted
 ## it and go on from its end; a sent row refused, and asked again, where its first leg starts within
 ## `EventScheduler.EVENT_SPACING_ANY` of a placed plan or runs through a field a plan keeps clear;
 ## and a marble of her route sent ahead of her that has no room, which waits for room and lets the
-## marbles behind it through (calm-pelican-6).
+## marbles behind it through (calm-pelican-6); and its looks at what her walk lays (`site_what_is_on_her_way()`),
+## handed a stand-in for the day's siting (`FakeWalkSiting`): a look asks each plan owed once,
+## between one `begin_look()` and one `end_look()`, no oftener than once a walking second; a placed plan behind her
+## for three walking seconds is asked again and one that has been in the world never; and the next crew waits
+## while one is laid and not yet real.
 ##
 ## On a hand-drawn map, one street running the whole length of the map (`_street()`, north-south or
 ## the same map turned), with plans made by hand: plans and rows are data, built as they are, and
@@ -68,6 +72,9 @@ func run(t: TestRunner) -> void:
 	_test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t)
 	_test_a_sent_row_starts_clear_of_a_placed_plan(t)
 	_test_a_sent_row_with_no_room_lets_the_next_marbles_through(t)
+	_test_a_look_asks_each_owed_plan_once_between_one_begin_and_one_end(t)
+	_test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t)
+	_test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
 ## sidewalk (`CityMap.corridor_offset()` 0 to 5), and building east of it. Turned where `vertical`
@@ -411,3 +418,97 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	t.check(closest >= EventDirector.AHEAD_INTERVAL.x - step,
 			"and nothing is handed out closer to the last than the clock's shortest wait, %.1fs "
 			% EventDirector.AHEAD_INTERVAL.x + "(the closest two %.1fs apart)" % closest)
+
+## What `site_what_is_on_her_way()` hands the siting while she walks north from her tile for `seconds`
+## of walking, one tenth of a second a tick; answers every plan it moved, in order.
+static func _walk_for(director: EventDirector, seconds: float) -> Array[EventPlan]:
+	var moved: Array[EventPlan] = []
+	for _tick in int(seconds / 0.1):
+		moved.append_array(director.site_what_is_on_her_way(0.1, _her(),
+				Vector2.UP * Tuning.WALK_SPEED))
+	return moved
+
+## A director over the street owing `plans` to her walk, handed `siting`.
+static func _director_with_a_siting(plans: Array[EventPlan], siting: FakeWalkSiting) -> EventDirector:
+	var director := EventDirector.new(_street())
+	director.use_way_on(FakeWayOn.new())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	director.start_day(DAY, plans, rng, siting)
+	return director
+
+## **A look asks each plan owed once**, between one `begin_look()` and one `end_look()`, and no oftener
+## than once a walking second (`EventDirector.ON_HER_WAY_LOOK`): none before she has walked
+## `ON_HER_WAY_AFTER` seconds, then one look a second, each told where she is and her heading.
+func _test_a_look_asks_each_owed_plan_once_between_one_begin_and_one_end(t: TestRunner) -> void:
+	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
+	var crew := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF)
+	var siting := FakeWalkSiting.new()
+	var director := _director_with_a_siting([fire, crew] as Array[EventPlan], siting)
+	_walk_for(director, EventDirector.ON_HER_WAY_AFTER - 1.0)
+	t.check(siting.looks.is_empty(), "no look is made before she has walked %.0fs"
+			% EventDirector.ON_HER_WAY_AFTER)
+	var walked := 10.0
+	_walk_for(director, 1.0 + walked)
+	var looks := siting.looks.size()
+	t.check(looks >= 1 and looks <= int(walked / EventDirector.ON_HER_WAY_LOOK) + 1,
+			"after that, no more than one look a walking second (%d looks in %.0fs)" % [looks, walked])
+	var shape := true
+	var index := 0
+	while index < siting.calls.size():
+		var group: Array[String] = []
+		var at := index
+		while at < siting.calls.size() and (at == index or siting.calls[at] != "begin_look"):
+			group.append(siting.calls[at])
+			at += 1
+		shape = shape and group.size() == 4 and group[0] == "begin_look" and group[3] == "end_look" \
+				and group[1] == "lay_ahead" and group[2] == "lay_ahead"
+		index = at
+	t.check(shape, "each look begins once, asks each of the two plans owed once and ends once")
+	t.check(siting.asked.count(fire) == looks and siting.asked.count(crew) == looks,
+			"so each plan owed is asked once a look (%d, %d asks in %d looks)"
+			% [siting.asked.count(fire), siting.asked.count(crew), looks])
+	t.check((siting.looks[0][1] as Vector2).is_equal_approx(Vector2.UP)
+			and (siting.looks[0][0] as Vector2).is_equal_approx(_her()),
+			"and a look is told where she stands and the way she heads")
+
+## A plan placed and still ahead of her is left alone; one the siting says is no longer ahead, for
+## `ON_HER_WAY_TURNED_AWAY` seconds of walking, is asked again; one that has been in the world is
+## never asked again.
+func _test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t: TestRunner) -> void:
+	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
+	var siting := FakeWalkSiting.new().set_place(fire.row_id(), _her() + Vector2.UP * 1500.0)
+	var director := _director_with_a_siting([fire] as Array[EventPlan], siting)
+	var moved := _walk_for(director, EventDirector.ON_HER_WAY_AFTER + 3.0)
+	t.check(fire.is_placed() and moved.has(fire), "the fire is laid at its first look")
+	var asks := siting.asked.size()
+	_walk_for(director, 6.0)
+	t.check(siting.asked.size() == asks,
+			"while the siting says it is still ahead of her it is not asked again (%d asks)" % siting.asked.size())
+	siting.set_still_ahead(false).set_place(fire.row_id(), _her() + Vector2.UP * 1800.0)
+	_walk_for(director, EventDirector.ON_HER_WAY_TURNED_AWAY - 1.0)
+	t.check(siting.asked.size() == asks,
+			"nor before it has been behind her for %.0f walking seconds" % EventDirector.ON_HER_WAY_TURNED_AWAY)
+	var again := _walk_for(director, 3.0)
+	t.check(siting.asked.size() > asks and again.has(fire),
+			"and after that it is asked again and moved (%d asks)" % siting.asked.size())
+	fire.was_live = true
+	asks = siting.asked.size()
+	siting.set_place(fire.row_id(), _her() + Vector2.UP * 2100.0)
+	_walk_for(director, 10.0)
+	t.check(siting.asked.size() == asks, "one that has been in the world is never asked again")
+
+## The next of a recurring row's copies waits while one is laid and not yet in the world, so the
+## day's crews are spread along the walk.
+func _test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t: TestRunner) -> void:
+	var first := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF)
+	var second := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF)
+	var siting := FakeWalkSiting.new().set_place(first.row_id(), _her() + Vector2.UP * 1500.0)
+	var director := _director_with_a_siting([first, second] as Array[EventPlan], siting)
+	_walk_for(director, EventDirector.ON_HER_WAY_AFTER + 3.0)
+	t.check(first.is_placed() and not second.is_placed() and not siting.asked.has(second),
+			"the first crew is laid and the second is not even asked while it stands unreal")
+	first.was_live = true
+	_walk_for(director, 3.0)
+	t.check(siting.asked.has(second) and second.is_placed(),
+			"once the first is in the world the next is asked and laid")

@@ -24,7 +24,7 @@ extends Node
 ##   and each day's walls add to the last. What kind goes up, and how much of a wall, follows the
 ##   progression in the poster paragraph of `docs/CITY.md` (`KIND_FIRST_DAY`, `KIND_WEIGHTS`, `_sheets_for()`).
 ## - **A crew on her way.** `poster_crew` is sited on her walk, in front of a blank cell
-##   (`EventScheduler.WalkSiting`, `fronts()`), and pastes its wall a sheet at a time while it is in
+##   (`WalkSiting`, `fronts()`), and pastes its wall a sheet at a time while it is in
 ##   her view — see `_work_the_crews()`.
 ## - **Pasting over.** A new sheet on an old one covers it exactly most of the time and shows it
 ##   beneath, offset enough to read, the rest (`OVERPASTE_SHARE`).
@@ -219,7 +219,7 @@ static func _is_a_front(map: CityMap, tile: Vector2i) -> bool:
 	return map.pavement_inward(tile) == Vector2i.UP \
 			and map.tile_at(tile + Vector2i.UP) == GameEnums.TileType.BUILDING
 
-## Every front tile a crew may stand on to paste, as a set — what `EventScheduler.WalkSiting`
+## Every front tile a crew may stand on to paste, as a set — what `SitedGround`
 ## narrows `poster_crew`'s ground to.
 func fronts() -> Dictionary:
 	var found := {}

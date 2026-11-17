@@ -1023,7 +1023,7 @@ enum Pavement {
 	## The frontage lane of an east-west street's north sidewalk, in front of the south face of the
 	## lot behind it, the one face of a building the city draws. Where a fire catches, so the
 	## building it burns is the one drawn burnt afterwards (`burning_building`'s own
-	## `pavement_side`), and where a poster crew pastes (`EventScheduler.WalkSiting` asks it for a
+	## `pavement_side`), and where a poster crew pastes (`SitedGround` asks it for a
 	## row whose `OnHerWay.at_a_front` is set).
 	AT_THE_FRONT,
 }
@@ -1038,7 +1038,7 @@ enum Pavement {
 ## 340px beside a fire she was led to is the wall the day puts across the street she is on, and the
 ## answer it asks for is to turn round or go another way. The pair is why a site is only accepted
 ## where the home and a calm area she has not used stay reachable outside both fields; see
-## `EventScheduler.WalkSiting`.
+## `WalkSiting`.
 ##
 ## Three things in `EventInstance` read it: `_be_done()` neither finishes nor leaves such a row,
 ## `EventRouteWalk.advance()` stops adding to the distance it has covered (a gait is driven by

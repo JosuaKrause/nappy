@@ -617,8 +617,8 @@ static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 
 ## Today's closures plus every blocker's own obstruction circle, each where its body stands
 ## (`EventPlan.body_at()`: a roadblock's band on the kerb beside its lane), as the `blocked` set
-## `ReachabilityGrid.flood()` takes. Public because `WalkSiting` builds the same set and then adds
-## two fields to it, and a second copy of this loop would be a second answer to the same question.
+## `ReachabilityGrid.flood()` takes. Public because the probes that measure what a day closes paint
+## the same set, and a second copy of this loop would be a second answer to the same question.
 static func blocked_by(map: CityMap, blockers: Array[EventPlan]) -> Dictionary:
 	var blocked := map.closed_tiles.duplicate()
 	for plan in blockers:

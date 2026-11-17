@@ -1,7 +1,7 @@
 class_name FakeWalkEvents
 extends WalkEvents
 ## A stand-in for the walk's events whose answers a check sets: handed to a placement made while
-## she walks (`EventScheduler.WalkSiting`) in place of the real one, so the check plans no walk. It
+## she walks (`WalkSiting`) in place of the real one, so the check plans no walk. It
 ## answers what a siting asks (the walk's plans, every plan but the one being sited, where today's
 ## doors stand and the day's calm areas) and records the one write a placement makes (`add()`).
 ## The real object's own logic is checked once, in `tests/test_walk_events.gd`. A helper, not a

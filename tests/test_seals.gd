@@ -758,7 +758,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 ## never see, the same question one step out"*) was invisible to the very rule written to keep a
 ## route junction open. `build_day`'s `standing` argument threads the day's seals and the region
 ## wall's own bodies into the three rules — not into `StreetInvalidation.room_around()`'s spacing, which stays asked
-## of the catalogue's own rows alone — see `EventScheduler._best_of`'s own doc.
+## of the catalogue's own rows alone — see `EventScheduler.build_day()`'s own doc.
 ##
 ## **What this proves.** Once `build_day` is handed `standing` the way `EventManager.start_day`
 ## already does, every row **it places** leaves every route junction it reaches still open
@@ -778,7 +778,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 ##
 ## **Checked over `rows` — `build_day`'s own output — and not over `standing` itself.** A seal or
 ## a wall body is never asked this question at its own placement, on either side of this branch:
-## `SealPlanner.plan_day` and `RegionPlanner.plan_day` do not call `_best_of` for their own
+## `SealPlanner.plan_day` and `RegionPlanner.plan_day` do not ask the day's rules for their own
 ## bodies at all — a seal and the region wall are structure, placed to close a street by design
 ## (`SealPlanner`'s own class doc: *"the corridor … is the day's only free way through;
 ## everything else in the lattice is closed"*; `RegionPlanner`'s: *"there is no case where the

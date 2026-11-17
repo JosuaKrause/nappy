@@ -147,7 +147,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 		var map := city.map
 		var tile := map.world_to_tile(where_sited)
 		# A van leaves no line past it on a sidewalk a route runs along, so it is put on the street
-		# she is walking, just out of her sight ahead of her (`WalkSiting.ahead_on_her_street()`).
+		# she is walking, just out of her sight ahead of her (`WalkSiting.lay_ahead()`).
 		var offset := where_sited - her_at_siting
 		t.check(offset.dot(heading_at_siting) > 0.0
 				and absf(offset.cross(heading_at_siting)) <= 5.0 * Tuning.TILE_SIZE,
@@ -192,7 +192,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	return placed.size() == 1
 
 ## **No part of the route van is in the camera's view the frame it is created** ("Nothing may be
-## seen to appear", `docs/EVENTS.md`): asked of `WalkSiting.ahead_on_her_street()` directly, from
+## seen to appear", `docs/EVENTS.md`): asked of `WalkSiting.lay_ahead()` directly, in a look begun from
 ## every third cell of the day's longest route with her walking it either way, its drawing
 ## (`EventFootprints.footprint_of()`, where it is drawn round its feet) against the 640x360 view led
 ## `Stroller.CAMERA_LOOK_AHEAD` along her heading as the camera leads her.
@@ -212,7 +212,6 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t: TestRunner) -> void
 	var path := _the_longest_route(city)
 	var sited := 0
 	var seen: Array[String] = []
-	var rng := _rng(seed_value, "sited")
 	for i in range(1, path.size(), 3):
 		for way: int in [1, -1]:
 			var from: Vector2 = path[i - 1] if way == 1 else path[i]
@@ -220,8 +219,11 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t: TestRunner) -> void
 			if from.distance_to(to) < 1.0:
 				continue
 			var heading := (to - from).normalized()
-			var plan := siting.ahead_on_her_street(def, rng, null, from, heading)
-			if plan == null:
+			var plan := EventPlan.new(def, Vector2.INF)
+			siting.begin_look(from, heading)
+			var laid := siting.lay_ahead(plan)
+			siting.end_look()
+			if not laid:
 				continue
 			sited += 1
 			var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) \
@@ -341,13 +343,13 @@ func _a_place_from_her_route(events: EventManager, standing: Array[EventPlan],
 			return plan
 	return null
 
-## The placement context the game builds for her walk (`EventsAhead.start_day()`), built with the
-## constructor the game calls, on a ground under the day's own home-street rule.
-func _siting_of(city: City) -> EventScheduler.WalkSiting:
-	return EventScheduler.WalkSiting.new(DAY, city.map, city.streets().route_tree(),
-			RunCity.events(city).walk_events(), EventScheduler.Verdicts.new(),
-			GamePlanBuilder.over(city.map), EventScheduler.row_ground(city.map, null,
-					DaySpec.for_day(DAY).holds_the_home_streets))
+## The placement context the game builds for her walk (`EventsAhead.start_day()`), made by the maker
+## the game hands its events (`SitingMaker`), on a ground under the day's own home-street rule.
+func _siting_of(city: City) -> WalkSiting:
+	var events := RunCity.events(city)
+	return SitingMaker.new(events.world, events.walk_events()).make(DAY,
+			city.streets().route_tree(), EventScheduler.row_ground(city.map, null,
+			DaySpec.for_day(DAY).holds_the_home_streets))
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:

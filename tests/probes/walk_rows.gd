@@ -35,7 +35,7 @@ extends RefCounted
 ## her walk and a row a unit drew, measured with every unit drawn (`EventPlan.gap_to()`; expected
 ## no less than `EventScheduler.EVENT_SPACING_ANY`); `WS all` sums the days. **What it sites is
 ## day 3's fire**: a sidewalk poster crew pastes a building's blank wall, which only the built
-## city knows (`EventsAhead._a_siting()` hands the siting the day's fronts), so a crew a unit
+## city knows (`SitingMaker.make()` hands the siting the day's fronts), so a crew a unit
 ## hands to her walk stays unplaced here; a crew sited on drawn ground is
 ## `tests/test_event_manager_units.gd`'s, against the game's own manager. Each day is planned
 ## as the game plans it: its closures, holds, region wall and seals first, the seals and the wall's
@@ -119,7 +119,7 @@ class _Drawing extends RefCounted:
 	## siting it is sited by (`walked_by()`).
 	var _walk: WalkEvents
 	var _director: EventDirector
-	var _siting: EventScheduler.WalkSiting
+	var _siting: WalkSiting
 	## Every row a unit drew with a place, so far.
 	var rows: Array[EventPlan] = []
 	## Every unit of the day, and each one's room before it drew, in small marbles (unit name ->
@@ -165,7 +165,7 @@ class _Drawing extends RefCounted:
 	## walk, a row handed to her walk added unplaced and owed to `director`, to site on her way
 	## with `siting`.
 	func walked_by(walk: WalkEvents, director: EventDirector,
-			siting: EventScheduler.WalkSiting) -> void:
+			siting: WalkSiting) -> void:
 		_walk = walk
 		_director = director
 		_siting = siting
@@ -378,11 +378,15 @@ func _walk_every_day(reach: float) -> void:
 				cut_at_dawn += _report_cut_off(map, grid, routes, reached_bare, plans, day, i,
 						"dawn")
 			var walk := WalkEvents.new()
-			walk.take(plans, CalmAreas.of(map), doors)
-			# The walk's sitings are judged against the walk itself, as the game's are.
-			var siting := EventScheduler.WalkSiting.new(day, map, tree, walk,
-					EventScheduler.Verdicts.new(), GamePlanBuilder.over(map),
-					EventScheduler.row_ground(map))
+			walk.take(plans, CalmAreas.of(map), doors, null, dawn.locations())
+			# The walk's sitings are judged against the walk itself, as the game's are, and lay a
+			# beat on the locations the units draw into: made by the game's maker, over a world
+			# that holds this probe's city and a run of its own.
+			var world := EventWorld.new()
+			world.city_map = map
+			world.run = RunState.new()
+			world.use_plan_builder(GamePlanBuilder.over(map))
+			var siting := SitingMaker.new(world, walk).make(day, tree, EventScheduler.row_ground(map))
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])
@@ -453,7 +457,7 @@ func _walk_every_day(reach: float) -> void:
 				var counted_marbles := drawing.marbles()
 				for k in marbles.size():
 					marbles[k] += counted_marbles[k]
-			gave_up += int(siting.waits.get("the ground round its site had not drawn", 0))
+			gave_up += int(siting.waits().get("the ground round its site had not drawn", 0))
 			for plan: EventPlan in sited:
 				if not plan.is_placed():
 					continue

@@ -284,7 +284,7 @@ can be met after an event behind it, or never. These rigs stand:
   inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
   otherwise site is a place, so when its marble comes up it is handed to her walk to site, the way
   day 3's fire is, but **on the street she is walking** rather than by the route band
-  (`EventScheduler.WalkSiting.ahead_on_her_street()`, the way day 7's van is): ahead of her, with
+  (`WalkSiting.lay_ahead()`, which lays a row met on her street there, as it does day 7's van): ahead of her, with
   nothing it draws in the camera's view so it is never seen to appear, within the streaming radius so
   it is in the world at once, under every acceptance rule a dawn placement is. The route band would put him
   past her walk, on a branch she then leaves or never at all; the street she is on is where she
@@ -308,8 +308,8 @@ can be met after an event behind it, or never. These rigs stand:
   no line past it on the sidewalk it stands on, so the day never puts one on a sidewalk a route runs
   along, and the band ahead of her on the day's routes the other places are sited in is ground her
   own walk rarely reaches. So her walk puts it on the street she is walking, ahead of her and just
-  out of her view, nearest first, under every other acceptance rule
-  (`EventScheduler.WalkSiting.ahead_on_her_street()`), where it is in the world at once and in her
+  out of her view, in the nearest free location first, under every other acceptance rule
+  (`WalkSiting.lay_ahead()`), where it is in the world at once and in her
   view a few seconds later if she keeps going. Nothing it draws is in the camera's view, lead
   included, the moment it is put there. **It may stand on the very line she walks**: the street she
   is walking is often off the day's routes, and off them nothing refuses a van on her own sidewalk,
@@ -1501,9 +1501,10 @@ Each item quotes the code on this branch.
    far into it from opposite sides, are not asked together whether it keeps a free line.
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
-2. **The walk's sitings still roll a spot.** `WalkSiting` goes through `_best_of()`, which rolls
-   tiles and takes the roomiest, each candidate asked of the same rules (`StreetInvalidation`). The
-   rest of the day is placed by location: the scripted rows each draw one location at dawn, weighted
+2. **Not every row is placed by a unit's draw.** A beat her walk lays is offered the free
+   locations on her way and stands on the first tile of the first that the day's rules
+   (`StreetInvalidation`) leave valid (`WalkSiting`, `LocationGround.offer_on()`). The scripted rows
+   each draw one location at dawn, weighted
    by role, and are assigned it (`ScriptedPhase`); a one-shot is owed to her walk and sited on her
    way, never placed at dawn (`EventDef.validate()` refuses one that is not); an authored scene's row stands
    in the location its tile names, asked once (`EventScheduler.recipe_placement()`); the masts stand
@@ -1519,7 +1520,7 @@ Each item quotes the code on this branch.
    starts on (`RouteGroundRule`, the streets counted).
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
-     owes her walk, each sited ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
+     owes her walk, each laid ahead of her (`WalkSiting.lay_ahead()`).
    - **The escape's bag** (`_draw_the_walk()`): each street of the walk draws one marble from one
      bag, empty marbles among them, and a drawn row is offered at the street's locations under the
      walk's rules; a row no location takes is spent unmet rather than kept in the bag.
@@ -1864,14 +1865,14 @@ day's `RouteTree` she is walking**, and nowhere else: *"valid spawn locations ar
 
 The window is the day's own route rather than a line from her. The route tree answers the cells of
 every route through the cell she is standing on (`RouteTree.cells_ahead()`), in the direction that
-agrees with the way she is travelling, and `EventScheduler.WalkSiting.ahead_of()` offers the tiles of
-the row's own ground standing on them — a
-building face for the fire and the poster crews, a mast's site for a mast
-(`WalkSiting._its_ground_on()`); day 7's route van and a man shouting a bag hands her (day 6's rigged
-one) are sited on the street she is walking instead (`ahead_on_her_street()`). **The far end of the
-band is read along that route** — `ON_HER_WAY_SIGHT` seconds of walking past the streaming band,
-through every corner and junction, which is how much further she actually has to walk. **The near
-end is a distance across the block**, the streaming radius plus its hysteresis, because that is what
+agrees with the way she is travelling, and `WalkSiting.lay_ahead()` offers the free locations holding
+tiles of the row's own ground on them (`SitedGround`) — a
+building face for the fire and the poster crews, a mast's site for a mast; day 7's route van and a
+man shouting a bag hands her (day 6's rigged one) are laid on the street she is walking instead
+(`WalkSiting.lay_ahead()`, which lays a row met on her street there). **It takes the nearest free
+location on that route beyond the near end**, a location at a time, at most
+`WalkSiting.LOCATIONS_A_LOOK` a look, read along the route through every corner and junction, which is how
+much further she actually has to walk. **The near end is a distance across the block**, the streaming radius plus its hysteresis, because that is what
 decides whether the placement is in the world at all: a site 1200px along a route that doubles back
 can be 500px away as the crow flies, streamed in and so real and unmovable on the frame it was
 placed. A straight line is never longer than the route to the same place, so clearing the streaming
@@ -1894,9 +1895,9 @@ route you chose that day)"* (PLAYTEST-117). Three things make that hold:
 
 - **It is a place, sited late, not a moment with no place.** The tile, the role, the corridor's own
   questions, the doors, the protected calm and the body in the street are all exactly what dawn
-  would have asked; `EventScheduler.WalkSiting` keeps the day's placement context past dawn so that
-  one candidate is judged against the same ground as every other placement. What waits is only
-  *which* of the legal tiles it takes.
+  would have asked; the siting (`WalkSiting`, made by `SitingMaker`) is handed the day's rules,
+  corridor and ground, so that one candidate is judged against the same ground as every other
+  placement. What waits is only *which* of the legal locations it takes.
 - **It may be moved until it is real, and never after.** If it has stopped being on the way she is
   walking — behind her past `ON_HER_WAY_BEHIND`, or off the branch she is now on — for
   `ON_HER_WAY_TURNED_AWAY` seconds of walking, it is sited again on the way she is going now. **The
@@ -1911,9 +1912,8 @@ route you chose that day)"* (PLAYTEST-117). Three things make that hold:
   her (for another row, no tile of its own ground), a door's clear ground, calm she has not used, a
   site that would close her own way out — any of these and the siting is simply refused and asked
   again a second later, from wherever she has got to. A day she walks into a corner is a day it
-  waits. Where the band itself holds none the window widens **along the same branch**, first to
-  twice its width and then to the end of the route she is on, before anything else is considered; it
-  never leaves the tree.
+  waits. One ask offers at most `WalkSiting.LOCATIONS_A_LOOK` locations, the nearest to walk to first; a
+  beat none of them takes waits for the next look, from further along, and it never leaves the tree.
 - **And a day she wins while it waited still burns.** *"I agree with the fire fix"* (PLAYTEST-121).
   The row runs on day 3 and no other day and is spent where it enters the world, so a won day on
   which every siting was refused would leave the run with no fire, no scar and no shell — and the
@@ -1978,9 +1978,8 @@ unit that draws a crew keeps it with no position at the location it lays it on**
 (`MarbleDraw.draw()`), so no
 row drawn after it is spaced from a place it never stands at, and
 `EventDirector.site_what_is_on_her_way()` sites it the way it sites the fire — on the branch
-of the day's route tree she is walking, beyond the streaming band and within
-`EventDirector.ON_HER_WAY_SIGHT` seconds of walking along the route, moved while unreal, fixed once
-real — with three differences. **One at a time**: the next crew waits while another is sited and
+of the day's route tree she is walking, on the nearest free location beyond the streaming band,
+moved while unreal, fixed once real — with three differences. **One at a time**: the next crew waits while another is sited and
 not yet in the world, so the day's crews are spread along her walk rather than bunched in one band.
 **At a front**: its ground is the frontage lane in front of a blank ground-floor cell
 (`Pavement.AT_THE_FRONT`, narrowed to `PosterWalls.fronts()`), facing the wall, and the line rules
@@ -2252,7 +2251,7 @@ All implemented.
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
-| `burning_building` | ONE_SHOT | 3 | Against the one face of a building the city actually draws, `AT_THE_FRONT` — never `AGAINST_THE_BUILDING`, the way `reversing_lorry` sites, since that catches only an east-or-west wall `building.gd` never puts a facade on — and never the power station's front, whose facade does not draw burnt and whose transformer yard has no wall. **Sited from the walk she is taking** (`EventDef.on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `aftermath.on_sight` calls `fire_truck` in the moment she first sees it. **The fire itself has no field and no obstacle — the truck it calls in is the danger, not the fire** (*"the fire goes on the building. the challenge is the fire truck not the fire"*, PLAYTEST-144, statement 12): `FireLook._draw_fire()` paints the flames and the smoke above them on the facade of the building it stands against, and the sidewalk in front stays clear. The flames burn along that building's whole facade, every column of it the city draws, and stay inside it: never on a neighbor's tile, and never on a column another building's roof covers (*"the fire should be on the whole building not only the door"*, sandy-egret). Burns for the rest of the day; from the next morning on, the scar it leaves is the building itself drawn burnt (`CityFronts.mark_the_burnt_frontage()`, `Building.Condition.BURNT`): windows black and broken under soot, the door boarded, the parapet charred. The `burnt_shell` row at the scar has no body and no picture of its own on the sidewalk, only its faint 2.5/s field — *"the building is what needs to be burnt, not an object next to the building"*. |
+| `burning_building` | ONE_SHOT | 3 | Against the one face of a building the city actually draws, `AT_THE_FRONT` — never `AGAINST_THE_BUILDING`, the way `reversing_lorry` sites, since that catches only an east-or-west wall `building.gd` never puts a facade on — and never the power station's front, whose facade does not draw burnt and whose transformer yard has no wall. **Sited from the walk she is taking** (`EventDef.on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, in the nearest free location beyond the streaming band across the block. It may be moved while she has not reached it and never once it is real. `aftermath.on_sight` calls `fire_truck` in the moment she first sees it. **The fire itself has no field and no obstacle — the truck it calls in is the danger, not the fire** (*"the fire goes on the building. the challenge is the fire truck not the fire"*, PLAYTEST-144, statement 12): `FireLook._draw_fire()` paints the flames and the smoke above them on the facade of the building it stands against, and the sidewalk in front stays clear. The flames burn along that building's whole facade, every column of it the city draws, and stay inside it: never on a neighbor's tile, and never on a column another building's roof covers (*"the fire should be on the whole building not only the door"*, sandy-egret). Burns for the rest of the day; from the next morning on, the scar it leaves is the building itself drawn burnt (`CityFronts.mark_the_burnt_frontage()`, `Building.Condition.BURNT`): windows black and broken under soot, the door boarded, the parapet charred. The `burnt_shell` row at the scar has no body and no picture of its own on the sidewalk, only its faint 2.5/s field — *"the building is what needs to be burnt, not an object next to the building"*. |
 | `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius, warned of first — its badge goes up alone the moment the fire is seen, pointing up the fire's own street, for its one-second telegraph, the most a badge is up alone, and it is then created just off screen on that road — and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has a body, the patrol car's construction (see "A car is solid and never drives into her"): solid while it drives and once it has parked, lethal only in front of it while it drives its route, and harmless once parked. What it closes is still the ground its field covers rather than the road itself: the body closes none (`obstructs_radius` is zero) and lies inside the field's 70px inner radius. A loss to it names `fire_truck` as its cause. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a

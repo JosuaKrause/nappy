@@ -700,7 +700,6 @@ src/events/event_manager.gd def
 src/events/event_manager.gd facing
 src/events/event_manager.gd position
 src/events/event_scheduler.gd def
-src/events/event_scheduler.gd path
 src/events/event_scheduler.gd role
 src/events/event_spawner.gd def
 src/events/event_spawner.gd live

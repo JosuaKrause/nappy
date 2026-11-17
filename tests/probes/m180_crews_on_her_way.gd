@@ -79,7 +79,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	var siting := siting_maker.latest()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
 			sited, met, first_sited, _pasted_cells(city) - before,
-			_refusal_summary(siting.waits if siting else {})])
+			_refusal_summary(siting.waits() if siting else {})])
 	rig.free()
 
 ## Every cell with a sheet on it, however it got there.

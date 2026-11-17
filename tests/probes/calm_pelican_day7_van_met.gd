@@ -198,7 +198,7 @@ class Walk extends RefCounted:
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
 		var siting := siting_maker.latest()
-		var waits: Dictionary = siting.waits if siting else {}
+		var waits: Dictionary = siting.waits() if siting else {}
 		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,
 				drawn_at, drawn_phase, sited_phase, where, waits,
 				"%.0fs" % seen_at if seen_at >= 0.0 else "never"]

@@ -194,7 +194,6 @@ test_sentence_lines.gd 37
 test_sentence_lines_render.gd 35
 test_shapes.gd 409
 test_shared_bag.gd 29
-test_siting_judges_once.gd 18408
 test_spawn_siting.gd 51
 test_spent_park.gd 102950
 test_still_watch.gd 1525

@@ -307,8 +307,8 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 				"day %d leaves a walkable route from home to a park" % day)
 
 ## Whether the grid still finds a way from the home to some calm tile with today's closures and
-## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`, the set
-## `WalkSiting` builds the same way): what the scheduler keeps true of the day it plans.
+## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`): what the
+## scheduler keeps true of the day it plans.
 func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventPlan]) -> bool:
 	var blocked := EventScheduler.blocked_by(_map, blockers)
 	var reached := grid.flood([_map.home_rect.position], blocked)

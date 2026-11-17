@@ -17,7 +17,7 @@ would give. A unit within the stream radius of her is drawn before the streaming
 **A place her walk sites stands on ground whose units have drawn, and no draw reads it.**
 A placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEAD` of its place
 first (`EventsAhead.draw_the_ground_round()`); a place the director sites ahead of her, for one,
-gives up a pick that drew a unit and asks again (`WalkSiting.ahead_of()`). **A place
+gives up a pick that drew a unit and asks again (`WalkSiting.lay_ahead()`). **A place
 the resistance sends her to is asked by where it stands** (`WayConfirmation`, asked wherever a
 contact is stood or moved, `ResistanceDirector._she_can_be_sent_to()`): inside the ground already
 drawn round her (the stream radius, and round where she reads a mark as far as its task is looked

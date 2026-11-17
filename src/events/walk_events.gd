@@ -10,7 +10,7 @@ extends RefCounted
 ## *(inbox #1156: "have an object that contains the derived information -- don't rederive over
 ## and over again -- then pass that object around".)* `EventManager` makes one and fills it at every
 ## walk's start (`take()`); the streaming, what is put in front of her (`EventsAhead`), every
-## `EventScheduler.WalkSiting` and the resistance are handed it, and nothing reads the walk's plans
+## `WalkSiting` and the resistance are handed it, and nothing reads the walk's plans
 ## any other way.
 ##
 ## **Its writes are the walk's own**: `take()` at a walk's start, `add()` for a plan placed while she
