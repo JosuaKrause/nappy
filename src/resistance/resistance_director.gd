@@ -1957,7 +1957,8 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 ## `DayLocations.nearest_section_in()`), with no cap on how far: `paths`, the paths the close-by
 ## search walked, first, then her paths over the whole city where those reach none. Of those, the
 ## first where the roadblock `def` stands across it (`EventScheduler.across_the_section()`: off the
-## main road, on its carriageway), with neither it nor anything the section holds in her view
+## main road, on its carriageway), with neither it, drawn where its body stands
+## (`EventPlan.body_at()`, on its kerb), nor anything the section holds in her view
 ## (`_drawing_shows()`), and holding none of the city's fixed parts (`EventPlan.is_a_fixed_part()`).
 ## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
 ## draws nothing. **And it is one she can be sent to** (`_she_can_be_sent_to()`, asked of the
@@ -1982,7 +1983,7 @@ func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Section
 		# Stationary, so it draws nothing from a stream: a fresh one, never the director's.
 		var across := EventScheduler.across_the_section(row, _builder, _map, section,
 				RandomNumberGenerator.new())
-		if across == null or _drawing_shows(row, across.placed_at()):
+		if across == null or _drawing_shows(row, across.body_at()):
 			return false
 		var ground := _ground_she_can_be_sent_to_in(section, searched, her)
 		if ground == NO_TILE:

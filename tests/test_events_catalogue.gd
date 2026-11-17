@@ -120,7 +120,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var solid_unpinned := 0
 	for def in EventCatalogue.all():
 		var stands := EventFootprints.stands_at(map, def, at)
-		var is_centred := def.stands_on_its_band_middle() and not def.stands_at_its_kerb()
+		var is_centred := def.stands_on_its_band_middle()
 		if is_centred:
 			solid_unpinned += 1
 		t.check((stands != at) == is_centred,

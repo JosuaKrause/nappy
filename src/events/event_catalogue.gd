@@ -1990,7 +1990,7 @@ static func _curfew_announce() -> EventDef:
 ## off from his own post (the other cannot, being blocked) while the other stays standing at his:
 ## the instance becomes the man, and `PursuitSpec.leaves_its_body` pins the barrier's body and
 ## picture where it was built for the rest of the event's life. Nothing appears, nothing
-## disappears, and the street he abandoned stays shut behind him.
+## disappears, and the sidewalk and road he abandoned stay shut behind him.
 ##
 ## **His one radius is measured from the band's centre, and he charges on his warning's clock.** The
 ## radius stays on the band because it may not reach past the field, which is cored there. His post
@@ -2038,7 +2038,7 @@ static func _roadblock() -> EventDef:
 	def.has_a_spread = true
 	def.first_day = 7
 	def.act_tag = 2
-	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
+	def.placement = [GameEnums.TileType.ROAD]
 	def.intensity = 0.0
 	def.inner_radius = 86.0
 	def.outer_radius = 179.0

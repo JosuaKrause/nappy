@@ -80,7 +80,8 @@ func place_at(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 	return candidate
 
 ## Where a placement's body stands once it is built: the first point of its path when it has one,
-## recentred on the pavement band unless `pavement_side` pins it — the reading
+## recentred on the pavement band unless `pavement_side` pins it, or on the kerb beside its lane
+## for a row that stands at its kerb (the roadblock) — the reading
 ## `EventInstance.setup()` makes of a stationary body, which is where a waiting guard's band stands
 ## and where he notices her from (`OneNoticeRule`).
 func body_stands_at(plan: EventPlan) -> Vector2:

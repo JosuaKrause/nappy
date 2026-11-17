@@ -534,7 +534,8 @@ func _planned_parts(plan: EventPlan) -> Array:
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
-## stationary solid row that `pavement_side` does not pin to an edge.
+## stationary solid row that `pavement_side` does not pin to an edge, or onto the kerb beside its
+## lane for a row that stands at its kerb (`EventFootprints.stands_at()`).
 func _planned_position(plan: EventPlan) -> Vector2:
 	return EventFootprints.stands_at(_map, plan.def,
 			plan.path[0] if plan.path.size() > 0 else plan.position)

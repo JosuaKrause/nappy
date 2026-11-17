@@ -837,9 +837,9 @@ func _test_task_target_resolves_for_the_neighbor_task_on_day_10(t: TestRunner) -
 	_free_fixture(fixture)
 
 ## The day 13 "no path to 'task'" regression: a contact standing on a solid row's own ground
-## (`roadblock`'s `obstructs_radius`, from `GroundShape.band(60.0)`) is exactly the ground every plan
-## refuses, so the planner must never hand the rig a target sitting inside one. Day 10's neighbor
-## stands on open ground, which is handed back unchanged; with its tile recorded obstructed
+## (`roadblock`'s `obstructs_radius`, from `GroundShape.band(EventCatalogue.ROADBLOCK_REACH)`) is
+## exactly the ground every plan refuses, so the planner must never hand the rig a target sitting
+## inside one. Day 10's neighbor stands on open ground, which is handed back unchanged; with its tile recorded obstructed
 ## (`CityMap.obstructed_tiles`, written here as `EventManager` records a body — `tests/probes/m110_bodies.gd`
 ## reads and rewrites it the same way) the point found is open, unobstructed ground beside it.
 func _test_task_target_steps_off_obstructed_ground(t: TestRunner) -> void:
