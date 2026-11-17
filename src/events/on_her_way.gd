@@ -25,3 +25,7 @@ extends Resource
 ## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). A location's draw offers the
 ## row by `pavement_side`, as it offers any row, and only the walk's siting reads this.
 @export var at_a_front := false
+
+## Whether her walk stands the row at a building's front it pastes (`at_a_front`).
+func pastes_a_front() -> bool:
+	return at_a_front

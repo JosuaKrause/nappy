@@ -738,6 +738,8 @@ static func _homeless_yeller() -> EventDef:
 	# - open ground, 0.0042: rare on open ground, where the street musician is nine tenths of
 	#   what stands: its share there against his.
 	def.weigh_on(PlacementGround.Kind.OPEN, 0.0042)
+	# The rigged bag draws his marble so she meets him, and her walk lays him on her street.
+	def.meet_on_her_street()
 	return def
 
 ## Slow, and it owns the sidewalk it is on.
