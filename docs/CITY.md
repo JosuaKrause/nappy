@@ -1194,13 +1194,15 @@ rather than holding a tile, yet it stands as a body. A pursuer on one sidewalk a
 another pursuer on the other close the street with every line rule satisfied, so this rule asks
 every body, not only the roadblock.
 
-**A roadblock is asked too**: it spans the street by design, and its band takes the sidewalk on its
-own side of the road and the road, standing on the kerb between them, and leaves the far sidewalk
-whole, so it is refused where a body already closes that far sidewalk ("one sidewalk must be open
-if they're en-route", inbox #747 in woolly-penguin; "okay let's use the one sidewalk has to be open
-and match the roadblocks size to one sidewalk + road", inbox #1465 in spry-plover). Every reading
-of a body here takes the band where it stands (`EventPlan.body_at()`). **The band
-is its body at every heat.** From heat 4 its guard hunts and the row's lethal inner disc would take
+**A roadblock is asked too**: the catalogue's `roadblock` is the open kind ("there are two kinds of
+roadblocks. one that is open and one that is closing the street", inbox #1491; the closing kind is
+M199, the roadblock closes its whole street, in the queue). It spans the street by design, and its
+band takes the sidewalk on its own side of the road and the road, standing on the kerb between
+them, and leaves the far sidewalk whole, so it is refused where a body already closes that far
+sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin; "okay
+let's use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road",
+inbox #1465 in spry-plover). Every reading of a body here takes the band where it stands
+(`EventPlan.body_at()`). **The band is its body at every heat.** From heat 4 its guard hunts and the row's lethal inner disc would take
 both sidewalks by itself, where the other pursuers' discs (the alley robbery's, the charging dog's)
 take one, and the escape reads the same hunting roadblock at its band (`WalkGround`); so a hunting
 roadblock stands on a route's street wherever a cold one does, and the other pursuers stay read at
