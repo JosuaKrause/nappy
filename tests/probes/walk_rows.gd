@@ -531,7 +531,9 @@ func _walk_every_day(reach: float) -> void:
 
 ## Adds, per view of `corridor` (`counts[view * 2]` the streets counted, `counts[view * 2 + 1]` those
 ## both closed), the streets of `map` with neither sidewalk walkable past the obstructing bodies of
-## `plans`, leaving out a street a closure, a seal, the region wall or a roadblock closes by itself.
+## `plans`, each where its body stands (`EventPlan.body_at()`: a roadblock's band on the kerb
+## beside its lane), leaving out a street a closure, a seal, the region wall or a roadblock closes by
+## itself.
 static func _count_both_closed(map: CityMap, corridor: Corridor, plans: Array[EventPlan],
 		counts: Array[int]) -> void:
 	var bodies: Array = []
@@ -539,7 +541,8 @@ static func _count_both_closed(map: CityMap, corridor: Corridor, plans: Array[Ev
 	for plan in plans:
 		if not plan.obstructs():
 			continue
-		var body := Vector3(plan.placed_at().x, plan.placed_at().y, plan.blocking_radius())
+		var at := plan.body_at()
+		var body := Vector3(at.x, at.y, plan.blocking_radius())
 		bodies.append(body)
 		if plan.is_a_fixed_part() or plan.row().spans_the_street():
 			fixed.append(body)
