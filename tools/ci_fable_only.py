@@ -2,11 +2,12 @@
 """A pull request that builds an item of a `fable-only` queue entry carries the `fable-only` label.
 
 A queue entry whose `README.md` says `fable-only: true` in its opening block, beside `priority:`,
-is one the player named as Fable's: Fable designs its code and reviews it, and writing the code may
-go to another model (`docs/TODO.md`, "The order is `tools/queue.sh`"; the model table in the
-orchestrating skill). The GitHub label `fable-only` is how a session that never read the entry
-knows that about a pull request, so every pull request that builds one of the entry's items carries
-it, and this fails one that does not.
+is one the player named as Fable's to design: as in all Fable work, Fable writes only its design,
+another model writes the code and Opus reviews it, and Fable cannot decide to do either itself
+(`docs/TODO.md`, "The order is `tools/queue.sh`"; the model table in the orchestrating skill).
+The GitHub label `fable-only` is how a session that never read the entry knows that about a pull
+request, so every pull request that builds one of the entry's items carries it, and this fails one
+that does not.
 
 - **Building an item is read from an added record.** A pull request builds an item of an entry when
   it adds a record of that entry under `docs/decisions/` (`<entry>.md`, `<entry>-<n>.md` or
@@ -27,7 +28,7 @@ it, and this fails one that does not.
   checks (`lib_ci.pr_labels`), so re-running the job sees a label added since. CI also starts a
   run when a label is added or removed, so taking the label off a green pull request turns it red.
 
-What a script cannot see -- that Fable did design and review the work -- is the orchestrator's and
+What a script cannot see -- that Fable wrote the design and nothing else -- is the orchestrator's and
 the reviewer's still.
 """
 
@@ -97,7 +98,7 @@ def check(built: dict[str, str], fable_only: set[str], labels: set[str]) -> tupl
         return [], f"the pull request builds {', '.join(owed)} and carries the `{LABEL}` label"
     return [
         f"{built[entry]}: the pull request adds a record of {entry}, whose README.md says `{LABEL}: true`,"
-        f" and does not carry the `{LABEL}` label; Fable designs and reviews this work, so add the label"
+        f" and does not carry the `{LABEL}` label; Fable writes only the design of this work, so add the label"
         " (which starts a new run)"
         for entry in owed
     ], ""

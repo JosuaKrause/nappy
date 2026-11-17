@@ -223,9 +223,10 @@ one review posted on the PR, and a report back: the verdict, each finding with i
 review's URL. **Which model reviews is decided by the orchestrating skill's model table**, whose
 rows for a review go by what the pull request carries, apart from the one case this skill fixes
 itself: a queue update's review is Sonnet's (bouncy-heron 8; "A queue update is reviewed for
-faithfulness and merged first"). The one other model this skill names, Haiku under "Three verdicts
-of *not ready* mean the approach is rethought", is the player's example of a builder and not of a
-reviewer. A reviewer that waits for CI reads it as **committing** says ("CI's state is read through
+faithfulness and merged first"). The review of anything Fable designed is Opus's, labelled
+`fable-only` or not, since Fable never reviews (inbox #1501 in silky-lemur, inbox #1504 in
+silky-lemur). Haiku, named under "Three verdicts of *not ready* mean the approach is rethought", is
+the player's example of a builder and not of a reviewer. A reviewer that waits for CI reads it as **committing** says ("CI's state is read through
 GraphQL").
 
 ## A queue update is reviewed for faithfulness and merged first

@@ -319,8 +319,9 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_code_pr_queue.py --base "origin/${GITHUB_BASE_REF}"
 
-      # A queue entry whose README.md says `fable-only: true` is one Fable designs and reviews
-      # (docs/TODO.md), and the label of that name is how a session knows it of a pull request: one
+      # A queue entry whose README.md says `fable-only: true` is one the player named as Fable's to design:
+      # Fable writes only its design, another model writes the code and Opus reviews it (docs/TODO.md),
+      # and the label of that name is how a session knows it of a pull request: one
       # that adds a record of such an entry, which every pull request building an item does,
       # fails without the label; a record it only changes (an inbox filing's citations) does not
       # count. Any kind of pull request may add a record, so it runs on every one. The labels are read

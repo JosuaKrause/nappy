@@ -48,10 +48,12 @@ delegation is unavailable, do the bounded work locally and retain the same verif
 judgement (woolly-finch 15). The rows that cite the player's words hold where another row differs.
 A stronger model than a row names takes a milestone whose geometry or contracts warrant it; for a
 build, the geometry and the contracts are part of what decides which model can do it, so this does
-not override the lowest-model rule below. A design the Fable designer hands off reaches a builder
-through the designer's report: it says whether it writes the code or hands it off, and on a
-hand-off the orchestrator briefs the lowest model able from the design (inbox #1436 in
-tiny-squirrel).
+not override the lowest-model rule below, and never makes Fable a builder or a reviewer.
+**In every piece of work Fable takes part in, under the `fable-only` label or not, Fable writes only
+the design**: it never writes the code, never reviews, and cannot decide to do either itself. The
+design reaches a builder and a reviewer through itself, so it carries the context to build and to
+review it, and the orchestrator briefs the lowest model able to build from the design; Opus reviews
+it (inbox #1436 in tiny-squirrel, inbox #1501 in silky-lemur, inbox #1504 in silky-lemur).
 
 **A design, and the evidence a later agent reads or reruns, is written to the main checkout's
 `.claude/briefs/designs/` from the start** (inbox #1474 in silky-lemur): the designer's brief names that path,
@@ -64,9 +66,10 @@ design cites, a patch script.
 
 | Task kind | Model |
 |---|---|
-| A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
-| A pull request labelled `fable-only`, a label put only on work the player names; the label also comes from the entry the pull request builds, whose opening block says `fable-only: true` (`docs/TODO.md`) | Fable designs its code and reviews it; the Fable designer decides whether the coding is too complex to hand off, writes it itself if so and otherwise hands it to the lowest model that can do it, and a brief never decides this for it (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout, inbox #1432 in minty-rabbit) |
-| The review of anything Fable designed | Fable (inbox #1299 in grassy-trout) |
+| A task that needs planning or complex reasoning | Fable is considered, and what it writes is the design alone (inbox #1264 in olive-ferret, inbox #1501 in silky-lemur, inbox #1504 in silky-lemur) |
+| A pull request labelled `fable-only`, a label put only on work the player names; the label also comes from the entry the pull request builds, whose opening block says `fable-only: true` (`docs/TODO.md`) | The label marks the work as the player's choice of Fable's to design; Fable's part is the design alone, as for all Fable work, and the orchestrator picks the model that builds it, the lowest that can do it from that design (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout, inbox #1432 in minty-rabbit, inbox #1501 in silky-lemur, inbox #1504 in silky-lemur) |
+| The code of anything Fable designed | the lowest model that can build it from the design, the orchestrator's choice; never Fable (inbox #1501 in silky-lemur, inbox #1504 in silky-lemur) |
+| The review of anything Fable designed | Opus (inbox #1504 in silky-lemur) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
