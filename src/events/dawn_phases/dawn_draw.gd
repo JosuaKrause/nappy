@@ -3,11 +3,11 @@ extends DawnPhase
 ## **The dawn draw**: every open location of the day drawn, a unit at a time (inbox #1185 in
 ## gentle-owl; `UnitDraw`, `MarbleDraw`): each unit (a street, a junction box, an alley, a park
 ## or a square; `DayUnits`) draws in one go, on its own stream, from one fresh bag of the fill of
-## its view, the most permissive of its locations' (`PlacementUnit.view()`;
-## `EventScheduler.view_fills()`: every recurring row the catalogue places on the map today, each as many times as
-## its weight in the view, and the empty event), each marble drawn before it has a place and its rows laid out
-## in the unit (inbox #1466), at most one of a row in a unit, after every touching unit of lower
-## rank. The day's ground answers which row is valid where and how much each location weighs it
+## its view, the most permissive of its locations' (`PlacementUnit.view()`), and its kind of ground
+## (`UnitFills`: every recurring row the catalogue places on the map today, the declared table's
+## events per hundred draw locations among them by weight, and the empty event for the rest of the
+## bag), each marble drawn before it has a place and its rows laid out in the unit (inbox #1466),
+## at most one of a row in a unit, after every touching unit of lower rank. The day's ground answers which row is valid where and how much each location weighs it
 ## (`RuledLocationGround`), judged among the dawn's plans and the draws of the units touching the
 ## one drawing, on the first tile no rule refuses, a route kept on its location's run
 ## (`Location.run()`). The rows other
@@ -43,9 +43,10 @@ func run(context: DawnContext) -> void:
 		if not def.is_drawn_by_units(day, beside_id):
 			continue
 		rows[def.id] = def.for_day(day)
-	var fills := UnitFills.new(rows, day, context.spec())
-	var units := DayUnits.of(context.locations().all(), context.day_seed())
 	var ground := context.ground()
+	var fills := UnitFills.new(rows, day, context.spec().share_of_walls_drawn(), ground.weights(),
+			ground.is_a_wall_by_cost)
+	var units := DayUnits.of(context.locations().all(), context.day_seed())
 	var events := context.events()
 	var judged := RuledLocationGround.new(day, context.day_seed(), map, events.standing(),
 			context.corridor(),

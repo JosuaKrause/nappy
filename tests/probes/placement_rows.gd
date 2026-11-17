@@ -1,14 +1,14 @@
 extends RefCounted
-## Measurement probe for the day's mix (`docs/EVENTS.md`, "The density, and why it is shares and
-## bags"): **what each day places, row by row, by view and by kind of ground.** Not a suite: it
+## Measurement probe for the day's mix (`docs/EVENTS.md`, "The density, and why it is a declared
+## table"): **what each day places, row by row, by view and by kind of ground.** Not a suite: it
 ## prints rather than asserting, so it lives here under `tests/probes/`, where the runner never
 ## discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/placement_rows.gd
 ##
 ## It asks only what every tree has (`EventScheduler.build_day()`, `Corridor.view_of()`, the tile
-## under each plan), so the same file measures main and a branch alike, which is how
-## `EventScheduler.GROUND_WEIGHTS` and `VIEW_SHARE_SCALES` are fitted: each day planned as the
+## under each plan), so the same file measures main and a branch alike, row by row beside the
+## declared table's cells (`tests/probes/placement_cells.gd`): each day planned as the
 ## scheduler plans it, on `SEEDS` cities from `BASE` in steps of `STEP` and the streams
 ## `placement_view_mix.gd` uses, and every placed plan counted under its row, its view (its street's,
 ## or the depth of its tile off the streets) and its kind of ground (a junction box, an alley, a

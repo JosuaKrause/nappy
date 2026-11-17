@@ -1,0 +1,28 @@
+on the route    seed 6.69 run 3.31 (x0.49): scaled
+   street    [4.8, 6.6, 7.1, 7.6] -> [7.5, 11.0, 14.0, 16.0]
+   junction  [9.7, 14, 12, 12] -> [24.0, 36.0, 35.0, 46.0]
+   alley     [0, 0, 0, 0] -> [0.0, 0.0, 0.0, 0.0]
+   open      [4.7, 7.1, 7.3, 9.6] -> [46.0, 50.0, 50.0, 50.0]
+route-adjacent  seed 7.92 run 9.57 (x1.21): scaled
+   street    [8.2, 8.9, 8.9, 11] -> [6.0, 6.7, 8.1, 9.5]
+   junction  [2.5, 2.5, 2.5, 2.5] -> [2.5, 2.5, 2.5, 2.5]
+   alley     [6, 5.8, 7.9, 7.3] -> [5.0, 4.9, 6.6, 6.1]
+   open      [24, 29, 34, 31] -> [40.0, 47.0, 50.0, 50.0]
+off the route   seed 7.63 run 6.30 (x0.83): scaled
+   street    [4.2, 6, 7.9, 8.5] -> [4.4, 6.6, 9.8, 11.0]
+   junction  [6.4, 11, 14, 24] -> [7.0, 13.0, 20.0, 35.0]
+   alley     [5.1, 4.6, 12, 12] -> [5.4, 4.7, 12.0, 9.7]
+   open      [27, 49, 49, 57] -> [35.0, 50.0, 50.0, 50.0]
+row abduction            on street    share 0.014 -> 0.083: weight there 1.0 -> 0.17
+row charging_dog         on street    share 0.013 -> 0.060: weight there 1.0 -> 0.22
+row chatting_mother      on street    share 0.022 -> 0.077: weight there 1.0 -> 0.29
+row abduction            on junction  share 0.068 -> 0.238: weight there 1.0 -> 0.28
+row charging_dog         on junction  share 0.064 -> 0.219: weight there 1.0 -> 0.29
+row chatting_mother      on junction  share 0.025 -> 0.238: weight there 1.0 -> 0.1
+row leaf_blower          on junction  share 0.047 -> 0.155: weight there 1.0 -> 0.3
+row protest              on junction  share 0.361 -> 0.129: weight there 1.0 -> 2.8
+row charging_dog         on open      share 0.004 -> 0.024: weight there 0.0085 -> 0.0015
+row leaf_blower          on open      share 0.005 -> 0.035: weight there 0.0039 -> 0.0006
+row market_stall         on open      share 0.004 -> 0.028: weight there 0.0073 -> 0.00098
+row pigeon_flock         on open      share 0.009 -> 0.029: weight there 0.012 -> 0.0038
+row poster_crew_square   on open      share 0.012 -> 0.030: weight there 1.0 -> 0.39

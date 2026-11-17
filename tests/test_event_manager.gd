@@ -519,6 +519,9 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
+	# Every unit drawn, so the walking row may stand anywhere in the city rather than only where the
+	# start drew: which rows the units near her draw moves with the declared table.
+	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	var plan: EventPlan = null
 	for candidate in RunCity.events(_city).plans():
 		if candidate.is_placed() and candidate.def.mobile and candidate.path.size() > 1 \

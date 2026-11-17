@@ -6,8 +6,9 @@ extends DawnPhase
 ## military convoy): sited in front of her by the director, on its own clock and from its own bag
 ## (`EventDirector`; the orchestrator's reading of fork 9: a moment is not a place), so the day
 ## only says how many.
-## `EventScheduler.MOMENTS_PER_DAY` of them, as today's placement bought on that day, each a row
-## drawn by weight among today's, at most its `max_per_day` where the spec keeps the caps.
+## `PlacementDensity.moments_on()` of them, the number the declared table gives the day's act,
+## each a row drawn by weight among today's, at most its `max_per_day` where the spec keeps the
+## caps.
 ##
 ## Model: no node.
 
@@ -27,7 +28,7 @@ func run(context: DawnContext) -> void:
 				or def.is_sent_ahead():
 			rows.append(def)
 	var owed := {}
-	for _i in int(EventScheduler.MOMENTS_PER_DAY[clampi(day, 1, 14) - 1]):
+	for _i in PlacementDensity.moments_on(day):
 		var open: Array[EventDef] = []
 		var total := 0.0
 		for def in rows:

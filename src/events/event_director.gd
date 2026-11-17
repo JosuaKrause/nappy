@@ -14,8 +14,8 @@ extends RefCounted
 ## an empty road two blocks away was, for six milestones, an event the player had no way of ever
 ## meeting. It only exists as an interruption, so it is authored as one.
 ##
-## **What is deliberately kept.** The day still says how many it owes, in `EventScheduler`
-## (`MOMENTS_PER_DAY`, measured from the day before the bags) — so making the cat land cannot
+## **What is deliberately kept.** The day still says how many it owes, in the declared table
+## (`PlacementDensity.moments_on()`, a number an act, measured) — so making the cat land cannot
 ## quietly make the day denser too. And the spawn is far enough ahead to be a *reaction window*: `AHEAD_LEAD_DISTANCE` is
 ## two seconds of walking, and the cat starts a street's width off to one side, so she is
 ## outside its outer radius the whole time it is crouching. That is the telegraph fairness
@@ -456,7 +456,7 @@ func owed() -> int:
 ## Fills `_route` with every row the director sites on `day` — recurring, available, and
 ## `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` that day, or sent ahead of her (`EventDef.is_sent_ahead()`)
 ## — in proportion to its weight. **How many she is owed
-## is the day's** (`EventScheduler.MOMENTS_PER_DAY`, each drawn by weight under its cap by
+## is the day's** (`PlacementDensity.moments_on()`, each drawn by weight under its cap by
 ## `DawnMoments`); the bag only decides which row each of those is, in the
 ## order she meets them. *(2026-09-27, asked how far the bags reach, the
 ## player chose the route's events only.)*

@@ -186,10 +186,10 @@ var holds_the_home_streets := true
 ## that walks a bag, turns them off (minty-lemur #785): what stands there is one draw a street
 ## from its bag.
 var caps_per_day := true
-## The share of its **wall**-role rows the day draws: every wall-role row's weight in the view bags
-## is scaled by it (`EventScheduler.view_weight()`), while the empty marbles are set for every wall
-## weighed in full, so a location draws a wall that much less often. The day holds about that
-## share of its walls. `1.0` keeps every wall: every day the region wall does not stand
+## The share of its **wall**-role rows the day draws: every wall-role row's weight in a unit's bag
+## is scaled by it, while its row marbles are measured against every wall weighed in full
+## (`UnitFills`), so a wall's place goes to empty and a unit draws a wall that much less often.
+## The day holds about that share of its walls. `1.0` keeps every wall: every day the region wall does not stand
 ## (`region_wall_stands()`) and every section of the escape. On a day it stands, `for_day()` hands
 ## `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day holds about half its walls, not all of them.
 var wall_row_share := 1.0
@@ -410,6 +410,11 @@ func runs_the_daylight_down() -> bool:
 ## Whether the city is dark from its first frame (`dark_from_the_start`).
 func is_dark_from_the_start() -> bool:
 	return dark_from_the_start
+
+## The share of its wall-role rows the day draws (`wall_row_share`), which a unit's bag fill scales
+## each wall by (`UnitFills`).
+func share_of_walls_drawn() -> float:
+	return wall_row_share
 
 ## Hands the walk its ways out, as the world it is walked in answers them (`DayWorld.exits()`): a
 ## `Goal.CITY_EDGE` walk's two, and none for any other (`exits`).

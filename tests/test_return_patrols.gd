@@ -211,9 +211,11 @@ func _gaps(handed: Array) -> Array[float]:
 ## *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the route queue --
 ## the marble bag approach will properly fix this" · "they will need rigged bags".)* On a real act
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
-## each comes within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
-## before it, so all of them are met within that many events each. A patrol is a marble of the
-## ordinary bag too (`EventDef.is_sent_ahead()`), so a window may hold a second one, never none.
+## the director rigs the events after the return as bags of `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT`
+## marbles, one patrol in each, so the nth patrol is among the first n bags' events. A patrol is a
+## marble of the ordinary bag too (`EventDef.is_sent_ahead()`), so a patrol may come early, and two
+## patrols in a row can leave a gap longer than one bag before the next: the check counts each patrol
+## against the bags it is owed by, never against the patrol before it.
 func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
@@ -230,10 +232,18 @@ func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
 			met.append((due[0] as EventDef).id)
-	var spaced := met.size() == count * x
-	for i in count:
-		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") >= 1
-	t.check(spaced, "each of the %d patrols is one of the %d events after the one before (%s)"
+	# The nth patrol among the first n bags of `x` events after the return: a patrol that comes early,
+	# or one of the ordinary bag's, leaves the next free to come late in its own bag.
+	var within := met.size() == count * x
+	var patrols := 0
+	for i in met.size():
+		if patrols == count:
+			break
+		if met[i] == "police_patrol":
+			patrols += 1
+			within = within and i < patrols * x
+	within = within and patrols == count
+	t.check(within, "the nth of the %d patrols is among the first n bags of %d events (%s)"
 			% [count, x, met])
 
 ## A marble spent unmet because its row has had its `max_per_day` was one of a patrol's rigged bag

@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 	_test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_street(t)
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t)
-	_test_every_ground_weight_names_a_row_and_a_kind(t)
+	_test_the_dawn_owes_her_the_acts_moments(t)
 	_test_nothing_beside_the_routes_stands_on_the_main_road(t)
 	_test_day_13s_roadblocks_stand_beside_the_routes(t)
 	_test_a_roadblock_leaves_no_section_within_its_spacing_offered(t)
@@ -530,20 +530,24 @@ func _test_along_street_paths_stay_in_bounds(t: TestRunner) -> void:
 			t.check(is_zero_approx(delta.x) or is_zero_approx(delta.y),
 					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])
 
-## **Every weight `EventScheduler.GROUND_WEIGHTS` holds is one the draw can find**: keyed by a row the
-## catalogue has and by a `Location.Kind`, so a misspelt row or a renamed kind fails here rather than
-## quietly weighing one and moving the fitted mix.
-func _test_every_ground_weight_names_a_row_and_a_kind(t: TestRunner) -> void:
-	var stray: Array[String] = []
-	for id: String in EventScheduler.GROUND_WEIGHTS:
-		if EventCatalogue.by_id(id) == null:
-			stray.append(id)
-			continue
-		for kind: Variant in (EventScheduler.GROUND_WEIGHTS[id] as Dictionary):
-			if typeof(kind) != TYPE_INT or not Location.Kind.values().has(kind):
-				stray.append("%s: %s" % [id, kind])
-	t.check(not EventScheduler.GROUND_WEIGHTS.is_empty() and stray.is_empty(),
-			"every ground weight names a catalogue row and a kind of location (%s)" % [stray])
+## **The dawn owes her the moments of the day's act** (`DawnMoments`, `PlacementDensity.moments_on()`):
+## on a day of each act of the suite's city, planned undrawn, the rows left with no place for the
+## director to site in front of her (the cat, the cyclist, the loose dog, and the rows it sends ahead
+## of her, `EventDef.is_sent_ahead()`) are as many as the declared table says the act owes.
+func _test_the_dawn_owes_her_the_acts_moments(t: TestRunner) -> void:
+	for day: int in [1, 5, 9, 13]:
+		var consumed: Array[String] = []
+		var dawn := GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).masts(_sites()) \
+				.spent(consumed).undrawn().planned()
+		var owed := 0
+		for plan in dawn.events().placements():
+			var mode := plan.row().spawn_mode_on(day)
+			if not plan.is_placed() and (mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
+					or mode == EventDef.SpawnMode.TOWARD_PLAYER or plan.row().is_sent_ahead()):
+				owed += 1
+		t.check(owed == PlacementDensity.moments_on(day),
+				"day %d: the dawn owes her %d moments, the act's %d"
+				% [day, owed, PlacementDensity.moments_on(day)])
 
 ## How far the share of its walls a day keeps from the gatehouse day on may sit from
 ## `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`, over the days the test below plans: the bags' wall
@@ -553,8 +557,8 @@ func _test_every_ground_weight_names_a_row_and_a_kind(t: TestRunner) -> void:
 ## outside it.
 const _WALL_SHARE_TOLERANCE := 0.2
 
-## **From the gatehouse day on, the day draws a share of its walls** — `EventScheduler.view_weight()`
-## scales the weight in the bags of every wall-role row by `DaySpec.wall_row_share` (azure-puffin
+## **From the gatehouse day on, the day draws a share of its walls** — a unit's bag fill
+## (`UnitFills`) scales the weight of every wall-role row by `DaySpec.wall_row_share` (azure-puffin
 ## point 4: "fewer of all three"). The same city, seed and day is planned twice, once as the game plans it
 ## (`DaySpec.for_day()`) and once with `wall_row_share` at `1.0`, every wall weighed in full, so the
 ## check is a relationship between the two days rather than the rule read back to itself: the share

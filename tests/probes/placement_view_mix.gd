@@ -11,9 +11,9 @@ extends RefCounted
 ## (`Corridor.view_of()` for a street, `Corridor.view_of_ground()` for an alley, a lot or a junction
 ## box), by row, against the number of locations each view has (`DayLocations.all()`).
 ## The rows the director sites in front of her, which the day owes her but places nowhere, are
-## counted apart (`MOMENTS`). `PV_VIEW` lines give each view's events per location, which each
-## view's empty weight is set from (fork 5(a) of the placement proposal, the orchestrator's reading:
-## set from today's measured count), and `PV_DAY` the day's whole count.
+## counted apart (`MOMENTS`). `PV_VIEW` lines give each view's events per location and `PV_DAY`
+## the day's whole count; the declared table's own cells, by view, kind of ground and act, are
+## `tests/probes/placement_cells.gd`'s.
 
 const SEEDS := 18
 const SAMPLE_DAYS := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]

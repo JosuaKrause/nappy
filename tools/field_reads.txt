@@ -266,7 +266,6 @@ src/events/event_scheduler.gd bag
 src/events/event_scheduler.gd bag_rows
 src/events/event_scheduler.gd caps_per_day
 src/events/event_scheduler.gd draw
-src/events/event_scheduler.gd wall_row_share
 src/main.gd a_win_leads_into
 src/main.gd daylight_runs_down
 src/main.gd saved_as_under_way

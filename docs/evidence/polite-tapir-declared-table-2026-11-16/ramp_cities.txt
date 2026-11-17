@@ -1,0 +1,23 @@
+# ramp_cities.gd on the branch (8150ce6d4's catalogue, the reading applied)
+RAMP city 4242 day1 89 day14 134 ratio 1.51
+RAMP city 77 day1 101 day14 135 ratio 1.34
+RAMP city 1301 day1 105 day14 124 ratio 1.18
+RAMP city 90210 day1 124 day14 131 ratio 1.06
+RAMP city 90241 day1 119 day14 118 ratio 0.99
+RAMP city 90272 day1 105 day14 125 ratio 1.19
+RAMP city 90303 day1 103 day14 124 ratio 1.20
+RAMP city 90334 day1 95 day14 125 ratio 1.32
+RAMP city 2024 day1 129 day14 123 ratio 0.95
+RAMP city 31337 day1 111 day14 126 ratio 1.14
+# ramp_cities.gd on the builder's reading (builders_reading_catalogue.diff applied)
+RAMP city 4242 day1 83 day14 135 ratio 1.63
+RAMP city 77 day1 100 day14 120 ratio 1.20
+RAMP city 1301 day1 108 day14 115 ratio 1.06
+RAMP city 90210 day1 119 day14 118 ratio 0.99
+RAMP city 90241 day1 116 day14 108 ratio 0.93
+RAMP city 90272 day1 100 day14 115 ratio 1.15
+RAMP city 90303 day1 104 day14 116 ratio 1.12
+RAMP city 90334 day1 92 day14 111 ratio 1.21
+RAMP city 2024 day1 126 day14 116 ratio 0.92
+RAMP city 31337 day1 109 day14 121 ratio 1.11
+# test_events_costs.gd's bar holds where day 14 * 5 > day 1 * 6 (a ratio over 1.2)

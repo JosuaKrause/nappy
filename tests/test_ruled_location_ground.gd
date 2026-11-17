@@ -2,16 +2,20 @@ extends RefCounted
 ## `RuledLocationGround`'s two settings, the judge as the unit draw and the scripted rows each
 ## make it: with `roomiest` false it takes the first tile no rule refuses, cramped or not, and with
 ## it true the first with room all round, else the roomiest; and with `keeps_routes_on_the_run` a
-## route is built inside its location's run (`Location.run()`), with it false on no bound.
+## route is built inside its location's run (`Location.run()`), with it false on no bound. And a
+## location's weight is its own ground's alone, a row's weight on a kind of ground left to the bag.
 ##
 ## Run with stand-ins for what it is handed: the fit (`_Fit`, whose tiles a check sets and which
-## records each build and its bound) and the day's rules (`_Rules`, the room of each tile set by
-## hand); the location is real (`Location`, state), on a street made by hand on the lattice's
-## numbers.
+## records each build and its bound), the day's rules (`_Rules`, the room of each tile set by
+## hand) and, for a location's weight, the map (`_Map`, every street an ordinary one); the
+## location is real (`Location`, state), on a street made by hand on the lattice's numbers, and so
+## is the walk's ground the weight asks (`RowGround`, its weights and its reading of a wall handed
+## to it, plain data).
 
 func run(t: TestRunner) -> void:
 	_test_the_first_allowed_tile_or_the_roomiest(t)
 	_test_a_route_is_built_inside_its_run(t)
+	_test_a_locations_weight_is_its_grounds_alone(t)
 
 const ROOMY := INF
 const CRAMPED := 100.0
@@ -49,6 +53,11 @@ class _Rules extends StreetInvalidation:
 	func room(_candidate: EventPlan, _role: GameEnums.BlockerRole, tile: Vector2i,
 			_placed: Array[EventPlan], _around: Array[EventPlan]) -> float:
 		return float(rooms[tile])
+
+class _Map extends CityMap:
+	## Overrides CityMap.street_kind_at.
+	func street_kind_at(_vertical: bool, _tile: Vector2i) -> GameEnums.StreetKind:
+		return GameEnums.StreetKind.ORDINARY
 
 static func _location() -> Location:
 	var segment := StreetNetwork.Segment.new(Vector2i(1, 1), true)
@@ -112,3 +121,22 @@ func _test_a_route_is_built_inside_its_run(t: TestRunner) -> void:
 	fit.bounds.clear()
 	_judge(fit, rules, true, false).offer(walker, location, NONE)
 	t.check(fit.bounds == ([Rect2i()] as Array[Rect2i]), "and off it, on no bound")
+
+## **A location's weight is its own ground's alone** (`scale()`): a row weighed at a half on a
+## street (`EventDef.weigh_on()`) scales at one on an ordinary sidewalk location, since its weight
+## on a kind of ground is in the bag's fill already (`UnitFills`) and is not counted again here.
+func _test_a_locations_weight_is_its_grounds_alone(t: TestRunner) -> void:
+	var row := EventDef.new()
+	row.id = "light"
+	row.kind = GameEnums.EventKind.RECURRING
+	row.role = EventDef.Role.SCENERY
+	row.placement = [GameEnums.TileType.SIDEWALK] as Array[int]
+	row.weigh_on(PlacementGround.Kind.STREET, 0.5)
+	var ground := RowGround.new(null, null, true, RowGround.Weights.new(),
+			func(_def: EventDef) -> bool: return false)
+	var standing: Array[EventPlan] = []
+	var judge := RuledLocationGround.new(1, 7, _Map.new(), standing, null, _Fit.new(), _Rules.new(),
+			ground, false, true)
+	t.check(judge.scale(row, _location()) == 1.0,
+			"a row weighed at a half on a street scales at one on an ordinary sidewalk (%.2f)"
+			% judge.scale(row, _location()))

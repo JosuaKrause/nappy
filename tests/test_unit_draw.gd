@@ -43,7 +43,7 @@ class _Fills extends UnitFills:
 	var asked: Array[Vector2i] = []
 
 	func _init(fills: Dictionary) -> void:
-		super({}, 1, null)
+		super({}, 1, 1.0, RowGround.Weights.new(), Callable())
 		by_view_and_ground = fills
 
 	## Overrides UnitFills.of.
