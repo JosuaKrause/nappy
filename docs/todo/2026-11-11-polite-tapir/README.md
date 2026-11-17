@@ -46,13 +46,12 @@ detail, which the player approved.
   `event-interface.md` (the callers outside the events folder, the live event's behaviours and
   looks) run beside placement, and its dawn, the event manager's parts, the resistance and the
   scene recipes follow placement; what is left of minty-quail's
-  `re-derived-cases.md` (the scene recipes' own ground scans) closes with placement or after it; a probe minty-quail's `typed-everywhere.md` lists is typed
-  or deleted by placement's step 4.
+  `re-derived-cases.md` (the scene recipes' own ground scans) closes with placement or after it.
 - **The standing layer breaks** (`standing-layer-breaks.md`): one pull request per group, each in
   its module's turn of minty-quail's order (within a module, its dead code, then its standing
   breaks, then its interface and field reads, then its suites). Dawn planning's reads stand in the
-  walk's siting and the walk's ground; placement's step 4 rewrites the siting, and row 3a of
-  minty-quail's `event-interface.md` settles both; the building's pass in minty-quail's order
+  walk's siting and the walk's ground, and row 3a of minty-quail's `event-interface.md` settles
+  both; the building's pass in minty-quail's order
   (`src/interior/`, `src/finale/`) takes its one read of `WorldMap.world` with the map interface's
   world half.
 - **The baseline** (`baseline-measurements.md`): a reading when placement closes and one after the

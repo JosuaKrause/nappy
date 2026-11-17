@@ -86,8 +86,6 @@ ticks give, and is kept with its reason:
   list, which nothing a game class asks reads. `test_day7_van.gd` reads the rigged bag through
   `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the
   resistance director to answer what is in front of her.
-- **`WalkSiting.offers_worked_out`** is a public counter only `test_siting_judges_once.gd` reads,
-  which wants the offer handed in.
 - **`RouteLines.routes()`** is kept in `tools/test_only_members.txt` as the only handle on the drawn
   polylines, as `EventRouteLines.routes()` is.
 - **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and

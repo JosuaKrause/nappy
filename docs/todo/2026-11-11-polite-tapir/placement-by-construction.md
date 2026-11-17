@@ -140,12 +140,12 @@ full text names the files each step owns.
    allow for it to be mocked easily" (the player on the board, question walksiting-lift, 2026-11-13;
    inbox #1456 in silky-lemur). **Read as** (the orchestrator's reading): `EventsAhead` is handed a maker of its walk's
    siting (`SitingMaker`, the record polite-tapir-coral-egret), and `EventDirector` the day's siting,
-   so a test of either can pass a mock in its place; what is left is `WalkSiting` in a file of its
-   own, laying a beat by location. The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
+   so a test of either can pass a mock in its place, and `WalkSiting` is a file of its own that lays
+   a beat on the nearest free location (the record polite-tapir-busy-toad). What is left is the beat laid
+   in the next undrawn unit ahead of her before it draws, and that unit's draw told of it (the design's
+   pull request 4, waiting on the board questions `beats-on-her-street` and `beat-changes-its-unit`). The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
    tree where she is going and is handed no siting (step 4's first pull request, the record
-   polite-tapir-tall-marmot): *proposed, not asked for*, the design's pick, open to the player. With the last
-   caller gone, `EventScheduler._best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES` and whatever only
-   they used are deleted. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
+   polite-tapir-tall-marmot): *proposed, not asked for*, the design's pick, open to the player. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
    ground still needs it.
 5. **The escape city's draw is the same unit draw** with three settings on the day's spec: one bag
    for the whole walk, at most one event a street, and every unit drawn before she sets off, in the

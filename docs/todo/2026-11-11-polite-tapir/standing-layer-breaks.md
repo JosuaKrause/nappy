@@ -35,9 +35,8 @@ review; a builder runs it again):
 
 - The map interface's world half is split off or declared a permanent exception in
   designing-classes.
-- Dawn planning's reads of live-event geometry stand in `WalkSiting.could_be_in_her_view()` in
-  `src/events/event_scheduler.gd` (`EventFootprints` once, `Stroller` three times), which placement's step 4
-  rewrites, and in `src/events/walk_ground.gd` (`EventFootprints` three times, `EventInstance` once); row 3a
+- Dawn planning's reads of live-event geometry stand in `WalkSiting._could_be_in_her_view()` in
+  `src/events/walk_siting.gd` (`EventFootprints` once, `Stroller` three times) and in `src/events/walk_ground.gd` (`EventFootprints` three times, `EventInstance` once); row 3a
   of minty-quail's `event-interface.md` settles both files' reads.
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
   that finishes this item lists what is left:* **the rest** ends as follows. `DrawnView` goes on the world layer in
