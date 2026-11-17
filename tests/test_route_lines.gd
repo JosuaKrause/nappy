@@ -55,7 +55,8 @@ class Rig:
 	var readout := DebugReadout.new()
 	var label := Label.new()
 	var layer := CanvasLayer.new()
-	var city := City.new()
+	## The map the readout is handed: the layer only holds it, and none of these checks reads it.
+	var map := CityMap.new()
 	var run := RunState.new()
 
 	func _init(t: TestRunner, config: RunConfig) -> void:
@@ -63,7 +64,7 @@ class Rig:
 		layer.add_child(label)
 		readout.setup(config, label, layer, run.header, null, Callable())
 		t.add_child(readout)
-		readout.draw_routes(city.map)
+		readout.draw_routes(map)
 
 	## The layer node the readout built under itself, or null where it built none.
 	func routes() -> RouteLines:
@@ -72,7 +73,6 @@ class Rig:
 	func free_all() -> void:
 		readout.free()
 		layer.free()
-		city.free()
 
 func _config(words: Array, debug_build: bool, query := "") -> RunConfig:
 	return RunConfig.parse(PackedStringArray(words), query, debug_build)
