@@ -85,10 +85,10 @@ Each "no" is a finding:
   defect that was already found: a finding from a playtest, a review or the player about work
   whose PR is still open is built into that PR, never queued against it (`tools/decisions.sh M90`,
   the controls do what the hand does, the record of PLAYTEST-35's findings built into the open
-  branch). Where the code does something the player's decisions say it should not and the change only carries
-  it over unchanged, the defect is not the change's own: it goes where **orchestrating** says ("What
+  branch). Where a step of a refactor carries over unchanged code that does something the player's decisions
+  say it should not, the defect is not the change's own: it goes where **orchestrating** says ("What
   the orchestrator keeps", the bullet on a defect a refactor step finds), filed as an entry of its
-  own.
+  own, and the review names it so the orchestrator files it.
 
 ## Then the code
 
@@ -293,7 +293,6 @@ proposes it:
 
 - **That a review names a carried-over defect it finds, so the orchestrator files it** ("Semantic
   correctness first", the defect question): the filer's addition to the rule of silky-lemur #1450.
-
 - **A refused reviewer spawn or review post is reported to the player and never worked around**
   ("The findings go on the PR"; curly-rabbit #1094).
 - **How the rethink after three *not ready* verdicts runs**: what counts, what else it asks, who

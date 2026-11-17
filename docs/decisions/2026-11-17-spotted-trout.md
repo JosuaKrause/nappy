@@ -9,9 +9,11 @@ refactor surfacing bugs is a positive outcome", then "we need to fix those" (sil
 bullet on a defect a refactor step finds): a defect a refactor step finds, where the code does
 something the player's decisions say it should not, is filed at once as an entry of its own and
 fixed to the player's decision for the thing, found in the records and playtests that built it,
-never left only as a line in a record, a report or a pull request. **pr-review**'s question "Is
-every defect already found in this change fixed inside it?" points to it for a defect a pull
-request finds outside its own work. It sits with minty-quail's frozen-list paragraph as written: the
+never left only as a line in a record, a report or a pull request. It covers code a refactor step carries over unchanged; a
+defect the step introduces, or one a review finds in its open pull request, is fixed inside that
+pull request. **pr-review**'s question "Is every defect already found in this change fixed inside
+it?" points to it for such a carried-over defect, and a review names one it finds so the
+orchestrator files it (marked there as the filer's addition). It sits with minty-quail's frozen-list paragraph as written: the
 entry filed for such a defect waits after the refactor like anything else found (inbox #1210 in
 gentle-owl), and is fixed then.
 
