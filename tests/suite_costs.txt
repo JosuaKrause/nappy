@@ -186,6 +186,7 @@ test_scene_recipe_stretch_crowd.gd 63596
 test_scene_recipe_task.gd 7921
 test_scenery_animation.gd 702
 test_scenery_residency.gd 3132
+test_scheduler_mouse_piles.gd 160000
 test_seals.gd 102610
 test_sent_rows_keep_to_the_road.gd 40607
 test_sentence_lines.gd 37

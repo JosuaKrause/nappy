@@ -10,6 +10,15 @@ extends RefCounted
 ## marks the task's row is one of the next events placed on her route, where she can reach it, and
 ## in the world once she walks on: day 11's mast ahead of her on the route band, day 6's man
 ## shouting on the street she walks (whose siting `tests/test_day6_yeller_met.gd` holds).
+##
+## **Why `_a_mark_puts_a_place_on_her_route` builds a real `City`, the event manager and the
+## resistance director:** the guarantee is the hand-off between the three, and it exists nowhere
+## else. The director's reading of a mark rigs a bag (its run-log line), the events' walk sites what
+## the bag draws on the route she walks, and the city streams the place in once she walks to it;
+## a stand-in for any one of them would hand the others back the answer the case asks whether they
+## agree on. No other case builds a city. Four plan a whole real day through `GameDawn` on a
+## generated map only to hand the director its moments: the scheduler is not this suite's subject,
+## and those four are what is left of the item's pass over this suite (`docs/todo/`, minty-quail).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
