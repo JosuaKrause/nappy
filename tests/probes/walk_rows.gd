@@ -393,7 +393,7 @@ func _walk_every_day(reach: float) -> void:
 			if the_games:
 				siting.use_the_ground_drawer(drawing.round_a_site)
 			var sited := {}
-			var route := _longest_route(tree, siting)
+			var route := _longest_route(tree)
 			if route.size() < 2:
 				continue
 			var path := route.duplicate()
@@ -631,8 +631,7 @@ static func _cut_off(map: CityMap, grid: ReachabilityGrid, routes: Array[Vector2
 
 ## The day's longest route as the line she walks, out from the doorstep: a route is grown from the
 ## area to the doorstep, so the walk out is the route reversed.
-static func _longest_route(tree: RouteTree,
-		siting: EventScheduler.WalkSiting) -> PackedVector2Array:
+static func _longest_route(tree: RouteTree) -> PackedVector2Array:
 	var best: Array = []
 	for branch in tree.branches:
 		for route: Array in branch.routes:
@@ -640,7 +639,7 @@ static func _longest_route(tree: RouteTree,
 				best = route
 	var points := PackedVector2Array()
 	for k in best.size():
-		points.append(siting.cell_centre(best[best.size() - 1 - k]))
+		points.append(tree.cell_centre(best[best.size() - 1 - k]))
 	return points
 
 ## `ticks median p99 worst total` of `ticks`, in microseconds; zeros for none.

@@ -232,6 +232,7 @@ func _clear_of_the_pair(plan: EventPlan, engine: EventDef, engine_at: Vector2,
 func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
 		engine: EventDef, engine_at: Vector2) -> float:
 	var grid := ReachabilityGrid.build(city.map)
+	var tree := city.streets().route_tree()
 	var start := grid.node_at(city.map.world_to_tile(from))
 	var goal := grid.node_at(city.map.world_to_tile(to))
 	if start < 0 or goal < 0:
@@ -248,7 +249,7 @@ func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
 			var next: int = edge[0]
 			if seen.has(next):
 				continue
-			var centre := EventScheduler.WalkSiting._cell_centre(city.map, grid.cell_of(next))
+			var centre := tree.cell_centre(grid.cell_of(next))
 			if next != goal:
 				if centre.distance_to(plan.position) <= plan.def.outer_radius:
 					continue
@@ -312,11 +313,12 @@ const NEAR_HOME_CELLS := 8
 
 ## The day's longest route, walked from the doorstep out to its calm area and back again.
 func _out_and_back(city: City, day: int) -> PackedVector2Array:
-	var route := _longest_route(RouteTree.for_day(city.map, day))
+	var tree := RouteTree.for_day(city.map, day)
+	var route := _longest_route(tree)
 	if route.is_empty():
 		return PackedVector2Array()
-	var out := _as_world(city, route, true)
-	var back := _as_world(city, route, false)
+	var out := _as_world(tree, route, true)
+	var back := _as_world(tree, route, false)
 	var whole := PackedVector2Array(out)
 	whole.append_array(back)
 	return whole
@@ -331,15 +333,15 @@ func _turns_back_at_the_first_junction(city: City, day: int) -> PackedVector2Arr
 	var second := _a_different_route(tree, first)
 	if first.is_empty() or second.is_empty():
 		return _out_and_back(city, day)
-	var wrong_way := _as_world(city, first, true)
+	var wrong_way := _as_world(tree, first, true)
 	var whole := PackedVector2Array()
 	var stop := mini(PAST_THE_FORK, wrong_way.size())
 	for i in stop:
 		whole.append(wrong_way[i])
 	for i in range(stop - 1, -1, -1):
 		whole.append(wrong_way[i])
-	whole.append_array(_as_world(city, second, true))
-	whole.append_array(_as_world(city, second, false))
+	whole.append_array(_as_world(tree, second, true))
+	whole.append_array(_as_world(tree, second, false))
 	return whole
 
 func _longest_route(tree: RouteTree) -> Array:
@@ -374,11 +376,11 @@ func _a_different_route(tree: RouteTree, unlike: Array) -> Array:
 
 ## A route's cells as world points. `outward` reverses it, because a route is grown from the calm
 ## area to the doorstep and the walk out is the other way.
-func _as_world(city: City, route: Array, outward: bool) -> PackedVector2Array:
+func _as_world(tree: RouteTree, route: Array, outward: bool) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in route.size():
 		var cell: Vector2i = route[route.size() - 1 - i] if outward else route[i]
-		points.append(EventScheduler.WalkSiting._cell_centre(city.map, cell))
+		points.append(tree.cell_centre(cell))
 	return points
 
 # ------------------------------------------------------------------- the rig ---

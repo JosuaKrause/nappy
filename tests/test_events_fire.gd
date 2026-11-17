@@ -66,7 +66,6 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 ## that an unseen fire follows the branch she actually took.
 func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 	var tree := RouteTree.for_day(_map(), day)
-	var siting := _fire_siting(day)
 	var carries := tree.branches_on(_map().world_to_tile(unlike))
 	for branch in tree.branches:
 		for route: Array in branch.routes:
@@ -79,7 +78,7 @@ func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 				continue
 			var points := PackedVector2Array()
 			for i in route.size():
-				points.append(siting.cell_centre(route[route.size() - 1 - i]))
+				points.append(tree.cell_centre(route[route.size() - 1 - i]))
 			return points
 	return PackedVector2Array()
 
@@ -94,10 +93,9 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 			if route.size() > best.size():
 				best = route
 	var points := PackedVector2Array()
-	var siting := _fire_siting(day)
 	for i in best.size():
 		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
-		points.append(siting.cell_centre(cell))
+		points.append(tree.cell_centre(cell))
 	return points
 
 ## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which

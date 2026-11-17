@@ -1043,3 +1043,109 @@ func branches_on(tile: Vector2i) -> Array[int]:
 	found.sort()
 	return found
 
+
+## **Every cell of the tree ahead of `at` along the branch through it**, as `cell -> how far she
+## walks down the route to reach it`, out to `limit` pixels: every route through the cell holding
+## `at`, walked the way that agrees with `heading`. Empty where `at` is off the tree.
+##
+## Empty when she is not standing on the tree at all, which is a real answer rather than a
+## failure: a route is the ground she is offered, and she is allowed to be off it.
+##
+## **Which way is "ahead" is read off her heading against the route itself**, not assumed to be
+## outbound. A route runs from the calm area to the doorstep (`Branch.routes`), so the walk out is
+## toward the head of the array and the walk home is toward its tail, and the one that agrees with
+## the direction she is actually travelling is the one taken. At a corner both neighbours can be
+## off her heading; the better of the two is still the way the route goes, which is what puts a
+## place round the corner she is about to turn.
+func cells_ahead(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
+	var found := {}
+	if not grid or not _map:
+		return found
+	var her_tile := _map.world_to_tile(at)
+	if branches_on(her_tile).is_empty():
+		return found
+	var her_cell := grid.cell_of(grid.node_at(her_tile))
+	for branch in branches:
+		for route: Array in branch.routes:
+			var index := route.find(her_cell)
+			if index < 0:
+				continue
+			var step := _onward_from(route, index, heading)
+			if step == 0:
+				continue
+			var travelled := 0.0
+			var from := at
+			var i := index + step
+			while i >= 0 and i < route.size():
+				var cell: Vector2i = route[i]
+				var centre := cell_centre(cell)
+				travelled += from.distance_to(centre)
+				if travelled > limit:
+					break
+				from = centre
+				if not found.has(cell) or travelled < float(found[cell]):
+					found[cell] = travelled
+				i += step
+	return found
+
+## **Whether `position` is ahead of `at` along the branch through `at`**, by any distance. True
+## where the answer cannot be had (`at` is off the tree), so a place is left alone for a corner cut.
+##
+## **Ahead by any distance, not inside a band.** She is walking toward it, so the distance shrinks
+## with every step; asking a band again would move a place she is about to reach.
+##
+## **True when the answer cannot be had.** Off the tree — a park cut, an alley, a thinned seal —
+## there is no branch to be ahead on, and the honest answer there is to leave the place alone
+## rather than to re-site it for a corner she is cutting.
+func is_ahead(at: Vector2, heading: Vector2, position: Vector2) -> bool:
+	var ahead := cells_ahead(at, heading, INF)
+	if ahead.is_empty():
+		return true
+	return ahead.has(_cell_of(position))
+
+## The world centre of a cell `cells_ahead()` names. A cell is two tiles square and
+## `CityMap.tile_to_world` answers the centre of a tile, so the cell's centre is half a tile
+## further along both axes than its first tile's.
+func cell_centre(cell: Vector2i) -> Vector2:
+	return _map.tile_to_world(cell * ReachabilityGrid.CELL) \
+			+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
+
+## The cell of the grid that holds `position`, or `(-1, -1)` off the grid.
+func _cell_of(position: Vector2) -> Vector2i:
+	if not grid or not _map:
+		return Vector2i(-1, -1)
+	var node := grid.node_at(_map.world_to_tile(position))
+	if node < 0:
+		return Vector2i(-1, -1)
+	return grid.cell_of(node)
+
+## How many cells down a route each way is looked at to tell which way she is going
+## (`_onward_from()`).
+const _ONWARD_LOOKAHEAD := 8
+
+## Which way along `route` from `index` agrees with the direction she is travelling: `-1` toward
+## the calm area, `+1` toward the doorstep, or `0` where the route has no neighbour to go to at
+## all (a route one cell long, which is a calm area on the doorstep's own street).
+##
+## **Asked over `_ONWARD_LOOKAHEAD` cells rather than the next one**, because a route is a
+## loop-erased walk and its next step is as often sideways as onward: a single-cell tangent flips
+## from one direction to the other at every wiggle, so a place would read as ahead of her on one
+## frame and behind her on the next. Looking a block down each way asks the question the walk is
+## actually about — which end of this route is she heading for.
+func _onward_from(route: Array, index: int, heading: Vector2) -> int:
+	var here := cell_centre(route[index])
+	var step := 0
+	var best := -INF
+	for candidate: int in [-1, 1]:
+		var i: int = clampi(index + candidate * _ONWARD_LOOKAHEAD, 0, route.size() - 1)
+		if i == index or (i - index) * candidate < 0:
+			continue
+		var toward: Vector2 = cell_centre(route[i]) - here
+		if toward.length_squared() < 1.0:
+			continue
+		var score := toward.normalized().dot(heading)
+		if score > best:
+			best = score
+			step = candidate
+	return step
+

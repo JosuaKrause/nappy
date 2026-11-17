@@ -55,6 +55,10 @@ func run(t: TestRunner) -> void:
 	_test_a_gap_is_a_small_part_of_the_rim(t)
 	_test_the_same_day_grows_the_same_tree(t)
 	_test_a_different_day_is_a_different_way(t)
+	_test_the_cells_ahead_follow_a_route_the_way_she_heads(t)
+	_test_at_a_shared_cell_every_route_through_it_is_ahead(t)
+	_test_off_the_tree_nothing_is_ahead_and_a_place_counts_as_ahead(t)
+	_test_a_corner_does_not_turn_the_way_round(t)
 
 # ----------------------------------------------------------------- the branch ---
 
@@ -465,7 +469,7 @@ const _NEIGHBOUR_OFFSETS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vect
 func _home_nodes(planned: Day) -> Dictionary:
 	var found := {}
 	for tile in planned.map.rect_tiles(planned.home.tile_rect()):
-		var node := planned.tree.grid.node_at(tile)
+		var node := planned.tree.reachability_grid().node_at(tile)
 		if node >= 0:
 			found[node] = true
 	return found
@@ -473,7 +477,7 @@ func _home_nodes(planned: Day) -> Dictionary:
 ## Every grid node bordering `area`'s own calm ground from outside it — restated independently of
 ## `RouteTree._access_nodes` for the same reason.
 ##
-## **Reads `planned.tree.grid` and nothing off `planned.map` itself.** `_plan()` shares one `map`
+## **Reads `planned.tree.reachability_grid()` and nothing off `planned.map` itself.** `_plan()` shares one `map`
 ## across every day of a seed and repaints it for each in turn, so by the time the tests run it
 ## holds whichever day was planned last — `Tile.is_calm(planned.map.tile_at(tile))` would ask
 ## today's question of a map painted for a different day. `area` already being in `planned.areas`
@@ -486,7 +490,7 @@ func _access_nodes(planned: Day, area: ClosurePlanner.CalmArea) -> Dictionary:
 			var neighbour := tile + offset
 			if area.rect.has_point(neighbour):
 				continue
-			var node := planned.tree.grid.node_at(neighbour)
+			var node := planned.tree.reachability_grid().node_at(neighbour)
 			if node >= 0:
 				found[node] = true
 	return found
@@ -507,22 +511,22 @@ func _walkable_tile_of_cell(planned: Day, cell: Vector2i) -> Vector2i:
 	var origin := cell * ReachabilityGrid.CELL
 	for offset in _CELL_TILE_OFFSETS:
 		var tile := origin + offset
-		if planned.tree.grid.node_at(tile) >= 0:
+		if planned.tree.reachability_grid().node_at(tile) >= 0:
 			return tile
 	return origin
 
 func _node_of_cell(planned: Day, cell: Vector2i) -> int:
-	return planned.tree.grid.node_at(_walkable_tile_of_cell(planned, cell))
+	return planned.tree.reachability_grid().node_at(_walkable_tile_of_cell(planned, cell))
 
 func _grid_adjacent(planned: Day, a: Vector2i, b: Vector2i) -> bool:
 	var target := _node_of_cell(planned, b)
-	for edge: Array in planned.tree.grid.neighbours(_node_of_cell(planned, a)):
+	for edge: Array in planned.tree.reachability_grid().neighbours(_node_of_cell(planned, a)):
 		if (edge[0] as int) == target:
 			return true
 	return false
 
 func _adjacent_to_any(planned: Day, node: int, targets: Dictionary) -> bool:
-	for edge: Array in planned.tree.grid.neighbours(node):
+	for edge: Array in planned.tree.reachability_grid().neighbours(node):
 		if targets.has(edge[0]):
 			return true
 	return false
@@ -533,3 +537,164 @@ func _cells(branch: RouteTree.Branch) -> Array:
 		found.append_array(route)
 	return found
 
+# --------------------------------------------------------------- the way ahead ---
+
+## How far down a route the way ahead is asked in the first test, a few blocks.
+const AHEAD_LIMIT := 1500.0
+
+## The longest route of the day's tree, from the calm area to the doorstep, or empty.
+func _longest_route_of(planned: Day) -> Array:
+	var best: Array = []
+	for branch in planned.tree.branches:
+		for route: Array in branch.routes:
+			if route.size() > best.size():
+				best = route
+	return best
+
+## The way along `route` from `index` the cells ahead are asked for, as a heading: toward the cell a
+## block away on the side `step` names (-1 toward the calm area, +1 toward the doorstep), which is
+## what the tree itself reads a direction of travel against.
+func _heading_along(planned: Day, route: Array, index: int, step: int) -> Vector2:
+	var here := planned.tree.cell_centre(route[index])
+	var toward := planned.tree.cell_centre(route[index + step * 8]) - here
+	return toward.normalized()
+
+## Every cell of every route that holds `cell`, as a set.
+func _cells_of_routes_through(planned: Day, cell: Vector2i) -> Dictionary:
+	var found := {}
+	for branch in planned.tree.branches:
+		for route: Array in branch.routes:
+			if route.has(cell):
+				for on_it: Vector2i in route:
+					found[on_it] = true
+	return found
+
+## **Standing on a route and heading toward the calm, what is ahead is that route's own cells toward
+## the calm, in the order she walks them**: every cell answered is on a route through the cell she
+## stands on, the distance to each grows along the route and none passes the limit; heading home
+## answers the cells on the doorstep's side instead.
+func _test_the_cells_ahead_follow_a_route_the_way_she_heads(t: TestRunner) -> void:
+	var asked := 0
+	for planned in _days:
+		var route := _longest_route_of(planned)
+		if route.size() < 24:
+			continue
+		var index := route.size() / 2
+		var at := planned.tree.cell_centre(route[index])
+		var through := _cells_of_routes_through(planned, route[index])
+		var toward_the_calm := _heading_along(planned, route, index, -1)
+		var ahead := planned.tree.cells_ahead(at, toward_the_calm, AHEAD_LIMIT)
+		asked += 1
+		var label := "seed %d day %d" % [planned.map.seed_used, planned.day]
+		t.check(ahead.has(route[index - 1]),
+				"%s: heading toward the calm, the next cell of her route is ahead" % label)
+		var nearest := float(ahead.get(route[index - 1], INF))
+		var no_nearer := true
+		var held := 0
+		for k in range(1, index + 1):
+			var cell: Vector2i = route[index - k]
+			if not ahead.has(cell):
+				break
+			held += 1
+			no_nearer = no_nearer and float(ahead[cell]) >= nearest
+		t.check(no_nearer and held >= 3 and float(ahead[route[index - held]]) > nearest,
+				"%s: the next cell is the nearest and the cells beyond it are further, over at least three (%d)"
+				% [label, held])
+		var on_a_route := true
+		var within := true
+		for cell: Vector2i in ahead:
+			on_a_route = on_a_route and through.has(cell)
+			within = within and float(ahead[cell]) <= AHEAD_LIMIT
+		t.check(on_a_route, "%s: every cell answered is on a route through her cell" % label)
+		t.check(within, "%s: and none is further than the limit" % label)
+		var home := planned.tree.cells_ahead(at, _heading_along(planned, route, index, 1), AHEAD_LIMIT)
+		t.check(home.has(route[index + 1]),
+				"%s: heading home, the next cell on the doorstep's side is ahead" % label)
+		t.check(home.hash() != ahead.hash() or home.keys() != ahead.keys(),
+				"%s: and the two ways answer different cells" % label)
+	t.check(asked > 0, "there were routes long enough to stand on (%d)" % asked)
+
+## **Where several routes cross the cell she stands on, each of them is ahead**: the way that agrees
+## with her heading is taken on every route through the cell, so a branch she could take there is not
+## left out of what she is walking toward.
+func _test_at_a_shared_cell_every_route_through_it_is_ahead(t: TestRunner) -> void:
+	var shared_cells := 0
+	for planned in _days:
+		var seen := {}
+		for branch in planned.tree.branches:
+			for route: Array in branch.routes:
+				for cell: Vector2i in route:
+					seen[cell] = int(seen.get(cell, 0)) + 1
+		var checked := 0
+		for cell: Vector2i in seen:
+			if int(seen[cell]) < 2 or checked >= 6:
+				continue
+			checked += 1
+			shared_cells += 1
+			var at := planned.tree.cell_centre(cell)
+			var ahead := planned.tree.cells_ahead(at, Vector2.RIGHT, INF)
+			for branch in planned.tree.branches:
+				for route: Array in branch.routes:
+					var index := route.find(cell)
+					if index < 0 or route.size() < 2:
+						continue
+					var next_to_it := false
+					for step: int in [-1, 1]:
+						var neighbour := index + step
+						if neighbour >= 0 and neighbour < route.size() \
+								and ahead.has(route[neighbour]):
+							next_to_it = true
+					t.check(next_to_it,
+							"seed %d day %d: a route through the shared cell %s has a cell ahead of her"
+							% [planned.map.seed_used, planned.day, cell])
+	t.check(shared_cells > 0, "the days planned a cell two routes share (%d)" % shared_cells)
+
+## **Off the tree there is nothing ahead, and a place counts as ahead**, so a placement is left where
+## it is for a corner she cuts across a park or an alley rather than moved for it.
+func _test_off_the_tree_nothing_is_ahead_and_a_place_counts_as_ahead(t: TestRunner) -> void:
+	var asked := 0
+	for planned in _days:
+		var off := Vector2.INF
+		for x in range(0, planned.map.size.x, 5):
+			for y in range(0, planned.map.size.y, 5):
+				if planned.tree.branches_on(Vector2i(x, y)).is_empty() \
+						and planned.tree.reachability_grid().node_at(Vector2i(x, y)) >= 0:
+					off = planned.map.tile_to_world(Vector2i(x, y))
+					break
+			if off != Vector2.INF:
+				break
+		if off == Vector2.INF:
+			continue
+		asked += 1
+		var route := _longest_route_of(planned)
+		var somewhere := planned.tree.cell_centre(route[route.size() / 2])
+		t.check(planned.tree.cells_ahead(off, Vector2.RIGHT, INF).is_empty(),
+				"seed %d day %d: off the tree nothing is ahead" % [planned.map.seed_used, planned.day])
+		t.check(planned.tree.is_ahead(off, Vector2.RIGHT, somewhere),
+				"seed %d day %d: and a place counts as ahead of her there" % [planned.map.seed_used, planned.day])
+	t.check(asked > 0, "there was ground off the tree to stand on (%d)" % asked)
+
+## **A corner does not turn the way round**: a route turns every block or two, and her heading leaves
+## the line of the route by a good way at each turning, so the cells ahead are the same set whichever
+## way within 30 degrees of the route's own she is heading, and a place a block down it stays ahead.
+func _test_a_corner_does_not_turn_the_way_round(t: TestRunner) -> void:
+	var asked := 0
+	for planned in _days:
+		var route := _longest_route_of(planned)
+		if route.size() < 40:
+			continue
+		var index := route.size() / 2
+		var at := planned.tree.cell_centre(route[index])
+		var square := _heading_along(planned, route, index, 1)
+		var ahead := planned.tree.cells_ahead(at, square, INF)
+		var place := planned.tree.cell_centre(route[index + 10])
+		asked += 1
+		for turn: float in [-30.0, -15.0, 15.0, 30.0]:
+			var heading := square.rotated(deg_to_rad(turn))
+			var label := "seed %d day %d, %.0f degrees off square" % [planned.map.seed_used, planned.day, turn]
+			var turned := planned.tree.cells_ahead(at, heading, INF)
+			t.check(turned.size() == ahead.size() and turned.has(route[index + 10]),
+					"%s: the same cells are ahead (%d of %d)" % [label, turned.size(), ahead.size()])
+			t.check(planned.tree.is_ahead(at, heading, place),
+					"%s: and a place a block down the route is still ahead" % label)
+	t.check(asked > 0, "there were routes long enough to turn a corner on (%d)" % asked)

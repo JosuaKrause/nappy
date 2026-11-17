@@ -60,7 +60,7 @@ func run(t: TestRunner) -> void:
 			var nodes := {}
 			for node: int in tree._colours:
 				var colours: Dictionary = tree._colours[node]
-				if colours.has(index) and cells.has(tree.grid.cell_of(node)):
+				if colours.has(index) and cells.has(tree.reachability_grid().cell_of(node)):
 					nodes[node] = true
 			var tiles := _tiles_for_nodes(tree, nodes)
 			var closed := _closed_count(tiles)
@@ -86,11 +86,11 @@ func run(t: TestRunner) -> void:
 func _tiles_for_nodes(tree: RouteTree, nodes: Dictionary) -> Dictionary:
 	var tiles := {}
 	for node: int in nodes:
-		var origin := tree.grid.cell_of(node) * ReachabilityGrid.CELL
+		var origin := tree.reachability_grid().cell_of(node) * ReachabilityGrid.CELL
 		for y in ReachabilityGrid.CELL:
 			for x in ReachabilityGrid.CELL:
 				var tile := origin + Vector2i(x, y)
-				if tree.grid.node_at(tile) == node:
+				if tree.reachability_grid().node_at(tile) == node:
 					tiles[tile] = true
 	return tiles
 

@@ -90,7 +90,6 @@ var _heading := Vector2.ZERO
 var _look_in := 0.0
 ## Whether today still owes the market, and the day's routes to site it on.
 var _market_owed := false
-var _siting: EventScheduler.WalkSiting = null
 ## Day 12's park closing: the police cordon round it, from the touch of its swing for the rest of
 ## the day, or null. Kept for the tests.
 var cordon: ParkCordon = null
@@ -119,8 +118,6 @@ var column: Array[EventInstance] = []
 
 ## Where the raid may put what it brings (`SpawnSiting`), or null.
 var _spawn_siting: SpawnSiting
-## The walk's events, the day's events' own (`EventManager.walk_events()`), from `setup()`.
-var _walk: WalkEvents
 ## Builds a plan at a tile (`PlanBuilder`), the day's events' own (`EventManager.plan_builder()`),
 ## from `setup()`; null for a rig with no events.
 var _builder: PlanBuilder
@@ -145,9 +142,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_fronts = fronts
 	_world = world
 	_atlas = atlas
-	# The walk's events every siting here is stated against (`WalkEvents`): the day's events' own, or
-	# an empty walk for a rig with none. The plan builder is the events' own too, or none.
-	_walk = events.walk_events() if events else WalkEvents.new()
+	# The plan builder is the day's events' own, or none for a rig with no events.
 	_builder = events.plan_builder() if events else null
 	_navigator = navigator if navigator else (map.navigator() if map else null)
 	_spawn_siting = spawn_siting
@@ -170,7 +165,6 @@ func start_day(day: int, with_its_events := true) -> void:
 	_walked = 0.0
 	_heading = Vector2.ZERO
 	_look_in = 0.0
-	_siting = null
 	if cordon:
 		cordon.clear()
 	cordon = null
@@ -283,7 +277,7 @@ func _maybe_raid(her: Vector2) -> void:
 ## (`EventManager.take_away_within()`) — so the street she was walking toward is dark by the time
 ## she reaches it. Sited as day 3's fire is (`docs/DECISIONS.md`, M179): after she has walked long
 ## enough to have chosen a way, on the branch of the day's route tree she is on
-## (`EventScheduler.WalkSiting.cells_ahead()`), the block whose frontage she reaches first, and
+## (`RouteTree.cells_ahead()`), the block whose frontage she reaches first, and
 ## never one within `Tuning.OUT_OF_SIGHT` of her, so nothing is seen to change.
 ##
 ## **Permanent because it is the block's own arc.** Only a block whose arc is waiting to board up
@@ -333,10 +327,10 @@ static func _market_candidates(map: CityMap, state: CityState) -> Array[Vector2i
 ## The candidate whose frontage she reaches first along the branch she is walking, out of her
 ## sight, or `(-1, -1)`.
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
-	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(_day, _map, _streets.route_tree(), _walk,
-				EventScheduler.Verdicts.new(), _builder, _walk.ground())
-	var ahead := _siting.cells_ahead(her, _heading, INF)
+	var tree := _streets.route_tree()
+	if not tree:
+		return Vector2i(-1, -1)
+	var ahead := tree.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
 	var nearest := INF
 	for block in candidates:
@@ -345,7 +339,7 @@ func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 			continue
 		for cell: Vector2i in ahead:
 			var walk := float(ahead[cell])
-			if walk < nearest and lot.has_point(_siting.cell_centre(cell)):
+			if walk < nearest and lot.has_point(tree.cell_centre(cell)):
 				nearest = walk
 				best = block
 	return best

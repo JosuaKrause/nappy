@@ -506,7 +506,7 @@ class WalkSiting extends RefCounted:
 	## Builds each candidate the siting judges (`PlanBuilder`), handed in by whoever builds the siting.
 	var _builder: PlanBuilder
 	## The day's routes themselves, not only the corridor made of them: a siting on the branch she
-	## is walking needs the ordered chain of cells. See `_the_way_she_is_going()`.
+	## is walking needs the ordered chain of cells. See `RouteTree.cells_ahead()`.
 	var _tree: RouteTree
 	var _corridor: Corridor
 	var _leave_alone: Array[Rect2]
@@ -551,10 +551,6 @@ class WalkSiting extends RefCounted:
 	## on with the walk (`WalkEvents.ground()`). **Whether the home's streets are the walk's is the
 	## ground's** (`DaySpec.holds_the_home_streets`): nothing sited after dawn stands on the street
 	## her front door opens onto, as nothing at dawn does, because both ask the one ground.
-	## **A null ground is allowed only for a caller that asks `cells_ahead()` and `cell_centre()`
-	## alone**, where she is going and never which tiles a row may stand on (the happenings,
-	## `ResistanceHappenings`, on a walk no dawn planned): the first row question (`ahead_of()`, `prepare()`,
-	## `off_her_path()`) is a call on null.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 			verdicts: EventScheduler.Verdicts, builder: PlanBuilder, ground: RowGround) -> void:
 		_day = for_day
@@ -637,8 +633,7 @@ class WalkSiting extends RefCounted:
 	## which lies within `reach` of `at`, what they place joining the walk's plans, and answers
 	## whether it drew any (`EventsAhead.draw_the_ground_round()`). `ahead_of()` asks it of every
 	## site it picks. A siting handed none judges as the walk stands: one that only places among
-	## tiles its caller drew round first (`among()`), or only asks where she is going
-	## (`cells_ahead()`).
+	## tiles its caller drew round first (`among()`).
 	func use_the_ground_drawer(draws_round: Callable) -> void:
 		_draws_the_ground_round = draws_round
 
@@ -729,14 +724,14 @@ class WalkSiting extends RefCounted:
 		offers_worked_out += 1
 		var nothing: Array[Vector2i] = []
 		var answer := [_OFF_THE_ROUTES, nothing]
-		var ahead := _the_way_she_is_going(at, heading, far)
+		var ahead := _tree.cells_ahead(at, heading, far)
 		if not ahead.is_empty():
 			var offered := _its_ground_on(def, ahead, at, near, far)
 			answer = [_IN_THE_BAND, offered]
 			if offered.is_empty():
 				answer = [_NONE_ON_THE_BRANCH, offered]
 				for wider in [far * 2.0, INF]:
-					ahead = _the_way_she_is_going(at, heading, wider)
+					ahead = _tree.cells_ahead(at, heading, wider)
 					offered = _its_ground_on(def, ahead, at, near, wider)
 					if not offered.is_empty():
 						answer = [_WIDENED, offered]
@@ -913,18 +908,6 @@ class WalkSiting extends RefCounted:
 				return candidate
 		return null
 
-	## Every cell of the day's route tree ahead of her along the branch she is walking, as
-	## `cell -> how far she walks down the route to reach it`, out to `limit` pixels —
-	## `_the_way_she_is_going()`, for a caller that sites something other than a catalogue row on her
-	## way: day 11's market, gone before she gets there (`ResistanceHappenings`). `cell_centre()`
-	## says where a cell is.
-	func cells_ahead(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
-		return _the_way_she_is_going(at, heading, limit)
-
-	## The world centre of a route cell `cells_ahead()` names.
-	func cell_centre(cell: Vector2i) -> Vector2:
-		return _cell_centre(_map, cell)
-
 	## Records why an attempt placed nothing and answers with the nothing. See `waits`.
 	func _waited(reason: String) -> EventPlan:
 		waits[reason] = int(waits.get(reason, 0)) + 1
@@ -942,81 +925,7 @@ class WalkSiting extends RefCounted:
 	## there is no branch to be ahead on, and the honest answer there is to leave the placement alone
 	## rather than to re-site it for a corner she is cutting.
 	func still_ahead_of(at: Vector2, heading: Vector2, position: Vector2) -> bool:
-		var ahead := _the_way_she_is_going(at, heading, INF)
-		if ahead.is_empty():
-			return true
-		return ahead.has(_cell_of(position))
-
-	## Every cell of the day's route tree that lies ahead of `at` along the branch she is walking, as
-	## `cell -> how far she walks down the route to reach it`, out to `limit` pixels.
-	##
-	## Empty when she is not standing on the tree at all, which is a real answer rather than a
-	## failure: a route is the ground she is offered, and she is allowed to be off it.
-	##
-	## **Which way is "ahead" is read off her heading against the route itself**, not assumed to be
-	## outbound. A route runs from the calm area to the doorstep (`RouteTree.Branch.routes`), so the
-	## walk out is toward the head of the array and the walk home is toward its tail, and the one that
-	## agrees with the direction she is actually travelling is the one taken. At a corner both
-	## neighbours can be off her heading; the better of the two is still the way the route goes, which
-	## is what puts the site round the corner she is about to turn.
-	func _the_way_she_is_going(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
-		var found := {}
-		if not _tree or not _tree.grid:
-			return found
-		var her_tile := _map.world_to_tile(at)
-		if _tree.branches_on(her_tile).is_empty():
-			return found
-		var her_cell := _tree.grid.cell_of(_tree.grid.node_at(her_tile))
-		for branch in _tree.branches:
-			for route: Array in branch.routes:
-				var index := route.find(her_cell)
-				if index < 0:
-					continue
-				var step := _onward_from(route, index, heading)
-				if step == 0:
-					continue
-				var travelled := 0.0
-				var from := at
-				var i := index + step
-				while i >= 0 and i < route.size():
-					var cell: Vector2i = route[i]
-					var centre := _cell_centre(_map, cell)
-					travelled += from.distance_to(centre)
-					if travelled > limit:
-						break
-					from = centre
-					if not found.has(cell) or travelled < float(found[cell]):
-						found[cell] = travelled
-					i += step
-		return found
-
-	## Which way along `route` from `index` agrees with the direction she is travelling: `-1` toward
-	## the calm area, `+1` toward the doorstep, or `0` where the route has no neighbour to go to at
-	## all (a route one cell long, which is a calm area on the doorstep's own street).
-	##
-	## **Asked over `_ONWARD_LOOKAHEAD` cells rather than the next one**, because a route is a
-	## loop-erased walk and its next step is as often sideways as onward: a single-cell tangent flips
-	## from one direction to the other at every wiggle, so a placement would read as ahead of her on
-	## one frame and behind her on the next. Looking a block down each way asks the question the
-	## walk is actually about — which end of this route is she heading for.
-	const _ONWARD_LOOKAHEAD := 8
-
-	func _onward_from(route: Array, index: int, heading: Vector2) -> int:
-		var here := _cell_centre(_map, route[index])
-		var step := 0
-		var best := -INF
-		for candidate in [-1, 1]:
-			var i: int = clampi(index + candidate * _ONWARD_LOOKAHEAD, 0, route.size() - 1)
-			if i == index or (i - index) * candidate < 0:
-				continue
-			var toward: Vector2 = _cell_centre(_map, route[i]) - here
-			if toward.length_squared() < 1.0:
-				continue
-			var score := toward.normalized().dot(heading)
-			if score > best:
-				best = score
-				step = candidate
-		return step
+		return _tree.is_ahead(at, heading, position)
 
 	## The tiles `def` may stand on that are on one of `ahead`'s cells, no more than `far` down the
 	## route from her and no less than `near` away across the block — see `ahead_of()` for why the
@@ -1097,21 +1006,6 @@ class WalkSiting extends RefCounted:
 					found[tile] = true
 			_front_ground[def] = found
 		return _front_ground[def]
-
-	func _cell_of(position: Vector2) -> Vector2i:
-		if not _tree or not _tree.grid:
-			return Vector2i(-1, -1)
-		var node := _tree.grid.node_at(_map.world_to_tile(position))
-		if node < 0:
-			return Vector2i(-1, -1)
-		return _tree.grid.cell_of(node)
-
-	## The centre of a `ReachabilityGrid` cell in world space. A cell is two tiles square and
-	## `CityMap.tile_to_world` answers the centre of a tile, so the cell's centre is half a tile
-	## further along both axes than its first tile's.
-	static func _cell_centre(map: CityMap, cell: Vector2i) -> Vector2:
-		return map.tile_to_world(cell * ReachabilityGrid.CELL) \
-				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
 
 	## Does at dawn the work the first `ahead_of()` would otherwise do in the middle of a walk: the
 	## scan for ground `def` may stand on and the set a cell asks about. It is a scan of the whole

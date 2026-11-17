@@ -9,9 +9,11 @@ extends RouteTree
 var _fake_network := StreetNetwork.new()
 var _fake_depths := {}
 var _fake_junctions: Array[Vector2i] = []
+var _fake_cells_ahead := {}
 
 ## A tree on a grid over `map`, the ground the corridor answers about.
 func _init(map: CityMap) -> void:
+	_map = map
 	grid = ReachabilityGrid.build(map)
 	for segment in _fake_network.segments():
 		_fake_depths[segment.key()] = 1
@@ -22,6 +24,30 @@ func set_routes(streets: Array[Vector3i], junctions: Array[Vector2i]) -> FakeRou
 		_fake_depths[key] = 0
 	_fake_junctions = junctions
 	return self
+
+## Sets the cells her way ahead runs over, as `cell -> how far she walks to reach it`
+## (`RouteTree.cells_ahead()`), whatever `at` and `heading` are asked.
+func set_cells_ahead(cells: Dictionary) -> FakeRouteTree:
+	_fake_cells_ahead = cells
+	return self
+
+## The cells set that lie no further than `limit`.
+##
+## Overrides RouteTree.cells_ahead.
+func cells_ahead(_at: Vector2, _heading: Vector2, limit: float) -> Dictionary:
+	var found := {}
+	for cell: Vector2i in _fake_cells_ahead:
+		if float(_fake_cells_ahead[cell]) <= limit:
+			found[cell] = _fake_cells_ahead[cell]
+	return found
+
+## Whether the cells set hold the cell of `position`, true with none set.
+##
+## Overrides RouteTree.is_ahead.
+func is_ahead(_at: Vector2, _heading: Vector2, position: Vector2) -> bool:
+	if _fake_cells_ahead.is_empty():
+		return true
+	return _fake_cells_ahead.has(_cell_of(position))
 
 ## Overrides RouteTree.network.
 func network() -> StreetNetwork:
