@@ -23,7 +23,8 @@ extends RefCounted
 ##   her from outside) **is its own until the next word**, and reaches no other event;
 ## - **with nobody in the world nothing is told**, and a handle keeps answering the last word.
 ##
-## The count of words and the point a handle saw are that timing's only state.
+## The count of words and the point a handle saw are that timing's only state; `forget()` starts a
+## walk over.
 
 var _at := Vector2.INF
 var _pram_at := Vector2.INF
@@ -67,6 +68,18 @@ func handle_for_an_event() -> WhereSheIs:
 	var handle := WhereSheIs.new()
 	handle._word = _told()
 	return handle
+
+## **Forgets every word as a walk begins** (`EventManager.clear()`): back to nowhere in place, since
+## every handle keeps this object, so an event streamed in before the walk's first word does not
+## hear the last walk's. A point an event saw itself expires with it.
+func forget() -> void:
+	_at = Vector2.INF
+	_pram_at = Vector2.INF
+	_view = Rect2()
+	_running = false
+	_awake = true
+	_held = false
+	_words += 1
 
 ## **Its event has seen her at `at` itself**, ahead of the next word: what it answers for `at()`
 ## until then. Every other event, and every other fact, keeps the word.

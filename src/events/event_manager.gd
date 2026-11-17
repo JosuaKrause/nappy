@@ -421,6 +421,9 @@ func end_the_charges_still_running() -> void:
 			instance.report_the_charge_cut_short()
 
 func clear() -> void:
+	# The last walk's word is nobody's now: an event streamed in before the new walk's first word
+	# hears nowhere, not where she stood at the end of the last one.
+	world.where_she_is().forget()
 	end_the_charges_still_running()
 	ahead.clear()
 	for instance in world.instances:
