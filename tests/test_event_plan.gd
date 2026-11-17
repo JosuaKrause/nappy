@@ -14,6 +14,8 @@ func run(t: TestRunner) -> void:
 	_test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t)
 	_test_what_its_field_reaches(t)
 	_test_where_its_body_stands(t)
+	_test_a_plan_stands_where_a_candidate_was_judged(t)
+	_test_a_plan_turns_to_face(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventPlan:
@@ -158,3 +160,28 @@ func _test_where_its_body_stands(t: TestRunner) -> void:
 			"a sidewalk row stands where it was placed")
 	t.check(_sealed("roadblock", lane).body_at() == lane,
 			"and so does the region wall's pinned roadblock")
+
+func _test_a_plan_stands_where_a_candidate_was_judged(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("poster_crew")
+	var judged := EventPlan.new(def, Vector2(640, 96),
+			PackedVector2Array([Vector2(640, 96), Vector2(704, 96)]))
+	judged.face(Vector2.UP)
+	judged.give_role(GameEnums.BlockerRole.WALL)
+	var owed := EventPlan.new(def, Vector2.INF)
+	t.check(not owed.is_placed(), "the plan her walk lays starts with no place")
+	owed.stand_where(judged)
+	t.check(owed.is_placed() and owed.placed_at() == Vector2(640, 96),
+			"it takes the place the candidate was judged at")
+	t.check(owed.walks() == judged.walks() and not owed.stands_still(),
+			"and the route, so a beat that paces walks the stretch it was judged on")
+	t.check(owed.facing == Vector2.UP, "and its facing")
+	t.check(owed.role == GameEnums.BlockerRole.WALL, "and the role the judge gave it")
+	t.check(judged.position == Vector2(640, 96) and judged.role == GameEnums.BlockerRole.WALL,
+			"while the candidate is left as it was")
+
+func _test_a_plan_turns_to_face(t: TestRunner) -> void:
+	var plan := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2(640, 96))
+	plan.face(Vector2.UP)
+	t.check(plan.facing == Vector2.UP, "a crew turned to face the wall it pastes faces it")
+	plan.face(Vector2.LEFT)
+	t.check(plan.facing == Vector2.LEFT, "and turns again where it is told to")

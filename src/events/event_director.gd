@@ -250,7 +250,7 @@ func start_day(day: int, plans: Array[EventPlan],
 		if plan.is_door() and plan.is_placed():
 			_doors.append(plan.position)
 		# A place the day planned and left unsited, read off the same list for the same reason.
-		if plan.def.on_her_way != null and not plan.is_placed():
+		if plan.row().is_sited_from_her_walk() and not plan.is_placed():
 			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
 		# A row the director sends ahead of her is owed as a moment where the dawn left it unplaced
@@ -790,10 +790,7 @@ func site_what_is_on_her_way(delta: float, at: Vector2,
 			_siting.forget_the_verdicts()
 		if not sited:
 			continue
-		plan.position = sited.position
-		plan.path = sited.path
-		plan.facing = sited.facing
-		plan.role = sited.role
+		plan.stand_where(sited)
 		_behind_her[plan] = 0.0
 		moved.append(plan)
 		# Placed or moved: a plan now stands where no verdict kept so far has seen it.

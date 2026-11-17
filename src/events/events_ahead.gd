@@ -79,7 +79,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 	_siting = null
 	_day_tree = tree
 	for plan in _walk.plans():
-		if plan.def.on_her_way != null and not plan.is_placed():
+		if plan.row().is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
 	_director.start_day(day, _walk.plans(), world.run.calendar.day_rng(day, "ahead"), _siting,
 			world.run.resistance.progress)
@@ -511,7 +511,7 @@ func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
 	# silenced by `EventStreaming.silence_mast()` and counts for
 	# `EventStreaming.silence_all_masts()`.
-	if plan.def.role == EventDef.Role.MAST:
+	if plan.row().is_a_mast():
 		plan.mast_id = DawnMasts.added_mast_id(plan.position)
 	_streaming.add(plan)
 	# Where, because nothing else records it: the siting depends on the walk she took.
@@ -738,18 +738,14 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		return false
 	for plan in _walk.plans():
 		# The fire is the set piece a run owes; a crew she never met simply was not met.
-		if plan.def.on_her_way == null or plan.def.kind != GameEnums.EventKind.ONE_SHOT \
-				or plan.was_live or plan.spent:
+		if not plan.row().is_a_set_piece_on_her_way() or plan.was_live or plan.spent:
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
 		var rng := world.run.calendar.day_rng(world.day, "dusk-fire")
 		var sited := _siting.off_her_path(plan.def, rng, plan, at)
 		if not sited:
 			continue
-		plan.position = sited.position
-		plan.path = sited.path
-		plan.facing = sited.facing
-		plan.role = sited.role
+		plan.stand_where(sited)
 		_streaming.stream_in(plan)
 		_streaming.stream_out(plan)
 		# It is over the moment it is recorded: the day has ended, and a plan left unspent would be

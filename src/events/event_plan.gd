@@ -225,6 +225,18 @@ func row() -> EventDef:
 func walks() -> PackedVector2Array:
 	return path
 
+## **Stands the plan where `sited` was judged**: takes its place, its route, its facing and its
+## role. What her walk's siting tells a beat once a location takes it.
+func stand_where(sited: EventPlan) -> void:
+	position = sited.position
+	path = sited.path
+	facing = sited.facing
+	role = sited.role
+
+## Turns the plan to face `direction`: a crew faces the wall it pastes.
+func face(direction: Vector2) -> void:
+	facing = direction
+
 ## Gives it the role a judge decided (`StreetInvalidation.room()`), which is where it went.
 func give_role(given: GameEnums.BlockerRole) -> void:
 	role = given

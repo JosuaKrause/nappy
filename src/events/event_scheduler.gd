@@ -644,7 +644,7 @@ class WalkSiting extends RefCounted:
 		# A wall by its fit alone is never put on a sidewalk a route runs along, so it is put on the
 		# street she is walking instead, just out of her sight (`ahead_on_her_street()`).
 		if (role == GameEnums.BlockerRole.WALL and not EventScheduler._is_a_wall_by_cost(def)) \
-				or def.id == _MET_ON_HER_STREET:
+				or def.is_met_on_her_street():
 			return ahead_on_her_street(def, rng, besides, at, heading)
 		var offer := _offer_ahead(def, at, heading, near, far)
 		match offer[0]:
@@ -662,8 +662,8 @@ class WalkSiting extends RefCounted:
 			return _waited("every tile of its ground on her branch broke a placement rule")
 		# A crew faces the wall it pastes, its back to the street. `PlanBuilder.build()` turned it by
 		# the dawn's own side, out of a wall it was never going to stand at.
-		if def.on_her_way != null and def.on_her_way.at_a_front:
-			candidate.facing = Vector2.UP
+		if def.stands_at_a_front():
+			candidate.face(Vector2.UP)
 		return candidate
 
 	## **Starts a look: from here every `ahead_of()` keeps its verdicts for the rest of the look**,
@@ -716,9 +716,8 @@ class WalkSiting extends RefCounted:
 	## from one place, and the last question asked is kept and given back.
 	func _offer_ahead(def: EventDef, at: Vector2, heading: Vector2, near: float,
 			far: float) -> Array:
-		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
-		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
-		var question := [def.placement, side, def.role == EventDef.Role.MAST, at, heading, near, far]
+		var side := EventDef.Pavement.AT_THE_FRONT if def.stands_at_a_front() else def.pavement_side
+		var question := [def.placement, side, def.is_a_mast(), at, heading, near, far]
 		if question == _last_offer_question:
 			return _last_offer
 		offers_worked_out += 1
@@ -833,12 +832,6 @@ class WalkSiting extends RefCounted:
 				(Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
 		return view.intersects(drawn, true)
 
-	## **Day 6's man shouting is sited the same way**, though he is no wall: the rigged bag draws his
-	## marble so she meets him (olive-koala, statement 2: "guaranteed to encounter a yeller in the
-	## next three events"), and the route band of the branch she is walking lies past her walk — a
-	## branch she leaves, or 1,300px and more ahead — where the street she is on offers him within the
-	## streaming radius, in the world at once.
-	const _MET_ON_HER_STREET := "homeless_yeller"
 	## How far either side of her line of travel `ahead_on_her_street()` looks: the street she is on,
 	## from her sidewalk to the far kerb, and no further — a block's frontage is past it.
 	const _STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
@@ -937,7 +930,7 @@ class WalkSiting extends RefCounted:
 	func _its_ground_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
 			far: float) -> Array[Vector2i]:
 		var pool := _ground_as_a_set(def)
-		var a_mast := def.role == EventDef.Role.MAST
+		var a_mast := def.is_a_mast()
 		var offered: Array[Vector2i] = []
 		for cell: Vector2i in ahead:
 			if float(ahead[cell]) > far:
@@ -997,7 +990,7 @@ class WalkSiting extends RefCounted:
 	## tiles in `fronts` — in front of a blank ground-floor cell, which only the city's buildings
 	## know — and nothing at all where no city handed any over.
 	func _ground_as_a_set(def: EventDef) -> Dictionary:
-		if def.on_her_way == null or not def.on_her_way.at_a_front:
+		if not def.stands_at_a_front():
 			return _ground.offers_for(def)
 		if not _front_ground.has(def):
 			var found := {}
