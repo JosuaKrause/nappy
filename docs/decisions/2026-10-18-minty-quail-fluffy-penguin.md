@@ -24,10 +24,17 @@ chose the timing in two places under two names.
   set on her from outside use it.
 - **The car-only keying of the first record is redundant** and replaced: a car hears the word so
   far because every event does.
-- **Tests.** `tests/test_where_she_is.gd` holds the handle on plain values.
-  `tests/test_event_behaviours.gd`, "a man made after the tick's word has her in sight before the
-  next word", fails at the head of the pull request this is stacked on (#1494, which gives only a
-  car the word so far).
+- **The word is forgotten as a walk begins.** The world's `WhereSheIs` lives for the whole boot,
+  and `EventManager._take()` streams events in before a walk's first word, so with the one rule
+  day 2's events heard day 1's last word (her last position, whether she ran, a door's hold, the
+  camera's view) until the first tick. `WhereSheIs.forget()` resets the word in place, so every
+  handle answers nowhere, and `EventManager.clear()` calls it; every walk's start (a day, an
+  escape section, a scene recipe) goes through `_begin()`, so through `clear()`, before `_take()`.
+- **Tests.** `tests/test_where_she_is.gd` holds the handle and `forget()` on plain values, and the
+  one combined check of `EventInstance.setup()`'s handle: "a man made after the tick's word has her
+  in sight before the next word", which fails at #1494's head (it gave only a car the word so far).
+  `tests/test_event_manager.gd`, "a walk begun forgets the last walk's word for every handle",
+  fails without the `forget()` call.
 
 ## What changes in play and in the run log
 
@@ -43,9 +50,9 @@ differently.
 ## Measured
 
 `tests/probes/director_placement_fingerprint.gd` (it covers `let_the_officers_out()`) printed
-identical `DP ` lines at the first head of this branch and at its base, 2359 lines each. After the
-rule was widened the suites below pass; `tests/probes/olive_badger_route_mix.gd` is recorded in the
-pull request's description.
+identical `DP ` lines at this branch's head and at main: 2359 lines each, `diff` empty.
+`tests/probes/olive_badger_route_mix.gd` at the head before `forget()` was added: mismatch mean 22.1%,
+worst day 41%; it was not run at main.
 
 ## Rejected
 
