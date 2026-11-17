@@ -22,5 +22,10 @@ stays in the bag while the next marble is offered.
 **What is left of step 5:** the switch, which draws the escape's walk with the unit draw, one bag for
 the whole walk, every unit drawn before she sets off, and deletes the escape's own loop.
 
-**Proposed, not asked for, open to the player:** none beyond the design's picks (its section 10);
-the builder found the design's text fit main as step 4 left it.
+**Proposed, not asked for, open to the player** (the design's picks this pull request builds):
+"at most one event a street" read as one marble a street, which stands a row alone in the street
+or leaves it empty, rather than a street that stops drawing once a row stands; the ground she starts
+on kept clear by the spec's existing rule for the home's streets (`DaySpec.holds_the_home_streets`),
+with no new setting; and the check that a walk kept open stands one event a street made where the
+day's rules are read (`DawnContext.rules()`), where the design placed it in two of its sections and
+in the dawn's draw in a third. The builder found the design's text fit main as step 4 left it.
