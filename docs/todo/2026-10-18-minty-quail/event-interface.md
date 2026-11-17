@@ -484,9 +484,10 @@ this tick: her position, her pram's, the camera's view, whether she runs, whethe
 awake, whether a door holds her. The event manager tells it once a tick in one call, and the
 events' world holds it. A fact derived once and handed around (inbox #1156 in gray-dolphin). Each
 live event hears it through a handle of its own, so that an event made after the tick's word
-knows nothing of her until the next one, as its own fields did; a notice's point goes to that
-event's handle and not to the shared object, and nothing else tells an event where she is: the
-halo's frame tells an event's source her motion and never the point. The handle is the builder's
+knows nothing of her until the next one, as its own fields did; nothing else tells an event where
+she is: the halo's frame tells every source her motion (`set_her_motion()`) and a crowd body the
+point, never an event, and a notice's point (`notice_her_at()`) is an order's input, not a word on
+where she is. The handle is the builder's
 choice, open to the player's overturn (the record minty-quail-olive-finch).
 
 ### 2.11 Several reads that become one question

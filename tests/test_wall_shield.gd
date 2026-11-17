@@ -362,7 +362,7 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t: TestRunner) -> vo
 	var open := _map_with([], 24, 12)
 	var ending := _map_with(_rect_tiles(Rect2i(0, 4, 10, 2)), 24, 12)
 	var coming_out := _a_car(t, ending, Vector2(80.0, 112.0))
-	coming_out.mood().set_player_at(Vector2(400.0, 200.0))
+	coming_out.mood().set_her_at(Vector2(400.0, 200.0))
 	t.check(coming_out.mood().contribution_at(Vector2(400.0, 200.0)) == 0.0
 			and coming_out.mood().expected_gross_at(Vector2(400.0, 200.0)) > 0.0,
 			"a car about to clear the building's end expects what it lands once out (%.2f)"
@@ -373,7 +373,7 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t: TestRunner) -> vo
 	var walk := Vector2(Tuning.WALK_SPEED, 0.0)
 	for map: CityMap in [walled, open]:
 		var musician := _musician(def, at, map)
-		musician.source().set_player_at(her, walk)
+		musician.source().set_her_motion(walk)
 		var expected := musician.source().expected_gross_at(her)
 		if map == walled:
 			t.check(expected == 0.0, "walking past behind a building expects nothing (%.2f)"
@@ -384,7 +384,7 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t: TestRunner) -> vo
 		musician.free()
 	for map: CityMap in [walled, open]:
 		var car := _a_car(t, map, Vector2(80.0, 112.0))
-		car.mood().set_player_at(Vector2(400.0, 200.0))
+		car.mood().set_her_at(Vector2(400.0, 200.0))
 		var expected := car.mood().expected_gross_at(Vector2(400.0, 200.0))
 		if map == walled:
 			t.check(expected == 0.0, "a car on the far side of a building expects nothing (%.2f)"

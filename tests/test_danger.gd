@@ -54,8 +54,8 @@ var _atlas := AtlasLibrary.new()
 
 ## **Both held still, a stationary thing earns no caret** — neither its own field nor her own
 ## motion changes under the projection, which is the halo's job to report from the moment she is
-## in reach at all. `set_player_at()`'s default velocity is `Vector2.ZERO`, so a caller that gives
-## no velocity at all is exactly this case. See `_test_walking_toward_a_stationary_thing_earns_a_
+## in reach at all. A source never told her motion (`set_her_motion()`) has her held still, so the
+## test, which tells it none, is exactly this case. See `_test_walking_toward_a_stationary_thing_earns_a_
 ## caret` for the one PLAYTEST-115 overturned: the same café, her walking toward it.
 func _test_a_stationary_thing_she_stands_in_is_unmarked(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cafe_tables")
@@ -81,7 +81,7 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t: TestRunner) -> voi
 		return
 	var instance := _instance(def)
 	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
-	instance.excitement.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+	instance.excitement.set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
 	t.check(instance.excitement.expected_impact_at(approach) > 0.0,
 			"walking straight at a stationary café five seconds out nets something, unlike " +
 			"standing in front of it")
@@ -109,7 +109,7 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t: TestRunner) -> void:
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON * 0.5
 	var player_pos := Vector2(-lead, 20.0)
-	instance.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+	instance.excitement.set_her_motion(player_velocity, decay, 1.0)
 	var caret_now := instance.excitement.expected_impact_at(player_pos)
 	t.check(caret_now > 0.0, "a pass through the field projects a positive net gain")
 
@@ -174,7 +174,7 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 			var decay := Tuning.EXCITEMENT_DECAY_WALKING
 			var lead := player_velocity.length() * horizon * 0.5
 			var player_pos := Vector2(-lead, 20.0)
-			instance.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+			instance.excitement.set_her_motion(player_velocity, decay, 1.0)
 			var caret_now := instance.excitement.expected_impact_at(player_pos)
 			t.check(caret_now > 0.0,
 					"%s at phase %.2fs still projects a positive net gain" % [id, start_age])
@@ -256,8 +256,8 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> v
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * horizon * 0.5
 	var player_pos := Vector2(-lead, 0.0)
-	a.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
-	b.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+	a.excitement.set_her_motion(player_velocity, decay, 1.0)
+	b.excitement.set_her_motion(player_velocity, decay, 1.0)
 
 	var solo_sum := a.excitement.expected_impact_at(player_pos) + b.excitement.expected_impact_at(player_pos)
 
@@ -406,11 +406,11 @@ func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t: TestRunner) -> v
 			CrowdLanes.road_lane(true, 1.0), street.along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
 			Tuning.CAR_SPEED.x)
 	var in_its_lane := car.global_position + Vector2(0.0, 60.0)
-	car.excitement.set_player_at(in_its_lane)
+	car.excitement.set_her_at(in_its_lane)
 	t.check(car.excitement.will_be_lethal(in_its_lane),
 			"a car whose strike box reaches the lane she is standing in front of is red")
 	var beside_its_line := car.global_position + Vector2(50.0, 60.0)
-	car.excitement.set_player_at(beside_its_line)
+	car.excitement.set_her_at(beside_its_line)
 	t.check(not car.excitement.will_be_lethal(beside_its_line),
 			"the same car passing beside her — she would have to step into it herself — is not")
 	_street_rig.free_crowd(crowd)
@@ -426,7 +426,7 @@ func _test_a_walker_brushing_past_is_unmarked(t: TestRunner) -> void:
 	var crowd: Crowd = street.crowd
 	var walker: CrowdAgent = _street_rig.place_on(crowd, street.map, CrowdAgent.Kind.WALKER, street.corridor,
 			0, street.along, 1.0)
-	walker.excitement.set_player_at(walker.global_position + Vector2(20.0, 25.0))
+	walker.excitement.set_her_at(walker.global_position + Vector2(20.0, 25.0))
 	t.check(walker.excitement.caret_strength() == 0,
 			"an ordinary walker brushing past her carries no caret at all")
 	_street_rig.free_crowd(crowd)
@@ -472,7 +472,7 @@ func _test_the_arterial_at_ordinary_density_marks_nobody(t: TestRunner) -> void:
 	for i in int(round(40.0 / STEP)):
 		crowd.step(STEP)
 		for agent in crowd.agents():
-			agent.excitement.set_player_at(standing_at)
+			agent.excitement.set_her_at(standing_at)
 			if agent.excitement.caret_strength() == 1:
 				amber += 1
 	t.check(amber == 0,
@@ -497,7 +497,7 @@ func _test_the_mark_still_breathes(t: TestRunner) -> void:
 	for i in int(round(def.pulse_period / STEP)):
 		instance.step(STEP)
 		where.tell(approach)
-		instance.excitement.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+		instance.excitement.set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
 		var carets := await _carets(t, instance)
 		var width: float = carets[0]["size"].x if not carets.is_empty() else 0.0
 		lowest = minf(lowest, width)

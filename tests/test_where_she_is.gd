@@ -1,10 +1,10 @@
 extends RefCounted
 ## `WhereSheIs`: the one object that says where she is, and the handle every live event hears it
 ## through (`handle_for_an_event()`). A handle answers the word told so far, all six facts, and
-## every word after it, nowhere until the first is told; the point an event sees itself
-## (`see_her_at()`) is its own until the next word and reaches no other handle. Plain values only:
-## no scene. **The one combined check** is `EventInstance.setup()`'s choice of handle, which only an
-## instance can show: a man made after the tick's word, built out of the tree on open ground.
+## every word after it, nowhere until the first is told; the tick's word is the only way an event
+## hears a point. Plain values only: no scene. **The combined checks** are `EventInstance.setup()`'s
+## choice of handle and an order's point reaching no handle, which only an instance can show: a man
+## made after the tick's word, built out of the tree on open ground.
 
 const HER := Vector2(120.0, 40.0)
 const PRAM := Vector2(134.0, 40.0)
@@ -14,7 +14,7 @@ func run(t: TestRunner) -> void:
 	_test_a_handle_answers_the_whole_word_told_so_far(t)
 	_test_a_handle_follows_the_words_after(t)
 	_test_a_handle_answers_nowhere_before_any_word(t)
-	_test_a_point_an_event_sees_itself_reaches_no_other_handle(t)
+	_test_an_event_hears_a_point_only_through_the_tick(t)
 	_test_a_forgotten_word_is_nowhere_for_every_handle(t)
 	_test_an_event_made_after_the_tick_word_knows_where_she_is_at_once(t)
 
@@ -47,21 +47,9 @@ func _test_a_handle_answers_nowhere_before_any_word(t: TestRunner) -> void:
 			and handle.baby_is_awake() and not handle.is_held_at_a_door(),
 			"a handle before any word is told answers nowhere on all six facts")
 
-func _test_a_point_an_event_sees_itself_reaches_no_other_handle(t: TestRunner) -> void:
-	var word := _told()
-	var seeing := word.handle_for_an_event()
-	var other := word.handle_for_an_event()
-	var there := Vector2(-50.0, 90.0)
-	seeing.see_her_at(there)
-	t.check(seeing.at() == there and other.at() == HER,
-			"the point one event sees is its own and the other keeps the word")
-	word.tell(HER, PRAM, VIEW, true, false, true)
-	t.check(seeing.at() == HER, "and the next word replaces it")
-
 func _test_a_forgotten_word_is_nowhere_for_every_handle(t: TestRunner) -> void:
 	var word := _told()
 	var before := word.handle_for_an_event()
-	before.see_her_at(Vector2(5.0, 5.0))
 	word.forget()
 	var after := word.handle_for_an_event()
 	for handle: WhereSheIs in [before, after]:
@@ -87,3 +75,20 @@ func _instance(def: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, where)
 	return instance
+
+## **An event's word on where she is changes only through the tick.** A man set on a point
+## (`EventInstance.notice_her_at()`, an order) and a source told her motion (`set_her_motion()`)
+## leave the point his handle hears where the tick's word put it.
+func _test_an_event_hears_a_point_only_through_the_tick(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("alley_robbery")
+	var told := WhereSheIs.nowhere()
+	told.tell(Vector2(80.0, 0.0))
+	var robber := _instance(def, told)
+	var before := robber.sight_line_to_her()
+	robber.notice_her_at(Vector2(5000.0, 5000.0))
+	robber.excitement.set_her_motion(Vector2(92.0, 0.0), 6.0, 0.8)
+	t.check(before != Vector2.ZERO and robber.sight_line_to_her() == before,
+			"a pursuer set on a far point still hears her where the tick's word put her")
+	told.tell(Vector2(-80.0, 0.0))
+	t.check(robber.sight_line_to_her() != before, "and the next word moves it")
+	robber.free()

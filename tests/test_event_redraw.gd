@@ -312,7 +312,7 @@ func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 	for state: Array in states:
 		var before: int = drawn[0]
 		her.tell(here + state[0])
-		instance.excitement.set_player_at(here + state[0], state[1])
+		instance.excitement.set_her_motion(state[1])
 		await DrawnEvent.frames(t)
 		moved.append(drawn[0] > before)
 		strengths.append(instance.excitement.caret_strength())

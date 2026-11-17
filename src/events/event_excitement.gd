@@ -64,8 +64,8 @@ func use_row_and_where_she_is(row: EventDef, where: WhereSheIs) -> void:
 	_where = where
 
 ## Where its instance hears she is, which its manager tells on the physics tick and nothing else
-## tells (`ExcitementHalo` tells it her velocity, decay and sensitivity once a drawn frame, never
-## where she is): the one point its behaviours, its look and its caret all read.
+## tells (`ExcitementHalo` tells it her motion once a drawn frame, never where she is): the one point its behaviours, its look and its
+## caret all read.
 ##
 ## Overrides ExcitementSource._her_at.
 func _her_at() -> Vector2:
@@ -192,8 +192,8 @@ func will_be_lethal(player_position: Vector2) -> bool:
 
 ## **Keyed on where she is as well as on the age, and the pair is load-bearing.** The answer is a
 ## projection of this event's course against her position, and the two do not move together:
-## where she is is told by the manager on its physics tick (and, for a pursuer, by the task that
-## sets it on her), while the look asks on the event's own drawn frame. Keyed on age alone, the
+## where she is is told by the manager on its physics tick, while the look asks on the event's own
+## drawn frame. Keyed on age alone, the
 ## first to ask would fix the answer for the whole tick.
 ##
 ## Overrides ExcitementSource._caret_key.

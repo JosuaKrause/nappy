@@ -4,26 +4,26 @@ extends RefCounted
 const Reference = preload("res://tests/fixtures/prediction_reference.gd")
 const HaloRig = preload("res://tests/halo_rig.gd")
 
-## An event's source that keeps the sensitivity the halo last told it (`set_player_at()`), which the
+## An event's source that keeps the sensitivity the halo last told it (`set_her_motion()`), which the
 ## frozen reference scales its projection by as the source scales its own.
 class ToldEventSource extends EventExcitement:
 	var told_sensitivity := 1.0
 
-	## Overrides ExcitementSource.set_player_at.
-	func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+	## Overrides ExcitementSource.set_her_motion.
+	func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 			sensitivity: float = 1.0) -> void:
 		told_sensitivity = sensitivity
-		super(at, velocity, decay_rate, sensitivity)
+		super(velocity, decay_rate, sensitivity)
 
 ## A crowd body's source that keeps the sensitivity the halo last told it, as `ToldEventSource`.
 class ToldCrowdSource extends CrowdExcitement:
 	var told_sensitivity := 1.0
 
-	## Overrides ExcitementSource.set_player_at.
-	func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+	## Overrides ExcitementSource.set_her_motion.
+	func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 			sensitivity: float = 1.0) -> void:
 		told_sensitivity = sensitivity
-		super(at, velocity, decay_rate, sensitivity)
+		super(velocity, decay_rate, sensitivity)
 
 ## An event whose source counts the samplings it really runs.
 class CountedEvent extends EventInstance:
@@ -146,12 +146,12 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.age = phase
 			for at: Vector2 in [Vector2(-170.0, 30.0), Vector2(20.0, 30.0), Vector2(1000.0, 0.0)]:
-				source.source().set_player_at(at, Vector2(92.0, 0.0), 6.0, 0.8)
+				source.source().set_her_motion(Vector2(92.0, 0.0), 6.0, 0.8)
 				_event_parity(t, source, at, definition.id + " phase/position")
 				if source.source().expected_gross_at(at) > 0.0:
 					positive += 1
 		var at := Vector2(-170.0, 30.0)
-		source.source().set_player_at(at, Vector2(92.0, 0.0))
+		source.source().set_her_motion(Vector2(92.0, 0.0))
 		# All writes happen without advancing age or the engine frame.
 		source.position += Vector2(9.0, 4.0)
 		_event_parity(t, source, at, definition.id + " source movement")
@@ -167,9 +167,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source.transition(EventInstance.Phase.PARKED)
 		_event_parity(t, source, at, definition.id + " parked")
 		source.transition(EventInstance.Phase.ACTIVE)
-		source.source().set_player_at(at, Vector2(43.0, 71.0))
+		source.source().set_her_motion(Vector2(43.0, 71.0))
 		_event_parity(t, source, at, definition.id + " player velocity")
-		source.source().set_player_at(at, Vector2(43.0, 71.0), 0.0, 0.35)
+		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id + " sensitivity")
 		source.silenced = true
 		_event_parity(t, source, at, definition.id + " silence")
@@ -233,7 +233,7 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source._speed = 60.0
 		var at := Vector2(-160.0, 12.0)
 		_crowd_parity(t, source, at, "crowd before player")
-		source.mood().set_player_at(at, Vector2(92.0, 0.0))
+		source.mood().set_her_motion(Vector2(92.0, 0.0))
 		_crowd_parity(t, source, at, "crowd player")
 		for field: String in ["_speed", "_direction", "_turn_back_hold"]:
 			source.set(field, float(source.get(field)) + 1.25)
@@ -267,9 +267,9 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 			turn.travelled = distance
 			_crowd_parity(t, source, at, "crowd changing turn tangent")
 		source.drop_the_turn()
-		source.mood().set_player_at(at, Vector2(0.0, 92.0))
+		source.mood().set_her_motion(Vector2(0.0, 92.0))
 		_crowd_parity(t, source, at, "crowd player velocity")
-		source.mood().set_player_at(at, Vector2(0.0, 92.0), 0.0, 0.22)
+		source.mood().set_her_motion(Vector2(0.0, 92.0), 0.0, 0.22)
 		_crowd_parity(t, source, at, "crowd sensitivity")
 		_crowd_parity(t, source, at + Vector2(20.0, 0.0), "crowd query position")
 		source.kind = CrowdAgent.Kind.CAR if kind == CrowdAgent.Kind.WALKER else CrowdAgent.Kind.WALKER
@@ -292,18 +292,18 @@ func _test_live_net_and_skipped_work(t: TestRunner) -> void:
 func _check_live_net_and_skipped_work(t: TestRunner, source: ExcitementSource, sampling_runs: Callable,
 		at: Vector2) -> void:
 	var walking := Vector2(92.0, 0.0)
-	source.set_player_at(at, walking)
+	source.set_her_motion(walking)
 	var gross: float = source.expected_gross_at(at)
 	t.check(gross > 0.0 and int(sampling_runs.call()) == 1, "initial projection really samples")
 	source.set_expected_total_gross(gross * 2.0)
-	source.set_player_at(at, walking, 1.0)
+	source.set_her_motion(walking, 1.0)
 	var net: float = source.expected_impact_at(at)
 	t.check(_same_bits(net, maxf(gross - 2.5, 0.0)), "total/decay affect net immediately")
-	source.set_player_at(at, walking, 1.0, 0.5)
+	source.set_her_motion(walking, 1.0, 0.5)
 	t.check(_same_bits(source.expected_gross_at(at), gross * 0.5), "sensitivity stays live")
 	t.check(int(sampling_runs.call()) == 1, "total/decay/sensitivity reuse only the integral")
 	# Below approximate-comparison tolerance, but a distinct representable Vector2 value.
-	source.set_player_at(at, walking + Vector2(0.00001, 0.0), 1.0, 0.5)
+	source.set_her_motion(walking + Vector2(0.00001, 0.0), 1.0, 0.5)
 	source.expected_gross_at(at)
 	t.check(int(sampling_runs.call()) == 2, "even a tiny changed trajectory samples without a tick")
 
@@ -338,7 +338,7 @@ func _test_consumer_order(t: TestRunner) -> void:
 		t.check(cached.source().caret_strength() == reference.source().caret_strength(), "pre-halo event mark parity")
 		t.check(car.mood().caret_strength() == reference_car.mood().caret_strength(), "pre-halo car mark parity")
 		for source in sources:
-			source.set_player_at(at, Vector2(-92.0, 0.0), 6.0, 0.8)
+			source.set_her_motion(Vector2(-92.0, 0.0), 6.0, 0.8)
 		var total := cached.source().expected_gross_at(at) + car.mood().expected_gross_at(at)
 		var reference_total := reference.source().expected_gross_at(at) + reference_car.mood().expected_gross_at(at)
 		t.check(_same_bits(total, reference_total), "halo total parity")

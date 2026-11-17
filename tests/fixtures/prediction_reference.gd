@@ -1,7 +1,7 @@
 extends RefCounted
 ## Independent pre-reuse gross projection, kept for bitwise behavioral comparisons.
 ## The sampling loops and arithmetic follow the stacked baseline; no new cache path is used.
-## `sensitivity` is the baby's, as the halo last told the source (`ExcitementSource.set_player_at()`).
+## `sensitivity` is the baby's, as the halo last told the source (`ExcitementSource.set_her_motion()`).
 
 static func event_gross(source: EventInstance, player_position: Vector2, sensitivity: float) -> float:
 	if source.is_finished or source.is_leaving or source.excitement.is_outranked():

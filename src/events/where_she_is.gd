@@ -19,12 +19,10 @@ extends RefCounted
 ##   body back round her from its first frame (`EventInstance._ready()`), and an officer let out
 ##   after the tick's word, a successor set off inside an event's step and a door's guard know all
 ##   six facts before the next word;
-## - **a point it is told itself** (`see_her_at()`: a pursuer set on her from outside) **is its
-##   own until the next word**, and reaches no other event;
 ## - **with nobody in the world nothing is told**, and a handle keeps answering the last word.
 ##
-## The count of words and the point a handle saw are that timing's only state; `forget()` starts a
-## walk over.
+## **Nothing else tells an event where she is**: its point is the manager's word and no other, so
+## two things never disagree about where she stands. `forget()` starts a walk over.
 
 var _at := Vector2.INF
 var _pram_at := Vector2.INF
@@ -32,16 +30,10 @@ var _view := Rect2()
 var _running := false
 var _awake := true
 var _held := false
-## How many words it has been told (`tell()`).
-var _words := 0
 
 ## The word a handle hears (`handle_for_an_event()`), or null for the one the manager tells,
 ## which answers from its own.
 var _word: WhereSheIs = null
-## A point its own event was told itself (`see_her_at()`), and how many words its word had been
-## told then: answered in place of the word's own point until the next word.
-var _seen_at := Vector2.INF
-var _seen_on := -1
 
 ## One nobody has told anything: it answers nowhere until it is told.
 static func nowhere() -> WhereSheIs:
@@ -59,11 +51,9 @@ func tell(at: Vector2, pram_at := Vector2.INF, view := Rect2(), running := false
 	_running = running
 	_awake = awake
 	_held = held
-	_words += 1
 
 ## **A handle for one live event**, on the same word: it answers the word told so far and every
-## word after it (nowhere until the first is told), and a point its event sees itself
-## (`see_her_at()`) until the next word.
+## word after it (nowhere until the first is told).
 func handle_for_an_event() -> WhereSheIs:
 	var handle := WhereSheIs.new()
 	handle._word = _told()
@@ -79,19 +69,10 @@ func forget() -> void:
 	_running = false
 	_awake = true
 	_held = false
-	_words += 1
-
-## **Its event has seen her at `at` itself**, ahead of the next word: what it answers for `at()`
-## until then. Every other event, and every other fact, keeps the word.
-func see_her_at(at: Vector2) -> void:
-	_seen_at = at
-	_seen_on = _told()._words
 
 ## Where she stands, in world space, or `Vector2.INF` for nowhere.
 func at() -> Vector2:
 	var word := _told()
-	if _seen_on == word._words:
-		return _seen_at
 	return word._at
 
 ## Where her pram's own body is (`Stroller.PRAM_BODY_RADIUS`, on her circumference along her

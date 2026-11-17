@@ -88,14 +88,12 @@ func _init(the_body: Node2D) -> void:
 
 # --------------------------------------------------------------- what she does ---
 
-## Where she is, in world space, or `Vector2.INF` before anybody has said, told once a frame by
-## `ExcitementHalo` through `set_player_at()`.
-var _player_at := Vector2.INF
-
-## Where the caret measures her from (`caret_strength()`): `_player_at`, unless the body keeps its
-## own account of where she is that more than the halo writes.
+## Where the caret measures her from (`caret_strength()`): where this source hears she is, or
+## `Vector2.INF` for nowhere. A source with no account of its own measures from nowhere; a crowd
+## body is told the point once a frame (`CrowdExcitement.set_her_at()`) and an event hears it from
+## its manager's word (`WhereSheIs`).
 func _her_at() -> Vector2:
-	return _player_at
+	return Vector2.INF
 
 ## Her current velocity, her decay rate (`Baby.decay_rate()`) and the baby's sensitivity
 ## (`Baby.current_sensitivity()`): everything `expected_impact_at()` needs to answer "if she keeps
@@ -110,12 +108,11 @@ var _player_sensitivity := 1.0
 ## `expected_impact_at()` nets the whole projected decay against this source alone.
 var player_expected_total_gross := -1.0
 
-## This frame's player position, velocity, decay rate and sensitivity, told once a frame to every
-## candidate by `ExcitementHalo`, picked or not, since a source below the halo's floor can still be
-## worth a caret.
-func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+## This frame's player velocity, decay rate and sensitivity, told once a frame to every candidate by
+## `ExcitementHalo`, picked or not, since a source below the halo's floor can still be worth a
+## caret. Her motion only: where she is reaches a source another way (`_her_at()`).
+func set_her_motion(velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 		sensitivity: float = 1.0) -> void:
-	_player_at = at
 	player_velocity = velocity
 	player_decay_rate = decay_rate
 	_player_sensitivity = sensitivity
