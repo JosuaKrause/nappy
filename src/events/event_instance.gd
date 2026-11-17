@@ -297,10 +297,9 @@ var _clock := 0.0
 ##
 ## `where` is where she is (`WhereSheIs`), the one its manager tells once a tick
 ## (`EventWorld.where_she_is()`, which `EventSpawner.create()` hands in); the event hears it
-## through a handle of its own from the next word on (`WhereSheIs.heard_from_now()`), and hands
-## that to its behaviours and its excitement source; a car hears the word told so far
-## (`WhereSheIs.heard_so_far()`), since its first frame holds its body back round her. None, and
-## it is nowhere.
+## through a handle of its own (`WhereSheIs.handle_for_an_event()`) that hears the word told so
+## far, whatever made it, and hands that to its behaviours and its excitement source. None, and it
+## is nowhere.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
 		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null,
 		where: WhereSheIs = null) -> void:
@@ -308,7 +307,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	path = route
 	_where = WhereSheIs.nowhere()
 	if where:
-		_where = where.heard_so_far() if definition.drives() else where.heard_from_now()
+		_where = where.handle_for_an_event()
 	excitement.use_row_and_where_she_is(definition, _where)
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else _map.navigator()
@@ -911,12 +910,6 @@ func give_up_the_chase() -> void:
 		return
 	gave_up = true
 	_be_done()
-
-## **Hears the word told so far** (`WhereSheIs.hear_so_far()`), ahead of its manager's next one: an
-## officer let out after the tick's word (`EventsAhead.let_the_officers_out()`), who is handed
-## where she stands and the five other facts as he is let out and not the one.
-func hear_the_word_so_far() -> void:
-	_where.hear_so_far()
 
 ## **Notices her now, wherever she is**: a waiting pursuer set on her by what she did rather than
 ## by what it saw — day 13's waiting guard the moment she has done the roadblock's task

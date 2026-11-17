@@ -20,6 +20,7 @@ func run(t: TestRunner) -> void:
 	_test_the_take_round_trips(t)
 	_test_the_barrier_post_round_trips(t)
 	_test_a_car_is_composed_of_its_vehicle(t)
+	_test_an_event_made_after_the_tick_word_knows_where_she_is_at_once(t)
 	_test_the_route_walk_has_no_state_of_its_own(t)
 	_test_a_departure_begun_on_resume_is_not_written_over(t)
 	_test_the_manager_streams_a_behaviours_state(t)
@@ -237,6 +238,18 @@ func _test_the_take_round_trips(t: TestRunner) -> void:
 
 ## The route and how far along it are the event's own body, which `resume()` carries; the walk
 ## itself keeps nothing.
+## **Every event made after the tick's word hears it as it is made**, whatever made it: a man put
+## down on foot (an officer let out, a successor set off in a step, a door's guard) has the way to
+## her at once, before the next word.
+func _test_an_event_made_after_the_tick_word_knows_where_she_is_at_once(t: TestRunner) -> void:
+	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
+	var told := WhereSheIs.nowhere()
+	told.tell(Vector2(80.0, 0.0))
+	var man := _instance(t, out, Vector2.ZERO, PackedVector2Array(), told)
+	t.check(man.sight_line_to_her() != Vector2.ZERO,
+			"a man made after the tick's word has her in sight before the next word")
+	man.free()
+
 func _test_the_route_walk_has_no_state_of_its_own(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("dog_walker")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
