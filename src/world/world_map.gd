@@ -470,12 +470,6 @@ func is_crossing(_tile: Vector2i) -> bool:
 func pavement_inward(_tile: Vector2i) -> Vector2i:
 	return Vector2i.ZERO
 
-## Where the kerb runs beside the carriageway lane `at` stands in: `at` moved across its street onto
-## the line between that lane and the sidewalk on the lane's own side, kept where it is along the
-## street; `at` itself anywhere else. Open ground has no kerb.
-func kerb_beside(at: Vector2) -> Vector2:
-	return at
-
 ## How far into a street's corridor `tile` lies on each axis — `x` across a north-south street, `y`
 ## across an east-west one, `-1` where the tile is in no corridor on that axis. A tile in both is a
 ## junction; a tile in neither is off the streets (a square, a park, a courtyard, a building).

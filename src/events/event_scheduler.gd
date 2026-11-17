@@ -1553,7 +1553,7 @@ static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 static func blocked_by(map: CityMap, blockers: Array[EventPlan]) -> Dictionary:
 	var blocked := map.closed_tiles.duplicate()
 	for plan in blockers:
-		block_a_disc(map, blocked, plan.body_at(map), plan.blocking_radius())
+		block_a_disc(map, blocked, plan.body_at(), plan.blocking_radius())
 	return blocked
 
 ## Paints one disc of ground into a `blocked` set — a body's obstruction, or a field treated as

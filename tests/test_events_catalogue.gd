@@ -129,7 +129,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
 			if road == Vector2i(-1, -1) and map.tile_at(tile) == GameEnums.TileType.ROAD \
-					and map.kerb_beside(map.tile_to_world(tile)) != map.tile_to_world(tile):
+					and CityMap.kerb_beside(map.tile_to_world(tile)) != map.tile_to_world(tile):
 				road = tile
 	t.check(road != Vector2i(-1, -1), "the city has a carriageway lane beside a kerb")
 	var on_the_road := map.tile_to_world(road)
@@ -139,7 +139,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 		var kerbed := def.stands_at_its_kerb()
 		if kerbed:
 			at_the_kerb += 1
-		t.check(stands == (map.kerb_beside(on_the_road) if kerbed else on_the_road),
+		t.check(stands == (CityMap.kerb_beside(on_the_road) if kerbed else on_the_road),
 				"%s stands %s" % [def.id, "on the kerb beside its lane" if kerbed else "where it is put on the road"])
 	t.check(at_the_kerb > 0, "the catalogue has a row that spans the street and stands at its kerb")
 
@@ -533,8 +533,8 @@ func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> vo
 			var far_kerb := street - sidewalk if own_low else sidewalk
 			var far_edge := street if own_low else 0.0
 			var toward_far := 1.0 if own_low else -1.0
-			var name := "a roadblock in the lane at %.0fpx across a %s street" \
-					% [placed.dot(across), "north-south" if across_x else "east-west"]
+			var name := "a roadblock in the lane at %.0fpx across %s street" \
+					% [placed.dot(across), "a north-south" if across_x else "an east-west"]
 			t.check(_solid_across(shape, stands, axis, placed, across, own_edge + toward_far * 0.5),
 					"%s covers its own sidewalk to the frontage" % name)
 			t.check(_solid_across(shape, stands, axis, placed, across, far_kerb - toward_far * 0.5),

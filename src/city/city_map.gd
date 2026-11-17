@@ -1303,22 +1303,22 @@ func is_closed(tile: Vector2i) -> bool:
 ## from the corridor's outer edge goes to the kerb at 64px, and one in the lane at 112px to the kerb
 ## at 128px.
 ##
-## **`at` itself where it stands on no one street's carriageway**: a junction box, which is in
-## both corridors at once and has no one kerb beside it, a sidewalk, a precinct (paved with no
-## carriageway) or ground off the streets. A point already on a kerb line is kept, so asking twice
-## answers what asking once did: the kerb at 64px is the lane's own edge, and the one at 128px is the
-## edge of the sidewalk tile beyond it.
-##
-## Overrides WorldMap.kerb_beside.
-func kerb_beside(at: Vector2) -> Vector2:
-	var tile := world_to_tile(at)
-	if tile_at(tile) != GameEnums.TileType.ROAD:
-		return at
+## **`at` itself where it is in no one corridor's carriageway lanes**: a junction box, which is in
+## both corridors at once and has no one kerb beside it, a sidewalk's offsets, or ground off the
+## streets. A point already on a kerb line is kept, so asking twice answers what asking once did:
+## the kerb at 64px is the lane's own edge, and the one at 128px is the edge of the sidewalk beyond
+## it. The lattice's geometry, like `corridor_offset()`, so a plan asks it without a map
+## (`EventPlan.body_at()`); what is painted on the ground is not read, and the one caller places
+## only on a carriageway (`EventDef.stands_at_its_kerb()`, the roadblock).
+static func kerb_beside(at: Vector2) -> Vector2:
+	var tile := WorldMap.tile_of(at)
 	var x_offset := corridor_offset(tile.x)
 	var y_offset := corridor_offset(tile.y)
 	if (x_offset >= 0) == (y_offset >= 0):
 		return at
 	var across_x := x_offset >= 0
+	if not is_road_offset(x_offset if across_x else y_offset):
+		return at
 	var coordinate := at.x if across_x else at.y
 	var into := float(x_offset if across_x else y_offset) \
 			+ fposmod(coordinate, float(Tuning.TILE_SIZE)) / float(Tuning.TILE_SIZE)

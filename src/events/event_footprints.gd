@@ -158,7 +158,7 @@ static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vect
 
 ## **Where a body stands once it is built at `at`**, the one reading every place that needs it asks:
 ## `at` moved onto the kerb beside its carriageway lane when the row spans the street
-## (`EventDef.stands_at_its_kerb()`, the roadblock, `WorldMap.kerb_beside()`); `at` moved to the
+## (`EventDef.stands_at_its_kerb()`, the roadblock, `CityMap.kerb_beside()`); `at` moved to the
 ## middle of its pavement band when the row is any other stationary solid body that `pavement_side`
 ## does not pin to an edge (`_centred_on_the_pavement_band()`); otherwise `at` itself.
 ## `EventInstance.setup()` and `move_to()` stand the body there, the scheduler's and the walk's
@@ -166,7 +166,7 @@ static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vect
 ## it for a body not yet built, so a body moved after dawn stands where the record says it does.
 static func stands_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
 	if row.stands_at_its_kerb():
-		return map.kerb_beside(at)
+		return CityMap.kerb_beside(at)
 	if row.stands_on_its_band_middle():
 		return _centred_on_the_pavement_band(map, at)
 	return at

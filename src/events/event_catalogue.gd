@@ -1900,7 +1900,7 @@ static func _curfew_announce() -> EventDef:
 ## **Its band covers its own sidewalk and the road, and leaves the far sidewalk whole** ("okay let's
 ## use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road", inbox
 ## #1465 in spry-plover). It is placed on a carriageway lane and its body stands on the kerb beside
-## that lane (`EventDef.stands_at_its_kerb()`, `WorldMap.kerb_beside()`), from where its band
+## that lane (`EventDef.stands_at_its_kerb()`, `CityMap.kerb_beside()`), from where its band
 ## reaches `ROADBLOCK_REACH` (64px) either way across the street: to the frontage on its own side
 ## and to the far kerb. So a roadblock on one of her routes' streets leaves her the far sidewalk to
 ## pass on (`OneSidewalkOpenRule`), baiting the guard away if he hunts.

@@ -61,7 +61,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## `_closing_radius() + PLAYER_BODY_RADIUS` from where it stands. The streets this city has only.
 func _streets_reached_by(plan: EventPlan) -> Array[StreetNetwork.Segment]:
 	var reach := _closing_radius(plan) + Tuning.PLAYER_BODY_RADIUS
-	var at := plan.body_at(_map)
+	var at := plan.body_at()
 	var from := _map.world_to_tile(at - Vector2.ONE * reach)
 	var to := _map.world_to_tile(at + Vector2.ONE * reach)
 	var found: Array[StreetNetwork.Segment] = []
@@ -91,13 +91,13 @@ func _closes_its_last_sidewalk(street: StreetNetwork.Segment, candidate: EventPl
 		if plan == candidate or not plan.obstructs():
 			continue
 		var radius := _closing_radius(plan)
-		var at := plan.body_at(_map)
+		var at := plan.body_at()
 		if world.grow(radius + Tuning.PLAYER_BODY_RADIUS).has_point(at):
 			bodies.append(Vector3(at.x, at.y, radius))
 	var bands := Corridor.sidewalk_bands(rect, street.horizontal)
 	if not _one_is_open(bands, street.horizontal, bodies):
 		return false
-	var stands := candidate.body_at(_map)
+	var stands := candidate.body_at()
 	bodies.append(Vector3(stands.x, stands.y, _closing_radius(candidate)))
 	return not _one_is_open(bands, street.horizontal, bodies)
 

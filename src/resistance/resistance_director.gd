@@ -2054,7 +2054,7 @@ class SectionToSwap extends RefCounted:
 ## reachable from home and closer along her paths than `reach`, or `NO_TILE` when none is.
 func _touched_from(plan: EventPlan, paths: Dictionary, reach: float) -> Vector2i:
 	var touch := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
-	var body := plan.body_at(_map)
+	var body := plan.body_at()
 	var centre := _map.world_to_tile(body)
 	var span := ceili(touch / Tuning.TILE_SIZE)
 	var from := NO_TILE
