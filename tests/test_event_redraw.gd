@@ -253,9 +253,11 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t: TestRunner) 
 ## time. The same cyclist with nobody to aim at carries no caret, and is drawn on none of them.
 func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
-	var marked: EventInstance = await DrawnEvent.stand(t, def, false)
+	var her := WhereSheIs.nowhere()
+	var marked: EventInstance = await DrawnEvent.stand(t, def, false, null, null,
+			DrawnEvent.AT, Vector2.RIGHT, her)
 	var unmarked: EventInstance = await DrawnEvent.stand(t, def, false)
-	marked.excitement.set_player_at(marked.global_position)
+	her.tell(marked.global_position)
 	t.check(marked.excitement.caret_strength() == 2 and unmarked.excitement.caret_strength() == 0,
 			"the cyclist she stands on is marked, the one nobody is near carries nothing")
 	var drawn := {marked: [0], unmarked: [0]}
@@ -293,7 +295,9 @@ func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 	var def := _copy_of(EventCatalogue.by_id("loose_dog"))
 	def.hard_fail = true
-	var instance: EventInstance = await DrawnEvent.stand(t, def, false)
+	var her := WhereSheIs.nowhere()
+	var instance: EventInstance = await DrawnEvent.stand(t, def, false, null, null,
+			DrawnEvent.AT, Vector2.RIGHT, her)
 	var drawn := [0]
 	instance.draw.connect(func() -> void: drawn[0] += 1)
 	var here := instance.global_position
@@ -307,6 +311,7 @@ func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 	var strengths := []
 	for state: Array in states:
 		var before: int = drawn[0]
+		her.tell(here + state[0])
 		instance.excitement.set_player_at(here + state[0], state[1])
 		await DrawnEvent.frames(t)
 		moved.append(drawn[0] > before)
@@ -330,15 +335,17 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t: TestRunner) -> void:
 	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
 	if not def:
 		return
+	var her := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]),
+			Vector2.RIGHT, null, null, her)
 	# Ticks with nobody's position known, so the gate caches an answer for this `age` against
 	# `Vector2.INF` — the state the running game is in on any frame whose event `_process()` runs
 	# before whoever tells where she is (`WhereSheIs.tell()`).
 	for i in int(ceil(def.telegraph_time / STEP)) + 1:
 		instance.step(STEP)
 	t.check(instance.excitement.caret_strength() == 0, "with nobody to aim at there is no caret")
-	instance.excitement.set_player_at(instance.global_position + Vector2(def.outer_radius, 0.0))
+	her.tell(instance.global_position + Vector2(def.outer_radius, 0.0))
 	t.check(instance.excitement.caret_strength() == 2,
 			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
 	instance.free()

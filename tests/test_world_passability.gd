@@ -508,7 +508,7 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 		return
 	var instance := RunCity.events(city).spawn_extra(dog, start)
 	instance.set_process(false)
-	instance.excitement.set_player_at(start - into * 80.0)
+	RunCity.events(city).world.where_she_is().tell(start - into * 80.0)
 	instance.give_up_the_chase()
 	t.check(instance.is_leaving and instance.facing_now().is_equal_approx(into),
 			"it starts leaving facing the building, away from her (%s)" % instance.facing_now())
@@ -559,7 +559,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 		var left_from := Vector2.INF
 		walked += 1
 		for frame in 200:
-			instance.excitement.set_player_at(her)
+			RunCity.events(city).world.where_she_is().tell(her)
 			if frame == 120 and not instance.is_leaving:
 				instance.give_up_the_chase()
 			if instance.is_leaving:

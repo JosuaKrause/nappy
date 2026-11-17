@@ -9,7 +9,7 @@ const HaloRig = preload("res://tests/halo_rig.gd")
 class ToldEventSource extends EventExcitement:
 	var told_sensitivity := 1.0
 
-	## Overrides EventExcitement.set_player_at.
+	## Overrides ExcitementSource.set_player_at.
 	func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 			sensitivity: float = 1.0) -> void:
 		told_sensitivity = sensitivity

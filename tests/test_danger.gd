@@ -62,8 +62,9 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t: TestRunner) -> void:
 	t.check(def != null and not def.mobile, "cafe_tables is a stationary row")
 	if not def:
 		return
-	var instance := _instance(def)
-	instance.excitement.set_player_at(instance.global_position)
+	var where := WhereSheIs.nowhere()
+	var instance := _instance(def, PackedVector2Array(), where)
+	where.tell(instance.global_position)
 	t.check((await _carets(t, instance)).is_empty(),
 			"a café she is standing in front of carries no caret at all")
 	instance.free()
@@ -298,11 +299,12 @@ func _test_a_cat_dashing_at_her_is_unmarked(t: TestRunner) -> void:
 	t.check(def != null, "cat_dash is in the catalogue")
 	if not def:
 		return
-	var instance := _instance(def, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+	var where := WhereSheIs.nowhere()
+	var instance := _instance(def, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]), where)
 	# One frame past the telegraph is enough to turn the crouch into a heading — `cat_dash` is
 	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
 	_advance(instance, def.telegraph_time + STEP)
-	instance.excitement.set_player_at(Vector2(def.outer_radius, 0.0))
+	where.tell(Vector2(def.outer_radius, 0.0))
 	t.check((await _carets(t, instance)).is_empty(),
 			"a cat driving straight at a standing player still lands under the line")
 	instance.free()
@@ -322,9 +324,10 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> 
 	# telegraph clears rather than at a fixed point its own approach may have already ridden past.
 	# (A telegraphing cyclist is its own scenario below — `caret_strength()` no longer needs the
 	# telegraph to be over to read red.)
-	var on_course := _instance(def, route)
+	var on_course_where := WhereSheIs.nowhere()
+	var on_course := _instance(def, route, on_course_where)
 	_advance(on_course, def.telegraph_time + STEP)
-	on_course.excitement.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
+	on_course_where.tell(on_course.global_position + Vector2(def.outer_radius, 0.0))
 	t.check(_is_the_doubled_red(await _carets(t, on_course)),
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
@@ -334,7 +337,6 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> 
 	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
 	# but past the inner radius (33) it would have to cross to end the day.
 	var her := wide.global_position + Vector2(0.0, 60.0)
-	wide.excitement.set_player_at(her)
 	t.check(not wide.excitement.will_be_lethal(her),
 			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
 	wide.free()
@@ -353,10 +355,11 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 		# No `_advance()` at all: still inside its own 2.0s telegraph, and already moving —
 		# `cyclist` is not `still_while_telegraphing`, so `_caret_velocity()` reads its route speed
 		# from age zero.
+		var cyclist_where := WhereSheIs.nowhere()
 		var cyclist := _instance(cyclist_def,
-				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]), cyclist_where)
 		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
-		cyclist.excitement.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
+		cyclist_where.tell(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
 		t.check(_is_the_doubled_red(await _carets(t, cyclist)),
 				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
 						"the doubled red caret")
@@ -369,10 +372,11 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 	if dog_def:
 		t.check(dog_def.hard_fail and dog_def.pursuit != null and dog_def.notice_within() <= 0.0,
 				"charging_dog is a hard-fail pursuer sited already noticing her")
-		var dog := _instance(dog_def)
+		var dog_where := WhereSheIs.nowhere()
+		var dog := _instance(dog_def, PackedVector2Array(), dog_where)
 		t.check(dog.is_telegraphing() and not dog.is_waiting(),
 				"the day-3 dog has already noticed her and is still telegraphing its charge")
-		dog.excitement.set_player_at(dog.global_position + Vector2(60.0, 0.0))
+		dog_where.tell(dog.global_position + Vector2(60.0, 0.0))
 		t.check(_is_the_doubled_red(await _carets(t, dog)),
 				"a noticed dog holding its stand-off through the telegraph is already the " +
 						"doubled red caret")
@@ -381,9 +385,10 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 	var robber_def := EventCatalogue.by_id("alley_robbery")
 	if robber_def:
 		t.check(robber_def.notice_within() > 0.0, "alley_robbery waits for a trigger")
-		var robber := _instance(robber_def)
+		var robber_where := WhereSheIs.nowhere()
+		var robber := _instance(robber_def, PackedVector2Array(), robber_where)
 		t.check(robber.is_waiting(), "and nobody has come near it yet")
-		robber.excitement.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
+		robber_where.tell(robber.global_position + Vector2(1000.0, 1000.0))
 		t.check((await _carets(t, robber)).is_empty(),
 				"a waiting robber in an alley she is not in carries no mark at all")
 		robber.free()
@@ -482,7 +487,8 @@ func _test_the_mark_still_breathes(t: TestRunner) -> void:
 	t.check(def != null and def.pulse_period > 0.0, "the yeller pulses")
 	if not def:
 		return
-	var instance := _instance(def)
+	var where := WhereSheIs.nowhere()
+	var instance := _instance(def, PackedVector2Array(), where)
 	_advance(instance, def.telegraph_time + 0.1)
 
 	var lowest := INF
@@ -490,6 +496,7 @@ func _test_the_mark_still_breathes(t: TestRunner) -> void:
 	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
 	for i in int(round(def.pulse_period / STEP)):
 		instance.step(STEP)
+		where.tell(approach)
 		instance.excitement.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
 		var carets := await _carets(t, instance)
 		var width: float = carets[0]["size"].x if not carets.is_empty() else 0.0
@@ -942,12 +949,15 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 			return each["colour"] == Palette.MARK_LETHAL)
 
 ## `def` live at the origin along `route`, handed a recording drawer before `setup()`, as its
-## manager's spawner hands the real one, so `_carets()` reads what its look draws.
-func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
+## manager's spawner hands the real one, so `_carets()` reads what its look draws. `where` is the
+## word on where she is it hears, which the manager tells in the game: a test that puts her
+## somewhere tells it.
+func _instance(def: EventDef, route := PackedVector2Array(),
+		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.atlas = _atlas
 	instance.drawer = RecordingEventDrawer.new(_atlas)
-	instance.setup(def, Vector2.ZERO, route)
+	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT, null, null, where)
 	return instance
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`

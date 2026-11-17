@@ -25,9 +25,11 @@ extends Node2D
 ## **It accumulates nothing itself.** What has landed on her is traced from the meter's own sum:
 ## `Baby._update_excitement()` hands each source its exact share (`accumulate_landed()`), and
 ## `Baby.decay_in_window()` is the same meter's decay over the same window. This node only selects
-## sources and combines the two into each rim's net, and tells every source where she is and what
-## the frame's projected total is for its caret (`ExcitementSource.set_player_at()`,
-## `set_expected_total_gross()`).
+## sources and combines the two into each rim's net, and tells every source her motion and what the
+## frame's projected total is for its caret (`ExcitementSource.set_player_at()`,
+## `set_expected_total_gross()`). **An event's source measures her from the manager's word and
+## ignores where the halo says she is**: that word is the one channel for where she is
+## (`WhereSheIs`), and the halo's own word on the point is the crowd's.
 ##
 ## **Its candidates are every source of the sets it is handed** (`ExcitementSources`, the world's
 ## own, `WorldContext.use_excitement_sources()`): the events and the whole crowd in the city, the

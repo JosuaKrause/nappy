@@ -19,8 +19,8 @@ extends RefCounted
 ##   body back round her from its first frame (`EventInstance._ready()`), and an officer let out
 ##   after the tick's word, a successor set off inside an event's step and a door's guard know all
 ##   six facts before the next word;
-## - **a point it is told itself** (`see_her_at()`: the halo once a drawn frame, a pursuer set on
-##   her from outside) **is its own until the next word**, and reaches no other event;
+## - **a point it is told itself** (`see_her_at()`: a pursuer set on her from outside) **is its
+##   own until the next word**, and reaches no other event;
 ## - **with nobody in the world nothing is told**, and a handle keeps answering the last word.
 ##
 ## The count of words and the point a handle saw are that timing's only state; `forget()` starts a
