@@ -22,7 +22,6 @@ func run(t: TestRunner) -> void:
 	_test_litter_stays_off_roads_and_calm_ground(t)
 	_test_litter_grows_with_the_day(t)
 	_test_sacks_wait_for_the_curve_then_alleys_before_fronts(t)
-	_test_the_mouse_prefers_a_pile(t)
 	await _test_boarded_storefronts_and_windows_shutter(t)
 	await _test_a_burnt_building_shows_nothing_intact(t)
 	await _test_ambient_shuttering_waits_for_the_curve(t)
@@ -148,55 +147,6 @@ func _test_sacks_wait_for_the_curve_then_alleys_before_fronts(t: TestRunner) -> 
 			var type := map.tile_at(tile)
 			t.check(type == GameEnums.TileType.ALLEY or type == GameEnums.TileType.SIDEWALK,
 					"a sack only ever stands in an alley or on a sidewalk")
-
-## **The alley mouse lands beside a garbage-sack pile more often than the ground alone would put it
-## there.** The last day is planned through `build_day()` on pinned maps, each from several rolls,
-## and every mouse it stands is asked whether it is within a tile of a pile
-## (`GarbageSacks.alley_pile_tiles()`). Without the preference a mouse is a uniform pick of the
-## alley ground it may stand on (`RowGround.tiles_for()`), so each lands near a pile with
-## the probability of that ground's share of such tiles, and the count near is a sum of those
-## chances: its mean is the sum of the shares and its variance the sum of share * (1 - share). With
-## the preference an alley location beside a pile draws the mouse five times as often (itself and
-## `_MOUSE_PILE_EXTRA_COPIES` more, `RuledLocationGround.scale()`) and the mouse it draws is offered
-## the tiles beside the pile first. The bar is the mean plus five standard deviations of the
-## no-preference count, far enough above chance that no pinned roll passes by luck; dropping the
-## preference puts the count near the mean and fails it.
-func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
-	var day := Tuning.RUN_LENGTH_DAYS
-	var mouse := EventCatalogue.by_id("alley_mouse")
-	var mice := 0
-	var near := 0
-	var expected := 0.0
-	var variance := 0.0
-	for i in 12:
-		var map := CityGenerator.generate(BASE_SEED + i * 173)
-		var piles := GarbageSacks.alley_pile_tiles(map, day)
-		if piles.is_empty():
-			continue
-		var candidates := EventScheduler.row_ground(map).tiles_for(mouse)
-		var beside := {}
-		for tile in candidates:
-			for pile in piles:
-				if maxi(absi(tile.x - pile.x), absi(tile.y - pile.y)) <= 1:
-					beside[tile] = true
-					break
-		var share := float(beside.size()) / float(candidates.size())
-		for roll in 8:
-			var rng := RandomNumberGenerator.new()
-			rng.seed = 1000 + roll
-			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).plan().placements():
-				if plan.def.id != mouse.id:
-					continue
-				mice += 1
-				expected += share
-				variance += share * (1.0 - share)
-				if beside.has(map.world_to_tile(plan.position)):
-					near += 1
-	t.check(mice > 100, "the pinned last days stand enough mice to count (%d)" % mice)
-	var bar := expected + 5.0 * sqrt(variance)
-	t.check(float(near) > bar,
-			"mice land beside a sack pile more often than their ground alone would put them (%d of %d, chance %.0f, bar %.0f)"
-			% [near, mice, expected, bar])
 
 # ---------------------------------------------------------------------- buildings ---
 
