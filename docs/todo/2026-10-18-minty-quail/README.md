@@ -159,8 +159,10 @@ to this entry through three weeks with no stated end; shown "The entry has no st
 player: "also good points". *Read as, the orchestrator's, open to the player's correction:* the
 entry is done when the items in this folder are gone and the remeasure is taken, which comes after
 the design review's items too, the decision on each standing break among them; a defect found in a pull request of this entry is fixed in that pull request,
-and anything else found from here on is filed as an entry of its own after this one, never as a new
-item here. `tests-public-seams.md`'s open list holds two kinds: test gaps, which add tests and
+and anything else found from here on is filed as an entry of its own, never as a new item here: a
+defect the player's decisions say the code should not have is filed `now` and does not wait behind
+this entry (**orchestrating**, "What the orchestrator keeps", silky-lemur #1450), and the rest is
+filed after this one. `tests-public-seams.md`'s open list holds two kinds: test gaps, which add tests and
 refactor nothing and move to such an entry when this one closes; and members the game does not
 need, `PlanBuilder._cross_street_path` (which no catalogue row uses) and those only tests read
 (`EventsAhead.walk_siting()` and `WalkSiting.offers_worked_out`), whose removal or game
