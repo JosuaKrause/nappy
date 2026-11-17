@@ -707,3 +707,23 @@
 9. **Read as:** (the assistant's interpretation, not the player's words)
 
    "Those things" are implementing and reviewing. Fable may not take either up on its own judgment, not even for a part it judges too complex to hand off. No exception remains for it to invoke. The choice of who codes and who reviews is not Fable's: the orchestrator picks the builder's model, and the review is Opus's.
+
+## #1504
+
+1. **Context** (the assistant's):
+
+   The player's answer on the Nappy board (Main tab), question `fable-outside-the-label`, 2026-11-17, as asked:
+   - Question: does "Fable only writes the design, never the code or the review" hold for every design Fable writes, or only for work under the fable-only label? (built on my pick)
+   - What you said today (inbox #1501): Opus may review fable-only work; Fable writes only the design, with enough context for building and reviewing it, and cannot decide to code or review it itself. My read-back said "on fable-only work".
+   - What it meets: an older rule of yours, separate from the label: when Fable designed something, Fable reviews it (grassy-trout #1299, statement 9, confirmed as permanent in #1303). It covers Fable designs outside the label too, for example a planning task given to Fable because it was hard.
+   - Only fable-only work (my pick): the label's work follows today's rule; a Fable design outside the label is still reviewed by Fable under the older rule. Nothing older is overturned without your word.
+   - Every Fable design: Fable never codes or reviews anything; the older rule goes, and Opus reviews every Fable design.
+   - Changing later: one row of the model table in the orchestrating skill and a sentence beside it.
+
+2. **The note.**
+
+   > every fable work item
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   The second option: the rule of inbox #1501 holds for every piece of work Fable takes part in, under the fable-only label or not. Fable writes only the design, with enough context to build and to review it; it never writes code or reviews, and cannot decide to. The older rule that Fable reviews what Fable designed (grassy-trout #1299, statement 9) is overturned by the player's word here, and Opus reviews every Fable design.
