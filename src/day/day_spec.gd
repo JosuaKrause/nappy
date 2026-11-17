@@ -174,6 +174,14 @@ var bag := {}
 ## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none. Read
 ## through `walk_bag_rows()`.
 var bag_rows := {}
+## Whether a unit of the walk draws one marble and no more (`MarbleDraw`): a row's stands alone in
+## the unit, an empty one leaves it with nothing. *(Inbox #1185 in gentle-owl's board answer: "one
+## per street. fill empty in if any segment or location in the street has an event".)* It also
+## stands one roadblock a street at most, so a crossing is one band and one guard on her side of it
+## to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not enough to make
+## the obstacle survivable")*. A day's unit draws until its room is spoken for. Read through
+## `stands_one_event_a_street()`.
+var _one_event_a_street := false
 ## Whether nothing dangerous may reach a calm area she has not used yet, and one stays usable
 ## (`CalmAreas.unused_ground()`, `DawnCalmKeptClean`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
@@ -340,6 +348,7 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 	}
 	spec.keeps_unused_calm_clear = false
 	spec.holds_the_home_streets = false
+	spec._one_event_a_street = true
 	spec.caps_per_day = false
 	spec.one_notice_at_a_time = true
 	spec.keeps_the_walk_open = true
@@ -430,6 +439,11 @@ func walk_bag() -> Dictionary:
 ## (`bag_rows`).
 func walk_bag_rows() -> Dictionary:
 	return bag_rows
+
+## Whether a street of the walk stands one event at most (`_one_event_a_street`): its unit draws
+## one marble (`MarbleDraw`).
+func stands_one_event_a_street() -> bool:
+	return _one_event_a_street
 
 ## Hands the walk its ways out, as the world it is walked in answers them (`DayWorld.exits()`): a
 ## `Goal.CITY_EDGE` walk's two, and none for any other (`exits`).

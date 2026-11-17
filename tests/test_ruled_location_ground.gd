@@ -4,7 +4,9 @@ extends RefCounted
 ## it true the first with room all round, else the roomiest; and with `keeps_routes_on_the_run` a
 ## route is built inside its location's run (`Location.run()`), with it false on no bound. And a
 ## location's weight is its own ground's alone, a row's weight on a kind of ground left to the bag.
-## And tiles a caller brings (`offer_on()`, a beat her walk lays) are asked in the order handed.
+## And a costly wall is weighed where the judge has no corridor (the escape's walk has none, so no
+## gap between its strands to weigh). And tiles a caller brings (`offer_on()`, a beat her walk
+## lays) are asked in the order handed.
 ##
 ## Run with stand-ins for what it is handed: the fit (`_Fit`, whose tiles a check sets and which
 ## records each build and its bound), the day's rules (`_Rules`, the room of each tile set by
@@ -17,6 +19,7 @@ func run(t: TestRunner) -> void:
 	_test_the_first_allowed_tile_or_the_roomiest(t)
 	_test_a_route_is_built_inside_its_run(t)
 	_test_a_locations_weight_is_its_grounds_alone(t)
+	_test_a_costly_wall_is_weighed_with_no_corridor(t)
 	_test_tiles_brought_are_asked_in_the_order_handed(t)
 
 const ROOMY := INF
@@ -66,6 +69,15 @@ static func _location() -> Location:
 	var tiles := Rect2i(segment.tile_rect().position, Vector2i(3, 2))
 	return Location.new(segment, 0, tiles, Vector2(tiles.position) * Tuning.TILE_SIZE,
 			PlacementView.View.ON_THE_ROUTE, true, Location.Kind.SIDEWALK)
+
+## A section of the carriageway, the street's whole width, as `StreetLocations` lays one: where a
+## row that takes a section stands.
+static func _section() -> Location:
+	var segment := StreetNetwork.Segment.new(Vector2i(1, 1), true)
+	var rect := segment.tile_rect()
+	var tiles := Rect2i(rect.position, Vector2i(3, rect.size.y))
+	return Location.new(segment, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
+			PlacementView.View.ON_THE_ROUTE, true, Location.Kind.SECTION)
 
 static func _judge(fit: _Fit, rules: _Rules, roomiest: bool,
 		on_the_run := false) -> RuledLocationGround:
@@ -142,6 +154,25 @@ func _test_a_locations_weight_is_its_grounds_alone(t: TestRunner) -> void:
 	t.check(judge.scale(row, _location()) == 1.0,
 			"a row weighed at a half on a street scales at one on an ordinary sidewalk (%.2f)"
 			% judge.scale(row, _location()))
+
+## **A costly wall is weighed with no corridor**: a walk with no corridor has no gap between strands,
+## so a wall by cost that does not end the day (the army truck, on the escape's day) weighs its
+## location's own ground alone and the gap's weight is skipped; asked of a null corridor it was a
+## call on nothing.
+func _test_a_costly_wall_is_weighed_with_no_corridor(t: TestRunner) -> void:
+	var truck := EventCatalogue.by_id("military_convoy")
+	var day := DaySpec.CITY_DAY
+	t.check(EventScheduler.role_for(truck, day) == GameEnums.BlockerRole.WALL and not truck.hard_fail,
+			"the army truck is a wall that does not end the day on the escape's day")
+	var ground := RowGround.new(null, null, true, RowGround.Weights.new(),
+			func(_def: EventDef) -> bool: return true)
+	var standing: Array[EventPlan] = []
+	var judge := RuledLocationGround.new(day, 7, _Map.new(), standing, null, _Fit.new(), _Rules.new(),
+			ground, false, false)
+	var section := _section()
+	t.check(judge.scale(truck, section) == 1.0,
+			"at a section of the carriageway, where the truck stands, it weighs the location's own "
+			+ "ground alone, the gap's weight skipped (%.2f)" % judge.scale(truck, section))
 
 ## **Tiles a caller brings are asked in the order it hands them** (`offer_on()`, for a beat her walk
 ## lays): the first the rules leave valid answers whatever the rooms of the ones after it, no tile

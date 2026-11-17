@@ -33,6 +33,12 @@ extends RefCounted
 ## - **Off the streets every marble takes one location**: a junction box, an alley's thirds, a
 ##   park's or a square's cells, every row the size of one.
 ##
+## - **Where the walk stands one event a unit** (`one_marble_a_unit`,
+##   `DaySpec.stands_one_event_a_street()`), the unit draws one marble: a row's stands alone in
+##   it and an empty one leaves it with nothing. A row the bag's `accepts` refuses stays in the bag and
+##   the bag offers the next marble inside the same draw, so a unit whose first row is refused
+##   draws again among the marbles left.
+##
 ## A row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew) is drawn and laid
 ## as any other and kept with no position, for her walk to site (`_as_drawn()`), so the rows laid
 ## after it are judged without it. Every location of the unit left open ends recorded as drawn.
@@ -49,6 +55,7 @@ const SIZE_ORDER := {
 var _locations: DayLocations
 var _rows: Dictionary
 var _ground: LocationGround
+var _one_marble_a_unit := false
 
 ## One row of a layout: the row, what it takes of its unit, the location it stands in and its
 ## event as the location holds it.
@@ -78,11 +85,14 @@ class _Placing extends RefCounted:
 		return _plan
 
 ## `locations` records each draw (`DayLocations.record()`); `rows` the rows the
-## bag's marbles name (`id -> EventDef`); `ground` the judge.
-func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround) -> void:
+## bag's marbles name (`id -> EventDef`); `ground` the judge; `one_marble_a_unit`, the unit
+## draws one marble and stops (the class comment).
+func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
+		one_marble_a_unit := false) -> void:
 	_locations = locations
 	_rows = rows
 	_ground = ground
+	_one_marble_a_unit = one_marble_a_unit
 
 ## **Draws `unit`'s marbles from `bag` and lays its rows out**, judged among `among`: answers the
 ## events placed, in the order drawn, a row handed to her walk among them with no position. Every
@@ -113,12 +123,14 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 		var marble := bag.draw(accepts, weight)
 		if marble == ViewBag.EMPTY:
 			room.take(EventDef.StreetShare.A_LOCATION)
-			continue
-		var def: EventDef = _rows[marble]
-		drawn.append(def)
-		var trial: Array[_Placing] = trials[marble]
-		laid.assign(trial)
-		room.take(_share_of(def, street))
+		else:
+			var def: EventDef = _rows[marble]
+			drawn.append(def)
+			var trial: Array[_Placing] = trials[marble]
+			laid.assign(trial)
+			room.take(_share_of(def, street))
+		if _one_marble_a_unit:
+			break
 	for placing in laid:
 		_locations.record(placing.location(), placing.plan())
 	for location in unit.locations():

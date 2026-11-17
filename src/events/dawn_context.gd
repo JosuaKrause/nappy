@@ -234,12 +234,24 @@ func ground() -> RowGround:
 		_ground = made
 	return _ground
 
-## **The day's locations** (`DayLocations`), laid out once on the map as the day's holds leave it
-## and each told its view by the walk's corridor.
+## **The day's locations** (`DayLocations`), laid out once on the map as the day's holds leave it:
+## by the walk's corridor, each told its view, or, for a walk with no corridor, along the streets
+## the walk names, each on the route (`DayLocations.along()`).
 func locations() -> DayLocations:
 	if _locations == null:
-		_locations = DayLocations.lay_out(_map, corridor())
+		var routed := corridor()
+		_locations = DayLocations.lay_out(_map, routed) if routed \
+				else DayLocations.along(_map, _walk.streets_on_the_walk())
 	return _locations
+
+## **Where she is put down, on a walk that keeps that ground clear**: the walk's start
+## (`RouteSource.start()`) where the spec does not hold the home's streets
+## (`DaySpec.holds_the_home_streets`), the rule a walk that sets off elsewhere keeps in their
+## place; `Vector2.INF` on a walk that holds them, where the street her door opens onto is refused
+## to every row instead (`RowGround`). What the fit is handed, so no body and no lethal field is
+## offered the ground she is put down on (`LocationFit`).
+func ground_she_starts_on() -> Vector2:
+	return Vector2.INF if _spec.holds_the_home_streets else _walk.start()
 
 ## **Tells the dawn which calm area it keeps clean** besides the ones she has not used
 ## (`DawnCalmKeptClean`), `CalmAreas.NONE` for none: its ground joins what nothing may reach.
@@ -263,6 +275,9 @@ func rules() -> StreetInvalidation:
 	if _rules == null:
 		var walk_ground: WalkGround = null
 		if _spec.keeps_the_walk_open:
+			# The walk's ground keeps every plan it is shown (`WalkGround.catch_up()`), so it may be
+			# shown final plans only, and with one marble a unit a trial layout shows it none.
+			assert(_spec.stands_one_event_a_street(), "a walk kept open stands one event a street")
 			walk_ground = WalkGround.new(_map, events().standing(), _walk)
 		_rules = StreetInvalidation.new(_map, corridor(), _leave_alone(), _doors,
 				_builder if _spec.one_notice_at_a_time else null, walk_ground)

@@ -8,6 +8,7 @@ func run(t: TestRunner) -> void:
 	_test_neither_section_of_the_escape_has_the_region_wall(t)
 	_test_the_walls_kept_follow_the_region_wall(t)
 	_test_every_marble_of_a_walk_bag_names_a_row(t)
+	_test_a_walk_kept_open_stands_one_event_a_street(t)
 
 ## Every marble of a walk's bag but the empty one names a row, for every spec the run builds, and
 ## the empty marble is the string the bag itself calls empty, one string two layers each name.
@@ -27,6 +28,23 @@ func _test_every_marble_of_a_walk_bag_names_a_row(t: TestRunner) -> void:
 					"day %d's walk bag marble %s names a row" % [spec.number, marble])
 	t.check(named > 0, "some spec walks a bag with rows in it (%d marbles named)" % named)
 	t.check(DaySpec.EMPTY_MARBLE == ViewBag.EMPTY, "the spec's empty marble is the bag's")
+
+## A walk kept open stands one event a street, for every spec the run builds: what the dawn's
+## context asserts, since the walk's ground keeps every plan it is shown and a unit with several
+## rows would show it trials.
+func _test_a_walk_kept_open_stands_one_event_a_street(t: TestRunner) -> void:
+	var specs: Array[DaySpec] = []
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		specs.append(DaySpec.for_day(day))
+	for which: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
+		specs.append(DaySpec.for_section(which, 60.0))
+	var kept_open := 0
+	for spec in specs:
+		if spec.keeps_the_walk_open:
+			kept_open += 1
+			t.check(spec.stands_one_event_a_street(),
+					"day %d keeps the walk open and stands one event a street" % spec.number)
+	t.check(kept_open > 0, "some spec keeps its walk open (%d)" % kept_open)
 
 func _test_the_region_wall_stands_from_its_first_day(t: TestRunner) -> void:
 	var first := Tuning.REGION_WALL_FIRST_DAY
