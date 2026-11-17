@@ -152,7 +152,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	while x < 200.0 and not seen:
 		car.position = Vector2(x, 180.0)
 		var her := car.position + Vector2(60.0, 0.0)
-		car.mood().set_player_at(her)
+		car.mood().set_her_at(her)
 		car.mood().advance(STEP)
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
@@ -172,7 +172,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	# the caret in that frame, and the probe says so.
 	car.position = Vector2(200.0, 180.0)
 	var her_on_screen := car.position + Vector2(60.0, 0.0)
-	car.mood().set_player_at(her_on_screen)
+	car.mood().set_her_at(her_on_screen)
 	car.mood().advance(STEP)
 	car.end_the_frame(0.0)
 	t.check(_the_gate_projected_her_caret(car, her_on_screen),
@@ -190,9 +190,9 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 ## while one it had not answers afresh, for a car she is far from (none). She is put back where the
 ## frame told the car she was, `at`.
 func _the_gate_projected_her_caret(car: CrowdAgent, at: Vector2) -> bool:
-	car.mood().set_player_at(at + Vector2(5000.0, 0.0))
+	car.mood().set_her_at(at + Vector2(5000.0, 0.0))
 	var answered := car.mood().caret_strength()
-	car.mood().set_player_at(at)
+	car.mood().set_her_at(at)
 	return answered != 0
 
 ## A walker whose picture did not change while it was off screen — covering no ground (nothing steps
@@ -230,23 +230,25 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	if not def:
 		return
 	var screen := _screen(t, Vector2(-2000.0, 0.0))
+	var her := WhereSheIs.nowhere()
 	var cyclist := EventInstance.new()
 	cyclist.setup(def, Vector2(320.0, 180.0),
-			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
+			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]),
+			Vector2.RIGHT, null, null, her)
 	cyclist.set_process(false)
 	# Hidden, so the frames the view pans through never draw it (it was handed no atlas): the gate
 	# asks for a redraw whatever the event's visibility, and that answer is what is checked.
 	cyclist.visible = false
 	screen.add_child(cyclist)
-	cyclist.source().set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
+	her.tell(cyclist.global_position + Vector2(def.outer_radius, 0.0))
 	# A twin it is asked of first: whether the gate worked out the caret is read off what it left
 	# cached (below), and reading it works the caret out.
 	var twin := EventInstance.new()
 	twin.setup(def, Vector2(320.0, 180.0),
-			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
+			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]),
+			Vector2.RIGHT, null, null, her)
 	twin.set_process(false)
 	screen.add_child(twin)
-	twin.source().set_player_at(twin.global_position + Vector2(def.outer_radius, 0.0))
 	t.check(not twin.look.redraw_if_the_picture_changed(), "off screen its twin asks for no redraw")
 	# The caret is cached on the age and where she stands, so a change to whether the event may carry
 	# one at all (`leave_for_a_completed_task()`, which no key term names) is answered afresh by a

@@ -25,9 +25,10 @@ extends Node2D
 ## **It accumulates nothing itself.** What has landed on her is traced from the meter's own sum:
 ## `Baby._update_excitement()` hands each source its exact share (`accumulate_landed()`), and
 ## `Baby.decay_in_window()` is the same meter's decay over the same window. This node only selects
-## sources and combines the two into each rim's net, and tells every source where she is and what
-## the frame's projected total is for its caret (`ExcitementSource.set_player_at()`,
-## `set_expected_total_gross()`).
+## sources and combines the two into each rim's net, and tells every source her motion and what the
+## frame's projected total is for its caret (`ExcitementSource.set_her_motion()`,
+## `set_expected_total_gross()`). **It tells a crowd body where she is and no event**: an event
+## hears it from its manager's word, the one channel for where she is (`WhereSheIs`).
 ##
 ## **Its candidates are every source of the sets it is handed** (`ExcitementSources`, the world's
 ## own, `WorldContext.use_excitement_sources()`): the events and the whole crowd in the city, the
@@ -171,7 +172,7 @@ func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
 ## people")*: `CONTRIBUTION_FLOOR` and `MAX_SOURCES` keep a busy sidewalk legible.
 ##
 ## **`total_landed` and `decay` are read once, over every candidate, before anybody's net is
-## computed**, and `expected_gross_at()` is asked of every candidate right after `set_player_at()`,
+## computed**, and `expected_gross_at()` is asked of every candidate right after `set_her_motion()`,
 ## its sum handed back through `set_expected_total_gross()` before anything asks a caret: every
 ## source's share scales by one factor (`ExcitementSource.net_landed()`), so the floor catches all of
 ## them together, never one at a time depending on loop order. `_player` is a `Node2D`, so her
@@ -227,7 +228,11 @@ func _pick_and_predict() -> void:
 	for source: ExcitementSource in _candidates:
 		# Every candidate, picked or not — a source below the halo's own floor can still be worth
 		# a caret, since the two cues answer different questions over different sets.
-		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
+		source.set_her_motion(player_velocity, player_decay_rate, player_sensitivity)
+		# A crowd body has no manager's word to hear where she is, so the halo tells it; an event
+		# hears her from its manager, the one channel for where she is.
+		if source is CrowdExcitement:
+			(source as CrowdExcitement).set_her_at(here)
 		total_expected_gross += source.expected_gross_at(here)
 	# Every block that can come back this frame comes back before any unserved pick is served —
 	# see this function's doc. First the rims of last frame's holders whose bodies are going anyway.

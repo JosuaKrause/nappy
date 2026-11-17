@@ -13,9 +13,9 @@ extends ExcitementSource
 ## stands, its present rate and course, its birds and its car's strike.
 ##
 ## **Its caret measures her from where its instance hears she is** (`WhereSheIs.at()`), the handle
-## `EventManager` tells once a physics tick for the chase and the leaving check and `ExcitementHalo`
-## tells again once a drawn frame (`set_player_at()`): one point, so the caret and the event's
-## behaviours can never disagree about where she stands.
+## `EventManager` tells once a physics tick, for the chase, the leaving check and the caret alike:
+## one point from one channel, so the caret and the event's behaviours can never disagree about
+## where she stands.
 
 ## Open ground, the walls a field from outside meets.
 static var _NO_WALLS := WorldMap.open_ground()
@@ -63,17 +63,9 @@ func use_row_and_where_she_is(row: EventDef, where: WhereSheIs) -> void:
 	_row = row
 	_where = where
 
-## The halo's word on where she is reaches its instance's handle too (`WhereSheIs.see_her_at()`),
-## where its behaviours and its look ask it, until the manager's next word; no other event hears it.
-##
-## Overrides ExcitementSource.set_player_at.
-func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
-		sensitivity: float = 1.0) -> void:
-	super(at, velocity, decay_rate, sensitivity)
-	_where.see_her_at(at)
-
-## Where its instance hears she is, which its manager tells on the physics tick as well as the halo
-## once a drawn frame: the one point its behaviours, its look and its caret all read.
+## Where its instance hears she is, which its manager tells on the physics tick and nothing else
+## tells (`ExcitementHalo` tells it her motion once a drawn frame, never where she is): the one point its behaviours, its look and its
+## caret all read.
 ##
 ## Overrides ExcitementSource._her_at.
 func _her_at() -> Vector2:
@@ -200,9 +192,9 @@ func will_be_lethal(player_position: Vector2) -> bool:
 
 ## **Keyed on where she is as well as on the age, and the pair is load-bearing.** The answer is a
 ## projection of this event's course against her position, and the two do not move together:
-## where she is is told by the manager on its physics tick and by the halo once a drawn frame,
-## while the look asks on the event's own drawn frame. Keyed on age alone, the first to ask would
-## fix the answer for the whole tick.
+## where she is is told by the manager on its physics tick, while the look asks on the event's own
+## drawn frame. Keyed on age alone, the
+## first to ask would fix the answer for the whole tick.
 ##
 ## Overrides ExcitementSource._caret_key.
 func _caret_key() -> Variant:

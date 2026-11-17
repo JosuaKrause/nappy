@@ -3181,6 +3181,8 @@ func _set_the_task_guard_on_her() -> void:
 					or (_task_guard.is_telegraphing() and _task_guard.warns_by_radius())):
 		return
 	var her := _player_position()
+	# With no player (only a rig) the order's point is the contact's place: he is set heading there,
+	# and hears no word on where she is until a manager tells one.
 	if her == Vector2.INF and _contact:
 		her = _contact.global_position
 	if her == Vector2.INF:

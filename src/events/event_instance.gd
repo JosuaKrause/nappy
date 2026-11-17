@@ -924,6 +924,10 @@ func give_up_the_chase() -> void:
 ## with his state rather than made again (`EventManager.move_extra()`), so the leaving guard is
 ## refused here: a man walking off is never turned back into a warning.
 ##
+## `her` is the order's own point: the heading, the notice clock and the pursuit's set-on-her take
+## it, and **it tells the event nothing about where she is**, which stays the manager's word
+## (`WhereSheIs`), so a rig with nobody in the world leaves him hearing nowhere.
+##
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
 ## has him stand still in his warning for it (`is_standing_for_its_notice()`): in her view, day
 ## 13's guard raises his warning for a second and then charges. From
@@ -938,7 +942,6 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	# back (`EventPursuit.was_set_on_her()`) and the notice it held still start again from here.
 	if stand:
 		_charge.warned = false
-	_where.see_her_at(her)
 	if _chase_way == null:
 		_chase_way = _navigator.way_to(_mover, _sight)
 	_notice_time = notice

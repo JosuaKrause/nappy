@@ -121,10 +121,6 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 	instance_where.tell(instance.global_position + Vector2(0.0, def.outer_radius * 4.0))
 	t.check(instance.source().caret_strength() == 0,
 			"and the answer moves with her inside one tick, keyed on where she is")
-	instance.source().set_player_at(instance.global_position
-			+ Vector2(def.lethal_reach() * 0.5, 0.0))
-	t.check(instance.source().caret_strength() == 2,
-			"the halo's word on where she is, once a drawn frame, is where it measures from too")
 	instance.free()
 
 func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:

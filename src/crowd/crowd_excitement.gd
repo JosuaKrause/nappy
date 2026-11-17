@@ -112,6 +112,18 @@ var _outer := Tuning.PEDESTRIAN_OUTER_RADIUS
 var _silent_squared := 0.0
 var _reach_scale := 1.0
 
+## Where she is, in world space, or `Vector2.INF` before anybody has said.
+var _her_at_now := Vector2.INF
+
+## Where `ExcitementHalo` last said she is, once a drawn frame: a crowd body hears no manager's
+## word, so this is the one point its caret measures from.
+func set_her_at(at: Vector2) -> void:
+	_her_at_now = at
+
+## Overrides ExcitementSource._her_at.
+func _her_at() -> Vector2:
+	return _her_at_now
+
 func _init(agent: CrowdAgent) -> void:
 	super(agent)
 	_agent = agent

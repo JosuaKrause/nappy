@@ -484,11 +484,11 @@ this tick: her position, her pram's, the camera's view, whether she runs, whethe
 awake, whether a door holds her. The event manager tells it once a tick in one call, and the
 events' world holds it. A fact derived once and handed around (inbox #1156 in gray-dolphin). Each
 live event hears it through a handle of its own, so that an event made after the tick's word
-knows nothing of her until the next one, as its own fields did; the halo's word once a drawn
-frame, an officer's first sight of her and a notice's point go to that event's handle and not to
-the shared object. The handle is the builder's choice, open to the player's overturn (the record
-minty-quail-olive-finch): it keeps today's answers, two of which are slightly wrong (section 7,
-point 6).
+knows nothing of her until the next one, as its own fields did; nothing else tells an event where
+she is: the halo's frame tells every source her motion (`set_her_motion()`) and a crowd body the
+point, never an event, and a notice's point (`notice_her_at()`) is an order's input, not a word on
+where she is. The handle is the builder's choice, open to the player's overturn (the record
+minty-quail-olive-finch).
 
 ### 2.11 Several reads that become one question
 
@@ -913,13 +913,9 @@ each question as it was shown).
    #1278 in olive-ferret). **Read as:** every answer below is made correct. The timing is the
    read-back's, which is what the player answered: each is a pull request of its own after the step
    that gives it a name, not a change inside that step, saying what it changes in play and in the
-   run log, with its pictures. Playtests decide what then needs fixing. The halo's answer below was found in
-   building where she is as one object; *read as* (the orchestrator's, open to the player's correction) covered by the same
-   words.
+   run log, with its pictures. Playtests decide what then needs fixing.
    - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
    - The ground a row that ends the day shuts is stated four ways (`clearance()`,
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
-   - The halo's word once a drawn frame reaches only the events it lights; every other live event
-     keeps the tick's word.
