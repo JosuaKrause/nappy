@@ -1,7 +1,7 @@
 # polite-tapir — The dog walker, the patrol and the convoy are sent just ahead of her as marbles of her route's bag (placement step 2) · 2026-11-16
 
 **The ask.** The dog walker, the police patrol and the military convoy are not drawn at the beginning of the day; they are
-put in the world when she is close by, just ahead of her, so that an encounter is guaranteed (inbox #1460). This is the
+put in the world when she is close by, just ahead of her, so that an encounter is guaranteed (inbox #1460 in silky-lemur). This is the
 pull request #1477, part A of step 2 of `placement-by-construction.md`: the three rows sent ahead of her, each on its first
 leg. The route of each worked out as it goes is the record `polite-tapir-tall-ibis`, which finishes the step; the street
 rules are the record `polite-tapir-golden-egret`. The pictures and the figures below are in
@@ -15,10 +15,10 @@ rules are the record `polite-tapir-golden-egret`. The pictures and the figures b
   the first three things sent at her; one drawn where she has none waits for room.
 - **The board question `day3-charging-share`**: day 3's charging dogs keep the player's share of the bag, two marbles in
   sixteen (inbox #566 in feathery-stork), one declared number (`EventDirector.ROUTE_BAG_SHARE_OF`). Built on the
-  orchestrator's pick; the player has since answered the question, keep the share, on inbox #1460, so the number stands.
+  orchestrator's pick; the player has since answered the question, keep the share, on inbox #1460 in silky-lemur, so the number stands.
 - **The board question `sent-ahead-pace`**: the three come in place of some of what the director sends, at the director's
   unchanged clock (`EventDirector.AHEAD_INTERVAL`, a handout every 11 to 26 seconds of walking), which the player accepted
-  as correct (inbox #1460, the orchestrator's reading of the answer). A row that waited for room is sent on a later turn of
+  as correct (inbox #1460 in silky-lemur, the orchestrator's reading of the answer). A row that waited for room is sent on a later turn of
   that clock, and a row that finds no room spends no turn.
 - **A rigged marble that waits is met later, or never** (a day-one dog walker, a return patrol). The player accepted that
   narrowing for a place's marble (inbox #650 in mossy-beaver); for a sent row it rests on the orchestrator's reading of

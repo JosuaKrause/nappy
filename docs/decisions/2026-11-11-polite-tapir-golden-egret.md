@@ -2,7 +2,7 @@
 
 **The ask.** Placement step 2 of `placement-by-construction.md`, the street rules: a rule that follows her line the way
 the free-line probe does, from the crossing onto her sidewalk, for every row that lands near her route, which the player
-accepted as option C of the free-line-density question (inbox #1461); and that one sidewalk of a street stays walkable
+accepted as option C of the free-line-density question (inbox #1461 in silky-lemur); and that one sidewalk of a street stays walkable
 past the drawn events where a street needs one, which the player's own correction of inbox #1465 in spry-plover limits to the streets
 that already require it. This is the pull request #1476, the first of the step's two parts (part B of the Fable design,
 the street rules); part A, the dog walker, the patrol and the convoy sent just ahead of her, is #1477 (its own record).

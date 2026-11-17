@@ -45,7 +45,7 @@ local run hit the 900-second timeout; it is not compared with main, the fingerpr
   is pure, so the day is the same either way, which the fingerprint shows.
 - **Typing `PlacementUnit.view()` by the enum**: the design gives this half only the rename in `placement_unit.gd`, so `view()`
   keeps its `int` return and `UnitDraw` casts it to `PlacementView.View` when it asks `of()`.
-- **The design's section 8.1 and its sequencing lines** (the routes-first draw, not built, inbox #1460): ignored by the brief,
+- **The design's section 8.1 and its sequencing lines** (the routes-first draw, not built, inbox #1460 in silky-lemur): ignored by the brief,
   and nothing here depends on them.
 
 ## Review

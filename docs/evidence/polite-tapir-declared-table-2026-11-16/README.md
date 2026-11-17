@@ -133,7 +133,7 @@ tools/agent-setup.sh --remove builders   # after `git checkout .` in it
    tenth (on the route x0.49, route-adjacent x1.21, off the route x0.83), so every view's cells were
    scaled, each by its own ratio, at most 50. **A row's share of a ground's events is read against
    the whole seed**, every row it counts included: the player's answer on the board
-   (`box-rows-after-the-pass`, inbox #1464). The cells count the three rows a bag no longer
+   (`box-rows-after-the-pass`, inbox #1464 in silky-lemur). The cells count the three rows a bag no longer
    holds, which were half of a junction box's events, and a bag hands their share to the rows it
    still holds, so those rows place more than on the seed tree on either reading; read against the
    whole seed, the pass cuts the charging dog, the chatting mother and the leaf blower in a box,
@@ -206,7 +206,7 @@ The pass compares a row's share of a ground's events with the seed's. The seed c
 walker, the patrol and the convoy, half of a junction box's events, and no bag holds them now, so
 the rule reads two ways: against the whole seed (the reading applied, `pass.log`), or among the
 rows a bag holds (the builder's reading, `pass_rows_among_the_rows_a_bag_holds_not_applied.log`).
-The player answered the board's question `box-rows-after-the-pass` for the first (inbox #1464),
+The player answered the board's question `box-rows-after-the-pass` for the first (inbox #1464 in silky-lemur),
 and the second is rejected. The builder's reading's row weights are
 `builders_reading_catalogue.diff` against the branch's catalogue: the delivery van 2.3 on a street,
 the poster crew, the reversing lorry and the roadblock 2.2 there; the charging dog 0.3 on a street
@@ -310,7 +310,7 @@ eight tiles, `path_length_tiles`, as far as the unit's ground runs, `Location.ru
 
 - The seed tree is main on 2026-11-09, not `v0.29.0` (the design's pick, open to overturn).
 - A row's share read against the whole seed, not among the rows a bag holds, is the player's
-  answer to the board's question `box-rows-after-the-pass` (inbox #1464); the builder's reading
+  answer to the board's question `box-rows-after-the-pass` (inbox #1464 in silky-lemur); the builder's reading
   is measured beside it.
 - Every number is over 18 cities and one stream per city-day; a cell with a hundred events moves
   by about a tenth from one sample to the next, which is why the pass is not repeated.
