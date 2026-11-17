@@ -82,7 +82,7 @@ ticks give, and is kept with its reason:
 - **`PlanBuilder._cross_street_path`** serves no catalogue row today, since the director sites the
   cat; it wants a row or removing.
 - **A recycled walker's heading** when it chooses its lane again has no suite guarding it.
-- **`EventsAhead.walk_siting()`** has no game caller (the route bag and resistance arrow suites and two probes read it); it goes with step 4 of polite-tapir's `placement-by-construction.md` (`tests-unseen-reads.md`). `test_route_bag.gd` reads a place waiting for its site in the director's private
+- **`test_route_bag.gd`** reads a place waiting for its site in the director's private
   list, which nothing a game class asks reads. `test_day7_van.gd` reads the rigged bag through
   `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the
   resistance director to answer what is in front of her.

@@ -76,11 +76,7 @@ exposes (drawing, a signal, input and frames) or the member is removed or needs 
   under test. **Open**, a change to `src/` and so a question first: hand the crowd a focus source, so
   that where the simulated patch stands is a game input apart from who she is, which would let
   `set_focus` go.
-- `EventsAhead.walk_siting` (record minty-quail-olive-sparrow): `test_route_bag.gd` reads the mast
-  checks it sites, and `EventsAhead` builds that siting itself, so no test can hand it one. It stays
-  until step 4 of polite-tapir's `placement-by-construction.md`, which replaces the walk's old
-  siting roll, and goes with that step (`dead-code-sweep.md`).
-  `EventLook.drawn_rect_now` (the same record): the caret is drawn straight onto the event and no
+- `EventLook.drawn_rect_now` (record minty-quail-olive-sparrow): the caret is drawn straight onto the event and no
   recorder holds it.
 - The balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and
   `sleepiness_gain_calm()` are functions of the tunables used to assert fairness contracts (the

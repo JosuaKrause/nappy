@@ -162,8 +162,8 @@ the design review's items too, the decision on each standing break among them; a
 and anything else found from here on is filed as an entry of its own after this one, never as a new
 item here. `tests-public-seams.md`'s open list holds two kinds: test gaps, which add tests and
 refactor nothing and move to such an entry when this one closes; and members the game does not
-need, `PlanBuilder._cross_street_path` (which no catalogue row uses) and those only tests read
-(`EventsAhead.walk_siting()` and `WalkSiting.offers_worked_out`), whose removal or game
+need, `PlanBuilder._cross_street_path` (which no catalogue row uses) and the one only tests read
+(`WalkSiting.offers_worked_out`), whose removal or game
 reader is a change to `src/`, a refactor rather than a test gap.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
