@@ -1,5 +1,5 @@
 # tests/test_events_costs.gd on the suite's city (4242), 121 blocks, the day check's bar 96 (four fifths of a block each).
-# The prints added for the counts, in the throwaway copy only:
+# The prints added for the counts, in a throwaway edit reverted after the runs:
 #   diff --git i/tests/test_events_costs.gd w/tests/test_events_costs.gd
 #   index 163a1a6df..cb18454df 100644
 #   --- i/tests/test_events_costs.gd
@@ -20,14 +20,14 @@
 #    	t.check(late * 5 > early * 6,
 #    			"and a late day is markedly denser than an early one, a fifth more and over (%d placed on day 14, %d on day 1)"
 #    			% [late, early])
-# The other reading (whole_seed_reading_catalogue.diff applied):
+# The branch (8150ce6d4's catalogue, the reading applied):
 DAYCHECK day 1 real 115 blocks 121 bar 96
 DAYCHECK day 3 real 138 blocks 121 bar 96
 DAYCHECK day 7 real 174 blocks 121 bar 96
 DAYCHECK day 14 real 174 blocks 121 bar 96
 RAMPCHECK day1 89 day14 134
 27941 checks, 0 failures
-# The branch (2bb74d6b7, its own catalogue):
+# The builder's reading (builders_reading_catalogue.diff applied):
 DAYCHECK day 1 real 109 blocks 121 bar 96
 DAYCHECK day 3 real 140 blocks 121 bar 96
 DAYCHECK day 7 real 161 blocks 121 bar 96

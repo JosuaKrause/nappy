@@ -193,7 +193,9 @@ with the moments, a city-day: the seed tree 102.8, main today 201.8, the branch 
   and days 9, 10 and 11 place fewer events than day 1 (80.6, 78.1 and 78.4 against 87.6): from day
   9, the first day the region wall stands, a unit draws half its walls, and five cells are lower
   than the act before them. `tests/test_events_costs.gd`'s bar, day 14 a fifth over day 1, passes on
-  its city (134 placed against 89). RAMPCITIES
+  its city (134 placed against 89). On nine other cities planned the same way (`ramp_cities.gd`,
+  `ramp_cities.txt`), three are over the bar and six under it (0.95 to 1.19 times); on the
+  builder's reading one of the nine is over it.
 - **The mix.** The units place 94.2 events a city-day against the 73.3 the seed tree's units placed
   without the three rows now sent ahead of her, so every other row is nearly a third more common
   on average, the most where the old daily caps held a row down.
@@ -242,7 +244,10 @@ city, against 7.7 on the builder's reading and 2.3 on the seed tree), the cafes 
 against 4.9, so the units place 94.2 events a city-day against 91.2.
 
 **One event per block holds under both.** `test_events_costs.gd` passes on each
-(`two_readings_costs.txt`): COSTSLINE
+(`two_readings_costs.txt`): on the suite's city, 121 blocks and a bar of 96, the day check counts
+115, 138, 174 and 174 events on days 1, 3, 7 and 14 on the branch (the builder's reading 109, 140,
+161 and 177), and the ramp check 89 placed on day 1 and 134 on day 14 (the builder's reading 83 and
+135).
 
 ## The first re-seed, tried and replaced
 
@@ -267,18 +272,23 @@ once, above.
   route tiles cut off from home after the dawn and at the end of her walk, is `0 0` on both. `WU
   all`, the units drawn on her walk and the longest chain of touching units each ranked below the
   last, is the same line on both (at reach 0, a chain of 28): the table changes no rank and no
-  relation. `WS all`, what her walk sited: 126 places on the branch and 128 on main, none with an
+  relation. `WS all`, what her walk sited: 132 places on the branch and 128 on main, none with an
   undrawn unit near it when sited, and the smallest gap to a row a unit drew 72px and 64px (no less
   than `EventScheduler.EVENT_SPACING_ANY`, 64px, on either). What streams in within her radius on
-  her walk (`WD`, `WV`): 11,835 rows over the 252 city-days on the branch, 26,295 on main; on her
-  route 3,442 and 8,291, route-adjacent 4,378 and 5,753, off it 4,015 and 12,251.
+  her walk (`WD`, `WV`): 12,449 rows over the 252 city-days on the branch, 26,295 on main; on her
+  route 3,632 and 8,291, route-adjacent 4,655 and 5,753, off it 4,162 and 12,251. The builder's
+  reading (`builders_reading_walk_rows_lines.txt`): the same `WC` and `WU` lines, 126 places sited,
+  11,835 rows streamed in.
 - **`m129_zero_cost_line.gd`**: 299 of 299 routes keep a zero-cost line on both (the primary
-  reading, and the catalogue's rows alone). Over a pacing row's whole beat: 176 of 299 on the
-  branch, 138 on main. Placed rows a day a line has to avoid: 321.7 on the branch, 326.2 on main.
+  reading, and the catalogue's rows alone). Over a pacing row's whole beat: 146 of 299 on the
+  branch, 138 on main (176 on the builder's reading, `builders_reading_m129_totals.txt`). Placed
+  rows a day a line has to avoid: 326.3 on the branch, 326.2 on main (321.7 on the builder's
+  reading).
 - **`placement_fingerprint.gd`**: the `^FP escape ` and `^FP building ` lines (9,864) are identical
   on both, `8cc1a28243816a83` (`shasum -a 256` of those lines, first 16 digits). The `FP day`
   lines move, as the table moves what a day places.
-- **`escape_roadblock_spacing.gd`**: identical on both, but for its time line.
+- **`escape_roadblock_spacing.gd`**: identical on both, but for its time line and the boot's run
+  line.
 - **`placement_cells.gd` on main** (`compare_main.txt`): 199.6 events the units place a city-day,
   x2.01 the seed tree; the junction boxes x6.6 on the route and x6.2 off it, the fitted tables'
   doubled day.

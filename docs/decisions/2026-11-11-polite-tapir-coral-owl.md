@@ -52,10 +52,10 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
   181.7 and 90.0.
 - **One event per block holds**: `test_events_costs` passes on days 1, 3, 7 and 14.
 - **Free line**: `m129_zero_cost_line.gd` 299 of 299 routes keep a zero-cost line on both branch and main; over a pacing row's
-  whole beat 176 of 299 on the branch, 138 on main.
+  whole beat 146 of 299 on the branch, 138 on main.
 - **The escape and building placement fingerprints** (`^FP escape `, `^FP building `, 9,864 lines) are identical on both,
   `8cc1a28243816a83`; `escape_roadblock_spacing.gd` is identical. The `FP day` lines move, as a table moves a day.
-- **Her walk**: `WC all` is `0 0` on both; what streams in within her radius is 11,835 rows on the branch and 26,295 on main.
+- **Her walk**: `WC all` is `0 0` on both; what streams in within her radius is 12,449 rows on the branch and 26,295 on main.
 - **Still off, listed for the end remeasure and fitted to nothing**: on her route the units place 0.87 of the seed tree
   (junction boxes 0.77, parks and squares 0.50, since the rules that keep her route open refuse more of a box's rows the
   later the act); day 11 is a fifth under and days 7 and 10 an eighth; the abduction is 0.94 to 5.76 a city-day on a
@@ -70,9 +70,10 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
   - **The ramp is flatter**: day 14 places 1.14 times day 1, where the seed tree's placed 1.28 times, and days 9, 10 and
     11 place fewer events than day 1 (80.6, 78.1 and 78.4 against 87.6), since from day 9 a unit draws half its walls
     and five cells are lower than the act before them (`docs/EVENTS.md`). `test_events_costs`'s bar, day 14 a fifth
-    over day 1, passes on its city (134 placed against 89); RAMPCITIES Whether the bar or the table is wrong is a
-    question for the orchestrator to put, under the balance skill's rule that a test pushing back asks which of the two
-    is wrong.
+    over day 1, passes on its city (134 placed against 89). On nine other cities planned the same way (`ramp_cities.gd`
+    in the evidence folder), three are over the bar and six under it (0.95 to 1.19 times); on the builder's reading one
+    of the nine was over it. Whether the bar or the table is wrong is a question for the orchestrator to put, under the
+    balance skill's rule that a test pushing back asks which of the two is wrong.
 - **The pacing rows**: 902 chatting mothers drawn, 571 on a street (421 at eight tiles), 331 in a box at one to five;
   2,323 men shouting, 1,424 on a street, 864 in a box, 35 on a square.
 
@@ -102,7 +103,8 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
   2.3 on the seed tree), which the player had accepted higher; and the delivery van, the poster crew, the reversing lorry
   and the roadblock, on which it sets no street weight, place 0.69 to 0.86 of the seed tree's count on a street. It is
   not a refit: it is the one pass's other output, printed by the same run, with option D still holding. One event per
-  block holds under it: `test_events_costs` on its city (121 blocks, a bar of 96) counts COSTSAPPLIED.
+  block holds under it: `test_events_costs` on its city (121 blocks, a bar of 96) counts 115, 138, 174 and 174 events
+  on days 1, 3, 7 and 14.
 - **What option D was told, and what is left of it.** The charging dog and the chatting mother come nearer main's share
   on this reading but not back to it: in a junction box the charging dog places 1.6 times the seed tree's count and the
   chatting mother 3.0 times, over the whole city 1.3 and 1.8 times ("The felt change", below).
@@ -140,7 +142,8 @@ a run. A "run" is `tests/probes/placement_cells.gd`.
     and the chatting mother 2.00 / 4.20 / 3.58;
   - the units placed 91.2 events a city-day (94.2), the whole day with the moments 93.3 (98.4), the abduction 7.7
     (10.8), cafes on her route 4.9 (6.5), and day 14 1.11 times day 1 (1.14);
-  - one event per block held under it too: `test_events_costs` counted COSTSBUILDER.
+  - one event per block held under it too: `test_events_costs` counted 109, 140, 161 and 177 events on days 1,
+    3, 7 and 14, and its ramp check 135 placed on day 14 against 83 on day 1.
 
 ## Choices open to overturn
 
