@@ -88,7 +88,7 @@ var _walked := 0.0
 var _heading := Vector2.ZERO
 ## Counts down to the next look for the market's block — once a second, not every frame.
 var _look_in := 0.0
-## Whether today still owes the market, and the day's routes to site it on.
+## Whether today still owes the market.
 var _market_owed := false
 ## Day 12's park closing: the police cordon round it, from the touch of its swing for the rest of
 ## the day, or null. Kept for the tests.

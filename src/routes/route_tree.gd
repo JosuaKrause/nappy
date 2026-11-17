@@ -123,7 +123,7 @@ var branches: Array[Branch] = []
 
 ## The grid the tree was grown on. Kept rather than rebuilt, because `Corridor` and the telemetry
 ## map both need to translate a cell or a tile against the same one the tree used.
-var grid: ReachabilityGrid
+var _grid: ReachabilityGrid
 
 ## The city the tree is grown against. Kept for the two facts about the lattice the growth needs
 ## beyond plain walkability: which cells are the main road, so the growth can leave the spine out of
@@ -278,7 +278,7 @@ static func _grow_into(tree: RouteTree, map: CityMap, home: StreetNetwork.Segmen
 	tree._home_street = home
 	if not home or areas.is_empty():
 		return tree
-	tree.grid = grid
+	tree._grid = grid
 	tree._absent = closed
 	for tile in _rect_tiles(home.tile_rect()):
 		var node := grid.node_at(tile)
@@ -356,7 +356,7 @@ func _access_nodes(map: CityMap, area: ClosurePlanner.CalmArea) -> Array[int]:
 			var neighbour := tile + offset
 			if area.rect.has_point(neighbour):
 				continue
-			var node := grid.node_at(neighbour)
+			var node := _grid.node_at(neighbour)
 			if node >= 0:
 				found[node] = true
 	var result: Array[int] = []
@@ -482,7 +482,7 @@ func _ways(node: int) -> Array:
 ## cache while sharing the production growth algorithm.
 func _ways_uncached(node: int) -> Array:
 	var found: Array = []
-	for edge: Array in grid.neighbours(node):
+	for edge: Array in _grid.neighbours(node):
 		if not _is_off_the_growths_graph(edge[2], true):
 			found.append(edge)
 	return found
@@ -502,7 +502,7 @@ func _ways_including_the_spine(node: int) -> Array:
 	if cached != null:
 		return cached
 	var found: Array = []
-	for edge: Array in grid.neighbours(node):
+	for edge: Array in _grid.neighbours(node):
 		if not _is_off_the_growths_graph(edge[2], false):
 			found.append(edge)
 	_kerb_only_cache[node] = found
@@ -585,7 +585,7 @@ func _adopt(path: Array[int], colour: int) -> Array:
 	# Bounded rather than trusted. The chain cannot cycle — a node's parent is set once, when it
 	# joins, and always points at something already on the way home — but a hang here would be a
 	# suite that prints nothing, so the one impossible case is the one worth bounding.
-	while not _home.has(at) and _parent.has(at) and nodes.size() <= grid.node_count():
+	while not _home.has(at) and _parent.has(at) and nodes.size() <= _grid.node_count():
 		at = _parent[at] as int
 		nodes.append(at)
 
@@ -596,7 +596,7 @@ func _adopt(path: Array[int], colour: int) -> Array:
 		var carried: Dictionary = _colours.get(node, {})
 		carried[colour] = true
 		_colours[node] = carried
-		route.append(grid.cell_of(node))
+		route.append(_grid.cell_of(node))
 	_resettle_the_tails()
 	return route
 
@@ -692,11 +692,11 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 ## `CityGenerator.validation_problems()` accepted, since every walkable tile is reachable from the
 ## home.
 func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:
-	if _colours.is_empty() or not grid:
+	if _colours.is_empty() or not _grid:
 		return
 	var sources: Array[int] = []
 	for tile in tiles:
-		var node := grid.node_at(tile)
+		var node := _grid.node_at(tile)
 		if node >= 0 and not sources.has(node):
 			sources.append(node)
 	if sources.is_empty():
@@ -760,7 +760,7 @@ func _any_colour_of(node: int) -> int:
 func cells() -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	for node: int in _colours:
-		found.append(grid.cell_of(node))
+		found.append(_grid.cell_of(node))
 	return found
 
 ## Builds `_street_keys` the first time anything asks a segment-level question. A node's cell
@@ -771,7 +771,7 @@ func _ensure_street_keys() -> void:
 	if _street_keys_built:
 		return
 	for node: int in _colours:
-		var segment := _map.street_network().segment_containing(grid.any_tile_of(node))
+		var segment := _map.street_network().segment_containing(_grid.any_tile_of(node))
 		if segment:
 			_street_keys[segment.key()] = true
 	_street_keys_built = true
@@ -824,9 +824,9 @@ func reaches_the_alley(map: CityMap, rect: Rect2i) -> bool:
 ##
 ## Overrides RouteSource.carries_a_route.
 func carries_a_route(tile: Vector2i) -> bool:
-	if not grid:
+	if not _grid:
 		return false
-	var node := grid.node_at(tile)
+	var node := _grid.node_at(tile)
 	return node >= 0 and _colours.has(node)
 
 ## **The street grain, where a tile has a street**: every tile of a street the tree runs along, and
@@ -852,10 +852,10 @@ func street_it_starts_in() -> StreetNetwork.Segment:
 func network() -> StreetNetwork:
 	return _map.street_network()
 
-## The grid the tree was grown on (`grid`), null for a tree grown with no home street or no calm
+## The grid the tree was grown on (`_grid`), null for a tree grown with no home street or no calm
 ## area to reach, which is how `Corridor.of()` tells an empty tree.
 func reachability_grid() -> ReachabilityGrid:
-	return grid
+	return _grid
 
 ## The tree's own corridor, built afresh: what every placement of the day is stated against.
 ##
@@ -892,7 +892,7 @@ func junctions() -> Array[Vector2i]:
 			found[segment.a] = true
 			found[segment.b] = true
 	for node: int in _colours:
-		var junction := CityMap.junction_at(grid.any_tile_of(node))
+		var junction := CityMap.junction_at(_grid.any_tile_of(node))
 		if junction != Vector2i(-1, -1):
 			found[junction] = true
 	var result: Array[Vector2i] = []
@@ -943,7 +943,7 @@ func node_depths() -> Dictionary:
 		hop += 1
 		var next: Array[int] = []
 		for node in frontier:
-			for edge: Array in grid.neighbours(node):
+			for edge: Array in _grid.neighbours(node):
 				var neighbour: int = edge[0]
 				if found.has(neighbour):
 					continue
@@ -1036,7 +1036,7 @@ func _crossed_by_the_tree(junction: Vector2i, along: int) -> bool:
 ## count could not tell it apart from *she left the corridor*.
 func branches_on(tile: Vector2i) -> Array[int]:
 	var found: Array[int] = []
-	var node := grid.node_at(tile)
+	var node := _grid.node_at(tile)
 	if node >= 0 and _colours.has(node):
 		for colour: int in (_colours[node] as Dictionary):
 			found.append(colour)
@@ -1059,12 +1059,12 @@ func branches_on(tile: Vector2i) -> Array[int]:
 ## place round the corner she is about to turn.
 func cells_ahead(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
 	var found := {}
-	if not grid or not _map:
+	if not _grid or not _map:
 		return found
 	var her_tile := _map.world_to_tile(at)
 	if branches_on(her_tile).is_empty():
 		return found
-	var her_cell := grid.cell_of(grid.node_at(her_tile))
+	var her_cell := _grid.cell_of(_grid.node_at(her_tile))
 	for branch in branches:
 		for route: Array in branch.routes:
 			var index := route.find(her_cell)
@@ -1112,12 +1112,12 @@ func cell_centre(cell: Vector2i) -> Vector2:
 
 ## The cell of the grid that holds `position`, or `(-1, -1)` off the grid.
 func _cell_of(position: Vector2) -> Vector2i:
-	if not grid or not _map:
+	if not _grid or not _map:
 		return Vector2i(-1, -1)
-	var node := grid.node_at(_map.world_to_tile(position))
+	var node := _grid.node_at(_map.world_to_tile(position))
 	if node < 0:
 		return Vector2i(-1, -1)
-	return grid.cell_of(node)
+	return _grid.cell_of(node)
 
 ## How many cells down a route each way is looked at to tell which way she is going
 ## (`_onward_from()`).

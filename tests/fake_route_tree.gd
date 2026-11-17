@@ -14,7 +14,7 @@ var _fake_cells_ahead := {}
 ## A tree on a grid over `map`, the ground the corridor answers about.
 func _init(map: CityMap) -> void:
 	_map = map
-	grid = ReachabilityGrid.build(map)
+	_grid = ReachabilityGrid.build(map)
 	for segment in _fake_network.segments():
 		_fake_depths[segment.key()] = 1
 
