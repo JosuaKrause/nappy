@@ -24,8 +24,7 @@ developer's rig, the route rig and its planner since the record
 through the world the director stands (`DayWorld`) and the city scene's dressing for a walk
 (`CityDressing`). The city scene builds no event manager, crowd, poster walls or blackout: one
 builder stands them in the city and in the escape's building (`SimulationBuilder`, the record
-2026-11-11-polite-tapir-snowy-toad), and `main` hands it the developer settings that reached those
-parts through the city. `main.gd` reads the city only to build it and hand its parts on; the eight
+2026-11-11-polite-tapir-snowy-toad), and `main` hands it the developer settings for those parts. `main.gd` reads the city only to build it and hand its parts on; the eight
 settings it still writes into the city's fields (`trace`, `run`, `ground_recipe`, `atlas`,
 `ground_mode`, `scenery_frame_locked`, `skip_shadows`, `frame_timing`) are the city's own, for its
 ground and scenery, and stay fields until the city scene's own pass (minty-quail's README, "The

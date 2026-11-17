@@ -68,8 +68,8 @@ own:
   `walk_ground.gd`, `event_director.gd`), which the placement rewrite
   rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
   row 3b's.
-- `src/main.gd`, which waits for no other item now that who builds the event manager and the crowd
-  is built (the record 2026-11-11-polite-tapir-snowy-toad), and the city scene
+- `src/main.gd`, which waits for no other item (who builds the event manager and the crowd is the
+  record 2026-11-11-polite-tapir-snowy-toad), and the city scene
   (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
@@ -117,6 +117,13 @@ Left, each its own design question:
     those readers: `home_block` by the day planner and the scene recipe runtime; `power_station` by the city scene's `assign_roof_extensions()`, which skips the
     station's yard columns when it extends a roof; `pasted_through` by the poster walls, which read
     and write it.
+- **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
+  read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
+  `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
+  director and the rigs. So do `MoveProposal`, `GroundShape`, `LaneMover`, `CrowdAgent.excitement`,
+  `Prop.shape`, and `Baby`'s and `DayController`'s fields. The map's wait for a decision on which
+  object holds what is blocked on the map, which no item makes yet; the rest go with their own
+  classes' passes.
 - **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by
   its own file and `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's
   name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
@@ -126,7 +133,7 @@ Left, each its own design question:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
-    reads of other classes' fields (the map's block plans and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
+    reads of other classes' fields (among them the map's block plans and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
     passes; `run_session.gd`'s read of `Crowd.sources` waits for the crowd's pass (the record
     2026-10-18-minty-quail-dappled-chipmunk);
   - the readers already handed their parts in place of the city (the records
