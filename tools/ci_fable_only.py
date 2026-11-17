@@ -2,12 +2,12 @@
 """A pull request that builds an item of a `fable-only` queue entry carries the `fable-only` label.
 
 A queue entry whose `README.md` says `fable-only: true` in its opening block, beside `priority:`,
-is one the player named as Fable's: Fable writes only its design, another model writes the code and
-Opus reviews it, and Fable cannot decide to do either itself
-(`docs/TODO.md`, "The order is `tools/queue.sh`"; the model table in the orchestrating skill). The GitHub
-label `fable-only` is how a session that never read the entry knows that about a pull request, so
-every pull request that builds one of the entry's items carries it, and this fails one that does
-not.
+is one the player named as Fable's to design: as in all Fable work, Fable writes only its design,
+another model writes the code and Opus reviews it, and Fable cannot decide to do either itself
+(`docs/TODO.md`, "The order is `tools/queue.sh`"; the model table in the orchestrating skill).
+The GitHub label `fable-only` is how a session that never read the entry knows that about a pull
+request, so every pull request that builds one of the entry's items carries it, and this fails one
+that does not.
 
 - **Building an item is read from an added record.** A pull request builds an item of an entry when
   it adds a record of that entry under `docs/decisions/` (`<entry>.md`, `<entry>-<n>.md` or

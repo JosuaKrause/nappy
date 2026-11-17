@@ -22,9 +22,10 @@ that were the only ones that were approved to get fable-only", "nothing else", a
 line marks a whole entry while the review's items stood inside minty-quail beside thirteen that no
 review gave, "if the mechanism doesn't support it then let' smove those items out and put the label
 then" (inbox #1387 in mossy-bunny). **Read as:** this entry carries `fable-only: true`, so every pull
-request that builds one of its items carries the `fable-only` label: Fable writes only the design,
-with enough context to build and to review it, another model writes the code and Opus reviews it, and Fable cannot decide to do either itself
-(`docs/TODO.md`, inbox #1501). minty-quail carries no
+request that builds one of its items carries the `fable-only` label, which marks the work as Fable's to
+design: as in all Fable work, Fable writes only the design, with enough context to build and to
+review it, another model writes the code and Opus reviews it, and Fable cannot decide to do either
+itself (`docs/TODO.md`, inbox #1501, inbox #1504). minty-quail carries no
 line. The other review of that day, of the rule files (inbox #1267 in olive-ferret), gave the entries
 amber-ibis and gentle-finch, which carry the line too.
 

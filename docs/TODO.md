@@ -49,16 +49,19 @@ its band, and `tools/queue.sh` prints every marked entry first, under an `up nex
 every entry does. Every marked line ends in `[up next]`. When the player asks for an entry to be done immediately, that is this marker, never a band of its own and never `bug` (inbox #1025 in brisk-ferret). The marker orders the queue and fences no other work; an entry the player puts first, with everything else after it, says so in its own `README.md` instead (inbox #1210 in gentle-owl), as **orchestrating** says. The queue move that starts the work drops
 the line, and the end-of-session pass drops it from an entry an open pull request is building.
 
-**`fable-only: true` says that Fable writes only the design of an entry's work.** An entry's opening block
-may carry the line beside `priority:`; an item file carries none. Every pull request that builds an
-item of that entry carries the GitHub label `fable-only`, and the label means that Fable writes the
-design alone, never the code and never the review, and it cannot decide to write either itself, not even for a part it judges too complex to hand off, so the design carries enough context for both the
-builder and the reviewer; another model writes the code, the choice of model being the orchestrator's
-(the lowest model that can do it from the design, as the model table says for any build), and Opus
-reviews it (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout, inbox #1432 in minty-rabbit,
-inbox #1501); the model table in **orchestrating** says so for the session that picks a model. The line goes only on an
-entry the player names, and it marks every item of the entry, so the work the player puts under the
-line is an entry of its own, never items of an entry that holds other work (inbox #1387 in mossy-bunny).
+**`fable-only: true` says that an entry's work is the player's choice of Fable's to design.** An entry's
+opening block may carry the line beside `priority:`; an item file carries none. Every pull request
+that builds an item of that entry carries the GitHub label `fable-only` (inbox #1293 in
+grassy-trout, inbox #1299 in grassy-trout, inbox #1432 in minty-rabbit). What Fable does there is
+what it does in all work it takes part in, labelled or not: it writes only the design, never the
+code and never the review, and it cannot decide to write either itself, not even for a part it
+judges too complex to hand off, so the design carries enough context for both the builder and the
+reviewer; another model writes the code, the choice of model being the orchestrator's (the lowest
+model that can do it from the design, as the model table says for any build), and Opus reviews it
+(inbox #1501, inbox #1504); the model table in **orchestrating** says so for the session that picks
+a model. The line goes only on an entry the player names, and it marks every item of the entry, so
+the work the player puts under the line is an entry of its own, never items of an entry that holds
+other work (inbox #1387 in mossy-bunny).
 It changes no order: `tools/queue.sh` ends the entry's line in
 `[fable-only]`, and CI fails a pull request that adds a record of such an entry under
 [decisions/](decisions/) without the label (`tools/ci_fable_only.py`), a new record being what every
