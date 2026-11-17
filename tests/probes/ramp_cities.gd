@@ -1,8 +1,8 @@
 extends RefCounted
-## Measurement probe, kept as evidence: `tests/test_events_costs.gd`'s ramp check (non-ambient rows
+## Measurement probe: `tests/test_events_costs.gd`'s ramp check (non-ambient rows
 ## placed on day 14 against day 1, its bar a fifth more) planned the same way, `GameDawn` on a fresh
 ## city with the suite's rng formula on the city's seed, on the suite's city (4242) and nine others.
-## Copied into `tests/probes/` to run: `tools/test.sh probes/ramp_cities.gd`. Prints
+## Run with `tools/test.sh probes/ramp_cities.gd`. Prints
 ## `RAMP city <seed> day1 <placed> day14 <placed> ratio <day 14 over day 1>`.
 
 const CITIES: Array[int] = [4242, 77, 1301, 90210, 90241, 90272, 90303, 90334, 2024, 31337]

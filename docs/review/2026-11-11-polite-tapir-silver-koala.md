@@ -6,13 +6,17 @@ through the side streets away from them. Since placement step 3 of polite-tapir,
 the city is one declared table: events for every hundred places a thing can stand, by how near her
 route a street is, by kind of ground and by act, seeded once from what main placed on 2026-11-09
 and scaled once. The day it replaces held about twice that; this one holds about one event per
-block again, your number (PLAYTEST-05 6). Her own route holds a little less than it did on
-2026-11-09 (0.87 of it, its crossings about three quarters), and a late day holds only a little
-more than an early one (day 14 about a seventh more than day 1, and days 9 to 11 a little fewer,
+block again, your number (PLAYTEST-05 6). Counting the dog walkers and patrols that used to
+be placed on it and now come from the director, her own route holds a little less than it did on
+2026-11-09 (0.87 of it, its crossings about three quarters); what is placed on it is half again what
+was, and in its crossings 2.7 times (27.7 events a city-day against 18.1, and 5.4 against 2.0). A late
+day holds only a little more than an early one (day 14 about a seventh more than day 1, and days 9 to 11 a little fewer,
 where day 14 held about a quarter more on 2026-11-09). You said the real test of the numbers comes from playtests
 (inbox #1268 in olive-ferret).
 
-Three rows come more often than they did on 2026-11-09. The figures are events across a whole city
+Most rows come more often than they did on 2026-11-09, about a third more across a city on average,
+and on her route the largest are not the three asked about here: cafes go from 2.2 to 6.5 a city-day and
+market stalls from 0.9 to 2.5. Three rows are asked about here. The figures are events across a whole city
 on a day the row is out, which is more than one walk meets, from the decision record
 `docs/decisions/2026-11-11-polite-tapir-coral-owl.md`, for the table as it stands when this item is
 written: the rows' weights read against everything the 2026-11-09 city placed, your answer to the

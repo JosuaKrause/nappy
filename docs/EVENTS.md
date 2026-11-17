@@ -1595,8 +1595,9 @@ route-adjacent and an alley off the route each from act I to II and from act III
 route-adjacent junction box is the same in every act, and from day 9, the first day the region
 wall stands, a unit draws about half its walls (`DaySpec.wall_row_share`). So late days are nastier
 more than they are denser: on the table's acceptance run days 9 to 11 placed fewer events than
-day 1, and day 14 placed 1.14 times day 1, where the seed tree's day 14 placed 1.28 times its day 1
-(`docs/evidence/polite-tapir-declared-table-2026-11-16/`). **The rows share a cell's events by
+day 1, and day 14 placed only a little more than day 1, where the tree the cells were seeded from (main as it
+stood on 2026-11-09) ramped more steeply (the ratios are in the record
+`docs/decisions/2026-11-11-polite-tapir-coral-owl.md`). **The rows share a cell's events by
 weight**: a row's own `weight`, times its weight on the unit's kind of ground (`EventDef.weight_on()`),
 times what the view is to its role on the day (the role-by-view weights `EVENT_CORRIDOR_WEIGHT`,
 `EVENT_WALL_RIM_WEIGHT` and `WALL_DEEP_WEIGHT`, which the day's ground hands the fill,
