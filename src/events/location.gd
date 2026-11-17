@@ -140,6 +140,14 @@ func takes(type: int) -> bool:
 			return type == GameEnums.TileType.CROSSING or type == GameEnums.TileType.SIDEWALK \
 					or type == GameEnums.TileType.ROAD
 
+## **Gives the location back where `plan` is what stands on it**: a beat her walk laid here and has
+## laid somewhere else (`DayLocations.give_back()`). Where something else stands here, or nothing,
+## it changes nothing. Whether a draw has filled it stays as it was: a location whose unit has not
+## drawn is open again, and one whose unit has is drawn with nothing on it.
+func give_back(plan: EventPlan) -> void:
+	if _plan == plan:
+		_plan = null
+
 ## Whether a draw has filled it yet, with an event or with nothing.
 func is_drawn() -> bool:
 	return _drawn

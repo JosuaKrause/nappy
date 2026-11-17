@@ -80,16 +80,49 @@ func open_locations() -> Array[Location]:
 ## that ground (`Location.takes()`), so a sidewalk tile names its sidewalk location and a carriageway
 ## tile its section; null where none does (a building, a corner a junction box leaves). What a fixed
 ## part's phase records on, and what an authored scene's tile names (`EventScheduler.recipe_placement()`).
+##
+## Answered from an index built on the first ask (`_index_every_tile()`), since her walk asks it of
+## every tile on her way each look and a scan of every street per tile is the cost that would add.
 func holding(tile: Vector2i, type: int) -> Location:
+	if _index.is_empty():
+		_index_every_tile()
+	var holders: Array = _index.get(tile, [])
+	for holder: Location in holders:
+		if holder.takes(type):
+			return holder
+	return null
+
+## Tile -> the locations whose rect holds it, in the order `holding()` has always met them: each
+## street's sidewalks and sections, street by street, then the ground beyond the streets. Built on
+## the first `holding()`; the set of locations never changes after `lay_out()`.
+var _index := {}
+
+## Fills `_index`.
+func _index_every_tile() -> void:
+	var in_order: Array[Location] = []
 	for key: Vector3i in _streets:
 		var street := _streets[key] as StreetLocations
-		for location in street.sidewalks() + street.sections():
-			if location.tiles().has_point(tile) and location.takes(type):
-				return location
-	for location in _grounds:
-		if location.tiles().has_point(tile) and location.takes(type):
-			return location
-	return null
+		in_order.append_array(street.sidewalks() + street.sections())
+	in_order.append_array(_grounds)
+	for location in in_order:
+		var rect := location.tiles()
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				var tile := Vector2i(x, y)
+				if not _index.has(tile):
+					_index[tile] = [] as Array[Location]
+				(_index[tile] as Array[Location]).append(location)
+
+## **Stands `plan`, a beat her walk lays, on `location` for the day**, so no draw fills it. Its
+## section is left as it is: a unit's draw lays no row that spans the street over a taken
+## sidewalk (`UnitRoom`, `MarbleDraw`), and day 13's swap replaces a section's whole content.
+func take_for_her_walk(location: Location, plan: EventPlan) -> void:
+	location.take(plan)
+
+## Gives `location` back where `plan` stands on it (`Location.give_back()`): a beat her walk has
+## laid somewhere else.
+func give_back(location: Location, plan: EventPlan) -> void:
+	location.give_back(plan)
 
 ## **Records a fixed part on the location holding where it stands**, so no draw happens there (the
 ## design's fixed parts' phases: "a wall makes its location unavailable throughout"; a mast's
