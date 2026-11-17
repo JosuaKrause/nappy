@@ -926,9 +926,6 @@ each question as it was shown).
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
-   - A car made after the tick's word knows nothing of her in its first frame, so it puts its
-     body down at once even where she stands, though the comment at that place promises it holds
-     the body back round her.
    - An officer let out of a car is told her position and none of the other five facts (her
      pram's place, the view, whether she runs, whether the baby is awake, whether a door holds
      her) until the next tick's word.

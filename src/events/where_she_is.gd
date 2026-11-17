@@ -15,9 +15,10 @@ extends RefCounted
 ## **A live event hears the word through a handle of its own** (`heard_from_now()`), with the
 ## timing every event's reads are built on:
 ##
-## - **it knows nothing of her until the next word after it was made.** A car made where she
-##   stands puts its body down at once, as it would with nobody there (`EventInstance._ready()`),
-##   and an officer let out after the tick's word is told where she stands by hand
+## - **it knows nothing of her until the next word after it was made**, but for a car, which
+##   hears the word told so far (`heard_so_far()`) so that, made where she stands, it holds its
+##   body back round her from its first frame (`EventInstance._ready()`), and an officer let out
+##   after the tick's word, who is told where she stands by hand
 ##   (`EventsAhead.let_the_officers_out()`);
 ## - **a point it is told itself** (`see_her_at()`: the halo once a drawn frame, a pursuer set on
 ##   her from outside, an officer let out) **is its own until the next word**, and reaches no
@@ -70,6 +71,14 @@ func heard_from_now() -> WhereSheIs:
 	var handle := WhereSheIs.new()
 	handle._word = _told()
 	handle._heard_from = handle._word._words
+	return handle
+
+## **A handle for a live event that hears the word told so far** and every word after it, rather
+## than from the word after this one (`heard_from_now()`): a car made mid-tick, whose first frame
+## already holds its body back round where she stands. Nowhere until the first word is told.
+func heard_so_far() -> WhereSheIs:
+	var handle := WhereSheIs.new()
+	handle._word = _told()
 	return handle
 
 ## **Its event has seen her at `at` itself**, ahead of the next word: what it answers for `at()`

@@ -298,13 +298,17 @@ var _clock := 0.0
 ## `where` is where she is (`WhereSheIs`), the one its manager tells once a tick
 ## (`EventWorld.where_she_is()`, which `EventSpawner.create()` hands in); the event hears it
 ## through a handle of its own from the next word on (`WhereSheIs.heard_from_now()`), and hands
-## that to its behaviours and its excitement source. None, and it is nowhere.
+## that to its behaviours and its excitement source; a car hears the word told so far
+## (`WhereSheIs.heard_so_far()`), since its first frame holds its body back round her. None, and
+## it is nowhere.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
 		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null,
 		where: WhereSheIs = null) -> void:
 	def = definition
 	path = route
-	_where = where.heard_from_now() if where else WhereSheIs.nowhere()
+	_where = WhereSheIs.nowhere()
+	if where:
+		_where = where.heard_so_far() if definition.drives() else where.heard_from_now()
 	excitement.use_row_and_where_she_is(definition, _where)
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else _map.navigator()
