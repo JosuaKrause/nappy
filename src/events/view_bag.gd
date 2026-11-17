@@ -4,8 +4,8 @@ extends RefCounted
 ## events for that view multiplied by their probability/weight. empty is also a possible event"):
 ## every row possible in the view as many times as its weight, and the empty event, drawn without
 ## putting back and filled again once it runs empty, as every marble bag of the game is
-## (`MarbleBag`, PLAYTEST-125). Each unit's draw makes its own, one bag of the fill of the unit's
-## view and kind of ground that `UnitFills.of()` answers (`UnitDraw`).
+## (`MarbleBag`, PLAYTEST-125). Each unit draws from its own, one bag of the fill of the unit's view
+## and kind of ground, which `UnitFills.bag_for()` makes it (`UnitDraw`).
 ##
 ## **A draw considers only what the unit drawing accepts** (`draw()`): a row the unit's earlier
 ## draws or its locations' own ground leave invalid is not considered, and stays in the bag for the

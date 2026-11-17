@@ -23,8 +23,9 @@ extends RefCounted
 ##
 ## Drawing one unit: one bag, the one the walk's bags answer for the unit (`UnitBags`): on a day a
 ## fresh bag of the fill of the unit's view (the most permissive of its locations',
-## `PlacementUnit.view()`) and kind of ground (`UnitFills`), on the unit's stream (`ViewBag`), so what
-## a far unit drew changes nothing here; the marbles drawn from it and laid out in the unit (`MarbleDraw.draw()`), a marble drawn before it has a place. Model: no node.
+## `PlacementUnit.view()`) and kind of ground (`UnitFills`), on the unit's stream (`ViewBag`), so
+## what a far unit drew changes nothing here; the marbles drawn from it and laid out in the unit
+## (`MarbleDraw.draw()`), a marble drawn before it has a place. Model: no node.
 
 var _units: DayUnits
 var _drawing: MarbleDraw
