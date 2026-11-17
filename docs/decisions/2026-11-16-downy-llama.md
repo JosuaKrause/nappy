@@ -11,12 +11,20 @@ its own rather than a width that depends on where a roadblock stands.
 
 ## What was built
 
-- **The body stands on the kerb.** The row is still placed on a carriageway lane tile, and its body
-  stands on the kerb beside that lane, kept where it is along the street: `CityMap.kerb_beside()`,
-  the lattice's geometry with no map, asked through `EventDef.stands_at_its_kerb()` (a stationary
-  solid row that spans the street and that `pavement_side` does not pin, which is the roadblock).
-  `EventFootprints.stands_at()` asks it first, so the live body, its recorded tiles, its look and
-  the two guards' posts follow it.
+- **The body stands on the kerb.** The row is placed on a carriageway lane tile (`ROAD` only: a
+  crossing lies in both corridors and has no one kerb, so a band there would not be the open kind,
+  and the row no longer lists `CROSSING`), and its body stands on the kerb beside that lane, kept
+  where it is along the street: `CityMap.kerb_beside()`, the lattice's geometry with no map, asked
+  through `EventDef.stands_at_its_kerb()` (a stationary solid row that spans the street and that
+  `pavement_side` does not pin, which is the roadblock).
+- **One place decides where a body stands** (designing-classes, inbox #1156 in gray-dolphin):
+  `EventPlan.stands_without_a_map()` moves a kerb row onto its kerb, and both `EventPlan.body_at()`
+  and `EventFootprints.stands_at()` ask it; `stands_at()` adds only the sidewalk recentring, which
+  needs the pavement and so a map. `EventDef.stands_on_its_band_middle()` and
+  `stands_at_its_kerb()` no longer overlap. A plan's own map-free reading leaves the recentring out,
+  as the day's rules always have for a sidewalk body, and `stands_without_a_map()` says why: it keeps
+  a body on its own sidewalk, at most half a tile across it, where the kerb changes what a band
+  covers. So the live body, its recorded tiles, its look and the two guards' posts follow the kerb.
 - **The band reaches 64px either way from the kerb** (`EventCatalogue.ROADBLOCK_REACH`,
   `GroundShape.band()`), so it covers its own sidewalk and the road, 128px of the 192px street, and
   stops at the far kerb. The picture is drawn at the width it collides at, as before.
@@ -24,9 +32,11 @@ its own rather than a width that depends on where a roadblock stands.
   `distance_from()`, `gap_to()`, `denies()`, `reaches()`, `reach_touches()`,
   `where_it_stands_now()`), and the day's readings of a body: `OneSidewalkOpenRule`,
   `RouteSidewalkRule`, `RouteGroundRule`'s body disc, `DoorClearanceRule`, `EventScheduler.blocked_by()`,
-  `RuledRoadblockGround` and `ResistanceDirector`'s touch. Every other row's `body_at()` is where it
-  was placed. The readers left on `placed_at()` ask which street or tile a plan is on, mark the run
-  log's map or space day 13's draws, where the 16px between lane and kerb changes no answer.
+  `RuledRoadblockGround`, `ResistanceDirector`'s touch and the day-13 swap's check that the
+  roadblock it puts across a section is drawn out of her view. Every other row's `body_at()` is
+  where it was placed. The readers left on `placed_at()` ask which street or tile a plan is on, mark
+  the run log's map, space day 13's draws or match a live instance to its plan, where the 16px
+  between lane and kerb changes no answer.
 - **The region wall's bodies are untouched**: they are pinned (`SealPlanner.sealed_variant()`) and
   stand where they are put, three across the street, with the shapes `RegionPlanner` and
   `SealPlanner` give them.
@@ -37,13 +47,19 @@ its own rather than a width that depends on where a roadblock stands.
   from its own frontage to the far kerb with all 64px of the far sidewalk open; against the old
   `band(60)` centred on its lane it fails nine checks ("52 of its 64px open"). The new suite
   `tests/test_city_map_kerb.gd` holds `kerb_beside()`, and `_test_where_a_body_stands_is_read_from_one_place`
-  gains the kerb case. `tests/test_day13_guard.gd`'s far-side test looked at a 128px box round
+  gains the kerb case. `tests/test_event_plan.gd` holds `body_at()`, and
+  `tests/test_one_sidewalk_open_rule.gd` a case the kerb decides (a pole on the far sidewalk's outer
+  row, level with the roadblock, which the band read at its lane would join into a closed street);
+  both fail with `body_at()` returning where the plan was placed. `tests/test_day13_guard.gd`'s far-side test looked at a 128px box round
   the task's first guard while the arrow settled, which on seed 314159, with the body on its kerb,
   took in the rider's box and so decided the roadblock's side from where she read the mark, as the
   decided-once rule (inbox #1185 in gentle-owl) says; the test rests on no roadblock coming on
   screen, so its view is now the guard's own figure, and it passes on main and on the branch.
 - **Docs**: `docs/EVENTS.md`'s roadblock row and its pursuit note, and `docs/CITY.md`'s one-sidewalk
-  passage, name the open kind; M199's `README.md` gains one line naming it beside the closing kind.
+  passage, name the open kind; M199's `README.md` gains one line naming it beside the closing kind,
+  and its paragraphs on the catalogue roadblock's band and on the sidewalk rules say what is true
+  now. The review item `docs/review/2026-11-16-downy-llama.md` asks whether the open roadblock reads
+  as "pass on the far side" in play.
 
 ## The measurement
 
