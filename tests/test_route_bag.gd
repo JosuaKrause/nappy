@@ -484,7 +484,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 			velocity.y = -velocity.y
 			at.y = clampf(at.y, 0.0, y_max)
 		walked += STEP
-	t.check(director.route_bag().peek() != "loudspeaker" and siting.asked > 0,
+	t.check(director.route_bag().peek() != "loudspeaker" and not siting.asked.is_empty(),
 			"the mast was handed to her walk to site (its marble is drawn and the siting was asked for it)")
 	t.check(met.count("police_patrol") == count,
 			"every return patrol still comes behind the mast that cannot be sited (%s)" % [met])
