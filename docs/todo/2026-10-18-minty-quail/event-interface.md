@@ -913,8 +913,8 @@ each question as it was shown).
    #1278 in olive-ferret). **Read as:** every answer below is made correct. The timing is the
    read-back's, which is what the player answered: each is a pull request of its own after the step
    that gives it a name, not a change inside that step, saying what it changes in play and in the
-   run log, with its pictures. Playtests decide what then needs fixing. The last three answers below were
-   found in building where she is as one
+   run log, with its pictures. Playtests decide what then needs fixing. The answers below from the officer's on
+   were found in building where she is as one
    object; *read as* (the orchestrator's, open to the player's correction) covered by the same
    words.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
