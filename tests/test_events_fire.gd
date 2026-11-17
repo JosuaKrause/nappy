@@ -106,29 +106,15 @@ func _fire_day_plans() -> Array[EventPlan]:
 	return GameDawn.of(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _rng(Tuning.RUN_TAUGHT_DAY), _map()) \
 			.spent(consumed).plan().placements()
 
-## The placement context the director above is started on, built the way `EventManager.start_day`
-## builds one. Kept as its own function so a check can ask it the same questions the director does —
-## `still_ahead_of()`, which is what "on the branch she is walking" means.
-var _shared_fire_siting: EventScheduler.WalkSiting = null
-## The walk the shared siting is stated against: a stand-in holding the plans the director at hand
-## was started on (`_fire_director()`), and the map's calm areas, none of them used.
-var _fire_walk := FakeWalkEvents.new()
-
-## The day-3 fire, and the whole rig it needs: the day's own plan, a placement context built the way
-## `EventManager.start_day` builds one, and a director started on both.
-func _fire_director(day: int, plans: Array[EventPlan]) -> EventDirector:
+## The day-3 fire, and the whole rig it needs: the day's own plan, a stand-in for the placement
+## context (`FakeWalkSiting`, which lays the fire where a check says and answers whether it is still
+## ahead as a check sets), and a director started on both. What is checked here is what the director
+## decides; that the fire stands on the tree, ahead on her branch and past the streaming band is
+## `tests/test_event_manager_fire.gd`'s, on a real city.
+func _fire_director(day: int, plans: Array[EventPlan], siting: FakeWalkSiting) -> EventDirector:
 	var director := EventDirector.new(_map())
-	_fire_walk.set_plans(plans)
-	director.start_day(day, plans, _rng(day), _fire_siting(day))
+	director.start_day(day, plans, _rng(day), siting)
 	return director
-
-func _fire_siting(day: int) -> EventScheduler.WalkSiting:
-	if not _shared_fire_siting:
-		_fire_walk.set_calm(CalmAreas.of(_map()))
-		_shared_fire_siting = EventScheduler.WalkSiting.new(day, _map(),
-				RouteTree.for_day(_map(), day), _fire_walk, EventScheduler.Verdicts.new(),
-				GamePlanBuilder.over(_map()), EventScheduler.row_ground(_map()))
-	return _shared_fire_siting
 
 func _fire_in(plans: Array[EventPlan]) -> EventPlan:
 	for plan in plans:
@@ -238,7 +224,6 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 ## checking one before accepting it. `EventPlan.was_live` is where the line is drawn, and it is drawn
 ## at the streaming radius rather than at the screen edge, which is six seconds of walking earlier.
 func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
-	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var plans := _fire_day_plans()
 	var fire := _fire_in(plans)
@@ -246,40 +231,37 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 			"day 3 budgets the fire and leaves it with no position at all")
 	if not fire:
 		return
-	var director := _fire_director(day, plans)
-	var siting := _fire_siting(day)
-
 	var out := _fire_route(day)
+	var first := out[out.size() - 1]
+	var second := out[out.size() / 2]
+	var siting := FakeWalkSiting.new().set_place(fire.row_id(), first)
+	var director := _fire_director(day, plans, siting)
+
 	var at := _walk_the_director(director, plans, out[0], out, 120.0,
 			func() -> bool: return fire.is_placed())
-	t.check(fire.is_placed(), "walking the day's own route out of the doorstep sites it")
+	t.check(fire.is_placed() and fire.position == first,
+			"walking the day's own route out of the doorstep has the siting lay it where it answers")
+	t.check(not siting.looks.is_empty() and siting.calls.size() % 3 == 0
+			and siting.calls.slice(0, 3) == ["begin_look", "lay_ahead", "end_look"],
+			"in a look of its own: begun, the plan asked, ended")
 	if not fire.is_placed():
 		return
-	var first := fire.position
-	t.check(not RouteTree.for_day(map, day).branches_on(map.world_to_tile(first)).is_empty(),
-			"on the path she is on: the day's route tree carries the tile it stands on")
-	t.check(siting.still_ahead_of(at, _last_heading, first),
-			"and ahead of her along the branch she is walking, rather than merely ahead of her")
-	t.check(first.distance_to(at) > Tuning.EVENT_STREAM_RADIUS,
-			"and outside the streaming band (%.0fpx), so it is neither seen nor real yet"
-			% first.distance_to(at))
+	t.check((siting.looks[0][1] as Vector2).is_equal_approx((siting.looks[0][1] as Vector2).normalized()),
+			"and a look is told her heading as a unit vector")
 
-	# Home and out again the other way. It was never in the world, so it follows her onto the branch
-	# she actually took — which is the whole of what a fork owes, and the one case a rule stated only
-	# over "is it behind her" cannot answer: the way out she abandoned stays a few degrees off
-	# square from the way she took, for the rest of the day.
-	at = _walk_the_director(director, plans, at, _fire_route(day, false), 200.0)
-	var other := _another_branch(day, first)
-	t.check(not other.is_empty(), "the day offers a second way out to change her mind to")
-	at = _walk_the_director(director, plans, at, other, 200.0,
+	# Home and out again the other way, the siting now saying it is no longer ahead. It was never in
+	# the world, so it follows her: the whole of what a fork owes, and the one case a rule stated only
+	# over "is it behind her" cannot answer.
+	siting.set_still_ahead(false).set_place(fire.row_id(), second)
+	at = _walk_the_director(director, plans, at, _fire_route(day, false), 200.0,
 			func() -> bool: return fire.position != first)
-	t.check(fire.position != first, "taking a different way out before it is ever seen moves it")
-	t.check(siting.still_ahead_of(at, _last_heading, fire.position),
-			"and it lands ahead of her on the branch she took instead")
+	t.check(fire.position == second,
+			"it is moved once the siting says it is no longer ahead of her for long enough")
 
 	# Real. From here it is where the city remembers it burning, and nothing moves it.
 	var burning_at := fire.position
 	fire.was_live = true
+	siting.set_place(fire.row_id(), first)
 	_walk_the_director(director, plans, at, _fire_route(day), 30.0)
 	t.check(fire.position == burning_at,
 			"once it has been in the world, walking away from it for half a minute leaves it "
@@ -289,8 +271,8 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 ## the fire a little behind square — a rule that moved it there would move it at every junction,
 ## which is a day spent chasing something that is always the same distance ahead.
 ## `EventDirector.ON_HER_WAY_BEHIND` is the coarse half of what makes the two cases different and
-## `WalkSiting.still_ahead_of()` the fine one, and this is the half of it that would otherwise never
-## be noticed: the *absence* of a move.
+## `WalkSiting.still_ahead_of()` the fine one, which the siting here answers true: this is the half of
+## it that would otherwise never be noticed, the *absence* of a move.
 ##
 ## **The walk has to actually turn**, or the check passes by walking in a straight line and proves
 ## nothing; the corner it took is measured and asserted alongside.
@@ -301,12 +283,13 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 	if not fire:
 		t.check(false, "day 3 budgets a fire to turn a corner past")
 		return
-	var director := _fire_director(day, plans)
 	var out := _fire_route(day)
+	var siting := FakeWalkSiting.new().set_place(fire.row_id(), out[out.size() - 1])
+	var director := _fire_director(day, plans, siting)
 	var at := _walk_the_director(director, plans, out[0], out, 120.0,
 			func() -> bool: return fire.is_placed())
 	if not fire.is_placed():
-		t.check(false, "walking the day's route sites the fire")
+		t.check(false, "walking the day's route lays the fire")
 		return
 	var sited := fire.position
 

@@ -272,9 +272,6 @@ func _longest_route_points() -> Array[Vector2]:
 
 ## How many seconds the last `_walk_until_the_route_mast()` walked before the mast was put down.
 var _seconds_walked_to_the_route_mast := 0.0
-## What made the day's siting in the city under test, which keeps it for the suite to ask
-## (`_a_mast_can_be_sited_along_her_route()`): handed to the events before the day starts.
-var _siting_maker: KeepingSitingMaker
 
 ## Walks her down the day's longest route, the events siting what her walk sites and placing what
 ## is owed ahead of her as they do in play, until the mast reading day 11's mark rigged onto her
@@ -334,14 +331,13 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ## exempt from the three rules that keep a line along her routes
 ## (`EventPlan.counts_against_the_line()`; inbox #684 in coral-lark), so the walk down the longest route puts it
 ## down in every city. The suite's own city is walked in full; the others are asked the one question
-## the walk asks, `WalkSiting.ahead_of()` from points along the longest route, without walking, which
+## the walk asks, `WalkSiting.lay_ahead()` from points along the longest route, without walking, which
 ## keeps six cities as cheap as one. A city that fails fails here rather than being skipped.
 func _test_day_eleven_answers_at_any_live_mast(t: TestRunner) -> void:
 	var routed_on := [-1]
 	var missed: Array[int] = []
 	for seed_value: int in DAY_ELEVEN_SEEDS:
 		_build_city_in_a_new_run(t, seed_value)
-		_siting_maker = KeepingSitingMaker.on(RunCity.events(_city))
 		if seed_value == DAY_ELEVEN_SEEDS[0]:
 			await _answer_day_eleven_at_any_live_mast(t, seed_value, routed_on)
 			if routed_on[0] < 0:
@@ -356,22 +352,25 @@ func _test_day_eleven_answers_at_any_live_mast(t: TestRunner) -> void:
 			% [DAY_ELEVEN_SEEDS, missed])
 	_free_city()
 
-## Whether `WalkSiting.ahead_of()` finds the routed mast a place from some point along the day's
+## Whether `WalkSiting.lay_ahead()` finds the routed mast a place from some point along the day's
 ## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
+## The siting is the game's, made by the maker the events are handed (`SitingMaker`) over the day's
+## tree and the ground the walk carries.
 func _a_mast_can_be_sited_along_her_route() -> bool:
-	var siting := _siting_maker.latest()
-	var def: EventDef = RunCity.events(_city).ahead.director().route_row(EventCatalogue.mast().id)
-	# The band the director sites the walk's events in: from the streaming edge to the sight of a
-	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
-	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
-	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
+	var events := RunCity.events(_city)
+	var siting := SitingMaker.new(events.world, events.walk_events()).make(
+			11, _city.streets().route_tree(), events.walk_events().ground())
+	var def: EventDef = events.ahead.director().route_row(EventCatalogue.mast().id)
 	var path := _longest_route_points()
 	for i in range(0, path.size() - 1, 4):
 		var heading := (path[i + 1] - path[i]).normalized()
-		if heading != Vector2.ZERO and siting.ahead_of(def, rng, null, path[i],
-				heading, near, far) != null:
+		if heading == Vector2.ZERO:
+			continue
+		var mast := EventPlan.new(def, Vector2.INF)
+		siting.begin_look(path[i], heading)
+		var laid := siting.lay_ahead(mast)
+		siting.end_look()
+		if laid:
 			return true
 	return false
 

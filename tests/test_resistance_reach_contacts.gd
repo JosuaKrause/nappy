@@ -49,11 +49,9 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 	t.check(not inside.is_empty() and not clear.is_empty(),
 			"there is sidewalk inside the lorry's field and well clear of it (%d, %d)"
 			% [inside.size(), clear.size()])
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	var refused := RunCity.events(_city).queue_a_mast(inside, rng)
+	var refused := RunCity.events(_city).queue_a_mast(inside)
 	t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
-	var placed := RunCity.events(_city).queue_a_mast(clear, rng)
+	var placed := RunCity.events(_city).queue_a_mast(clear)
 	t.check(placed != null and placed.mast_id.begins_with("added-")
 			and placed in RunCity.events(_city).plans(),
 			"offered ground clear of it, a mast is generated into the day's plan")

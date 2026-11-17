@@ -338,10 +338,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "names",
         "EventFootprints",
         "the day's planning reads the live events' picture geometry",
-        (
-            "src/events/event_scheduler.gd",
-            "src/events/walk_ground.gd",
-        ),
+        ("src/events/walk_ground.gd",),
         more=(("src/events/walk_ground.gd", 3),),
     ),
     Exception_(
@@ -399,14 +396,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "names",
         "Stroller",
         "her class's constants (the camera's look-ahead) and type tests are read where she is not handed in",
-        (
-            "src/events/event_scheduler.gd",
-            "src/interior/interior_scene.gd",
-        ),
-        more=(
-            ("src/events/event_scheduler.gd", 3),
-            ("src/interior/interior_scene.gd", 2),
-        ),
+        ("src/interior/interior_scene.gd",),
+        more=(("src/interior/interior_scene.gd", 2),),
     ),
     Exception_(
         "names",

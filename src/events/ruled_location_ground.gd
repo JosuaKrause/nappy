@@ -81,8 +81,7 @@ func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventP
 	var fits := _fit.tiles(def, location)
 	if fits.is_empty():
 		return null
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%s:%s" % [_base, location.tiles(), def.id])
+	var rng := _stream_of(def, location)
 	for i in range(fits.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
 		var kept := fits[i]
@@ -90,6 +89,29 @@ func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventP
 		fits[j] = kept
 	if def.id == _MOUSE_ID:
 		fits = _beside_a_pile_first(fits)
+	return _first_valid(def, location, fits, among, rng)
+
+## Overrides LocationGround.offer_on.
+func offer_on(def: EventDef, location: Location, tiles: Array[Vector2i],
+		among: Array[EventPlan]) -> EventPlan:
+	if tiles.is_empty():
+		return null
+	return _first_valid(def, location, tiles, among, _stream_of(def, location))
+
+## The stream a location's candidates for `def` are built on: seeded by the day, the location and the
+## row alone, so the same row at the same location has the same route and facing whenever it is
+## asked, and by whoever asks (the unit's draw, her walk's siting).
+func _stream_of(def: EventDef, location: Location) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%s:%s" % [_base, location.tiles(), def.id])
+	return rng
+
+## **The event `def` would be at `location`**: a candidate built on each of `fits` in the order
+## handed, on `rng`, asked of the day's rules among `among` (and what the day stands); the first with
+## room all round, or with `roomiest` off the first no rule refuses, else the roomiest a rule leaves
+## valid, else null.
+func _first_valid(def: EventDef, location: Location, fits: Array[Vector2i],
+		among: Array[EventPlan], rng: RandomNumberGenerator) -> EventPlan:
 	var role := EventScheduler.role_for(def, _day)
 	var reach_context := among.duplicate()
 	reach_context.append_array(_standing)

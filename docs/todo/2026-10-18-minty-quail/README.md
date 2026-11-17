@@ -161,10 +161,9 @@ entry is done when the items in this folder are gone and the remeasure is taken,
 the design review's items too, the decision on each standing break among them; a defect found in a pull request of this entry is fixed in that pull request,
 and anything else found from here on is filed as an entry of its own after this one, never as a new
 item here. `tests-public-seams.md`'s open list holds two kinds: test gaps, which add tests and
-refactor nothing and move to such an entry when this one closes; and members the game does not
-need, `PlanBuilder._cross_street_path` (which no catalogue row uses) and the one only tests read
-(`WalkSiting.offers_worked_out`), whose removal or game
-reader is a change to `src/`, a refactor rather than a test gap.
+refactor nothing and move to such an entry when this one closes; and a member the game does not
+need, `PlanBuilder._cross_street_path` (which no catalogue row uses), whose removal is a change
+to `src/`, a refactor rather than a test gap.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
 layering paragraph and closing list of proposals refer to this entry, and **removes its exception for downy-tapir's minimal

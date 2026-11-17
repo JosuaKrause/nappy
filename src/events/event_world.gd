@@ -130,6 +130,12 @@ func plan_builder() -> PlanBuilder:
 func the_city_map() -> CityMap:
 	return city_map
 
+## A stream of the run's own for `day`, named `stream` (`RunState.run_rng()`): the same stream
+## whenever it is asked, and a different one on another run's seed, so a part of the events seeds
+## what it draws from it without reaching into the run (`SitingMaker`).
+func day_stream(for_day: int, stream: String) -> RandomNumberGenerator:
+	return run.run_rng("%s:%d" % [stream, for_day])
+
 ## Hands the world the city's plan builder. See `plan_builder()`.
 func use_plan_builder(builder: PlanBuilder) -> void:
 	_plan_builder = builder

@@ -185,7 +185,7 @@ const SITINGS := 4
 const WALK_SECONDS := 170.0
 
 ## **What her walk sites stands on drawn ground, and changes no unit's draw**
-## (`EventScheduler.WalkSiting.ahead_of()`, `EventsAhead.draw_the_ground_round()`). She walks the
+## (`WalkSiting.lay_ahead()`, `EventsAhead.draw_the_ground_round()`). She walks the
 ## day's longest route out and back, through the manager's own tick, until her walk has sited
 ## `SITINGS` poster crews, each a row a unit drew as she walked and handed to her walk
 ## (`EventsAhead._take_what_was_drawn()`, `EventDirector.owe_on_her_way()`). At each siting no
@@ -243,7 +243,7 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 			"and at no siting does an undrawn unit lie within %.0fpx of the site (%d of %d did)"
 			% [Tuning.EVENT_DRAW_AHEAD, on_undrawn_ground, sitings])
 	var siting := _siting_maker.latest()
-	var gave_up := int(siting.waits.get("the ground round its site had not drawn", 0)) \
+	var gave_up := int(siting.waits().get("the ground round its site had not drawn", 0)) \
 			if siting else 0
 	t.check(gave_up > 0,
 			"the walk gave up a pick the ground round which had not drawn (%d times)" % gave_up)

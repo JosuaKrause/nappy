@@ -194,7 +194,7 @@ test_sentence_lines.gd 37
 test_sentence_lines_render.gd 35
 test_shapes.gd 409
 test_shared_bag.gd 29
-test_siting_judges_once.gd 18408
+test_sited_ground.gd 1192
 test_spawn_siting.gd 51
 test_spent_park.gd 102950
 test_still_watch.gd 1525
@@ -213,6 +213,7 @@ test_visible_view.gd 391
 test_visit_counter.gd 154
 test_visuals.gd 138
 test_walk_plan.gd 50796
+test_walk_siting.gd 668
 test_walk_siting_spec.gd 2924
 test_walker_views.gd 394
 test_wall_shield.gd 8081

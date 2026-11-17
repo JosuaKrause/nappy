@@ -3,14 +3,15 @@ extends RefCounted
 ## guaranteed to encounter a yeller in the next three events")*. Reading the mark rigs her route's
 ## bag so his marble is one of the next `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT` events handed
 ## out on her route (`MarbleBag.rig()`, `EventDirector.rig_her_route()`), and when his marble comes
-## up he is sited on the street she is walking (`WalkSiting.ahead_on_her_street()`): ahead of her,
+## up he is laid on the street she is walking (`WalkSiting.lay_ahead()`): ahead of her,
 ## just out of her sight and inside the streaming radius, in the world at once.
 ##
 ## **What is checked is the guarantee, on every walk**: once she has read the mark, he is sited
 ## while no more than that many events have been handed out on her route since (`EventManager.
 ## owed_ahead()` counts down one for each), ahead of her along her line of travel, on her street
 ## (no further across it than `HER_STREET_HALF_WIDTH`), out of her view
-## (`WalkSiting.could_be_in_her_view()`) and within `Tuning.EVENT_STREAM_RADIUS` of her, and on the
+## (what he draws, `EventFootprints.footprint_of()` at his place, misses the camera's view round her,
+## `Tuning.VIEW_HALF_EXTENT`) and within `Tuning.EVENT_STREAM_RADIUS` of her, and on the
 ## same tick one of the world's men shouting stands there (`EventManager.instances()`). Whether
 ## she then sees him is her walk's: a walk that turns off her street before it reaches him passes
 ## him by, and `tests/probes/calm_pelican_day7_van_met.gd` measures how often a played walk does.
@@ -38,7 +39,7 @@ const SETTLE_SECONDS := 12.0
 ## cities, where only city 555 walks on, for one leg.
 const MORE_LEGS := 6
 ## The street she is on, from her sidewalk to the far kerb, either side of her line of travel: the
-## width `WalkSiting.ahead_on_her_street()` looks across.
+## width `WalkSiting.STREET_HALF_WIDTH` looks across.
 const HER_STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
 
 func run(t: TestRunner) -> void:
@@ -168,11 +169,21 @@ func _first_siting(man: EventPlan, player: Stroller, handed: int) -> String:
 		return "sited behind her"
 	if absf(offset.cross(heading)) > HER_STREET_HALF_WIDTH:
 		return "sited off her street"
-	if EventScheduler.WalkSiting.could_be_in_her_view(man.def, man.position, player.global_position):
+	if _in_the_cameras_view(man, player.global_position, heading):
 		return "sited in her view"
 	if offset.length() > Tuning.EVENT_STREAM_RADIUS:
 		return "sited past the streaming radius"
 	return "kept"
+
+## Whether any of what the man draws, standing where he was sited, meets the camera's view round
+## `her`, led `Stroller.CAMERA_LOOK_AHEAD` along her `heading` as the camera leads her.
+func _in_the_cameras_view(man: EventPlan, her: Vector2, heading: Vector2) -> bool:
+	var box := EventFootprints.footprint_of(man.row())
+	var drawn := Rect2(man.placed_at() + box.position, box.size) if box.has_area() \
+			else Rect2(man.placed_at(), Vector2.ZERO)
+	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	return Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0) \
+			.intersects(drawn, true)
 
 func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
 	for point in points:

@@ -6,7 +6,7 @@ extends RefCounted
 ## asked of each candidate before it is accepted and never repaired afterwards (`docs/CITY.md`,
 ## "Check before accepting"). *(Inbox #747: "one sidewalk must be open if they're en-route. the
 ## escape's street should not have fully blocking events like in the normal game.")* One rule, asked
-## by the event scheduler's own judge (`EventScheduler._best_of()`) of any walk whose spec keeps it
+## by the day's rules (`StreetInvalidation`) of any walk whose spec keeps it
 ## (`DaySpec.keeps_the_walk_open`), stated over the walk it is handed (`RouteSource`): its streets,
 ## where it starts and where it has to get to.
 ##

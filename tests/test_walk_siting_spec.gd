@@ -1,7 +1,7 @@
 extends RefCounted
 ## **What is sited after dawn keeps the walk's own home-street rule** (`DaySpec.holds_the_home_streets`),
 ## not always a day's: the placement context the events ask for after dawn
-## (`EventScheduler.WalkSiting`, made by the `SitingMaker` the events are handed) refuses the street her front door opens onto on a walk that holds
+## (`WalkSiting`, made by the `SitingMaker` the events are handed) refuses the street her front door opens onto on a walk that holds
 ## the home's streets, as the dawn placement does, and offers it on a walk that does not (the escape's
 ## city, which sets off from the service exit). The rule is the ground's a siting is handed
 ## (`RowGround`): the day's own, made at dawn under the day's spec and handed on with the walk, or,
@@ -15,10 +15,8 @@ extends RefCounted
 ## the maker it is handed, with the walk's ground. It builds a real `EventManager` over a generated
 ## city for the parts it hands `EventsAhead` (the world, streaming, spawner and board), which a
 ## hand-made one would only restate: `EventsAhead` is the module under test, the maker is a fake.
-## **The director and the siting it answers are real**, over that map (`EventDirector`,
-## `EventScheduler.WalkSiting`): the fake siting a stand-in needs (`FakeWalkSiting`) arrives with
-## pull request 3b, which also makes `WalkSiting` a file of its own, and until then a siting cannot
-## be built without a map; this suite then hands the fake and builds no city.
+## **The director is real**, over that map (`EventDirector`); the siting the fake maker answers is a
+## stand-in (`FakeWalkSiting`), so no siting is built over a city.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 
@@ -59,8 +57,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
 	var plans: Array[EventPlan] = [fire]
 	walk.set_plans(plans)
-	var siting := EventScheduler.WalkSiting.new(DAY, map, tree, walk, EventScheduler.Verdicts.new(),
-			GamePlanBuilder.over(map), EventScheduler.row_ground(map))
+	var siting := FakeWalkSiting.new()
 	var maker := FakeSitingMaker.new(siting)
 	var ahead := EventsAhead.new(manager.world, manager.streaming, manager.spawner,
 			manager.warnings, walk)
@@ -102,8 +99,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	ahead.start_day(DAY, tree)
 	before = maker.made.size()
 	var offered: Array[Vector2i] = [Vector2i(1, 1)]
-	var rng := RandomNumberGenerator.new()
-	ahead.queue_a_mast(offered, rng)
+	ahead.queue_a_mast(offered)
 	t.check(maker.made.size() == before + 1,
 			"a mast queued on a day with none asks the maker for one (%d asks, %d before)"
 			% [maker.made.size(), before])
@@ -116,11 +112,11 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	on_a_carried_walk.use_sitings(carried_asks)
 	on_a_carried_walk.use_director(EventDirector.new(map, manager.world.navigator()), null)
 	on_a_carried_walk.holds_the_home_streets = false
-	on_a_carried_walk.queue_a_mast(offered, rng)
+	on_a_carried_walk.queue_a_mast(offered)
 	t.check(carried_asks.made.size() == 1 and carried_asks.made[0][2] == carried,
 			"a walk that carries a ground has it handed, whatever the spec holds")
-	var holding := _the_ground_asked_of(maker, ahead, true, offered, rng)
-	var not_holding := _the_ground_asked_of(maker, ahead, false, offered, rng)
+	var holding := _the_ground_asked_of(maker, ahead, true, offered)
+	var not_holding := _the_ground_asked_of(maker, ahead, false, offered)
 	t.check(holding.tiles_for(def) == holds_it,
 			"a walk of a spec that holds the home's streets is handed a ground that keeps off the home street")
 	t.check(not_holding.tiles_for(def) == leaves_it,
@@ -129,10 +125,10 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 
 ## The ground a mast queued on a day with no siting is made over, under `holds`.
 func _the_ground_asked_of(maker: FakeSitingMaker, ahead: EventsAhead, holds: bool,
-		offered: Array[Vector2i], rng: RandomNumberGenerator) -> RowGround:
+		offered: Array[Vector2i]) -> RowGround:
 	ahead.holds_the_home_streets = holds
 	ahead.start_a_given_walk(DAY)
-	ahead.queue_a_mast(offered, rng)
+	ahead.queue_a_mast(offered)
 	return maker.made.back()[2] as RowGround
 
 ## A walk that carries the ground its dawn made.

@@ -140,10 +140,7 @@ var _route_rows := {}
 var _met_today := {}
 ## The ids the ordinary bag is filled with today.
 var _ordinary_rows := {}
-## The stream a place put on her route by a marble (`_place_on_her_route()`) is sited and re-sited
-## from — its own, so it never moves a crew's or the fire's.
-var _place_rng := RandomNumberGenerator.new()
-## The plans a marble put on her route, so their sitings draw from `_place_rng`. Not in the day's
+## The plans a marble put on her route (`_place_on_her_route()`). Not in the day's
 ## plan until first sited: `EventManager` adds one there then (`is_from_her_route()`).
 var _placed_from_the_route := {}
 var _next_in := 0.0
@@ -177,7 +174,7 @@ var _on_her_way: Array[EventPlan] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
 ## on any rig that starts the director without one.
-var _siting: EventScheduler.WalkSiting = null
+var _siting: WalkSiting = null
 ## Seconds of *walking* since the day started — the clock `_on_her_way` waits out, ticking only
 ## while she is actually going somewhere for the same reason `due()`'s own clock does.
 var _walked := 0.0
@@ -188,12 +185,6 @@ var _behind_her := {}
 ## there is anywhere to site what is still owed, and whether what is already sited is still on her
 ## way. See `ON_HER_WAY_LOOK`.
 var _since_the_last_look := 0.0
-## The stream the siting rolls its candidate tile out of. Derived from the day's own director stream
-## rather than drawn from it, so which building face the fire takes cannot move a single cat.
-var _walk_rng := RandomNumberGenerator.new()
-## The same for a recurring row sited on her way — `poster_crew` — so the crews' sitings are a
-## stream of their own and never move the fire's.
-var _crew_rng := RandomNumberGenerator.new()
 
 func _init(map: CityMap, navigator: Navigator = null) -> void:
 	_map = map
@@ -213,7 +204,7 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same
 ## `RunState.resistance.progress` the day's own placements were planned at.
 func start_day(day: int, plans: Array[EventPlan],
-		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null,
+		rng: RandomNumberGenerator, siting: WalkSiting = null,
 		heat: int = 0) -> void:
 	_owed.clear()
 	_lesson = null
@@ -234,12 +225,6 @@ func start_day(day: int, plans: Array[EventPlan],
 	_since_the_last_look = 0.0
 	_siting = siting
 	_plans = plans
-	# Derived from the day stream's seed rather than drawn from the stream itself: the siting rolls
-	# a candidate tile and a re-siting rolls another, and a day on which she turned round would
-	# otherwise hand every cat after it a different interval than a day on which she did not.
-	_walk_rng.seed = hash("%d:on-her-way" % rng.seed)
-	_crew_rng.seed = hash("%d:crews-on-her-way" % rng.seed)
-	_place_rng.seed = hash("%d:placed-from-the-route" % rng.seed)
 	# The first pursuer the day owes, for day 3's lesson — see `_teach_the_run()`.
 	var lesson: EventDef = null
 	for plan in plans:
@@ -548,7 +533,7 @@ func route_bag() -> MarbleBag:
 ## finds it a site, which can be after an event behind it, or never.
 ## `siting` is the day's placement context, for a place; `heat` the shape its row is put in.
 func rig_her_route(ids: Array[String], size: int, heat: int = 0,
-		siting: EventScheduler.WalkSiting = null) -> Array:
+		siting: WalkSiting = null) -> Array:
 	if _forced or not _route:
 		return []
 	if siting and not _siting:
@@ -581,7 +566,7 @@ static func _routed(def: EventDef, heat: int) -> EventDef:
 ## A place whose own row names no ground — a loudspeaker mast, whose sites are the city's
 ## (`MastSites`) — is offered the sidewalk and the square when a marble puts it on her route, the
 ## ground `ResistanceDirector._add_a_mast_near()` offers a mast near a mark, and on it only what a
-## mast site may be (`MastSites.is_eligible()`, asked by `EventScheduler.WalkSiting`). A copy, never
+## mast site may be (`MastSites.is_eligible()`, asked by `SitedGround`). A copy, never
 ## the shared heated row every dawn placement of it reads (`EventCatalogue.heated()`).
 static func _with_ground(def: EventDef) -> EventDef:
 	if not def.placement.is_empty() or def.spawn_mode != EventDef.SpawnMode.MAP:
@@ -616,11 +601,11 @@ const ROUTE_SKIP_LIMIT := 64
 ## on her route — is handed out the moment it is drawn, like any other marble: its owed slot and
 ## the marble are spent, and the place goes on the list of what her walk sites
 ## (`site_what_is_on_her_way()`), unplaced, the way day 3's fire waits there. That half sites it on
-## its own cadence: on the branch of the day's route tree she is walking, past the streaming band
-## and within `ON_HER_WAY_SIGHT` seconds of walking of it, through every acceptance rule a dawn
-## placement is under, so it is never seen to appear, it is reachable on the route she is walking,
-## and it is in the world once she walks on; and it re-sites it ahead of her if she turns away before
-## it has been.
+## its own cadence: on the nearest free location of the branch of the day's route tree she is
+## walking, past the streaming band, or on her street just out of her view (`WalkSiting`), through
+## every acceptance rule a dawn placement is under, so it is never seen to appear, it is reachable on
+## the route she is walking, and it is in the world once she walks on; and it re-sites it ahead of her
+## if she turns away before it has been.
 ##
 ## **A place that cannot be sited yet holds nothing up.** A refusal is ordinary — she is off the
 ## day's routes, or walking home inside the streaming band of the branch's end — so the events
@@ -649,7 +634,7 @@ func is_from_her_route(plan: EventPlan) -> bool:
 ## sited on her way like any other (`site_what_is_on_her_way()`). `siting` is the day's placement
 ## context, taken where the day had none, since a day with nothing left for her walk at its start
 ## was started without one.
-func owe_on_her_way(plan: EventPlan, siting: EventScheduler.WalkSiting) -> void:
+func owe_on_her_way(plan: EventPlan, siting: WalkSiting) -> void:
 	_on_her_way.append(plan)
 	if not _siting:
 		_siting = siting
@@ -668,12 +653,6 @@ const ON_HER_WAY_AFTER := 18.0
 ## satisfied one of them and neither.
 const ON_HER_WAY_BEYOND_HOME := 400.0
 
-## How much further she may have to walk past the streaming band to reach the site, in seconds —
-## the width of the siting band, measured **along the route she is on** like the rest of it. Still
-## well inside the outbound leg of a 210s day with the walk home in hand. The near end of the band
-## is not a number of seconds but the streaming band itself; see `_siting_band()`.
-const ON_HER_WAY_SIGHT := 16.0
-
 ## How long the thing has to be behind her before it is moved, in seconds of walking. It is not
 ## instant on purpose: three seconds of walking the wrong way is a player who has changed her mind,
 ## one frame of it is a player stepping round a bollard.
@@ -689,7 +668,7 @@ const ON_HER_WAY_TURNED_AWAY := 3.0
 ## alone — it is still the way she is generally going — and what does move it is a heading that has
 ## genuinely put it behind her, which is the case the rule is for.
 ##
-## **It is the coarse half of the question and `EventScheduler.WalkSiting` answers the fine half.**
+## **It is the coarse half of the question and `WalkSiting` answers the fine half.**
 ## A fire on the fork she did not take is a few degrees off square and passes this test for ever;
 ## what moves it is that it is no longer on the branch she is walking. See
 ## `_is_no_longer_on_her_way()`.
@@ -703,23 +682,24 @@ const ON_HER_WAY_BEHIND := -0.5
 ## answer is to ask again a street later rather than to place it somewhere illegal. A placement
 ## already made is asked on the same beat whether the walk has left it behind, which is a walk of
 ## the route tree rather than a dot product and does not belong in a physics frame: a refused
-## attempt scans her branch and rolls `EventScheduler.EVENT_PLACEMENT_TRIES` candidates, and
-## doing that sixty times a second while she walks into a corner is the one hitch on the beat of the
-## day she is meant to be watching.
+## attempt scans her branch and judges a candidate on the tiles of up to `WalkSiting.LOCATIONS_A_LOOK`
+## locations, and doing that sixty times a second while she walks into a corner is the one hitch on
+## the beat of the day she is meant to be watching.
 const ON_HER_WAY_LOOK := 1.0
 
 ## Sites, or re-sites, whatever the day planned and left for her walk to place: a tile of the row's
 ## own ground (a building face for the fire and the crews) on the day's own route tree — day 7's
-## route van and day 6's rigged man shouting on the street she is walking instead — **on the branch she is walking**, ahead of her by distance along that
-## route, off screen, `ON_HER_WAY_SIGHT` seconds of walking short of being seen. Returns every plan
+## route van and day 6's rigged man shouting on the street she is walking instead — **on the branch
+## she is walking**, in the nearest free location of it beyond the streaming band
+## (`WalkSiting.lay_ahead()`), off screen. Returns every plan
 ## this call moved, so the caller can give back the ground the old body was standing on and take the
 ## new — `EventsAhead.site_what_is_on_her_way()` is that caller — and a place from her route's bag
 ## sited for the first time, which the caller adds to the day's plan (`is_from_her_route()`).
 ##
 ## **The path is the day's route tree and nothing else is a site.** *(PLAYTEST-119: "the fire needs
 ## to spawn on the current path the player is on — moving it around works but valid spawn locations
-## are only on the path".)* `EventScheduler.WalkSiting.ahead_of()` carries the geometry; what this
-## half owns is *when* it is asked and *which* plan is asked about.
+## are only on the path".)* `WalkSiting` carries the geometry; what this half owns is *when* it is
+## asked and *which* plan is asked about.
 ##
 ## **The walk home changes nothing.** *(PLAYTEST-120: "if they managed to avoid it thus far they
 ## should still have to try avoid it further. only once the event has actually taken place does it
@@ -745,7 +725,7 @@ const ON_HER_WAY_LOOK := 1.0
 ##
 ## **And nothing is sited on ground whose units have not drawn.** The siting draws the units of
 ## the day's locations round its pick before the pick stands, and gives up a pick that drew one
-## (`EventScheduler.WalkSiting.ahead_of()`): the next look judges against what they drew.
+## (`WalkSiting.lay_ahead()`): the next look judges against what they drew.
 func site_what_is_on_her_way(delta: float, at: Vector2,
 		velocity: Vector2) -> Array[EventPlan]:
 	var moved: Array[EventPlan] = []
@@ -770,37 +750,25 @@ func site_what_is_on_her_way(delta: float, at: Vector2,
 	if at.distance_to(_map.home_world_position()) < ON_HER_WAY_BEYOND_HOME:
 		return moved
 	var heading := velocity / speed
-	# One look's verdicts are shared by every copy it asks about, and dropped whenever what they
-	# were judged against changes. See `EventScheduler.WalkSiting.begin_look()`.
-	_siting.begin_look()
+	# One look reads one way ahead for every copy it asks about (`WalkSiting.begin_look()`). A
+	# placed plan is asked about without its own body, which every other ask counts, and the siting
+	# does that itself.
+	_siting.begin_look(at, heading)
 	for plan in _on_her_way:
 		if plan.is_placed() and not _is_no_longer_on_her_way(plan, at, heading, elapsed):
 			continue
 		if not plan.is_placed() and _waits_its_turn(plan):
 			continue
-		var band := _siting_band()
-		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT \
-				else (_place_rng if _placed_from_the_route.has(plan) else _crew_rng)
-		# A placed plan is asked about without its own body, which every other ask counts.
-		var asked_without_its_body := plan.is_placed()
-		if asked_without_its_body:
-			_siting.forget_the_verdicts()
-		var sited := _siting.ahead_of(plan.def, rng, plan, at, heading, band.x, band.y)
-		if asked_without_its_body:
-			_siting.forget_the_verdicts()
-		if not sited:
+		if not _siting.lay_ahead(plan):
 			continue
-		plan.stand_where(sited)
 		_behind_her[plan] = 0.0
 		moved.append(plan)
-		# Placed or moved: a plan now stands where no verdict kept so far has seen it.
-		_siting.forget_the_verdicts()
 	_siting.end_look()
 	return moved
 
 ## **A recurring row is sited on her way one at a time**: the next of the day's crews waits while
 ## another is sited ahead of her and not yet in the world. All of them at once would put the day's
-## crews on the one stretch of street the band covers; one at a time, each is met on its own and
+## crews on the one stretch of street the nearest free locations cover; one at a time, each is met on its own and
 ## the next is sited as the last comes into reach, so they are spread along the day's walk.
 func _waits_its_turn(plan: EventPlan) -> bool:
 	if plan.def.kind == GameEnums.EventKind.ONE_SHOT:
@@ -847,24 +815,6 @@ func _is_no_longer_on_her_way(plan: EventPlan, at: Vector2, heading: Vector2,
 	var behind: float = float(_behind_her.get(plan, 0.0)) + elapsed
 	_behind_her[plan] = behind
 	return behind >= ON_HER_WAY_TURNED_AWAY
-
-## How far ahead of her the siting goes, as a near and a far distance.
-##
-## **The near end is the streaming band**, radius plus hysteresis, and it is a distance *across the
-## block* rather than along the route: a placement inside it would be in the world on the frame it
-## was made — a fire that has already recorded its scar, and so one that can never be moved again,
-## before she has walked a single step toward it. Streaming is a radius, so this end of the band has
-## to be one too. It puts the first sight of it at least 9 seconds of walking away, since the view
-## reaches `Tuning.VIEW_HALF_EXTENT` and the rest is walking.
-##
-## **The far end is how much more walking there is to reach it**, so it is read along the route
-## through every corner and junction — `EventScheduler.WalkSiting.ahead_of()` walks the cells. A
-## distance off the edge of the view would be the straight-line reading again, and the day's routes
-## are loop-erased walks rather than lines: 1200px across the block is regularly 2800px of walking,
-## and a band stated as a straight line leaves almost nothing on the route inside it.
-static func _siting_band() -> Vector2:
-	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
-	return Vector2(near, near + Tuning.WALK_SPEED * ON_HER_WAY_SIGHT)
 
 ## Hands the day's return leg its own pressure — `docs/TODO.md`'s M98, pressure in the empty acts
 ## — the moment `EventManager` hears `EventBus.return_phase_started`. `Tuning.RETURN_PATROLS_PER_

@@ -9,7 +9,8 @@ extends RefCounted
 ## holding its location, so it leaves the locations still open to a phase or a draw; every
 ## location answered once by `all()`; each location told the whole it is part of
 ## (`Location.part_of()`), and a street's location the run a route of it may lie on
-## (`Location.run()`); and a location open only while available, untaken and undrawn. Laid out
+## (`Location.run()`); a location open only while available, untaken and undrawn; and a location a
+## beat her walk lays is taken for the day and given back where nothing else stands there. Laid out
 ## on a bare city's lattice (`CityMap.new()`, every street present), with a stand-in for the corridor
 ## whose views the check sets (`_Views`); which view a street really is in is `Corridor.view_of()`'s,
 ## checked in `tests/test_corridor.gd`.
@@ -30,6 +31,7 @@ func run(t: TestRunner) -> void:
 	_test_every_location_is_answered_once(t)
 	_test_each_location_is_part_of_its_whole(t)
 	_test_a_location_is_open_while_nothing_holds_it(t)
+	_test_a_beat_takes_a_location_and_gives_it_back(t)
 
 const ON := Vector3i(2, 2, 0)
 const BESIDE := Vector3i(3, 2, 1)
@@ -451,3 +453,33 @@ func _test_a_location_is_open_while_nothing_holds_it(t: TestRunner) -> void:
 	t.check(not sidewalks[0].is_open(), "one a dawn phase filled is not")
 	t.check(not sidewalks[1].is_open(), "nor one a draw left empty")
 	t.check(not _sidewalks_of(locations, OFF)[0].is_open(), "nor one on a street held today")
+
+## **A beat her walk lays takes a location and gives it back** (`DayLocations.take_for_her_walk()`,
+## `give_back()`): taken, so not open to a draw and its section left as it was; given back it is open
+## again where no draw filled it, drawn with nothing on it where its unit had drawn, and left alone
+## where another plan stands there.
+func _test_a_beat_takes_a_location_and_gives_it_back(t: TestRunner) -> void:
+	var map := CityMap.new()
+	var locations := DayLocations.lay_out(map, _views())
+	var sidewalks := _sidewalks_of(locations, BESIDE)
+	var section_open_before := _sections_of(locations, PlacementView.View.OFF_THE_ROUTE, BESIDE).size()
+	var beat := EventPlan.new(EventCatalogue.mast(), sidewalks[0].centre())
+	locations.take_for_her_walk(sidewalks[0], beat)
+	t.check(sidewalks[0].is_taken() and not sidewalks[0].is_open(),
+			"a location a beat took is taken for the day, so no draw fills it")
+	t.check(_sections_of(locations, PlacementView.View.OFF_THE_ROUTE, BESIDE).size()
+			== section_open_before, "its section is left as it was")
+	t.check(sidewalks[1].is_open(), "and the street's other sidewalk is not touched")
+	locations.give_back(sidewalks[0], beat)
+	t.check(sidewalks[0].is_open() and not sidewalks[0].is_taken(),
+			"a location given back before its unit drew is open again")
+	var drawn := sidewalks[1]
+	locations.record(drawn, null)
+	locations.take_for_her_walk(drawn, beat)
+	locations.give_back(drawn, beat)
+	t.check(drawn.is_drawn() and not drawn.is_taken() and not drawn.is_open(),
+			"one whose unit had drawn reads drawn with nothing on it")
+	var other := EventPlan.new(EventCatalogue.by_id("cafe_tables"), sidewalks[0].centre())
+	locations.assign_to(sidewalks[0], other)
+	locations.give_back(sidewalks[0], beat)
+	t.check(sidewalks[0].is_taken(), "a beat that does not stand there gives back nothing of another plan's")

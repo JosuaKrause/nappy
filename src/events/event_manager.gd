@@ -539,7 +539,7 @@ func _tick_the_events(delta: float) -> void:
 		# The day's units she comes near draw first, before anything is streamed in: every unit
 		# within the stream radius of her whole, so the streaming finds no row of it missing
 		# (`EventsAhead.draw_what_comes_near()`). What is sited below draws the ground round its
-		# own site (`EventScheduler.WalkSiting.ahead_of()`).
+		# own site (`WalkSiting.lay_ahead()`).
 		ahead.draw_what_comes_near(world.player.global_position, stream_radius)
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn. Nothing is sited in a world with no
@@ -806,8 +806,8 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 	spawner.move_extra(instance, at)
 
 ## One more mast for day 11's task (`EventsAhead.queue_a_mast()`).
-func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventPlan:
-	return ahead.queue_a_mast(offered, rng)
+func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
+	return ahead.queue_a_mast(offered)
 
 ## Day 13's task roadblock `plan` across a section of the day's locations, whatever it held spent
 ## (`EventsAhead.swap_in_a_section()`).

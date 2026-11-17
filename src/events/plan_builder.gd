@@ -69,7 +69,7 @@ func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 ## `tile` that the handed room among placed plans (the game's `StreetInvalidation.room_around()`)
 ## leaves room for among `already`. The one entry point a
 ## planner and `SceneRecipeRuntime` share: an authored scene's row keeps the day's spacing. The
-## scheduler's own loop (`EventScheduler._best_of()`) does not call it: a day asks the day's rules
+## scheduler's own loop and her walk's siting (`WalkSiting`) do not call it: a day asks the day's rules
 ## (`StreetInvalidation`), which ask `StreetInvalidation.room_around()` among many more rules and set the candidate's
 ## role, so routing the loop through this would change what the day places.
 func place_at(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,

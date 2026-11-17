@@ -77,10 +77,10 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 	t.check(lit_unmet == told,
 			"and it is told on the builder's bus as lit unmet, once, by its row (%s)" % [lit_unmet])
 	t.check(plan.position.distance_to(doorstep)
-			>= EventScheduler.WalkSiting.DUSK_CLEAR_OF_HER,
+			>= WalkSiting.DUSK_CLEAR_OF_HER,
 			("it is lit %.0fpx from where she finished, past the %.0fpx streaming band, so it is "
 			% [plan.position.distance_to(doorstep),
-			EventScheduler.WalkSiting.DUSK_CLEAR_OF_HER]) + "nowhere she could have seen it happen")
+			WalkSiting.DUSK_CLEAR_OF_HER]) + "nowhere she could have seen it happen")
 	var scar_here := false
 	for scar in _city.run.attempt_spend.scars:
 		scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
@@ -358,6 +358,11 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 		var sited_at := _walk_clock
 		t.check(not _branches_on(day, plan.position).is_empty(),
 				"walking %s: and it stands on the day's own route tree, never off it" % leg)
+		var tile := _city.map.world_to_tile(plan.position)
+		var location := RunCity.events(_city).walk_events().locations().holding(tile,
+				_city.map.tile_at(tile))
+		t.check(location != null and location.is_taken(),
+				"walking %s: and the location under it is taken for the day, so no draw fills it" % leg)
 		t.check(plan.position.distance_to(sited_from) > Tuning.EVENT_STREAM_RADIUS,
 				("walking %s: %.0fpx out, past the %.0fpx streaming band, so it is neither visible "
 				% [leg, plan.position.distance_to(sited_from), Tuning.EVENT_STREAM_RADIUS])

@@ -75,7 +75,7 @@ func director() -> EventDirector:
 ## keeps the placement context a row left for her walk is sited against.
 func start_day(day: int, tree: RouteTree) -> void:
 	# The day's placement context, kept past dawn for the one kind of plan the day plans and
-	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.on_her_way`.
+	# leaves for her walk to site — see `WalkSiting` and `EventDef.on_her_way`.
 	# Stated against exactly what `build_day` was: the same tree, the walk's own doors and calm
 	# areas, which are the day's, and the day's ground for a row (`_ground_of_the_walk()`). Only
 	# on a day that has such a plan: the context grows a corridor, and a day with nothing left for
@@ -92,7 +92,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 ## time one needs it, over the day's tree (`start_day()`), and its first attempt's one-time scans
 ## for `plan`'s row done now rather than mid-walk (`WalkSiting.prepare()`): for a row the dawn
 ## left, at the walk's start, and for one a unit draws as she walks, as it is drawn. Answers it.
-func _siting_for(day: int, plan: EventPlan) -> EventScheduler.WalkSiting:
+func _siting_for(day: int, plan: EventPlan) -> WalkSiting:
 	if not _siting:
 		_siting = _a_siting(day, _day_tree)
 	_siting.prepare(plan.def)
@@ -103,7 +103,7 @@ func _siting_for(day: int, plan: EventPlan) -> EventScheduler.WalkSiting:
 ## draws the ground round a site it picks** (`draw_the_ground_round()`,
 ## `WalkSiting.use_the_ground_drawer()`), so nothing it sites stands on ground whose units have not
 ## drawn.
-func _a_siting(day: int, tree: RouteTree) -> EventScheduler.WalkSiting:
+func _a_siting(day: int, tree: RouteTree) -> WalkSiting:
 	var siting := _sitings.make(day, tree, _ground_of_the_walk())
 	siting.use_the_ground_drawer(draw_the_ground_round)
 	return siting
@@ -155,7 +155,7 @@ var _spawn_siting: SpawnSiting
 ## left none — the whole of `EventDef.on_her_way`, which today is day 3's fire and nothing
 ## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
 ## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
-var _siting: EventScheduler.WalkSiting = null
+var _siting: WalkSiting = null
 ## What makes a siting (`SitingMaker`), handed in by the manager (`use_sitings()`): this class makes
 ## none itself, so a suite hands in a maker that answers a stand-in, or keeps what it made.
 var _sitings: SitingMaker
@@ -320,9 +320,10 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## close by" · inbox #503 in quiet-yak: "no events are dynamically created as you walk around -- if
 ## there is a mast queued up that will be the next event to be generated".)* So it is not put down
 ## where the director points: it is generated the way every row the day plans is, a `loudspeaker`
-## heated like the day's own (`world.run.resistance.progress`) placed by `EventScheduler._best_of()`
-## among `offered` — the tiles the director found near her and out of her view — against the whole
-## of the day's plan: `StreetInvalidation.room_around()`'s spacing, so it never stands inside anything else or inside
+## heated like the day's own (`world.run.resistance.progress`) laid by the day's siting
+## (`WalkSiting.lay_among()`) in the first free location that takes one of `offered` — the tiles the
+## director found near her and out of her view — against the whole of the day's plan:
+## `StreetInvalidation.room_around()`'s spacing, so it never stands inside anything else or inside
 ## a lethal row's field, the region doors' clear ground and the calm she has not used; a mast is
 ## exempt from the three rules that keep a line along her routes (the route junctions, the route
 ## sidewalks and a pacing beat's opening), as the fixed ones are (inbox #684 in coral-lark).
@@ -332,7 +333,7 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## silenced stands silenced on later days from its scar (`DawnMasts`). Null when no offered tile passes, which leaves day 11 to the
 ## nearest live mast she can be sent to (`ResistanceDirector._nearest_confirmed_mast()`), or, where
 ## there is none, with nowhere to go.
-func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventPlan:
+func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 	if offered.is_empty():
 		return null
 	var def := EventCatalogue.heated(EventCatalogue.mast(),
@@ -340,8 +341,8 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	var siting := _siting
 	if not siting:
 		siting = _sitings.make(world.day, _day_tree, _ground_of_the_walk())
-	var plan := siting.among(def, rng, offered)
-	if not plan:
+	var plan := EventPlan.new(def, Vector2.INF)
+	if not siting.lay_among(plan, offered):
 		return null
 	plan.mast_id = DawnMasts.added_mast_id(plan.position)
 	_streaming.add(plan)
@@ -533,8 +534,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _director.route_bag():
 		return []
 	if not _siting:
-		_siting = _a_siting(world.day, _day_tree if _day_tree
-				else RouteTree.for_day(world.city_map, world.day))
+		_siting = _a_siting(world.day, _day_tree)
 	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)
 	for id in ids:
 		var row := _director.route_row(id)
@@ -743,10 +743,8 @@ func light_what_she_never_met(at: Vector2) -> bool:
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
 		var rng := world.run.calendar.day_rng(world.day, "dusk-fire")
-		var sited := _siting.off_her_path(plan.def, rng, plan, at)
-		if not sited:
+		if not _siting.lay_off_her_path(plan, at, rng):
 			continue
-		plan.stand_where(sited)
 		_streaming.stream_in(plan)
 		_streaming.stream_out(plan)
 		# It is over the moment it is recorded: the day has ended, and a plan left unspent would be
@@ -760,9 +758,20 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		# where she finished the day, and no seed reproduces that from outside.
 		world.trace.note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
 				% [plan.def.id, RunTrace.tile(world.map.world_to_tile(plan.position)),
-				plan.position.distance_to(at)] + "finished the day")
+				plan.position.distance_to(at)] + "finished the day, " + _what_her_walk_waited_on())
 		return true
 	return false
+
+## What her walk's siting waited on today, as `reason xN; reason xN`, or "nothing": the run log's
+## account of why the set piece a run owes never came (`WalkSiting.waits()`).
+func _what_her_walk_waited_on() -> String:
+	var waits := _siting.waits()
+	if waits.is_empty():
+		return "her walk waited on nothing"
+	var parts: Array[String] = []
+	for reason: String in waits:
+		parts.append("%s x%d" % [reason, int(waits[reason])])
+	return "her walk waited on " + "; ".join(parts)
 
 ## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`). A
 ## recipe's day starts with nothing owed and with everything the director does while she walks

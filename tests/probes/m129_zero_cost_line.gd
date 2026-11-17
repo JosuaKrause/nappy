@@ -405,7 +405,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 	# `EventManager.start_day`'s own `doors` and `standing`: where today's door structure stands
 	# (kept clear of by `DoorClearanceRule.clear_of_the_doors()`, a pre-existing rule this probe simply never
 	# exercised before) and what the seals and the region wall's own bodies already stand as
-	# (`standing`, newly threaded into the three placement rules — `EventScheduler._best_of`'s own
+	# (`standing`, newly threaded into the three placement rules — `EventScheduler.build_day()`'s own
 	# doc). Missing both was itself a probe/rule disagreement — see `DECISIONS.md`, M129, "which
 	# placements the three rules never see" — and each moves the headline on its own: isolated
 	# against `main`'s own scheduler (`standing` accepted but not yet asked of the three rules),

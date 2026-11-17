@@ -31,5 +31,5 @@ extends Resource
 ## capsule's field is a stadium about its spine). Set on `fire_truck` alone, whose field
 ## `docs/COSTS.md` prices as a point's: the body it is given to be solid is not a reason for the
 ## street beside a parked engine to cost more, and the 340px the fire's siting check closes about
-## its kerb (`EventScheduler.WalkSiting`) is then the whole of its field.
+## its kerb (`WalkSiting`) is then the whole of its field.
 @export var field_from_its_centre := false

@@ -8,9 +8,8 @@ extends RefCounted
 ##
 ## Day 3's fire is budgeted with no position and sited by `EventDirector.site_what_is_on_her_way()`
 ## once she has been walking `ON_HER_WAY_AFTER` seconds and is clear of the doorstep, **on the
-## branch of the day's route tree she is walking**, between the far edge of the streaming band and
-## `ON_HER_WAY_SIGHT` seconds of walking past the edge of the view, measured along the route rather
-## than along a straight line.
+## branch of the day's route tree she is walking**, in the nearest free location past the streaming
+## band (`WalkSiting.lay_ahead()`), found along the route rather than along a straight line.
 ##
 ## **So the rigs walk the day's own routes.** A straight line through the lattice was the honest rig
 ## for a straight-line rule and is the wrong one for this: it spends most of its time off the tree,
@@ -37,7 +36,7 @@ const PAST_THE_FORK := 6
 const RUN_SEED := 2
 
 func run(t: TestRunner) -> void:
-	print("seed   walk        sited at   lead px   seen after   total    widened  waited on")
+	print("seed   walk        sited at   lead px   seen after   total    waited on")
 	var met := 0
 	var walks := 0
 	var unmet_on_a_won_day := 0
@@ -111,18 +110,17 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	_follow(city, rig, route, plan, state)
 
 	var siting := siting_maker.latest()
-	var widened := siting.widened if siting else 0
-	state["refusals"] = siting.waits.duplicate() if siting else {}
+	state["refusals"] = siting.waits() if siting else {}
 	var met: bool = float(state["seen_at"]) >= 0.0
 	if met:
-		print("%-6d %-12s %7.1fs %9.0f %10.1fs %7.1fs %8d  %s"
+		print("%-6d %-12s %7.1fs %9.0f %10.1fs %7.1fs  %s"
 				% [seed_value, walk_name, state["sited_at"], state["lead"],
-				float(state["seen_at"]) - float(state["sited_at"]), state["seen_at"], widened,
+				float(state["seen_at"]) - float(state["sited_at"]), state["seen_at"],
 				_refusal_summary(state["refusals"])])
 		_what_the_pair_costs(city, rig, plan)
 	else:
-		print("%-6d %-12s never seen (sited at %.1fs) %25d  %s"
-				% [seed_value, walk_name, state["sited_at"], widened,
+		print("%-6d %-12s never seen (sited at %.1fs)  %s"
+				% [seed_value, walk_name, state["sited_at"],
 				_refusal_summary(state["refusals"])])
 
 	# E's case: the day is won with the fire never in the world, so it is lit at dusk off her path.

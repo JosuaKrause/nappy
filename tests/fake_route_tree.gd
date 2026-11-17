@@ -10,6 +10,7 @@ var _fake_network := StreetNetwork.new()
 var _fake_depths := {}
 var _fake_junctions: Array[Vector2i] = []
 var _fake_cells_ahead := {}
+var _fake_carried := {}
 
 ## A tree on a grid over `map`, the ground the corridor answers about.
 func _init(map: CityMap) -> void:
@@ -30,6 +31,27 @@ func set_routes(streets: Array[Vector3i], junctions: Array[Vector2i]) -> FakeRou
 func set_cells_ahead(cells: Dictionary) -> FakeRouteTree:
 	_fake_cells_ahead = cells
 	return self
+
+## Sets the tiles the tree carries a route along (`RouteTree.branches_on()`, `carries_a_route()`).
+func set_carried_tiles(tiles: Array[Vector2i]) -> FakeRouteTree:
+	for tile in tiles:
+		_fake_carried[tile] = true
+	return self
+
+## One branch on every tile set, none elsewhere.
+##
+## Overrides RouteTree.branches_on.
+func branches_on(tile: Vector2i) -> Array[int]:
+	var found: Array[int] = []
+	if _fake_carried.has(tile):
+		found.append(0)
+	return found
+
+## Whether the tile is one set.
+##
+## Overrides RouteTree.carries_a_route.
+func carries_a_route(tile: Vector2i) -> bool:
+	return _fake_carried.has(tile)
 
 ## The cells set that lie no further than `limit`.
 ##

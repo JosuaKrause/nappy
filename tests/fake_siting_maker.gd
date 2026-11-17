@@ -8,14 +8,14 @@ extends SitingMaker
 ## What each ask was given, in order, as `[day, tree, ground]`.
 var made: Array[Array] = []
 
-var _fake_siting: EventScheduler.WalkSiting
+var _fake_siting: WalkSiting
 
 ## A maker that answers `siting` to every ask.
-func _init(siting: EventScheduler.WalkSiting) -> void:
+func _init(siting: WalkSiting) -> void:
 	super(null, null)
 	_fake_siting = siting
 
 ## Overrides SitingMaker.make.
-func make(day: int, tree: RouteTree, ground: RowGround) -> EventScheduler.WalkSiting:
+func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 	made.append([day, tree, ground])
 	return _fake_siting

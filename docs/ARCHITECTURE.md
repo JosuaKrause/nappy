@@ -303,9 +303,10 @@ src/
 	marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
 	                      out again largest first as each is added, what the room left or the
 	                      layout cannot hold left out, at most one of a row in the unit
-	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid among
-	                      the plans it is handed, the location's own weight; the day's own is
-	                      `RuledLocationGround`
+	location_ground.gd    what the dawn draw and her walk's siting ask of the day: a row's event at a
+	                      location if valid among the plans it is handed (on a tile of the draw's
+	                      choosing or a tile the siting brings), the location's own weight; the
+	                      day's own is `RuledLocationGround`
 	ruled_location_ground.gd the day's own ground as a location is asked: a row's event where it
 	                      fits and the day's rules leave it valid among the plans it is handed, the
 	                      location's weight; handed the walk's ground and the bodies the day stands,
@@ -359,8 +360,12 @@ src/
 	                       a task's mast placed after dawn and day 13's roadblock put across a
 	                       route-adjacent section in place of what it held, the fire lit at dusk,
 	                       and the day's units drawn as she comes near them
-	siting_maker.gd       makes a day's siting; what the events ahead are handed, so a test hands in
-	                       one that answers a stand-in
+	siting_maker.gd       makes a day's siting from the walk's rules and locations; what the events
+	                       ahead are handed, so a test hands in one that answers a stand-in
+	walk_siting.gd        lays the rows her walk places: the free locations on her way, the first
+	                       the day's rules take
+	sited_ground.gd       the tiles a row her walk lays may stand on: a crew's fronts, a mast's
+	                       sites
 	event_director.gd     sites what the day planned and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
@@ -1279,6 +1284,11 @@ field with its value before and after (`tests/shared_state.gd`).
   drawn as she comes near them: a unit draws before the streaming looks at its ground, and what
   her walk sites, swaps in or takes away draws the units round it first. Its header gives the
   reason it builds a city: each rule is the order of two parts the manager owns.
+- `test_walk_siting.gd` — the siting that lays the rows her walk places, over stand-ins for the
+  route tree, the locations and the judge: the nearest free location on her branch or her
+  street takes a beat, a placed beat gives its location back only once it has another, a mast
+  near the mark and the fire lit at dusk take the first location offered; and
+  `test_sited_ground.gd`, the tiles a row her walk lays may stand on.
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —
   pushing every block to the end of its arc moves no walkable tile.
