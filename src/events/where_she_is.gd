@@ -18,8 +18,8 @@ extends RefCounted
 ## - **it knows nothing of her until the next word after it was made**, but for a car, which
 ##   hears the word told so far (`heard_so_far()`) so that, made where she stands, it holds its
 ##   body back round her from its first frame (`EventInstance._ready()`), and an officer let out
-##   after the tick's word, who is told where she stands by hand
-##   (`EventsAhead.let_the_officers_out()`);
+##   after the tick's word, who is handed the whole of it as he is let out
+##   (`hear_so_far()`, `EventsAhead.let_the_officers_out()`);
 ## - **a point it is told itself** (`see_her_at()`: the halo once a drawn frame, a pursuer set on
 ##   her from outside, an officer let out) **is its own until the next word**, and reaches no
 ##   other event;
@@ -80,6 +80,12 @@ func heard_so_far() -> WhereSheIs:
 	var handle := WhereSheIs.new()
 	handle._word = _told()
 	return handle
+
+## **Its event hears the word told so far from now on**, ahead of the word after it: an officer let
+## out after the tick's word, handed all six facts at once (where she stands, her pram, the view,
+## whether she runs, whether the baby is awake, whether a door holds her) and not only her place.
+func hear_so_far() -> void:
+	_heard_from = 0
 
 ## **Its event has seen her at `at` itself**, ahead of the next word: what it answers for `at()`
 ## until then. Every other event, and every other fact, keeps the word.

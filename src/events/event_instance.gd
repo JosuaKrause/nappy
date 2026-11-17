@@ -912,11 +912,11 @@ func give_up_the_chase() -> void:
 	gave_up = true
 	_be_done()
 
-## **Has seen her at `at` itself**, ahead of its manager's next word (`WhereSheIs.see_her_at()`):
-## an officer let out after the tick's word (`EventsAhead.let_the_officers_out()`), who otherwise
-## knows nothing of her until the next.
-func see_her_at(at: Vector2) -> void:
-	_where.see_her_at(at)
+## **Hears the word told so far** (`WhereSheIs.hear_so_far()`), ahead of its manager's next one: an
+## officer let out after the tick's word (`EventsAhead.let_the_officers_out()`), who is handed
+## where she stands and the five other facts as he is let out and not the one.
+func hear_the_word_so_far() -> void:
+	_where.hear_so_far()
 
 ## **Notices her now, wherever she is**: a waiting pursuer set on her by what she did rather than
 ## by what it saw — day 13's waiting guard the moment she has done the roadblock's task

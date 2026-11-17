@@ -926,8 +926,5 @@ each question as it was shown).
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
-   - An officer let out of a car is told her position and none of the other five facts (her
-     pram's place, the view, whether she runs, whether the baby is awake, whether a door holds
-     her) until the next tick's word.
    - The halo's word once a drawn frame reaches only the events it lights; every other live event
      keeps the tick's word.
