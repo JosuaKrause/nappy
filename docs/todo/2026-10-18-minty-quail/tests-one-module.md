@@ -26,10 +26,11 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 
 **The order** is by module, those whose suites build a city before those that boot `main`, one
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
-`booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 5 and 8 have had their
+`booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 5, 7 and 8 have had their
 pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
--curly-hawk and -merry-goose), and what each lists is what is left of it; entry 6 is row 5 of
-`event-interface.md`, after its row 4b; entry 7 has had no pass:
+-curly-hawk, -merry-goose and -dotted-pelican), and what each lists is what is left of it; entry 6 is row 5 of
+`event-interface.md`, after its row 4b; entry 7 left none, and its number is kept so the others
+keep theirs:
 
 1. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
@@ -53,7 +54,7 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
 6. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
    `park_cordon`, `burnt_door`);
-7. the routes, city and regions suites that test something other than the city itself;
+7. (none left);
 8. run flow, save and pause: `test_day_loop`'s retry case (the same mark in the same alley from the
    same seed) is the resistance director's placement answer, to move to the resistance suites
    after placement by construction; `test_dev_rig`'s `--spawn` event, closure and door cases read
