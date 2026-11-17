@@ -487,7 +487,7 @@ live event hears it through a handle of its own, so that an event made after the
 knows nothing of her until the next one, as its own fields did; the halo's word once a drawn
 frame, an officer's first sight of her and a notice's point go to that event's handle and not to
 the shared object. The handle is the builder's choice, open to the player's overturn (the record
-minty-quail-olive-finch): it keeps today's answers, three of which are slightly wrong (section 7,
+minty-quail-olive-finch): it keeps today's answers, two of which are slightly wrong (section 7,
 point 6).
 
 ### 2.11 Several reads that become one question
@@ -899,7 +899,8 @@ each question as it was shown).
    pull request, so that there are numbers to look at later; no step is held, tuned or sent back for
    its cost.
 6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three answers
-   the board named (the first three below) and listing them for the end remeasure (a), or (b), in
+   the board named (the field's shape, built in minty-quail-dappled-llama, and the first two
+   below) and listing them for the end remeasure (a), or (b), in
    the board's words, "fix each in the step that names it, as a change made on purpose with
    pictures": "the shape change is desired. as I said earlier the main real measure will be
    playtests. This will tell us what needs fixing. Let's not obsess over theoretical numbers. We

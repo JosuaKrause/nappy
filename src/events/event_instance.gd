@@ -1570,11 +1570,15 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 	var outer := flock.bird_outer()
 	var total := 0.0
 	for bird in birds():
-		var d := GroundShape.eccentric_distance(global_position + bird.at(),
-				bird.heading() * bird.speed,
-				world_position)
-		total += def.bird_emission_at(d, share, outer)
+		total += def.bird_emission_at(_bird_distance(bird, world_position), share, outer)
 	return total
+
+## The distance a bird's own kernel prices `world_position` at: eccentric about where the bird is by
+## its own `heading * speed`. The one place a bird's datum is worked out, for the flock's field
+## (`_flock_contribution_at()`) and its reach (`field_reaches()`) alike.
+func _bird_distance(bird: EventFlock.Bird, world_position: Vector2) -> float:
+	return GroundShape.eccentric_distance(global_position + bird.at(), bird.heading() * bird.speed,
+			world_position)
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
 ## no longer merely telegraphing.
@@ -2168,9 +2172,7 @@ func closes_on(point: Vector2) -> bool:
 func field_reaches(point: Vector2) -> bool:
 	if not birds().is_empty():
 		for bird in birds():
-			var d := GroundShape.eccentric_distance(global_position + bird.at(),
-					bird.heading() * bird.speed, point)
-			if d <= flock.bird_outer():
+			if _bird_distance(bird, point) <= flock.bird_outer():
 				return true
 		return false
 	return _field_distance(point, travel_velocity()) <= def.heard_within()
