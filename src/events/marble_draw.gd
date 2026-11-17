@@ -34,8 +34,8 @@ extends RefCounted
 ##   park's or a square's cells, every row the size of one.
 ##
 ## - **Where the walk stands one event a unit** (`one_marble_a_unit`,
-##   `DaySpec.stands_one_event_a_street()`), the unit draws one marble: a row's stands alone in it
-##   and an empty one leaves it with nothing. A row the bag's `accepts` refuses stays in the bag and
+##   `DaySpec.stands_one_event_a_street()`), the unit draws one marble: a row's stands alone in
+##   it and an empty one leaves it with nothing. A row the bag's `accepts` refuses stays in the bag and
 ##   the bag offers the next marble inside the same draw, so a unit whose first row is refused
 ##   draws again among the marbles left.
 ##
@@ -85,8 +85,8 @@ class _Placing extends RefCounted:
 		return _plan
 
 ## `locations` records each draw (`DayLocations.record()`); `rows` the rows the
-## bag's marbles name (`id -> EventDef`); `ground` the judge; `one_marble_a_unit`, the unit draws one marble and stops (the class
-## comment).
+## bag's marbles name (`id -> EventDef`); `ground` the judge; `one_marble_a_unit`, the unit
+## draws one marble and stops (the class comment).
 func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
 		one_marble_a_unit := false) -> void:
 	_locations = locations

@@ -1,16 +1,17 @@
 class_name DayLocations
 extends RefCounted
 ## **Every street's locations for one day, laid out once at dawn and handed to whatever asks**
-## (inbox #1185 in gentle-owl; `docs/EVENTS.md`, "The three views and the placement order"): each street's three
-## sections and their sidewalk locations (`StreetLocations`), each told its view once
-## (`Corridor.view_of()`), with the ground the city's fixed parts hold marked unavailable and what a
-## phase has assigned taken for the day. The one object holding those answers, so nothing works
+## (inbox #1185 in gentle-owl; `docs/EVENTS.md`, "The three views and the placement order"): each
+## street's three sections and their sidewalk locations (`StreetLocations`), each told its view once
+## (`Corridor.view_of()`; every one on the route for a walk with no corridor, `along()`), with the
+## ground the city's fixed parts hold marked unavailable and what a phase has assigned taken for
+## the day. The one object holding those answers, so nothing works
 ## them out again (inbox #1156 in gray-dolphin).
 ##
 ## **Laid out every day at dawn**, by the dawn's context (`DawnContext.locations()`) the first time
 ## `EventScheduler.build_day()` asks, after the routes are established and the day's holds are on
-## the map. A walk with no corridor is laid out along its own streets (`along()`). On day 13 the roadblock
-## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn, a unit
+## the map. A walk with no corridor is laid out along its own streets (`along()`). On day 13 the
+## roadblock phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn, a unit
 ## at a time, from the bag of its unit's view (`UnitDraw`, `MarbleDraw`; the units are grouped from
 ## `all()`).
 ## The day's planner hands the locations on to the walk
@@ -53,7 +54,8 @@ static func along(map: CityMap, streets: Array[StreetNetwork.Segment]) -> DayLoc
 				PlacementView.View.ON_THE_ROUTE)
 	return day
 
-## **Every location**, open or not: street by street in the lattice's order, each street's sections
+## **Every location**, open or not: street by street in the order laid out (the lattice's, or the
+## order a walk with no corridor handed its streets in, `along()`), each street's sections
 ## and then its sidewalks, then the ground beyond the streets, as `open_locations()` walks them but
 ## unfiltered. What the day's units are grouped from (`DayUnits.of()`).
 func all() -> Array[Location]:
@@ -73,8 +75,9 @@ func record(location: Location, plan: EventPlan) -> void:
 	location.record(plan)
 
 ## **Every location still open to a phase**: available and neither taken nor drawn, street by
-## street in the lattice's order (each street's sidewalk locations, then its sections), then the
-## ground beyond the streets. Unshuffled, so a phase that draws among them draws on its own stream.
+## street in the order laid out (as `all()`: each street's sidewalk locations, then its sections),
+## then the ground beyond the streets. Unshuffled, so a phase that draws among them draws on its
+## own stream.
 func open_locations() -> Array[Location]:
 	var found: Array[Location] = []
 	for key: Vector3i in _streets:
@@ -264,7 +267,7 @@ static func _ground_location(map: CityMap, corridor: Corridor, tiles: Rect2i, in
 			corridor.view_of_ground(tiles), available, kind, whole)
 
 ## The sections in `view` (`PlacementView.View`) that are available and not yet taken, street by
-## street in the lattice's order and along each street in order.
+## street in the order laid out (as `all()`) and along each street in order.
 func sections_in(view: int) -> Array[Location]:
 	var found: Array[Location] = []
 	for key: Vector3i in _streets:

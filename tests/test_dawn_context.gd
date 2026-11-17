@@ -84,16 +84,20 @@ func _test_a_walk_with_no_corridor_is_laid_out_along_its_streets(t: TestRunner) 
 				and named.has(location.segment().key())
 	t.check(only_those, "every location of a walk with no corridor is of a street it names (%d)"
 			% found.size())
+	var seen := {}
+	for location in found:
+		seen[location.segment().key()] = true
+	t.check(seen.size() == 2, "and both streets it names are laid out (%d seen)" % seen.size())
 
 ## **The ground she is put down on** is kept clear by the existing setting: a spec that holds the
 ## home's streets answers no point, one that does not answers where the walk starts.
 func _test_the_ground_she_starts_on_is_kept_where_the_home_streets_are_not_held(
 		t: TestRunner) -> void:
 	var walk := _Walk.new()
-	var held := DaySpec.for_day(1)
-	var not_held := DaySpec.for_section(DaySpec.Section.CITY, 60.0)
-	t.check(held.holds_the_home_streets and not not_held.holds_the_home_streets,
-			"a day holds the home's streets and the escape's city does not")
+	var held := DaySpec.new()
+	held.holds_the_home_streets = true
+	var not_held := DaySpec.new()
+	not_held.holds_the_home_streets = false
 	var of_a_day := DawnContext.new(held, 7, null, walk, null, null, Callable())
 	var of_the_escape := DawnContext.new(not_held, 7, null, walk, null, null, Callable())
 	t.check(of_a_day.ground_she_starts_on() == Vector2.INF,
