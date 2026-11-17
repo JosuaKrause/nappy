@@ -70,7 +70,6 @@ var _ground: SitedGround
 ## Where she is and which way she is going, as `begin_look()` was told.
 var _at := Vector2.ZERO
 var _heading := Vector2.ZERO
-var _in_a_look := false
 ## The cells ahead of her in walking order, asked of the tree on the first branch ask of a look.
 var _cells: Array[Vector2i] = []
 var _cells_asked := false
@@ -122,14 +121,12 @@ func use_the_ground_drawer(draws_round: Callable) -> void:
 func begin_look(at: Vector2, heading: Vector2) -> void:
 	_at = at
 	_heading = heading
-	_in_a_look = true
 	_cells.clear()
 	_cells_asked = false
 	_nowhere.clear()
 
 ## Ends a look; nothing is kept past it.
 func end_look() -> void:
-	_in_a_look = false
 	_cells.clear()
 	_cells_asked = false
 	_nowhere.clear()

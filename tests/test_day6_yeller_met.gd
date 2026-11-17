@@ -169,19 +169,21 @@ func _first_siting(man: EventPlan, player: Stroller, handed: int) -> String:
 		return "sited behind her"
 	if absf(offset.cross(heading)) > HER_STREET_HALF_WIDTH:
 		return "sited off her street"
-	if _in_the_cameras_view(man, player.global_position):
+	if _in_the_cameras_view(man, player.global_position, heading):
 		return "sited in her view"
 	if offset.length() > Tuning.EVENT_STREAM_RADIUS:
 		return "sited past the streaming radius"
 	return "kept"
 
 ## Whether any of what the man draws, standing where he was sited, meets the camera's view round
-## `her`.
-func _in_the_cameras_view(man: EventPlan, her: Vector2) -> bool:
+## `her`, led `Stroller.CAMERA_LOOK_AHEAD` along her `heading` as the camera leads her.
+func _in_the_cameras_view(man: EventPlan, her: Vector2, heading: Vector2) -> bool:
 	var box := EventFootprints.footprint_of(man.row())
 	var drawn := Rect2(man.placed_at() + box.position, box.size) if box.has_area() \
 			else Rect2(man.placed_at(), Vector2.ZERO)
-	return Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0).intersects(drawn, true)
+	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	return Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0) \
+			.intersects(drawn, true)
 
 func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
 	for point in points:
