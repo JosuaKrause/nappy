@@ -25,4 +25,5 @@ empty walk bag means none, with no yes-or-no beside it; `UnitFills` extends `Uni
 a wrapper; `DaySpec.bag` stays a field the suites set), and one the design did not foresee:
 `UnitFills.of()`, now read only by its own file and its suites, is a kept line in
 `tools/test_only_members.txt` rather than made internal, which would rewrite `test_unit_fills.gd`'s
-per-cell checks.
+per-cell checks. A third way the review of #1508 named: a small separate bag-maker class that holds a
+`UnitFills`, so that `of()` has a reader in the game and needs no kept line.
