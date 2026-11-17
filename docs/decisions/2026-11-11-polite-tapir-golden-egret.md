@@ -3,16 +3,16 @@
 **The ask.** Placement step 2 of `placement-by-construction.md`, the street rules: a rule that follows her line the way
 the free-line probe does, from the crossing onto her sidewalk, for every row that lands near her route, which the player
 accepted as option C of the free-line-density question (inbox #1461); and that one sidewalk of a street stays walkable
-past the drawn events where a street needs one, which the player's own correction of inbox #1465 limits to the streets
+past the drawn events where a street needs one, which the player's own correction of inbox #1465 in spry-plover limits to the streets
 that already require it. This is the pull request #1476, the first of the step's two parts (part B of the Fable design,
 the street rules); part A, the dog walker, the patrol and the convoy sent just ahead of her, is #1477 (its own record).
 
 **Read as** (the orchestrator's readings, each open to the player's correction):
 
-- Option C's "her line" includes the home street, which the route tree does not carry (a door is not a route). The
+- Option C's following of her line includes the home street, which the route tree does not carry (a door is not a route). The
   free-line probe (`tests/probes/m129_zero_cost_line.gd`) already starts the line in the home and takes the home street,
   both sidewalks, as ground.
-- The correction of inbox #1465 makes no street newly required to keep a walkable sidewalk. Where a rule already
+- The correction of inbox #1465 in spry-plover makes no street newly required to keep a walkable sidewalk. Where a rule already
   requires one, the draw makes sure of it by construction; today those streets are her routes' own streets and the
   escape's walk, which keeps its own rule. The streets beside the routes and off them keep PLAYTEST-17's blocking events
   all over. So the one-sidewalk rule covers the streets a route runs along and nothing else.
@@ -49,7 +49,12 @@ the street rules); part A, the dog walker, the patrol and the convoy sent just a
 - **`StreetInvalidation`** composes both rules for a walk with a corridor and no `WalkGround`; the escape keeps its own,
   stricter rule. `EventPlan.walks_a_beat()` is new and `denies()` asks it; `RouteSidewalkRule.is_a_carriageway_tile()` is
   public so the line rule takes a street's ground the same way; `Corridor.of()` copies the tree's home street;
-  `RouteGroundRule` and `RouteSidewalkRule` stay as they were.
+  `RouteSidewalkRule` and `PacingOpeningRule` stay as they were.
+- **`RouteGroundRule` gains a cost half** beside its body half: a row that counts against her line is refused where its line
+  reach covers a tile a route runs along off the streets (`_denies_a_route_off_the_streets()`), asked only by the day's judge
+  (`counts_the_streets` off). Its class comment now says no body and no cost stands on the ground a route runs along off the
+  streets, and the early return on a candidate that obstructs nothing is gone; the scars and park spoilers stay on the body
+  reading alone. Two of the mutations hold it (the cost half dropped; the cost half asked with the streets counted).
 - **A measurement member**: `StreetInvalidation.refusals()` counts how many times each rule refused a candidate, by rule
   class name, printed by `tests/probes/walk_rows.gd` as `WL day rule count`, kept in `tools/test_only_members.txt` as a count
   of work done.
@@ -84,7 +89,7 @@ Heat 0, base `0296c814f` against `5a944841c`. The later commits change nothing a
 ## Rejected, and the forks the first build brought back
 
 - **A setting, `OneSidewalkOpenRule.COVERS`, for which streets the rule covers** (`NEAR_THE_ROUTES` or `EVERY_STREET`):
-  deleted after the player's correction of inbox #1465, since a setting would have one value.
+  deleted after the player's correction of inbox #1465 in spry-plover, since a setting would have one value.
 - **Reducing the rule to a roadblock check**: a pursuer (the alley robbery, the charging dog) does not count against the
   line, since it follows her rather than holding a tile, yet it stands as a body; a pursuer on one sidewalk with a
   roadblock or a second pursuer on the other closes a route's street with every line rule satisfied (seed 90303, day 9, a

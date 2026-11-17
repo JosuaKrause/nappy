@@ -30,11 +30,11 @@ internal, deleted with the test rewritten to what the game does, or kept under a
 
 ## Measured
 
-The look fingerprint (`tests/probes/look_fingerprint.gd`, 63,070 `LK` lines, the flock and the spread look drawn) is identical
+The builder's runs: the look fingerprint (`tests/probes/look_fingerprint.gd`, 63,070 `LK` lines, the flock and the spread look drawn) is identical
 before and after, `a12e4cc9...18415539`, which the reviewer reproduced. The changed suites pass, and each rewritten check fails
 without its line (`test_event_redraw.gd`'s "the take is over" without the age advance; `test_run_state.gd`'s "a part declared and
-never registered is named" if `_is_written_by` answers true). The field-to-method search for a `Bird`'s fields finds no read from
-outside its file. The reviewer ran `resistance_traps` and `event_behaviours` as well: 43,875 checks, 0 failures.
+never registered is named" if `_is_written_by` answers true). The builder's field-to-method search for a `Bird`'s fields finds no read from
+outside its file, which the reviewer repeated, receivers included. The reviewer also ran `resistance_traps` and `event_behaviours` as well: 43,875 checks, 0 failures.
 
 ## Rejected, with the reason
 

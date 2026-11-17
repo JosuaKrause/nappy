@@ -1,6 +1,6 @@
 # minty-quail — The HUD reads the home arrow and the meter bar through methods · 2026-11-16
 
-**The ask.** "Never read fields directly, always through a method" (inbox #1173 in gray-dolphin), `field-reads.md`'s rule, for
+**The ask.** Never read a field directly, always through a method (inbox #1173 in gray-dolphin), `field-reads.md`'s rule, for
 the HUD's reads of the home arrow and the meter bar and of `FrameGraph.text_colour`. This is the pull request #1479.
 
 ## What was built
@@ -31,3 +31,7 @@ pass. The look fingerprint was not run: the same colours, word, markers and clam
 - **A new test**: the methods hand a drawn control its look and a headless run draws nothing and exposes none of it, so a check
   would read back what the test set, or reach a private field. The reviewer agreed. A preference left standing: `Hud.set_rotated()`
   and `HomeArrow.use_rotated()` forward one flag under two verbs.
+
+## What stays open
+
+The entry's other areas of `field-reads.md`, which stay in the entry.

@@ -12,13 +12,13 @@ plan's `role`, waits for row 3a and is untouched.
 - **Deleted**: `BadgeModel.Subject.speed` and its one write, `def.speed` in `DangerEdge.subject_for_def()`; the line
   `src/ui/danger_edge.gd speed` in `tools/field_reads.txt`.
 - **Test**: `test_badge_model.gd` `_test_a_pending_warning_is_listed_closing_at_its_approach_speed`; replacing
-  `subject.approach_speed` in `_announce_the_warnings()` with `0.0` fails it (the old line listed 0).
+  `subject.approach_speed` in `_announce_the_warnings()` with `0.0` fails it (the old line listed 0); the reviewer ran that mutation, replacing the read with `0.0`, and it failed.
 
 ## Measured
 
-The change moves the number only for pursuers; every other warning (vehicles, a cyclist, a van with no pursuit) lists what it
+The builder's account, checked by the reviewer: the change moves the number only for pursuers; every other warning (vehicles, a cyclist, a van with no pursuit) lists what it
 listed before. The number is the one a live thing that arrived under its warning starts closing at, so the log line a warning
-writes and the one the same thing writes once it is in the world now agree. Nothing re-records: the only consumer of the listed
+writes and the one the same thing writes once it is in the world now agree. Nothing re-records (the builder's claim, confirmed by the reviewer's search): the only consumer of the listed
 approach is the run log's "edge badge ... closing Npx/s" note, no fixture under `tests/fixtures` or `tools` holds that line,
 and `docs/TELEMETRY.md` quotes a number only for the escape's live masked pursuer.
 

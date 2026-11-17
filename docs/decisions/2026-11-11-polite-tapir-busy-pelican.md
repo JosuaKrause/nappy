@@ -1,7 +1,7 @@
 # polite-tapir — The dog walker, the patrol and the convoy are sent just ahead of her as marbles of her route's bag (placement step 2) · 2026-11-16
 
 **The ask.** The dog walker, the police patrol and the military convoy are not drawn at the beginning of the day; they are
-put in the world when she is close by, "just ahead" of her, so that an encounter is guaranteed (inbox #1460). This is the
+put in the world when she is close by, just ahead of her, so that an encounter is guaranteed (inbox #1460). This is the
 pull request #1477, part A of step 2 of `placement-by-construction.md`: the three rows sent ahead of her, each on its first
 leg. The route of each worked out as it goes is the record `polite-tapir-tall-ibis`, which finishes the step; the street
 rules are the record `polite-tapir-golden-egret`. The pictures and the figures below are in
@@ -10,8 +10,8 @@ rules are the record `polite-tapir-golden-egret`. The pictures and the figures b
 **Readings taken without asking the player**, each the orchestrator's and open to the player's correction:
 
 - **The dog walker walks toward her**, down her own sidewalk, as the loose dog comes: a guaranteed encounter asks for it.
-- **Day one's floor** is two dog walkers among the first three marbles drawn on her route (the design's "at least twice on
-  day one", PLAYTEST-05 6), by a rigged bag (inbox #561 in coral-bunny). Where she has a sidewalk ahead of her they are two of
+- **Day one's floor** is two dog walkers among the first three marbles drawn on her route (the design's floor of at
+  least two on day one, PLAYTEST-05 6), by a rigged bag (inbox #561 in coral-bunny). Where she has a sidewalk ahead of her they are two of
   the first three things sent at her; one drawn where she has none waits for room.
 - **The board question `day3-charging-share`**: day 3's charging dogs keep the player's share of the bag, two marbles in
   sixteen (inbox #566 in feathery-stork), one declared number (`EventDirector.ROUTE_BAG_SHARE_OF`). Built on the
@@ -23,7 +23,7 @@ rules are the record `polite-tapir-golden-egret`. The pictures and the figures b
 - **A rigged marble that waits is met later, or never** (a day-one dog walker, a return patrol). The player accepted that
   narrowing for a place's marble (inbox #650 in mossy-beaver); for a sent row it rests on the orchestrator's reading of
   `sent-ahead-pace`, pace over order. `docs/EVENTS.md` says so where the rigs are listed.
-- **The sent dog walker keeps the catalogue row's price**: "just ahead" is about where, not what it costs, so its bark is at a
+- **The sent dog walker keeps the catalogue row's price**: being just ahead is about where, not what it costs, so its bark is at a
   drawn point when it is created, as a dog walker she walked up to is.
 - **The convoy is warned of first**: its screen-edge badge alone for a second, then it is created in its lane just out of
   sight, as day 13's column is.
@@ -106,10 +106,11 @@ rules are the record `polite-tapir-golden-egret`. The pictures and the figures b
 
 ## Review
 
-Five reviews. The first found the patrol popping into view, the dog walker's price, the charging share, a sent row holding the
+Six reviews, five of them asking changes. The first found the patrol popping into view, the dog walker's price, the charging share, a sent row holding the
 route, and untrue sentences; the second the clock's turn spent by a waiting row; the third a car's way out running onto paving
 in her view (the leg ended at the last carriageway tile and the car drove straight on); the fourth the convoy that overtakes
-her (decided above, and queued); the fifth four sentences and one test's lead.
+her (decided above, and queued); the fifth two places that still said no car is sent where its drive in her sight would leave the carriageway (a test's
+lead and the evidence README); the sixth approved the four sentences that fixed them.
 
 ## What stays open
 

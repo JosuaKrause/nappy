@@ -49,6 +49,6 @@ compares private variables too.
 
 ## What stays open
 
-A temporal coupling the reviewer noted: `add_stretch_tile` before `begin_stretch()` indexes an empty `stretch` array, and
-`show_stretch()` before it asks `is_void` of an unsized mask. The one caller orders them right and the test pins the order; a doc
-line would say so. The rest of `field-reads.md`'s areas stay in the entry.
+The rest of `field-reads.md`'s areas stay in the entry. (The temporal coupling the reviewer noted, `add_stretch_tile` or
+`show_stretch()` before `begin_stretch()`, is handled: the doc comment on `CityMap.begin_stretch()` says the other two follow it,
+added before the merge.)

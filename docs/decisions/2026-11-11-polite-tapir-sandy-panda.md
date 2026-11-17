@@ -1,9 +1,9 @@
 # polite-tapir — The world layer no longer names her class · 2026-11-16
 
 **The ask.** Every listed layer break is fixed, moved or declared permanent (`standing-layer-breaks.md`, the layer-break
-item of the polite-tapir entry). This is the pull request #1484, the second of the three that go before the builder in
-the Fable design for who builds the event manager and the crowd; the builder is the record `polite-tapir-snowy-toad`, which
-names this pull request and holds none of what it built. The first is the record `polite-tapir-snowy-sparrow`. Behaviour is
+item of the polite-tapir entry). This is the pull request #1484, the design's pull request 3 of who builds the event manager and the crowd, merged before the builder (the design's pull
+request 2, #1486); the builder is the record `polite-tapir-snowy-toad`, which
+names this pull request and holds none of what it built. The design's pull request 1, merged after this one, is the record `polite-tapir-snowy-sparrow`; its pull request 4, the bus, is open. Behaviour is
 unchanged: the camera frames the same and the view is the same rectangle. Nothing here is visible in play and no words of the
 player's are cited or changed.
 
@@ -45,9 +45,12 @@ the body changed to `return player.global_position`).
 
 ## Review
 
-One review, changes requested on the head `1bd14d1779`: the mutation that made `view_centre_of()` answer the body's position
-for her too failed nothing (her camera case in the test did not distinguish it), which the second test, a rig whose camera is
-current and limited, now holds; the rest held.
+One review, changes requested on the head `1bd14d1779`, asking six fixes, all made in `d062180b4` and approved by the delta
+review: the missing check on her camera's half of `view_centre_of()` (a mutation answering the body's position for her too
+failed nothing; a rig whose camera is current and limited now holds it); `docs/MECHANICS.md` naming `view_centre_of()` where
+the ease reads `_camera_screen_center()`; two queue sentences in `standing-layer-breaks.md`; the patrol suite's stand-in
+overriding the private method; a stale closing paragraph in the description; and a test named for a camera it did not test.
+Of its two preferences, `DangerEdge`'s first use of her class was left as it is and "are gone" in the queue entry was taken.
 
 ## What stays open
 

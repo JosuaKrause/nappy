@@ -51,7 +51,7 @@ director or a world, and for `prepare_city_scenery`, finds none of the removed n
 2. **The name `CityDressing`**, for what the director gets out of it. The reviewer's preference on the name stretch stands.
 3. **The scenery's prepare is one of its methods.** Rejected: handing the director the `SceneryResidency` as a fifth part; it
    only ever brought it to one view at once.
-4. **`DayWorld` takes the four parts as arguments of `in_the_city()`**, eleven with the optional scene city. Rejected: a record
+4. **`DayWorld` takes the four parts as arguments of `in_the_city()`**, eleven, plus the optional scene city. Rejected: a record
    grouping the city's parts, a new type only to carry them.
 5. **The whole city goes in the world only for an authored scene**, so a day of the game's own run holds no `City` in its world.
    Rejected: always handing it.

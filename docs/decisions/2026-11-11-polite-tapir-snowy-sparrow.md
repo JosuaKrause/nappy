@@ -4,7 +4,7 @@
 player approved the design review's plan of one start for every kind of day, its world built per spec by a builder handed
 in (inbox #1268 in olive-ferret). The builder (`polite-tapir-snowy-toad`) takes the event manager, the crowd, the spawn siting
 and the poster walls out of the city scene's fields, and 130 test files read those fields. This is the pull request #1485,
-the first of the three that precede the builder, in the Fable design: **tests only, nothing under `src/` changes**, so the
+the design's pull request 1 and the only one it puts before the builder (#1486, its pull request 2; #1484 is its pull request 3, merged earlier than this one): **tests only, nothing under `src/` changes**, so the
 pull request that moves the parts changes the fixture and no suite. `snowy-toad` names it in a line and holds none of this.
 
 ## What was built

@@ -37,4 +37,4 @@ answer.
 
 ## What stays open
 
-Parts (b) and (c) of `dead-code-sweep.md`, which wait for the placement work.
+Parts (b) and (c) of `dead-code-sweep.md`, which stayed open after this pull request, waiting for the placement work (part (b) has since been deleted on main).
