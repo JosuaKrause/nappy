@@ -474,11 +474,14 @@ func obstructs_within() -> float:
 func ends_the_day() -> bool:
 	return def.ends_the_day()
 
-## Whether its field reaches `point`: from where it stands now (`where_it_stands_now()`)
-## against how far its row is heard (`EventDef.heard_within()`), measured from the centre as
-## every caller has measured it.
+## Whether its field reaches `point`: its live event's own answer while it is in the world
+## (`EventInstance.field_reaches()`, the field's real shape), and otherwise a disc of how far its
+## row is heard (`EventDef.heard_within()`) about where it was placed (`body_at()`): a body
+## not yet made has no heading and no street to lie along, which is what a capsule is turned by.
 func field_reaches(point: Vector2) -> bool:
-	return where_it_stands_now().distance_to(point) <= def.heard_within()
+	if live and is_instance_valid(live):
+		return live.field_reaches(point)
+	return body_at().distance_to(point) <= def.heard_within()
 
 ## Makes it come again `seconds` after each of its instances came, on its own clock
 ## (`repeat_every`), in place of its row's: each of the building's vents has its own period.

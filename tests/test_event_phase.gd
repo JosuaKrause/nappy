@@ -17,6 +17,7 @@ func run(t: TestRunner) -> void:
 	_test_a_hunting_copy_does_not_share_its_rows_pursuit(t)
 	_test_a_badge_up_alone_points_and_counts_down(t)
 	_test_a_live_event_answers_for_its_row(t)
+	_test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t)
 
 # ------------------------------------------------------------------- the clock ---
 
@@ -256,3 +257,30 @@ func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 			t.check(instance.field_reaches(at) == (def.emission_at_distance(distance) > 0.0),
 					"'%s' reaches %.0fpx out exactly where its row's field is heard" % [id, distance])
 		instance.free()
+
+## **A row with a long body reaches as far along that body as its field runs**: the field is a capsule
+## about the spine, so a point one pixel inside it past the row's outer radius from the centre is
+## reached, and one a pixel outside it along the spine is not, where a disc of the outer radius says
+## the reverse. Across the body the capsule and the disc agree.
+func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRunner) -> void:
+	var tried := 0
+	for def: EventDef in EventCatalogue.all():
+		var body := def.datum()
+		if body == null or body.kind != GroundShape.Kind.SEGMENT or def.mobile or def.drives() \
+				or def.pursuit != null or def.flock_size > 0:
+			continue
+		var instance := EventInstance.new()
+		instance.setup(def, Vector2.ZERO)
+		var axis := instance.solid_axis()
+		var along := body.half_length + def.heard_within()
+		t.check(instance.field_reaches(axis * (along - 1.0)),
+				"'%s' reaches a point just inside its capsule along its spine" % def.id)
+		t.check(not instance.field_reaches(axis * (along + 1.0)),
+				"'%s' does not reach one just outside its capsule along its spine" % def.id)
+		var across := axis.orthogonal()
+		t.check(instance.field_reaches(across * (def.heard_within() - 1.0))
+				and not instance.field_reaches(across * (def.heard_within() + 1.0)),
+				"'%s' reaches abeam of its body exactly as far as its row is heard" % def.id)
+		instance.free()
+		tried += 1
+	t.check(tried > 0, "the catalogue has a stationary row with a long body to try")

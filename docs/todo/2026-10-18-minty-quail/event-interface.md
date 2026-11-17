@@ -524,9 +524,8 @@ one question, which is the sign the skill looks for: what ends the day (a place'
 pursuer's catch along a clear line, a car's strike ahead of its nose, all behind
 `is_lethal_at()`), the field's distance (a disc, a capsule about a body's spine, an ellipse
 stretched ahead of a mover, a sum over a flock's birds, all behind `contribution_at()`), and when
-a body is solid (always, once it starts, while lowered, behind `is_solid()`). Two swaps the
-interface makes possible that the fields do not: `field_reaches(point)` can answer with the real
-field, where its five callers compare a distance with one radius; and where a row stands
+a body is solid (always, once it starts, while lowered, behind `is_solid()`). One swap the
+interface makes possible that the fields do not: where a row stands
 (`stands_as_a_fixed_body()`, `body_pieces()`) can be worked out once per row, where two files
 re-derive it.
 
@@ -916,10 +915,6 @@ each question as it was shown).
    run log, with its pictures. Playtests decide what then needs fixing. The halo's answer below was found in
    building where she is as one object; *read as* (the orchestrator's, open to the player's correction) covered by the same
    words.
-   - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
-     its five callers do, though the field of a row with a long body is a capsule about that body.
-     Answering with the real field changes when the run log says "out of range" and when the
-     unmarked van stops its take.
    - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
    - The ground a row that ends the day shuts is stated four ways (`clearance()`,
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
