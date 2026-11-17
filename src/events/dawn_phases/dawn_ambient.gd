@@ -18,7 +18,7 @@ func run(context: DawnContext) -> void:
 static func _plans(context: DawnContext) -> Array[EventPlan]:
 	var map := context.map()
 	var planned: Array[EventPlan] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.AMBIENT, context.day(), context.heat()):
+	for def in context.catalogue_rows(GameEnums.EventKind.AMBIENT):
 		match def.ambient_source:
 			EventDef.AmbientSource.PLAYGROUND:
 				for rect in map.playgrounds:

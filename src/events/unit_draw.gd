@@ -21,24 +21,24 @@ extends RefCounted
 ## her walk (`EventDef.is_handed_to_her_walk()`) is passed over. Neither changes a draw made while
 ## the plan has no place, since every rule passes over a plan that stands nowhere.
 ##
-## Drawing one unit: one fresh bag, of the fill of the unit's view (the most permissive of its
-## locations', `PlacementUnit.view()`) and kind of ground (`UnitFills.of()`), on the unit's stream
-## (`ViewBag`), so what a far unit drew changes nothing here; the marbles drawn from it and laid
-## out in the unit (`MarbleDraw.draw()`), a marble drawn before it has a place. Model: no node.
+## Drawing one unit: one bag, the one the walk's bags answer for the unit (`UnitBags`): on a day a
+## fresh bag of the fill of the unit's view (the most permissive of its locations',
+## `PlacementUnit.view()`) and kind of ground (`UnitFills`), on the unit's stream (`ViewBag`), so what
+## a far unit drew changes nothing here; the marbles drawn from it and laid out in the unit (`MarbleDraw.draw()`), a marble drawn before it has a place. Model: no node.
 
 var _units: DayUnits
 var _drawing: MarbleDraw
-var _fills: UnitFills
+var _bags: UnitBags
 var _dawn: Array[EventPlan] = []
 
-## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `fills` the day's bag
-## fills, by view and kind of ground (`UnitFills`); `dawn` the plans the dawn placed, copied, a
+## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `bags` what answers a
+## unit's bag (`UnitBags`: on a day, `UnitFills`); `dawn` the plans the dawn placed, copied, a
 ## plan it left with no place left out (the class comment says why).
-func _init(units: DayUnits, drawing: MarbleDraw, fills: UnitFills,
+func _init(units: DayUnits, drawing: MarbleDraw, bags: UnitBags,
 		dawn: Array[EventPlan]) -> void:
 	_units = units
 	_drawing = drawing
-	_fills = fills
+	_bags = bags
 	for plan in dawn:
 		if plan.is_placed():
 			_dawn.append(plan)
@@ -96,10 +96,6 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 		for plan in other.drawn():
 			if not plan.row().is_handed_to_her_walk():
 				among.append(plan)
-	var rng := unit.stream()
-	var view := unit.view()
-	var fill := _fills.of(view as PlacementView.View, unit.kind())
-	var bag := ViewBag.new(fill, hash("%d:%s:bag:%d" % [rng.seed, unit.name(), view]))
-	var placed := _drawing.draw(unit, bag, among)
+	var placed := _drawing.draw(unit, _bags.bag_for(unit), among)
 	unit.record_draw(placed)
 	return placed

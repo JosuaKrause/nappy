@@ -55,6 +55,7 @@ test_danger.gd 17955
 test_day13_guard.gd 40738
 test_day6_yeller_met.gd 12059
 test_day7_van.gd 15363
+test_dawn_context.gd 1250
 test_day_controller.gd 76
 test_day_director.gd 162
 test_day_loop.gd 2903

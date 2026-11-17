@@ -22,7 +22,7 @@ func run(context: DawnContext) -> void:
 	var caps := context.spec().caps_per_day
 	var rng := context.stream(SALT)
 	var rows: Array[EventDef] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, context.heat()):
+	for def in context.catalogue_rows(GameEnums.EventKind.RECURRING):
 		var mode := def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
 				or def.is_sent_ahead():

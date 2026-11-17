@@ -1044,15 +1044,16 @@ func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 		return null
 	return builder.place_at(def, tile, RandomNumberGenerator.new(), prior)
 
-## The escape's exact actors use its own row variants (the walk's spec's `DaySpec.bag_rows`), open
+## The escape's exact actors use its own row variants (the walk's spec's `DaySpec.walk_bag_rows()`), open
 ## streets, tree exclusion, spawn clearance and body spacing. No ordinary-day corridor or offscreen
 ## director stands in for it.
 func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventPlan],
 		route_seed: int) -> EventPlan:
-	if not _walk_spec.bag_rows.has(def.id):
+	var rows := _walk_spec.walk_bag_rows()
+	if not rows.has(def.id):
 		return null
-	def = _walk_spec.bag_rows[def.id]
+	def = rows[def.id]
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):

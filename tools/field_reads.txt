@@ -246,7 +246,6 @@ src/dev/debug_readout.gd section
 src/dev/debug_readout.gd title
 src/dev/route_rig.gd number
 src/dev/route_rig_planner.gd exits
-src/dev/scene_recipe_runtime.gd bag_rows
 src/dev/scene_recipe_runtime.gd holds_the_home_streets
 src/events/dawn_context.gd holds_the_home_streets
 src/events/dawn_context.gd keeps_the_walk_open

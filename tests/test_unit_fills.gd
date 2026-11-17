@@ -19,6 +19,7 @@ func run(t: TestRunner) -> void:
 	_test_a_rows_weight_on_a_ground_scales_its_marbles(t)
 	_test_a_larger_marble_weighs_as_the_locations_it_speaks_for(t)
 	_test_a_cell_no_row_stands_in_is_all_empty(t)
+	_test_a_unit_is_made_a_fresh_bag_of_its_fill(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 const BESIDE := PlacementView.View.ROUTE_ADJACENT
@@ -78,12 +79,57 @@ static func _fills(rows: Dictionary, day: int, share := 1.0,
 		by_cost: Callable = func(def: EventDef) -> bool: return def.hard_fail) -> UnitFills:
 	return UnitFills.new(rows, day, share, _weights(), by_cost)
 
+## A street unit of one sidewalk location on the route, `x` blocks along, on the day seed `day_seed`.
+static func _street_unit(x: int, day_seed: int) -> PlacementUnit:
+	var tiles := Rect2i(Vector2i(x * CityMap.period(), 0), Vector2i(8, Tuning.STREET_WIDTH))
+	var location := Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
+			ON, true, Location.Kind.SIDEWALK, tiles)
+	var locations: Array[Location] = [location]
+	return PlacementUnit.new(STREET, tiles,
+			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE, Vector2(tiles.size) * Tuning.TILE_SIZE),
+			locations, day_seed)
+
+## The first `count` marbles a bag draws with every row accepted and every marble weighed alike.
+static func _first_marbles(bag: ViewBag, count: int) -> Array[String]:
+	var drawn: Array[String] = []
+	for _i in count:
+		drawn.append(bag.draw(func(_marble: String) -> bool: return true,
+				func(_marble: String) -> float: return 1.0))
+	return drawn
+
 ## A fill's marbles, all told.
 static func _total(fill: Dictionary) -> int:
 	var total := 0
 	for marble: String in fill:
 		total += int(fill[marble])
 	return total
+
+## **A unit is made a fresh bag of its fill** (`bag_for()`): asked twice it answers two bags, not
+## one, that draw the same first ten marbles, each a marble of the fill of the unit's view and
+## ground; a unit of other tiles draws on a stream of its own, so its first ten differ from the first
+## unit's on at least one of three day seeds.
+func _test_a_unit_is_made_a_fresh_bag_of_its_fill(t: TestRunner) -> void:
+	var day := 8
+	var fills := _fills(_catalogue(day), day)
+	var fill := fills.of(ON, STREET)
+	t.check(fill.size() > 1, "the street's fill on day %d holds several marbles (%d)"
+			% [day, fill.size()])
+	var differed := 0
+	for day_seed: int in [3, 5, 9]:
+		var unit := _street_unit(0, day_seed)
+		var first := fills.bag_for(unit)
+		var second := fills.bag_for(unit)
+		t.check(first != second, "bag_for() makes a bag a time (day seed %d)" % day_seed)
+		var marbles := _first_marbles(first, 10)
+		t.check(marbles == _first_marbles(second, 10),
+				"two bags of one unit draw the same first ten marbles (day seed %d)" % day_seed)
+		var of_the_fill := marbles.all(func(marble: String) -> bool: return fill.has(marble))
+		t.check(of_the_fill, "every marble drawn is a marble of the unit's fill (day seed %d)"
+				% day_seed)
+		if _first_marbles(fills.bag_for(_street_unit(1, day_seed)), 10) != marbles:
+			differed += 1
+	t.check(differed > 0, "a unit of other tiles draws on another stream (%d of 3 seeds differ)"
+			% differed)
 
 ## **A fill holds its cell's events in a hundred of its marbles**, the rest empty: for every view
 ## and ground on a day of each act, over the catalogue's drawn rows at a wall share of one, the row

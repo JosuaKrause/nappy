@@ -169,6 +169,16 @@ func doors() -> PackedVector2Array:
 func heat() -> int:
 	return _heat
 
+## **The catalogue's rows of `kind` the dawn stands today**, in the shape the heat puts them in
+## (`EventCatalogue.of_kind()`): what a phase that places the day's rows asks. **None on a walk with
+## a bag of its own** (`DaySpec.walk_bag()`): that walk stands its bag's rows and no other, which
+## its draw reads off the spec (`DawnDraw`).
+func catalogue_rows(kind: GameEnums.EventKind) -> Array[EventDef]:
+	if not _spec.walk_bag().is_empty():
+		var none: Array[EventDef] = []
+		return none
+	return EventCatalogue.of_kind(kind, day(), _heat)
+
 ## The permanent marks earlier days left (`DawnScars`, `DawnMasts`).
 func scars() -> Array[Dictionary]:
 	return _scars

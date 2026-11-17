@@ -281,14 +281,18 @@ src/
 	                      location) a marble may still take
 	day_units.gd          the day's units grouped from its locations, and which touch which: a shared
 	                      junction box, or a shared alley, park or square
+	unit_bags.gd          the bag a unit draws from, answered by the walk: on a day, the fresh bag of
+	                      the fill `UnitFills` answers for the unit's view and kind of ground
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
-	                      every touching unit of lower rank, from one fresh bag of the fill
-	                      `UnitFills` answers for its view and kind of ground, judged among the
-	                      dawn's plans and the touching units' draws, never a plan her walk sites
+	                      every touching unit of lower rank, from the bag the walk's bags answer
+	                      for it (`UnitBags`: on a day, one fresh bag of the fill `UnitFills`
+	                      answers for its view and kind of ground), judged among the dawn's plans
+	                      and the touching units' draws, never a plan her walk sites
 	unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
 	                      table's events per hundred as row marbles, the rows among themselves by
 	                      weight (their own, on the ground, for their role in the view), empty for
-	                      the rest; each worked out the first time a unit of it draws, kept for the day
+	                      the rest; each worked out the first time a unit of it draws, kept for the
+	                      day; and each unit's fresh bag of its fill
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
