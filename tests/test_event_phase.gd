@@ -17,6 +17,9 @@ func run(t: TestRunner) -> void:
 	_test_a_hunting_copy_does_not_share_its_rows_pursuit(t)
 	_test_a_badge_up_alone_points_and_counts_down(t)
 	_test_a_live_event_answers_for_its_row(t)
+	_test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t)
+	_test_a_mover_reaches_as_the_ellipse_its_field_is(t)
+	_test_a_flock_reaches_where_one_of_its_birds_does(t)
 
 # ------------------------------------------------------------------- the clock ---
 
@@ -256,3 +259,76 @@ func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 			t.check(instance.field_reaches(at) == (def.emission_at_distance(distance) > 0.0),
 					"'%s' reaches %.0fpx out exactly where its row's field is heard" % [id, distance])
 		instance.free()
+
+## **A row with a long body reaches as far along that body as its field runs**: the field is a capsule
+## about the spine, so a point one pixel inside it past the row's outer radius from the centre is
+## reached, and one a pixel outside it along the spine is not, where a disc of the outer radius says
+## the reverse. Across the body the capsule and the disc agree.
+func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRunner) -> void:
+	var tried := 0
+	for def: EventDef in EventCatalogue.all():
+		var body := def.datum()
+		if body == null or body.kind != GroundShape.Kind.SEGMENT or def.mobile or def.drives() \
+				or def.pursuit != null or def.flock_size > 0:
+			continue
+		var instance := EventInstance.new()
+		instance.setup(def, Vector2.ZERO)
+		var axis := instance.solid_axis()
+		var along := body.half_length + def.heard_within()
+		t.check(instance.field_reaches(axis * (along - 1.0)),
+				"'%s' reaches a point just inside its capsule along its spine" % def.id)
+		t.check(not instance.field_reaches(axis * (along + 1.0)),
+				"'%s' does not reach one just outside its capsule along its spine" % def.id)
+		var across := axis.orthogonal()
+		t.check(instance.field_reaches(across * (def.heard_within() - 1.0))
+				and not instance.field_reaches(across * (def.heard_within() + 1.0)),
+				"'%s' reaches abeam of its body exactly as far as its row is heard" % def.id)
+		instance.free()
+		tried += 1
+	t.check(tried > 0, "the catalogue has a stationary row with a long body to try")
+
+## **A mover reaches as far ahead of itself as its field runs and as far behind**: the field is an
+## ellipse with the mover at one focus, `outer_radius / (1 - e)` dead ahead and
+## `outer_radius / (1 + e)` behind, and exactly `outer_radius` abeam, where a disc says
+## `outer_radius` every way. The cyclist is given a route so that it moves.
+func _test_a_mover_reaches_as_the_ellipse_its_field_is(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("cyclist")
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+	var velocity := instance.travel_velocity()
+	t.check(not velocity.is_zero_approx(), "the cyclist given a route moves")
+	var ahead := velocity.normalized()
+	var e := Field.eccentricity(velocity.length())
+	var outer := def.heard_within()
+	t.check(instance.field_reaches(ahead * (outer / (1.0 - e) - 1.0)),
+			"the cyclist reaches a point just inside its ellipse dead ahead, past its row's radius")
+	t.check(not instance.field_reaches(ahead * (outer / (1.0 - e) + 1.0)),
+			"and not one just outside it")
+	t.check(instance.field_reaches(-ahead * (outer / (1.0 + e) - 1.0))
+			and not instance.field_reaches(-ahead * (outer / (1.0 + e) + 1.0)),
+			"behind it the ellipse is shorter than its row's radius")
+	t.check(instance.field_reaches(ahead.orthogonal() * (outer - 1.0))
+			and not instance.field_reaches(ahead.orthogonal() * (outer + 1.0)),
+			"abeam of it the reach is its row's radius")
+	instance.free()
+
+## **A flock reaches where one of its birds' own fields does**, not within a disc about its centre:
+## the birds' kernels (`bird_outer()` each, about where each bird is) cover less than the row's
+## `outer_radius` about the centre, so a point just inside that radius which no bird reaches is not
+## reached, and the place a bird stands is.
+func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	instance.flock.build()
+	var any_bird := instance.birds()[0]
+	t.check(instance.field_reaches(any_bird.at()), "a flock reaches the place one of its birds stands")
+	var uncovered := Vector2(def.heard_within() - 1.0, 0.0)
+	var covered_by_a_bird := false
+	for bird in instance.birds():
+		if bird.at().distance_to(uncovered) <= instance.flock.bird_outer():
+			covered_by_a_bird = true
+	t.check(not covered_by_a_bird, "no bird's kernel covers a point just inside the flock's radius")
+	t.check(not instance.field_reaches(uncovered),
+			"so a flock does not reach it, though it is inside the disc its row is heard in")
+	instance.free()

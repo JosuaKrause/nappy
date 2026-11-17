@@ -114,16 +114,31 @@ func _test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t: TestRunner) -> v
 			"a door's hut and an alley door's post hold a walker")
 	t.check(not _door("checkpoint_gate").detains_her(), "the boom over the road holds nobody")
 
-## **Whether its field reaches a point** (`field_reaches()`), from where it stands now: where it was
-## placed while it is not in the world, and **measured from its centre**, out to where its row is
-## heard.
+## **Whether its field reaches a point** (`field_reaches()`) is its live event's answer while it is
+## in the world, whatever shape that field has, and false while it is not.
 func _test_what_its_field_reaches(t: TestRunner) -> void:
-	var row := EventCatalogue.by_id("alley_robbery")
-	var plan := EventPlan.new(row, Vector2(320, 320))
-	t.check(plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() - 1.0, 0.0)),
-			"its field reaches a point just inside where its row is heard")
-	t.check(not plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() + 1.0, 0.0)),
-			"and not one just outside")
+	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), Vector2(320, 320))
+	var point := Vector2(500, 40)
+	t.check(not plan.field_reaches(point), "a plan out of the world reaches nothing")
+	var live := FakeLive.new()
+	plan.live = live
+	live.answers = true
+	t.check(plan.field_reaches(point), "in the world it reaches where its live event says its field does")
+	t.check(live.asked == point, "and it asks its live event about the point it was given")
+	live.answers = false
+	t.check(not plan.field_reaches(point), "and not where its live event says it does not")
+	plan.live = null
+	live.free()
+
+## A live event that answers `field_reaches()` as a test sets it and records the point it was asked.
+class FakeLive extends EventInstance:
+	var answers := false
+	var asked := Vector2.INF
+
+	## Overrides EventInstance.field_reaches.
+	func field_reaches(point: Vector2) -> bool:
+		asked = point
+		return answers
 
 ## **Where a plan's body stands** (`EventPlan.body_at()`): a roadblock placed in a carriageway lane
 ## stands on the kerb beside it (`CityMap.kerb_beside()`), and its geometry reads it there; a

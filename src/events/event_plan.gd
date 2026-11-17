@@ -474,11 +474,11 @@ func obstructs_within() -> float:
 func ends_the_day() -> bool:
 	return def.ends_the_day()
 
-## Whether its field reaches `point`: from where it stands now (`where_it_stands_now()`)
-## against how far its row is heard (`EventDef.heard_within()`), measured from the centre as
-## every caller has measured it.
+## Whether its field reaches `point`: its live event's own answer (`EventInstance.field_reaches()`,
+## the field's real shape), and false while it is not in the world, where no field stands to reach
+## anything. The only caller, the run log's met-events watch, asks of plans in the world alone.
 func field_reaches(point: Vector2) -> bool:
-	return where_it_stands_now().distance_to(point) <= def.heard_within()
+	return live != null and is_instance_valid(live) and live.field_reaches(point)
 
 ## Makes it come again `seconds` after each of its instances came, on its own clock
 ## (`repeat_every`), in place of its row's: each of the building's vents has its own period.
