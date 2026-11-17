@@ -16,9 +16,5 @@ run with comments stripped, since a first survey that counted them missed four m
 (minty-quail-misty-ferret). Each deletion says in its pull request what reached
 the code last, or that nothing ever did.
 
-**Where the rest is** (the survey with `check_test_only_members.py` and a scan for members named
-nowhere in `src/`, `tests/`, `tools/` or `scenes/`; no module holds more than a few):
-- `src/events/`: `EventsAhead.walk_siting()` (test-only), which hands out the day's walk siting
-  (`EventScheduler.WalkSiting`) so its suites can read the work the siting did: it stays until step
-  4 of polite-tapir's `placement-by-construction.md`, which replaces the walk's old siting roll, and
-  goes with that step (`tests-unseen-reads.md`, `tests-public-seams.md`).
+**Where the rest is:** the next pass runs the survey again (`check_test_only_members.py` and a scan
+for members named nowhere in `src/`, `tests/`, `tools/` or `scenes/`) and deletes what it finds.

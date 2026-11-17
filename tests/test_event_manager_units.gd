@@ -21,6 +21,9 @@ const Rig := preload("res://tests/event_manager_rig.gd")
 const DAY := 4
 
 var _city: City
+## What made the day's siting, which keeps it for the case that reads what the walk gave up
+## (handed to the events in `_start()`, before the day starts).
+var _siting_maker: KeepingSitingMaker
 ## Moves her down the route a walking test sets it, on its own physics tick, before the city's.
 var _walker: Rig.Walker
 
@@ -56,6 +59,7 @@ class _Drew extends RefCounted:
 ## Starts the day at her door, at a played day's stream radius. Answers the units the start left
 ## undrawn: all but the ones round her door.
 func _start() -> Array[PlacementUnit]:
+	_siting_maker = KeepingSitingMaker.on(RunCity.events(_city))
 	Rig.start(_city, DAY, [], _home())
 	return _units().undrawn_within(Vector2.ZERO, INF)
 
@@ -238,7 +242,7 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 	t.check(on_undrawn_ground == 0,
 			"and at no siting does an undrawn unit lie within %.0fpx of the site (%d of %d did)"
 			% [Tuning.EVENT_DRAW_AHEAD, on_undrawn_ground, sitings])
-	var siting := events.ahead.walk_siting()
+	var siting := _siting_maker.latest()
 	var gave_up := int(siting.waits.get("the ground round its site had not drawn", 0)) \
 			if siting else 0
 	t.check(gave_up > 0,

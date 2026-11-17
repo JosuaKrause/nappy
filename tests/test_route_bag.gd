@@ -522,6 +522,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("route-bag:%d:%d:events" % [SEED, day])
 	var consumed: Array[String] = []
+	var siting_maker := KeepingSitingMaker.on(RunCity.events(city))
 	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var done: Array[int] = []
@@ -548,7 +549,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	# Reading the mark is one frame of play, and the rig is part of it: a mast's siting must not be
 	# prepared over the whole city's ground, only over what a siting is offered. The work is counted
 	# in tiles asked, never in time.
-	var walk_siting := RunCity.events(city).ahead.walk_siting()
+	var walk_siting := siting_maker.latest()
 	if walk_siting:
 		t.check(walk_siting.mast_checks == 0,
 				"day %d: the rig asks no tile whether a mast may stand there (%d)"
@@ -641,7 +642,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 			for at: Vector2i in EventScheduler.row_ground(map, null,
 					RunCity.events(city).ahead.holds_the_home_streets).tiles_for(mast, mast.pavement_side):
 				ground[at] = true
-			var siting := RunCity.events(city).ahead.walk_siting()
+			var siting := siting_maker.latest()
 			t.check(siting.mast_checks > 0 and siting.mast_checks * 10 < ground.size(),
 					"siting it asked %d tiles whether a mast may stand there, of %d tiles of ground"
 					% [siting.mast_checks, ground.size()])

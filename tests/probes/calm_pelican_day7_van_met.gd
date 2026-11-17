@@ -48,6 +48,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	var consumed: Array[String] = []
+	var siting_maker := KeepingSitingMaker.on(RunCity.events(city))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
@@ -72,6 +73,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	RunCity.events(city).use_player(player)
 	var walk := Walk.new()
 	walk.city = city
+	walk.siting_maker = siting_maker
 	walk.row = row
 	var mark := resistance.current_step()
 	var map := city.map
@@ -104,6 +106,8 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 ## Her walk, ticking what the manager ticks, and what it saw of the van.
 class Walk extends RefCounted:
 	var city: City
+	## What made the day's siting, which keeps it for `detail()` to read what her walk waited on.
+	var siting_maker: KeepingSitingMaker
 	var row := ""
 	var read_at := Vector2.INF
 	var walked := 0.0
@@ -193,7 +197,8 @@ class Walk extends RefCounted:
 					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when put there %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
-		var waits: Dictionary = RunCity.events(city).ahead._siting.waits if RunCity.events(city).ahead._siting else {}
+		var siting := siting_maker.latest()
+		var waits: Dictionary = siting.waits if siting else {}
 		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,
 				drawn_at, drawn_phase, sited_phase, where, waits,
 				"%.0fs" % seen_at if seen_at >= 0.0 else "never"]

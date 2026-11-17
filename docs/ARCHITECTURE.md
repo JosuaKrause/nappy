@@ -359,6 +359,8 @@ src/
 	                       a task's mast placed after dawn and day 13's roadblock put across a
 	                       route-adjacent section in place of what it held, the fire lit at dusk,
 	                       and the day's units drawn as she comes near them
+	siting_maker.gd       makes a day's siting; what the events ahead are handed, so a test hands in
+	                       one that answers a stand-in
 	event_director.gd     sites what the day planned and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a

@@ -87,6 +87,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	var spec := DaySpec.for_day(day)
 	RigStreets.begin(city.streets(), city.map, spec)
+	var siting_maker := KeepingSitingMaker.on(RunCity.events(city))
 	RunCity.events(city).start_day(spec, rng, consumed)
 	var plan: EventPlan = null
 	for candidate in RunCity.events(city).plans():
@@ -109,7 +110,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	}
 	_follow(city, rig, route, plan, state)
 
-	var siting := RunCity.events(city).ahead.walk_siting()
+	var siting := siting_maker.latest()
 	var widened := siting.widened if siting else 0
 	state["refusals"] = siting.waits.duplicate() if siting else {}
 	var met: bool = float(state["seen_at"]) >= 0.0

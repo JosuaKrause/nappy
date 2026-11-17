@@ -41,6 +41,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	var spec := DaySpec.for_day(day)
 	RigStreets.begin(city.streets(), city.map, spec)
+	var siting_maker := KeepingSitingMaker.on(RunCity.events(city))
 	RunCity.events(city).start_day(spec, rng, consumed)
 	var crews: Array[EventPlan] = []
 	for plan in RunCity.events(city).plans():
@@ -75,7 +76,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	for plan in crews:
 		sited += 1 if plan.is_placed() else 0
 		met += 1 if plan.was_live else 0
-	var siting := RunCity.events(city).ahead.walk_siting()
+	var siting := siting_maker.latest()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
 			sited, met, first_sited, _pasted_cells(city) - before,
 			_refusal_summary(siting.waits if siting else {})])
