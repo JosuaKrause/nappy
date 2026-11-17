@@ -556,8 +556,8 @@ conversion finds nothing to redo in those files.
 | 3 | a row's role by view (wall, friction, set piece), which `EventScheduler.role_for()` works out | row `ends_the_day()` (new), `walk_through_cost()` ok, `is_scenery()` (new), `is_a_one_shot()` (new), `spawn_mode_on(day)` ok, `line_reach()` ok |
 | 3 | a row's act, for the table's act column | row `act()` (new) |
 | 3 | the most of a row a day stands | row `most_in_a_day()` ok; once step 2 drops the caps for drawn rows its callers are the director's moments and the scene recipes, and the step says whether any is left |
-| 4, the beats as rigged marbles | is a row sited from her walk, at a building's front; is it the set piece | row `is_sited_from_her_walk()` (new), `stands_at_a_front()` (new), `is_a_set_piece_on_her_way()` (new), `is_handed_to_her_walk()` ok |
-| 4 | a rigged marble takes its location | plan `place_at(at)` (new; today `plan.position = ...`) |
+| 4, the beats as rigged marbles | is a row sited from her walk, at a building's front; is it the set piece | row `is_sited_from_her_walk()` ok, `stands_at_a_front()` ok, `is_a_set_piece_on_her_way()` ok, `is_handed_to_her_walk()` ok |
+| 4 | a rigged marble takes its location | plan `stand_where(sited)` ok, `face(direction)` ok (the design's pick in place of `place_at(at)`, open to the player) |
 | the breakup's `PlanBuilder` | how a row's route is built; the lane it stands in; its body's pieces | the route part's `kind()` and `tiles()`, handed to the builder by `row.route()`; row `sidewalk_lane()`, `ground_shape()`, `body_pieces()` (all new) |
 | the breakup's `RowGround` | which tiles a row may stand on | the step-3 ground questions and `ground_key()` |
 | every step | how far a row's field, body, lethal reach and notice reach | row `field_reach()`, `line_reach()`, `obstructs_within()`, `solid_reach()`, `lethal_reach()`, `notice_within()`, all ok |
@@ -919,3 +919,4 @@ each question as it was shown).
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
+
