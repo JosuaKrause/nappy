@@ -85,7 +85,7 @@ static func _leaves_the_routes_sidewalk_open(candidate: EventPlan, map: CityMap,
 		if closes_the_run(map, entry[1], segment.horizontal, standing):
 			return false
 		if closes_a_walked_sidewalk_band(map, entry[1], segment.horizontal,
-				_physical_bodies_of(standing)):
+				_physical_bodies_of(map, standing)):
 			return false
 	return true
 
@@ -101,13 +101,15 @@ static func _cumulative_lane_reach_of(def: EventDef) -> float:
 	return maxf(def.line_reach(), def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS)
 
 ## `rows` reduced to `[position.x, position.y, obstructs_radius]` triples, the shape
-## `closes_a_walked_sidewalk_band` asks for — a row with no body contributes nothing to a physical
-## reading, however loud it is.
-static func _physical_bodies_of(rows: Array[EventPlan]) -> Array:
+## `closes_a_walked_sidewalk_band` asks for, each where its body stands on `map`
+## (`EventPlan.body_at()`: a roadblock's band on the kerb beside its lane) — a row with no body
+## contributes nothing to a physical reading, however loud it is.
+static func _physical_bodies_of(map: WorldMap, rows: Array[EventPlan]) -> Array:
 	var found: Array = []
 	for plan in rows:
 		if plan.row().obstructs_within() > 0.0:
-			found.append(Vector3(plan.placed_at().x, plan.placed_at().y, plan.row().obstructs_within()))
+			var at := plan.body_at(map)
+			found.append(Vector3(at.x, at.y, plan.row().obstructs_within()))
 	return found
 
 ## The same question over an arbitrary run of a street's ground, which is what lets the width rule

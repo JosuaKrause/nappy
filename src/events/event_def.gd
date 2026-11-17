@@ -1856,6 +1856,15 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 func stands_on_its_band_middle() -> bool:
 	return not mobile and obstructs_radius > 0.0 and pavement_side == Pavement.ANY
 
+## Whether the row's body stands on the kerb beside the carriageway lane it is placed in rather
+## than on the lane (`WorldMap.kerb_beside()`): a stationary solid body that spans the street
+## (`spans_the_street()`) and that `pavement_side` does not pin, the roadblock. From the kerb its
+## band reaches across its own sidewalk and the road and stops at the far kerb, so the far sidewalk
+## stays whole. A region wall's bodies are pinned (`SealPlanner.sealed_variant()`) and stand where
+## they are put. Read by `EventFootprints.stands_at()` and `EventPlan.body_at()`.
+func stands_at_its_kerb() -> bool:
+	return _spans_the_street and stands_on_its_band_middle()
+
 ## Whether the row stands in alleys and on no other ground: the robber and the mouse. Such a row is
 ## refused an alley the day's routes run down (`RowGround.offers_for_role()`) and has no marble on
 ## the route (`EventScheduler.view_weight()`), since that alley is ground she has no way around

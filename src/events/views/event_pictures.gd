@@ -93,7 +93,7 @@ const ROADBLOCK_SEGMENT := "events/roadblock_segment"
 const ROADBLOCK_SEGMENT_VERTICAL := "events/roadblock_segment_vertical"
 const ROADBLOCK_END := "events/roadblock_end"
 ## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
-## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 60px
+## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 64px
 ## capsule, which is still what the collision body and the cold picture are built from.
 const GUARD_SHADOW_RADIUS := 9.0
 

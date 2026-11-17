@@ -102,7 +102,7 @@ func offer(section: Location) -> EventPlan:
 ## Overrides RoadblockGround.covers.
 func covers(plan: EventPlan) -> Array[Vector2i]:
 	var shut := _shut.duplicate()
-	EventScheduler.block_a_disc(_map, shut, plan.placed_at(), plan.blocking_radius())
+	EventScheduler.block_a_disc(_map, shut, plan.body_at(_map), plan.blocking_radius())
 	var found: Array[Vector2i] = []
 	for tile: Vector2i in close_by(_map, shut, plan):
 		found.append(tile)
@@ -111,7 +111,7 @@ func covers(plan: EventPlan) -> Array[Vector2i]:
 ## Overrides RoadblockGround.stand.
 func stand(plan: EventPlan) -> void:
 	_events.add(plan)
-	EventScheduler.block_a_disc(_map, _shut, plan.placed_at(), plan.blocking_radius())
+	EventScheduler.block_a_disc(_map, _shut, plan.body_at(_map), plan.blocking_radius())
 
 ## **The ground close by `plan`** (`tile -> its distance from the plan`): the walk her paths take
 ## over the ground `shut` leaves open, from where she touches the plan (`_touched_from()`),
@@ -119,20 +119,20 @@ func stand(plan: EventPlan) -> void:
 ## measure of close by, which what a section's roadblock would cover (`covers()`) and the count of
 ## the route tiles the finished day leaves without one share.
 static func close_by(map: CityMap, shut: Dictionary, plan: EventPlan) -> Dictionary:
-	return DayReach.paths_over(map, shut, _touched_from(map, shut, plan), plan.placed_at(),
+	return DayReach.paths_over(map, shut, _touched_from(map, shut, plan), plan.body_at(map),
 			TASK_ROW_CLOSE_BY)
 
 ## The walkable ground left open within a tile and a half of `plan`'s body: where she touches it
 ## from.
 static func _touched_from(map: CityMap, shut: Dictionary, plan: EventPlan) -> Array[Vector2i]:
 	var reach := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
-	var centre := map.world_to_tile(plan.placed_at())
+	var centre := map.world_to_tile(plan.body_at(map))
 	var span := ceili(reach / Tuning.TILE_SIZE)
 	var found: Array[Vector2i] = []
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre + Vector2i(dx, dy)
 			if map.in_bounds(tile) and map.is_walkable(tile) and not shut.has(tile) \
-					and map.tile_to_world(tile).distance_to(plan.placed_at()) <= reach:
+					and map.tile_to_world(tile).distance_to(plan.body_at(map)) <= reach:
 				found.append(tile)
 	return found

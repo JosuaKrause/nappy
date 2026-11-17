@@ -1762,7 +1762,7 @@ var _circle_edge := {}
 var _circle_inside := {}
 
 ## Half the box a task's rider is kept out of her view by when it is placed, around the tile it
-## stands on: three tiles either side and four up and down — more than a roadblock's 60px band and
+## stands on: three tiles either side and four up and down — more than a roadblock's 64px band and
 ## its guards, a van, or the burnt building the day-8 fallback burns behind its front, whose wall
 ## rises above the tile. She reads the mark standing on it, so a task placed near it could
 ## otherwise be put in the world, or a building burnt, in front of her. `docs/EVENTS.md`'s rule,
@@ -2050,11 +2050,12 @@ class SectionToSwap extends RefCounted:
 		return _ground
 
 ## **The nearest ground along her paths she can touch `plan` from** (`paths`, `tile -> its distance
-## from her`): a tile within a tile and a half of its body, reachable from home and closer along
-## her paths than `reach`, or `NO_TILE` when none is.
+## from her`): a tile within a tile and a half of its body where it stands (`EventPlan.body_at()`),
+## reachable from home and closer along her paths than `reach`, or `NO_TILE` when none is.
 func _touched_from(plan: EventPlan, paths: Dictionary, reach: float) -> Vector2i:
 	var touch := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
-	var centre := _map.world_to_tile(plan.placed_at())
+	var body := plan.body_at(_map)
+	var centre := _map.world_to_tile(body)
 	var span := ceili(touch / Tuning.TILE_SIZE)
 	var from := NO_TILE
 	var nearest := INF
@@ -2065,7 +2066,7 @@ func _touched_from(plan: EventPlan, paths: Dictionary, reach: float) -> Vector2i
 				continue
 			var distance: float = paths[tile]
 			if distance >= reach or distance >= nearest \
-					or _map.tile_to_world(tile).distance_to(plan.placed_at()) > touch \
+					or _map.tile_to_world(tile).distance_to(body) > touch \
 					or not _reachable_from_home(tile):
 				continue
 			nearest = distance

@@ -135,6 +135,17 @@ func row_id() -> String:
 func placed_at() -> Vector2:
 	return position
 
+## **Where its body stands on `map`, for a reading of the day that stands each body as a disc**:
+## on the kerb beside the carriageway lane it was placed in when its row stands at its kerb
+## (`EventDef.stands_at_its_kerb()`, the roadblock, `WorldMap.kerb_beside()`), which is where
+## `EventFootprints.stands_at()` stands its built body; where it was placed for any other plan. So the
+## day's readings of a roadblock's band (`OneSidewalkOpenRule`, `RouteSidewalkRule`,
+## `EventScheduler.blocked_by()`, the roadblock phase) see the band where it is drawn and solid,
+## leaving the far sidewalk whole. A body on a sidewalk is moved to the middle of its sidewalk when
+## it is built, at most half a tile; these readings take it where it was placed.
+func body_at(map: WorldMap) -> Vector2:
+	return map.kerb_beside(position) if def.stands_at_its_kerb() else position
+
 ## **Whether this body is one of a region door's**: a `checkpoint_hut` or the `checkpoint_gate`
 ## at a street door's mouth, or a `checkpoint_post` at an alley door's. What makes a body a door
 ## is `RegionPlanner` standing it at one, not anything on its def, so the placement says it once
