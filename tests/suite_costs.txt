@@ -219,4 +219,5 @@ test_walker_views.gd 394
 test_wall_shield.gd 8081
 test_way_on.gd 98
 test_web_display.gd 34
+test_whole_walk_bag.gd 150
 test_world_passability.gd 11227

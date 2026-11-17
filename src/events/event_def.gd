@@ -443,10 +443,9 @@ func is_weighed_on_ground_it_cannot_stand_on() -> bool:
 	return false
 
 ## **The most of the row a day stands** (`max_per_day`) where something counts it across the day:
-## the moments the dawn owes her (`DawnMoments`, where the spec keeps the caps), the director's
-## marbles and the rows of a scene recipe that no unit draws (`SceneRecipeRuntime`). The escape's
-## bag walk reads `max_per_day` only for a spec that keeps the caps, and the escape's does not. A
-## unit's draw counts nothing across the day; it holds one of a row in the unit (`MarbleDraw`).
+## the moments the dawn owes her (`DawnMoments`), the director's marbles and the rows of a scene
+## recipe that no unit draws (`SceneRecipeRuntime`). A unit's draw counts nothing across the day;
+## it holds one of a row in the unit (`MarbleDraw`).
 func most_in_a_day() -> int:
 	return max_per_day
 @export var max_per_day := 1
@@ -1124,9 +1123,10 @@ func span_the_street() -> void:
 ## **How much of a street a row takes up when a street draws it** (`UnitRoom`, `MarbleDraw`), of
 ## the player's three sizes (inbox #1466 in silky-lemur: a marble that takes the whole street ends its draw, one
 ## that takes a segment leaves at least two more draws, and one smaller than a segment is followed
-## by another small one): one sidewalk location or one whole section. Nothing a street draws takes
-## the whole street: the rows that would, the police patrol and the military convoy, are sent ahead
-## of her by the director (`is_sent_ahead()`) and drawn by no unit.
+## by another small one): one sidewalk location or one whole section. Nothing a street draws **on a
+## day** takes the whole street: the rows that would, the police patrol and the military convoy, are
+## sent ahead of her by the director (`is_sent_ahead()`) and drawn by no unit; the escape's truck
+## takes a section.
 enum StreetShare { A_LOCATION, A_SECTION }
 
 ## **What the row takes of a street**, read off its ground, never set: a section where it stands on

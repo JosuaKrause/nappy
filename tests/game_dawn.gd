@@ -62,8 +62,8 @@ func scars(left: Array[Dictionary]) -> GameDawn:
 	return self
 
 ## The walk the day is placed against, where it is not the tree the city grows for the day. A walk
-## not said becomes that tree on every spec, the escape's bag-per-street one included, where the
-## game hands the escape the walk its chains make.
+## not said becomes that tree on every spec, the escape's one included, where the game hands the
+## escape the walk its chains make.
 func on(walk: RouteSource) -> GameDawn:
 	_walk = walk
 	return self
@@ -117,8 +117,9 @@ func undrawn() -> GameDawn:
 
 ## **Draws every unit of `dawn` into its plan** (`DawnContext.unit_draw()`), nearest the city's
 ## corner first: the whole day, the same whatever order the units are drawn in (`UnitDraw`), as a
-## walk that comes near every unit draws it. Nothing where the dawn holds no draw (the escape's bag
-## walk). For a probe that runs the dawn's passes by hand.
+## walk that comes near every unit draws it. Nothing is left to draw where the dawn drew the walk
+## whole (`DaySpec.draws_before_she_sets_off()`, the escape's). For a probe that runs the dawn's
+## passes by hand.
 static func draw_every_unit(dawn: DawnContext) -> void:
 	var draw := dawn.unit_draw()
 	if not draw:

@@ -25,7 +25,13 @@ extends RefCounted
 ## fresh bag of the fill of the unit's view (the most permissive of its locations',
 ## `PlacementUnit.view()`) and kind of ground (`UnitFills`), on the unit's stream (`ViewBag`), so
 ## what a far unit drew changes nothing here; the marbles drawn from it and laid out in the unit
-## (`MarbleDraw.draw()`), a marble drawn before it has a place. Model: no node.
+## (`MarbleDraw.draw()`), a marble drawn before it has a place.
+##
+## **A walk that is drawn whole before she sets off** (`DaySpec.draws_before_she_sets_off()`) draws
+## every unit at once instead (`draw_in_their_order()`), in the order the day's units are in, each
+## judged among the dawn's plans and everything drawn before it: the order is total and the same on
+## every plan of the same seed, so no rank is asked and no touching unit is pulled first. Model: no
+## node.
 
 var _units: DayUnits
 var _drawing: MarbleDraw
@@ -86,6 +92,24 @@ func _lowest_waited_for(unit: PlacementUnit) -> PlacementUnit:
 			return other
 	return null
 
+## **Draws every undrawn unit now, in the order the day's units are in** (`DayUnits.all()`), each
+## judged among the dawn's plans and everything every unit before it in that order drew, a row
+## handed to her walk passed over: the draw of a walk that is drawn whole before she sets off
+## (`DaySpec.draws_before_she_sets_off()`). The order is total and the same on every plan of the
+## same seed, so no rank is asked and no touching unit is pulled first, and a draw may be judged
+## among every draw before it however far off, which a route that leaves its street needs
+## (`DawnDraw`). Answers everything placed, in the order drawn.
+func draw_in_their_order() -> Array[EventPlan]:
+	var placed: Array[EventPlan] = []
+	var before: Array[EventPlan] = _dawn.duplicate()
+	for unit in _units.all():
+		if not unit.is_drawn():
+			placed.append_array(_draw_among(unit, before))
+		for plan in unit.drawn():
+			if not plan.row().is_handed_to_her_walk():
+				before.append(plan)
+	return placed
+
 ## Draws `unit`, every touching unit of lower rank drawn already: judged among the dawn's plans and
 ## what the touching units drew, a row one of them handed to her walk passed over, which by now
 ## may stand where her walk sited it.
@@ -97,6 +121,11 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 		for plan in other.drawn():
 			if not plan.row().is_handed_to_her_walk():
 				among.append(plan)
+	return _draw_among(unit, among)
+
+## Draws `unit` among `among`, from the bag the walk's bags answer for it, and records what it
+## placed.
+func _draw_among(unit: PlacementUnit, among: Array[EventPlan]) -> Array[EventPlan]:
 	var placed := _drawing.draw(unit, _bags.bag_for(unit), among)
 	unit.record_draw(placed)
 	return placed

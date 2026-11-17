@@ -62,21 +62,6 @@ func sections() -> Array[Location]:
 func sidewalks() -> Array[Location]:
 	return _sidewalks
 
-## **The street's locations in the order the dawn draw fills them**: its three sections first, so
-## an event that takes its section (one that spans the street or drives its carriageway) is drawn
-## before the sidewalks it takes, then the six sidewalk locations, in an order `rng` shuffles, so no
-## side or end of a street always draws first.
-func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
-	var order: Array[Location] = _sections.duplicate()
-	var sidewalks := _sidewalks.duplicate()
-	for i in range(sidewalks.size() - 1, 0, -1):
-		var j := rng.randi_range(0, i)
-		var kept: Location = sidewalks[i]
-		sidewalks[i] = sidewalks[j]
-		sidewalks[j] = kept
-	order.append_array(sidewalks)
-	return order
-
 ## Puts `plan`, an event that spans the street, on `section` for the day, and takes the section's
 ## two sidewalk locations with it, so no draw happens for any of the three.
 func take_section(section: Location, plan: EventPlan) -> void:

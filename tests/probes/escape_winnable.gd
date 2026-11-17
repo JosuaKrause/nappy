@@ -129,8 +129,8 @@ func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Arr
 	return found
 
 ## The section's plan, drawn the way a straight city boot draws it; for a mix other than `as built`,
-## the same plan under a spec whose bag is that mix's, drawn on the stream the game's own
-## bag is drawn on (`EventScheduler.street_bag_seed()`).
+## the same plan under a spec whose bag is that mix's, drawn on the plan's own stream, the one the
+## game's own bag is drawn on.
 func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
 		mix: Dictionary) -> Array[EventPlan]:
 	var rng := own_run.calendar.day_rng(day, "finale")

@@ -269,7 +269,7 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 ## `builder` makes every plan the dawn sites (`DawnContext.builder()`), and `populate_events` says
 ## whether the events are sited at all.
 ##
-## `trace` is where the bag draw writes its count for the run log (`EventScheduler.build_day()`).
+## `trace` is where the dawn's draw writes its line for the run log (`EventScheduler.build_day()`).
 static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		rng: RandomNumberGenerator, spec: DaySpec, builder: PlanBuilder,
 		populate_events := true, trace: RunTrace = null) -> Array[EventPlan]:

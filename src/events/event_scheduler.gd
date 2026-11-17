@@ -131,10 +131,9 @@ const WALL_WORTH_OF_COST := Tuning.METER_MAX * 0.48
 
 ## **Plans what stands on the walk the dawn's context describes** (`DawnContext`): which rows, how
 ## they are drawn, and which placement rules apply are all the spec's (`DaySpec`, "how its events
-## are placed"), so a day and the escape's city are one entry point and one set of rules
-## (`StreetInvalidation`). A day draws the catalogue (`DaySpec.Draw.CATALOGUE`, below); the
-## escape's city fills each street of its walk from its marble bag (`DaySpec.Draw.BAG_PER_STREET`,
-## `_draw_the_walk()`). Nothing here asks which day it is beyond `DawnContext.day()`, the day the
+## are placed"), so a day and the escape's city are one entry point, one list of phases and one set
+## of rules (`StreetInvalidation`). The escape's city is the same draw under three of the spec's
+## settings (`DawnDraw`). Nothing here asks which day it is beyond `DawnContext.day()`, the day the
 ## catalogue's rows are read for.
 ##
 ## **Every input is the context's**, handed it by whoever made it (`DayPlanner`, or a suite's
@@ -155,10 +154,6 @@ const WALL_WORTH_OF_COST := Tuning.METER_MAX * 0.48
 ## routes, which no body the day plans closes (the route rules of `StreetInvalidation`, and
 ## `RouteGroundRule` for the scars and the spoilers), run to it.
 static func build_day(context: DawnContext) -> void:
-	var spec := context.spec()
-	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
-		_draw_the_walk(context, _street_bag(spec.bag, street_bag_seed(context.day_seed())))
-		return
 	for phase in _phases():
 		phase.run(context)
 
@@ -232,87 +227,6 @@ static func owed_to_her_walk(plan: EventPlan) -> EventPlan:
 	var owed := EventPlan.new(plan.def, Vector2.INF)
 	owed.role = plan.role
 	return owed
-
-# ------------------------------------------------------ the walk's streets from a bag ---
-
-## **One draw per street of the walk, from one marble bag** — `DaySpec.Draw.BAG_PER_STREET`, the
-## escape city's draw. The walk knows exactly which streets she can take — everything else is sealed —
-## so it draws them before she sets off rather than siting things round her as a day does; and which
-## row a street gets, or whether it gets one at all, is a draw. *(Inbox #785 in minty-lemur: "nobody
-## ever asked for all four events on *every* street. that doesn't make any sense and cannot feasibly
-## work at all. that is why the density is so high that it's impossible to get anywhere. yes, a
-## marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
-## mix". Of how many a street holds, inbox #1185 in gentle-owl's board answer: "one per street. fill empty in if
-## any segment or location in the street has an event".)*
-##
-## Each street of the walk (`RouteSource.streets_on_the_walk()`, in its own order) draws one marble
-## from `bag`, one bag for the whole walk. A marble with a row (`DaySpec.bag_rows`) is offered at the
-## street's locations in the street's own order (`StreetLocations.drawing_order()`), on the ground the
-## row fits (`LocationFit`, never the ground she starts on) and left out where the walk's rules
-## invalidate it (`StreetInvalidation`: every day's rules but the calm the spec does not keep, one
-## waiting guard's notice at a time, and the walk kept open past everything standing on it,
-## `WalkGround`); the first location it stands at takes it, and **the rest of the street stays
-## empty**. A marble with no row leaves the street empty, and **a row's marble no location of the
-## street takes is spent unmet**, so a refused row never moves its danger onto the next street (the
-## builder's reading, open to correction: the escape's bag keeps the player's counts, and a refused
-## row stays the empty street it is today rather than staying in the bag). A row past its
-## `max_per_day` is spent unmet the same way where the spec keeps the caps. Every row is added to
-## `events`, the walk's plan, whose `standing()` the seals are.
-##
-## `bag` is drawn on its own stream (`street_bag_seed()`, off the day's seed), so drawing it takes
-## nothing from the stream the placements roll on, and a replan from the same seed — the escape's
-## restart after a loss — draws the same walk again. The trace is told how many marbles the walk
-## drew (`bag.drawn`), the plan's own account and the one count a reader of the plan cannot
-## recompute.
-##
-## The walk's ground for a row is the context's (`DawnContext.ground()`, the day's own under the
-## spec's home-street rule: **a tree and an event never share ground**, `docs/CITY.md`, "Street
-## trees"), and so are its rules (`DawnContext.rules()`: the walk kept open past everything standing
-## on it, one waiting guard's notice at a time).
-static func _draw_the_walk(context: DawnContext, bag: MarbleBag) -> void:
-	var spec := context.spec()
-	var map := context.map()
-	var route := context.walk()
-	var events := context.events()
-	var fit := LocationFit.new(context.day(), map, context.builder(), context.ground(),
-			route.start())
-	var offered := RuledLocationGround.new(context.day(), context.day_seed(), map,
-			events.standing(), context.corridor(), fit, context.rules(), context.ground())
-	var placed := {}
-	for segment in route.streets_on_the_walk():
-		var def: EventDef = spec.bag_rows.get(bag.draw())
-		if def == null:
-			continue
-		if spec.caps_per_day and int(placed.get(def.id, 0)) >= def.max_per_day:
-			continue
-		var street := StreetLocations.of(map, segment, PlacementView.View.ON_THE_ROUTE)
-		var order_rng := RandomNumberGenerator.new()
-		order_rng.seed = hash("%d:%s:walk-street" % [context.day_seed(), segment.key()])
-		for location in street.drawing_order(order_rng):
-			var placement := offered.offer(def, location, events.placements())
-			if placement:
-				events.add(placement)
-				placed[def.id] = int(placed.get(def.id, 0)) + 1
-				break
-	context.note("plan", "the escape's bag drew %d marbles for %d rows"
-			% [bag.drawn, events.size()])
-
-## **A marble bag of `counts`**: `counts` marbles of each key, a row's marble or
-## `DaySpec.EMPTY_MARBLE`, on its own stream off `seed_value`, filled again whenever it runs empty —
-## one bag for the whole walk, so the mix is exact over each fill of it rather than over each street.
-## See `_draw_the_walk()`.
-static func _street_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
-	var marbles: Array = []
-	for marble: String in counts:
-		for _i in int(counts[marble]):
-			marbles.append(marble)
-	return MarbleBag.new([], marbles, seed_value)
-
-## The street bag's own stream, off the day's seed rather than off a draw from a stream made with it,
-## so drawing the bag takes nothing from the stream the placements roll on — the shape
-## `EventDirector` seeds its route bag in.
-static func street_bag_seed(day_seed: int) -> int:
-	return hash("%d:escape-bag" % day_seed)
 
 ## The tiles of one street of the walk a given row may stand on: **the day's own ground for the row**
 ## (`RowGround.tiles_for()`, every refusal a day makes of a tile — a closed tile, a held street, the

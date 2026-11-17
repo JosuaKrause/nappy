@@ -7,8 +7,7 @@ extends DawnPhase
 ## (`EventDirector`; the orchestrator's reading of fork 9: a moment is not a place), so the day
 ## only says how many.
 ## `PlacementDensity.moments_on()` of them, the number the declared table gives the day's act,
-## each a row drawn by weight among today's, at most its `max_per_day` where the spec keeps the
-## caps.
+## each a row drawn by weight among today's, at most its `max_per_day`.
 ##
 ## Model: no node.
 
@@ -19,7 +18,6 @@ const SALT := 7
 func run(context: DawnContext) -> void:
 	var day := context.day()
 	var events := context.events()
-	var caps := context.spec().caps_per_day
 	var rng := context.stream(SALT)
 	var rows: Array[EventDef] = []
 	for def in context.catalogue_rows(GameEnums.EventKind.RECURRING):
@@ -32,7 +30,7 @@ func run(context: DawnContext) -> void:
 		var open: Array[EventDef] = []
 		var total := 0.0
 		for def in rows:
-			if not caps or int(owed.get(def.id, 0)) < def.most_in_a_day():
+			if int(owed.get(def.id, 0)) < def.most_in_a_day():
 				open.append(def)
 				total += def.drawn_as_often()
 		if open.is_empty():

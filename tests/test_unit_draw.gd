@@ -5,13 +5,17 @@ extends RefCounted
 ## a chain, and is judged among the dawn's plans and the draws of the units touching it only, a
 ## plan her walk sites never among them; a unit draws once; a unit whose locations are in
 ## different views draws from the bag of the most permissive of them; and a unit draws from the
-## fill of its view and its kind of ground.
+## fill of its view and its kind of ground. A walk drawn whole (`draw_in_their_order()`) draws every
+## unit in the order its units are in, never asks which touch, judges each among the dawn's plans and
+## everything drawn before it, passes over a unit drawn already, and has every unit draw from the one
+## bag its walk answers.
 ##
-## Run with stand-ins for what it is handed: the day's units (`_Units`, a touching table set by
-## hand), the day's fills (`_Fills`, a fill set by hand for each view and ground, which records
-## each ask) and the unit's draw (`_Drawing`, which records each call and answers one plan for
-## it, drawing one marble from the bag it is handed); the units are real (`PlacementUnit`, state),
-## each of a location or two made by hand, and so are the bags (`ViewBag`).
+## Run with stand-ins for what it is handed: the day's units (`_Units`, a touching table and an
+## order set by hand), the day's fills (`_Fills`, a fill set by hand for each view and ground, which
+## records each ask), one bag for the walk (`_Bags`, which records each ask) and the unit's draw
+## (`_Drawing`, which records each call and answers one plan for it, drawing one marble from the bag
+## it is handed); the units are real (`PlacementUnit`, state), each of a location or two made by
+## hand, and so are the bags (`ViewBag`).
 
 func run(t: TestRunner) -> void:
 	_test_every_order_of_asking_draws_the_same(t)
@@ -20,6 +24,10 @@ func run(t: TestRunner) -> void:
 	_test_a_unit_draws_once(t)
 	_test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t)
 	_test_a_unit_draws_from_the_fill_of_its_view_and_its_ground(t)
+	_test_a_whole_walk_is_drawn_in_its_units_order(t)
+	_test_a_whole_walk_judges_each_unit_among_everything_before_it(t)
+	_test_a_whole_walk_passes_over_a_unit_already_drawn(t)
+	_test_every_unit_draws_from_the_bag_its_walk_answers(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 const OFF := PlacementView.View.OFF_THE_ROUTE
@@ -27,9 +35,18 @@ const OFF := PlacementView.View.OFF_THE_ROUTE
 class _Units extends DayUnits:
 	## Unit name -> the units it touches.
 	var table := {}
+	## The units in the order the day names them, `all()`'s answer.
+	var order: Array[PlacementUnit] = []
+	## How many times the draw asked which units touch one.
+	var touched := 0
+
+	## Overrides DayUnits.all.
+	func all() -> Array[PlacementUnit]:
+		return order.duplicate()
 
 	## Overrides DayUnits.touching.
 	func touching(unit: PlacementUnit) -> Array[PlacementUnit]:
+		touched += 1
 		var found: Array[PlacementUnit] = []
 		found.assign(table.get(unit.name(), []))
 		found.sort_custom(func(a: PlacementUnit, b: PlacementUnit) -> bool:
@@ -52,6 +69,20 @@ class _Fills extends UnitFills:
 		asked.append(key)
 		var fill: Dictionary = by_view_and_ground.get(key, {ViewBag.EMPTY: 1})
 		return fill
+
+class _Bags extends UnitBags:
+	## The one bag every unit is answered.
+	var bag: ViewBag
+	## The name of each unit asked, in the order asked.
+	var asked: Array[String] = []
+
+	func _init(the_bag: ViewBag) -> void:
+		bag = the_bag
+
+	## Overrides UnitBags.bag_for.
+	func bag_for(unit: PlacementUnit) -> ViewBag:
+		asked.append(unit.name())
+		return bag
 
 class _Drawing extends MarbleDraw:
 	## A plan's place -> the name of the unit that drew it.
@@ -265,3 +296,84 @@ func _test_a_unit_draws_from_the_fill_of_its_view_and_its_ground(t: TestRunner) 
 	t.check(fills.asked == [Vector2i(ON, PlacementGround.Kind.STREET),
 			Vector2i(ON, PlacementGround.Kind.JUNCTION)],
 			"each asks the fills for its view and its ground (%s)" % [fills.asked])
+
+## Three units, none touching another, named by the day in `order`: the last of the ranked units
+## first, so a later unit draws before an earlier one by rank.
+static func _a_walk_not_in_rank_order() -> _Units:
+	var made := _ranked([_unit(0), _unit(1), _unit(2)] as Array[PlacementUnit])
+	var units := _Units.new()
+	units.order = [made[2], made[0], made[1]] as Array[PlacementUnit]
+	return units
+
+## **A walk drawn whole draws every unit in the order the day's units are in** (`DayUnits.all()`),
+## whatever their rank, and never asks which touch.
+func _test_a_whole_walk_is_drawn_in_its_units_order(t: TestRunner) -> void:
+	var drawing := _Drawing.new()
+	var units := _a_walk_not_in_rank_order()
+	t.check(units.order[1].draws_before(units.order[0]),
+			"a later unit of the walk draws before an earlier one by rank, so the order is not the rank")
+	var draw := UnitDraw.new(units, drawing, _fills(), _dawn())
+	var placed := draw.draw_in_their_order()
+	var named: Array[String] = []
+	for call: Array in drawing.calls:
+		named.append(str(call[0]))
+	var wanted: Array[String] = []
+	for unit in units.order:
+		wanted.append(unit.name())
+	t.check(named == wanted, "every unit is drawn once, in the walk's own order (%s)" % [named])
+	t.check(units.touched == 0, "and none is asked which units touch it (%d asks)" % units.touched)
+	t.check(placed.size() == 3 and placed[0] == units.order[0].drawn()[0]
+			and placed[2] == units.order[2].drawn()[0],
+			"and answers every plan placed, in the order drawn (%d)" % placed.size())
+
+## **Each unit of a walk drawn whole is judged among everything drawn before it**, though none
+## touches another, and a row a unit handed to her walk is in no later unit's judgment.
+func _test_a_whole_walk_judges_each_unit_among_everything_before_it(t: TestRunner) -> void:
+	var drawing := _Drawing.new()
+	var units := _a_walk_not_in_rank_order()
+	drawing.hands_over[units.order[0].name()] = true
+	var draw := UnitDraw.new(units, drawing, _fills(), _dawn())
+	draw.draw_in_their_order()
+	var judged: Array = []
+	for call: Array in drawing.calls:
+		judged.append(call[3])
+	t.check(judged == [["roadblock"], ["roadblock", "cafe_tables"],
+			["roadblock", "cafe_tables", "cafe_tables"]],
+			"the first unit is judged among the dawn's plan, the second among that and the first's "
+			+ "row, the third among all three; the crew the first handed to her walk is in none (%s)"
+			% [judged])
+
+## **A unit drawn before the call is not drawn again**, and what it drew is among the later units'.
+func _test_a_whole_walk_passes_over_a_unit_already_drawn(t: TestRunner) -> void:
+	var drawing := _Drawing.new()
+	var units := _a_walk_not_in_rank_order()
+	var draw := UnitDraw.new(units, drawing, _fills(), _dawn())
+	draw.draw(units.order[1])
+	draw.draw_in_their_order()
+	var named: Array[String] = []
+	for call: Array in drawing.calls:
+		named.append(str(call[0]))
+	t.check(named == [units.order[1].name(), units.order[0].name(), units.order[2].name()],
+			"the unit drawn already is passed over and the other two are drawn after it (%s)" % [named])
+	var judged: Array = drawing.calls[2][3]
+	t.check(judged == ["roadblock", "cafe_tables", "cafe_tables"],
+			"and the last is judged among the dawn's plan and both draws before it (%s)" % [judged])
+
+## **Every unit draws from the bag its walk answers**, asked once a unit in the order drawn: one bag
+## drawn without putting back gives three different marbles to three units.
+func _test_every_unit_draws_from_the_bag_its_walk_answers(t: TestRunner) -> void:
+	var drawing := _Drawing.new()
+	var units := _a_walk_not_in_rank_order()
+	var bags := _Bags.new(ViewBag.new({"cafe_tables": 1, "dog_walker": 1, "roadblock": 1}, 3))
+	UnitDraw.new(units, drawing, bags, _dawn()).draw_in_their_order()
+	var wanted: Array[String] = []
+	for unit in units.order:
+		wanted.append(unit.name())
+	t.check(bags.asked == wanted, "the walk's bags are asked once a unit, in the order drawn (%s)"
+			% [bags.asked])
+	var marbles: Array[String] = []
+	for call: Array in drawing.calls:
+		marbles.append(str(call[2]))
+	marbles.sort()
+	t.check(marbles == ["cafe_tables", "dog_walker", "roadblock"],
+			"and every unit drew from the one bag, each marble once (%s)" % [marbles])
