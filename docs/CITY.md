@@ -1175,7 +1175,7 @@ from wherever she has walked to.
 
 **Where a street has to keep a sidewalk she can walk, the draw makes sure of it.** The player, on
 the board: "what I said was *if* a street needs to have one sidewalk walkable *then* the placement
-of the drawn events needs to make sure of that" (inbox #1465). *Read as:* no street is newly
+of the drawn events needs to make sure of that" (inbox #1465 in spry-plover). *Read as:* no street is newly
 required to keep one; the streets that already are, her routes' own streets, keep it by
 construction. On a day's walk a body (a row she cannot pass, or one that ends the day, at the disc
 it blocks with) is refused where, for a street of her routes it reaches, neither sidewalk could then
@@ -1195,8 +1195,11 @@ another pursuer on the other close the street with every line rule satisfied, so
 every body, not only the roadblock.
 
 **A roadblock is asked too**: it spans the street by design, and its band takes the sidewalk on its
-own side of the road and leaves the far one, so it is refused where a body already closes that far
-sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin). **The band
+own side of the road and the road, standing on the kerb between them, and leaves the far sidewalk
+whole, so it is refused where a body already closes that far sidewalk ("one sidewalk must be open
+if they're en-route", inbox #747 in woolly-penguin; "okay let's use the one sidewalk has to be open
+and match the roadblocks size to one sidewalk + road", inbox #1465 in spry-plover). Every reading
+of a body here takes the band where it stands (`EventPlan.body_at()`). **The band
 is its body at every heat.** From heat 4 its guard hunts and the row's lethal inner disc would take
 both sidewalks by itself, where the other pursuers' discs (the alley robbery's, the charging dog's)
 take one, and the escape reads the same hunting roadblock at its band (`WalkGround`); so a hunting
