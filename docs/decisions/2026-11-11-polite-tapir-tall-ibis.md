@@ -162,15 +162,16 @@ Its mutation table, on the final head of the pull request (each line removed in 
   it leaves by a through road, whose far box has another way on, so it only refused a car driving
   off a stub into the through roads. Deleted; `test_way_on` asks that such a car goes on.
 
-## Readings, each open to the player
+## Readings and answers
 
 - **"Just ahead of the player"** (inbox #1460): the sent rows are created just ahead of her on the
-  street she walks, coming toward her.
-- **The convoy comes only from ahead of her**, the orchestrator's reading on the Nappy board: the
-  player's words do not cover a convoy from behind her, so none is sent.
-- **The followed convoy** (the Nappy board's question followed-convoy), built on the orchestrator's
-  pick: a sent convoy stays loud while she can see it, as the dog walker and the patrol do. Following
-  it, or walking ahead of it, is her choice, and stepping off its street stops the cost; the
-  reviewer's rows above say what that choice costs. Turning it would be one setting: the convoy's
+  street she walks, coming toward her. A reading, open to the player.
+- **The convoy comes only from ahead of her**, the orchestrator's reading on the Nappy board, open
+  to the player: the player's words do not cover a convoy from behind her, so none is sent.
+- **The followed convoy, settled by the player** (the Nappy board's question followed-convoy,
+  inbox #1460): a sent convoy stays loud while she can see it, as the dog walker and the patrol do,
+  so following it can end the day; stepping away is the lesson, as with the fire engine. The
+  reviewer's rows above say what following it costs, and stepping off its street stops the cost.
+  Turning it would be one setting: the convoy's
   departure told the way on and its route walk not, so its truck ends its route at its first leg,
   quiet, and still leaves by legs.
