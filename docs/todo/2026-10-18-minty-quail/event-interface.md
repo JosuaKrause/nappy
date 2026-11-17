@@ -328,9 +328,9 @@ sites, and the seal and region planners under `src/routes/`.
 | What is asked | Method | Answered by |
 |---|---|---|
 | Is the row available on this day | row `available_on(day)` ok | the row |
-| Is it placed at dawn, sited from her walk, or sited by the director, on this day | row `spawn_mode_on(day)` ok, `is_sited_from_her_walk()`, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` | the row |
+| Is it placed at dawn, sited from her walk, or sited by the director, on this day | row `spawn_mode_on(day)` ok, `is_sited_from_her_walk()` ok, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` ok | the row |
 | Which kind of row is it | row `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()`; `ambient_source()` | the row |
-| Which ground takes it | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `sidewalk_lane()`, `stands_at_a_front()` | the row |
+| Which ground takes it | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `sidewalk_lane()`, `stands_at_a_front()` ok | the row |
 | Does it need one street to lie across (so a corner is no site) | row `lies_as_a_spread()` | body |
 | Does it take a whole section of a street | row `spans_the_street()` ok | the row |
 | How often is it drawn, here, and how many may stand | row `drawn_as_often()` ok, `drawn_as_often_on(ground)`, `most_in_a_day()` ok | the row |
@@ -344,7 +344,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does it wait for her, and within what | row `notice_within()` ok | notice |
 | Does it move, pace a beat, pursue | row `moves()`, `paces_a_beat()`, `pursues()` | route, pursuit |
 | How is its route built (asked by the plan builder, which is handed the part) | the route part's `kind()`, `tiles()` | route |
-| Is it scenery, is it the mast | row `is_scenery()`, `is_a_mast()` | the row |
+| Is it scenery, is it the mast | row `is_scenery()`, `is_a_mast()` ok | the row |
 | What does it leave or call in | row `scar_id()`, `leaves_behind()` ok, `calls_in()` | aftermath |
 | Where does a plan stand, walk, face | plan `is_placed()` ok, `placed_at()` ok, `walks()` ok, `stands_still()` ok, `ends()` ok, `faces()` | the plan |
 | How far is a plan from a point or another plan | plan `distance_from(at)` ok, `gap_to(other)` ok | the plan |
@@ -501,7 +501,7 @@ minty-quail-olive-finch).
 | `shape != null and obstructs_radius > 0 and not mobile and detain_seconds <= 0 and solid_when != WHILE_LOWERED` | the route rig, and the spawner's own record in other words | row `stands_as_a_fixed_body()` |
 | `kind != AMBIENT and pursuit == null and vehicle == null and not warned_first and not starts_by(ARRIVES_CHASING)` | the park cordon | live `is_ambient()`, `was_sent_at_her()`, `drives()` |
 | `solid_when == WHILE_LOWERED`, five places; `redetains` read as "this is a door's hut or post", six places | the live event and its hold, the spawner, the resistance, the route rig (the checkpoint controller asks already) | row and live `is_a_boom()` ok, `detains_again()` ok; the plan's `is_a_boom()` and `detains_again()` |
-| `on_her_way != null and on_her_way.at_a_front`, three times; `on_her_way != null and kind == ONE_SHOT`, twice | the scheduler, streaming | row `stands_at_a_front()`, `is_a_set_piece_on_her_way()` |
+| `on_her_way != null and on_her_way.at_a_front`, three times; `on_her_way != null and kind == ONE_SHOT`, twice | the scheduler, streaming | row `stands_at_a_front()` ok, `is_a_set_piece_on_her_way()` ok |
 | `placement.size() == 1 and placement[0] == ALLEY` | the scheduler | row `stands_only_in_alleys()` |
 | `vehicle and vehicle.field_from_its_centre`, three times | `EventDef`, `EventInstance` | the field part's `datum()` (the row's `datum()` until the field part exists ok) |
 | the ramp over its duration and the pulse, five fields | `EventInstance.current_intensity()` | the field part's `peak_through(age, into_its_burst)` (the row's `peak_through(age, into_its_burst, beat)` until the field part exists ok; the caret passes its closed-form mean as `beat`) |
@@ -617,8 +617,8 @@ counted where it only writes.
 | `pavement_side` | 2 in, 1 out (`SealPlanner`) | row `sidewalk_lane()`; a draft for the seal's copy |
 | `_spans_the_street` | private already | row `spans_the_street()` ok; the draft's `spanning_the_street()` replaces `span_the_street()` |
 | `spawn_mode`, `from_day_after` (`DaySwitch`: `after_day`, `spawn_mode`, `notice`) | 2 in; 7 lines of `DaySwitch`, all in | row `spawn_mode_on(day)` ok, `for_day(day)` ok, `comes_down_her_line()` ok, `crosses_ahead_of_her()`; `DaySwitch` becomes private to the row |
-| `on_her_way` (`OnHerWay.at_a_front`) | 2 in | row `is_sited_from_her_walk()`, `stands_at_a_front()`, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` |
-| `role` | 2 in, 1 out (the scene recipes), the resistance untyped | row `is_scenery()`, `is_a_mast()`; plan `is_a_mast()` |
+| `on_her_way` (`OnHerWay.at_a_front`) | 2 in | row `is_sited_from_her_walk()` ok, `stands_at_a_front()` ok, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` ok |
+| `role` | 2 in, 1 out (the scene recipes), the resistance untyped | row `is_scenery()`, `is_a_mast()` ok; plan `is_a_mast()` |
 | `ambient_source` | 1 in (the scheduler) | row `ambient_source()` |
 | `duration` | 3 in | row `lasts_for()`; the field asks it for its swell |
 | `departs_at` | the catalogue | row `departure_speed()` ok |
@@ -695,9 +695,9 @@ field under `[EventPlan]`.
 | Field | Reads | Replaced by |
 |---|---|---|
 | `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`pursues()`, `ends_the_day()` ok, `detains_her()` ok, `detains_again()`, `detain_distance()`, `is_a_boom()`, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()`, `body_pieces()`) |
-| `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `place_at(at)` for the one writer, her walk's siting |
+| `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `stand_where(sited)` ok for the one writer, her walk's siting (the design's pick in place of `place_at(at)`, open to the player) |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
-| `facing` | 18 | `faces()`; set as the plan is built |
+| `facing` | 18 | `faces()`; set as the plan is built, or turned by `face(direction)` ok for a crew facing the wall it pastes |
 | `live` | about 60 (streaming, the route rig, the scene recipes, the resistance) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()`; `EventManager.event_of(plan)` for the live event itself; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
 | `spent` | 18 | `is_spent()` ok, `spend()` ok |
 | `mast_id`, `silenced` | 17 and 5 | `is_a_mast()`, `mast_id()`, `stand_as_a_mast(id)`, `is_silenced()`, `silence()`, `is_a_live_mast()` |
@@ -919,4 +919,3 @@ each question as it was shown).
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
-
