@@ -112,7 +112,8 @@ it street by street, from six kinds of place found from the map's own ground and
 places (8 plain, 15 before a paved box, 4 before a stub, 4 before a box with one way out, 24 past a
 paved box, 4 toward a lethal row's field); 107 rows sent and every one seen, 65 from streets
 running north-south and 42 east-west; none sent past a paved box, where `main` sends 13; before a
-dead end 22 patrols and 21 convoys watched over three legs and turning a corner in her view; 39
+dead end 22 patrols and 21 convoys watched over three legs and turning a corner in her view while
+not leaving, which only a row given a further leg does; 39
 cars watched over 15 seconds; 89 rows followed; toward a field 2 patrols and 2 dog walkers seen
 leaving for over 6 seconds. The review of the suite before this one found 24 of its 36 places
 sending nothing, every row from north-south streets, and no car watched over 9.4 seconds, and it
@@ -133,7 +134,7 @@ Its mutation table, on the final head of the pull request (each line removed in 
 | `clear_to_go_on()` answering `true` from its first line | fails, 10 faults: live inside the lorry's field, and nothing seen leaving toward a field | `test_event_director`: "a leg past a lethal row's field is refused", "a leg past a region door is refused" |
 | the `use_the_days_rule()` line of `use_way_on()` | fails the same way, 10 faults | `test_event_director`: "the director tells the way on it is handed the day's rule" |
 | each of the three `go_on_by()` tellings in `EventsAhead` | fails: the patrol's 59 faults, the convoy's 31, the dog walker's 16 | — |
-| `_goes_on()` in `EventRouteWalk.advance()` | passes: a row given no further leg leaves by legs, held to her sight, which is the same outcome | `test_event_route_walk`: "at the end of its route it asks for a further leg" |
+| `_goes_on()` in `EventRouteWalk.advance()` (made `if false:`) | fails, 2 checks: before a dead end no patrol (22 at the head) and no convoy (21) turns a corner still live. A row given no further leg ends its route at its first leg and leaves, which emits nothing, carries no cue and strikes nobody: the quiet truck, the answer to followed-convoy the player turned down | `test_event_route_walk`: "at the end of its route it asks for a further leg" |
 | the turns' order (`turns.reverse()`) | passes: which turn is taken is no fault she can see | `test_way_on`: both "it turns away from her" cases on the other side, and "round the corner away from her with a body on its lane" |
 | `turns_onto_her` in `EventCarDriving.check()` | passes: no walk puts her on the street round the corner within the patrol's warning | `test_police_car`: the corner case's "never strikes her" and "stands in the junction box", and the raid's car cases |
 | the recipe order (`start_recipe()` recording its bodies after its way on) | not run | `test_event_manager`: "and with a recipe's barricade on the street beyond it, it no longer does" |

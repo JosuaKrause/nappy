@@ -370,6 +370,11 @@ and the raid make their own, and a scene recipe lays a dog walker at a tile.
   never from behind her ("just spawn in the car just ahead of the player", inbox #1460): a truck
   from behind her, faster than her walk, would stay loud beside her for as long as she could see
   it.
+  **A convoy she follows stays loud while she can see it**, as the dog walker and the patrol do,
+  so following it can end the day; stepping away is the lesson, as with the fire engine (the
+  player's answer, inbox #1460). It is given a further leg while she is within
+  `Tuning.OUT_OF_SIGHT`, and a row given none ends its route and leaves quiet, which is not what
+  was asked.
 
 The patrol's and the convoy's first leg is built in one place (`EventDirector.leg_in_the_lane()`),
 as the row is sited and, for the convoy, again from where she is when its warning ends. **Nothing is

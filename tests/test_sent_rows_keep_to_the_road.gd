@@ -129,7 +129,9 @@ class Watched:
 	var still := 0.0
 	var seen_for := 0.0
 	var seen_leaving_for := 0.0
-	var turned_a_corner := false
+	## Whether it turned a corner in her view while it was not leaving: a row given no further leg
+	## ends its route and leaves, and a corner is only turned on a further leg.
+	var turned_a_corner_live := false
 	var in_a_box := false
 	## The junction boxes it drove out of while she could see it.
 	var boxes_left := 0
@@ -160,8 +162,8 @@ class Tally:
 	var by_axis := {}
 	var long_watched := 0
 	var followed := 0
-	## `"<row>"` -> cars that turned a corner, and that drove out of two boxes, in her view, before a
-	## dead end.
+	## `"<row>"` -> cars that turned a corner while still live, and that drove out of two boxes, in
+	## her view, before a dead end.
 	var corners := {}
 	var three_legs := {}
 	## `"<row>"` -> rows seen leaving for longer than the departure's backstop, toward a field.
@@ -197,7 +199,8 @@ func run(t: TestRunner) -> void:
 ## Every place, row and walk: no sent car off its ground, standing or turning on the spot in her
 ## view, no sent row gone in it, and none live in a lethal row's field. Not vacuous: there are places
 ## of every kind; each row is sent and seen from streets on both axes; before a dead end a patrol and
-## a convoy are each watched over three legs and turning a corner; some car is watched a good while;
+## a convoy are each watched over three legs and turning a corner while still live (the followed
+## convoy the player settled on, inbox #1460); some car is watched a good while;
 ## and toward a field rows are seen leaving for longer than the departure's backstop.
 func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 	var tally := Tally.new()
@@ -258,7 +261,7 @@ static func _count(tally: Tally, watched: Array[Watched], spot: Spot, row: Strin
 		tally.long_watched += 1 if car.row in CARS and car.seen_for > LONG_WATCH else 0
 		tally.followed += 1 if car.followed else 0
 		if spot.place in [Place.BEFORE_A_PAVED_BOX, Place.BEFORE_A_STUB, Place.BEFORE_A_CORNER]:
-			if car.turned_a_corner:
+			if car.turned_a_corner_live:
 				tally.count(row, tally.corners)
 			if car.boxes_left >= 2:
 				tally.count(row, tally.three_legs)
@@ -292,7 +295,8 @@ static func _check(t: TestRunner, tally: Tally) -> void:
 				% [PLACE_NAMES[place], sent, seen])
 	for row in CARS:
 		t.check(tally.of(row, tally.three_legs) > 0 and tally.of(row, tally.corners) > 0,
-				"before a dead end, a %s is watched over three legs (%d) and turning a corner (%d)"
+				("before a dead end, a %s is watched over three legs (%d) and turns a corner "
+				+ "still live (%d)")
 				% [row, tally.of(row, tally.three_legs), tally.of(row, tally.corners)])
 	t.check(tally.long_watched > 0 and tally.followed > 0,
 			"some cars are watched over %.0fs (%d), and some with her walking their way (%d)"
@@ -432,8 +436,8 @@ static func _look_at(car: Watched, map: CityMap, place: Vector2, step: float) ->
 	var axis := car.instance.facing_now()
 	if not car.last_axis.is_zero_approx() and axis.dot(car.last_axis) < 0.0:
 		car.fault("turned on the spot at %s" % map.world_to_tile(place))
-	if absf(axis.dot(car.axis)) < 0.5:
-		car.turned_a_corner = true
+	if absf(axis.dot(car.axis)) < 0.5 and not car.instance.is_leaving:
+		car.turned_a_corner_live = true
 	for along: float in [-HALF_LENGTH, 0.0, HALF_LENGTH]:
 		var under := map.world_to_tile(place + axis * along)
 		if not map.is_driveable_at(true, under):
