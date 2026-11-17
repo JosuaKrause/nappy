@@ -216,8 +216,8 @@ static func calm_areas(map: CityMap) -> Array[CalmArea]:
 	return found
 
 ## The tile rect of a calm block's own calm ground — the open rect for open calm, falling back to
-## the whole lot. Also what `EventScheduler._calm_rect` protects from spoiling; the two ask the
-## same question and this is the one place it is answered.
+## the whole lot. The spoilage probe `tests/probes/m97_spoilage.gd` asks the same question of a
+## calm block when it measures spoiling, and this is the one place it is answered.
 static func calm_area_rect(map: CityMap, block: Vector2i) -> Rect2i:
 	var layout := map.layout_of(block)
 	if layout and layout.has_open_ground():

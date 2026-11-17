@@ -1364,12 +1364,6 @@ static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 
 # ---------------------------------------------------------------- park rules ---
 
-## The rect of a calm block's actual calm ground, falling back to the whole lot. The same question
-## `ClosurePlanner.CalmArea.rect` answers, and the same function now — a courtyard's calm is its
-## court alone, and there is exactly one place that says so.
-static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
-	return ClosurePlanner.calm_area_rect(map, block)
-
 ## Today's closures plus every blocker's own obstruction circle, each where its body stands
 ## (`EventPlan.body_at()`: a roadblock's band on the kerb beside its lane), as the `blocked` set
 ## `ReachabilityGrid.flood()` takes. Public because `WalkSiting` builds the same set and then adds

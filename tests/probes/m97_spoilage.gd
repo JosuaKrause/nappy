@@ -81,7 +81,7 @@ func _reproduce_zero_density_visits() -> void:
 
 			for block: Vector2i in candidates:
 				trials += 1
-				var lot_tiles := EventScheduler._calm_rect(map, block)
+				var lot_tiles := ClosurePlanner.calm_area_rect(map, block)
 				var lot_world := map.tile_rect_to_world(lot_tiles)
 				var open_tiles: Array[Vector2i] = []
 				for tile in map.rect_tiles(lot_tiles):
