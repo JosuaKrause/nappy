@@ -3,8 +3,9 @@
 **The ask.** Offered keeping three "slightly wrong" answers found while `WhereSheIs` was built, or
 fixing each in a pull request of its own, the player answered: "whatever is the *correct*
 implementation. if that is b then let's do that" (inbox #1278 in olive-ferret). **Read as** (the
-orchestrator's, open to the player's correction): the three found in building where she is as one
-object are covered by the same words. This record is the first of the three.
+queue item's, in `event-interface.md` section 7 point 6, open to the player's correction): each
+queued answer is made correct, in a pull request of its own. This record is the first of the three,
+the queued bullet that names the car.
 
 ## What was built
 
@@ -24,21 +25,24 @@ object are covered by the same words. This record is the first of the three.
 
 ## What changes in play and in the run log
 
-In play: a patrol car or fire engine that appears with her standing where its body would stand no
-longer has a solid body around her for its first frames; the body comes down the first frame she is
-clear of it. Nothing about a car made with her elsewhere changes. In the run log nothing changes:
-no entry is written from this path, so no line differs. No picture was taken: the body is a
-collision shape with no drawing of its own, so no car appears differently.
+The answer was wrong in structure: the comment in `EventInstance._ready()` promised that a car holds
+its body back round her, and the handle it was given could not deliver it. **Nothing she can see is
+expected to change**, since no path in play makes a car with her inside its body: streaming makes a
+plan live at `Tuning.EVENT_STREAM_RADIUS` (900px), the fire engine is made just out of sight once its
+badge time is over, the patrol the director sends is sited a lead ahead of her, and at dawn and in
+the building world no word has been told yet, so the handle answers nowhere as before. The run log
+does not change: no entry is written from this path. No picture was taken: the body is a collision
+shape with no drawing of its own.
 
 ## Why the car alone, and not every event
 
-The other rows keep the timing their own fields had: an event knows nothing of her until the next
-word. Nothing else reads her in its first frame in a way that is visibly wrong, so the player's
-words ("every slightly wrong answer is made correct") are met by the one that is. Handing every
-event the word told so far was weighed and not taken: it changes what every excitement source and
-behaviour reads before its first step, for no answer found wrong.
+The queued answer names the car. The other rows keep the timing their own fields had: an event knows
+nothing of her until the next word. Handing every event the word told so far was weighed and not
+taken in this pull request: it changes what every excitement source and behaviour reads before its
+first step, which the queue does not name.
 
 ## Measured
 
-`tests/probes/olive_badger_route_mix.gd` is unchanged by it (the director's handouts do not read
-where she is in a car's first frame).
+`tests/probes/olive_badger_route_mix.gd` was run at this head only (mismatch mean 22.1%, worst day
+41%) and not at main; the director's handouts it measures read nothing this change touches, so it
+is not compared.
