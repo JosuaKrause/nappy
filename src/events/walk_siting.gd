@@ -74,6 +74,10 @@ var _in_a_look := false
 ## The cells ahead of her in walking order, asked of the tree on the first branch ask of a look.
 var _cells: Array[Vector2i] = []
 var _cells_asked := false
+## A row -> its ground by cell of the route tree (`cell -> its tiles, in row-then-column order`), worked
+## out once a row, so a look walks the cells of her branch and asks only the tiles of the row's
+## ground in each.
+var _by_cell := {}
 ## The rows refused in this look while unplaced, cleared when a look begins or ends and whenever a
 ## plan is laid.
 var _nowhere := {}
@@ -102,6 +106,7 @@ func _init(for_day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 ## Does at a day's start the scan the first ask for `def` would do mid-walk (`SitedGround.prepare()`).
 func prepare(def: EventDef) -> void:
 	_ground.prepare(def)
+	_ground_by_cell(def)
 
 ## **Hands the siting what draws the ground round a site**: `draws_round` is `func(at: Vector2,
 ## reach: float) -> bool`, which draws every undrawn unit of the day's locations any part of which
@@ -253,10 +258,12 @@ func _on_her_branch(def: EventDef) -> Dictionary:
 	if _cells.is_empty():
 		_waited(_OFF_THE_ROUTES)
 		return offers
+	var ground_by_cell := _ground_by_cell(def)
 	for cell in _cells:
-		for dy in ReachabilityGrid.CELL:
-			for dx in ReachabilityGrid.CELL:
-				var tile: Vector2i = cell * ReachabilityGrid.CELL + Vector2i(dx, dy)
+		if ground_by_cell.has(cell):
+			for tile: Vector2i in (ground_by_cell[cell] as Array[Vector2i]):
+				if not _ground.takes(def, tile):
+					continue
 				if _map.tile_to_world(tile).distance_to(_at) < NOT_YET_REAL:
 					continue
 				var location := _locations.holding(tile, _map.tile_at(tile))
@@ -264,7 +271,7 @@ func _on_her_branch(def: EventDef) -> Dictionary:
 					continue
 				if not offers.has(location) and offers.size() >= LOCATIONS_A_LOOK:
 					continue
-				if _tree.branches_on(tile).is_empty() or not _ground.takes(def, tile):
+				if _tree.branches_on(tile).is_empty():
 					continue
 				_group(offers, location, tile)
 		if offers.size() >= LOCATIONS_A_LOOK:
@@ -272,6 +279,25 @@ func _on_her_branch(def: EventDef) -> Dictionary:
 	if offers.is_empty():
 		_waited(_NO_GROUND_ON_THE_BRANCH)
 	return offers
+
+## **`def`'s ground by the cell of the route tree each tile lies in**, each cell's tiles in row-then-
+## column order, worked out once a row: a tree has far more tiles than a row's ground, so a look asks
+## only the tiles a row may stand on, cell by cell, instead of every tile of every cell.
+func _ground_by_cell(def: EventDef) -> Dictionary:
+	if not _by_cell.has(def):
+		var found := {}
+		for tile: Vector2i in _ground.tiles_of(def):
+			var cell := Vector2i(floori(tile.x / float(ReachabilityGrid.CELL)),
+					floori(tile.y / float(ReachabilityGrid.CELL)))
+			if not found.has(cell):
+				found[cell] = [] as Array[Vector2i]
+			(found[cell] as Array[Vector2i]).append(tile)
+		for cell: Vector2i in found:
+			(found[cell] as Array[Vector2i]).sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+					return a.y < b.y or (a.y == b.y and a.x < b.x))
+		_by_cell[def] = found
+	var kept: Dictionary = _by_cell[def]
+	return kept
 
 ## The cells of the tree ahead of her, nearest to walk to first.
 func _cells_in_walking_order() -> Array[Vector2i]:
