@@ -11,8 +11,9 @@ something the player's decisions say it should not, is filed at once as an entry
 fixed to the player's decision for the thing, found in the records and playtests that built it,
 never left only as a line in a record, a report or a pull request. **pr-review**'s question "Is
 every defect already found in this change fixed inside it?" points to it for a defect a pull
-request finds outside its own work. minty-quail's frozen-list paragraph is reconciled: such a defect
-does not wait behind that entry; anything else found still files after it.
+request finds outside its own work. It sits with minty-quail's frozen-list paragraph as written: the
+entry filed for such a defect waits after the refactor like anything else found (inbox #1210 in
+gentle-owl), and is fixed then.
 
 **Proposed, not asked for, open to the player:**
 
