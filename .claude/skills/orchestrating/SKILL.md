@@ -314,6 +314,14 @@ before spawning:
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
+- **A defect a refactor step finds is filed to be fixed, never only noted** (silky-lemur #1450). When a
+  step of a refactor (minty-quail, polite-tapir or any other) finds that the code does something the
+  player's decisions say it should not, the defect is filed at once as an entry of its own, never left
+  only as a line in a record, a report or a pull request, and is built like any other entry. It is
+  fixed to the player's decision for the thing, found in the records and playtests that built it
+  (`tools/decisions.sh --in all <noun>`), not to whichever of the code or the doc reads better. Its
+  band is `now`; the player moves one to `bug` when they want it ahead of everything, and nothing
+  is filed `bug` on a reading (**playtest-feedback**, mossy-ferret #710).
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
@@ -406,6 +414,14 @@ coming. **Run `tools/agent-status.sh` before touching anything**, then follow
 
 The rules in this file that are the filer's proposal or reading, not the player's words, each open
 to the player's correction:
+
+- **What happens where the records and playtests say nothing about a thing a refactor found**
+  ("What the orchestrator keeps", the bullet on a defect a refactor step finds): that the question
+  goes to the board before either the code or the doc is changed to match the other. The player's
+  words are that such bugs are fixed (silky-lemur #1450).
+- **The band of an entry filed for such a defect**, `now`, with `bug` only where the player moves
+  it there: the orchestrator's pick on the board question `refactor-bug-band`, open to the
+  player's answer there.
 
 - **Every row of the model table that carries no citation**, the merging row among them, to be
   revised once the agent counter holds enough entries (inbox #900 in freckled-moose). The player

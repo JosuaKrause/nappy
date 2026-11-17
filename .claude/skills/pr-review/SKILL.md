@@ -85,7 +85,9 @@ Each "no" is a finding:
   defect that was already found: a finding from a playtest, a review or the player about work
   whose PR is still open is built into that PR, never queued against it (`tools/decisions.sh M90`,
   the controls do what the hand does, the record of PLAYTEST-35's findings built into the open
-  branch).
+  branch). A defect the pull request finds outside its own work, in code it only passes through,
+  goes where **orchestrating** says ("What the orchestrator keeps", the bullet on a defect a refactor
+  step finds): filed as an entry of its own, and named in the review so the orchestrator files it.
 
 ## Then the code
 
