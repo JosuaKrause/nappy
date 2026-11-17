@@ -13,7 +13,9 @@ first change to a file, read whole every skill that governs it and is not alread
 whichever tool makes the change**: the edit tools, `sed`, a script or a patch alike. `CLAUDE.md`'s
 path table names the skills. A hook names them too and refuses the first edit-tool change of an
 area until they are read, but it sees no shell command, so a change made through the shell meets no
-refusal and the reading is yours to do first.
+refusal and the reading is yours to do first. **Nor can it see whether you read what it named**: the
+same edit made again passes, so a refusal is answered by reading every skill it names, whole, before
+the edit is made again, and never by a helper that retries a refused edit on its own.
 This file carries what a builder needs of **verify** and **committing**, so neither is read for an
 ordinary task, and a tool the brief names explains itself: run `tools/<name> --help`.
 
