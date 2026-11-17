@@ -913,8 +913,8 @@ each question as it was shown).
    #1278 in olive-ferret). **Read as:** every answer below is made correct. The timing is the
    read-back's, which is what the player answered: each is a pull request of its own after the step
    that gives it a name, not a change inside that step, saying what it changes in play and in the
-   run log, with its pictures. Playtests decide what then needs fixing. The last three answers below were
-   found in building where she is as one
+   run log, with its pictures. Playtests decide what then needs fixing. The answers below from the officer's on
+   were found in building where she is as one
    object; *read as* (the orchestrator's, open to the player's correction) covered by the same
    words.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
@@ -926,9 +926,6 @@ each question as it was shown).
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
-   - A car made after the tick's word knows nothing of her in its first frame, so it puts its
-     body down at once even where she stands, though the comment at that place promises it holds
-     the body back round her.
    - An officer let out of a car is told her position and none of the other five facts (her
      pram's place, the view, whether she runs, whether the baby is awake, whether a door holds
      her) until the next tick's word.

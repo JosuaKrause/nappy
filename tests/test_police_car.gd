@@ -15,6 +15,7 @@ const WALK := 2.0
 
 func run(t: TestRunner) -> void:
 	_test_her_walk_into_a_standing_car_stops_at_its_side(t)
+	_test_a_car_made_where_she_stands_holds_its_body_back_from_its_first_frame(t)
 	_test_the_body_is_its_drawn_ground_contact_along_its_heading(t)
 	_test_a_driving_car_beside_her_is_solid_and_not_lethal(t)
 	_test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t)
@@ -120,6 +121,26 @@ func _test_her_walk_into_a_standing_car_stops_at_its_side(t: TestRunner) -> void
 				% [stopped_at, touch])
 		player.free()
 	car.free()
+
+## **A car made after the tick's word is handed where she is before its first frame**
+## (`WhereSheIs.heard_so_far()`): made where she stands it holds its body back round her, and puts
+## it down the first frame she is not there; made with her elsewhere its body is down at once.
+func _test_a_car_made_where_she_stands_holds_its_body_back_from_its_first_frame(t: TestRunner) -> void:
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
+	var told := WhereSheIs.nowhere()
+	told.tell(Vector2(6.0, 0.0), Vector2(20.0, 0.0))
+	var on_her := _car(t, _patrol(), route, null, told)
+	t.check(not on_her.is_solid(),
+			"a car made where she stands holds its body back from its first frame")
+	told.tell(Vector2(0.0, 300.0), Vector2.INF)
+	on_her.step(STEP)
+	t.check(on_her.is_solid(), "and puts it down once she is not where it stands")
+	on_her.free()
+	var far := WhereSheIs.nowhere()
+	far.tell(Vector2(0.0, 300.0), Vector2.INF)
+	var clear := _car(t, _patrol(), route, null, far)
+	t.check(clear.is_solid(), "a car made with her elsewhere puts its body down at once")
+	clear.free()
 
 ## The collision shape of the solid body the car carries, found by type among its children.
 func _body_shape(car: EventInstance) -> CollisionShape2D:

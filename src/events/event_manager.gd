@@ -585,7 +585,8 @@ func _step_them(delta: float) -> void:
 			instance.step(delta)
 
 ## **Tells where she is, once a tick** (`WhereSheIs.tell()`, `EventWorld.where_she_is()`), which
-## every instance was handed when it was made and hears from the word after.
+## every instance was handed when it was made and hears from the word after (a car hears the
+## word told so far, `WhereSheIs.heard_so_far()`).
 ##
 ## Here rather than in the instance for the same reason `Crowd` finds who stands ahead of a car
 ## (`LaneMover.Lane.see_a_pedestrian_at()`) rather than letting each car look: the player is found
