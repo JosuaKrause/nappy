@@ -16,8 +16,6 @@ func run(t: TestRunner) -> void:
 	_test_where_its_body_stands(t)
 	_test_a_plan_stands_where_a_candidate_was_judged(t)
 	_test_a_plan_turns_to_face(t)
-	_test_a_plan_stands_where_a_candidate_was_judged(t)
-	_test_a_plan_turns_to_face(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventPlan:
@@ -167,7 +165,7 @@ func _test_a_plan_stands_where_a_candidate_was_judged(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("poster_crew")
 	var judged := EventPlan.new(def, Vector2(640, 96),
 			PackedVector2Array([Vector2(640, 96), Vector2(704, 96)]))
-	judged.facing = Vector2.UP
+	judged.face(Vector2.UP)
 	judged.give_role(GameEnums.BlockerRole.WALL)
 	var owed := EventPlan.new(def, Vector2.INF)
 	t.check(not owed.is_placed(), "the plan her walk lays starts with no place")
