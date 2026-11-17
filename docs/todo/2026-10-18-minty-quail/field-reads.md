@@ -121,9 +121,9 @@ Left, each its own design question:
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
   director and the rigs. So do `MoveProposal`, `GroundShape`, `LaneMover`, `CrowdAgent.excitement`,
-  `Prop.shape`, and `Baby`'s and `DayController`'s fields. The map's wait for a decision on which
-  object holds what is blocked on the map, which no item makes yet; the rest go with their own
-  classes' passes.
+  `Prop.shape`, and `Baby`'s and `DayController`'s fields. *Read as* (the orchestrator's reading):
+  the map's are converted with whatever pass gives the blocked tiles an owner of their own, and the
+  rest with their own classes' passes.
 - **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by
   its own file and `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's
   name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no

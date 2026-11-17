@@ -11,7 +11,7 @@ well as the suites), and neither sees access through a variable holding the name
 `tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print two breaches still open: `tests/test_event_manager_fire.gd` and
 `tests/test_fire_truck_body.gd` each call the private `EventSpawner._where_the_summoned_row_stops()`; and the
 shared helper `tests/game_dawn.gd`, whose `GameDawn.of()` writes its own new dawn's private fields
-(`_spec`, `_rng`, `_map`), which an `_init` taking them would close. A test or helper that makes them
+(`_spec`, `_rng`, `_map`); *proposed, not asked for:* an `_init` taking them would close it. A test or helper that makes them
 print anything else is a breach.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
