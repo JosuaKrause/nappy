@@ -118,7 +118,7 @@ home street's included, and the probe shows every route keeping one. The player 
 chat to option C of free-line-density and to pick (c) of line-reach-close (inbox #1461). **Read
 as**: the draw gains a rule that follows her line from a junction box onto the sidewalk she walks,
 for every row that lands near her route, and a street that draws after its neighbours keeps one
-sidewalk open, given what they drew (with inbox #1465), which the player's correction on that note
+sidewalk open, given what they drew (with inbox #1465 in spry-plover), which the player's correction on that note
 narrows to the streets a rule already keeps walkable, the streets of her routes.
 
 ## What is left, in order
