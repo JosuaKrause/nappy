@@ -4,7 +4,7 @@ extends RefCounted
 ## (`MarbleDraw`). *(The player: "if the draw takes up the whole street you're done. if it takes an
 ## entire segment you need to do at least two more draws", and "if you draw a marble that is
 ## smaller than a segment you need to draw another one (with a filter to only include also small
-## marbles)"; inbox #1466.)*
+## marbles)"; inbox #1466 in silky-lemur.)*
 ##
 ## A street counts its sections that are whole (the section and both its sidewalk locations open)
 ## and the open halves of the others (one sidewalk location each). Of the player's three sizes, the

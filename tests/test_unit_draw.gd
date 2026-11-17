@@ -217,7 +217,7 @@ func _test_a_unit_draws_once(t: TestRunner) -> void:
 			"a unit asked for twice draws once (%d calls)" % drawing.calls.size())
 	t.check(unit.drawn() == first, "and holds what it drew")
 
-## **A unit of mixed views draws from the bag of the most permissive one** (inbox #1466): an open
+## **A unit of mixed views draws from the bag of the most permissive one** (inbox #1466 in silky-lemur): an open
 ## lot of two cells, the first off the route and the second on it, is handed a bag of the
 ## on-the-route fill, each fill one marble of its own, so the marble its draw takes names the bag.
 func _test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t: TestRunner) -> void:

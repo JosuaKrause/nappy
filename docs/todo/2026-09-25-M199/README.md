@@ -12,7 +12,7 @@ walk round every catalogue roadblock on that sidewalk. The closing kind this ent
 all 192px. The region wall's roadblocks are not affected: they are three narrower bodies across
 the street and close it.
 
-**M199 builds the closing roadblock, beside downy-llama's open one** (the roadblock covers its own sidewalk and the road, built there with a band that leaves the far sidewalk whole): "there are two kinds of roadblocks. one that is open and one that is closing the street" (inbox #1491).
+**M199 builds the closing roadblock, beside downy-llama's open one** (the roadblock covers its own sidewalk and the road, built there with a band that leaves the far sidewalk whole): "there are two kinds of roadblocks. one that is open and one that is closing the street" (inbox #1491 in silky-lemur).
 
 **Band `now`.** [tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #930: "yes", to moving it to now.
 

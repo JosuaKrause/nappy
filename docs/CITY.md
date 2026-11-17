@@ -1078,7 +1078,7 @@ sidewalks she walks, whether or not a route crosses that box: the free-line prob
 street as ground from the doorstep the same way. A row on a street beside the home that cuts the
 mouth of the alley or park her route leaves the home street by, or the home street's way to its
 boxes, is refused. *Read as* (the player's "sure" to a rule that follows her line the way the probe
-does, inbox #1461): the home street is part of her line. This widens the ground the line rule
+does, inbox #1461 in silky-lemur): the home street is part of her line. This widens the ground the line rule
 floods and nothing else: the doorstep's exemption from the route-redundancy guarantee, which is about
 counting distinct routes, is as it was.
 
@@ -1094,7 +1094,7 @@ for.** The crossing that breaks most routes is covered by two ordinary rows betw
 one corner and a yeller on the other — and a rule that only asked *does this one row take the whole
 box* would accept both of them.
 
-**One case is left open, as the player's condition on it has it** (inbox #1461): two rows in units at
+**One case is left open, as the player's condition on it has it** (inbox #1461 in silky-lemur): two rows in units at
 the two ends of one walked sidewalk, neither standing on that street, each reaching far into it
 from opposite sides, are never judged together, since neither unit's draw sees the other's.
 `tests/probes/m129_zero_cost_line.gd` measures whether it ever happens.
@@ -1195,7 +1195,7 @@ another pursuer on the other close the street with every line rule satisfied, so
 every body, not only the roadblock.
 
 **A roadblock is asked too**: the catalogue's `roadblock` is the open kind ("there are two kinds of
-roadblocks. one that is open and one that is closing the street", inbox #1491; the closing kind is
+roadblocks. one that is open and one that is closing the street", inbox #1491 in silky-lemur; the closing kind is
 M199, the roadblock closes its whole street, in the queue). It spans the street by design, and its
 band takes the sidewalk on its own side of the road and the road, standing on the kerb between
 them, and leaves the far sidewalk whole, so it is refused where a body already closes that far

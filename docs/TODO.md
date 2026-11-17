@@ -58,7 +58,7 @@ code and never the review, and it cannot decide to write either itself, not even
 judges too complex to hand off, so the design carries enough context for both the builder and the
 reviewer; another model writes the code, the choice of model being the orchestrator's (the lowest
 model that can do it from the design, as the model table says for any build), and Opus reviews it
-(inbox #1501, inbox #1504); the model table in **orchestrating** says so for the session that picks
+(inbox #1501 in silky-lemur, inbox #1504 in silky-lemur); the model table in **orchestrating** says so for the session that picks
 a model. The line goes only on an entry the player names, and it marks every item of the entry, so
 the work the player puts under the line is an entry of its own, never items of an entry that holds
 other work (inbox #1387 in mossy-bunny).

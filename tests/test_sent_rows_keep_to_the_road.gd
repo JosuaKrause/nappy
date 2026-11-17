@@ -200,7 +200,7 @@ func run(t: TestRunner) -> void:
 ## view, no sent row gone in it, and none live in a lethal row's field. Not vacuous: there are places
 ## of every kind; each row is sent and seen from streets on both axes; before a dead end a patrol and
 ## a convoy are each watched over three legs and turning a corner while still live (the followed
-## convoy the player settled on, inbox #1460); some car is watched a good while;
+## convoy the player settled on, inbox #1460 in silky-lemur); some car is watched a good while;
 ## and toward a field rows are seen leaving for longer than the departure's backstop.
 func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 	var tally := Tally.new()

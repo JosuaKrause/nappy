@@ -1,4 +1,4 @@
-# downy-sparrow — Fable writes only the design of every piece of Fable work (inbox #1501, #1504) · 2026-11-17 · not from an entry
+# downy-sparrow — Fable writes only the design of every piece of Fable work (inbox #1501, #1504 in silky-lemur) · 2026-11-17 · not from an entry
 
 **What the rule said before.** Fable designed the code of what the player named as Fable's, and
 reviewed what it had designed. On a queue entry carrying `fable-only: true` (every pull request
@@ -14,7 +14,7 @@ on a hand-off (inbox #1436 in tiny-squirrel).
 
 **The player's words**, on two inbox notes.
 
-Inbox #1501, three statements:
+Inbox #1501 in silky-lemur, three statements:
 
 1. "let's change the fable only label to let opus do the review"
 2. "also fable is only allowed to write down the design -- no implementation and no review -- it needs
@@ -22,17 +22,17 @@ Inbox #1501, three statements:
 3. "that means it cannot decide to do those things by itself either" (read as: those things are
    implementing and reviewing).
 
-Inbox #1504, the answer to the board question `fable-outside-the-label`, which asked whether
+Inbox #1504 in silky-lemur, the answer to the board question `fable-outside-the-label`, which asked whether
 statement 2 holds for every design Fable writes or only for work under the `fable-only` label:
 "every fable work item".
 
 **Asked for and overturned.** Asked for X · overturned to Y on 2026-11-17, because Z:
 
-- Asked for (inbox #1501, read by the orchestrator as about the label): on `fable-only` work, Opus
+- Asked for (inbox #1501 in silky-lemur, read by the orchestrator as about the label): on `fable-only` work, Opus
   reviews and Fable only writes the design; a Fable design outside the label stayed reviewed by
   Fable, the rule of inbox #1299 in grassy-trout. · Overturned to: the rule holds for every piece of
   work Fable takes part in, under the label or not, and Opus reviews every Fable design, because the
-  player answered the board question "every fable work item" (inbox #1504). The older rule that
+  player answered the board question "every fable work item" (inbox #1504 in silky-lemur). The older rule that
   Fable reviews what Fable designed (inbox #1299 in grassy-trout statement 9, kept in inbox #1303 in
   grassy-trout) is overturned by that answer and nothing is left of it.
 

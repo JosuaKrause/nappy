@@ -786,7 +786,7 @@ static func _dog_walker() -> EventDef:
 	def.speed = 32.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 30
-	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "the same for
+	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460 in silky-lemur, "the same for
 	# the dog walker"): the director creates it at once just out of sight down her own sidewalk,
 	# walking toward her, as the loose dog comes, so the dog-walker decision is one she always meets.
 	def.send_ahead(SentAhead.at_once())
@@ -1798,7 +1798,7 @@ static func _police_patrol() -> EventDef:
 	def.speed = 74.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 40
-	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "just spawn in
+	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460 in silky-lemur, "just spawn in
 	# the car just ahead of the player? then you guarantee an encounter"): created at once down the
 	# carriageway lane that drives toward her, the return leg's patrols among them.
 	def.send_ahead(SentAhead.at_once())
@@ -2524,7 +2524,7 @@ static func _military_convoy() -> EventDef:
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
-	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460, "the same for
+	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460 in silky-lemur, "the same for
 	# [...] the convoy"; "just spawn in the car just ahead of the player"): warned of first, its badge
 	# alone for a second, then created in the lane beside her just out of sight up the road ahead of
 	# her, as day 13's column is. The escape's trucks are the planned ones.

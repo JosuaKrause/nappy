@@ -25,7 +25,7 @@ then" (inbox #1387 in mossy-bunny). **Read as:** this entry carries `fable-only:
 request that builds one of its items carries the `fable-only` label, which marks the work as Fable's to
 design: as in all Fable work, Fable writes only the design, with enough context to build and to
 review it, another model writes the code and Opus reviews it, and Fable cannot decide to do either
-itself (`docs/TODO.md`, inbox #1501, inbox #1504). minty-quail carries no
+itself (`docs/TODO.md`, inbox #1501 in silky-lemur, inbox #1504 in silky-lemur). minty-quail carries no
 line. The other review of that day, of the rule files (inbox #1267 in olive-ferret), gave the entries
 amber-ibis and gentle-finch, which carry the line too.
 

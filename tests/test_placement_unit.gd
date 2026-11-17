@@ -92,7 +92,7 @@ static func _lot(views: Array[int]) -> PlacementUnit:
 			Rect2(Vector2(lot.position) * Tuning.TILE_SIZE, Vector2(lot.size) * Tuning.TILE_SIZE),
 			locations, 3)
 
-## **A unit's view is the most permissive of its locations'** (inbox #1466): on the route before
+## **A unit's view is the most permissive of its locations'** (inbox #1466 in silky-lemur): on the route before
 ## route-adjacent before off the route, wherever in the unit the location lies, and off the route
 ## for a unit with none.
 func _test_its_view_is_the_most_permissive_of_its_locations(t: TestRunner) -> void:

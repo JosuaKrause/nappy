@@ -371,7 +371,7 @@ func _test_as_warned_first_carries_solid_parts_too(t: TestRunner) -> void:
 			("as_warned_first() copies %d solid part(s), the row's own %d"
 			% [warned.solid_parts.size(), crash.solid_parts.size()]))
 
-## **The dog walker, the patrol and the convoy are sent ahead of her** (inbox #1460), and drawn by no
+## **The dog walker, the patrol and the convoy are sent ahead of her** (inbox #1460 in silky-lemur), and drawn by no
 ## unit on any day. The copy the director sends (`EventDef.as_sent_ahead()`) validates: the dog
 ## walker comes down her line created at once, with no badge, its field short of where it is
 ## created; the patrol comes down the road created at once; the convoy is warned of first in its

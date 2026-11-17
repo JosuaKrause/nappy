@@ -72,7 +72,7 @@ func locations() -> Array[Location]:
 ## locations' views, on the route before route-adjacent before off the route, so a park a route
 ## cuts through draws from the route's bag; off the route for a unit with no location. *(The
 ## player, of a unit whose locations have different views: "the more permissive (in terms of
-## traversability) view gets priority", "whichever is easier to implement"; inbox #1466.)* A
+## traversability) view gets priority", "whichever is easier to implement"; inbox #1466 in silky-lemur.)* A
 ## marble is drawn before it has a location, so there is no location's view to pick a bag by.
 ## Worked out once, as the unit is made.
 func view() -> int:

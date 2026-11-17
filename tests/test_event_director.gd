@@ -1,7 +1,8 @@
 extends RefCounted
 ## `EventDirector`'s siting of the rows it sends ahead of her (`EventDef.is_sent_ahead()`; inbox
-## #1460): the dog walker down her own sidewalk toward her, the patrol down the carriageway lane
-## that drives toward her, and the convoy in the lane beside her coming toward her, its first leg
+## #1460 in silky-lemur): the dog walker down her own sidewalk toward her, the patrol down the
+## carriageway lane that drives toward her, and the convoy in the lane beside her coming toward
+## her, its first leg
 ## running past her to the far edge of the next junction box, on a street running north-south and
 ## on one running east-west; a car's first leg sent only where the day's way on says a car may drive
 ## it and go on from its end; a sent row refused, and asked again, where its first leg starts within
@@ -181,7 +182,7 @@ func _test_the_patrol_comes_down_the_lane_that_drives_toward_her(t: TestRunner,
 ## The convoy is warned of first in the lane beside her: its place is up the road out of sight,
 ## level with the lane its way drives in; its first leg runs past her to the far edge of the next
 ## junction box; and over the director's streams it always comes toward her, never from behind
-## ("just ahead of the player", inbox #1460).
+## ("just ahead of the player", inbox #1460 in silky-lemur).
 func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 		vertical: bool) -> void:
 	var map := _street(vertical)
