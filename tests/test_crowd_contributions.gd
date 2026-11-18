@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 func _test_the_contribution_matches_the_unfiltered_kernel(t: TestRunner, crowd: Crowd, map: CityMap,
 		street: Vector2i) -> void:
 	# The crowd's set the bodies are heard in, which their jolts widen as a crowd's own bodies do.
-	var heard_in := crowd.sources
+	var heard_in := crowd.sources()
 	var mismatches := 0
 	var positive := 0
 	var zero := 0
@@ -114,7 +114,7 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t: TestRunner, crowd: 
 func _test_a_wide_jolt_widens_what_the_sweep_asks(t: TestRunner, crowd: Crowd) -> void:
 	var body: CrowdAgent = crowd.agents()[0]
 	body.mood().startle(30.0, 1.0, 45.0, 2000.0)
-	t.check(crowd.sources.silent_beyond() >= 2000.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX),
+	t.check(crowd.sources().silent_beyond() >= 2000.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX),
 			"a jolt radius a body is startled to still widens what the sweep asks")
 
 func _rng() -> RandomNumberGenerator:
@@ -139,7 +139,7 @@ func _test_the_sweep_matches_the_unfiltered_loop(t: TestRunner, crowd: Crowd, ma
 			loud = body
 	# The fastest car of the day sounds the loudest horn: a moving body's field reaches furthest ahead.
 	loud.mood().startle(30.0, 1.0, 45.0, 400.0)
-	var sources := crowd.sources
+	var sources := crowd.sources()
 	var heard := 0
 	var skipped := 0
 	var differed := 0

@@ -49,13 +49,13 @@ class CountedEvent extends EventInstance:
 class CountedCrowd extends CrowdAgent:
 	var sampling_runs: int:
 		get:
-			return (excitement as Source).sampling_runs
+			return (_excitement as Source).sampling_runs
 
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim()
-		excitement = Source.new(self)
-		excitement.use_rim(rim)
+		var rim: SourceRim = _excitement.rim()
+		_excitement = Source.new(self)
+		_excitement.use_rim(rim)
 
 	class Source extends ToldCrowdSource:
 		var sampling_runs := 0
@@ -82,9 +82,9 @@ class ReferenceEvent extends EventInstance:
 class ReferenceCrowd extends CrowdAgent:
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim()
-		excitement = Source.new(self)
-		excitement.use_rim(rim)
+		var rim: SourceRim = _excitement.rim()
+		_excitement = Source.new(self)
+		_excitement.use_rim(rim)
 
 	class Source extends ToldCrowdSource:
 		## Overrides ExcitementSource.expected_gross_at.
@@ -122,7 +122,7 @@ func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: Stri
 
 func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: String) -> void:
 	var expected := Reference.crowd_gross(source, at,
-			(source.excitement as ToldCrowdSource).told_sensitivity)
+			(source.mood() as ToldCrowdSource).told_sensitivity)
 	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " repeats exactly")

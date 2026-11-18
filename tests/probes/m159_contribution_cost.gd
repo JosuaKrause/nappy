@@ -34,7 +34,7 @@ func run(t: TestRunner) -> void:
 				var silent := 0
 				for agent: CrowdAgent in RunCity.crowd(city).agents():
 					var contribution := ORACLE.full_contribution(city.map, agent, here, 0.0)
-					if contribution != agent.excitement.contribution_at(here):
+					if contribution != agent.mood().contribution_at(here):
 						mismatch += 1
 					expected += contribution
 					if contribution == 0.0:
@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 				var checksum := 0.0
 				var started := Time.get_ticks_usec()
 				for repeat in BATCH:
-					for pair: Array in RunCity.crowd(city).sources.sources_at(here):
+					for pair: Array in RunCity.crowd(city).sources().sources_at(here):
 						checksum += pair[1]
 				var elapsed := Time.get_ticks_usec() - started
 				rows.append([frame, float(elapsed) / BATCH, expected, silent,

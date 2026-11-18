@@ -200,7 +200,7 @@ func field_runs(view: Rect2) -> Array:
 				var outline := GroundShape.field_outline_at(at, velocities[i], level)
 				_field_boundary(outline, source, grid, colour, [id, i, level], view, cuts, drawn)
 	for agent in _agents():
-		var is_car := agent.kind == CrowdAgent.Kind.CAR
+		var is_car := agent.is_car()
 		var inner := Tuning.CAR_INNER_RADIUS if is_car else Tuning.PEDESTRIAN_INNER_RADIUS
 		var outer := Tuning.CAR_OUTER_RADIUS if is_car else Tuning.PEDESTRIAN_OUTER_RADIUS
 		# Noise, never lethal — a car's strike box is drawn in the bounding-box layer instead, in
@@ -209,12 +209,12 @@ func field_runs(view: Rect2) -> Array:
 		# doc), so it is outlined as a point whatever the agent's own shadow shape says.
 		var velocity := agent.velocity()
 		var levels: Array[float] = [inner, outer]
-		if agent.excitement.is_startled():
-			var jolt := agent.excitement.jolt_radii()
+		if agent.mood().is_startled():
+			var jolt := agent.mood().jolt_radii()
 			levels.append(jolt.x)
 			levels.append(jolt.y)
 		var source := agent.global_position
-		var grid := agent.excitement.wall_grid()
+		var grid := agent.mood().wall_grid()
 		var id := agent.get_instance_id()
 		for level in levels:
 			if not _may_be_seen(view, source, level):
@@ -403,8 +403,8 @@ func _draw_shadows() -> void:
 			continue
 		_draw_shadow_outline(instance.def.shape, instance.global_position, instance.solid_axis())
 	for agent in _agents():
-		var axis := agent.heading() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
-		_draw_shadow_outline(agent.shape, agent.global_position, axis)
+		var axis := agent.heading() if agent.is_car() else Vector2.RIGHT
+		_draw_shadow_outline(agent.shape(), agent.global_position, axis)
 	var props: Array[Node2D] = []
 	if _world is City:
 		props = (_world as City).props()
@@ -450,7 +450,7 @@ func _draw_bodies() -> void:
 func _strike_box_agents() -> Array[CrowdAgent]:
 	var found: Array[CrowdAgent] = []
 	for agent in _agents():
-		if agent.kind == CrowdAgent.Kind.CAR and agent.speed() >= Tuning.CAR_STRIKE_MIN_SPEED:
+		if agent.is_car() and agent.speed() >= Tuning.CAR_STRIKE_MIN_SPEED:
 			found.append(agent)
 	return found
 

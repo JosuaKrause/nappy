@@ -149,7 +149,12 @@ var _atlas_held := false
 var _agents: Array[CrowdAgent] = []
 ## **The crowd as one set of things that charge the baby** (`CrowdSources`), handed to the world
 ## this crowd walks (`WorldContext.use_excitement_sources()`) and to the halo through it.
-var sources := CrowdSources.new(self)
+var _sources := CrowdSources.new(self)
+
+## The crowd as one set of things that charge the baby (`CrowdSources`): the live set, which
+## every agent this crowd makes is heard in, so a caller holding it sees today's crowd.
+func sources() -> CrowdSources:
+	return _sources
 ## `_agents`' cars and its walkers, each in `_agents`' own order, sorted by `_sort_by_kind()` at
 ## the top of `_resolve_the_queues()` — the first thing every frame's traffic pass does — and read by
 ## everything after it in the same frame that is about one kind only: the queue, the turns, the
@@ -402,7 +407,7 @@ func _make_an_agent() -> CrowdAgent:
 	agent.skip_drawing(skip_agent_drawing)
 	agent.use_crowd_parts(_traffic, _pockets, view, timing)
 	agent.use_atlas(atlas)
-	agent.mood().hear_in(sources)
+	agent.mood().hear_in(_sources)
 	return agent
 
 ## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected

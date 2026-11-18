@@ -207,7 +207,7 @@ func _test_the_world_answers_her_from_the_events_then_the_crowd(t: TestRunner) -
 	t.check(order == events_then_crowd,
 			"the world answers her from the events' set and then the crowd's (%s)" % [order])
 	var sets := simulation.excitement_sources()
-	t.check(sets.size() == 2 and sets[0] == events.sources and sets[1] == crowd.sources,
+	t.check(sets.size() == 2 and sets[0] == events.sources and sets[1] == crowd.sources(),
 			"and the simulation answers the same sets in the same order, for the halo")
 	_free(made)
 

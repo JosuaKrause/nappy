@@ -197,7 +197,7 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 		var agents := crowd.agents()
 		for i in agents.size():
 			var agent := agents[i]
-			var source := agent.excitement
+			var source := agent.mood()
 			printed += _print_one(walk, tick, "A%d:%d" % [i, agent.kind], [
 					source.contribution_at(her), source.expected_gross_at(her),
 					source.expected_impact_at(her), source.landed()],

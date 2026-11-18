@@ -881,8 +881,8 @@ run log notes.
 **The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
 built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`
 — the one caller of `GroundShape`'s rectangle kind, since nothing else has a footprint that is not
-already a point or a band; and the crowd's walkers and cars each carry a `shape` of their own
-(`CrowdAgent.shape`) read for their shadow, though neither has a body — a car's lethality stays the
+already a point or a band; and the crowd's walkers and cars each carry a ground shape of their own
+(`CrowdAgent.shape()`) read for their shadow, though neither has a body — a car's lethality stays the
 separate `CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` rectangle `will_be_lethal()` reads, on the
 player's own *"lethal != noise"*.
 

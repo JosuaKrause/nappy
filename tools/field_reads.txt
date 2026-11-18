@@ -120,17 +120,11 @@ src/dev/scene_recipe_runtime.gd is_done
 src/dev/scene_recipe_runtime.gd step
 
 # [Crowd] src/crowd/crowd.gd
-src/day/world_simulation.gd sources
 src/simulation_builder.gd atlas
 src/simulation_builder.gd skip_agent_drawing
 src/simulation_builder.gd skip_motion
 src/simulation_builder.gd timing
 src/simulation_builder.gd view
-src/telemetry/run_session.gd sources
-
-# [CrowdAgent] src/crowd/crowd_agent.gd
-src/dev/debug_layers.gd excitement
-src/run/day_director.gd excitement
 
 # [DangerEdge] src/ui/danger_edge.gd
 src/main.gd atlas
@@ -783,14 +777,6 @@ src/events/event_def.gd pursuit
 # [InteriorScene] src/interior/interior_scene.gd
 src/main.gd atlas
 src/main.gd map
-
-# [LaneMover] src/crowd/lane_mover.gd
-src/dev/debug_layers.gd kind
-src/dev/debug_layers.gd shape
-src/dev/scene_recipe_draft.gd kind
-src/dev/scene_recipe_runtime.gd kind
-src/dev/still_watch.gd kind
-src/run/day_director.gd kind
 
 # [MarbleBag] src/city/marble_bag.gd
 src/events/event_spawner.gd drawn

@@ -47,6 +47,12 @@ var kind := Kind.WALKER:
 		kind = value
 		_install(CarStrategy.new(self) if value == Kind.CAR else WalkerStrategy.new(self))
 		_kind_installed()
+
+## Whether this agent is a car rather than a walker: the one question about its kind that anything
+## outside the crowd asks of it (the day director's tally, the developer's rigs and readouts).
+func is_car() -> bool:
+	return kind == Kind.CAR
+
 ## What only this agent's kind does on the lanes — `WalkerStrategy` or `CarStrategy`, installed by
 ## `kind`. Everything here that differs between a walker and a car asks it. See `LaneStrategy`.
 var _strategy: LaneStrategy
@@ -56,7 +62,12 @@ var _strategy: LaneStrategy
 ## there is no body for either. It is the noise (and the shadow) a car makes, not what it hits:
 ## `will_be_lethal()`'s strike box (the front half of the body, `Tuning.CAR_STRIKE_HALF_LENGTH` and
 ## `CAR_STRIKE_HALF_WIDTH`) is the lethal rectangle, since lethal is not noise (M61).
-var shape: GroundShape
+var _shape: GroundShape
+
+## This agent's own ground shape (`GroundShape`): the live one it took at its setup, not a copy,
+## for the shadow under it and the debug view's outline. Null before a setup.
+func shape() -> GroundShape:
+	return _shape
 
 ## The box this agent lives in, held by reference and moved by `Crowd`. Leaving the box is what
 ## recycles an agent — not leaving the map. See `CrowdField`.
@@ -213,7 +224,7 @@ class Lane:
 		return _of._blocked_in
 
 	func shape() -> GroundShape:
-		return _of.shape
+		return _of._shape
 
 	func map() -> CityMap:
 		return _of._map
@@ -505,12 +516,12 @@ var _nose := 0.0
 var _acts_within := 1
 var _scans_from_its_lane := false
 
-## Takes its kind's ground shape (`shape`), and the reach round its centre its move carries for
+## Takes its kind's ground shape (`shape()`), and the reach round its centre its move carries for
 ## whoever gives way or is given way to (`MoveProposal.radius`): once, at either setup, a rolled
 ## morning's or a pinned actor's.
 func _take_the_shape() -> void:
-	shape = _strategy.ground_shape()
-	_move.use_body_radius(shape.reach())
+	_shape = _strategy.ground_shape()
+	_move.use_body_radius(_shape.reach())
 
 ## Constructs a pinned actor through the same initial lane eligibility as a rolled morning.
 ## The cross coordinate must already be the lane center; authoring never snaps a placement.

@@ -272,11 +272,11 @@ func _one_tick_steps_each_once(t: TestRunner, crowd: Crowd, agents: Array[CrowdA
 	await t.get_tree().physics_frame
 	var clocks: Array[float] = []
 	for agent in agents:
-		clocks.append(agent.excitement.clock())
+		clocks.append(agent.mood().clock())
 	await t.get_tree().physics_frame
 	var tick := crowd.get_physics_process_delta_time()
 	for i in agents.size():
-		if not is_equal_approx(agents[i].excitement.clock(), clocks[i] + tick):
+		if not is_equal_approx(agents[i].mood().clock(), clocks[i] + tick):
 			return false
 	return true
 

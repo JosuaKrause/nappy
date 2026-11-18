@@ -35,7 +35,7 @@ func hold_the_city_parts(crowd: Crowd, posters: PosterWalls, blackout: Blackout)
 	_crowd = crowd
 	_posters = posters
 	_blackout = blackout
-	_sources = [_events.sources, crowd.sources]
+	_sources = [_events.sources, crowd.sources()]
 
 ## The day's events in this world.
 func events() -> EventManager:

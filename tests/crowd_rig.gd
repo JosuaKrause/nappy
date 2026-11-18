@@ -305,9 +305,9 @@ func _test_a_park_is_out_of_earshot_of_the_traffic(t: TestRunner) -> void:
 		# Against what a park gives back rather than against the flat walking rate: calm ground
 		# has a multiplier of its own, so the raw constant is a number that is never applied here.
 		var calm_decay := Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(centre)
-		t.check(RunCity.crowd(_city).sources.total_at(centre) < calm_decay,
+		t.check(RunCity.crowd(_city).sources().total_at(centre) < calm_decay,
 				"the middle of park %s recovers faster than the traffic loads it (%.1f of %.1f)"
-				% [block, RunCity.crowd(_city).sources.total_at(centre), calm_decay])
+				% [block, RunCity.crowd(_city).sources().total_at(centre), calm_decay])
 
 # ------------------------------------------------------------------- the floor ---
 
@@ -479,7 +479,7 @@ func _crossing_the_main_road_costs() -> float:
 			walker.x += Tuning.WALK_SPEED * STEP
 			RunCity.crowd(_city).set_focus(walker)
 			RunCity.crowd(_city).step(STEP)
-			paid += (RunCity.crowd(_city).sources.total_at(walker)
+			paid += (RunCity.crowd(_city).sources().total_at(walker)
 					- Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(walker)) * STEP
 			took += STEP
 		worst = maxf(worst, paid)
@@ -493,7 +493,7 @@ func _mean_excitement(at: Vector2, seconds: float) -> float:
 	var samples := 0
 	for i in int(round(seconds / STEP)):
 		RunCity.crowd(_city).step(STEP)
-		total += RunCity.crowd(_city).sources.total_at(at)
+		total += RunCity.crowd(_city).sources().total_at(at)
 		samples += 1
 	return total / maxi(1, samples)
 

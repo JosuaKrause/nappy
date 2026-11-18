@@ -150,7 +150,7 @@ func _on_world_stood(spec: DaySpec, world: DayWorld, restarted: bool) -> void:
 		_observer = _new_observer()
 	if world.is_in_a_city():
 		_observer.watch(world.map(), world.events(), world.player(), world.baby(),
-				world.city_map(), world.streets(), world.crowd().sources, _section_name(spec))
+				world.city_map(), world.streets(), world.crowd().sources(), _section_name(spec))
 	else:
 		_observer.watch(world.map(), world.events(), world.player(), world.baby(), null, null,
 				null, _section_name(spec))

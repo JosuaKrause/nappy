@@ -311,7 +311,7 @@ func _nearest() -> String:
 				describe = "%s %.0fpx" % [instance.def.id, distance]
 	if _crowd:
 		for agent: CrowdAgent in _crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+			if not agent.is_car():
 				continue
 			var distance: float = agent.global_position.distance_to(_player.global_position)
 			if distance < best:
