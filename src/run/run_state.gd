@@ -13,9 +13,9 @@ extends RefCounted
 ## its method (`run.header().day()`, `run.attempt_spend().scars()`) and ask it through its own, and
 ## nothing forwards to a part.
 ##
-## **The `Sitting` is where the run lives** (`Sitting.run`), since the sitting outlives the
-## scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint); a
-## held restart hands the sitting a fresh one, which the next boot starts (`start_run()`). `main`,
+## **The `Sitting` is where the run lives** (`Sitting.take_the_run()`), since the sitting
+## outlives the scene reloads that carry a run on (the day-14 hand-over, a run carried to its
+## checkpoint); a held restart hands the sitting a fresh one, which the next boot starts (`start_run()`). `main`,
 ## the composition root, takes it off the sitting once a boot and hands it, typed `RunState`, to
 ## `GameSave` and to every reader it builds, so a test hands a reader whichever run it built; the
 ## resistance is handed it by `ResistanceDirector.setup()`, which hands it on to its happenings.

@@ -825,7 +825,7 @@ exists at all — the answer a rig gets if it skips the title (`--no-title`, a s
 `main._on_title_start()` overrides both the moment a player actually presses a button. The side is
 never saved: it lasts until the title asks again. The day-14 hand-over to the escape and a run
 carried on to its checkpoint reload the scene and open no title, so `main._on_title_start()` keeps
-the title's answer on the `Sitting` (`controls_word`, in the words `--controls` takes, written by
+the title's answer on the `Sitting` (`keep_controls_word()`, read back by `controls_word()`, in the words `--controls` takes, written by
 `ControlsMode.word_for()`), and those boots' `_add_touch_controls()` take it instead of the
 configured word. The command-line door stays behind the debug build; the query door behind
 `RunConfig.live_debug`, so a release page's own `?debug=1&controls=` reaches it too
@@ -944,7 +944,7 @@ save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a s
 beside it with a default for absence, or under a key of its own. Readers take the part that owns a
 fact through the run's method and ask the part through its own (`run.header().day()`,
 `run.attempt_spend().scars()`), since every part's fields are private; code written against a part
-takes it as an argument. **The `Sitting` is where the run lives** (`Sitting.run`): the sitting outlives the
+takes it as an argument. **The `Sitting` is where the run lives** (`Sitting.take_the_run()`): the sitting outlives the
 scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and a
 held restart hands it a fresh run (`main._restart_run()`), which the boot after starts
 (`start_run()`). `main`, the composition root, takes it off the sitting once a boot and hands it,
@@ -1014,11 +1014,11 @@ Not an autoload: a plain `Node` (`src/autoload/sitting.gd`, on the model's layer
 sitting keeps across the scene reloads a run makes, the held restart, the day-14 hand-over to the
 escape, a run carried on to its checkpoint and a recipe's lost section played again, since
 `reload_current_scene()` frees every node `main` built. It holds these facts and is one home: the run
-carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
+carried over (`carries_the_run_over()`), the title's answer (`controls_word()`), the instant of the last
 held restart, which the title's restart guard measures a press against (`restart_requested_at_msec()`), the
-desktop frame record's one file (`frame_record_path`), the run (`run`, a `RunState`, which `main`
-takes off it once a boot, `take_the_run()` starting one of the sitting's own on its first boot), the ground's composition recipe, read once
-per process (`ground_recipe`), the baked atlas pages and which of them are held (`atlas`, the one
+desktop frame record's one file (`frame_record_file()`), the run (a `RunState`, which `main`
+takes off it once a boot, `take_the_run()` starting one of the sitting's own on its first boot, and hands a fresh one on a held restart, `use_run()`), the ground's composition recipe, read once
+per process (`ground_recipe()`), the baked atlas pages and which of them are held (`atlas()`, the one
 `AtlasLibrary`, so the pages a boot holds for the process and its loading moments outlive the
 reload), the save symbol a reload carries, which
 `SaveIndicator.outlive_the_scene()` reparents under it, and the `GameSave`, a child `main` makes
@@ -1033,7 +1033,7 @@ screens, which hand it to their buttons and lines; the touch controls; the badge
 symbol);
 nothing below the composition root fetches it. A test hands its boots a node of its own in place
 of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
-boot before parked there, holding the run the test built where the test hands one (`Sitting.run`).
+boot before parked there, holding the run the test built where the test hands one (`Sitting.use_run()`).
 
 ### `SummaryModel`
 Not an autoload: a pure `RefCounted` (`src/run/summary_model.gd`, the domain model) saying what one

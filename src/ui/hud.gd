@@ -361,8 +361,8 @@ func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 ## before the `Baby` it goes looking for even exists — so `_ready()`'s own
 ## `get_first_node_in_group("baby")` comes back empty, and a label that stopped asking would show
 ## `hud.tscn`'s own placeholder text, "awake", for the section's whole life while the pram's own
-## picture (`Stroller._draw_baby_cue()`, reading the same `Baby.state`) drew whatever she actually
-## was.
+## picture (`Stroller._draw_baby_cue()`, reading `Baby.cue()`, which follows the same state) drew
+## whatever she actually was.
 func _refresh_state() -> void:
 	if not _baby:
 		_baby = get_tree().get_first_node_in_group("baby") as Baby

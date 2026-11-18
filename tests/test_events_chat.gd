@@ -173,7 +173,7 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 
 		if not awake:
 			baby.force_sleep()
-		var starting_excitement := baby.excitement
+		var starting_excitement := baby.excitement_level()
 
 		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(stroller.is_detained(), "a capture starts whether she is awake or asleep")
@@ -182,7 +182,7 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 				Callable(), WAIT_SCALE)
 
 		if awake:
-			t.close_to(baby.excitement, starting_excitement + Tuning.CHAT_EXCITEMENT,
+			t.close_to(baby.excitement_level(), starting_excitement + Tuning.CHAT_EXCITEMENT,
 					"an awake conversation adds %.0f points" % Tuning.CHAT_EXCITEMENT, 2.0)
 			# Playtest 38, finding 4: "there is also no real fade from yellow to red (eg when
 			# standing next to the other baby lady". Holding this first is what tells the ramp's own
@@ -194,10 +194,10 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 					"and the mother's own landed() carries the same points, which is what " +
 					"the halo's colour reads", 2.0)
 		else:
-			t.close_to(baby.excitement, starting_excitement,
+			t.close_to(baby.excitement_level(), starting_excitement,
 					"asleep, the same conversation is a pure time loss: the meter does not move",
 					0.5)
-			t.close_to(baby.sleepiness, 100.0, "and sleepiness stays pinned at 100 asleep", 0.01)
+			t.close_to(baby.sleepiness_level(), 100.0, "and sleepiness stays pinned at 100 asleep", 0.01)
 
 		stroller.free()
 		world.free()

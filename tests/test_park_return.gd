@@ -197,7 +197,7 @@ func _check_the_next_morning(t: TestRunner, main: Node2D, label: String) -> void
 			"%s: with the summary gone and the tree running" % label)
 	t.check(Boot.day(main).is_running() and Boot.day(main).phase() == GameEnums.DayPhase.WALKING,
 			"%s: the new day is running and she is walking" % label)
-	t.check(Boot.baby(main).state == GameEnums.BabyState.AWAKE,
+	t.check(Boot.baby(main).is_awake(),
 			"%s: the baby wakes with the day" % label)
 	_check_no_cordon_stands(t, main, label, "the new day")
 	var here: Vector2 = Boot.player(main).global_position
@@ -243,7 +243,7 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t: TestRunner, seed_value:
 			"%s: the gap closes behind her, with her outside, and the day goes on" % label)
 	t.check(Boot.day(main).is_running() and results.is_empty(),
 			"%s: the day is still on, the baby asleep (%s)" % [label, results])
-	t.check(Boot.baby(main).state == GameEnums.BabyState.ASLEEP, "%s: and still asleep" % label)
+	t.check(Boot.baby(main).is_asleep(), "%s: and still asleep" % label)
 	Boot.player(main).global_position = Boot.city(main).map.home_world_position()
 	_frame(main, shows)
 	t.check(results == [GameEnums.DayResult.WON], "%s: home with her asleep wins (%s)"
@@ -295,7 +295,7 @@ func _test_shut_in_with_the_baby_asleep(t: TestRunner, seed_value: int) -> void:
 			and not t.get_tree().paused,
 			"%s: leaving it plays day %d again (day %d)" % [label, day, _run.header().day()])
 	t.check(Boot.day(main).is_running() and Boot.day(main).phase() == GameEnums.DayPhase.WALKING
-			and Boot.baby(main).state == GameEnums.BabyState.AWAKE,
+			and Boot.baby(main).is_awake(),
 			"%s: the retry runs with the baby awake" % label)
 	_check_no_cordon_stands(t, main, label, "the retry's dawn")
 	_finish(t)

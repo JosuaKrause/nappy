@@ -132,7 +132,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		rig.global_position = here
 		rig.velocity = going * Tuning.WALK_SPEED
 		crowd._physics_process(STEP)
-		var was_crying := baby.state == GameEnums.BabyState.CRYING
+		var was_crying := baby.condition() == GameEnums.BabyState.CRYING
 		var row: Array[int] = []
 		if mode == "whole":
 			var began := Time.get_ticks_usec()
@@ -147,9 +147,9 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		# Wherever the step left her: a door's release sets her down somewhere else.
 		here = rig.global_position
 		chain = _chain(chain, city, rig, baby)
-		if baby.last_incoming > 0.0:
+		if baby.last_frame_incoming() > 0.0:
 			reached_ticks += 1
-		if baby.state == GameEnums.BabyState.CRYING:
+		if baby.condition() == GameEnums.BabyState.CRYING:
 			crying_ticks += 1
 		if rig._alert != Stroller.Alert.NONE:
 			alert_ticks += 1
@@ -305,11 +305,11 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 	state.append(rig.global_position.y)
 	state.append(float(rig._alert))
 	state.append(rig._alert_left)
-	state.append(baby.excitement)
-	state.append(baby.sleepiness)
-	state.append(float(baby.state))
-	state.append(baby.last_incoming)
-	state.append(baby.last_decay)
+	state.append(baby.excitement_level())
+	state.append(baby.sleepiness_level())
+	state.append(float(baby.condition()))
+	state.append(baby.last_frame_incoming())
+	state.append(baby.last_frame_decay())
 	state.append(baby.self_landed())
 	state.append(baby.decay_in_window())
 	context.update(state.to_byte_array())

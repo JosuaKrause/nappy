@@ -38,7 +38,7 @@ func run(t: TestRunner) -> void:
 			fresh.header().set_day(DAY)
 			fresh.facts().set_escape_section(DaySpec.Section.BUILDING))
 	# Handed the watch's log: a boot points the sitting's library at the log it writes.
-	var pages := PageLog.new(seat.sitting.atlas)
+	var pages := PageLog.new(seat.sitting.atlas())
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], pages.boot_log())
 	var main := booted.main
 	var interior := Boot.interior(main)

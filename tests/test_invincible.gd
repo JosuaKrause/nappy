@@ -186,20 +186,20 @@ func _test_a_won_day_still_ends_under_invincible(t: TestRunner) -> void:
 	_teardown()
 
 ## PLAYTEST-57: "excitement should never go up" under the flag. `FakeWorld.noise` stands in for a
-## live event well above any walking decay, so a straight read of `Baby.excitement` after several
+## live event well above any walking decay, so a straight read of `Baby.excitement_level()` after several
 ## seconds against it is a read of `_update_excitement()`'s own arithmetic, not of the predicate.
 ## Starts above zero so decay has something to do: the flag freezes what feeds the meter, never
 ## the meter itself, so it may still fall.
 func _test_the_meter_does_not_rise_under_invincible(t: TestRunner) -> void:
 	var rig := _build_meter_rig(t)
-	rig.baby.excitement = 20.0
+	rig.baby.seed_meters(rig.baby.sleepiness_level(), 20.0)
 	rig.world.noise = 50.0
 
 	rig.baby.freeze_excitement()
 	await _let_the_baby_tick(rig, METER_SECONDS)
-	t.check(rig.baby.excitement <= 20.0 + 0.01,
+	t.check(rig.baby.excitement_level() <= 20.0 + 0.01,
 			"excitement never rises under --invincible, even against a live source (got %.2f)"
-			% rig.baby.excitement)
+			% rig.baby.excitement_level())
 	_teardown_meter_rig(rig)
 
 ## The flag off: the same rig, the same source, moves both meters — the day clock and the
@@ -216,7 +216,7 @@ func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t: TestRunner) ->
 	var rig := _build_meter_rig(t)
 	rig.world.noise = 50.0
 	await _let_the_baby_tick(rig, METER_SECONDS)
-	t.check(rig.baby.excitement > 0.01, "and excitement rises too, against the same source")
+	t.check(rig.baby.excitement_level() > 0.01, "and excitement rises too, against the same source")
 	_teardown_meter_rig(rig)
 
 ## The day's own default leaves the ordinary behaviour alone, so the predicate's off branch is

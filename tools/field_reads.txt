@@ -31,17 +31,6 @@ src/main.gd trace_note
 src/main.gd before_capture
 src/main.gd simulation_clock
 
-# [Baby] src/player/baby.gd
-src/dev/debug_readout.gd excitement
-src/dev/debug_readout.gd last_decay
-src/dev/debug_readout.gd last_incoming
-src/dev/debug_readout.gd sleepiness
-src/dev/dev_rig.gd excitement
-src/dev/dev_rig.gd sleepiness
-src/dev/route_rig.gd state
-src/dev/scene_recipe_runtime.gd excitement
-src/dev/scene_recipe_runtime.gd sleepiness
-
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
 src/city/city.gd day
@@ -913,9 +902,6 @@ src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
 
-# [RunSession] src/telemetry/run_session.gd
-src/main.gd trace
-
 # [SaveIndicator] src/ui/save_indicator.gd
 src/main.gd atlas
 
@@ -932,14 +918,6 @@ src/city/city.gd view
 # [SceneryWater] src/city/scenery_water.gd
 src/city/scenery_ground.gd atlas
 
-# [Sitting] src/autoload/sitting.gd
-src/main.gd atlas
-src/main.gd carry_the_run_over
-src/main.gd controls_word
-src/main.gd frame_timing
-src/main.gd ground_recipe
-src/main.gd run
-
 # [StillWatch] src/dev/still_watch.gd
 src/main.gd trace
 
@@ -952,9 +930,6 @@ src/events/checkpoint_controller.gd outright_moves
 src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
 src/main.gd carrying
-
-# [TelemetryLog] src/telemetry/telemetry_log.gd
-src/dev/still_watch.gd path
 
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd atlas

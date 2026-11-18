@@ -812,7 +812,7 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 			"well past the %.1f this rig reads the toll to — otherwise it checks nothing")
 			% [would_leak, TOLL_TOLERANCE])
 
-	var before := baby.excitement
+	var before := baby.excitement_level()
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(hut.is_chatting(), "walking up to the hut starts the hold")
 	# Her tick and the baby's are the engine's, in the tree, after the manager's: every tick the
@@ -826,9 +826,9 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 		guard -= 1
 		await PhysicsTicks.pass_ticks(t, 1)
 	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
-	t.close_to(baby.excitement - before, Tuning.CHAT_EXCITEMENT,
+	t.close_to(baby.excitement_level() - before, Tuning.CHAT_EXCITEMENT,
 			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
-			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], TOLL_TOLERANCE)
+			% [baby.excitement_level() - before, Tuning.CHAT_EXCITEMENT], TOLL_TOLERANCE)
 	t.close_to(landed_in_the_hold, 0.0,
 			"and nothing of it is attributed to the loudspeaker beside the door while it runs (%.1f)"
 			% landed_in_the_hold, 0.01)

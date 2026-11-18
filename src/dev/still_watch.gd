@@ -277,7 +277,7 @@ func _trigger() -> void:
 
 ## Where the picture goes in a game run: a `still/` folder beside the run's other picture kinds
 ## (`auto/`, `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off
-## the boot's run log `run_log` (`current_log().path`) — the one public handle onto where a run
+## the boot's run log `run_log` (`current_log().file_path()`) — the one public handle onto where a run
 ## writes anything, rather than a second copy of `Telemetry`'s own folder-naming. Falls back to
 ## `Telemetry.DIRECTORY` itself when telemetry is off (`--no-telemetry` alongside this flag) — an
 ## edge case the flag was not asked to solve, but one a picture dropped into the working directory
@@ -285,7 +285,7 @@ func _trigger() -> void:
 ## makes it.
 static func telemetry_picture_dir(run_log: Telemetry) -> String:
 	var log := run_log.current_log()
-	return (log.path.get_base_dir() + "/still") if log and log.path != "" \
+	return (log.file_path().get_base_dir() + "/still") if log and log.file_path() != "" \
 			else (Telemetry.DIRECTORY + "/still")
 
 ## The picture's file, in the folder the watch was handed (made here). A fixed filename is enough:

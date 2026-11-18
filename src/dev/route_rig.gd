@@ -733,7 +733,7 @@ func _arrive() -> void:
 		return
 	_advance_target()
 
-## `calm` keeps her pacing rather than standing, until `Baby.state` reaches `ASLEEP` — **standing
+## `calm` keeps her pacing rather than standing, until she is asleep (`Baby.is_asleep()`) — **standing
 ## still is the wrong way to settle her.** `Baby._update_sleepiness()` (`src/player/baby.gd`) only
 ## fills the sleepiness meter while she is walking, scaled by the ground's own
 ## `sleepiness_multiplier()` (`Tuning.SLEEPINESS_GAIN_WALKING`, 0.42/s); standing idle *drains* it
@@ -746,7 +746,7 @@ func _arrive() -> void:
 ## already ticking every frame it is not walking a leg, and a poll costs nothing a signal
 ## connection would not have, without a second lifetime to manage.
 func _check_settled() -> void:
-	if _baby.state == GameEnums.BabyState.ASLEEP:
+	if _baby.is_asleep():
 		_settling = false
 		_settle_anchor = Vector2.INF
 		_release()

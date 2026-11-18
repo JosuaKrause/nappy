@@ -108,7 +108,7 @@ func run_of(main: Node) -> RunState:
 	var sitting := main.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	if not sitting:
 		sitting = get_tree().root.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
-	return sitting.run
+	return sitting.take_the_run()
 ## The picture each public fixture kind stands as on the roof: the texture keys `Building` names.
 const ROOF_TEXTURE_OF_KIND := {
 	"VENT": Building.VENT_HOUSING, "HVAC_A": Building.HVAC_A, "HVAC_B": Building.HVAC_B,

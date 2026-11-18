@@ -118,7 +118,7 @@ Left, each its own design question:
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
-  director and the rigs. So do `MoveProposal`, `GroundShape`, `Prop.shape`, and `Baby`'s fields. *Read as* (the orchestrator's reading):
+  director and the rigs. So do `MoveProposal`, `GroundShape` and `Prop.shape`. *Read as* (the orchestrator's reading):
   the map's are converted with whatever pass gives the blocked tiles an owner of their own, and the
   rest with their own classes' passes.
 - **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by

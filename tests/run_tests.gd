@@ -22,8 +22,8 @@ extends Node
 ## Runs as a scene rather than via `--script` so that the autoloads (`Tuning` and `EventBus`)
 ## actually exist — `--script` replaces the main loop and skips them.
 ##
-## **No suite reads a global run.** The game's run lives on the `Sitting` (`Sitting.run`), which
-## `main` takes it from; each suite makes a `RunState` of its own and hands it to what it tests (a
+## **No suite reads a global run.** The game's run lives on the `Sitting`
+## (`Sitting.take_the_run()`), which `main` takes it from; each suite makes a `RunState` of its own and hands it to what it tests (a
 ## part directly, a city through `RunCity`, a booted `main` through its sitting), so there is no
 ## run to put back between suites and `SharedState` compares every autoload's variables.
 ##

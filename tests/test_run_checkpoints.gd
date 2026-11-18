@@ -379,7 +379,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	if reloads.size() == 1:
 		booted.free_all()
 		var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
-		t.check(parked != null and parked.carry_the_run_over,
+		t.check(parked != null and parked.carries_the_run_over(),
 				"the continue leaves the sitting in its home, carrying the run over")
 		playing = await Boot.boot(t, _scratch_path, config, hand, false, MapCache.source())
 	t.check(reloads.size() == 1, "the continue reloads the scene rather than repainting this one")
@@ -401,7 +401,8 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.went_back_to_a_checkpoint.disconnect(on_back)
 	EventBus.run_begun.disconnect(on_begun)
 	t.get_tree().paused = false
-	t.check(home.get_child_count() == 1 and not (home.get_child(0) as Sitting).carry_the_run_over,
+	t.check(home.get_child_count() == 1
+			and not (home.get_child(0) as Sitting).carries_the_run_over(),
 			"and the next boot took that sitting and spent the carry")
 	playing.free_all()
 	home.free()

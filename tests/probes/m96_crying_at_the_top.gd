@@ -143,7 +143,7 @@ func _new_peaks() -> Dictionary:
 	return peaks
 
 func _track_peaks(peaks: Dictionary) -> void:
-	if _baby.excitement < Tuning.METER_MAX:
+	if _baby.excitement_level() < Tuning.METER_MAX:
 		return
 	for w: float in WINDOWS:
 		peaks[w] = maxf(peaks[w], _baby.overflow_mass(w))
@@ -158,7 +158,7 @@ func _new_cross() -> Dictionary:
 	return cross
 
 func _track_cross(cross: Dictionary, elapsed: float) -> void:
-	if _baby.excitement < Tuning.METER_MAX:
+	if _baby.excitement_level() < Tuning.METER_MAX:
 		return
 	for setting: Array in SETTINGS:
 		if cross[setting] >= 0.0:
@@ -178,7 +178,7 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 	agent.global_position = _stroller.global_position
 	agent.mood().startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
 			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
-	_baby.excitement = at
+	_baby.seed_meters(_baby.sleepiness_level(), at)
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
 	var jolt := Crowd.BUMP_DURATION
@@ -188,7 +188,7 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		jolt -= STEP
-	var result := {"excitement": _baby.excitement, "peak": peaks}
+	var result := {"excitement": _baby.excitement_level(), "peak": peaks}
 	agent.free()
 	_teardown()
 	return result
@@ -197,7 +197,7 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 ## "one bump into one pedestrian" turning into two before the mass has had a chance to drain.
 func _two_bumps_at_the_top(t: TestRunner) -> Dictionary:
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
 	var gap := 0.3
@@ -221,7 +221,7 @@ func _two_bumps_at_the_top(t: TestRunner) -> Dictionary:
 			for _i in gap_steps:
 				_baby._update_excitement(STEP, _stroller.global_position, false)
 				_track_peaks(peaks)
-	var result := {"excitement": _baby.excitement, "peak": peaks}
+	var result := {"excitement": _baby.excitement_level(), "peak": peaks}
 	_teardown()
 	return result
 
@@ -239,7 +239,7 @@ func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
 		instance.step(STEP)
 
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 	var lead := def.outer_radius + 40.0
 	var lateral := 40.0
 	_stroller.global_position = Vector2(-lead, lateral)
@@ -256,7 +256,7 @@ func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
 		_track_peaks(peaks)
 		elapsed += STEP
 		_track_cross(cross, elapsed)
-	var result := {"excitement": _baby.excitement, "peak": peaks, "cross": cross}
+	var result := {"excitement": _baby.excitement_level(), "peak": peaks, "cross": cross}
 	instance.free()
 	_teardown()
 	return result
@@ -274,7 +274,7 @@ func _stand_in_row(t: TestRunner, id: String, seconds: float) -> Dictionary:
 		instance.step(STEP)
 
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 	_stroller.global_position = Vector2.ZERO
 	_stroller.velocity = Vector2.ZERO
 	var peaks := _new_peaks()
@@ -288,7 +288,7 @@ func _stand_in_row(t: TestRunner, id: String, seconds: float) -> Dictionary:
 		_track_peaks(peaks)
 		elapsed += STEP
 		_track_cross(cross, elapsed)
-	var result := {"excitement": _baby.excitement, "peak": peaks, "cross": cross}
+	var result := {"excitement": _baby.excitement_level(), "peak": peaks, "cross": cross}
 	instance.free()
 	_teardown()
 	return result
@@ -300,11 +300,11 @@ func _stand_in_row(t: TestRunner, id: String, seconds: float) -> Dictionary:
 ## adding to the mass once the source is gone.
 func _fall_from_the_top(t: TestRunner) -> float:
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 	_world.noise = 0.0
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var elapsed := 0.0
-	while _baby.excitement >= Baby.EXCITEMENT_NEARLY_CRYING:
+	while _baby.excitement_level() >= Baby.EXCITEMENT_NEARLY_CRYING:
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		elapsed += STEP
 	_teardown()

@@ -131,7 +131,7 @@ class Parked:
 	func _init(t: TestRunner) -> void:
 		t.add_child(home)
 		sitting.name = Sitting.NODE_NAME
-		sitting.run = RunState.new()
+		sitting.use_run(RunState.new())
 		home.add_child(sitting)
 		indicator = SaveIndicator.new(timeline)
 		sitting.add_child(indicator)
@@ -335,7 +335,7 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t: TestRunner) -> void:
 	var run := RunState.new()
 	var sitting := Sitting.new()
 	sitting.name = Sitting.NODE_NAME
-	sitting.run = run
+	sitting.use_run(run)
 	home.add_child(sitting)
 	var parked := GameSave.new(_SCRATCH_PATH)
 	parked.name = GameSave.NODE_NAME

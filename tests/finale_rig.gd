@@ -2291,7 +2291,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t: TestRun
 	t.check(t.get_tree().paused and is_equal_approx(day.seconds_left(), length),
 			"the clock still standing still behind the brief")
 
-	(home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting).atlas.close_loading_window()
+	(home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting).atlas().close_loading_window()
 	t.get_tree().paused = false
 	booted.free_all()
 	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
@@ -2397,12 +2397,13 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t: TestRunner) ->
 	t.get_tree().paused = false
 	t.check(reloads[0] == 1, "the escape's own pause screen reaches the held restart, same as a day's")
 	var sitting := escape.home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting
-	var after_the_pause := sitting.run
+	var after_the_pause := sitting.take_the_run()
 	Boot.summary(main).restart_requested.emit()
 	t.check(reloads[0] == 2,
 			"and so does the section brief's own restart button — the same DaySummary a day uses")
-	t.check(sitting.run != escape.run and sitting.run != after_the_pause
-			and sitting.run.facts().escape_section() == DaySpec.Section.NONE,
+	var after_the_restart := sitting.take_the_run()
+	t.check(after_the_restart != escape.run and after_the_restart != after_the_pause
+			and after_the_restart.facts().escape_section() == DaySpec.Section.NONE,
 			"each restart hands the sitting a fresh run, with no escape section — the run the "
 			+ "next boot starts")
 	_free_the_escape(t, escape)

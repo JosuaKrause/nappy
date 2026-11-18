@@ -9,7 +9,7 @@ extends RefCounted
 ## costs**: it is loaded on the first `acquire()` and dropped on the last `release()`, and nothing
 ## here ever loads a constituent picture.
 ##
-## **One library per sitting, handed to whoever draws.** The `Sitting` holds it (`Sitting.atlas`),
+## **One library per sitting, handed to whoever draws.** The `Sitting` holds it (`Sitting.atlas()`),
 ## so the pages held for the life of the process (`hold_for_the_process()`) and the loading moments
 ## outlive the scene reload a held restart makes, and `main` hands it to everything that acquires a
 ## group or draws a region: the city hands it on to its furniture, the simulation's builder

@@ -256,7 +256,7 @@ func _test_calm_zone_speeds_sleep(t: TestRunner) -> void:
 
 func _test_idle_drains_sleepiness(t: TestRunner) -> void:
 	_build(t)
-	_baby.sleepiness = 50.0
+	_baby.seed_meters(50.0, _baby.excitement_level())
 	_stand()
 	await _simulate(10.0)
 	t.close_to(_baby.sleepiness_level(), 50.0 - Baby.SLEEPINESS_DRAIN_IDLE * 10.0,
@@ -265,7 +265,7 @@ func _test_idle_drains_sleepiness(t: TestRunner) -> void:
 
 func _test_running_blocks_sleep_and_excites(t: TestRunner) -> void:
 	_build(t)
-	_baby.sleepiness = 50.0
+	_baby.seed_meters(50.0, _baby.excitement_level())
 	_sprint()
 	await _simulate(1.0)
 	t.close_to(_baby.sleepiness_level(), 50.0, "running neither fills nor drains sleepiness", 0.1)
@@ -276,8 +276,7 @@ func _test_running_blocks_sleep_and_excites(t: TestRunner) -> void:
 
 func _test_calm_threshold_freezes_sleepiness(t: TestRunner) -> void:
 	_build(t)
-	_baby.sleepiness = 40.0
-	_baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD + 5.0
+	_baby.seed_meters(40.0, Tuning.EXCITEMENT_CALM_THRESHOLD + 5.0)
 	# Noise exactly cancels the walking decay, so excitement holds above the threshold.
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING
 	_walk()
@@ -321,7 +320,7 @@ func _test_only_motion_settles_her(t: TestRunner) -> void:
 			"and an alley better than the main road, which stays the worst ground in the city")
 
 	_build(t)
-	_baby.excitement = 50.0
+	_baby.seed_meters(_baby.sleepiness_level(), 50.0)
 	_stand()
 	await _simulate(5.0)
 	t.close_to(_baby.excitement_level(), 50.0,
@@ -329,7 +328,7 @@ func _test_only_motion_settles_her(t: TestRunner) -> void:
 	_teardown()
 
 	_build(t)
-	_baby.excitement = 50.0
+	_baby.seed_meters(_baby.sleepiness_level(), 50.0)
 	_walk()
 	await _simulate(5.0)
 	t.close_to(_baby.excitement_level(), 50.0 - Tuning.EXCITEMENT_DECAY_WALKING * 5.0,
@@ -367,7 +366,7 @@ func _test_falls_asleep(t: TestRunner) -> void:
 	_bus.return_phase_started.connect(handler)
 	# Half a second of walking away from asleep, expressed as a rate rather than a number,
 	# so re-pitching the fill cannot silently stop this test reaching the threshold.
-	_baby.sleepiness = Tuning.METER_MAX - Tuning.SLEEPINESS_GAIN_WALKING * 0.5
+	_baby.seed_meters(Tuning.METER_MAX - Tuning.SLEEPINESS_GAIN_WALKING * 0.5, _baby.excitement_level())
 	_walk()
 	await _simulate(1.0)
 	_bus.return_phase_started.disconnect(handler)
@@ -389,7 +388,7 @@ func _test_sleeping_baby_is_less_sensitive(t: TestRunner) -> void:
 func _test_wakes_up_with_penalty(t: TestRunner) -> void:
 	_build(t)
 	_baby.force_sleep()
-	_baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - 2.0
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.EXCITEMENT_WAKE_THRESHOLD - 2.0)
 	_world.noise = 40.0
 	_walk()
 	await _simulate(0.5)
@@ -401,7 +400,7 @@ func _test_wakes_up_with_penalty(t: TestRunner) -> void:
 
 func _test_full_excitement_cries(t: TestRunner) -> void:
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX - 1.0
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX - 1.0)
 	_world.noise = 60.0
 	_walk()
 	await _simulate(0.5)
@@ -444,7 +443,7 @@ func _test_one_bump_no_longer_ends_the_day(t: TestRunner) -> void:
 ## reaching 100 the way one short bump's is.
 func _test_a_sustained_source_at_the_top_cries(t: TestRunner) -> void:
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 	# Comfortably net-positive while walking, so the whole window's worth clears the threshold.
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
 	_walk()
@@ -457,7 +456,7 @@ func _test_a_sustained_source_at_the_top_cries(t: TestRunner) -> void:
 ## source too quiet to clear the mass however long it runs, both leave the day still going.
 func _test_the_overflow_mass_needs_both_size_and_time(t: TestRunner) -> void:
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0  # net +10/s, well above the threshold
 	_walk()
 	await _simulate(0.5)  # 0.5s of it is 5 points of mass, under `Baby.EXCITEMENT_OVERFLOW_TO_CRY`
@@ -466,7 +465,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t: TestRunner) -> void:
 	_teardown()
 
 	_build(t)
-	_baby.excitement = Tuning.METER_MAX
+	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # net +2/s: 6 points over the whole window
 	_walk()
 	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
@@ -484,7 +483,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t: TestRunner) -> void:
 func _test_the_overflow_mass_drains_with_the_window(t: TestRunner) -> void:
 	for waited: float in [ONE_FRAME, Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0]:
 		_build(t)
-		_baby.excitement = Tuning.METER_MAX
+		_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 		# Net +6/s while walking: 1.4s of it is about 8.4 points, under the threshold.
 		_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 6.0
 		_walk()
@@ -493,7 +492,7 @@ func _test_the_overflow_mass_drains_with_the_window(t: TestRunner) -> void:
 				"a source whose mass stays under the threshold ends nothing")
 		_world.noise = 0.0
 		await _simulate(waited)
-		_baby.excitement = Tuning.METER_MAX
+		_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
 		_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
 		await _simulate(0.3)  # 3 points of its own: too few alone
 		if waited == ONE_FRAME:
@@ -512,7 +511,7 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 	agent.global_position = _stroller.global_position
 	agent.mood().startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
 			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
-	_baby.excitement = at
+	_baby.seed_meters(_baby.sleepiness_level(), at)
 	_walk()
 	var frame := 1.0 / Engine.physics_ticks_per_second
 	# Bounded, so a jolt that `advance()` stopped running down fails the check below rather than

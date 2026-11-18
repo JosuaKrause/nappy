@@ -161,8 +161,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	baby.use_bus(EventBus)
 	stroller.add_child(baby)
 	baby.set_physics_process(false)
-	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD
-	baby.sleepiness = 0.0
+	baby.seed_meters(0.0, Tuning.EXCITEMENT_CALM_THRESHOLD)
 
 	var result := -1.0
 	var elapsed := 0.0
@@ -170,7 +169,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 		instance.step(step)
 		baby._physics_process(step)
 		elapsed += step
-		if baby.sleepiness >= Tuning.METER_MAX:
+		if baby.sleepiness_level() >= Tuning.METER_MAX:
 			result = elapsed
 			break
 
@@ -354,7 +353,7 @@ func _playground_settles(t: TestRunner) -> void:
 					if not instance.is_finished:
 						instance.step(step)
 				baby._physics_process(step)
-				if baby.state == GameEnums.BabyState.ASLEEP:
+				if baby.condition() == GameEnums.BabyState.ASLEEP:
 					settled = i * step
 					break
 			print("  seed %-8d settled: %s" % [city_seed,

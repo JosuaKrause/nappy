@@ -118,7 +118,7 @@ static func home_playing(t: TestRunner, run: RunState) -> Node:
 	t.add_child(home)
 	var sitting := Sitting.new()
 	sitting.name = Sitting.NODE_NAME
-	sitting.run = run
+	sitting.use_run(run)
 	home.add_child(sitting)
 	return home
 

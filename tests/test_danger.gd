@@ -785,21 +785,21 @@ func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t: TestRunner
 func _test_the_pram_says_how_the_baby_is(t: TestRunner) -> void:
 	var baby := Baby.new()
 
-	baby.state = GameEnums.BabyState.AWAKE
-	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD - 1.0
+	baby.reset()
+	baby.seed_meters(baby.sleepiness_level(), Tuning.EXCITEMENT_CALM_THRESHOLD - 1.0)
 	t.check(baby.cue() == Baby.Cue.NONE,
 			"an ordinary street says nothing over the pram")
-	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD
+	baby.seed_meters(baby.sleepiness_level(), Tuning.EXCITEMENT_CALM_THRESHOLD)
 	t.check(baby.cue() == Baby.Cue.UNSETTLED,
 			"the moment the day stops progressing, it says so")
-	baby.excitement = Baby.EXCITEMENT_NEARLY_CRYING
+	baby.seed_meters(baby.sleepiness_level(), Baby.EXCITEMENT_NEARLY_CRYING)
 	t.check(baby.cue() == Baby.Cue.NEARLY_CRYING,
 			"and escalates before the day is lost rather than as it is lost")
 
-	baby.state = GameEnums.BabyState.ASLEEP
-	baby.excitement = 0.0
+	baby.force_sleep()
+	baby.seed_meters(baby.sleepiness_level(), 0.0)
 	t.check(baby.cue() == Baby.Cue.ASLEEP, "asleep is a state with a mark of its own")
-	baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - Baby.EXCITEMENT_STIR_MARGIN
+	baby.seed_meters(baby.sleepiness_level(), Tuning.EXCITEMENT_WAKE_THRESHOLD - Baby.EXCITEMENT_STIR_MARGIN)
 	t.check(baby.cue() == Baby.Cue.STIRRING,
 			"and stirring is warned about before it costs half the bar")
 

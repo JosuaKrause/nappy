@@ -771,7 +771,7 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t: TestRunner) -> void:
 
 ## The contact resolves as a *position*, so two bodies can never end up inside each other
 ## however fast she is going, and the person she walked into is the thing that gets loud --
-## nothing writes to `Baby.excitement` from outside. See the invariant in CLAUDE.md.
+## nothing outside `Baby` writes her excitement meter. See the invariant in CLAUDE.md.
 ##
 ## Run on the crowd's own physics frames, with a real `Stroller` handed to it as `main` hands her
 ## (`Crowd.use_player()`) standing 4px from a walker: the crowd's player half meets her every tick
