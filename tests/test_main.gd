@@ -1376,20 +1376,23 @@ func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 ## `--no-focus-pause` is parsed from the command line and the page's query into the run's
 ## configuration, which is what `main` reads.
 func _test_no_focus_pause_from_args(t: TestRunner) -> void:
-	t.check(not _config([]).no_focus_pause,
+	t.check(not _config([]).skips_the_focus_pause(),
 			"no command-line modifier leaves focus loss pausing the game")
-	t.check(_config(["--no-focus-pause"]).no_focus_pause, "--no-focus-pause turns it off directly")
-	t.check(_config(["--screenshot", "out.png"]).no_focus_pause,
+	t.check(_config(["--no-focus-pause"]).skips_the_focus_pause(),
+			"--no-focus-pause turns it off directly")
+	t.check(_config(["--screenshot", "out.png"]).skips_the_focus_pause(),
 			"--screenshot implies it without being told to, since a rig's window opens unfocused")
-	t.check(not _config(["--seed", "1"]).no_focus_pause, "an unrelated flag does not imply it")
+	t.check(not _config(["--seed", "1"]).skips_the_focus_pause(),
+			"an unrelated flag does not imply it")
 
 func _test_no_focus_pause_from_query(t: TestRunner) -> void:
-	t.check(not _config([], true, "").no_focus_pause,
+	t.check(not _config([], true, "").skips_the_focus_pause(),
 			"an absent URL parameter leaves focus loss pausing the game")
-	t.check(not _config([], true, "?nofocuspause=0").no_focus_pause,
+	t.check(not _config([], true, "?nofocuspause=0").skips_the_focus_pause(),
 			"nofocuspause=0 leaves it pausing")
-	t.check(_config([], true, "?nofocuspause=1").no_focus_pause, "?nofocuspause=1 turns it off")
-	t.check(_config([], true, "?seed=1&nofocuspause=1&day=2").no_focus_pause,
+	t.check(_config([], true, "?nofocuspause=1").skips_the_focus_pause(),
+			"?nofocuspause=1 turns it off")
+	t.check(_config([], true, "?seed=1&nofocuspause=1&day=2").skips_the_focus_pause(),
 			"the parameter is found among other URL parameters")
 
 # ---------------------------------------------------------------------- the return window ---
@@ -1530,12 +1533,12 @@ func _test_return_window_is_off_under_the_override(t: TestRunner) -> void:
 ## window-flag/`InputMap`-erasure both key off, so a case proven here holds for all three without a
 ## live window to check them against.
 func _test_is_rig_from_args(t: TestRunner) -> void:
-	t.check(not _config([]).is_rig, "no flags at all is a person, not a rig")
-	t.check(not _config(["--seed", "1", "--day", "9"]).is_rig,
+	t.check(not _config([]).runs_as_a_rig(), "no flags at all is a person, not a rig")
+	t.check(not _config(["--seed", "1", "--day", "9"]).runs_as_a_rig(),
 			"flags that only choose what she is looking at do not make it a rig")
 	for flag: String in ["--screenshot", "--walk", "--flee", "--press", "--tap", "--route"]:
-		t.check(_config([flag, "x"]).is_rig, "%s alone marks the run a rig" % flag)
-	t.check(_config(["--seed", "1", "--walk", "north"]).is_rig,
+		t.check(_config([flag, "x"]).runs_as_a_rig(), "%s alone marks the run a rig" % flag)
+	t.check(_config(["--seed", "1", "--walk", "north"]).runs_as_a_rig(),
 			"a rig flag among others still counts")
 
 ## `rig_quit_seconds_from(after, day_length)` — the pure formula both `RigLock._process()`'s own

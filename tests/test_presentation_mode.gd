@@ -142,36 +142,38 @@ func _test_skip_from_args_and_query_extract_the_raw_value(t: TestRunner) -> void
 func _test_skip_is_gated_on_the_readout_being_requested(t: TestRunner) -> void:
 	var words := PackedStringArray(["--skip", "events,crowd,shadows,motion"])
 	var unasked := RunConfig.parse(words, "", true)
-	t.check(unasked.skip_words().is_empty() and not unasked.skip_events and not unasked.skip_crowd
-			and not unasked.skip_shadows and not unasked.skip_motion,
+	t.check(unasked.skip_words().is_empty() and not unasked.leaves_out_the_events()
+			and not unasked.leaves_out_the_crowd()
+			and not unasked.leaves_out_the_shadows() and not unasked.leaves_out_the_motion(),
 		"nothing is skipped while the readout was not requested")
 	words.append("--debug")
 	var asked := RunConfig.parse(words, "", true)
-	t.check(asked.skip_events and asked.skip_crowd and asked.skip_shadows and asked.skip_motion,
+	t.check(asked.leaves_out_the_events() and asked.leaves_out_the_crowd()
+			and asked.leaves_out_the_shadows() and asked.leaves_out_the_motion(),
 		"all four are skipped once it was")
 	var page := RunConfig.parse(PackedStringArray(), "?debug=1&skip=shadows", false)
-	t.check(page.skip_shadows and not page.skip_events,
+	t.check(page.leaves_out_the_shadows() and not page.leaves_out_the_events(),
 		"a release page that asked ?debug=1 skips what its own ?skip= names")
 
 ## `?seed=`'s positive integer, honoured on a page that asked `?debug=1`.
 func _test_seed_from_query_takes_a_valid_seed_under_debug(t: TestRunner) -> void:
-	t.check(_page("?debug=1&seed=12345").seed_override == 12345,
+	t.check(_page("?debug=1&seed=12345").seed_override() == 12345,
 		"a valid ?debug=1&seed=12345 yields the seed it names")
-	t.check(_page("?seed=12345&debug=1").seed_override == 12345,
+	t.check(_page("?seed=12345&debug=1").seed_override() == 12345,
 		"the seed parameter is found regardless of where it sits among others")
 
 func _test_seed_from_query_ignores_the_seed_without_debug(t: TestRunner) -> void:
-	t.check(_page("?seed=12345").seed_override == 0,
+	t.check(_page("?seed=12345").seed_override() == 0,
 		"a release page nobody asked ?debug=1 of never takes a seed, the same as it never skips")
-	t.check(_page("").seed_override == 0, "an absent query is not given, the ordinary sentinel")
+	t.check(_page("").seed_override() == 0, "an absent query is not given, the ordinary sentinel")
 
 func _test_seed_from_query_refuses_non_positive_and_malformed_values(t: TestRunner) -> void:
-	t.check(_page("?debug=1&seed=0").seed_override == 0, "0 is refused the same as not given")
-	t.check(_page("?debug=1&seed=-3").seed_override == 0,
+	t.check(_page("?debug=1&seed=0").seed_override() == 0, "0 is refused the same as not given")
+	t.check(_page("?debug=1&seed=-3").seed_override() == 0,
 		"a negative seed is refused the same as not given")
-	t.check(_page("?debug=1&seed=abc").seed_override == 0,
+	t.check(_page("?debug=1&seed=abc").seed_override() == 0,
 		"anything that is not an integer is refused the same as not given")
-	t.check(_page("?debug=1&seed=").seed_override == 0,
+	t.check(_page("?debug=1&seed=").seed_override() == 0,
 		"an explicit but empty value is refused the same as not given")
 
 ## `live_debug_requested()`'s own truth table: a debug build, or a page that asked `?debug=1`.
@@ -184,24 +186,25 @@ func _test_live_debug_requested_is_debug_or_readout(t: TestRunner) -> void:
 
 ## `?day=`, clamped the same way `--day` itself is rather than refused outright.
 func _test_day_from_query_clamps_the_same_way_as_the_command_line(t: TestRunner) -> void:
-	t.check(_page("?debug=1&day=9").day_override == 9, "a plain day is read back")
-	t.check(_page("?debug=1&day=99").day_override == Tuning.RUN_LENGTH_DAYS,
+	t.check(_page("?debug=1&day=9").day_override() == 9, "a plain day is read back")
+	t.check(_page("?debug=1&day=99").day_override() == Tuning.RUN_LENGTH_DAYS,
 		"a day past the run's own length clamps into it, the same as --day")
-	t.check(_page("?debug=1&day=0").day_override == 1,
+	t.check(_page("?debug=1&day=0").day_override() == 1,
 		"a day below one clamps up to one, the same as --day")
-	t.check(_page("?debug=1&day=abc").day_override == 1,
+	t.check(_page("?debug=1&day=abc").day_override() == 1,
 		"a non-numeric day reads as zero and clamps to one, the same as --day")
-	t.check(_page("?seed=1&day=5&debug=1").day_override == 5,
+	t.check(_page("?seed=1&day=5&debug=1").day_override() == 5,
 		"the day parameter is found among other URL parameters")
-	t.check(_page("?day=5").day_override == 1,
+	t.check(_page("?day=5").day_override() == 1,
 		"a release page nobody asked ?debug=1 of starts on day 1")
 
 func _test_day_from_query_is_not_given_when_absent(t: TestRunner) -> void:
-	t.check(_page("").day_override == 1, "an absent query starts on the first day")
-	t.check(_page("?debug=1").day_override == 1, "?debug=1 alone opens the bundle but names no day")
-	t.check(_debug_build(["--day", "4"], "?debug=1").day_override == 4,
+	t.check(_page("").day_override() == 1, "an absent query starts on the first day")
+	t.check(_page("?debug=1").day_override() == 1,
+		"?debug=1 alone opens the bundle but names no day")
+	t.check(_debug_build(["--day", "4"], "?debug=1").day_override() == 4,
 		"an absent ?day= leaves a --day N on the command line alone")
-	t.check(_page("?debug=1&day=1").day_override == 1, "?day=1 on an open page is day 1")
+	t.check(_page("?debug=1&day=1").day_override() == 1, "?day=1 on an open page is day 1")
 
 ## `web_debug_flag_used`: the save's policy (`GameSave._uses_save()`) reads this so a release page's visitor who
 ## actually typed one of the bundle's parameters never touches the save the page might otherwise
@@ -233,30 +236,33 @@ func _test_layers_from_query_is_unchanged_by_m193(t: TestRunner) -> void:
 ## release page answers the query only once it asked `?debug=1`.
 func _test_controls_reads_the_url_is_the_live_debug_gate_and_web(t: TestRunner) -> void:
 	var none := PackedStringArray()
-	t.check(RunConfig.parse(none, "?debug=1&controls=joystick", false).controls_word == "joystick",
+	t.check(RunConfig.parse(none, "?debug=1&controls=joystick", false)
+			.controls_word() == "joystick",
 		"a release page that asked ?debug=1 reads its own ?controls=")
-	t.check(RunConfig.parse(none, "?controls=joystick", false).controls_word == "",
+	t.check(RunConfig.parse(none, "?controls=joystick", false).controls_word() == "",
 		"a release page that did not reads nothing")
 	t.check(RunConfig.parse(PackedStringArray(["--controls", "tap"]), "?controls=joystick", true)
-			.controls_word == "tap", "the command line wins over the page")
-	t.check(RunConfig.parse(PackedStringArray(["--controls", "tap"]), "", false).controls_word == "",
+			.controls_word() == "tap", "the command line wins over the page")
+	t.check(RunConfig.parse(PackedStringArray(["--controls", "tap"]), "", false)
+			.controls_word() == "",
 		"and answers nothing on a release build")
 
 func _test_controls_word_from_query_is_unchanged_by_m193(t: TestRunner) -> void:
-	t.check(_page("?debug=1&controls=joystick").controls_word == "joystick",
+	t.check(_page("?debug=1&controls=joystick").controls_word() == "joystick",
 		"the controls parameter is read out of the query")
-	t.check(_page("?debug=1&seed=4&controls=tap").controls_word == "tap",
+	t.check(_page("?debug=1&seed=4&controls=tap").controls_word() == "tap",
 		"found among other URL parameters")
-	t.check(_page("?debug=1").controls_word == "", "an absent parameter is still empty")
+	t.check(_page("?debug=1").controls_word() == "", "an absent parameter is still empty")
 
 ## `?escape=1` — the bare boolean M193 opens; `start_escape_at()`'s own optional target word stays
 ## command-line only (see that function's own doc).
 func _test_escape_from_query(t: TestRunner) -> void:
-	t.check(_page("?debug=1&escape=1").start_escape, "?escape=1 starts the escape scene")
-	t.check(not _page("?debug=1&escape=0").start_escape, "escape=0 starts nothing")
-	t.check(not _page("?debug=1").start_escape, "an absent parameter starts nothing")
-	t.check(_page("?debug=1&seed=3&escape=1").start_escape, "found among other URL parameters")
-	t.check(not _page("?escape=1").start_escape,
+	t.check(_page("?debug=1&escape=1").starts_in_the_escape(), "?escape=1 starts the escape scene")
+	t.check(not _page("?debug=1&escape=0").starts_in_the_escape(), "escape=0 starts nothing")
+	t.check(not _page("?debug=1").starts_in_the_escape(), "an absent parameter starts nothing")
+	t.check(_page("?debug=1&seed=3&escape=1").starts_in_the_escape(),
+		"found among other URL parameters")
+	t.check(not _page("?escape=1").starts_in_the_escape(),
 		"a page that never opened the bundle starts nothing")
 
 func _test_meters_from_query(t: TestRunner) -> void:
@@ -285,42 +291,44 @@ func _test_day_length_from_query(t: TestRunner) -> void:
 		"a non-positive value refuses the flag")
 
 func _test_ending_from_query(t: TestRunner) -> void:
-	t.check(_page("?debug=1&ending=bad").ending_override == "bad", "the raw word is read back")
-	t.check(_page("?debug=1").ending_override == "", "an absent value is the empty word")
-	t.check(_page("?debug=1&seed=2&ending=good").ending_override == "good",
+	t.check(_page("?debug=1&ending=bad").ending_override() == "bad", "the raw word is read back")
+	t.check(_page("?debug=1").ending_override() == "", "an absent value is the empty word")
+	t.check(_page("?debug=1&seed=2&ending=good").ending_override() == "good",
 		"found among other URL parameters")
 
 func _test_blackout_from_query(t: TestRunner) -> void:
-	t.check(_page("?debug=1&blackout=1").blackout_requested, "?blackout=1 forces the blackout")
-	t.check(not _page("?debug=1&blackout=0").blackout_requested, "blackout=0 forces nothing")
-	t.check(not _page("?debug=1").blackout_requested, "an absent parameter forces nothing")
+	t.check(_page("?debug=1&blackout=1").asks_for_the_blackout(), "?blackout=1 forces the blackout")
+	t.check(not _page("?debug=1&blackout=0").asks_for_the_blackout(), "blackout=0 forces nothing")
+	t.check(not _page("?debug=1").asks_for_the_blackout(), "an absent parameter forces nothing")
 
 ## `--ground-mode`/`?groundmode=`: the command line, the page under the bundle's gate, and the
 ## default of `2` when neither names one.
 func _test_ground_mode_reads_the_command_line_and_the_open_page(t: TestRunner) -> void:
-	t.check(_debug_build(["--ground-mode", "2"]).ground_mode == 2, "the command line names the mode")
-	t.check(_debug_build(["--seed", "4", "--ground-mode", "3"], "?debug=1&groundmode=2").ground_mode
-			== 3, "the command line wins over the page")
-	t.check(_debug_build([], "?debug=1&groundmode=3").ground_mode == 3,
+	t.check(_debug_build(["--ground-mode", "2"]).ground_mode() == 2,
+		"the command line names the mode")
+	t.check(_debug_build(["--seed", "4", "--ground-mode", "3"], "?debug=1&groundmode=2")
+			.ground_mode() == 3, "the command line wins over the page")
+	t.check(_debug_build([], "?debug=1&groundmode=3").ground_mode() == 3,
 		"an open page names the mode among other parameters")
-	t.check(_debug_build([], "?debug=1").ground_mode == DevFlags.GROUND_MODE_DEFAULT
+	t.check(_debug_build([], "?debug=1").ground_mode() == DevFlags.GROUND_MODE_DEFAULT
 		and DevFlags.GROUND_MODE_DEFAULT == SceneryGround.Mode.ONE
-		and _page("").ground_mode == 2
-		and _debug_build(["--seed", "4"]).ground_mode == 2,
+		and _page("").ground_mode() == 2
+		and _debug_build(["--seed", "4"]).ground_mode() == 2,
 		"naming no mode prepares at most one whole region a frame")
 
 func _test_ground_mode_is_ignored_on_a_release_page_without_debug(t: TestRunner) -> void:
 	for query: String in ["?groundmode=3", "?debug=1&groundmode=3"]:
 		var expected := 3 if query.contains("debug=1") else 2
-		t.check(_page(query).ground_mode == expected,
+		t.check(_page(query).ground_mode() == expected,
 			"a release page reads %s as mode %d" % [query, expected])
 
 func _test_ground_mode_refuses_anything_but_its_three_numbers(t: TestRunner) -> void:
 	for raw: String in ["1", "2", "3"]:
-		t.check(_debug_build(["--ground-mode", raw]).ground_mode == int(raw), "mode %s is read back" % raw)
+		t.check(_debug_build(["--ground-mode", raw]).ground_mode() == int(raw),
+			"mode %s is read back" % raw)
 	for raw: String in ["0", "4", "two", ""]:
-		t.check(_debug_build(["--ground-mode", raw]).ground_mode == 2 \
-			and _debug_build(["--ground-mode", raw]).ground_mode == DevFlags.GROUND_MODE_DEFAULT,
+		t.check(_debug_build(["--ground-mode", raw]).ground_mode() == 2 \
+			and _debug_build(["--ground-mode", raw]).ground_mode() == DevFlags.GROUND_MODE_DEFAULT,
 			"'%s' refuses the flag rather than choosing a mode" % raw)
 
 ## Pins the engine's own physics rate and interpolation setting so a `project.godot` edit cannot

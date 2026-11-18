@@ -333,7 +333,7 @@ func _start_the_day(t: TestRunner, day: int, resistance: ResistanceDirector,
 	var clock := DayController.new()
 	clock.set_process(false)
 	t.add_child(clock)
-	var days := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend(), config)
+	var days := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend())
 	days.use_the_world(null, resistance, clock)
 	days.use_worlds(StandingCity.new(_city, player, baby))
 	_clock = clock

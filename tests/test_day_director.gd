@@ -78,7 +78,7 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	map.world = holder
 	events.setup_world(map, _run)
 	t.add_child(events)
-	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend(), RunConfig.parse(PackedStringArray(), "", true))
+	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
 	# A world with no city: the open ground and its events, nobody in it.
 	director.use_the_world(DayWorld.in_the_building(map, events, null, null, Vector2.ZERO,
 			Vector2.DOWN, null), null, clock)
@@ -282,20 +282,19 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 		world = DayWorld.in_the_city(city, map, DayStreets.new(), crowd, events, player, baby,
 				Vector2(100.0, 200.0), home_map, exits, Vector2.DOWN, scene_city)
 	var worlds := _FakeWorlds.new(world, _asked)
-	var config := RunConfig.parse(PackedStringArray(), "", true)
-	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend(), config)
+	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
 	director.use_the_world(null, resistance, clock)
 	director.use_worlds(worlds)
 	director.use_the_scene(scene)
 	var lines: Array[String] = []
 	director.use_trace(RecordingTrace.new(lines))
-	# What `main._new_director()` hands: where the developer's flags start her, and what they do to
-	# the bars. Here a start on the city map's doorstep, as `--spawn` with no target answers, and no
-	# change to the bars.
+	# What `main._new_director()` hands, the run's `--spawn` target and `--meters` override bound
+	# in: where the developer's flags start her, and what they do to the bars. Here a start on the
+	# city map's doorstep, as `--spawn` with no target answers, and no change to the bars.
 	# The meters callable notes itself with whether the day's clock is already running.
 	director.use_the_flags(
-			func(_target: String) -> Vector2: return map.doorstep_world_position(),
-			func(_the_baby: Baby, _override: Vector2) -> void:
+			func() -> Vector2: return map.doorstep_world_position(),
+			func(_the_baby: Baby) -> void:
 				_asked.append("meters %s" % (clock.seconds_total() > 0.0)))
 	var nodes: Array[Node] = [clock, events, player, baby, resistance]
 	if city:

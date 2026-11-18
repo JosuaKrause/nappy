@@ -358,14 +358,14 @@ func _test_draws_are_counted_by_listening(t: TestRunner) -> void:
 ## The flag and its page word, read the way the game reads them: off the configuration
 ## `RunConfig.parse()` builds from the command line, the page's query and the build.
 func _test_the_flag_and_its_page_word(t: TestRunner) -> void:
-	t.check(_debug_build(["--frame-record"]).frame_record_requested,
+	t.check(_debug_build(["--frame-record"]).asks_for_a_frame_record(),
 			"the command line's --frame-record starts the record")
-	t.check(_page("?debug=1&framerecord=1").frame_record_requested,
+	t.check(_page("?debug=1&framerecord=1").asks_for_a_frame_record(),
 			"?framerecord=1 starts it on a page whose bundle is open")
-	t.check(not _page("?framerecord=1").frame_record_requested,
+	t.check(not _page("?framerecord=1").asks_for_a_frame_record(),
 			"a release page without ?debug=1 ignores ?framerecord=1")
-	t.check(not _page("?debug=1&framerecord=0").frame_record_requested
-			and not _page("?debug=1").frame_record_requested,
+	t.check(not _page("?debug=1&framerecord=0").asks_for_a_frame_record()
+			and not _page("?debug=1").asks_for_a_frame_record(),
 			"only the value 1 asks for it, and ?debug=1 alone does not")
 	t.check(_page("?debug=1&framerecord=1").used_a_web_debug_flag(),
 			"a page that records stays off the save, like the bundle's other words")

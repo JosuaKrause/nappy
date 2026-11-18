@@ -41,7 +41,7 @@ func _ready() -> void:
 	var config := RunConfig.at_boot()
 	var save := GameSave.new(_SCRATCH_SAVE)
 	save.configure(config)
-	if config.is_rig != config.recipe_scripted:
+	if config.runs_as_a_rig() != config.plays_the_recipe_scripted():
 		save.free()
 		get_tree().quit(12)
 		return

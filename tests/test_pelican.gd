@@ -155,9 +155,11 @@ func _test_the_bag_follows_the_run_and_the_count(t: TestRunner) -> void:
 func _test_the_dev_flag_makes_every_cyclist_a_pelican(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var plain := _rolls_for(5, [cyclist], 40)
-	t.check(RunConfig.parse(PackedStringArray(["--pelican"]), "", true).pelican,
+	t.check(RunConfig.parse(PackedStringArray(["--pelican"]), "", true)
+			.draws_cyclists_as_the_pelican(),
 			"the flag is read from the command line")
-	t.check(not RunConfig.parse(PackedStringArray(["--pelican"]), "", false).pelican,
+	t.check(not RunConfig.parse(PackedStringArray(["--pelican"]), "", false)
+			.draws_cyclists_as_the_pelican(),
 			"and answers nothing on a release build")
 	var flagged := _rolls_for(5, [cyclist], 40, EventSpawner.PelicanRig.ALWAYS)
 	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5, EventSpawner.PelicanRig.ALWAYS)
