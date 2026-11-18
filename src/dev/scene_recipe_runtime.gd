@@ -484,10 +484,10 @@ func configure(result: Dictionary, config: RunConfig, run: RunState,
 	data = result.data
 	_written = result.get("written", result.data)
 	built = result
-	if config.recipe_draft_path != "":
+	if config.recipe_draft_path() != "":
 		_draft = SceneRecipeDraft.new()
 	manifest = result.manifest.duplicate(true)
-	_scripted = config.recipe_scripted
+	_scripted = config.plays_the_recipe_scripted()
 	manifest["recipe"] = data.get("name", "")
 	manifest["recipe_sha256"] = JSON.stringify(data, "", true).sha256_text()
 	manifest["engine"] = Engine.get_version_info().string
@@ -503,8 +503,8 @@ func configure(result: Dictionary, config: RunConfig, run: RunState,
 			Engine.physics_ticks_per_second, bool(data.get("playback", {}).get("smooth", false)))
 	_observations = data.get("playback", {}).get("observations", [])
 	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
-	if config.screenshot_path != "":
-		_capture_tick = ceili(maxf(config.rig_after, 0.0) * Engine.physics_ticks_per_second - 0.00001)
+	if config.screenshot_path() != "":
+		_capture_tick = ceili(maxf(config.rig_after(), 0.0) * Engine.physics_ticks_per_second - 0.00001)
 	# begin() supplies the first input; subsequent inputs are queued after the world's tick.
 	# Observations and completion therefore see the tick they name, including the final one.
 	process_physics_priority = 100
@@ -1077,7 +1077,7 @@ func begin() -> void:
 	_record_crowd("initial_crowd")
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
 	write_manifest()
-	if _config.recipe_validate:
+	if _config.validates_the_recipe():
 		_end_the_game(0)
 		return
 	if not _scripted:
@@ -1624,7 +1624,7 @@ func _write_the_draft() -> int:
 			pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
-	var path := _config.recipe_draft_path
+	var path := _config.recipe_draft_path()
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
 		print("[SceneRecipe] cannot write the draft: " + path)
@@ -1664,7 +1664,7 @@ func _end_the_game(code: int) -> void:
 	get_tree().quit(code)
 
 func write_manifest() -> void:
-	var path := _config.recipe_manifest_path
+	var path := _config.recipe_manifest_path()
 	if path.is_empty():
 		return
 	var file := FileAccess.open(path, FileAccess.WRITE)

@@ -803,12 +803,6 @@ src/main.gd trace
 src/dev/route_lines.gd branches
 
 # [RunConfig] src/run_config.gd
-src/dev/scene_recipe_runtime.gd recipe_draft_path
-src/dev/scene_recipe_runtime.gd recipe_manifest_path
-src/dev/scene_recipe_runtime.gd recipe_scripted
-src/dev/scene_recipe_runtime.gd recipe_validate
-src/dev/scene_recipe_runtime.gd rig_after
-src/dev/scene_recipe_runtime.gd screenshot_path
 src/main.gd active_args
 src/main.gd blackout_requested
 src/main.gd caption_text
