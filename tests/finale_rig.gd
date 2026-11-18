@@ -1847,7 +1847,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		_free_the_escape(t, escape)
 
 ## **The escape is counted like a day** *(minty-lemur #785: "telemetry should work the same also in
-## escape both apartment and city")*: the run's played time (`RunHeader.play_ticks`, which the
+## escape both apartment and city")*: the run's played time (`RunHeader.play_ticks()`, which the
 ## ending screen shows) runs while a section is walked, and a charge still running when she gets
 ## out of the city is closed for the page's counter as cut short, before the section's own end is
 ## counted — through the day's own finish path, as a day's are. The played time is read across one

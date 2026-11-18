@@ -4,7 +4,7 @@ extends RefCounted
 ## nerves a loss spends, the checkpoint a normal run goes back to, and the day's random streams.
 ## `RunState` builds one over the parts it registers and hands it to whoever walks the days
 ## (`DayDirector`, the readers `main` builds), so those take the calendar rather than the whole
-## run; a test builds a `RunState` and takes its `calendar`.
+## run; a test builds a `RunState` and takes its `calendar()`.
 ##
 ## It holds the run's mode and its checkpoint, which are the calendar's state rather than any
 ## part's: both ride beside the snapshot as top-level keys of the save. It reads and writes the
@@ -39,10 +39,10 @@ func use_trace(sink: RunTrace) -> void:
 ## the run with no checkpoints**: the last nerve ends it with the bad ending, and the escape spends
 ## nerves as well (`finish_day()` on a section's `DaySpec`), and nothing, a won day or a won
 ## section, gives one back (`regain_a_nerve_for_a_won_day()`). **Normal mode never reaches the
-## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint`). Nothing
+## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint()`). Nothing
 ## else differs — *"hard mode doesn't affect gameplay -- only restart pacing"*.
 ##
-## Not in the run snapshot: it rides beside `escape_section` as its own top-level save key, so a
+## Not in the run snapshot: it rides beside `RunFacts.escape_section()` as its own top-level save key, so a
 ## save written before there were two modes loads as normal mode by absence.
 var _hard_mode := false
 
@@ -59,7 +59,7 @@ var _hard_mode := false
 ## exactly, so nothing is stored for it — which is also what a save written before checkpoints
 ## existed reads as. Never taken in hard mode, which has none.
 ##
-## Not in the run snapshot, for the same reason as `hard_mode`: a top-level save key of its own.
+## Not in the run snapshot, for the same reason as `_hard_mode`: a top-level save key of its own.
 var _checkpoint: Dictionary = {}
 
 ## Whether this run is in hard mode (`_hard_mode` says what that is).
@@ -140,7 +140,7 @@ func choose_mode(hard: bool) -> void:
 
 ## Whether `for_day` is one of the days a normal run keeps a checkpoint at: the first day of every
 ## act after the first, read off `Tuning.ACT_START_DAYS` (days 4, 8 and 12). Day 1 is checkpoint
-## zero, which the registry's reset rebuilds rather than anything storing it — see `checkpoint`.
+## zero, which the registry's reset rebuilds rather than anything storing it — see `_checkpoint`.
 static func _is_checkpoint_day(for_day: int) -> bool:
 	return for_day > 1 and for_day in Tuning.ACT_START_DAYS
 
@@ -195,7 +195,7 @@ func _keep_a_checkpoint_if_one_is_due() -> void:
 ##   whatever walk the retry takes — and leaves no shell behind it. Only a day she **wins** keeps
 ##   any of it.
 ## - **Except where she settled.** That is a fact about the attempt rather than about the run,
-##   and `settled_in` is read to decide what tomorrow spoils. Left in place, an attempt that
+##   and where she settled (`SettledState`) is read to decide what tomorrow spoils. Left in place, an attempt that
 ##   reached a park and then lost the day would send tomorrow's loud event to a park she never
 ##   actually used — and the winning attempt could not overwrite it, because the record is written
 ##   once.
@@ -292,12 +292,12 @@ func regain_a_nerve_for_a_won_day() -> void:
 ## `RunStateRegistry.restore_run_data()` a save is read back with, so nothing a later field adds
 ## to the save can be left out of a checkpoint by forgetting it here.
 ##
-## **Everything but the play time**: `RunHeader.play_ticks` stays as it was at the loss, for a
+## **Everything but the play time**: `RunHeader.play_ticks()` stays as it was at the loss, for a
 ## checkpoint zero and a later one alike, since going back is the game sending her back for running
 ## out of nerves and not the player starting over; only a new game from the title starts it at zero
 ## (inbox #920 in plaid-penguin).
 ##
-## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: the registry reset. The header
+## Checkpoint zero (`_checkpoint` empty) is day 1 of the same city: the registry reset. The header
 ## keeps the run's seed and who is pushing the pram, since `--parent` may have chosen it over the
 ## seed's roll; a normal run has no checkpoint to clear and is not in hard mode.
 func _go_back_to_the_checkpoint() -> void:

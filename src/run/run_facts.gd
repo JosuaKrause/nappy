@@ -22,7 +22,7 @@ var _escape_section: int = 0
 var _completed_resistance_alley_tiles: Array[Vector2i] = []
 ## The one calm area barriers ever stand around this run, once she has used it — `(-1, -1)` until
 ## one is. Chosen no earlier than act III; see docs/CITY.md, "Shutting a spent park". `Main`
-## hands this and `fenced_park_act` to `CityMap.set_fenced_park_state()` before the repaint and
+## hands this and `_fenced_park_act` to `CityMap.set_fenced_park_state()` before the repaint and
 ## remembers its first choice once it returns. This history survives the act boundary even though
 ## the physical fence does not.
 var _fenced_park := Vector2i(-1, -1)

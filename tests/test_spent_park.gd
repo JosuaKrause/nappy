@@ -65,9 +65,9 @@ func _calm_on(map: CityMap, day: int) -> Array[Vector2i]:
 	return map.calm_blocks.duplicate()
 
 ## What an act would have used by `day`: one area a day since the act began, most recent first,
-## drawn from today's calm in an order rolled from the seed — the shape `RunState.calendar.
+## drawn from today's calm in an order rolled from the seed — the shape `RunState.calendar().
 ## settled_this_act()` has, without playing the days. A block chosen as `CityMap.fenced_park` on an
-## earlier day may still be here on a later one, the same way `RunState.settled.settled_in` still carries
+## earlier day may still be here on a later one, the same way the run's `SettledState` still carries
 ## the day she used it before it was fenced — fencing does not erase the past.
 func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 	var calm := _calm_on(map, day)

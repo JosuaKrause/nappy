@@ -115,7 +115,7 @@ var _runs_the_resistance := true
 ## her awake.
 var _starts_asleep := false
 ## Whether the walk's plan draws on the run's one-shots and spends them
-## (`AttemptSpendState.consumed_one_shots`, appended to as the day's plan spends one): every day's.
+## (`AttemptSpendState.consumed_one_shots()`, appended to as the day's plan spends one): every day's.
 ## The escape plans from a list of its own, empty, and spends none of the run's.
 var _spends_the_one_shots := true
 ## The run's random stream the walk's events are planned on (`RunCalendar.day_rng()`): `"events"` for

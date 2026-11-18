@@ -225,7 +225,7 @@ var _resume := {}
 
 ## Whether opening the save spent a normal run's last nerve and sent it back to its checkpoint —
 ## set once in `_ready()`, before the charge, and read by `_show_the_resume_gate()` for the line the
-## day brief carries. A hard run's last nerve ends the run instead (`RunHeader.ending`).
+## day brief carries. A hard run's last nerve ends the run instead (`RunHeader.ending()`).
 var _resume_went_back := false
 
 ## Read once, in `configure()` — a run's touch hardware does not change, and `--touch` is the run's
@@ -415,7 +415,7 @@ func _ready() -> void:
 	# and the last nerve doing exactly what it does there: a hard run ends, a normal one goes back
 	# to its checkpoint. Applied before anything downstream (the HUD, the city's own act) ever reads
 	# a nerve count or a resistance state that has not been charged yet. A hard run's last nerve
-	# ends the run here (`RunHeader.ending`), and `_on_title_start()` shows that ending, or the
+	# ends the run here (`RunHeader.ending()`), and `_on_title_start()` shows that ending, or the
 	# brief, once the title itself has been dismissed. An escape section is never saved as under way
 	# (`DaySpec.saved_as_under_way`), so a resumed escape is never charged here.
 	#
@@ -2242,7 +2242,7 @@ func _tree_is_paused() -> bool:
 	var loop := Engine.get_main_loop()
 	return loop is SceneTree and (loop as SceneTree).paused
 
-## **The walk's tick**: the run's play time (`RunHeader.play_ticks`), the day's countdown
+## **The walk's tick**: the run's play time (`RunHeader.play_ticks()`), the day's countdown
 ## (`DayController.tick()`) and the resistance's clocks (`ResistanceDirector.tick()`), one physics
 ## tick at a time — the one tick source all three count. **Frame
 ## locked** (inbox #866 in minty-dolphin): it counts the ticks the engine stepped, never a drawn frame's length, so a

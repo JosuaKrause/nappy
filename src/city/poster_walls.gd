@@ -10,7 +10,7 @@ extends Node
 ## pasted and torn from the sidewalk tile directly in front of it. That tile is what names a cell
 ## everywhere: `PosterState` keys by it, a crew is sited on it, she pushes from it.
 ##
-## **What is on the walls is run state, and this only reads and writes it.** the run's `PosterState` (`RunState.posters`)
+## **What is on the walls is run state, and this only reads and writes it.** the run's `PosterState` (`RunState.posters()`)
 ## holds it, so it survives a save and a lost day gives it back; this node is stood with every city
 ## (`SimulationBuilder`), handed the run, and hands each `Building` the cells it draws
 ## (`Building.posters`) and whether the neighbor was taken (`Building.hand_over_posters()`). It
@@ -154,7 +154,7 @@ func equip(sink: RunTrace, poster_art: PosterArt, library: AtlasLibrary) -> void
 	_art = poster_art
 	atlas = library
 
-## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
+## The bag the run's tears draw from, rebuilt from `PosterState.tears_made()` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null
 var _bag_seed := 0
@@ -506,7 +506,7 @@ func _tear(tile: Vector2i) -> void:
 	if pursuit and _events:
 		_events.send_a_pursuer()
 
-## The run's marble bag, brought to where the run is: `PosterState.tears` marbles already drawn,
+## The run's marble bag, brought to where the run is: `PosterState.tears_made()` marbles already drawn,
 ## from the bag's own stream off the run's seed, so a save, a lost day's give-back and a retry all
 ## draw the same marbles the run would have drawn.
 func _the_bag() -> MarbleBag:

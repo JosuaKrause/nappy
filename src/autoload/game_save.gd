@@ -13,7 +13,7 @@ extends Node
 ## module is data, the symbol is presentation, and the two only meet through `EventBus`.
 ##
 ## **The save is the run, never the moment inside a day.** The run's registered parts
-## (`RunState.run_parts`) say what a run holds and where in the file each part sits; this file
+## (`RunState.run_parts()`) say what a run holds and where in the file each part sits; this file
 ## only adds the facts a run does not know about itself — whether a day was under way when the
 ## file was written, which section of the escape it is in, and which build
 ## wrote it — and turns the result into JSON. *Asked for "that exact state", the crowd included, and overturned by the player to a
@@ -33,7 +33,7 @@ extends Node
 ## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save
 ## written before there were two modes, which reads as normal mode; `"checkpoint"` is absent
 ## from one written before there were checkpoints, which reads as checkpoint zero, day 1 of the
-## same city — see `RunCalendar.checkpoint`. **A checkpoint is the run in exactly the
+## same city — see `RunCalendar.checkpoint()`. **A checkpoint is the run in exactly the
 ## shape the file carries it** (`RunStateRegistry.run_data()`, every key below but the ones
 ## about the file itself), so a field a later build adds to the save is in every checkpoint the
 ## moment it is in `run_data()`, and `RunStateRegistry.restore_run_data()` is the one function
