@@ -302,8 +302,8 @@ flow's `day_started` alone.
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
 (`RunConfig.is_debug_build()`), the page was not asked for `?debug=1`
-(`RunConfig.asks_for_the_readout()`, from the run's configuration `main` hands the counter at boot —
-nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
+(`RunConfig.asks_for_the_readout()`, from the run's configuration `main` hands the counter at
+boot — nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
 independent switch. `GoatCounterOutbox.may_ever_send()` decides the three that never change, and

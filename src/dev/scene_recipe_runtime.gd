@@ -504,7 +504,8 @@ func configure(result: Dictionary, config: RunConfig, run: RunState,
 	_observations = data.get("playback", {}).get("observations", [])
 	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
 	if config.screenshot_path() != "":
-		_capture_tick = ceili(maxf(config.rig_after(), 0.0) * Engine.physics_ticks_per_second - 0.00001)
+		_capture_tick = ceili(maxf(config.rig_after(), 0.0) * Engine.physics_ticks_per_second
+				- 0.00001)
 	# begin() supplies the first input; subsequent inputs are queued after the world's tick.
 	# Observations and completion therefore see the tick they name, including the final one.
 	process_physics_priority = 100

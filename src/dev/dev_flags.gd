@@ -921,8 +921,9 @@ static func rig_quit_seconds_from(after: float, day_length: float) -> float:
 	return clampf(script + RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_CEILING_SECONDS)
 
 ## `--after`'s own value, or `-1.0` for "not given or not a number" — the sentinel
-## `rig_quit_seconds_from()` reads as "fall back to the day's own length". `AutoScreenshot` reads
-## the same flag for its own wait.
+## `rig_quit_seconds_from()` reads as "fall back to the day's own length". `AutoScreenshot`
+## waits this long before its capture, through `RunConfig.rig_after()`, or its own default when
+## not given.
 func rig_after() -> float:
 	var args := active_args()
 	var index := args.find("--after")

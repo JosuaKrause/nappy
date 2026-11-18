@@ -12,15 +12,15 @@ extends RefCounted
 ## a component a config of its own by parsing the words it wants
 ## (`RunConfig.parse(PackedStringArray(["--invincible"]), "", true)`), never by changing one.
 ##
-## **Read through its methods** (designing-classes, "Fields are not API"): one method a field, which
-## keeps the field's name when it holds a value and takes a new one when it answers yes or no, so a
-## stored answer can become a computed one with no reader changing. The fields still public are
-## `main`'s reads alone; every other reader asks the methods under "What it says" below. The
-## class is the one value every reader is handed whole, rather than cut into a part per reader, since
-## the readers' needs overlap (a screenshot's path is the screenshot rig's and the scene recipe's, a
-## movie recording the rig lock's and the screenshot rig's) and several of its answers are derived from
-## more than one flag (`day_length_for()`, `rig_quit_seconds()`, `screenshot_rig()`), which a
-## reader handed plain values would derive again.
+## **Read through its methods** (designing-classes, "Fields are not API"): one method a field,
+## which keeps the field's name when it holds a value and takes a new one when it answers yes or
+## no, so a stored answer can become a computed one with no reader changing. The fields still
+## public are `main`'s reads alone; every other reader asks the methods under "What it says"
+## below. The class is the one value every reader is handed whole, rather than cut into a part
+## per reader, since the readers' needs overlap (a screenshot's path is the screenshot rig's and
+## the scene recipe's, a movie recording the rig lock's and the screenshot rig's) and several of
+## its answers are derived from more than one flag (`day_length_for()`, `rig_quit_seconds()`,
+## `screenshot_rig()`), which a reader handed plain values would derive again.
 ##
 ## `DevFlags` is the parser and the flag manifest the shell tools read; what each flag means is
 ## its getter's doc there.
@@ -363,7 +363,8 @@ func skip_words() -> Array[String]:
 func layers_override() -> Array[int]:
 	return _layers_override
 
-## `--spawn`'s raw target word, where she starts on the boot's first walk from her doorstep, or `""`.
+## `--spawn`'s raw target word, where she starts on the boot's first walk from her doorstep, or
+## `""`.
 func spawn_target() -> String:
 	return _spawn_target
 
@@ -371,8 +372,8 @@ func spawn_target() -> String:
 func meters_override() -> Vector2:
 	return _meters_override
 
-## Whether this run is a rig rather than a person at the keyboard: a rig flag, a movie recording or a
-## scripted recipe.
+## Whether this run is a rig rather than a person at the keyboard: a rig flag, a movie recording
+## or a scripted recipe.
 func runs_as_a_rig() -> bool:
 	return is_rig
 

@@ -83,7 +83,8 @@ func _test_readout_requested_true_for_the_documented_query_shapes(t: TestRunner)
 		"?debug=1 requests the readout without a debug-build gate")
 	t.check(_page("?x=1&debug=1").asks_for_the_readout(),
 		"the debug parameter is found among other URL parameters")
-	t.check(_debug_build(["--debug"]).asks_for_the_readout(), "--debug requests it on the command line")
+	t.check(_debug_build(["--debug"]).asks_for_the_readout(),
+			"--debug requests it on the command line")
 
 func _test_readout_requested_false_for_everything_else(t: TestRunner) -> void:
 	t.check(not _page("?debug=0").asks_for_the_readout(),
@@ -96,7 +97,8 @@ func _test_readout_requested_false_for_everything_else(t: TestRunner) -> void:
 func _test_readout_requested_does_not_move_enabled(t: TestRunner) -> void:
 	var page := RunConfig.parse(PackedStringArray(["--spawn", "park", "--walk", "1e"]),
 			"?debug=1", false)
-	t.check(page.asks_for_the_readout() and not page.is_debug_build() and page.dev_flag_words().is_empty()
+	t.check(page.asks_for_the_readout() and not page.is_debug_build()
+			and page.dev_flag_words().is_empty()
 			and page.spawn_target() == "",
 		"the readout's own release-safe flag reaches nothing the debug build gates — no spawn, "
 		+ "meter or scripted-input flag moves with it")
@@ -263,7 +265,8 @@ func _test_meters_from_query(t: TestRunner) -> void:
 	t.check(_page("?debug=1&meters=%d,%d" % [Tuning.METER_MAX + 50, -5]).meters_override()
 			== Vector2(Tuning.METER_MAX, 0.0),
 		"each number clamps into range the same as --meters already does")
-	t.check(_page("?debug=1").meters_override() == Vector2(-1.0, -1.0), "an absent value is not given")
+	t.check(_page("?debug=1").meters_override() == Vector2(-1.0, -1.0),
+			"an absent value is not given")
 	t.check(_page("?debug=1&meters=10").meters_override() == Vector2(-1.0, -1.0),
 		"one number refuses the whole value rather than guessing the other")
 	t.check(_page("?debug=1&meters=a,b").meters_override() == Vector2(-1.0, -1.0),
