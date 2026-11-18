@@ -98,20 +98,18 @@ Left, each its own design question:
   by class: the city map's (`CityMap`) in the events, whose fields (`network`, `main_road`, `block_plans`,
   `calm_blocks`, `closed_tiles`, `power_station`, `boundary_wall_at_a`, `square_rects`, `playgrounds`)
   stay public until the events' pass, and in the scene recipes' draft and runtime (`stretch`,
-  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
-  previews and the scene recipes. Two groups have a home of their own:
+  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
     a closure's segment go through `BlockPlan.Step`'s and `RoadClosure`'s methods. It is no longer a
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
     private.
   - A field only a test still reads outside its own class and the code that writes it
     (`CityMap.home_rect`, `courtyard_rects`,
-    `Building.scenery_clock`, `door_world_x_range`, `station_door_col`, `station_yard_cols`,
-    `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the city and goes with the
-    tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
-    also calls. `Building.power_station` is not in this group, since game
-    code reads it outside its class, and it is converted with that reader, the city scene's
-    `assign_roof_extensions()`, which skips the station's yard columns when it extends a roof.
+    `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
+    `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
+    `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the game (the city, the city
+    scene, the blackout, the poster walls, the roof previews) and goes with the tests-one-module
+    item (`tests-one-module.md`), when its tests read through a method the game also calls.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
