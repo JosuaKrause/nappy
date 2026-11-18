@@ -386,11 +386,6 @@ src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
 src/resistance/happenings.gd solid_parts
 src/resistance/resistance_director.gd id
-src/resistance/resistance_director.gd inner_radius
-src/resistance/resistance_director.gd paces
-src/resistance/resistance_director.gd redetains
-src/resistance/resistance_director.gd role
-src/resistance/resistance_director.gd solid_when
 src/resistance/resistance_director.gd speed
 src/routes/region_planner.gd guard_sides
 src/routes/seal_planner.gd act_tag
@@ -474,10 +469,6 @@ src/events/warning_board.gd barrier_post
 src/events/warning_board.gd car
 src/events/warning_board.gd def
 src/events/warning_board.gd is_finished
-src/resistance/resistance_director.gd def
-src/resistance/resistance_director.gd is_finished
-src/resistance/resistance_director.gd is_parked
-src/resistance/resistance_director.gd path
 src/run/day_director.gd excitement
 
 # [EventManager] src/events/event_manager.gd
@@ -561,11 +552,7 @@ src/events/walk_ground.gd def
 src/events/walk_ground.gd facing
 src/events/walk_ground.gd path
 src/events/walk_ground.gd position
-src/resistance/resistance_director.gd def
-src/resistance/resistance_director.gd facing
 src/resistance/resistance_director.gd mast_id
-src/resistance/resistance_director.gd position
-src/resistance/resistance_director.gd silenced
 src/routes/region_planner.gd def
 src/routes/region_planner.gd facing
 src/routes/region_planner.gd gate_state
