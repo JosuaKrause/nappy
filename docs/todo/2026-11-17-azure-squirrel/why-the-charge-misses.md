@@ -4,4 +4,5 @@
 his charge's path and her position each tick) to find whether he notices her too late, runs a path
 that cannot reach her, or gives up before his reach closes, and fix that in the guard's own
 behavior rather than in the escape's spacing. Then the finale rig's floor goes back to a check of
-every posted walk, and `docs/EVENTS.md`'s sentence goes back to saying a straight walk is caught.
+every posted walk, and `docs/EVENTS.md`'s and `docs/MECHANICS.md`'s sentences go back to saying a
+straight walk is caught.

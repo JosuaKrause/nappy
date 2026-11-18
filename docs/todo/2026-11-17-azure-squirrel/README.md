@@ -9,8 +9,9 @@ refactor step finds in code it carries over (**orchestrating**, the bullet on su
 silky-lemur #1450): it waits for the refactor (inbox #1210 in gentle-owl).
 
 **What was found.** `docs/EVENTS.md` and `docs/MECHANICS.md` say that walking straight past a
-posted roadblock's guard meets his charge; the player asked that luring the guard away be enough to
-pass (inbox #771 in minty-lemur), which needs the straight walk to be the one that fails. On some
+posted roadblock's guard meets his charge. The player: "it should be in a way that luring away the
+guard is enough" (inbox #771 in minty-lemur). **Read as** (the filer's reading): luring is the way
+past, so a straight walk past a posted guard is the one that fails. On some
 streets the guard charges and misses her: seed 77's street (7,0,1) walked forward and seed
 4216201080's street (2,0,1) walked back each print `charged: 1`, `caught: false`, the first with the
 band on the street's last tile. `tests/probes/escape_roadblock_cost.gd` shows it at main too, on 3
