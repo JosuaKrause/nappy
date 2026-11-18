@@ -82,7 +82,7 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	# A world with no city: the open ground and its events, nobody in it.
 	director.use_the_world(DayWorld.in_the_building(map, events, null, null, Vector2.ZERO,
 			Vector2.DOWN, null), null, clock)
-	director.spec = spec
+	director.use_the_spec(spec)
 	_ended.clear()
 	EventBus.day_ended.connect(_on_day_ended)
 	return {"director": director, "clock": clock, "nodes": [clock, events]}
@@ -188,7 +188,7 @@ func _test_a_scene_recipe_never_hands_over(t: TestRunner) -> void:
 	_run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	_run.resistance().record_the_sabotage()
-	director.escape_follows = false
+	director.use_escape_follows(false)
 	var end := director.finish_day(GameEnums.DayResult.WON)
 	t.check(not end.continues_into_the_escape(), "a scene recipe's won last day never hands over")
 	_put_away(rig)
@@ -499,7 +499,7 @@ func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t: TestRunner) -
 			DaySpec.for_section(DaySpec.Section.CITY, 210.0)]:
 		var rig := _start_rig(t, spec)
 		var director: DayDirector = rig["director"]
-		director.first_day = true
+		director.use_first_day(true)
 		director.start(spec)
 		var player: _FakeStroller = rig["player"]
 		var map: _FakeMap = rig["map"]

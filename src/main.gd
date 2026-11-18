@@ -753,8 +753,8 @@ func _add_the_screenshot_rig() -> void:
 	if not screenshot:
 		return
 	if _flow.plays_an_authored_scene() and _flow.scene().plays_by_script():
-		screenshot.simulation_clock = _flow.scene().elapsed
-		screenshot.before_capture = _flow.scene().prepare_capture
+		screenshot.use_simulation_clock(_flow.scene().elapsed)
+		screenshot.use_before_capture(_flow.scene().prepare_capture)
 	add_child(screenshot)
 
 ## `--parent mother|father` over the roll `RunState.start_run()` just made from the seed, so a
@@ -1693,7 +1693,7 @@ func _add_the_return_window(viewport: Viewport) -> void:
 	add_child(_return_window)
 	_return_window.left_the_game.connect(_pause_on_focus_lost)
 	_return_window.setup(viewport, _no_focus_pause,
-			_rig_lock != null and _rig_lock.locked_out)
+			_rig_lock != null and _rig_lock.shuts_out_real_input())
 
 ## The one control scheme, in its own layer for the same reason the danger edge gets one: it has to
 ## sit above the world it overlays. One node goes into the tree rather than a choice between two —
@@ -1862,9 +1862,9 @@ func _new_director() -> DayDirector:
 	director.use_trace(_the_trace())
 	director.use_the_flags(_spawn_start.bind(config.spawn_target()),
 			DevRig.apply_meter_override.bind(config.meters_override()))
-	director.first_day = _first_day
-	director.escape_follows = _flow.escape_follows()
-	director.spec = _flow.spec()
+	director.use_first_day(_first_day)
+	director.use_escape_follows(_flow.escape_follows())
+	director.use_the_spec(_flow.spec())
 	return director
 
 ## Where the `--spawn` `target` starts her (`DevRig.for_spawn_target()`), asked by the day director

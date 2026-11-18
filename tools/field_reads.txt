@@ -24,10 +24,6 @@ src/events/event_spawner.gd scar
 src/events/row_ground.gd scar
 src/events/walk_ground.gd on_finish
 
-# [AutoScreenshot] src/dev/auto_screenshot.gd
-src/main.gd before_capture
-src/main.gd simulation_clock
-
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
 src/city/city.gd day
@@ -110,11 +106,6 @@ src/simulation_builder.gd view
 src/main.gd atlas
 src/main.gd rotated
 src/main.gd timing
-
-# [DayDirector] src/run/day_director.gd
-src/main.gd escape_follows
-src/main.gd first_day
-src/main.gd spec
 
 # [DaySpec] src/day/day_spec.gd
 src/events/dawn_context.gd holds_the_home_streets
@@ -777,9 +768,6 @@ src/events/event_instance.gd warns_for
 # [ResistanceHappenings] src/resistance/happenings.gd
 src/dev/scene_recipe_runtime.gd column
 src/dev/scene_recipe_runtime.gd trace
-
-# [RigLock] src/dev/rig_lock.gd
-src/main.gd locked_out
 
 # [RoadClosure] src/routes/road_closure.gd
 src/events/day_planner.gd segment

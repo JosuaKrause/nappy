@@ -69,8 +69,8 @@ func _ready() -> void:
 	var words := PackedStringArray([
 			"--screenshot", OS.get_cmdline_user_args()[0], "--after", "abc"])
 	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
-	rig.simulation_clock = func() -> float: return _now
-	rig.before_capture = func() -> void: print("CAPTURE_AT %.2f" % _now)
+	rig.use_simulation_clock(func() -> float: return _now)
+	rig.use_before_capture(func() -> void: print("CAPTURE_AT %.2f" % _now))
 	add_child(rig)
 func _process(_delta: float) -> void:
 	_now += 0.25
@@ -140,7 +140,7 @@ func _rig(t: TestRunner, clock: UI.FakeClock, words: Array[String], flee := fals
 	if flee:
 		args.append("--flee")
 	var node := AutoScreenshot.from_config(RunConfig.parse(PackedStringArray(args), "", true))
-	node.simulation_clock = clock.read
+	node.use_simulation_clock(clock.read)
 	t.add_child(node)
 	return node
 

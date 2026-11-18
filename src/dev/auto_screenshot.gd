@@ -121,8 +121,11 @@ var _elapsed := 0.0
 ## Whether Godot's movie writer is recording the run — see `_draw_covered_recording_frame()`.
 var _recording := false
 ## A recipe's movement and screenshot share physics time; ordinary rigs retain their own clock.
-var simulation_clock: Callable
-var before_capture: Callable
+## Handed in by `use_simulation_clock()`.
+var _simulation_clock: Callable
+## What runs just before the picture is taken, handed in by `use_before_capture()`; none, and
+## nothing does.
+var _before_capture: Callable
 var _holding := ""
 ## The script's own currently-pressed direction, or `Vector2.ZERO` when no script step is
 ## holding anything — see `_hold_direction()` / `_release_direction()`. A separate field from
@@ -307,6 +310,17 @@ static func _bearing_to_direction(degrees: float) -> Vector2:
 	var radians := deg_to_rad(degrees)
 	return Vector2(sin(radians), -cos(radians)).normalized()
 
+## Hands the rig the clock a recipe's movement and screenshot share: a `Callable` answering the
+## physics seconds the authored scene has run. `main` hands a scene played by script its own,
+## before the rig enters the tree; a rig handed none keeps its own.
+func use_simulation_clock(clock: Callable) -> void:
+	_simulation_clock = clock
+
+## Hands the rig what to run just before it takes the picture: `main` hands a scene played by
+## script its own preparation, before the rig enters the tree.
+func use_before_capture(prepare: Callable) -> void:
+	_before_capture = prepare
+
 func _ready() -> void:
 	if _smooth:
 		_plan = WalkPlan.make(_script, Engine.physics_ticks_per_second, true)
@@ -411,8 +425,8 @@ func _on_telegraphed(instance: EventInstance) -> void:
 	_flee_at = _elapsed + _dither
 
 func _process(delta: float) -> void:
-	if simulation_clock.is_valid():
-		_elapsed = float(simulation_clock.call())
+	if _simulation_clock.is_valid():
+		_elapsed = float(_simulation_clock.call())
 	else:
 		_elapsed += delta
 	if not _smooth:
@@ -454,7 +468,8 @@ func _process(delta: float) -> void:
 ## whose shortcuts are keycodes, which is the pause screen entirely.
 ##
 ## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.**
-## `RigLock._input()` marks every event handled while `locked_out`, except one carrying this exact
+## `RigLock._input()` marks every event handled while it shuts out real input
+## (`RigLock.shuts_out_real_input()`), except one carrying this exact
 ## device id — see `RigLock._input()` for why a tag on the event and not its class.
 func _tap(what: String) -> void:
 	for pressed: bool in [true, false]:
@@ -518,8 +533,8 @@ func _turn_and_run() -> void:
 ## A window that exists but is not being drawn is the other half, and `DrawnFrame.wait()` is what
 ## answers it.
 func _capture() -> void:
-	if before_capture.is_valid():
-		before_capture.call()
+	if _before_capture.is_valid():
+		_before_capture.call()
 	if not _can_photograph(DisplayServer.get_name()):
 		printerr("[AutoScreenshot] nothing to photograph: this run is headless, so no frame is " +
 				"ever drawn and %s cannot be written. tools/shot.sh needs a display." % _path)
