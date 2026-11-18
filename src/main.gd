@@ -85,8 +85,8 @@ var _return_window: ReturnWindow
 
 var _city: City
 ## The run this boot plays, taken off its sitting once, with the sitting (`_take_the_run()`):
-## the sitting is where the run lives (`Sitting.run`), since the sitting outlives the scene
-## reloads that carry a run on, and this is where it is reached. This file reads the run through
+## the sitting is where the run lives (`Sitting.take_the_run()`), since the sitting outlives the
+## scene reloads that carry a run on, and this is where it is reached. This file reads the run through
 ## `_run` and hands it, typed `RunState`, to `GameSave` and to every reader it builds. Null
 ## until a sitting is taken.
 var _run: RunState
@@ -319,7 +319,7 @@ func _ready() -> void:
 	# Before anything reads what the sitting kept: the run carried over, the title's answer, the
 	# save symbol a reload carried, the save itself.
 	_take_the_sitting()
-	if config.frame_record_requested and not _sitting.frame_timing is FrameRecord:
+	if config.frame_record_requested and not _sitting.kept_frame_timing() is FrameRecord:
 		_sitting.use_frame_timing(FrameRecord.new())
 	# Before anything can end the run, so every boot (the escape's and a recipe's too) deletes the
 	# save when its run ends.
@@ -343,7 +343,7 @@ func _ready() -> void:
 	_session.setup(_run_log, config, EventBus, _flow, _run, _run.attempt_spend().block_arcs())
 	_run.use_trace(_session.trace)
 	_save.trace = _session.trace
-	_sitting.atlas.trace_note = _session.trace.note
+	_sitting.atlas().trace_note = _session.trace.note
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -470,7 +470,7 @@ func _ready() -> void:
 		add_child(_resistance)
 		_pauses_with_the_game(_resistance)
 		_resistance.trace = _the_trace()
-		_resistance.use_atlas(_sitting.atlas)
+		_resistance.use_atlas(_sitting.atlas())
 		_resistance.use_bus(EventBus)
 		var events := _city_simulation.events()
 		_resistance.setup(_city.map, _run, events, _city.streets(), _city.fronts(), _city,
@@ -615,8 +615,8 @@ func _settle_the_run() -> void:
 	# **A run carried on from a checkpoint reads no file**: the sitting's run already holds it, and
 	# `GameSave.load_in_memory()` puts it back through the same JSON and the same `_apply()` a load
 	# does, so this boot builds on exactly what a load would give it, on any run.
-	var carried := _sitting.carry_the_run_over
-	_sitting.carry_the_run_over = false
+	var carried := _sitting.carries_the_run_over()
+	_sitting.spend_the_carry()
 	if carried:
 		_save.load_in_memory(_run)
 	else:
@@ -698,7 +698,7 @@ static func _escape_section_spec(section: int, length: float) -> DaySpec:
 ## and the title, with one set of handlers for all three.
 func _build_the_screens() -> void:
 	_hud = HUD.instantiate()
-	_hud.use_atlas(_sitting.atlas)
+	_hud.use_atlas(_sitting.atlas())
 	_configure_the_hud()
 	_hud.use_touch(_touch_available)
 	add_child(_hud)
@@ -711,7 +711,7 @@ func _build_the_screens() -> void:
 	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	_summary.use_touch(_touch_available)
-	_summary.use_atlas(_sitting.atlas)
+	_summary.use_atlas(_sitting.atlas())
 	add_child(_summary)
 
 	# Deliberately not `_pauses_with_the_game`: a pause screen that pauses with the game cannot
@@ -719,7 +719,7 @@ func _build_the_screens() -> void:
 	_pause = PAUSE_SCREEN.instantiate()
 	_pause.use_platform(_touch_available, QuitOption.available(config))
 	_pause.use_run(_run)
-	_pause.use_atlas(_sitting.atlas)
+	_pause.use_atlas(_sitting.atlas())
 	add_child(_pause)
 	# So `_pause.open()`/`close()` can stash and restore the heading she carried into an ordinary
 	# Esc-pause — see `PauseScreen._touch_controls`'s own doc. `_add_touch_controls()` already ran
@@ -733,7 +733,7 @@ func _build_the_screens() -> void:
 	_title.use_platform(_touch_available, QuitOption.available(config))
 	_title.use_run(_run)
 	_title.use_sitting(_sitting)
-	_title.use_atlas(_sitting.atlas)
+	_title.use_atlas(_sitting.atlas())
 	add_child(_title)
 	_title.start_requested.connect(_on_title_start)
 	_title.quit_requested.connect(_quit)
@@ -819,11 +819,11 @@ func _add_trailer_rigs() -> void:
 ## that make her, and nothing hears it before the controls exist.
 func _make_player() -> Stroller:
 	var player: Stroller = STROLLER.instantiate()
-	player.use_atlas(_sitting.atlas)
+	player.use_atlas(_sitting.atlas())
 	player.draw_as_father(_run.header().parent_is_father())
 	var baby := player.get_node("Baby") as Baby
 	baby.use_bus(EventBus)
-	baby.use_frame_timing(_sitting.frame_timing)
+	baby.use_frame_timing(_sitting.kept_frame_timing())
 	if config.invincible:
 		baby.freeze_excitement()
 	player.let_out_of_the_hold.connect(func() -> void:
@@ -848,11 +848,11 @@ func _simulation_builder() -> SimulationBuilder:
 	if _simulations:
 		return _simulations
 	_simulations = SimulationBuilder.new()
-	_simulations.equip(_the_trace(), _sitting.atlas, _sitting.frame_timing)
+	_simulations.equip(_the_trace(), _sitting.atlas(), _sitting.kept_frame_timing())
 	_simulations.use_bus(EventBus)
 	_simulations.use_poster_art(_poster_art)
 	_simulations.use_the_crowds_screen(ScreenCrowdView.new(self),
-			FrameRecordTiming.new(_sitting.frame_timing))
+			FrameRecordTiming.new(_sitting.kept_frame_timing()))
 	_simulations.leave_out(config.skip_events, config.skip_crowd, config.skip_motion)
 	if config.pelican:
 		_simulations.make_every_cyclist_a_pelican()
@@ -867,12 +867,12 @@ func _new_city() -> City:
 	var city: City = CITY.instantiate()
 	city.trace = _the_trace()
 	city.run = _run
-	city.ground_recipe = _sitting.ground_recipe
-	city.atlas = _sitting.atlas
+	city.ground_recipe = _sitting.ground_recipe()
+	city.atlas = _sitting.atlas()
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows
-	city.frame_timing = _sitting.frame_timing
+	city.frame_timing = _sitting.kept_frame_timing()
 	add_child(city)
 	_pauses_with_the_game(city)
 	return city
@@ -1022,7 +1022,7 @@ func _world_map() -> WorldMap:
 ## reaches the day's clock (`DayController.reach_the_exit()`).
 func _build_the_escape_building() -> void:
 	_interior = InteriorScene.new()
-	_interior.atlas = _sitting.atlas
+	_interior.atlas = _sitting.atlas()
 	_interior.name = "Interior"
 	add_child(_interior)
 	_pauses_with_the_game(_interior)
@@ -1042,7 +1042,7 @@ func _build_the_escape_building() -> void:
 	_building_simulation.events().use_player(_player)
 	_hand_the_controls_cover_to_the_events()
 	_building_seed = _run.calendar().day_rng(_run.header().day(), "finale-interior").randi()
-	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map, _sitting.atlas)
+	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map, _sitting.atlas())
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
 	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
 	# three again when she walks out, which points them at the street.
@@ -1322,7 +1322,7 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	# lesson by it and the page counts it.
 	EventBus.controls_chosen.emit(mode == ControlsMode.Mode.JOYSTICK, by_key)
 	_touch_controls.set_mode(mode, side)
-	_sitting.controls_word = ControlsMode.word_for(mode, side)
+	_sitting.keep_controls_word(ControlsMode.word_for(mode, side))
 	if _readout:
 		_readout.close_the_title()
 	# A new game's mode is the title's Hard Mode checkbox, read as the title is dismissed — the
@@ -1361,7 +1361,7 @@ func _show_the_resume_gate() -> void:
 	# here today** — the boot above already holds every group a day draws — and it is opened
 	# anyway because this is the screen a page the boot could not have known about belongs behind:
 	# a group whose membership depends on the day would be acquired between these two lines.
-	_sitting.atlas.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
+	_sitting.atlas().open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
 	_summary.show_summary(SummaryModel.brief_for(_run, _resume_gate_note(), _flow.spec().title),
 			_flow.mode())
 
@@ -1426,8 +1426,8 @@ func _add_danger_edge() -> void:
 	layer.name = "DangerEdge"
 	_edge_layer = layer
 	_edge = DangerEdge.new()
-	_edge.timing = _sitting.frame_timing
-	_edge.atlas = _sitting.atlas
+	_edge.timing = _sitting.kept_frame_timing()
+	_edge.atlas = _sitting.atlas()
 	_edge.name = "Edge"
 	# Pinned to the fixed design box rather than full-rect, so this layer's own rotation (applied
 	# in `_apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
@@ -1458,7 +1458,7 @@ func _add_excitement_halo() -> void:
 		_halo.setup(_excitement_now(), _player, _baby)
 		return
 	_halo = ExcitementHalo.new()
-	_halo.timing = _sitting.frame_timing
+	_halo.timing = _sitting.kept_frame_timing()
 	_halo.name = "ExcitementHalo"
 	DrawLayer.draw_on(_halo, DrawLayer.Layer.HALO)
 	_halo.setup(_excitement_now(), _player, _baby)
@@ -1569,7 +1569,7 @@ func _retire_the_boot_camera() -> void:
 ## restarted once would be holding both.
 func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -> void:
 	var elapsed := Time.get_ticks_msec()
-	var atlas := _sitting.atlas
+	var atlas := _sitting.atlas()
 	atlas.claim_the_loading_moments(moment)
 	for group in RESIDENT_GROUPS:
 		atlas.hold_for_the_process(group)
@@ -1590,7 +1590,7 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 ## the thing the residency exists to prevent.
 func _exit_tree() -> void:
 	if _sitting:
-		_sitting.atlas.release_the_loading_moments()
+		_sitting.atlas().release_the_loading_moments()
 
 ## Gets the Compatibility renderer to compile the halo and shoreline shader programs before their
 ## first real drawings. **Godot 4.7 has no precompile call for this renderer** — `RenderingServer`'s own
@@ -1626,7 +1626,7 @@ func _warm_the_canvas_shaders(ground: Vector2) -> void:
 	_pauses_with_the_game(halo_probe)
 	halo_probe.queue_redraw()
 
-	var water_texture := _sitting.atlas.region(&"tiles/water") as AtlasTexture
+	var water_texture := _sitting.atlas().region(&"tiles/water") as AtlasTexture
 	var water_probe := Node2D.new()
 	water_probe.name = "WaterWarm"
 	water_probe.global_position = ground
@@ -1710,7 +1710,7 @@ func _add_the_return_window(viewport: Viewport) -> void:
 ## **Except on the two boots that open no title of their own** while the title's answer is still in
 ## this process: the day-14 hand-over to the escape (`RunFlow.escape_from_a_run()`) and a normal run
 ## carried on from its checkpoint (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`). Each keeps the mode and steering side the
-## player chose on the run's title (`Sitting.controls_word`) rather than falling back to the rig's
+## player chose on the run's title (`Sitting.controls_word()`) rather than falling back to the rig's
 ## default — the side is "permanently for the sitting" (2026-10-10). A game closed inside a section
 ## and opened again has no answer in memory, and its title asks.
 func _add_touch_controls() -> void:
@@ -1719,14 +1719,14 @@ func _add_touch_controls() -> void:
 	_touch_layer = layer
 	add_child(layer)
 	_touch_controls = TOUCH_CONTROLS.instantiate()
-	_touch_controls.atlas = _sitting.atlas
+	_touch_controls.atlas = _sitting.atlas()
 	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
 	var word := config.controls_word
 	if (_flow.escape_from_a_run() or _flow.opening() == RunFlow.Opening.CARRIED_FROM_CHECKPOINT) \
-			and _sitting.controls_word != "":
-		word = _sitting.controls_word
+			and _sitting.controls_word() != "":
+		word = _sitting.controls_word()
 	_touch_controls.set_mode(ControlsMode.from_word(word), ControlsMode.side_from_word(word))
 	_hand_the_controls_cover_to_the_events()
 
@@ -2046,7 +2046,7 @@ func _on_summary_continued(raised_in: int) -> void:
 		RunFlow.Step.ENGAGE:
 			# The brief's own loading window shuts with the brief: from here she is walking, and a
 			# page read from disk in a walked frame is the stutter the window exists to refuse.
-			_sitting.atlas.close_loading_window()
+			_sitting.atlas().close_loading_window()
 			_summary.dismiss()
 			_engage_the_day()
 		RunFlow.Step.CARRY_TO_CHECKPOINT:
@@ -2084,7 +2084,7 @@ func _on_summary_continued(raised_in: int) -> void:
 ## checkpoint's day on the run exactly as a load would give it, then starts it. The save already
 ## says that dawn: `_on_day_finished()` wrote it as the lost-day screen came up.
 func _carry_the_run_into_the_next_boot() -> void:
-	_sitting.carry_the_run_over = true
+	_sitting.mark_the_run_carried_over()
 	_reload_the_scene()
 
 ## Back to the title, with everything about the run thrown away.
@@ -2129,7 +2129,7 @@ func _restart_run() -> void:
 	# open the escape again over a run that was just thrown away. Only the run goes: what else the
 	# sitting keeps (the title's answer, the restart stamp below, the save symbol's home) outlives
 	# the restart. This boot plays on its own `_run` until the reload frees it.
-	_sitting.run = RunState.new()
+	_sitting.use_run(RunState.new())
 	_sitting.note_restart_requested()
 	_reload_the_scene()
 
@@ -2431,7 +2431,7 @@ func _raise_save_indicator() -> void:
 	if _save_indicator:
 		return
 	_save_indicator = SaveIndicator.new()
-	_save_indicator.atlas = _sitting.atlas
+	_save_indicator.atlas = _sitting.atlas()
 	add_child(_save_indicator)
 
 ## Every write goes through here. **It tells the symbol nothing**: `GameSave.write()` announces the

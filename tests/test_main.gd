@@ -863,7 +863,7 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t: TestRunner) -
 	t.check(first_calls.reloads.size() == 1, "day 14's continue hands over with a reload")
 	_shut(t, first)
 	var sitting := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
-	t.check(sitting != null and sitting.controls_word == "joystick-right",
+	t.check(sitting != null and sitting.controls_word() == "joystick-right",
 			"and parks the sitting, keeping the title's answer, in its home")
 	run.start_run(SEED)
 	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
@@ -902,7 +902,7 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunne
 	home.add_child(sitting)
 	var first_calls := Calls.new()
 	var first := await _boot(t, [], first_calls, home)
-	t.check(sitting.run == run and run.header().run_seed() == SEED,
+	t.check(sitting.take_the_run() == run and run.header().run_seed() == SEED,
 			"the first boot plays the run the sitting made, started on the run's seed")
 	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
@@ -916,7 +916,8 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunne
 			and run.facts().escape_section() == DaySpec.Section.BUILDING,
 			"its won day 14 leaves the run in the building and reloads")
 	_shut(t, first)
-	t.check(home.get_node_or_null(NodePath(Sitting.NODE_NAME)) == sitting and sitting.run == run,
+	t.check(home.get_node_or_null(NodePath(Sitting.NODE_NAME)) == sitting
+			and sitting.take_the_run() == run,
 			"the sitting stays in its home, holding the same run")
 	var main := await _boot(t, [], Calls.new(), home)
 	t.check(_one(main, "InteriorScene") != null

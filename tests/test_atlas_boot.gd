@@ -58,7 +58,7 @@ func run(t: TestRunner) -> void:
 ## days built still holds a reference; the second run's own is given back the same way at the end.
 func _test_a_boot_holds_one_parent_and_never_the_other(t: TestRunner) -> void:
 	var seat := Seat.new(t)
-	var atlas := seat.sitting.atlas
+	var atlas := seat.sitting.atlas()
 	var pages := PageLog.new(atlas)
 	for male: bool in [false, true]:
 		# Handed the watch's log: a boot points the sitting's library at the log it writes.
@@ -98,7 +98,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t: TestRunner) -> void:
 ## look identical from the outside and would have cost a blocking read from disk in between.
 func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 	var seat := Seat.new(t)
-	var atlas := seat.sitting.atlas
+	var atlas := seat.sitting.atlas()
 	var pages := PageLog.new(atlas)
 	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"],
 			pages.boot_log(), false, MapCache.source())).free_all()
@@ -157,11 +157,11 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 					run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 				run.facts().set_escape_section(section))
 		var recording := RecordingAtlas.new()
-		seat.sitting.atlas = recording
+		seat.sitting.use_atlas(recording)
 		var booted := await seat.boot(t, _SCRATCH_SAVE, [])
 		var main := booted.main
 		var where := "the day" if section == DaySpec.Section.NONE else "the building"
-		var atlas: AtlasLibrary = seat.sitting.atlas
+		var atlas: AtlasLibrary = seat.sitting.atlas()
 		var holders := 0
 		var help_texts := 0
 		var mode_buttons := 0
@@ -227,7 +227,7 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t: TestRunner) -> void:
 			"the held restart parks the one sitting in the home")
 	_shut(t, first)
 	# The restart handed the sitting a fresh run, which the reloaded boot plays.
-	run = seat.sitting.run
+	run = seat.sitting.take_the_run()
 
 	# The restart closed the run log; the reloaded boot's lines go in once it is open again.
 	run_log.begin_run(SEED, false)

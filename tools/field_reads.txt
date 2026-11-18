@@ -932,14 +932,6 @@ src/city/city.gd view
 # [SceneryWater] src/city/scenery_water.gd
 src/city/scenery_ground.gd atlas
 
-# [Sitting] src/autoload/sitting.gd
-src/main.gd atlas
-src/main.gd carry_the_run_over
-src/main.gd controls_word
-src/main.gd frame_timing
-src/main.gd ground_recipe
-src/main.gd run
-
 # [StillWatch] src/dev/still_watch.gd
 src/main.gd trace
 

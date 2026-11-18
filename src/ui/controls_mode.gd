@@ -33,8 +33,8 @@ enum Side { LEFT, RIGHT }
 ## The word `from_word()` and `side_from_word()` read back as `mode` and `side`: `"tap"` for
 ## `Mode.TAP`, whose side means nothing, and `"joystick-left"` or `"joystick-right"` for
 ## `Mode.JOYSTICK`. `main` keeps the title's answer in this form on the `Sitting` it hands down
-## (`Sitting.controls_word`), so the boots that open no title of their own read it the way they
-## read the configured word.
+## (`Sitting.keep_controls_word()`, read back by `controls_word()`), so the boots that open no
+## title of their own read it the way they read the configured word.
 static func word_for(mode: ControlsMode.Mode, side: ControlsMode.Side) -> String:
 	if mode != Mode.JOYSTICK:
 		return "tap"
