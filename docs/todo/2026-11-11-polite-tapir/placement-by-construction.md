@@ -151,7 +151,9 @@ full text names the files each step owns.
    will guarantee the shouting man" (inbox #1520 in breezy-magpie). **Read as** (the orchestrator's
    reading): the mark puts a rigged bag in front of the bag the units ahead of her draw from
    (`MarbleBag`'s queue of bags and `rig()`), and the next unit to draw stands him, wherever and
-   whenever that draw happens, rather than a spot on her street taken at the mark. The design's pull
+   whenever that draw happens, rather than a spot on her street taken at the mark; day 7's second van
+   is laid the same way, since the question asked both and the answer names the man alone (the
+   orchestrator's reading). The design's pull
    request 4 is amended for this reading by Fable before it is built. The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
    tree where she is going and is handed no siting (step 4's first pull request, the record
    polite-tapir-tall-marmot): *proposed, not asked for*, the design's pick, open to the player. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
