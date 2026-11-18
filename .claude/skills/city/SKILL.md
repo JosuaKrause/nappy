@@ -153,7 +153,7 @@ point somewhere** — a scheduler decision, not a change to what a closure is.
 ## The street hierarchy
 
 `CityGenerator._assign_street_kinds()` decides *where* (`CityMap.main_road`,
-`CityMap.precinct_spans`); `Tuning.PRECINCT_BLOCKS`, `CrowdLanes.PRECINCT_BUSYNESS`,
+`CityMap.precinct_stretches()`); `Tuning.PRECINCT_BLOCKS`, `CrowdLanes.PRECINCT_BUSYNESS`,
 `EventScheduler.EVENT_PRECINCT_WEIGHT` and `City`'s `EXCITEMENT_DECAY_*_MULTIPLIER` family decide
 *what it means*.
 
