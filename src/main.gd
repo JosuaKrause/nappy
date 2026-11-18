@@ -1944,11 +1944,11 @@ func _write_dawn_for_a_resumed_run() -> void:
 ## nothing should be different.")*
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var end := _new_director().finish_day(result)
-	if end.is_section:
+	if end.ends_a_section():
 		_finish_the_section(end)
 		return
 	_flow.day_ended(end)
-	if end.hands_over_to_the_escape:
+	if end.continues_into_the_escape():
 		_facts.set_escape_section(DaySpec.Section.BUILDING)
 		_save_now(false)
 		_summary.show_summary(SummaryModel.day_over(_run, end), _flow.mode)
@@ -1958,7 +1958,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# `finish_day()` above) already cleared the save, and writing here would resurrect a file
 	# naming a run that is over. A normal run sent back to its checkpoint is written here like any
 	# other loss, already standing at that dawn.
-	if not end.run_over:
+	if not end.ends_the_run():
 		_save_now(false)
 	_summary.show_summary(SummaryModel.day_over(_run, end), _flow.mode)
 
@@ -1985,7 +1985,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## goes out here too, beside the day's own `day_ended`.
 func _finish_the_section(end: DayEnd) -> void:
 	var spec := _flow.spec
-	var result := end.result
+	var result := end.outcome()
 	var won := result == GameEnums.DayResult.WON
 	if not won:
 		EventBus.escape_lost.emit(spec.section_kind(), result)
@@ -1995,7 +1995,7 @@ func _finish_the_section(end: DayEnd) -> void:
 		# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it
 		# ended. `EventBus.run_ended` fires a moment later, from
 		# `RunCalendar.finish_day()` below.
-		EventBus.escape_out.emit(_day.exit_reached)
+		EventBus.escape_out.emit(end.exit_taken())
 	# The flag's escape is a day-1 run that only jumped here, so getting out of it settles nothing;
 	# a lost section costs what it costs either way.
 	var run_over := false

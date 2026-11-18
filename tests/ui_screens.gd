@@ -57,9 +57,7 @@ static func mouse_at(position: Vector2, pressed: bool) -> InputEventMouseButton:
 ## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence,
 ## the clock it ended on, and whether it sent a normal run back to its checkpoint.
 static func ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0, goes_back := false) -> DayEnd:
-	var end := DayEnd.new()
-	end.result = result
-	end.reason = reason
-	end.elapsed_seconds = elapsed
-	end.goes_back = goes_back
+	var end := DayEnd.new(result, reason, elapsed)
+	if goes_back:
+		end.mark_sending_the_run_back()
 	return end

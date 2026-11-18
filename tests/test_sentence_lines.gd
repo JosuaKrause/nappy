@@ -82,10 +82,8 @@ func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t: Tes
 func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t: TestRunner) -> void:
 	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
-	var end := DayEnd.new()
-	end.result = GameEnums.DayResult.LOST_CRYING
-	end.reason = "She started crying. There is no settling her now."
-	end.elapsed_seconds = 10.0
+	var end := DayEnd.new(GameEnums.DayResult.LOST_CRYING,
+			"She started crying. There is no settling her now.", 10.0)
 	var run := RunState.new()
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.DAY_OVER)
 	var title: Label = summary.get_node("Root/Center/Lines/Title")

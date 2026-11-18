@@ -588,8 +588,7 @@ func _test_the_epilogue_carries_no_brief_note(t: TestRunner) -> void:
 	summary.show_summary(SummaryModel.brief_for(run, Texts.RESUMED_DAY_LOST),
 			RunFlow.Mode.BRIEF)
 	t.check(note.visible, "a resumed day's brief shows its note")
-	var out := _ended(GameEnums.DayResult.WON, "", 42.0)
-	out.exit_reached = CityEdge.Kind.TUNNEL
+	var out := DayEnd.new(GameEnums.DayResult.WON, "", 42.0, CityEdge.Kind.TUNNEL)
 	summary.show_summary(SummaryModel.epilogue(out), RunFlow.Mode.EPILOGUE)
 	t.check(not note.visible, "and the epilogue after it does not carry it")
 	summary.free()
@@ -656,11 +655,7 @@ func _show_day(summary: Boot.DaySummaryScript, run: RunState, end: DayEnd) -> vo
 ## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence
 ## and the clock it ended on.
 func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd:
-	var end := DayEnd.new()
-	end.result = result
-	end.reason = reason
-	end.elapsed_seconds = elapsed
-	return end
+	return DayEnd.new(result, reason, elapsed)
 
 # ------------------------------------------------------- the resistance's own day ---
 

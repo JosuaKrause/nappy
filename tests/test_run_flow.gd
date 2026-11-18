@@ -98,11 +98,11 @@ func _test_a_day_end_raises_the_screen_its_end_asks_for(t: TestRunner) -> void:
 	var M := RunFlow.Mode
 	var ordinary := DayEnd.new()
 	var handed := DayEnd.new()
-	handed.hands_over_to_the_escape = true
+	handed.mark_continuing_into_the_escape()
 	var back := DayEnd.new()
-	back.goes_back = true
+	back.mark_sending_the_run_back()
 	var over := DayEnd.new()
-	over.run_over = true
+	over.mark_ending_the_run()
 	for case: Array in [[ordinary, M.DAY_OVER], [handed, M.INTO_ESCAPE],
 			[back, M.BACK_TO_CHECKPOINT], [over, M.RUN_OVER]]:
 		var flow := RunFlow.new()

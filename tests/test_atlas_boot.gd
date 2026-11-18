@@ -233,7 +233,7 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t: TestRunner) -> void:
 	run_log.begin_run(SEED, false)
 	var second := await _boot_in(t, home, save, reloads, run_log)
 	await _press_tap(t, second)
-	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
+	# Day 14 after the hand-over (`DayEnd.continues_into_the_escape()`): every task done, a win.
 	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	run.resistance().record_the_sabotage()

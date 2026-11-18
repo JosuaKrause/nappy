@@ -11,8 +11,9 @@ extends CanvasLayer
 ##
 ## **A normal run's last nerve comes here as a lost day, not as an ending**: the same screen any
 ## lost day reaches, saying the day she goes back to and drawing the nerves she has again, with the
-## ordinary continue that carries on into it (`SummaryModel.day_over()`, `DayEnd.goes_back`). The
-## ending with no continue, `GAME OVER`, is hard mode's alone — see `_refresh_buttons()`.
+## ordinary continue that carries on into it (`SummaryModel.day_over()`,
+## `DayEnd.sends_the_run_back()`). The ending with no continue, `GAME OVER`, is hard mode's alone —
+## see `_refresh_buttons()`.
 ##
 ## Also the pause: the tree is paused while this is up, so the city keeps its state and the
 ## day can simply be restarted rather than rebuilt.

@@ -516,10 +516,8 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t: TestRunner) -> voi
 	run.header().set_day(8)
 	var summary: Boot.DaySummaryScript = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
-	var end := DayEnd.new()
-	end.result = GameEnums.DayResult.LOST_TIMEOUT
-	end.reason = "Dusk came."
-	end.goes_back = true
+	var end := DayEnd.new(GameEnums.DayResult.LOST_TIMEOUT, "Dusk came.")
+	end.mark_sending_the_run_back()
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.BACK_TO_CHECKPOINT)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	t.check(body.text.contains("Back to day 8"), "it names the day she goes back to ('%s')" % body.text)

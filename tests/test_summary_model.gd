@@ -20,11 +20,7 @@ func _run_on(day: int, nerves: int) -> RunState:
 	return run
 
 func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd:
-	var end := DayEnd.new()
-	end.result = result
-	end.reason = reason
-	end.elapsed_seconds = elapsed
-	return end
+	return DayEnd.new(result, reason, elapsed)
 
 func _test_a_won_days_summary_names_the_coming_day(t: TestRunner) -> void:
 	var run := _run_on(5, 3)
@@ -54,7 +50,7 @@ func _test_a_lost_days_summary_says_it_is_tried_again(t: TestRunner) -> void:
 func _test_a_last_nerve_names_the_checkpoint(t: TestRunner) -> void:
 	var run := _run_on(8, Tuning.STARTING_NERVES)
 	var end := _ended(GameEnums.DayResult.LOST_TIMEOUT, "Dusk came.")
-	end.goes_back = true
+	end.mark_sending_the_run_back()
 	var body := SummaryModel.day_over(run, end).body("")
 	t.check(body.contains("Your nerves gave out. Back to day 8.") and not body.contains("again"),
 			"a normal run's last nerve names the day she goes back to ('%s')" % body)
@@ -95,8 +91,7 @@ func _test_an_ending_has_no_continue_and_names_its_day_when_bad(t: TestRunner) -
 	t.check(not good.body("").contains("made it to day"), "the good ending names no day")
 
 func _test_the_epilogue_names_the_way_out_and_its_clock(t: TestRunner) -> void:
-	var end := _ended(GameEnums.DayResult.WON, "", 42.5)
-	end.exit_reached = CityEdge.Kind.TUNNEL
+	var end := DayEnd.new(GameEnums.DayResult.WON, "", 42.5, CityEdge.Kind.TUNNEL)
 	var model := SummaryModel.epilogue(end)
 	t.check(model.kind == SummaryModel.Kind.EPILOGUE and model.offers_continue()
 			and model.heading_text() == Texts.FINALE_HEADING and model.title_text() == Texts.FINALE_TITLE,
