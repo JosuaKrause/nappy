@@ -2,8 +2,8 @@ extends RefCounted
 ## **Every placement entry point of the resistance and the events' director half, printed one line
 ## each**, so a change to the rules they ask can be shown to pick exactly what they picked before:
 ## the pick (row, tile, world point, heading where there is one) and the state of the stream the
-## pick drew from. Not a suite: it prints rather than asserts. Run by name, before and after a
-## change, and compare:
+## pick drew from, where it draws from one. Not a suite: it prints rather than asserts. Run by
+## name, before and after a change, and compare:
 ##
 ##     tools/test.sh probes/director_placement_fingerprint.gd > before.txt
 ##     grep '^DP ' before.txt > before.dp     (and the same for after; `diff` the two)
@@ -20,8 +20,8 @@ extends RefCounted
 ##   `_roadblock_guard_spot()`), with and without her screen counted;
 ## - **the relocation and the extras**: `_nearest_alley_within()`, `_nearest_to_the_mark()`,
 ##   `_frontage_below()`, the neighbor's start (`_send_the_neighbor_home()`), the mast added
-##   near the mark (`_add_a_mast_near()`) and day 13's roadblock placed near it
-##   (`_place_the_roadblock_near()`);
+##   near the mark (`_add_a_mast_near()`, which takes no stream, so its line is the pick alone)
+##   and day 13's roadblock placed near it (`_place_the_roadblock_near()`);
 ## - **the happenings**: day 10's raid, refused with her view on a van and let through off it, and
 ##   day 13's column sent at her from a few places along the main road;
 ## - **the events' director half**: where a row comes down her line (`down_her_line()`, the
@@ -202,10 +202,9 @@ func _the_extras(city: City, director: ResistanceDirector, player: Stroller, lab
 		else:
 			_print("%s neighbor starts nowhere rng %d" % [label, director._rng.state])
 		printed += 1
-		var mast_rng := _rng(seed_value, day, "mast-near")
 		director._follow_the_paths_to_the_edge(director._where_she_read_it(contact))
-		var added := director._add_a_mast_near(contact, mast_rng)
-		_print("%s mast near %s rng %d" % [label, added, mast_rng.state])
+		var added := director._add_a_mast_near(contact)
+		_print("%s mast near %s" % [label, added])
 		printed += 1
 		# Only the guarded band's task (day 13's roadblock) swaps one in, as the director's own
 		# caller asks; any other day's task row does not span the street.
