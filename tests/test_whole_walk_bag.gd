@@ -28,6 +28,9 @@ static func _accepts_all(_id: String) -> bool:
 static func _weighs_the_row_most(_id: String) -> float:
 	return 1.0e9
 
+static func _weighs_the_row_least(_id: String) -> float:
+	return 1.0e-9
+
 static func _weighs_one(_id: String) -> float:
 	return 1.0
 
@@ -36,10 +39,12 @@ func _test_every_unit_is_handed_the_same_bag(t: TestRunner) -> void:
 	t.check(bags.bag_for(_unit(0)) == bags.bag_for(_unit(1)),
 			"two units of the walk are answered the one bag")
 
-## A bag of one row's marble and one empty marble, the row weighed a billion to one so it comes up
-## first on every seed: the first unit's rules are asked about it and refuse it, so that unit draws
-## the empty marble, and the row is still in the bag for the second unit, whose rules take it. A
-## refused marble spent instead of left would leave the second unit the empty marble.
+## A bag of one row's marble and one empty marble. The first unit weighs the row a billion to one,
+## so it comes up first on every seed: its rules are asked about it and refuse it, so it draws the
+## empty marble. The second unit weighs the row a billionth of the empty marble, so it draws the row
+## only if the row is the one marble left in the bag, as it is when the refusal left it there. A
+## refused marble spent instead of left leaves the second unit a refilled bag, and it draws the
+## empty marble.
 func _test_a_marble_one_unit_refuses_is_there_for_the_next(t: TestRunner) -> void:
 	for seed_value in 8:
 		var bags := WholeWalkBag.new({"cafe_tables": 1, ViewBag.EMPTY: 1}, seed_value)
@@ -48,7 +53,7 @@ func _test_a_marble_one_unit_refuses_is_there_for_the_next(t: TestRunner) -> voi
 			asked.append(id)
 			return id == ViewBag.EMPTY
 		var first := bags.bag_for(_unit(0)).draw(refuses_the_row, _weighs_the_row_most)
-		var second := bags.bag_for(_unit(1)).draw(_accepts_all, _weighs_the_row_most)
+		var second := bags.bag_for(_unit(1)).draw(_accepts_all, _weighs_the_row_least)
 		t.check(asked == ["cafe_tables"],
 				"seed %d: the first unit's rules were asked about the row, and refused it (%s)" % [seed_value, asked])
 		t.check(first == ViewBag.EMPTY, "seed %d: so it draws the empty marble (%s)" % [seed_value, first])
