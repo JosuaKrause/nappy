@@ -592,7 +592,7 @@ and `--summary`, and with `rg` for what the check cannot see.
   `event_streaming.gd` (the search guesses receivers by name, so the builder counts again once
   `EventPlan` is a class the check sees).
 - **Reads through an untyped receiver, which the check skips**, found with `rg '\.def\.'` outside
-  `src/events/`: `city.gd` (`id`), `region_planner.gd` (one write).
+  `src/events/`: `region_planner.gd` (one write).
 - **The tests**: 138 files under `tests/` read an event's field. `.def.id` 258 times,
   `.is_finished` 154, `.live` 144, `.is_leaving` 133, `.def.obstructs_radius`
   46, `.phase` 40; 11 files build a row with `EventDef.new()` and 18 write a row's field.
@@ -606,7 +606,7 @@ counted where it only writes.
 
 | Field | Reader files | Replaced by |
 |---|---|---|
-| `id` | 9 in, 2 out (the scene recipes, the resistance), 24 untyped | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` |
+| `id` | 9 in, 2 out (the scene recipes, the resistance) | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` |
 | `display_name` | written by the catalogue; no reader in `src/`, `tests/` or `tools/` | deleted, nobody would miss it (section 7) |
 | `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun(count)` |
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
