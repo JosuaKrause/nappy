@@ -705,12 +705,12 @@ func _spawn_buildings() -> void:
 	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
 	# the generated or authored values above, so both run before any of them enters the tree — see
 	# `_covered_ground_cols()` and `assign_roof_extensions()`. Never asked of her own building
-	# (`covered_ground_cols` stays empty) — her own building's front is the one the player knows
+	# (`Building.covered_ground_cols()` stays empty) — her own building's front is the one the player knows
 	# as home and stays as it is, and the home block's own doorstep already exempts it from the
 	# route-redundancy guarantee the same way.
 	for i in buildings.size():
 		if not buildings[i].is_on_home_block():
-			buildings[i].covered_ground_cols = _covered_ground_cols(map.building_lots()[i])
+			buildings[i].mark_covered_ground_cols(_covered_ground_cols(map.building_lots()[i]))
 	var courtyard_of := _courtyard_lot_of(map.building_lots())
 	assign_roof_extensions(buildings, courtyard_of)
 	_share_courtyard_tint(buildings, courtyard_of)
@@ -739,7 +739,7 @@ func _spawn_buildings() -> void:
 			add_entity(stack)
 			scenery.register(stack.residence())
 
-## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
+## `Building.covered_ground_cols()` for `rect`: true at column `col` where the tile directly south of
 ## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
 ## `GameEnums.TileType.BUILDING` rather than walkable ground. `map.is_walkable()` is the fixed
 ## lattice fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
@@ -756,22 +756,22 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 
 ## `Building.roof_extension_rows`, `roof_extension_seamless` and `seamless_cover_cols` for every
 ## building in `buildings` (parallel to `map.building_lots()`): wherever a building's own
-## `covered_ground_cols` marks a column covered, the tile directly south of it belongs to some
+## `covered_ground_cols()` marks a column covered, the tile directly south of it belongs to some
 ## other lot's rect — the one whose roof now has to reach up to meet the covered building's own
 ## roof — found by a tile lookup over every rect rather than a spatial search, since the whole set
 ## is small and built once per run. The extension at that column is exactly the covered
 ## building's own `wall_tiles()`: precisely enough rows to reach the world row its roof already
 ## starts at, edge to edge. A power
-## station's yard columns (`hall_cols()`, read after `_dress_the_power_station()` above has set
-## `power_station`) are skipped since no roof stands there to extend — the yard is fenced ground,
+## station's yard columns (`hall_cols()`, read after `_dress_the_power_station()` above has made
+## it the station, `is_power_station()`) are skipped since no roof stands there to extend — the yard is fenced ground,
 ## not a building mass.
 ##
 ## **A front column draws no facade only where a roof actually covers it.** Once every extension
-## is placed, each building's `covered_ground_cols` is narrowed to the columns an extension
+## is placed, each building's `covered_ground_cols()` is narrowed to the columns an extension
 ## reached; a column nothing covers — a yard's, a tile past the map's edge, any south tile no lot
 ## owns — keeps its facade, since a column with neither a facade nor a roof over it shows the dark
 ## background where its wall would be (the player, shown one: "Keep its facade"). Nothing reads
-## `covered_ground_cols` before this, so the door and every other roll see only the final answer.
+## `covered_ground_cols()` before this, so the door and every other roll see only the final answer.
 ##
 ## **Seamless when both rectangles are cut from the same courtyard lot.** A single-block or
 ## apartment-complex courtyard is cut into up to four rectangles around its hole
@@ -804,19 +804,23 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 		falses.fill(false)
 		seamless.append(falses)
 		seamless_below.append(falses.duplicate())
+	var covered: Array[Array] = []
 	var reached: Array[Array] = []
 	for building in buildings:
+		var cols := building.covered_ground_cols()
+		covered.append(cols)
 		var none: Array[bool] = []
-		none.resize(building.covered_ground_cols.size())
+		none.resize(cols.size())
 		none.fill(false)
 		reached.append(none)
 	for i in buildings.size():
 		var back := buildings[i]
-		if back.covered_ground_cols.is_empty():
+		var back_covered: Array[bool] = covered[i]
+		if back_covered.is_empty():
 			continue
 		var rect: Rect2i = map.building_lots()[i]
-		for col in back.covered_ground_cols.size():
-			if not back.covered_ground_cols[col]:
+		for col in back_covered.size():
+			if not back_covered[col]:
 				continue
 			var south := Vector2i(rect.position.x + col, rect.position.y + rect.size.y)
 			var front_index: int = tile_to_index.get(south, -1)
@@ -825,7 +829,7 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 			var front := buildings[front_index]
 			var front_rect: Rect2i = map.building_lots()[front_index]
 			var local_col := south.x - front_rect.position.x
-			if front.power_station:
+			if front.is_power_station():
 				var hall := front.hall_cols()
 				if local_col < hall.x or local_col >= hall.y:
 					continue
@@ -843,8 +847,9 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 		buildings[i].roof_extension_rows = extensions[i]
 		buildings[i].roof_extension_seamless = seamless[i]
 		buildings[i].seamless_cover_cols = seamless_below[i]
-		if buildings[i].covered_ground_cols != reached[i]:
-			buildings[i].covered_ground_cols = reached[i]
+		var narrowed: Array[bool] = reached[i]
+		if covered[i] != narrowed:
+			buildings[i].mark_covered_ground_cols(narrowed)
 
 ## Gives every piece of one courtyard lot one tint (`Building.tint_variant`), so the rectangles a
 ## courtyard is cut into read as the one building they are rather than as three or four neighbours.
@@ -896,11 +901,10 @@ func _courtyard_lot_of(rects: Array[Rect2i]) -> Array[int]:
 func _dress_the_power_station(building: Building, rect: Rect2i) -> void:
 	if not map.has_power_station() or rect != CityMap.blocks_tile_rect(map.power_station_blocks()):
 		return
-	building.power_station = true
-	building.station_door_col = map.power_station_door_tiles().position.x - rect.position.x
-	var door_is_west := building.station_door_col < Tuning.BLOCK_SIZE
-	building.station_yard_cols = Vector2i(rect.size.x - Tuning.BLOCK_SIZE if door_is_west else 0,
-			Tuning.BLOCK_SIZE)
+	var door_col := map.power_station_door_tiles().position.x - rect.position.x
+	var door_is_west := door_col < Tuning.BLOCK_SIZE
+	building.dress_as_power_station(door_col,
+			Vector2i(rect.size.x - Tuning.BLOCK_SIZE if door_is_west else 0, Tuning.BLOCK_SIZE))
 
 ## The block a lot belongs to — the city's own lots and the fronts' (`CityFronts`).
 static func block_of(rect: Rect2i) -> Vector2i:
@@ -1277,8 +1281,8 @@ func _dress_blocks(state: CityState) -> void:
 		_place_garbage_sacks()
 	for building in _buildings:
 		var listed: Dictionary = map.stretch_building_on(building.lot_rect())
-		building.condition = int(listed.condition) as Building.Condition if not listed.is_empty() \
-				else condition_for(state.purpose_of(map.plans_by_block(), block_of(building.lot_rect())))
+		building.show_condition(int(listed.condition) as Building.Condition if not listed.is_empty() \
+				else condition_for(state.purpose_of(map.plans_by_block(), block_of(building.lot_rect()))))
 		building.day = _day
 	_fronts.mark_the_burnt_frontage()
 

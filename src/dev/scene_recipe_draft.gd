@@ -91,13 +91,13 @@ func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start:
 	var stretch := {"tiles": _tile_runs(map, ground, _dawn_tiles)}
 	var buildings: Array = []
 	for building in city.buildings():
-		if _fronts(map, building.lot, ground):
-			buildings.append({"lot": [building.lot.position.x, building.lot.position.y,
-					building.lot.size.x, building.lot.size.y],
-					"district": str(GameEnums.BlockPurpose.keys()[building.district]).to_lower(),
-					"variant": building.variant,
-					"height": roundi(building.height / Tuning.TILE_SIZE),
-					"condition": str(Building.Condition.keys()[building.condition]).to_lower()})
+		var lot := building.lot_rect()
+		if _fronts(map, lot, ground):
+			buildings.append({"lot": [lot.position.x, lot.position.y, lot.size.x, lot.size.y],
+					"district": str(GameEnums.BlockPurpose.keys()[building.district()]).to_lower(),
+					"variant": building.look_variant(),
+					"height": roundi(building.height() / Tuning.TILE_SIZE),
+					"condition": str(Building.Condition.keys()[building.condition()]).to_lower()})
 	buildings.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 			return Vector2i(a.lot[1], a.lot[0]) < Vector2i(b.lot[1], b.lot[0]))
 	stretch["buildings"] = buildings
