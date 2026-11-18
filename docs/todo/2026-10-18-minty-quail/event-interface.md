@@ -592,8 +592,7 @@ and `--summary`, and with `rg` for what the check cannot see.
   `event_streaming.gd` (the search guesses receivers by name, so the builder counts again once
   `EventPlan` is a class the check sees).
 - **Reads through an untyped receiver, which the check skips**, found with `rg '\.def\.'` outside
-  `src/events/`: `city.gd` (`id`),   `region_planner.gd` (one write). In all `rg` finds 51 reads of a row's field through `.def.` in
-  14 files outside the events folder, 24 of them `id`.
+  `src/events/`: `city.gd` (`id`), `region_planner.gd` (one write).
 - **The tests**: 138 files under `tests/` read an event's field. `.def.id` 258 times,
   `.is_finished` 154, `.live` 144, `.is_leaving` 133, `.def.obstructs_radius`
   46, `.phase` 40; 11 files build a row with `EventDef.new()` and 18 write a row's field.
