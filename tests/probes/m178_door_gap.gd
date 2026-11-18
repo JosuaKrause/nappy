@@ -59,7 +59,7 @@ func run(_t: TestRunner) -> void:
 			placed_before += count_before
 			placed_after += count_after
 			print("%-12d %5d %6d %8d %8d %8d %8d" % [
-					map.seed_used, day, doors.size(), in_before, in_after,
+					map.city_seed(), day, doors.size(), in_before, in_after,
 					count_before, count_after])
 	print("total inside the gap: %d before, %d after" % [total_before, total_after])
 	print("total placed: %d before, %d after (%.1f%%)"
@@ -72,7 +72,7 @@ func run(_t: TestRunner) -> void:
 func _plan_day(map: CityMap, day: int, tree: RouteTree,
 		doors: PackedVector2Array) -> Array[EventPlan]:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = map.seed_used * 31 + day
+	rng.seed = map.city_seed() * 31 + day
 	var consumed: Array[String] = []
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []

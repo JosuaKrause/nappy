@@ -88,8 +88,8 @@ func _day_twelve(t: TestRunner, seed_value: int) -> Node2D:
 			func(unbooted: Boot.MainScript) -> void: unbooted.use_sitting_home(_home), false, MapCache.source())
 	var main := _booted.main
 	await Boot.press_title(t, main, "Right")
-	t.check(Boot.city(main).map.seed_used == seed_value, "seed %d is the city under test (%d)"
-			% [seed_value, Boot.city(main).map.seed_used])
+	t.check(Boot.city(main).map.city_seed() == seed_value, "seed %d is the city under test (%d)"
+			% [seed_value, Boot.city(main).map.city_seed()])
 	t.check(_run.header().day() == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
 			% [ResistanceSteps.swing_day(), _run.header().day()])
 	# A resumed run opens on the day's brief; leaving it is what puts her on the street.

@@ -1,10 +1,10 @@
 class_name ParkClosure
 extends RoadClosure
-## One fenced run of `CityMap.fenced_park`'s edge — the one calm area this run ever physically
+## One fenced run of `CityMap.fenced_park_block()`'s edge — the one calm area this run ever physically
 ## closes, at most once, in act III or later. *(PLAYTEST-140, statement 9: "doing it for one park,
 ## sure, more towards the later stages of the game once but not for regular".)* Every other used
 ## area is off the route tree the same way (`CityMap.shut_calm()`) but carries no fence at all: this
-## class only ever draws the one area `CityMap.fenced_park` names.
+## class only ever draws the one area `CityMap.fenced_park_block()` names.
 ##
 ## **It is a `RoadClosure` so that it is drawn, and stands in her way, exactly as a closed street's
 ## barriers do.** `ClosurePlanner.plan_day` hands these to `City` beside the day's street closures,
@@ -15,7 +15,7 @@ extends RoadClosure
 ## reads, from the pavement beside it, before she has taken a step onto it.
 ##
 ## **Which park is fenced is not decided here**: `CityMap._shut_the_spent_calm()` decides it at the
-## repaint, from `ClosurePlanner.calm_to_shut()`'s own candidates, and `CityMap.fenced_park` records
+## repaint, from `ClosurePlanner.calm_to_shut()`'s own candidates, and `CityMap.fenced_park_block()` records
 ## it. This is only the fence around what was decided.
 ##
 ## **The fence stands on the calm ground's own edge row, never on the pavement.** A barrier line is

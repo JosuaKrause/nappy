@@ -62,14 +62,14 @@ func _repaint_for(map: CityMap, day: int) -> void:
 
 func _seal_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 	return rng
 
 ## `RouteTree.for_day()` and `SealPlanner.plan_day()`'s own answers for a (map, day) pair, shared
 ## by the read-only checks below rather than recomputed once per test — **M125: measured at
 ## ~124ms a pair**, and eight of this file's tests ask the same 84 (seed, day) pairs (six maps,
 ## every day) independently, which was the great majority of the suite's cost. Keyed on
-## `map.seed_used` for the same reason `test_checkpoints.gd`'s own cache is.
+## `map.city_seed()` for the same reason `test_checkpoints.gd`'s own cache is.
 ##
 ## **Not used by `_test_the_tree_itself_is_untouched` or `_test_the_doorstep_still_reaches_the_
 ## corridor_after_thinning`**, which both call `SealPlanner.plan_day` directly: the first asks
@@ -81,14 +81,14 @@ var _tree_cache: Dictionary = {}
 var _seal_cache: Dictionary = {}
 
 func _tree_for(map: CityMap, day: int) -> RouteTree:
-	var key := "%d:%d" % [map.seed_used, day]
+	var key := "%d:%d" % [map.city_seed(), day]
 	if not _tree_cache.has(key):
 		_repaint_for(map, day)
 		_tree_cache[key] = RouteTree.for_day(map, day)
 	return _tree_cache[key]
 
 func _seals_for(map: CityMap, day: int) -> Array[EventPlan]:
-	var key := "%d:%d" % [map.seed_used, day]
+	var key := "%d:%d" % [map.city_seed(), day]
 	if not _seal_cache.has(key):
 		var tree := _tree_for(map, day)
 		_seal_cache[key] = SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
@@ -155,7 +155,7 @@ func _test_off_tree_streets_are_sealed(t: TestRunner) -> void:
 			else:
 				t.check(missing == 0,
 						"seed %d day %d: %d off-tree streets carry no seal (of %d candidates)"
-						% [map.seed_used, day, missing, candidates.size()])
+						% [map.city_seed(), day, missing, candidates.size()])
 
 			var extra := 0
 			for key: Vector3i in sealed:
@@ -163,14 +163,14 @@ func _test_off_tree_streets_are_sealed(t: TestRunner) -> void:
 					extra += 1
 			t.check(extra == 0,
 					"seed %d day %d: %d seals stand on a street that was never a candidate"
-					% [map.seed_used, day, extra])
+					% [map.city_seed(), day, extra])
 		t.check(walled_candidates > 0,
 				"seed %d: the days with the region wall had off-tree streets to seal (%d)"
-				% [map.seed_used, walled_candidates])
+				% [map.city_seed(), walled_candidates])
 		var share := float(walled_sealed) / maxf(1.0, float(walled_candidates))
 		t.check(absf(share - SealPlanner.GATEHOUSE_DAY_SEAL_SHARE) <= _SEAL_SHARE_TOLERANCE,
 				"seed %d: with the region wall %.2f of the off-tree streets are sealed (%d of %d), "
-				% [map.seed_used, share, walled_sealed, walled_candidates]
+				% [map.city_seed(), share, walled_sealed, walled_candidates]
 				+ "the share asked for is %.2f" % SealPlanner.GATEHOUSE_DAY_SEAL_SHARE)
 
 func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
@@ -185,10 +185,10 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 					continue
 				t.check(not tree.is_on_the_tree(segment.key()),
 						"seed %d day %d: a seal stands on the corridor itself, at %s"
-						% [map.seed_used, day, segment.key()])
+						% [map.city_seed(), day, segment.key()])
 				t.check(not (home != null and segment.key() == home.key()),
 						"seed %d day %d: a seal stands on the doorstep's own street"
-						% [map.seed_used, day])
+						% [map.city_seed(), day])
 
 ## The main road is refused as a seal candidate outright — see `CityMap.is_main_road` (which the planner asks) and
 ## its class doc, "The main road is exempt too". Checked over every real vertical segment at
@@ -206,7 +206,7 @@ func _test_the_main_road_is_never_sealed(t: TestRunner) -> void:
 					continue
 				t.check(not sealed.has(segment.key()),
 						"seed %d day %d: a seal stands on the main road at %s"
-						% [map.seed_used, day, segment.key()])
+						% [map.city_seed(), day, segment.key()])
 
 ## `SealPlanner` only ever reads `tree.is_on_the_tree()` — it must never grow, shrink or move what
 ## the tree itself carries.
@@ -220,7 +220,7 @@ func _test_the_tree_itself_is_untouched(t: TestRunner) -> void:
 		var after := tree.cells()
 		t.check(before.size() == after.size(),
 				"seed %d: sealing does not add or remove tree cells (%d before, %d after)"
-				% [map.seed_used, before.size(), after.size()])
+				% [map.city_seed(), before.size(), after.size()])
 		var before_set := {}
 		for cell in before:
 			before_set[cell] = true
@@ -229,7 +229,7 @@ func _test_the_tree_itself_is_untouched(t: TestRunner) -> void:
 			if not before_set.has(cell):
 				moved += 1
 		t.check(moved == 0,
-				"seed %d: sealing does not change which cells the tree carries" % map.seed_used)
+				"seed %d: sealing does not change which cells the tree carries" % map.city_seed())
 
 # ------------------------------------------------------------------- the doorstep ---
 
@@ -257,7 +257,7 @@ func _test_the_doorstep_reaches_the_corridor(t: TestRunner) -> void:
 						joined = true
 			t.check(joined,
 					"seed %d day %d: a street meeting the doorstep's own junctions is on the tree"
-					% [map.seed_used, day])
+					% [map.city_seed(), day])
 	t.check(total > 0, "there were days with a tree to ask about (%d)" % total)
 
 # ------------------------------------------------------------------ winnability ---
@@ -283,7 +283,7 @@ func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) 
 ## sees as taken on the one test that actually composes seals with closures.
 func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var closure_rng := RandomNumberGenerator.new()
-	closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+	closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day), closure_rng, tree)
 	map.close_streets(closures)
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
@@ -337,7 +337,7 @@ func _test_a_day_is_reachable_without_the_main_road(t: TestRunner) -> void:
 			t.check(_some_calm_is_reached(map, grid, blocked),
 					("seed %d day %d: some calm area is reachable without the main road " +
 					"(decay ×%.1f, the ground playtest 22's run was forced onto)")
-					% [map.seed_used, day, City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
+					% [map.city_seed(), day, City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 
 # ------------------------------------------------------------------------ alleys ---
 
@@ -360,7 +360,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 				if not map.network.segment_containing(tile):
 					off_street_tiles[tile] = true
 
-			for rect in map.alley_rects:
+			for rect in map.alley_lots():
 				if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
 					continue
 				var vertical := rect.size.x < rect.size.y
@@ -378,7 +378,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 						break
 				t.check(not (sealed_here and rejoins),
 						"seed %d day %d: alley at %s is sealed although it rejoins the tree"
-						% [map.seed_used, day, rect.position])
+						% [map.city_seed(), day, rect.position])
 				if not rejoins:
 					candidates += 1
 	t.check(candidates > 0, "at least one disconnected alley was sampled (%d)" % candidates)
@@ -475,7 +475,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 					joined = true
 		t.check(joined,
 				"seed %d day %d: the doorstep still reaches the corridor once seals are thinned"
-				% [map.seed_used, day])
+				% [map.city_seed(), day])
 
 # ----------------------------------------------------------------- hard coverage ---
 
@@ -563,10 +563,10 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
 				found += 1
 				t.check(plan.def.solid_parts.size() == expected,
 						"seed %d day %d: a placed crash still carries its %d car bodies (%d)"
-						% [map.seed_used, day, expected, plan.def.solid_parts.size()])
+						% [map.city_seed(), day, expected, plan.def.solid_parts.size()])
 				t.check(plan.def.shape != null,
 						"seed %d day %d: and the band its field and picture are stated over"
-						% [map.seed_used, day])
+						% [map.city_seed(), day])
 	t.check(found > 0, "some day across the sweep sealed a street with a crash (%d)" % found)
 
 ## **The gap in a crash is a price, not a way through.** *(2026-09-12: "it should emanate an
@@ -665,7 +665,7 @@ func _test_no_seal_body_stands_in_a_street_tree(t: TestRunner) -> void:
 				var tile := map.world_to_tile(plan.position)
 				t.check(not trees.has(tile),
 						"seed %d day %d: seal '%s' stands in a street tree at %s"
-						% [map.seed_used, day, plan.def.id, tile])
+						% [map.city_seed(), day, plan.def.id, tile])
 	t.check(checked > 0, "there were seal bodies to check (%d)" % checked)
 
 ## **No seal stands over a building**, with its body or with the ground its picture is drawn over
@@ -688,7 +688,7 @@ func _test_no_seal_reaches_over_a_building(t: TestRunner) -> void:
 				var drawn := Reach.drawing_overhang(map, plan)
 				t.check(body <= 0.5 and drawn <= 0.5,
 						"seed %d day %d: seal '%s' at %s keeps off the buildings (body %.1fpx, drawing %.1fpx over)"
-						% [map.seed_used, day, plan.def.id, map.world_to_tile(plan.position), body,
+						% [map.city_seed(), day, plan.def.id, map.world_to_tile(plan.position), body,
 						drawn])
 	t.check(checked > 0 and barricades > 0,
 			"there were seals to ask about (%d, %d of them barricade pieces)" % [checked, barricades])
@@ -727,7 +727,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 				var segment := map.network.segment_containing(tile)
 				t.check(segment != null and lined.has(segment.key()),
 						"seed %d day %d: a fallen tree seals %s, which has no trees on it"
-						% [map.seed_used, day, tile])
+						% [map.city_seed(), day, tile])
 				if segment:
 					felled[segment.key()] = plan.position
 			for key: Vector3i in felled:
@@ -739,11 +739,11 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 					empty += 1
 					t.check(pit.position.distance_to(at) <= reach,
 							"seed %d day %d: the empty pit at %s is %.0fpx from the fallen tree, "
-							% [map.seed_used, day, pit.tile, pit.position.distance_to(at)]
+							% [map.city_seed(), day, pit.tile, pit.position.distance_to(at)]
 							+ "outside its own %.0fpx scene" % reach)
 				t.check(empty == 1,
 						"seed %d day %d: street %s has %d empty pits, want exactly the one the tree fell from"
-						% [map.seed_used, day, key, empty])
+						% [map.city_seed(), day, key, empty])
 	t.check(found > 0, "some day across the sweep felled a tree across a street (%d)" % found)
 
 # --------------------------------------------------------------------------- M129 ---
@@ -802,7 +802,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			map.close_streets(closures)
@@ -813,7 +813,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 			var boundary := {}
 			for segment in region_plan.walls:
@@ -834,7 +834,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			var no_scars: Array[Dictionary] = []
 			var no_calm: Array[Vector2i] = []
 			var events_rng := RandomNumberGenerator.new()
-			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
+			events_rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
 			var rows := GameDawn.of(DaySpec.for_day(day), events_rng, map) \
 					.calm(CalmAreas.of(map, no_calm)).spent(no_one_shots).scars(no_scars).on(tree) \
 					.standing(standing).plan().placements()
@@ -869,7 +869,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 				t.check(_the_crossing_is_walkable(map, corridor, junction, box, here),
 						("seed %d day %d: a route junction at %s is left closed beside the " +
 						"day's own seals and the region wall (covered by %s)")
-						% [map.seed_used, day, junction, _ids_of(here)])
+						% [map.city_seed(), day, junction, _ids_of(here)])
 	t.check(checked > 0, "there were route junctions a catalogue row reaches to check (%d)"
 			% checked)
 

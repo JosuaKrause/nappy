@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
 		var plan_rng := RandomNumberGenerator.new()
-		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
+		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
 		var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 				.on(RouteTree.for_day(map, day)).plan().placements()
 		var bought_a_dog := false
@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 			no_dog_bought += 1
 		var director := EventDirector.new(map)
 		var director_rng := RandomNumberGenerator.new()
-		director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])
+		director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
 		director.start_day(day, planned, director_rng)
 		var met := _walk_a_day(map, director, day)
 		var dogs := met.count(DOG)

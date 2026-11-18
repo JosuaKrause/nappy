@@ -634,7 +634,7 @@ func _advance_watching(seconds: float, at: Vector2) -> void:
 ## crossroads the finding is about. Empty, with a failed check, where this city has none.
 func _a_junction_to_seal(t: TestRunner) -> Dictionary:
 	var home := {}
-	for segment in _city.map.network.around_blocks(Rect2i(_city.map.home_block, Vector2i.ONE)):
+	for segment in _city.map.network.around_blocks(Rect2i(_city.map.home_block_coordinate(), Vector2i.ONE)):
 		home[segment.key()] = true
 	var count := StreetNetwork.junction_count()
 	for y in range(1, count.y - 1):
@@ -1129,7 +1129,7 @@ func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> v
 
 ## M110, item 3: a soft seal takes both pavements from the walkers and leaves the carriageway to
 ## the cars. `SealPlanner.plan_day` is driven directly here, off a real tree, since
-## `CityMap.soft_sealed_tiles` and `CrowdAgent.lane().strategy().cannot_go_on` are what is being asked about rather
+## `CityMap.soft_sealed_tiles()` and `CrowdAgent.lane().strategy().cannot_go_on` are what is being asked about rather
 ## than the whole day's pipeline — checked against the predicate directly, for the same reason the
 ## door carve-out above is: whether a random walker wanders onto one particular tile inside a short
 ## window is a question about the day's population, not about this rule.
@@ -1139,9 +1139,9 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t: TestRunner) -> vo
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("crowd-soft-seal:%d:%d" % [SEED, day])
 	SealPlanner.plan_day(_city.map, DaySpec.for_day(day), tree, seal_rng)
-	t.check(not _city.map.soft_sealed_tiles.is_empty(),
+	t.check(not _city.map.soft_sealed_tiles().is_empty(),
 			"today's tree leaves at least one street soft-sealed (%d tiles)"
-			% _city.map.soft_sealed_tiles.size())
+			% _city.map.soft_sealed_tiles().size())
 
 	var both_sealed: StreetNetwork.Segment = null
 	var thinned: StreetNetwork.Segment = null
@@ -1247,7 +1247,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, consumed)
 
-	var home_segments := map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE))
+	var home_segments := map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE))
 	t.check(not home_segments.is_empty(), "the home block has bordering streets")
 	var home_keys := {}
 	var held_home := false
@@ -1331,10 +1331,10 @@ func _test_only_cars_go_over_the_bridge(t: TestRunner) -> void:
 ## it is correct rather than a leak. So the property is asked only of cars, over a real zone with
 ## real traffic around it rather than by re-deriving what `LaneStrategy.cannot_go_on()` already computes.
 func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t: TestRunner) -> void:
-	if _city.map.zone_rects.is_empty():
+	if _city.map.zone_anchors().is_empty():
 		return
-	var anchor: Vector2i = _city.map.zone_rects.keys()[0]
-	var footprint := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor])
+	var anchor: Vector2i = _city.map.zone_anchors()[0]
+	var footprint := CityMap.blocks_tile_rect(_city.map.zone_footprint(anchor))
 	var at := _city.map.tile_rect_to_world(footprint).get_center()
 	RunCity.crowd(_city).start_day(1, _rng(1), at)
 

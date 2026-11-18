@@ -176,9 +176,9 @@ func _dominant_multiplier(multipliers: Dictionary) -> String:
 
 ## A line along whichever precinct this city put inland, taken down the middle of its corridor.
 func _precinct_leg(map: CityMap) -> Array:
-	if map.precinct_spans.is_empty():
+	if map.precinct_stretches().is_empty():
 		return []
-	var span: Vector4i = map.precinct_spans[map.precinct_spans.size() - 1]
+	var span: Vector4i = map.precinct_stretches()[map.precinct_stretches().size() - 1]
 	var vertical := span.x == 1
 	var across := span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
 	var from_along := span.z * CityMap.period() + Tuning.STREET_WIDTH

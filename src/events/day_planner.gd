@@ -132,7 +132,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	for segment in region_plan.doors:
 		city_map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	if spec.holds_the_home_streets:
-		for segment in city_map.network.around_blocks(Rect2i(city_map.home_block, Vector2i.ONE)):
+		for segment in city_map.network.around_blocks(Rect2i(city_map.home_block_coordinate(), Vector2i.ONE)):
 			city_map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	# Apart from the catalogue's own events on purpose — see `SealPlanner`'s own doc. It seals everything

@@ -22,7 +22,7 @@ func _rows(map: CityMap) -> Array:
 	var rows := {}
 	var out: Array = []
 	var posts := map.post_positions()
-	for span in map.precinct_spans:
+	for span in map.precinct_stretches():
 		var vertical := span.x == 1
 		for at in posts:
 			var tile := map.world_to_tile(at)

@@ -162,16 +162,16 @@ func _test_partition_covers_every_real_junction(t: TestRunner) -> void:
 			var region := RegionPlanner.region_of_junction(map, junction)
 			t.check(region >= 0 and region < Tuning.REGION_COUNT,
 					"seed %d: junction %s, touched by a real street, has a region in [0, %d) (got %d)"
-					% [map.seed_used, junction, Tuning.REGION_COUNT, region])
+					% [map.city_seed(), junction, Tuning.REGION_COUNT, region])
 			seen[region] = (seen.get(region, 0) as int) + 1
 		t.check(total_real > 0, "there were real junctions to check (%d)" % total_real)
 		t.check(seen.size() == Tuning.REGION_COUNT,
 				"seed %d: all %d regions are used, not just some of them (got %d)"
-				% [map.seed_used, Tuning.REGION_COUNT, seen.size()])
+				% [map.city_seed(), Tuning.REGION_COUNT, seen.size()])
 		var counts: Array[int] = []
 		for r in Tuning.REGION_COUNT:
 			counts.append(seen.get(r, 0) as int)
-		sizes_report.append("seed %d: %s" % [map.seed_used, counts])
+		sizes_report.append("seed %d: %s" % [map.city_seed(), counts])
 	# A plain measurement, not a pass/fail bound — the milestone report's "region size spread".
 	print("[test_regions] junctions per region, one line per seed: ", sizes_report)
 
@@ -180,14 +180,14 @@ func _test_partition_covers_every_real_junction(t: TestRunner) -> void:
 func _test_assignment_is_deterministic(t: TestRunner) -> void:
 	for map in _maps:
 		var rng_a := RandomNumberGenerator.new()
-		rng_a.seed = hash("regions:%d" % map.seed_used)
+		rng_a.seed = hash("regions:%d" % map.city_seed())
 		RegionPlanner.assign(map, rng_a)
 		var first := _regions_of(map)
 		var rng_b := RandomNumberGenerator.new()
-		rng_b.seed = hash("regions:%d" % map.seed_used)
+		rng_b.seed = hash("regions:%d" % map.city_seed())
 		RegionPlanner.assign(map, rng_b)
 		t.check(first == _regions_of(map),
-				"seed %d: the same seed assigns the same regions twice" % map.seed_used)
+				"seed %d: the same seed assigns the same regions twice" % map.city_seed())
 
 # ----------------------------------------------------------------------- the atoms ---
 
@@ -208,24 +208,24 @@ func _test_calm_atoms_are_never_boundary(t: TestRunner) -> void:
 				checked += 1
 				t.check(map.has_street(segment.key()) and not _wall_street_keys(map).has(segment.key()),
 						"seed %d: calm area %s's access street %s is not a region boundary"
-						% [map.seed_used, area.block, segment.key()])
+						% [map.city_seed(), area.block, segment.key()])
 	t.check(checked > 0, "at least one calm area's access street was checked (%d)" % checked)
 
 func _test_the_home_street_is_never_boundary(t: TestRunner) -> void:
 	for map in _maps:
 		var home := ClosurePlanner.home_street(map)
-		t.check(home != null, "seed %d: the front door opens onto a street" % map.seed_used)
+		t.check(home != null, "seed %d: the front door opens onto a street" % map.city_seed())
 		if home:
 			t.check(map.has_street(home.key()) and not _wall_street_keys(map).has(home.key()),
 					"seed %d: the home street %s is not a region boundary"
-					% [map.seed_used, home.key()])
+					% [map.city_seed(), home.key()])
 
 ## Every street along a precinct span's own corridor is interior to one region — cutting one would
 ## wall off half a place the player is told how to find.
 func _test_precinct_spans_are_never_boundary(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
-		for span: Vector4i in map.precinct_spans:
+		for span: Vector4i in map.precinct_stretches():
 			var corridor := span.y
 			var range_end := span.w + 1
 			for along in range(span.z, range_end):
@@ -236,7 +236,7 @@ func _test_precinct_spans_are_never_boundary(t: TestRunner) -> void:
 				checked += 1
 				t.check(not _wall_street_keys(map).has(segment.key()),
 						"seed %d: precinct span street %s is not a region boundary"
-						% [map.seed_used, segment.key()])
+						% [map.city_seed(), segment.key()])
 	t.check(checked > 0, "at least one precinct span street was checked (%d)" % checked)
 
 # ------------------------------------------------------------------------- the flood ---
@@ -295,7 +295,7 @@ func _test_flood_matches_the_partition(t: TestRunner) -> void:
 			floods[region] = grid.flood([seed_tile], blocked)
 		t.check(floods.size() == Tuning.REGION_COUNT,
 				"seed %d: every region has a street to flood from (%d of %d)"
-				% [map.seed_used, floods.size(), Tuning.REGION_COUNT])
+				% [map.city_seed(), floods.size(), Tuning.REGION_COUNT])
 		for segment in map.network.segments():
 			if not map.has_street(segment.key()):
 				continue
@@ -310,7 +310,7 @@ func _test_flood_matches_the_partition(t: TestRunner) -> void:
 					var does_reach := grid.reaches(tile, blocked, floods[from_region])
 					t.check(does_reach == (from_region == region),
 							"seed %d: tile %s of region %d's street %s reached from region %d = %s"
-							% [map.seed_used, tile, region, segment.key(), from_region, does_reach])
+							% [map.city_seed(), tile, region, segment.key(), from_region, does_reach])
 		for rect in listed:
 			var ends := _alley_end_tiles(rect)
 			var regions: Array[int] = []
@@ -323,7 +323,7 @@ func _test_flood_matches_the_partition(t: TestRunner) -> void:
 			listed_alleys += 1
 			t.check(regions[0] >= 0 and regions[1] >= 0 and regions[0] != regions[1],
 					"seed %d: listed alley %s joins two regions (%d and %d)"
-					% [map.seed_used, rect.position, regions[0], regions[1]])
+					% [map.city_seed(), rect.position, regions[0], regions[1]])
 	t.check(checked_cells > 0, "there were cells to ask (%d)" % checked_cells)
 	t.check(listed_alleys > 0, "and listed alleys to ask about (%d)" % listed_alleys)
 
@@ -346,7 +346,7 @@ func _test_no_wall_before_the_first_day(t: TestRunner) -> void:
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			t.check(plan.walls.is_empty() and plan.doors.is_empty(),
 					"seed %d day %d: nothing is drawn before day %d (%d walls, %d doors)"
-					% [map.seed_used, day, Tuning.REGION_WALL_FIRST_DAY, plan.walls.size(),
+					% [map.city_seed(), day, Tuning.REGION_WALL_FIRST_DAY, plan.walls.size(),
 					plan.doors.size()])
 
 ## The day's whole shape, from `Tuning.REGION_WALL_FIRST_DAY` to the end of the run: every door is
@@ -377,7 +377,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 			var this_day_had_a_calmless_door := false
 			for segment in plan.doors:
 				t.check(tree.is_on_the_tree(segment.key()),
-						"seed %d day %d: door %s is on the day's tree" % [map.seed_used, day, segment.key()])
+						"seed %d day %d: door %s is on the day's tree" % [map.city_seed(), day, segment.key()])
 				var ra := RegionPlanner.region_of_junction(map, segment.a)
 				var rb := RegionPlanner.region_of_junction(map, segment.b)
 				if (ra >= 0 and ra < calm.size() and calm[ra] == 0) \
@@ -388,7 +388,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 
 			for segment in plan.walls:
 				t.check(not tree.is_on_the_tree(segment.key()),
-						"seed %d day %d: wall %s is off the day's tree" % [map.seed_used, day, segment.key()])
+						"seed %d day %d: wall %s is off the day's tree" % [map.city_seed(), day, segment.key()])
 
 			# "The home region has a door, or every calm area the tree reaches is in the home
 			# region" — unconditional: the tree-wins rule needs no premise about which regions
@@ -411,7 +411,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 						break
 				t.check(home_has_door,
 						("seed %d day %d: the home region has a door, or every calm area the tree " +
-						"reaches is in it (%d boundary segments)") % [map.seed_used, day, boundary_count])
+						"reaches is in it (%d boundary segments)") % [map.city_seed(), day, boundary_count])
 
 			var blocked: Dictionary[Vector2i, bool] = {}
 			for plan_body in plan.wall_bodies:
@@ -432,7 +432,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 				t.check(area_reached,
 						("seed %d day %d: region %d's calm area %s, which today's tree reaches, is " +
 						"reached from the doorstep with only the day's doors open")
-						% [map.seed_used, day, region, branch.area])
+						% [map.city_seed(), day, region, branch.area])
 	t.check(sampled_days > 0, "at least one day from %d to %d was sampled (%d)"
 			% [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS, sampled_days])
 	# Not a pass/fail bound — a plain measurement for whoever reads the suite's own output.
@@ -462,7 +462,7 @@ func _test_crossing_alleys_are_consistent(t: TestRunner) -> void:
 						on_tree = true
 						break
 				t.check(on_tree, "seed %d day %d: alley door %s is on the day's tree"
-						% [map.seed_used, day, rect.position])
+						% [map.city_seed(), day, rect.position])
 			for rect in plan.alley_walls:
 				var on_tree := false
 				for tile in map.rect_tiles(rect):
@@ -470,7 +470,7 @@ func _test_crossing_alleys_are_consistent(t: TestRunner) -> void:
 						on_tree = true
 						break
 				t.check(not on_tree, "seed %d day %d: alley wall %s is off the day's tree"
-						% [map.seed_used, day, rect.position])
+						% [map.city_seed(), day, rect.position])
 	t.check(crossing_alleys > 0, "at least one alley crosses between regions (%d)" % crossing_alleys)
 	# Not a pass/fail bound — the measurement the coordinator asked for.
 	print("[test_regions] %d alleys are crossings, doors and walls, over %d maps"
@@ -484,7 +484,7 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		var alley_mouth_tiles: Dictionary[Vector2i, bool] = {}
-		for rect in map.alley_rects:
+		for rect in map.alley_lots():
 			if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
 				continue
 			var vertical := rect.size.x < rect.size.y
@@ -508,7 +508,7 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 					t.check(distance > body.def.obstructs_radius,
 							("seed %d day %d: a wall body at %s (radius %.0f) does not reach " +
 							"alley mouth tile %s (%.0fpx away)")
-							% [map.seed_used, day, body.position, body.def.obstructs_radius,
+							% [map.city_seed(), day, body.position, body.def.obstructs_radius,
 							tile, distance])
 	t.check(checked > 0, "at least one wall body was checked against every alley mouth (%d)" % checked)
 
@@ -533,13 +533,13 @@ func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 			var per_wall := street_walls.size() / maxi(1, plan.walls.size())
 			t.check(street_walls.size() == per_wall * plan.walls.size(),
 					"seed %d day %d: every wall stands the same run of bodies (%d in all)"
-					% [map.seed_used, day, street_walls.size()])
+					% [map.city_seed(), day, street_walls.size()])
 			for wall in plan.walls.size():
 				var bodies: Array[EventPlan] = []
 				bodies.assign(street_walls.slice(wall * per_wall, (wall + 1) * per_wall))
 				checked += 1
 				t.check(bodies.size() == 3, "seed %d day %d: a wall crossing stands three bodies (%d)"
-						% [map.seed_used, day, bodies.size()])
+						% [map.city_seed(), day, bodies.size()])
 				var road_index := bodies.size() / 2
 				var total_guards := 0
 				for i in bodies.size():
@@ -548,14 +548,14 @@ func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 					if i == road_index:
 						t.check(sides.is_empty(),
 								"seed %d day %d: the wall's road body posts no guard (%d)"
-								% [map.seed_used, day, sides.size()])
+								% [map.city_seed(), day, sides.size()])
 					else:
 						t.check(sides.size() == 2,
 								"seed %d day %d: a wall's sidewalk body posts two guards (%d)"
-								% [map.seed_used, day, sides.size()])
+								% [map.city_seed(), day, sides.size()])
 				t.check(total_guards == 4,
 						"seed %d day %d: a wall crossing posts four guards between its bodies (%d)"
-						% [map.seed_used, day, total_guards])
+						% [map.city_seed(), day, total_guards])
 	t.check(checked > 0, "at least one wall crossing was checked (%d)" % checked)
 
 ## A crossing alley's own wall bodies post one guard each, standing outside the alley, never the
@@ -575,7 +575,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 			var mouths := _alley_wall_mouths(plan)
 			t.check(mouths.size() == plan.alley_walls.size(),
 					"seed %d day %d: every walled alley has its mouth bodies in the plan (%d for %d)"
-					% [map.seed_used, day, mouths.size(), plan.alley_walls.size()])
+					% [map.city_seed(), day, mouths.size(), plan.alley_walls.size()])
 			for rect in plan.alley_walls:
 				var vertical := rect.size.x < rect.size.y
 				var world := map.tile_rect_to_world(rect)
@@ -589,11 +589,11 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 					var body: EventPlan = mouths[rect][0 if at_start else 1]
 					t.check(_stands_in_the_mouth(map, body, rect, at_start),
 							"seed %d day %d: the plan's mouth body for alley %s stands in its mouth"
-							% [map.seed_used, day, rect])
+							% [map.city_seed(), day, rect])
 					var sides := body.def.guard_sides
 					t.check(sides.size() == 1,
 							"seed %d day %d: an alley wall body posts one guard (%d)"
-							% [map.seed_used, day, sides.size()])
+							% [map.city_seed(), day, sides.size()])
 					if sides.is_empty():
 						continue
 					var standing := EventInstance.new()
@@ -606,7 +606,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 					t.check(guard_along < low or guard_along > high,
 							("seed %d day %d: alley wall guard at mouth %s (at_start %s, side %d) " +
 							"stands outside the alley's own %.0f..%.0f, not inside it")
-							% [map.seed_used, day, body.position, at_start, sides[0], low, high])
+							% [map.city_seed(), day, body.position, at_start, sides[0], low, high])
 	t.check(checked > 0, "at least one alley wall body's guard was checked (%d)" % checked)
 
 ## A crossing alley's own wall bodies draw and collide no wider than the alley's own paving — the
@@ -639,7 +639,7 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
 					t.check(centre - half >= low - 0.01 and centre + half <= high + 0.01,
 							("seed %d day %d: alley wall body at %s (half-width %.0f) draws within " +
 							"the alley's own mouth %.0f..%.0f, not over the lots either side")
-							% [map.seed_used, day, body.position, half, low, high])
+							% [map.city_seed(), day, body.position, half, low, high])
 	t.check(checked > 0, "at least one alley wall body was checked against its own mouth (%d)" % checked)
 
 ## The core guarantee, unconditionally: with the region wall standing alongside the day's closures
@@ -675,13 +675,13 @@ func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 			var boundary := _boundary_keys(region_plan)
 			var seal_rng := RandomNumberGenerator.new()
-			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
 			var blocked := map.closed_tiles.duplicate()
@@ -699,7 +699,7 @@ func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 					break
 			t.check(some_calm,
 					("seed %d day %d: some calm area is reachable with the region wall standing")
-					% [map.seed_used, day])
+					% [map.city_seed(), day])
 
 			var blocked_no_road: Dictionary[Vector2i, bool] = {}
 			blocked_no_road.assign(blocked)
@@ -733,20 +733,20 @@ func _test_closures_and_seals_never_land_on_a_boundary(t: TestRunner) -> void:
 			var boundary := _boundary_keys(region_plan)
 
 			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			for closure in closures:
 				t.check(not boundary.has(closure.segment.key()),
 						"seed %d day %d: closure at %s does not land on a region boundary"
-						% [map.seed_used, day, closure.segment.key()])
+						% [map.city_seed(), day, closure.segment.key()])
 
 			var seal_rng := RandomNumberGenerator.new()
-			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 			for plan_item in seals:
 				var segment := map.network.segment_containing(map.world_to_tile(plan_item.position))
 				if segment:
 					t.check(not boundary.has(segment.key()),
 							"seed %d day %d: seal at %s does not land on a region boundary"
-							% [map.seed_used, day, segment.key()])
+							% [map.city_seed(), day, segment.key()])

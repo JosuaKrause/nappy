@@ -45,7 +45,7 @@ func run(t: TestRunner) -> void:
 			worst_pass = minf(worst_pass, lo)
 			best_pass = maxf(best_pass, hi)
 			print("seed %d %s street: %d open lanes over %.0fpx, pass costs %.1f..%.1f of %d"
-					% [map.seed_used, "east-west" if vertical else "north-south", open.size(),
+					% [map.city_seed(), "east-west" if vertical else "north-south", open.size(),
 					2.0 * half, lo, hi, int(Tuning.METER_MAX)])
 			print("    gaps (px from the scene centre): %s" % [_gap_spans(open)])
 			instance.free()

@@ -409,7 +409,7 @@ func _test_partial_bodies_in_neighbouring_rows_wall_a_precinct(t: TestRunner, cr
 func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: Array,
 		label: String) -> Dictionary:
 	var span := Vector4i(-1, -1, -1, -1)
-	for candidate in map.precinct_spans:
+	for candidate in map.precinct_stretches():
 		span = candidate
 		break
 	t.check(span.x >= 0, "this city has a precinct to wall off")

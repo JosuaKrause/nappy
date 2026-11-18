@@ -117,7 +117,7 @@ func _prepare_whole(key: Vector2i) -> void:
 				water_cells.append(tile)
 			elif source >= 0:
 				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.seed_used, tile, tile_set))
+						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas
@@ -154,7 +154,7 @@ func prepare_step(key: Vector2i) -> bool:
 				water_cells.append(tile)
 			elif source >= 0:
 				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.seed_used, tile, tile_set))
+						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas

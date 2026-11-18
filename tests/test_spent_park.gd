@@ -7,7 +7,7 @@ extends RefCounted
 ##
 ## `ClosurePlanner.calm_to_shut()` decides which used areas come off today's route tree at
 ## `CityMap.repaint()`; `RouteTree` plans around all of them; `DawnSpoilers`
-## spoils every one of them except `CityMap.fenced_park`, the one the run
+## spoils every one of them except `CityMap.fenced_park_block()`, the one the run
 ## ever fences (`ClosurePlanner.plan_day` hands `City` its `ParkClosure`). This suite asks all of
 ## that over a sweep of seeds and days, with the used areas an act would actually have, and once
 ## with every calm area used to make the guarantee's refusals happen.
@@ -54,7 +54,7 @@ func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
 	GivenRun.fenced_park(run, fenced, fenced_act)
-	run.facts().remember_fenced_park(map.fenced_park, map.fenced_park_act)
+	run.facts().remember_fenced_park(map.fenced_park_block(), map.fenced_park_act())
 	var remembered := [run.facts().fenced_park(), run.facts().fenced_park_act()]
 	return remembered
 
@@ -66,7 +66,7 @@ func _calm_on(map: CityMap, day: int) -> Array[Vector2i]:
 
 ## What an act would have used by `day`: one area a day since the act began, most recent first,
 ## drawn from today's calm in an order rolled from the seed — the shape `RunState.calendar().
-## settled_this_act()` has, without playing the days. A block chosen as `CityMap.fenced_park` on an
+## settled_this_act()` has, without playing the days. A block chosen as `CityMap.fenced_park_block()` on an
 ## earlier day may still be here on a later one, the same way the run's `SettledState` still carries
 ## the day she used it before it was fenced — fencing does not erase the past.
 func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
@@ -76,7 +76,7 @@ func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 		if start <= day:
 			act_start = start
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("spent:%d:%d" % [map.seed_used, act_start])
+	rng.seed = hash("spent:%d:%d" % [map.city_seed(), act_start])
 	var order: Array[Vector2i] = calm.duplicate()
 	for i in range(order.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
@@ -97,7 +97,7 @@ func _days() -> Array[int]:
 
 func _closure_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 	return rng
 
 func _shut_rect_tiles(map: CityMap) -> Dictionary:
@@ -129,22 +129,22 @@ func _test_the_one_fence_is_remembered_after_its_act(t: TestRunner) -> void:
 		fenced = remembered[0]
 		fenced_act = remembered[1]
 		if day == 9:
-			first = map.fenced_park
+			first = map.fenced_park_block()
 			t.check(first.x >= 0 and fenced_act == 3, "the fixture chooses its fence in act III")
 		if day >= 9:
 			t.check(fenced == first and fenced_act == 3,
 					"day %d remembers the original fence after the director's read-back" % day)
 		if day >= 12:
-			t.check(map.fenced_park == Vector2i(-1, -1) and map.closed_tiles.is_empty(),
+			t.check(map.fenced_park_block() == Vector2i(-1, -1) and map.closed_tiles.is_empty(),
 					"day %d has no physical fence after the chosen act" % day)
 		elif day >= 9:
-			t.check(map.fenced_park == first, "the original fence stands for the rest of act III")
+			t.check(map.fenced_park_block() == first, "the original fence stands for the rest of act III")
 		if day == 13:
 			t.check(not map.shut_calm().is_empty(), "act IV still excludes used areas from its routes")
 	# A run with no earlier choice is still allowed its first fence in act IV.
 	var used := _used_by(map, 13)
 	_repaint(map, 13, used)
-	t.check(map.fenced_park.x >= 0, "act IV can choose the run's first fence")
+	t.check(map.fenced_park_block().x >= 0, "act IV can choose the run's first fence")
 
 ## The whole point, over the sweep: every area taken off the tree is one she used, its ground stays
 ## walkable and calm — open unless it is `fenced_park`, closed only if it is — and the day's tree
@@ -164,10 +164,10 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> vo
 			fenced_act = result[1]
 			offered += used.size()
 			shut += map.shut_calm().size()
-			if map.fenced_park.x >= 0:
+			if map.fenced_park_block().x >= 0:
 				fenced_days += 1
 			for block in map.shut_calm():
-				var is_fenced := block == map.fenced_park
+				var is_fenced := block == map.fenced_park_block()
 				# The fenced park stays off the tree by carrying over from the day it was chosen
 				# (`CityMap._shut_the_spent_calm()`), not by being in every later day's own `used` —
 				# once fenced she cannot settle there again, but a day she did before it was fenced
@@ -175,21 +175,21 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> vo
 				# recomputed fresh from `used` each day, so it has to be in it.
 				t.check(is_fenced or block in used,
 						"seed %d day %d takes %s off the tree, which she used"
-						% [map.seed_used, day, block])
+						% [map.city_seed(), day, block])
 				t.check(is_fenced != (block in map.calm_blocks),
 						"seed %d day %d: %s is calm today unless it is the one fenced park"
-						% [map.seed_used, day, block])
+						% [map.city_seed(), day, block])
 				for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, block)):
 					if not map.is_walkable(tile):
 						continue
 					if is_fenced:
 						t.check(map.is_closed(tile) and not map.is_open(tile),
 								"seed %d day %d: %s of fenced %s is closed"
-								% [map.seed_used, day, tile, block])
+								% [map.city_seed(), day, tile, block])
 					else:
 						t.check(not map.is_closed(tile) and map.is_open(tile),
 								"seed %d day %d: %s of shut-but-not-fenced %s stays open"
-								% [map.seed_used, day, tile, block])
+								% [map.city_seed(), day, tile, block])
 			var tree := RouteTree.for_day(map, day)
 			var shut_tiles := _shut_rect_tiles(map)
 			var through := 0
@@ -199,10 +199,10 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> vo
 						if shut_tiles.has(cell * 2 + Vector2i(dx, dy)):
 							through += 1
 			t.check(through == 0, "seed %d day %d: no route of the day runs through a used area "
-					% [map.seed_used, day] + "taken off the tree (%d tiles)" % through)
+					% [map.city_seed(), day] + "taken off the tree (%d tiles)" % through)
 			for branch in tree.branches:
 				t.check(not branch.area in map.shut_calm(),
-						"seed %d day %d: no branch goes to shut %s" % [map.seed_used, day, branch.area])
+						"seed %d day %d: no branch goes to shut %s" % [map.city_seed(), day, branch.area])
 	t.check(shut > 0, "the sweep took some used areas off the tree (%d of %d used)"
 			% [shut, offered])
 	t.check(fenced_days > 0, "the sweep fenced a park on at least one day (%d)" % fenced_days)
@@ -227,10 +227,10 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 			if used.is_empty():
 				continue
 			_force_a_fence(map, day, used)
-			if map.fenced_park.x < 0:
+			if map.fenced_park_block().x < 0:
 				continue
 			checked += 1
-			var block := map.fenced_park
+			var block := map.fenced_park_block()
 			var rect := ClosurePlanner.calm_area_rect(map, block)
 			var world := map.tile_rect_to_world(rect)
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
@@ -244,7 +244,7 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 				t.check(fence.kind == RoadClosure.Kind.PARK and
 						map.network.by_key(fence.segment.key()) == null,
 						"seed %d day %d: a fence is a PARK closure holding no real street"
-						% [map.seed_used, day])
+						% [map.city_seed(), day])
 				var half_width := fence.barrier_width() * 0.5
 				for at in fence.mouth_centres(map):
 					var size := Vector2(half_width * 2.0, half_depth * 2.0) \
@@ -254,7 +254,7 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 					boxes.append(box)
 					t.check(world.grow(0.01).encloses(box),
 							"seed %d day %d: a barrier of fenced %s stands on its own ground"
-							% [map.seed_used, day, block])
+							% [map.city_seed(), day, block])
 			for out: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
 				for tile in _edge_tiles(rect, out):
 					if not (map.is_walkable(tile) and map.is_walkable(tile + out)):
@@ -269,7 +269,7 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 							covered = true
 							break
 					t.check(covered, "seed %d day %d: the way in at %s of fenced %s is fenced"
-							% [map.seed_used, day, tile, block])
+							% [map.city_seed(), day, tile, block])
 	t.check(checked > 0, "the sweep had a fenced park to check (%d)" % checked)
 
 ## Two runs that meet at a corner of the area turn on it as one fence: each line ends exactly at
@@ -289,11 +289,11 @@ func _test_the_fence_turns_each_corner_on_one_post(t: TestRunner) -> void:
 			for fence in fences:
 				for at in fence.posts(map):
 					t.check(not posts.has(at), "seed %d %s: one post at %s, not two"
-							% [map.seed_used, block, at])
+							% [map.city_seed(), block, at])
 					posts[at] = true
 			for fence in fences:
 				t.check(fence.barrier_width() > 0.0, "seed %d %s: a run of %s has length"
-						% [map.seed_used, block, fence.segment.tile_rect()])
+						% [map.city_seed(), block, fence.segment.tile_rect()])
 				# Where the line ends, worked out from its middle and its length alone (not from
 				# `rail_ends()`, which the posts are built from): a joined end stands on the corner it
 				# turns, an open end's post `ParkClosure.POST_HALF` in from it.
@@ -308,7 +308,7 @@ func _test_the_fence_turns_each_corner_on_one_post(t: TestRunner) -> void:
 						var post: Vector2 = point + (end[2] as Vector2) * ParkClosure.POST_HALF
 						t.check(posts.has(post),
 								"seed %d %s: the open end at %s ends on its own post"
-								% [map.seed_used, block, point])
+								% [map.city_seed(), block, point])
 						continue
 					corners += 1
 					var meets := 0
@@ -317,9 +317,9 @@ func _test_the_fence_turns_each_corner_on_one_post(t: TestRunner) -> void:
 						if other != fence and (other_line[0] == point or other_line[1] == point):
 							meets += 1
 					t.check(meets == 1, "seed %d %s: the run ending at %s meets exactly one "
-							% [map.seed_used, block, point] + "other run there (%d)" % meets)
+							% [map.city_seed(), block, point] + "other run there (%d)" % meets)
 					t.check(posts.has(point), "seed %d %s: a post stands at the corner %s"
-							% [map.seed_used, block, point])
+							% [map.city_seed(), block, point])
 	t.check(corners > 0, "the sweep had corners to turn (%d)" % corners)
 	print("  fence corners: %d run ends turn a corner, %d end on a post of their own"
 			% [corners, open_ends])
@@ -363,11 +363,11 @@ func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 			_repaint(map, day, none)
 			var before := map.walk_field(home)
 			_force_a_fence(map, day, used)
-			if map.fenced_park.x < 0:
+			if map.fenced_park_block().x < 0:
 				continue
 			checked += 1
 			var fenced_tiles := {}
-			for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, map.fenced_park)):
+			for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, map.fenced_park_block())):
 				fenced_tiles[tile] = true
 			var after := map.walk_field(home, map.closed_tiles)
 			var cut := 0
@@ -376,7 +376,7 @@ func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 				if before[index] >= 0 and after[index] < 0 and not fenced_tiles.has(tile):
 					cut += 1
 			t.check(cut == 0, "seed %d day %d: fencing cuts nothing off but its own ground (%d tiles)"
-					% [map.seed_used, day, cut])
+					% [map.city_seed(), day, cut])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					_closure_rng(map, day))
 			map.close_streets(closures)
@@ -396,7 +396,7 @@ func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 						break
 			t.check(reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d open calm areas reachable with the park fenced and the "
-					% [map.seed_used, day, reachable] + "streets closed, need %d"
+					% [map.city_seed(), day, reachable] + "streets closed, need %d"
 					% ClosurePlanner.MIN_CALM_AREAS_REACHABLE)
 	t.check(checked > 0, "the sweep had a fenced park to check guarantees against (%d)" % checked)
 
@@ -420,29 +420,29 @@ func _test_a_never_used_park_is_unaffected(t: TestRunner) -> void:
 			for branch in RouteTree.for_day(map, day).branches:
 				shut_tree[branch.area] = true
 			var all_calm: Array[Vector2i] = map.calm_blocks.duplicate()
-			if map.fenced_park.x >= 0:
-				all_calm.append(map.fenced_park)
+			if map.fenced_park_block().x >= 0:
+				all_calm.append(map.fenced_park_block())
 			all_calm.append_array(map.shut_calm())
 			for block in all_calm:
 				if block in used:
 					continue
 				compared += 1
 				t.check(block in map.calm_blocks, "seed %d day %d: unused %s is still calm"
-						% [map.seed_used, day, block])
+						% [map.city_seed(), day, block])
 				for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, block)):
 					t.check(not map.is_shut(tile) and not map.is_closed(tile),
-							"seed %d day %d: %s of unused %s is open" % [map.seed_used, day, tile,
+							"seed %d day %d: %s of unused %s is open" % [map.city_seed(), day, tile,
 							block])
 				if plain.has(block):
 					t.check(shut_tree.has(block),
-							"seed %d day %d: unused %s still has its branch" % [map.seed_used, day,
+							"seed %d day %d: unused %s still has its branch" % [map.city_seed(), day,
 							block])
 	t.check(compared > 0, "the sweep compared unused parks on days with a park shut (%d)"
 			% compared)
 
 ## The scheduler's calm-ground pass spoils every used area the tree has taken off the route —
 ## the day still has a clean open calm area, which dawn keeps clean before any spoiler is placed
-## (`DawnCalmKeptClean`) — and places nothing inside `CityMap.fenced_park`, whose fence is the whole of
+## (`DawnCalmKeptClean`) — and places nothing inside `CityMap.fenced_park_block()`, whose fence is the whole of
 ## what it shows.
 func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> void:
 	var offered := 0
@@ -460,40 +460,40 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> v
 					_closure_rng(map, day), tree)
 			map.close_streets(closures)
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("events:%d:%d" % [map.seed_used, day])
+			rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
 			var calm := CalmAreas.of(map, used)
 			var events := GameDawn.of(DaySpec.for_day(day), rng, map).calm(calm).spent(no_one_shots) \
 					.scars(no_scars).on(tree).plan()
 			var planned := events.placements()
-			if map.fenced_park.x >= 0:
+			if map.fenced_park_block().x >= 0:
 				var fenced_tiles := {}
-				for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, map.fenced_park)):
+				for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, map.fenced_park_block())):
 					fenced_tiles[tile] = true
 				for plan in planned:
 					if not plan.is_placed():
 						continue
 					t.check(not fenced_tiles.has(map.world_to_tile(plan.position)),
 							"seed %d day %d: '%s' is not placed inside the fenced park"
-							% [map.seed_used, day, plan.def.id])
+							% [map.city_seed(), day, plan.def.id])
 			for block in used:
-				if block == map.fenced_park or not block in calm.blocks():
+				if block == map.fenced_park_block() or not block in calm.blocks():
 					continue
 				offered += 1
 				if events.is_spoiled(block):
 					spoiled += 1
 				t.check(events.is_spoiled(block), "seed %d day %d: the used area %s is spoiled"
-						% [map.seed_used, day, block])
+						% [map.city_seed(), day, block])
 				t.check(_a_body_stands_inside(map, events, calm, block),
 						"seed %d day %d: something stands inside the used area %s at the end of the plan"
-						% [map.seed_used, day, block])
+						% [map.city_seed(), day, block])
 			var clean := 0
 			for block in calm.blocks():
 				if not events.is_spoiled(block):
 					clean += 1
 			t.check(clean >= 1, "seed %d day %d leaves an open calm area clean"
-					% [map.seed_used, day])
+					% [map.city_seed(), day])
 	t.check(offered > 0, "the sweep had used, open areas to spoil (%d)" % offered)
 	print("  spent parks: %d of %d used-and-open areas were spoiled with events" % [spoiled, offered])
 
@@ -526,9 +526,9 @@ func _test_a_used_courtyard_keeps_what_was_put_in_it(t: TestRunner) -> void:
 	var tree := RouteTree.for_day(map, day)
 	map.close_streets(ClosurePlanner.plan_day(map, DaySpec.for_day(day), _closure_rng(map, day), tree))
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("events:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
 	var calm := CalmAreas.of(map, used)
-	t.check(block in calm.blocks() and block != map.fenced_park,
+	t.check(block in calm.blocks() and block != map.fenced_park_block(),
 			"the courtyard is a counted, unfenced calm area that day")
 	var no_one_shots: Array[String] = []
 	var no_scars: Array[Dictionary] = []
@@ -553,7 +553,7 @@ func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 			map.close_streets(ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					_closure_rng(map, day), tree))
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("events:%d:%d" % [map.seed_used, day])
+			rng.seed = hash("events:%d:%d" % [map.city_seed(), day])
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
 			var calm := CalmAreas.of(map, used)
@@ -567,7 +567,7 @@ func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 				if block != calm.besides() and not events.is_spoiled(block):
 					clean += 1
 			t.check(clean >= 1, "seed %d day %d, every area used: one calm area is clean (%d)"
-					% [map.seed_used, day, clean])
+					% [map.city_seed(), day, clean])
 	t.check(asked > 0, "the sweep had days with every calm area used (%d)" % asked)
 
 ## With every calm area handed over as used, the tree takes as many off as it may and no more: at
@@ -580,13 +580,13 @@ func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t: TestRunner) -
 			_repaint(map, day, calm, Vector2i(-1, -1), 0)
 			t.check(calm.size() - map.shut_calm().size() >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d of %d calm areas kept fully on the tree, need %d"
-					% [map.seed_used, day, calm.size() - map.shut_calm().size(), calm.size(),
+					% [map.city_seed(), day, calm.size() - map.shut_calm().size(), calm.size(),
 					ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
-			var fenced_count := 1 if map.fenced_park.x >= 0 else 0
+			var fenced_count := 1 if map.fenced_park_block().x >= 0 else 0
 			t.check(map.calm_blocks.size() == calm.size() - fenced_count,
 					"seed %d day %d: only the fenced park, if any, leaves calm_blocks (%d calm, "
-					% [map.seed_used, day, calm.size()] + "%d left, fenced %s)"
-					% [map.calm_blocks.size(), map.fenced_park])
+					% [map.city_seed(), day, calm.size()] + "%d left, fenced %s)"
+					% [map.calm_blocks.size(), map.fenced_park_block()])
 
 ## Day 12's park is where the day's task is, so it is never taken off the tree or fenced on its day,
 ## even when she used it.
@@ -599,9 +599,9 @@ func _test_the_swing_park_is_never_shut_or_fenced_on_its_day(t: TestRunner) -> v
 		var park := CityGenerator.swing_park(map)
 		var used: Array[Vector2i] = [park]
 		_force_a_fence(map, day, used)
-		t.check(not park in map.shut_calm() and park != map.fenced_park and park in map.calm_blocks,
+		t.check(not park in map.shut_calm() and park != map.fenced_park_block() and park in map.calm_blocks,
 				"seed %d: the swing park %s stays open and unfenced on day %d"
-				% [map.seed_used, park, day])
+				% [map.city_seed(), park, day])
 
 ## The same handover shuts and fences the same areas, and a repaint with no handover shuts and
 ## fences nothing — the escape's own repaint, and every rig that never hands one over.
@@ -612,19 +612,19 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRu
 			var used := _used_by(cmap, day)
 			_repaint(cmap, day, used)
 			var first: Array[Vector2i] = cmap.shut_calm().duplicate()
-			var first_fenced := cmap.fenced_park
+			var first_fenced := cmap.fenced_park_block()
 			_repaint(cmap, day, used)
 			t.check(first == cmap.shut_calm(), "seed %d day %d shuts the same parks twice"
-					% [cmap.seed_used, day])
-			t.check(first_fenced == cmap.fenced_park, "seed %d day %d fences the same park twice"
-					% [cmap.seed_used, day])
+					% [cmap.city_seed(), day])
+			t.check(first_fenced == cmap.fenced_park_block(), "seed %d day %d fences the same park twice"
+					% [cmap.city_seed(), day])
 			var state := CityState.new()
 			state.begin_day(cmap.block_plans, day)
 			cmap.repaint(state)
 			t.check(cmap.shut_calm().is_empty() and cmap.closed_tiles.is_empty() \
-					and cmap.fenced_park == Vector2i(-1, -1),
+					and cmap.fenced_park_block() == Vector2i(-1, -1),
 					"seed %d day %d: a repaint with nothing handed over shuts and fences nothing"
-					% [cmap.seed_used, day])
+					% [cmap.city_seed(), day])
 
 ## Every closure picture the city stands, found the way any node is: down the city's own subtree,
 ## where `City` hands each piece to the entities layer (`add_entity()`) and to the scenery.
@@ -660,7 +660,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	city.map.repaint(state)
 	var calm: Array[Vector2i] = city.map.calm_blocks.duplicate()
 	t.check(calm.size() >= 1, "seed %d day %d has a calm area to use (%d)"
-			% [city.map.seed_used, day, calm.size()])
+			% [city.map.city_seed(), day, calm.size()])
 	if calm.is_empty():
 		city.free()
 		return
@@ -670,9 +670,9 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("spent-park:closures:%d" % day)
 	city.start_day(state, day, rng)
-	t.check(city.map.fenced_park.x >= 0, "the city fenced the park it was handed (%s)"
-			% [city.map.fenced_park])
-	if city.map.fenced_park.x < 0:
+	t.check(city.map.fenced_park_block().x >= 0, "the city fenced the park it was handed (%s)"
+			% [city.map.fenced_park_block()])
+	if city.map.fenced_park_block().x < 0:
 		city.free()
 		return
 	var park_pictures := 0
@@ -686,7 +686,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 					"street closures retain their own barrier renderer")
 	t.check(park_pictures > 0, "the fenced park has runtime pictures to check")
 	await PhysicsTicks.pass_ticks(t, 1)
-	var block := city.map.fenced_park
+	var block := city.map.fenced_park_block()
 	var rect := ClosurePlanner.calm_area_rect(city.map, block)
 	var entrances := 0
 	for out: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:

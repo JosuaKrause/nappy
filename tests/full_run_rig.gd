@@ -204,7 +204,7 @@ func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 	var best := Vector2.INF
 	for block: Vector2i in map.calm_blocks:
 		var anchor := map.anchor_of(block)
-		if used.has(anchor) or map.shut_calm().has(anchor) or anchor == map.fenced_park:
+		if used.has(anchor) or map.shut_calm().has(anchor) or anchor == map.fenced_park_block():
 			continue
 		var spot := CalmSpot.of(map, block)
 		if spot != Vector2.INF and spot.distance_to(home) < best.distance_to(home):

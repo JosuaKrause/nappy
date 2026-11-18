@@ -102,23 +102,23 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 	# has a **shape** and the square is always placed first, so `keys()[0]` is always the square
 	# and no other shape can be looked at without the index.
 	if target.begins_with("zone"):
-		if map.zone_rects.is_empty():
+		if map.zone_anchors().is_empty():
 			push_warning("this city has no multi-block calm zone")
 			return map.home_world_position()
-		var keys := map.zone_rects.keys()
+		var keys := map.zone_anchors()
 		var which := clampi(int(target.get_slice(":", 1)), 0, keys.size() - 1)
 		var anchor: Vector2i = keys[which]
-		var corner := CityMap.blocks_tile_rect(map.zone_rects[anchor]).position
+		var corner := CityMap.blocks_tile_rect(map.zone_footprint(anchor)).position
 		return _nearest_walkable(map, map.tile_to_world(corner - Vector2i.ONE * 2))
 	# A big building, stood on the street running along the joined side of it, level with the
 	# street it was built over. The whole claim of a landmark is that it reads as **one mass**
 	# rather than as two blocks with the road missing between them, and this flag is the only way
 	# to point a camera at one.
 	if target == "landmark":
-		if map.big_buildings.is_empty():
+		if map.big_building_pairs().is_empty():
 			push_warning("this city has no big building")
 			return map.home_world_position()
-		var pair: Rect2i = map.big_buildings[0]
+		var pair: Rect2i = map.big_building_pairs()[0]
 		var mass := CityMap.blocks_tile_rect(pair)
 		# Off the **long** side, which is the one the joined seam runs the width of: a mass two
 		# blocks wide is looked at from the north, a mass two blocks deep from the west. Two tiles
@@ -147,7 +147,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a
 	# still of one — take several seconds apart, or use `--walk` and watch the cycle.
 	if target == "signal":
-		var spine := map.main_road
+		var spine := map.main_road_corridor()
 		var down := clampi(Tuning.CITY_BLOCKS.y / 2, 1, Tuning.CITY_BLOCKS.y - 1)
 		# On the side street's own pavement, a couple of tiles east of the junction: the block
 		# east of corridor `spine` is block `spine`, and offset 1 of a corridor is footway.
@@ -158,7 +158,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 	# is the bridge at the other end and `edge:e` / `edge:w` the road simply running out.
 	if target.begins_with("edge"):
 		var side := target.get_slice(":", 1)
-		var spine_x := map.main_road * CityMap.period() + Tuning.STREET_WIDTH / 2
+		var spine_x := map.main_road_corridor() * CityMap.period() + Tuning.STREET_WIDTH / 2
 		var spine_y := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period() \
 				+ Tuning.STREET_WIDTH / 2
 		# Beside the carriageway, not on it: the exits are lethal, which is the point of them.
@@ -171,10 +171,10 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 	# The middle of a pedestrianised street, which is the other end of the same trade: paving
 	# frontage to frontage, no kerb, no asphalt and nothing on it that can kill you.
 	if target == "precinct":
-		if map.precinct_spans.is_empty():
+		if map.precinct_stretches().is_empty():
 			push_warning("this city has no precinct")
 			return map.home_world_position()
-		var span: Vector4i = map.precinct_spans[0]
+		var span: Vector4i = map.precinct_stretches()[0]
 		var across := span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
 		var along := (span.z + span.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH
 		return _nearest_walkable(map, map.tile_to_world(

@@ -1467,7 +1467,7 @@ func _test_the_service_exit_is_beside_the_home_block(t: TestRunner) -> void:
 		_paint_day_one(map)
 		var tile := map.world_to_tile(FinalePlanner.service_exit_world_position(map))
 		t.check(map.is_walkable(tile), "seed %d: the service exit is walkable" % seed_value)
-		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block))
+		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block_coordinate()))
 		var beside := tile.x == lot.position.x - 1 or tile.x == lot.end.x
 		t.check(beside, "seed %d: it is on one of the home lot's two side streets" % seed_value)
 		var spine := map.main_road * CityMap.period()

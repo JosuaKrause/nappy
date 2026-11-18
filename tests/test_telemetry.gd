@@ -422,7 +422,7 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t: TestRunner) -> void:
 ## passed on a single blue pixel, and this one fails if the paving ever stops being paving.
 func _check_a_precinct_shows_as_paving(t: TestRunner, map: CityMap, image: Image) -> void:
 	var paving := Tile.ground_colour(GameEnums.TileType.SIDEWALK)
-	for span: Vector4i in map.precinct_spans:
+	for span: Vector4i in map.precinct_stretches():
 		var vertical := span.x == 1
 		var across: int = span.y * CityMap.period()
 		var along: int = (span.z + 1) * CityMap.period() - 2
@@ -1111,8 +1111,8 @@ func _test_a_baked_page_says_which_moment_loaded_it(t: TestRunner) -> void:
 ## of one interaction uses a map built to the case).
 func _picture_map() -> CityMap:
 	var map := StreetMap.full()
-	map.seed_used = 4242
-	map.home_block = Vector2i(1, 1)
+	map.generated_from(4242)
+	map.place_home(Vector2i(1, 1))
 	map.home_rect = Rect2i(CityMap.block_rect(Vector2i(1, 1)).position + Vector2i(2, 2),
 			Vector2i(3, 2))
 	map.calm_blocks = [Vector2i(8, 8)] as Array[Vector2i]
@@ -1121,7 +1121,7 @@ func _picture_map() -> CityMap:
 			Vector2i(Tuning.STREET_WIDTH, 2)))
 	map.fill_rect(Rect2i(Vector2i(7 * period, 0), Vector2i(Tuning.STREET_WIDTH, map.size.y)),
 			GameEnums.TileType.SIDEWALK)
-	map.precinct_spans.append(Vector4i(1, 7, 2, 3))
+	map.add_precinct(Vector4i(1, 7, 2, 3))
 	return map
 
 ## A route tree that is only a footprint: the cells the picture draws as the corridor.

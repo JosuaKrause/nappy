@@ -60,7 +60,7 @@ static func mast_at(director: ResistanceDirector, events: EventManager) -> Strin
 ## (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan, flooded from
 ## home), built independently here so a sweep is not just asking the director to grade its own
 ## homework. A region door's own bodies are excluded, the same way the director excludes them: they
-## are doors she walks through, not a block. The soft seals' bands (`CityMap.soft_sealed_tiles`) are
+## are doors she walks through, not a block. The soft seals' bands (`CityMap.soft_sealed_tiles()`) are
 ## blocked on top, as the director blocks them: the red arrow reads a band as ground she cannot walk,
 ## so a place reached only through one is not a place the arrow can lead her to. `[grid, blocked,
 ## reached]`, the shape `home_reach()` answers and `reaches_home()` takes. Plans standing within a
@@ -82,7 +82,7 @@ static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Ar
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)
-	blocked.merge(city.map.soft_sealed_tiles)
+	blocked.merge(city.map.soft_sealed_tiles())
 	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
 
 ## The tiles her paths reach from home under `blocked` (the day's obstruction), as

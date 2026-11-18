@@ -207,7 +207,7 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 ## calm handed over where the spec shuts it, the repaint and the closures
 ## (`CityDressing.start_day()`), the act's cast and, where the light does not run down, the night.
 func _dress_the_city(today: int) -> void:
-	spend.block_arcs().begin_day(_city_map.block_plans, today)
+	spend.block_arcs().begin_day(_city_map.plans_by_block(), today)
 	if spec.shuts_the_spent_calm():
 		# The calm areas she has used this act, handed to the repaint `start_day()` opens with,
 		# so the ones that can be shut are shut before the day's route tree is grown around them.
@@ -228,7 +228,7 @@ func _dress_the_city(today: int) -> void:
 	if spec.shuts_the_spent_calm():
 		# Remember the first choice for the run. Today's physical fence disappears after its act,
 		# but that must not erase the history and allow tomorrow to choose another one.
-		_facts.remember_fenced_park(_city_map.fenced_park, _city_map.fenced_park_act)
+		_facts.remember_fenced_park(_city_map.fenced_park_block(), _city_map.fenced_park_act())
 	_dressing.set_act(calendar.current_act())
 	# Night, and fixed there: the escape happens after the last day and the clock is the tension
 	# rather than the light, so the sky does not run itself down over the sequence.

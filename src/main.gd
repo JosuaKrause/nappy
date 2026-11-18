@@ -438,7 +438,7 @@ func _ready() -> void:
 		var elapsed := Time.get_ticks_msec()
 		_build_the_city()
 		print("[Main] city generated in %d ms (seed %d)" % [
-			Time.get_ticks_msec() - elapsed, _city.map.seed_used])
+			Time.get_ticks_msec() - elapsed, _city.map.city_seed()])
 		ground = _city.map.doorstep_world_position()
 	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_canvas_shaders()`
 	# awaits below draw the ground the title screen and the day itself will, rather than the

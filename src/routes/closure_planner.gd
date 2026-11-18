@@ -103,7 +103,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## as closure candidates: a closure on a region boundary would be two things standing in the same
 ## spot, one placed by this pass and one by the region's own wall or door.
 ##
-## **`CityMap.fenced_park`'s fence comes back with the streets** (one `ParkClosure` per fenced run
+## **`CityMap.fenced_park_block()`'s fence comes back with the streets** (one `ParkClosure` per fenced run
 ## of its edge), after them and outside the day's quota: it is what `City` stands barriers at, the
 ## same way it stands them at a closed street's two mouths. Every other used area in `CityMap.
 ## shut_calm()` gets no fence at all — it is off the route tree but not off the ground, so nothing
@@ -301,7 +301,7 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## `protected` is never excluded: day 12's park, whose swing is the day's task. An area that is not
 ## calm today (requisitioned since, or never calm) is not in `map.calm_blocks` and is passed over.
 ## A refused area is still one she has used, so `DawnSpoilers` spoils it
-## — which every accepted area not chosen as `CityMap.fenced_park` also gets, since exclusion from
+## — which every accepted area not chosen as `CityMap.fenced_park_block()` also gets, since exclusion from
 ## the tree is the only thing accepting an area here actually does.
 static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 		protected: Array[Vector2i] = [], trace: RunTrace = null) -> Array[Vector2i]:
@@ -394,7 +394,7 @@ static func _open_calm_reached(map: CityMap, field: PackedInt32Array, shut: Arra
 ## (`RouteTree.for_day`) and every closure is placed off the tree, so like the calm half this is the
 ## second opinion rather than the thing that keeps it.
 ##
-## **With today's fenced park closed as well** (`CityMap.fenced_park`, in `map.closed_tiles` from
+## **With today's fenced park closed as well** (`CityMap.fenced_park_block()`, in `map.closed_tiles` from
 ## the repaint on): a street closure that leaves two areas reachable only through the one park that
 ## is actually fenced has left them unreachable. A merely-shut area (`CityMap.shut_calm()`) is not
 ## in `closed_tiles` — its ground stays open, so a street closure may still rely on a route

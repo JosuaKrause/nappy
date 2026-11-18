@@ -1,6 +1,6 @@
 extends RefCounted
 ## **What a real `City` hands its buildings**: `City._spawn_buildings()`'s own wiring of
-## `is_home_building`, `door_world_x_range` and `covered_ground_cols` off `CityMap.home_block`,
+## `is_home_building`, `door_world_x_range` and `covered_ground_cols` off `CityMap.home_block_coordinate()`,
 ## `map.home_rect` and `map.is_walkable()`, and `City.assign_roof_extensions()`'s of the roof rows,
 ## asked of whatever the generator actually builds across a spread of seeds, and that a dawn
 ## (`City.start_day()`) leaves every building and its collision shape as they were. What a building does with
@@ -99,15 +99,15 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 				for cell: Vector2i in unit["cells"]:
 					inside = inside and expected.has(cell)
 			t.check(inside, "seed %d: the unextended roof at %s stands its units on its interior"
-					% [map.seed_used, building.lot_rect().position])
+					% [map.city_seed(), building.lot_rect().position])
 			ordered += 1
-			if map.seed_used == BASE_SEED and main_layouts.has(building.lot_rect().position):
+			if map.city_seed() == BASE_SEED and main_layouts.has(building.lot_rect().position):
 				var layout: Array = []
 				for unit: Dictionary in RoofReads.units_of(building):
 					layout.append([unit["cell"], unit["texture"]])
 				t.check(layout == main_layouts[building.lot_rect().position],
 						"seed %d: the roof at %s carries main's layout %s (got %s)"
-						% [map.seed_used, building.lot_rect().position,
+						% [map.city_seed(), building.lot_rect().position,
 						main_layouts[building.lot_rect().position], layout])
 				pinned += 1
 		city.free()
@@ -140,14 +140,14 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 				edge_fronts += 1
 				t.check(not building.covered_ground_cols.has(true),
 						"seed %d: a front facing the map's edge at %s keeps its facade"
-						% [map.seed_used, building.lot_rect().position])
+						% [map.city_seed(), building.lot_rect().position])
 			for col in building.covered_ground_cols.size():
 				if not building.covered_ground_cols[col]:
 					continue
 				var south := Vector2i(building.lot_rect().position.x + col,
 						building.lot_rect().position.y + building.lot_rect().size.y)
 				t.check(map.in_bounds(south),
-						"seed %d: a covered column's south tile is on the map" % map.seed_used)
+						"seed %d: a covered column's south tile is on the map" % map.city_seed())
 				if not map.in_bounds(south):
 					continue
 				var front: Building = null
@@ -157,14 +157,14 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 						break
 				t.check(front != null,
 						"seed %d: a column with no facade has a lot south of it to cover it"
-						% map.seed_used)
+						% map.city_seed())
 				if front == null:
 					continue
 				var local_col := south.x - front.lot_rect().position.x
 				var extension: int = _front_of(fronts, front).roof_rows_at(local_col) - front.roof_tiles()
 				t.check(extension == building.wall_tiles(),
 						"seed %d: no column is left with neither a facade nor a covering roof (%d rows expected, got %d)"
-						% [map.seed_used, building.wall_tiles(), extension])
+						% [map.city_seed(), building.wall_tiles(), extension])
 				checked += 1
 		city.free()
 	t.check(checked > 0, "the sweep met at least one real covered column to check the extension's own wiring on (%d)" % checked)
@@ -276,7 +276,7 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 				if same_courtyard:
 					t.check(front.tint_variant >= 0 and front.tint_variant == building.tint_variant,
 							"seed %d: two pieces of one courtyard lot share one tint (%d, %d)"
-							% [map.seed_used, front.tint_variant, building.tint_variant])
+							% [map.city_seed(), front.tint_variant, building.tint_variant])
 				var extension: int = _front_of(fronts, front).roof_rows_at(local_col) - front.roof_tiles()
 				if extension <= 0 or building.roof_tiles() <= 0:
 					continue
@@ -285,10 +285,10 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 				var lip_drawn: bool = (_front_of(fronts, building).roof_edges_at(col, 0) & Building.ROOF_EDGE_BIT_S) != 0
 				t.check(cap_drawn != expect_seamless,
 						"seed %d: the covering piece's extension top draws a north lip exactly off a seamless seam"
-						% map.seed_used)
+						% map.city_seed())
 				t.check(lip_drawn != expect_seamless,
 						"seed %d: the covered piece's first roof row draws a front lip exactly off a seamless seam"
-						% map.seed_used)
+						% map.city_seed())
 				if expect_seamless:
 					checked_courtyard += 1
 				else:
@@ -321,7 +321,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 				for step in int(unit["span"]):
 					var at := cell + Vector2i(step, 0)
 					t.check(_front_of(fronts, building).roof_edges_at(at.x, at.y) == 0,
-							"seed %d: a roof unit at %s sits on a cell with no lip" % [map.seed_used, at])
+							"seed %d: a roof unit at %s sits on a cell with no lip" % [map.city_seed(), at])
 					checked += 1
 					if at.y >= building.roof_tiles():
 						on_extension += 1
@@ -336,7 +336,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 
 ## Full `City` scenes across a spread of seeds — the only path that exercises
 ## `City._spawn_buildings()`'s own wiring of `is_home_building`, `door_world_x_range` and
-## `covered_ground_cols` off `CityMap.home_block`, `map.home_rect` and `map.is_walkable()`,
+## `covered_ground_cols` off `CityMap.home_block_coordinate()`, `map.home_rect` and `map.is_walkable()`,
 ## rather than a fixture set directly.
 func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunner) -> void:
 	var checked_non_home := 0
@@ -356,18 +356,18 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 		var fronts := await _watch_the_fronts(t, city)
 		for building: Building in city.buildings():
 			var front := _front_of(fronts, building)
-			_check_accessor_invariant(t, building, front, map.seed_used)
-			if GroundFloorChecks.check_fire_escape(t, front, "seed %d" % map.seed_used):
+			_check_accessor_invariant(t, building, front, map.city_seed())
+			if GroundFloorChecks.check_fire_escape(t, front, "seed %d" % map.city_seed()):
 				checked_escapes += 1
 			if building.power_station:
 				continue
 			if building.is_on_home_block():
 				checked_home += 1
 				t.check(building.covered_ground_cols.is_empty(),
-						"seed %d: her own building is never told about a covered column" % map.seed_used)
+						"seed %d: her own building is never told about a covered column" % map.city_seed())
 				t.check(front.escape_cols().is_empty(),
 						"seed %d: her own building never carries a fire escape, wired the real way through the city's building spawn"
-						% map.seed_used)
+						% map.city_seed())
 				if building.wall_tiles() >= 2:
 					checked_home_multistory += 1
 					var saw_a_window := false
@@ -377,11 +377,11 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 							checked_door_columns += 1
 						t.check((front.window_at(col, 0) != &"") != under_door,
 								"seed %d: her own building draws a ground-floor window at column %d iff the door does not stand there"
-								% [map.seed_used, col])
+								% [map.city_seed(), col])
 						saw_a_window = saw_a_window or not under_door
 					t.check(saw_a_window,
 							"seed %d: her own building still shows a ground-floor window somewhere the door does not stand"
-							% map.seed_used)
+							% map.city_seed())
 				continue
 			checked_non_home += 1
 			if building.wall_tiles() < 2:
@@ -392,18 +392,18 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 				# since the roof in front of it reaches up to meet this building's own roof.
 				t.check(front.window_at(col, 0) == &"",
 						"seed %d: no ground-floor column of a building that is not her own draws a window, covered or not (district %d)"
-						% [map.seed_used, building.district])
+						% [map.city_seed(), building.district])
 				if col < building.covered_ground_cols.size() and building.covered_ground_cols[col]:
 					any_covered = true
 					checked_covered_columns += 1
 					t.check(not front.facade_drawn_in(col),
 							"seed %d: a covered column (%d) draws no facade at all, no storefront and no blank-wall plinth (district %d)"
-							% [map.seed_used, col, building.district])
+							% [map.city_seed(), col, building.district])
 			var fully_covered := any_covered and building.covered_ground_cols.count(true) == building.columns()
 			if fully_covered:
 				checked_fully_covered_fronts += 1
 				t.check(front.door_col() == -1,
-						"seed %d: a fully covered front has no door (district %d)" % [map.seed_used, building.district])
+						"seed %d: a fully covered front has no door (district %d)" % [map.city_seed(), building.district])
 			var door: int = front.door_col()
 			var shop_col := -1
 			for probe_col in building.columns():
@@ -414,21 +414,21 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 			var has_other_way_in: bool = (building.district == GameEnums.BlockPurpose.CIVIC and front.portico_drawn()) \
 					or (building.district == GameEnums.BlockPurpose.COMMERCIAL and shop_col >= 0)
 			if has_other_way_in:
-				t.check(door == -1, "seed %d: a front with a drawn storefront or portico has no extra door" % map.seed_used)
+				t.check(door == -1, "seed %d: a front with a drawn storefront or portico has no extra door" % map.city_seed())
 			elif fully_covered:
-				t.check(door == -1, "seed %d: a fully covered front with no other way in still has no door" % map.seed_used)
+				t.check(door == -1, "seed %d: a fully covered front with no other way in still has no door" % map.city_seed())
 			else:
 				checked_doors += 1
 				t.check(door >= 0 and door < building.columns() and not front.escape_cols().has(door)
 						and not (door < building.covered_ground_cols.size() and building.covered_ground_cols[door]),
 						"seed %d: a multi-story front with no other way in has one door, off every fire escape and every covered column (district %d)"
-						% [map.seed_used, building.district])
+						% [map.city_seed(), building.district])
 			if building.district == GameEnums.BlockPurpose.COMMERCIAL and shop_col >= 0:
 				checked_commercial += 1
 				var texture: StringName = front.ground_floor_at(shop_col)
 				t.check(Building.STOREFRONT_TEXTURES.has(texture) or Building.STOREFRONT_AWNING_TEXTURES.has(texture)
 						or Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
-						"seed %d: a real commercial building's storefront is still drawn" % map.seed_used)
+						"seed %d: a real commercial building's storefront is still drawn" % map.city_seed())
 		city.free()
 	t.check(checked_non_home > 0, "the sweep built non-home buildings to check (%d)" % checked_non_home)
 	t.check(checked_home > 0, "the sweep built her own building at least once (%d)" % checked_home)

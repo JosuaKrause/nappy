@@ -264,7 +264,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t: TestRunner) -> vo
 		away.append(map.tile_to_world(tile))
 		if target != Vector2i(-1, -1) or map.is_on_home_block(tile):
 			continue
-		for rect in map.alley_rects:
+		for rect in map.alley_lots():
 			if not rect.has_point(tile):
 				continue
 			var vertical := rect.size.y >= rect.size.x

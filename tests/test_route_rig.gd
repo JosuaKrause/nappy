@@ -725,7 +725,7 @@ func _test_a_plan_never_goes_through_a_precincts_posts(t: TestRunner) -> void:
 		return
 	var planner := _planner()
 	var vertical := not is_equal_approx(posts[0].x, posts[1].x)
-	var count := posts.size() / (2 * _city.map.precinct_spans.size())
+	var count := posts.size() / (2 * _city.map.precinct_stretches().size())
 	var middle := posts[count / 2]
 	var along := Vector2(0.0, 1.0) if vertical else Vector2(1.0, 0.0)
 	var from := _city.map.world_to_tile(middle - along * Tuning.TILE_SIZE * 3.0)
@@ -1048,7 +1048,7 @@ func _test_resolve_target_calm_home_prefers_the_combined_walk(t: TestRunner) -> 
 	var kept := {}
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		kept[tile] = true
-	for tiles: Dictionary in [map.closed_tiles, map.soft_sealed_tiles, map.obstructed_tiles]:
+	for tiles: Dictionary in [map.closed_tiles, map.soft_sealed_tiles(), map.obstructed_tiles]:
 		for tile: Vector2i in tiles:
 			kept[tile] = true
 	kept.erase(here)

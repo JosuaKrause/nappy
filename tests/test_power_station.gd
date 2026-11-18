@@ -43,42 +43,42 @@ func _test_every_city_has_exactly_one(t: TestRunner) -> void:
 	for map in _maps:
 		var problems := CityGenerator.validation_problems(map)
 		t.check(problems.is_empty(),
-				"seed %d: the city passes validation (%s)" % [map.seed_used, problems])
-		t.check(map.has_power_station(), "seed %d has a power station" % map.seed_used)
+				"seed %d: the city passes validation (%s)" % [map.city_seed(), problems])
+		t.check(map.has_power_station(), "seed %d has a power station" % map.city_seed())
 		var matching := 0
-		for pair in map.big_buildings:
+		for pair in map.big_building_pairs():
 			if pair == map.power_station:
 				matching += 1
 		t.check(matching == 1,
-				"seed %d: exactly one big building is the power station (%d)" % [map.seed_used, matching])
-		t.check(map.big_buildings.size() <= CityGenerator.MAX_BIG_BUILDINGS,
+				"seed %d: exactly one big building is the power station (%d)" % [map.city_seed(), matching])
+		t.check(map.big_building_pairs().size() <= CityGenerator.MAX_BIG_BUILDINGS,
 				"seed %d: the station is counted among at most %d big buildings (%d)"
-				% [map.seed_used, CityGenerator.MAX_BIG_BUILDINGS, map.big_buildings.size()])
+				% [map.city_seed(), CityGenerator.MAX_BIG_BUILDINGS, map.big_building_pairs().size()])
 
 ## The door's own street ground belongs to another region than the home street's, which with the
 ## wall standing means reaching it takes a door crossing — the day-14 half of this suite walks it.
 func _test_it_is_not_in_the_home_region(t: TestRunner) -> void:
 	for map in _maps:
 		var street := map.power_station_door_street()
-		t.check(street != null, "seed %d: the door opens onto a street" % map.seed_used)
+		t.check(street != null, "seed %d: the door opens onto a street" % map.city_seed())
 		if not street:
 			continue
 		var door_region := RegionPlanner.ground_region_of(map, street)
 		var home_region := RegionPlanner.home_region(map)
 		t.check(door_region >= 0 and home_region >= 0 and door_region != home_region,
 				"seed %d: the door is in region %d, the home in %d"
-				% [map.seed_used, door_region, home_region])
+				% [map.city_seed(), door_region, home_region])
 
 func _test_its_door_is_a_reasonable_walk_from_home(t: TestRunner) -> void:
 	var spread := {}
 	for map in _maps:
 		var key := map.power_station_door_street().key()
-		var offset := (Vector2i(key.x, key.y - 1) - map.home_block).abs()
+		var offset := (Vector2i(key.x, key.y - 1) - map.home_block_coordinate()).abs()
 		var away := offset.x + offset.y
 		spread[away] = spread.get(away, 0) + 1
 		t.check(away >= CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME,
 				"seed %d: the door is %d blocks from the home, at least %d"
-				% [map.seed_used, away, CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME])
+				% [map.city_seed(), away, CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME])
 	print("[test_power_station] door distance from the home block, blocks: count — %s" % spread)
 
 ## The door is pavement, directly south of the mass, inside its width, on the street
@@ -88,27 +88,27 @@ func _test_the_front_door_is_on_its_long_south_side(t: TestRunner) -> void:
 	for map in _maps:
 		var pair := map.power_station
 		t.check(pair.size == Vector2i(2, 1),
-				"seed %d: the station is two blocks wide and one deep (%s)" % [map.seed_used, pair])
+				"seed %d: the station is two blocks wide and one deep (%s)" % [map.city_seed(), pair])
 		var mass := CityMap.blocks_tile_rect(pair)
 		var door := map.power_station_door_tiles()
 		t.check(door.size == Vector2i(CityMap.POWER_STATION_DOOR_TILES, 1),
 				"seed %d: the door is %d tiles wide (%s)"
-				% [map.seed_used, CityMap.POWER_STATION_DOOR_TILES, door])
+				% [map.city_seed(), CityMap.POWER_STATION_DOOR_TILES, door])
 		t.check(door.position.y == mass.end.y and door.position.x >= mass.position.x
 				and door.end.x <= mass.end.x,
-				"seed %d: the door %s is on the south face of %s" % [map.seed_used, door, mass])
+				"seed %d: the door %s is on the south face of %s" % [map.city_seed(), door, mass])
 		var street := map.power_station_door_street()
 		t.check(street != null and street.horizontal and map.has_street(street.key()),
-				"seed %d: the door's street is a real east-west street" % map.seed_used)
+				"seed %d: the door's street is a real east-west street" % map.city_seed())
 		for tile in map.rect_tiles(door):
 			t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
-					"seed %d: the door's pavement at %s is sidewalk" % [map.seed_used, tile])
+					"seed %d: the door's pavement at %s is sidewalk" % [map.city_seed(), tile])
 			if street:
 				t.check(street.tile_rect().has_point(tile),
-						"seed %d: the door's pavement %s is on its own street" % [map.seed_used, tile])
+						"seed %d: the door's pavement %s is on its own street" % [map.city_seed(), tile])
 			t.check(not map.is_walkable(tile + Vector2i.UP),
 					"seed %d: the tile north of the door's pavement %s is the building"
-					% [map.seed_used, tile])
+					% [map.city_seed(), tile])
 
 ## **The preference is an order, and the order is what is held**: both blocks industrial, then one,
 ## then the pair nearest industrial ground.
@@ -171,12 +171,12 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		var tree := RouteTree.for_day(map, day)
 		var door_street := map.power_station_door_street()
 		t.check(door_street != null and tree.is_on_the_tree(door_street.key()),
-				"seed %d day %d: the corridor reaches the door's street" % [map.seed_used, day])
+				"seed %d day %d: the corridor reaches the door's street" % [map.city_seed(), day])
 		var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 		t.check(not (region_plan.doors.is_empty() and region_plan.alley_doors.is_empty()),
-				"seed %d day %d: the wall has a door in it" % [map.seed_used, day])
+				"seed %d day %d: the wall has a door in it" % [map.city_seed(), day])
 		var closure_rng := RandomNumberGenerator.new()
-		closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+		closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 		var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 				closure_rng, tree, region_plan)
 		map.close_streets(closures)
@@ -190,7 +190,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		for rect in region_plan.alley_doors:
 			boundary[rect.position] = true
 		var seal_rng := RandomNumberGenerator.new()
-		seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+		seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 		var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
 		var blocked := map.closed_tiles.duplicate()
@@ -203,7 +203,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		var reached := grid.flood([map.home_rect.position], blocked)
 		t.check(_reaches_any(grid, reached, blocked, door),
 				"seed %d day %d: the front door is reachable with the day's walls, seals and "
-				% [map.seed_used, day] + "%d closures in place" % closures.size())
+				% [map.city_seed(), day] + "%d closures in place" % closures.size())
 
 		var shut := blocked.duplicate()
 		for segment in region_plan.doors:
@@ -220,7 +220,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		var reached_shut := grid.flood([map.home_rect.position], shut)
 		t.check(not _reaches_any(grid, reached_shut, shut, door),
 				"seed %d day %d: with the region doors shut the front door is out of reach"
-				% [map.seed_used, day])
+				% [map.city_seed(), day])
 
 ## The day before, the corridor is what it would be with no station at all — the spur is the one
 ## thing the station's day adds, and nothing else in the tree moves for it on that day either.
@@ -241,9 +241,9 @@ func _test_no_other_day_is_bent_toward_it(t: TestRunner) -> void:
 			kept += mini(wanted[cell], held.get(cell, 0))
 		t.check(kept == without.cells().size(),
 				"seed %d: the station's day keeps every cell of the corridor it would have had (%d of %d)"
-				% [map.seed_used, kept, without.cells().size()])
+				% [map.city_seed(), kept, without.cells().size()])
 		t.check(with_spur.cells().size() >= without.cells().size(),
-				"seed %d: and only adds to it" % map.seed_used)
+				"seed %d: and only adds to it" % map.city_seed())
 
 		var before := Tuning.POWER_STATION_DAY - 1
 		_repaint_for(map, before)
@@ -251,7 +251,7 @@ func _test_no_other_day_is_bent_toward_it(t: TestRunner) -> void:
 				ClosurePlanner.calm_areas(map), map.blocked_segments(),
 				ReachabilityGrid.build(map, Mover.ground()), _routes_rng(map, before))
 		t.check(RouteTree.for_day(map, before).cells().size() == plain.cells().size(),
-				"seed %d day %d: an ordinary day's corridor has no spur" % [map.seed_used, before])
+				"seed %d day %d: an ordinary day's corridor has no spur" % [map.city_seed(), before])
 
 ## How many of the tree's nodes stand in each cell it covers.
 func _nodes_by_cell(tree: RouteTree) -> Dictionary:
@@ -262,7 +262,7 @@ func _nodes_by_cell(tree: RouteTree) -> Dictionary:
 
 func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("routes:%d:%d" % [map.city_seed(), day])
 	return rng
 
 # ------------------------------------------------------------------ saves ---

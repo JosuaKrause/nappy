@@ -12,7 +12,7 @@ extends RefCounted
 ##
 ## **The home block's own lot geometry was already seed-independent before this change** —
 ## `CityGenerator` carves it from `Tuning.BLOCK_SIZE`, `CityGenerator.HOME_SIZE_TILES` and the fixed
-## middle block alone, never from `map.seed_used` — which is what makes `City._variant_for()` and
+## middle block alone, never from `map.city_seed()` — which is what makes `City._variant_for()` and
 ## `City._height_for()` cheap to fix: each takes an early return for a home-block rect to a fixed
 ## choice (a hash of the rect's own position alone, or one of two fixed wall-row counts) and
 ## otherwise runs exactly the code it always has, so a non-home building's own roll is untouched.
@@ -67,7 +67,7 @@ static func _window_pictures(building: Building) -> Array[StringName]:
 static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 	var rects: Array[Rect2i] = []
 	for rect in map.building_lots():
-		if City.block_of(rect) == map.home_block:
+		if City.block_of(rect) == map.home_block_coordinate():
 			rects.append(rect)
 	rects.sort_custom(func(a: Rect2i, b: Rect2i) -> bool: return a.position < b.position)
 	return rects
@@ -77,7 +77,7 @@ static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 static func _deepest_home_block_rect(map: CityMap) -> Rect2i:
 	var deepest := Rect2i()
 	for rect in map.building_lots():
-		if City.block_of(rect) == map.home_block and rect.size.y > deepest.size.y:
+		if City.block_of(rect) == map.home_block_coordinate() and rect.size.y > deepest.size.y:
 			deepest = rect
 	return deepest
 

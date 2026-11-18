@@ -21,7 +21,7 @@ const GROUND := 1
 const POSTS := 2
 ## Today's closures and the fenced park's ground (`CityMap.closed_tiles`).
 const CLOSED := 4
-## The pavement tiles a soft seal shuts to walkers (`CityMap.soft_sealed_tiles`).
+## The pavement tiles a soft seal shuts to walkers (`CityMap.soft_sealed_tiles()`).
 const SOFT_SEALS := 8
 ## The tiles under a stationary solid body (`CityMap.obstructed_tiles`).
 const BODIES := 16
@@ -83,7 +83,7 @@ static func on_foot(body_radius := 0.0) -> Mover:
 
 ## **A car that drives**: stopped by the ground, the posts, today's closures and every stationary
 ## body, and kept to street ground. A soft seal takes only the pavements, so its carriageway stays
-## open to a car (`CityMap.soft_sealed_tiles`).
+## open to a car (`CityMap.soft_sealed_tiles()`).
 static func vehicle(body_radius := 0.0) -> Mover:
 	return Mover.new(GROUND | POSTS | CLOSED | BODIES | STREETS, body_radius)
 

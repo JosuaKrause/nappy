@@ -1088,7 +1088,7 @@ static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 		home: Rect2i) -> void:
 	map.fill_rect(home, GameEnums.TileType.HOME)
 	map.home_rect = home
-	map.home_block = block
+	map.place_home(block)
 	block_rects[block] = _keep_nonempty(_subtract_all(block_rects[block], home))
 
 # ----------------------------------------------------------- hard blockers ---

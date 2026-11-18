@@ -1319,7 +1319,7 @@ const FAR_END_REACH_IN := 96.0
 ## The mark's own through-alley, as `[nearer edge, farther edge]` along its long axis in the mark's
 ## own column or row — the outer edges of its two end tiles, so the span is the alley's whole length
 ## (`Tuning.BLOCK_SIZE`, 8 tiles, 256px, for a one-block lot) — or `[]` when `at` is in no
-## through-alley (`CityMap.alley_rects`): a courtyard's passage, or not an alley at all.
+## through-alley (`CityMap.alley_lots()`): a courtyard's passage, or not an alley at all.
 func _through_alley_span(at: Vector2) -> Array[Vector2]:
 	var span: Array[Vector2] = []
 	if not _map:
@@ -1490,7 +1490,7 @@ func _drawing_shows(row: EventDef, feet: Vector2) -> bool:
 
 ## The mark's own alley, as `[nearer, farther]`, or `[]` when `at` is on no `ALLEY` ground.
 ##
-## **A through-alley** (`CityMap.alley_rects`, one `Rect2i` each from `CityGenerator._alley_rect()`,
+## **A through-alley** (`CityMap.alley_lots()`, one `Rect2i` each from `CityGenerator._alley_rect()`,
 ## always `ALLEY_WIDTH_TILES` (2) wide and the rest of the lot long): the end tiles of its long axis
 ## in the mark's own column or row, ordered by distance from `at`.
 ##
@@ -1635,7 +1635,7 @@ func _place_contact(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 ## (`_marks()`). *(2026-10-03, quiet-yak, inbox #486, the player, asked whether a mark may sit
 ## in the middle of its alley: "Mouth only".)* A through-alley's mouths are
 ## its end tiles along its long axis, both of them across its two-tile width
-## (`CityMap.alley_rects`), so four to an alley; a courtyard passage's is its tile that opens onto
+## (`CityMap.alley_lots()`), so four to an alley; a courtyard passage's is its tile that opens onto
 ## ground that is neither alley nor courtyard — the street end. In `CityMap.tiles_of_type()`'s own
 ## order, so a seeded draw over them is the same every time. Built once per map and kept.
 func _alley_mouths() -> Array[Vector2i]:
@@ -1663,7 +1663,7 @@ func _marks() -> Array[Vector2i]:
 	return _mark_tiles_of_mouths
 
 ## The tile a mark stands on for the alley whose mouth is `mouth`: one step in from it along the
-## alley's long axis for a through-alley (`CityMap.alley_rects`), and for a courtyard's passage the
+## alley's long axis for a through-alley (`CityMap.alley_lots()`), and for a courtyard's passage the
 ## next tile toward the courtyard, which is courtyard ground where the passage is one tile long.
 ## `mouth` itself when no tile lies in from it.
 static func _mark_tile_of(map: CityMap, mouth: Vector2i) -> Vector2i:

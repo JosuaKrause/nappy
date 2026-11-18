@@ -1126,8 +1126,8 @@ func _test_a_precinct_has_no_cars_in_it(t: TestRunner) -> void:
 	# is always east-west, and the other is inland *on either axis*. Seed 4242 happened to roll a
 	# vertical one for eleven milestones, and moving the main road (which draws from the same city
 	# stream) rolled it the other way. A fixture that only exists on one seed is not a fixture.
-	t.check(not _city.map.precinct_spans.is_empty(), "this city has a precinct to build a field around")
-	var chosen: Vector4i = _city.map.precinct_spans[_city.map.precinct_spans.size() - 1]
+	t.check(not _city.map.precinct_stretches().is_empty(), "this city has a precinct to build a field around")
+	var chosen: Vector4i = _city.map.precinct_stretches()[_city.map.precinct_stretches().size() - 1]
 	var vertical := chosen.x == 1
 
 	# Built around one, so the field is looking at it rather than at the middle of the map.
@@ -1182,7 +1182,7 @@ func _test_a_precinct_stops_the_street_that_crosses_it(t: TestRunner) -> void:
 	var map := _city.map
 	var box := Rect2i()
 	var found := false
-	for span in map.precinct_spans:
+	for span in map.precinct_stretches():
 		var vertical: bool = span.x == 1
 		for block in range(span.z, span.w):
 			var along := (block + 1) * CityMap.period()

@@ -83,7 +83,7 @@ func setup(map: CityMap, buildings: Array[Building], signals: TrafficSignals,
 	_forced = forced
 	_dark_from_the_start = dark_from_the_start
 	if map.has_power_station():
-		_station = map.tile_rect_to_world(CityMap.blocks_tile_rect(map.power_station))
+		_station = map.tile_rect_to_world(CityMap.blocks_tile_rect(map.power_station_blocks()))
 	if _dark_from_the_start:
 		_go_dark()
 
