@@ -1124,9 +1124,9 @@ func how_long_its_victim_has_walked() -> float:
 
 # ------------------------------------------------------------------ the flock ---
 
-## The radius one bird emits over (`EventFlock.bird_outer()`), read by `DebugLayers` so a flock's
-## own fields layer draws the exact radius `_flock_contribution_at()` sums over.
-func flock_outer_radius() -> float:
+## The radius one bird emits over (`EventFlock.bird_outer()`), or 0 without a flock: the outer ring
+## `field_rings()` gives a flock, the exact radius `_flock_contribution_at()` sums over.
+func _flock_outer_radius() -> float:
 	return flock.bird_outer() if flock else 0.0
 
 ## Each live bird's own ground-plane offset from this instance's origin — empty for anything
@@ -1550,6 +1550,11 @@ func field_distance_from(centre: Vector2, shape: GroundShape, axis: Vector2,
 ## its row's (`EventDef.datum()`), its shape or none — a point at its centre.
 func field_shape() -> GroundShape:
 	return def.datum()
+
+## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture: the
+## outline its shadow is drawn over (`DebugLayers`).
+func ground_shape() -> GroundShape:
+	return def.ground_shape()
 
 ## A flock is its birds, summed.
 ##
@@ -2198,6 +2203,15 @@ func field_reaches(point: Vector2) -> bool:
 				return true
 		return false
 	return _field_distance(point, travel_velocity()) <= def.heard_within()
+
+## **The two rings of its field**, as the debug view's fields layer draws them (`DebugLayers`): its
+## core (`x`, `EventDef.core_within()`) and its outer edge (`y`), which is how far its row is
+## heard (`EventDef.heard_within()`) and, for a flock with birds, how far one bird is heard
+## (`_flock_outer_radius()`), the radius `field_reaches()` and the flock's own field sum over. A
+## value, so the layer asks it once per event per redraw and allocates nothing.
+func field_rings() -> Vector2:
+	var outer := _flock_outer_radius() if not birds().is_empty() else def.heard_within()
+	return Vector2(def.core_within(), outer)
 
 ## Whether its chase ended because she shook it off rather than because the clock ran out
 ## (`gave_up`).

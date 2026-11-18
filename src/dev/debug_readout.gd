@@ -371,9 +371,9 @@ func _nearest_event_text() -> String:
 	if not nearest:
 		return "none"
 	return "%s %s age=%.1f/%.1f %.0fpx i=%.1f" % [
-		nearest.def.id,
+		nearest.row_id(),
 		"telegraph" if nearest.is_telegraphing() else "active",
-		nearest.age, nearest.def.telegraph_time,
+		nearest.age, nearest.telegraphs_for(),
 		best, nearest.current_intensity()]
 
 func _tile_name(type: GameEnums.TileType) -> String:

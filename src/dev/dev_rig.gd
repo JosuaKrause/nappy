@@ -57,7 +57,7 @@ func update_follow_camera(events: EventManager) -> void:
 	if not _follow_camera or not events:
 		return
 	for instance in events.instances():
-		if instance.def.id == _follow_id:
+		if instance.row_id() == _follow_id:
 			_follow_camera.position = instance.global_position
 			return
 
@@ -212,7 +212,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 		# Off to one side, so the chalk mark is not hidden under the pram.
 		return contact + Vector2(70.0, 30.0)
 	# A region-wall checkpoint's own hut, stood back a few tiles on the approach side so a
-	# `--walk` in `facing`'s own direction closes the distance toward it — the trailer's
+	# `--walk` in the direction it faces (`faces()`) closes the distance toward it — the trailer's
 	# "walking towards a gatehouse" shot. Doors exist only from `Tuning.REGION_WALL_FIRST_DAY`;
 	# `door:<n>` picks which one of the day's, the way `closure:<n>` and `zone:<n>` already do.
 	# `checkpoint_gate` (the boom over the road) and `checkpoint_post` (an alley mouth) are
@@ -222,7 +222,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 		var plan := streets.region_plan()
 		if plan:
 			for body in plan.door_bodies:
-				if body.def.id == "checkpoint_hut":
+				if body.row_id() == "checkpoint_hut":
 					huts.append(body)
 		if huts.is_empty():
 			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
@@ -230,7 +230,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 			return map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventPlan = huts[which]
-		return _nearest_walkable(map, hut.position - hut.facing * Tuning.TILE_SIZE * 4.0)
+		return _nearest_walkable(map, hut.placed_at() - hut.faces() * Tuning.TILE_SIZE * 4.0)
 
 	var wanted: int = {
 		"park": GameEnums.TileType.PARK,
@@ -269,7 +269,8 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 ##
 ## **A row that waits for her** (`EventDef.notice` — a `pigeon_flock`, an `alley_robbery`) is stood
 ## just *outside* its own trigger rather than inside it: the offset below is measured against
-## whichever is larger of `outer_radius` and `EventDef.notice`, plus a tile's width of clearance,
+## whichever is larger of its field's reach (`EventPlan.heard_within()`) and its notice
+## (`EventPlan.notice_within()`), plus a tile's width of clearance,
 ## so a rig can photograph the silence before it notices her rather than always finding it already
 ## noticing.
 ##
@@ -281,20 +282,21 @@ static func first_event_position(events: EventManager, map: CityMap, trace: RunT
 	var waits_for_her_walk := false
 	for plan in events.plans():
 		if not plan.is_placed():
-			waits_for_her_walk = waits_for_her_walk or plan.def.id == wanted_id
+			waits_for_her_walk = waits_for_her_walk or plan.row_id() == wanted_id
 			continue
 		if wanted_id != "" and wanted_id != "event":
-			if plan.def.id != wanted_id:
+			if plan.row_id() != wanted_id:
 				continue
-		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
+		elif plan.is_ambient():
 			continue
-		if plan.def.notice_within() > 0.0:
-			var reach := maxf(plan.def.outer_radius, plan.def.notice_within())
+		var at := plan.placed_at()
+		if plan.notice_within() > 0.0:
+			var reach := maxf(plan.heard_within(), plan.notice_within())
 			var clearance := reach + Tuning.TILE_SIZE
-			var stand_off := pavement_offset(map, plan.position, clearance, 1.0)
-			return _nearest_walkable(map, plan.position + stand_off, plan.position, reach)
-		var offset := pavement_offset(map, plan.position, plan.def.outer_radius)
-		return _nearest_walkable(map, plan.position + offset)
+			var stand_off := pavement_offset(map, at, clearance, 1.0)
+			return _nearest_walkable(map, at + stand_off, at, reach)
+		var offset := pavement_offset(map, at, plan.heard_within())
+		return _nearest_walkable(map, at + offset)
 	if waits_for_her_walk:
 		var reason := (("'%s' is planned today with no position: it is sited from her walk, so "
 				% wanted_id) + "there is nowhere to stand at dawn. Use --follow %s once it exists"

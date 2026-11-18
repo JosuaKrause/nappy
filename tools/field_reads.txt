@@ -129,16 +129,6 @@ src/events/event_manager.gd day
 src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
-src/dev/auto_screenshot.gd pursuit
-src/dev/debug_layers.gd hard_fail
-src/dev/debug_layers.gd inner_radius
-src/dev/debug_layers.gd outer_radius
-src/dev/debug_layers.gd shape
-src/dev/debug_readout.gd id
-src/dev/debug_readout.gd telegraph_time
-src/dev/dev_rig.gd id
-src/dev/dev_rig.gd kind
-src/dev/dev_rig.gd outer_radius
 src/dev/scene_recipe_runtime.gd aftermath
 src/dev/scene_recipe_runtime.gd id
 src/dev/scene_recipe_runtime.gd pursuit
@@ -146,7 +136,6 @@ src/dev/scene_recipe_runtime.gd role
 src/dev/scene_recipe_runtime.gd stops_where_it_arrives
 src/dev/scene_recipe_runtime.gd telegraph_time
 src/dev/scene_recipe_runtime.gd vehicle
-src/dev/still_watch.gd id
 src/events/behaviours/event_abduction.gd duration
 src/events/behaviours/event_abduction.gd id
 src/events/behaviours/event_abduction.gd pursuit
@@ -392,13 +381,7 @@ src/routes/seal_planner.gd solid_parts
 src/events/event_instance.gd birds
 
 # [EventInstance] src/events/event_instance.gd
-src/dev/auto_screenshot.gd def
-src/dev/debug_layers.gd def
-src/dev/debug_layers.gd excitement
-src/dev/debug_layers.gd is_finished
 src/dev/debug_readout.gd age
-src/dev/debug_readout.gd def
-src/dev/dev_rig.gd def
 src/dev/scene_recipe_runtime.gd barrier_post
 src/dev/scene_recipe_runtime.gd def
 src/dev/scene_recipe_runtime.gd departure
@@ -407,8 +390,6 @@ src/dev/scene_recipe_runtime.gd is_finished
 src/dev/scene_recipe_runtime.gd is_leaving
 src/dev/scene_recipe_runtime.gd on_foot
 src/dev/scene_recipe_runtime.gd pursuit
-src/dev/still_watch.gd def
-src/dev/still_watch.gd is_finished
 src/events/behaviours/event_behaviours.gd abduction
 src/events/behaviours/event_behaviours.gd barrier_post
 src/events/behaviours/event_behaviours.gd car
@@ -469,9 +450,6 @@ src/simulation_builder.gd timing
 src/simulation_builder.gd trace
 
 # [EventPlan] src/events/event_plan.gd
-src/dev/dev_rig.gd def
-src/dev/dev_rig.gd facing
-src/dev/dev_rig.gd position
 src/dev/scene_recipe_runtime.gd age
 src/dev/scene_recipe_runtime.gd def
 src/dev/scene_recipe_runtime.gd facing
