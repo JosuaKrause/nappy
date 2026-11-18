@@ -1651,7 +1651,7 @@ have the wrong turn in the last minutes count.
 
 **Every section opens on its brief** — the same day brief a resumed run opens on
 (`SummaryModel.brief_for()`), titled *"Escape the building"* or *"Escape the city"* where a day's
-number stands (`DaySpec.title`), and carrying the Nerve count as the run holds it — unchanged in a
+number stands (`DaySpec.title()`), and carrying the Nerve count as the run holds it — unchanged in a
 normal run, whose escape spends none, and in a hard run whatever its lost sections spent. A retry
 opens on it too, after the lost section's outcome screen: the outcome screen says why the section
 was lost (minty-lemur #785), and its continue brings up the section's brief before she walks it

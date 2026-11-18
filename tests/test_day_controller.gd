@@ -238,8 +238,8 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 	results.clear()
 	var city := _rig(t)
 	city.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
-	city.spec().exits = {CityEdge.Kind.TUNNEL: Vector2(1000.0, 0.0),
-			CityEdge.Kind.BRIDGE: Vector2(-1000.0, 0.0)}
+	city.spec().use_exits({CityEdge.Kind.TUNNEL: Vector2(1000.0, 0.0),
+			CityEdge.Kind.BRIDGE: Vector2(-1000.0, 0.0)})
 	city.day_finished.connect(on_finished)
 	city.start(180.0)
 	city.reach_the_exit()

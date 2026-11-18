@@ -1058,7 +1058,7 @@ func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_
 	if not map.tile_to_world(tile).is_equal_approx(at):
 		return null
 	var ground_ok := false
-	var ground := EventScheduler.row_ground(map, null, _walk_spec.holds_the_home_streets)
+	var ground := EventScheduler.row_ground(map, null, _walk_spec.keeps_the_home_streets_clear())
 	for segment in finale.open_streets:
 		if tile in EventScheduler.street_ground(map, ground, segment, def, player_at):
 			ground_ok = true

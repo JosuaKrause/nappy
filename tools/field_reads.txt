@@ -123,15 +123,6 @@ src/main.gd first_day
 src/main.gd spec
 
 # [DaySpec] src/day/day_spec.gd
-src/dev/brief_presser.gd section
-src/dev/building_walker.gd section
-src/dev/debug_readout.gd closes_streets
-src/dev/debug_readout.gd number
-src/dev/debug_readout.gd section
-src/dev/debug_readout.gd title
-src/dev/route_rig.gd number
-src/dev/route_rig_planner.gd exits
-src/dev/scene_recipe_runtime.gd holds_the_home_streets
 src/events/dawn_context.gd holds_the_home_streets
 src/events/dawn_context.gd keeps_the_walk_open
 src/events/dawn_context.gd keeps_unused_calm_clear
@@ -145,18 +136,6 @@ src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd number
 src/events/event_manager.gd owes_a_return
 src/events/event_manager.gd poster_pursuits
-src/main.gd a_win_leads_into
-src/main.gd daylight_runs_down
-src/main.gd saved_as_under_way
-src/main.gd title
-src/main.gd world
-src/routes/seal_planner.gd seal_pictures
-src/routes/seal_planner.gd seals_every_street_off_the_walk
-src/routes/seal_planner.gd seals_the_main_road
-src/run/run_calendar.gd a_loss_gives_back_the_attempt
-src/run/run_calendar.gd a_win_gives_a_nerve_back
-src/run/run_calendar.gd a_win_leads_into
-src/telemetry/run_session.gd title
 
 # [DaySwitch] src/events/day_switch.gd
 src/events/event_catalogue.gd after_day

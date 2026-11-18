@@ -66,7 +66,7 @@ func press_the_brief(spec: DaySpec) -> void:
 ## The building section has been planned (`RunFlow.day_planned`): plans the walk out from where she
 ## stands.
 func start_section(spec: DaySpec) -> void:
-	if spec.section != DaySpec.Section.BUILDING:
+	if spec.section_kind() != DaySpec.Section.BUILDING:
 		return
 	_legs.clear()
 	_pursued_shaft.clear()

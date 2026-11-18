@@ -211,14 +211,14 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ##   seal and no thinning: a soft seal leaves the carriageway open, which is exactly the wrong answer
 ##   when the brief is *"a single path through the city"*, and the thinning pass exists to let a wrong
 ##   turn be taken and discovered, which is a day's lesson rather than the climax's.
-## - **The main road is sealed like anything else** (`DaySpec.seals_the_main_road`). The day's
+## - **The main road is sealed like anything else** (`DaySpec.seals_off_the_main_road()`). The day's
 ##   exemption is that `RouteTree` refuses to route along the spine and sealing it as well would
 ##   wall the one street she is meant to be free to cross. The escape's chains *end* on the spine —
 ##   the tunnel is at its north end and the bridge at its south — so the spine is chain ground where
 ##   they run on it and ordinary closed ground everywhere else, and leaving the rest of it open would
 ##   join the two chains at the one street that touches both exits.
 ## - **Every street and every alley mouth off the walk is sealed**
-##   (`DaySpec.seals_every_street_off_the_walk`), rather than a share of them and a fraction of the
+##   (`DaySpec.seals_off_every_other_street()`), rather than a share of them and a fraction of the
 ##   alleys: `ALLEY_MOUTH_SEAL_CHANCE` exists so an alley reads as an occasional exception on
 ##   an ordinary day; one open alley in the finale is a second way through.
 ##
@@ -275,7 +275,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	var soft_pairs: Array = []
 	# On a day the region wall stands, only a share of the streets below is sealed at all — see
 	# `_seals_this_street`. Asked once here so any other day draws nothing extra from `rng`.
-	var thinned := spec.region_wall_stands() and not spec.seals_every_street_off_the_walk
+	var thinned := spec.region_wall_stands() and not spec.seals_off_every_other_street()
 	for segment in map.street_network().segments():
 		var key := segment.key()
 		if skip.has(key) or not may_seal(map, spec, route, segment):
@@ -349,22 +349,22 @@ static func _build_escape_candidates() -> Array[Candidate]:
 static func _escape_candidates() -> Array[Candidate]:
 	return _build_escape_candidates()
 
-## The pictures `spec` seals with (`DaySpec.seal_pictures`).
+## The pictures `spec` seals with (`DaySpec.seal_pictures()`).
 static func pictures_for(spec: DaySpec) -> Array[Candidate]:
-	if spec.seal_pictures == DaySpec.SealPictures.ESCAPE:
+	if spec.seal_pictures() == DaySpec.SealPictures.ESCAPE:
 		return _escape_candidates()
 	return candidates()
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate on a day, because
 ## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
 ## street the design deliberately leaves open to cross. A spec that seals the main road
-## (`DaySpec.seals_the_main_road`) does not ask.
+## (`DaySpec.seals_off_the_main_road()`) does not ask.
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return map.is_main_road(not segment.horizontal, segment.a.x)
 
 ## **Whether `segment` is a street the walk `spec` describes may seal at all**: a real street on
 ## `map`, off the walk `route` hands in, not the street the walk starts in, and not the main road
-## unless the spec seals it (`DaySpec.seals_the_main_road`). The one answer `plan_day()` asks of
+## unless the spec seals it (`DaySpec.seals_off_the_main_road()`). The one answer `plan_day()` asks of
 ## every street before it rolls for one, and the one a scene recipe's authored seal is held to
 ## (`SceneRecipeRuntime`), so an authored seal stands only where the day's own pass could have put
 ## one. `plan_day()`'s `skip` and its gatehouse-day share are its own, on top of this.
@@ -376,7 +376,7 @@ static func may_seal(map: CityMap, spec: DaySpec, route: RouteSource,
 	var home := route.street_it_starts_in()
 	if home and key == home.key():
 		return false
-	return spec.seals_the_main_road or not _is_the_main_road(map, segment)
+	return spec.seals_off_the_main_road() or not _is_the_main_road(map, segment)
 
 ## Whether a street the loop in `plan_day` would seal is sealed today, on a day the region wall
 ## stands — one roll per street against `GATEHOUSE_DAY_SEAL_SHARE`. *(azure-puffin, point 4: "when
@@ -794,7 +794,7 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 ## only a `ALLEY_MOUTH_SEAL_CHANCE` fraction of those, rolled once per qualifying alley, and on a
 ## day the region wall stands (`DaySpec.region_wall_stands()`) that fraction times
 ## `GATEHOUSE_DAY_SEAL_SHARE`, unless the spec seals every alley off the walk
-## (`DaySpec.seals_every_street_off_the_walk`, the escape's), which rolls nothing. See the class
+## (`DaySpec.seals_off_every_other_street()`, the escape's), which rolls nothing. See the class
 ## doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
 ## rather than guessed at: an alley that touches the corridor at either end is kept open outright
 ## (the way round a wall), and one that touches it at neither is a *candidate* to be walled at both
@@ -810,7 +810,7 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 	if def_id == "":
 		return planned
 	var mouth_def := sealed_variant(EventCatalogue.by_id(def_id), true)
-	var every := spec.seals_every_street_off_the_walk
+	var every := spec.seals_off_every_other_street()
 	# On a day the region wall stands, the same share `_seals_this_street` keeps of the streets,
 	# folded into the one roll each qualifying alley already gets rather than rolled a second time.
 	var chance := ALLEY_MOUTH_SEAL_CHANCE

@@ -194,9 +194,7 @@ func _test_a_scene_recipe_never_hands_over(t: TestRunner) -> void:
 	_put_away(rig)
 
 func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
-	var spec := DaySpec.new()
-	spec.section = DaySpec.Section.BUILDING
-	spec.number = 15
+	var spec := DaySpec.for_section(DaySpec.Section.BUILDING, 300.0)
 	var rig := _rig(t, spec)
 	var director: DayDirector = rig["director"]
 	var clock: EndedClock = rig["clock"]
