@@ -130,7 +130,7 @@ func _test_street_kit_consumers_share_one_reference_count(t: TestRunner) -> void
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var marker := ClosureMarker.new()
-	marker.atlas = atlas
+	marker.use_atlas(atlas)
 	t.add_child(marker)
 	t.check(pages.held(&"street_kit"), "the closure marker takes the page")
 	var light := TrafficLight.new()
@@ -140,7 +140,7 @@ func _test_street_kit_consumers_share_one_reference_count(t: TestRunner) -> void
 	edge.dress(atlas, CityEdge.Kind.TUNNEL)
 	t.add_child(edge)
 	var park := ParkFenceMarker.new()
-	park.atlas = atlas
+	park.use_atlas(atlas)
 	t.add_child(park)
 	var tape := CordonTape.new()
 	tape.use_atlas(atlas)
@@ -166,7 +166,7 @@ func _test_each_street_kit_consumer_holds_its_own_reference(t: TestRunner) -> vo
 	var makers := {
 		"the closure marker": func(atlas: AtlasLibrary) -> Node:
 			var node := ClosureMarker.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the traffic light": func(atlas: AtlasLibrary) -> Node:
 			var node := TrafficLight.new()
@@ -178,7 +178,7 @@ func _test_each_street_kit_consumer_holds_its_own_reference(t: TestRunner) -> vo
 			return node,
 		"the park fence": func(atlas: AtlasLibrary) -> Node:
 			var node := ParkFenceMarker.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the cordon tape": func(atlas: AtlasLibrary) -> Node:
 			var node := CordonTape.new()

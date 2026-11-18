@@ -1019,19 +1019,17 @@ func _watch_closures(here: Vector2) -> void:
 	if not _map:
 		return
 	for closure in _streets.closures():
-		var key := closure.segment.key()
+		var key := closure.street_key()
 		if _seen_closures.has(key):
 			continue
 		for mouth in closure.mouth_centres(_map):
 			if mouth.distance_to(here) > CLOSURE_SIGHT:
 				continue
 			_seen_closures[key] = true
-			_last_closure = RoadClosure.display_name(closure.kind).to_lower()
+			_last_closure = RoadClosure.display_name(closure.kind()).to_lower()
 			_last_closure_at = _log.clock()
-			_log.note("closure", "saw the %s on %s%s from %s" % [
-				_last_closure, "h" if closure.segment.horizontal else "v",
-				RunTrace.tile(closure.segment.a),
-				RunTrace.tile(_map.world_to_tile(here))])
+			_log.note("closure", "saw the %s on %s from %s" % [
+				_last_closure, closure.street_words(), RunTrace.tile(_map.world_to_tile(here))])
 			break
 
 ## Whether the player ever went near a chalk mark. "Nobody ever finds it" is the thing that

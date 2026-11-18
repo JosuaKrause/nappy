@@ -86,7 +86,7 @@ func case_closures_are_deterministic(t: TestRunner) -> void:
 					% [map.city_seed(), day])
 			for i in mini(first.size(), second.size()):
 				t.check(first[i].segment.key() == second[i].segment.key()
-						and first[i].kind == second[i].kind,
+						and first[i].kind() == second[i].kind(),
 						"seed %d day %d shuts the same streets in the same way"
 						% [map.city_seed(), day])
 
@@ -116,9 +116,9 @@ func case_closure_counts_follow_the_act(t: TestRunner) -> void:
 						"streets (%d)")
 						% [map.city_seed(), day, Tuning.closures_for_day(day), closures.size()])
 			for closure in closures:
-				t.check(day >= int(RoadClosure.KINDS[closure.kind]["first_day"]),
+				t.check(day >= int(RoadClosure.KINDS[closure.kind()]["first_day"]),
 						"seed %d day %d: %s cannot happen yet"
-						% [map.city_seed(), day, RoadClosure.display_name(closure.kind)])
+						% [map.city_seed(), day, RoadClosure.display_name(closure.kind())])
 	t.check(thinned_days > 0,
 			"the sweep had days with the region wall and an act quota above one (%d)"
 			% thinned_days)

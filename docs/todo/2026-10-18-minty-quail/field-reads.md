@@ -98,7 +98,11 @@ Left, each its own design question:
   by class: the city map's (`CityMap`) in the events, whose fields (`network`, `main_road`, `block_plans`,
   `calm_blocks`, `closed_tiles`, `power_station`, `boundary_wall_at_a`, `square_rects`, `playgrounds`)
   stay public until the events' pass, and in the scene recipes' draft and runtime (`stretch`,
-  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets. Two groups have a home of their own:
+  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets. `RoadClosure.segment` stays public for one reader,
+  the day planner's holds (`src/events/day_planner.gd`), which go with the events' interface
+  (`event-interface.md`); every other reader asks `street_key()`, `street_words()`, `mouth_rects()`
+  or `covers_tile()`, and the suites' and the probes' reads of `closure.segment` go with
+  that read. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
     a closure's segment go through `BlockPlan.Step`'s and `RoadClosure`'s methods. It is no longer a
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
@@ -108,8 +112,9 @@ Left, each its own design question:
     `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
     `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
     `BuildingShadows.streamed`, `falls_on`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
-    `skip_agent_drawing`) keeps its direct write in the game (the city, the city scene, the
-    blackout, the poster walls, the roof previews, the simulation builder) and goes with the
+    `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`)
+    keeps its direct write in the game (the city, the city scene, the blackout, the poster walls,
+    the roof previews, the simulation builder) and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
     also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while

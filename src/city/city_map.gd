@@ -1495,8 +1495,8 @@ func close_streets(closures: Array[RoadClosure]) -> void:
 		return
 	var barrier_tiles := _fenced_tiles.duplicate()
 	for closure in streets:
-		for at_a: bool in [true, false]:
-			for tile in rect_tiles(closure.segment.mouth_rect(at_a)):
+		for mouth in closure.mouth_rects():
+			for tile in rect_tiles(mouth):
 				barrier_tiles[tile] = true
 	var grid := ReachabilityGrid.build(self)
 	var reached := grid.flood([world_to_tile(doorstep_world_position())], barrier_tiles)

@@ -241,7 +241,7 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 				var fence := closure as ParkClosure
 				if not fence:
 					continue
-				t.check(fence.kind == RoadClosure.Kind.PARK and
+				t.check(fence.kind() == RoadClosure.Kind.PARK and
 						map.network.by_key(fence.segment.key()) == null,
 						"seed %d day %d: a fence is a PARK closure holding no real street"
 						% [map.city_seed(), day])
@@ -299,8 +299,8 @@ func _test_the_fence_turns_each_corner_on_one_post(t: TestRunner) -> void:
 				# turns, an open end's post `ParkClosure.POST_HALF` in from it.
 				var line := _line_ends(fence, map)
 				var inward := _along(fence)
-				for end: Array in [[fence.joined_start, line[0], inward],
-						[fence.joined_end, line[1], -inward]]:
+				for end: Array in [[fence.start_turns_a_corner(), line[0], inward],
+						[fence.end_turns_a_corner(), line[1], -inward]]:
 					var joined: bool = end[0]
 					var point: Vector2 = end[1]
 					if not joined:
@@ -327,7 +327,7 @@ func _test_the_fence_turns_each_corner_on_one_post(t: TestRunner) -> void:
 ## The direction a fence's line runs in: across the screen along a north or south edge, down it along
 ## a west or east one.
 func _along(fence: ParkClosure) -> Vector2:
-	return Vector2.RIGHT if fence.outward.y != 0 else Vector2.DOWN
+	return Vector2.RIGHT if fence.outward().y != 0 else Vector2.DOWN
 
 ## A fence's two line ends, start first: half its length either side of its middle (`mouth_centres()`).
 func _line_ends(fence: ParkClosure, map: CityMap) -> Array[Vector2]:

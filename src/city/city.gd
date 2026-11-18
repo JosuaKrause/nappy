@@ -1164,18 +1164,18 @@ func _spawn_closure(closure: RoadClosure) -> void:
 	# after the rail, at the run midpoint rather than at a panel endpoint.
 	for feet in closure.posts(map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
-		post.atlas = atlas
+		post.use_atlas(atlas)
 		post.piece = ClosureMarker.Piece.POST
-		post.kind = closure.kind
+		post.kind = closure.kind()
 		post.position = feet
 		_add_closure_node(post, true)
 	for mouth in closure.mouth_centres(map):
 		_spawn_barrier(closure, mouth)
-	if ClosureMarker.CAUSES.has(closure.kind):
+	if ClosureMarker.CAUSES.has(closure.kind()):
 		var cause := ClosureMarker.new()
-		cause.atlas = atlas
+		cause.use_atlas(atlas)
 		cause.piece = ClosureMarker.Piece.CAUSE
-		cause.kind = closure.kind
+		cause.kind = closure.kind()
 		cause.across = closure.barrier_runs_across()
 		cause.position = closure.cause_centre(map)
 		_add_closure_node(cause, true)
@@ -1203,8 +1203,8 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var fence := closure as ParkClosure
 		# An open end's post is inset on its own ground. Rails end on that post, while
 		# the collision below continues to cover the entire entrance as planned.
-		var start_inset := 0.0 if fence.joined_start else ParkClosure.POST_HALF
-		var end_inset := 0.0 if fence.joined_end else ParkClosure.POST_HALF
+		var start_inset := 0.0 if fence.start_turns_a_corner() else ParkClosure.POST_HALF
+		var end_inset := 0.0 if fence.end_turns_a_corner() else ParkClosure.POST_HALF
 		picture_width -= start_inset + end_inset
 		picture_at += (Vector2.RIGHT if across else Vector2.DOWN) * (start_inset - end_inset) * 0.5
 		run = fence.rail_ends()
@@ -1224,15 +1224,14 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var slices: Array[Node2D] = []
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
-		panel.atlas = atlas
+		panel.use_atlas(atlas)
 		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
-		panel.kind = closure.kind
+		panel.kind = closure.kind()
 		panel.across = across
-		panel.span = span
-		panel.rise = closure.end_on_rise()
+		panel.cover_slice(span, closure.end_on_rise())
 		if panel is ParkFenceMarker:
-			(panel as ParkFenceMarker).draw_support = i < panels - 1
-			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward.x * 4.0
+			(panel as ParkFenceMarker).mount_rail(i < panels - 1,
+					-(closure as ParkClosure).outward().x * 4.0)
 			(panel as ParkFenceMarker).sign_offset = at - feet[i]
 		slices.append(panel)
 	DrawLayer.add_slices(self, slices, feet)

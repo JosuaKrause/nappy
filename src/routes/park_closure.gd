@@ -43,12 +43,13 @@ extends RoadClosure
 ## overhanging them.
 
 ## The strip of edge a fence stands on, dressed as the street a `RoadClosure` closes — so everything
-## that reads a closure's `segment` (the day's holds, the run log, the telemetry map) reads this one
-## without learning a second kind of closure.
+## that asks a closure about its street (the day's holds, the run log's `street_key()` and
+## `street_words()`, the telemetry map's `mouth_rects()`) asks this one without learning a second
+## kind of closure.
 ##
 ## **Its key is never a real street's.** A lattice key's third component is 0 or 1 for the two
-## orientations; this is 2 or 3, so holding it (`EventManager.start_day` holds every closure's
-## segment) holds nothing a car, a walker or a catalogue row ever asks about, and
+## orientations; this is 2 or 3, so holding it (`DayPlanner` holds every closure's segment) holds
+## nothing a car, a walker or a catalogue row ever asks about, and
 ## `StreetNetwork.by_key()` answers null for it. `a` and `b` are the block that anchors the area,
 ## which is what a log line naming this closure should point at.
 class Edge extends StreetNetwork.Segment:
@@ -82,31 +83,47 @@ const POST_HALF := 4.6
 ## The calm area this fence belongs to, as the tile rect of its calm ground.
 var _area := Rect2i()
 ## Which way is out of the area from this run — the direction the pavement is in.
-var outward := Vector2i.ZERO
+var _outward := Vector2i.ZERO
 ## Where the line starts and ends along its run, in world pixels on the run's own axis (x for a
 ## north or south edge, y for a west or east one). The run's own tiles, except at an end that turns
 ## a corner onto the next side's run, which stops at the corner of the two fence lines instead.
 var _from_along := 0.0
 var _to_along := 0.0
 ## Whether each end turns a corner onto the next side's run (`fence()`).
-var joined_start := false
-var joined_end := false
+var _joined_start := false
+var _joined_end := false
 
 func _init(anchor: Vector2i, calm_rect: Rect2i, strip: Rect2i, out: Vector2i,
 		start_turns := false, end_turns := false) -> void:
 	super(RoadClosure.Kind.PARK, Edge.new(anchor, strip, out.y != 0))
 	_area = calm_rect
-	outward = out
-	joined_start = start_turns
-	joined_end = end_turns
+	_outward = out
+	_joined_start = start_turns
+	_joined_end = end_turns
 	var tile := float(Tuning.TILE_SIZE)
 	var horizontal := out.y != 0
 	_from_along = (strip.position.x if horizontal else strip.position.y) * tile
 	_to_along = (strip.end.x if horizontal else strip.end.y) * tile
-	if joined_start:
+	if _joined_start:
 		_from_along = _line(calm_rect, Vector2i.LEFT if horizontal else Vector2i.UP)
-	if joined_end:
+	if _joined_end:
 		_to_along = _line(calm_rect, Vector2i.RIGHT if horizontal else Vector2i.DOWN)
+
+## Which way is out of the area from this run, a unit step toward the pavement: the side of the area
+## the run is on, which day 12's cordon matches its own stretches against and the city's rails sit
+## inside of.
+func outward() -> Vector2i:
+	return _outward
+
+## Whether the run's start (its west or north end) turns a corner onto the next side's run, so its
+## line stops on the shared corner post rather than on a post `POST_HALF` in from an open end.
+func start_turns_a_corner() -> bool:
+	return _joined_start
+
+## Whether the run's end (its east or south end) turns a corner onto the next side's run, as
+## `start_turns_a_corner()` asks of the start.
+func end_turns_a_corner() -> bool:
+	return _joined_end
 
 ## Every fence a shut calm area needs: one per run of its edge that has walkable ground outside it,
 ## each told which of its ends turns a corner onto the next side's run. The two runs at a corner
@@ -216,11 +233,11 @@ func mouth_centres(_map: CityMap) -> Array[Vector2]:
 ## Overrides RoadClosure.posts.
 func posts(_map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
-	var horizontal := outward.y != 0
+	var horizontal := _outward.y != 0
 	var ends := rail_ends()
-	if horizontal or not joined_start:
+	if horizontal or not _joined_start:
 		found.append(ends[0])
-	if horizontal or not joined_end:
+	if horizontal or not _joined_end:
 		found.append(ends[1])
 	return found
 
@@ -230,13 +247,13 @@ func posts(_map: CityMap) -> Array[Vector2]:
 ## post it ends on stand on the same point and not on two sums of one length.
 func rail_ends() -> PackedVector2Array:
 	return PackedVector2Array([
-		_point(_from_along if joined_start else _from_along + POST_HALF),
-		_point(_to_along if joined_end else _to_along - POST_HALF)])
+		_point(_from_along if _joined_start else _from_along + POST_HALF),
+		_point(_to_along if _joined_end else _to_along - POST_HALF)])
 
 ## The point `along` pixels down this run's axis, on its fence line.
 func _point(along: float) -> Vector2:
-	var across := _line(_area, outward)
-	return Vector2(along, across) if outward.y != 0 else Vector2(across, along)
+	var across := _line(_area, _outward)
+	return Vector2(along, across) if _outward.y != 0 else Vector2(across, along)
 
 ## The middle of the shut area — nothing is lying there, but `DevRig`'s `closure:<n>` spawn reads the
 ## line from here out through a fence to stand her on the pavement looking at it.
@@ -250,4 +267,4 @@ func cause_centre(map: CityMap) -> Vector2:
 ##
 ## Overrides RoadClosure.barrier_runs_across.
 func barrier_runs_across() -> bool:
-	return outward.y != 0
+	return _outward.y != 0
