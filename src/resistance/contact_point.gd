@@ -111,7 +111,7 @@ func complete_on_ellipse(semi: Vector2) -> void:
 
 ## Whether the thing this rides on is still there to be touched.
 func rider_alive() -> bool:
-	return not _rider or (is_instance_valid(_rider) and not _rider.is_finished)
+	return not _rider or (is_instance_valid(_rider) and not _rider.is_gone())
 
 ## Hands the contact the player whose touch completes it.
 func use_player(player: Stroller) -> void:
@@ -138,9 +138,9 @@ func _physics_process(delta: float) -> void:
 ## asks, pure:
 ##
 ## - **a crossing** (`by_crossing`, day 9) never completes on where she stands;
-## - **day 6's note** (`ResistanceSteps.Step.completes_at_inner_radius`) completes within the man's
-##   own `inner_radius` (45px) — M205: "the moment the player touches the inner circle it counts as
-##   delivered";
+## - **day 6's note** (`ResistanceSteps.Step.completes_at_inner_radius`) completes inside the man's
+##   own core (`EventInstance.core_reaches()`, 45px) — M205: "the moment the player touches the
+##   inner circle it counts as delivered";
 ## - **a rider with a body** (the van, a roadblock) completes from any side of it
 ##   (`touches_the_body()`);
 ## - **an area on the ground** (`touch_ellipse`, the swing's base) completes the moment her body
@@ -150,7 +150,7 @@ func would_complete_at(her: Vector2) -> bool:
 	if by_crossing:
 		return false
 	if _rider and step and step.completes_at_inner_radius:
-		return global_position.distance_to(her) <= _rider.def.inner_radius
+		return _rider.core_reaches(her)
 	if _rider and has_a_body(_rider):
 		return touches_the_body(_rider, her, REACH)
 	if touch_ellipse != Vector2.ZERO:
@@ -186,16 +186,16 @@ const ELLIPSE_SAMPLES := 96
 ## Whether `instance` has a solid body she is stopped by — the van, a roadblock — rather than being
 ## a figure she walks up to (the man shouting, the neighbor) or a bodiless scar.
 static func has_a_body(instance: EventInstance) -> bool:
-	return instance != null and instance.def.solid_reach() > 0.0
+	return instance != null and instance.solid_reach() > 0.0
 
 ## How far from `instance`'s own centre a touch of its body counts: its furthest reach
-## (`EventDef.solid_reach()`) plus her own body (`Tuning.PLAYER_BODY_RADIUS`) plus `within` — 72px
-## for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle round the
-## body's centre rather than a band round its outline, so it reaches past the body by at least
-## `within` on every side, its ends included, and is the same circle an any-instance task already
-## retargeted onto a look-alike from (`ResistanceDirector._touch_reach()`).
+## (`EventInstance.solid_reach()`) plus her own body (`Tuning.PLAYER_BODY_RADIUS`) plus `within`
+## — 72px for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle
+## round the body's centre rather than a band round its outline, so it reaches past the body by at
+## least `within` on every side, its ends included, and is the same circle an any-instance task
+## already retargeted onto a look-alike from (`ResistanceDirector._touch_reach()`).
 static func body_reach(instance: EventInstance, within := REACH) -> float:
-	return instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
+	return instance.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
 
 ## **Touching a task's body from any side completes it** (feathery-marmot: *"the arrow correctly
 ## points to the van but touching the van doesn't solve the task"*): her centre within

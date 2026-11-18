@@ -382,7 +382,6 @@ src/events/warning_board.gd hard_fail
 src/events/warning_board.gd inner_radius
 src/events/warning_board.gd outer_radius
 src/events/warning_board.gd vehicle
-src/resistance/contact_point.gd inner_radius
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
 src/resistance/happenings.gd solid_parts
@@ -479,8 +478,6 @@ src/events/warning_board.gd barrier_post
 src/events/warning_board.gd car
 src/events/warning_board.gd def
 src/events/warning_board.gd is_finished
-src/resistance/contact_point.gd def
-src/resistance/contact_point.gd is_finished
 src/resistance/park_cordon.gd def
 src/resistance/park_cordon.gd is_finished
 src/resistance/park_cordon.gd is_leaving
