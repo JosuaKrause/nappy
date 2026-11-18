@@ -317,14 +317,14 @@ before spawning:
 - **A defect a refactor step finds is filed to be fixed, never only noted** (silky-lemur #1450). When a
   step of a refactor finds that code it carries over unchanged does something the player's decisions
   say it should not, the defect is filed at once as an entry of its own, never left only as a line in
-  a record, a report or a pull request, and is built like any other entry, waiting where the queue
-  puts it (an entry the player put first keeps the fence above, inbox #1210 in gentle-owl). It is
+  a record, a report or a pull request, and is built in its band's turn. It is
   fixed to the player's decision for the thing, found in the records and playtests that built it
   (`tools/decisions.sh --in all <noun>`), not to whichever of the code or the doc reads better. A
   defect the step introduces, or one a review finds in the step's open pull request, is fixed inside
-  that pull request (**pr-review**). The entry's band is `now`; the player moves one to `bug` when
-  they want it ahead of everything, and nothing is filed `bug` on a reading (**playtest-feedback**,
-  mossy-ferret #710).
+  that pull request (**pr-review**). The entry is filed `bug`, the band above `now`, since a bug is a bug and the band exists to be used
+  (inbox #1519 in breezy-magpie), and so is started at once beside the refactor, not held by the fence
+  that keeps other work waiting until the refactor is done (inbox #1210 in gentle-owl; the reading is
+  listed under "Proposed, not asked for"); nothing else is filed `bug` on a reading (**playtest-feedback**, mossy-ferret #710).
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
@@ -422,10 +422,14 @@ to the player's correction:
   ("What the orchestrator keeps", the bullet on a defect a refactor step finds): that the question
   goes to the board before either the code or the doc is changed to match the other. The player's
   words are that such bugs are fixed (silky-lemur #1450).
-- **The band of an entry filed for such a defect**, `now`, with `bug` only where the player moves
-  it there: the orchestrator's pick on the board question `refactor-bug-band`, open to the
-  player's answer there. A flat band for every such defect also sets aside `docs/TODO.md`'s rule that
-  a band is chosen on what the entry does to the route decision.
+- **What "bug" means for a defect a refactor step finds** ("What the orchestrator keeps"): the code
+  doing what the player's decisions or the docs say it should not, the board's wording; a finding the
+  investigation shows is not one (a probe or a doc that is wrong) leaves the band. The player's words
+  are that such a bug is filed in the bug band (inbox #1519 in breezy-magpie).
+- **That a bug a refactor step finds starts at once beside the refactor** ("What the orchestrator
+  keeps"), not held by the fence that keeps other work waiting until the refactor is done (inbox #1210
+  in gentle-owl): the board's option for the bug band said so, and the player answered "bug is higher
+  than now" (inbox #1519 in breezy-magpie), read as taking that option whole.
 - **Every row of the model table that carries no citation**, the merging row among them, to be
   revised once the agent counter holds enough entries (inbox #900 in freckled-moose). The player
   asked for a granular table revised after experiments or statistics, and for Haiku to be tried on

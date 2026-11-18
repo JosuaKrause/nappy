@@ -71,7 +71,7 @@ closes such an entry by adding its record needs the label too, whoever writes it
 is a judgement about the work the player put under Fable.
 
 `bug` is the band above `now`, for what
-the player calls a bug; a note from playing is still filed `now` unless the player names `bug`.
+the player calls a bug; a note from playing is still filed `now` unless the player names `bug`; a bug a refactor step finds is filed `bug` (inbox #1519 in breezy-magpie).
 `tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of one
 file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` or `fable-only:` line with any value but `true` or a second one, an `after:`
 naming neither an open entry nor a closed one, an `after:` cycle, and a band, `upnext:` or `fable-only:` line anywhere but the
