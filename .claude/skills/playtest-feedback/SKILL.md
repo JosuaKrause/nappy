@@ -104,7 +104,9 @@ number keep it, and so do the entries and records that already have one.
   another band, since a note from playing is a bug report (olive-koala 11): pass `--priority now` to
   `tools/new-name.sh todo`, which writes `priority: later` otherwise. For anything else, a band the
   player did not name is the filer's proposal and the report says so. **`bug` is never proposed or
-  defaulted, for any entry**: it is filed only when the player names it (mossy-ferret #710). The
+  defaulted, for any entry**: it is filed only when the player names it (mossy-ferret #710), with the
+  one exception the player named, a bug a refactor step finds, which **orchestrating** files `bug`
+  (inbox #1519 in breezy-magpie). The
   rest of the `README.md` holds the player's words, the playtest links and the context. **Each item
   is a file of its own** beside it, under a short descriptive name (`stack-in-front.md`), written in
   full prose with no checkbox (PLAYTEST-144 7); an item somebody is mid-way through says so in its
