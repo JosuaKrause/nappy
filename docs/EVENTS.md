@@ -2381,15 +2381,15 @@ day 9")*.
 
 ### The escape — the walk filled before she sets off
 
-Four rows nothing but the escape ever places. All four are `SCRIPTED` with `scripted_day` 0, the
-same gate the seal pictures use, so the ordinary catalogue roll can never reach one: the escape
-city's plan places the first two on the open chains `FinalePlanner` grows
-(`DayPlanner.plan_the_escape_city()`) and the building places the last two inside it
-(`BuildingPlan`, its own placements); both are planned and run by the day's `EventManager` like any
-walk (`start_day()` with the section's spec). Three rows the escape uses are not new —
-`military_convoy` is the army truck, traffic in the escape as on a day, `abduction` is the masked
-men in a van, and `roadblock` at full heat is the masked man on foot who leaves the post — the
-barrier he was standing at stays where it is and stays shut.
+The city section's walk is drawn from the section's own bag (`DaySpec.bag`) and holds four rows,
+planned and run by the day's `EventManager` like any walk (`start_day()` with the section's spec).
+Three are rows a day uses: `military_convoy` is the army truck, traffic in the escape as on a day,
+`abduction` is the masked men in a van, and `roadblock` at full heat (`EventCatalogue.escape_roadblock()`)
+is the masked man on foot who leaves the post — the barrier he was standing at stays where it is and
+stays shut. `finale_explosion` is the one row of the four that is `SCRIPTED` with `scripted_day` 0, the
+same gate the seal pictures use, so the ordinary catalogue roll can never reach it. The building's own
+rows (`masked_pursuer`, `basement_steam`, the stairwell's fire and the explosion outside) are that
+kind too, and the building places them (`BuildingPlan`, its own placements), not the draw below.
 
 **What stands on the city's streets is drawn from one marble bag.** *(Inbox #785 in minty-lemur:
 "nobody ever asked for all four events on *every* street. that doesn't make any sense and cannot
@@ -2414,7 +2414,10 @@ of streets that stand nothing where it stood when a refused marble was spent; th
 lilac-marten (the fuller escape) sets it from there. The bag has its own stream off the plan's
 seed, so a lost section replans the same streets. `tests/probes/escape_winnable.gd` prints
 what the plan stands and walks the game's own plan with the game's own walker (`RouteRig`,
-`--start-escape city --route tunnel`). **The draw is the day's own**: `EventScheduler.build_day()`
+`--start-escape city --route tunnel`). **That walker is a plain one**: it does not play the lure, so a
+walks it loses are the walks into a posted roadblock band, whose guard charges a straight walker;
+a player who lures the guard off, as the next section says, is
+not the walker the probe measures. **The draw is the day's own**: `EventScheduler.build_day()`
 runs the same dawn phases for the escape as for a day, the phases that place the catalogue's
 rows find none for a walk with a bag of its own (`DawnContext.catalogue_rows()`), and
 `DawnDraw` draws the walk's streets (`DayLocations.along()`, `DayUnits`, `MarbleDraw`) with
