@@ -230,7 +230,7 @@ class _HeardDirector extends DayDirector:
 	var world := DayWorld.new()
 
 	func _init(run: RunState, heard: Array) -> void:
-		super(run.calendar(), run.facts(), run.attempt_spend(), RunConfig.parse(PackedStringArray(), "", true))
+		super(run.calendar(), run.facts(), run.attempt_spend())
 		_heard = heard
 
 	## Overrides DayDirector.start.

@@ -54,10 +54,6 @@ const _ALLOWED_LITERALS := {
 		"%s via %d calm, %d cells%s": "the planner's summary line, written to the run log",
 		"%d open streets, %d placements": "the planner's summary line, written to the run log",
 	},
-	"res://src/run_config.gd": {
-		"RunConfig is resolved once at boot and never changes; a write was refused":
-				"the warning for a write to a resolved configuration, read by a developer",
-	},
 	"res://src/ui/hud.gd": {
 		"asleep - go home": "the debug HUD's state line",
 		"crying - day lost": "the debug HUD's state line",
