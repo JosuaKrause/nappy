@@ -46,7 +46,7 @@ func _drawn_over(t: TestRunner, rects: Array[Rect2i]) -> Dictionary:
 ## (`BuildingShadows.draw_through()`), once every chunk of the city is prepared (`update_view()`, which the
 ## residency calls) and drawn.
 ##
-## Which tiles a shadow may fall on is asked through `BuildingShadows.falls_on`, the filter the city
+## Which tiles a shadow may fall on is asked through `BuildingShadows.use_falls_on()`, the filter the city
 ## hands in for a task scene's stretch; here it lets every tile through and counts the tiles it is
 ## asked about. A tile is asked about only when shadow tiles are worked out, so streamed shadows
 ## handed their footprints ask about none until a view prepares a chunk.
@@ -65,10 +65,10 @@ func _test_resident_geometry_matches_the_complete_union(t: TestRunner) -> void:
 	var asked := [0]
 	var shadows := BuildingShadows.new()
 	shadows.draw_through(drawer)
-	shadows.falls_on = func(_tile: Vector2i) -> bool:
+	shadows.use_falls_on(func(_tile: Vector2i) -> bool:
 		asked[0] += 1
-		return true
-	shadows.streamed = true
+		return true)
+	shadows.stream_in_chunks()
 	shadows.set_buildings(map.building_lots())
 	t.check(shadows.get_child_count() == 0 and asked[0] == 0,
 			"streaming keeps footprint facts without working out or preparing distant shadows"

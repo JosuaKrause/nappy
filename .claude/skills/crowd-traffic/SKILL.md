@@ -94,7 +94,7 @@ already in the box — so lengthening it buys her nothing and lengthening the si
 everything.
 
 **A dark light hands the main road back to the side street's contract.** On the last night the
-blackout cuts the power (`TrafficSignals.powered`), so `is_signalled()` answers false on the spine
+blackout cuts the power (`TrafficSignals.use_power()`), so `is_signalled()` answers false on the spine
 and the box rule negotiates its junctions as it does every other street's — no crowd code knows the
 difference, and none should. The spine's traffic still does not give way at a zebra, since that is
 the street's kind rather than its light, so the clock is gone and nothing replaces the courtesy:

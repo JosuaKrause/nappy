@@ -16,34 +16,49 @@ const BOLLARD := &"props/bollard"
 const SACK := &"props/garbage_sack"
 const SACK_PILE := &"props/garbage_sacks_pile"
 
-@export var kind := Kind.TREE
+@export var _kind := Kind.TREE
 ## Deterministic per-prop variation, so a park does not shimmer between frames.
-@export var variant := 0
-@export var scale_factor := 1.0
+@export var _variant := 0
+@export var _scale_factor := 1.0
 ## The city's library (`AtlasLibrary`), handed before the prop is added: the city holds the
 ## decoration group on it, and the prop draws its regions from it.
 var atlas: AtlasLibrary
 
 ## Dresses the prop before it is added: drawn from `library` as `as_kind`, with `with_variant` and
-## `scaled` varying its look. See `atlas`, `kind`, `variant` and `scale_factor`.
+## `scaled` varying its look. See `atlas`, `kind()`, `variant()` and `scale_factor()`.
 func dress(library: AtlasLibrary, as_kind: Kind, with_variant := 0, scaled := 1.0) -> void:
 	atlas = library
-	kind = as_kind
-	variant = with_variant
-	scale_factor = scaled
+	_kind = as_kind
+	_variant = with_variant
+	_scale_factor = scaled
+
+## What the prop is.
+func kind() -> Kind:
+	return _kind
+
+## The prop's deterministic variation: which of two tree pictures it draws, and which way round.
+func variant() -> int:
+	return _variant
+
+## How much larger than its picture's own size the prop is drawn.
+func scale_factor() -> float:
+	return _scale_factor
 
 ## This prop's own ground shape — a point for a tree, a street tree, the bollard, a sack or a
 ## sack pile, sized off the same texture fraction the shadow always used; a capsule for the swing
-## frame (`_playground_frame_shape()`). Computed once `_ready()` fires, by which point `city.gd`
-## has already set `kind`, `variant` and `scale_factor` on the new node (`Prop.new()` then the
-## three exports, then `add_child()`), and read by `_draw()` for the shadow. **No prop has a
+## frame (`_playground_frame_shape()`). Computed once `_ready()` fires, by which point the prop has
+## been dressed (`dress()`), and read by `_draw()` for the shadow and through `shape()`. **No prop has a
 ## body** except the bollard (`_add_bollard_body()`). A tree on a pavement is walked past exactly
 ## like a tree in a park *(2026-09-12, the
 ## player, PLAYTEST-58.md: "trees shouldn't have a hitbox at all. trees in parks don't why should
 ## the ones in the street be treated differently?")*; a sack or a pile carries none either, so the
 ## ground under it stays exactly as walkable as the pavement or alley it stands on. Decoration
 ## only — see `GarbageSacks`' own class doc for why a pile is not yet an obstruction.
-var shape: GroundShape
+var _shape: GroundShape
+
+## This prop's own ground shape, null until `_ready()` has computed it.
+func shape() -> GroundShape:
+	return _shape
 
 ## The post's body, once `_ready()` has made it; null for every other prop.
 var _body: StaticBody2D
@@ -54,11 +69,11 @@ func body_shape() -> Shape2D:
 	return null if _body == null else (_body.get_child(0) as CollisionShape2D).shape
 
 func _ready() -> void:
-	shape = _compute_shape()
-	if kind == Kind.BOLLARD:
+	_shape = _compute_shape()
+	if _kind == Kind.BOLLARD:
 		_add_bollard_body()
 
-## **The one prop with a body: a precinct's post.** A `StaticBody2D` holding `shape`'s own
+## **The one prop with a body: a precinct's post.** A `StaticBody2D` holding `_shape`'s own
 ## collision resource, so the post's body is the ground contact its shadow is drawn from (one shape
 ## per object, M61) rather than a second number. A tree, a sack and a pile stay bodiless; a post
 ## stops her *(2026-10-10, the player, azure-puffin, on the bollards: "it will make the middle of
@@ -71,7 +86,7 @@ func _add_bollard_body() -> void:
 	body.name = "BollardBody"
 	_body = body
 	var collision := CollisionShape2D.new()
-	collision.shape = shape.collision_shape()
+	collision.shape = _shape.collision_shape()
 	body.add_child(collision)
 	add_child(body)
 
@@ -81,10 +96,10 @@ static func bollard_shape() -> GroundShape:
 	return GroundShape.point(AtlasTable.baked().native_size(BOLLARD).x * 0.4)
 
 func _compute_shape() -> GroundShape:
-	match kind:
+	match _kind:
 		Kind.TREE, Kind.STREET_TREE:
-			var size := Vector2(AtlasTable.baked().native_size(TREES[absi(variant) % TREES.size()])) \
-					* scale_factor
+			var size := Vector2(AtlasTable.baked().native_size(TREES[absi(_variant) % TREES.size()])) \
+					* _scale_factor
 			return GroundShape.point(size.x * 0.28)
 		Kind.PLAYGROUND_FRAME:
 			return _playground_frame_shape()
@@ -100,20 +115,20 @@ func _compute_shape() -> GroundShape:
 func _draw() -> void:
 	if not residence().is_resident():
 		return
-	match kind:
+	match _kind:
 		Kind.TREE:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
-			shape.draw_shadow(self, Vector2.ZERO)
+			_shape.draw_shadow(self, Vector2.ZERO)
 			Sprites.draw_standing(self, atlas.region(SWING_FRAME), Vector2.ZERO)
 		Kind.BOLLARD:
-			shape.draw_shadow(self, Vector2.ZERO)
+			_shape.draw_shadow(self, Vector2.ZERO)
 			Sprites.draw_standing(self, atlas.region(BOLLARD), Vector2.ZERO)
 		Kind.SACK:
-			shape.draw_shadow(self, Vector2.ZERO)
+			_shape.draw_shadow(self, Vector2.ZERO)
 			Sprites.draw_standing(self, atlas.region(SACK), Vector2.ZERO)
 		Kind.SACK_PILE:
-			shape.draw_shadow(self, Vector2.ZERO)
+			_shape.draw_shadow(self, Vector2.ZERO)
 			Sprites.draw_standing(self, atlas.region(SACK_PILE), Vector2.ZERO)
 		Kind.STREET_TREE:
 			_draw_street_tree()
@@ -129,15 +144,15 @@ static func _playground_frame_shape() -> GroundShape:
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:
-	var name: StringName = TREES[absi(variant) % TREES.size()]
-	# The size is read off the region table rather than off the drawn texture, since `scale_factor`
+	var name: StringName = TREES[absi(_variant) % TREES.size()]
+	# The size is read off the region table rather than off the drawn texture, since `scale_factor()`
 	# is applied here and the two answer the same number either way — a region reports its
 	# source's own size.
-	var size := Vector2(AtlasTable.baked().native_size(name)) * scale_factor
-	shape.draw_shadow(self, Vector2.ZERO)
-	Sprites.draw_standing(self, atlas.region(name), Vector2.ZERO, size, absi(variant) % 4 < 2)
+	var size := Vector2(AtlasTable.baked().native_size(name)) * _scale_factor
+	_shape.draw_shadow(self, Vector2.ZERO)
+	Sprites.draw_standing(self, atlas.region(name), Vector2.ZERO, size, absi(_variant) % 4 < 2)
 
-## The same standing tree every park tree draws, unscaled by `scale_factor`. The street tree's pit
+## The same standing tree every park tree draws, unscaled by `scale_factor()`. The street tree's pit
 ## is a ground decal owned by `CityDecals`, so it stays under the player and other entities.
 func _draw_street_tree() -> void:
 	_draw_tree()

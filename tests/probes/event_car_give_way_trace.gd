@@ -191,17 +191,17 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 	car.set_process(false)
 	var signals := TrafficSignals.new(map)
 	if rig.has("junction"):
-		signals.elapsed = 0.0
+		signals.restart_cycle()
 		var junction: Vector2i = rig["junction"]
 		var vertical: bool = rig.get("vertical", false)
 		if rig["red"]:
 			# The arm she drives along is red: the main road's green is the side street's red, and
 			# the side street's green the spine's.
 			while not signals.green_for(junction, not vertical):
-				signals.elapsed += 0.25
+				signals.advance(0.25)
 		else:
 			while not signals.green_for(junction, rig.get("vertical", false)):
-				signals.elapsed += 0.25
+				signals.advance(0.25)
 		car.signals = signals
 	var her: Vector2 = rig["her"]
 	var chain := PackedByteArray()
@@ -216,7 +216,7 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 		if rig["red"] and tick == LEAVES_AT:
 			var junction: Vector2i = rig["junction"]
 			while not signals.green_for(junction, rig.get("vertical", false)):
-				signals.elapsed += 0.25
+				signals.advance(0.25)
 		var was_at := car.position
 		car.step(STEP)
 		# Standing is what a car held for her shows: the step left it where it was.

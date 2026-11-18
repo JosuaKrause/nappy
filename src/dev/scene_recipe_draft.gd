@@ -110,12 +110,12 @@ func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start:
 	var props: Array = []
 	for node in city.props():
 		var prop := node as Prop
-		if not prop or prop.kind == Prop.Kind.STREET_TREE \
+		if not prop or prop.kind() == Prop.Kind.STREET_TREE \
 				or not ground.has(map.world_to_tile(prop.position)):
 			continue
-		props.append({"kind": str(Prop.Kind.keys()[prop.kind]).to_lower(),
+		props.append({"kind": str(Prop.Kind.keys()[prop.kind()]).to_lower(),
 				"at": [snappedf(prop.position.x, 0.01), snappedf(prop.position.y, 0.01)],
-				"variant": prop.variant, "scale": snappedf(prop.scale_factor, 0.0001)})
+				"variant": prop.variant(), "scale": snappedf(prop.scale_factor(), 0.0001)})
 	stretch["props"] = props
 	var litter: Array = []
 	for placed in Litter.placed(map, day):

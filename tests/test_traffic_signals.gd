@@ -28,7 +28,7 @@ func _test_a_dark_junction_is_negotiated(t: TestRunner) -> void:
 	t.check(reds > 0, "a lit spine junction holds its own traffic for part of the cycle (%d/24)"
 			% reds)
 	t.check(signals.is_signalled(junction), "and its lights decide it")
-	signals.powered = false
+	signals.use_power(false)
 	t.check(not signals.is_signalled(junction),
 			"a dark one is left to the crowd's own give-way, the same as a side street's")
 	t.check(signals.has_lights(junction), "though its lights still stand there")

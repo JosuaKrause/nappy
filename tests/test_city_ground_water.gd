@@ -37,7 +37,7 @@ func _test_water_ownership(t: TestRunner) -> void:
 				surfaces.append(child)
 	t.check(not surfaces.is_empty(), "the resident shoreline supplies water surfaces")
 	var water := surfaces[0]
-	t.check(not city.scenery_ground.tile_set.has_source(GroundTiles.WATER),
+	t.check(not city.scenery_ground.tile_set().has_source(GroundTiles.WATER),
 			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
 	var expected: Dictionary[Vector2i, bool] = {}

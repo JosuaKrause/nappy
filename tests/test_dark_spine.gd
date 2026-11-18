@@ -7,7 +7,7 @@ extends RefCounted
 ## has to come from a city the generator can produce (writing-tests, "Which map a test uses"): the
 ## street network the lanes run on exists only there. So the crowd and the signals are real and the
 ## city is the generated one of seed 4242, from the cache (`tests/city_map_cache.gd`). The lights
-## are put out by the one flag the blackout sets (`TrafficSignals.powered`); that the blackout does
+## are put out by the one flag the blackout sets (`TrafficSignals.use_power()`); that the blackout does
 ## so is `tests/test_blackout.gd`'s. This case belongs in the crowd's suites once their conversion
 ## reaches them; `tests/crowd_rig.gd`, which they run from, is not this change's.
 ##
@@ -45,7 +45,7 @@ func _test_the_dark_spine_keeps_moving(t: TestRunner) -> void:
 	_city.start_day(state, day, _rng("closures"))
 	var lit: Vector2 = await _spine_traffic(t)
 	var lit_samples := _sampled_cars
-	_city.traffic_signals().powered = false
+	_city.traffic_signals().use_power(false)
 	var dark: Vector2 = await _spine_traffic(t)
 	_sampled_cars = mini(_sampled_cars, lit_samples)
 	print("[test_dark_spine] spine traffic over 40s, lit: mean %.0f px/s, %.0f%% stopped; "

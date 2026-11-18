@@ -218,7 +218,7 @@ func _test_a_dark_city_says_so_on_the_bus_it_was_handed(t: TestRunner) -> void:
 	var made := _city(t, null, bus, true)
 	t.check(bus.times("city_gone_dark") == 1,
 			"a city dark from the start says it went dark on its bus (%d)" % bus.times("city_gone_dark"))
-	t.check(not (made["signals"] as TrafficSignals).powered, "and its lights are out")
+	t.check(not (made["signals"] as TrafficSignals).is_powered(), "and its lights are out")
 	_free(made)
 	bus.free()
 
@@ -347,13 +347,13 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 	var her := _her(t, Vector2(sheet_face.get_center().x, sheet_face.position.y + 24.0))
 	var a_push := PhysicsTicks.ticks_for(PosterWalls.PRESS_TO_TEAR * 2.0)
 	await PhysicsTicks.pass_ticks(t, a_push)
-	t.check(not run.posters().is_torn(sheet) and signals.powered,
+	t.check(not run.posters().is_torn(sheet) and signals.is_powered(),
 			"before she is met nothing tears and the lights stay on")
 	simulation.meet_her(her)
 	await PhysicsTicks.pass_ticks(t, a_push)
 	t.check(run.posters().is_torn(sheet) and bus.times("poster_torn") == 1,
 			"met, her push tears the sheet, said on the bus the walls were handed")
-	t.check(not signals.powered, "and the blackout, handed --blackout, puts the lights out round her")
+	t.check(not signals.is_powered(), "and the blackout, handed --blackout, puts the lights out round her")
 	crowd.set_focus(walker.global_position)
 	her.global_position = walker.global_position
 	await PhysicsTicks.pass_ticks(t, 2)

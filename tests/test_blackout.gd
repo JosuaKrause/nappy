@@ -5,7 +5,7 @@ extends RefCounted
 ## **This suite tests `Blackout`, the one decision**: when the city goes dark, once, and when it comes
 ## back. It builds no city and plans no day. The parts the blackout switches are stand-ins that keep
 ## what it did to them: the parts `Blackout` is handed (a hand-drawn map with a power station on it,
-## a run's resistance, a `TrafficSignals` that holds the one `powered` flag, a `FakeEventManager`
+## a run's resistance, a `TrafficSignals` that holds the one `_powered` flag (`is_powered()`), a `FakeEventManager`
 ## that counts the masts it is asked to silence) and three `Building`s that were never put in a
 ## world. The map's station is the lot seed 4242's generated city has, read off once.
 ##
@@ -113,7 +113,7 @@ func _she_stands_at(t: TestRunner, point: Vector2) -> void:
 
 ## Whether the city's lights are out, as the one flag the blackout puts them out by shows it.
 func _is_dark() -> bool:
-	return not _signals.powered
+	return not _signals.is_powered()
 
 ## How many of the buildings the blackout was handed still have their power.
 func _powered_buildings() -> int:
@@ -189,5 +189,5 @@ func _test_a_retry_gives_the_power_back(t: TestRunner) -> void:
 func _test_the_escape_is_dark_from_its_first_frame(t: TestRunner) -> void:
 	_begin(t, true)
 	t.check(_went_dark == 1, "the escape's city is dark from the moment it is built (%d)" % _went_dark)
-	t.check(not _signals.powered and _powered_buildings() == 0, "its lights and windows with it")
+	t.check(not _signals.is_powered() and _powered_buildings() == 0, "its lights and windows with it")
 	_end()

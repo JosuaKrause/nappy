@@ -1090,8 +1090,8 @@ func _test_a_signal_gives_her_time_to_cross(t: TestRunner) -> void:
 	# the spine **the way the wave runs** meets a green at every junction it comes to. The other
 	# direction is at chance and cannot be rescued on this geometry — see
 	# `Tuning.SIGNAL_PROGRESSION_BLOCKS`, which carries the derivation.
-	var signals := _city.traffic_signals()
-	var was := signals.elapsed
+	# A set of lights of its own, so the walk leaves the city's clock where the crowd has it.
+	var signals := TrafficSignals.new(_city.map)
 	var travel := Tuning.signal_travel_seconds()
 	var greens := 0
 	var arrivals := 0
@@ -1111,8 +1111,6 @@ func _test_a_signal_gives_her_time_to_cross(t: TestRunner) -> void:
 			arrivals += 1
 			if signals.green_for(Vector2i(_city.map.main_road, 8 - hop - 1), true):
 				greens += 1
-	signals.restart_cycle()
-	signals.advance(was)
 	t.check(greens == arrivals,
 			"a car in the platoon never meets a red going the way the wave runs (%d of %d)"
 			% [greens, arrivals])

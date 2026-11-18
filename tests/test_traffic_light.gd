@@ -9,7 +9,7 @@ extends RefCounted
 const RecordingTrafficLightDrawer := preload("res://tests/recording_traffic_light_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
 
-## Signals that are green for every arm while they have power: the head reads `powered` first, so
+## Signals that are green for every arm while they have power: the head reads `is_powered()` first, so
 ## what it shows with the power out is the real class's answer.
 class GreenSignals extends TrafficSignals:
 	func _init() -> void:
@@ -34,7 +34,7 @@ func _test_a_head_shows_its_lamp_and_loses_it_when_the_power_goes(t: TestRunner)
 	var lit_lamps: Array = lit_head.get("lamps", [])
 	t.check(lit_head.get("picture") == TrafficLight.HEAD and lit_lamps.size() == 1,
 			"a lit signal head shows its face with one lamp on it (%s)" % [lit_head])
-	signals.powered = false
+	signals.use_power(false)
 	await UI.frames(t, 2)
 	var dark_head := head.shown()
 	var dark_lamps: Array = dark_head.get("lamps", [0])

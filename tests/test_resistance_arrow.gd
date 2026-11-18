@@ -580,7 +580,7 @@ func _test_the_contact_draws_from_the_library_its_director_is_handed(t: TestRunn
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
 ## touch"*. The swing's contact is touched by her body overlapping an ellipse round the swing's base,
 ## the extent of the shadow the frame casts there (the ground shape a swing frame `Prop` takes as it
-## enters the tree, `Prop.shape`): the contact the director offers on day 12 carries that ellipse as
+## enters the tree, `Prop.shape()`): the contact the director offers on day 12 carries that ellipse as
 ## its `touch_ellipse`, and from eight bearings, standing with her edge a pixel inside the ellipse's
 ## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
 func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
@@ -597,9 +597,9 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
 		director.free()
 		return
 	var frame := Prop.new()
-	frame.kind = Prop.Kind.PLAYGROUND_FRAME
+	frame.dress(null, Prop.Kind.PLAYGROUND_FRAME)
 	t.add_child(frame)
-	var shadow := frame.shape
+	var shadow := frame.shape()
 	frame.free()
 	# The places are derived from the shadow the frame casts at its base; the contact is asked about
 	# them below, which only answers right if it carries that ellipse.

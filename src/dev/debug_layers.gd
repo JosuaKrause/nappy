@@ -410,7 +410,7 @@ func _draw_shadows() -> void:
 		props = (_world as City).props()
 	for prop in props:
 		if prop is Prop:
-			_draw_shadow_outline((prop as Prop).shape, prop.global_position, Vector2.RIGHT)
+			_draw_shadow_outline((prop as Prop).shape(), prop.global_position, Vector2.RIGHT)
 	_draw_shadow_outline(_player.shape, _player.global_position, Vector2.RIGHT)
 	# In the escape she carries the baby and there is no pram, so no pram shadow is drawn
 	# (`Stroller._draw()`) and none is outlined here either.
