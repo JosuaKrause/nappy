@@ -14,7 +14,7 @@ extends Node
 ## builds it, hands it what no world holds (`watch()`), opens it once per boot (`open()`) and closes
 ## it when the run is left (`close()`).
 ##
-## **And it is where game logic's trace comes from.** `trace` writes into the run log; `main`
+## **And it is where game logic's trace comes from.** `trace()` writes into the run log; `main`
 ## hands it to everything it builds, so nothing that decides anything names the log itself.
 
 ## The run log (`Telemetry`), handed in by `setup()`: the one `main` keeps under the sitting, or a
@@ -29,7 +29,7 @@ var _run: RunState
 var _arcs: CityState
 ## The trace handed to game logic: every line it is given goes into the run log, or nowhere while
 ## no log is open.
-var trace := RunTrace.new()
+var _trace := RunTrace.new()
 
 ## Null until a world stands while a log is open — with telemetry off there is no observer in the
 ## tree at all, rather than one checking a flag sixty times a second.
@@ -57,10 +57,15 @@ func setup(run_log: Telemetry, config: RunConfig, bus: _BUS, flow: RunFlow, run:
 	_config = config
 	_run = run
 	_arcs = arcs
-	trace = RunTrace.new(run_log.note)
+	_trace = RunTrace.new(run_log.note)
 	flow.world_stood.connect(_on_world_stood)
 	flow.day_planned.connect(_on_day_planned)
 	bus.day_ended.connect(_on_day_ended)
+
+## The trace handed to game logic, which writes into the run log while one is open: `main`
+## hands it to everything it builds.
+func trace() -> RunTrace:
+	return _trace
 
 # ------------------------------------------------------------- open and close ---
 

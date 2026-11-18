@@ -122,7 +122,7 @@ var _session: RunSession
 
 ## The trace this boot hands game logic: the session's, or a silent one for a script-only `main`.
 func _the_trace() -> RunTrace:
-	return _session.trace if _session else RunTrace.new()
+	return _session.trace() if _session else RunTrace.new()
 var _hud: CanvasLayer
 ## Kept because the telemetry observer asks it what she is being warned about; the layer around it
 ## is kept only so the title screen can take it off the street.
@@ -341,9 +341,9 @@ func _ready() -> void:
 	_session.name = "RunSession"
 	add_child(_session)
 	_session.setup(_run_log, config, EventBus, _flow, _run, _run.attempt_spend().block_arcs())
-	_run.use_trace(_session.trace)
-	_save.trace = _session.trace
-	_sitting.atlas().trace_note = _session.trace.note
+	_run.use_trace(_session.trace())
+	_save.trace = _session.trace()
+	_sitting.atlas().trace_note = _session.trace().note
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits

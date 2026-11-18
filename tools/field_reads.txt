@@ -913,9 +913,6 @@ src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
 
-# [RunSession] src/telemetry/run_session.gd
-src/main.gd trace
-
 # [SaveIndicator] src/ui/save_indicator.gd
 src/main.gd atlas
 
