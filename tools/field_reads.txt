@@ -842,8 +842,6 @@ src/main.gd title_card_text
 src/main.gd zoom_out_delay
 src/main.gd zoom_out_seconds
 src/main.gd zoom_override
-src/telemetry/run_session.gd no_telemetry
-src/telemetry/run_session.gd spikes_requested
 
 # [SaveIndicator] src/ui/save_indicator.gd
 src/main.gd atlas
