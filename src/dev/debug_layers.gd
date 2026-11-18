@@ -46,7 +46,8 @@ extends Node2D
 ## amber the caret already uses for "worth going round", so this view speaks the vocabulary the
 ## game already has rather than inventing a third pair of danger colours.
 const FIELD_COSTLY := Palette.MARK_COSTLY
-## And the same deep red `Palette.MARK_LETHAL` for a `hard_fail` event's field and a car's strike
+## And the same deep red `Palette.MARK_LETHAL` for the field of an event that ends the day
+## (`EventInstance.ends_the_day()`) and a car's strike
 ## box — "lethal != noise ... lethal is when you get hit by a car" (the player, 2026-09-10): a
 ## car's ordinary noise field is never this colour, only the box that can end the day.
 const FIELD_LETHAL := Palette.MARK_LETHAL
@@ -153,9 +154,10 @@ func _draw() -> void:
 ## meter does: a capsule about a stationary body's own spine, an ellipse (focus at the emitter)
 ## about a moving one, and a plain circle at zero speed, exactly as it always drew — a mast's field
 ## included, now that it stands somewhere. A flock draws one pair per bird, at its own position and
-## its own `heading * speed`, and `flock_outer_radius()` rather than `outer_radius` — the same
-## radius `_flock_contribution_at()` sums over, so drawing the flat number instead would show a
-## field wider than what the birds actually emit. Each outline is cut wherever the emitter's own
+## its own `heading * speed`, and its outer ring is one bird's reach rather than the row's
+## (`EventInstance.field_rings()` answers it for a flock) — the same radius
+## `_flock_contribution_at()` sums over, so drawing the row's reach instead would show a field
+## wider than what the birds actually emit. Each outline is cut wherever the emitter's own
 ## walls keep the field from that point — see `open_runs()`.
 func _draw_fields() -> void:
 	for drawn: Array in field_runs(_view_rect()):
@@ -169,11 +171,12 @@ func field_runs(view: Rect2) -> Array:
 	var cuts := {}
 	_cut_calls += 1
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
-		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
+		var colour := FIELD_LETHAL if instance.ends_the_day() else FIELD_COSTLY
 		var source := instance.global_position
-		var grid := instance.excitement.wall_grid()
+		var grid := instance.source().wall_grid()
+		var rings := instance.field_rings()
 		var id := instance.get_instance_id()
 		var offsets := instance.flock_offsets()
 		if offsets.is_empty():
@@ -181,20 +184,19 @@ func field_runs(view: Rect2) -> Array:
 			var velocity := instance.travel_velocity()
 			var shape := instance.field_shape()
 			var spine := shape.spine_half_length() if shape != null else 0.0
-			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
+			for level: float in [rings.x, rings.y]:
 				if not _may_be_seen(view, source, level, spine):
 					continue
 				var outline := shape.field_outline(source, axis, velocity, level) if shape != null \
 						else GroundShape.field_outline_at(source, velocity, level)
 				_field_boundary(outline, source, grid, colour, [id, -1, level], view, cuts, drawn)
 			continue
-		var outer := instance.flock_outer_radius()
 		var velocities := instance.flock_velocities()
 		# Every bird's outline is cut by the flock's own line, from its centre, which is the line
 		# `contribution_at()` asks for the whole flock.
 		for i in offsets.size():
 			var at := source + offsets[i]
-			for level: float in [instance.def.inner_radius, outer]:
+			for level: float in [rings.x, rings.y]:
 				if not _may_be_seen(view, at, level):
 					continue
 				var outline := GroundShape.field_outline_at(at, velocities[i], level)
@@ -399,9 +401,10 @@ static func _deep_ground_meets(grid: WorldMap, rect: Rect2) -> bool:
 ## `shape` still appears in the bounding-box layer below.
 func _draw_shadows() -> void:
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
-		_draw_shadow_outline(instance.def.shape, instance.global_position, instance.solid_axis())
+		_draw_shadow_outline(instance.ground_shape(), instance.global_position,
+				instance.solid_axis())
 	for agent in _agents():
 		var axis := agent.heading() if agent.is_car() else Vector2.RIGHT
 		_draw_shadow_outline(agent.shape(), agent.global_position, axis)
