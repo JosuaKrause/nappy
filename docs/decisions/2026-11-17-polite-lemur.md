@@ -1,8 +1,9 @@
 # polite-lemur — A bug a refactor step finds is filed in the bug band: the rule in the skills · 2026-11-17
 
 **What it is.** The entry polite-lemur, from the player's answer on the board question
-`refactor-bug-band` (inbox #1519 in breezy-magpie): a bug a refactor step finds is filed `bug` and
-started at once beside the refactor, overturning the orchestrator's pick of `now` (the record
+`refactor-bug-band` (inbox #1519 in breezy-magpie): a bug a refactor step finds is filed `bug` (and,
+read as taking the board's option whole, started at once beside the refactor rather than held by the
+fence of inbox #1210 in gentle-owl), overturning the orchestrator's pick of `now` (the record
 spotted-trout, which wrote the rule with that pick).
 
 **What was built.** **orchestrating**'s bullet on a defect a refactor step finds files its entry
