@@ -123,7 +123,7 @@ func _coverage(tiles: Dictionary, margin: float) -> Dictionary:
 				if GroundCells.source_id(_ground, cell) >= 0:
 					ground_seen[cell] = true
 		for building in _city.buildings():
-			if view.intersects(_city.map.tile_rect_to_world(building.lot)):
-				buildings_seen[building.lot] = true
+			if view.intersects(_city.map.tile_rect_to_world(building.lot_rect())):
+				buildings_seen[building.lot_rect()] = true
 	return {"open_camera_centers": centers, "ground_cells": ground_seen.size(),
 		"building_lots": buildings_seen.size()}

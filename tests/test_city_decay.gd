@@ -154,7 +154,7 @@ func _test_boarded_storefronts_and_windows_shutter(t: TestRunner) -> void:
 	var building := FrontReads.new_building()
 	building.stand_on(Rect2i(), Vector2(96.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 	t.add_child(building)
-	building.condition = Building.Condition.BOARDED
+	building.show_condition(Building.Condition.BOARDED)
 	building.day = Tuning.RUN_LENGTH_DAYS
 	await UI.frames(t, 2)
 	var front := FrontReads.look(building)
@@ -209,7 +209,7 @@ func _test_a_burnt_building_shows_nothing_intact(t: TestRunner) -> void:
 		t.add_child(building)
 		# Equipped as the city equips it, it waits for the residency to stand it up.
 		building.residence().set_resident(true)
-		building.condition = Building.Condition.BURNT
+		building.show_condition(Building.Condition.BURNT)
 		building.day = Tuning.RUN_LENGTH_DAYS
 		buildings.append(building)
 		fronts.append(front)
@@ -234,7 +234,7 @@ func _test_a_burnt_building_shows_nothing_intact(t: TestRunner) -> void:
 				% [window_cells, burnt_windows])
 		var door_drawn := drawn.count(Building.ENTRANCE_DOOR_BURNT)
 		# A shop is a commercial front's way in, so only it has no door of its own.
-		t.check(door_drawn == int(building.district != GameEnums.BlockPurpose.COMMERCIAL),
+		t.check(door_drawn == int(building.district() != GameEnums.BlockPurpose.COMMERCIAL),
 				"a burnt front with a door column is drawn with its burnt door, once (%d)" % door_drawn)
 		windows += burnt_windows
 		shops += drawn.count(Building.STOREFRONT_BURNT)
@@ -242,7 +242,7 @@ func _test_a_burnt_building_shows_nothing_intact(t: TestRunner) -> void:
 		for texture in drawn:
 			t.check(not intact.has(texture),
 					"a burnt %s front draws nothing intact (%s)"
-					% [GameEnums.BlockPurpose.keys()[building.district], texture])
+					% [GameEnums.BlockPurpose.keys()[building.district()], texture])
 		building.free()
 	t.check(windows > 0 and shops > 0 and doors > 0,
 			"burnt windows, shops and doors were drawn to ask about (%d, %d, %d)"
@@ -257,7 +257,7 @@ func _test_ambient_shuttering_waits_for_the_curve(t: TestRunner) -> void:
 		building.stand_on(Rect2i(), Vector2(96.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 		building.position = Vector2(i * 200.0, i * 137.0)
 		t.add_child(building)
-		building.condition = Building.Condition.LIVED_IN
+		building.show_condition(Building.Condition.LIVED_IN)
 		building.day = 1
 		buildings.append(building)
 	await UI.frames(t, 2)
@@ -324,10 +324,10 @@ func _test_storefront_variants_use_seeded_bags(t: TestRunner) -> void:
 	t.check(_variants(FrontReads.look(sampled[0])) == _variants(FrontReads.look(same_seed)),
 			"a storefront variant bag is reproducible from the building seed")
 	var variants_before_state_changes := _variants(FrontReads.look(sampled[0])).duplicate()
-	sampled[0].height = 96.0
-	sampled[0].height = 64.0
+	sampled[0].draw_as(sampled[0].district(), sampled[0].look_variant(), 96.0)
+	sampled[0].draw_as(sampled[0].district(), sampled[0].look_variant(), 64.0)
 	sampled[0].day = Tuning.RUN_LENGTH_DAYS
-	sampled[0].condition = Building.Condition.BOARDED
+	sampled[0].show_condition(Building.Condition.BOARDED)
 	await UI.frames(t, 2)
 	t.check(_variants(FrontReads.look(sampled[0])) == variants_before_state_changes,
 			"day and condition changes preserve storefront variants")

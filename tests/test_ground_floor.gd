@@ -14,7 +14,7 @@ extends RefCounted
 ##
 ## A covered column reaches the same columns for the opposite reason: where the tile directly
 ## south of a non-home front's own column is another building rather than walkable ground
-## (`Building.covered_ground_cols`, another geometry fact `City._spawn_buildings()` hands over, read
+## (`Building.covered_ground_cols()`, another geometry fact `City._spawn_buildings()` hands over, read
 ## off `CityMap.is_walkable()`), that column draws no facade at all — no wall, no window at any
 ## floor, no storefront, no blank-wall plinth, no door, no portico, no fire escape. The building
 ## that covers it draws its own roof further north instead, up to exactly the covered building's
@@ -26,7 +26,7 @@ extends RefCounted
 ## lands on. `roof_extension_rows` itself is pure geometry, not a roll.
 ##
 ## **Every building here is set up by hand**, the way `City._spawn_buildings()` sets one up. What the
-## real city hands its buildings (`is_home_building`, `door_world_x_range`, `covered_ground_cols` and
+## real city hands its buildings (`is_on_home_block()`, `door_world_x_range`, `covered_ground_cols()` and
 ## the roof rows, off the generated map) is asked of generated cities in `tests/test_city_buildings.gd`.
 
 const RoofReads := preload("res://tests/roof_reads.gd")
@@ -69,7 +69,7 @@ func run(t: TestRunner) -> void:
 
 ## One `Building`, built the way `City._spawn_buildings()` builds one — the exports set, then
 ## `add_child()`, which is what fires `_ready()` and rolls `_build_windows()`/`_build_front()`.
-## `covered` is `Building.covered_ground_cols`, empty by default — the same "nothing in
+## `covered` is `Building.covered_ground_cols()`, empty by default — the same "nothing in
 ## front of it" a real front with clear sidewalk south of it reads as.
 static func _new_building(t: TestRunner, district: int, footprint: Vector2, height: float, is_home := false,
 		position := Vector2.ZERO, covered: Array[bool] = []) -> Building:
@@ -77,7 +77,7 @@ static func _new_building(t: TestRunner, district: int, footprint: Vector2, heig
 	building.stand_on(Rect2i(), footprint, 0, district as GameEnums.BlockPurpose, height)
 	building.position = position
 	building.stand_on_home_block(is_home)
-	building.covered_ground_cols = covered
+	building.mark_covered_ground_cols(covered)
 	t.add_child(building)
 	return building
 
@@ -223,7 +223,7 @@ func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t: Te
 
 	# The three guards: the power station, her own building and a one-row facade offer nothing.
 	var station := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, Vector2(96.0, 256.0), 64.0)
-	station.power_station = true
+	station.dress_as_power_station(0, Vector2i.ZERO)
 	t.check(station.blank_ground_floor_cells().is_empty(),
 			"the power station draws its own front, so the accessor has nothing to offer")
 	station.free()
@@ -244,7 +244,7 @@ func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t: Te
 ## the public consts the windows are drawn with — never the private `_WindowStyle` enum —
 ## so this pins the *behaviour* `main` already has rather than an implementation detail of it. Run
 ## for both a home and a non-home building at the same seed, since the rule change reads
-## `is_home_building` only in which cells draw a window and must not have touched this roll at all.
+## `is_on_home_block()` only in which cells draw a window and must not have touched this roll at all.
 func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t: TestRunner) -> void:
 	var buildings: Array[Building] = []
 	for is_home: bool in [false, true]:
@@ -283,7 +283,7 @@ func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t: TestRunner) -> vo
 						% [is_home, index])
 		building.free()
 
-## `_build_front()`'s own seed string never mentions `is_home_building`, so two otherwise-identical
+## `_build_front()`'s own seed string never mentions `is_on_home_block()`, so two otherwise-identical
 ## buildings — one flagged hers, one not — roll the exact same storefront bag, awning and
 ## ambient-shutter values (checked directly, since `tests/test_city_decay.gd` already pins what the
 ## stream itself produces), and the exact same fire-escape roll — whether one exists and its column
@@ -421,7 +421,7 @@ func _test_a_front_with_no_other_way_in_has_one_door(t: TestRunner) -> void:
 	for case: Array in cases:
 		buildings.append(_new_building(t, case[0], case[1], case[2], case[3]))
 	var station := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, Vector2(160.0, 256.0), 64.0)
-	station.power_station = true
+	station.dress_as_power_station(0, Vector2i.ZERO)
 	await UI.frames(t, 2)
 	for i in cases.size():
 		var case: Array = cases[i]
@@ -913,7 +913,7 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t: TestRunner) ->
 		# lip-free interior and every cell of it is stood on by some seed.
 		var reached := {}
 		for variant in 120:
-			building.variant = variant
+			building.draw_as(building.district(), variant, building.height())
 			for unit: Dictionary in RoofReads.units_of(building):
 				for cell: Vector2i in unit["cells"]:
 					reached[cell] = true
@@ -937,7 +937,7 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t: TestRunner) ->
 
 
 ## `_build_front()`'s own `front:` stream — the storefront bag, the awning and ambient-shutter
-## rolls — reads nothing about `covered_ground_cols`, so two otherwise-identical fronts, one fully
+## rolls — reads nothing about `covered_ground_cols()`, so two otherwise-identical fronts, one fully
 ## covered and one not, roll it identically; only whether a pair actually draws
 ## (`_pair_is_storefront()`) differs. A fully covered commercial front shows no storefront on any
 ## column and, since nothing is visible, still has no door of its own — nobody can reach any of it.

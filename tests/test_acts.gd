@@ -147,10 +147,10 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 		if not behind:
 			nothing_behind.append(tile)
 			continue
-		if tile.x == behind.lot.position.x or tile.x == behind.lot.end.x - 1:
+		if tile.x == behind.lot_rect().position.x or tile.x == behind.lot_rect().end.x - 1:
 			at_a_lot_end += 1
 		var fire: EventInstance = fires[tile]
-		var facade := city.map.tile_rect_to_world(behind.lot)
+		var facade := city.map.tile_rect_to_world(behind.lot_rect())
 		if facade.size.x > 80.0:
 			wider_than_five += 1
 		# Each flame as the span of x it covers in the world.
@@ -166,11 +166,11 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 				break
 		# Each column, at its middle and a pixel in from both its edges, against every flame's own
 		# span: a column the building draws is burning end to end (so a flame dropped at the end of a
-		# stretch leaves a bare edge), one another building's roof covers (`Building.covered_ground_cols`)
+		# stretch leaves a bare edge), one another building's roof covers (`Building.covered_ground_cols()`)
 		# is not.
-		for col in behind.lot.size.x:
+		for col in behind.lot_rect().size.x:
 			var left_edge := facade.position.x + col * size
-			var drawn := not (col < behind.covered_ground_cols.size() and behind.covered_ground_cols[col])
+			var drawn := not (col < behind.covered_ground_cols().size() and behind.covered_ground_cols()[col])
 			var burning_all := true
 			var burning_any := false
 			for point: float in [left_edge + 1.0, left_edge + size * 0.5, left_edge + size - 1.0]:
@@ -239,18 +239,18 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 
 	city.run.add_scar("burnt_shell", city.map.tile_to_world(site))
 	city.start_day(CityState.new(), 4, rng)
-	t.check(scarred.condition == Building.Condition.BURNT,
+	t.check(scarred.condition() == Building.Condition.BURNT,
 			"the dawn after the fire, the building behind its scar is drawn burnt")
 	t.check(_burnt_count(city) == 1, "and no other building is (%d are)" % _burnt_count(city))
 	city.start_day(CityState.new(), 5, rng)
-	t.check(scarred.condition == Building.Condition.BURNT and _burnt_count(city) == 1,
+	t.check(scarred.condition() == Building.Condition.BURNT and _burnt_count(city) == 1,
 			"and every dawn after that, the same one")
 	# Day 11's market boards its block up during the day (`present_block()`), and the burnt
 	# building is never boarded up with it.
 	city.fronts().present_block(
-			city.map.block_at(city.map.tile_rect_to_world(scarred.lot).get_center()),
+			city.map.block_at(city.map.tile_rect_to_world(scarred.lot_rect()).get_center()),
 			CityState.new())
-	t.check(scarred.condition == Building.Condition.BURNT,
+	t.check(scarred.condition() == Building.Condition.BURNT,
 			"its block shown anew during the day leaves the burnt building burnt")
 
 	city.free()
@@ -258,14 +258,14 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 ## The one `Building` whose lot holds `tile`, or null.
 func _building_at(city: City, tile: Vector2i) -> Building:
 	for building in city.buildings():
-		if building.lot.has_point(tile):
+		if building.lot_rect().has_point(tile):
 			return building
 	return null
 
 func _burnt_count(city: City) -> int:
 	var burnt := 0
 	for building in city.buildings():
-		if building.condition == Building.Condition.BURNT:
+		if building.condition() == Building.Condition.BURNT:
 			burnt += 1
 	return burnt
 

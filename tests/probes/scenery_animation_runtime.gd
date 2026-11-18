@@ -35,8 +35,7 @@ func _ready() -> void:
 	_building = Building.new()
 	_building.equip(_atlas, _roof, FrontDrawer.new(_atlas))
 	_building.footprint = Vector2(192, 192)
-	_building.height = 64
-	_building.district = GameEnums.BlockPurpose.INDUSTRIAL
+	_building.draw_as(GameEnums.BlockPurpose.INDUSTRIAL, _building.look_variant(), 64)
 	_building.position = Vector2(205, 438)
 	_building.scale = Vector2.ONE * 1.7
 	_fixtures.add_child(_building)
@@ -46,7 +45,7 @@ func _ready() -> void:
 	for variant in 200:
 		if not _rotors().is_empty():
 			break
-		_building.variant = variant + 1
+		_building.draw_as(_building.district(), variant + 1, _building.height())
 	assert(not _rotors().is_empty())
 	_watch(_building, "building_static")
 	for entry in _roof.standing():

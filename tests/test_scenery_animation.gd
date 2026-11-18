@@ -32,8 +32,7 @@ func _test_roof_rotors(t: TestRunner) -> void:
 	var building := Building.new()
 	building.equip(atlas, drawer, FrontDrawer.new(atlas))
 	building.footprint = Vector2(256, 256)
-	building.height = 64
-	building.district = GameEnums.BlockPurpose.INDUSTRIAL
+	building.draw_as(GameEnums.BlockPurpose.INDUSTRIAL, building.look_variant(), 64)
 	t.add_child(building)
 	# Equipped as the city equips it, the building waits for the residency, which stands a building
 	# in view up.
@@ -41,7 +40,7 @@ func _test_roof_rotors(t: TestRunner) -> void:
 	for variant in 200:
 		if not _rotors(drawer).is_empty():
 			break
-		building.variant = variant + 1
+		building.draw_as(building.district(), variant + 1, building.height())
 	t.check(not _rotors(drawer).is_empty(), "the roof fixture actually has moving vents")
 	var body := _collision_shape(building)
 	var drawn := drawer.draws.size()

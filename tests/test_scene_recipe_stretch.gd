@@ -345,9 +345,9 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: D
 		var back: Building = null
 		var front: Building = null
 		for building: Building in city.buildings():
-			if building.lot == back_lot:
+			if building.lot_rect() == back_lot:
 				back = building
-			elif building.lot == front_lot:
+			elif building.lot_rect() == front_lot:
 				front = building
 		t.check(back != null and front != null,
 				"both pieces of the edited day-7 join stand in the live City")
@@ -383,15 +383,15 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 		var tint_source: Building = null
 		var visible_sibling: Building = null
 		for building: Building in city.buildings():
-			if building.lot == tint_source_lot:
+			if building.lot_rect() == tint_source_lot:
 				tint_source = building
-			elif building.lot == visible_sibling_lot:
+			elif building.lot_rect() == visible_sibling_lot:
 				visible_sibling = building
 		t.check(tint_source != null and visible_sibling != null,
 				"both authored pieces of task 14's partial courtyard stand in the live City")
 		if tint_source != null and visible_sibling != null:
-			t.check(tint_source.variant == authored_variant
-					and visible_sibling.variant == sibling_variant,
+			t.check(tint_source.look_variant() == authored_variant
+					and visible_sibling.look_variant() == sibling_variant,
 					"each visible piece keeps its own authored variant")
 			t.check(tint_source.tint_variant == authored_variant
 					and visible_sibling.tint_variant == authored_variant,

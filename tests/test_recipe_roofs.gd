@@ -25,8 +25,7 @@ func _roof(t: TestRunner, footprint: Vector2, height: float, district: int,
 		drawer: RoofDrawer = null) -> Building:
 	var building := Building.new()
 	building.footprint = footprint
-	building.height = height
-	building.district = district
+	building.draw_as(district as GameEnums.BlockPurpose, building.look_variant(), height)
 	if drawer != null:
 		var atlas := AtlasLibrary.new()
 		building.equip(atlas, drawer, FrontDrawer.new(atlas))

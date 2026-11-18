@@ -108,7 +108,7 @@ func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t: TestRunner) -> 
 		t.check(drawn.rotor_frame_b, "a roof drawn in the clock's second interval turns its rotors"
 				+ " on their second frame")
 	clock.elapsed = Building.VENT_FRAME_INTERVAL * 2.5
-	building.variant += 1
+	building.draw_as(building.district(), building.look_variant() + 1, building.height())
 	var rebuilt := drawer.standing()
 	t.check(not rebuilt.is_empty(), "the rebuilt roof has units to draw")
 	for drawn in rebuilt:
@@ -181,15 +181,15 @@ func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t: TestRunner) -> vo
 	var other: Building = twin["building"]
 	var differs := false
 	for variant in 8:
-		building.variant = variant
-		other.variant = variant
+		building.draw_as(building.district(), variant, building.height())
+		other.draw_as(other.district(), variant, other.height())
 		var roof := drawer.drawn()
 		t.check(not roof.is_empty(), "an industrial roof of seed %d has units" % variant)
 		t.check(twin_drawer.drawn() == roof,
 				"the same seed on the same lot lays the same roof on another building")
-		building.variant = variant + 100
+		building.draw_as(building.district(), variant + 100, building.height())
 		differs = differs or drawer.drawn() != roof
-		building.variant = variant
+		building.draw_as(building.district(), variant, building.height())
 		t.check(drawer.drawn() == roof, "laying a seed again gives the same roof")
 	t.check(differs, "another seed lays another roof on the same lot")
 	_free(fixture)
@@ -202,7 +202,7 @@ func _test_industrial_networks_fit_and_connect(t: TestRunner) -> void:
 	var signatures := {}
 	var branched := false
 	for variant in 40:
-		building.variant = variant
+		building.draw_as(building.district(), variant, building.height())
 		building.roof_extension_rows = [0, 0, 1, 3, 3, 1, 0, 0]
 		var layout := drawer.layout()
 		var network := {}
@@ -275,7 +275,7 @@ func _test_networks_on_narrow_and_shallow_roofs(t: TestRunner) -> void:
 			Vector2(288, 160), Vector2(192, 320)]:
 		building.footprint = size
 		for variant in 12:
-			building.variant = variant
+			building.draw_as(building.district(), variant, building.height())
 			var layout := drawer.layout()
 			var occupied := {}
 			var network := {}
@@ -321,8 +321,8 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t: TestRunner) -> v
 			t.check(cells > 0 and cells == _interior_cells(wide),
 					"the two roofs offer as many interior cells (%d)" % cells)
 			for variant in 24:
-				narrow.variant = variant
-				wide.variant = variant
+				narrow.draw_as(narrow.district(), variant, narrow.height())
+				wide.draw_as(wide.district(), variant, wide.height())
 				var layout := narrow_drawer.layout()
 				var wide_layout := wide_drawer.layout()
 				t.check(layout.size() == wide_layout.size(),
@@ -346,7 +346,7 @@ func _test_rebuild_releases_external_roof_objects(t: TestRunner) -> void:
 	for object in _roof_objects_in(entities):
 		old_objects.append(weakref(object))
 	t.check(not old_objects.is_empty(), "the roof had objects to release")
-	building.variant += 1
+	building.draw_as(building.district(), building.look_variant() + 1, building.height())
 	for object: WeakRef in old_objects:
 		t.check(object.get_ref() == null, "rebuild frees superseded entity roof art")
 	var replacements := _roof_objects_in(entities)
