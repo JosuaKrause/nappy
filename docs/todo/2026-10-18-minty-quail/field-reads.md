@@ -95,8 +95,10 @@ fields are the most read, so the events go first, as the ask says.
 Left, each its own design question:
 
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
-  by class: the city map's (`CityMap`) in the routes (the region and seal planners), the blackout, the streamed ground and the city's generator, besides the
-  events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
+  by class: the city map's (`CityMap`) in the events, whose fields (`network`, `main_road`, `block_plans`,
+  `calm_blocks`, `closed_tiles`, `power_station`, `boundary_wall_at_a`, `square_rects`, `playgrounds`)
+  stay public until the events' pass, and in the scene recipes' draft and runtime (`stretch`,
+  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
   previews and the scene recipes. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
     a closure's segment go through `BlockPlan.Step`'s and `RoadClosure`'s methods. It is no longer a
@@ -107,10 +109,9 @@ Left, each its own design question:
     `Building.scenery_clock`, `door_world_x_range`, `station_door_col`, `station_yard_cols`,
     `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the city and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
-    also calls. `CityMap.home_block` and `Building.power_station` are
-    not in this group, since game code reads them outside their class, and they are converted with
-    those readers: `home_block` by the day planner and the scene recipe runtime; `power_station` by the city scene's `assign_roof_extensions()`, which skips the
-    station's yard columns when it extends a roof.
+    also calls. `Building.power_station` is not in this group, since game
+    code reads it outside its class, and it is converted with that reader, the city scene's
+    `assign_roof_extensions()`, which skips the station's yard columns when it extends a roof.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
@@ -127,7 +128,7 @@ Left, each its own design question:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
-    reads of other classes' fields (among them the map's block plans and fenced park, a crowd agent's kind and excitement, the day's clock) wait for those classes'
+    reads of other classes' fields (among them a crowd agent's kind and excitement, the day's clock) wait for those classes'
     passes; `run_session.gd`'s read of `Crowd.sources` waits for the crowd's pass (the record
     2026-10-18-minty-quail-dappled-chipmunk);
   - the readers already handed their parts in place of the city (the records
