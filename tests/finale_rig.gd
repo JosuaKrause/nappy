@@ -869,8 +869,6 @@ func _stand_her_at(t: TestRunner, manager: EventManager, at: Vector2) -> Strolle
 ## over more seeds.
 func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> void:
 	var crossings := 0
-	var posted_walks := 0
-	var posted_caught := 0
 	for seed_value: int in [4242, 77]:
 		var built := RoadblockRig.plan_for(seed_value)
 		var map: CityMap = built["map"]
@@ -893,8 +891,7 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 						"forward" if forward else "back"]
 				var posted := RoadblockRig.walk(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
-				posted_walks += 1
-				posted_caught += 1 if posted["caught"] else 0
+				_check_a_posted_walk_is_caught(t, where, posted)
 				var lured := RoadblockRig.lure(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
 				var after: Dictionary = lured["after"]
@@ -908,19 +905,16 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 						"%s: and the band charges her nothing on the way (%.1f/s at most, %.1f points)"
 						% [where, after["strongest"], after["cost"]])
 	t.check(crossings > 0, "there were roadblock crossings to walk (%d)" % crossings)
-	_check_posted_walks_are_caught(t, posted_walks, posted_caught)
 
-## The share of walks straight past a posted guard that are caught, at least: the walk is the
-## control that shows the lure walk beside it is not walking past nothing. A posted guard does not
-## catch every straight walker (the probe `tests/probes/escape_roadblock_cost.gd` prints which are
-## not; the queue entry azure-squirrel, a posted roadblock guard that charges a straight walker and
-## misses her on some streets, investigates why), so this is a floor over the walks and not a
-## promise of each.
-const POSTED_WALKS_CAUGHT_AT_LEAST := 0.5
-
-static func _check_posted_walks_are_caught(t: TestRunner, walks: int, caught: int) -> void:
-	t.check(walks > 0 and float(caught) >= POSTED_WALKS_CAUGHT_AT_LEAST * walks,
-			"walking straight past a posted guard is caught on most walks (%d of %d)" % [caught, walks])
+## **Every walk straight past a posted guard is caught**, on every crossing: the walk is the control
+## that shows the lure walk beside it is not walking past nothing, and the player's rule is that luring
+## the guard off is the way past (inbox #771 in minty-lemur). The warning runs its clock while she
+## walks on, so the charge starts with her already past him, and it closes the gap at 38px/s more
+## than her walk: on every street the rig walks her along the sidewalk to where the ground ends, and
+## a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has caught her.
+static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted: Dictionary) -> void:
+	t.check(posted["caught"] and posted["charged"] > 0,
+			"%s: walking straight past a posted guard is caught (%d charged)" % [where, posted["charged"]])
 
 ## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
 ## where one's guard notices her while she deals with the other: their notices, each
@@ -1144,8 +1138,6 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 			t.check(found, "seed %d: the %s is reached from the door past every body standing"
 					% [PLAYERS_SEED, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
 		var crossings := 0
-		var posted_walks := 0
-		var posted_caught := 0
 		for street: Array in RoadblockRig.roadblock_streets(map, plan, placements):
 			var segment: StreetNetwork.Segment = street[0]
 			var group: Array[EventPlan] = []
@@ -1163,8 +1155,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 						"forward" if forward else "back"]
 				var posted := RoadblockRig.walk(t, map, group, from, to,
 						RoadblockRig.Meter.new(0.0, true))
-				posted_walks += 1
-				posted_caught += 1 if posted["caught"] else 0
+				_check_a_posted_walk_is_caught(t, where, posted)
 				var lured := RoadblockRig.lure(t, map, group, from, to,
 						RoadblockRig.Meter.new(0.0, true))
 				var after: Dictionary = lured["after"]
@@ -1174,7 +1165,6 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 						% where)
 		t.check(crossings > 0, "seed %d: there were roadblock crossings to walk (%d)"
 				% [PLAYERS_SEED, crossings])
-		_check_posted_walks_are_caught(t, posted_walks, posted_caught)
 	t.get_tree().paused = false
 	booted.free_all()
 	home.free()

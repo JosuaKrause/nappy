@@ -104,8 +104,25 @@ static func her_line(t: Node, map: CityMap, segment: StreetNetwork.Segment,
 			widest = run
 	var lane := (widest.x + widest.y) * 0.5
 	places.sort()
-	return PackedVector2Array([centre + along * (places[0] - BEYOND) + across * lane,
-			centre + along * (places[places.size() - 1] + BEYOND) + across * lane])
+	return PackedVector2Array([_as_far_as_ground_goes(map, centre + along * places[0] + across * lane,
+			-along), _as_far_as_ground_goes(map, centre + along * places[places.size() - 1]
+			+ across * lane, along)])
+
+## The point `BEYOND` from `from` along `way`, or the last one before the ground stops her body.
+static func _as_far_as_ground_goes(map: CityMap, from: Vector2, way: Vector2) -> Vector2:
+	var at := from
+	var gone := 0.0
+	while gone < BEYOND and _she_fits(map, at + way * LANE_SCAN):
+		at += way * LANE_SCAN
+		gone += LANE_SCAN
+	return at
+
+## Where she is after trying to walk to `wanted`: there, or where she was when the ground does not
+## take her body there (a building, the edge of the map), as it stops her in play, so a walk that
+## runs on past a street's end meets the wall at the end of the street and does not carry on
+## through it where no guard can follow.
+static func _on_ground(map: CityMap, was: Vector2, wanted: Vector2) -> Vector2:
+	return wanted if _she_fits(map, wanted) else was
 
 static func _she_fits(map: CityMap, at: Vector2) -> bool:
 	var reach := Tuning.PLAYER_BODY_RADIUS - 1.0
@@ -278,7 +295,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 	var charged := {}
 	var strongest := 0.0
 	while walked < length:
-		her = from + heading * walked
+		her = _on_ground(map, her, from + heading * walked)
 		if tick(where, instances, her, false, heading):
 			caught = true
 			break
@@ -292,7 +309,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 	# every charge has caught her or given up (`TAIL`), as she would past the end of a street.
 	var tail := 0
 	while not caught and _charging(instances) > 0 and tail < int(TAIL / STEP):
-		her += heading * Tuning.WALK_SPEED * STEP
+		her = _on_ground(map, her, her + heading * Tuning.WALK_SPEED * STEP)
 		if tick(where, instances, her, false, heading):
 			caught = true
 			break

@@ -2461,12 +2461,13 @@ obstacle survivable")* Four things make that true:
   raised-hand picture at his post is inside the camera's view, and he charges only if she is still
   inside his radius once his 2.0s warning has run.
 
-So walking straight past a posted band meets his charge and is caught on most walks (the probe
-`tests/probes/escape_roadblock_cost.gd` prints the walks that are not; the entry azure-squirrel,
-a posted guard that charges a straight walker and misses her on some streets, investigates why), and walking in until his hand goes up, standing
+So walking straight past a posted band meets his charge and is caught, on every street and in both
+directions (the warning's 2.0s runs while she walks on, so he charges with her already past him, and
+he closes the gap at 38px/s more than her walk; the rig walks her along the sidewalk to where the
+ground stops her, a building or a street's end, as it stops her in play), and walking in until his hand goes up, standing
 until he charges, running back until he gives up and then walking past costs what the run costs
 and nothing more, awake or asleep. `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) walks exactly that on every roadblock street of two seeds' plans,
-in both directions (it requires at least half of the straight walks past a posted guard caught, a floor and not a promise of each), and on seed 4216201080 booted from the building through `main.tscn`; it walks
+in both directions (it requires every straight walk past a posted guard caught), and on seed 4216201080 booted from the building through `main.tscn`; it walks
 her in at every band from all round it and requires his warning to start in her view and above the
 street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over more seeds, and
 `tests/probes/escape_roadblock_spacing.gd` how many bands a plan stands and how near the nearest

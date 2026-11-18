@@ -1811,8 +1811,7 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
-charge, which catches her on most walks (the entry azure-squirrel, a posted guard whose charge
-misses a straight walker on some streets, investigates why). Walking in until he charges and running back until he gives up takes him off for good, and
+charge, which catches her on every walk. Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
 (`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk
 past at any time, manned or not, as every roadblock's band, a day's included
