@@ -2232,6 +2232,23 @@ func is_a_boom() -> bool:
 func solid_reach() -> float:
 	return def.solid_reach()
 
+## **Whether it is a place that ends her day and stays where it stands**: not gone, its row ends the
+## day (`EventDef.ends_the_day()`) and does not move (`EventDef.moves()`). A guard over a mark, an
+## idling van, a reversing lorry: a hazard a route can go round once and stay clear of, where a
+## mover is somewhere else by the time the route gets there.
+func is_a_standing_lethal_place() -> bool:
+	return not is_gone() and def.ends_the_day() and not def.moves()
+
+## How far from its centre entering it ends her day (`EventDef.lethal_reach()`), or 0 for one that
+## does not.
+func lethal_reach() -> float:
+	return def.lethal_reach()
+
+## Whether its body is one the map records for the whole day (`EventDef.stands_as_a_fixed_body()`):
+## standing, solid, and no door's.
+func stands_as_a_fixed_body() -> bool:
+	return def.stands_as_a_fixed_body()
+
 ## **Whether `point` is inside its core**: within its row's core (`EventDef.core_within()`) of where
 ## it stands, a disc about its centre and not the shape its field is priced in (`field_reaches()`).
 ## Day 6's note is delivered the moment she is inside the man's core.

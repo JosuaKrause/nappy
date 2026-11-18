@@ -2234,6 +2234,16 @@ func detains_again() -> bool:
 func is_a_boom() -> bool:
 	return solid_when == SolidWhen.WHILE_LOWERED
 
+## **Whether its body is recorded on the ground for the whole day**: a standing body that stops her
+## (a `shape` and an `obstructs_radius`), that does not move (`mobile`), since a mover is somewhere
+## else by the time a route gets there, and is no door's: a hut or a post that holds her
+## (`detain_seconds`) or the boom (`is_a_boom()`), a crossing the day keeps open. The rows whose
+## ground the map's record of blocked tiles holds (`EventSpawner.obstructed_footprint()` makes the
+## same five tests), and the bodies the route rig keeps clear of before they are streamed in.
+func stands_as_a_fixed_body() -> bool:
+	return shape != null and obstructs_radius > 0.0 and not mobile and detain_seconds <= 0.0 \
+			and solid_when != SolidWhen.WHILE_LOWERED
+
 ## Whether several of it count as the strongest one only (`barrier_structure`): the pieces of a
 ## street being held, whose fields do not add up.
 func counts_as_one_barrier() -> bool:
