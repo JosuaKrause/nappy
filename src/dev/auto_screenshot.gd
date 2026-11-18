@@ -420,7 +420,7 @@ func _press_plan(tick: int) -> void:
 	_holding_direction = direction.normalized()
 
 func _on_telegraphed(instance: EventInstance) -> void:
-	if _fled or _flee_at < INF or instance.def.pursuit == null:
+	if _fled or _flee_at < INF or not instance.pursues():
 		return
 	_flee_at = _elapsed + _dither
 

@@ -129,7 +129,6 @@ src/events/event_manager.gd day
 src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
-src/dev/auto_screenshot.gd pursuit
 src/dev/dev_rig.gd id
 src/dev/dev_rig.gd kind
 src/dev/dev_rig.gd outer_radius
@@ -385,7 +384,6 @@ src/routes/seal_planner.gd solid_parts
 src/events/event_instance.gd birds
 
 # [EventInstance] src/events/event_instance.gd
-src/dev/auto_screenshot.gd def
 src/dev/debug_readout.gd age
 src/dev/dev_rig.gd def
 src/dev/scene_recipe_runtime.gd barrier_post
