@@ -940,7 +940,7 @@ func _send_escorts() -> void:
 	for live in _events.instances():
 		if not _walks_out(live):
 			continue
-		if live.is_leaving or sent >= PARK_CLOSING_ESCORTS:
+		if live.is_on_its_way_out() or sent >= PARK_CLOSING_ESCORTS:
 			_send_off(live)
 			continue
 		var escort := Officer.new()
@@ -959,13 +959,11 @@ func _send_escorts() -> void:
 
 ## Whether a live event is one of the park's people, to be walked out.
 func _walks_out(live: EventInstance) -> bool:
-	if not live or not is_instance_valid(live) or live.is_finished:
+	if not live or not is_instance_valid(live) or live.is_gone():
 		return false
 	if not _area.has_point(live.global_position):
 		return false
-	var def := live.def
-	return def.kind != GameEnums.EventKind.AMBIENT and def.pursuit == null and def.vehicle == null \
-			and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING)
+	return not live.is_ambient() and not live.was_sent_at_her() and not live.drives()
 
 ## Sends one person in the park off on foot, out through the last gap and down the way out
 ## (`EventInstance.leave_along()`: no field and no cue, and gone only once she could not be
@@ -974,9 +972,9 @@ func _walks_out(live: EventInstance) -> bool:
 ## her, through the tape. A row that stands where it was placed has no departure of its own, so it
 ## walks out at `PARK_CLOSING_LEAVE_SPEED`.
 func _send_off(person: EventInstance) -> void:
-	if not person or not is_instance_valid(person) or person.is_finished or _leaving.has(person):
+	if not person or not is_instance_valid(person) or person.is_gone() or _leaving.has(person):
 		return
-	var speed := PARK_CLOSING_LEAVE_SPEED if person.def.departure_speed() <= 0.0 else 0.0
+	var speed := PARK_CLOSING_LEAVE_SPEED if person.departure_speed() <= 0.0 else 0.0
 	if not person.leave_along(_way_out_from(person.global_position), speed, _rect):
 		if _events:
 			_events.retire(person)
@@ -1241,7 +1239,7 @@ func _tiles_along(from: Vector2, points: PackedVector2Array) -> Dictionary:
 func _walkers() -> PackedVector2Array:
 	var found := PackedVector2Array()
 	for person in _leaving:
-		if is_instance_valid(person) and not person.is_finished \
+		if is_instance_valid(person) and not person.is_gone() \
 				and not person.is_queued_for_deletion():
 			found.append(person.global_position)
 	for officer in _officers:
@@ -1249,7 +1247,7 @@ func _walkers() -> PackedVector2Array:
 			continue
 		found.append(officer.at)
 		var person := officer.person
-		if is_instance_valid(person) and not person.is_finished \
+		if is_instance_valid(person) and not person.is_gone() \
 				and not person.is_queued_for_deletion() and not _leaving.has(person):
 			found.append(person.global_position)
 	return found
@@ -1269,7 +1267,7 @@ func _still_to_come_out() -> bool:
 				if at_the_line.has_point(officer.at):
 					return true
 	for person in _leaving:
-		if is_instance_valid(person) and not person.is_finished \
+		if is_instance_valid(person) and not person.is_gone() \
 				and not person.is_queued_for_deletion() \
 				and at_the_line.has_point(person.global_position):
 			return true
@@ -1312,12 +1310,12 @@ func _plant_a_post(at: Vector2) -> void:
 ## he sends off once he reaches them or the end of his way up to them.
 func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 	var person := officer.person
-	if not person or not is_instance_valid(person) or person.is_finished:
+	if not person or not is_instance_valid(person) or person.is_gone():
 		_leave(officer)
 		return
 	# Someone who set off on their own before he reached them is turned onto the way out at once,
 	# and he walks out behind them from where he is.
-	var already := person.is_leaving and not _leaving.has(person)
+	var already := person.is_on_its_way_out() and not _leaving.has(person)
 	if not already:
 		var there := person.global_position
 		if officer.aim != Vector2.INF and officer.aim.distance_to(there) > REAIM:
@@ -1342,7 +1340,7 @@ func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 ## her sight.
 func _escort(officer: Officer, delta: float) -> void:
 	var person := officer.person
-	if not person or not is_instance_valid(person) or person.is_finished \
+	if not person or not is_instance_valid(person) or person.is_gone() \
 			or person.is_queued_for_deletion():
 		officer.phase = Officer.Phase.LEAVING
 		_maybe_gone(officer)

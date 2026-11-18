@@ -385,10 +385,6 @@ src/events/warning_board.gd vehicle
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
 src/resistance/happenings.gd solid_parts
-src/resistance/park_cordon.gd kind
-src/resistance/park_cordon.gd pursuit
-src/resistance/park_cordon.gd vehicle
-src/resistance/park_cordon.gd warned_first
 src/resistance/resistance_director.gd id
 src/resistance/resistance_director.gd inner_radius
 src/resistance/resistance_director.gd paces
@@ -478,9 +474,6 @@ src/events/warning_board.gd barrier_post
 src/events/warning_board.gd car
 src/events/warning_board.gd def
 src/events/warning_board.gd is_finished
-src/resistance/park_cordon.gd def
-src/resistance/park_cordon.gd is_finished
-src/resistance/park_cordon.gd is_leaving
 src/resistance/resistance_director.gd def
 src/resistance/resistance_director.gd is_finished
 src/resistance/resistance_director.gd is_parked
