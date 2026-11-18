@@ -344,8 +344,8 @@ func _in_a_day(t: TestRunner, check: Callable) -> void:
 	var city: City = RunCity.in_run(CITY_SCENE, run_state)
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED))
-	var state := CityState.new()
-	run_state.attempt_spend.city_state = state
+	var state := run_state.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.plans_by_block(), WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())

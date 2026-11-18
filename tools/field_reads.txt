@@ -27,12 +27,6 @@ src/events/walk_ground.gd on_finish
 # [AtlasLibrary] src/visuals/atlas_library.gd
 src/main.gd trace_note
 
-# [AttemptSpendState] src/run/attempt_spend_state.gd
-src/events/day_planner.gd scars
-src/events/event_spawner.gd city_state
-src/run/day_director.gd city_state
-src/run/day_director.gd consumed_one_shots
-
 # [AutoScreenshot] src/dev/auto_screenshot.gd
 src/main.gd before_capture
 src/main.gd simulation_clock
@@ -895,9 +889,6 @@ src/city/city.gd draw_support
 src/city/city.gd rail_offset
 src/city/city.gd sign_offset
 
-# [PelicanState] src/city/pelican_state.gd
-src/events/event_spawner.gd draws
-
 # [PendingWarning] src/events/pending_warning.gd
 src/events/event_spawner.gd on_withdrawn
 src/events/events_ahead.gd is_pelican
@@ -905,12 +896,6 @@ src/events/events_ahead.gd on_withdrawn
 src/events/warning_board.gd on_withdrawn
 src/events/warning_board.gd shown
 src/events/warning_board.gd withdrawn
-
-# [PosterState] src/city/poster_state.gd
-src/city/city.gd pasted_through
-src/city/poster_walls.gd pasted_through
-src/dev/scene_recipe_draft.gd cells
-src/events/events_ahead.gd tears
 
 # [Prop] src/city/prop.gd
 src/dev/debug_layers.gd shape
@@ -951,30 +936,6 @@ src/main.gd trace
 src/dev/scene_recipe_runtime.gd column
 src/dev/scene_recipe_runtime.gd trace
 
-# [ResistanceRunState] src/run/resistance_run_state.gd
-src/city/blackout.gd sabotage_done
-src/city/city.gd carrying_package
-src/dev/route_rig.gd completed_steps
-src/dev/scene_recipe_draft.gd progress
-src/dev/scene_recipe_runtime.gd completed_steps
-src/dev/scene_recipe_runtime.gd progress
-src/events/day_planner.gd progress
-src/events/events_ahead.gd progress
-src/resistance/resistance_director.gd carrying_package
-src/resistance/resistance_director.gd completed_steps
-src/resistance/resistance_director.gd failed_steps
-src/resistance/resistance_director.gd sabotage_done
-src/run/run_calendar.gd carrying_package
-src/run/run_calendar.gd progress
-src/run/run_calendar.gd sabotage_done
-src/run/run_state.gd completed_steps
-src/run/run_state.gd failed_steps
-src/run/run_state.gd progress
-src/run/summary_model.gd failed_steps
-src/run/summary_model.gd progress
-src/ui/hud.gd completed_steps
-src/ui/hud.gd progress
-
 # [RigLock] src/dev/rig_lock.gd
 src/main.gd locked_out
 
@@ -992,16 +953,6 @@ src/main.gd trace
 
 # [RouteTree] src/routes/route_tree.gd
 src/dev/route_lines.gd branches
-
-# [RunCalendar] src/run/run_calendar.gd
-src/autoload/game_save.gd checkpoint
-src/autoload/game_save.gd hard_mode
-src/autoload/visit_counter.gd hard_mode
-src/main.gd hard_mode
-src/run/day_director.gd header
-src/run/run_state.gd checkpoint
-src/run/run_state.gd hard_mode
-src/ui/title_screen.gd hard_mode
 
 # [RunConfig] src/run_config.gd
 src/dev/auto_screenshot.gd active_args
@@ -1065,13 +1016,6 @@ src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
 
-# [RunFacts] src/run/run_facts.gd
-src/main.gd escape_section
-src/resistance/resistance_director.gd completed_resistance_alley_tiles
-src/run/day_director.gd fenced_park
-src/run/day_director.gd fenced_park_act
-src/run/run_calendar.gd escape_section
-
 # [RunFlow] src/run/run_flow.gd
 src/main.gd authored
 src/main.gd mode
@@ -1079,102 +1023,8 @@ src/main.gd opening
 src/main.gd scene
 src/main.gd spec
 
-# [RunHeader] src/run/run_header.gd
-src/autoload/game_save.gd ending
-src/autoload/visit_counter.gd day
-src/city/poster_walls.gd run_seed
-src/dev/debug_readout.gd day
-src/dev/debug_readout.gd run_seed
-src/dev/dev_rig.gd day
-src/dev/scene_recipe_draft.gd day
-src/dev/scene_recipe_runtime.gd day
-src/events/event_manager.gd day
-src/events/event_spawner.gd day
-src/events/event_spawner.gd run_seed
-src/events/events_ahead.gd run_seed
-src/main.gd day
-src/main.gd ending
-src/main.gd nerves
-src/main.gd play_ticks
-src/main.gd player_is_male
-src/main.gd run_seed
-src/run/day_director.gd day
-src/run/run_calendar.gd day
-src/run/run_calendar.gd ending
-src/run/run_calendar.gd nerves
-src/run/run_calendar.gd play_ticks
-src/run/run_calendar.gd run_seed
-src/run/run_state.gd day
-src/run/run_state.gd player_is_male
-src/run/run_state.gd run_seed
-src/run/summary_model.gd day
-src/run/summary_model.gd nerves
-src/telemetry/frame_recorder.gd day
-src/telemetry/frame_recorder.gd run_seed
-src/telemetry/frame_trace.gd day
-src/telemetry/frame_trace.gd run_seed
-src/telemetry/run_session.gd run_seed
-src/ui/hud.gd day
-src/ui/hud.gd nerves
-
 # [RunSession] src/telemetry/run_session.gd
 src/main.gd trace
-
-# [RunState] src/run/run_state.gd
-src/autoload/game_save.gd calendar
-src/autoload/game_save.gd header
-src/autoload/game_save.gd run_parts
-src/autoload/visit_counter.gd calendar
-src/autoload/visit_counter.gd header
-src/city/city.gd attempt_spend
-src/city/city.gd posters
-src/city/city.gd resistance
-src/city/city_fronts.gd attempt_spend
-src/city/poster_walls.gd calendar
-src/city/poster_walls.gd header
-src/city/poster_walls.gd posters
-src/day/day_controller.gd calendar
-src/dev/route_rig.gd resistance
-src/dev/scene_recipe_draft.gd calendar
-src/dev/scene_recipe_draft.gd header
-src/dev/scene_recipe_draft.gd posters
-src/dev/scene_recipe_draft.gd resistance
-src/dev/scene_recipe_runtime.gd calendar
-src/dev/scene_recipe_runtime.gd header
-src/dev/scene_recipe_runtime.gd posters
-src/dev/scene_recipe_runtime.gd resistance
-src/events/day_planner.gd attempt_spend
-src/events/day_planner.gd calendar
-src/events/day_planner.gd resistance
-src/events/event_manager.gd header
-src/events/event_spawner.gd attempt_spend
-src/events/event_spawner.gd calendar
-src/events/event_spawner.gd header
-src/events/event_spawner.gd pelican
-src/events/events_ahead.gd calendar
-src/events/events_ahead.gd header
-src/events/events_ahead.gd posters
-src/events/events_ahead.gd resistance
-src/main.gd attempt_spend
-src/main.gd calendar
-src/main.gd facts
-src/main.gd header
-src/resistance/happenings.gd attempt_spend
-src/resistance/happenings.gd calendar
-src/resistance/resistance_director.gd attempt_spend
-src/resistance/resistance_director.gd facts
-src/resistance/resistance_director.gd resistance
-src/run/summary_model.gd header
-src/run/summary_model.gd resistance
-src/simulation_builder.gd resistance
-src/telemetry/frame_recorder.gd header
-src/telemetry/frame_trace.gd header
-src/telemetry/run_session.gd header
-src/telemetry/telemetry_observer.gd attempt_spend
-src/ui/hud.gd calendar
-src/ui/hud.gd header
-src/ui/hud.gd resistance
-src/ui/title_screen.gd calendar
 
 # [SaveIndicator] src/ui/save_indicator.gd
 src/main.gd atlas
@@ -1191,9 +1041,6 @@ src/city/city.gd view
 
 # [SceneryWater] src/city/scenery_water.gd
 src/city/scenery_ground.gd atlas
-
-# [SettledState] src/run/settled_state.gd
-src/run/run_calendar.gd settled_in
 
 # [Sitting] src/autoload/sitting.gd
 src/main.gd atlas

@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 	var step := maxi(1, fronts.size() / 10)
 	for i in range(0, fronts.size(), step):
 		var shell_at := city.map.tile_to_world(fronts[i])
-		city.run.attempt_spend.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
+		GivenRun.scars(city.run, [{"id": "burnt_shell", "position": shell_at, "since_day": 3}])
 		var director := _task_on_offer(t, city)
 		var door := city.fronts().way_in_behind(shell_at)
 		if door == Vector2.INF or director.current_step() == null:
@@ -79,7 +79,7 @@ func run(t: TestRunner) -> void:
 			+ "being taken (%d)" % from_the_side)
 
 	# A run with no recorded scar burns a front for the task, and stands on that building's door too.
-	city.run.attempt_spend.scars = []
+	GivenRun.scars(city.run, [])
 	var director := _task_on_offer(t, city)
 	t.check(director.current_step() != null, "the fallback task is on offer")
 	if director.current_step() != null and director.rider() != null:
@@ -97,11 +97,11 @@ func tile_is_taken(city: City, tile: Vector2i) -> bool:
 ## Day 8 started through the real order and its mark read, so the task is placed. Reading the mark
 ## completes a step of the city's run, so the run's resistance starts over for each front.
 func _task_on_offer(t: TestRunner, city: City) -> ResistanceDirector:
-	city.run.resistance.completed_steps = []
-	city.run.resistance.failed_steps = []
-	city.run.resistance.progress = 0
-	var state := CityState.new()
-	city.run.attempt_spend.city_state = state
+	GivenRun.completed_steps(city.run, [])
+	GivenRun.failed_steps(city.run, [])
+	city.run.resistance().set_progress(0)
+	var state := city.run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng("closures"))
 	var none: Array[String] = []

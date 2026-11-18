@@ -48,7 +48,7 @@ func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
 			"every building holds a collision shape before the dawn (%d buildings)" % before.size())
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 8)
-	city.start_day(state, 8, city.run.calendar.day_rng(8, "closures"))
+	city.start_day(state, 8, city.run.calendar().day_rng(8, "closures"))
 	var after: Array[Building] = city.buildings()
 	t.check(after == before, "a dawn leaves the city the same buildings, the same nodes")
 	var replaced := 0

@@ -132,7 +132,7 @@ func in_the_city(world: CityDressing, map: CityMap, streets: DayStreets, signals
 	blackout.name = "Blackout"
 	blackout.use_bus(_bus)
 	simulation.add_child(blackout)
-	blackout.setup(map, buildings, signals, events, run.resistance, _blackout_forced,
+	blackout.setup(map, buildings, signals, events, run.resistance(), _blackout_forced,
 			dark_from_the_start)
 
 	simulation.hold_the_events(events)

@@ -74,7 +74,7 @@ func _test_appeared_requires_sight(t: TestRunner) -> void:
 func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	var own_run := RunState.new()
 	own_run.start_run(4242)
-	own_run.header.day = 3
+	own_run.header().set_day(3)
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1280, 720)
 	t.add_child(viewport)
@@ -82,10 +82,10 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	city.run = own_run
 	viewport.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
-	var state := CityState.new()
-	own_run.attempt_spend.city_state = state
+	var state := own_run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.block_plans, 3)
-	city.start_recipe_day(state, 3, own_run.calendar.day_rng(3, "closures"))
+	city.start_recipe_day(state, 3, own_run.calendar().day_rng(3, "closures"))
 	var from := Vector2i.ZERO
 	var found := false
 	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -486,7 +486,7 @@ func _drafted(t: TestRunner, city: City, data: Dictionary, walked: Array[Vector2
 	walker.free()
 	var own_run := RunState.new()
 	own_run.start_run(7)
-	own_run.header.day = 7
+	own_run.header().set_day(7)
 	var problems: Array[String] = []
 	var drafted := draft.compose(data, own_run, city, RunCity.crowd(city),
 			city.map.tile_to_world(walked[0]), pinned, problems)

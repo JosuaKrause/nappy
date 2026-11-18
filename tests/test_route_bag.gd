@@ -515,9 +515,9 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	city.run.resistance.completed_steps = done
-	city.run.resistance.failed_steps = []
-	city.run.resistance.progress = 0
+	GivenRun.completed_steps(city.run, done)
+	GivenRun.failed_steps(city.run, [])
+	city.run.resistance().set_progress(0)
 	var resistance := ResistanceDirector.new()
 	var told: Array[String] = []
 	resistance.trace = RecordingTrace.new(told)

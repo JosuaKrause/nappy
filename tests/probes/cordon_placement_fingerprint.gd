@@ -39,9 +39,9 @@ func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
 	var day := ResistanceSteps.swing_day()
-	city.run.header.day = day
-	var state := CityState.new()
-	city.run.attempt_spend.city_state = state
+	city.run.header().set_day(day)
+	var state := city.run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],

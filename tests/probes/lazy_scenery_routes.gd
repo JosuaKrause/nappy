@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 	var offered := network_tiles.duplicate()
 	offered.merge(home_tiles)
 	var routes: Array[Dictionary] = []
-	var row := {"seed": _city.map.seed_used, "day": seat.run.header.day,
+	var row := {"seed": _city.map.seed_used, "day": seat.run.header().day(),
 		"branches": tree.branches.size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),

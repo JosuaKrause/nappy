@@ -112,7 +112,7 @@ func configure(config: RunConfig) -> void:
 	_spikes_requested = config.spikes_requested
 
 ## Builds what the gate allows on the readout's label and layer, and shows the readout in the shape
-## this build should have. `run` is the run whose seed and calendar day it names (`run.header`),
+## this build should have. `run` is the run whose seed and calendar day it names (`run.header()`),
 ## `session` where the snapshot keys send their pictures, and `screen_name` what screen is up, for
 ## the snapshot's line ("title", "paused" or "playing").
 func setup(config: RunConfig, status: Label, status_layer: CanvasLayer, run: RunHeader,
@@ -280,8 +280,8 @@ func _process(delta: float) -> void:
 		_build_text = BuildInfo.build_text()
 	var header := [
 		"build %s" % _build_text,
-		"seed  %d   day %d%s" % [_run.run_seed,
-			_run.day if _spec.section == DaySpec.Section.NONE else _spec.number,
+		"seed  %d   day %d%s" % [_run.run_seed(),
+			_run.day() if _spec.section == DaySpec.Section.NONE else _spec.number,
 			"" if _spec.title == "" else "   " + _spec.title.to_lower()],
 	]
 	if not _skip_words.is_empty():

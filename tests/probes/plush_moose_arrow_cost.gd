@@ -125,9 +125,9 @@ func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> Res
 		if step.day < day:
 			done.append(step.index)
 	var run: RunState = city.run
-	run.resistance.completed_steps = done
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	GivenRun.completed_steps(run, done)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],

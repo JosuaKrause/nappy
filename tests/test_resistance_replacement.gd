@@ -256,7 +256,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 	var relocations := 0
 	for seed_value: int in [4242, 555555]:
 		var run := _build_city_in_a_new_run(t, seed_value)
-		run.resistance.completed_steps = _completed_through(2)
+		GivenRun.completed_steps(run, _completed_through(2))
 		var map := _city.map
 		var director := _director(t)
 		director.start_day(7, _rng(7, "off-screen", seed_value), 300.0)

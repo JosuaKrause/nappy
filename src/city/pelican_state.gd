@@ -4,7 +4,7 @@ extends RunSubState
 ## draws. Run-scoped, a registered part of the run (`RunSubState`) held as `run.pelican`, and
 ## the whole state of the bag — it is rebuilt from the run's seed and `MarbleBag.skip()`ped to this
 ## count, the way the poster tears' bag is
-## (`PosterState.tears`). *(pebbly-ibis, inbox #575 in feathery-lynx: "let's do a bag per run but
+## (`PosterState.tears_made()`). *(pebbly-ibis, inbox #575 in feathery-lynx: "let's do a bag per run but
 ## save it in the standard save file to reset the bag to the beginning of the day on a lost day".)*
 ##
 ## **A lost day sets the bag back to the beginning of that day.** `photograph()` is taken where
@@ -12,9 +12,17 @@ extends RunSubState
 ## back, so the retry meets the same cyclists, and the same pelican, the day first did.
 
 ## Cyclists drawn from the bag so far this run.
-var draws := 0
+var _draws := 0
 
 var _dawn := 0
+
+## Cyclists drawn from the bag so far this run: how far `EventSpawner` skips a rebuilt bag.
+func draws() -> int:
+	return _draws
+
+## One more cyclist drawn (`EventSpawner`).
+func count_a_draw() -> void:
+	_draws += 1
 
 ## Overrides RunSubState.slot.
 func slot() -> Slot:
@@ -26,30 +34,30 @@ func save_key() -> String:
 
 ## Overrides RunSubState.reset.
 func reset() -> void:
-	draws = 0
+	_draws = 0
 	_dawn = 0
 
 ## Photographs the count as the attempt about to be played found it.
 ##
 ## Overrides RunSubState.photograph.
 func photograph() -> void:
-	_dawn = draws
+	_dawn = _draws
 
 ## Puts the count back where the photograph found it.
 ##
 ## Overrides RunSubState.give_back.
 func give_back() -> void:
-	draws = _dawn
+	_draws = _dawn
 
 ## Everything a save carries, the photograph included, as plain JSON-safe values.
 ##
 ## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
-	return {"draws": draws, "dawn": _dawn}
+	return {"draws": _draws, "dawn": _dawn}
 
 ## The other half of `to_data()`. JSON has no integer type, so every number is cast.
 ##
 ## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
-	draws = int(data.get("draws", 0))
+	_draws = int(data.get("draws", 0))
 	_dawn = int(data.get("dawn", 0))

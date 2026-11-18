@@ -1,7 +1,7 @@
 class_name PosterState
 extends RunSubState
 ## What is pasted on the city's walls this run, and how many tears she has made. Run-scoped, a
-## registered part of the run (`RunSubState`) held as `run.posters`, and a fact about the run
+## registered part of the run (`RunSubState`) held as `run.posters()`, and a fact about the run
 ## rather than about the seed: a crew pastes where her walk sites it and a sheet tears where she
 ## pushes, so neither can be recomputed.
 ##
@@ -25,14 +25,14 @@ const INTACT := -1
 const NONE := -1
 
 ## `Vector2i` front tile -> `{"kind", "tear", "under", "under_tear", "side"}`.
-var cells: Dictionary = {}
+var _cells: Dictionary = {}
 ## The last day whose dawn pasting is on the walls, so a day started twice — a retry, or a run
 ## resumed from a save — pastes its dawn exactly once, and a run started on a later day under
 ## `--day` catches up on every dawn before it.
-var pasted_through := 0
+var _pasted_through := 0
 ## How many tears she has made this run: how far into the marble bag the next tear draws. See
 ## `MarbleBag.skip()`.
-var tears := 0
+var _tears := 0
 
 var _dawn: Dictionary = {}
 
@@ -46,54 +46,68 @@ func save_key() -> String:
 
 ## Overrides RunSubState.reset.
 func reset() -> void:
-	cells.clear()
-	pasted_through = 0
-	tears = 0
+	_cells.clear()
+	_pasted_through = 0
+	_tears = 0
 	_dawn = {}
+
+## Every cell with a sheet, `Vector2i` front tile -> its cell (`_cells`): the live dictionary, which
+## a reader does not change; `paste()` and `tear()` do.
+func cells() -> Dictionary:
+	return _cells
+
+## The last day whose dawn pasting is on the walls (`_pasted_through`).
+func pasted_through() -> int:
+	return _pasted_through
+
+## Records the dawns through `day` as pasted, keeping a later day already recorded: the walls'
+## own pasting (`PosterWalls`) and a stretch's, which pastes none (`City`).
+func mark_pasted_through(day: int) -> void:
+	_pasted_through = maxi(_pasted_through, day)
 
 ## Whether any sheet is on `tile`, torn or not.
 func has_sheet(tile: Vector2i) -> bool:
-	return cells.has(tile)
+	return _cells.has(tile)
 
 ## The cell on `tile` (`kind`, `tear`, `under`, `under_tear`, `side`), or an empty one where no
 ## sheet is. It is the cell itself, so a front handed it draws what is pasted now.
 func sheet_at(tile: Vector2i) -> Dictionary:
-	return cells.get(tile, {})
+	return _cells.get(tile, {})
 
-## How many tears she has made this run (see `tears`).
+## How many tears she has made this run (see `_tears`).
 func tears_made() -> int:
-	return tears
+	return _tears
 
 ## Counts one more tear made.
 func count_a_tear() -> void:
-	tears += 1
+	_tears += 1
 
 ## Whether the top sheet on `tile` is there and not torn.
 func has_intact_sheet(tile: Vector2i) -> bool:
-	var cell: Dictionary = cells.get(tile, {})
+	var cell: Dictionary = _cells.get(tile, {})
 	return not cell.is_empty() and int(cell["tear"]) == INTACT
 
 ## Whether the top sheet on `tile` is torn.
 func is_torn(tile: Vector2i) -> bool:
-	var cell: Dictionary = cells.get(tile, {})
+	var cell: Dictionary = _cells.get(tile, {})
 	return not cell.is_empty() and int(cell["tear"]) != INTACT
 
 ## Pastes a new `kind` on `tile`. Over an older sheet, `offset` keeps the old top sheet showing
 ## beneath the new one, shifted `side` (+1 or -1); otherwise the new sheet covers the old exactly
 ## and replaces it. Whatever was under the old sheet is covered for good either way.
 func paste(tile: Vector2i, kind: int, offset: bool, side: int) -> void:
-	var old: Dictionary = cells.get(tile, {})
+	var old: Dictionary = _cells.get(tile, {})
 	var cell := {"kind": kind, "tear": INTACT, "under": NONE, "under_tear": INTACT, "side": side}
 	if offset and not old.is_empty():
 		cell["under"] = int(old["kind"])
 		cell["under_tear"] = int(old["tear"])
-	cells[tile] = cell
+	_cells[tile] = cell
 
 ## Tears the top sheet on `tile` the `tear`th way. Answers whether there was an intact sheet to tear.
 func tear(tile: Vector2i, tear_index: int) -> bool:
 	if not has_intact_sheet(tile):
 		return false
-	cells[tile]["tear"] = tear_index
+	_cells[tile]["tear"] = tear_index
 	return true
 
 ## Photographs the walls as the attempt about to be played found them. See the class note.
@@ -129,20 +143,20 @@ func restore(data: Dictionary) -> void:
 
 func _as_data() -> Dictionary:
 	var rows: Array = []
-	for tile: Vector2i in cells:
-		var cell: Dictionary = cells[tile]
+	for tile: Vector2i in _cells:
+		var cell: Dictionary = _cells[tile]
 		rows.append({"x": tile.x, "y": tile.y, "k": int(cell["kind"]), "t": int(cell["tear"]),
 				"u": int(cell["under"]), "ut": int(cell["under_tear"]), "s": int(cell["side"])})
-	return {"cells": rows, "pasted_through": pasted_through, "tears": tears}
+	return {"cells": rows, "pasted_through": _pasted_through, "tears": _tears}
 
 func _from_data(data: Dictionary) -> void:
-	cells.clear()
+	_cells.clear()
 	for raw: Dictionary in data.get("cells", []):
-		cells[Vector2i(int(raw["x"]), int(raw["y"]))] = {"kind": int(raw["k"]),
+		_cells[Vector2i(int(raw["x"]), int(raw["y"]))] = {"kind": int(raw["k"]),
 				"tear": int(raw["t"]), "under": int(raw["u"]), "under_tear": int(raw["ut"]),
 				"side": int(raw["s"])}
-	pasted_through = int(data.get("pasted_through", 0))
-	tears = int(data.get("tears", 0))
+	_pasted_through = int(data.get("pasted_through", 0))
+	_tears = int(data.get("tears", 0))
 
 ## A photograph read back from JSON, cast to the shape `_as_data()` writes, so a save written and
 ## read back compares equal to the one it came from.

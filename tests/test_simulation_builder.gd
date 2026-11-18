@@ -259,11 +259,11 @@ func _test_both_worlds_events_report_on_the_bus_it_was_handed(t: TestRunner) -> 
 func _test_the_dressed_day_pastes_the_walls(t: TestRunner) -> void:
 	var made := _city(t)
 	var run: RunState = made["run"]
-	t.check(run.posters.pasted_through < 3, "the walls start before day 3's dawn")
+	t.check(run.posters().pasted_through() < 3, "the walls start before day 3's dawn")
 	(made["world"] as CityDressing).day_dressed.emit(3, DaySpec.for_day(3))
-	t.check(run.posters.pasted_through == 3,
+	GivenRun.pasted_through(t.check(run, = 3,)
 			"the city dressed for day 3 pastes the walls through its dawn (%d)"
-			% run.posters.pasted_through)
+			% run.posters().pasted_through())
 	_free(made)
 
 ## **Each developer setting the builder is handed reaches the part it is for**, and a builder handed
@@ -331,7 +331,7 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 		bus.free()
 		return
 	(made["world"] as CityDressing).day_dressed.emit(1, DaySpec.for_day(1))
-	run.posters.paste(sheet, PosterArt.Kind.RULES, false, 1)
+	run.posters().paste(sheet, PosterArt.Kind.RULES, false, 1)
 	var crowd := simulation.crowd()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = RUN_SEED
@@ -347,11 +347,11 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 	var her := _her(t, Vector2(sheet_face.get_center().x, sheet_face.position.y + 24.0))
 	var a_push := PhysicsTicks.ticks_for(PosterWalls.PRESS_TO_TEAR * 2.0)
 	await PhysicsTicks.pass_ticks(t, a_push)
-	t.check(not run.posters.is_torn(sheet) and signals.powered,
+	t.check(not run.posters().is_torn(sheet) and signals.powered,
 			"before she is met nothing tears and the lights stay on")
 	simulation.meet_her(her)
 	await PhysicsTicks.pass_ticks(t, a_push)
-	t.check(run.posters.is_torn(sheet) and bus.times("poster_torn") == 1,
+	t.check(run.posters().is_torn(sheet) and bus.times("poster_torn") == 1,
 			"met, her push tears the sheet, said on the bus the walls were handed")
 	t.check(not signals.powered, "and the blackout, handed --blackout, puts the lights out round her")
 	crowd.set_focus(walker.global_position)

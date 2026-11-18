@@ -300,8 +300,8 @@ func _test_the_pause_says_where_the_run_stands(t: TestRunner) -> void:
 	var pause := _pause(t, false, true, run)
 	var standing := UI.control(pause, "Standing") as Label
 
-	run.header.day = 7
-	run.header.nerves = 3
+	run.header().set_day(7)
+	run.header().set_nerves(3)
 	t.get_tree().paused = false
 	pause.open()
 	var line: String = standing.text
@@ -313,7 +313,7 @@ func _test_the_pause_says_where_the_run_stands(t: TestRunner) -> void:
 
 	# A single nerve is one star, drawn through the same `Texts.nerve_stars()` every other screen
 	# reads the count through — never a digit and never the word.
-	run.header.nerves = 1
+	run.header().set_nerves(1)
 	pause.open()
 	t.check(standing.text.contains(Texts.nerve_stars(1)) and not standing.text.contains("1 nerve"),
 			"and the last one is one star, not a number ('%s')" % standing.text)
@@ -602,11 +602,11 @@ func _test_the_pause_quit_key_matches_the_platform(t: TestRunner) -> void:
 func _test_the_title_names_the_mode_once_it_is_decided(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var title := _title(t, false, true, run)
-	run.calendar.hard_mode = false
+	run.calendar().restore_mode(false)
 	title.open(false, false, true)
 	t.check(Boot.mode_name_drawn(title) == "Normal", "a decided Normal run is named 'Normal'")
 	t.check(not UI.control(title, "HardMode").visible, "and the checkbox is not offered beside it")
-	run.calendar.hard_mode = true
+	run.calendar().restore_mode(true)
 	title.open(false, false, true)
 	t.check(Boot.mode_name_drawn(title) == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
 	title.open(false, true)

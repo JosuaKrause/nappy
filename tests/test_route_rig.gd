@@ -117,7 +117,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 		run_seed := RUN_SEED) -> Dictionary:
 	var run := RunState.new()
 	run.start_run(run_seed)
-	run.resistance.progress = progress_at_dawn
+	run.resistance().set_progress(progress_at_dawn)
 	var city: City = CITY_SCENE.instantiate()
 	city.run = run
 	t.add_child(city)

@@ -106,15 +106,15 @@ func _day(t: TestRunner, day: int) -> Array:
 	var map: CityMap = built.map
 	var own_run := RunState.new()
 	own_run.start_run(RECIPE_SEED)
-	own_run.header.day = day
-	var state := CityState.new()
-	own_run.attempt_spend.city_state = state
+	own_run.header().set_day(day)
+	var state := own_run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(map.block_plans, day)
 	var city: City = CITY_SCENE.instantiate()
 	city.run = own_run
 	t.add_child(city)
 	RunCity.build(city, map)
-	city.start_recipe_day(state, day, own_run.calendar.day_rng(day, "closures"))
+	city.start_recipe_day(state, day, own_run.calendar().day_rng(day, "closures"))
 	# A recipe that selects no gate or barrier stands no region wall either, the way
 	# `SceneRecipeRuntime._select_structures()` leaves the day's plan.
 	if city.streets().region_plan():
@@ -140,7 +140,7 @@ func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t: TestRunner) -> v
 	var own_run: RunState = made[2]
 	var map := city.map
 	var mark := map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, mark)
+	var errors := director.start_recipe_task(7, own_run.calendar().day_rng(7, "resistance"), 300.0, mark)
 	t.check(errors.is_empty(), "a mark one tile in from an alley mouth is accepted: %s" % [errors])
 	# *(Inbox #555, "Unread, walk to it".)* The scene begins with the mark standing unread and no
 	# task on offer; a touch reads it and the task is placed then.
@@ -151,7 +151,7 @@ func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t: TestRunner) -> v
 	t.check(director.current_step().is_pickup and director.red_arrow_target() == Vector2.INF
 			and director.contact_position() == mark,
 			"no task is on offer and no arrow is drawn before she reads it")
-	t.check(not own_run.resistance.completed_steps.has(director.current_step().index),
+	t.check(not own_run.resistance().completed_steps().has(director.current_step().index),
 			"nothing is completed at the start")
 	director.contact().complete_now()
 	var task := director.current_step()
@@ -179,7 +179,7 @@ func _test_a_mark_is_touched_only_from_inside_its_alley(t: TestRunner) -> void:
 	var own_run: RunState = made[2]
 	var map := city.map
 	var mark := map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, mark)
+	var errors := director.start_recipe_task(7, own_run.calendar().day_rng(7, "resistance"), 300.0, mark)
 	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
 	var outward := Vector2(MOUTH - MARK)
 	var street_edge := mark + outward * Tuning.TILE_SIZE * 1.5
@@ -207,7 +207,7 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t: TestRunn
 	var map := city.map
 	var at_mouth := map.tile_to_world(MOUTH)
 	var at_mark := map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, at_mark)
+	var errors := director.start_recipe_task(7, own_run.calendar().day_rng(7, "resistance"), 300.0, at_mark)
 	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
 	var guards: Array[Vector2] = []
 	for instance in RunCity.events(city).instances():
@@ -239,12 +239,12 @@ func _test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t: TestRunne
 	t.check(map.tile_at(inside) == GameEnums.TileType.ALLEY
 			and not AlleyMarks.is_a_mouth(map, inside),
 			"the probe stands inside the mark's own alley, not at its mouth")
-	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0,
+	var errors := director.start_recipe_task(7, own_run.calendar().day_rng(7, "resistance"), 300.0,
 			map.tile_to_world(inside))
 	t.check("\n".join(errors).contains("is not one tile in from an alley mouth"),
 			"a mark in the middle of an alley is refused: %s" % [errors])
 	t.check(director.current_step() == null, "and nothing is offered in its place")
-	errors = director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0,
+	errors = director.start_recipe_task(7, own_run.calendar().day_rng(7, "resistance"), 300.0,
 			map.tile_to_world(MOUTH))
 	t.check("\n".join(errors).contains("is not one tile in from an alley mouth"),
 			"and so is one on the mouth's own tile: %s" % [errors])
@@ -261,7 +261,7 @@ func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t: TestRunner) -> 
 	# about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
 	var near_home := Vector2i(62, 84)
 	t.check(map.tile_at(near_home) == GameEnums.TileType.SIDEWALK, "the probe stands on a sidewalk")
-	var errors := director.start_recipe_task(10, own_run.calendar.day_rng(10, "resistance"), 300.0, mark,
+	var errors := director.start_recipe_task(10, own_run.calendar().day_rng(10, "resistance"), 300.0, mark,
 			map.tile_to_world(near_home))
 	t.check(errors.is_empty(), "the mark is accepted; the neighbor is drawn when she reads it")
 	director.contact().complete_now()
@@ -281,7 +281,7 @@ func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t: TestRunner) 
 	var director: ResistanceDirector = made[1]
 	var own_run: RunState = made[2]
 	var mark := city.map.tile_to_world(MARK)
-	var errors := director.start_recipe_task(11, own_run.calendar.day_rng(11, "resistance"), 300.0, mark)
+	var errors := director.start_recipe_task(11, own_run.calendar().day_rng(11, "resistance"), 300.0, mark)
 	t.check(errors.is_empty(), "day 11's mark is accepted: %s" % [errors])
 	director.contact().complete_now()
 	t.check(director.scene_task_errors().is_empty() and director.current_step() != null
@@ -379,13 +379,13 @@ func _mast_installs(t: TestRunner, made: Array, at: Vector2) -> bool:
 	t.add_child(player)
 	var her := city.map.tile_to_world(MOUTH)
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure({"data": {"setup": {"day": own_run.header.day,
+	runtime.configure({"data": {"setup": {"day": own_run.header().day(),
 			"player": {"at": [her.x, her.y]},
 			"events": [{"name": "mast", "row": "loudspeaker", "at": [at.x, at.y], "mast_id": "m"}]}},
 			"manifest": {}, "anchors": {}, "map": city.map},
 			RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), own_run)
 	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"),
-			DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
+			DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	runtime.free()
 	player.free()
 	return not "\n".join(errors).contains("event mast fails")

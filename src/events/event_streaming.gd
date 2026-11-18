@@ -174,7 +174,7 @@ func stream_in(plan: EventPlan) -> void:
 	plan.live = _spawner.create(plan.def, plan.position, plan.path, first_time, plan.facing)
 	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where it
 	# becomes something that happened — see `DawnOneShots`. The list is the one
-	# `start_day` was handed, which in a played game is `world.run.attempt_spend.consumed_one_shots`
+	# `start_day` was handed, which in a played game is `world.run.attempt_spend().consumed_one_shots()`
 	# and in a rig is the rig's own.
 	if first_time and plan.row().is_a_set_piece_on_her_way() and not plan.def.id in consumed:
 		consumed.append(plan.def.id)

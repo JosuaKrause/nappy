@@ -115,7 +115,7 @@ func run(t: TestRunner) -> void:
 			% [ordinary_share, uniform_share])
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
-	city.start_recipe_day(state, 1, city.run.calendar.day_rng())
+	city.start_recipe_day(state, 1, city.run.calendar().day_rng())
 	var oversized: Dictionary = recipe.duplicate(true)
 	oversized.setup = {"day": 1, "background": {"crowd": true, "crowd_scope": "city",
 			"uniform_walkers": true, "walker_multiplier": 4}}
@@ -125,7 +125,7 @@ func run(t: TestRunner) -> void:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
-	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"), DaySpec.for_day(city.run.header.day, Tuning.DAY_LENGTH_SECONDS))
+	var errors := runtime.install(city, RunCity.simulation(city), player, player.get_node("Baby"), DaySpec.for_day(city.run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	t.check("\n".join(errors).contains("too few eligible sidewalk positions"),
 			"oversized city-wide uniform population rejects instead of silently truncating")
 	runtime.free()

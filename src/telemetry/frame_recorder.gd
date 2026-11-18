@@ -136,7 +136,7 @@ func at_process_end() -> void:
 		ledger.set_counter(FrameLedger.LIVE_EVENTS, _events.active_count())
 		ledger.set_counter(FrameLedger.PLAYER_X, roundi(here.x))
 		ledger.set_counter(FrameLedger.PLAYER_Y, roundi(here.y))
-		ledger.set_counter(FrameLedger.DAY, _run.header.day)
+		ledger.set_counter(FrameLedger.DAY, _run.header().day())
 		ledger.set_counter(FrameLedger.PROCESS_FRAME, Engine.get_process_frames())
 	ledger.process_end(Time.get_ticks_usec())
 
@@ -297,7 +297,7 @@ func _report_text() -> String:
 			+ "counts, not times"
 	var metadata := _metadata.duplicate()
 	metadata["build"] = BuildInfo.build_text()
-	metadata["run_seed"] = _run.header.run_seed
+	metadata["run_seed"] = _run.header().run_seed()
 	metadata["ground_mode"] = int(_ground_mode)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
 	metadata["engine"] = Engine.get_version_info()
@@ -322,13 +322,13 @@ func _save() -> String:
 	var text := _report_text()
 	ledger.keep_this_frame(false)
 	if OS.get_name() == "Web":
-		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header.run_seed,
+		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header().run_seed(),
 			Time.get_datetime_string_from_system().replace(":", "-")]
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
 	if _sitting.frame_record_file() == "":
 		_sitting.keep_frame_record_file("%s/record-%s-seed%d.json" % [_records_dir,
-			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed])
+			Time.get_datetime_string_from_system().replace(":", "-"), _run.header().run_seed()])
 	var path := _sitting.frame_record_file()
 	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")

@@ -54,7 +54,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	city.run.resistance.completed_steps.assign(done)
+	GivenRun.completed_steps(city.run, done)
 	# A read mark's alley is remembered and never chosen again; each walk's run starts with none.
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)

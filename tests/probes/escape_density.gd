@@ -20,8 +20,8 @@ func run(t: TestRunner) -> void:
 	var totals := {}
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(own_run.attempt_spend.city_state)
+		own_run.attempt_spend().block_arcs().begin_day(map.block_plans, 1)
+		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var started := Time.get_ticks_msec()

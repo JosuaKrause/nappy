@@ -120,14 +120,14 @@ func _route_tiles(map: CityMap, corridor: Corridor) -> Array[Vector2i]:
 func _start(t: TestRunner, seed_value: int) -> City:
 	var spec := DaySpec.for_day(DAY)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header.day = DAY
+	city.run.header().set_day(DAY)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, DAY)
-	city.start_day(city.run.attempt_spend.city_state, DAY, city.run.calendar.day_rng(DAY, "closures"),
+	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, DAY)
+	city.start_day(city.run.attempt_spend().block_arcs(), DAY, city.run.calendar().day_rng(DAY, "closures"),
 			spec)
 	var consumed: Array[String] = []
-	RunCity.events(city).start_day(spec, city.run.calendar.day_rng(DAY), consumed,
+	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(DAY), consumed,
 			city.map.doorstep_world_position())
 	return city
 

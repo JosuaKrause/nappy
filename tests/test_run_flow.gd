@@ -236,7 +236,7 @@ class _HeardDirector extends DayDirector:
 	var world := DayWorld.new()
 
 	func _init(run: RunState, heard: Array) -> void:
-		super(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
+		super(run.calendar(), run.facts(), run.attempt_spend(), RunConfig.parse(PackedStringArray(), "", true))
 		_heard = heard
 
 	## Overrides DayDirector.start.
@@ -278,17 +278,17 @@ func _test_a_tap_then_a_key_continue_once(t: TestRunner) -> void:
 	var reloads: Array[int] = []
 	main.use_reload(func() -> void: reloads.append(1))
 	t.get_tree().paused = false
-	var ticks := _run.header.play_ticks
+	var ticks := _run.header().play_ticks()
 	await _physics_frames(t, 4)
-	t.check(_run.header.play_ticks > ticks, "the walk's tick counts while she walks (%d to %d)"
-			% [ticks, _run.header.play_ticks])
+	t.check(_run.header().play_ticks() > ticks, "the walk's tick counts while she walks (%d to %d)"
+			% [ticks, _run.header().play_ticks()])
 	Boot.pause(main).restart_requested.emit()
 	t.check(reloads.size() == 1, "a restart from the walk asks for one reload (%d)" % reloads.size())
-	ticks = _run.header.play_ticks
+	ticks = _run.header().play_ticks()
 	await _physics_frames(t, 4)
-	t.check(_run.header.play_ticks == ticks and not t.get_tree().paused,
+	t.check(_run.header().play_ticks() == ticks and not t.get_tree().paused,
 			"and leaves the flow RELOADING: the walk's tick no longer counts, with the tree running"
-			+ " (%d to %d)" % [ticks, _run.header.play_ticks])
+			+ " (%d to %d)" % [ticks, _run.header().play_ticks()])
 	_shut_down(t, booted)
 
 ## A hard run's last nerve: the run-over screen's continue raises the ending, and the tap's own
@@ -299,11 +299,11 @@ func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t: TestRunner
 	var main := booted.main
 	var reloads: Array[int] = []
 	main.use_reload(func() -> void: reloads.append(1))
-	_run.calendar.choose_mode(true)
-	_run.header.nerves = 1
+	_run.calendar().choose_mode(true)
+	_run.header().set_nerves(1)
 	EventBus.hard_fail_triggered.emit("car_strike")
 	var summary := Boot.summary(main)
-	t.check(summary.is_showing() and _continue_shown(main) and _run.header.nerves == 0,
+	t.check(summary.is_showing() and _continue_shown(main) and _run.header().nerves() == 0,
 			"the run-over screen is up")
 	await _tap_then_key(t, main)
 	t.check(summary.is_showing() and not _continue_shown(main) and reloads.is_empty(),

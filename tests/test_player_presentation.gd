@@ -22,16 +22,16 @@ func _test_seeded_equal_choice_and_lifetime(t: TestRunner) -> void:
 	var observed: Dictionary = {}
 	for seed_value in range(1, 33):
 		state.start_run(seed_value)
-		var selected: bool = state.header.player_is_male
+		var selected: bool = state.header().parent_is_father()
 		observed[selected] = true
-		state.header.day = 9
-		state.calendar.begin_day()
-		state.calendar.finish_day(GameEnums.DayResult.WON)
-		state.calendar.begin_day()
-		state.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-		t.check(state.header.player_is_male == selected, "winning, retrying and starting days retain the choice")
+		state.header().set_day(9)
+		state.calendar().begin_day()
+		state.calendar().finish_day(GameEnums.DayResult.WON)
+		state.calendar().begin_day()
+		state.calendar().finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+		t.check(state.header().parent_is_father() == selected, "winning, retrying and starting days retain the choice")
 		state.start_run(seed_value)
-		t.check(state.header.player_is_male == selected, "replaying a seed reproduces the presentation")
+		t.check(state.header().parent_is_father() == selected, "replaying a seed reproduces the presentation")
 	t.check(observed.size() == 2, "the seed sweep exercises both families")
 
 ## A rig of each family, handed its choice before it enters the tree, the way `main` hands it

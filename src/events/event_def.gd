@@ -833,7 +833,7 @@ func starts_by(start: PursuitSpec.Start) -> bool:
 ## How this row answers to the resistance.
 ##
 ## **The city gets worse the further into the subquest you are**, and this is the whole of how a row
-## says so. `RunState.resistance.progress` is an integer 0..`Tuning.RESISTANCE_GOAL`, and
+## says so. `RunState.resistance().progress()` is an integer 0..`Tuning.RESISTANCE_GOAL`, and
 ## `at_heat()` below turns a level into a **derived copy** of the row with its numbers moved, so
 ## nothing downstream of the day's plan has to know that heat exists: an `EventInstance` reads
 ## `intensity`, `pursuit` and the rest off whichever copy the day handed it.
@@ -1238,7 +1238,7 @@ func effect() -> GameEnums.BlockerEffect:
 
 ## This row as it is at a given resistance level, which is `self` for almost everything.
 ##
-## `level` is `RunState.resistance.progress`, clamped here rather than by the caller: it can reach
+## `level` is `RunState.resistance().progress()`, clamped here rather than by the caller: it can reach
 ## five over the five tasks while `Tuning.RESISTANCE_GOAL` is the four that qualify, and full heat is
 ## the qualification rather than the last errand.
 ##

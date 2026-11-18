@@ -37,7 +37,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	var run := city.run
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(run.header.run_seed))
+	RunCity.build(city, CityGenerator.generate(run.header().run_seed()))
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is
 	# about a run's whole chain — one-shots, successors, scars — which is a property of the
 	# fourteen *plans*, so it puts every day in the world at once. See `EventManager`.
@@ -76,7 +76,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	clock.setup(run)
 
 	var config := RunConfig.parse(PackedStringArray(), "", true)
-	var days := DayDirector.new(run.calendar, run.facts, run.attempt_spend, config)
+	var days := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend(), config)
 	days.use_the_world(null, resistance, clock)
 	days.use_worlds(StandingCity.new(city, player, baby))
 
@@ -87,14 +87,14 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	var days_with_a_crowd := 0
 
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		t.check(run.header.day == day,
-				"seed %d: the calendar is on day %d (%d)" % [seed_value, day, run.header.day])
+		t.check(run.header().day() == day,
+				"seed %d: the calendar is on day %d (%d)" % [seed_value, day, run.header().day()])
 		days.start(DaySpec.for_day(day, config.day_length_for(day)))
 		# Every area off today's tree is one she used earlier this act, the fenced park included —
 		# it is chosen from the areas handed over as used, so it holds no exemption here; a wiring
 		# that shut the wrong area fails on the day it does. Whether any day shuts one at all is
 		# counted apart and checked once the run is over.
-		var used := run.calendar.settled_this_act()
+		var used := run.calendar().settled_this_act()
 		for block: Vector2i in city.map.shut_calm():
 			t.check(used.has(block),
 					"seed %d day %d: calm area %s off the tree is one she used this act %s"
@@ -159,11 +159,11 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 		_settle(city, run, player, baby)
 		t.check(clock.is_running(), "seed %d day %d: the day is still under way when she settles"
 				% [seed_value, day])
-		t.check(run.settled.settled_in.has(day),
+		t.check(GivenRun.settled_on(run, day) != Vector2i(-1, -1),
 				"seed %d day %d: the calm she settled on is remembered" % [seed_value, day])
 
 		# The day was survivable, so bank the win and move on.
-		run.calendar.finish_day(GameEnums.DayResult.WON)
+		run.calendar().finish_day(GameEnums.DayResult.WON)
 
 	t.check(events_that_moved > 0,
 			"seed %d: the physics ticks of the played days moved the events that travel (%d)"
@@ -171,9 +171,9 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	t.check(contacts_offered >= Tuning.RESISTANCE_GOAL,
 			"seed %d offers at least %d contacts over a run (%d)"
 			% [seed_value, Tuning.RESISTANCE_GOAL, contacts_offered])
-	t.check(run.header.ending == GameEnums.Ending.GOOD,
+	t.check(run.header().ending() == GameEnums.Ending.GOOD,
 			"seed %d: doing every errand and the sabotage earns the good ending" % seed_value)
-	t.check(run.attempt_spend.scars.size() > 0,
+	t.check(run.attempt_spend().scars().size() > 0,
 			"seed %d: the run left marks on the city" % seed_value)
 	t.check(days_with_a_used_area_shut > 0,
 			"seed %d: some day takes a calm area she used off its route tree (%d days)"
@@ -199,7 +199,7 @@ func _touch(resistance: ResistanceDirector) -> void:
 ## as falling asleep does).
 func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 	var map := city.map
-	var used := run.calendar.settled_this_act()
+	var used := run.calendar().settled_this_act()
 	var home := map.home_world_position()
 	var best := Vector2.INF
 	for block: Vector2i in map.calm_blocks:

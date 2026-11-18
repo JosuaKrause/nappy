@@ -67,7 +67,6 @@ src/run/day_director.gd day
 src/run/day_director.gd events
 src/run/day_director.gd landed_by_group
 src/run/day_director.gd player
-src/run/run_state.gd settled
 src/ui/danger_edge.gd model
 src/ui/danger_edge.gd sees
 src/ui/danger_edge.gd view

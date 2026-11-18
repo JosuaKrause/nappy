@@ -85,8 +85,8 @@ func start_day(day: int, tree: RouteTree) -> void:
 	for plan in _walk.plans():
 		if plan.row().is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
-	_director.start_day(day, _walk.plans(), world.run.calendar.day_rng(day, "ahead"), _siting,
-			world.run.resistance.progress)
+	_director.start_day(day, _walk.plans(), world.run.calendar().day_rng(day, "ahead"), _siting,
+			world.run.resistance().progress())
 
 ## **The day's placement context for a row left for her walk to site** (`plan`), made the first
 ## time one needs it, over the day's tree (`start_day()`), and its first attempt's one-time scans
@@ -126,13 +126,13 @@ func start_a_given_walk(day: int) -> void:
 	_siting = null
 	if _director:
 		_director.start_day(day, _walk.plans(),
-				world.run.calendar.day_rng(day, "finale-ahead"))
+				world.run.calendar().day_rng(day, "finale-ahead"))
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
 ## `RETURNING`, for the day `day` at the run's heat.
 func owe_the_return(day: int) -> void:
 	if _director:
-		_director.owe_the_return(day, world.run.resistance.progress)
+		_director.owe_the_return(day, world.run.resistance().progress())
 
 ## Forgets the day's owed pursuer, the poster tear's pursuer and where the units were last asked
 ## for.
@@ -217,8 +217,8 @@ func send_a_pursuer() -> void:
 	if not def:
 		return
 	var her := world.player.global_position
-	var first_up := posmod(hash("%d:%d:tear-pursuer" % [world.run.header.run_seed,
-			world.run.posters.tears]), 2) == 0
+	var first_up := posmod(hash("%d:%d:tear-pursuer" % [world.run.header().run_seed(),
+			world.run.posters().tears_made()]), 2) == 0
 	var search := func(standing: Vector2, prefer: Vector2) -> SpawnSiting.Start:
 		return _where_the_sent_pursuer_starts(def, standing, prefer, first_up)
 	var arrive := func(place: Vector2, standing: Vector2, start: SpawnSiting.Start) -> void:
@@ -320,7 +320,7 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## close by" · inbox #503 in quiet-yak: "no events are dynamically created as you walk around -- if
 ## there is a mast queued up that will be the next event to be generated".)* So it is not put down
 ## where the director points: it is generated the way every row the day plans is, a `loudspeaker`
-## heated like the day's own (`world.run.resistance.progress`) laid by the day's siting
+## heated like the day's own (`world.run.resistance().progress()`) laid by the day's siting
 ## (`WalkSiting.lay_among()`) in the first free location that takes one of `offered` — the tiles the
 ## director found near her and out of her view — against the whole of the day's plan:
 ## `StreetInvalidation.room_around()`'s spacing, so it never stands inside anything else or inside
@@ -337,7 +337,7 @@ func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 	if offered.is_empty():
 		return null
 	var def := EventCatalogue.heated(EventCatalogue.mast(),
-			world.run.resistance.progress)
+			world.run.resistance().progress())
 	var siting := _siting
 	if not siting:
 		siting = _sitings.make(world.day, _day_tree, _ground_of_the_walk())
@@ -535,7 +535,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 		return []
 	if not _siting:
 		_siting = _a_siting(world.day, _day_tree)
-	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)
+	var rigged := _director.rig_her_route(ids, size, world.run.resistance().progress(), _siting)
 	for id in ids:
 		var row := _director.route_row(id)
 		if row and row.spawn_mode_on(world.day) == EventDef.SpawnMode.MAP \
@@ -732,7 +732,7 @@ func site_what_is_on_her_way(delta: float) -> void:
 ## does a fire do to a run".
 ##
 ## Called by `DayDirector.finish_day()` on a won day only. A lost day gives everything back
-## (`world.run.calendar.finish_day`), so lighting a fire on one would be handing the retry a
+## (`world.run.calendar().finish_day`), so lighting a fire on one would be handing the retry a
 ## shell it never earned.
 func light_what_she_never_met(at: Vector2) -> bool:
 	if not _siting:
@@ -742,7 +742,7 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		if not plan.row().is_a_set_piece_on_her_way() or plan.was_live or plan.spent:
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
-		var rng := world.run.calendar.day_rng(world.day, "dusk-fire")
+		var rng := world.run.calendar().day_rng(world.day, "dusk-fire")
 		if not _siting.lay_off_her_path(plan, at, rng):
 			continue
 		_streaming.stream_in(plan)
@@ -783,5 +783,5 @@ func _what_her_walk_waited_on() -> String:
 ## and IV return patrols (`owe_the_return()`). Answers how many events her route is now owed.
 func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
 	_director.start_recipe_route(marbles, pre_bag, owed, first_after,
-			world.run.resistance.progress)
+			world.run.resistance().progress())
 	return _director.owed() if _director else 0

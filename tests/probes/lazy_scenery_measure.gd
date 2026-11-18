@@ -64,11 +64,11 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 		_counterfactual(city, t)
 	var state := CityState.new()
 	for day: int in [1, 8, 14]:
-		own_run.header.day = day
+		own_run.header().set_day(day)
 		state.begin_day(map.block_plans, day)
 		city.set("spans", {})
 		started = Time.get_ticks_usec()
-		city.start_day(state, day, own_run.calendar.day_rng())
+		city.start_day(state, day, own_run.calendar().day_rng())
 		var day_spans: Dictionary = city.get("spans")
 		row = day_spans.duplicate()
 		row.merge({"seed": seed_value, "trial": trial, "stage": "day", "day": day,

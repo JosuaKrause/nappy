@@ -163,7 +163,7 @@ func rolls_a_pelican(def: EventDef) -> bool:
 	if not def.may_be_a_pelican:
 		return false
 	var drew: bool = _the_pelican_bag().draw()
-	world.run.pelican.draws += 1
+	world.run.pelican().count_a_draw()
 	match pelican_rig:
 		PelicanRig.ALWAYS:
 			return true
@@ -171,14 +171,14 @@ func rolls_a_pelican(def: EventDef) -> bool:
 			return false
 	return drew
 
-## The run's pelican bag with `world.run.pelican.draws` marbles already drawn, from the bag's own
+## The run's pelican bag with `world.run.pelican().draws()` marbles already drawn, from the bag's own
 ## stream off the run's seed, so a save, a lost day's give-back and a retry all draw the cyclists
 ## the run would have drawn. Rebuilt whenever the run, or the count a save or a lost day put back,
 ## disagrees with the bag.
 func _the_pelican_bag() -> MarbleBag:
-	var seed_value := hash("%d:%s" % [world.run.header.run_seed, PELICAN_STREAM])
+	var seed_value := hash("%d:%s" % [world.run.header().run_seed(), PELICAN_STREAM])
 	if _pelican_bag == null or _pelican_bag_seed != seed_value \
-			or _pelican_bag.drawn != world.run.pelican.draws:
+			or _pelican_bag.drawn != world.run.pelican().draws():
 		var marbles := []
 		marbles.resize(CYCLISTS_IN_THE_BAG)
 		marbles.fill(false)
@@ -186,7 +186,7 @@ func _the_pelican_bag() -> MarbleBag:
 			marbles.append(true)
 		_pelican_bag = MarbleBag.shared(marbles, seed_value)
 		_pelican_bag_seed = seed_value
-		_pelican_bag.skip(world.run.pelican.draws)
+		_pelican_bag.skip(world.run.pelican().draws())
 	return _pelican_bag
 
 ## Makes `instance` the pelican, as it is created: the picture (`EventInstance.is_pelican`) and the
@@ -272,8 +272,8 @@ func _mark_the_block(scar_id: String, at: Vector2) -> void:
 		return
 	if not world.city_map:
 		return
-	world.run.attempt_spend.city_state.apply_cause(world.city_map.block_plans, world.city_map.block_at(at),
-			cause as GameEnums.BlockCause, world.run.header.day)
+	world.run.attempt_spend().block_arcs().apply_cause(world.city_map.block_plans, world.city_map.block_at(at),
+			cause as GameEnums.BlockCause, world.run.header().day())
 
 ## Which scars move a block along its arc. Keyed by scar id rather than by event id, because
 ## what matters to a block is what was left behind, not which siren left it.
@@ -402,7 +402,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 	var along := Vector2(inward.y, inward.x)
 	var road_at := _where_the_summoned_row_stops(world.city_map, at)
 	var headings: Array[Vector2] = [along, -along]
-	if world.run.calendar.day_rng(world.day, "sighted:%s" % source.id).randf() < 0.5:
+	if world.run.calendar().day_rng(world.day, "sighted:%s" % source.id).randf() < 0.5:
 		headings.reverse()
 	var her := world.player.global_position if world.player else at
 	for heading in headings:

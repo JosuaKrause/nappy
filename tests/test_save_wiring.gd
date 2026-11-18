@@ -98,7 +98,7 @@ func _on_disk() -> Dictionary:
 	var reader := RunState.new()
 	var resumed := _save.try_resume(reader)
 	if not resumed.is_empty():
-		resumed["nerves"] = reader.header.nerves
+		resumed["nerves"] = reader.header().nerves()
 	return resumed
 
 var _operation := 5000
@@ -217,13 +217,13 @@ func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t: TestRunner) ->
 	await Boot.press_title(t, main, "Tap")
 	var pause := Boot.pause(main)
 	var window := main.get_node("ReturnWindow") as ReturnWindow
-	var day := run.header.day
-	var nerves := run.header.nerves
+	var day := run.header().day()
+	var nerves := run.header().nerves()
 	t.get_tree().paused = false
 
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(pause.is_open(), "focus loss still opens the pause, exactly as before this milestone")
-	t.check(run.header.day == day and run.header.nerves == nerves,
+	t.check(run.header().day() == day and run.header().nerves() == nerves,
 			"and neither the day nor the nerve count moved — a focus loss alone never spends one")
 	pause.close()
 
@@ -398,8 +398,8 @@ func _test_a_game_closed_between_days_writes_nothing_at_opening(t: TestRunner) -
 	_begin()
 	var closed := RunState.new()
 	closed.start_run(348)
-	closed.header.day = 4
-	closed.calendar.begin_day()
+	closed.header().set_day(4)
+	closed.calendar().begin_day()
 	t.check(_saved(closed, false), "the save the end-of-day message wrote")
 	t.check(_on_disk().get("day_under_way") == false, "the load finds the day not under way")
 	var before := FileAccess.get_file_as_string(_SCRATCH_PATH)
@@ -429,9 +429,9 @@ func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t: T
 	_begin()
 	var run := RunState.new()
 	run.start_run(347)
-	run.header.day = 4
-	run.header.nerves = 5
-	run.calendar.begin_day()
+	run.header().set_day(4)
+	run.header().set_nerves(5)
+	run.calendar().begin_day()
 	t.check(_saved(run, true), "the original mid-day save")
 	t.check(_on_disk().get("day_under_way") == true, "the load finds a day under way")
 
@@ -439,7 +439,7 @@ func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t: T
 	var played := RunState.new()
 	var home := Boot.home_playing(t, played)
 	var main := await _boot(t, _windowed(), Calls.new(), home)
-	t.check(played.header.nerves == 4, "the boot charges its one nerve")
+	t.check(played.header().nerves() == 4, "the boot charges its one nerve")
 	var after := _on_disk()
 	t.check(after.get("day_under_way") == false,
 			"the boot write says nothing has been played in the retry yet")
@@ -460,8 +460,8 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t: TestRunner) -> v
 	_begin()
 	var run := RunState.new()
 	run.start_run(234)
-	run.header.day = 7
-	run.header.nerves = 5
+	run.header().set_day(7)
+	run.header().set_nerves(5)
 	_saved(run, false)
 	var main := await _boot(t, _windowed(), Calls.new())
 
@@ -512,10 +512,10 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t: TestRunner) -> void:
 	_begin()
 	var closed := RunState.new()
 	closed.start_run(236)
-	closed.calendar.choose_mode(true)
-	closed.header.day = 5
-	closed.header.nerves = 1
-	closed.calendar.begin_day()
+	closed.calendar().choose_mode(true)
+	closed.header().set_day(5)
+	closed.header().set_nerves(1)
+	closed.calendar().begin_day()
 	t.check(_saved(closed, true), "the hard run's save, closed with its day under way, is on disk")
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
@@ -524,13 +524,13 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t: TestRunner) -> void:
 	var own := _one(main, "SaveIndicator") as SaveIndicator
 	t.check(own != null and own.is_showing(),
 			"the symbol is raised before the resumed run's charge, so the deletion it makes is announced")
-	t.check(run.header.ending != GameEnums.Ending.NONE and not FileAccess.file_exists(_SCRATCH_PATH),
+	t.check(run.header().ending() != GameEnums.Ending.NONE and not FileAccess.file_exists(_SCRATCH_PATH),
 			"the charge spent the last nerve, ended the run and deleted the save")
 	await Boot.press_title(t, main, "Tap")
 	var summary := Boot.summary(main)
 	t.check(summary.is_showing()
 			and (summary.get_node("Root/Center/Lines/Title") as Label).text
-			== SummaryModel.ending(run, run.header.ending).title_text(),
+			== SummaryModel.ending(run, run.header().ending()).title_text(),
 			"the ending is shown rather than the day brief, so there is no day brief for a later"
 			+ " continue to engage")
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "a run that has ended writes nothing, on this path either")
@@ -566,12 +566,12 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t: TestRunner
 
 	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
 	run.start_run(_SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = true
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	run.resistance().record_the_sabotage()
 	Boot.day(main).day_finished.emit(GameEnums.DayResult.WON)
 	t.check(Boot.summary(main).is_showing()
-			and run.facts.escape_section == DaySpec.Section.BUILDING,
+			and run.facts().escape_section() == DaySpec.Section.BUILDING,
 			"a won day 14 puts day 14's summary up with the run in the building")
 	var day_fourteen := _next_operation()
 	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))

@@ -23,7 +23,7 @@ func _ready() -> void:
 		return
 	var setup: Dictionary = loaded_data.setup
 	var run := run_of(main)
-	var act := Tuning.act_for_day(run.header.day)
+	var act := Tuning.act_for_day(run.header().day())
 	var background: Dictionary = setup.get("background", {})
 	var multiplier: float = background.get("walker_multiplier", 1)
 	var pins: Array = setup.get("actors", [])
@@ -81,7 +81,7 @@ func _ready() -> void:
 	if setup.has("posters"):
 		for entry: Dictionary in setup.posters:
 			var tile := city.map.world_to_tile(Vector2(entry.at[0], entry.at[1]))
-			if not RunCity.poster_walls(city).fronts().has(tile) or run.posters.cells[tile].kind \
+			if not RunCity.poster_walls(city).fronts().has(tile) or run.posters().cells()[tile].kind \
 					!= PosterArt.Kind[str(entry.kind).to_upper()]:
 				fail("authored poster is not a real eligible wall cell")
 				return

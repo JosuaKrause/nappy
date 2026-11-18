@@ -363,7 +363,7 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> vo
 ## unguarded, since its trap comes to her once she has handed the key over.
 func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	for day: int in [9, 13, Tuning.RUN_LENGTH_DAYS]:
 		var first := _attempt_the_day(t, day, _city.map.doorstep_world_position(), false)
 		var retry := _attempt_the_day(t, day, first[0], true)
@@ -391,13 +391,13 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t: TestRunner) 
 ## (`EventCatalogue.task_guard()`).
 func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 	var run: RunState = _city.run
-	run.resistance.completed_steps = _completed_through(2 * (day - 6)) \
-			if day < Tuning.RUN_LENGTH_DAYS else _all_but_the_finale()
+	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)) \
+			if day < Tuning.RUN_LENGTH_DAYS else _all_but_the_finale())
 	# A lost day gives back what the attempt recorded (`RunCalendar.begin_day()`), the alley it read
 	# its mark in included.
-	run.facts.completed_resistance_alley_tiles = []
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	GivenRun.alley_tiles(run, [])
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -481,7 +481,7 @@ func _test_the_guard_is_seeded(t: TestRunner) -> void:
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 
 	for day: int in [6, 7, 8, 9]:
-		run.resistance.completed_steps = _completed_through(2 * (day - 6))
+		GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
 		var director := _director(t)
 		# The robber this day's mark set, not a proximity search over the street: this loop never
 		# retires a day's guard before the next iteration spawns another, so a search by distance
@@ -533,7 +533,7 @@ func _test_a_perform_step_expires_when_its_rider_is_gone(t: TestRunner) -> void:
 	RunCity.events(_city).retire(rider)
 	director.tick(0.1)
 	t.check(director.current_step() == null, "and it is gone once the rider is")
-	t.check(2 in run.resistance.failed_steps, "recorded as failed for the run")
+	t.check(2 in run.resistance().failed_steps(), "recorded as failed for the run")
 	director.free()
 
 ## No task built this slice carries a deadline — the two that do, warning the neighbor and
@@ -562,11 +562,11 @@ func _test_a_timed_step_expires(t: TestRunner) -> void:
 
 	director.tick(100.0 * timed.deadline_fraction * 0.5)
 	t.check(director.current_step() == timed, "on offer before the deadline")
-	t.check(timed.index not in run.resistance.failed_steps, "nothing has failed yet")
+	t.check(timed.index not in run.resistance().failed_steps(), "nothing has failed yet")
 
 	director.tick(100.0 * timed.deadline_fraction)
 	t.check(director.current_step() == null, "past the deadline it is gone")
-	t.check(timed.index in run.resistance.failed_steps, "and recorded as failed for the run")
+	t.check(timed.index in run.resistance().failed_steps(), "and recorded as failed for the run")
 	director.free()
 
 ## Step 4's cost is deferred and total rather than local: picking the package up does not cost the
@@ -581,7 +581,7 @@ func _test_completing_the_package_makes_the_pram_heavier(t: TestRunner) -> void:
 	director.start_day(7, _rng(7, "resistance"), 300.0)
 	_read_the_mark(director)
 	director.contact().complete_now()
-	t.check(run.resistance.carrying_package, "picking up the package sets the flag")
+	t.check(run.resistance().is_carrying_package(), "picking up the package sets the flag")
 
 	var after := _city.decay_multiplier(somewhere)
 	t.close_to(after, before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
@@ -590,10 +590,10 @@ func _test_completing_the_package_makes_the_pram_heavier(t: TestRunner) -> void:
 
 func _test_starting_a_day_resets_the_package_flag(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
-	run.resistance.carrying_package = true
+	run.resistance().pick_up_package()
 	var director := _director(t)
 	director.start_day(1, _rng(1, "resistance"), 300.0)
-	t.check(not run.resistance.carrying_package,
+	t.check(not run.resistance().is_carrying_package(),
 			"a fresh attempt at a day has not picked it up yet")
 	director.free()
 
@@ -761,10 +761,10 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t: TestRunner) ->
 ## two-beat design had.
 func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
-	run.header.run_seed = SEED
-	run.header.day = 6
-	run.header.nerves = Tuning.STARTING_NERVES
-	run.calendar.begin_day()
+	run.header().use_seed(SEED)
+	run.header().set_day(6)
+	run.header().set_nerves(Tuning.STARTING_NERVES)
+	run.calendar().begin_day()
 
 	var attempt := _director(t)
 	attempt.start_day(6, _rng(6, "resistance"), 300.0)
@@ -782,12 +782,12 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: Test
 			"and sends him away once he has lingered that long")
 	attempt.free()
 
-	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING),
+	t.check(run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING),
 			"losing the day continues the run")
-	t.check(1 not in run.resistance.completed_steps
-			and 2 not in run.resistance.completed_steps,
+	t.check(1 not in run.resistance().completed_steps()
+			and 2 not in run.resistance().completed_steps(),
 			"and gives both halves of the day's task back")
-	t.check(run.header.day == 6, "and the retry is the same day")
+	t.check(run.header().day() == 6, "and the retry is the same day")
 
 	var retry := _director(t)
 	retry.start_day(6, _rng(6, "resistance"), 300.0)
@@ -806,8 +806,8 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: Test
 ## edge like any other row's, so what stops is everywhere a mast actually stands, not the whole map.
 func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
-	run.resistance.completed_steps = _completed_through(8)
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	GivenRun.completed_steps(run, _completed_through(8))
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	t.check(run.sabotage_available(), "the finale is on offer")
 
 	# A live mast, the way day 5 onwards leaves one — planned for real, at one of
@@ -855,7 +855,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	if finale:
 		director.contact().complete_now()
 
-	t.check(run.resistance.sabotage_done, "completing it does the sabotage")
+	t.check(run.resistance().sabotage_went_through(), "completing it does the sabotage")
 	t.check(quiet.is_empty() and not mast.silenced,
 			"and the masts are still speaking at the door: they stop with the power")
 	var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))

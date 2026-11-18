@@ -36,7 +36,7 @@ class Rig:
 		layer.add_child(label)
 		var config := RunConfig.parse(PackedStringArray(), "", debug_build)
 		session.setup(run_log, config, EventBus, RunFlow.new(), run, CityState.new())
-		readout.setup(config, label, layer, run.header, session, Callable())
+		readout.setup(config, label, layer, run.header(), session, Callable())
 		t.add_child(readout)
 
 	## The run log's lines that begin a picture or a burst the key asked for.

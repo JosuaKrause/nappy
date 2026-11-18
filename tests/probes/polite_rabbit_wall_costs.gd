@@ -58,7 +58,7 @@ func run(t: TestRunner) -> void:
 		t.add_child(city)
 		RunCity.build(city, CityGenerator.generate(city_seed))
 		for day in DAYS:
-			city.run.header.day = day
+			city.run.header().set_day(day)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("polite-rabbit-walls:%d:%d" % [city_seed, day])
 			city.start_day(CityState.new(), day, rng)

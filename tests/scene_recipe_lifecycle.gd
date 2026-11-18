@@ -120,8 +120,8 @@ func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneR
 			"%s starts her where the recipe puts her" % label)
 	var setup: Dictionary = recipe.data.get("setup", {})
 	var authored_day: Variant = setup.get("day")
-	t.check(authored_day == null or run.header.day == int(authored_day),
-			"%s starts the run on its authored day (day %d)" % [label, run.header.day])
+	t.check(authored_day == null or run.header().day() == int(authored_day),
+			"%s starts the run on its authored day (day %d)" % [label, run.header().day()])
 	t.check(_quits.is_empty() and not t.get_tree().paused,
 			"%s boots without ending the game, running" % label)
 	_meters_hold(t, booted.main, recipe, label)
@@ -130,8 +130,8 @@ func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneR
 		for entry: Dictionary in entries:
 			t.check(recipe.named.has(entry.name), "%s installs the authored %s %s"
 					% [label, collection, entry.name])
-	return {"actors": recipe.manifest.initial_actors, "day": run.header.day,
-			"events": recipe.manifest.get("installed_events", []), "seed": run.header.run_seed}
+	return {"actors": recipe.manifest.initial_actors, "day": run.header().day(),
+			"events": recipe.manifest.get("installed_events", []), "seed": run.header().run_seed()}
 
 ## Her meters are what `setup.player` says, moved by no more than the ticks the scene has counted can
 ## move them: sleepiness at the fastest it fills (a one-block calm area, `Tuning.sleepiness_gain_calm()`)
@@ -223,15 +223,15 @@ func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 ## Free play, left a second time through a won day: the day's win applies the normal progression,
 ## and the summary's continue reloads.
 func _win_the_day(t: TestRunner, main: Node, run: RunState, reloads: Array[int], label: String) -> void:
-	var authored_day := run.header.day
+	var authored_day := run.header().day()
 	if authored_day == Tuning.RUN_LENGTH_DAYS:
 		# The door touched, so the run has earned the good ending: outside a recipe that hands the
 		# won day over to the escape, and the reload would boot it with no director.
-		run.resistance.sabotage_done = true
+		run.resistance().record_the_sabotage()
 	Boot.day(main).day_finished.emit(GameEnums.DayResult.WON)
 	# The last night's win ends the run on its ending rather than moving on to a next day.
-	var progressed := run.header.ending != GameEnums.Ending.NONE \
-			if authored_day == Tuning.RUN_LENGTH_DAYS else run.header.day == authored_day + 1
+	var progressed := run.header().ending() != GameEnums.Ending.NONE \
+			if authored_day == Tuning.RUN_LENGTH_DAYS else run.header().day() == authored_day + 1
 	t.check(progressed, "%s: winning the recipe day applies normal progression" % label)
 	await Boot.press_continue(t, main)
 	t.check(reloads.size() == 1, "%s: the summary's continue reloads the authored setup" % label)

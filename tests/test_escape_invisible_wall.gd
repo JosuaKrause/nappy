@@ -35,8 +35,8 @@ const WHERE_SHE_STOOD := Vector2i(74, 27)
 func run(t: TestRunner) -> void:
 	var seat := Seat.new(t, func(fresh: RunState) -> void:
 			fresh.start_run(SEED)
-			fresh.header.day = DAY
-			fresh.facts.escape_section = DaySpec.Section.BUILDING)
+			fresh.header().set_day(DAY)
+			fresh.facts().set_escape_section(DaySpec.Section.BUILDING))
 	# Handed the watch's log: a boot points the sitting's library at the log it writes.
 	var pages := PageLog.new(seat.sitting.atlas)
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], pages.boot_log())

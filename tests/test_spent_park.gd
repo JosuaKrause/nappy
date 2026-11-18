@@ -38,8 +38,8 @@ func run(t: TestRunner) -> void:
 # ------------------------------------------------------------------------ setup ---
 
 ## Repaints `map` for `day` with `used` handed over the way `DayDirector.start()` hands
-## `RunState.calendar.settled_this_act()` over, and `fenced`/`fenced_act` the way it hands over
-## `RunState.facts.fenced_park`/`fenced_park_act` — both defaulting to "nothing fenced yet", the shape
+## `RunState.calendar().settled_this_act()` over, and `fenced`/`fenced_act` the way it hands over
+## `RunState.facts().fenced_park()`/`fenced_park_act` — both defaulting to "nothing fenced yet", the shape
 ## every test but the ones about the fence itself wants. Returns the pair to feed the same map's
 ## next call, the way `DayDirector.start()` reads them back into the run for tomorrow, so a fence
 ## chosen on one day of the sweep carries into the next rather than being re-decided.
@@ -53,10 +53,9 @@ func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 	# Exercise the director's actual read-back policy on a run of its own, thrown away after.
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
-	run.facts.fenced_park = fenced
-	run.facts.fenced_park_act = fenced_act
-	run.facts.remember_fenced_park(map.fenced_park, map.fenced_park_act)
-	var remembered := [run.facts.fenced_park, run.facts.fenced_park_act]
+	GivenRun.fenced_park(run, fenced, fenced_act)
+	run.facts().remember_fenced_park(map.fenced_park, map.fenced_park_act)
+	var remembered := [run.facts().fenced_park(), run.facts().fenced_park_act()]
 	return remembered
 
 ## The calm areas today's repaint leaves calm with nothing handed over.
@@ -172,7 +171,7 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> vo
 				# The fenced park stays off the tree by carrying over from the day it was chosen
 				# (`CityMap._shut_the_spent_calm()`), not by being in every later day's own `used` —
 				# once fenced she cannot settle there again, but a day she did before it was fenced
-				# is still one `RunState.settled.settled_in` remembers. Every other shut area is
+				# is still one the run remembers (`SettledState`). Every other shut area is
 				# recomputed fresh from `used` each day, so it has to be in it.
 				t.check(is_fenced or block in used,
 						"seed %d day %d takes %s off the tree, which she used"
@@ -723,7 +722,7 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[Roa
 	var day := 9
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
-	city.start_recipe_day(state, day, run.calendar.day_rng(day, "closures"))
+	city.start_recipe_day(state, day, run.calendar().day_rng(day, "closures"))
 	var shared_panel_posts := 0
 	var short_end := short_run.posts(city.map).back() as Vector2
 	var short_end_checked := false

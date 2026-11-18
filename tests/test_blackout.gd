@@ -50,7 +50,7 @@ func run(t: TestRunner) -> void:
 ## bus the way `SimulationBuilder` hands them, and in the tree.
 func _begin(t: TestRunner, from_the_start := false) -> void:
 	_resistance = ResistanceRunState.new()
-	_resistance.sabotage_done = false
+	_resistance.reset()
 	_map = CityMap.new()
 	_map.record_power_station(STATION, Vector3i(-1, -1, -1), STATION_DOOR)
 	_signals = TrafficSignals.new(null)
@@ -94,7 +94,7 @@ func _end() -> void:
 ## (`ResistanceDirector`, where `tests/test_resistance_*` hold how). The blackout is stated over the
 ## flag and never over how it was set.
 func _do_the_sabotage() -> void:
-	_resistance.sabotage_done = true
+	_resistance.record_the_sabotage()
 
 ## The city after the sabotage is done and she has walked far enough south of the station.
 func _go_dark(t: TestRunner) -> void:

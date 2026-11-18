@@ -34,12 +34,12 @@ func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 		_build_city(t)
 		var run := _city.run
 		var finale := day == finale_day
-		run.header.day = day
-		run.resistance.completed_steps = _all_but_the_finale() if finale \
-				else _completed_before(day)
-		run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-		var state := CityState.new()
-		run.attempt_spend.city_state = state
+		run.header().set_day(day)
+		GivenRun.completed_steps(run, _all_but_the_finale() if finale \
+				else _completed_before(day))
+		run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
+		var state := run.attempt_spend().block_arcs()
+		state.reset()
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
 		RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())

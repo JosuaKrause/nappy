@@ -135,7 +135,7 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	var streaming := manager.streaming
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def.aftermath.scar != "", "the fire leaves a scar")
-	t.check(manager.world.run.attempt_spend.scars.is_empty(), "and the run starts with none")
+	t.check(manager.world.run.attempt_spend().scars().is_empty(), "and the run starts with none")
 	var at := Vector2(6000.0, 6000.0)
 	var plan := EventPlan.new(def, at)
 	var plans: Array[EventPlan] = [plan]
@@ -145,22 +145,22 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	for _i in 3:
 		streaming.stream_around(at)
 		streaming.stream_around(far)
-	var added := manager.world.run.attempt_spend.scars.size()
+	var added := manager.world.run.attempt_spend().scars().size()
 	t.check(added == 1, "three times in and out records the fire's scar once (%d)" % added)
 	_free_manager(manager)
 
 func _test_the_pelican_bag_is_the_handed_runs(t: TestRunner) -> void:
 	var manager := EventManager.new()
 	var run := RunState.new()
-	run.header.run_seed = 4242
+	run.header().use_seed(4242)
 	manager.use_run(run)
 	var spawner := manager.spawner
 	var cyclist := EventCatalogue.by_id("cyclist")
 	for _i in 5:
 		spawner.rolls_a_pelican(cyclist)
-	t.check(run.pelican.draws == 5, "five cyclists draw five marbles from the handed run's bag")
+	GivenRun.pelican_draws(t.check(run, = 5, "five cyclists draw five marbles from the handed run's bag"))
 	spawner.rolls_a_pelican(EventCatalogue.by_id("loose_dog"))
-	t.check(run.pelican.draws == 5, "a dog draws nothing")
+	GivenRun.pelican_draws(t.check(run, = 5, "a dog draws nothing"))
 	manager.free()
 
 func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> void:

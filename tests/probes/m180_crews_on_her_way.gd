@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 	t.check(true, "m180_crews_on_her_way probe ran")
 
 func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: String) -> void:
-	city.run.posters.reset()
+	city.run.posters().reset()
 	var tree := RouteTree.for_day(city.map, day)
 	var no_closures: Array[RoadClosure] = []
 	city.streets().begin_day(tree, null, no_closures)
@@ -85,7 +85,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 ## Every cell with a sheet on it, however it got there.
 func _pasted_cells(city: City) -> int:
 	var count := 0
-	for tile: Vector2i in city.run.posters.cells:
+	for tile: Vector2i in city.run.posters().cells():
 		count += 1
 	return count
 

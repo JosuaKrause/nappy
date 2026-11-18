@@ -218,7 +218,7 @@ class Rig:
 	func _init(t: TestRunner, config: RunConfig) -> void:
 		t.add_child(layer)
 		layer.add_child(label)
-		readout.setup(config, label, layer, run.header, null, Callable())
+		readout.setup(config, label, layer, run.header(), null, Callable())
 		readout.watch(player, null, null)
 		t.add_child(readout)
 		readout.show_the_world(null, null, world, null, null)

@@ -219,9 +219,9 @@ func _check_a_task_stands_unguarded_until_it_is_handed_over(t: TestRunner, day: 
 ## task's roadblock is one the day placed, or one of the day's events swapped for one.
 func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
-	run.header.day = 13
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	run.header().set_day(13)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(_city.map.block_plans, 13)
 	_city.start_day(state, 13, _rng(13, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(13), _rng(13, "events"), [],
@@ -325,13 +325,13 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t: TestRunner) ->
 ## guard the mark set or null]`.
 func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	var run := _build_city_in_a_new_run(t)
-	run.header.day = day
+	run.header().set_day(day)
 	var finale := day == Tuning.RUN_LENGTH_DAYS
-	run.resistance.completed_steps = _all_but_the_finale() if finale \
-			else _completed_through(2 * (day - 6))
-	run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	GivenRun.completed_steps(run, _all_but_the_finale() if finale \
+			else _completed_through(2 * (day - 6)))
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())

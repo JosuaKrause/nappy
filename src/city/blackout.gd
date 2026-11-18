@@ -137,4 +137,4 @@ func restore() -> void:
 	_signals.powered = true
 
 func _sabotaged() -> bool:
-	return _resistance.sabotage_done or _forced
+	return _resistance.sabotage_went_through() or _forced

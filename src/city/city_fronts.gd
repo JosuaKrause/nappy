@@ -49,7 +49,7 @@ static func over(buildings: Array[Building], home_door: City.HomeDoor, door_x_ra
 ## purpose above too — the same look for a different, per-building reason.
 ##
 ## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
-## about the run (`run.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
+## about the run (`run.attempt_spend().scars()`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall the city actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
 ## tile one step north of the scar (`Vector2i.UP`, the same direction `RowGround.
@@ -69,7 +69,7 @@ static func over(buildings: Array[Building], home_door: City.HomeDoor, door_x_ra
 func mark_the_burnt_frontage() -> void:
 	if _run == null:
 		return
-	for scar_at in _run.attempt_spend.scar_positions(City.BURNT_FRONTAGE_SCAR):
+	for scar_at in _run.attempt_spend().scar_positions(City.BURNT_FRONTAGE_SCAR):
 		var wall_tile := _map.world_to_tile(scar_at) + Vector2i.UP
 		for building in _buildings:
 			if building.lot.has_point(wall_tile):

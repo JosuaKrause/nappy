@@ -31,7 +31,7 @@ func _test_the_raid_seals_her_street_door(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
 	var run_state := RunState.new()
 	run_state.start_run(RUN_SEED)
-	run_state.header.day = ResistanceHappenings.NEIGHBOR_DAY
+	run_state.header().set_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var events := FakeEventManager.new()
 	var fronts := FakeCityFronts.new()
 	var happenings := ResistanceHappenings.new()
@@ -42,7 +42,7 @@ func _test_the_raid_seals_her_street_door(t: TestRunner) -> void:
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(fronts.seals() == 1, "and sealed the moment the raid arrives, out of her sight")
 	var sealed := false
-	for scar in run_state.attempt_spend.scars:
+	for scar in run_state.attempt_spend().scars():
 		if String(scar["id"]) == City.SEALED_DOOR_SCAR:
 			sealed = true
 	t.check(sealed, "which leaves a scar for every later day to read")
@@ -56,9 +56,9 @@ func _test_the_market_goes_where_the_route_tree_says_she_is_heading(t: TestRunne
 	var map := CityGenerator.generate(SEED)
 	var run_state := RunState.new()
 	run_state.start_run(RUN_SEED)
-	run_state.header.day = ResistanceHappenings.MARKET_DAY
-	var state := CityState.new()
-	run_state.attempt_spend.city_state = state
+	run_state.header().set_day(ResistanceHappenings.MARKET_DAY)
+	var state := run_state.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(map.block_plans, ResistanceHappenings.MARKET_DAY)
 	var door := map.doorstep_world_position()
 	var out_of_sight: Array[Vector2i] = []

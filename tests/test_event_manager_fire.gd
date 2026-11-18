@@ -82,7 +82,7 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 			% [plan.position.distance_to(doorstep),
 			WalkSiting.DUSK_CLEAR_OF_HER]) + "nowhere she could have seen it happen")
 	var scar_here := false
-	for scar in _city.run.attempt_spend.scars:
+	for scar in _city.run.attempt_spend().scars():
 		scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
 				and Vector2(scar["position"]).distance_to(plan.position) < 1.0)
 	t.check(scar_here, "and the shell the run keeps is standing where it burned")
@@ -419,7 +419,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 	if plan.was_live:
 		var burning_at := plan.position
 		var scar_here := false
-		for scar in _city.run.attempt_spend.scars:
+		for scar in _city.run.attempt_spend().scars():
 			scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
 					and Vector2(scar["position"]).distance_to(burning_at) < 1.0)
 		t.check(scar_here, "and the scar the run keeps is where it actually burned")

@@ -12,7 +12,7 @@ func run(_t: TestRunner) -> void:
 	var own_run := RunState.new()
 	for day: int in [1, 13]:
 		own_run.start_run(11)
-		own_run.header.day = day
+		own_run.header().set_day(day)
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -45,12 +45,12 @@ func run(_t: TestRunner) -> void:
 			accepted += 1
 			if accepted >= 5:
 				break
-	own_run.header.day = 14
+	own_run.header().set_day(14)
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 14)
 	map.repaint(state)
 	var finale := FinalePlanner.route(map)
-	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar.day_rng(14, "finale"), _city_spec(),
+	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar().day_rng(14, "finale"), _city_spec(),
 			GamePlanBuilder.over(map))
 	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))

@@ -281,7 +281,7 @@ func _marks_guard_feet() -> Vector2:
 ## milliseconds; the city is the test's, freed by the next build or `_free_city()`.
 func _relocations_over_the_marks(t: TestRunner, seed_value: int, her_at: Callable) -> Array[Dictionary]:
 	var run := _build_city_in_a_new_run(t, seed_value)
-	run.resistance.completed_steps = _completed_through(2)
+	GivenRun.completed_steps(run, _completed_through(2))
 	_look_at(Rect2())
 	var director := _director(t)
 	director.start_day(7, _rng(7, "resistance", seed_value), 300.0)
@@ -562,10 +562,10 @@ func _the_way_has_drawn(tile: Vector2i) -> bool:
 func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
 		trace_into: Array[String] = []) -> ResistanceDirector:
 	var run: RunState = _city.run
-	run.resistance.completed_steps = _completed_through(2 * (day - 6))
-	run.facts.completed_resistance_alley_tiles = []
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
+	GivenRun.alley_tiles(run, [])
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
