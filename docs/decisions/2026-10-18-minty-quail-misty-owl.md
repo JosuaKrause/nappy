@@ -11,7 +11,7 @@ they read went private.
 `plans_by_block()`, `fenced_park_block()` and the rest); the map gains readers and writers for the
 region planner (`square_lots()`, `region_of_node()`, `region_has_calm()`, `wall_stands_at_a()`,
 `record_junction_regions()`, `record_calm_regions()`, `record_wall_ends()`), the generator
-`place_home()`, the day director `fenced_park_act()`, and `soft_sealed_tiles()` is a method. Ten
+`record_home_block()`, the day director `fenced_park_act()`, and `soft_sealed_tiles()` is a method. Ten
 fields are private (`seed_used`, `home_block`, `precinct_spans`, `alley_rects`, `big_buildings`,
 `zone_rects`, `fenced_park`, `fenced_park_act`, `region_of_junction`, `region_has_calm`), and
 `BlockedLayer.replace_soft_sealed_tiles()`, which nothing called, is deleted. `tools/field_reads.txt`
