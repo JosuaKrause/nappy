@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 			Vector2(_city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)):
 		_ground.prepare(key)
 	var tree := _city.streets().route_tree()
-	t.check(tree != null and not tree.branches.is_empty(), "real daily boot supplies route options")
+	t.check(tree != null and not tree.branches().is_empty(), "real daily boot supplies route options")
 	var home_tiles := _tiles_for_nodes(tree, tree._home)
 	home_tiles[_city.map.world_to_tile(_city.map.doorstep_world_position())] = true
 	var network_tiles := _tiles_for_nodes(tree, tree._colours)
@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 	offered.merge(home_tiles)
 	var routes: Array[Dictionary] = []
 	var row := {"seed": _city.map.city_seed(), "day": seat.run.header().day(),
-		"branches": tree.branches.size(), "generated_nodes": tree._colours.size(),
+		"branches": tree.branches().size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),
 		"closures": _city.streets().closures().size(), "closed_map_tiles": _city.map.closed_tiles.size(),
@@ -53,8 +53,8 @@ func run(t: TestRunner) -> void:
 	for area in areas:
 		area_by_block[area.block] = area
 	var all_options := home_tiles.duplicate()
-	for index in tree.branches.size():
-		var branch := tree.branches[index]
+	for index in tree.branches().size():
+		var branch := tree.branches()[index]
 		for option in branch.routes.size():
 			var cells: Array = branch.routes[option]
 			var nodes := {}
@@ -74,7 +74,7 @@ func run(t: TestRunner) -> void:
 				"coverage_with_home_and_calm_entry": _coverage(tiles, 0)})
 	lines.free()
 	row["all_options_and_home_and_calm_entries"] = _coverage(all_options, 0)
-	t.check(routes.size() >= tree.branches.size(), "every branch supplies a measured option")
+	t.check(routes.size() >= tree.branches().size(), "every branch supplies a measured option")
 	t.check(network_closed == 0, "daily closures leave sampled generated network tiles open")
 	t.check(row.network_and_home.ground_cells > 0, "generated-route coverage is nonempty")
 	print("LAZY_ROUTES " + JSON.stringify(row))

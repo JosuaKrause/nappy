@@ -133,9 +133,14 @@ Left, each its own design question:
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
-  director and the rigs. So do `MoveProposal` and `GroundShape`. *Read as* (the orchestrator's reading):
-  the map's are converted with whatever pass gives the blocked tiles an owner of their own, and the
-  rest with their own classes' passes.
+  director and the rigs. *Read as* (the orchestrator's reading): they are converted with whatever
+  pass gives the blocked tiles an owner of their own. The fields the events read of
+  `MoveProposal` (`to`, `radius`, `parked`, `open`, `stood_round`), `GroundShape` (`kind`,
+  `half_length`, `radius`, `half_extents`), `Stroller` (`carrying`, `facing`, `outright_moves`) and
+  `VisibleView` (`view`, `controls`) stay public and go private with the events' interface
+  (`event-interface.md`); every reader under `src/` outside the events asks their methods.
+  `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask
+  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public too.
 - **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the
   screen-edge badge) are handed in through `use_atlas()` and read by their own files and
   `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's name (`"atlas" in

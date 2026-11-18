@@ -245,7 +245,7 @@ func _test_the_pram_has_its_own_trailing_body(t: TestRunner) -> void:
 			"the real stroller scene carries a second collision shape for the pram")
 	var circle := pram_collision.shape as CircleShape2D
 	t.check(circle != null and is_equal_approx(circle.radius, Stroller.PRAM_BODY_RADIUS),
-			("sized to PRAM_BODY_RADIUS, smaller than the 12px pram_shape still draws the shadow "
+			("sized to PRAM_BODY_RADIUS, smaller than the 12px `_pram_shape` still draws the shadow "
 			+ "with (%.1f in the scene, %.1f pinned)")
 			% [circle.radius if circle else -1.0, Stroller.PRAM_BODY_RADIUS])
 	t.check(not pram_collision.disabled, "and enabled while she is pushing the pram")

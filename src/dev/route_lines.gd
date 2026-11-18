@@ -95,7 +95,7 @@ func _build_routes(tree: RouteTree) -> Array[PackedVector2Array]:
 	var area_by_block := {}
 	for area in areas:
 		area_by_block[area.block] = area
-	for branch in tree.branches:
+	for branch in tree.branches():
 		var area: ClosurePlanner.CalmArea = area_by_block.get(branch.area)
 		for route: Array in branch.routes:
 			if route.is_empty():

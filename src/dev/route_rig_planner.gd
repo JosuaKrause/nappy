@@ -741,14 +741,14 @@ func _tiles_near_pieces(centres: PackedVector2Array, shapes: Array[GroundShape],
 	var near := {}
 	for k in centres.size():
 		var shape := shapes[k]
-		var angle := axis.angle() if shape.half_length > 0.0 else 0.0
+		var angle := axis.angle() if shape.spine_half_length() > 0.0 else 0.0
 		var centre_tile := _map.world_to_tile(centres[k])
 		var span := ceili((shape.reach() + margin) / Tuning.TILE_SIZE) + 1
 		for dy in range(-span, span + 1):
 			for dx in range(-span, span + 1):
 				var tile := centre_tile + Vector2i(dx, dy)
 				var local := (_map.tile_to_world(tile) - centres[k]).rotated(-angle)
-				if shape.distance_to_spine(local) - shape.radius < margin:
+				if shape.distance_to_spine(local) - shape.rounding_radius() < margin:
 					near[tile] = true
 	return near
 
@@ -856,7 +856,7 @@ func _post_tiles() -> Dictionary:
 		return _post_cache
 	_post_cache_map = _map
 	_post_cache = {}
-	var reach := _BODY_CLEARANCE + Prop.bollard_shape().radius
+	var reach := _BODY_CLEARANCE + Prop.bollard_shape().rounding_radius()
 	for at in _map.post_positions():
 		_post_cache.merge(_tiles_near_point(at, reach))
 	return _post_cache
@@ -1184,7 +1184,7 @@ func _room_at(point: Vector2, pieces: Array, walls: Array[Vector2i]) -> float:
 	for piece: Array in pieces:
 		var shape: GroundShape = piece[1]
 		var local := (point - (piece[0] as Vector2)).rotated(-float(piece[2]))
-		room = minf(room, shape.distance_to_spine(local) - shape.radius)
+		room = minf(room, shape.distance_to_spine(local) - shape.rounding_radius())
 	for wall in walls:
 		room = minf(room, _tile_nearest_distance(wall, point))
 	return room
@@ -1214,7 +1214,7 @@ func _add_pieces_near(pieces: Array, centres: PackedVector2Array, shapes: Array[
 		var shape := shapes[k]
 		if centres[k].distance_to(point) - shape.reach() > radius:
 			continue
-		var angle := axis.angle() if shape.half_length > 0.0 else 0.0
+		var angle := axis.angle() if shape.spine_half_length() > 0.0 else 0.0
 		pieces.append([centres[k], shape, angle])
 
 # ----------------------------------------------------------------- unsticking ---

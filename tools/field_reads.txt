@@ -655,9 +655,6 @@ src/events/encounter_watch.gd landed_ever
 src/events/event_spawner.gd on_first_landing
 
 # [GroundShape] src/ground_shape.gd
-src/dev/debug_layers.gd half_length
-src/dev/route_rig_planner.gd half_length
-src/dev/route_rig_planner.gd radius
 src/events/behaviours/event_car_driving.gd half_length
 src/events/behaviours/event_car_driving.gd radius
 src/events/event_def.gd half_length
@@ -669,8 +666,6 @@ src/events/event_instance.gd radius
 src/events/walk_ground.gd half_length
 src/events/walk_ground.gd kind
 src/events/walk_ground.gd radius
-src/resistance/resistance_director.gd half_length
-src/resistance/resistance_director.gd radius
 
 # [HuntSpec] src/events/hunt_spec.gd
 src/events/event_def.gd ends_the_day
@@ -686,10 +681,6 @@ src/events/event_instance.gd parked
 src/events/event_instance.gd radius
 src/events/event_instance.gd stood_round
 src/events/event_instance.gd to
-src/resistance/park_cordon.gd radius
-src/resistance/park_cordon.gd to
-src/world/separation_pass.gd from
-src/world/separation_pass.gd parked
 
 # [Mover] src/world/mover.gd
 src/events/event_instance.gd blocked_by
@@ -750,9 +741,6 @@ src/dev/scene_recipe_runtime.gd trace
 # [RoadClosure] src/routes/road_closure.gd
 src/events/day_planner.gd segment
 
-# [RouteTree] src/routes/route_tree.gd
-src/dev/route_lines.gd branches
-
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd frame_locked
 
@@ -760,14 +748,9 @@ src/city/city.gd frame_locked
 src/main.gd trace
 
 # [Stroller] src/player/stroller.gd
-src/dev/debug_layers.gd carrying
-src/dev/debug_layers.gd pram_shape
-src/dev/debug_layers.gd shape
-src/dev/scene_recipe_runtime.gd facing
 src/events/checkpoint_controller.gd outright_moves
 src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
-src/main.gd carrying
 
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd rotated
@@ -777,11 +760,9 @@ src/events/event_catalogue.gd field_from_its_centre
 src/events/event_def.gd field_from_its_centre
 
 # [VisibleView] src/world/visible_view.gd
-src/dev/scene_recipe_runtime.gd controls
 src/events/encounter_watch.gd view
 src/events/event_manager.gd controls
 src/events/event_manager.gd view
-src/world/spawn_siting.gd view
 
 # [Warning] src/events/warning.gd
 src/events/behaviours/event_notice_run.gd cancel_if

@@ -264,7 +264,7 @@ static func _routes_it_cuts(city: City, body: Array[Vector2i]) -> Vector2i:
 		its[tile] = true
 	var walkable := 0
 	var cut := 0
-	for branch in city.streets().route_tree().branches:
+	for branch in city.streets().route_tree().branches():
 		for route: Array in branch.routes:
 			if route.size() < 2:
 				continue
@@ -355,7 +355,7 @@ func _siting_of(city: City) -> WalkSiting:
 func _the_longest_route(city: City) -> Array[Vector2]:
 	var tree := city.streets().route_tree()
 	var longest: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route

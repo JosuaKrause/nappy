@@ -282,7 +282,7 @@ func _measure() -> void:
 				if reading != Reading.BEAT_OPENING:
 					denied[reading] = _blocked_counts(map, rows, reading)
 
-			for branch: RouteTree.Branch in tree.branches:
+			for branch: RouteTree.Branch in tree.branches():
 				var area_rect := ClosurePlanner.calm_area_rect(map, branch.area)
 				for leg in branch.routes.size():
 					var route: Array = branch.routes[leg]

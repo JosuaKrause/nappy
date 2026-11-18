@@ -254,7 +254,7 @@ func _days_tree(day: int) -> RouteTree:
 func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 	var tree := _days_tree(day)
 	var best: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route

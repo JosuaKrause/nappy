@@ -1012,7 +1012,7 @@ func _move(officer: Officer, delta: float, her: Vector2) -> void:
 		Officer.Phase.LEAVING:
 			_walk_path(officer, officer.speed * delta)
 			_maybe_gone(officer)
-	officer.move.to = officer.at
+	officer.move.step_to(officer.at)
 	officer.at = officer.move.commit()
 	_show(officer)
 
@@ -1395,7 +1395,7 @@ func _maybe_gone(officer: Officer) -> void:
 ## (`WorldMap.moves`) and his figure in the world.
 func _take_on(officer: Officer) -> void:
 	_officers.append(officer)
-	officer.move.radius = _officer_reach
+	officer.move.use_body_radius(_officer_reach)
 	_map.moves.join(officer.move, officer.at)
 	_make_figure(officer)
 

@@ -630,7 +630,7 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 func _the_longest_route(city: City) -> Array[Vector2]:
 	var tree := city.streets().route_tree()
 	var longest: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route

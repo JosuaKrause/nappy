@@ -28,7 +28,7 @@ extends RefCounted
 ##
 ## **Read at each crowd body's own step, against the others' committed poses.** `gather()` takes the
 ## keepers off the list once a crowd tick, at its start, before any crowd body steps, and notes each
-## one's pose (`MoveProposal.from`, the pose it committed). The events and the cordon step before the
+## one's pose (`MoveProposal.stands_at()`, the pose it committed). The events and the cordon step before the
 ## crowd in a tick (`City` adds the event manager first), so a crowd body gives way to where each
 ## figure stands this tick, and no figure reads where a crowd body went. **How a keeper moves is
 ## measured here, between two gatherings**, not read off its own step: a mover that stops stepping
@@ -179,7 +179,7 @@ func edge_ahead(at: Vector2, forward: Vector2, half_width: float, widest: float,
 	var side := Vector2(-forward.y, forward.x)
 	var nearest := INF
 	for keeper in _for_cars:
-		if parked_only and not (keeper.move.parked and keeper.step == Vector2.ZERO):
+		if parked_only and not (keeper.move.has_parked() and keeper.step == Vector2.ZERO):
 			continue
 		var offset := keeper.at - at
 		var along := offset.dot(forward)
@@ -248,7 +248,7 @@ class Keeper extends RefCounted:
 
 	func _init(of: MoveProposal) -> void:
 		move = of
-		at = of.from
+		at = of.stands_at()
 
 	## Reads its pose off its move: how far it went since the last look, and whether it stood.
 	func look() -> void:

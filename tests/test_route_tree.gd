@@ -72,7 +72,7 @@ func _test_a_route_is_a_walk_from_the_calm_to_the_door(t: TestRunner) -> void:
 	var routes := 0
 	for planned in _days:
 		var home_nodes := _home_nodes(planned)
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			var area := _area_of(planned, branch.area)
 			t.check(area != null, "seed %d day %d: %s is a calm area on today's map"
 					% [planned.map.city_seed(), planned.day, branch.area])
@@ -150,7 +150,7 @@ func _test_no_route_runs_along_the_main_road(t: TestRunner) -> void:
 	for planned in _days:
 		if planned.map.main_road < 0:
 			continue
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			for route: Array in branch.routes:
 				for cell: Vector2i in route:
 					for offset in _CELL_TILE_OFFSETS:
@@ -185,7 +185,7 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t: TestRunner) -> vo
 	var on_a_carriageway := 0
 	var first := ""
 	for planned in _days:
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			for route: Array in branch.routes:
 				for cell: Vector2i in route:
 					for offset in _CELL_TILE_OFFSETS:
@@ -219,7 +219,7 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t: TestRunner) -> vo
 func _test_the_two_routes_of_one_area_share_no_cell(t: TestRunner) -> void:
 	var pairs := 0
 	for planned in _days:
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			if branch.routes.size() < 2:
 				continue
 			pairs += 1
@@ -247,10 +247,10 @@ func _test_a_tile_says_which_branches_it_carries(t: TestRunner) -> void:
 					"seed %d day %d: a cell on the tree names at least one branch (%s)"
 					% [planned.map.city_seed(), planned.day, cell])
 			for colour in branches:
-				t.check(colour >= 0 and colour < planned.tree.branches.size(),
+				t.check(colour >= 0 and colour < planned.tree.branches().size(),
 						"seed %d day %d: %s carries a branch that exists (%d of %d)"
 						% [planned.map.city_seed(), planned.day, tile, colour,
-						planned.tree.branches.size()])
+						planned.tree.branches().size()])
 			named += 1
 		t.check(planned.tree.branches_on(planned.home.tile_rect().position).is_empty(),
 				"seed %d day %d: the doorstep street carries no branch"
@@ -311,7 +311,7 @@ func _test_a_second_route_is_offered_where_the_map_allows_one(t: TestRunner) -> 
 	var offered := 0
 	var possible := 0
 	for planned in _days:
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			var area := _area_of(planned, branch.area)
 			if not area or planned.map.network.route_count(
 					planned.home, area.access, planned.blocked, 2) < 2:
@@ -389,14 +389,14 @@ func _crossed_by_the_tree(planned: Day, junction: Vector2i, along: int) -> bool:
 func _test_the_same_day_grows_the_same_tree(t: TestRunner) -> void:
 	for planned in _days:
 		var again := planned.again
-		t.check(again.branches.size() == planned.tree.branches.size(),
+		t.check(again.branches().size() == planned.tree.branches().size(),
 				"seed %d day %d: the same day grows the same number of branches"
 				% [planned.map.city_seed(), planned.day])
-		for i in mini(again.branches.size(), planned.tree.branches.size()):
-			t.check(again.branches[i].area == planned.tree.branches[i].area
-					and _cells(again.branches[i]) == _cells(planned.tree.branches[i]),
+		for i in mini(again.branches().size(), planned.tree.branches().size()):
+			t.check(again.branches()[i].area == planned.tree.branches()[i].area
+					and _cells(again.branches()[i]) == _cells(planned.tree.branches()[i]),
 					"seed %d day %d: and the same cells for %s"
-					% [planned.map.city_seed(), planned.day, planned.tree.branches[i].area])
+					% [planned.map.city_seed(), planned.day, planned.tree.branches()[i].area])
 
 ## *"A route to a calm area is not stable across days, and that is the mechanism rather than a
 ## side effect."* The hard blockers are what she learns; the day is what she reads.
@@ -407,7 +407,7 @@ func _test_a_different_day_is_a_different_way(t: TestRunner) -> void:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		var first := _plan(map, 1)
 		var later := _plan(map, 5)
-		for branch in first.tree.branches:
+		for branch in first.tree.branches():
 			var other := _branch_for(later.tree, branch.area)
 			if not other:
 				continue
@@ -422,7 +422,7 @@ func _test_a_different_day_is_a_different_way(t: TestRunner) -> void:
 
 ## The branch that reaches the calm area anchored at `area`, or null.
 func _branch_for(tree: RouteTree, area: Vector2i) -> RouteTree.Branch:
-	for branch in tree.branches:
+	for branch in tree.branches():
 		if branch.area == area:
 			return branch
 	return null
@@ -545,7 +545,7 @@ const AHEAD_LIMIT := 1500.0
 ## The longest route of the day's tree, from the calm area to the doorstep, or empty.
 func _longest_route_of(planned: Day) -> Array:
 	var best: Array = []
-	for branch in planned.tree.branches:
+	for branch in planned.tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
@@ -562,7 +562,7 @@ func _heading_along(planned: Day, route: Array, index: int, step: int) -> Vector
 ## Every cell of every route that holds `cell`, as a set.
 func _cells_of_routes_through(planned: Day, cell: Vector2i) -> Dictionary:
 	var found := {}
-	for branch in planned.tree.branches:
+	for branch in planned.tree.branches():
 		for route: Array in branch.routes:
 			if route.has(cell):
 				for on_it: Vector2i in route:
@@ -621,7 +621,7 @@ func _test_at_a_shared_cell_every_route_through_it_is_ahead(t: TestRunner) -> vo
 	var shared_cells := 0
 	for planned in _days:
 		var seen := {}
-		for branch in planned.tree.branches:
+		for branch in planned.tree.branches():
 			for route: Array in branch.routes:
 				for cell: Vector2i in route:
 					seen[cell] = int(seen.get(cell, 0)) + 1
@@ -633,7 +633,7 @@ func _test_at_a_shared_cell_every_route_through_it_is_ahead(t: TestRunner) -> vo
 			shared_cells += 1
 			var at := planned.tree.cell_centre(cell)
 			var ahead := planned.tree.cells_ahead(at, Vector2.RIGHT, INF)
-			for branch in planned.tree.branches:
+			for branch in planned.tree.branches():
 				for route: Array in branch.routes:
 					var index := route.find(cell)
 					if index < 0 or route.size() < 2:

@@ -117,7 +117,7 @@ static func longest_route_out(city: City, day: int) -> PackedVector2Array:
 	var grown := city.streets().route_tree()
 	var tree := grown if grown else RouteTree.for_day(city.map, day)
 	var best: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route

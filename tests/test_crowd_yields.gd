@@ -146,9 +146,9 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 ## the two radii.
 func _overlaps(car: CrowdAgent, figure: MoveProposal) -> bool:
 	var spine := car.heading() * car.lane().shape().spine_half_length()
-	var nearest := Geometry2D.get_closest_point_to_segment(figure.from, car.position - spine,
+	var nearest := Geometry2D.get_closest_point_to_segment(figure.stands_at(), car.position - spine,
 			car.position + spine)
-	return nearest.distance_to(figure.from) < car.lane().shape().rounding_radius() + figure.radius - 0.5
+	return nearest.distance_to(figure.stands_at()) < car.lane().shape().rounding_radius() + figure.radius - 0.5
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

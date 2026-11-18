@@ -260,7 +260,7 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t: TestRunner) -> void:
 ## a cell's centre is half a tile past its first tile's centre on both axes.
 func _longest_route_points() -> Array[Vector2]:
 	var longest: Array = []
-	for branch in _city.streets().route_tree().branches:
+	for branch in _city.streets().route_tree().branches():
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route

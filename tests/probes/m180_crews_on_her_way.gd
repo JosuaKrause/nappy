@@ -175,7 +175,7 @@ func _turns_back_at_the_first_junction(city: City, day: int) -> PackedVector2Arr
 
 func _longest_route(tree: RouteTree) -> Array:
 	var best: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
@@ -189,7 +189,7 @@ func _a_different_route(tree: RouteTree, unlike: Array) -> Array:
 		shared[cell] = true
 	var best: Array = []
 	var best_shared := -1
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route == unlike or route.is_empty():
 				continue

@@ -1031,7 +1031,7 @@ func _build_the_escape_building() -> void:
 	_interior.exit_requested.connect(_day.reach_the_exit)
 
 	_player = _make_player()
-	_player.carrying = true
+	_player.use_carrying_rig()
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
@@ -1066,7 +1066,7 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 	_build_the_city(spec.is_dark_from_the_start())
 	if not _player:
 		_player = _make_player()
-		_player.carrying = true
+		_player.use_carrying_rig()
 		_city.add_entity(_player)
 		_baby = _player.get_node("Baby")
 	else:

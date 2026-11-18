@@ -66,6 +66,15 @@ var _right := Rect2()
 ## whole view.
 var controls: ScreenCover = null
 
+## The world the camera shows, as `look()` was last told: empty until it has been told.
+func camera_view() -> Rect2:
+	return view
+
+## What the on-screen controls cover and whether their scheme is in force, as handed in (`controls`);
+## `null` where nothing built them.
+func screen_cover() -> ScreenCover:
+	return controls
+
 ## A view of `Tuning.VIEW_HALF_EXTENT` either side of `centre`, covered by `covering` — what a rig
 ## with no camera stands in for the camera's view with. A `covering` that is null or not in force is
 ## the tap scheme's whole view; the argument is required so that a forgotten one cannot mean it.

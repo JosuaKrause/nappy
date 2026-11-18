@@ -394,7 +394,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 			# region" — unconditional: the tree-wins rule needs no premise about which regions
 			# hold calm to make this true.
 			var home_reaches_only_home := true
-			for branch in tree.branches:
+			for branch in tree.branches():
 				var area := _area_for_block(areas, branch.area)
 				if not area or area.access.is_empty():
 					continue
@@ -419,7 +419,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 			var grid := ReachabilityGrid.build(map)
 			var doorstep := map.world_to_tile(map.doorstep_world_position())
 			var reached := grid.flood([doorstep], blocked)
-			for branch in tree.branches:
+			for branch in tree.branches():
 				var area := _area_for_block(areas, branch.area)
 				if not area or area.access.is_empty():
 					continue

@@ -637,7 +637,7 @@ static func _cut_off(map: CityMap, grid: ReachabilityGrid, routes: Array[Vector2
 ## area to the doorstep, so the walk out is the route reversed.
 static func _longest_route(tree: RouteTree) -> PackedVector2Array:
 	var best: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
