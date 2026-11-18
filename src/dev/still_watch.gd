@@ -303,12 +303,12 @@ func _nearest() -> String:
 	var describe := "nothing live"
 	if _events:
 		for instance: EventInstance in _events.instances():
-			if instance.is_finished:
+			if instance.is_gone():
 				continue
 			var distance: float = instance.global_position.distance_to(_player.global_position)
 			if distance < best:
 				best = distance
-				describe = "%s %.0fpx" % [instance.def.id, distance]
+				describe = "%s %.0fpx" % [instance.row_id(), distance]
 	if _crowd:
 		for agent: CrowdAgent in _crowd.agents():
 			if not agent.is_car():

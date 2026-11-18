@@ -140,7 +140,6 @@ src/dev/scene_recipe_runtime.gd role
 src/dev/scene_recipe_runtime.gd stops_where_it_arrives
 src/dev/scene_recipe_runtime.gd telegraph_time
 src/dev/scene_recipe_runtime.gd vehicle
-src/dev/still_watch.gd id
 src/events/behaviours/event_abduction.gd duration
 src/events/behaviours/event_abduction.gd id
 src/events/behaviours/event_abduction.gd pursuit
@@ -397,8 +396,6 @@ src/dev/scene_recipe_runtime.gd is_finished
 src/dev/scene_recipe_runtime.gd is_leaving
 src/dev/scene_recipe_runtime.gd on_foot
 src/dev/scene_recipe_runtime.gd pursuit
-src/dev/still_watch.gd def
-src/dev/still_watch.gd is_finished
 src/events/behaviours/event_behaviours.gd abduction
 src/events/behaviours/event_behaviours.gd barrier_post
 src/events/behaviours/event_behaviours.gd car
