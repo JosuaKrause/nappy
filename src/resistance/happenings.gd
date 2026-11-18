@@ -111,6 +111,10 @@ func use_bus(bus: _BUS) -> void:
 var _column_owed := false
 var column: Array[EventInstance] = []
 
+## Day 13's trucks, front first, once the column has come; empty before then (`column`).
+func column_trucks() -> Array[EventInstance]:
+	return column
+
 ## Where the raid may put what it brings (`SpawnSiting`), or null.
 var _spawn_siting: SpawnSiting
 ## Builds a plan at a tile (`PlanBuilder`), the day's events' own (`EventManager.plan_builder()`),

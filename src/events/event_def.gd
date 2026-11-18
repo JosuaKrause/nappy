@@ -2168,6 +2168,15 @@ func is_ambient() -> bool:
 func drives() -> bool:
 	return vehicle != null
 
+## Whether it comes after her (`pursuit`), however its chase starts.
+func pursues() -> bool:
+	return pursuit != null
+
+## Whether it stops where its route ends and stands there for the rest of the day
+## (`stops_where_it_arrives`): day 10's neighbor home before she reached them.
+func parks_where_it_arrives() -> bool:
+	return stops_where_it_arrives
+
 ## Whether it was sent at her: it comes after her (`pursuit`, however its chase starts), or the
 ## caller that sends it warns of it first (`warned_first`). The park cordon walks out everyone in
 ## the closed park but such a row, a car and the ambient ground.

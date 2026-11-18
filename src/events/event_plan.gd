@@ -559,6 +559,15 @@ func detain_distance() -> float:
 func gate() -> RegionPlanner.GateState:
 	return gate_state
 
+## How long its row's telegraph lasts, in seconds (`EventDef.telegraphs_for()`).
+func telegraphs_for() -> float:
+	return def.telegraphs_for()
+
+## Makes it a loudspeaker mast's own plan, known by `id` (`mast_id`): what the day's task, its red
+## arrow and the blackout find a mast by. A scene recipe's runtime calls it for each mast it stands.
+func stand_as_a_mast(id: String) -> void:
+	mast_id = id
+
 ## Whether it is a loudspeaker mast still speaking today: a mast's own plan (`mast_id`, of a row
 ## that is a mast) that nothing has silenced (`silenced`).
 func is_a_live_mast() -> bool:

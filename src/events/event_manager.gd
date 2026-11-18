@@ -503,6 +503,12 @@ func active_count() -> int:
 func instances() -> Array[EventInstance]:
 	return world.instances
 
+## **The live event of `plan`** while it is in the world, null otherwise: for a caller that names
+## or commands it (a scene recipe's runtime sets it on her, keeps it coming or holds it). A caller
+## that only asks something of a plan asks the plan (`EventPlan.is_in_the_world()`).
+func event_of(plan: EventPlan) -> EventInstance:
+	return plan.instance() as EventInstance
+
 # ------------------------------------------------------------ WorldContext ---
 
 ## **These events as one set of things that charge the baby** (`EventSources`): the door's toll

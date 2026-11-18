@@ -13,7 +13,6 @@ src/events/views/event_vehicle_look.gd standing_offset
 src/events/views/event_vehicle_look.gd taken_over
 
 # [Aftermath] src/events/aftermath.gd
-src/dev/scene_recipe_runtime.gd on_finish
 src/events/event_catalogue.gd on_finish
 src/events/event_catalogue.gd on_sight
 src/events/event_catalogue.gd scar
@@ -87,10 +86,6 @@ src/city/city.gd across
 src/city/city.gd kind
 src/city/city.gd piece
 
-# [ContactPoint] src/resistance/contact_point.gd
-src/dev/scene_recipe_runtime.gd is_done
-src/dev/scene_recipe_runtime.gd step
-
 # [Crowd] src/crowd/crowd.gd
 src/simulation_builder.gd atlas
 src/simulation_builder.gd skip_agent_drawing
@@ -129,13 +124,7 @@ src/events/event_manager.gd day
 src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
-src/dev/scene_recipe_runtime.gd aftermath
 src/dev/scene_recipe_runtime.gd id
-src/dev/scene_recipe_runtime.gd pursuit
-src/dev/scene_recipe_runtime.gd role
-src/dev/scene_recipe_runtime.gd stops_where_it_arrives
-src/dev/scene_recipe_runtime.gd telegraph_time
-src/dev/scene_recipe_runtime.gd vehicle
 src/events/behaviours/event_abduction.gd duration
 src/events/behaviours/event_abduction.gd id
 src/events/behaviours/event_abduction.gd pursuit
@@ -382,14 +371,6 @@ src/events/event_instance.gd birds
 
 # [EventInstance] src/events/event_instance.gd
 src/dev/debug_readout.gd age
-src/dev/scene_recipe_runtime.gd barrier_post
-src/dev/scene_recipe_runtime.gd def
-src/dev/scene_recipe_runtime.gd departure
-src/dev/scene_recipe_runtime.gd held_by_hand
-src/dev/scene_recipe_runtime.gd is_finished
-src/dev/scene_recipe_runtime.gd is_leaving
-src/dev/scene_recipe_runtime.gd on_foot
-src/dev/scene_recipe_runtime.gd pursuit
 src/events/behaviours/event_behaviours.gd abduction
 src/events/behaviours/event_behaviours.gd barrier_post
 src/events/behaviours/event_behaviours.gd car
@@ -440,7 +421,6 @@ src/run/day_director.gd excitement
 
 # [EventManager] src/events/event_manager.gd
 src/day/world_simulation.gd sources
-src/dev/scene_recipe_runtime.gd world
 src/resistance/resistance_director.gd points_at
 src/simulation_builder.gd atlas
 src/simulation_builder.gd pelican_rig
@@ -450,14 +430,6 @@ src/simulation_builder.gd timing
 src/simulation_builder.gd trace
 
 # [EventPlan] src/events/event_plan.gd
-src/dev/scene_recipe_runtime.gd age
-src/dev/scene_recipe_runtime.gd def
-src/dev/scene_recipe_runtime.gd facing
-src/dev/scene_recipe_runtime.gd kept_live
-src/dev/scene_recipe_runtime.gd live
-src/dev/scene_recipe_runtime.gd mast_id
-src/dev/scene_recipe_runtime.gd path
-src/dev/scene_recipe_runtime.gd position
 src/events/dawn_phases/dawn_masts.gd mast_id
 src/events/dawn_phases/dawn_masts.gd silenced
 src/events/dawn_phases/dawn_one_shots.gd role
@@ -515,9 +487,6 @@ src/routes/region_planner.gd facing
 src/routes/region_planner.gd gate_state
 src/telemetry/telemetry_map.gd role
 
-# [EventPursuit] src/events/behaviours/event_pursuit.gd
-src/dev/scene_recipe_runtime.gd outrun_for
-
 # [EventSpawner] src/events/event_spawner.gd
 src/events/event_manager.gd pelican_rig
 
@@ -527,7 +496,6 @@ src/events/event_manager.gd consumed
 src/events/event_manager.gd stream_radius
 
 # [EventWorld] src/events/event_world.gd
-src/dev/scene_recipe_runtime.gd visible
 src/events/checkpoint_controller.gd instances
 src/events/checkpoint_controller.gd map
 src/events/checkpoint_controller.gd player
@@ -668,10 +636,6 @@ src/events/event_def.gd warns_for
 src/events/event_instance.gd stop_excitement
 src/events/event_instance.gd warns_for
 
-# [ResistanceHappenings] src/resistance/happenings.gd
-src/dev/scene_recipe_runtime.gd column
-src/dev/scene_recipe_runtime.gd trace
-
 # [RoadClosure] src/routes/road_closure.gd
 src/events/day_planner.gd segment
 
@@ -730,6 +694,3 @@ src/resistance/resistance_director.gd day_record_version
 src/resistance/resistance_director.gd obstruction_version
 src/world/chase_way.gd day_record_version
 src/world/chase_way.gd obstruction_version
-
-# [ZoomOutCamera] src/dev/zoom_out_camera.gd
-src/dev/scene_recipe_runtime.gd simulation_clock
