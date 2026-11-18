@@ -142,8 +142,19 @@ full text names the files each step owns.
    `EventsAhead` through a maker and to `EventDirector` as the day's siting, so a test of either can
    pass a mock in its place (the records polite-tapir-coral-egret and polite-tapir-busy-toad). What is
    left is the beat laid in the next undrawn unit ahead of her before it draws, and that unit's draw
-   told of it (the design's pull request 4, waiting on the board questions `beats-on-her-street` and
-   `beat-changes-its-unit`). The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
+   told of it, the design's pull request 4. A beat is a marble the units draw: "repeating the day has
+   the exact same preconditions. if the player does something differently different things might
+   happen. if the player were to do exactly the same everything would behave exactly the same. beats
+   are marbles, yes" (inbox #1521 in breezy-magpie). Day 6's second man shouting and day 7's second
+   van: "the draw doesn't have to happen at the point where she touches the mark. the bag gets the
+   biased bag in front (via the chained bags mechanism) and the next draw (whenever that happens)
+   will guarantee the shouting man" (inbox #1520 in breezy-magpie). **Read as** (the orchestrator's
+   reading): the mark puts a rigged bag in front of the bag the units ahead of her draw from
+   (`MarbleBag`'s queue of bags and `rig()`), and the next unit to draw stands him, wherever and
+   whenever that draw happens, rather than a spot on her street taken at the mark; day 7's second van
+   is laid the same way, since the question asked both and the answer names the man alone (the
+   orchestrator's reading). The design's pull
+   request 4 is amended for this reading by Fable before it is built. The resistance's market (`ResistanceHappenings._market_ahead_of()`) asks the day's route
    tree where she is going and is handed no siting (step 4's first pull request, the record
    polite-tapir-tall-marmot): *proposed, not asked for*, the design's pick, open to the player. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
    ground still needs it.
