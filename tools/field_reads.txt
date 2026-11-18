@@ -130,8 +130,6 @@ src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
 src/dev/auto_screenshot.gd pursuit
-src/dev/debug_readout.gd id
-src/dev/debug_readout.gd telegraph_time
 src/dev/dev_rig.gd id
 src/dev/dev_rig.gd kind
 src/dev/dev_rig.gd outer_radius
@@ -390,7 +388,6 @@ src/events/event_instance.gd birds
 # [EventInstance] src/events/event_instance.gd
 src/dev/auto_screenshot.gd def
 src/dev/debug_readout.gd age
-src/dev/debug_readout.gd def
 src/dev/dev_rig.gd def
 src/dev/scene_recipe_runtime.gd barrier_post
 src/dev/scene_recipe_runtime.gd def
