@@ -107,14 +107,15 @@ Left, each its own design question:
     (`CityMap.home_rect`, `courtyard_rects`,
     `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
     `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
-    `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the game (the city, the city
-    scene, the blackout, the poster walls, the roof previews) and goes with the tests-one-module
+    `BuildingShadows.streamed`, `falls_on`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
+    `skip_agent_drawing`, `LaneMover.kind`) keeps its direct write in the game (the city, the city
+    scene, the blackout, the poster walls, the roof previews, the simulation builder, a crowd agent's
+    own setup) and goes with the tests-one-module
     item (`tests-one-module.md`), when its tests read through a method the game also calls.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
-  director and the rigs. So do `MoveProposal`, `GroundShape`, `LaneMover`, `CrowdAgent.excitement`,
-  `Prop.shape`, and `Baby`'s and `DayController`'s fields. *Read as* (the orchestrator's reading):
+  director and the rigs. So do `MoveProposal`, `GroundShape`, `Prop.shape`, and `Baby`'s and `DayController`'s fields. *Read as* (the orchestrator's reading):
   the map's are converted with whatever pass gives the blocked tiles an owner of their own, and the
   rest with their own classes' passes.
 - **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by
@@ -126,9 +127,7 @@ Left, each its own design question:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
-    reads of other classes' fields (among them a crowd agent's kind and excitement, the day's clock) wait for those classes'
-    passes; `run_session.gd`'s read of `Crowd.sources` waits for the crowd's pass (the record
-    2026-10-18-minty-quail-dappled-chipmunk);
+    reads of other classes' fields (among them the day's clock) wait for those classes' passes;
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface
