@@ -927,13 +927,6 @@ src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
 
-# [RunFlow] src/run/run_flow.gd
-src/main.gd authored
-src/main.gd mode
-src/main.gd opening
-src/main.gd scene
-src/main.gd spec
-
 # [RunSession] src/telemetry/run_session.gd
 src/main.gd trace
 
