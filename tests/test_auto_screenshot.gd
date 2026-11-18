@@ -44,6 +44,7 @@ func run(t: TestRunner) -> void:
 	await _test_a_pursuit_stops_the_script_from_resuming(t)
 	await _test_a_pursuit_reverses_an_angled_step_too(t)
 	_test_a_headless_run_has_nothing_to_photograph(t)
+	_test_an_after_that_is_no_number_is_not_given(t)
 	_test_the_scan_finds_a_bare_wait_on_the_render_loop(t)
 	_test_only_a_covered_recording_needs_an_on_demand_frame(t)
 	_test_no_capture_under_src_waits_on_the_render_loop_alone(t)
@@ -60,6 +61,58 @@ func _ready() -> void:
 	add_child(AutoScreenshot.from_config(RunConfig.parse(words, "", true)))
 """
 
+## A rig asked for `--after abc`, on a clock the probe moves a quarter second a frame
+## (`simulation_clock`), saying on which reading of it the capture began (`before_capture`).
+const AFTER_PROBE := """extends Node
+var _now := 0.0
+func _ready() -> void:
+	var words := PackedStringArray([
+			"--screenshot", OS.get_cmdline_user_args()[0], "--after", "abc"])
+	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
+	rig.simulation_clock = func() -> float: return _now
+	rig.before_capture = func() -> void: print("CAPTURE_AT %.2f" % _now)
+	add_child(rig)
+func _process(_delta: float) -> void:
+	_now += 0.25
+"""
+
+## Runs `source` as the script of a scene of its own in a headless child process, handed
+## `picture` as its one word, and answers its exit status and what it printed. Its files go
+## after it.
+static func _run_probe(source: String, name: String, picture: String) -> Array:
+	var stem := "user://%s_%d" % [name, OS.get_process_id()]
+	var script := FileAccess.open(stem + ".gd", FileAccess.WRITE)
+	script.store_string(source)
+	script.close()
+	var scene := FileAccess.open(stem + ".tscn", FileAccess.WRITE)
+	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s.gd\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % stem)
+	scene.close()
+	var output: Array = []
+	var status := OS.execute(OS.get_executable_path(), PackedStringArray([
+			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--quit-after", "600",
+			stem + ".tscn", "--", picture]), output, true)
+	DirAccess.remove_absolute(stem + ".tscn")
+	DirAccess.remove_absolute(stem + ".gd")
+	DirAccess.remove_absolute(stem + ".gd.uid")
+	return [status, "\n".join(output)]
+
+## `--after` that is no number is not given: the rig waits its own default before the capture,
+## as the rig lock and the scene recipe read the same word (`RunConfig.rig_after()`, worked out
+## once), rather than reading the word as zero seconds and capturing on the first frame. Asked
+## of a process of its own, since a capture ends the process it runs in.
+func _test_an_after_that_is_no_number_is_not_given(t: TestRunner) -> void:
+	var picture := ProjectSettings.globalize_path("user://auto_screenshot_after_%d.png"
+			% OS.get_process_id())
+	var ran := _run_probe(AFTER_PROBE, "auto_screenshot_after_probe", picture)
+	var text_output: String = ran[1]
+	var at := -1.0
+	for line in text_output.split("\n"):
+		if line.begins_with("CAPTURE_AT "):
+			at = float(line.trim_prefix("CAPTURE_AT "))
+	t.check(at >= AutoScreenshot.DEFAULT_SECONDS,
+			"--after abc waits the rig's own %.1fs, not zero (the capture began at %.2fs): %s"
+			% [AutoScreenshot.DEFAULT_SECONDS, at, text_output])
+
 ## The guard that stops `_capture()` awaiting a frame a headless run will never draw. **The hang it
 ## replaces printed nothing at all**, so the failure read as a slow run rather than as a stuck one,
 ## and it is reached by any caller of `tools/shot.sh` that has no display to open a window against.
@@ -67,25 +120,13 @@ func _ready() -> void:
 ## Asked of a process of its own, started headless the way a display-less machine starts one: the
 ## rig refuses with the line that says why, exits non-zero, and writes no picture to its path.
 func _test_a_headless_run_has_nothing_to_photograph(t: TestRunner) -> void:
-	var stem := "user://auto_screenshot_probe_%d" % OS.get_process_id()
-	var script := FileAccess.open(stem + ".gd", FileAccess.WRITE)
-	script.store_string(PROBE)
-	script.close()
-	var scene := FileAccess.open(stem + ".tscn", FileAccess.WRITE)
-	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s.gd\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % stem)
-	scene.close()
-	var picture := ProjectSettings.globalize_path(stem + ".png")
-	var output: Array = []
-	var status := OS.execute(OS.get_executable_path(), PackedStringArray([
-			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--quit-after", "600",
-			stem + ".tscn", "--", picture]), output, true)
-	var text_output := "\n".join(output)
+	var picture := "user://auto_screenshot_probe_%d.png" % OS.get_process_id()
+	var ran := _run_probe(PROBE, "auto_screenshot_probe", ProjectSettings.globalize_path(picture))
+	var status: int = ran[0]
+	var text_output: String = ran[1]
 	t.check(status == 1 and text_output.contains("nothing to photograph"),
 			"a headless run draws no frame, so it says there is nothing to save and exits 1: %s" % text_output)
-	t.check(not FileAccess.file_exists(stem + ".png"), "and writes no picture")
-	DirAccess.remove_absolute(stem + ".tscn")
-	DirAccess.remove_absolute(stem + ".gd")
-	DirAccess.remove_absolute(stem + ".gd.uid")
+	t.check(not FileAccess.file_exists(picture), "and writes no picture")
 
 # ------------------------------------------------------------------ the rig ---
 

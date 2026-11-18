@@ -65,17 +65,17 @@ func _test_a_release_build_reads_no_command_line_flag(t: TestRunner) -> void:
 	var words := _words(["--day", "5", "--seed", "7", "--invincible", "--layers", "1",
 			"--route", "home", "--no-telemetry"])
 	var release := RunConfig.parse(words, "", false)
-	t.check(release.day_override == 1 and release.seed_override == 0 and not release.invincible
-			and release.layers_override.is_empty() and release.route_targets.is_empty()
-			and release.active_args.is_empty() and not release.is_rig,
+	t.check(release.day_override == 1 and release.seed_override == 0 and not release.is_invincible()
+			and release.layers_override().is_empty() and release.route_targets.is_empty()
+			and release.dev_flag_words().is_empty() and not release.runs_as_a_rig(),
 			"a release build reads none of the developer flags")
-	t.check(release.no_telemetry, "but does read the player's own --no-telemetry")
+	t.check(release.refuses_telemetry(), "but does read the player's own --no-telemetry")
 
 func _test_a_debug_build_reads_them(t: TestRunner) -> void:
 	var debug := RunConfig.parse(_words(["--day", "99", "--seed", "7", "--invincible",
 			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40"]), "", true)
 	t.check(debug.day_override == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
-	t.check(debug.seed_override == 7 and debug.invincible and debug.layers_override == [1, 3]
+	t.check(debug.seed_override == 7 and debug.is_invincible() and debug.layers_override() == [1, 3]
 			and debug.ground_mode == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
 			"and every other flag given is read")
 	t.check(debug.active_args.size() == 11, "the words themselves are kept, all of them")
@@ -90,7 +90,7 @@ func _test_a_release_page_opens_the_bundle_only_with_debug(t: TestRunner) -> voi
 			"a release page that did not ask ?debug=1 reads nothing of the bundle")
 	var asked := RunConfig.parse(none, "?debug=1&day=9&invincible=1", false)
 	t.check(asked.day_override == 9 and asked.invincible and asked.is_live_debug()
-			and asked.used_a_web_debug_flag() and asked.readout_requested,
+			and asked.used_a_web_debug_flag() and asked.asks_for_the_readout(),
 			"one that did reads the bundle and counts as having used it")
 	t.check(asked.page_query_string() == "?debug=1&day=9&invincible=1",
 			"and keeps the query it read for the readers that parse their own parameter")
@@ -104,8 +104,8 @@ func _test_a_release_page_opens_the_bundle_only_with_debug(t: TestRunner) -> voi
 func _test_a_resolved_config_cannot_change(t: TestRunner) -> void:
 	var config := RunConfig.parse(_words(["--layers", "1", "--route", "home", "--skip", "events",
 			"--debug"]), "", true)
-	t.check(config.layers_override.is_read_only() and config.route_targets.is_read_only()
-			and config.skip_words.is_read_only(),
+	t.check(config.layers_override().is_read_only() and config.route_targets.is_read_only()
+			and config.skip_words().is_read_only(),
 			"every array a resolved config holds is read-only")
 	var refused := RefusedWrites.new()
 	OS.add_logger(refused)
@@ -122,8 +122,8 @@ func _test_a_resolved_config_cannot_change(t: TestRunner) -> void:
 			"the run parsed again from its words does not carry the refused write")
 	var movie := RunConfig.parse(_words(["--invincible", "--layers", "1"]), "", true, true)
 	var again := movie.with_recipe({})
-	t.check(again.recording and again.invincible and again.layers_override == [1]
-			and again.active_args == movie.active_args,
+	t.check(again.records_a_movie() and again.is_invincible() and again.layers_override() == [1]
+			and again.dev_flag_words() == movie.dev_flag_words(),
 			"but does carry the movie flag and every word it was parsed from")
 	var args := config.active_args
 	args.append("--invincible")

@@ -741,19 +741,21 @@ onto a building part's name, with the command line taken out of it; the real `ma
 `?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
 invincible, etc.) so debugging the live build is easier".)* `RunConfig.live_debug` — a debug
-build, or `?debug=1` (`readout_requested`) — is the gate: `?day=`, `?invincible=1`, `?layers=`,
-`?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-`?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
+build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
+`?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`,
+`?ending=`/`?blackout=1`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind
 the debug build alone, with no release-page door at all. `GameSave._uses_save()` refuses the
 player's own save the moment a release page's query actually used one of the flags above
-(`RunConfig.web_debug_flag_used`), the same way it already refuses a debug build's own argv.
+(`RunConfig.used_a_web_debug_flag()`), the same way it already refuses a debug build's own argv.
 
-`src/dev/auto_screenshot.gd` parses `--screenshot` and the flags nested under it (`--after`,
-`--walk`, `--smooth-walk`, `--flee`, `--press`, `--tap`) itself, from the gated words the config
-holds (`RunConfig.active_args`, empty on a release build), so none of it has a release-page door.
+`src/dev/auto_screenshot.gd` drives `--screenshot` and the flags nested under it. It takes the
+picture's path and `--after`'s wait from the configuration (`RunConfig.screenshot_path()`,
+`RunConfig.rig_after()`, worked out once for every rig that reads them) and parses `--walk`,
+`--smooth-walk`, `--flee`, `--press` and `--tap` itself, from the gated words the config holds
+(`RunConfig.dev_flag_words()`, empty on a release build), so none of it has a release-page door.
 One rig list decides what a rig is — `DevFlags`' `RIG_FLAGS`, `--tap` included, plus a movie
 recording and a scripted recipe (`RunConfig.is_rig`) — for the window lockdown, the wall-clock
 quit and whether the run log is a playtest; `RigLock` (`src/dev/rig_lock.gd`) applies the

@@ -80,7 +80,7 @@ func trace() -> RunTrace:
 ## from its checkpoint. The log lives under the sitting and outlives the scene reload either came
 ## through, and opening again would close it and start a second folder for one run.
 func open(run_seed: int, played: bool, keep_an_open_log: bool) -> void:
-	if _config.no_telemetry:
+	if _config.refuses_telemetry():
 		return
 	if keep_an_open_log and _log.is_active():
 		return
@@ -130,7 +130,7 @@ func _new_observer() -> TelemetryObserver:
 	# Part of the game, not the frame around it: it stops with the pause like the day it watches.
 	watcher.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(watcher)
-	watcher.setup(_run, _clock, _resistance, _config.spikes_requested, _edge)
+	watcher.setup(_run, _clock, _resistance, _config.asks_for_spikes(), _edge)
 	return watcher
 
 # ---------------------------------------------------------------------- a walk ---

@@ -803,23 +803,6 @@ src/main.gd trace
 src/dev/route_lines.gd branches
 
 # [RunConfig] src/run_config.gd
-src/dev/auto_screenshot.gd active_args
-src/dev/auto_screenshot.gd recording
-src/dev/auto_screenshot.gd screenshot_path
-src/dev/debug_readout.gd debug_build
-src/dev/debug_readout.gd layers_override
-src/dev/debug_readout.gd player_view_requested
-src/dev/debug_readout.gd readout_requested
-src/dev/debug_readout.gd skip_words
-src/dev/debug_readout.gd spikes_requested
-src/dev/rig_lock.gd is_rig
-src/dev/rig_lock.gd recording
-src/dev/scene_recipe_runtime.gd recipe_draft_path
-src/dev/scene_recipe_runtime.gd recipe_manifest_path
-src/dev/scene_recipe_runtime.gd recipe_scripted
-src/dev/scene_recipe_runtime.gd recipe_validate
-src/dev/scene_recipe_runtime.gd rig_after
-src/dev/scene_recipe_runtime.gd screenshot_path
 src/main.gd active_args
 src/main.gd blackout_requested
 src/main.gd caption_text
@@ -859,10 +842,6 @@ src/main.gd title_card_text
 src/main.gd zoom_out_delay
 src/main.gd zoom_out_seconds
 src/main.gd zoom_override
-src/run/day_director.gd meters_override
-src/run/day_director.gd spawn_target
-src/telemetry/run_session.gd no_telemetry
-src/telemetry/run_session.gd spikes_requested
 
 # [SaveIndicator] src/ui/save_indicator.gd
 src/main.gd atlas

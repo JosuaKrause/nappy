@@ -128,7 +128,7 @@ func _test_clear_empties_the_ring(t: TestRunner) -> void:
 
 ## The layers a debug build given `--layers raw` starts on.
 func _layers(raw: String) -> Array[int]:
-	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override
+	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override()
 
 ## `6` (the frame graph's own key) joins `5` in the list `--layers`/`?layers=` may set, on the same
 ## terms `tests/test_route_lines.gd` already holds for `5`: `4` (the readout) stays rejected even
