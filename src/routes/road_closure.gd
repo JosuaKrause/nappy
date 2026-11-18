@@ -37,9 +37,9 @@ const KINDS := {
 }
 
 var _kind := Kind.ROADWORKS
-## The street closed. Every reader outside this file asks the methods below but one, the day's
-## holds (`DayPlanner`), which hold its key and wait for the events' interface to ask
-## `street_key()`.
+## The street closed. Every reader under `src/` outside this file asks the methods below but one,
+## the day's holds (`DayPlanner`), which hold its key and wait for the events' interface to ask
+## `street_key()`; the suites' and the probes' reads of it go with that read.
 var segment: StreetNetwork.Segment
 
 func _init(closure_kind: Kind, closed_street: StreetNetwork.Segment) -> void:

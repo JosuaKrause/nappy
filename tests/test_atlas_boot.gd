@@ -144,11 +144,11 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 ## the building alike. A node still holding a public `atlas` it was never handed fails this by name; a
 ## node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
 ## recording one (`tests/recording_atlas.gd`) and every help text, mode button and closure piece
-## standing must have asked it for its page, which a node handed another library, or none, did not. The cordon's figures,
-## the contact and the crowd's agents are handed theirs where they are made, and
-## `test_park_cordon.gd`, `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same
-## off the library each is handed. And the pages the boot took for the process are the sitting's
-## library's: they still answer on it once everything the boot built is gone.
+## standing must have asked it for its page, which a node handed another library, or none, did
+## not. The cordon's figures, the contact and the crowd's agents are handed theirs where they are
+## made, and `test_park_cordon.gd`, `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd`
+## read the same off the library each is handed. And the pages the boot took for the process are
+## the sitting's library's: they still answer on it once everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
 		var seat := Seat.new(t, func(run: RunState) -> void:
@@ -196,7 +196,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		# `ClosureMarker._enter_tree()`; the building stands none.
 		var closure_asks := recording.acquired_from("res://src/routes/closure_marker.gd")
 		t.check(section != DaySpec.Section.NONE or closure_pieces > 0,
-				"the day stands closure pieces to ask about (%d)" % closure_pieces)
+				"%s: the day stands closure pieces to ask about (%d)" % [where, closure_pieces])
 		t.check(closure_asks >= closure_pieces,
 				"%s: every closure piece asked the sitting's library for its page (%d of %d)"
 				% [where, closure_asks, closure_pieces])
