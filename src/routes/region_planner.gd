@@ -113,10 +113,10 @@ class RegionPlan extends RefCounted:
 
 # ------------------------------------------------------------------- generation ---
 
-## Assigns every junction to a region and stores the result on `map` — `region_of_junction`,
-## `region_has_calm`. Called once, at generation, after hard blockers have taken their streets
-## (`CityGenerator._assign_regions`): a region may not grow across ground a dead end or a big
-## building just built over, and the absent streets (`CityMap.has_street()`) only carry that once
+## Assigns every junction to a region and stores the result on `map`
+## (`CityMap.record_junction_regions()`, `record_calm_regions()`). Called once, at generation, after
+## hard blockers have taken their streets (`CityGenerator._assign_regions`): a region may not grow
+## across ground a dead end or a big building just built over, and the absent streets (`CityMap.has_street()`) only carry that once
 ## the blockers are placed.
 ##
 ## `rng` seeds only the farthest-point sample's starting junction — everything after that is

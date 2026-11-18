@@ -1112,7 +1112,7 @@ func _test_a_baked_page_says_which_moment_loaded_it(t: TestRunner) -> void:
 func _picture_map() -> CityMap:
 	var map := StreetMap.full()
 	map.generated_from(4242)
-	map.place_home(Vector2i(1, 1))
+	map.record_home_block(Vector2i(1, 1))
 	map.home_rect = Rect2i(CityMap.block_rect(Vector2i(1, 1)).position + Vector2i(2, 2),
 			Vector2i(3, 2))
 	map.calm_blocks = [Vector2i(8, 8)] as Array[Vector2i]

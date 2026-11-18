@@ -818,7 +818,7 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 		chance *= GATEHOUSE_DAY_SEAL_SHARE
 	for rect in map.alley_lots():
 		# A through-alley can be built over by a later generation pass (`CityGenerator.
-		# _make_the_pair_solid`), which does not retract it from `alley_rects` — so the ground is
+		# _make_the_pair_solid`), which does not retract it from `CityMap.alley_lots()` — so the ground is
 		# checked rather than trusted.
 		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
 			continue

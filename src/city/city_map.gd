@@ -757,7 +757,7 @@ func generated_from(seed_value: int) -> void:
 	_seed_used = seed_value
 
 ## Records the block she lives on (`_home_block`).
-func place_home(block: Vector2i) -> void:
+func record_home_block(block: Vector2i) -> void:
 	_home_block = block
 
 ## Records which corridor is the main road (`main_road`).
