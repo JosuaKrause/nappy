@@ -147,15 +147,8 @@ full text names the files each step owns.
    tree where she is going and is handed no siting (step 4's first pull request, the record
    polite-tapir-tall-marmot): *proposed, not asked for*, the design's pick, open to the player. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
    ground still needs it.
-5. **The escape city's draw is the same unit draw** with three settings on the day's spec: one bag
-   for the whole walk, at most one event a street, and every unit drawn before she sets off, in the
-   walk's own order. `EventScheduler._draw_the_walk()` and the spec's switch between draws go, and a
-   refused marble stays in the bag. *Open, for the entry lilac-marten (the fuller escape), which
-   retunes that density:* the player's order has empty as the rarest outcome ("trucks > explosions >
-   vans > barriers > empty", inbox #785 in minty-lemur), while about a third of the streets stand empty today; this
-   step keeps today's share and `tests/probes/escape_winnable.gd` shows the before and after.
 
-Steps 4 and 5 touch different files and run in parallel. The dawn draw is a small file of its own
+The dawn draw is a small file of its own
 (`src/events/dawn_phases/dawn_draw.gd`).
 
 **How a step is accepted.** Its suites pass, as for every step of the refactor ("for the refactor

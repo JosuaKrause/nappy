@@ -16,5 +16,10 @@ orchestrator's, proposed and open to the player's correction.*
 - **Two more readings, in the background:** winnability and frame time on `main` when placement
   closes, and again after the events' field-read conversion, each added to the same folder as a
   further column, with the same commands and seeds, and the machine's load noted before each run.
+- **The escape's mix and walks, listed for the end remeasure** (step 5's switch, the record
+  polite-tapir-coral-badger; `tests/probes/escape_winnable.gd`, 24 seeds): main before the switch planned 0.66
+  dangers a street and 34% of streets with none (trucks 167, explosions 193, vans 91, roadblocks 44),
+  and walked out to the tunnel on 13 walks and to the bridge on 10; after it, 0.66 and 34% (181,
+  178, 89, 46), 12 and 10.
 - **Nothing is judged here.** A number that moved is listed for the end remeasure; no step waits on
   a reading.
