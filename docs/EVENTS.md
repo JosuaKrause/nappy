@@ -2464,10 +2464,13 @@ obstacle survivable")* Four things make that true:
   raised-hand picture at his post is inside the camera's view, and he charges only if she is still
   inside his radius once his 2.0s warning has run.
 
-So walking straight past a posted band meets his charge and is caught, on every street and in both
-directions (the warning's 2.0s runs while she walks on, so he charges with her already past him, and
-he closes the gap at 38px/s more than her walk; the rig walks her along the sidewalk to where the
-ground stops her, a building or a street's end, as it stops her in play), and walking in until his hand goes up, standing
+So walking straight past a posted band meets his charge and is caught along his street, in both
+directions: the warning's 2.0s runs while she walks on, so he charges with her 106-123px ahead, and
+he closes the gap at 38px/s more than her walk, which lands the catch about 400px past the band
+(399-418px on every walk the probe measures). Where his street ends sooner (two of the probe's streets
+end 209px and 304px past the band) she can turn the next corner first, and his chase does not follow
+her round a building, so turning that corner gets her away; the rig holds her at the wall instead of
+turning her. Walking in until his hand goes up, standing
 until he charges, running back until he gives up and then walking past costs what the run costs
 and nothing more, awake or asleep. `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) walks exactly that on every roadblock street of two seeds' plans,
 in both directions (it requires every straight walk past a posted guard caught), and on seed 4216201080 booted from the building through `main.tscn`; it walks
