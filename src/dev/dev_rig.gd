@@ -367,9 +367,8 @@ static func apply_meter_override(baby: Baby, override: Vector2) -> void:
 		return
 	if override.x < 0.0:
 		return
-	baby.sleepiness = override.x
-	baby.excitement = override.y
+	baby.seed_meters(override.x, override.y)
 	# A full meter means "show me the walk home". Left to settle on its own it never would:
 	# a stationary player drains sleepiness faster than the state check can fire.
-	if baby.sleepiness >= Tuning.METER_MAX:
+	if baby.sleepiness_level() >= Tuning.METER_MAX:
 		baby.force_sleep()

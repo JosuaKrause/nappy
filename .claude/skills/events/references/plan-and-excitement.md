@@ -59,7 +59,9 @@ Events never push a value at the baby. `Baby` asks the `WorldContext` for the so
 position (`excitement_sources_at()`, each paired with what it answers from `contribution_at()`:
 `ExcitementSource`, which each instance composes as `excitement`) and sums them itself. This is why
 events compose by simple addition, there is no ordering to get wrong, and an event can be tested
-without a scene. **Do not add a code path that writes to `Baby.excitement` from outside.**
+without a scene. **Do not add a code path that feeds her excitement meter from outside `Baby`.**
+The developer's rigs start her bars where a capture wants them (`Baby.seed_meters()`); nothing in
+play calls it.
 
 **Nothing reaches her through a building, and a new source has to ask.** Every source's
 `ExcitementSource.contribution_at()` zeroes a positive field when `WorldMap.wall_between()` finds

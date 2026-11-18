@@ -773,14 +773,14 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 		if robber.is_lethal_at(her):
 			result["caught_at"] = elapsed
 			break
-		if baby.state == GameEnums.BabyState.CRYING:
+		if baby.condition() == GameEnums.BabyState.CRYING:
 			result["cried"] = true
 			break
 		if robber.gave_up or robber.is_finished or robber.is_leaving:
 			result["gave_up"] = robber.gave_up
 			result["ended"] = true
 			break
-	result["excitement"] = baby.excitement
+	result["excitement"] = baby.excitement_level()
 	_give_the_ticks_back(held)
 	stroller.free()
 	robber.free()

@@ -15,7 +15,7 @@ description: Rules for adding or changing an event in the catalogue — the fair
 - **A new row owes a drawing of its own.** No two rows share a picture or a badge silhouette.
 - **Whether a row telegraphs its coming is the rule's question**, never switched to pass a contract.
 - **Nothing appears in her view and nothing vanishes while she is looking at it.**
-- **Excitement is a pure query.** Nothing writes `Baby.excitement` from outside.
+- **Excitement is a pure query.** Nothing outside `Baby` feeds her excitement meter.
 - **A guarantee about a day is decided at dawn or by a unit's own draw (`UnitDraw`)**, never in the
   streaming.
 - **A number that moves regenerates `docs/COSTS.md` in the same commit** (the **balance** skill).
@@ -206,8 +206,8 @@ are `references/flocks-and-moving-pictures.md`.
 **Do not move a guarantee out of the dawn (`EventScheduler.build_day()`) or a unit's own draw
 (`UnitDraw`) and into the streaming.** Every guarantee is stated over a day and is a property of
 the plan, which the dawn and each unit's draw make the same whatever her path; what streams is the
-instantiation, and a spent plan stays spent while a running one resumes. **Do not add a code path that writes to
-`Baby.excitement` from outside**: `Baby` asks the world for its sources and sums them, and anything
+instantiation, and a spent plan stays spent while a running one resumes. **Do not add a code path that feeds her
+excitement meter from outside `Baby`**: `Baby` asks the world for its sources and sums them, and anything
 that emits is an `ExcitementSource`, which asks whether a wall stands between it and her. The
 reasons and the traps (the stream radius against the widest field, what a stream-out carries, the
 caret's projection and the wall) are `references/plan-and-excitement.md`.

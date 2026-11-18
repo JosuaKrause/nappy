@@ -167,7 +167,7 @@ func _walk(t: TestRunner, walk: String, world: WorldContext, sources: Array[Exci
 		cues_usec += Time.get_ticks_usec() - began
 		here = rig.global_position
 		printed += _print_the_sources(walk, tick, events, crowd, here)
-		print("XF_BABY %s | %d | %s" % [walk, tick, _hex([baby.excitement, baby.last_incoming,
+		print("XF_BABY %s | %d | %s" % [walk, tick, _hex([baby.excitement_level(), baby.last_frame_incoming(),
 				baby.decay_in_window()])])
 		if tick % 60 == 0:
 			print("XF_WHERE %s | %d | at %s | %d live" % [walk, tick, here, events.active_count()])

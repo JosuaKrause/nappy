@@ -647,11 +647,10 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	player.reset_at(at, DIRECTIONS[setup.get("player", {}).get("facing", "south")])
 	baby.reset()
 	var initial: Dictionary = setup.get("player", {})
-	baby.excitement = float(initial.get("excitement", 0))
-	baby.sleepiness = float(initial.get("sleep", 0))
+	baby.seed_meters(float(initial.get("sleep", 0)), float(initial.get("excitement", 0)))
 	# Asleep where the walk starts her asleep (`DaySpec.starts_with_the_baby_asleep()`, the escape's
 	# city), or where the scene fills her sleep.
-	if spec.starts_with_the_baby_asleep() or baby.sleepiness >= Tuning.METER_MAX:
+	if spec.starts_with_the_baby_asleep() or baby.sleepiness_level() >= Tuning.METER_MAX:
 		baby.force_sleep()
 	if setup.has("column"):
 		_install_column(setup.column, errors)
@@ -1416,8 +1415,7 @@ func _observe() -> void:
 					# The baby's own state, the one `Baby` sets by the game's sleep rule and the
 					# pram's zzz is drawn from -- never a recipe-authored indicator.
 					var baby := actor.get_node_or_null("Baby") as Baby if actor is Stroller else null
-					passed = baby != null and (baby.state == GameEnums.BabyState.ASLEEP) \
-							== (check.condition == "asleep")
+					passed = baby != null and baby.is_asleep() == (check.condition == "asleep")
 				"pursuing":
 					passed = actor is EventInstance and actor.def.pursuit != null \
 							and not actor.is_telegraphing() and not actor.is_waiting() \

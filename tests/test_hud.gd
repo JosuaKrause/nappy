@@ -421,7 +421,7 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t: Test
 ## one-time lookup of the baby came back empty and the readout stayed on `hud.tscn`'s own
 ## placeholder text, "awake", for the whole section, no matter what she actually was. The HUD now
 ## re-asks the group whenever it has no baby yet, so the first frame the escape's `Baby` exists is
-## the first frame the readout can see it too — the same `Baby.state` the pram's own picture
+## the first frame the readout can see it too — the same `Baby.condition()` the pram's own picture
 ## (`Stroller._draw_baby_cue()`) already reads.
 func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t: TestRunner) -> void:
 	var run := _run_on(1)
@@ -437,7 +437,7 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t: TestR
 	baby.use_bus(EventBus)
 	stroller.add_child(baby)
 	baby.set_physics_process(false)
-	baby.state = GameEnums.BabyState.ASLEEP
+	baby.force_sleep()
 
 	await UIScreens.frames(t)
 	t.check(_label(hud, "State").text.begins_with("asleep"),

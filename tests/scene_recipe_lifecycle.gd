@@ -151,11 +151,11 @@ func _meters_hold(t: TestRunner, main: Node, recipe: SceneRecipeRuntime, label: 
 	var sleep_rate := maxf(Tuning.sleepiness_gain_calm(1), Baby.SLEEPINESS_DRAIN_IDLE)
 	var sleep_from := Tuning.METER_MAX if asleep else float(authored.get("sleep", 0))
 	var excite_from := float(authored.get("excitement", 0))
-	t.check(absf(baby.sleepiness - sleep_from) <= sleep_rate * seconds + 0.01
-			and baby.excitement <= Tuning.METER_MAX
-			and baby.excitement >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER * seconds - 0.01,
+	t.check(absf(baby.sleepiness_level() - sleep_from) <= sleep_rate * seconds + 0.01
+			and baby.excitement_level() <= Tuning.METER_MAX
+			and baby.excitement_level() >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER * seconds - 0.01,
 			"%s: her meters are %.2f sleep and %.2f excitement after %d ticks, from %.1f and %.1f"
-			% [label, baby.sleepiness, baby.excitement, recipe.tick, sleep_from, excite_from])
+			% [label, baby.sleepiness_level(), baby.excitement_level(), recipe.tick, sleep_from, excite_from])
 
 ## The free-play boot of `path`, played the ways a player plays a scene and left the ways one is
 ## left. Returns `{"initial": <its start>, "bounded_returned": <she went out of a bounded scene

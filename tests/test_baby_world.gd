@@ -97,6 +97,7 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> v
 ## One physics tick, on which the baby's own frame runs her meter and writes what it was fed.
 func _let_her_tick(t: TestRunner, baby: Baby) -> void:
 	baby.reset()
-	# What the meter was fed is written by her own tick, so a tick that did not run reads nothing.
-	baby.last_incoming = -1.0
 	await PhysicsTicks.pass_ticks(t, 1)
+	# Her own tick writes what fed her meter and what it gave back. She is walking, so a tick that
+	# ran took her decay where the reset left none, and a check that nothing fed her is of a real tick.
+	t.close_to(baby.last_frame_decay(), baby.decay_rate(), "her tick ran and took her decay")

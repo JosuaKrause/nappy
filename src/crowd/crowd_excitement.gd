@@ -83,7 +83,7 @@ var _clock := 0.0
 
 ## Seconds of agitation left, and how loud the agitation started. A person she walked into is
 ## startled and says so; a car that had to sound its horn keeps sounding for a moment. This is how a
-## contact reaches the meter *without* anything writing to `Baby.excitement`: the source is the body
+## contact reaches the meter *without* anything outside `Baby` writing to it: the source is the body
 ## she touched, summed exactly like every other body.
 var _jolt := 0.0
 var _jolt_for := 1.0

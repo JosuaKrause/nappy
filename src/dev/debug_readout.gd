@@ -299,9 +299,9 @@ func _process(delta: float) -> void:
 		"",
 	] + FrameCost.readout_lines() + FrameRecorder.view_lines() + _frame_record_lines() + [
 		"",
-		"incoming    %6.2f /s" % _baby.last_incoming,
-		"decay       %6.2f /s" % _baby.last_decay,
-		"net         %6.2f /s" % (_baby.last_incoming - _baby.last_decay),
+		"incoming    %6.2f /s" % _baby.last_frame_incoming(),
+		"decay       %6.2f /s" % _baby.last_frame_decay(),
+		"net         %6.2f /s" % (_baby.last_frame_incoming() - _baby.last_frame_decay()),
 		"",
 		"arrows/WASD walk",
 		"shift       run",
@@ -471,7 +471,7 @@ func _capture_context() -> String:
 		where = _map.world_to_tile(_player.global_position)
 	var meters := "no baby yet"
 	if _baby:
-		meters = "exc %d, sleep %d" % [roundi(_baby.excitement), roundi(_baby.sleepiness)]
+		meters = "exc %d, sleep %d" % [roundi(_baby.excitement_level()), roundi(_baby.sleepiness_level())]
 	var screen: String = _screen_name.call() if _screen_name.is_valid() else "playing"
 	return "(%d,%d) | %s | %s" % [where.x, where.y, meters, screen]
 

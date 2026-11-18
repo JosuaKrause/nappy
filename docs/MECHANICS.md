@@ -524,7 +524,7 @@ meter, none of which a data-level test can see:
 
 ### The bump is a source, not a write
 
-**Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
+**Excitement stays a pure query.** A contact does not touch the baby's excitement meter (`Baby.excitement_level()` reads it); it *startles
 the person she walked into*, and the crowd's set (`CrowdSources`) sums that agent like it sums
 every other one. So contacts still compose by plain addition, there is still no ordering to get
 wrong, and `WorldContext.excitement_sources_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.

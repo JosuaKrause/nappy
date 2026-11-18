@@ -110,7 +110,7 @@ const BUMP_RADIUS := 14.0
 
 const BUMP_DURATION := 1.2
 
-## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into, and
+## A contact is not a write to the baby's excitement meter — it agitates the *person* she walked into, and
 ## the crowd sums them like any other body. Excitement stays a pure query; a bump startles the
 ## agent, never the meter — the invariant the **events** skill and `docs/MECHANICS.md` hold.
 ##
