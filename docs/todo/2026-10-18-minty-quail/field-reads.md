@@ -111,7 +111,7 @@ Left, each its own design question:
     (`CityMap.home_rect`, `courtyard_rects`,
     `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
     `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
-    `BuildingShadows.streamed`, `falls_on`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
+    `SceneryResidency.frame_locked`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
     `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
     `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the
     city scene, the blackout, the poster walls, the roof previews, the simulation builder, `main`) and goes with the
@@ -133,7 +133,7 @@ Left, each its own design question:
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
-  director and the rigs. So do `MoveProposal`, `GroundShape` and `Prop.shape`. *Read as* (the orchestrator's reading):
+  director and the rigs. So do `MoveProposal` and `GroundShape`. *Read as* (the orchestrator's reading):
   the map's are converted with whatever pass gives the blocked tiles an owner of their own, and the
   rest with their own classes' passes.
 - **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the
