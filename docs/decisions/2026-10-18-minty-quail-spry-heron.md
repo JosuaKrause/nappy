@@ -17,7 +17,7 @@ shape's readers use the existing `spine_half_length()` and `rounding_radius()`. 
 
 **Left:** the fields the events read stay public (the move proposal's `to`, `radius`, `parked`,
 `open`, `stood_round`; the ground shape's `kind`, `half_length`, `radius`, `half_extents`; the
-pram's `carrying` and `facing`; the view's `view` and `controls`) and go private with the events'
+pram's `carrying`, `facing` and `outright_moves`; the view's `view` and `controls`) and go private with the events'
 interface.
 
 **Proposed, not asked for, open to the player:** the names `has_parked()`, `is_carrying()`,

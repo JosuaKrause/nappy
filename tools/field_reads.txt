@@ -741,8 +741,6 @@ src/dev/scene_recipe_runtime.gd trace
 # [RoadClosure] src/routes/road_closure.gd
 src/events/day_planner.gd segment
 
-# [RouteTree] src/routes/route_tree.gd
-
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd frame_locked
 
