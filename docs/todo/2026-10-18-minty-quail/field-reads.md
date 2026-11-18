@@ -101,7 +101,8 @@ Left, each its own design question:
   `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets. `RoadClosure.segment` stays public for one reader,
   the day planner's holds (`src/events/day_planner.gd`), which go with the events' interface
   (`event-interface.md`); every other reader asks `street_key()`, `street_words()`, `mouth_rects()`
-  or `covers_tile()`, and the suites' reads of `closure.segment` go with that read. Two groups have a home of their own:
+  or `covers_tile()`, and the suites' and the probes' reads of `closure.segment` go with
+  that read. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
     a closure's segment go through `BlockPlan.Step`'s and `RoadClosure`'s methods. It is no longer a
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
