@@ -108,10 +108,13 @@ Left, each its own design question:
     `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
     `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
     `BuildingShadows.streamed`, `falls_on`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
-    `skip_agent_drawing`, `LaneMover.kind`) keeps its direct write in the game (the city, the city
-    scene, the blackout, the poster walls, the roof previews, the simulation builder, a crowd agent's
-    own setup) and goes with the tests-one-module
-    item (`tests-one-module.md`), when its tests read through a method the game also calls.
+    `skip_agent_drawing`) keeps its direct write in the game (the city, the city scene, the
+    blackout, the poster walls, the roof previews, the simulation builder) and goes with the
+    tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
+    also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
+    outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
+    suites set it on the agents they build by hand (its setter installs the car or walker rules),
+    so a public writer would be called by tests alone.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
