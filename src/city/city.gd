@@ -83,7 +83,7 @@ const _TREES := {
 
 ## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
 ## than asked for. `Prop.TREES` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
-## `_dress_block` below rolls `scale_factor` as large as 1.25x, so the widest either canopy is ever
+## `_dress_block` below rolls the prop's `scale_factor()` as large as 1.25x, so the widest either canopy is ever
 ## drawn is 50px; two canopies planted any closer than their own width overlap and read as one
 ## shape rather than as two trees, which is the clump this spacing exists to stop.
 const MIN_TREE_SPACING := 40.0 * 1.25

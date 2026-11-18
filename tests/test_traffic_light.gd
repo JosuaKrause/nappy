@@ -9,7 +9,7 @@ extends RefCounted
 const RecordingTrafficLightDrawer := preload("res://tests/recording_traffic_light_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
 
-## Signals that are green for every arm while they have power: the head reads `powered` first, so
+## Signals that are green for every arm while they have power: the head reads `is_powered()` first, so
 ## what it shows with the power out is the real class's answer.
 class GreenSignals extends TrafficSignals:
 	func _init() -> void:

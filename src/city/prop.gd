@@ -145,14 +145,14 @@ static func _playground_frame_shape() -> GroundShape:
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:
 	var name: StringName = TREES[absi(_variant) % TREES.size()]
-	# The size is read off the region table rather than off the drawn texture, since `scale_factor`
+	# The size is read off the region table rather than off the drawn texture, since `scale_factor()`
 	# is applied here and the two answer the same number either way — a region reports its
 	# source's own size.
 	var size := Vector2(AtlasTable.baked().native_size(name)) * _scale_factor
 	_shape.draw_shadow(self, Vector2.ZERO)
 	Sprites.draw_standing(self, atlas.region(name), Vector2.ZERO, size, absi(_variant) % 4 < 2)
 
-## The same standing tree every park tree draws, unscaled by `scale_factor`. The street tree's pit
+## The same standing tree every park tree draws, unscaled by `scale_factor()`. The street tree's pit
 ## is a ground decal owned by `CityDecals`, so it stays under the player and other entities.
 func _draw_street_tree() -> void:
 	_draw_tree()

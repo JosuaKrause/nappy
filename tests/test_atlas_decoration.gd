@@ -42,7 +42,7 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	var tree_name: StringName = Prop.TREES[0]
 	var expected_tree: float = float(AtlasTable.baked().native_size(tree_name).x) * 1.3 * 0.28
 	t.check(tree.shape() != null and is_equal_approx(tree.shape().radius, expected_tree),
-			"a tree's shadow radius follows scale_factor off the region table's own size (%.2f against %.2f)"
+			"a tree's shadow radius follows scale_factor() off the region table's own size (%.2f against %.2f)"
 			% [tree.shape().radius if tree.shape() else -1.0, expected_tree])
 	tree.free()
 

@@ -5,7 +5,7 @@ extends RefCounted
 ## **This suite tests `Blackout`, the one decision**: when the city goes dark, once, and when it comes
 ## back. It builds no city and plans no day. The parts the blackout switches are stand-ins that keep
 ## what it did to them: the parts `Blackout` is handed (a hand-drawn map with a power station on it,
-## a run's resistance, a `TrafficSignals` that holds the one `powered` flag, a `FakeEventManager`
+## a run's resistance, a `TrafficSignals` that holds the one `_powered` flag (`is_powered()`), a `FakeEventManager`
 ## that counts the masts it is asked to silence) and three `Building`s that were never put in a
 ## world. The map's station is the lot seed 4242's generated city has, read off once.
 ##
