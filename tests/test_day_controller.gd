@@ -85,13 +85,13 @@ func _test_a_day_starting_is_its_own_emit(t: TestRunner) -> void:
 	EventBus.day_time_changed.disconnect(on_emit)
 	day.free()
 
-## `--invincible` (`DayController.invincible`) freezes `time_remaining` outright (see
+## `--invincible` (`DayController.set_invincible()`) freezes `seconds_left()` outright (see
 ## `tick()`), so once the first second of a frozen day has been told, the value driving the
 ## gate never changes again -- the gate must not re-emit an unchanging number just because
 ## `tick()` keeps being called.
 func _test_invincible_stops_emitting_once_the_first_second_is_told(t: TestRunner) -> void:
 	var day := _rig(t)
-	day.invincible = true
+	day.set_invincible(true)
 	var emits := [0]
 	var on_emit := func(_remaining: float, _total: float) -> void:
 		emits[0] += 1
@@ -112,7 +112,7 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t: TestRunner
 ## once a second; the ending screens' formatter keeps three digits. *(inbox #746 in woolly-penguin.)*
 func _test_the_escape_clock_moves_every_frame(t: TestRunner) -> void:
 	var escape := _rig(t)
-	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	escape.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
 	var labels: Array[String] = []
 	var on_emit := func(remaining: float, _total: float) -> void:
 		labels.append(RunState.format_clock_hundredths(remaining))
@@ -156,7 +156,7 @@ func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t: TestRunner) -> 
 		shown.append(remaining)
 	EventBus.day_time_changed.connect(on_emit)
 	var escape := _rig(t)
-	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	escape.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
 	escape.start(180.0)
 	escape.tick(tick)
 	var after_the_tick := escape.seconds_left()
@@ -170,9 +170,9 @@ func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t: TestRunner) -> 
 	escape.free()
 	for frozen: bool in [false, true]:
 		var day := _rig(t)
-		day.invincible = frozen
+		day.set_invincible(frozen)
 		if frozen:
-			day.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+			day.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
 		day.start(180.0)
 		await _one_drawn_frame(t, day, shown)
 		t.check(shown.is_empty(), "a %s is told nothing by a drawn frame (%s)"
@@ -200,8 +200,8 @@ func _test_the_formatters(t: TestRunner) -> void:
 ## A frozen `--invincible` escape clock has nothing new to tell the HUD, flag or not.
 func _test_a_frozen_escape_clock_stays_silent(t: TestRunner) -> void:
 	var escape := _rig(t)
-	escape.invincible = true
-	escape.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+	escape.set_invincible(true)
+	escape.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
 	var emits := [0]
 	var count := func(_r: float, _tt: float) -> void:
 		emits[0] += 1
@@ -225,7 +225,7 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 		results.append(result)
 
 	var building := _rig(t)
-	building.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	building.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
 	building.day_finished.connect(on_finished)
 	building.start(180.0)
 	building.tick(0.016)
@@ -237,8 +237,8 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 
 	results.clear()
 	var city := _rig(t)
-	city.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
-	city.spec.exits = {CityEdge.Kind.TUNNEL: Vector2(1000.0, 0.0),
+	city.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
+	city.spec().exits = {CityEdge.Kind.TUNNEL: Vector2(1000.0, 0.0),
 			CityEdge.Kind.BRIDGE: Vector2(-1000.0, 0.0)}
 	city.day_finished.connect(on_finished)
 	city.start(180.0)

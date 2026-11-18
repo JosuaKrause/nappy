@@ -118,7 +118,7 @@ Left, each its own design question:
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
-  director and the rigs. So do `MoveProposal`, `GroundShape`, `Prop.shape`, and `Baby`'s and `DayController`'s fields. *Read as* (the orchestrator's reading):
+  director and the rigs. So do `MoveProposal`, `GroundShape`, `Prop.shape`, and `Baby`'s fields. *Read as* (the orchestrator's reading):
   the map's are converted with whatever pass gives the blocked tiles an owner of their own, and the
   rest with their own classes' passes.
 - **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by
@@ -130,7 +130,7 @@ Left, each its own design question:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
-    reads of other classes' fields (among them the day's clock) wait for those classes' passes;
+    reads of other classes' fields wait for those classes' passes;
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface

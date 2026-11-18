@@ -193,7 +193,8 @@ func _test_a_day_not_running_freezes_the_hold_instead_of_resetting_it(t: TestRun
 	await _stand(t, rig, Vector2.ZERO, 2)
 	await _stand(t, rig, Vector2(10, 0), 1)
 	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS / 2)
-	rig.day.phase = GameEnums.DayPhase.OVER
+	# Over at dusk, the way a day runs out: one tick of every second it had left.
+	rig.day.tick(rig.day.seconds_left())
 	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS * 5)
 	t.check(rig.triggered_at < 0, "ticks of a day not running never advance the hold, however many")
 	rig.day.start(1000.0)

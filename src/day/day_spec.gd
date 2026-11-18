@@ -5,10 +5,11 @@ extends RefCounted
 ##
 ## **The escape is a day with special settings, run by the day's own code** *(minty-lemur #785)*.
 ## A run is a sequence of these — the fourteen days, then the building, then the city — and one
-## `DayController` is handed whichever is being walked (`DayController.spec`), so the clock, the
-## goal, the loss and its cause, the finish path, the counters and the run log are the same code for
-## all sixteen; the city's dressing (`City.start_day()`), its seals (`SealPlanner.plan_day()`) and
-## its events (`EventScheduler.build_day()`) are the same code for the fourteen days and the city's
+## `DayController` is handed whichever is being walked (`DayController.use_the_spec()`), so the
+## clock, the goal, the loss and its cause, the finish path, the counters and the run log are
+## the same code for all sixteen; the city's dressing (`City.start_day()`), its seals
+## (`SealPlanner.plan_day()`) and its events (`EventScheduler.build_day()`) are the same code
+## for the fourteen days and the city's
 ## section. What differs between a day and a section of the escape is written here, as values, and
 ## read where it matters, rather than asked of a global "are we in the escape" anywhere else.
 ##

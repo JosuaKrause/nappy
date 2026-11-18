@@ -93,7 +93,7 @@ func _test_a_boot_gives_the_day_its_configured_length(t: TestRunner) -> void:
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--day-length", "77"]),
 			func(main: Boot.MainScript) -> void: main.use_sitting_home(home))
-	var spec: DaySpec = Boot.day(booted.main).spec
+	var spec: DaySpec = Boot.day(booted.main).spec()
 	t.check(spec != null and is_equal_approx(spec.length, 77.0),
 			"a boot with --day-length 77 starts a day 77s long (%s)" % [spec.length if spec else "no spec"])
 	booted.free_all()
@@ -1021,7 +1021,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 
 	await tree.physics_frame
 	var ticks_before: int = run.header().play_ticks()
-	var time_before := day.time_remaining
+	var time_before := day.seconds_left()
 	stepped[0] = 0
 	for i in 5:
 		await tree.physics_frame
@@ -1031,15 +1031,15 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	t.check(is_equal_approx(run.header().play_seconds() - ticks_before * tick,
 			stepped[0] * tick),
 			"play seconds are the ticks, one physics tick each")
-	t.check(absf((time_before - day.time_remaining) - stepped[0] * tick) < 0.0001,
+	t.check(absf((time_before - day.seconds_left()) - stepped[0] * tick) < 0.0001,
 			"and the day's countdown by the same ticks (%.4f of %.4f)"
-			% [time_before - day.time_remaining, stepped[0] * tick])
+			% [time_before - day.seconds_left(), stepped[0] * tick])
 
 	# A drawn frame a quarter second long, the lag spike a slow machine draws: the frame's own
 	# length adds nothing. Only the ticks the engine steps count.
 	await tree.physics_frame
 	ticks_before = run.header().play_ticks()
-	time_before = day.time_remaining
+	time_before = day.seconds_left()
 	stepped[0] = 0
 	OS.delay_msec(250)
 	await tree.physics_frame
@@ -1047,9 +1047,9 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	t.check(run.header().play_ticks() - ticks_before == stepped[0],
 			"a long drawn frame adds no play time beyond the ticks that ran (%d of %d)"
 			% [run.header().play_ticks() - ticks_before, stepped[0]])
-	t.check(absf((time_before - day.time_remaining) - stepped[0] * tick) < 0.0001,
+	t.check(absf((time_before - day.seconds_left()) - stepped[0] * tick) < 0.0001,
 			"and moves the day's countdown by those ticks alone (%.4f of %.4f)"
-			% [time_before - day.time_remaining, stepped[0] * tick])
+			% [time_before - day.seconds_left(), stepped[0] * tick])
 
 	# The escape's countdown: a day on a hundredths clock is told the drawn frame's position inside
 	# the tick, never moved by it.
@@ -1057,20 +1057,20 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	main.add_child(escape_day)
 	escape_day.setup(run)
 	escape_day.use_the_walk((_one(main, "City") as City).map, _one(main, "Stroller"))
-	escape_day.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	escape_day.use_the_spec(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
 	escape_day.start(30.0)
 	await tree.process_frame
 	OS.delay_msec(250)
 	await tree.process_frame
 	await tree.process_frame
-	t.check(is_equal_approx(escape_day.time_remaining, 30.0),
+	t.check(is_equal_approx(escape_day.seconds_left(), 30.0),
 			"and a long drawn frame moves the escape's countdown not at all (%.4f)"
-			% escape_day.time_remaining)
+			% escape_day.seconds_left())
 	escape_day.free()
 
 	# The pause screen: phase stays WALKING (a day in progress, Esc pressed), the tree pauses.
 	ticks_before = run.header().play_ticks()
-	time_before = day.time_remaining
+	time_before = day.seconds_left()
 	var esc := InputEventAction.new()
 	esc.action = &"pause"
 	esc.pressed = true
@@ -1078,7 +1078,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	t.check(pause.is_open() and tree.paused, "Esc opens the pause screen and pauses the tree")
 	for i in 4:
 		await tree.physics_frame
-	t.check(run.header().play_ticks() == ticks_before and day.time_remaining == time_before,
+	t.check(run.header().play_ticks() == ticks_before and day.seconds_left() == time_before,
 			"a paused tick does not, nor does the day's countdown run")
 	pause.close()
 
@@ -1087,9 +1087,9 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	day.start(0.1)
 	for i in 30:
 		await tree.physics_frame
-		if day.phase == GameEnums.DayPhase.OVER:
+		if day.phase() == GameEnums.DayPhase.OVER:
 			break
-	t.check(day.phase == GameEnums.DayPhase.OVER and summary.is_showing(),
+	t.check(day.phase() == GameEnums.DayPhase.OVER and summary.is_showing(),
 			"the day ran out and its summary is up")
 	ticks_before = run.header().play_ticks()
 	for i in 4:

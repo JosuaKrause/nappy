@@ -9,10 +9,13 @@ extends RefCounted
 ## writes, are `tests/test_telemetry.gd`'s. The observer is the one object under test, with real
 ## frames passing so its per-frame watchers run as they do in play.
 ##
-## **The player, the baby and the day's clock are built bare** (`Stroller.new()`, `Baby.new()`,
-## `DayController.new()`) and not faked: the observer is typed against those classes and has no
-## narrower interface to hand a fake, and what it reads off them (a position, a velocity, the
-## meters, the clock's reading) is state a case sets on the real node, as the game does. The
+## **The player and the baby are built bare** (`Stroller.new()`, `Baby.new()`) and not faked: the
+## observer is typed against those classes and has no narrower interface to hand a fake, and what
+## it reads off them (a position, a velocity, the meters) is state a case sets on the real node, as
+## the game does. **The day's clock is the shared fake clock** (`tests/ended_clock.gd`): the real
+## countdown, which a case runs with `start()` and `tick()`, answering what ended the day (the
+## loss's sentence, the way out) as the case sets it, since walking the clock's losing paths is its
+## own suite's job. The
 ## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
 ## `EventInstance` set up with a catalogue row), since the observer asks it only for
 ## `instances()` and its event sources, which answer nothing there.
@@ -38,6 +41,7 @@ extends RefCounted
 const PlanSignature := preload("res://tests/plan_signature.gd")
 const CityMapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
+const EndedClock := preload("res://tests/ended_clock.gd")
 ## The seed of the run the observer is handed, a run of the test's own.
 const RUN_SEED := 2
 ## The seed of the generated city the one planning case runs on.
@@ -242,7 +246,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	player.facing = Vector2.UP
 	var baby := Baby.new()
 	baby.use_bus(EventBus)
-	var clock := DayController.new()
+	var clock := EndedClock.new()
 	_fresh_log()
 	# The run the escape's city stands in, handed to the observer as the session hands it the boot's.
 	var day := WatchedDayParts.new(StreetMap.full())
@@ -261,7 +265,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	player.global_position = man.global_position + Vector2(man.def.outer_radius * 0.5, 0.0)
 	clock.tick(12.5)
 	await t.get_tree().process_frame
-	clock.failure_reason = "They were on the stairs."
+	clock.says = "They were on the stairs."
 	observer.day_finished(GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer")
 	player.global_position = start
 	observer.start(true)
@@ -273,7 +277,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 	_log.set_clock(40.0)
 	clock.tick(40.0)
-	clock.exit_reached = CityEdge.Kind.TUNNEL
+	clock.way_out = CityEdge.Kind.TUNNEL
 	observer.day_finished(GameEnums.DayResult.WON)
 
 	_log.end_run()

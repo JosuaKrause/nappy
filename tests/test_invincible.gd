@@ -1,7 +1,7 @@
 extends RefCounted
 ## `--invincible`, M100 "An invincible mode for playtesting": `DevFlags`' own parsing of the flag,
-## and what the run hands on from it — `DayController.invincible`, whose `_ignores_loss()` is the
-## single predicate all three losing paths consult, so a lost day under the flag stays running and
+## and what the run hands on from it — `DayController.set_invincible()`, whose `_ignores_loss()` is
+## the single predicate all three losing paths consult, so a lost day under the flag stays running and
 ## a won day still ends; `Baby.freeze_excitement()`; the HUD's own note (the run log's is
 ## `tests/test_telemetry.gd`'s). Each is
 ## handed its value directly, the way `main` hands it from the run's configuration.
@@ -141,7 +141,7 @@ func _teardown_meter_rig(rig: _MeterRig) -> void:
 func _test_crying_does_not_end_the_day_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
 	t.check(_results.is_empty(), "crying does not end the day under --invincible")
 	t.check(_day.is_running(), "the day is still running")
@@ -151,7 +151,7 @@ func _test_crying_does_not_end_the_day_under_invincible(t: TestRunner) -> void:
 func _test_hard_fail_does_not_end_the_day_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	EventBus.hard_fail_triggered.emit("abduction")
 	t.check(_results.is_empty(), "a hard fail does not end the day under --invincible")
 	t.check(_day.is_running(), "the day is still running")
@@ -164,7 +164,7 @@ func _test_hard_fail_does_not_end_the_day_under_invincible(t: TestRunner) -> voi
 func _test_the_clock_never_moves_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(10.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	_day.tick(9.0)
 	t.close_to(_day.seconds_left(), 10.0,
 			"the clock has not moved even after what would be most of the day", 0.001)
@@ -179,7 +179,7 @@ func _test_the_clock_never_moves_under_invincible(t: TestRunner) -> void:
 func _test_a_won_day_still_ends_under_invincible(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	_day.invincible = true
+	_day.set_invincible(true)
 	_player.global_position = _map.home_world_position()
 	EventBus.return_phase_started.emit()
 	t.check(_results == [GameEnums.DayResult.WON], "a won day still ends under --invincible")
@@ -208,7 +208,7 @@ func _test_the_meter_does_not_rise_under_invincible(t: TestRunner) -> void:
 func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t: TestRunner) -> void:
 	_build(t)
 	_day.start(10.0)
-	_day.invincible = false
+	_day.set_invincible(false)
 	_day.tick(3.0)
 	t.check(_day.seconds_left() < 10.0 - 0.01, "the clock counts down with the flag off")
 	_teardown()

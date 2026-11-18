@@ -131,42 +131,10 @@ src/main.gd atlas
 src/main.gd rotated
 src/main.gd timing
 
-# [DayController] src/day/day_controller.gd
-src/dev/debug_readout.gd phase
-src/dev/debug_readout.gd time_remaining
-src/dev/route_rig.gd invincible
-src/dev/route_rig.gd time_total
-src/dev/route_rig_planner.gd spec
-src/main.gd exit_reached
-src/main.gd invincible
-src/main.gd phase
-src/run/day_director.gd exit_reached
-src/run/day_director.gd failure_reason
-src/run/day_director.gd hard_fail_reason
-src/run/day_director.gd spec
-src/run/day_director.gd time_remaining
-src/run/day_director.gd time_total
-
 # [DayDirector] src/run/day_director.gd
 src/main.gd escape_follows
 src/main.gd first_day
 src/main.gd spec
-
-# [DayEnd] src/run/day_end.gd
-src/main.gd hands_over_to_the_escape
-src/main.gd is_section
-src/main.gd result
-src/main.gd run_over
-src/run/day_director.gd cause
-src/run/day_director.gd elapsed_seconds
-src/run/day_director.gd exit_reached
-src/run/day_director.gd finished_day
-src/run/day_director.gd goes_back
-src/run/day_director.gd hands_over_to_the_escape
-src/run/day_director.gd is_section
-src/run/day_director.gd reason
-src/run/day_director.gd result
-src/run/day_director.gd run_over
 
 # [DaySpec] src/day/day_spec.gd
 src/dev/brief_presser.gd section
@@ -944,13 +912,6 @@ src/run/day_director.gd meters_override
 src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
-
-# [RunFlow] src/run/run_flow.gd
-src/main.gd authored
-src/main.gd mode
-src/main.gd opening
-src/main.gd scene
-src/main.gd spec
 
 # [RunSession] src/telemetry/run_session.gd
 src/main.gd trace

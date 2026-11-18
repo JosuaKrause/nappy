@@ -564,7 +564,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t: TestRunner
 	t.check(indicator != null and indicator.get_parent() == main,
 			"a boot with nothing carried builds the symbol as its own child")
 
-	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
+	# Day 14 after the hand-over (`DayEnd.continues_into_the_escape()`): every task done, a win.
 	run.start_run(_SEED)
 	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)

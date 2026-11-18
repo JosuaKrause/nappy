@@ -162,7 +162,7 @@ func _parse_log(path: String) -> Dictionary:
 			# `WON` can fire before `_arrive()`'s tighter `_ARRIVE_RADIUS` does, so a day this
 			# table calls "home" may never print `RouteRig`'s own "reached 'home'" line at all —
 			# this is the only record of when she actually got there. `target` is always `home`,
-			# the one word `_current_word` can be while `DayController.phase` is `RETURNING`.
+			# the one word `_current_word` can be while `DayController.phase()` is `RETURNING`.
 			reached[target] = elapsed
 			outcome = "won (before the rig's own arrival check)"
 		elif text.contains("day ended"):

@@ -402,7 +402,7 @@ func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 
 ## A won day's `home` line: the margin, and in the escape where she got out — through the
 ## building's service exit, or by the tunnel or the bridge out of the city
-## (`DayController.exit_reached`, a `CityEdge.Kind`).
+## (`DayController.exit_taken()`, a `CityEdge.Kind`).
 func _won_line() -> String:
 	if _escape_section == "":
 		return "WON, %.1fs to spare" % _day.seconds_left()

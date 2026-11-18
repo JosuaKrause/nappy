@@ -141,7 +141,7 @@ func use_the_world(world: DayWorld, the_resistance: ResistanceDirector,
 ## The day about to be walked, handed to the day's clock.
 func use_the_day(the_spec: DaySpec) -> void:
 	spec = the_spec
-	day.spec = the_spec
+	day.use_the_spec(the_spec)
 
 ## **Starts the walk `the_spec` describes**: a day, an authored scene's day, or a section of the
 ## escape, the first time or again after a loss. Writes nothing to the save itself: each caller
@@ -313,13 +313,14 @@ func _print_the_start(ms: int) -> void:
 	if _in_a_city:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
 				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
-				events.active_count(), events.owed_ahead(), _crowd.agent_count(), day.time_total]
+				events.active_count(), events.owed_ahead(), _crowd.agent_count(),
+				day.seconds_total()]
 				+ "| calm: %s | closed: %s" % [_city_map.calm_summary(spend.block_arcs()),
 				_streets.closure_summary()])
 	else:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %.0fs"
 				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
-				events.active_count(), events.owed_ahead(), day.time_total])
+				events.active_count(), events.owed_ahead(), day.seconds_total()])
 
 ## Today's crowd, as dense as the spec says (`DaySpec.crowd_share()`), built round `at`: a day's
 ## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular
@@ -338,17 +339,14 @@ func _start_the_crowd(at: Vector2, today: int) -> void:
 ## was settled; the save and the screen are the caller's. *(minty-lemur #785: "losing an escape
 ## should still state the reason like the rest of the game. nothing should be different.")*
 func finish_day(result: GameEnums.DayResult) -> DayEnd:
-	var end := DayEnd.new()
-	end.result = result
 	# A day's number is the calendar's; a section's is its own, after the last day.
-	end.finished_day = calendar.day() if spec.section_kind() == DaySpec.Section.NONE \
+	var finished_day: int = calendar.day() if spec.section_kind() == DaySpec.Section.NONE \
 			else spec.day_number()
 	# Captured here, before anything below touches the clock, so the summary reads the instant
-	# the day actually ended. Clamped because `_process()` can call `_end()` one frame after
-	# `time_remaining` has gone slightly negative.
-	end.elapsed_seconds = clampf(day.time_total - day.time_remaining, 0.0, day.time_total)
-	end.reason = day.failure_reason
-	end.exit_reached = day.exit_reached
+	# the day actually ended. Clamped because `_process()` can call `_end()` one frame after the
+	# seconds left have gone slightly negative.
+	var elapsed := clampf(day.seconds_total() - day.seconds_left(), 0.0, day.seconds_total())
+	var end := DayEnd.new(result, day.loss_reason(), elapsed, day.exit_taken())
 	# **A day she wins with day 3's fire never met still burns.** The row's only day is day 3 and it
 	# is spent when it enters the world, so a won day on which every siting was refused would leave
 	# the run with no fire, no scar and no shell for day 4 to come out to. Lit here, off her path,
@@ -360,16 +358,16 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 			and spec.goal_kind() == DaySpec.Goal.HOME:
 		events.light_what_she_never_met(player.global_position)
 	# What ended the day, read once in the frame it ended (see `landed_by_group()`).
-	end.cause = _loss_cause(result)
+	var cause := _loss_cause(result)
 	# Every charge still running ends for the page's charging counter, cut short by the day, on the
 	# day it was charged — a section she walks out of or loses as much as a day.
 	if events:
 		events.end_the_charges_still_running()
 	# The one place a day's attempt ends, with everything about it. Before the calendar moves, so
 	# the outcome is written above the nerve it cost.
-	EventBus.day_ended.emit(end.finished_day, result, end.cause, end.elapsed_seconds)
+	EventBus.day_ended.emit(finished_day, result, cause, elapsed)
 	if spec.section_kind() != DaySpec.Section.NONE:
-		end.is_section = true
+		end.mark_a_section()
 		return end
 	# **The last night hands over rather than ending.** *(PLAYTEST-113: "the escape the building
 	# starts when the player has completed all tasks by the end of day 14".)* A won day 14 with
@@ -380,13 +378,14 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 		# Day 14 is still an ordinary won day, so it still gives a normal run a nerve back — called
 		# directly because this is the one day whose win never reaches `finish_day()`.
 		calendar.regain_a_nerve_for_a_won_day()
-		end.hands_over_to_the_escape = true
+		end.mark_continuing_into_the_escape()
 		return end
 	# Asked before `finish_day()`, which is what goes back: whether this loss spends a normal run's
 	# last nerve, so the summary says where she is going rather than that she tries the day again.
-	end.goes_back = result != GameEnums.DayResult.WON \
-			and calendar.a_loss_goes_back_to_the_checkpoint()
-	end.run_over = not calendar.finish_day(result)
+	if result != GameEnums.DayResult.WON and calendar.a_loss_goes_back_to_the_checkpoint():
+		end.mark_sending_the_run_back()
+	if not calendar.finish_day(result):
+		end.mark_ending_the_run()
 	return end
 
 ## Whether the day that just ended is the one the escape follows: **won, the last day, and every
@@ -405,7 +404,7 @@ func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 func _loss_cause(result: GameEnums.DayResult) -> String:
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
-			return LossCause.of(result, day.hard_fail_reason,
+			return LossCause.of(result, day.hard_fail_reason(),
 					events.what_struck_her() if events else "")
 		GameEnums.DayResult.LOST_CRYING:
 			return LossCause.of(result, "", "", landed_by_group())

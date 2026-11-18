@@ -142,8 +142,8 @@ var _leg_start_elapsed := 0.0
 var _leg_start_position := Vector2.ZERO
 
 ## This rig's own running total of every `_physics_process(delta)` it has been given since
-## `start_day()`, which is what `_elapsed()` reports rather than `_day.time_total -
-## _day.time_remaining` — see that function's own doc for why.
+## `start_day()`, which is what `_elapsed()` reports rather than `_day.seconds_total() -
+## _day.seconds_left()` — see that function's own doc for why.
 var _elapsed_seconds := 0.0
 
 var _resolving := false
@@ -278,7 +278,7 @@ func _physics_process(delta: float) -> void:
 	if _done or not _day or not _day.is_running():
 		return
 	_elapsed_seconds += delta
-	if _day.invincible and _elapsed_seconds > _day.time_total:
+	if _day.is_invincible() and _elapsed_seconds > _day.seconds_total():
 		_out_of_day()
 		return
 	var here := _player.global_position
@@ -349,8 +349,8 @@ func _begin_leg(target_world: Vector2) -> void:
 	_leg_stall_episodes = 0
 
 ## Elapsed day time, in simulated seconds — this rig's own `_elapsed_seconds`, not
-## `_day.time_total - _day.time_remaining`. The two agree while the day is played straight, since
-## both are the same sum of physics deltas since the day began; they part company under
+## `_day.seconds_total() - _day.seconds_left()`. The two agree while the day is played straight,
+## since both are the same sum of physics deltas since the day began; they part company under
 ## `--invincible`, which `DayController.tick()` (`src/day/day_controller.gd`) stands still on
 ## purpose — *"the clock never moves"*, so the capture it exists for never runs out of day — which
 ## is exactly wrong for the number this class exists to report. A `--route` run *under*
@@ -809,14 +809,14 @@ func _out_of_day() -> void:
 	_done = true
 	_release()
 	trace.note("route", "day %d: the day's %.0fs ran out before reaching '%s', %.1fs (day time)"
-			% [_day_number, _day.time_total, _current_word, _elapsed()])
+			% [_day_number, _day.seconds_total(), _current_word, _elapsed()])
 	_quit()
 
 ## Any day ending — a loss, or a win — is logged and quit rather than left to sit at a day summary
 ## nobody headless is going to dismiss.
 ##
 ## **`WON` is not a no-op here, and finding out why it has to be one is worth keeping.** A won day
-## can only follow *this* node walking her onto a `HOME` tile while `DayController.phase` is
+## can only follow *this* node walking her onto a `HOME` tile while `DayController.phase()` is
 ## `RETURNING`, which reads as `_arrive()`'s own `home` case — so the first build of this class
 ## left `WON` unhandled, on the reasoning that `_arrive()` already reports and quits before this
 ## signal could add anything to it. That reasoning assumes the two checks agree on the instant

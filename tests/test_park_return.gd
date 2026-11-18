@@ -195,7 +195,7 @@ func _check_the_next_morning(t: TestRunner, main: Node2D, label: String) -> void
 			% [label, ResistanceSteps.swing_day() + 1, _run.header().day()])
 	t.check(not Boot.summary(main).is_showing() and not t.get_tree().paused,
 			"%s: with the summary gone and the tree running" % label)
-	t.check(Boot.day(main).is_running() and Boot.day(main).phase == GameEnums.DayPhase.WALKING,
+	t.check(Boot.day(main).is_running() and Boot.day(main).phase() == GameEnums.DayPhase.WALKING,
 			"%s: the new day is running and she is walking" % label)
 	t.check(Boot.baby(main).state == GameEnums.BabyState.AWAKE,
 			"%s: the baby wakes with the day" % label)
@@ -233,7 +233,7 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t: TestRunner, seed_value:
 	t.check(_happenings.cordon != null, "%s: reaching the swing starts the cordon" % label)
 	_frame(main, shows)
 	Boot.baby(main).force_sleep()
-	t.check(Boot.day(main).phase == GameEnums.DayPhase.RETURNING,
+	t.check(Boot.day(main).phase() == GameEnums.DayPhase.RETURNING,
 			"%s: asleep, the day is the walk home" % label)
 	var results: Array = []
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
@@ -286,7 +286,7 @@ func _test_shut_in_with_the_baby_asleep(t: TestRunner, seed_value: int) -> void:
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
 	_wait_for_the_close(main, shows)
 	t.check(results == [GameEnums.DayResult.LOST_HARD_FAIL]
-			and Boot.day(main).hard_fail_reason == ParkCordon.TRAPPED,
+			and Boot.day(main).hard_fail_reason() == ParkCordon.TRAPPED,
 			"%s: shut in, the day is lost to the cordon (%s)" % [label, results])
 	t.check(Boot.summary(main).is_showing(), "%s: the lost day's summary is up" % label)
 	var day := _run.header().day()
@@ -294,7 +294,7 @@ func _test_shut_in_with_the_baby_asleep(t: TestRunner, seed_value: int) -> void:
 	t.check(_run.header().day() == day and not Boot.summary(main).is_showing()
 			and not t.get_tree().paused,
 			"%s: leaving it plays day %d again (day %d)" % [label, day, _run.header().day()])
-	t.check(Boot.day(main).is_running() and Boot.day(main).phase == GameEnums.DayPhase.WALKING
+	t.check(Boot.day(main).is_running() and Boot.day(main).phase() == GameEnums.DayPhase.WALKING
 			and Boot.baby(main).state == GameEnums.BabyState.AWAKE,
 			"%s: the retry runs with the baby awake" % label)
 	_check_no_cordon_stands(t, main, label, "the retry's dawn")

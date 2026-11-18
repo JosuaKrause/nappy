@@ -106,7 +106,7 @@ func map_edge_tile() -> int:
 func _test_start_sets_the_clock(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	t.check(_day.phase == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
+	t.check(_day.phase() == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
 	t.close_to(_day.seconds_left(), 300.0, "the clock starts full")
 	t.close_to(_day.fraction_remaining(), 1.0, "the light starts at midday")
 	_tick(150.0)
@@ -127,7 +127,7 @@ func _test_sleeping_starts_the_return_phase(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
-	t.check(_day.phase == GameEnums.DayPhase.RETURNING,
+	t.check(_day.phase() == GameEnums.DayPhase.RETURNING,
 			"a sleeping baby starts the walk home")
 	t.check(_results.is_empty(), "falling asleep does not by itself win the day")
 	_teardown()
@@ -158,7 +158,7 @@ func _test_being_woken_resumes_walking(t: TestRunner) -> void:
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.AWAKE)
-	t.check(_day.phase == GameEnums.DayPhase.WALKING,
+	t.check(_day.phase() == GameEnums.DayPhase.WALKING,
 			"being woken on the way home puts you back to walking her down")
 
 	_at_home()
@@ -588,8 +588,7 @@ func _test_the_epilogue_carries_no_brief_note(t: TestRunner) -> void:
 	summary.show_summary(SummaryModel.brief_for(run, Texts.RESUMED_DAY_LOST),
 			RunFlow.Mode.BRIEF)
 	t.check(note.visible, "a resumed day's brief shows its note")
-	var out := _ended(GameEnums.DayResult.WON, "", 42.0)
-	out.exit_reached = CityEdge.Kind.TUNNEL
+	var out := DayEnd.new(GameEnums.DayResult.WON, "", 42.0, CityEdge.Kind.TUNNEL)
 	summary.show_summary(SummaryModel.epilogue(out), RunFlow.Mode.EPILOGUE)
 	t.check(not note.visible, "and the epilogue after it does not carry it")
 	summary.free()
@@ -656,11 +655,7 @@ func _show_day(summary: Boot.DaySummaryScript, run: RunState, end: DayEnd) -> vo
 ## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence
 ## and the clock it ended on.
 func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd:
-	var end := DayEnd.new()
-	end.result = result
-	end.reason = reason
-	end.elapsed_seconds = elapsed
-	return end
+	return DayEnd.new(result, reason, elapsed)
 
 # ------------------------------------------------------- the resistance's own day ---
 

@@ -368,8 +368,8 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.went_back_to_a_checkpoint.connect(on_back)
 	EventBus.run_begun.connect(on_begun)
 	run.header().set_nerves(1)
-	# The day's own timeout: its clock runs out and one physics tick ends the day.
-	Boot.day(main).time_remaining = 0.0
+	# The day's own timeout: one tick of every second it had left runs its clock out and ends it.
+	Boot.day(main).tick(Boot.day(main).seconds_left())
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
 	t.check(run.header().day() == 8 and Boot.summary(main).is_showing(), "the lost-day screen is up, at day 8")
@@ -516,10 +516,8 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t: TestRunner) -> voi
 	run.header().set_day(8)
 	var summary: Boot.DaySummaryScript = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
-	var end := DayEnd.new()
-	end.result = GameEnums.DayResult.LOST_TIMEOUT
-	end.reason = "Dusk came."
-	end.goes_back = true
+	var end := DayEnd.new(GameEnums.DayResult.LOST_TIMEOUT, "Dusk came.")
+	end.mark_sending_the_run_back()
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.BACK_TO_CHECKPOINT)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	t.check(body.text.contains("Back to day 8"), "it names the day she goes back to ('%s')" % body.text)

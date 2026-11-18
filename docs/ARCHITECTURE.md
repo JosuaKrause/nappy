@@ -715,7 +715,7 @@ the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and han
 day and the baby the plain values they need out of it: a day's length
 (`RunConfig.day_length_for()`, the one place it is decided) to `DayController.start()`, the
 resistance and the run log, and an escape section's length (`RunConfig.escape_section_length()`)
-to its `DaySpec`; `DayController.invincible` and the baby's frozen meter
+to its `DaySpec`; `DayController.set_invincible()` and the baby's frozen meter
 (`Baby.freeze_excitement()`); on `City` before `build()`, the ground mode, the frame lock and
 `--skip shadows`, which are the city's own drawing; and to the simulation's builder
 (`SimulationBuilder`), the other three `--skip` words, the forced blackout, `--pelican` and

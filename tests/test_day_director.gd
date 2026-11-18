@@ -14,11 +14,14 @@ extends RefCounted
 ## (the escape's building and city booted, the day's city through its fourteen days) is the finale
 ## and full-run suites' to show.
 ##
-## **The end on a bare world**: a day clock and an event manager, no city, no player. What a day's end
+## **The end on a bare world**: a day clock and an event manager, no city, no player. The clock is
+## `tests/ended_clock.gd`, the real countdown answering what ended the day as a case sets it, since
+## its losing paths are the clock's own suite's. What a day's end
 ## settles — the cause `day_ended` carries, the calendar, the hand-over to the escape — is decided
 ## there, so it is checked there.
 
 const SEED := 1717
+const EndedClock := preload("res://tests/ended_clock.gd")
 
 var _ended: Array = []
 ## A fresh run for every rig, handed to the director in place of the autoload.
@@ -34,6 +37,7 @@ func run(t: TestRunner) -> void:
 	_test_a_scene_recipe_never_hands_over(t)
 	_test_a_won_day_with_a_player_and_no_city_ends(t)
 	_test_a_section_is_ended_but_not_settled(t)
+	_test_a_city_section_won_carries_the_way_out(t)
 	_test_a_day_starts_in_its_order(t)
 	_test_the_city_section_starts_on_its_settings(t)
 	_test_the_building_section_starts_with_no_city(t)
@@ -46,15 +50,25 @@ func run(t: TestRunner) -> void:
 func _on_day_ended(day: int, result: int, cause: String, elapsed: float) -> void:
 	_ended.append([day, result, cause, elapsed])
 
+## The day's number the last `day_ended` sent: a day's the calendar's, a section's its own.
+func _day_sent() -> int:
+	var sent: Array = _ended.back()
+	return sent[0]
+
+## What ended the day, as the last `day_ended` sent it (`LossCause`), `""` for a win or a timeout.
+func _cause_sent() -> String:
+	var sent: Array = _ended.back()
+	return sent[2]
+
 ## The director over a bare world, on a run of its own freshly started on `SEED`.
 func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
-	var clock := DayController.new()
+	var clock := EndedClock.new()
 	clock.set_process(false)
 	t.add_child(clock)
 	clock.start(300.0)
-	clock.time_remaining = 120.0
+	clock.tick(180.0)
 	# The events' world: open ground drawn in a node the manager holds, and the run's own state
 	# (`EventManager.setup_world()`, as the escape's building is handed its world).
 	var events := EventManager.new()
@@ -71,7 +85,7 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	director.spec = spec
 	_ended.clear()
 	EventBus.day_ended.connect(_on_day_ended)
-	return {"director": director, "nodes": [clock, events]}
+	return {"director": director, "clock": clock, "nodes": [clock, events]}
 
 func _put_away(rig: Dictionary) -> void:
 	EventBus.day_ended.disconnect(_on_day_ended)
@@ -82,20 +96,21 @@ func _test_a_timeout_costs_a_nerve_and_names_no_cause(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var end := director.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-	t.check(end.cause == "" and end.finished_day == 1 and not end.is_section,
+	t.check(_cause_sent() == "" and _day_sent() == 1 and not end.ends_a_section(),
 			"a timeout on day 1 names no cause")
-	t.check(is_equal_approx(end.elapsed_seconds, 180.0), "and reads the clock at the instant it ended")
+	t.check(is_equal_approx(end.lasted_seconds(), 180.0), "and reads the clock at the instant it ended")
 	t.check(_ended == [[1, GameEnums.DayResult.LOST_TIMEOUT, "", 180.0]],
 			"and sends day_ended once, with that cause and clock (%s)" % [_ended])
-	t.check(_run.header().nerves() == Tuning.STARTING_NERVES - 1 and not end.run_over
-			and not end.goes_back, "the nerve is spent and the run goes on")
+	t.check(_run.header().nerves() == Tuning.STARTING_NERVES - 1 and not end.ends_the_run()
+			and not end.sends_the_run_back(), "the nerve is spent and the run goes on")
 	_put_away(rig)
 
 func _test_a_crying_day_is_named_by_what_landed_the_most(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	t.check(director.landed_by_group().is_empty(), "the bare world landed nothing")
-	t.check(director.finish_day(GameEnums.DayResult.LOST_CRYING).cause == "self",
+	director.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(_cause_sent() == "self",
 			"a crying day with nothing in the world that landed is her own")
 	_put_away(rig)
 
@@ -115,7 +130,8 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 	pelican.excitement.accumulate_landed(5.0)
 	t.check(director.landed_by_group() == {"cyclist": 3.0, "pelican": 5.0},
 			"the pelican's share is its own group (%s)" % [director.landed_by_group()])
-	t.check(director.finish_day(GameEnums.DayResult.LOST_CRYING).cause == "pelican",
+	director.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(_cause_sent() == "pelican",
 			"so a crying day the pelican landed the most on is lost to the pelican")
 	director.events.clear()
 	_put_away(rig)
@@ -123,8 +139,10 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 func _test_a_hard_fail_is_named_by_its_reason(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
-	director.day.hard_fail_reason = "charging_dog"
-	t.check(director.finish_day(GameEnums.DayResult.LOST_HARD_FAIL).cause == "charging-dog",
+	var clock: EndedClock = rig["clock"]
+	clock.struck_by = "charging_dog"
+	director.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(_cause_sent() == "charging-dog",
 			"a hard fail is named by the row that struck her")
 	_put_away(rig)
 
@@ -132,9 +150,9 @@ func _test_a_won_day_moves_the_calendar_on(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(not end.hands_over_to_the_escape and not end.run_over and _run.header().day() == 2,
+	t.check(not end.continues_into_the_escape() and not end.ends_the_run() and _run.header().day() == 2,
 			"a won day 1 is day 2 next")
-	t.check(end.cause == "", "and a win is named by nothing")
+	t.check(_cause_sent() == "", "and a win is named by nothing")
 	_put_away(rig)
 
 ## `finish_day()` requires only the clock and the run: a won day walked home with a player but no
@@ -145,7 +163,7 @@ func _test_a_won_day_with_a_player_and_no_city_ends(t: TestRunner) -> void:
 	var player := Stroller.new()
 	director.player = player
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(end.finished_day == 1 and _run.header().day() == 2, "the day ends and the calendar moves")
+	t.check(_day_sent() == 1 and _run.header().day() == 2, "the day ends and the calendar moves")
 	player.free()
 	_put_away(rig)
 
@@ -157,10 +175,10 @@ func _test_a_won_last_day_with_every_task_done_hands_over(t: TestRunner) -> void
 	_run.resistance().record_the_sabotage()
 	_run.header().set_nerves(Tuning.STARTING_NERVES - 2)
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(end.hands_over_to_the_escape, "a won last day with every task done hands over")
+	t.check(end.continues_into_the_escape(), "a won last day with every task done hands over")
 	t.check(_run.header().nerves() == Tuning.STARTING_NERVES - 1,
 			"and the won day gives a nerve back, as every won day does")
-	t.check(_run.header().day() == Tuning.RUN_LENGTH_DAYS and not end.run_over,
+	t.check(_run.header().day() == Tuning.RUN_LENGTH_DAYS and not end.ends_the_run(),
 			"and the calendar is left where it was for the escape to decide")
 	_put_away(rig)
 
@@ -172,7 +190,7 @@ func _test_a_scene_recipe_never_hands_over(t: TestRunner) -> void:
 	_run.resistance().record_the_sabotage()
 	director.escape_follows = false
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(not end.hands_over_to_the_escape, "a scene recipe's won last day never hands over")
+	t.check(not end.continues_into_the_escape(), "a scene recipe's won last day never hands over")
 	_put_away(rig)
 
 func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
@@ -181,16 +199,31 @@ func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
 	spec.number = 15
 	var rig := _rig(t, spec)
 	var director: DayDirector = rig["director"]
-	director.day.failure_reason = "She started crying."
-	director.day.exit_reached = CityEdge.Kind.TUNNEL
+	var clock: EndedClock = rig["clock"]
+	clock.says = "She started crying."
 	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(end.is_section and end.finished_day == 15 and end.cause == "self",
+	t.check(end.ends_a_section() and _day_sent() == 15 and _cause_sent() == "self",
 			"a section sends day_ended under its own number and cause")
-	t.check(end.reason == "She started crying." and end.exit_reached == CityEdge.Kind.TUNNEL,
-			"and its end carries the clock's own sentence and the way out, for the summary to say")
+	t.check(end.loss_reason() == "She started crying.",
+			"and its end carries the clock's own sentence, for the summary to say")
 	t.check(_run.header().nerves() == Tuning.STARTING_NERVES,
 			"and leaves what it costs to the section's own flow")
 	_put_away(rig)
+
+## The way she left the city, as the clock recorded it, is carried on the end: the page's `out` count
+## and the epilogue's tunnel-or-bridge line read it there (`main._finish_the_section()`,
+## `SummaryModel.epilogue()`).
+func _test_a_city_section_won_carries_the_way_out(t: TestRunner) -> void:
+	for way: int in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		var rig := _rig(t, DaySpec.for_section(DaySpec.Section.CITY, 60.0))
+		var director: DayDirector = rig["director"]
+		var clock: EndedClock = rig["clock"]
+		clock.way_out = way
+		var end := director.finish_day(GameEnums.DayResult.WON)
+		t.check(end.ends_a_section() and end.exit_taken() == way and end.loss_reason() == ""
+				and _cause_sent() == "", ("a city section won by way %d carries it on its end, named"
+				+ " by no loss (got %d)") % [way, end.exit_taken()])
+		_put_away(rig)
 
 # ------------------------------------------------------------------ the start ---
 
@@ -265,7 +298,7 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	director.use_the_flags(
 			func(_target: String) -> Vector2: return map.doorstep_world_position(),
 			func(_the_baby: Baby, _override: Vector2) -> void:
-				_asked.append("meters %s" % (clock.time_total > 0.0)))
+				_asked.append("meters %s" % (clock.seconds_total() > 0.0)))
 	var nodes: Array[Node] = [clock, events, player, baby, resistance]
 	if city:
 		nodes.append_array([city, crowd])
@@ -326,7 +359,7 @@ func _test_a_day_starts_in_its_order(t: TestRunner) -> void:
 	t.check(not _run.resistance().is_carrying_package(), "the dawn is photographed before it starts")
 	var clock: DayController = rig["clock"]
 	t.check(clock.is_running() and is_equal_approx(clock.seconds_total(), 210.0)
-			and clock.spec == spec, "the clock runs the day's own spec and length")
+			and clock.spec() == spec, "the clock runs the day's own spec and length")
 	_put_the_start_away(rig)
 
 ## The escape's city starts on the city section's settings: no photograph, no resistance, nobody on
