@@ -25,8 +25,8 @@ static func _unit(x: int) -> PlacementUnit:
 static func _accepts_all(_id: String) -> bool:
 	return true
 
-static func _accepts_no_row(id: String) -> bool:
-	return id == ViewBag.EMPTY
+static func _weighs_the_row_most(_id: String) -> float:
+	return 1.0e9
 
 static func _weighs_one(_id: String) -> float:
 	return 1.0
@@ -36,16 +36,25 @@ func _test_every_unit_is_handed_the_same_bag(t: TestRunner) -> void:
 	t.check(bags.bag_for(_unit(0)) == bags.bag_for(_unit(1)),
 			"two units of the walk are answered the one bag")
 
-## A bag of one row's marble and one empty marble: the first unit's rules refuse the row, so it
-## draws the empty marble, and the row is still in the bag for the second unit, whose rules take it.
+## A bag of one row's marble and one empty marble, the row weighed a billion to one so it comes up
+## first on every seed: the first unit's rules are asked about it and refuse it, so that unit draws
+## the empty marble, and the row is still in the bag for the second unit, whose rules take it. A
+## refused marble spent instead of left would leave the second unit the empty marble.
 func _test_a_marble_one_unit_refuses_is_there_for_the_next(t: TestRunner) -> void:
-	var bags := WholeWalkBag.new({"cafe_tables": 1, ViewBag.EMPTY: 1}, 5)
-	var first := bags.bag_for(_unit(0)).draw(_accepts_no_row, _weighs_one)
-	var second := bags.bag_for(_unit(1)).draw(_accepts_all, _weighs_one)
-	t.check(first == ViewBag.EMPTY, "a unit whose rules refuse the row draws the empty marble (%s)"
-			% [first])
-	t.check(second == "cafe_tables",
-			"and the row the first refused is drawn by the next unit that takes it (%s)" % [second])
+	for seed_value in 8:
+		var bags := WholeWalkBag.new({"cafe_tables": 1, ViewBag.EMPTY: 1}, seed_value)
+		var asked: Array[String] = []
+		var refuses_the_row := func(id: String) -> bool:
+			asked.append(id)
+			return id == ViewBag.EMPTY
+		var first := bags.bag_for(_unit(0)).draw(refuses_the_row, _weighs_the_row_most)
+		var second := bags.bag_for(_unit(1)).draw(_accepts_all, _weighs_the_row_most)
+		t.check(asked == ["cafe_tables"],
+				"seed %d: the first unit's rules were asked about the row, and refused it (%s)" % [seed_value, asked])
+		t.check(first == ViewBag.EMPTY, "seed %d: so it draws the empty marble (%s)" % [seed_value, first])
+		t.check(second == "cafe_tables",
+				"seed %d: and the row the first refused is drawn by the next unit that takes it (%s)"
+						% [seed_value, second])
 
 func _test_the_same_seed_draws_the_same(t: TestRunner) -> void:
 	var fill := {"cafe_tables": 4, "dog_walker": 3, ViewBag.EMPTY: 5}

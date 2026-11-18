@@ -19,20 +19,22 @@ extends RefCounted
 const FINALE_BAG_EMPTY := 9
 const FINALE_BAG_EXPLOSIONS := 8
 const FINALE_BAG_ROADBLOCKS := 2
-## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
-## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
-## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the street that draws
-## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
-## 3 and roadblocks 2, and the trucks and explosions, which only wake the baby, make up the rest: a
-## van's catch and a guard's end the section, and a van's field is most of what the probe's walks
-## that cried had landed.
+## The escape's marble bag. Its four rows are in the player's order of how many *(inbox #785 in
+## minty-lemur: "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks,
+## off-screen explosions, unmarked vans and roadblocks (the barriers). **The two rows that take her
+## have the fewest marbles of the four**, vans 3 and roadblocks 2, and the trucks and explosions,
+## which only wake the baby, make up the rest: a van's catch and a guard's end the section, and a
+## van's field is most of what the probe's walks that cried had landed.
 ##
-## The empty marbles are counted apart from the order: a marble a street's rules refuse stays in
-## the bag (`ViewBag`), so the empty marbles are what leaves a street with nothing, and
-## `FINALE_BAG_EMPTY` is the count at which about a third of the streets stand nothing, the share
-## the escape had when a refused marble was spent. One measurement
-## (`tests/probes/escape_winnable.gd`), not a fit; the entry lilac-marten (the fuller escape) sets
-## the count from here. A fill is the sum of the five and a plan has about 31 open streets.
+## The empty marbles, where the street that draws one stands nothing, are counted apart from that
+## order: a marble a street's rules refuse stays in the bag (`ViewBag`), so the empty marbles are
+## what leaves a street with nothing, and `FINALE_BAG_EMPTY` is the count at which about a third of
+## the streets stand nothing, the share the escape had when a refused marble was spent. Nine puts
+## the empty marble second most numerous, against the player's order with empty last: the
+## orchestrator's reading of the player's approval of the design review (inbox #1268 in
+## olive-ferret), open to the player. One measurement (`tests/probes/escape_winnable.gd`), not a
+## fit; the entry lilac-marten (the fuller escape) sets the count from here. A fill is the sum of
+## the five and a plan has about 31 open streets.
 const FINALE_BAG_TRUCKS := 10
 const FINALE_BAG_VANS := 3
 

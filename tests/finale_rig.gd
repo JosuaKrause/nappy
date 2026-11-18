@@ -1403,7 +1403,7 @@ func _test_the_game_draws_the_escape_from_tunings_bag(t: TestRunner) -> void:
 		var plan: FinalePlanner.Plan = built["plan"]
 		var placements: Array[EventPlan] = built["placements"]
 		var bare := _bare_plan(map, seed_value)
-		var placed := _escape_rows_from(map, bare, _city_spec().bag)
+		var placed := _escape_rows_from(map, bare, _city_spec().walk_bag())
 		var played: Array[EventPlan] = []
 		for placement in placements:
 			if ESCAPE_ROWS.has(placement.def.id):
@@ -2088,7 +2088,7 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t: TestRunner) -> v
 		# event's own row.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for placement in GameDawn.of(_city_spec(), rng, map).on(plan).plan().placements():
+		for placement in GameDawn.of(_city_spec(), rng, map).masts(_NO_MASTS).on(plan).plan().placements():
 			var tile := map.world_to_tile(placement.position)
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"

@@ -2489,8 +2489,8 @@ below, and is never offered the ground she starts on.
 
 **Three of a day's rules are not the escape's, each by the player's word** *(inbox #785 in minty-lemur, asked
 which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's
-streets and the caps)*, each a setting the city section's spec turns off
-(`DaySpec.keeps_unused_calm_clear`, `holds_the_home_streets`, and the walk's own bag, `walk_bag()`):
+streets and the caps)*, each a setting of the city section's spec
+(`DaySpec.keeps_unused_calm_clear` and `holds_the_home_streets` turned off, and the walk's own bag, `walk_bag()`, filled):
 
 - **The calm a day leaves alone** (`CalmAreas.unused_ground()`: nothing's field may reach a calm
   area she has not used yet). The escape is the climax and the chains pass a calm area at every
