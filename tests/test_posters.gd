@@ -584,7 +584,7 @@ func _check_every_front_is_blank_wall(t: TestRunner, city: City, map: CityMap, s
 	var wrong: Array[String] = []
 	for tile: Vector2i in fronts:
 		var building: Building = blank.get(tile)
-		if building == null or building.is_on_home_block() or building.power_station:
+		if building == null or building.is_on_home_block() or building.is_power_station():
 			wrong.append(str(tile))
 	t.check(wrong.is_empty(), "seed %d: every poster cell is blank wall off her block (%s)"
 			% [seed_value, ", ".join(wrong.slice(0, 5))])

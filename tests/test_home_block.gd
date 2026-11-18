@@ -253,9 +253,9 @@ func _test_non_home_buildings_still_roll_the_seed(t: TestRunner) -> void:
 			differing += 1
 		# The height rolls within the range its block's purpose allows, so it is the lots whose
 		# block has the same purpose on both seeds that show the roll itself.
-		if partner.district == building.district and not building.power_station:
+		if partner.district() == building.district() and not building.is_power_station():
 			same_ground += 1
-			if not is_equal_approx(partner.height, building.height):
+			if not is_equal_approx(partner.height(), building.height()):
 				heights_differing += 1
 	t.check(compared > 20, "the sweep found enough shared non-home lots to compare (%d)" % compared)
 	t.check(differing > 0,
@@ -286,16 +286,16 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) 
 		var checked := 0
 		var heights := {}
 		for building: Building in city.buildings():
-			if building.is_on_home_block() or building.power_station:
+			if building.is_on_home_block() or building.is_power_station():
 				continue
 			var rect := building.lot_rect()
 			var partner: Building = twin.get(rect)
 			t.check(partner != null and partner.look_variant() == building.look_variant(),
 					"seed %d, lot %s: a non-home building's colour variant is the same on a rebuilt city"
 					% [seed_value, rect])
-			t.check(partner != null and is_equal_approx(partner.height, building.height),
+			t.check(partner != null and is_equal_approx(partner.height(), building.height()),
 					"seed %d, lot %s: and so is its height" % [seed_value, rect])
-			var tiles := building.height / float(Tuning.TILE_SIZE)
+			var tiles := building.height() / float(Tuning.TILE_SIZE)
 			var cap := maxi(1, mini(rect.size.y - 1, floori(rect.size.y * City.MAX_HEIGHT_FRACTION)))
 			t.check(is_equal_approx(tiles, roundf(tiles)) and tiles >= 1.0 and tiles <= cap,
 					"seed %d, lot %s: its height (%.2f tiles) is whole, at least one and at most %d"
@@ -309,7 +309,7 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) 
 		var by_block := {}
 		var by_block_and_depth := {}
 		for building: Building in city.buildings():
-			if building.is_on_home_block() or building.power_station:
+			if building.is_on_home_block() or building.is_power_station():
 				continue
 			var block := City.block_of(building.lot_rect())
 			by_block[block] = by_block.get(block, []) + [building]
@@ -323,7 +323,7 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) 
 			height_groups += 1
 			var seen := {}
 			for building: Building in group:
-				seen[roundi(building.height)] = true
+				seen[roundi(building.height())] = true
 			if seen.size() >= 2:
 				varied_heights += 1
 		var varied_variants := 0

@@ -38,7 +38,7 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 			"exterior uses the plain documented ground texture")
 	var station: Building = null
 	for building in city.buildings():
-		if building.power_station:
+		if building.is_power_station():
 			station = building
 	t.check(station != null, "bounded rendering includes the real power station")
 	if station:
@@ -63,11 +63,11 @@ func _test_the_examples(t: TestRunner) -> void:
 		var wall_tile := Vector2i(118 if side == "hall" else 132, 14)
 		var found := false
 		for building in city.buildings():
-			if building.lot.position != wall_tile:
+			if building.lot_rect().position != wall_tile:
 				continue
 			found = true
-			t.check(not building.covered_ground_cols.is_empty(), "%s renders adjoining facade columns" % side)
-			for covered: bool in building.covered_ground_cols:
+			t.check(not building.covered_ground_cols().is_empty(), "%s renders adjoining facade columns" % side)
+			for covered: bool in building.covered_ground_cols():
 				t.check(covered == (side == "hall"), "%s adjoining column has a roof or keeps its facade" % side)
 		t.check(found, "%s uses the generator's real adjoining dead-end building" % side)
 		var exterior := Rect2(-20000, -20000, 640, 480)

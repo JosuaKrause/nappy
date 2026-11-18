@@ -173,8 +173,8 @@ func _coverage(city: City) -> void:
 					if GroundCells.source_id(ground, cell) >= 0:
 						seen_cells[cell] = true
 			for building in city.buildings():
-				if rect.intersects(map.tile_rect_to_world(building.lot)):
-					seen_buildings[building.lot] = true
+				if rect.intersects(map.tile_rect_to_world(building.lot_rect())):
+					seen_buildings[building.lot_rect()] = true
 		print("LAZY_COVERAGE " + JSON.stringify({"seed": map.city_seed(),
 			"route": "nearest_calm_return" if goal == near else "farthest_bfs_calm_return",
 			"round_trip_px": (path.size() - 1) * 64,
@@ -195,7 +195,7 @@ func _prepare_every_region(ground: SceneryGround, city: City) -> void:
 func _building_count(city: City, rect: Rect2) -> int:
 	var result := 0
 	for building in city.buildings():
-		result += int(rect.intersects(city.map.tile_rect_to_world(building.lot)))
+		result += int(rect.intersects(city.map.tile_rect_to_world(building.lot_rect())))
 	return result
 
 func _counterfactual(city: City, t: TestRunner) -> void:

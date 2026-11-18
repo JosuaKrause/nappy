@@ -313,7 +313,7 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 			"Entities is the y-sorted layer above the buildings")
 	var station: Building = null
 	for child in buildings.get_children():
-		if child is Building and (child as Building).power_station:
+		if child is Building and (child as Building).is_power_station():
 			station = child
 	t.check(station != null, "the city has a power station building")
 	if station == null:
@@ -363,9 +363,7 @@ func _test_the_hall_is_lit_only_on_the_last_night(t: TestRunner) -> void:
 	var front := RecordingFrontDrawer.new()
 	var atlas := AtlasLibrary.new()
 	hall.equip(atlas, RoofDrawer.new(atlas), front)
-	hall.power_station = true
-	hall.station_door_col = 3
-	hall.station_yard_cols = Vector2i(14, 8)
+	hall.dress_as_power_station(3, Vector2i(14, 8))
 	hall.stand_on(Rect2i(), Vector2(704.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 128.0)
 	hall.day = Tuning.POWER_STATION_DAY
 	hall.powered = true
@@ -411,7 +409,7 @@ func _clerestory_band(front: RecordingFrontDrawer) -> Array[StringName]:
 func _test_the_yard_layer_is_tagged_scenery_as_it_enters_the_tree(t: TestRunner) -> void:
 	var station := Building.new()
 	station.stand_on(Rect2i(), Vector2(96.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
-	station.power_station = true
+	station.dress_as_power_station(0, Vector2i.ZERO)
 	station.equip(null, null, null)
 	t.add_child(station)
 	# The roof objects that enter beside it are counted as scenery by their class, so the layers

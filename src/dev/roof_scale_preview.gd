@@ -28,9 +28,7 @@ func _ready() -> void:
 	building.atlas = _atlas
 	building.position = Vector2(640, 576)
 	building.footprint = Vector2(1152, 448)
-	building.height = 64
-	building.variant = 4
-	building.district = GameEnums.BlockPurpose.BIG_BUILDING
+	building.draw_as(GameEnums.BlockPurpose.BIG_BUILDING, 4, 64)
 	building.roof_object_parent = entities
 	buildings.add_child(building)
 	for index in EQUIPMENT.size():

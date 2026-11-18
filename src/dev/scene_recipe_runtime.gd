@@ -569,7 +569,7 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	for roof: Dictionary in setup.get("roof_fixtures", []):
 		var found := false
 		for building in city.buildings():
-			if building.lot == SceneRecipe.rect(roof.lot):
+			if building.lot_rect() == SceneRecipe.rect(roof.lot):
 				found = true
 				errors.append_array(building.author_roof_furniture(roof.fixtures))
 		if not found:

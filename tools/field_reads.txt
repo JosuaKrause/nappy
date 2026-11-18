@@ -44,48 +44,21 @@ src/dev/scene_recipe_runtime.gd sleepiness
 
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
-src/city/city.gd condition
-src/city/city.gd covered_ground_cols
 src/city/city.gd day
 src/city/city.gd door_world_x_range
-src/city/city.gd power_station
 src/city/city.gd roof_extension_rows
-src/city/city.gd roof_extension_seamless
 src/city/city.gd scenery_clock
-src/city/city.gd seamless_cover_cols
-src/city/city.gd station_door_col
-src/city/city.gd station_yard_cols
 src/city/city.gd tint_variant
-src/city/city_fronts.gd condition
-src/city/city_fronts.gd is_home_building
-src/city/city_fronts.gd lot
-src/city/city_fronts.gd neighbor_window_col
 src/city/poster_walls.gd poster_art
 src/dev/roof_context_preview.gd atlas
-src/dev/roof_context_preview.gd district
 src/dev/roof_context_preview.gd footprint
-src/dev/roof_context_preview.gd height
 src/dev/roof_context_preview.gd roof_object_parent
-src/dev/roof_context_preview.gd variant
-src/dev/roof_network_preview.gd _roof_furniture
 src/dev/roof_network_preview.gd atlas
-src/dev/roof_network_preview.gd district
 src/dev/roof_network_preview.gd footprint
-src/dev/roof_network_preview.gd height
 src/dev/roof_network_preview.gd roof_object_parent
-src/dev/roof_network_preview.gd variant
 src/dev/roof_scale_preview.gd atlas
-src/dev/roof_scale_preview.gd district
 src/dev/roof_scale_preview.gd footprint
-src/dev/roof_scale_preview.gd height
 src/dev/roof_scale_preview.gd roof_object_parent
-src/dev/roof_scale_preview.gd variant
-src/dev/scene_recipe_draft.gd condition
-src/dev/scene_recipe_draft.gd district
-src/dev/scene_recipe_draft.gd height
-src/dev/scene_recipe_draft.gd lot
-src/dev/scene_recipe_draft.gd variant
-src/dev/scene_recipe_runtime.gd lot
 
 # [BuildingShadows] src/city/building_shadows.gd
 src/city/city.gd falls_on

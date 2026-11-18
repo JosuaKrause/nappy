@@ -50,9 +50,7 @@ func _ready() -> void:
 	building.name = "ReviewRoof"
 	building.position = Vector2(640, 576)
 	building.footprint = Vector2(1088, 384)
-	building.height = 64
-	building.variant = 4
-	building.district = GameEnums.BlockPurpose.BIG_BUILDING
+	building.draw_as(GameEnums.BlockPurpose.BIG_BUILDING, 4, 64)
 	building.roof_object_parent = _entities
 	_buildings.add_child(building)
 

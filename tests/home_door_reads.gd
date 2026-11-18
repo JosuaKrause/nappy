@@ -30,9 +30,9 @@ static func building(city: City) -> Building:
 	var right: float = drawn.position.x + half
 	for child in city.get_node("Buildings").get_children():
 		var candidate := child as Building
-		if candidate == null or not candidate.is_home_building:
+		if candidate == null or not candidate.is_on_home_block():
 			continue
-		var world := city.map.tile_rect_to_world(candidate.lot)
+		var world := city.map.tile_rect_to_world(candidate.lot_rect())
 		if world.position.x < right and world.end.x > left:
 			return candidate
 	return null

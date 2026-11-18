@@ -168,7 +168,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	var target := _view(building.residence().bounds().get_center())
 	scene.scenery.update(target, true)
 	# Lived in and powered, so the pictures say which windows the roll lit.
-	building.condition = Building.Condition.LIVED_IN
+	building.show_condition(Building.Condition.LIVED_IN)
 	building.powered = true
 	var windows := _window_pictures(building)
 	t.check(_lit_windows(building) > 0, "the building watched has lit windows to compare")
@@ -203,9 +203,9 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 				SceneryGround.bounds(SceneryGround.key_for(tile))):
 			t.check(GroundCells.source_id(scene.ground, tile) == -1, "distant cells have no resident owner")
 	building.day = 12
-	building.condition = Building.Condition.BOARDED
+	building.show_condition(Building.Condition.BOARDED)
 	building.powered = false
-	building.neighbor_window_col = 2
+	building.board_neighbor_window_at(2)
 	building.hand_over_posters({1: {"kind": 1, "tear": 0, "under": -1, "under_tear": 0, "side": 1}}, false)
 	seed(91234)
 	var expected_rng := randi()
@@ -214,11 +214,11 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	t.check(randi() == expected_rng, "scenery reconstruction consumes no global gameplay RNG")
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"residency preserves building identity and its collision resource")
-	building.condition = Building.Condition.LIVED_IN
+	building.show_condition(Building.Condition.LIVED_IN)
 	building.powered = true
 	t.check(_window_pictures(building) == windows and _drawer_of(building).drawn() == roof,
 			"returning artwork reconstructs the same seeded window and furniture layout")
-	building.condition = Building.Condition.BOARDED
+	building.show_condition(Building.Condition.BOARDED)
 	building.powered = false
 	_check_roof_ownership(t, scene)
 	for cycle in 3:
@@ -226,8 +226,8 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 		await _run_the_city_clock(t, scene, Building.VENT_FRAME_INTERVAL * 1.25)
 		scene.scenery.update(target, true)
 		_check_roof_ownership(t, scene)
-	t.check(building.day == 12 and building.condition == Building.Condition.BOARDED \
-			and not building.powered and building.neighbor_window_col == 2 \
+	t.check(building.day == 12 and building.condition() == Building.Condition.BOARDED \
+			and not building.powered and building.neighbor_window_col() == 2 \
 			and building.posters.has(1), "changes while unloaded survive reconstruction")
 	_check_coverage(t, scene, target)
 	scene.scenery.update(far, true)
@@ -258,7 +258,7 @@ func _test_roof_phase(t: TestRunner, seed_value: int) -> void:
 	var scene := _scene_for(t, seed_value)
 	var observed := 0
 	for building in scene.buildings:
-		if building.district != GameEnums.BlockPurpose.INDUSTRIAL:
+		if building.district() != GameEnums.BlockPurpose.INDUSTRIAL:
 			continue
 		var view := _view(building.residence().bounds().get_center())
 		scene.scenery.update(view, true)

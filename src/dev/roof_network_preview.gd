@@ -33,9 +33,7 @@ func _ready() -> void:
 		building.name = "ReviewRoof%d" % index
 		building.position = Vector2(224 + (index % 3) * 416, 336 + (index / 3) * 352)
 		building.footprint = Vector2(320 - (index % 3) * 32, 256)
-		building.height = 64
-		building.variant = index
-		building.district = GameEnums.BlockPurpose.INDUSTRIAL
+		building.draw_as(GameEnums.BlockPurpose.INDUSTRIAL, index, 64)
 		building.roof_object_parent = _entities
 		_buildings.add_child(building)
 		if index == 5:
@@ -57,13 +55,13 @@ func _ready() -> void:
 	get_tree().quit()
 
 func _vertical_fixture(building: Building) -> void:
-	building._roof_furniture.clear()
+	var units: Array[Dictionary] = []
 	for row in range(1, 4):
 		var cell := Vector2i(2, row)
 		var cells: Array[Vector2i] = [cell]
-		building._roof_furniture.append({"cell": cell, "kind": Building._Furniture.DUCT_RUN,
+		units.append({"cell": cell, "kind": Building._Furniture.DUCT_RUN,
 			"span": 1, "cells": cells, "links": (4 if row > 1 else 0) | (8 if row < 3 else 0)})
-	building._build_roof_layers()
+	building.lay_roof_furniture(units)
 
 func _draw() -> void:
 	var sidewalk := _atlas.region(&"tiles/layers/sidewalk_base")

@@ -137,22 +137,22 @@ func _check_the_task_is_at_the_burnt_buildings_door(t: TestRunner, director: Res
 	var shell_tile := _city.map.world_to_tile(shell.global_position)
 	var behind: Building = null
 	for building in _city.buildings():
-		if building.lot.has_point(shell_tile + Vector2i.UP):
+		if building.lot_rect().has_point(shell_tile + Vector2i.UP):
 			behind = building
 	t.check(behind != null, "the shell at %s has a building behind it" % shell_tile)
 	if behind == null:
 		return
-	var lot := _city.map.tile_rect_to_world(behind.lot)
+	var lot := _city.map.tile_rect_to_world(behind.lot_rect())
 	var size := float(Tuning.TILE_SIZE)
 	t.close_to(tip.y, lot.end.y - size * 0.5,
 			"the tip is half a tile up that building's ground floor", 0.01)
 	var door_col: int = (await _doors_drawn_on(t, [behind]))[behind]
 	if door_col >= 0:
 		t.close_to(tip.x, lot.position.x + (door_col + 0.5) * size,
-				"and on its entrance door, column %d of %s" % [door_col, behind.lot], 0.01)
+				"and on its entrance door, column %d of %s" % [door_col, behind.lot_rect()], 0.01)
 	else:
 		t.check(tip.x >= lot.position.x and tip.x <= lot.end.x,
-				"and on its own front, which has no entrance door (%s)" % behind.lot)
+				"and on its own front, which has no entrance door (%s)" % behind.lot_rect())
 
 ## The contact at the door completes from the near half of the sidewalk in front of it — the whole
 ## tile below the door, out to its bottom corners — and not from its far half or past it. Called
@@ -211,7 +211,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunne
 	var drawn_on: Array[Building] = []
 	for tile in fronts:
 		for building in _city.buildings():
-			if building.lot.has_point(tile + Vector2i.UP):
+			if building.lot_rect().has_point(tile + Vector2i.UP):
 				behind_tile[tile] = building
 				drawn_on.append(building)
 	var doors := await _doors_drawn_on(t, drawn_on)
@@ -221,7 +221,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunne
 		if behind == null or way == Vector2.INF:
 			wrong.append(tile)
 			continue
-		var lot := _city.map.tile_rect_to_world(behind.lot)
+		var lot := _city.map.tile_rect_to_world(behind.lot_rect())
 		var below := _city.map.world_to_tile(way) + Vector2i.DOWN
 		var ok := absf(way.y - (lot.end.y - size * 0.5)) < 0.01 \
 				and _city.map.tile_at(below) == GameEnums.TileType.SIDEWALK
@@ -256,7 +256,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) 
 	var run := _build_city_in_a_new_run(t)
 	var burnt_before := 0
 	for building in _city.buildings():
-		if building.condition == Building.Condition.BURNT:
+		if building.condition() == Building.Condition.BURNT:
 			burnt_before += 1
 
 	var director := _director(t)
@@ -290,11 +290,11 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) 
 	var behind: Building = null
 	var burnt_now := 0
 	for building in _city.buildings():
-		if building.lot.has_point(shell_tile + Vector2i.UP):
+		if building.lot_rect().has_point(shell_tile + Vector2i.UP):
 			behind = building
-		if building.condition == Building.Condition.BURNT:
+		if building.condition() == Building.Condition.BURNT:
 			burnt_now += 1
-	t.check(behind != null and behind.condition == Building.Condition.BURNT,
+	t.check(behind != null and behind.condition() == Building.Condition.BURNT,
 			"the building behind the shell is burnt the moment the task is on offer")
 	t.check(burnt_now == burnt_before + 1,
 			"and no other building is (%d burnt, %d before)" % [burnt_now, burnt_before])
@@ -1138,16 +1138,16 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t: TestRunner) -> void
 			"seed %d: her own building has at least four wall rows (%d)" % [SEED, building.wall_tiles()])
 
 	happenings.start_day(ResistanceHappenings.MARKET_DAY - 1)
-	t.check(building.neighbor_window_col == -1, "unboarded the day before")
+	t.check(building.neighbor_window_col() == -1, "unboarded the day before")
 
 	happenings.start_day(ResistanceHappenings.MARKET_DAY)
-	var col := building.neighbor_window_col
+	var col := building.neighbor_window_col()
 	t.check(col >= 0, "boarded from day 11's morning on")
 	t.check(building.neighbor_window_row() == 3,
 			"seed %d: on the third floor" % SEED)
 
 	happenings.start_day(ResistanceHappenings.MARKET_DAY + 3)
-	t.check(building.neighbor_window_col == col, "the same cell on every later day")
+	t.check(building.neighbor_window_col() == col, "the same cell on every later day")
 
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
@@ -1157,7 +1157,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t: TestRunner) -> void
 	RunCity.build(reloaded, CityGenerator.generate(SEED))
 	reloaded.fronts().board_neighbor_window()
 	var reloaded_building := HomeDoorReads.building(reloaded)
-	t.check(reloaded_building.neighbor_window_col == col, "and the same cell on a fresh load")
+	t.check(reloaded_building.neighbor_window_col() == col, "and the same cell on a fresh load")
 	reloaded.free()
 
 ## Plans `day` on the test city through the real day order (the closures and the events) with
@@ -1217,8 +1217,8 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 				== GameEnums.BlockPurpose.BOARDED_UP, "boarded up now")
 		var shuttered := 0
 		for building in _city.buildings():
-			if _city.map.lot_rect(block).has_point(building.lot.position):
-				t.check(building.condition == Building.Condition.BOARDED,
+			if _city.map.lot_rect(block).has_point(building.lot_rect().position):
+				t.check(building.condition() == Building.Condition.BOARDED,
 						"every building of it shuttered")
 				shuttered += 1
 		t.check(shuttered > 0, "and it has buildings to shutter")

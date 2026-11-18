@@ -38,7 +38,7 @@ static func check_fire_escape(t: TestRunner, front: FrontReads, label: String) -
 			rows.append(row)
 		rows.sort()
 		t.check(rows == landings, "%s: every escape on a front climbs the same floors (%s, %s)" % [label, rows, landings])
-	t.check(building.district == GameEnums.BlockPurpose.RESIDENTIAL,
+	t.check(building.district() == GameEnums.BlockPurpose.RESIDENTIAL,
 			"%s: only a residential front carries a fire escape" % label)
 	t.check(building.wall_tiles() >= Building.FIRE_ESCAPE_MIN_WALL_ROWS,
 			"%s: a front with a fire escape has three floors at least (%d)" % [label, building.wall_tiles()])

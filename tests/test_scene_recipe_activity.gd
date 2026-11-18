@@ -62,7 +62,7 @@ func _ready() -> void:
 	for roof: Dictionary in setup.get("roof_fixtures", []):
 		var matched := false
 		for building in city.buildings():
-			if building.lot == SceneRecipe.rect(roof.lot):
+			if building.lot_rect() == SceneRecipe.rect(roof.lot):
 				matched = roof_matches(building, roof.fixtures)
 		if not matched:
 			fail("authored fixtures did not reach the real production building")

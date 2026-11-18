@@ -358,7 +358,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	t.check(run.header().day() == 11,
 			"day 11 is under way, with day 8 the checkpoint its last nerve goes back to below")
 	var boarded := HomeDoorReads.building(Boot.city(main))
-	t.check(boarded != null and boarded.neighbor_window_col >= 0,
+	t.check(boarded != null and boarded.neighbor_window_col() >= 0,
 			"day 11 boarded the neighbor's window")
 
 	var back := []
@@ -386,7 +386,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	t.check(run.header().day() == 8 and run.header().nerves() == Tuning.STARTING_NERVES,
 			"she plays day 8 with every nerve")
 	var building := HomeDoorReads.building(Boot.city(playing.main))
-	t.check(building != null and building.neighbor_window_col < 0,
+	t.check(building != null and building.neighbor_window_col() < 0,
 			"and the neighbor's window is not boarded on day 8")
 	t.check(not Boot.title(playing.main).is_open() and not t.get_tree().paused,
 			"straight into the day, with no title in front of it")
