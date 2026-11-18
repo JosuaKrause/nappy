@@ -37,6 +37,7 @@ func run(t: TestRunner) -> void:
 	_test_a_scene_recipe_never_hands_over(t)
 	_test_a_won_day_with_a_player_and_no_city_ends(t)
 	_test_a_section_is_ended_but_not_settled(t)
+	_test_a_city_section_won_carries_the_way_out(t)
 	_test_a_day_starts_in_its_order(t)
 	_test_the_city_section_starts_on_its_settings(t)
 	_test_the_building_section_starts_with_no_city(t)
@@ -208,6 +209,21 @@ func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
 	t.check(_run.header().nerves() == Tuning.STARTING_NERVES,
 			"and leaves what it costs to the section's own flow")
 	_put_away(rig)
+
+## The way she left the city, as the clock recorded it, is carried on the end: the page's `out` count
+## and the epilogue's tunnel-or-bridge line read it there (`main._finish_the_section()`,
+## `SummaryModel.epilogue()`).
+func _test_a_city_section_won_carries_the_way_out(t: TestRunner) -> void:
+	for way: int in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		var rig := _rig(t, DaySpec.for_section(DaySpec.Section.CITY, 60.0))
+		var director: DayDirector = rig["director"]
+		var clock: EndedClock = rig["clock"]
+		clock.way_out = way
+		var end := director.finish_day(GameEnums.DayResult.WON)
+		t.check(end.ends_a_section() and end.exit_taken() == way and end.loss_reason() == ""
+				and _cause_sent() == "", ("a city section won by way %d carries it on its end, named"
+				+ " by no loss (got %d)") % [way, end.exit_taken()])
+		_put_away(rig)
 
 # ------------------------------------------------------------------ the start ---
 
