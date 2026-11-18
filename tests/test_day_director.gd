@@ -14,11 +14,14 @@ extends RefCounted
 ## (the escape's building and city booted, the day's city through its fourteen days) is the finale
 ## and full-run suites' to show.
 ##
-## **The end on a bare world**: a day clock and an event manager, no city, no player. What a day's end
+## **The end on a bare world**: a day clock and an event manager, no city, no player. The clock is
+## `tests/ended_clock.gd`, the real countdown answering what ended the day as a case sets it, since
+## its losing paths are the clock's own suite's. What a day's end
 ## settles — the cause `day_ended` carries, the calendar, the hand-over to the escape — is decided
 ## there, so it is checked there.
 
 const SEED := 1717
+const EndedClock := preload("res://tests/ended_clock.gd")
 
 var _ended: Array = []
 ## A fresh run for every rig, handed to the director in place of the autoload.
@@ -60,11 +63,11 @@ func _cause_sent() -> String:
 func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
-	var clock := DayController.new()
+	var clock := EndedClock.new()
 	clock.set_process(false)
 	t.add_child(clock)
 	clock.start(300.0)
-	clock.time_remaining = 120.0
+	clock.tick(180.0)
 	# The events' world: open ground drawn in a node the manager holds, and the run's own state
 	# (`EventManager.setup_world()`, as the escape's building is handed its world).
 	var events := EventManager.new()
@@ -81,7 +84,7 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	director.spec = spec
 	_ended.clear()
 	EventBus.day_ended.connect(_on_day_ended)
-	return {"director": director, "nodes": [clock, events]}
+	return {"director": director, "clock": clock, "nodes": [clock, events]}
 
 func _put_away(rig: Dictionary) -> void:
 	EventBus.day_ended.disconnect(_on_day_ended)
@@ -135,7 +138,8 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 func _test_a_hard_fail_is_named_by_its_reason(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
-	director.day.hard_fail_reason = "charging_dog"
+	var clock: EndedClock = rig["clock"]
+	clock.struck_by = "charging_dog"
 	director.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 	t.check(_cause_sent() == "charging-dog",
 			"a hard fail is named by the row that struck her")
@@ -194,8 +198,9 @@ func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
 	spec.number = 15
 	var rig := _rig(t, spec)
 	var director: DayDirector = rig["director"]
-	director.day.failure_reason = "She started crying."
-	director.day.exit_reached = CityEdge.Kind.TUNNEL
+	var clock: EndedClock = rig["clock"]
+	clock.says = "She started crying."
+	clock.way_out = CityEdge.Kind.TUNNEL
 	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(end.ends_a_section() and _day_sent() == 15 and _cause_sent() == "self",
 			"a section sends day_ended under its own number and cause")
@@ -278,7 +283,7 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	director.use_the_flags(
 			func(_target: String) -> Vector2: return map.doorstep_world_position(),
 			func(_the_baby: Baby, _override: Vector2) -> void:
-				_asked.append("meters %s" % (clock.time_total > 0.0)))
+				_asked.append("meters %s" % (clock.seconds_total() > 0.0)))
 	var nodes: Array[Node] = [clock, events, player, baby, resistance]
 	if city:
 		nodes.append_array([city, crowd])
@@ -339,7 +344,7 @@ func _test_a_day_starts_in_its_order(t: TestRunner) -> void:
 	t.check(not _run.resistance().is_carrying_package(), "the dawn is photographed before it starts")
 	var clock: DayController = rig["clock"]
 	t.check(clock.is_running() and is_equal_approx(clock.seconds_total(), 210.0)
-			and clock.spec == spec, "the clock runs the day's own spec and length")
+			and clock.spec() == spec, "the clock runs the day's own spec and length")
 	_put_the_start_away(rig)
 
 ## The escape's city starts on the city section's settings: no photograph, no resistance, nobody on

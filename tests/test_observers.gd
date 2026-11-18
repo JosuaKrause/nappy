@@ -120,8 +120,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Arr
 	await _continue_while_paused(t, main)
 	# Dusk: the day's own clock run out, through the one tick that notices it.
 	var day := Boot.day(main)
-	day.time_remaining = 0.0
-	day.tick(0.0)
+	day.tick(day.seconds_left())
 	await _continue_while_paused(t, main)
 	day = Boot.day(main)
 	day.day_finished.emit(GameEnums.DayResult.WON)
@@ -199,7 +198,7 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 				m.use_run_log(run_log))
 	var main := booted.main
 	var summary := Boot.summary(main)
-	t.check(Boot.day(main).spec.section == DaySpec.Section.BUILDING and summary.is_showing(),
+	t.check(Boot.day(main).spec().section == DaySpec.Section.BUILDING and summary.is_showing(),
 			"the escape opened on its brief")
 	var brief := _words_on(summary)
 
@@ -214,10 +213,10 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 			"and its continue on the section's brief")
 	await _continue_while_paused(t, main)
 	Boot.interior(main).exit_requested.emit()
-	t.check(Boot.day(main).spec.section == DaySpec.Section.CITY and summary.is_showing(),
+	t.check(Boot.day(main).spec().section == DaySpec.Section.CITY and summary.is_showing(),
 			"through the service door, the city opens on its brief")
 	await _continue_while_paused(t, main)
-	Boot.player(main).global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
+	Boot.player(main).global_position = Boot.day(main).spec().exits[CityEdge.Kind.TUNNEL]
 	Boot.day(main).tick(0.0)
 
 	var lines := _lines_kept(run_log.lines)

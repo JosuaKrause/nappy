@@ -484,7 +484,7 @@ func _ready() -> void:
 
 	_day = DayController.new()
 	_day.name = "Day"
-	_day.invincible = config.invincible
+	_day.set_invincible(config.invincible)
 	add_child(_day)
 	_pauses_with_the_game(_day)
 	_day.setup(_run)
@@ -2260,7 +2260,7 @@ func _physics_process(delta: float) -> void:
 	if not _player or not _baby or not _day:
 		return
 	if _flow.mode() == RunFlow.Mode.WALKING \
-			and _day.phase in [GameEnums.DayPhase.WALKING, GameEnums.DayPhase.RETURNING] \
+			and _day.is_running() \
 			and not _tree_is_paused():
 		_run.header().count_a_play_tick()
 		# The resistance first, as the tree order always had it (`Resistance` is added before `Day`):
@@ -2299,7 +2299,7 @@ func _process(delta: float) -> void:
 	if _city and _flow.spec().daylight_runs_down:
 		_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_flow.spec().goal_kind() == DaySpec.Goal.HOME
-			and _day.phase == GameEnums.DayPhase.RETURNING,
+			and _day.phase() == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position() if _city else Vector2.ZERO)
 	# The red arrow: `ResistanceDirector.red_arrow_target()` is the one place that decides
 	# whether today's task is on offer with its mark already touched, and which of the places

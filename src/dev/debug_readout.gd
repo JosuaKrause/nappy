@@ -286,9 +286,9 @@ func _process(delta: float) -> void:
 	]
 	if not _skip_words.is_empty():
 		header.append("skip  %s" % ", ".join(_skip_words))
-	var phase: String = GameEnums.DayPhase.keys()[_day.phase]
+	var phase: String = GameEnums.DayPhase.keys()[_day.phase()]
 	_status.text = "\n".join(header + [
-		"phase %s  %.0fs left" % [phase.to_lower(), _day.time_remaining],
+		"phase %s  %.0fs left" % [phase.to_lower(), _day.seconds_left()],
 	] + _where_she_is_lines() + [
 		"",
 		"speed       %6.1f" % _player.current_speed(),

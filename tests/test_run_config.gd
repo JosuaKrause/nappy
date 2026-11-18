@@ -456,14 +456,14 @@ func _first_cyclist_on_a_walk(t: TestRunner, events: EventManager, her: Stroller
 func _test_the_escape_clock_takes_its_length_and_invincible(t: TestRunner) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.BUILDING, 25.0)
 	var clock := DayController.new()
-	clock.invincible = true
-	clock.spec = spec
+	clock.set_invincible(true)
+	clock.use_the_spec(spec)
 	t.add_child(clock)
 	clock.set_process(false)
 	clock.start(spec.length)
-	t.check(is_equal_approx(clock.time_remaining, 25.0), "a section runs the length handed in")
+	t.check(is_equal_approx(clock.seconds_left(), 25.0), "a section runs the length handed in")
 	clock.tick(5.0)
-	t.check(is_equal_approx(clock.time_remaining, 25.0), "and stands still when invincible")
+	t.check(is_equal_approx(clock.seconds_left(), 25.0), "and stands still when invincible")
 	clock.free()
 
 ## `--touch` and `--web` are the run's configuration like every other flag, a debug build's alone,

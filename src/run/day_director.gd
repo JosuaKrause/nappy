@@ -141,7 +141,7 @@ func use_the_world(world: DayWorld, the_resistance: ResistanceDirector,
 ## The day about to be walked, handed to the day's clock.
 func use_the_day(the_spec: DaySpec) -> void:
 	spec = the_spec
-	day.spec = the_spec
+	day.use_the_spec(the_spec)
 
 ## **Starts the walk `the_spec` describes**: a day, an authored scene's day, or a section of the
 ## escape, the first time or again after a loss. Writes nothing to the save itself: each caller
@@ -313,13 +313,14 @@ func _print_the_start(ms: int) -> void:
 	if _in_a_city:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
 				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
-				events.active_count(), events.owed_ahead(), _crowd.agent_count(), day.time_total]
+				events.active_count(), events.owed_ahead(), _crowd.agent_count(),
+				day.seconds_total()]
 				+ "| calm: %s | closed: %s" % [_city_map.calm_summary(spend.block_arcs()),
 				_streets.closure_summary()])
 	else:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %.0fs"
 				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
-				events.active_count(), events.owed_ahead(), day.time_total])
+				events.active_count(), events.owed_ahead(), day.seconds_total()])
 
 ## Today's crowd, as dense as the spec says (`DaySpec.crowd_share()`), built round `at`: a day's
 ## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular
@@ -345,7 +346,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# the day actually ended. Clamped because `_process()` can call `_end()` one frame after the
 	# seconds left have gone slightly negative.
 	var elapsed := clampf(day.seconds_total() - day.seconds_left(), 0.0, day.seconds_total())
-	var end := DayEnd.new(result, day.failure_reason, elapsed, day.exit_reached)
+	var end := DayEnd.new(result, day.loss_reason(), elapsed, day.exit_taken())
 	# **A day she wins with day 3's fire never met still burns.** The row's only day is day 3 and it
 	# is spent when it enters the world, so a won day on which every siting was refused would leave
 	# the run with no fire, no scar and no shell for day 4 to come out to. Lit here, off her path,
@@ -403,7 +404,7 @@ func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 func _loss_cause(result: GameEnums.DayResult) -> String:
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
-			return LossCause.of(result, day.hard_fail_reason,
+			return LossCause.of(result, day.hard_fail_reason(),
 					events.what_struck_her() if events else "")
 		GameEnums.DayResult.LOST_CRYING:
 			return LossCause.of(result, "", "", landed_by_group())

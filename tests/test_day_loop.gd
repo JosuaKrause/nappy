@@ -106,7 +106,7 @@ func map_edge_tile() -> int:
 func _test_start_sets_the_clock(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
-	t.check(_day.phase == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
+	t.check(_day.phase() == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
 	t.close_to(_day.seconds_left(), 300.0, "the clock starts full")
 	t.close_to(_day.fraction_remaining(), 1.0, "the light starts at midday")
 	_tick(150.0)
@@ -127,7 +127,7 @@ func _test_sleeping_starts_the_return_phase(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
-	t.check(_day.phase == GameEnums.DayPhase.RETURNING,
+	t.check(_day.phase() == GameEnums.DayPhase.RETURNING,
 			"a sleeping baby starts the walk home")
 	t.check(_results.is_empty(), "falling asleep does not by itself win the day")
 	_teardown()
@@ -158,7 +158,7 @@ func _test_being_woken_resumes_walking(t: TestRunner) -> void:
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.AWAKE)
-	t.check(_day.phase == GameEnums.DayPhase.WALKING,
+	t.check(_day.phase() == GameEnums.DayPhase.WALKING,
 			"being woken on the way home puts you back to walking her down")
 
 	_at_home()

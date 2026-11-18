@@ -245,7 +245,7 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	_city_trace = RunCity.events(city).trace
 	RunCity.events(city).trace = trace
 	rig.setup(city.map, RunCity.events(city), _no_spawn, stroller, baby, resistance, day, targets, run)
-	rig.start_day(day.spec)
+	rig.start_day(day.spec())
 	return rig
 
 ## What the rig started last and its city's events wrote (`_started_rig()`), as `"<kind> <text>"`.
@@ -791,8 +791,8 @@ func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestR
 			== Vector2.INF, "a day has no tunnel or bridge to walk to")
 	var tunnel := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL))
 	var bridge := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE))
-	clock.spec = DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	clock.spec.exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
+	clock.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
+	clock.spec().exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
 	t.check(planner.resolve("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
 	t.check(planner.resolve("bridge") == bridge, "'bridge' resolves to the spec's bridge")
 	var escape := RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, null, clock)
@@ -1569,7 +1569,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	var to := _open_point_near(city.map, gate.global_position + axis * reach)
 	stroller.reset_at(from)
 	var day := _started_day(t, city, stroller, run)
-	day.spec.exits = {CityEdge.Kind.TUNNEL: to}
+	day.spec().exits = {CityEdge.Kind.TUNNEL: to}
 	var rig := _started_rig(t, city, stroller, doors["resistance"], day, run, ["tunnel"])
 	await _steps(t, 2)
 	t.check(_pressed() != Vector2.ZERO and _count("no path") == 0,
