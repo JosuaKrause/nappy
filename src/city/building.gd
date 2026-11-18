@@ -436,26 +436,30 @@ func _is_covered(col: int) -> bool:
 ## (`City.assign_roof_extensions()`'s own doc), each its own `Building`, but physically it is one
 ## building with one roof that turns its corners — so where one piece's extension meets another
 ## piece's roof, neither draws a lip: this piece withholds `ROOF_EDGE_N` at the extension's top,
-## and the covered piece withholds `ROOF_EDGE_S` at that column (`seamless_cover_cols`). Between
+## and the covered piece withholds `ROOF_EDGE_S` at that column (`_seamless_cover_cols`). Between
 ## two separate buildings the extension still caps, since that lip is the real, visible step
 ## between two roofs. Sized to `columns()`, or empty when nothing needs the distinction;
 ## `_extension_is_seamless()` reads an index past the end as false, the same convention
 ## `roof_extension_rows` and `_covered_ground_cols` already use. Drawing only, so a redraw is all a
-## change needs.
-@export var roof_extension_seamless: Array[bool] = []:
-	set(value):
-		roof_extension_seamless = value
-		queue_redraw()
+## change needs. Handed over with `_seamless_cover_cols` by `mark_courtyard_seams()`.
+var _roof_extension_seamless: Array[bool] = []
 
 ## Per-column: true where this front's covered column is covered by another piece of the same
-## courtyard lot (the covered side of `roof_extension_seamless`), so the roof in front carries on
+## courtyard lot (the covered side of `_roof_extension_seamless`), so the roof in front carries on
 ## into this one and this column's first roof row draws no `ROOF_EDGE_S` lip. Set by
 ## `City.assign_roof_extensions()`; empty for everything else, read as false past the end
 ## (`_is_seamlessly_covered()`). Drawing only, so a redraw is all a change needs.
-@export var seamless_cover_cols: Array[bool] = []:
-	set(value):
-		seamless_cover_cols = value
-		queue_redraw()
+var _seamless_cover_cols: Array[bool] = []
+
+## Hands this front where its roof runs on into another piece of its own courtyard lot rather than
+## stepping to a separate building, one entry per column (empty where none does), and redraws it:
+## `extension` at the top of its own roof extension (see `_roof_extension_seamless`), `covered` at
+## the first roof row over a covered column (see `_seamless_cover_cols`).
+## `City.assign_roof_extensions()` finds both sides of every such seam.
+func mark_courtyard_seams(extension: Array[bool], covered: Array[bool]) -> void:
+	_roof_extension_seamless = extension
+	_seamless_cover_cols = covered
+	queue_redraw()
 
 ## The palette entry this building's wall and roof are tinted from, or -1 for its own `_variant`.
 ## `City` sets it so every piece of one courtyard lot carries the same colour, since the pieces are
@@ -473,16 +477,16 @@ func _is_covered(col: int) -> bool:
 func _extension_rows(col: int) -> int:
 	return roof_extension_rows[col] if col >= 0 and col < roof_extension_rows.size() else 0
 
-## Whether column `col`'s own extension is seamless (`roof_extension_seamless`), defaulting to
+## Whether column `col`'s own extension is seamless (`_roof_extension_seamless`), defaulting to
 ## false for an index the array does not reach.
 func _extension_is_seamless(col: int) -> bool:
-	return roof_extension_seamless[col] if col >= 0 and col < roof_extension_seamless.size() \
+	return _roof_extension_seamless[col] if col >= 0 and col < _roof_extension_seamless.size() \
 			else false
 
 ## Whether column `col` is covered by another piece of its own courtyard lot
-## (`seamless_cover_cols`), defaulting to false for an index the array does not reach.
+## (`_seamless_cover_cols`), defaulting to false for an index the array does not reach.
 func _is_seamlessly_covered(col: int) -> bool:
-	return seamless_cover_cols[col] if col >= 0 and col < seamless_cover_cols.size() else false
+	return _seamless_cover_cols[col] if col >= 0 and col < _seamless_cover_cols.size() else false
 
 ## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
 ## from day 11 on, or -1 for every building but the one `CityFronts.board_neighbor_window()` picked: the

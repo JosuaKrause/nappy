@@ -47,9 +47,7 @@ src/city/blackout.gd powered
 src/city/city.gd day
 src/city/city.gd door_world_x_range
 src/city/city.gd roof_extension_rows
-src/city/city.gd roof_extension_seamless
 src/city/city.gd scenery_clock
-src/city/city.gd seamless_cover_cols
 src/city/city.gd tint_variant
 src/city/poster_walls.gd poster_art
 src/dev/roof_context_preview.gd atlas

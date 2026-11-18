@@ -754,7 +754,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
 	return result
 
-## `Building.roof_extension_rows`, `roof_extension_seamless` and `seamless_cover_cols` for every
+## `Building.roof_extension_rows` and the courtyard seams (`Building.mark_courtyard_seams()`) for every
 ## building in `buildings` (parallel to `map.building_lots()`): wherever a building's own
 ## `covered_ground_cols()` marks a column covered, the tile directly south of it belongs to some
 ## other lot's rect — the one whose roof now has to reach up to meet the covered building's own
@@ -781,8 +781,8 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## the *same* roof continuing rather than stopping in a parapet. `courtyard_of` maps each building
 ## index to whichever courtyard's own `map.lot_rect(block)` encloses it, or -1
 ## (`_courtyard_lot_of()`). Both sides of a seamless seam are marked — the covering piece's column
-## in `roof_extension_seamless`, the covered piece's in `seamless_cover_cols` — and
-## `Building._roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at
+## as its extension's seam, the covered piece's as its covered column's
+## (`Building.mark_courtyard_seams()`) — and `Building._roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at
 ## all is never seamless: nothing of its own carries on above the extension, so the extension caps.
 func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var tile_to_index := {}
@@ -845,8 +845,7 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 				back_seamless[col] = true
 	for i in buildings.size():
 		buildings[i].roof_extension_rows = extensions[i]
-		buildings[i].roof_extension_seamless = seamless[i]
-		buildings[i].seamless_cover_cols = seamless_below[i]
+		buildings[i].mark_courtyard_seams(seamless[i], seamless_below[i])
 		var narrowed: Array[bool] = reached[i]
 		if covered[i] != narrowed:
 			buildings[i].mark_covered_ground_cols(narrowed)

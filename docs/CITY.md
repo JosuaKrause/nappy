@@ -2355,9 +2355,9 @@ Top-down camera with a fake vertical extrusion:
   that is the same wall-meets-roof relationship the bullet above already extends a roof to fill,
   but the two pieces are physically one building's roof rather than a front covering a genuinely
   separate one behind it. `City.assign_roof_extensions()` marks both sides of such a seam wherever
-  both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`): the covering
-  piece's column (`Building.roof_extension_seamless`) draws no `ROOF_EDGE_N` at its extension's
-  top, and the covered piece's column (`Building.seamless_cover_cols`) draws no `ROOF_EDGE_S` on
+  both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`), handing each
+  piece its side (`Building.mark_courtyard_seams()`): the covering piece's column draws no
+  `ROOF_EDGE_N` at its extension's top, and the covered piece's column draws no `ROOF_EDGE_S` on
   its first roof row, so the two roofs run into each other with no lip on either side.
   `Building._roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
   with no roof rows of its own is the one courtyard seam that still caps, since nothing of its own

@@ -799,11 +799,14 @@ func _test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(
 			Vector2(4 * Building.TILE, 5 * Building.TILE), 64.0)
 	t.check(front_building.roof_tiles() == 3, "the fixture front has three roof rows of its own")
 	front_building.roof_extension_rows = [0, 2, 2, 0]
-	front_building.roof_extension_seamless = [false, true, false, false]
+	var no_seams: Array[bool] = []
+	var extension_seams: Array[bool] = [false, true, false, false]
+	front_building.mark_courtyard_seams(extension_seams, no_seams)
 	var covered: Array[bool] = [true, true]
 	var back_building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
 			Vector2(2 * Building.TILE, 4 * Building.TILE), 64.0, false, Vector2.ZERO, covered)
-	back_building.seamless_cover_cols = [true, false]
+	var covered_seams: Array[bool] = [true, false]
+	back_building.mark_courtyard_seams(no_seams, covered_seams)
 	await UI.frames(t, 2)
 	var front: FrontReads = FrontReads.look(front_building)
 	var back: FrontReads = FrontReads.look(back_building)
