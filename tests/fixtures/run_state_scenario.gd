@@ -17,7 +17,7 @@ static func build(run: RunState) -> void:
 	run.calendar().begin_day()
 	run.header().set_day(6)
 	run.header().set_nerves(3)
-	run.header().set_play_ticks(9645  # 321.5 s at 30 ticks a second)
+	run.header().set_play_ticks(9645)  # 321.5 s at 30 ticks a second
 	run.complete_resistance_step(0)
 	run.complete_resistance_step(1)
 	run.fail_resistance_step(2)

@@ -328,8 +328,8 @@ func _test_round_trip_preserves_every_field(t: TestRunner) -> void:
 	t.check(run.header().play_ticks() == 3704, "the play time survives to the tick, saved as seconds")
 	t.check(run.attempt_spend().consumed_one_shots() == ["a_one_shot", "another_one_shot"],
 			"consumed_one_shots survives, string array and all")
-	GivenRun.completed_steps(t.check(run, = [0, 2], "completed_resistance_steps survives"))
-	GivenRun.failed_steps(t.check(run, = [1], "failed_resistance_steps survives"))
+	t.check(run.resistance().completed_steps() == [0, 2], "completed_resistance_steps survives")
+	t.check(run.resistance().failed_steps() == [1], "failed_resistance_steps survives")
 	t.check(run.attempt_spend().scars().size() == 1
 			and run.attempt_spend().scars()[0]["id"] == "fire"
 			and (run.attempt_spend().scars()[0]["position"] as Vector2).distance_to(Vector2(140.5, -30.25)) < 0.01
@@ -345,7 +345,7 @@ func _test_round_trip_preserves_every_field(t: TestRunner) -> void:
 			"and the whole snapshot taken before the write matches the one read back after it")
 	# The dawn snapshot, read through what it is for: a lost day gives it back.
 	run.resistance().give_back()
-	GivenRun.completed_steps(t.check(run, = [0] and run.resistance().failed_steps.is_empty(),)
+	t.check(run.resistance().completed_steps() == [0] and run.resistance().failed_steps().is_empty(),
 			"the dawn snapshot's own steps survive")
 	t.check(run.resistance().progress() == 1, "the dawn's progress survives")
 	t.check(not run.resistance().sabotage_went_through() and not run.resistance().is_carrying_package(),
@@ -513,7 +513,7 @@ func _test_completed_resistance_alley_tiles_survive_a_round_trip(t: TestRunner) 
 	t.check(run.facts().completed_resistance_alley_tiles().is_empty(),
 			"a fresh run has recorded none (the check below would pass vacuously otherwise)")
 	t.check(not _save.try_resume(run).is_empty(), "and the file resumes")
-	GivenRun.alley_tiles(t.check(run, = [Vector2i(4, 9), Vector2i(-2, 15)],)
+	t.check(run.facts().completed_resistance_alley_tiles() == [Vector2i(4, 9), Vector2i(-2, 15)],
 			"onto the tiles it was closed with, Vector2i values and all")
 	_save.clear()
 
@@ -613,15 +613,15 @@ func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at
 	var data := run.run_parts().run_data()
 	run.pelican().reset()
 	run.run_parts().restore_run_data(data)
-	GivenRun.pelican_draws(t.check(run, = 12, "a save keeps the pelican bag's count (%d)")
+	t.check(run.pelican().draws() == 12, "a save keeps the pelican bag's count (%d)"
 			% run.pelican().draws())
 	run.pelican().give_back()
-	GivenRun.pelican_draws(t.check(run, = 9, "and the dawn's, so a lost day after a resume goes back"))
+	t.check(run.pelican().draws() == 9, "and the dawn's, so a lost day after a resume goes back")
 	GivenRun.pelican_draws(run, 12)
 	var old: Dictionary = data.duplicate(true)
 	old.erase("pelican")
 	run.run_parts().restore_run_data(old)
-	GivenRun.pelican_draws(t.check(run, = 0,)
+	t.check(run.pelican().draws() == 0,
 			"a save written before the bag loads at 0 over a run with a count (%d)"
 			% run.pelican().draws())
 
@@ -648,7 +648,7 @@ func _test_the_posters_survive_a_round_trip(t: TestRunner) -> void:
 	})
 	_write_raw(old_shape)
 	_save.try_resume(run)
-	GivenRun.pasted_through(t.check(run.posters().cells.is_empty() and run, = 0,)
+	t.check(run.posters().cells().is_empty() and run.posters().pasted_through() == 0,
 			"a save with no posters in it loads with bare walls")
 	_save.clear()
 
@@ -683,7 +683,7 @@ func _test_a_save_from_before_a_task_was_one_day_still_loads(t: TestRunner) -> v
 	t.check(not resumed.is_empty(), "a save naming the old brief fields still resumes")
 	t.check(run.header().run_seed() == 636363 and run.header().day() == 7 and run.header().nerves() == 4,
 			"with every field the new build still reads")
-	GivenRun.completed_steps(t.check(run, = [1, 2, 3],)
+	t.check(run.resistance().completed_steps() == [1, 2, 3],
 			"and its old-table step indices, carried over rather than dropped")
 	_save.clear()
 

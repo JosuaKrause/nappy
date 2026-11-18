@@ -158,9 +158,9 @@ func _test_the_pelican_bag_is_the_handed_runs(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	for _i in 5:
 		spawner.rolls_a_pelican(cyclist)
-	GivenRun.pelican_draws(t.check(run, = 5, "five cyclists draw five marbles from the handed run's bag"))
+	t.check(run.pelican().draws() == 5, "five cyclists draw five marbles from the handed run's bag")
 	spawner.rolls_a_pelican(EventCatalogue.by_id("loose_dog"))
-	GivenRun.pelican_draws(t.check(run, = 5, "a dog draws nothing"))
+	t.check(run.pelican().draws() == 5, "a dog draws nothing")
 	manager.free()
 
 func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> void:

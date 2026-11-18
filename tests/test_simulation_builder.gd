@@ -261,7 +261,7 @@ func _test_the_dressed_day_pastes_the_walls(t: TestRunner) -> void:
 	var run: RunState = made["run"]
 	t.check(run.posters().pasted_through() < 3, "the walls start before day 3's dawn")
 	(made["world"] as CityDressing).day_dressed.emit(3, DaySpec.for_day(3))
-	GivenRun.pasted_through(t.check(run, = 3,)
+	t.check(run.posters().pasted_through() == 3,
 			"the city dressed for day 3 pastes the walls through its dawn (%d)"
 			% run.posters().pasted_through())
 	_free(made)

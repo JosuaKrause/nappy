@@ -595,7 +595,7 @@ func _check_a_retry_pastes_the_same_dawn(t: TestRunner, city: City, state: CityS
 	var run := city.run
 	var first := run.posters().to_data()
 	run.posters().give_back()
-	GivenRun.pasted_through(run, mini(run.posters().pasted_through, day - 1))
+	GivenRun.pasted_through(run, mini(run.posters().pasted_through(), day - 1))
 	city.start_day(state, day, run.calendar().day_rng(day, "closures"))
 	t.check(run.posters().to_data()["cells"] == first["cells"],
 			"seed %d: a retried day %d pastes the same dawn" % [seed_value, day])

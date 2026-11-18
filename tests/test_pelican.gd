@@ -163,7 +163,7 @@ func _test_the_dev_flag_makes_every_cyclist_a_pelican(t: TestRunner) -> void:
 	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5, EventSpawner.PelicanRig.ALWAYS)
 	t.check(flagged.count(true) == 40 and dog.count(true) == 0,
 			"with it every cyclist is a pelican and no dog is")
-	GivenRun.pelican_draws(t.check(_run, = 0 and _rolls_for(5, [cyclist], 40) == plain,)
+	t.check(_run.pelican().draws() == 0 and _rolls_for(5, [cyclist], 40) == plain,
 			"and without it the same run draws as before")
 
 ## A row that is not a cyclist is never the pelican and draws nothing from the bag, so the loose
@@ -183,7 +183,7 @@ func _test_only_a_cyclist_draws_from_the_bag(t: TestRunner) -> void:
 	t.check(not any_dog_pelican, "a loose dog is never the pelican")
 	t.check(cyclists_among_dogs == cyclists_only,
 			"the dogs sent between them do not change which cyclist is the pelican")
-	GivenRun.pelican_draws(t.check(_run, = 400, "and the count the save keeps is cyclists only (%d)")
+	t.check(_run.pelican().draws() == 400, "and the count the save keeps is cyclists only (%d)"
 			% _run.pelican().draws())
 
 ## *(inbox #575: "save it in the standard save file to reset the bag to the beginning of the day on
@@ -200,13 +200,13 @@ func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t: TestRunner) -
 			break
 	_new_run(seed_value)
 	var yesterday := _rolls(cyclist, 7, seed_value)
-	GivenRun.pelican_draws(t.check(yesterday.size() == 7 and _run, = 7, "a run's earlier day draws 7"))
+	t.check(yesterday.size() == 7 and _run.pelican().draws() == 7, "a run's earlier day draws 7")
 	_run.run_parts().photograph()
 	var day := _rolls(cyclist, 20, seed_value)
 	t.check(day.has(true), "the day holds the pelican (a guard that the comparisons compare one)")
 	var saved := _run.pelican().to_data()
 	_run.run_parts().give_back()
-	GivenRun.pelican_draws(t.check(_run, = 7, "a lost day sets the count back to the day's dawn"))
+	t.check(_run.pelican().draws() == 7, "a lost day sets the count back to the day's dawn")
 	t.check(_rolls(cyclist, 20, seed_value) == day,
 			"and the retry draws the same cyclists and pelican the day first did")
 	t.check(_run.run_parts().run_data().has("pelican")
@@ -214,16 +214,16 @@ func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t: TestRunner) -
 			"the standard save carries the count under its own key")
 	_run.pelican().reset()
 	_run.pelican().restore(JSON.parse_string(JSON.stringify(saved)))
-	GivenRun.pelican_draws(t.check(_run, = 27,)
+	t.check(_run.pelican().draws() == 27,
 			"a save read back keeps the count (%d)" % _run.pelican().draws())
 	_run.pelican().give_back()
 	t.check(_rolls(cyclist, 20, seed_value) == day,
 			"and keeps the dawn too: a day lost after a resume draws the same again")
 	_run.pelican().reset()
-	GivenRun.pelican_draws(t.check(_run, = 0 and _run.pelican().to_data().get("draws") == 0,)
+	t.check(_run.pelican().draws() == 0 and _run.pelican().to_data().get("draws") == 0,
 			"a new run starts from the full bag")
 	_run.pelican().restore({})
-	GivenRun.pelican_draws(t.check(_run, = 0, "and a save written before the bag loads at 0"))
+	t.check(_run.pelican().draws() == 0, "and a save written before the bag loads at 0")
 
 ## Starts a run of `run_seed` with the full bag.
 func _new_run(run_seed: int) -> void:
