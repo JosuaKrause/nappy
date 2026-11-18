@@ -93,13 +93,13 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	for step in ResistanceSteps.all():
 		if step.index <= 2 * (day - 6):
 			done.append(step.index)
-	city.run.resistance.completed_steps = done
-	city.run.resistance.progress = 0
-	city.run.facts.completed_resistance_alley_tiles = []
-	city.run.attempt_spend.scars.clear()
-	city.run.header.day = day
-	var state := CityState.new()
-	city.run.attempt_spend.city_state = state
+	GivenRun.completed_steps(city.run, done)
+	city.run.resistance().set_progress(0)
+	GivenRun.alley_tiles(city.run, [])
+	GivenRun.scars(city.run, [])
+	city.run.header().set_day(day)
+	var state := city.run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],

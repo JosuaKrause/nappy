@@ -66,7 +66,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t: TestRunner) -> void:
 				"father" if male else "mother"], pages.boot_log(), false, MapCache.source())
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
-		t.check(seat.run.header.player_is_male == male, "the boot plays the parent it was told to")
+		t.check(seat.run.header().parent_is_father() == male, "the boot plays the parent it was told to")
 		t.check(pages.held(mine),
 				"the boot holds the '%s' page the run draws from" % mine)
 		t.check(not pages.held(theirs),
@@ -154,8 +154,8 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		var seat := Seat.new(t, func(run: RunState) -> void:
 				run.start_run(SEED)
 				if section != DaySpec.Section.NONE:
-					run.header.day = Tuning.RUN_LENGTH_DAYS
-				run.facts.escape_section = section)
+					run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+				run.facts().set_escape_section(section))
 		var recording := RecordingAtlas.new()
 		seat.sitting.atlas = recording
 		var booted := await seat.boot(t, _SCRATCH_SAVE, [])
@@ -234,15 +234,15 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t: TestRunner) -> void:
 	var second := await _boot_in(t, home, save, reloads, run_log)
 	await _press_tap(t, second)
 	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = true
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	run.resistance().record_the_sabotage()
 	(_one(second, "DayController") as DayController).day_finished.emit(GameEnums.DayResult.WON)
 	var summary := _one(second, "DaySummary")
 	await UI.frames(t)
 	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
 	await UI.frames(t)
-	t.check(reloads.size() == 2 and run.facts.escape_section == DaySpec.Section.BUILDING,
+	t.check(reloads.size() == 2 and run.facts().escape_section() == DaySpec.Section.BUILDING,
 			"continuing past day 14's summary reloads into the escape's building")
 	t.check(parked != null and _sittings_in(home) == [parked],
 			"and the second boot took the parked sitting and parks the same one again, and no other")

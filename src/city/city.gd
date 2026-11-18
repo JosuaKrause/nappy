@@ -91,7 +91,7 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
 
 ## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
-## package is picked up (`run.resistance.carrying_package`) — the one cost in the subquest
+## package is picked up (`run.resistance().is_carrying_package()`) — the one cost in the subquest
 ## that is deferred and total rather than local, so it changes the afternoon's routing rather than
 ## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
 ## it: this is a decision she made, not ground she has to cross.
@@ -235,7 +235,7 @@ const DOOR_TEXTURE := &"props/door"
 ## home_door_sealed.svg`, the same 26×34 canvas and feet anchor as `DOOR_TEXTURE` (`docs/
 ## GRAPHICS.md`), so swapping `_home_door`'s texture needs no change to its offset or position.
 const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
-## `run.attempt_spend.scars` id for the sealed street door, recorded at the doorstep by
+## `run.attempt_spend().scars()` id for the sealed street door, recorded at the doorstep by
 ## `ResistanceHappenings._maybe_raid()` once the raid actually arrives. No `since_day` comparison
 ## is needed the way `DawnMasts.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
 ## `_sync_home_door()` both run after `RunCalendar.begin_day()`'s dawn photograph, so the
@@ -243,7 +243,7 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## was added on, and the moment it happens on its own day is `CityFronts.seal_home_door()`'s,
 ## called live.
 const SEALED_DOOR_SCAR := "sealed_door"
-## `run.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
+## `run.attempt_spend().scars()` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
 ## `aftermath.scar`), read by `CityFronts.mark_the_burnt_frontage()` the same way
 ## `_door_texture_for_today()` reads `SEALED_DOOR_SCAR` above.
 const BURNT_FRONTAGE_SCAR := "burnt_shell"
@@ -425,7 +425,7 @@ func _sleepiness_on(tile: Vector2i) -> float:
 ## Overrides WorldContext.decay_multiplier.
 func decay_multiplier(world_position: Vector2) -> float:
 	var ground := _ground_decay_multiplier(world_position)
-	if run.resistance.carrying_package:
+	if run.resistance().is_carrying_package():
 		# The one cost in the game that is not a field at a place: picking the package up makes
 		# every street after it dearer for the rest of the day, rather than the street it was
 		# picked up on.
@@ -465,7 +465,7 @@ func _spawn_home() -> void:
 	_home_door = HomeDoor.new()
 	_home_door.atlas = atlas
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
-	# the raid — `_door_texture_for_today()` reads the run's scars (`run.attempt_spend`), already loaded by the
+	# the raid — `_door_texture_for_today()` reads the run's scars (`run.attempt_spend()`), already loaded by the
 	# time `main.gd` calls `City.build()`. Day 10 itself is `CityFronts.seal_home_door()`'s, called
 	# live the moment the raid actually arrives.
 	_home_door.picture = _door_texture_for_today()
@@ -488,13 +488,13 @@ func _spawn_home() -> void:
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
 func _door_texture_for_today() -> StringName:
-	if run.attempt_spend.has_scar(SEALED_DOOR_SCAR):
+	if run.attempt_spend().has_scar(SEALED_DOOR_SCAR):
 		return SEALED_DOOR_TEXTURE
 	return DOOR_TEXTURE
 
 ## Puts the street door where the run's scars say it belongs, for the dawn `start_day()`
 ## already runs every day: sealed from day 11 on and after a save/load, ordinary again the dawn a
-## lost day 10 gives its own scar back (`run.run_parts.give_back()`), since
+## lost day 10 gives its own scar back (`run.run_parts().give_back()`), since
 ## `_spawn_home()` itself only ever runs once, at boot, for the whole run.
 func _sync_home_door() -> void:
 	if _home_door:
@@ -1037,7 +1037,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 	for closure in closures:
 		_spawn_closure(closure)
 	if map.has_stretch():
-		run.posters.pasted_through = maxi(run.posters.pasted_through, day)
+		run.posters().mark_pasted_through(day)
 	day_dressed.emit(day, spec)
 
 ## The closed streets of the day `spec` describes. The whole street comes out of the network; the

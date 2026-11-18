@@ -11,6 +11,11 @@ extends RefCounted
 ## the mark is touched rather than waiting for the next day's dawn. Only the perform half
 ## grants progress toward `Tuning.RESISTANCE_GOAL`; picking up a note is not the errand.
 
+## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
+## Held with the steps (data) because the run's model reads it to say whether she was taken, and
+## `ResistanceHappenings` reads it for the neighbor's mornings.
+const NEIGHBOR_DAY := 10
+
 ## The same for day 11: once she has read its mark, a second loudspeaker mast's marble is one of
 ## the next this many events, and the mast is put on her route once her walk finds it a site, beside
 ## the one near the mark the task points at first. *(inbox #561 in coral-bunny:
@@ -37,7 +42,7 @@ const VAN_WITHIN_THE_NEXT := 2
 ## How a perform step's contact is placed once its mark is touched.
 ## - `EVENT` rides a freshly spawned `EventInstance` of `task_event_id`, at a tile from
 ##   `placement` — the man shouting, the van, the roadblock.
-## - `SCAR` rides the run's own recorded scar for `task_event_id` (`RunState.attempt_spend.scars`), or falls
+## - `SCAR` rides the run's own recorded scar for `task_event_id` (`RunState.attempt_spend().scars()`), or falls
 ##   back to `EVENT`'s own placement when the run has no such scar.
 ## - `DOOR` sits at one of today's region-wall doors, a bare point rather than a rider.
 ## - `PARK_SWING` sits at the swing of one specific park's playground, also a bare point.

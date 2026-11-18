@@ -68,7 +68,7 @@ func _hud(t: TestRunner, run: RunState, debug := true, touch := false, learned :
 ## A run of the test's own, on `day`.
 func _run_on(day: int) -> RunState:
 	var run := RunState.new()
-	run.header.day = day
+	run.header().set_day(day)
 	return run
 
 func _teach(hud: Hud) -> HelpText:
@@ -450,7 +450,7 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t: TestR
 ## Playtest 19 finding 5, verbatim: *"the first chalk mark is written in the status when it
 ## should not be"* — seen as `resistance ....   out there: a chalk mark` before
 ## anything had been found. `CLAUDE.md`'s own rule is that the first encounter comes with no
-## hint at all, so the goal title is silent until the run's `resistance.completed_steps` is
+## hint at all, so the goal title is silent until the run's `resistance().completed_steps()` is
 ## non-empty — which happens the instant the first mark is *touched*, not once its perform
 ## half is done a day later, because `complete_resistance_step` records a pickup too even
 ## though a pickup grants no progress. `has_joined_resistance()` (`progress > 0`) would still
@@ -495,7 +495,7 @@ func _test_every_task_line_fits_on_one_line(t: TestRunner) -> void:
 	var width: float = (label.get_parent() as Control).get_combined_minimum_size().x
 	t.check(width >= 280.0, "the Meters column gives the task line at least 280px")
 	# Non-empty so the HUD's own "already touched a mark" gate is open.
-	run.resistance.completed_steps = [1]
+	GivenRun.completed_steps(run, [1])
 	for step in ResistanceSteps.all():
 		_offer(step.index)
 		# A pickup has no header and shows its title, exactly as the HUD names it.
@@ -555,7 +555,7 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t: Tes
 			continue
 		t.check(step.header != "", "perform step %d has its own header phrase" % step.index)
 		# Non-empty so the HUD's own "already touched a mark" gate is open.
-		run.resistance.completed_steps = [step.index - 1]
+		GivenRun.completed_steps(run, [step.index - 1])
 		_offer(step.index)
 		t.check(label.text == "out there: %s" % step.header.to_lower(),
 				"step %d's header names the instruction ('%s')" % [step.index, label.text])
@@ -597,8 +597,8 @@ func _test_the_task_line_clears_when_the_task_is_done(t: TestRunner) -> void:
 	var run := _run_on(7)
 	# Day 6 already behind her, so the "first mark is never named" gate — the goal has been
 	# joined — is open for day 7's own mark (index 3) and perform (index 4) below.
-	run.resistance.completed_steps = [1, 2]
-	run.resistance.progress = 1
+	GivenRun.completed_steps(run, [1, 2])
+	run.resistance().set_progress(1)
 
 	var hud := _hud(t, run, false)
 	var label := _label(hud, "Resistance")
@@ -692,7 +692,7 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t: TestRunn
 
 	# The title chooses the scheme after day 1 began, and `main` emits the choice before it sets
 	# the scheme on `TouchControls`, which still answers TAP here.
-	run.header.day = 1
+	run.header().set_day(1)
 	EventBus.controls_chosen.emit(true, false)
 	t.check(teach.get_parsed_text() == _as_shown("Tap to walk, hold {run} or double tap to run")
 			and atlas.pictures_asked() == [&"ui/run"],
@@ -724,7 +724,7 @@ func _test_learned_lessons_say_no_control_lesson(t: TestRunner) -> void:
 	EventBus.controls_chosen.emit(true, false)
 	t.check(teach.get_parsed_text() == "", "learned: choosing the controls says no walking lesson")
 	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
-	run.header.day = Tuning.RUN_TAUGHT_DAY
+	run.header().set_day(Tuning.RUN_TAUGHT_DAY)
 	var pursuer := _pursuer()
 	EventBus.event_telegraphed.emit(pursuer)
 	t.check(teach.get_parsed_text() == "",
@@ -757,7 +757,7 @@ func _test_unlearned_lessons_are_all_said(t: TestRunner) -> void:
 	EventBus.controls_chosen.emit(true, false)
 	t.check(teach.get_parsed_text() != "", "unlearned: choosing the controls says it again")
 	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
-	run.header.day = Tuning.RUN_TAUGHT_DAY
+	run.header().set_day(Tuning.RUN_TAUGHT_DAY)
 	var pursuer := _pursuer()
 	EventBus.event_telegraphed.emit(pursuer)
 	t.check(teach.get_parsed_text() != "",

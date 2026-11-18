@@ -48,12 +48,12 @@ func _task_guards(t: TestRunner) -> void:
 		t.add_child(city)
 		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day: int in [13]:
-			city.run.facts.completed_resistance_alley_tiles = []
+			GivenRun.alley_tiles(city.run, [])
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			city.run.resistance.completed_steps = done
-			var state := CityState.new()
-			city.run.attempt_spend.city_state = state
+			GivenRun.completed_steps(city.run, done)
+			var state := city.run.attempt_spend().block_arcs()
+			state.reset()
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],

@@ -15,8 +15,8 @@ func run(t: TestRunner) -> void:
 
 func _run_on(day: int, nerves: int) -> RunState:
 	var run := RunState.new()
-	run.header.day = day
-	run.header.nerves = nerves
+	run.header().set_day(day)
+	run.header().set_nerves(nerves)
 	return run
 
 func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd:
@@ -38,7 +38,7 @@ func _test_a_won_days_summary_names_the_coming_day(t: TestRunner) -> void:
 
 func _test_a_lost_days_summary_says_it_is_tried_again(t: TestRunner) -> void:
 	var run := _run_on(4, 2)
-	run.resistance.progress = 2
+	run.resistance().set_progress(2)
 	var model := SummaryModel.day_over(run, _ended(GameEnums.DayResult.LOST_CRYING,
 			"She started crying. There is no settling her now.", 84.0))
 	t.check(model.title_text() == "She started crying after 1:24. There is no settling her now.",
@@ -61,7 +61,7 @@ func _test_a_last_nerve_names_the_checkpoint(t: TestRunner) -> void:
 
 func _test_a_lost_sections_summary_carries_its_words(t: TestRunner) -> void:
 	var run := _run_on(Tuning.RUN_LENGTH_DAYS, 2)
-	run.resistance.progress = 3
+	run.resistance().set_progress(3)
 	var model := SummaryModel.day_over(run, _ended(GameEnums.DayResult.LOST_HARD_FAIL,
 			"It never slowed down.", 30.0), "Escape the city")
 	t.check(model.body("") == "Escape the city\n\nNerves left: **",
@@ -82,14 +82,14 @@ func _test_a_brief_is_the_day_the_nerves_and_the_morning(t: TestRunner) -> void:
 
 func _test_an_ending_has_no_continue_and_names_its_day_when_bad(t: TestRunner) -> void:
 	var run := _run_on(9, 0)
-	run.header.play_ticks = 22620
+	run.header().set_play_ticks(22620)
 	var bad := SummaryModel.ending(run, GameEnums.Ending.BAD)
 	t.check(bad.kind == SummaryModel.Kind.ENDING and not bad.offers_continue()
 			and bad.heading_text() == Texts.ENDING_HEADING[GameEnums.Ending.BAD],
 			"an ending has its heading and no continue")
 	t.check(bad.body_sentence() == Texts.ENDING_BODY[GameEnums.Ending.BAD], "its prose is its paragraph")
 	t.check(bad.body("PROSE") == Texts.ENDING_PLAYED % ["PROSE",
-			RunState.format_clock(run.header.play_seconds()), Texts.ENDING_DAY_REACHED % 9],
+			RunState.format_clock(run.header().play_seconds()), Texts.ENDING_DAY_REACHED % 9],
 			"and its body the paragraph, the time played and the day")
 	var good := SummaryModel.ending(run, GameEnums.Ending.GOOD)
 	t.check(not good.body("").contains("made it to day"), "the good ending names no day")
@@ -113,14 +113,14 @@ func _tally_on_the_summary(run: RunState) -> String:
 
 func _test_the_tally_counts_errands_and_contacts_lost(t: TestRunner) -> void:
 	var run := _run_on(6, 3)
-	run.resistance.progress = 1
+	run.resistance().set_progress(1)
 	t.check(_tally_on_the_summary(run) == "Errands run: 1 of %d" % Tuning.RESISTANCE_GOAL,
 			"the errands run of the goal")
-	run.resistance.failed_steps.assign([4])
+	GivenRun.failed_steps(run, [4])
 	t.check(_tally_on_the_summary(run).ends_with(Texts.SUMMARY_TALLY_LOST_ONE), "one contact lost")
-	run.resistance.failed_steps.assign([4, 7])
+	GivenRun.failed_steps(run, [4, 7])
 	t.check(_tally_on_the_summary(run).ends_with(Texts.SUMMARY_TALLY_LOST % 2),
 			"several contacts lost")
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	t.check(_tally_on_the_summary(run) == Texts.SUMMARY_TALLY_DONE,
 			"and done enough once the last night's work is on offer")

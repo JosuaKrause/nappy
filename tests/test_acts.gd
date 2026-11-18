@@ -79,22 +79,22 @@ func _peak_over(instance: EventInstance, seconds: float) -> float:
 func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(SEED)
-	run.header.day = 3
+	run.header().set_day(3)
 	var where := _map.tile_to_world(Vector2i(40, 40))
 	run.add_scar("burnt_shell", where)
 	run.add_scar("burnt_shell", where)
-	t.check(run.attempt_spend.scars.size() == 1, "the same scar is not recorded twice")
+	t.check(run.attempt_spend().scars().size() == 1, "the same scar is not recorded twice")
 
 	var consumed: Array[String] = []
 	var same_day := GameDawn.of(DaySpec.for_day(3), _rng(3), _map).spent(consumed) \
-			.scars(run.attempt_spend.scars).plan().placements()
+			.scars(run.attempt_spend().scars()).plan().placements()
 	t.check(not _contains(same_day, "burnt_shell"),
 			"a scar does not double up on the day it was made")
 
 	for day: int in [4, 9, 14]:
 		var later: Array[String] = []
 		var planned := GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(later) \
-				.scars(run.attempt_spend.scars).plan().placements()
+				.scars(run.attempt_spend().scars()).plan().placements()
 		t.check(_contains(planned, "burnt_shell"),
 				"the burnt-out shell is still there on day %d" % day)
 		for plan in planned:
@@ -117,7 +117,7 @@ func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
 ## reaches `CityFronts.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
 func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
-	city.run.header.day = 4
+	city.run.header().set_day(4)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(SEED))
 
@@ -300,7 +300,7 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 		var consumed: Array[String] = []
 		var blockers: Array[EventPlan] = []
 		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(consumed) \
-				.scars(run.attempt_spend.scars).plan().placements():
+				.scars(run.attempt_spend().scars()).plan().placements():
 			if plan.obstructs():
 				blockers.append(plan)
 		t.check(_a_park_is_reachable(grid, blockers),

@@ -24,8 +24,8 @@ func run(t: TestRunner) -> void:
 	var nearest_of_all := INF
 	for seed_value in range(1, SEEDS + 1):
 		var map := CityGenerator.generate(seed_value)
-		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(own_run.attempt_spend.city_state)
+		own_run.attempt_spend().block_arcs().begin_day(map.block_plans, 1)
+		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,

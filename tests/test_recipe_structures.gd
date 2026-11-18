@@ -12,7 +12,7 @@ func run(t: TestRunner) -> void:
 	# A run of its own, handed to the city and the scene as `main` hands them the game's.
 	var own_run := RunState.new()
 	own_run.start_run(11)
-	own_run.header.day = 13
+	own_run.header().set_day(13)
 	var loaded := SceneRecipe.load_file("res://scene-recipes/trailer-trucks.json")
 	var loaded_data: Dictionary = loaded.data
 	var data: Dictionary = loaded_data.duplicate(true)
@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 	RunCity.build(city, built.map)
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 13)
-	city.start_recipe_day(state, 13, own_run.calendar.day_rng())
+	city.start_recipe_day(state, 13, own_run.calendar().day_rng())
 	var player_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = player_scene.instantiate()
 	t.add_child(player)
@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure(built, RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), own_run)
 	var selected := Vector3i(-1, -1, -1)
-	var day_spec := DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS)
+	var day_spec := DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS)
 	for key: Vector3i in StreetTrees.segment_keys_with_trees(city.map):
 		if SealPlanner.may_seal(city.map, day_spec, city.streets().route_tree(), city.map.network.by_key(key)):
 			selected = key
@@ -43,7 +43,7 @@ func run(t: TestRunner) -> void:
 	t.check(selected.x >= 0, "tree regression has a real eligible off-route street")
 	if selected.x >= 0:
 		setup.seals = [{"segment": [selected.x, selected.y, selected.z], "candidate": "fallen_tree_seal"}]
-		var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
+		var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty(), "authored fallen tree installs through production siting: %s" % [errors])
 		var emptied := _emptied_pits(city.map)
 		t.check(emptied.size() == 1, "authored fallen tree empties exactly one source pit")
@@ -52,7 +52,7 @@ func run(t: TestRunner) -> void:
 			t.check(tree != null and not tree.visible,
 					"runtime hides the standing source tree after installing its fallen seal")
 		setup.erase("seals")
-		errors = runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
+		errors = runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty() and _emptied_pits(city.map).is_empty(), "reinstallation clears unselected fallen-tree state")
 		for tree in _street_trees(city):
 			t.check(tree.visible, "standing source trees return when no authored fallen tree selects them")
@@ -65,7 +65,7 @@ func run(t: TestRunner) -> void:
 		elif collection == "seals":
 			entry.candidate = "cafe_pair"
 		setup[collection] = [entry]
-		var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
+		var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		t.check("\n".join(errors).contains("leaves the authored extent"),
 				"%s outside a bounded scene rejects instead of silently dropping bodies" % collection)
 		setup.erase(collection)
@@ -83,7 +83,7 @@ func run(t: TestRunner) -> void:
 ## through (`RegionPlanner.stand_door()`).
 func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
-	var days := RegionPlanner.plan_day(city.map, DaySpec.for_day(own_run.header.day), city.streets().route_tree())
+	var days := RegionPlanner.plan_day(city.map, DaySpec.for_day(own_run.header().day()), city.streets().route_tree())
 	t.check(not days.doors.is_empty(), "the day has a street door to author")
 	if days.doors.is_empty():
 		return
@@ -93,7 +93,7 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 	city.streets().replace_region_plan(days)
 	var key := door.key()
 	setup.gates = [{"segment": [key.x, key.y, key.z]}]
-	var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
+	var errors := runtime.install(city, RunCity.simulation(city), player, baby, DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 	var authored := city.streets().region_plan()
 	t.check(errors.is_empty() and authored.doors.size() == 1 and authored.doors[0].key() == key
 			and authored.gates.size() == 1 and authored.door_bodies.size() == bodies.size(),
@@ -112,7 +112,7 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 ## (`SealPlanner.seal_street()`), and both of the street's sidewalks are shut to walkers there.
 func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
-	var spec := DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS)
+	var spec := DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS)
 	var cafe: SealPlanner.Candidate = null
 	for candidate in SealPlanner.candidates():
 		if candidate.id == "cafe_pair":
@@ -184,7 +184,7 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: Sc
 	t.check(RunCity.events(city).pending_warnings().is_empty(), "so a torn poster there sends nobody")
 
 	var configured := RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true)
-	var day := DaySpec.for_day(own_run.header.day, configured.day_length_for(own_run.header.day))
+	var day := DaySpec.for_day(own_run.header().day(), configured.day_length_for(own_run.header().day()))
 	t.check(is_equal_approx(day.length, 77.0),
 			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
 	errors = runtime.install(city, RunCity.simulation(city), player, baby, day)

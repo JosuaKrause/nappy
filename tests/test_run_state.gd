@@ -174,7 +174,7 @@ static func _unregistered_in(owner: Object, registry: RunStateRegistry) -> Array
 ## Every part a `RunState` declares is on its registry.
 func _test_the_registry_lists_every_part_the_state_declares(t: TestRunner) -> void:
 	var run := _fresh(1)
-	var missing := _unregistered_in(run, run.run_parts)
+	var missing := _unregistered_in(run, run.run_parts())
 	t.check(missing.is_empty(), "every run sub-state a RunState declares is registered (%s)" % [missing])
 
 func _test_a_part_left_off_the_list_is_caught(t: TestRunner) -> void:
@@ -191,22 +191,22 @@ func _test_a_part_left_off_the_list_is_caught(t: TestRunner) -> void:
 func _test_every_part_gives_back_what_it_photographed(t: TestRunner) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
-	run.run_parts.photograph()
-	var photographed := run.run_parts.run_data()
+	run.run_parts().photograph()
+	var photographed := run.run_parts().run_data()
 	run.complete_resistance_step(9)
 	run.fail_resistance_step(8)
-	run.resistance.sabotage_done = not run.resistance.sabotage_done
-	run.resistance.carrying_package = not run.resistance.carrying_package
-	run.attempt_spend.consumed_one_shots.append("spent_after_the_photograph")
+	GivenRun.sabotage(run, not run.resistance().sabotage_went_through())
+	GivenRun.carrying_package(run, not run.resistance().is_carrying_package())
+	run.attempt_spend().consumed_one_shots().append("spent_after_the_photograph")
 	run.add_scar("scarred_after_the_photograph", Vector2(1.0, 2.0))
-	run.posters.paste(Vector2i(40, 41), 2, false, 1)
-	run.posters.tears += 2
-	run.pelican.draws += 4
-	t.check(run.run_parts.run_data() != photographed, "the attempt spent something of every part")
-	run.run_parts.give_back()
-	t.check(run.run_parts.run_data() == photographed,
+	run.posters().paste(Vector2i(40, 41), 2, false, 1)
+	GivenRun.tears(run, run.posters().tears_made() + 2)
+	GivenRun.pelican_draws(run, run.pelican().draws() + 4)
+	t.check(run.run_parts().run_data() != photographed, "the attempt spent something of every part")
+	run.run_parts().give_back()
+	t.check(run.run_parts().run_data() == photographed,
 			"and giving back puts every part back (%s)"
-			% _first_difference(run.run_parts.run_data(), photographed))
+			% _first_difference(run.run_parts().run_data(), photographed))
 
 ## A part's variables and its data keys correspond one to one: a field added to a part and not to
 ## its `to_data()` is the mistake the old six places made easy.

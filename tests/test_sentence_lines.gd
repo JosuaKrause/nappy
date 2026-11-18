@@ -102,7 +102,7 @@ func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t: Test
 	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var run := RunState.new()
-	run.header.day = 1
+	run.header().set_day(1)
 	summary.show_summary(SummaryModel.brief_for(run), RunFlow.Mode.BRIEF)
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
 	t.check(brief.text == "She won't settle indoors. It is quiet in the park.\n" +

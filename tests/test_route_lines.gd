@@ -62,7 +62,7 @@ class Rig:
 	func _init(t: TestRunner, config: RunConfig) -> void:
 		t.add_child(layer)
 		layer.add_child(label)
-		readout.setup(config, label, layer, run.header, null, Callable())
+		readout.setup(config, label, layer, run.header(), null, Callable())
 		t.add_child(readout)
 		readout.draw_routes(map)
 

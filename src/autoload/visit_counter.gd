@@ -317,11 +317,11 @@ var _day := 0
 ## there is no run: `main` always configures one, and a counter configured with none (the test
 ## runner's, between boots) sends nothing.
 func _counted_day() -> int:
-	return _day if _day > 0 or _run == null else _run.header.day
+	return _day if _day > 0 or _run == null else _run.header().day()
 
 func _on_day_started(spec: DaySpec) -> void:
 	_day = spec.day_number()
-	for name in _day_began_names(_day, _run != null and _run.calendar.hard_mode):
+	for name in _day_began_names(_day, _run != null and _run.calendar().in_hard_mode()):
 		_send_event(name)
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first

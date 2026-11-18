@@ -3,14 +3,15 @@ extends RefCounted
 ## Owns the state of a run: the seed, the calendar, nerves and resistance progress.
 ##
 ## Determinism contract (docs/ARCHITECTURE.md): nothing gameplay-relevant may call the
-## global `randi()`. The city's layout is generated from `header.run_seed`, a day's events come from
-## `calendar.day_rng()`, and a stream of the run's own from `run_rng()`.
+## global `randi()`. The city's layout is generated from `header().run_seed()`, a day's events come
+## from `calendar().day_rng()`, and a stream of the run's own from `run_rng()`.
 
 ## The run's state is kept in registered parts (`RunSubState`), each declaring its own fields, its
 ## dawn copies and their save shape once; starting a run, the dawn photograph, a lost day's
 ## give-back, the snapshot and the save all walk this list (`RunStateRegistry`). **A part declared
-## here and not registered is caught by `tests/test_run_state.gd`**. Readers take the part
-## (`run.header.day`, `run.attempt_spend.scars`), and nothing forwards to a part.
+## here and not registered is caught by `tests/test_run_state.gd`**. Readers take the part through
+## its method (`run.header().day()`, `run.attempt_spend().scars()`) and ask it through its own, and
+## nothing forwards to a part.
 ##
 ## **The `Sitting` is where the run lives** (`Sitting.run`), since the sitting outlives the
 ## scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint); a
@@ -22,25 +23,58 @@ extends RefCounted
 ## **A plain `RefCounted`, not a node**: the sitting holds it by reference, and it goes when the
 ## last holder lets it go, so no test frees one. It reaches nothing in the scene tree, and no
 ## autoload registers it.
-var run_parts := RunStateRegistry.new()
-var header: RunHeader = run_parts.register(RunHeader.new())
-var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())
-var attempt_spend: AttemptSpendState = run_parts.register(AttemptSpendState.new())
-var settled: SettledState = run_parts.register(SettledState.new())
-var facts: RunFacts = run_parts.register(RunFacts.new())
+var _run_parts := RunStateRegistry.new()
+var _header: RunHeader = _run_parts.register(RunHeader.new())
+var _resistance: ResistanceRunState = _run_parts.register(ResistanceRunState.new())
+var _attempt_spend: AttemptSpendState = _run_parts.register(AttemptSpendState.new())
+## Where she settled each day; only the calendar asks it (`RunCalendar.settled_this_act()`).
+var _settled: SettledState = _run_parts.register(SettledState.new())
+var _facts: RunFacts = _run_parts.register(RunFacts.new())
 ## What is pasted on the city's walls and how many sheets she has torn — see `PosterState`. A fact
-## about the run like `scars`, photographed and given back with them, so a lost day's crews and
+## about the run like the scars, photographed and given back with them, so a lost day's crews and
 ## tears did not happen. A top-level save key of its own, so a save written before there were
 ## posters still loads, with bare walls.
-var posters: PosterState = run_parts.register(PosterState.new())
+var _posters: PosterState = _run_parts.register(PosterState.new())
 ## How many cyclists the run has drawn from its one pelican bag — see `PelicanState`. Photographed
 ## and given back with the rest of what an attempt spends, and a top-level save key of its own like
-## `posters`, so a save written before it loads at 0.
-var pelican: PelicanState = run_parts.register(PelicanState.new())
+## the posters, so a save written before it loads at 0.
+var _pelican: PelicanState = _run_parts.register(PelicanState.new())
 ## The run's calendar over those parts: the day and act, a day's attempt begun and ended, the mode
 ## and the checkpoint, the day's random streams (`RunCalendar`). Whoever walks the days is handed
 ## this rather than the whole run.
-var calendar := RunCalendar.new(run_parts, header, settled, resistance, facts)
+var _calendar := RunCalendar.new(_run_parts, _header, _settled, _resistance, _facts)
+
+## The list of the run's parts, which the save writes and reads the run through (`GameSave`).
+func run_parts() -> RunStateRegistry:
+	return _run_parts
+
+## Who and where the run is: its seed, the parent, the day, the nerves, the ending, its play time.
+func header() -> RunHeader:
+	return _header
+
+## The run's calendar over its parts (`_calendar` says what it holds).
+func calendar() -> RunCalendar:
+	return _calendar
+
+## What the resistance has done this run.
+func resistance() -> ResistanceRunState:
+	return _resistance
+
+## What an attempt spends and a lost day gives back: the one-shots, the scars, the block arcs.
+func attempt_spend() -> AttemptSpendState:
+	return _attempt_spend
+
+## The facts that ride beside the save's snapshot: the escape's section, the alley tiles, the park.
+func facts() -> RunFacts:
+	return _facts
+
+## What is on the city's walls (`_posters`).
+func posters() -> PosterState:
+	return _posters
+
+## The run's pelican bag (`_pelican`).
+func pelican() -> PelicanState:
+	return _pelican
 
 ## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever
 ## shown in: the ending screens (`SummaryModel.ending()`, the escape's epilogue,
@@ -77,30 +111,30 @@ static func format_clock_seconds(seconds: float) -> String:
 ## Hands the run the trace its facts are written to, and the city's arcs with it. `main` hands the
 ## run session's at every boot; a run nobody hands one, as a test's own run is, writes nowhere.
 func use_trace(sink: RunTrace) -> void:
-	calendar.use_trace(sink)
-	attempt_spend.block_arcs().use_trace(sink)
+	_calendar.use_trace(sink)
+	_attempt_spend.block_arcs().use_trace(sink)
 
 # ------------------------------------------------------------------ lifecycle ---
 
 ## Begin a fresh run. Pass a seed to reproduce a previous city, or omit for a new one.
 func start_run(seed_value: int = 0) -> void:
-	header.run_seed = seed_value if seed_value != 0 else _new_seed()
-	header.player_is_male = run_rng("player-presentation").randi_range(0, 1) == 1
-	run_parts.reset()
+	_header.use_seed(seed_value if seed_value != 0 else _new_seed())
+	_header.set_parent_is_father(run_rng("player-presentation").randi_range(0, 1) == 1)
+	_run_parts.reset()
 	# A fresh run is a normal run with nothing to go back to but its own day 1 until the title says
-	# otherwise — `main._on_title_start()` sets `hard_mode` from the checkbox as the run begins.
-	calendar.hard_mode = false
-	calendar.checkpoint = {}
-	print("[RunState] run started, seed=%d" % header.run_seed)
+	# otherwise — `main._on_title_start()` chooses the mode from the checkbox as the run begins.
+	_calendar.restore_mode(false)
+	_calendar.restore_checkpoint({})
+	print("[RunState] run started, seed=%d" % _header.run_seed())
 
 ## Records a permanent mark, ignoring duplicates from the same spot.
 func add_scar(id: String, position: Vector2) -> void:
-	attempt_spend.record_scar(id, position, header.day)
+	_attempt_spend.record_scar(id, position, _header.day())
 
 # ------------------------------------------------------------------ queries ---
 
 func has_joined_resistance() -> bool:
-	return resistance.progress > 0
+	return _resistance.progress() > 0
 
 ## Whether the neighbor was taken in day 10's raid: the raid's day is behind her and its warning is
 ## not among the steps she completed on a day she won — skipped, failed or never offered, "the same
@@ -108,14 +142,14 @@ func has_joined_resistance() -> bool:
 ## face (`PosterArt.texture_for()`). Derived rather than saved, so a lost day gives it back with the
 ## step.
 func neighbor_was_taken() -> bool:
-	if header.day <= ResistanceHappenings.NEIGHBOR_DAY:
+	if _header.day() <= ResistanceSteps.NEIGHBOR_DAY:
 		return false
 	var warning := ResistanceSteps.warning_step()
-	return warning != null and warning.index not in resistance.completed_steps
+	return warning != null and not _resistance.has_completed(warning.index)
 
 ## Whether the final sabotage is on offer at all.
 func sabotage_available() -> bool:
-	return resistance.progress >= Tuning.RESISTANCE_GOAL
+	return _resistance.progress() >= Tuning.RESISTANCE_GOAL
 
 # --------------------------------------------------------------- resistance ---
 
@@ -126,19 +160,16 @@ func sabotage_available() -> bool:
 ## own words are announced from there, at the mark and nowhere else, rather than queued here for
 ## a day brief to read out later (`docs/NARRATIVE.md`, "Feedback").
 func complete_resistance_step(step: int, counts_toward_goal: bool = true) -> void:
-	if step in resistance.completed_steps:
+	if not _resistance.complete(step, counts_toward_goal):
 		return
-	resistance.completed_steps.append(step)
 	if counts_toward_goal:
-		resistance.progress += 1
-		EventBus.resistance_progress_changed.emit(resistance.progress)
+		EventBus.resistance_progress_changed.emit(_resistance.progress())
 	EventBus.resistance_step_completed.emit(step)
 
 ## A timed step that expired. The contact is gone for the rest of the run.
 func fail_resistance_step(step: int) -> void:
-	if step in resistance.failed_steps:
+	if not _resistance.fail(step):
 		return
-	resistance.failed_steps.append(step)
 	EventBus.resistance_step_failed.emit(step)
 
 # ---------------------------------------------------------------------- RNG ---
@@ -147,7 +178,7 @@ func fail_resistance_step(step: int) -> void:
 ## Keeping presentation off the city/day streams preserves every seeded gameplay layout.
 func run_rng(stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:run:%s" % [header.run_seed, stream])
+	rng.seed = hash("%d:run:%s" % [_header.run_seed(), stream])
 	return rng
 
 func _new_seed() -> int:
@@ -160,7 +191,7 @@ func _new_seed() -> int:
 ## Whether `data` carries every key this build's `run_data()` writes under `"state"` — the keys
 ## come from the parts, so a field a part gains is required of a save the moment it is written.
 func snapshot_is_complete(data: Dictionary) -> bool:
-	for field: String in run_parts.state_keys():
+	for field: String in _run_parts.state_keys():
 		if not data.has(field):
 			return false
 	return true

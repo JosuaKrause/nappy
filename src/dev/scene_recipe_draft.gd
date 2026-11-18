@@ -78,7 +78,7 @@ func record(player: Node2D, city: City, events: EventManager, neighbor: Node2D) 
 func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start: Vector2,
 		pinned: Array[Vector2], problems: Array[String]) -> Dictionary:
 	var map := city.map
-	var day := run.header.day
+	var day := run.header().day()
 	var ground := {}
 	for tile: Vector2i in _walked:
 		_add_the_ground_of(map, tile, ground)
@@ -139,7 +139,7 @@ func compose(recipe: Dictionary, run: RunState, city: City, crowd: Crowd, start:
 	# A route bag the author has already rigged is theirs: it is about what she meets, not about
 	# where the stretch runs, so drafting the stretch again keeps it.
 	if not setup.has("route_bag"):
-		var marbles := EventDirector.ordinary_route_marbles(day, run.resistance.progress)
+		var marbles := EventDirector.ordinary_route_marbles(day, run.resistance().progress())
 		setup["route_bag"] = {"marbles": marbles, "owed": marbles.size()}
 	var background: Dictionary = setup.get("background", {})
 	background.erase("crowd")
@@ -211,7 +211,7 @@ static func _fronts(map: CityMap, lot: Rect2i, ground: Dictionary) -> bool:
 ## stretch holds, as `setup.posters` names it.
 static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 	var posters: Array = []
-	var cells: Dictionary = run.posters.cells
+	var cells: Dictionary = run.posters().cells()
 	for tile: Vector2i in _sorted(ground):
 		if not cells.has(tile):
 			continue
@@ -230,12 +230,12 @@ static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 static func _starting_crowd(run: RunState, city: City, crowd: Crowd, ground: Dictionary,
 		start: Vector2, problems: Array[String]) -> Array:
 	var map := city.map
-	var day := run.header.day
+	var day := run.header().day()
 	var box := Rect2i()
 	for tile: Vector2i in ground:
 		box = Rect2i(tile, Vector2i.ONE) if not box.has_area() else box.expand(tile).expand(tile + Vector2i.ONE)
 	var centre := map.tile_rect_to_world(box).get_center()
-	crowd.start_day(day, run.calendar.day_rng(day, "crowd"), centre, true)
+	crowd.start_day(day, run.calendar().day_rng(day, "crowd"), centre, true)
 	var found: Array[Dictionary] = []
 	for agent in crowd.agents():
 		if not ground.has(map.world_to_tile(agent.position)):

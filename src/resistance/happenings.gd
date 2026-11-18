@@ -14,7 +14,7 @@ extends RefCounted
 ## main road on her way**, and drives on and off again, leaving nothing behind.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
-## (`RunState.calendar.day_rng(day, "happenings")`), so nothing here moves a draw the director
+## (`RunState.calendar().day_rng(day, "happenings")`), so nothing here moves a draw the director
 ## or the scheduler makes.
 
 const COLUMN_BY := 100.0
@@ -28,11 +28,6 @@ const COLUMN_WITHIN := 480.0
 ## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
 ## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
 const MARKET_GONE_BY := 90.0
-
-## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
-## Named here rather than read off `ResistanceSteps` because the neighbor's mornings are the story
-## whether or not this run is ever offered the task.
-const NEIGHBOR_DAY := 10
 
 ## How far beside her the neighbor comes out of the door, along the street: enough that the two
 ## figures do not stand in one another on the first frame, not so far that they read as strangers.
@@ -147,7 +142,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_navigator = navigator if navigator else (map.navigator() if map else null)
 	_spawn_siting = spawn_siting
 
-## Starts the day's happenings: on the mornings before `NEIGHBOR_DAY` the neighbor walks out of
+## Starts the day's happenings: on the mornings before `ResistanceSteps.NEIGHBOR_DAY` the neighbor walks out of
 ## her building beside her and off along her street.
 ##
 ## `with_its_events` false starts the day with none of them owed — no neighbor, raid, market,
@@ -156,7 +151,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 ## 12's park is taken when its swing is reached (`take_the_park()`).
 func start_day(day: int, with_its_events := true) -> void:
 	_day = day
-	_rng = _run.calendar.day_rng(day, "happenings")
+	_rng = _run.calendar().day_rng(day, "happenings")
 	morning_neighbor = null
 	_raid.clear()
 	_raid_vans = PackedVector2Array()
@@ -173,9 +168,9 @@ func start_day(day: int, with_its_events := true) -> void:
 	_column_owed = with_its_events and day == COLUMN_DAY
 	if not with_its_events:
 		return
-	if day < NEIGHBOR_DAY:
+	if day < ResistanceSteps.NEIGHBOR_DAY:
 		morning_neighbor = _send_the_neighbor_to_work()
-	if day == NEIGHBOR_DAY:
+	if day == ResistanceSteps.NEIGHBOR_DAY:
 		_plan_the_raid()
 	# The neighbor's boarded window, from this morning on for the rest of the run
 	# (`CityFronts.board_neighbor_window()` is idempotent, so calling it again on a later day costs
@@ -296,7 +291,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 	if _look_in > 0.0:
 		return
 	_look_in = EventDirector.ON_HER_WAY_LOOK
-	var candidates := _market_candidates(_map, _run.attempt_spend.block_arcs())
+	var candidates := _market_candidates(_map, _run.attempt_spend().block_arcs())
 	if candidates.is_empty():
 		_market_owed = false
 		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
@@ -358,7 +353,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 ## Boards `block` up now and takes its market away: the arc's own next step, taken today, the
 ## buildings shown shuttered, and the stalls at its frontage gone from the day's plan.
 func board_up(block: Vector2i) -> bool:
-	var state := _run.attempt_spend.block_arcs()
+	var state := _run.attempt_spend().block_arcs()
 	if not state or not state.advance_now(_map.plans_by_block(), block, _day,
 			GameEnums.BlockPurpose.BOARDED_UP, GameEnums.BlockCause.SCHEDULED):
 		return false
@@ -400,7 +395,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if not _map:
 		return false
 	var park := CityGenerator.swing_park(_map)
-	var state := _run.attempt_spend.block_arcs()
+	var state := _run.attempt_spend().block_arcs()
 	if park.x < 0 or not state or not state.take(_map.plans_by_block(), park, _day):
 		return false
 	_map.recompute_calm(state)

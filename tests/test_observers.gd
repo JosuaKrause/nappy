@@ -181,8 +181,8 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	var run := RunState.new()
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.facts.escape_section = DaySpec.Section.BUILDING
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.facts().set_escape_section(DaySpec.Section.BUILDING)
 	var counter := RecordingCounter.new(run)
 	t.get_tree().paused = true
 	var run_log := RecordingLog.new()
@@ -304,25 +304,25 @@ func _test_endings_and_checkpoints(t: TestRunner) -> void:
 	t.add_child(counter)
 
 	run.start_run(SEED)
-	run.header.day = 6
-	run.header.nerves = 1
-	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	run.header().set_day(6)
+	run.header().set_nerves(1)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_CRYING)
 
 	run.start_run(SEED)
-	run.calendar.choose_mode(true)
-	run.header.day = 3
-	run.header.nerves = 1
-	run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	run.calendar().choose_mode(true)
+	run.header().set_day(3)
+	run.header().set_nerves(1)
+	run.calendar().finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = true
-	run.calendar.finish_day(GameEnums.DayResult.WON)
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	run.resistance().record_the_sabotage()
+	run.calendar().finish_day(GameEnums.DayResult.WON)
 
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.calendar.finish_day(GameEnums.DayResult.WON)
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.calendar().finish_day(GameEnums.DayResult.WON)
 
 	t.check(counter.sent == ["nappy-checkpoint-1-from-day-6", "nappy-ending-bad",
 			"nappy-ending-good", "nappy-ending-neutral"],

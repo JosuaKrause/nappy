@@ -80,14 +80,14 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
 	RunCity.build(_city, MapCache.of(SEED))
-	_run.resistance.completed_steps = []
-	_run.resistance.failed_steps = []
-	_run.resistance.progress = 0
-	_run.resistance.carrying_package = false
+	GivenRun.completed_steps(_run, [])
+	GivenRun.failed_steps(_run, [])
+	_run.resistance().set_progress(0)
+	_run.resistance().put_down_package()
 	var day := ResistanceSteps.swing_day()
-	_run.header.day = day
-	var state := CityState.new()
-	_run.attempt_spend.city_state = state
+	_run.header().set_day(day)
+	var state := _run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	# What the day closes is closed before its walk starts, which is when where she can get to from

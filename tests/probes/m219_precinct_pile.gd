@@ -18,16 +18,16 @@ func run(t: TestRunner) -> void:
 		var day: int = case[1]
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-		city.run.header.day = day
+		city.run.header().set_day(day)
 		t.add_child(city)
 		RunCity.build(city, map)
-		city.run.attempt_spend.city_state.begin_day(map.block_plans, day)
-		city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"))
+		city.run.attempt_spend().block_arcs().begin_day(map.block_plans, day)
+		city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"))
 		var doorstep := map.doorstep_world_position()
-		RunCity.events(city).start_day(DaySpec.for_day(day), city.run.calendar.day_rng(), city.run.attempt_spend.consumed_one_shots, doorstep)
+		RunCity.events(city).start_day(DaySpec.for_day(day), city.run.calendar().day_rng(), city.run.attempt_spend().consumed_one_shots(), doorstep)
 		var at := map.tile_to_world(case[2])
 		RunCity.events(city).stream_around(at)
-		RunCity.crowd(city).start_day(day, city.run.calendar.day_rng(day, "crowd"), at)
+		RunCity.crowd(city).start_day(day, city.run.calendar().day_rng(day, "crowd"), at)
 		RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
 		var most := 0
 		var total := 0

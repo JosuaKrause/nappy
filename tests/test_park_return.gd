@@ -74,7 +74,7 @@ func _day_twelve(t: TestRunner, seed_value: int) -> Node2D:
 	# reads. The run the boot plays is the sitting's, a fresh one the resume reads that save into.
 	var written := RunState.new()
 	written.start_run(seed_value)
-	written.header.day = ResistanceSteps.swing_day()
+	written.header().set_day(ResistanceSteps.swing_day())
 	var save := GameSave.new(_SCRATCH_PATH)
 	save.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
 	save.write(written, true)
@@ -90,13 +90,13 @@ func _day_twelve(t: TestRunner, seed_value: int) -> Node2D:
 	await Boot.press_title(t, main, "Right")
 	t.check(Boot.city(main).map.seed_used == seed_value, "seed %d is the city under test (%d)"
 			% [seed_value, Boot.city(main).map.seed_used])
-	t.check(_run.header.day == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
-			% [ResistanceSteps.swing_day(), _run.header.day])
+	t.check(_run.header().day() == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
+			% [ResistanceSteps.swing_day(), _run.header().day()])
 	# A resumed run opens on the day's brief; leaving it is what puts her on the street.
 	if Boot.summary(main).is_showing():
 		await Boot.press_continue(t, main)
 	t.check(Boot.day(main).is_running() and not Boot.summary(main).is_showing(),
-			"seed %d: day %d is under way" % [seed_value, _run.header.day])
+			"seed %d: day %d is under way" % [seed_value, _run.header().day()])
 	_touch_the_contact(Boot.resistance(main))
 	return main
 
@@ -124,7 +124,7 @@ func _touch_the_swing(t: TestRunner, main: Node2D, through_the_director := false
 	_happenings.use_bus(EventBus)
 	_happenings.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city,
 			city.atlas, null, RunCity.spawn_siting(city))
-	_happenings.start_day(_run.header.day, false)
+	_happenings.start_day(_run.header().day(), false)
 	t.check(_happenings.take_the_park(ResistanceReads.day_reachability(Boot.city(main))[1]),
 			"reaching the swing takes the park")
 	return swing
@@ -190,9 +190,9 @@ func _check_the_next_morning(t: TestRunner, main: Node2D, label: String) -> void
 	t.check(Boot.summary(main).is_showing(), "%s: the won day's summary is up" % label)
 	var map: CityMap = Boot.city(main).map
 	await Boot.press_continue(t, main)
-	t.check(_run.header.day == ResistanceSteps.swing_day() + 1,
+	t.check(_run.header().day() == ResistanceSteps.swing_day() + 1,
 			"%s: leaving the summary starts day %d (day %d)"
-			% [label, ResistanceSteps.swing_day() + 1, _run.header.day])
+			% [label, ResistanceSteps.swing_day() + 1, _run.header().day()])
 	t.check(not Boot.summary(main).is_showing() and not t.get_tree().paused,
 			"%s: with the summary gone and the tree running" % label)
 	t.check(Boot.day(main).is_running() and Boot.day(main).phase == GameEnums.DayPhase.WALKING,
@@ -289,11 +289,11 @@ func _test_shut_in_with_the_baby_asleep(t: TestRunner, seed_value: int) -> void:
 			and Boot.day(main).hard_fail_reason == ParkCordon.TRAPPED,
 			"%s: shut in, the day is lost to the cordon (%s)" % [label, results])
 	t.check(Boot.summary(main).is_showing(), "%s: the lost day's summary is up" % label)
-	var day := _run.header.day
+	var day := _run.header().day()
 	await Boot.press_continue(t, main)
-	t.check(_run.header.day == day and not Boot.summary(main).is_showing()
+	t.check(_run.header().day() == day and not Boot.summary(main).is_showing()
 			and not t.get_tree().paused,
-			"%s: leaving it plays day %d again (day %d)" % [label, day, _run.header.day])
+			"%s: leaving it plays day %d again (day %d)" % [label, day, _run.header().day()])
 	t.check(Boot.day(main).is_running() and Boot.day(main).phase == GameEnums.DayPhase.WALKING
 			and Boot.baby(main).state == GameEnums.BabyState.AWAKE,
 			"%s: the retry runs with the baby awake" % label)

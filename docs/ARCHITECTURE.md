@@ -937,13 +937,14 @@ it**, together with its dawn copy and its save shape; starting a run, the dawn p
 day's give-back, the snapshot and the save all walk the list, so a part on the list is walked by every one
 of them and no part can be missed in one; within a part, each field is written in each of its methods,
 and `tests/test_run_state.gd` checks that every field reaches its data and that a lost day gives back
-what was photographed. The parts are `RunHeader` (`run_seed`, `day`, `nerves`, the
+what was photographed. The parts are `RunHeader` (the seed, the day, the nerves, the
 ending, play time), `ResistanceRunState`, `AttemptSpendState` (consumed one-shots, scars, block
 arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part says where the
 save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
-beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
-(`run.header.day`, `run.attempt_spend.scars`); code written against a part takes it as
-an argument. **The `Sitting` is where the run lives** (`Sitting.run`): the sitting outlives the
+beside it with a default for absence, or under a key of its own. Readers take the part that owns a
+fact through the run's method and ask the part through its own (`run.header().day()`,
+`run.attempt_spend().scars()`), since every part's fields are private; code written against a part
+takes it as an argument. **The `Sitting` is where the run lives** (`Sitting.run`): the sitting outlives the
 scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and a
 held restart hands it a fresh run (`main._restart_run()`), which the boot after starts
 (`start_run()`). `main`, the composition root, takes it off the sitting once a boot and hands it,
@@ -967,7 +968,7 @@ puts no run back between suites; the visit counter, under the sitting, holds onl
 `Sitting` holds it by reference, it goes when its last holder lets it go, and it reaches nothing in
 the scene tree.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
-builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
+builds over the parts and exposes as `run.calendar()`): the day and act, a day's attempt begun
 (`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day
 a win moves on to), the mode and the checkpoint a normal run goes back to, where she settled
 (`settled_this_act()`), and the day's random streams (`day_rng()`). `DayDirector` is handed it, with

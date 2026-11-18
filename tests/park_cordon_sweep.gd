@@ -148,14 +148,14 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	run.resistance.completed_steps = []
-	run.resistance.failed_steps = []
-	run.resistance.progress = 0
-	run.resistance.carrying_package = false
+	GivenRun.completed_steps(run, [])
+	GivenRun.failed_steps(run, [])
+	run.resistance().set_progress(0)
+	run.resistance().put_down_package()
 	var day := ResistanceSteps.swing_day()
-	run.header.day = day
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	run.header().set_day(day)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],

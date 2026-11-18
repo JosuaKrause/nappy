@@ -111,16 +111,14 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      breaks, the baseline readings); its README gives their order and where each meets the items
      here.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
-     crowd; the city map. The city scene and the conversion of the run's parts (`field-reads.md`,
-     "A run's parts") wait for no other item. **Every file under `src/` is typed
+     crowd; the city map. The city scene waits for no other item. **Every file under `src/` is typed
      but those `field-reads.md` lists, each with what it waits for, under "What is left of the
      typing".** The view (`src/ui/`), the building (`src/interior/`, `src/finale/`), the run's
      parts, the routes, the resistance and the developer's rigs (`src/dev/`) are typed ahead of
      their conversion, and what is left of them is their reads of other classes' fields, which the
      records of their typing list by class: among them the building's
      write of `WorldMap.world`, which goes with the map interface's world half (the design
-     review's standing breaks), the reads through the run's parts, which wait with those parts,
-     and the developer's rigs' reads of an event, row 3c of `event-interface.md`.
+     review's standing breaks), and the developer's rigs' reads of an event, row 3c of `event-interface.md`.
    - **Tools:** `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a

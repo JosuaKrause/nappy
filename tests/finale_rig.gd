@@ -1094,8 +1094,8 @@ static func _escape_roadblocks(
 func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(PLAYERS_SEED)
-	run.header.day = 1
-	run.facts.escape_section = DaySpec.Section.BUILDING
+	run.header().set_day(1)
+	run.facts().set_escape_section(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
 			func(node: Node) -> void: (node as Main).use_sitting_home(home))
@@ -1110,7 +1110,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 		var map: CityMap = city.map
 		var plan := FinalePlanner.route(map)
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
-				run.calendar.day_rng(run.header.day, "finale"), _city_spec(),
+				run.calendar().day_rng(run.header().day(), "finale"), _city_spec(),
 				GamePlanBuilder.over(map))
 		var bands := _escape_roadblocks(placements)
 		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
@@ -1586,9 +1586,9 @@ func _test_the_finale_city_grows_no_corridor(t: TestRunner) -> void:
 	var run := city.run
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
-	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
+	run.attempt_spend().block_arcs().begin_day(city.map.block_plans, 1)
 	var spec := _section(DaySpec.Section.CITY)
-	city.start_day(run.attempt_spend.city_state, 1, run.calendar.day_rng(1, "closures"), spec)
+	city.start_day(run.attempt_spend().block_arcs(), 1, run.calendar().day_rng(1, "closures"), spec)
 	t.check(city.streets().route_tree() == null and city.streets().closures().is_empty(),
 			"the escape grows no corridor and closes no street")
 	# `.free()`, not `queue_free()`, so the city is gone before the next check rather than at a
@@ -1615,7 +1615,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t: T
 	# *"No regular cars or regular people on the street"*: a crowd the start had started would be a
 	# day's, hundreds strong.
 	t.check(RunCity.crowd(city).agent_count() == 0, "the escape's city, started as its spec says, has nobody in it")
-	var day := escape.run.header.day
+	var day := escape.run.header().day()
 	var corridor := Corridor.of(RouteTree.for_day(city.map, day))
 	var plan := FinalePlanner.route(city.map)
 	var on_the_walk := {}
@@ -1774,7 +1774,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		var main := escape.main
 		var summary := Boot.summary(main)
 		var words := _section(section).title
-		var nerves := escape.run.header.nerves
+		var nerves := escape.run.header().nerves()
 		var length: float = Boot.day(main).spec.length
 		var title: Label = summary.get_node("Root/Center/Lines/Title")
 		var body: Label = summary.get_node("Root/Center/Lines/Body")
@@ -1813,7 +1813,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		t.check(body.text.contains(words) and body.text.contains(Texts.nerve_stars(nerves)),
 				"section %d: under the section's own words, the nerves unchanged ('%s')"
 				% [section, body.text])
-		t.check(escape.run.header.nerves == nerves,
+		t.check(escape.run.header().nerves() == nerves,
 				"section %d: since a normal run's lost section spends none" % section)
 
 		teach.text = ""
@@ -1847,7 +1847,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		_free_the_escape(t, escape)
 
 ## **The escape is counted like a day** *(minty-lemur #785: "telemetry should work the same also in
-## escape both apartment and city")*: the run's played time (`RunHeader.play_ticks`, which the
+## escape both apartment and city")*: the run's played time (`RunHeader.play_ticks()`, which the
 ## ending screen shows) runs while a section is walked, and a charge still running when she gets
 ## out of the city is closed for the page's counter as cut short, before the section's own end is
 ## counted — through the day's own finish path, as a day's are. The played time is read across one
@@ -1862,11 +1862,11 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t: TestRunner) -> v
 	var main := escape.main
 	await Boot.press_continue(t, main)
 	await t.get_tree().physics_frame
-	var played := escape.run.header.play_ticks
+	var played := escape.run.header().play_ticks()
 	await t.get_tree().physics_frame
-	t.check(escape.run.header.play_ticks == played + 1,
+	t.check(escape.run.header().play_ticks() == played + 1,
 			"walking the city section counts toward the run's played time (%d, then %d ticks)"
-			% [played, escape.run.header.play_ticks])
+			% [played, escape.run.header().play_ticks()])
 
 	var heard: Array[String] = []
 	var on_cut_short := func(id: String) -> void:
@@ -1915,8 +1915,8 @@ func _boot_the_escape(t: TestRunner, section: int, flags: PackedStringArray = Pa
 	var escape := Escape.new()
 	escape.run = RunState.new()
 	escape.run.start_run(SEEDS[0])
-	escape.run.header.day = Tuning.RUN_LENGTH_DAYS
-	escape.run.facts.escape_section = section
+	escape.run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	escape.run.facts().set_escape_section(section)
 	escape.home = Boot.home_playing(t, escape.run)
 	var home := escape.home
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(Array(flags)),
@@ -1971,11 +1971,11 @@ func _test_only_a_won_last_day_with_every_task_done_hands_over(t: TestRunner) ->
 ## so nothing of the autoload's is touched; the clock is freed).
 func _hands_over(t: TestRunner, result: GameEnums.DayResult, day: int, progress: int, sabotaged: bool) -> bool:
 	var run := RunState.new()
-	var director := DayDirector.new(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
+	var director := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend(), RunConfig.parse(PackedStringArray(), "", true))
 	run.start_run(9182)
-	run.header.day = day
-	run.resistance.progress = progress
-	run.resistance.sabotage_done = sabotaged
+	run.header().set_day(day)
+	run.resistance().set_progress(progress)
+	GivenRun.sabotage(run, sabotaged)
 	var clock := DayController.new()
 	clock.set_process(false)
 	t.add_child(clock)
@@ -2029,7 +2029,7 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
-	city.run.header.day = an_act_iv_day
+	city.run.header().set_day(an_act_iv_day)
 	GivenPlanner.hand_in(RunCity.events(city), [] as Array[EventPlan])
 	var none: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
@@ -2049,14 +2049,14 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
-	city.run.header.day = an_act_iv_day
+	city.run.header().set_day(an_act_iv_day)
 	var owed := {}
 	for owes: bool in [true, false]:
 		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
 		spec.owes_a_return = owes
 		var consumed: Array[String] = []
 		RigStreets.begin(city.streets(), city.map, spec)
-		RunCity.events(city).start_day(spec, city.run.calendar.day_rng(an_act_iv_day), consumed)
+		RunCity.events(city).start_day(spec, city.run.calendar().day_rng(an_act_iv_day), consumed)
 		var before := RunCity.events(city).owed_ahead()
 		EventBus.return_phase_started.emit()
 		owed[owes] = RunCity.events(city).owed_ahead() - before
@@ -2267,8 +2267,8 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t: TestRun
 	save.configure(config)
 	var closed := RunState.new()
 	closed.start_run(SEEDS[0])
-	closed.header.day = Tuning.RUN_LENGTH_DAYS
-	closed.facts.escape_section = DaySpec.Section.BUILDING
+	closed.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	closed.facts().set_escape_section(DaySpec.Section.BUILDING)
 	t.check(save.write(closed, false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
 	save.free()
@@ -2412,7 +2412,7 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t: TestRunner) ->
 	t.check(reloads[0] == 2,
 			"and so does the section brief's own restart button — the same DaySummary a day uses")
 	t.check(sitting.run != escape.run and sitting.run != after_the_pause
-			and sitting.run.facts.escape_section == DaySpec.Section.NONE,
+			and sitting.run.facts().escape_section() == DaySpec.Section.NONE,
 			"each restart hands the sitting a fresh run, with no escape section — the run the "
 			+ "next boot starts")
 	_free_the_escape(t, escape)

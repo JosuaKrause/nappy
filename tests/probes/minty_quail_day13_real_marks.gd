@@ -202,10 +202,10 @@ func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int,
 		if step.day < DAY:
 			done.append(step.index)
 	var run: RunState = city.run
-	run.header.day = DAY
-	run.resistance.completed_steps.assign(done)
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	run.header().set_day(DAY)
+	GivenRun.completed_steps(run, done)
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [],

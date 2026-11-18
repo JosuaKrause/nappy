@@ -80,7 +80,7 @@ func run(t: TestRunner) -> void:
 func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) -> Dictionary:
 	var day := Tuning.RUN_TAUGHT_DAY
 	# Every walk on this city's run starts from the scars it began with.
-	var scars := city.run.attempt_spend.scars.duplicate()
+	var scars := city.run.attempt_spend().scars().duplicate()
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
@@ -134,7 +134,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 					% [RunTrace.tile(city.map.world_to_tile(plan.position)),
 					plan.position.distance_to(rig.global_position)])
 	rig.free()
-	city.run.attempt_spend.scars = scars
+	GivenRun.scars(city.run, scars)
 	var out := state.duplicate()
 	out["met"] = met
 	out["never_real"] = never_real

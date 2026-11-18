@@ -64,7 +64,7 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	map.world = holder
 	events.setup_world(map, _run)
 	t.add_child(events)
-	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
+	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend(), RunConfig.parse(PackedStringArray(), "", true))
 	# A world with no city: the open ground and its events, nobody in it.
 	director.use_the_world(DayWorld.in_the_building(map, events, null, null, Vector2.ZERO,
 			Vector2.DOWN, null), null, clock)
@@ -87,7 +87,7 @@ func _test_a_timeout_costs_a_nerve_and_names_no_cause(t: TestRunner) -> void:
 	t.check(is_equal_approx(end.elapsed_seconds, 180.0), "and reads the clock at the instant it ended")
 	t.check(_ended == [[1, GameEnums.DayResult.LOST_TIMEOUT, "", 180.0]],
 			"and sends day_ended once, with that cause and clock (%s)" % [_ended])
-	t.check(_run.header.nerves == Tuning.STARTING_NERVES - 1 and not end.run_over
+	t.check(_run.header().nerves() == Tuning.STARTING_NERVES - 1 and not end.run_over
 			and not end.goes_back, "the nerve is spent and the run goes on")
 	_put_away(rig)
 
@@ -132,7 +132,7 @@ func _test_a_won_day_moves_the_calendar_on(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(not end.hands_over_to_the_escape and not end.run_over and _run.header.day == 2,
+	t.check(not end.hands_over_to_the_escape and not end.run_over and _run.header().day() == 2,
 			"a won day 1 is day 2 next")
 	t.check(end.cause == "", "and a win is named by nothing")
 	_put_away(rig)
@@ -145,31 +145,31 @@ func _test_a_won_day_with_a_player_and_no_city_ends(t: TestRunner) -> void:
 	var player := Stroller.new()
 	director.player = player
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(end.finished_day == 1 and _run.header.day == 2, "the day ends and the calendar moves")
+	t.check(end.finished_day == 1 and _run.header().day() == 2, "the day ends and the calendar moves")
 	player.free()
 	_put_away(rig)
 
 func _test_a_won_last_day_with_every_task_done_hands_over(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
-	_run.header.day = Tuning.RUN_LENGTH_DAYS
-	_run.resistance.progress = Tuning.RESISTANCE_GOAL
-	_run.resistance.sabotage_done = true
-	_run.header.nerves = Tuning.STARTING_NERVES - 2
+	_run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	_run.resistance().record_the_sabotage()
+	_run.header().set_nerves(Tuning.STARTING_NERVES - 2)
 	var end := director.finish_day(GameEnums.DayResult.WON)
 	t.check(end.hands_over_to_the_escape, "a won last day with every task done hands over")
-	t.check(_run.header.nerves == Tuning.STARTING_NERVES - 1,
+	t.check(_run.header().nerves() == Tuning.STARTING_NERVES - 1,
 			"and the won day gives a nerve back, as every won day does")
-	t.check(_run.header.day == Tuning.RUN_LENGTH_DAYS and not end.run_over,
+	t.check(_run.header().day() == Tuning.RUN_LENGTH_DAYS and not end.run_over,
 			"and the calendar is left where it was for the escape to decide")
 	_put_away(rig)
 
 func _test_a_scene_recipe_never_hands_over(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
-	_run.header.day = Tuning.RUN_LENGTH_DAYS
-	_run.resistance.progress = Tuning.RESISTANCE_GOAL
-	_run.resistance.sabotage_done = true
+	_run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	_run.resistance().record_the_sabotage()
 	director.escape_follows = false
 	var end := director.finish_day(GameEnums.DayResult.WON)
 	t.check(not end.hands_over_to_the_escape, "a scene recipe's won last day never hands over")
@@ -188,7 +188,7 @@ func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
 			"a section sends day_ended under its own number and cause")
 	t.check(end.reason == "She started crying." and end.exit_reached == CityEdge.Kind.TUNNEL,
 			"and its end carries the clock's own sentence and the way out, for the summary to say")
-	t.check(_run.header.nerves == Tuning.STARTING_NERVES,
+	t.check(_run.header().nerves() == Tuning.STARTING_NERVES,
 			"and leaves what it costs to the section's own flow")
 	_put_away(rig)
 
@@ -238,7 +238,7 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	var world: DayWorld
 	if in_building:
 		world = DayWorld.in_the_building(WorldMap.open_ground(), events, player, baby,
-				Vector2(30.0, 40.0), Vector2.UP, _run.calendar.day_rng(1, "a seed of its own"))
+				Vector2(30.0, 40.0), Vector2.UP, _run.calendar().day_rng(1, "a seed of its own"))
 	else:
 		city = _FakeDressing.new(_asked)
 		city.name = "City"
@@ -252,7 +252,7 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 				Vector2(100.0, 200.0), home_map, exits, Vector2.DOWN, scene_city)
 	var worlds := _FakeWorlds.new(world, _asked)
 	var config := RunConfig.parse(PackedStringArray(), "", true)
-	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
+	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend(), config)
 	director.use_the_world(null, resistance, clock)
 	director.use_worlds(worlds)
 	director.use_the_scene(scene)
@@ -304,7 +304,7 @@ func _test_a_day_starts_in_its_order(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1, 210.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
-	_run.resistance.carrying_package = true
+	_run.resistance().pick_up_package()
 	var errors := _start(director, spec)
 	t.check(errors.is_empty(), "a day's start stands")
 	t.check(_asked_in_order(["started 1", "stand %d" % spec.number, "stood", "dress start_day",
@@ -317,13 +317,13 @@ func _test_a_day_starts_in_its_order(t: TestRunner) -> void:
 	var events: _FakeEvents = rig["events"]
 	t.check(events.planned_with == spec and events.planned_around == Vector2(100.0, 200.0),
 			"its events are planned on its own spec round where the world puts her")
-	t.check(events.planned_on.seed == _run.calendar.day_rng(1, "events").seed,
+	t.check(events.planned_on.seed == _run.calendar().day_rng(1, "events").seed,
 			"on the run's own events stream for the day")
-	t.check(is_same(events.one_shots_spent, _run.attempt_spend.consumed_one_shots),
+	t.check(is_same(events.one_shots_spent, _run.attempt_spend().consumed_one_shots()),
 			"and they spend the run's one-shots")
 	t.check(not _asked.has("baby force_sleep") and not _asked.has("tint"),
 			"the baby starts awake and a grown tree is tinted as it grows, not here")
-	t.check(not _run.resistance.carrying_package, "the dawn is photographed before it starts")
+	t.check(not _run.resistance().is_carrying_package(), "the dawn is photographed before it starts")
 	var clock: DayController = rig["clock"]
 	t.check(clock.is_running() and is_equal_approx(clock.seconds_total(), 210.0)
 			and clock.spec == spec, "the clock runs the day's own spec and length")
@@ -337,7 +337,7 @@ func _test_the_city_section_starts_on_its_settings(t: TestRunner) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
-	_run.resistance.carrying_package = true
+	_run.resistance().pick_up_package()
 	_start(director, spec)
 	var events: _FakeEvents = rig["events"]
 	t.check(_asked_in_order(["started %d" % DaySpec.CITY_DAY, "stood", "dress start_day",
@@ -345,16 +345,16 @@ func _test_the_city_section_starts_on_its_settings(t: TestRunner) -> void:
 			"crowd clear", "reset_at (100.0, 200.0) (0.0, 1.0)", "baby reset", "baby force_sleep"]),
 			"the city section is announced, dressed at night, planned, tinted, emptied and put down "
 			+ "asleep (%s)" % [_asked])
-	t.check(events.planned_on.seed == _run.calendar.day_rng(1, "finale").seed,
+	t.check(events.planned_on.seed == _run.calendar().day_rng(1, "finale").seed,
 			"its events are planned on the escape's own stream of the run's day")
-	t.check(not is_same(events.one_shots_spent, _run.attempt_spend.consumed_one_shots)
+	t.check(not is_same(events.one_shots_spent, _run.attempt_spend().consumed_one_shots())
 			and events.one_shots_spent.is_empty(), "from a list of its own, empty")
 	var city: _FakeDressing = rig["city"]
 	t.check(city.tinted == events.walk(), "the kerb tint is the walk it planned")
 	var lines: Array[String] = rig["lines"]
 	t.check(lines == ["plan finale: 0 open streets, 0 placements"],
 			"and the walk's shape is written to the run log (%s)" % [lines])
-	t.check(not _asked.has("resistance 1 180") and _run.resistance.carrying_package,
+	t.check(not _asked.has("resistance 1 180") and _run.resistance().is_carrying_package(),
 			"no resistance runs and no dawn is photographed")
 	_put_the_start_away(rig)
 
@@ -445,17 +445,17 @@ func _says(spec: DaySpec, setting: String) -> bool:
 func _started_on(t: TestRunner, spec: DaySpec) -> Dictionary:
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
-	_run.resistance.carrying_package = true
+	_run.resistance().pick_up_package()
 	director.start(spec)
 	var events: _FakeEvents = rig["events"]
 	var map: _FakeMap = rig["map"]
 	var seen := {
-		"photographs_the_dawn": not _run.resistance.carrying_package,
+		"photographs_the_dawn": not _run.resistance().is_carrying_package(),
 		"runs_the_resistance": _asked_any(["resistance"]),
 		"starts_with_the_baby_asleep": _asked.has("baby force_sleep"),
 		"spends_the_one_shots": is_same(events.one_shots_spent,
-				_run.attempt_spend.consumed_one_shots),
-		"events_stream": events.planned_on.seed == _run.calendar.day_rng(1, "events").seed,
+				_run.attempt_spend().consumed_one_shots()),
+		"events_stream": events.planned_on.seed == _run.calendar().day_rng(1, "events").seed,
 		"shuts_the_spent_calm": map.handed_spent,
 		"runs_the_daylight_down": not _asked.has("daylight 0.0"),
 	}

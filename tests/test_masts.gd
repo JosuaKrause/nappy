@@ -309,7 +309,7 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> 
 func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> void:
 	var first := Tuning.MAST_FIRST_DAY
 	var run := _city.run
-	run.header.day = first
+	run.header().set_day(first)
 	_start(first)
 	var target: MastSites.Site = null
 	for site in _sites():
@@ -324,7 +324,7 @@ func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> v
 	RunCity.events(_city).silence_mast(target.id)
 	run.add_scar(DawnMasts.SILENCED_MAST, foot)
 
-	run.header.day = first + 1
+	run.header().set_day(first + 1)
 	_start(first + 1)
 	var tomorrow := _plan_for(target.id)
 	t.check(tomorrow != null and tomorrow.silenced,
@@ -335,7 +335,7 @@ func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> v
 		if site.id != target.id and plan != null and not plan.silenced:
 			others_speak += 1
 	t.check(others_speak > 0, "while the other sites speak (%d)" % others_speak)
-	run.attempt_spend.scars.clear()
+	GivenRun.scars(run, [])
 
 func _teardown() -> void:
 	if _city:

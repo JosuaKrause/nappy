@@ -198,7 +198,7 @@ var _held := false
 var _last_position := Vector2.INF
 var _teleported := false
 ## The day this rig's queue was started for, read once in `start_day()` off the spec it is handed
-## (`DaySpec.number`: 1 to 14, or the escape's city, 16). The run's `header.day` has already moved to the
+## (`DaySpec.number`: 1 to 14, or the escape's city, 16). The run's `header().day()` has already moved to the
 ## next day by the time `DayController.day_finished` reports a win, so a line written from
 ## `_on_day_finished()` would otherwise name the wrong day.
 var _day_number := 0
@@ -521,7 +521,7 @@ func _maybe_replan(delta: float) -> void:
 ## answer to whether she reached it (`ContactPoint.REACH`, 36px, or an any-instance task's wider
 ## reach), which is what the leg is timing.
 func _step_completed() -> bool:
-	return _leg_step != null and _run.resistance.completed_steps.has(_leg_step.index)
+	return _leg_step != null and _run.resistance().completed_steps().has(_leg_step.index)
 
 ## A `mark` or `task` target further than this from where the leg is aimed has moved: a tile, so a
 ## pacing any-instance task drifting inside its own tile does not re-plan every check.

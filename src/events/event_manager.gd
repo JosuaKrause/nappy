@@ -318,7 +318,7 @@ func _begin(spec: DaySpec) -> void:
 ## a walk planned whole hands it nothing. `world.day` is the plan's: the day's own number for a day,
 ## the run's last day for the escape's sections.
 func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bodies: bool) -> void:
-	world.day = spec.number if plan.is_a_day else world.run.header.day
+	world.day = spec.number if plan.is_a_day else world.run.header().day()
 	_encounters.day = spec.number
 	_walk = plan.walk
 	# Where she can get to from home, worked out as the walk starts, from what it planned and the

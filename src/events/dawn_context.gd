@@ -163,7 +163,7 @@ func calm() -> CalmAreas:
 func doors() -> PackedVector2Array:
 	return _doors
 
-## The run's heat (`RunState.resistance.progress`). **Handed in rather than read off the run**, so
+## The run's heat (`RunState.resistance().progress()`). **Handed in rather than read off the run**, so
 ## that a day is a function of what its context holds: a rig that plans day 9 twice gets the same
 ## day twice whatever a run happens to have done.
 func heat() -> int:

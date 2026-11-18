@@ -29,9 +29,9 @@ func run(t: TestRunner) -> void:
 		t.add_child(city)
 		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day in range(PosterWalls.FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
-			city.run.header.day = day
-			var state := CityState.new()
-			city.run.attempt_spend.city_state = state
+			city.run.header().set_day(day)
+			var state := city.run.attempt_spend().block_arcs()
+			state.reset()
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -45,7 +45,7 @@ func run(t: TestRunner) -> void:
 			player.set_physics_process(false)
 			player.add_to_group("player")
 			RunCity.events(city).use_player(player)
-			var sheets: Array = city.run.posters.cells.keys()
+			var sheets: Array = city.run.posters().cells().keys()
 			sheets.sort()
 			var picked: Array[Vector2i] = []
 			for i in mini(TEARS_A_DAY, sheets.size()):
@@ -53,7 +53,7 @@ func run(t: TestRunner) -> void:
 			var tears := 0
 			for tile: Vector2i in picked:
 				tears += 1
-				city.run.posters.tears = tears
+				GivenRun.tears(city.run, tears)
 				var her := city.map.tile_to_world(tile)
 				player.global_position = her
 				RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,

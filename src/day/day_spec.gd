@@ -54,13 +54,13 @@ enum Goal {
 }
 
 ## The escape's two sections, and `NONE` for every one of the fourteen days. **The values are the
-## save's**: `run.facts.escape_section` holds one as a plain `int` and `GameSave` writes it, so a
+## save's**: `run.facts().escape_section()` holds one as a plain `int` and `GameSave` writes it, so a
 ## save written before this enum moved here reads the same.
 enum Section { NONE, BUILDING, CITY }
 
 ## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
 ## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
-## `run.header.day` stays on the last day while the escape is walked, since the run has not moved
+## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
 ## past it — its plan's random streams and its save are keyed by it.
 var number := 1
 ## The day's own words where "Day N of 14" stands, on its brief and its outcome screen, and the
@@ -115,7 +115,7 @@ var _runs_the_resistance := true
 ## her awake.
 var _starts_asleep := false
 ## Whether the walk's plan draws on the run's one-shots and spends them
-## (`AttemptSpendState.consumed_one_shots`, appended to as the day's plan spends one): every day's.
+## (`AttemptSpendState.consumed_one_shots()`, appended to as the day's plan spends one): every day's.
 ## The escape plans from a list of its own, empty, and spends none of the run's.
 var _spends_the_one_shots := true
 ## The run's random stream the walk's events are planned on (`RunCalendar.day_rng()`): `"events"` for
@@ -269,7 +269,7 @@ static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpe
 
 ## One of the escape's two sections, `section_length` seconds long, titled `section_title` — its own
 ## words, handed in by whoever builds it (`main._escape_section_spec()`). `which` is a `Section`
-## passed as an `int`, the way `run.facts.escape_section` holds it.
+## passed as an `int`, the way `run.facts().escape_section()` holds it.
 static func for_section(which: int, section_length: float, section_title := "") -> DaySpec:
 	var spec := DaySpec.new()
 	spec.section = which

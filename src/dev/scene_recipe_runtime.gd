@@ -413,7 +413,7 @@ static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[
 	if task.has("neighbor"):
 		if not perform or perform.target_kind != ResistanceSteps.TargetKind.NEIGHBOR:
 			errors.append("setup.task.neighbor: only day %d's neighbor has a start to pin"
-					% ResistanceHappenings.NEIGHBOR_DAY)
+					% ResistanceSteps.NEIGHBOR_DAY)
 		else:
 			_position(task.neighbor, "setup.task.neighbor", errors)
 	names["task"] = true
@@ -586,7 +586,7 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	# sites against after.
 	var calm := simulation.events().calm_as_the_map_stands()
 	var plans := _event_plans(at, errors, calm)
-	simulation.events().start_recipe(plans, spec, _run.header.day, at, calm)
+	simulation.events().start_recipe(plans, spec, _run.header().day(), at, calm)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -609,14 +609,14 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
 						plan.kept_live = true
-	simulation.crowd().start_day(_run.header.day,
-			_run.calendar.day_rng(_run.header.day, "crowd"), at,
+	simulation.crowd().start_day(_run.header().day(),
+			_run.calendar().day_rng(_run.header().day(), "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
 		var area_scale := map.world_size().x * map.world_size().y / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) \
 				if background.get("crowd_scope", "player") == "city" else 1.0
-		var act := Tuning.act_for_day(_run.header.day)
+		var act := Tuning.act_for_day(_run.header().day())
 		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
 				+ roundi(Tuning.crowd_cars(act) * area_scale)
 		if simulation.crowd().agent_count() != expected:
@@ -682,15 +682,15 @@ func _start_the_task() -> bool:
 		var camera := get_viewport().get_camera_2d()
 		if camera:
 			camera.force_update_scroll()
-		if _run.calendar.is_final_day():
-			_run.resistance.progress = Tuning.RESISTANCE_GOAL
+		if _run.calendar().is_final_day():
+			_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 		# The day's task is planned over the whole witness, as a played day plans it: the mark's
 		# "reachable from home" and the guard's place are questions about the city, and a stretch's
 		# void would answer every one of them no.
 		var edges := _city.map.witness_only()
-		errors = _resistance.start_recipe_task(_run.header.day,
-				_run.calendar.day_rng(_run.header.day, "resistance"),
-				_config.day_length_for(_run.header.day), mark, neighbor)
+		errors = _resistance.start_recipe_task(_run.header().day(),
+				_run.calendar().day_rng(_run.header().day(), "resistance"),
+				_config.day_length_for(_run.header().day()), mark, neighbor)
 		_city.map.restore_edges(edges)
 	if not errors.is_empty():
 		manifest["setup_failed"] = true
@@ -776,7 +776,7 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	happening.trace = _city.trace
 	happening.setup(map, _city.run, _simulation.events(), _city.streets(), _city.fronts(), _city,
 			_city.atlas, null, _simulation.events().spawn_siting())
-	happening.start_day(_run.header.day)
+	happening.start_day(_run.header().day())
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
 			bottom)
 	for i in happening.column.size():
@@ -797,7 +797,7 @@ func _install_posters(entries: Array, errors: Array[String]) -> void:
 			continue
 		used[tile] = true
 		var kind: int = PosterArt.Kind[str(entry.kind).to_upper()]
-		_run.posters.paste(tile, kind, false, 1)
+		_run.posters().paste(tile, kind, false, 1)
 		recorded.append({"at": [at.x, at.y], "kind": entry.kind})
 	_simulation.poster_walls().refresh()
 	manifest["authored_posters"] = recorded
@@ -891,7 +891,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 		for candidate in SealPlanner.candidates():
 			if candidate.id != entry.candidate:
 				continue
-			if not SealPlanner.offers(candidate, _run.header.day, lined.has(key)):
+			if not SealPlanner.offers(candidate, _run.header().day(), lined.has(key)):
 				errors.append("setup.seals: candidate is unavailable on this day or street")
 				continue
 			var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
@@ -921,7 +921,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
 		# seal empties, the soft seals cleared); what they place is not the scene's.
 		DayPlanner.plan_the_escape_city(map, finale,
-				_run.calendar.day_rng(_run.header.day, "finale"), _walk_spec, builder, false)
+				_run.calendar().day_rng(_run.header().day(), "finale"), _walk_spec, builder, false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")
@@ -962,18 +962,18 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		elif finale:
 			plan = _finale_placement(def, builder, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
-		elif def.spawn_mode_on(_run.header.day) != EventDef.SpawnMode.MAP:
+		elif def.spawn_mode_on(_run.header().day()) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
 			var route := director._crossing_ahead_of(player_at, heading, def)
-			if not def.available_on(_run.header.day) or def.pursuit == null or route.is_empty() \
+			if not def.available_on(_run.header().day()) or def.pursuit == null or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
 					or not DoorClearanceRule.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
 				continue
 			plan = EventPlan.new(def, at, route)
 		else:
-			plan = EventScheduler.recipe_placement(def, _run.header.day, map, builder, at,
+			plan = EventScheduler.recipe_placement(def, _run.header().day(), map, builder, at,
 					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing,
 					locations, why)
 		if not plan:
@@ -983,8 +983,8 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		counts[def.id] = int(counts.get(def.id, 0)) + 1
 		# A day holds no cap on a row its units draw (one of a row in a unit instead,
 		# `MarbleDraw`), so a row a unit draws is held to none here either.
-		var beside := ResistanceSteps.guarded_row_on(_run.header.day)
-		var capped := not def.is_drawn_by_units(_run.header.day, beside) \
+		var beside := ResistanceSteps.guarded_row_on(_run.header().day())
+		var capped := not def.is_drawn_by_units(_run.header().day(), beside) \
 				and def.most_in_a_day() > 0
 		if capped and int(counts[def.id]) > def.most_in_a_day():
 			errors.append("event %s exceeds the ordinary per-day cap" % entry.name)
@@ -1036,7 +1036,7 @@ func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 		prior: Array[EventPlan]) -> EventPlan:
 	var map := _city.map
 	var tile := map.world_to_tile(at)
-	if _run.header.day < Tuning.MAST_FIRST_DAY \
+	if _run.header().day() < Tuning.MAST_FIRST_DAY \
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
@@ -1443,7 +1443,7 @@ func _observe() -> void:
 							and _resistance.contact() == actor
 				"done":
 					passed = actor is ContactPoint and actor.is_done \
-							and actor.step.index in _run.resistance.completed_steps
+							and actor.step.index in _run.resistance().completed_steps()
 				"arrowed":
 					passed = _resistance != null and _resistance.red_arrow_target() != Vector2.INF \
 							and _resistance.red_arrow_target().is_equal_approx(actor.global_position)

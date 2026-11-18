@@ -30,7 +30,7 @@ const RUN_SEED := 2
 func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
-	own_run.resistance.progress = Tuning.RESISTANCE_GOAL
+	own_run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
 	print("\n== M181: the day's resistance target, reachable from home ==")
 	print("%-12s %4s %-8s %6s %6s %6s  %s" % ["seed", "day", "target", "legal", "open", "reach",
 			"placed at (reachable?)"])

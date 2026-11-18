@@ -157,7 +157,7 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 	# this path — planning the day's closures, placing every event, streaming the world around
 	# the doorstep — as one of the candidates for the wait after a summary's continue button.
 	var elapsed := Time.get_ticks_msec()
-	var today: int = calendar.header.day
+	var today: int = calendar.day()
 	use_the_day(the_spec)
 	# Before the announcement and before anything is placed: this is where the run photographs
 	# what the resistance had done, and a lost day gives exactly that back — so the photograph has
@@ -207,7 +207,7 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 ## calm handed over where the spec shuts it, the repaint and the closures
 ## (`CityDressing.start_day()`), the act's cast and, where the light does not run down, the night.
 func _dress_the_city(today: int) -> void:
-	spend.city_state.begin_day(_city_map.block_plans, today)
+	spend.block_arcs().begin_day(_city_map.block_plans, today)
 	if spec.shuts_the_spent_calm():
 		# The calm areas she has used this act, handed to the repaint `start_day()` opens with,
 		# so the ones that can be shut are shut before the day's route tree is grown around them.
@@ -216,15 +216,15 @@ func _dress_the_city(today: int) -> void:
 		# What the run already remembers about the one park barriers ever stand around this run,
 		# handed over the same way, so a fence chosen on an earlier day of this act stands again
 		# today rather than being re-decided. See `CityMap.set_fenced_park_state()`.
-		_city_map.set_fenced_park_state(_facts.fenced_park, _facts.fenced_park_act,
+		_city_map.set_fenced_park_state(_facts.fenced_park(), _facts.fenced_park_act(),
 				calendar.current_act())
 	# An authored scene's city closes the recipe's own streets rather than growing a day's
 	# (`City.start_recipe_day()`); a walk that closes none is dressed the same either way.
 	if _scene and spec.closes_the_streets():
-		_dressing.start_recipe_day(spend.city_state, today, calendar.day_rng(today, "closures"),
+		_dressing.start_recipe_day(spend.block_arcs(), today, calendar.day_rng(today, "closures"),
 				spec)
 	else:
-		_dressing.start_day(spend.city_state, today, calendar.day_rng(today, "closures"), spec)
+		_dressing.start_day(spend.block_arcs(), today, calendar.day_rng(today, "closures"), spec)
 	if spec.shuts_the_spent_calm():
 		# Remember the first choice for the run. Today's physical fence disappears after its act,
 		# but that must not erase the history and allow tomorrow to choose another one.
@@ -250,7 +250,7 @@ func _plan_the_walk(world: DayWorld, today: int) -> void:
 	if not rng:
 		rng = calendar.day_rng(today, spec.events_stream())
 	var none: Array[String] = []
-	events.start_day(spec, rng, spend.consumed_one_shots if spec.spends_the_one_shots() else none,
+	events.start_day(spec, rng, spend.consumed_one_shots() if spec.spends_the_one_shots() else none,
 			world.start_position())
 	if not _in_a_city:
 		return
@@ -341,7 +341,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	var end := DayEnd.new()
 	end.result = result
 	# A day's number is the calendar's; a section's is its own, after the last day.
-	end.finished_day = calendar.header.day if spec.section_kind() == DaySpec.Section.NONE \
+	end.finished_day = calendar.day() if spec.section_kind() == DaySpec.Section.NONE \
 			else spec.day_number()
 	# Captured here, before anything below touches the clock, so the summary reads the instant
 	# the day actually ended. Clamped because `_process()` can call `_end()` one frame after

@@ -94,12 +94,12 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 	model.kind = Kind.BRIEF
 	model._note = note_line
 	if section_title == "":
-		model._title = day_line(run.header.day)
+		model._title = day_line(run.header().day())
 	else:
 		model._title = section_title
 		model.title_is_prose = true
-	model._plain_body(nerves_line(run.header.nerves))
-	model._brief = Texts.DAY_BRIEF.get(run.header.day, "") if section_title == "" else ""
+	model._plain_body(nerves_line(run.header().nerves()))
+	model._brief = Texts.DAY_BRIEF.get(run.header().day(), "") if section_title == "" else ""
 	return model
 
 ## The summary of a day that just ended, or of a lost section of the escape (`section_title`, its
@@ -107,7 +107,7 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 ##
 ## **Everything but the one line about the day that ended is the coming day's.** The title is the
 ## clock the day ended on, worded by `_clock_line()`; the day, the nerves and the morning's line read
-## the run as it stands now — a win has already moved `run.header.day` on, and a loss leaves it on
+## the run as it stands now — a win has already moved `run.header().day()` on, and a loss leaves it on
 ## the day being retried, so the screen names the day she is about to walk.
 ##
 ## **`end.sends_the_run_back()` is a normal run's last nerve**: the run is back at its checkpoint's dawn with
@@ -120,8 +120,8 @@ static func day_over(run: RunState, end: DayEnd, section_title := "") -> Summary
 	model.kind = Kind.DAY
 	model._title = _clock_line(end.outcome(), end.loss_reason(), RunState.format_clock_seconds(end.lasted_seconds()))
 	model.title_is_prose = true
-	var day := run.header.day
-	var nerves := run.header.nerves
+	var day := run.header().day()
+	var nerves := run.header().nerves()
 	var retrying := end.outcome() != GameEnums.DayResult.WON and nerves > 0 and section_title == ""
 	var lines: Array[String] = [day_line(day) if section_title == "" else section_title]
 	lines.append("")
@@ -143,7 +143,7 @@ static func day_over(run: RunState, end: DayEnd, section_title := "") -> Summary
 	return model
 
 ## The last screen of a run: its heading, its title, its paragraph and the run's length to the
-## millisecond — the one place `run.header.play_seconds()` is ever shown. `which` is the run's ending;
+## millisecond — the one place `run.header().play_seconds()` is ever shown. `which` is the run's ending;
 ## a rig (`--ending`) names one of its own. The day is shown on the `BAD` ending alone, the only one
 ## that can end mid-day, and it is the last day played, never advanced past the day a run ends on.
 static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
@@ -152,10 +152,10 @@ static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	model._heading = Texts.ENDING_HEADING.get(which, Texts.ENDING_HEADING_DEFAULT)
 	model._title = Texts.ENDING_TITLE.get(which, Texts.ENDING_TITLE_DEFAULT)
 	model.body_prose = Texts.ENDING_BODY.get(which, "")
-	var day_reached := Texts.ENDING_DAY_REACHED % run.header.day \
+	var day_reached := Texts.ENDING_DAY_REACHED % run.header().day() \
 			if which == GameEnums.Ending.BAD else ""
 	model._body_shape = Texts.ENDING_PLAYED
-	model._body_fill = [RunState.format_clock(run.header.play_seconds()), day_reached]
+	model._body_fill = [RunState.format_clock(run.header().play_seconds()), day_reached]
 	model.shows_continue = false
 	return model
 
@@ -186,15 +186,15 @@ static func nerves_line(nerves: int) -> String:
 
 ## Where the run stands, on one line: the pause screen's, the day and the nerves it covers in the HUD.
 static func standing_line(run: RunState) -> String:
-	return Texts.PAUSE_STANDING % [day_line(run.header.day), nerves_line(run.header.nerves)]
+	return Texts.PAUSE_STANDING % [day_line(run.header().day()), nerves_line(run.header().nerves())]
 
 ## The resistance's tally: the errands run of the goal and the contacts lost, or that the work is
 ## done enough once the last night's sabotage is on offer. The morning's line is not part of it.
 static func _resistance_tally(run: RunState) -> String:
 	if run.sabotage_available():
 		return Texts.SUMMARY_TALLY_DONE
-	var done := run.resistance.progress
-	var lost := run.resistance.failed_steps.size()
+	var done := run.resistance().progress()
+	var lost := run.resistance().failed_steps().size()
 	var line := Texts.SUMMARY_TALLY % [done, Tuning.RESISTANCE_GOAL]
 	if lost > 0:
 		line += Texts.SUMMARY_TALLY_LOST_ONE if lost == 1 else Texts.SUMMARY_TALLY_LOST % lost

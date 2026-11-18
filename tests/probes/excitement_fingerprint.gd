@@ -52,15 +52,15 @@ func run(t: TestRunner) -> void:
 func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header.day = day
+	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
+	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, day)
+	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
 	var start := city.map.doorstep_world_position()
 	var consumed: Array[String] = []
-	RunCity.events(city).start_day(spec, city.run.calendar.day_rng(day), consumed, start)
+	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(day), consumed, start)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("excitement-fingerprint-crowd:%d:%d" % [seed_value, day])
 	RunCity.crowd(city).start_day(day, rng, start)
@@ -77,15 +77,15 @@ func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	city.run.header.day = day
+	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
+	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, day)
+	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
 	var none: Array[String] = []
-	RunCity.events(city).start_day(spec, city.run.calendar.day_rng(day, "finale"), none, start)
+	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(day, "finale"), none, start)
 	var printed := _walk(t, "escape seed %d" % seed_value, city,
 			RunCity.simulation(city).excitement_sources(), RunCity.events(city), RunCity.crowd(city),
 			start)
@@ -97,10 +97,10 @@ func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 func _the_building(t: TestRunner, seed_value: int) -> int:
 	var own_run := RunState.new()
 	own_run.start_run(seed_value)
-	own_run.header.day = Tuning.RUN_LENGTH_DAYS
+	own_run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var rng := own_run.calendar.day_rng(own_run.header.day, "finale-interior")
+	var rng := own_run.calendar().day_rng(own_run.header().day(), "finale-interior")
 	var events := BuildingEvents.events_in(t, scene, rng, own_run)
 	var sets: Array[ExcitementSources] = [events.sources]
 	var printed := _walk(t, "building seed %d" % seed_value, scene, sets, events, null,

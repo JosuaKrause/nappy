@@ -403,12 +403,12 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_own_reach = null
 	_cleared = {}
 	# A fresh attempt at the day starts without the package, whether this is the first try
-	# or a retry after a nerve — see _run.resistance.carrying_package.
-	_run.resistance.carrying_package = false
+	# or a retry after a nerve — see _run.resistance().is_carrying_package().
+	_run.resistance().put_down_package()
 	_happenings.start_day(day, not _scene_task)
 
-	var step := ResistanceSteps.for_day(day, _run.resistance.completed_steps,
-			_run.resistance.failed_steps, _run.sabotage_available(), _steps)
+	var step := ResistanceSteps.for_day(day, _run.resistance().completed_steps(),
+			_run.resistance().failed_steps(), _run.sabotage_available(), _steps)
 	_begin_step(step, true)
 
 ## **A scene recipe's task** (`SceneRecipeRuntime`, `setup.task`; `docs/SCENE_RECIPES.md`): the
@@ -719,11 +719,11 @@ static func _swing_base() -> Vector2:
 	var shadow := Prop._playground_frame_shape()
 	return Vector2(shadow.half_length + shadow.radius, shadow.radius)
 
-## Where the run recorded its scar `scar_id` (`RunState.attempt_spend.scars`), or `Vector2.INF` when it never
+## Where the run recorded its scar `scar_id` (`RunState.attempt_spend().scars()`), or `Vector2.INF` when it never
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
 ## even at dusk.
 func _recorded_scar(scar_id: String) -> Vector2:
-	return _run.attempt_spend.scar_position(scar_id)
+	return _run.attempt_spend().scar_position(scar_id)
 
 ## The instance standing at the run's own recorded scar for `scar_id`, put in the world now and kept
 ## there for the rest of the day wherever she walks, or null when the run never recorded one
@@ -750,7 +750,7 @@ func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
 ## arc, since no fire burned.
 ##
 ## **Safe on a retry.** A lost day gives the scars back to their dawn copy
-## (`RunState.run_parts.give_back()`), and the retry's dawn dresses every building
+## (`RunState.run_parts().give_back()`), and the retry's dawn dresses every building
 ## again before this runs, so a lost attempt leaves neither a scar nor a burnt building behind it.
 ## On a won day the scar is kept, stamped with day 8 (`RunState.add_scar()`), so the scheduler
 ## stands the shell there again from day 9 on and every later dawn burns the same building, as it
@@ -1159,7 +1159,7 @@ static func _sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 ##
 ## **On the last night it chases her away from the station.** The hand-over is the sabotage, and
 ## the day still has to be won by walking home under the blackout before it goes on to the escape
-## (`RunState.calendar.earned_good_ending()`), so being caught there loses day 14 like any other
+## (`RunState.calendar().earned_good_ending()`), so being caught there loses day 14 like any other
 ## catch, and a lost day gives the sabotage back with the rest of what the attempt spent, so the
 ## retry starts at the station's door again.
 ##
@@ -1655,7 +1655,7 @@ func _alley_mouths() -> Array[Vector2i]:
 ## centre, 48px in from the street's edge, takes her at least 12px inside the alley.
 ## *(2026-10-10, azure-puffin, inbox #664, the player: "let's move the chalk mark one tile into the
 ## alley so I actually have to enter the alley to activate it".)* Reachability, legal ground and the
-## tiles a completed step used (`RunState.facts.completed_resistance_alley_tiles`) are all asked of
+## tiles a completed step used (`RunState.facts().completed_resistance_alley_tiles()`) are all asked of
 ## these tiles. In `_alley_mouths()`'s order, so a seeded draw over them is the same every time.
 ## The director keeps its own list for every later draw and relocation.
 func _marks() -> Array[Vector2i]:
@@ -2708,7 +2708,7 @@ static func target_ground(map: CityMap, day: int,
 ## Landing a fresh mark back on the very alley an earlier step's mark stood at reads as the game
 ## reusing its own prop rather than "any alley she comes across" — but the avoidance never costs
 ## the placement guarantee itself: a candidate list whose only reachable tile happens to be a used
-## one still returns it rather than `Vector2.INF`. `RunState.facts.completed_resistance_alley_tiles`
+## one still returns it rather than `Vector2.INF`. `RunState.facts().completed_resistance_alley_tiles()`
 ## only ever holds the tiles a mark stood on (see `_on_contact_completed()`): `ALLEY` tiles, or the
 ## courtyard tile a one-tile passage puts its mark on. So this filter is a silent no-op against
 ## every other kind of placement.
@@ -2742,7 +2742,7 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 		return free.call(tile) and _reachable_from_home(tile) \
 				and _she_can_be_sent_to(tile, her, free)
 	var tile := _draw_reachable(candidates, rng, stands, open,
-			_run.facts.completed_resistance_alley_tiles)
+			_run.facts().completed_resistance_alley_tiles())
 	if tile == NO_TILE:
 		return Vector2.INF
 	_ground = tile
@@ -3294,7 +3294,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 ##
 ## **Avoids a tile a completed step already used, the same rule and the same fallback
 ## `_pick_reachable()` applies to the dawn placement (M177):** the nearest eligible tile that is
-## not in `RunState.facts.completed_resistance_alley_tiles`, or the plain nearest eligible tile if
+## not in `RunState.facts().completed_resistance_alley_tiles()`, or the plain nearest eligible tile if
 ## avoiding them would leave nothing in reach at all — a relocation exists to keep the mark
 ## findable, and that guarantee outranks the avoidance.
 ##
@@ -3315,7 +3315,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 ## its candidates: every refusal above is asked of each (`Vector2.INF` when none passes).
 func _nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground()
-	var used := _run.facts.completed_resistance_alley_tiles
+	var used := _run.facts().completed_resistance_alley_tiles()
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
@@ -3379,7 +3379,7 @@ func _on_contact_completed(step_index: int) -> void:
 	# one-tile passage) — every other kind of contact sits on a rider or a computed point — so this is the one completion worth recording for
 	# `_pick_reachable()`/`_nearest_alley_within()` to avoid reusing later (M177).
 	if step and step.is_pickup and _contact:
-		_run.facts.record_completed_alley_tile(_map.world_to_tile(_contact.global_position))
+		_run.facts().record_completed_alley_tile(_map.world_to_tile(_contact.global_position))
 	if step and step.is_pickup:
 		# The task is announced at the mark and nowhere else: `RunState.complete_resistance_
 		# step()` above already emitted `resistance_step_completed`, which is what `Hud` reads
@@ -3391,7 +3391,7 @@ func _on_contact_completed(step_index: int) -> void:
 		_rig_her_route_for(task)
 		return
 	if step and step.applies_package_weight:
-		_run.resistance.carrying_package = true
+		_run.resistance().pick_up_package()
 		trace.note("contact", "the package is heavier now; the rest of today costs more")
 	# A finished task is shown by the world, never by text: the man shouting she actually handed
 	# it to — `_rider` after any retargeting in `_follow_her_between_look_alikes()` — stops
@@ -3438,7 +3438,7 @@ func _on_contact_completed(step_index: int) -> void:
 	if not (step and step.needs_goal):
 		return
 
-	_run.resistance.sabotage_done = true
+	_run.resistance().record_the_sabotage()
 	# Nothing goes off here. The hand-over takes the man on the night shift minutes, so the city
 	# goes dark once she has walked far enough from the station — every window, every light and
 	# every mast at once, the masts because they run on the same power. That is `Blackout`'s, and

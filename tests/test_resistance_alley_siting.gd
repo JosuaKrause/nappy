@@ -39,8 +39,8 @@ func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t: TestRunner) -> 
 	var used_tile := _city.map.world_to_tile(first.contact_position())
 	first.free()
 
-	run.facts.completed_resistance_alley_tiles.append(used_tile)
-	run.resistance.completed_steps = _completed_through(2)
+	run.facts().record_completed_alley_tile(used_tile)
+	GivenRun.completed_steps(run, _completed_through(2))
 	var second := _director(t)
 	second.start_day(7, _rng(7, "resistance"), 300.0)
 	t.check(second.current_step() != null and second.current_step().index == 3,
@@ -88,7 +88,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t: TestRunner)
 	var tried := 0
 	for nearer_tile in candidates:
 		var player_at := _city.map.tile_to_world(nearer_tile)
-		run.facts.completed_resistance_alley_tiles.assign([nearer_tile])
+		GivenRun.alley_tiles(run, [nearer_tile])
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var old_at := director.contact_position()
@@ -250,7 +250,7 @@ func _test_the_guard_never_lands_inside_a_building(t: TestRunner) -> void:
 ## and says so in the run's trace.
 func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
-	run.resistance.completed_steps = _completed_through(2)
+	GivenRun.completed_steps(run, _completed_through(2))
 	_look_at(Rect2())
 	var map := _city.map
 	var director := _director(t)
@@ -311,7 +311,7 @@ func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t: TestRunner
 	var moved_to_a_mouth := 0
 	for seed_value: int in SWEEP_SEEDS.slice(0, 2):
 		var run := _build_city_in_a_new_run(t, seed_value)
-		run.resistance.completed_steps = _completed_through(2)
+		GivenRun.completed_steps(run, _completed_through(2))
 		var map := _city.map
 		var director := _director(t)
 		for draw in 4:
@@ -490,7 +490,7 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t: TestRun
 		var run: RunState = _city.run
 		for tile in _mark_tiles():
 			if not AlleyMarks.through_ends(city_map, tile, city_map.tile_to_world(tile)).is_empty():
-				run.facts.completed_resistance_alley_tiles.append(tile)
+				run.facts().record_completed_alley_tile(tile)
 		var guards_before := _live(EventCatalogue.mark_guard().id)
 		var director := _director(t)
 		director.start_day(7, _rng(7, "courtyard-dawn", seed_value), 300.0)
@@ -611,7 +611,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 		# through-alley, the courtyard's inner end past a passage (`_maybe_set_a_trap()`).
 		var run := _build_city_in_a_new_run(t, seed_value)
 		for day: int in GUARD_DOORSTEP_DAYS:
-			run.resistance.completed_steps = _completed_through(2 * (day - 6))
+			GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
 			var guards_before := _live(EventCatalogue.mark_guard().id)
 			var director := _director(t)
 			director.start_day(day, _rng(day, "mark", seed_value), 300.0)
@@ -745,7 +745,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t: TestRunner) 
 	var seed_value := 2199579682
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var run := _build_city_in_a_new_run(t, seed_value)
-	run.resistance.completed_steps = _completed_through(2 * (day - 6))
+	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
 	var city := _city
 	var map := city.map
 

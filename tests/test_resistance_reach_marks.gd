@@ -35,9 +35,9 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 		var this_run := _build_city_in_a_new_run(t, seed_value)
 		var city := _city
 		for day: int in REACHABILITY_SWEEP_DAYS:
-			this_run.resistance.completed_steps = []
-			this_run.resistance.failed_steps = []
-			this_run.facts.completed_resistance_alley_tiles.clear()
+			GivenRun.completed_steps(this_run, [])
+			GivenRun.failed_steps(this_run, [])
+			GivenRun.alley_tiles(this_run, [])
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))

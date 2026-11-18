@@ -94,11 +94,6 @@ fields are the most read, so the events go first, as the ask says.
 
 Left, each its own design question:
 
-- **A run's parts.** `RunState` hands out `header`, `calendar`, `resistance`, `attempt_spend`,
-  `posters` and `facts`, and a read through one is two field reads (`RunHeader`, `RunCalendar`,
-  `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
-  part's fields behind methods; the vars are renamed, and the tests read them, so the conversion
-  rewrites those reads with it; it waits for no other item.
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
   by class: the city map's (`CityMap`) in the routes (the region and seal planners), the blackout, the streamed ground and the city's generator, besides the
   events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
@@ -112,11 +107,10 @@ Left, each its own design question:
     `Building.scenery_clock`, `door_world_x_range`, `station_door_col`, `station_yard_cols`,
     `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the city and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
-    also calls. `CityMap.home_block`, `Building.power_station` and `PosterState.pasted_through` are
+    also calls. `CityMap.home_block` and `Building.power_station` are
     not in this group, since game code reads them outside their class, and they are converted with
     those readers: `home_block` by the day planner and the scene recipe runtime; `power_station` by the city scene's `assign_roof_extensions()`, which skips the
-    station's yard columns when it extends a roof; `pasted_through` by the poster walls, which read
-    and write it.
+    station's yard columns when it extends a roof.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance

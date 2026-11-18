@@ -256,7 +256,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 	var relocations := 0
 	for seed_value: int in [4242, 555555]:
 		var run := _build_city_in_a_new_run(t, seed_value)
-		run.resistance.completed_steps = _completed_through(2)
+		GivenRun.completed_steps(run, _completed_through(2))
 		var map := _city.map
 		var director := _director(t)
 		director.start_day(7, _rng(7, "off-screen", seed_value), 300.0)
@@ -492,7 +492,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		_build_city_in_a_new_run(t)
 		var events := RunCity.events(_city)
 		var covered: Variant = TouchCover.joystick() if joystick else null
-		var day := ResistanceHappenings.NEIGHBOR_DAY
+		var day := ResistanceSteps.NEIGHBOR_DAY
 		var state := CityState.new()
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))

@@ -13,7 +13,7 @@ extends Node
 ## module is data, the symbol is presentation, and the two only meet through `EventBus`.
 ##
 ## **The save is the run, never the moment inside a day.** The run's registered parts
-## (`RunState.run_parts`) say what a run holds and where in the file each part sits; this file
+## (`RunState.run_parts()`) say what a run holds and where in the file each part sits; this file
 ## only adds the facts a run does not know about itself — whether a day was under way when the
 ## file was written, which section of the escape it is in, and which build
 ## wrote it — and turns the result into JSON. *Asked for "that exact state", the crowd included, and overturned by the player to a
@@ -33,7 +33,7 @@ extends Node
 ## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save
 ## written before there were two modes, which reads as normal mode; `"checkpoint"` is absent
 ## from one written before there were checkpoints, which reads as checkpoint zero, day 1 of the
-## same city — see `RunCalendar.checkpoint`. **A checkpoint is the run in exactly the
+## same city — see `RunCalendar.checkpoint()`. **A checkpoint is the run in exactly the
 ## shape the file carries it** (`RunStateRegistry.run_data()`, every key below but the ones
 ## about the file itself), so a field a later build adds to the save is in every checkpoint the
 ## moment it is in `run_data()`, and `RunStateRegistry.restore_run_data()` is the one function
@@ -354,7 +354,7 @@ func _new_operation() -> int:
 
 ## Whether `run` has an ending, after which nothing is written — see `write()`, where the refusal lives.
 static func _run_has_ended(run: RunState) -> bool:
-	return run.header.ending != GameEnums.Ending.NONE
+	return run.header().ending() != GameEnums.Ending.NONE
 
 ## Starts a web flush for `operation` and settles it through `settled` — see `_FLUSH_JS` for the
 ## page's half and `FLUSH_TIMEOUT_SECONDS` for the backstop. The operation id is the flush's token,
@@ -490,7 +490,7 @@ class Flushes extends RefCounted:
 			settled.call(result)
 
 ## The ungated mechanics `write()` calls through. `write()` has already refused a run whose
-## `run.header.ending` is set (`_run_has_ended()`), the one path to the file, so this does not
+## `run.header().ending()` is set (`_run_has_ended()`), the one path to the file, so this does not
 ## check again: a stray write between the ending firing and the player being shown it must not
 ## resurrect a file that `clear_when_a_run_ends()` deleted, and `write()` is where that is held.
 ##
@@ -515,12 +515,12 @@ func _write_now(run: RunState, day_under_way: bool) -> bool:
 ## rather than about where the run stands — the format and the build that wrote it, whether a
 ## day was under way, the mode, and the checkpoint.
 static func _file_data(run: RunState, day_under_way: bool) -> Dictionary:
-	var data := run.run_parts.run_data()
+	var data := run.run_parts().run_data()
 	data["format_version"] = FORMAT_VERSION
 	data["build"] = BuildInfo.build_text()
 	data["day_under_way"] = day_under_way
-	data["hard_mode"] = run.calendar.hard_mode
-	data["checkpoint"] = run.calendar.checkpoint.duplicate(true)
+	data["hard_mode"] = run.calendar().in_hard_mode()
+	data["checkpoint"] = run.calendar().checkpoint().duplicate(true)
 	return data
 
 ## Connects the deletion of the save to the end of a run: **a finished run leaves no save**,
@@ -587,12 +587,12 @@ func _read_now(run: RunState) -> Dictionary:
 ## Everything a readable save puts back on `run`, from `_read_now()`'s file and from
 ## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
 static func _apply(run: RunState, data: Dictionary) -> Dictionary:
-	run.run_parts.restore_run_data(data)
+	run.run_parts().restore_run_data(data)
 	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
 	# normal run, and one from before there were checkpoints goes back to day 1 of its own city.
-	run.calendar.hard_mode = bool(data.get("hard_mode", false))
+	run.calendar().restore_mode(bool(data.get("hard_mode", false)))
 	var kept: Variant = data.get("checkpoint", {})
-	run.calendar.checkpoint = _usable_checkpoint(run, kept)
+	run.calendar().restore_checkpoint(_usable_checkpoint(run, kept))
 	return {"day_under_way": bool(data.get("day_under_way", false))}
 
 ## `run` written out the way a save is and read straight back into it the way a save is —

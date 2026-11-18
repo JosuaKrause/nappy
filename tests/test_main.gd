@@ -146,8 +146,8 @@ func _test_main_hands_the_baby_the_world_it_puts_her_in(t: TestRunner) -> void:
 func _a_run_on(section: int) -> RunState:
 	var run := RunState.new()
 	run.start_run(4216201080)
-	run.header.day = 1
-	run.facts.escape_section = section
+	run.header().set_day(1)
+	run.facts().set_escape_section(section)
 	return run
 
 func _boot_hands_the_baby_the_city(t: TestRunner, section: int, what: String) -> void:
@@ -265,7 +265,7 @@ func _test_main_binds_the_family_before_the_first_draw(t: TestRunner) -> void:
 		var rig := Boot.player(booted.main)
 		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
 				and rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male
-				and seat.run.header.player_is_male == male,
+				and seat.run.header().parent_is_father() == male,
 				"ordinary and escape construction share a choice bound before the first draw")
 		booted.free_all()
 		seat.end()
@@ -333,7 +333,7 @@ class ReadoutRig:
 		baby.set_physics_process(false)
 		t.add_child(day)
 		day.set_process(false)
-		readout.setup(config, label, layer, run.header, null, Callable())
+		readout.setup(config, label, layer, run.header(), null, Callable())
 		readout.watch(stroller, baby, day)
 		t.add_child(readout)
 
@@ -568,7 +568,7 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t: TestRunner) -> void:
 	var not_rebuilt_when_due := 0
 	var frames := 0
 	while rebuilds < 3 and frames < 3000:
-		rig.run.header.run_seed += 1
+		rig.run.header().use_seed(rig.run.header().run_seed() + 1)
 		await t.get_tree().process_frame
 		frames += 1
 		# The signal comes before the frame's nodes are processed: what is read here is what the
@@ -866,8 +866,8 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t: TestRunner) -
 	t.check(sitting != null and sitting.controls_word == "joystick-right",
 			"and parks the sitting, keeping the title's answer, in its home")
 	run.start_run(SEED)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.facts.escape_section = DaySpec.Section.CITY
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.facts().set_escape_section(DaySpec.Section.CITY)
 	var calls := Calls.new()
 	var main := await _boot(t, [], calls, home)
 	var controls := _one(main, "TouchControls") as TouchControls
@@ -878,11 +878,11 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t: TestRunner) -
 	# even with the tree running.
 	var summary := _one(main, "DaySummary") as DaySummaryScript
 	t.check(summary.is_showing(), "a section's brief is up over the escape")
-	run.header.play_ticks = 0
+	run.header().set_play_ticks(0)
 	main.get_tree().paused = false
 	for i in 4:
 		await main.get_tree().physics_frame
-	t.check(run.header.play_ticks == 0,
+	t.check(run.header().play_ticks() == 0,
 			"and a brief in front of the walk adds no tick, with the tree running behind it")
 	_shut(t, main)
 	seat.end()
@@ -902,18 +902,18 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunne
 	home.add_child(sitting)
 	var first_calls := Calls.new()
 	var first := await _boot(t, [], first_calls, home)
-	t.check(sitting.run == run and run.header.run_seed == SEED,
+	t.check(sitting.run == run and run.header().run_seed() == SEED,
 			"the first boot plays the run the sitting made, started on the run's seed")
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = true
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	run.resistance().record_the_sabotage()
 	(_one(first, "DayController") as DayController).day_finished.emit(GameEnums.DayResult.WON)
 	var day_fourteen := _one(first, "DaySummary") as DaySummaryScript
 	await UI.frames(t)
 	UI.push(day_fourteen, UI.touch_at(UI.centre(UI.button(day_fourteen, "Continue")), true))
 	await UI.frames(t)
 	t.check(first_calls.reloads.size() == 1
-			and run.facts.escape_section == DaySpec.Section.BUILDING,
+			and run.facts().escape_section() == DaySpec.Section.BUILDING,
 			"its won day 14 leaves the run in the building and reloads")
 	_shut(t, first)
 	t.check(home.get_node_or_null(NodePath(Sitting.NODE_NAME)) == sitting and sitting.run == run,
@@ -922,7 +922,7 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunne
 	t.check(_one(main, "InteriorScene") != null
 			and (_one(main, "DaySummary") as DaySummaryScript).is_showing(),
 			"the next boot plays that run: it opens on the building's brief, not a day's title")
-	t.check(run.header.day == Tuning.RUN_LENGTH_DAYS, "on day 14 still")
+	t.check(run.header().day() == Tuning.RUN_LENGTH_DAYS, "on day 14 still")
 	_shut(t, main)
 	home.free()
 
@@ -936,9 +936,9 @@ func _test_a_session_on_one_booted_game(t: TestRunner) -> void:
 	# Day 14's hand-over parks the sitting in the seat's home rather than at the tree's root.
 	var seat := Seat.new(t)
 	var run := seat.run
-	run.header.play_ticks = 42
+	run.header().set_play_ticks(42)
 	run.start_run(SEED)
-	t.check(run.header.play_ticks == 0, "start_run() zeroes the clock with the rest of the run")
+	t.check(run.header().play_ticks() == 0, "start_run() zeroes the clock with the rest of the run")
 	var calls := Calls.new()
 	var main := _instance([], calls)
 	main.use_sitting_home(seat.home)
@@ -991,7 +991,7 @@ func _check_the_title_then_a_key_starts_in_tap(t: TestRunner, main: Boot.MainScr
 	t.check(not tree.paused, "so the tree keeps running")
 	for i in 4:
 		await tree.physics_frame
-	t.check(title.is_open() and run.header.play_ticks == 0,
+	t.check(title.is_open() and run.header().play_ticks() == 0,
 			"the title screen does not advance the clock, even with the tree unpaused behind it")
 	var chosen: Array = []
 	var record := func(joystick: bool, by_key: bool) -> void: chosen.append([joystick, by_key])
@@ -1004,7 +1004,7 @@ func _check_the_title_then_a_key_starts_in_tap(t: TestRunner, main: Boot.MainScr
 			"and the counter hears which input began each run, a key as a key")
 	t.check(not title.is_open(), "and the title is closed, the day begun")
 
-## `run.header.play_ticks` has exactly one owner, `main`'s physics tick, which counts a tick
+## `run.header().play_ticks()` has exactly one owner, `main`'s physics tick, which counts a tick
 ## only once a day is actually running, walking or returning, with the tree unpaused — and counts
 ## ticks, never a drawn frame's length, so a long frame adds no play time (inbox #866 in
 ## minty-dolphin) — and the same tick runs the day's countdown. Played with real physics frames; a
@@ -1020,15 +1020,15 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	tree.physics_frame.connect(count)
 
 	await tree.physics_frame
-	var ticks_before: int = run.header.play_ticks
+	var ticks_before: int = run.header().play_ticks()
 	var time_before := day.time_remaining
 	stepped[0] = 0
 	for i in 5:
 		await tree.physics_frame
-	t.check(run.header.play_ticks - ticks_before == stepped[0] and stepped[0] >= 5,
+	t.check(run.header().play_ticks() - ticks_before == stepped[0] and stepped[0] >= 5,
 			"a walking tick with the tree unpaused advances the clock by one tick (%d of %d)"
-			% [run.header.play_ticks - ticks_before, stepped[0]])
-	t.check(is_equal_approx(run.header.play_seconds() - ticks_before * tick,
+			% [run.header().play_ticks() - ticks_before, stepped[0]])
+	t.check(is_equal_approx(run.header().play_seconds() - ticks_before * tick,
 			stepped[0] * tick),
 			"play seconds are the ticks, one physics tick each")
 	t.check(absf((time_before - day.time_remaining) - stepped[0] * tick) < 0.0001,
@@ -1038,15 +1038,15 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	# A drawn frame a quarter second long, the lag spike a slow machine draws: the frame's own
 	# length adds nothing. Only the ticks the engine steps count.
 	await tree.physics_frame
-	ticks_before = run.header.play_ticks
+	ticks_before = run.header().play_ticks()
 	time_before = day.time_remaining
 	stepped[0] = 0
 	OS.delay_msec(250)
 	await tree.physics_frame
 	await tree.physics_frame
-	t.check(run.header.play_ticks - ticks_before == stepped[0],
+	t.check(run.header().play_ticks() - ticks_before == stepped[0],
 			"a long drawn frame adds no play time beyond the ticks that ran (%d of %d)"
-			% [run.header.play_ticks - ticks_before, stepped[0]])
+			% [run.header().play_ticks() - ticks_before, stepped[0]])
 	t.check(absf((time_before - day.time_remaining) - stepped[0] * tick) < 0.0001,
 			"and moves the day's countdown by those ticks alone (%.4f of %.4f)"
 			% [time_before - day.time_remaining, stepped[0] * tick])
@@ -1069,7 +1069,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	escape_day.free()
 
 	# The pause screen: phase stays WALKING (a day in progress, Esc pressed), the tree pauses.
-	ticks_before = run.header.play_ticks
+	ticks_before = run.header().play_ticks()
 	time_before = day.time_remaining
 	var esc := InputEventAction.new()
 	esc.action = &"pause"
@@ -1078,7 +1078,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	t.check(pause.is_open() and tree.paused, "Esc opens the pause screen and pauses the tree")
 	for i in 4:
 		await tree.physics_frame
-	t.check(run.header.play_ticks == ticks_before and day.time_remaining == time_before,
+	t.check(run.header().play_ticks() == ticks_before and day.time_remaining == time_before,
 			"a paused tick does not, nor does the day's countdown run")
 	pause.close()
 
@@ -1091,15 +1091,15 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 			break
 	t.check(day.phase == GameEnums.DayPhase.OVER and summary.is_showing(),
 			"the day ran out and its summary is up")
-	ticks_before = run.header.play_ticks
+	ticks_before = run.header().play_ticks()
 	for i in 4:
 		await tree.physics_frame
-	t.check(run.header.play_ticks == ticks_before,
+	t.check(run.header().play_ticks() == ticks_before,
 			"the day summary (phase OVER, tree paused) does not advance it either")
 	tree.paused = false
 	for i in 4:
 		await tree.physics_frame
-	t.check(run.header.play_ticks == ticks_before,
+	t.check(run.header().play_ticks() == ticks_before,
 			"nor with the tree running behind it: the flow, not the pause, holds the walk")
 
 	# Its continue starts the next day, and a walking tick afterwards counts again rather than the
@@ -1107,10 +1107,10 @@ func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main:
 	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
 	await UI.frames(t)
 	await tree.physics_frame
-	ticks_before = run.header.play_ticks
+	ticks_before = run.header().play_ticks()
 	for i in 3:
 		await tree.physics_frame
-	t.check(run.header.play_ticks > ticks_before,
+	t.check(run.header().play_ticks() > ticks_before,
 			"and a walking tick afterwards resumes rather than having latched off")
 	tree.physics_frame.disconnect(count)
 
@@ -1174,17 +1174,17 @@ func _check_focus_loss(t: TestRunner, main: Boot.MainScript, run: RunState) -> v
 ## The day begun, its day 14 set up as `kept_the_last_night` and `hard` say, and the day's end
 ## announced by the day itself: the day's signal, as its clock or its goal would send it.
 func _end_day_fourteen(main: Boot.MainScript, run: RunState, hard: bool, sabotage_done: bool) -> void:
-	run.facts.escape_section = DaySpec.Section.NONE
+	run.facts().set_escape_section(DaySpec.Section.NONE)
 	run.start_run(SEED)
 	if hard:
-		run.calendar.choose_mode(true)
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = sabotage_done
+		run.calendar().choose_mode(true)
+	run.header().set_day(Tuning.RUN_LENGTH_DAYS)
+	run.resistance().set_progress(Tuning.RESISTANCE_GOAL)
+	GivenRun.sabotage(run, sabotage_done)
 	# Below the cap (`Tuning.STARTING_NERVES`, 5) so a missing or doubled
-	# `run.calendar.regain_a_nerve()` call in the hand-over branch would show up as a wrong
+	# `run.calendar().regain_a_nerve()` call in the hand-over branch would show up as a wrong
 	# count rather than being masked by the cap `run.start_run()` already sets `nerves` to.
-	run.header.nerves = 3
+	run.header().set_nerves(3)
 	(_one(main, "DayController") as DayController).day_finished.emit(GameEnums.DayResult.WON)
 
 ## **The last day ends by handing over, not by ending the run.** *(PLAYTEST-113: "the escape the
@@ -1197,16 +1197,16 @@ func _end_day_fourteen(main: Boot.MainScript, run: RunState, hard: bool, sabotag
 ##
 ## Driven through the day's own end signal on the booted game against its real city, day and
 ## summary, because the thing that has to hold is an *omission* — that
-## `run.calendar.finish_day()` is not called — and an omission is only visible where the call
+## `run.calendar().finish_day()` is not called — and an omission is only visible where the call
 ## would have been.
 func _check_a_won_day_fourteen_hands_over(t: TestRunner, main: Boot.MainScript, calls: Calls, run: RunState) -> void:
 	var reloads_before := calls.reloads.size()
 	_end_day_fourteen(main, run, false, true)
-	t.check(run.header.ending == GameEnums.Ending.NONE,
+	t.check(run.header().ending() == GameEnums.Ending.NONE,
 			"a won day 14 with every task complete does not end the run")
-	t.check(run.facts.escape_section == DaySpec.Section.BUILDING,
+	t.check(run.facts().escape_section() == DaySpec.Section.BUILDING,
 			"it puts the run in the building, which is where the escape starts")
-	t.check(run.header.day == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
+	t.check(run.header().day() == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
 	var summary := _one(main, "DaySummary") as DaySummaryScript
 	t.check(calls.reloads.size() == reloads_before, "nothing has reloaded yet")
 	await UI.frames(t)
@@ -1214,23 +1214,23 @@ func _check_a_won_day_fourteen_hands_over(t: TestRunner, main: Boot.MainScript, 
 	await UI.frames(t)
 	t.check(calls.reloads.size() == reloads_before + 1,
 			"so its continue reloads into the escape rather than ending the run")
-	t.check(run.header.nerves == 4,
+	t.check(run.header().nerves() == 4,
 			"day 14's win still gives a nerve back, and exactly once, through the direct call")
 
 	# The same hand-over in a hard run gives nothing back.
 	_end_day_fourteen(main, run, true, true)
-	t.check(run.facts.escape_section == DaySpec.Section.BUILDING,
+	t.check(run.facts().escape_section() == DaySpec.Section.BUILDING,
 			"a hard run's day 14 also hands over to the escape")
-	t.check(run.header.nerves == 3, "and its win gives a hard run no nerve back")
+	t.check(run.header().nerves() == 3, "and its win gives a hard run no nerve back")
 
 	# The other side of the same day: the legwork done and the last night skipped is still the
 	# neutral ending it has always been, and must not reach the escape.
-	run.facts.escape_section = DaySpec.Section.NONE
+	run.facts().set_escape_section(DaySpec.Section.NONE)
 	_end_day_fourteen(main, run, false, false)
-	t.check(run.header.ending == GameEnums.Ending.NEUTRAL,
+	t.check(run.header().ending() == GameEnums.Ending.NEUTRAL,
 			"a won day 14 without the last night still ends the run on the neutral ending")
-	t.check(run.facts.escape_section == DaySpec.Section.NONE, "and never reaches the escape")
-	t.check(run.header.nerves == 4,
+	t.check(run.facts().escape_section() == DaySpec.Section.NONE, "and never reaches the escape")
+	t.check(run.header().nerves() == 4,
 			"and this path's win gains a nerve too, through the ordinary calendar's finish_day()")
 
 ## **Caught only by asking the connection, not by pressing the button.** The day summary's own
@@ -1252,18 +1252,18 @@ func _check_the_summary_and_pause_restart_signals_are_both_connected(t: TestRunn
 
 	# Nothing of the walk counts behind the ending, with the tree running (the walk's tick,
 	# `_check_play_seconds_only_advance_while_the_world_moves`).
-	run.header.play_ticks = 0
+	run.header().set_play_ticks(0)
 	main.get_tree().paused = false
 	for i in 3:
 		await main.get_tree().physics_frame
-	t.check(run.header.play_ticks == 0, "the ending screen adds no tick, with the tree running")
+	t.check(run.header().play_ticks() == 0, "the ending screen adds no tick, with the tree running")
 
 	summary.continued.emit(RunFlow.Mode.ENDING)
 	t.check(calls.reloads.size() == reloads + 1,
 			"continuing from the summary still reaches the run loop, and an ended run starts over")
 	for i in 3:
 		await main.get_tree().physics_frame
-	t.check(run.header.play_ticks == 0, "a scene on its way out adds no tick either")
+	t.check(run.header().play_ticks() == 0, "a scene on its way out adds no tick either")
 	summary.restart_requested.emit()
 	t.check(calls.reloads.size() == reloads + 2,
 			"the day summary's own restart button reaches the restart")

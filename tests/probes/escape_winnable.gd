@@ -13,7 +13,7 @@ extends RefCounted
 ##
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
 ## (`--start-escape city`: `RunState.start_run(seed)`, the city built from the run seed, the plan
-## drawn from `city.run.calendar.day_rng(day, "finale")` under the city section's spec, as
+## drawn from `city.run.calendar().day_rng(day, "finale")` under the city section's spec, as
 ## `DayDirector.start()` draws it): how many of the escape's four rows stand on its open
 ## streets and how many streets stand none, for every mix. **And for the game's own bag, the game
 ## walking it**: one headless run of the real game per exit, booted `--start-escape city --seed
@@ -110,11 +110,11 @@ func _mixes() -> Array[Dictionary]:
 ## Every mix's plan for one seed, on the city a straight city boot builds.
 func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
-	var day := city.run.header.day
+	var day := city.run.header().day()
 	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(city.run.header.run_seed))
-	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"), _city_spec())
+	RunCity.build(city, CityGenerator.generate(city.run.header().run_seed()))
+	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, day)
+	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"), _city_spec())
 	var found: Array[Dictionary] = []
 	for mix in mixes:
 		var walk := FinalePlanner.route(city.map)
@@ -133,7 +133,7 @@ func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Arr
 ## game's own bag is drawn on.
 func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
 		mix: Dictionary) -> Array[EventPlan]:
-	var rng := own_run.calendar.day_rng(day, "finale")
+	var rng := own_run.calendar().day_rng(day, "finale")
 	var spec := _city_spec()
 	if mix.has("counts"):
 		var counts: Array = mix["counts"]

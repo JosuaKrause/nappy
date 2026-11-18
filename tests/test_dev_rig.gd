@@ -82,7 +82,7 @@ func _teardown(t: TestRunner) -> void:
 func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 	for target: String in ["park", "alley"]:
 		var at := DevRig.for_spawn_target(target, _city.map, RunCity.events(_city), _city.streets(),
-				_resistance, _city.run.header, _city.trace)
+				_resistance, _city.run.header(), _city.trace)
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 				"--spawn %s lands on a walkable tile (%s)" % [target, at])
 
@@ -91,7 +91,7 @@ func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 ## guaranteed to have at least one.
 func _test_event_target_lands_near_a_placed_event(t: TestRunner) -> void:
 	var at := DevRig.for_spawn_target("event", _city.map, RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header, _city.trace)
+			_resistance, _city.run.header(), _city.trace)
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 			"--spawn event lands on a walkable tile (%s)" % at)
 
@@ -100,7 +100,7 @@ func _test_event_target_lands_near_a_placed_event(t: TestRunner) -> void:
 func _test_closure_target_lands_near_the_first_closure(t: TestRunner) -> void:
 	t.check(not _city.streets().closures().is_empty(), "day %d has a closure to look at" % DAY)
 	var at := DevRig.for_spawn_target("closure:0", _city.map, RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header, _city.trace)
+			_resistance, _city.run.header(), _city.trace)
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 			"--spawn closure:0 lands on a walkable tile (%s)" % at)
 
@@ -111,7 +111,7 @@ func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> voi
 	var contact := _resistance.contact_position()
 	t.check(contact != Vector2.INF, "day %d has a resistance mark placed" % DAY)
 	var at := DevRig.for_spawn_target("contact", _city.map, RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header, _city.trace)
+			_resistance, _city.run.header(), _city.trace)
 	t.check(is_equal_approx(at.distance_to(contact), Vector2(70.0, 30.0).length()),
 			"--spawn contact stands off to the side of the mark rather than on top of it (%s)" % at)
 
@@ -120,7 +120,7 @@ func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> voi
 ## through and lands on the doorstep, with a warning rather than a silent wrong answer.
 func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
 	var at := DevRig.for_spawn_target("not-a-real-target", _city.map, RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header, _city.trace)
+			_resistance, _city.run.header(), _city.trace)
 	t.check(at == _city.map.home_world_position(),
 			"an unrecognised --spawn target falls back to the doorstep rather than guessing")
 
@@ -135,7 +135,7 @@ func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
 func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 	var lines: Array[String] = []
 	var at := DevRig.for_spawn_target("event:cat_dash", _city.map, RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header, RecordingTrace.new(lines))
+			_resistance, _city.run.header(), RecordingTrace.new(lines))
 	t.check(at == _city.map.home_world_position(),
 			"a queue-fed row still leaves her somewhere to stand: the doorstep")
 	var named := false
@@ -161,7 +161,7 @@ func _test_a_waiting_row_stands_outside_its_trigger(t: TestRunner) -> void:
 	if found == null:
 		return
 	var at := DevRig.for_spawn_target("event:" + found.def.id, _city.map, RunCity.events(_city),
-			_city.streets(), _resistance, _city.run.header, _city.trace)
+			_city.streets(), _resistance, _city.run.header(), _city.trace)
 	var dist := at.distance_to(found.position)
 	t.check(dist > found.def.notice_within(),
 			"stands outside the wait trigger, %.0fpx > its notice's %.0fpx"
@@ -209,7 +209,7 @@ func _test_no_door_before_the_region_wall_starts(t: TestRunner) -> void:
 	t.check(DAY < Tuning.REGION_WALL_FIRST_DAY,
 			"day %d is before the region wall starts (day %d)" % [DAY, Tuning.REGION_WALL_FIRST_DAY])
 	var at := DevRig.for_spawn_target("door", _city.map, RunCity.events(_city), _city.streets(),
-			_resistance, _city.run.header, _city.trace)
+			_resistance, _city.run.header(), _city.trace)
 	t.check(at == _city.map.home_world_position(),
 			"no checkpoint exists yet, so --spawn door falls back to the doorstep")
 
@@ -238,7 +238,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 		return
 
 	var at := DevRig.for_spawn_target("door:0", city.map, RunCity.events(city), city.streets(),
-			_resistance, city.run.header, city.trace)
+			_resistance, city.run.header(), city.trace)
 	t.check(city.map.is_walkable(city.map.world_to_tile(at)), "--spawn door:0 lands on a walkable tile (%s)" % at)
 	var hut := huts[0]
 	var expected := hut.position - hut.facing * Tuning.TILE_SIZE * 4.0

@@ -10,7 +10,7 @@ extends Node
 ## pasted and torn from the sidewalk tile directly in front of it. That tile is what names a cell
 ## everywhere: `PosterState` keys by it, a crew is sited on it, she pushes from it.
 ##
-## **What is on the walls is run state, and this only reads and writes it.** the run's `PosterState` (`RunState.posters`)
+## **What is on the walls is run state, and this only reads and writes it.** the run's `PosterState` (`RunState.posters()`)
 ## holds it, so it survives a save and a lost day gives it back; this node is stood with every city
 ## (`SimulationBuilder`), handed the run, and hands each `Building` the cells it draws
 ## (`Building.posters`) and whether the neighbor was taken (`Building.hand_over_posters()`). It
@@ -154,7 +154,7 @@ func equip(sink: RunTrace, poster_art: PosterArt, library: AtlasLibrary) -> void
 	_art = poster_art
 	atlas = library
 
-## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
+## The bag the run's tears draw from, rebuilt from `PosterState.tears_made()` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null
 var _bag_seed := 0
@@ -188,7 +188,7 @@ func setup(buildings: Array[Building], map: CityMap, run: RunState,
 		streets: DayStreets) -> void:
 	_streets = streets
 	_run = run
-	posters = run.posters
+	posters = run.posters()
 	_map = map
 	_walls.clear()
 	_by_tile.clear()
@@ -231,7 +231,7 @@ func fronts() -> Dictionary:
 ## ordinary morning, all of them on a run started later under `--day`. `tree` is the day's route
 ## tree, what "the streets she uses most" is read against. Called on the city's word that the day
 ## is dressed (`dress_for()`), after the day's closures, which is after
-## `RunState.calendar.begin_day()` photographed the walls, so a retry pastes the same dawn again.
+## `RunState.calendar().begin_day()` photographed the walls, so a retry pastes the same dawn again.
 func _start_day(day: int, tree: RouteTree) -> void:
 	_day = day
 	_day_running = true
@@ -240,9 +240,9 @@ func _start_day(day: int, tree: RouteTree) -> void:
 	_sliding = false
 	var state := posters
 	var corridor := Corridor.of(tree) if tree else null
-	for dawn in range(maxi(state.pasted_through + 1, FIRST_DAY), day + 1):
+	for dawn in range(maxi(state.pasted_through() + 1, FIRST_DAY), day + 1):
 		_paste_the_dawn(dawn, corridor)
-	state.pasted_through = maxi(state.pasted_through, day)
+	state.mark_pasted_through(day)
 	refresh()
 
 ## The escape, or anything else that shows the city without playing a day in it: the walls as the
@@ -276,7 +276,7 @@ func _refresh_wall(index: int) -> void:
 ## One morning's pasting, from that day's own `posters` stream, so no other roll moves. Every wall
 ## is asked in the same order every run, which is what makes the dawn reproducible from the seed.
 func _paste_the_dawn(day: int, corridor: Corridor) -> void:
-	var rng := _run.calendar.day_rng(day, "posters")
+	var rng := _run.calendar().day_rng(day, "posters")
 	var act := Tuning.act_for_day(day)
 	var first_morning := day == FIRST_DAY or Tuning.ACT_START_DAYS.has(day)
 	for i in _walls.size():
@@ -400,7 +400,7 @@ func _work_the_crews(delta: float) -> void:
 ## A crew's work: which kind it carries and which cells, in the order it pastes them.
 func _job_for(tile: Vector2i) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d:%d:%d:poster-crew" % [_run.header.run_seed, _day, tile.x, tile.y])
+	rng.seed = hash("%d:%d:%d:%d:poster-crew" % [_run.header().run_seed(), _day, tile.x, tile.y])
 	var at: Vector2i = _by_tile[tile]
 	var tiles: Array = _walls[at.x]["tiles"]
 	var kind := _kind_for(_day, rng)
@@ -486,7 +486,7 @@ func _presses_into_the_front(tile: Vector2i, at: Vector2, steering: Vector2) -> 
 func _tear(tile: Vector2i) -> void:
 	var state := posters
 	var kind := int(state.sheet_at(tile)["kind"])
-	var which := posmod(hash("%d:%d:%d:%d:tear" % [_run.header.run_seed, tile.x, tile.y,
+	var which := posmod(hash("%d:%d:%d:%d:tear" % [_run.header().run_seed(), tile.x, tile.y,
 			state.tears_made()]), PosterArt.TEARS)
 	var bag := _the_bag()
 	if not state.tear(tile, which):
@@ -506,12 +506,12 @@ func _tear(tile: Vector2i) -> void:
 	if pursuit and _events:
 		_events.send_a_pursuer()
 
-## The run's marble bag, brought to where the run is: `PosterState.tears` marbles already drawn,
+## The run's marble bag, brought to where the run is: `PosterState.tears_made()` marbles already drawn,
 ## from the bag's own stream off the run's seed, so a save, a lost day's give-back and a retry all
 ## draw the same marbles the run would have drawn.
 func _the_bag() -> MarbleBag:
 	var tears := posters.tears_made()
-	var seed_value := hash("%d:poster-tears" % _run.header.run_seed)
+	var seed_value := hash("%d:poster-tears" % _run.header().run_seed())
 	if _bag == null or _bag_seed != seed_value or _bag.draws_made() != tears:
 		_bag = MarbleBag.new(TEAR_PRE_BAG, TEAR_BAG, seed_value)
 		_bag_seed = seed_value

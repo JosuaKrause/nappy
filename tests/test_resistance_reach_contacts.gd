@@ -124,7 +124,7 @@ const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 ## rig's real cases at all.
 ##
 ## **Each day is asked fresh**, the same "no history, just this day" state `--day N`
-## (`DevFlags.day_override()`) boots into — `RunState.start_run()` runs before the run's `header.day` is
+## (`DevFlags.day_override()`) boots into — `RunState.start_run()` runs before the run's `header().day()` is
 ## set, so a rig timing day 9 alone never played days 6-8 first — matching every other single-day
 ## placement test in this file (`_test_the_door_task_sits_at_a_region_door` and others call
 ## `director.start_day()` for one chosen day with no days before it either).
@@ -148,10 +148,10 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 			# No history, like `--day N`: no step done, no alley used and no scar — day 8 with no
 			# recorded scar records one for its task, and an earlier day's must not stand in this
 			# one's.
-			run.resistance.completed_steps = []
-			run.resistance.failed_steps = []
-			run.facts.completed_resistance_alley_tiles = []
-			run.attempt_spend.scars = []
+			GivenRun.completed_steps(run, [])
+			GivenRun.failed_steps(run, [])
+			GivenRun.alley_tiles(run, [])
+			GivenRun.scars(run, [])
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
@@ -252,9 +252,9 @@ func _test_the_director_hands_the_draw_its_own_predicates(t: TestRunner) -> void
 ## any) recorded on the map before the director dawns. (-1, -1) when it has no mark.
 func _dawn_mark_tile(t: TestRunner, day: int, bodies: Array[Vector2i]) -> Vector2i:
 	var run := _build_city_in_a_new_run(t)
-	run.resistance.completed_steps = _completed_through(2 * (day - 6))
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", SEED))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", SEED), [],

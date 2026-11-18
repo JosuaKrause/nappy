@@ -281,7 +281,7 @@ func _marks_guard_feet() -> Vector2:
 ## milliseconds; the city is the test's, freed by the next build or `_free_city()`.
 func _relocations_over_the_marks(t: TestRunner, seed_value: int, her_at: Callable) -> Array[Dictionary]:
 	var run := _build_city_in_a_new_run(t, seed_value)
-	run.resistance.completed_steps = _completed_through(2)
+	GivenRun.completed_steps(run, _completed_through(2))
 	_look_at(Rect2())
 	var director := _director(t)
 	director.start_day(7, _rng(7, "resistance", seed_value), 300.0)
@@ -423,7 +423,7 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned
 ## through the real day order, since the walk is stated over the day's own closures and bodies.
 func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
-	var day := ResistanceHappenings.NEIGHBOR_DAY
+	var day := ResistanceSteps.NEIGHBOR_DAY
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
@@ -562,10 +562,10 @@ func _the_way_has_drawn(tile: Vector2i) -> bool:
 func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
 		trace_into: Array[String] = []) -> ResistanceDirector:
 	var run: RunState = _city.run
-	run.resistance.completed_steps = _completed_through(2 * (day - 6))
-	run.facts.completed_resistance_alley_tiles = []
-	var state := CityState.new()
-	run.attempt_spend.city_state = state
+	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
+	GivenRun.alley_tiles(run, [])
+	var state := run.attempt_spend().block_arcs()
+	state.reset()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
@@ -600,7 +600,7 @@ func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Arr
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 
 ## The same hash the run calendar's `day_rng()` takes, built here without a run, whose
-## `header.run_seed` this sweep has no other use for — same stream a played day actually draws from, for a seed and a day
+## `header().run_seed()` this sweep has no other use for — same stream a played day actually draws from, for a seed and a day
 ## this test chooses rather than the run's own.
 func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

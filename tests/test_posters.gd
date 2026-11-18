@@ -75,8 +75,8 @@ func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) ->
 	_run = _city.run
 	t.add_child(_city)
 	RunCity.build(_city, _map, builder)
-	_run.header.day = day
-	_run.posters.pasted_through = day
+	_run.header().set_day(day)
+	GivenRun.pasted_through(_run, day)
 	_walls = RunCity.poster_walls(_city)
 	_walls.dress_for(day, DaySpec.for_day(day))
 	_her = STROLLER_SCENE.instantiate()
@@ -168,14 +168,14 @@ func _longest_run(most: int) -> Array[Vector2i]:
 	return best.slice(0, most)
 
 func _paste_all(run: Array[Vector2i]) -> void:
-	_run.posters.reset()
+	_run.posters().reset()
 	for tile in run:
-		_run.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
+		_run.posters().paste(tile, PosterArt.Kind.RULES, false, 1)
 
 func _torn_in(run: Array[Vector2i]) -> int:
 	var n := 0
 	for tile in run:
-		if _run.posters.is_torn(tile):
+		if _run.posters().is_torn(tile):
 			n += 1
 	return n
 
@@ -347,11 +347,11 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t: TestRunner) -> void
 	t.check(plain != null and crossed != null, "both copies of the wanted notice are baked")
 	var art := PosterArt.new()
 	var intact := PosterState.INTACT
-	run.header.day = ResistanceHappenings.NEIGHBOR_DAY + 2
-	run.resistance.completed_steps = [ResistanceSteps.warning_step().index]
+	run.header().set_day(ResistanceSteps.NEIGHBOR_DAY + 2)
+	GivenRun.completed_steps(run, [ResistanceSteps.warning_step().index])
 	t.check(art.texture_for(atlas, PosterArt.Kind.WANTED, intact, run.neighbor_was_taken()) == plain,
 			"a warned neighbor's face is not crossed out")
-	run.resistance.completed_steps = []
+	GivenRun.completed_steps(run, [])
 	t.check(art.texture_for(atlas, PosterArt.Kind.WANTED, intact, run.neighbor_was_taken()) == crossed,
 			"a taken neighbor's face is crossed out")
 	t.check(art.texture_for(atlas, PosterArt.Kind.LEADER, intact, run.neighbor_was_taken())
@@ -370,7 +370,7 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t: TestRunner) -> void
 func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
-	var day := ResistanceHappenings.NEIGHBOR_DAY + 2
+	var day := ResistanceSteps.NEIGHBOR_DAY + 2
 	var art := RecordingPosterArt.new()
 	await _open(t, SEEDS[0], day, art)
 	var tiles: Array = _walls.fronts().keys()
@@ -389,9 +389,9 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 	var plain := drawn_from.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
 	var crossed := drawn_from.region(PosterArt.WANTED_CROSSED)
 	var intact := PosterState.INTACT
-	_run.posters.paste(tile, PosterArt.Kind.WANTED, false, 1)
+	_run.posters().paste(tile, PosterArt.Kind.WANTED, false, 1)
 
-	_run.resistance.completed_steps = []
+	GivenRun.completed_steps(_run, [])
 	var from := art.asked.size()
 	_walls.dress_for(day, DaySpec.for_day(day))
 	await _frames(t, 2)
@@ -401,7 +401,7 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 	t.check(_drew(drawn, PosterArt.Kind.WANTED, intact, crossed),
 			"and a front draws the crossed wanted notice")
 
-	_run.resistance.completed_steps = [ResistanceSteps.warning_step().index]
+	GivenRun.completed_steps(_run, [ResistanceSteps.warning_step().index])
 	from = art.asked.size()
 	_walls.dress_for(day, DaySpec.for_day(day))
 	await _frames(t, 2)
@@ -411,14 +411,14 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 			and not _drew(drawn, PosterArt.Kind.WANTED, intact, crossed),
 			"a warned neighbor's front draws the plain notice at dawn")
 
-	_run.resistance.completed_steps = []
+	GivenRun.completed_steps(_run, [])
 	from = art.asked.size()
 	_stand_at(tile, 1.0, Vector2.UP)
-	var torn := await _wait_until(t, func() -> bool: return _run.posters.is_torn(tile), 3.0)
+	var torn := await _wait_until(t, func() -> bool: return _run.posters().is_torn(tile), 3.0)
 	t.check(torn, "a push tears the wanted notice")
 	await _frames(t, 2)
 	drawn = _drawn_since(art, from)
-	var which := int(_run.posters.sheet_at(tile)["tear"])
+	var which := int(_run.posters().sheet_at(tile)["tear"])
 	t.check(not drawn.is_empty() and drawn.all(_drawn_taken),
 			"after a tear, the run's taken neighbor reaches the fronts")
 	var crossed_torn := art.texture_for(drawn_from, PosterArt.Kind.WANTED, which, true)
@@ -465,7 +465,7 @@ func _test_the_state_survives_a_round_trip_and_a_lost_day(t: TestRunner) -> void
 	var state := PosterState.new()
 	state.paste(Vector2i(3, 4), PosterArt.Kind.RULES, false, 1)
 	state.paste(Vector2i(3, 4), PosterArt.Kind.LEADER, true, -1)
-	state.pasted_through = 5
+	state.mark_pasted_through(5)
 	state.photograph()
 	state.tear(Vector2i(3, 4), 2)
 	state.paste(Vector2i(9, 4), PosterArt.Kind.CURFEW, false, 1)
@@ -479,8 +479,8 @@ func _test_the_state_survives_a_round_trip_and_a_lost_day(t: TestRunner) -> void
 	loaded.restore(data)
 	t.check(loaded.to_data() == state.to_data(), "the walls survive a trip through a save file")
 	loaded.give_back()
-	t.check(loaded.cells.size() == 1 and loaded.has_intact_sheet(Vector2i(3, 4)) \
-			and loaded.tears_made() == 0 and loaded.pasted_through == 5,
+	t.check(loaded.cells().size() == 1 and loaded.has_intact_sheet(Vector2i(3, 4)) \
+			and loaded.tears_made() == 0 and loaded.pasted_through() == 5,
 			"a lost day gives back the morning's walls: the tear, the crew's sheet and the count go")
 	state.paste(Vector2i(3, 4), PosterArt.Kind.UNIFORM, false, 1)
 	t.check(int(state.sheet_at(Vector2i(3, 4))["under"]) == PosterState.NONE \
@@ -505,13 +505,13 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 		var covered_on: Dictionary = {}
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.block_plans, day)
-			run.posters.photograph()
-			city.start_day(state, day, run.calendar.day_rng(day, "closures"))
-			var cells := run.posters.cells
+			run.posters().photograph()
+			city.start_day(state, day, run.calendar().day_rng(day, "closures"))
+			var cells := run.posters().cells()
 			if day < PosterWalls.FIRST_DAY:
 				t.check(cells.is_empty(), "seed %d: nothing is on a wall on day %d" % [seed_value, day])
 			for tile: Vector2i in cells:
-				var kind := int(run.posters.sheet_at(tile)["kind"])
+				var kind := int(run.posters().sheet_at(tile)["kind"])
 				t.check(day >= int(PosterWalls.KIND_FIRST_DAY[kind]),
 						"seed %d day %d: no %s sheet before day %d" % [seed_value, day,
 						PosterArt.Kind.keys()[kind], PosterWalls.KIND_FIRST_DAY[kind]])
@@ -534,12 +534,12 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 				% [seed_value, covered_on[PosterWalls.FIRST_DAY],
 				covered_on[Tuning.RUN_LENGTH_DAYS], Tuning.RUN_LENGTH_DAYS])
 		var offset := 0
-		for tile: Vector2i in run.posters.cells:
-			if int(run.posters.sheet_at(tile)["under"]) != PosterState.NONE:
+		for tile: Vector2i in run.posters().cells():
+			if int(run.posters().sheet_at(tile)["under"]) != PosterState.NONE:
 				offset += 1
-		t.check(offset > 0 and offset * 2 < run.posters.cells.size(),
+		t.check(offset > 0 and offset * 2 < run.posters().cells().size(),
 				"seed %d: some sheets show an older one beneath, and most do not (%d of %d)"
-				% [seed_value, offset, run.posters.cells.size()])
+				% [seed_value, offset, run.posters().cells().size()])
 		city.free()
 
 ## The density floors ("on the first day with posters it's very hard to find one -- increase the
@@ -593,11 +593,11 @@ func _check_every_front_is_blank_wall(t: TestRunner, city: City, map: CityMap, s
 func _check_a_retry_pastes_the_same_dawn(t: TestRunner, city: City, state: CityState, day: int,
 		seed_value: int) -> void:
 	var run := city.run
-	var first := run.posters.to_data()
-	run.posters.give_back()
-	run.posters.pasted_through = mini(run.posters.pasted_through, day - 1)
-	city.start_day(state, day, run.calendar.day_rng(day, "closures"))
-	t.check(run.posters.to_data()["cells"] == first["cells"],
+	var first := run.posters().to_data()
+	run.posters().give_back()
+	GivenRun.pasted_through(run, mini(run.posters().pasted_through(), day - 1))
+	city.start_day(state, day, run.calendar().day_rng(day, "closures"))
+	t.check(run.posters().to_data()["cells"] == first["cells"],
 			"seed %d: a retried day %d pastes the same dawn" % [seed_value, day])
 
 # ------------------------------------------------------------- the marble bag ---
@@ -663,8 +663,8 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t: TestRunner) -> void:
 	for joystick: bool in [true, false]:
 		# A day started again clears what the crews were working at.
 		_walls.dress_for(DAY, DaySpec.for_day(DAY))
-		_run.posters.reset()
-		_run.posters.pasted_through = DAY
+		_run.posters().reset()
+		GivenRun.pasted_through(_run, DAY)
 		RunCity.events(_city).use_controls(TouchCover.joystick() if joystick else null)
 		await _wait(t, 0.2)
 		t.check(RunCity.events(_city).sees(at) != joystick,
@@ -674,7 +674,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t: TestRunner) -> void:
 		# given two `PASTE_EVERY` more than that to paste nothing.
 		await _wait(t, PosterWalls.FIRST_PASTE_AFTER + 2.0 * PosterWalls.PASTE_EVERY if joystick
 				else PosterWalls.FIRST_PASTE_AFTER + 0.5)
-		var pasted := _run.posters.cells.size()
+		var pasted := _run.posters().cells().size()
 		t.check((pasted == 0) == joystick,
 				"%s scheme: a crew only under the left corner pasted %d sheets"
 				% ["joystick" if joystick else "tap", pasted])
@@ -710,10 +710,10 @@ func _test_a_push_tears_and_walking_past_does_not(t: TestRunner) -> void:
 	await _wait(t, 0.2)
 	_stand_at(tile, 1.0, Vector2.UP)
 	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
-	t.check(_run.posters.has_intact_sheet(tile), "letting go before the time is up starts it again")
+	t.check(_run.posters().has_intact_sheet(tile), "letting go before the time is up starts it again")
 	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.5 + 0.1)
-	t.check(_run.posters.is_torn(tile), "a push held for the time tears the sheet")
-	t.check(_run.posters.tears_made() == 1, "and counts one tear")
+	t.check(_run.posters().is_torn(tile), "a push held for the time tears the sheet")
+	t.check(_run.posters().tears_made() == 1, "and counts one tear")
 
 	# The diagonal slides her along the wall at walking speed, so the sheet she stands before when
 	# the time is up is the one she has slid to: a wall of sheets, one of them comes down.
@@ -724,8 +724,8 @@ func _test_a_push_tears_and_walking_past_does_not(t: TestRunner) -> void:
 	var torn := await _wait_until(t, func() -> bool: return _torn_in(run) > 0,
 			PosterWalls.PRESS_TO_TEAR + 0.4)
 	t.check(torn, "a diagonal into the wall is a push too")
-	_run.posters.paste(tile, PosterArt.Kind.CURFEW, false, 1)
-	t.check(_run.posters.has_intact_sheet(tile), "a torn sheet pasted again is whole")
+	_run.posters().paste(tile, PosterArt.Kind.CURFEW, false, 1)
+	t.check(_run.posters().has_intact_sheet(tile), "a torn sheet pasted again is whole")
 	_close()
 
 ## A heading into the wall from back on the sidewalk is a walk toward it, not a push: a bollard
@@ -742,17 +742,17 @@ func _test_a_push_held_off_the_wall_does_not_tear(t: TestRunner) -> void:
 	bollard.add_child(shape)
 	bollard.position = Vector2(rect.get_center().x, rect.position.y + 2.0)
 	_city.add_child(bollard)
-	_run.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
+	_run.posters().paste(tile, PosterArt.Kind.RULES, false, 1)
 	_stand_at(tile, Tuning.TILE_SIZE * 0.5, Vector2.UP, Tuning.TILE_SIZE - 1.0)
 	await _wait(t, 2.0)
 	var back := _her.global_position.y - rect.position.y
 	t.check(back > PosterWalls.PRESS_REACH and back < Tuning.TILE_SIZE,
 			"she is held on the front tile, back of the push's reach (%.1fpx from the face)" % back)
-	t.check(_run.posters.has_intact_sheet(tile),
+	t.check(_run.posters().has_intact_sheet(tile),
 			"a heading into the wall from back on the sidewalk tears nothing")
 	bollard.free()
 	await _wait(t, PosterWalls.PRESS_TO_TEAR + 0.2)
-	t.check(_run.posters.is_torn(tile), "and the same push at the face tears it")
+	t.check(_run.posters().is_torn(tile), "and the same push at the face tears it")
 	_close()
 
 ## The tears' marbles, one push to a fresh sheet each: the pre-bag and two whole bags after it. The
@@ -770,17 +770,17 @@ func _test_the_tears_draw_the_marbles(t: TestRunner) -> void:
 		return
 	EventBus.poster_torn.connect(_count_a_tear)
 	EventBus.poster_pursuit_sent.connect(_count_a_pursuit)
-	_run.posters.photograph()
+	_run.posters().photograph()
 	var first_marbles := await _tear_one_sheet_each(t, tiles, tears)
-	t.check(_run.posters.tears_made() == tears, "every push tore its sheet (%d of %d)"
-			% [_run.posters.tears_made(), tears])
+	t.check(_run.posters().tears_made() == tears, "every push tore its sheet (%d of %d)"
+			% [_run.posters().tears_made(), tears])
 	t.check(not first_marbles[0], "the run's first tear sends nobody")
 	t.check(first_marbles.count(true) == 2, "two whole bags of tears send exactly two pursuers (%d)"
 			% first_marbles.count(true))
 	t.check(_seen["torn"] == tears, "every tear tells the counter (%d of %d)" % [_seen["torn"], tears])
 	t.check(_seen["pursuit"] == first_marbles.count(true),
 			"and every pursuer a tear sent tells it too, once each (%d)" % _seen["pursuit"])
-	_run.posters.give_back()
+	_run.posters().give_back()
 	var again := await _tear_one_sheet_each(t, tiles, tears)
 	t.check(again == first_marbles, "a lost day gives the tears back and the retry draws the same marbles")
 	await _let_the_pursuer_go(t)
@@ -800,10 +800,10 @@ func _tear_one_sheet_each(t: TestRunner, tiles: Array, count: int) -> Array[bool
 	var sent: Array[bool] = []
 	for i in count:
 		var tile: Vector2i = tiles[i]
-		_run.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
+		_run.posters().paste(tile, PosterArt.Kind.RULES, false, 1)
 		var pursuits: int = _seen["pursuit"]
 		_stand_at(tile, Tuning.TILE_SIZE * 0.5, Vector2.UP)
-		await _wait_until(t, func() -> bool: return _run.posters.is_torn(tile), 2.0)
+		await _wait_until(t, func() -> bool: return _run.posters().is_torn(tile), 2.0)
 		sent.append(_seen["pursuit"] > pursuits)
 		if sent[-1]:
 			await _let_the_pursuer_go(t, true)
@@ -848,14 +848,14 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t: TestRunner) -> void:
 	# slides on with the push held (the diagonal).
 	_paste_all(run)
 	_stand_at(run[0], 1.0, Vector2.UP)
-	await _wait_until(t, func() -> bool: return _run.posters.is_torn(run[0]),
+	await _wait_until(t, func() -> bool: return _run.posters().is_torn(run[0]),
 			PosterWalls.PRESS_TO_TEAR + 0.2)
 	_steer(diagonal)
 	await _wait_until(t, reached_the_last, guard)
 	t.check(reached_the_last.call(), "she slid along the whole run")
 	t.check(_torn_in(run) == sheets, "a diagonal held along %d adjacent sheets tears all of them (%d)"
 			% [sheets, _torn_in(run)])
-	t.check(_run.posters.tears_made() == sheets, "and draws one marble for each (%d)" % _run.posters.tears_made())
+	t.check(_run.posters().tears_made() == sheets, "and draws one marble for each (%d)" % _run.posters().tears_made())
 
 	# The first sheet of a push still waits for the time.
 	_steer(Vector2.ZERO)
@@ -866,7 +866,7 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t: TestRunner) -> void:
 	t.check(_torn_in(run) == 0, "the first sheet of a push still waits for the time")
 	var passed := await _wait_until(t, func() -> bool: return _torn_in(run) > 0,
 			PosterWalls.PRESS_TO_TEAR)
-	t.check(passed and _torn_in(run) == 1 and _run.posters.is_torn(run[0]),
+	t.check(passed and _torn_in(run) == 1 and _run.posters().is_torn(run[0]),
 			"and tears once it has passed")
 
 	# The push a player makes: a diagonal held while walking into the wall, never stopping, slides
@@ -879,21 +879,21 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t: TestRunner) -> void:
 	_paste_all(run)
 	_stand_at(run[0], 20.0, diagonal)
 	await _wait_until(t, reached_the_last, guard)
-	t.check(_run.posters.has_intact_sheet(run[0]),
+	t.check(_run.posters().has_intact_sheet(run[0]),
 			"the sheet she was already past when the time elapsed escapes the first tear")
 	var rest_torn := true
 	for i in range(1, sheets):
-		rest_torn = rest_torn and _run.posters.is_torn(run[i])
+		rest_torn = rest_torn and _run.posters().is_torn(run[i])
 	t.check(rest_torn, "and every sheet after the first tear comes down as she reaches it")
-	t.check(_run.posters.tears_made() == sheets - 1, "one marble each (%d)" % _run.posters.tears_made())
+	t.check(_run.posters().tears_made() == sheets - 1, "one marble each (%d)" % _run.posters().tears_made())
 
 	# Letting go re-arms the wait: the next sheet she stands before takes the time again.
 	_steer(Vector2.ZERO)
 	await _wait(t, 0.2)
-	_run.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
+	_run.posters().paste(run[0], PosterArt.Kind.RULES, false, 1)
 	_stand_at(run[0], 1.0, Vector2.UP)
 	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
-	t.check(_run.posters.has_intact_sheet(run[0]),
+	t.check(_run.posters().has_intact_sheet(run[0]),
 			"after letting go the next push waits for the time again")
 	_close()
 
@@ -920,18 +920,18 @@ func _test_a_door_in_the_wall_does_not_end_the_slide(t: TestRunner) -> void:
 		_close()
 		return
 	var diagonal := Vector2(1.0, -1.0)
-	var across := func() -> bool: return _run.posters.is_torn(run[2])
-	_run.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
-	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
+	var across := func() -> bool: return _run.posters().is_torn(run[2])
+	_run.posters().paste(run[0], PosterArt.Kind.RULES, false, 1)
+	_run.posters().paste(run[2], PosterArt.Kind.RULES, false, 1)
 	# She stands against the first sheet until it gives, then slides across the door to the third.
 	_stand_at(run[0], 1.0, Vector2.UP)
-	var first := await _wait_until(t, func() -> bool: return _run.posters.is_torn(run[0]),
+	var first := await _wait_until(t, func() -> bool: return _run.posters().is_torn(run[0]),
 			PosterWalls.PRESS_TO_TEAR + 0.2)
 	t.check(first, "the sheet before the door tears")
 	_steer(diagonal)
 	var crossed := await _wait_until(t, across, 3.0 * Tuning.TILE_SIZE / 40.0)
 	t.check(crossed, "a push held across a door tears the next sheet at once")
-	var tears: int = _run.posters.tears_made()
+	var tears: int = _run.posters().tears_made()
 	var beyond_door := _map.tile_rect_to_world(Rect2i(run[2], Vector2i.ONE)).position.x
 	t.check(_her.global_position.x > beyond_door and tears == 2,
 			"she tore it as she came in front of it, not before the door (%d tears)" % tears)
@@ -943,16 +943,16 @@ func _test_a_door_in_the_wall_does_not_end_the_slide(t: TestRunner) -> void:
 	# the new heading by the first tick she is there.
 	_steer(diagonal)
 	await _wait(t, 0.1)
-	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
+	_run.posters().paste(run[2], PosterArt.Kind.RULES, false, 1)
 	_stand_at(run[2], 1.0, diagonal)
 	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
-	t.check(_run.posters.has_intact_sheet(run[2]),
+	t.check(_run.posters().has_intact_sheet(run[2]),
 			"turning out of the wall in the doorway ends the slide")
 
 	# Leaving the front altogether ends it too: a point far from the wall is no front tile.
-	_run.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
+	_run.posters().paste(run[0], PosterArt.Kind.RULES, false, 1)
 	_stand_at(run[0], 1.0, Vector2.UP)
-	await _wait_until(t, func() -> bool: return _run.posters.is_torn(run[0]),
+	await _wait_until(t, func() -> bool: return _run.posters().is_torn(run[0]),
 			PosterWalls.PRESS_TO_TEAR + 0.2)
 	_steer(diagonal)
 	await _wait(t, 0.5)
@@ -962,8 +962,8 @@ func _test_a_door_in_the_wall_does_not_end_the_slide(t: TestRunner) -> void:
 	# the new heading by the first tick she is there.
 	_steer(diagonal)
 	await _wait(t, 0.1)
-	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
+	_run.posters().paste(run[2], PosterArt.Kind.RULES, false, 1)
 	_stand_at(run[2], 1.0, diagonal)
 	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
-	t.check(_run.posters.has_intact_sheet(run[2]), "walking off the front ends the slide")
+	t.check(_run.posters().has_intact_sheet(run[2]), "walking off the front ends the slide")
 	_close()

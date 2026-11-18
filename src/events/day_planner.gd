@@ -153,14 +153,14 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	for rect in region_plan.alley_doors:
 		boundary[rect.position] = true
 	# **Planned before `build_day`.** `SealPlanner.plan_day` is a pure function of the map, the day,
-	# `tree` and its own RNG stream (`world.run.calendar.day_rng(day, "seals")`, never shared
+	# `tree` and its own RNG stream (`world.run.calendar().day_rng(day, "seals")`, never shared
 	# with the catalogue's), so planning it first changes which seals a day gets not at all —
 	# only how soon `build_day` can see where they landed. `held` is `city_map.held_streets()`
 	# itself: a hard seal's segment is marked there as it is placed, so the catalogue never
 	# offers a candidate row that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a
 	# fully blocked street").
 	var seals := SealPlanner.plan_day(city_map, spec, tree,
-			world.run.calendar.day_rng(day, "seals"), boundary, city_map.held_streets())
+			world.run.calendar().day_rng(day, "seals"), boundary, city_map.held_streets())
 	# Each says it is a seal, one of the city's fixed parts (`EventPlan.is_a_fixed_part()`), which day
 	# 13's swap never takes.
 	for seal in seals:
@@ -190,15 +190,15 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
 	# The day's calm areas, made once here where the map, the run and the day meet, and handed
 	# to the scheduler, which hands them to every pass that asks about calm ground.
-	var calm := CalmAreas.of(city_map, world.run.calendar.settled_this_act(), day, target)
+	var calm := CalmAreas.of(city_map, world.run.calendar().settled_this_act(), day, target)
 	# The day's guarded-band task row, day 13's roadblock, stood beside her routes at dawn so that one
 	# is close by wherever she reads its mark; none on any other day.
 	var guarded := ResistanceSteps.guarded_row_on(day)
 	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
-			world.run.resistance.progress) if guarded != "" else null
+			world.run.resistance().progress()) if guarded != "" else null
 	var dawn := DawnContext.new(spec, rng.seed, city_map, tree, calm, world.plan_builder(),
 			EventScheduler.row_ground)
-	dawn.use_the_run(consumed, world.run.attempt_spend.scars, world.run.resistance.progress)
+	dawn.use_the_run(consumed, world.run.attempt_spend().scars(), world.run.resistance().progress())
 	dawn.use_the_doors(doors)
 	dawn.use_what_stands(standing)
 	dawn.use_mast_sites(world.mast_sites())
@@ -232,7 +232,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 ## (`CalmAreas.of()`): what a scene recipe's walk, planned by hand rather than here, is sited
 ## against (`EventManager.start_recipe()`).
 func calm_as_the_map_stands() -> CalmAreas:
-	return CalmAreas.of(world.city_map, world.run.calendar.settled_this_act())
+	return CalmAreas.of(world.city_map, world.run.calendar().settled_this_act())
 
 # ------------------------------------------------------------ the escape's city ---
 

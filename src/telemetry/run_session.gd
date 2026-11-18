@@ -140,9 +140,9 @@ func _on_world_stood(spec: DaySpec, world: DayWorld, restarted: bool) -> void:
 	_restarted = restarted
 	var day := spec.day_number()
 	if _a_section(spec):
-		_log.begin_section(day, spec.title, _run.header.run_seed, spec.seconds_on_the_clock())
+		_log.begin_section(day, spec.title, _run.header().run_seed(), spec.seconds_on_the_clock())
 	else:
-		_log.begin_day(day, Tuning.act_for_day(day), _run.header.run_seed,
+		_log.begin_day(day, Tuning.act_for_day(day), _run.header().run_seed(),
 				world.city_map().city_seed(), _config.day_length_for(day))
 	if not _log.is_active():
 		return
