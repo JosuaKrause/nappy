@@ -119,7 +119,7 @@ func is_active() -> bool:
 ## a great many plays that never happened, and every inference drawn from it is skewed.
 ##
 ## Whether the deployed page has asked, this run, to be logged anyway: the page's own query, as the
-## run read it at boot (`RunConfig.page_query`), since the page has no command line.
+## run read it at boot (`RunConfig.page_query_string()`), since the page has no command line.
 ##
 ## **A debug build's alone, like every other developer flag** (2026-09-06, the player: "I never
 ## asked for telemetry on web. you added that to debug in a browser. that browser build should be

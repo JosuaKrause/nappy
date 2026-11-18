@@ -112,7 +112,7 @@ func _build_rig(t: TestRunner) -> void:
 	_resistance.set_process(false)
 	_resistance.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
 			RunCity.spawn_siting(_city))
-	_days = DayDirector.new(_city.run.calendar(), _city.run.facts(), _city.run.attempt_spend(), _config)
+	_days = DayDirector.new(_city.run.calendar(), _city.run.facts(), _city.run.attempt_spend())
 	_days.use_the_world(null, _resistance, _clock)
 	_days.use_worlds(StandingCity.new(_city, _stroller, _baby))
 

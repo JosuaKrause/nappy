@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 
 ## The parent a debug build given `--parent word` shows.
 func _parent(word: String) -> String:
-	return RunConfig.parse(PackedStringArray(["--parent", word]), "", true).parent_override
+	return RunConfig.parse(PackedStringArray(["--parent", word]), "", true).parent_override()
 
 func _test_parent_accepts_mother_and_father(t: TestRunner) -> void:
 	t.check(_parent("mother") == "mother", "'mother' is read back unchanged")

@@ -76,7 +76,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	clock.setup(run)
 
 	var config := RunConfig.parse(PackedStringArray(), "", true)
-	var days := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend(), config)
+	var days := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend())
 	days.use_the_world(null, resistance, clock)
 	days.use_worlds(StandingCity.new(city, player, baby))
 

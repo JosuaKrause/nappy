@@ -74,13 +74,13 @@ func _test_invincible_from_query(t: TestRunner) -> void:
 		"the invincible parameter is found among other URL parameters")
 
 ## Whether a debug build's run configuration on command-line `args` is invincible
-## (`RunConfig.invincible`, which `DevFlags.invincible()` answers).
+## (`RunConfig.is_invincible()`, which `DevFlags.invincible()` answers).
 static func _from_args(args: PackedStringArray) -> bool:
-	return RunConfig.parse(args, "", true).invincible
+	return RunConfig.parse(args, "", true).is_invincible()
 
 ## Whether a debug build's run configuration on the page query `query` is invincible.
 static func _from_query(query: String) -> bool:
-	return RunConfig.parse(PackedStringArray(), query, true).invincible
+	return RunConfig.parse(PackedStringArray(), query, true).is_invincible()
 
 # ---------------------------------------------------------------------- rig ---
 

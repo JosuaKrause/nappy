@@ -20,7 +20,7 @@ extends RefCounted
 ## by nothing at all. `QuitOption.available()` and `hud._debug` follow the same pattern for their
 ## own platform questions.
 ##
-## `--touch` forces this true (`RunConfig.touch_forced`, a debug build's flag like every other dev
+## `--touch` forces this true (`RunConfig.forces_touch()`, a debug build's flag like every other dev
 ## flag): nothing on the machine that runs `tools/test.sh` or an exported build has a real
 ## touchscreen, so without it a touch-only screen could never be rendered, and
 ## `tools/shot.sh out.png 3 --touch --walk north` is how the touch HUD is looked at. The run's

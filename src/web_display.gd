@@ -5,7 +5,7 @@ extends RefCounted
 ## **`?dpr=<x>`** caps the device pixel ratio the page reports, so the canvas — the window times
 ## the ratio — draws fewer pixels. For testing only: there is no default cap, the value is the
 ## player's after two phone frame records. Read in the release-safe bundle `?debug=1` opens
-## (`RunConfig.live_debug`), from the query the run read at boot. The page's own
+## (`RunConfig.is_live_debug()`), from the query the run read at boot. The page's own
 ## `window.devicePixelRatio` is what is capped, so the frame record and the readout report the
 ## capped ratio and the drawn size that results.
 

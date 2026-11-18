@@ -46,15 +46,6 @@ func run(t: TestRunner) -> void:
 	_test_the_escape_clock_takes_its_length_and_invincible(t)
 	await _test_touch_and_web_are_the_runs_answers(t)
 
-## The errors raised while it is attached (`OS.add_logger()`).
-class RefusedWrites extends Logger:
-	var count := 0
-
-	func _log_error(_function: String, _file: String, _line: int, _code: String,
-			_rationale: String, _editor_notify: bool, _error_type: int,
-			_script_backtraces: Array) -> void:
-		count += 1
-
 static func _words(words: Array) -> PackedStringArray:
 	return PackedStringArray(words)
 
@@ -65,8 +56,9 @@ func _test_a_release_build_reads_no_command_line_flag(t: TestRunner) -> void:
 	var words := _words(["--day", "5", "--seed", "7", "--invincible", "--layers", "1",
 			"--route", "home", "--no-telemetry"])
 	var release := RunConfig.parse(words, "", false)
-	t.check(release.day_override == 1 and release.seed_override == 0 and not release.is_invincible()
-			and release.layers_override().is_empty() and release.route_targets.is_empty()
+	t.check(release.day_override() == 1 and release.seed_override() == 0
+			and not release.is_invincible()
+			and release.layers_override().is_empty() and release.route_targets().is_empty()
 			and release.dev_flag_words().is_empty() and not release.runs_as_a_rig(),
 			"a release build reads none of the developer flags")
 	t.check(release.refuses_telemetry(), "but does read the player's own --no-telemetry")
@@ -74,22 +66,24 @@ func _test_a_release_build_reads_no_command_line_flag(t: TestRunner) -> void:
 func _test_a_debug_build_reads_them(t: TestRunner) -> void:
 	var debug := RunConfig.parse(_words(["--day", "99", "--seed", "7", "--invincible",
 			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40"]), "", true)
-	t.check(debug.day_override == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
-	t.check(debug.seed_override == 7 and debug.is_invincible() and debug.layers_override() == [1, 3]
-			and debug.ground_mode == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
+	t.check(debug.day_override() == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
+	t.check(debug.seed_override() == 7 and debug.is_invincible()
+			and debug.layers_override() == [1, 3]
+			and debug.ground_mode() == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
 			"and every other flag given is read")
-	t.check(debug.active_args.size() == 11, "the words themselves are kept, all of them")
+	t.check(debug.dev_flag_words().size() == 11, "the words themselves are kept, all of them")
 
 ## The release-safe bundle answers to a release page only once it asked `?debug=1`; using one of its
 ## parameters is what keeps that page off the save.
 func _test_a_release_page_opens_the_bundle_only_with_debug(t: TestRunner) -> void:
 	var none := PackedStringArray()
 	var unasked := RunConfig.parse(none, "?day=9&invincible=1", false)
-	t.check(unasked.day_override == 1 and not unasked.invincible and not unasked.is_live_debug()
+	t.check(unasked.day_override() == 1 and not unasked.is_invincible()
+			and not unasked.is_live_debug()
 			and not unasked.used_a_web_debug_flag(),
 			"a release page that did not ask ?debug=1 reads nothing of the bundle")
 	var asked := RunConfig.parse(none, "?debug=1&day=9&invincible=1", false)
-	t.check(asked.day_override == 9 and asked.invincible and asked.is_live_debug()
+	t.check(asked.day_override() == 9 and asked.is_invincible() and asked.is_live_debug()
 			and asked.used_a_web_debug_flag() and asked.asks_for_the_readout(),
 			"one that did reads the bundle and counts as having used it")
 	t.check(asked.page_query_string() == "?debug=1&day=9&invincible=1",
@@ -98,37 +92,27 @@ func _test_a_release_page_opens_the_bundle_only_with_debug(t: TestRunner) -> voi
 	t.check(readout_only.is_live_debug() and not readout_only.used_a_web_debug_flag(),
 			"?debug=1 alone opens the bundle without using any of it")
 
-## A write to a resolved config is refused with a warning and leaves the value as it was, whichever
-## field it names, including the ones that hold the gate itself; the arrays are read-only, so no
-## reader's edit of one can reach another reader.
+## What a resolved config hands out cannot change it: its arrays are read-only and its words a copy,
+## so no reader's edit of one reaches another reader. Its fields are private and written by
+## `parse()` alone, so nothing else here writes one.
 func _test_a_resolved_config_cannot_change(t: TestRunner) -> void:
 	var config := RunConfig.parse(_words(["--layers", "1", "--route", "home", "--skip", "events",
 			"--debug"]), "", true)
-	t.check(config.layers_override().is_read_only() and config.route_targets.is_read_only()
+	t.check(config.layers_override().is_read_only() and config.route_targets().is_read_only()
 			and config.skip_words().is_read_only(),
 			"every array a resolved config holds is read-only")
-	var refused := RefusedWrites.new()
-	OS.add_logger(refused)
-	config.invincible = true
-	config.debug_build = false
-	OS.remove_logger(refused)
-	t.check(not config.invincible and config.debug_build,
-			"a write after the build changes nothing, the field that holds the gate included")
-	t.check(refused.count == 2, "each refused write is reported, not swallowed: %d" % refused.count)
 	# The words and the movie flag it was parsed from are what `with_recipe()` (which `main` calls)
-	# parses the run from again, so the run it gives is the same run: a refused write to the config
-	# is not in it, and what the words and the movie flag said is.
-	t.check(not config.with_recipe({}).invincible,
-			"the run parsed again from its words does not carry the refused write")
+	# parses the run from again, so the run it gives is the same run.
 	var movie := RunConfig.parse(_words(["--invincible", "--layers", "1"]), "", true, true)
 	var again := movie.with_recipe({})
 	t.check(again.records_a_movie() and again.is_invincible() and again.layers_override() == [1]
 			and again.dev_flag_words() == movie.dev_flag_words(),
-			"but does carry the movie flag and every word it was parsed from")
-	var args := config.active_args
+			"the run parsed again carries the movie flag and every word it was parsed from")
+	var args := config.dev_flag_words()
 	args.append("--invincible")
-	t.check(not "--invincible" in config.active_args,
+	t.check(not "--invincible" in config.dev_flag_words(),
 			"the words are a value: a reader's copy does not change the config's")
+
 
 ## A recipe is one whole authored setup: its seed, day, escape part and parent stand in for the
 ## flags' own, on a new config, while the one it came from stays what it was.
@@ -138,14 +122,15 @@ func _test_a_recipe_stands_in_for_the_run_flags(t: TestRunner) -> void:
 	var recipe := {"seed": 9, "kind": "escape", "setup": {"day": 7, "parent": "father",
 			"progression": {"escape_part": "lobby"}}}
 	var overlaid := base.with_recipe(recipe)
-	t.check(overlaid.seed_override == 9 and overlaid.day_override == 7 and overlaid.start_escape
-			and overlaid.start_escape_at == "lobby" and overlaid.parent_override == "father",
+	t.check(overlaid.seed_override() == 9 and overlaid.day_override() == 7
+			and overlaid.starts_in_the_escape()
+			and overlaid.start_escape_at() == "lobby" and overlaid.parent_override() == "father",
 			"the recipe's seed, day, escape part and parent are the run's")
-	t.check(overlaid.recipe_path == "scene.json",
+	t.check(overlaid.recipe_path() == "scene.json",
 			"the rest of the run is parsed from the same words")
-	t.check(RunConfig.parse(_words(["--seed", "3"]), "", false, false, recipe).seed_override == 0,
+	t.check(RunConfig.parse(_words(["--seed", "3"]), "", false, false, recipe).seed_override() == 0,
 			"a release build keeps no recipe, whatever it is handed")
-	t.check(base.seed_override == 3 and base.day_override == 2,
+	t.check(base.seed_override() == 3 and base.day_override() == 2,
 			"and the config it was put on is unchanged")
 
 ## A day's length is decided in one place and handed on as a number: `--day-length` for every day
@@ -169,14 +154,14 @@ func _test_the_day_and_the_section_lengths(t: TestRunner) -> void:
 func _test_every_rig_flag_makes_a_rig(t: TestRunner) -> void:
 	for words: Array in [["--screenshot", "x.png"], ["--walk", "1e"], ["--flee"],
 			["--press", "pause", "1"], ["--tap", "1", "1"], ["--route", "home"]]:
-		t.check(RunConfig.parse(_words(words), "", true).is_rig, "%s is a rig" % [words])
-	t.check(RunConfig.parse(PackedStringArray(), "", true, true).is_rig,
+		t.check(RunConfig.parse(_words(words), "", true).runs_as_a_rig(), "%s is a rig" % [words])
+	t.check(RunConfig.parse(PackedStringArray(), "", true, true).runs_as_a_rig(),
 			"a movie recording is a rig")
 	t.check(RunConfig.parse(_words(["--recipe", "x.json", "--recipe-mode", "scripted"]), "", true)
-			.is_rig, "a scripted recipe is a rig")
-	t.check(not RunConfig.parse(_words(["--seed", "1", "--day", "9"]), "", true).is_rig,
+			.runs_as_a_rig(), "a scripted recipe is a rig")
+	t.check(not RunConfig.parse(_words(["--seed", "1", "--day", "9"]), "", true).runs_as_a_rig(),
 			"a run that only chooses where it starts is a person's")
-	t.check(not RunConfig.parse(_words(["--walk", "1e"]), "", false).is_rig,
+	t.check(not RunConfig.parse(_words(["--walk", "1e"]), "", false).runs_as_a_rig(),
 			"and nothing is a rig on a release build")
 
 func _test_the_title_is_skipped_by_a_rig_or_a_recipe(t: TestRunner) -> void:

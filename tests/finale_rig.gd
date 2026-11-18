@@ -1961,7 +1961,7 @@ func _test_only_a_won_last_day_with_every_task_done_hands_over(t: TestRunner) ->
 ## so nothing of the autoload's is touched; the clock is freed).
 func _hands_over(t: TestRunner, result: GameEnums.DayResult, day: int, progress: int, sabotaged: bool) -> bool:
 	var run := RunState.new()
-	var director := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend(), RunConfig.parse(PackedStringArray(), "", true))
+	var director := DayDirector.new(run.calendar(), run.facts(), run.attempt_spend())
 	run.start_run(9182)
 	run.header().set_day(day)
 	run.resistance().set_progress(progress)

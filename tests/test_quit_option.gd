@@ -1,6 +1,6 @@
 extends RefCounted
-## `QuitOption.available()` with the run's configuration handed in: `--web` (`RunConfig.web_preview`)
-## asks for the web shape on a debug build, and nothing else does.
+## `QuitOption.available()` with the run's configuration handed in: `--web`
+## (`RunConfig.previews_the_web()`) asks for the web shape on a debug build, and nothing else does.
 
 func run(t: TestRunner) -> void:
 	_test_web_preview_needs_both_a_debug_build_and_the_flag(t)

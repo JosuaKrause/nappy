@@ -13,7 +13,7 @@ extends RefCounted
 ## of the OS directly at every call site would leave the web shape asserted by nothing at all.
 ## `hud._debug` follows the same pattern for its own release/debug gate.
 ##
-## **`--web` previews the web shape from a desktop debug build** (`RunConfig.web_preview`), the role
+## **`--web` previews the web shape from a desktop debug build** (`RunConfig.previews_the_web()`), the role
 ## `TouchInput`'s own `--touch` plays for its platform fact: without it, the hidden-`Q` hint this
 ## class exists to show can only be looked at by exporting the game and opening it in a browser.
 ## It only changes what a screen *shows*, never what quitting *does*. The run's configuration is

@@ -147,7 +147,7 @@ reject_route_with_screenshot() {
 # ------------------------------------------------------------------ a rig's own lockdown ---
 # M195: a rig's window takes no focus, hears no stray key, and always closes. `rig_flag_present()`
 # and `rig_kill_after_seconds()` below are the shell half of the same three-defence lockdown
-# `RunConfig.is_rig`/`RigLock` (src/dev/rig_lock.gd) apply from inside the game -- see the
+# `RunConfig.runs_as_a_rig()`/`RigLock` (src/dev/rig_lock.gd) apply from inside the game -- see the
 # `RIG_FLAGS` and `RIG_QUIT_SECONDS` marker blocks in src/dev/dev_flags.gd's own doc comment,
 # which both sides read live so shot.sh/run.sh can never name a different set of flags, or a
 # different deadline, than the game itself is locking down and timing against.

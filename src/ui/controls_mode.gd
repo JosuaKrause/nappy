@@ -19,7 +19,7 @@ extends RefCounted
 ## first (`--controls joystick|joystick-left|joystick-right|tap`), then the page's own URL
 ## (`?controls=`, the same words), then `TAP` — the wording every existing capture and `--walk`
 ## script was taken under, so a rig's back catalogue keeps reproducing. The run's configuration
-## resolves the word (`RunConfig.controls_word`). **The title screen's own buttons are not a third
+## resolves the word (`RunConfig.controls_word()`). **The title screen's own buttons are not a third
 ## step in this order**: they are what decides instead of it, every time the title is actually
 ## shown — see `TitleScreen`, whose buttons are the only pointer way in and always answer the
 ## question, the side included. `main._add_touch_controls()` asks the two mappings, and
@@ -41,7 +41,7 @@ static func word_for(mode: ControlsMode.Mode, side: ControlsMode.Side) -> String
 	return "joystick-right" if side == Side.RIGHT else "joystick-left"
 
 ## The bare mapping from a raw word — `--controls`/`?controls=`, which the run's configuration
-## resolves (`RunConfig.controls_word`) — onto a `Mode`. `"joystick"`, `"joystick-left"` and
+## resolves (`RunConfig.controls_word()`) — onto a `Mode`. `"joystick"`, `"joystick-left"` and
 ## `"joystick-right"` select it; anything else, including an empty string, is `TAP`.
 static func from_word(word: String) -> Mode:
 	return Mode.JOYSTICK if word in ["joystick", "joystick-left", "joystick-right"] else Mode.TAP
