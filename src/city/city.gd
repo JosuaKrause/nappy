@@ -871,7 +871,7 @@ func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int])
 		buildings[i].tint_variant = first_variant[lot]
 
 ## Which courtyard lot (an index into the courtyards found on `map`, or -1) each of `rects` was cut
-## from — single-block and apartment-complex courtyards alike, `map.zone_rects` or not, since both
+## from — single-block and apartment-complex courtyards alike, a multi-block lot (`map.zone_anchors()`) or not, since both
 ## go through the same `COURTYARD` branch of `_build_block()` and both can split into more than one
 ## rectangle. `map.lot_rect(block)` is the whole lot a courtyard's rectangles were cut from, never
 ## smaller than any of them, so `encloses()` is exact rather than an overlap test.
@@ -907,9 +907,9 @@ static func block_of(rect: Rect2i) -> Vector2i:
 	return (rect.position - Vector2i.ONE * Tuning.STREET_WIDTH) / CityMap.period()
 
 ## A home-block building's own fixed choice, keyed on nothing but the lot's own tile position —
-## never `map.seed_used` — so its wall/roof colour and `Building._build_windows()`'s own window
+## never `map.city_seed()` — so its wall/roof colour and `Building._build_windows()`'s own window
 ## style and lit-window pattern (keyed on `variant` and the building's world position, itself fixed
-## since `CityMap.home_block` and every constant the lattice is built from are the same on every
+## since `CityMap.home_block_coordinate()` and every constant the lattice is built from are the same on every
 ## seed) no longer depend on the seed either. A non-home building keeps the per-seed roll.
 func _variant_for(rect: Rect2i) -> int:
 	if block_of(rect) == map.home_block_coordinate():
@@ -1351,7 +1351,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	# `ParkClosure`'s line stands on the lot's own edge row, and a tree seeded there before the
 	# fence existed would stand on the fence line — cleared for the barrier the same way the
 	# ground itself was, on the one occasion the ground changes at all. `margin` only widens past
-	# the ordinary 16px inset while `block` is `map.fenced_park`, so every other park's trees are
+	# the ordinary 16px inset while `block` is `map.fenced_park_block()`, so every other park's trees are
 	# untouched by this at every reading.
 	var margin := 16.0
 	if map.fenced_park_block() == block and ClosurePlanner.calm_area_rect(map, block) == layout.open_ground():

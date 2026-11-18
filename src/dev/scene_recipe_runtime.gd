@@ -143,7 +143,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("setup.progression.escape_part requires kind escape")
 	_number(setup.get("signal_time", 0), "setup.signal_time", 0, 86400, errors)
 	# No map is built yet, so the keys are checked against a lattice of their own: the same streets
-	# every city's map holds (`CityMap.network`).
+	# every city's map holds (`CityMap.street_network()`).
 	var lattice := StreetNetwork.new()
 	var structure_streets := {}
 	for collection in ["seals", "gates", "barriers"]:
@@ -765,7 +765,7 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	if not errors.is_empty():
 		return
 	var going := -1.0 if column.direction == "north" else 1.0
-	var lane := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
+	var lane := CrowdLanes.lane_centre(map.main_road_corridor(), CrowdLanes.road_lane(true, going))
 	var top := Tuning.TILE_SIZE * 0.5
 	var bottom := map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	var back := at.y - going * Tuning.COLUMN_SPACING * (Tuning.COLUMN_TRUCKS - 1)
@@ -831,7 +831,7 @@ func _select_structures(errors: Array[String]) -> void:
 	var selected := RegionPlanner.RegionPlan.new()
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.network.by_key(key)
+		var segment := _city.map.street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
@@ -845,7 +845,7 @@ func _select_structures(errors: Array[String]) -> void:
 		RegionPlanner.stand_door(_city.map, segment, selected)
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.network.by_key(key)
+		var segment := _city.map.street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
@@ -881,7 +881,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 	var route := _city.streets().route_tree()
 	for entry: Dictionary in data.get("setup", {}).get("seals", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := _city.map.network.by_key(key)
+		var segment := _city.map.street_network().by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.seals: selected street leaves the authored extent")
 			continue
@@ -937,7 +937,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 				plans.append(body)
 	if not finale:
 		plans.append_array(_authored_seals(errors))
-	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+	for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 	var counts := {}
 	# The day's locations, laid out once: an authored row's tile names the one it stands in.

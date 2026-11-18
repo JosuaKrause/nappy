@@ -120,7 +120,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 						water.append(tile)
 					elif source >= 0:
 						layer.set_cell(tile, source, GroundLayers.atlas_coords_for(source,
-								_city.map.seed_used, tile, layer.tile_set))
+								_city.map.city_seed(), tile, layer.tile_set))
 					cells += int(source >= 0)
 			if not water.is_empty():
 				var surface := SceneryWater.new()

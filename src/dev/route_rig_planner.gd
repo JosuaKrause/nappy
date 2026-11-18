@@ -290,7 +290,7 @@ func _nearest_calm(toward_home: bool = false) -> Vector2:
 
 ## `CityMap.calm_tiles()` less the ground of any lot the day has stopped counting as calm, which is
 ## the ground of a lot being taken while she watches. Day 12's park, once she has reached its swing,
-## leaves `CityMap.calm_blocks` that instant (`Happenings.take_the_park()`), but its grass stays
+## leaves `CityMap.calm_blocks_now()` that instant (`Happenings.take_the_park()`), but its grass stays
 ## grass while the police cordon it off (`ParkCordon`), so its tiles still read calm one by one: a
 ## calm area chosen from the tiles alone is the swing's own park, which is taped shut round her
 ## seconds later (`ParkCordon.deadline`), and being shut in ends the day. So the calm leg goes to
@@ -299,10 +299,10 @@ func _nearest_calm(toward_home: bool = false) -> Vector2:
 func _calm_tiles_left() -> Array[Vector2i]:
 	var map := _map
 	var calm := {}
-	for block: Vector2i in map.calm_blocks:
+	for block: Vector2i in map.calm_blocks_now():
 		calm[block] = true
 	var going := {}
-	for block: Vector2i in map.block_plans:
+	for block: Vector2i in map.blocks_with_plans():
 		if calm.has(block):
 			continue
 		for tile in map.rect_tiles(map.lot_rect(block)):
@@ -349,7 +349,7 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 # ----------------------------------------------------------------- planning ---
 
 ## Today's `closed_tiles`, `CityMap.obstructed_tiles`, today's soft-sealed pavement
-## (`CityMap.soft_sealed_tiles`), the ground a street door's boom would take her on
+## (`CityMap.soft_sealed_tiles()`), the ground a street door's boom would take her on
 ## (`_gate_ground()`), the ground under a door body that has just let her out
 ## (`_latched_door_bodies()`) and the ground round a precinct's posts (`_post_tiles()`), which block
 ## a plan whatever else it asks, plus `_road_tiles` while `sidewalk_only`; `hazards` (see
@@ -378,9 +378,9 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 	if sidewalk_only:
 		for tile: Vector2i in _road_tiles:
 			blocked[tile] = true
-	for tile: Vector2i in _map.closed_tiles:
+	for tile: Vector2i in _map.closed_tile_set():
 		blocked[tile] = true
-	for tile: Vector2i in _map.soft_sealed_tiles:
+	for tile: Vector2i in _map.soft_sealed_tiles():
 		blocked[tile] = true
 	for tile: Vector2i in _map.obstructed_tiles:
 		blocked[tile] = true

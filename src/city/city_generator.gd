@@ -1088,7 +1088,7 @@ static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 		home: Rect2i) -> void:
 	map.fill_rect(home, GameEnums.TileType.HOME)
 	map.home_rect = home
-	map.home_block = block
+	map.record_home_block(block)
 	block_rects[block] = _keep_nonempty(_subtract_all(block_rects[block], home))
 
 # ----------------------------------------------------------- hard blockers ---
@@ -1661,7 +1661,7 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 				if not all_problems:
 					return problems
 
-	# **The open ones only, and one of them is the square.** `zone_rects` is every multi-block lot,
+	# **The open ones only, and one of them is the square.** `CityMap.zone_anchors()` is every multi-block lot,
 	# which is not the same thing as every multi-block *park* — an apartment complex is four blocks
 	# of building — so counting the dictionary lets a city satisfy the guarantee with a thing you
 	# cannot walk across. And the guarantee is not "multi-block calm" in general: it is that every

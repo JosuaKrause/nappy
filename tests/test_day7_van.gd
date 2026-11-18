@@ -323,7 +323,7 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var next := tile + side
 			if reached.has(next) or not map.in_bounds(next) or not map.is_walkable(next) \
-					or map.is_closed(next) or map.soft_sealed_tiles.has(next) \
+					or map.is_closed(next) or map.soft_sealed_tiles().has(next) \
 					or map.is_obstructed(next):
 				continue
 			reached[next] = true

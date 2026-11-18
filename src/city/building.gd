@@ -351,7 +351,7 @@ enum Condition {
 ## one fire escape in `FIRE_ESCAPE_SHARE` of the time; her own building carries neither, since she
 ## has a stair inside instead (the player, PLAYTEST-128.md: "the home building shouldn't have a fire
 ## escape (it has a double staircase inside)"). Set by `City._spawn_buildings()` from the building's
-## own lot and `CityMap.home_block`, so every Building on the home block counts as hers, not only
+## own lot and `CityMap.home_block_coordinate()`, so every Building on the home block counts as hers, not only
 ## whichever lot the door notch happens to touch. The fire-escape roll itself still runs on every
 ## front regardless of this flag — only whether the column is kept depends on it — so flipping this
 ## never moves any other roll on `_build_front()`'s own stream. Flipping it after the front is

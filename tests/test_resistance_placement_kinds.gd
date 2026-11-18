@@ -590,7 +590,7 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 		RunCity.events(city).start_day(DaySpec.for_day(day), events_rng, [], city.map.doorstep_world_position())
 
 		var home_border := city.map.network.around_blocks(
-				Rect2i(city.map.home_block, Vector2i.ONE))
+				Rect2i(city.map.home_block_coordinate(), Vector2i.ONE))
 		var home_border_keys := {}
 		for segment in home_border:
 			home_border_keys[segment.key()] = true

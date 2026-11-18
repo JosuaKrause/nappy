@@ -66,11 +66,11 @@ func _test_the_lattice_is_the_lattice(t: TestRunner) -> void:
 func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t: TestRunner) -> void:
 	var zones := 0
 	for map in _maps:
-		for anchor: Vector2i in map.zone_rects:
+		for anchor: Vector2i in map.zone_anchors():
 			if map.starting_purpose(anchor) == GameEnums.BlockPurpose.COURTYARD:
 				continue
 			zones += 1
-			var footprint: Rect2i = map.zone_rects[anchor]
+			var footprint: Rect2i = map.zone_footprint(anchor)
 			var span := footprint.size
 			var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 			var found := 0
@@ -84,13 +84,13 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t: TestRunner) -> vo
 				for tile in map.rect_tiles(rect):
 					t.check(Tile.is_calm(map.tile_at(tile)),
 							"seed %d: the street %s the zone took is calm ground at %s"
-							% [map.seed_used, segment.key(), tile])
+							% [map.city_seed(), segment.key(), tile])
 					t.check(not map.is_closed(tile),
 							"seed %d: and is open — a zone is walked through, not walked round"
-							% map.seed_used)
+							% map.city_seed())
 			t.check(found == absorbed,
 					"seed %d zone %s absorbed its %d inside streets (found %d)"
-					% [map.seed_used, anchor, absorbed, found])
+					% [map.city_seed(), anchor, absorbed, found])
 
 			# Any junction inside the zone has nothing left reaching it; the ones on the edges are
 			# T-junctions, which is what the milestone is for. A 2x1 has no interior junction at
@@ -104,14 +104,14 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t: TestRunner) -> vo
 							streets_left += 1
 					t.check(streets_left == 0,
 							"seed %d: junction %s inside zone %s is cut off from the whole city"
-							% [map.seed_used, inside, anchor])
+							% [map.city_seed(), inside, anchor])
 			var ways_in := map.network.around_blocks(footprint)
 			t.check(ways_in.size() == 2 * (span.x + span.y),
 					"seed %d zone %s has %d streets round it, one per block edge"
-					% [map.seed_used, anchor, ways_in.size()])
+					% [map.city_seed(), anchor, ways_in.size()])
 			for segment in ways_in:
 				t.check(map.has_street(segment.key()),
-						"seed %d: the way in %s is a real street" % [map.seed_used, segment.key()])
+						"seed %d: the way in %s is a real street" % [map.city_seed(), segment.key()])
 	t.check(zones >= SEEDS, "every seed made a zone (%d over %d seeds)" % [zones, SEEDS])
 
 ## A junction belongs to no street on purpose: it is where the choice is made, so closing a
@@ -143,11 +143,11 @@ func _test_an_open_city_can_reach_everywhere_calm(t: TestRunner) -> void:
 	var total := 0
 	for map in _maps:
 		var home := ClosurePlanner.home_street(map)
-		t.check(home != null, "seed %d: the front door opens onto a street" % map.seed_used)
+		t.check(home != null, "seed %d: the front door opens onto a street" % map.city_seed())
 		for area in ClosurePlanner.calm_areas(map):
 			t.check(map.network.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
 					"seed %d: calm area %s can be walked to before anything closes"
-					% [map.seed_used, area.block])
+					% [map.city_seed(), area.block])
 			total += 1
 			if map.network.route_count(home, area.access, map.blocked_segments(), 2) >= 2:
 				with_a_choice += 1
@@ -171,7 +171,7 @@ func _test_access_segments_are_never_absent(t: TestRunner) -> void:
 				checked += 1
 				t.check(map.has_street(segment.key()),
 						"seed %d: %s's access street %s is a real street, not an absent one"
-						% [map.seed_used, area.block, segment.key()])
+						% [map.city_seed(), area.block, segment.key()])
 	t.check(checked > 0, "some calm area had access streets to check (%d)" % checked)
 
 ## Menger, the other way round, asked about the **city** rather than about one area: no single
@@ -230,10 +230,10 @@ func _test_a_doorway_is_not_a_route(t: TestRunner) -> void:
 			checked += 1
 			t.check(map.network.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
 					"seed %d: the one archway into %s can be walked to"
-					% [map.seed_used, area.block])
+					% [map.city_seed(), area.block])
 			var closed := map.blocked_segments()
 			closed[area.access[0].key()] = true
 			t.check(map.network.route_count(home, area.access, closed, 1) == 0,
 					"seed %d: and shutting that archway's street puts %s out of reach today"
-					% [map.seed_used, area.block])
+					% [map.city_seed(), area.block])
 	t.check(checked > 0, "the city still has calm with a single way in (%d found)" % checked)

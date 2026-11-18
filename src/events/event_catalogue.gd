@@ -596,7 +596,7 @@ static func _cat_dash() -> EventDef:
 ## not over when the clock starts, so it is unaffected.
 ##
 ## **The dash crosses the alley's own short axis by construction.** `EventInstance` reads
-## `map.alley_rects` for the rect this instance landed in and lays its two-point path across the
+## `map.alley_lots()` for the rect this instance landed in and lays its two-point path across the
 ## narrower side (`ALLEY_WIDTH_TILES` (2) is always less than an alley's length). She can only be
 ## walking the long axis, so the dash is always across her path. See
 ## `EventInstance._alley_crossing_path()`.

@@ -79,7 +79,7 @@ func _role_and_depth_sweep() -> void:
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("zz_m64:%d:%d" % [map.seed_used, day])
+			rng.seed = hash("zz_m64:%d:%d" % [map.city_seed(), day])
 			var consumed: Array[String] = []
 			var planned := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree) \
 					.plan().placements()
@@ -203,7 +203,7 @@ func _closure_access_vs_rim_sweep() -> void:
 
 			# The real, filtered plan — ClosurePlanner.plan_day, exactly as the game runs it.
 			var rng_a := RandomNumberGenerator.new()
-			rng_a.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			rng_a.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 			var real := ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng_a, tree)
 			sum_closures_with_filter += real.size()
 			for closure in real:
@@ -215,7 +215,7 @@ func _closure_access_vs_rim_sweep() -> void:
 			# `ClosurePlanner` itself, which item 1 may not change — this is measurement code, not
 			# a behaviour change.
 			var rng_b := RandomNumberGenerator.new()
-			rng_b.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			rng_b.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 			var without := _plan_without_access_filter(map, day, rng_b, tree, home, areas)
 			sum_closures_without_filter += without.size()
 			for segment in without:

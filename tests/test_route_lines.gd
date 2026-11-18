@@ -204,30 +204,30 @@ func _test_a_planned_day_yields_one_polyline_per_route_from_its_first_cell_to_ca
 			var drawn := built.lines.routes()
 			t.check(drawn.size() == expected_routes,
 					"seed %d day %d: one polyline per route (%d), not %d"
-					% [built.map.seed_used, day, expected_routes, drawn.size()])
+					% [built.map.city_seed(), day, expected_routes, drawn.size()])
 			if expected_routes > 0:
 				days_with_routes += 1
 			for route in drawn:
 				routes_checked += 1
 				t.check(route.size() >= 2, "seed %d day %d: a drawn route has at least two points"
-						% [built.map.seed_used, day])
+						% [built.map.city_seed(), day])
 				t.check(route[0] == route[0].snapped(Vector2.ONE * Tuning.TILE_SIZE),
 						"seed %d day %d: the first point is a cell's own centre (a whole-tile corner "
-						% [built.map.seed_used, day] + "of a two-tile cell), not the doorstep tile")
+						% [built.map.city_seed(), day] + "of a two-tile cell), not the doorstep tile")
 				var last_tile := built.map.world_to_tile(route[route.size() - 1])
 				t.check(Tile.is_calm(built.map.tile_at(last_tile)),
-						"seed %d day %d: the last point sits on a calm tile" % [built.map.seed_used, day])
+						"seed %d day %d: the last point sits on a calm tile" % [built.map.city_seed(), day])
 				# Interior cell-to-cell steps from the very first point, and the calm connector (the
 				# last pair, checked on its own fixed distance below).
 				for i2 in range(0, route.size() - 2):
 					t.close_to(route[i2].distance_to(route[i2 + 1]), cell_step,
 							"seed %d day %d: consecutive route cells are one reachability-cell step "
-							% [built.map.seed_used, day] + "(%.0fpx) apart" % cell_step, 0.5)
+							% [built.map.city_seed(), day] + "(%.0fpx) apart" % cell_step, 0.5)
 				if route.size() >= 3:
 					var last_two_distance := route[route.size() - 2].distance_to(route[route.size() - 1])
 					t.close_to(last_two_distance, calm_step,
 							"seed %d day %d: the calm connector is exactly one cell-to-tile step "
-							% [built.map.seed_used, day] + "(%.1fpx)" % calm_step, 0.5)
+							% [built.map.city_seed(), day] + "(%.1fpx)" % calm_step, 0.5)
 			built.lines.free()
 	t.check(routes_checked > 0, "the sweep actually built some routes to check")
 	t.check(days_with_routes > 0, "and at least one planned day had a route on it")

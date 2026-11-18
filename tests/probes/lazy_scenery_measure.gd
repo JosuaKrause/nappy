@@ -91,7 +91,7 @@ func _coverage(city: City) -> void:
 	var map := city.map
 	var home := map.doorstep_world_position()
 	var view := Rect2(home - HALF_VIEW, HALF_VIEW * 2)
-	var home_rect := map.tile_rect_to_world(CityMap.block_rect(map.home_block))
+	var home_rect := map.tile_rect_to_world(CityMap.block_rect(map.home_block_coordinate()))
 	var ground: SceneryGround = city.scenery_ground
 	_prepare_every_region(ground, city)
 	var cells := GroundCells.used_cells(ground)
@@ -127,7 +127,7 @@ func _coverage(city: City) -> void:
 			var foot := -float(building.wall_tiles() + (unit["cell"] as Vector2i).y) * 32.0
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
 					-(foot - rise) - building.footprint.y)
-	print("LAZY_BOOT " + JSON.stringify({"seed": map.seed_used,
+	print("LAZY_BOOT " + JSON.stringify({"seed": map.city_seed(),
 		"viewport_world": str(view), "home_block_world": str(home_rect),
 		"ground_prepared": cells.size(), "visible_ground_inside_home": boot_inside,
 		"visible_ground_outside_home": boot_outside, "building_nodes": building_nodes,
@@ -175,7 +175,7 @@ func _coverage(city: City) -> void:
 			for building in city.buildings():
 				if rect.intersects(map.tile_rect_to_world(building.lot)):
 					seen_buildings[building.lot] = true
-		print("LAZY_COVERAGE " + JSON.stringify({"seed": map.seed_used,
+		print("LAZY_COVERAGE " + JSON.stringify({"seed": map.city_seed(),
 			"route": "nearest_calm_return" if goal == near else "farthest_bfs_calm_return",
 			"round_trip_px": (path.size() - 1) * 64,
 			"unique_ground_cells": seen_cells.size(), "prepared_ground_cells": cells.size(),
@@ -224,7 +224,7 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 					else city._border_source(x, y)
 				if source_id >= 0 and source_id != GroundTiles.WATER:
 					layer.set_cell(tile, source_id, GroundLayers.atlas_coords_for(
-						source_id, city.map.seed_used, tile, source.tile_set))
+						source_id, city.map.city_seed(), tile, source.tile_set))
 					count += 1
 		var insert_ms := (Time.get_ticks_usec() - started) / 1000.0
 		var allocated := OS.get_static_memory_usage() - baseline
@@ -244,7 +244,7 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 			"counterfactual paints nonempty cells identical to the actual boot ground")
 		if mode == "full":
 			t.check(count == expected_count, "full counterfactual covers boot ground")
-		print("LAZY_SUBSET " + JSON.stringify({"seed": city.map.seed_used, "mode": mode,
+		print("LAZY_SUBSET " + JSON.stringify({"seed": city.map.city_seed(), "mode": mode,
 			"cells": count, "insert_ms": insert_ms, "clear_ms": clear_ms,
 			"static_memory_delta": allocated, "static_memory_after_clear_delta": after_clear,
 			"static_memory_after_free_delta": after_free,

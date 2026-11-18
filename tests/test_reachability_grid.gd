@@ -74,7 +74,7 @@ func _test_the_grid_agrees_with_walk_field(t: TestRunner, maps: Array[CityMap]) 
 				var gridded := grid.reaches(tile, {}, reached)
 				t.check(walked == gridded,
 						"seed %d: %s agrees between walk_field (%s) and the grid (%s)"
-						% [map.seed_used, tile, walked, gridded])
+						% [map.city_seed(), tile, walked, gridded])
 				checked += 1
 	t.check(checked > SEEDS * 100 * 100, "the sweep actually covered the maps (%d tiles)" % checked)
 
@@ -90,7 +90,7 @@ func _test_every_walkable_tile_has_a_node(t: TestRunner, maps: Array[CityMap]) -
 			if map.is_walkable(tile) and grid.node_at(tile) < 0:
 				missing += 1
 	t.check(missing == 0, "seed %d: every walkable tile has a node (%d missing)"
-			% [map.seed_used, missing])
+			% [map.city_seed(), missing])
 
 # --------------------------------------------------------------------- the sliver ---
 
@@ -122,7 +122,7 @@ func _test_a_query_sees_a_blocked_tile_the_grid_was_not_built_with(t: TestRunner
 	var open := grid.flood([home])
 	var far: Vector2i = map.calm_tiles()[0]
 	t.check(grid.reaches(far, {}, open), "seed %d: some calm tile is reachable at all"
-			% map.seed_used)
+			% map.city_seed())
 
 	# Wall the home in on all four sides with a fresh blocked set the grid was never built with.
 	var blocked := {}
@@ -130,12 +130,12 @@ func _test_a_query_sees_a_blocked_tile_the_grid_was_not_built_with(t: TestRunner
 		blocked[home + offset] = true
 	var sealed := grid.flood([home], blocked)
 	t.check(not grid.reaches(far, blocked, sealed),
-			"seed %d: sealing every tile round the source blocks the query" % map.seed_used)
+			"seed %d: sealing every tile round the source blocks the query" % map.city_seed())
 	# And unrelated to the block, an unblocked query is untouched by having asked a blocked one.
 	var reopened := grid.flood([home])
 	t.check(grid.reaches(far, {}, reopened),
 			"seed %d: a later unblocked query is unaffected by an earlier blocked one"
-			% map.seed_used)
+			% map.city_seed())
 
 ## A query's blocking can turn one component into two even though the grid was built with the
 ## cell as a single component — the diagonal case, produced here by blocking two of a cell's four

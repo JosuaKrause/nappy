@@ -61,13 +61,9 @@ func todays_closed_tiles() -> Dictionary:
 func replace_closed_tiles(tiles: Dictionary) -> void:
 	_closed = tiles
 
-## Today's soft-sealed pavement as the record itself, tile -> true (`CityMap.soft_sealed_tiles`).
+## Today's soft-sealed pavement as the record itself, tile -> true (`CityMap.soft_sealed_tiles()`).
 func todays_soft_sealed_tiles() -> Dictionary:
 	return _soft_sealed
-
-## Lets go of today's soft-sealed pavement and records `tiles` instead.
-func replace_soft_sealed_tiles(tiles: Dictionary) -> void:
-	_soft_sealed = tiles
 
 ## The tiles under today's stationary solid bodies as the record itself, tile -> how many bodies
 ## stand on it (`CityMap.obstructed_tiles`).

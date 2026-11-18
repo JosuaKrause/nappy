@@ -61,10 +61,11 @@ func _test_a_soft_seal_band_and_a_closure_are_shut(t: TestRunner) -> void:
 	var band := {}
 	for y in range(5, 7):
 		band[Vector2i(ACROSS, y)] = true
-	map.soft_sealed_tiles = band
+	for tile: Vector2i in band:
+		map.seal_soft_tile(tile)
 	t.check(not DayReach.of(map, [] as Array[EventPlan]).reaches(BEYOND),
 			"a soft seal's band across the sidewalk shuts it: the red arrow cannot walk it")
-	map.soft_sealed_tiles = {}
+	map.clear_day_soft_seals()
 	map.closed_tiles = band.duplicate()
 	t.check(not DayReach.of(map, [] as Array[EventPlan]).reaches(BEYOND),
 			"and so does today's closure")

@@ -64,7 +64,7 @@ func _measure_caps() -> void:
 			var tree := RouteTree.for_day(map, day)
 
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("m99:plan:%d:%d" % [map.seed_used, day])
+			plan_rng.seed = hash("m99:plan:%d:%d" % [map.city_seed(), day])
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 					.on(tree).plan().placements()
 
@@ -77,7 +77,7 @@ func _measure_caps() -> void:
 
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
-			director_rng.seed = hash("m99:ahead:%d:%d" % [map.seed_used, day])
+			director_rng.seed = hash("m99:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng)
 
 			var y_min := 0.0

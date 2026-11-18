@@ -117,31 +117,14 @@ src/main.gd skip_shadows
 src/main.gd trace
 
 # [CityMap] src/city/city_map.gd
-src/city/blackout.gd power_station
 src/city/city_generator.gd courtyard_rects
-src/city/city_generator.gd home_block
 src/city/city_generator.gd home_rect
-src/city/scenery_ground.gd seed_used
-src/dev/dev_rig.gd big_buildings
-src/dev/dev_rig.gd main_road
-src/dev/dev_rig.gd precinct_spans
-src/dev/dev_rig.gd zone_rects
-src/dev/route_rig_planner.gd block_plans
-src/dev/route_rig_planner.gd calm_blocks
-src/dev/route_rig_planner.gd closed_tiles
-src/dev/route_rig_planner.gd soft_sealed_tiles
-src/dev/scene_recipe_draft.gd alley_rects
-src/dev/scene_recipe_draft.gd network
 src/dev/scene_recipe_draft.gd stretch
 src/dev/scene_recipe_draft.gd stretch_active
 src/dev/scene_recipe_draft.gd tiles
-src/dev/scene_recipe_runtime.gd home_block
-src/dev/scene_recipe_runtime.gd main_road
-src/dev/scene_recipe_runtime.gd network
 src/dev/scene_recipe_runtime.gd recipe_bounds
 src/events/calm_areas.gd calm_blocks
 src/events/dawn_phases/dawn_ambient.gd playgrounds
-src/events/day_planner.gd home_block
 src/events/day_planner.gd network
 src/events/event_scheduler.gd closed_tiles
 src/events/event_spawner.gd block_plans
@@ -150,19 +133,6 @@ src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects
 src/events/row_ground.gd power_station
-src/main.gd seed_used
-src/routes/region_planner.gd alley_rects
-src/routes/region_planner.gd boundary_wall_at_a
-src/routes/region_planner.gd network
-src/routes/region_planner.gd precinct_spans
-src/routes/region_planner.gd region_has_calm
-src/routes/region_planner.gd region_of_junction
-src/routes/region_planner.gd square_rects
-src/routes/seal_planner.gd alley_rects
-src/routes/seal_planner.gd network
-src/run/day_director.gd block_plans
-src/run/day_director.gd fenced_park
-src/run/day_director.gd fenced_park_act
 
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across

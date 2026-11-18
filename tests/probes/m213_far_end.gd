@@ -207,7 +207,7 @@ func _shows(at: Vector2, her: Vector2, half_w: float, half_h: float) -> bool:
 			and absf(at.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y + half_h
 
 func _in_a_through_alley(map: CityMap, tile: Vector2i) -> bool:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if rect.has_point(tile):
 			return true
 	return false

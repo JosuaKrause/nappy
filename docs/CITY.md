@@ -43,7 +43,7 @@ and decided before a tile is laid — see `CityGenerator._assign_street_kinds`.
 | --- | --- | --- |
 | `ORDINARY` | everything else | Two lanes, a zebra at every junction with a carriageway on the far side, and traffic that gives way to somebody standing at the kerb. Where the far side is a precinct there is no carriageway to zebra: the street ends at the precinct's edge instead, a T rather than a crossroads. |
 | `MAIN` | **one**, north to south | The spine. Five times the traffic, signalled at every junction, and **it does not give way**: what stops it is the light. Every crossing at one of its junctions — the side street's two arms as well as its own — is two dotted lines rather than a zebra, because one light governs all four and a zebra on any of them is a promise the traffic there does not make. `CityMap.main_road`. |
-| `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_spans`. |
+| `PEDESTRIAN` | **two stretches of three blocks** | A retail precinct: paving frontage to frontage, no kerb, no cars, the busiest pavement in the city, and the best ground outside a park to bring a meter down on. `CityMap.precinct_stretches()`. |
 
 **With one kind of street the only route question is *which way*; with three it is also *which
 kind*, and that is the trade the whole game is made of.** A main road is quick to cross at a light,
@@ -335,7 +335,7 @@ rects on every seed.** The notch is centred on the south edge of a fixed-size lo
 nothing about where the home sits or how big its lots are depends on the seed to begin with —
 only what a seed's own lattice puts around it does. `City` reaches past every per-seed roll on
 these three buildings as a result: a fixed wall/roof colour and window pattern
-(`City._variant_for()`, a hash of the lot's own position rather than of `map.seed_used`) and a
+(`City._variant_for()`, a hash of the lot's own position rather than of `map.city_seed()`) and a
 fixed height (`City._home_building_height()`) — `HOME_BUILDING_WALL_ROWS` (4) for the one lot the
 door's own world-space span stands in front of, `HOME_FLANKING_WALL_ROWS` (2) for the other two —
 so the block reads the same however a run's own dice landed elsewhere. Her own building's four
@@ -561,7 +561,7 @@ walks there without a route pointing the way.
 - **The day 12 swing is never taken off the tree or fenced on its day**, whatever she has settled in:
   the day's own task is in it, and `CityState.is_forced_open()` is what `CityMap.repaint()` reads to
   protect it.
-- **One used area, at most once a run, is fenced instead of spoiled** — `CityMap.fenced_park`, the
+- **One used area, at most once a run, is fenced instead of spoiled** — `CityMap.fenced_park_block()`, the
   first used area `calm_to_shut()` accepts on a day in act III or later, closed the way a street is
   for the rest of that act and never chosen again. *(PLAYTEST-140, statement 9: "doing it for one
   park, sure, more towards the later stages of the game once but not for regular".)* `ParkClosure`
@@ -669,7 +669,7 @@ question below:
 - `DawnCalmKeptClean` covers the day she has used every calm area there is: the one
   area the spoilers pass over joins the ground nothing may reach.
 - `DawnSpoilers` spoils every area she has already settled in **this act** — what stops
-  her going back to the same bench every day — except the currently active `CityMap.fenced_park`,
+  her going back to the same bench every day — except the currently active `CityMap.fenced_park_block()`,
   the run's single physical fence, which stands for the remainder of its chosen act.
 - Every body the day places, the scars and the spoilers included, is judged by the rules that keep
   the routes open, so nothing seals the city or the one place the resistance sends her to that day
@@ -2020,7 +2020,7 @@ is loud, and the reason a park is quiet.
   all.
 
 - **And the same predicate covers a hard seal, a region wall and a soft seal.** `CityMap.
-  held_streets()` (the day's no-catalogue-row ground, and why each segment is held) and `CityMap.soft_sealed_tiles` (a soft seal's
+  held_streets()` (the day's no-catalogue-row ground, and why each segment is held) and `CityMap.soft_sealed_tiles()` (a soft seal's
   own pavement tiles, kept apart because its carriageway is not held) are what each kind's
   `cannot_go_on()` (`CarStrategy`, `WalkerStrategy`) asks alongside a closure: a hard seal or a
   wall shuts the whole street to both walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
@@ -2272,7 +2272,7 @@ Top-down camera with a fake vertical extrusion:
   it is shops or blank wall — the wall texture and its own plinth — with the entrance, the civic
   portico and the fire escape exactly where they already stand. A column she cannot stand in front
   of is the exception below. **Her own building is the other exception** and keeps its ground-floor
-  windows, read off `CityMap.home_block` rather than off anything drawn — except the column(s) her
+  windows, read off `CityMap.home_block_coordinate()` rather than off anything drawn — except the column(s) her
   own front door's footprint overlaps (`Building.door_world_x_range`), which draw plain wall
   instead, since a window behind a door she is standing in front of never showed anything. A
   facade only one wall row tall is not multi-story, so its single row is unaffected either way. Each complete

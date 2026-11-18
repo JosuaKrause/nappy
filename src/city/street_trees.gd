@@ -126,7 +126,7 @@ class Planted extends RefCounted:
 	var tile: Vector2i
 	var segment_key: Vector3i
 
-## The city's tree-lined runs, fixed for the run from `map.seed_used`.
+## The city's tree-lined runs, fixed for the run from `map.city_seed()`.
 ##
 ## **Placed at random across the map in both directions** *(2026-09-11, the player: "continuous
 ## segments of 3/4/5 blocks randomly placed on the map in both directions")*, and rejected whole

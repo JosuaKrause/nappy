@@ -241,7 +241,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			map.close_streets(closures)
@@ -254,7 +254,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}
@@ -267,14 +267,14 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 			for rect in region_plan.alley_doors:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
-			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 			var unheld_rng := RandomNumberGenerator.new()
-			unheld_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			unheld_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals_unheld := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, unheld_rng, boundary)
 			t.check(seals.size() == seals_unheld.size(),
 					"seed %d day %d: holding the hard seals' ground plans the same seals (%d vs %d)"
-					% [map.seed_used, day, seals.size(), seals_unheld.size()])
+					% [map.city_seed(), day, seals.size(), seals_unheld.size()])
 
 			# **A tree and an event never share ground** — `docs/CITY.md`, "Street trees". Checked
 			# over the same full days, against the tree footprints themselves rather than against
@@ -286,7 +286,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				var seal_tile := map.world_to_tile(seal.position)
 				t.check(not trees.has(seal_tile),
 						"seed %d day %d: seal '%s' stands in a street tree at %s"
-						% [map.seed_used, day, seal.def.id, seal_tile])
+						% [map.city_seed(), day, seal.def.id, seal_tile])
 				checked_trees += 1
 
 			var consumed: Array[String] = []
@@ -298,16 +298,16 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				var tile := map.world_to_tile(plan.position)
 				t.check(not map.is_closed(tile),
 						"seed %d day %d: '%s' does not stand on a closed tile"
-						% [map.seed_used, day, plan.def.id])
+						% [map.city_seed(), day, plan.def.id])
 				t.check(not map.is_held_at(tile),
 						"seed %d day %d: '%s' does not stand on a held segment"
-						% [map.seed_used, day, plan.def.id])
+						% [map.city_seed(), day, plan.def.id])
 				t.check(not map.is_on_home_block(tile),
 						"seed %d day %d: '%s' does not stand inside the home block"
-						% [map.seed_used, day, plan.def.id])
+						% [map.city_seed(), day, plan.def.id])
 				t.check(not trees.has(tile),
 						"seed %d day %d: '%s' stands in a street tree at %s"
-						% [map.seed_used, day, plan.def.id, tile])
+						% [map.city_seed(), day, plan.def.id, tile])
 				checked_trees += 1
 
 			total_closures += closures.size()
@@ -355,7 +355,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			map.close_streets(closures)
@@ -367,7 +367,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}
@@ -380,7 +380,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 			for rect in region_plan.alley_doors:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
-			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 
 			var consumed: Array[String] = []
@@ -403,6 +403,6 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 				t.check(not RouteSidewalkRule.closes_a_walked_sidewalk_band(
 						map, band, segment.horizontal, bodies),
 						"seed %d day %d: street %s's walked sidewalk keeps a lane she fits through"
-						% [map.seed_used, day, segment.key()])
+						% [map.city_seed(), day, segment.key()])
 	t.check(bands_checked > 50,
 			"and the days sampled have walked-sidewalk bands to ask it of (%d)" % bands_checked)

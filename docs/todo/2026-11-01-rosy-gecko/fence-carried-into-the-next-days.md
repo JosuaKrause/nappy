@@ -3,7 +3,7 @@
 fix but we need to focus on other tasks right now"). PR #374's post-merge review
 (https://github.com/JosuaKrause/nappy/pull/374#pullrequestreview-5327317363) found that on
 days 10–11 `ClosurePlanner.calm_to_shut()` runs after `CityMap.repaint()` has reset
-`fenced_park`, so it counts the fenced area as open and its ground as walkable, and the tree
+the map's fenced park (`CityMap.fenced_park_block()`), so it counts the fenced area as open and its ground as walkable, and the tree
 can keep one calm area against `MIN_CALM_AREAS_REACHABLE` (2); seed 14965, day 10, is one.
 The plan: the carried fence is known (excluded, its ground blocked) before `calm_to_shut()`
 judges anything, with a regression carrying a day-9 fence into days 10–11 across seeds

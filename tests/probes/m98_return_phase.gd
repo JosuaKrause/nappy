@@ -85,7 +85,7 @@ func _measure_return_phase() -> void:
 			var return_seconds := minf(out_seconds, maxf(0.0, day_len - out_seconds))
 
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("m98:plan:%d:%d" % [map.seed_used, day])
+			plan_rng.seed = hash("m98:plan:%d:%d" % [map.city_seed(), day])
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 					.on(tree).plan().placements()
 
@@ -99,7 +99,7 @@ func _measure_return_phase() -> void:
 			# no call to `owe_the_return()` at all.
 			var before := EventDirector.new(map)
 			var before_rng := RandomNumberGenerator.new()
-			before_rng.seed = hash("m98:ahead:%d:%d" % [map.seed_used, day])
+			before_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
 			before.start_day(day, planned, before_rng)
 			var out_result := _walk_and_count(before, start_pos, start_vel, out_seconds, y_min, y_max)
 			var out_count: int = out_result[0]
@@ -113,7 +113,7 @@ func _measure_return_phase() -> void:
 			# own return leg walks.
 			var after := EventDirector.new(map)
 			var after_rng := RandomNumberGenerator.new()
-			after_rng.seed = hash("m98:ahead:%d:%d" % [map.seed_used, day])
+			after_rng.seed = hash("m98:ahead:%d:%d" % [map.city_seed(), day])
 			after.start_day(day, planned, after_rng)
 			var out_result_after := _walk_and_count(after, start_pos, start_vel, out_seconds,
 					y_min, y_max)

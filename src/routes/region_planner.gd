@@ -113,10 +113,10 @@ class RegionPlan extends RefCounted:
 
 # ------------------------------------------------------------------- generation ---
 
-## Assigns every junction to a region and stores the result on `map` — `region_of_junction`,
-## `region_has_calm`. Called once, at generation, after hard blockers have taken their streets
-## (`CityGenerator._assign_regions`): a region may not grow across ground a dead end or a big
-## building just built over, and the absent streets (`CityMap.has_street()`) only carry that once
+## Assigns every junction to a region and stores the result on `map`
+## (`CityMap.record_junction_regions()`, `record_calm_regions()`). Called once, at generation, after
+## hard blockers have taken their streets (`CityGenerator._assign_regions`): a region may not grow
+## across ground a dead end or a big building just built over, and the absent streets (`CityMap.has_street()`) only carry that once
 ## the blockers are placed.
 ##
 ## `rng` seeds only the farthest-point sample's starting junction — everything after that is
@@ -133,9 +133,10 @@ static func assign(map: CityMap, rng: RandomNumberGenerator) -> void:
 		if not (adjacency[node] as Array).is_empty():
 			real.append(node)
 	var seeds := _pick_seeds(adjacency, real, dsu, rng)
-	map.region_of_junction = _grow_regions(total, adjacency, dsu, seeds)
-	map.region_has_calm = _compute_region_has_calm(map, map.region_of_junction)
-	map.boundary_wall_at_a = _assign_wall_ends(map)
+	var regions := _grow_regions(total, adjacency, dsu, seeds)
+	map.record_junction_regions(regions)
+	map.record_calm_regions(_compute_region_has_calm(map, regions))
+	map.record_wall_ends(_assign_wall_ends(map))
 
 ## Unions every atom's junctions together before growth, so a claim can never split one across a
 ## boundary. See the class doc, "Atoms".
@@ -156,12 +157,12 @@ static func _union_atoms(map: CityMap, dsu: _DSU) -> void:
 	# as unguarded a bypass as an unatomised calm area would be, since nothing about the wall's
 	# mouth placement (see `ground_region_of`) stops a walk that never sets foot on the segment the
 	# wall actually stands on.
-	for rect in map.square_rects:
+	for rect in map.square_lots():
 		_union_touch_points(map, rect, dsu)
 	var home := ClosurePlanner.home_street(map)
 	if home:
 		dsu.union(StreetNetwork.node_of(home.a), StreetNetwork.node_of(home.b))
-	for span: Vector4i in map.precinct_spans:
+	for span: Vector4i in map.precinct_stretches():
 		var junctions := _precinct_span_junctions(span)
 		for i in range(1, junctions.size()):
 			dsu.union(StreetNetwork.node_of(junctions[0]), StreetNetwork.node_of(junctions[i]))
@@ -210,7 +211,7 @@ static func _area_touch_points(map: CityMap, rect: Rect2i) -> Array:
 	while head < queue.size():
 		var tile: Vector2i = queue[head]
 		head += 1
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		if segment:
 			if not seen_keys.has(segment.key()):
 				seen_keys[segment.key()] = true
@@ -223,7 +224,7 @@ static func _area_touch_points(map: CityMap, rect: Rect2i) -> Array:
 ## Every junction along a precinct span's own corridor, first block to last block inclusive —
 ## `length + 1` of them for a `length`-block span. `span` is `(axis, corridor, first block, last
 ## block)`; `axis == 1` runs the span along y at a fixed x (`corridor`), `axis == 0` along x at a
-## fixed y. See `CityMap.precinct_spans`.
+## fixed y. See `CityMap.precinct_stretches()`.
 static func _precinct_span_junctions(span: Vector4i) -> Array[Vector2i]:
 	var junctions: Array[Vector2i] = []
 	var corridor := span.y
@@ -248,8 +249,8 @@ static func _alley_border_segments(map: CityMap, rect: Rect2i) -> Array:
 	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 	var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 	var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-	var segment_a := map.network.beside_block(block, side_a)
-	var segment_b := map.network.beside_block(block, side_b)
+	var segment_a := map.street_network().beside_block(block, side_a)
+	var segment_b := map.street_network().beside_block(block, side_b)
 	if not segment_a or not segment_b:
 		return []
 	return [segment_a, segment_b, vertical]
@@ -308,7 +309,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 		var rb := region_of_junction(map, segment.b)
 		wall_at_a[segment.key()] = ra < rb
 	var demanded := {}
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
@@ -343,7 +344,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 		var wanted: int = demanded[key]
 		if wanted < 0:
 			continue   # a conflict was recorded; keep the default
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		var ra := region_of_junction(map, segment.a)
 		var rb := region_of_junction(map, segment.b)
 		if ra == wanted:
@@ -372,7 +373,7 @@ static func _growth_graph(map: CityMap) -> Array:
 	adjacency.resize(total)
 	for i in total:
 		adjacency[i] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()):
 			continue
 		var u := StreetNetwork.node_of(segment.a)
@@ -523,9 +524,7 @@ static func region_of_junction(map: CityMap, junction: Vector2i) -> int:
 	if not StreetNetwork.in_bounds(junction):
 		return -1
 	var node := StreetNetwork.node_of(junction)
-	if node < 0 or node >= map.region_of_junction.size():
-		return -1
-	return map.region_of_junction[node]
+	return map.region_of_node(node)
 
 ## The region a segment belongs to when both its ends agree, or `-1` when it is absent from the
 ## lattice or is itself a boundary segment. Never confuse the two `-1`s without checking
@@ -554,24 +553,23 @@ static func ground_region_of(map: CityMap, segment: StreetNetwork.Segment) -> in
 	var rb := region_of_junction(map, segment.b)
 	if ra == rb:
 		return ra
-	var wall_at_a: bool = map.boundary_wall_at_a.get(segment.key(), ra < rb)
+	var wall_at_a: bool = map.wall_stands_at_a(segment.key(), ra < rb)
 	return rb if wall_at_a else ra
 
 ## Every real segment whose two ends disagree about their region — the wall, permanent for the
 ## run and independent of any day's tree.
 static func boundary_segments(map: CityMap) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()):
 			continue
 		if region_of_junction(map, segment.a) != region_of_junction(map, segment.b):
 			found.append(segment)
 	return found
 
-## Which regions hold a calm area — the generation-time fact `assign()` stored on `map`, wrapped
-## here so a caller never reaches into the map's field directly.
+## Which regions hold a calm area — the generation-time fact `assign()` stored on `map`.
 static func regions_with_calm(map: CityMap) -> PackedByteArray:
-	return map.region_has_calm
+	return map.region_has_calm()
 
 ## The region the home street's own two junctions belong to. Never `-1` in practice: the home
 ## street's atom unions its two junctions before growth, so they always resolve to one region
@@ -614,7 +612,7 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 			stand_door(map, segment, plan)
 		else:
 			plan.walls.append(segment)
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
@@ -633,7 +631,7 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 			plan.alley_walls.append(rect)
 	for segment in plan.walls:
 		var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
-		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+		var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 		plan.wall_bodies.append_array(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
 	for rect in plan.alley_walls:
 		var info := _alley_border_segments(map, rect)
@@ -716,7 +714,7 @@ static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: Regio
 ## continuous, non-tile-aligned position disagrees with what the recentring assumes.
 static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
 	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
-	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+	var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
 	var positions := SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)
 	if positions.is_empty():

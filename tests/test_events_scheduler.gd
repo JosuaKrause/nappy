@@ -207,14 +207,14 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 ## `alley_mouse` to landing on an `ALLEY` tile, the same as every other `MAP` row. What nothing else
 ## checks is the alley dash's own reason for existing (`EventInstance.path` of the mouse): that the
 ## two-point dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
-## off `CityMap.alley_rects` rather than off a scheduled placement, so it holds for every alley a
+## off `CityMap.alley_lots()` rather than off a scheduled placement, so it holds for every alley a
 ## seed generates rather than only the ones a roll happens to use that day.
 func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 	var checked := 0
 	var solid := 0
 	for run_seed: int in [4242, 2102613802, 90210]:
 		var map := CityGenerator.generate(run_seed)
-		for rect: Rect2i in map.alley_rects:
+		for rect: Rect2i in map.alley_lots():
 			# An alley the generator has made solid stays in `alley_rects` (see `SealPlanner`'s
 			# note on `_make_the_pair_solid`) and has no ground to stand on, so a mouse is never
 			# placed in it and the dash it is given there is cut to nothing.
@@ -278,9 +278,9 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var rect: Rect2i
 	for run_seed: int in [4242, 2102613802, 90210, 37, 38]:
 		var candidate := CityGenerator.generate(run_seed)
-		if not candidate.alley_rects.is_empty():
+		if not candidate.alley_lots().is_empty():
 			map = candidate
-			rect = candidate.alley_rects[0]
+			rect = candidate.alley_lots()[0]
 			break
 	t.check(map != null, "some seed generated an alley to place the mouse on")
 	if map == null:

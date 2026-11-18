@@ -41,13 +41,13 @@ func _measure_sprinkle_rate() -> void:
 		for day in range(Tuning.RUN_TAUGHT_DAY + 1, Tuning.RUN_LENGTH_DAYS + 1):
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("m96:plan:%d:%d" % [map.seed_used, day])
+			plan_rng.seed = hash("m96:plan:%d:%d" % [map.city_seed(), day])
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 					.on(tree).plan().placements()
 
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
-			director_rng.seed = hash("m96:ahead:%d:%d" % [map.seed_used, day])
+			director_rng.seed = hash("m96:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng)
 			for queued: EventDef in director._owed:
 				if queued.id == "charging_dog":

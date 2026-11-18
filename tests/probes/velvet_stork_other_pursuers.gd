@@ -126,7 +126,7 @@ func _the_sent_robbers_starts(t: TestRunner, seed_value: int) -> void:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile) and not map.is_closed(tile) and not map.is_obstructed(tile) \
-					and not map.soft_sealed_tiles.has(tile):
+					and not map.soft_sealed_tiles().has(tile):
 				open.append(tile)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value

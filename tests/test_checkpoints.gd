@@ -100,12 +100,12 @@ func _sampled_days() -> Array[Array]:
 ## three shape tests below rather than once each. **M125: measured at 112ms a pair** — repainting
 ## the map and planning the day is real work, and asking the same 32 pairs three times over was
 ## three-quarters of what this suite's shape section cost (10.8s of its ~11s, against 3.6s once
-## the plan is shared). Keyed on `map.seed_used`, which is distinct per generated map, rather than
+## the plan is shared). Keyed on `map.city_seed()`, which is distinct per generated map, rather than
 ## on the map object itself, so the cache reads the same regardless of which test asks first.
 var _plan_cache: Dictionary[String, RegionPlanner.RegionPlan] = {}
 
 func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
-	var key := "%d:%d" % [map.seed_used, day]
+	var key := "%d:%d" % [map.city_seed(), day]
 	if not _plan_cache.has(key):
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day)
@@ -144,16 +144,16 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 
 		t.check(huts == plan.doors.size() * 2,
 				"seed %d day %d: two huts per street door (%d doors, %d huts)"
-				% [map.seed_used, day, plan.doors.size(), huts])
+				% [map.city_seed(), day, plan.doors.size(), huts])
 		t.check(gates == plan.doors.size(),
 				"seed %d day %d: one gate per street door (%d doors, %d gates)"
-				% [map.seed_used, day, plan.doors.size(), gates])
+				% [map.city_seed(), day, plan.doors.size(), gates])
 		t.check(posts == plan.alley_doors.size() * 2,
 				"seed %d day %d: two posts per alley door (%d alley doors, %d posts)"
-				% [map.seed_used, day, plan.alley_doors.size(), posts])
+				% [map.city_seed(), day, plan.alley_doors.size(), posts])
 		t.check(plan.gates.size() == plan.doors.size(),
 				"seed %d day %d: one GateState per street door (%d doors, %d gates)"
-				% [map.seed_used, day, plan.doors.size(), plan.gates.size()])
+				% [map.city_seed(), day, plan.doors.size(), plan.gates.size()])
 	t.check(sampled > 0, "at least one (seed, day) pair was sampled (%d)" % sampled)
 	print(("[test_checkpoints] over %d sampled (seed, day) pairs: %d street doors (%d huts, " +
 			"%d gates), %d alley doors (%d posts)")
@@ -187,7 +187,7 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 				var containing := map.network.segment_containing(tile)
 				t.check(containing != null and containing.key() == segment.key(),
 						"seed %d day %d: door body %s at %s stands on its own segment %s (got %s)"
-						% [map.seed_used, day, body.def.id, body.position, segment.key(),
+						% [map.city_seed(), day, body.def.id, body.position, segment.key(),
 						containing.key() if containing else "none"])
 
 		# And every wall body never reaches inside a door's own mouth, the same direction
@@ -201,7 +201,7 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 				var distance := wall_body.position.distance_to(mouth_centre)
 				t.check(distance > wall_body.def.obstructs_radius,
 						("seed %d day %d: a wall body at %s (radius %.0f) does not reach the door " +
-						"at %s (%.0fpx away)") % [map.seed_used, day, wall_body.position,
+						"at %s (%.0fpx away)") % [map.city_seed(), day, wall_body.position,
 						wall_body.def.obstructs_radius, segment.key(), distance])
 	t.check(checked > 0, "at least one door body was checked against its own segment (%d)" % checked)
 
@@ -256,10 +256,10 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 				var hut_along: float = hut.position.x if segment.horizontal else hut.position.y
 				t.check(is_equal_approx(hut_along, gate_along),
 						"seed %d day %d: the gate stands level with its huts along the street "
-						% [map.seed_used, day] + "(gate %.1f, hut %.1f)" % [gate_along, hut_along])
+						% [map.city_seed(), day] + "(gate %.1f, hut %.1f)" % [gate_along, hut_along])
 			t.check(gate_across > across_low and gate_across < across_high,
 					"seed %d day %d: the gate's ground point is on the carriageway, not a kerb "
-					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
+					% [map.city_seed(), day] + "(%.1f in %.1f..%.1f)"
 					% [gate_across, across_low, across_high])
 
 			if not spans.has(gate.facing):
@@ -270,11 +270,11 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 			t.check(arm_near <= across_low and arm_far >= across_high,
 					("seed %d day %d: the lowered arm crosses the whole carriageway (%.1f..%.1f " +
 					"over %.1f..%.1f)")
-					% [map.seed_used, day, arm_near, arm_far, across_low, across_high])
+					% [map.city_seed(), day, arm_near, arm_far, across_low, across_high])
 			var arm_middle := 0.5 * (arm_near + arm_far)
 			t.check(arm_middle > across_low and arm_middle < across_high,
 					"seed %d day %d: and the middle of the bar is over the lanes, not a kerb "
-					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
+					% [map.city_seed(), day] + "(%.1f in %.1f..%.1f)"
 					% [arm_middle, across_low, across_high])
 
 			# And the picture stays over ground the door is actually solid on: the three bodies
@@ -289,7 +289,7 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 			t.check(arm_near >= solid_low and arm_far <= solid_high,
 					("seed %d day %d: the arm never reaches past the door's own solid line " +
 					"(%.1f..%.1f over %.1f..%.1f)")
-					% [map.seed_used, day, arm_near, arm_far, solid_low, solid_high])
+					% [map.city_seed(), day, arm_near, arm_far, solid_low, solid_high])
 	t.check(checked > 0, "at least one street door's boom was measured (%d)" % checked)
 
 ## How far the lowered boom a gate planned like `gate` draws reaches to either side of its ground
@@ -355,7 +355,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 	var scheduled := 0
 	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("checkpoints:%d:%d" % [map.seed_used, day])
+		rng.seed = hash("checkpoints:%d:%d" % [map.city_seed(), day])
 		var consumed: Array[String] = []
 		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements():
 			scheduled += 1
@@ -473,12 +473,12 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 					inside_before += 1
 			t.check(inside == 0,
 					"seed %d day %d: nothing the day placed reaches inside a door's %.0fpx gap "
-					% [map.seed_used, day, Tuning.CHECKPOINT_EVENT_GAP] + "(%d of %d)"
+					% [map.city_seed(), day, Tuning.CHECKPOINT_EVENT_GAP] + "(%d of %d)"
 					% [inside, _placed_count(guarded)])
 			t.check(inside_before > 0,
 					("seed %d day %d: and the same day planned without the gap puts %d there — " +
 					"otherwise this sweep is checking nothing")
-					% [map.seed_used, day, inside_before])
+					% [map.city_seed(), day, inside_before])
 	t.check(found_a_door, "the sampled days actually carry doors to keep clear of")
 	t.check(kept >= int(round(0.8 * float(loose))),
 			("the gap costs the day a little: %d placed with it against %d without, and a " +
@@ -490,7 +490,7 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 func _planned_day(map: CityMap, day: int, tree: RouteTree,
 		doors: PackedVector2Array) -> Array[EventPlan]:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("checkpoint-gap:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("checkpoint-gap:%d:%d" % [map.city_seed(), day])
 	var consumed: Array[String] = []
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []

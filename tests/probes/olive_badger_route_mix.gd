@@ -55,7 +55,7 @@ func _measure() -> void:
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
+			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 					.on(tree).plan().placements()
 			var bought := 0
@@ -67,7 +67,7 @@ func _measure() -> void:
 					bought += 1
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
-			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])
+			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng)
 			var met := _walk_a_day(map, director, day)
 			var shares := _intended_shares(day)
@@ -96,7 +96,7 @@ func _measure() -> void:
 			bought_sum += bought
 			days_run += 1
 			print("  seed %d day %2d: bought %2d, met %2d, mismatch %4.0f%%, longest run %d  %s"
-					% [map.seed_used, day, bought, met.size(), mismatch * 100.0, streak,
+					% [map.city_seed(), day, bought, met.size(), mismatch * 100.0, streak,
 					" ".join(_short(met))])
 	print("\n-- over %d days --" % days_run)
 	print("  mean bought/day %.1f, mean met/day %.1f" % [float(bought_sum) / days_run,
@@ -128,12 +128,12 @@ func _measure_the_return() -> void:
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
-			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
+			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])
 			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
 					.on(tree).plan().placements()
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
-			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])
+			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng)
 			var day_len := Tuning.day_length(day)
 			var leg: float = RETURN_LEG[act]
@@ -164,7 +164,7 @@ func _measure_the_return() -> void:
 			if in_leg > 0:
 				legs_with_one += 1
 			print("  seed %d day %2d (act %d): %d of %d return patrols land in the %.0fs leg"
-					% [map.seed_used, day, act, in_leg, count, leg])
+					% [map.city_seed(), day, act, in_leg, count, leg])
 	print("  over %d legs: %d of %d owed patrols land, %d legs meet at least one" % [legs, landed,
 			owed, legs_with_one])
 

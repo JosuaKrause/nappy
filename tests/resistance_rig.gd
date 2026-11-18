@@ -356,14 +356,14 @@ static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
 func _through_alleys() -> Array[Vector2i]:
 	return _through_alley_tiles(_city.map)
 
-## Every `ALLEY` tile of `map` that lies in a through-alley (`CityMap.alley_rects`), in
+## Every `ALLEY` tile of `map` that lies in a through-alley (`CityMap.alley_lots()`), in
 ## `CityMap.tiles_of_type()`'s own order: the marks whose robber stands at the alley's far end,
 ## rather than in a courtyard past a passage. The director never needs the split; the sweeps here
 ## ask each kind its own question.
 static func _through_alley_tiles(map: CityMap) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []
 	for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
-		for rect in map.alley_rects:
+		for rect in map.alley_lots():
 			if rect.has_point(tile):
 				tiles.append(tile)
 				break
@@ -388,7 +388,7 @@ func _two_nearby_alleys() -> Array:
 ## second-to-last tile of a through-alley along its long axis, or the walkable alley or courtyard
 ## tile beside a courtyard passage's mouth that is not itself a mouth.
 static func _is_one_in_from_a_mouth(map: CityMap, tile: Vector2i) -> bool:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if rect.has_point(tile):
 			var vertical := rect.size.y >= rect.size.x
 			var along := tile.y - rect.position.y if vertical else tile.x - rect.position.x

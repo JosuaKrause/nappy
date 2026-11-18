@@ -406,7 +406,7 @@ func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var horizontal := Rect2i()
 	var vertical := Rect2i()
-	for rect: Rect2i in map.alley_rects:
+	for rect: Rect2i in map.alley_lots():
 		# An alley the generator made solid has no ground to stand on (see `SealPlanner`).
 		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
 			continue

@@ -267,7 +267,7 @@ func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 
 func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("m129w:%s:%d:%d" % [stream, map.seed_used, day])
+	rng.seed = hash("m129w:%s:%d:%d" % [stream, map.city_seed(), day])
 	return rng
 
 ## Every solid body the day stands, tagged with the pass that placed it. Reimplements
@@ -289,7 +289,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for segment: StreetNetwork.Segment in region_plan.doors:
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment: StreetNetwork.Segment in map.network.around_blocks(
-			Rect2i(map.home_block, Vector2i.ONE)):
+			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}

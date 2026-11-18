@@ -158,12 +158,12 @@ func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t: TestR
 	var closures: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS,
 			map.street_network().segment_containing(street))]
 	map.close_streets(closures)
-	map.set_fenced_park_state(map.fenced_park_block(), map.fenced_park_act, Tuning.act_for_day(day))
+	map.set_fenced_park_state(map.fenced_park_block(), map.fenced_park_act(), Tuning.act_for_day(day))
 	t.check(map.fenced_park_block().x >= 0 and map.is_closed(street),
 			"seed %d: the act III map has a fenced park and a closed street" % seed_value)
 	var twin := map.copy()
 	t.check(twin.fenced_park_block() == map.fenced_park_block()
-			and twin.fenced_park_act == map.fenced_park_act,
+			and twin.fenced_park_act() == map.fenced_park_act(),
 			"seed %d: the copy has the same fenced park" % seed_value)
 	_check_the_same(t, map, twin, "seed %d, in act III" % seed_value)
 	# The handover is carried: both maps' next repaint keeps the same fence standing.

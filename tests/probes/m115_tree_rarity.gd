@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 		total_pits += pits
 		worst = maxf(worst, float(lined) / float(maxi(1, ordinary)))
 		print("seed %d: %d ordinary streets, %d tree-lined (%.1f%%), %d runs, %d pits"
-				% [map.seed_used, ordinary, lined, 100.0 * lined / maxf(1.0, ordinary),
+				% [map.city_seed(), ordinary, lined, 100.0 * lined / maxf(1.0, ordinary),
 				runs.size(), pits])
 	print("MEAN tree-lined fraction %.3f (worst seed %.3f), mean %.1f runs, mean %.1f pits, %d seeds short of the run count"
 			% [float(total_lined) / float(total_ordinary), worst,

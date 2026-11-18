@@ -103,7 +103,7 @@ func _reproduce_zero_density_visits() -> void:
 				# 1. The roll alone, on its own RNG stream — an independent sample of what the
 				# spoil mechanism by itself produces for this park.
 				var rng1 := RandomNumberGenerator.new()
-				rng1.seed = hash("m97:roll:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
+				rng1.seed = hash("m97:roll:%d:%d:%d" % [map.city_seed(), day, block.x * 100000 + block.y])
 				var roll_calm := CalmAreas.of(map, [block] as Array[Vector2i])
 				var roll := GameDawn.of(DaySpec.for_day(day), rng1, map).calm(roll_calm) \
 						.masts([] as Array[MastSites.Site]).on(RouteSource.new()).context()
@@ -118,7 +118,7 @@ func _reproduce_zero_density_visits() -> void:
 				# filtered to whatever actually reaches the park — the day's own question of a
 				# spoiler (`EventPlan.reaches()`).
 				var rng2 := RandomNumberGenerator.new()
-				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
+				rng2.seed = hash("m97:full:%d:%d:%d" % [map.city_seed(), day, block.x * 100000 + block.y])
 				var full_planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), rng2, map) \
 						.calm(CalmAreas.of(map, [block] as Array[Vector2i])).on(tree).plan().placements()
 				var full_in_lot: Array[EventPlan] = []

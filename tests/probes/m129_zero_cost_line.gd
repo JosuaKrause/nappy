@@ -308,7 +308,7 @@ func _measure() -> void:
 						var kept: Array = examples[verdict.shape]
 						if kept.size() < 3:
 							kept.append("seed %d day %d area %s route %d: %s"
-									% [map.seed_used, day, branch.area, leg, verdict.detail])
+									% [map.city_seed(), day, branch.area, leg, verdict.detail])
 
 					var road_cells := _road_cells_of(map, route)
 					if road_cells > 0:
@@ -384,7 +384,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.doors:
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+	for segment in map.network.around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
@@ -444,7 +444,7 @@ var _sources := {}
 
 func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("m129:%s:%d:%d" % [stream, map.seed_used, day])
+	rng.seed = hash("m129:%s:%d:%d" % [stream, map.city_seed(), day])
 	return rng
 
 # ------------------------------------------------------------------------- the rows ---

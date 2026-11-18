@@ -10,7 +10,7 @@ extends RefCounted
 ## scheduler.
 static func of(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("telemetry:%d:%d" % [map.city_seed(), day])
 	var consumed: Array[String] = []
 	var parts: Array[String] = []
 	for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).traced(trace).plan().placements():

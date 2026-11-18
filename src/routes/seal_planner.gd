@@ -250,7 +250,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
 		held: HeldStreets = null) -> Array[EventPlan]:
-	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles` — is this function's
+	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles()` — is this function's
 	# own output and nobody else's, so it is cleared and rebuilt here exactly the way `planned`
 	# itself is, rather than trusting a caller to clear it first.
 	map.clear_day_soft_seals()
@@ -270,13 +270,13 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	var emptied: Array[Vector2i] = []
 	# Soft pairs are collected as the whole `SitedSeal` rather than its bodies alone, because the
 	# thinning pass below needs the street and the along tile back to shut the surviving side's own
-	# pavement tiles in `CityMap.soft_sealed_tiles` as well as to drop one body of the pair — see
+	# pavement tiles in `CityMap.soft_sealed_tiles()` as well as to drop one body of the pair — see
 	# `_thin_soft_pairs`.
 	var soft_pairs: Array = []
 	# On a day the region wall stands, only a share of the streets below is sealed at all — see
 	# `_seals_this_street`. Asked once here so any other day draws nothing extra from `rng`.
 	var thinned := spec.region_wall_stands() and not spec.seals_every_street_off_the_walk
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		var key := segment.key()
 		if skip.has(key) or not may_seal(map, spec, route, segment):
 			continue
@@ -457,7 +457,7 @@ class SitedSeal extends RefCounted:
 		along = at
 		bodies = placed
 
-	## Shuts one pavement of a soft seal to walkers (`CityMap.soft_sealed_tiles`): both lanes of
+	## Shuts one pavement of a soft seal to walkers (`CityMap.soft_sealed_tiles()`): both lanes of
 	## the near side (`near`, the lower end of the street's cross-section) or of the far one, at the
 	## tile the bodies stand at. `_thin_soft_pairs()` shuts the side of each body it keeps, and a
 	## scene recipe's authored soft seal shuts both.
@@ -816,9 +816,9 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 	var chance := ALLEY_MOUTH_SEAL_CHANCE
 	if spec.region_wall_stands():
 		chance *= GATEHOUSE_DAY_SEAL_SHARE
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		# A through-alley can be built over by a later generation pass (`CityGenerator.
-		# _make_the_pair_solid`), which does not retract it from `alley_rects` — so the ground is
+		# _make_the_pair_solid`), which does not retract it from `CityMap.alley_lots()` — so the ground is
 		# checked rather than trusted.
 		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
 			continue

@@ -52,7 +52,7 @@ func run(t: TestRunner) -> void:
 
 func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("bouncy-egret:%s:%d:%d" % [stream, map.seed_used, day])
+	rng.seed = hash("bouncy-egret:%s:%d:%d" % [stream, map.city_seed(), day])
 	return rng
 
 func _count_day(map: CityMap, day: int) -> Dictionary:
@@ -78,7 +78,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	for segment: StreetNetwork.Segment in region_plan.doors:
 		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment: StreetNetwork.Segment in map.network.around_blocks(
-			Rect2i(map.home_block, Vector2i.ONE)):
+			Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}

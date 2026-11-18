@@ -54,7 +54,7 @@ func _events_per_street_by_band() -> void:
 					streets[2] += 1
 
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("zz_m64d:%d:%d" % [map.seed_used, day])
+			rng.seed = hash("zz_m64d:%d:%d" % [map.city_seed(), day])
 			var consumed: Array[String] = []
 			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
 				if not plan.is_placed():
