@@ -36,12 +36,20 @@ const KINDS := {
 	Kind.PARK: {"name": "Park closed", "first_day": 1, "weight": 0.0},
 }
 
-var kind := Kind.ROADWORKS
+var _kind := Kind.ROADWORKS
+## The street closed. Every reader outside this file asks the methods below but one, the day's
+## holds (`DayPlanner`), which hold its key and wait for the events' interface to ask
+## `street_key()`.
 var segment: StreetNetwork.Segment
 
 func _init(closure_kind: Kind, closed_street: StreetNetwork.Segment) -> void:
-	kind = closure_kind
+	_kind = closure_kind
 	segment = closed_street
+
+## What closed the street: what its barriers carry and what lies in the road (`ClosureMarker`), and
+## the name the run log gives it (`display_name()`).
+func kind() -> Kind:
+	return _kind
 
 static func display_name(closure_kind: Kind) -> String:
 	return String(KINDS[closure_kind]["name"])
@@ -61,9 +69,18 @@ static func kinds_on(day: int) -> Array[int]:
 ## What this closure is and where, in the run log's words: its kind, which way the street runs and
 ## the tile it starts at, such as `roadworks v(8,6)`.
 func summary_words() -> String:
-	return "%s %s%s" % [
-		RoadClosure.display_name(kind).to_lower(), "h" if segment.horizontal else "v",
-		RunTrace.tile(segment.a)]
+	return "%s %s" % [RoadClosure.display_name(_kind).to_lower(), street_words()]
+
+## Where this closure is, in the run log's words: which way its street runs and the tile it starts
+## at, such as `v(8,6)`.
+func street_words() -> String:
+	return "%s%s" % ["h" if segment.horizontal else "v", RunTrace.tile(segment.a)]
+
+## The lattice key of the street this closure closes (`StreetNetwork.Segment.key()`), which tells it
+## apart from the day's other closures. A park's fence answers a key no street has
+## (`ParkClosure.Edge.key()`).
+func street_key() -> Vector3i:
+	return segment.key()
 
 # ------------------------------------------------------------------ geometry ---
 
@@ -78,15 +95,29 @@ func summary_words() -> String:
 func tiles(map: CityMap) -> Array[Vector2i]:
 	return map.rect_tiles(segment.tile_rect())
 
+## Whether `tile` lies on the ground this closure's segment covers: a street's tiles, or a park
+## fence's strip of edge (`ParkClosure.Edge`). The geometry, not the verdict, as `tiles()`.
+func covers_tile(tile: Vector2i) -> bool:
+	return segment.tile_rect().has_point(tile)
+
 ## Whether the whole street this closure's segment covers lies inside `window` (a tile rectangle).
 func fits_within(window: Rect2i) -> bool:
 	return window.encloses(segment.tile_rect())
 
+## The two mouths the barriers stand across, the `a` end first, each a tile rectangle one tile thick
+## across the street (`StreetNetwork.Segment.mouth_rect()`). A `ParkClosure`'s are its run's strip,
+## twice.
+func mouth_rects() -> Array[Rect2i]:
+	var found: Array[Rect2i] = []
+	for at_a: bool in [true, false]:
+		found.append(segment.mouth_rect(at_a))
+	return found
+
 ## Where the two barriers stand: the middle of each mouth, on the ground plane.
 func mouth_centres(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
-	for at_a: bool in [true, false]:
-		found.append(map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center())
+	for mouth in mouth_rects():
+		found.append(map.tile_rect_to_world(mouth).get_center())
 	return found
 
 ## The middle of the closed street, where whatever caused it is lying.

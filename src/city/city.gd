@@ -1166,16 +1166,16 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
 		post.atlas = atlas
 		post.piece = ClosureMarker.Piece.POST
-		post.kind = closure.kind
+		post.kind = closure.kind()
 		post.position = feet
 		_add_closure_node(post, true)
 	for mouth in closure.mouth_centres(map):
 		_spawn_barrier(closure, mouth)
-	if ClosureMarker.CAUSES.has(closure.kind):
+	if ClosureMarker.CAUSES.has(closure.kind()):
 		var cause := ClosureMarker.new()
 		cause.atlas = atlas
 		cause.piece = ClosureMarker.Piece.CAUSE
-		cause.kind = closure.kind
+		cause.kind = closure.kind()
 		cause.across = closure.barrier_runs_across()
 		cause.position = closure.cause_centre(map)
 		_add_closure_node(cause, true)
@@ -1226,7 +1226,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
 		panel.atlas = atlas
 		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
-		panel.kind = closure.kind
+		panel.kind = closure.kind()
 		panel.across = across
 		panel.span = span
 		panel.rise = closure.end_on_rise()

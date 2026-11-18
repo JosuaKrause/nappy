@@ -826,13 +826,7 @@ src/dev/scene_recipe_runtime.gd trace
 src/main.gd locked_out
 
 # [RoadClosure] src/routes/road_closure.gd
-src/city/city.gd kind
-src/city/city_map.gd segment
 src/events/day_planner.gd segment
-src/resistance/park_cordon.gd segment
-src/telemetry/telemetry_map.gd segment
-src/telemetry/telemetry_observer.gd kind
-src/telemetry/telemetry_observer.gd segment
 
 # [RouteRig] src/dev/route_rig.gd
 src/main.gd trace

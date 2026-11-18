@@ -63,7 +63,7 @@ func _test_a_fallen_tree_only_falls_where_a_tree_stood(t: TestRunner) -> void:
 		var lined := StreetTrees.segment_keys_with_trees(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for closure in _plan_uncached(map, day):
-				if closure.kind != RoadClosure.Kind.FALLEN_TREE:
+				if closure.kind() != RoadClosure.Kind.FALLEN_TREE:
 					continue
 				felled += 1
 				var key := closure.segment.key()
@@ -107,10 +107,10 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t: TestRunner)
 					any_lined = true
 					continue
 				bare_closures += 1
-				t.check(closure.kind != RoadClosure.Kind.FALLEN_TREE,
+				t.check(closure.kind() != RoadClosure.Kind.FALLEN_TREE,
 						"seed %d day %d: a bare street is never closed by a fallen tree"
 						% [map.city_seed(), day])
-				t.check(RoadClosure.KINDS.has(closure.kind),
+				t.check(RoadClosure.KINDS.has(closure.kind()),
 						"seed %d day %d: a bare street still has something to have happened to it"
 						% [map.city_seed(), day])
 			if any_lined:

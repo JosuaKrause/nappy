@@ -241,7 +241,7 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 				var fence := closure as ParkClosure
 				if not fence:
 					continue
-				t.check(fence.kind == RoadClosure.Kind.PARK and
+				t.check(fence.kind() == RoadClosure.Kind.PARK and
 						map.network.by_key(fence.segment.key()) == null,
 						"seed %d day %d: a fence is a PARK closure holding no real street"
 						% [map.city_seed(), day])

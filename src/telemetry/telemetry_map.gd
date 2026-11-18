@@ -357,8 +357,8 @@ static func _mark_the_calm(image: Image, map: CityMap) -> void:
 ## street without covering it.
 static func _mark_the_closures(image: Image, closures: Array[RoadClosure]) -> void:
 	for closure in closures:
-		for at_a: bool in [true, false]:
-			_fill_tiles(image, closure.segment.mouth_rect(at_a), CLOSURE_MARK)
+		for mouth in closure.mouth_rects():
+			_fill_tiles(image, mouth, CLOSURE_MARK)
 
 ## The home, filled at exactly its own size.
 ##

@@ -394,7 +394,7 @@ func _opens_out(runs: Array[ParkClosure], stretch: Stretch) -> bool:
 		if run.outward != stretch.outward:
 			continue
 		for tile in stretch.tiles:
-			if run.segment.tile_rect().has_point(tile):
+			if run.covers_tile(tile):
 				return true
 	return false
 

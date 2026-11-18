@@ -43,12 +43,13 @@ extends RoadClosure
 ## overhanging them.
 
 ## The strip of edge a fence stands on, dressed as the street a `RoadClosure` closes — so everything
-## that reads a closure's `segment` (the day's holds, the run log, the telemetry map) reads this one
-## without learning a second kind of closure.
+## that asks a closure about its street (the day's holds, the run log's `street_key()` and
+## `street_words()`, the telemetry map's `mouth_rects()`) asks this one without learning a second
+## kind of closure.
 ##
 ## **Its key is never a real street's.** A lattice key's third component is 0 or 1 for the two
-## orientations; this is 2 or 3, so holding it (`EventManager.start_day` holds every closure's
-## segment) holds nothing a car, a walker or a catalogue row ever asks about, and
+## orientations; this is 2 or 3, so holding it (`DayPlanner` holds every closure's segment) holds
+## nothing a car, a walker or a catalogue row ever asks about, and
 ## `StreetNetwork.by_key()` answers null for it. `a` and `b` are the block that anchors the area,
 ## which is what a log line naming this closure should point at.
 class Edge extends StreetNetwork.Segment:
