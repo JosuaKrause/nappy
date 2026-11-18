@@ -2466,11 +2466,10 @@ obstacle survivable")* Four things make that true:
 
 So walking straight past a posted band meets his charge and is caught along his street, in both
 directions: the warning's 2.0s runs while she walks on, so he charges with her 106-123px ahead, and
-he closes the gap at 38px/s more than her walk, which lands the catch about 400px past the band
-(399-418px on every walk the probe measures). Where his street ends sooner (two of the probe's streets
-end 209px and 304px past the band) she can turn the next corner first, and his chase does not follow
-her round a building, so turning that corner gets her away; the rig holds her at the wall instead of
-turning her. Walking in until his hand goes up, standing
+he closes the gap at 38px/s more than her walk, so he reaches her some 400px past the band (the
+record azure-squirrel has the walks it was measured on). Where his street ends sooner, nothing
+checks a walk that turns the next corner first: his chase runs straight at her, and the rig holds her
+at the wall instead of turning her. Walking in until his hand goes up, standing
 until he charges, running back until he gives up and then walking past costs what the run costs
 and nothing more, awake or asleep. `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) walks exactly that on every roadblock street of two seeds' plans,
 in both directions (it requires every straight walk past a posted guard caught), and on seed 4216201080 booted from the building through `main.tscn`; it walks

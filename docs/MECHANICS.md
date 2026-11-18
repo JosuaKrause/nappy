@@ -1811,8 +1811,8 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
-charge, which catches a straight walker along his street, about 400px past the band. Where his street
-ends sooner she can turn the next corner first, and his chase does not follow her round a building.
+charge, which catches a straight walker along his street, some 400px past the band. A walk that turns
+the next corner first, where his street ends sooner, is checked by nothing yet.
 Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
 (`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk

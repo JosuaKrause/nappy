@@ -17,8 +17,9 @@ there. The finale rig checks every posted walk per crossing again (the floor is 
 check fails on exactly the two crossings above. `probes/escape_roadblock_cost.gd`: posted walks
 caught 28 of 30 at main, 30 of 30 now; lure walks get past on every street, as before. No warning
 time, speed, reach or spacing changed. `docs/EVENTS.md` and `docs/MECHANICS.md` say a straight walk
-is caught along his street, and that where his street ends sooner she can turn the next corner
-first and get away, since his chase does not follow her round a building.
+is caught along his street, and that nothing checks a walk that turns the next corner first where
+his street ends sooner (the measurements above are the builder's own tick walks, which no probe
+prints).
 
 **Open, on the board as `corner-turner`:** whether the guard follows a walker round the corner (the
 orchestrator's pick), turning the corner stays a second way past, or no posted band stands within
