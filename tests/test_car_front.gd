@@ -78,9 +78,9 @@ func _test_the_rear_half_is_safe_and_the_front_half_is_not(t: TestRunner, city: 
 			"nor the sides of its rear half")
 	t.check(not CarStrike.hits(at, forward, speed, at + forward * (half + 4.0)),
 			"beyond its bumper is not")
-	t.check(not car.excitement.will_be_lethal(at - forward * (half - 2.0)),
+	t.check(not car.mood().will_be_lethal(at - forward * (half - 2.0)),
 			"the danger prediction agrees: no red caret behind it")
-	t.check(car.excitement.will_be_lethal(at + forward * (half + 40.0)),
+	t.check(car.mood().will_be_lethal(at + forward * (half + 40.0)),
 			"and has one for somebody it is driving at")
 	t.check(CarStrike.hits(at, forward, speed, at) and not CarStrike.hits(at, forward, 0.0, at),
 			"a car that has stopped cannot run anybody over")
@@ -138,8 +138,8 @@ func _test_a_fast_car_is_foreseen(t: TestRunner, city: City, map: CityMap, stree
 	var car := _a_car(city, map, street, lane, top)
 	var forward := car.heading()
 	var ahead := 100.0 + Tuning.CAR_STRIKE_HALF_LENGTH
-	t.check(car.excitement.will_be_lethal(car.global_position + forward * ahead),
+	t.check(car.mood().will_be_lethal(car.global_position + forward * ahead),
 			"a car at top speed is foreseen to strike her 126px ahead, between two samples")
 	var beyond := top * Tuning.EXPECTED_IMPACT_HORIZON + Tuning.CAR_STRIKE_HALF_LENGTH + 40.0
-	t.check(not car.excitement.will_be_lethal(car.global_position + forward * beyond),
+	t.check(not car.mood().will_be_lethal(car.global_position + forward * beyond),
 			"and not one beyond the horizon")

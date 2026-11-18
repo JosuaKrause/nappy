@@ -161,7 +161,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		for agent in crowd.agents():
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
-			var now_startled := agent.excitement.is_startled()
+			var now_startled := agent.mood().is_startled()
 			var box := agent.junction_occupied()
 			var in_box := box != Vector2i(-1, -1)
 			if tick >= WARMUP:

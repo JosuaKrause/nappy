@@ -433,7 +433,7 @@ func landed_by_group() -> Dictionary:
 				by_group[name] = float(by_group.get(name, 0.0)) + points
 	if _in_a_city:
 		for agent: CrowdAgent in _crowd.agents():
-			var points := agent.excitement.landed()
+			var points := agent.mood().landed()
 			if points <= 0.0:
 				continue
 			var key := "traffic" if agent.kind == CrowdAgent.Kind.CAR else "crowd"

@@ -300,7 +300,7 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 		state.append(agent.global_position.x)
 		state.append(agent.global_position.y)
 		state.append(agent.speed())
-		state.append(agent.excitement.landed())
+		state.append(agent.mood().landed())
 	state.append(rig.global_position.x)
 	state.append(rig.global_position.y)
 	state.append(float(rig._alert))

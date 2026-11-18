@@ -406,12 +406,12 @@ func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t: TestRunner) -> v
 			CrowdLanes.road_lane(true, 1.0), street.along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
 			Tuning.CAR_SPEED.x)
 	var in_its_lane := car.global_position + Vector2(0.0, 60.0)
-	car.excitement.set_her_at(in_its_lane)
-	t.check(car.excitement.will_be_lethal(in_its_lane),
+	car.mood().set_her_at(in_its_lane)
+	t.check(car.mood().will_be_lethal(in_its_lane),
 			"a car whose strike box reaches the lane she is standing in front of is red")
 	var beside_its_line := car.global_position + Vector2(50.0, 60.0)
-	car.excitement.set_her_at(beside_its_line)
-	t.check(not car.excitement.will_be_lethal(beside_its_line),
+	car.mood().set_her_at(beside_its_line)
+	t.check(not car.mood().will_be_lethal(beside_its_line),
 			"the same car passing beside her — she would have to step into it herself — is not")
 	_street_rig.free_crowd(crowd)
 
@@ -426,8 +426,8 @@ func _test_a_walker_brushing_past_is_unmarked(t: TestRunner) -> void:
 	var crowd: Crowd = street.crowd
 	var walker: CrowdAgent = _street_rig.place_on(crowd, street.map, CrowdAgent.Kind.WALKER, street.corridor,
 			0, street.along, 1.0)
-	walker.excitement.set_her_at(walker.global_position + Vector2(20.0, 25.0))
-	t.check(walker.excitement.caret_strength() == 0,
+	walker.mood().set_her_at(walker.global_position + Vector2(20.0, 25.0))
+	t.check(walker.mood().caret_strength() == 0,
 			"an ordinary walker brushing past her carries no caret at all")
 	_street_rig.free_crowd(crowd)
 
@@ -472,8 +472,8 @@ func _test_the_arterial_at_ordinary_density_marks_nobody(t: TestRunner) -> void:
 	for i in int(round(40.0 / STEP)):
 		crowd.step(STEP)
 		for agent in crowd.agents():
-			agent.excitement.set_her_at(standing_at)
-			if agent.excitement.caret_strength() == 1:
+			agent.mood().set_her_at(standing_at)
+			if agent.mood().caret_strength() == 1:
 				amber += 1
 	t.check(amber == 0,
 			("a crowd at ordinary arterial density around a standing player marks nobody " +

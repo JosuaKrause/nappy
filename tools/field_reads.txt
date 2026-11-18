@@ -126,10 +126,6 @@ src/simulation_builder.gd skip_motion
 src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
-# [CrowdAgent] src/crowd/crowd_agent.gd
-src/dev/debug_layers.gd excitement
-src/run/day_director.gd excitement
-
 # [DangerEdge] src/ui/danger_edge.gd
 src/main.gd atlas
 src/main.gd rotated

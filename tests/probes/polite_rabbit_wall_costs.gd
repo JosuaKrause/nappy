@@ -172,10 +172,10 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 		var heard := 0.0
 		var noise := [0.0, 0.0, 0.0]
 		for agent in RunCity.crowd(city).agents():
-			var field := agent.excitement._field(here)
+			var field := agent.mood()._field(here)
 			if field <= 0.0:
 				continue
-			heard += agent.excitement.contribution_at(here)
+			heard += agent.mood().contribution_at(here)
 			for i in 3:
 				if i != NONE and map.wall_between(agent.global_position, here, _depths[i].x,
 						_depths[i].y):

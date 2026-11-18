@@ -176,15 +176,15 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
-	agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+	agent.mood().startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
 			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
 	var jolt := Crowd.BUMP_DURATION
 	while jolt > 0.0:
-		agent.excitement._jolt = jolt
-		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
+		agent.mood()._jolt = jolt
+		_world.noise = agent.mood().contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		jolt -= STEP
@@ -204,12 +204,12 @@ func _two_bumps_at_the_top(t: TestRunner) -> Dictionary:
 	for bump_start: float in [0.0, Crowd.BUMP_DURATION + gap]:
 		var agent := CrowdAgent.new()
 		agent.global_position = _stroller.global_position
-		agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+		agent.mood().startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
 				Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 		var jolt := Crowd.BUMP_DURATION
 		while jolt > 0.0:
-			agent.excitement._jolt = jolt
-			_world.noise = agent.excitement.contribution_at(_stroller.global_position)
+			agent.mood()._jolt = jolt
+			_world.noise = agent.mood().contribution_at(_stroller.global_position)
 			_baby._update_excitement(STEP, _stroller.global_position, false)
 			_track_peaks(peaks)
 			jolt -= STEP

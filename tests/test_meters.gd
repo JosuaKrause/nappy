@@ -510,7 +510,7 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
-	agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+	agent.mood().startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
 			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_walk()
@@ -518,12 +518,12 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 	# Bounded, so a jolt that `advance()` stopped running down fails the check below rather than
 	# hanging the suite.
 	var frames := int(Crowd.BUMP_DURATION / frame) + 10
-	while agent.excitement.is_startled() and frames > 0:
-		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
+	while agent.mood().is_startled() and frames > 0:
+		_world.noise = agent.mood().contribution_at(_stroller.global_position)
 		await _baby.get_tree().physics_frame
-		agent.excitement.advance(frame)
+		agent.mood().advance(frame)
 		frames -= 1
-	t.check(not agent.excitement.is_startled(),
+	t.check(not agent.mood().is_startled(),
 			"a bump's jolt runs down within its own duration (from %.0f)" % at)
 	var result := {"excitement": _baby.excitement_level(),
 			"crying": _baby.condition() == GameEnums.BabyState.CRYING}

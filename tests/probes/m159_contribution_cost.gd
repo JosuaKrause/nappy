@@ -34,7 +34,7 @@ func run(t: TestRunner) -> void:
 				var silent := 0
 				for agent: CrowdAgent in RunCity.crowd(city).agents():
 					var contribution := ORACLE.full_contribution(city.map, agent, here, 0.0)
-					if contribution != agent.excitement.contribution_at(here):
+					if contribution != agent.mood().contribution_at(here):
 						mismatch += 1
 					expected += contribution
 					if contribution == 0.0:

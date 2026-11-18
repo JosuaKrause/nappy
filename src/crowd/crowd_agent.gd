@@ -5,7 +5,7 @@ extends LaneMover
 ## An agent is not an event. An event is authored, telegraphed and held to the fairness
 ## contract; an agent is traffic, and the player is expected to walk around it rather than
 ## be warned about it. What the two share is the *source*: each composes an `ExcitementSource`
-## (`excitement`, a `CrowdExcitement` here), so nothing pushes a value at the baby and the crowd
+## (`mood()`, a `CrowdExcitement` here), so nothing pushes a value at the baby and the crowd
 ## composes with the events by plain addition.
 ##
 ## The lane movement is `LaneMover`'s; this is the crowd member on top of it: its excitement, the
@@ -40,9 +40,11 @@ func be_touched(now: bool) -> void:
 func skip_drawing(now: bool) -> void:
 	_skip_draw = now
 
-## This body as the thing that charges the baby: its jolt, its field, its caret (`excitement`).
+## This body as the thing that charges the baby (`CrowdExcitement`): its jolt, its field, its caret.
+## The live object rather than a copy, since the crowd's own loops (`CrowdSources`, `Crowd._horn()`)
+## ask it of every agent every tick.
 func mood() -> CrowdExcitement:
-	return excitement
+	return _excitement
 
 ## True while the player is touching this agent. Owned by `Crowd`, and the reason it exists is
 ## that a contact is not instantaneous: she walks faster than a pedestrian does, so a person
@@ -54,7 +56,7 @@ var touching := false
 ## a horn leaves and its share of the field, its clock, its ledger of what it has landed, its
 ## projection and its caret's strength. `ExcitementHalo` tells it once a frame where she is, which
 ## is the one channel that reaches every body in the crowd whether or not it is near a road.
-var excitement := CrowdExcitement.new(self)
+var _excitement := CrowdExcitement.new(self)
 
 ## The sector, flip and third term currently drawn, so a redraw only happens when one of them
 ## changes. The third is the gait frame for a walker and the body's bob for a car, quantised by
@@ -124,7 +126,7 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 func end_the_frame(delta: float) -> bool:
 	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
 	# contact or a horn left, run here because every tick that is not skipped ends here.
-	excitement.advance(delta)
+	_excitement.advance(delta)
 	var picture := _look.picture(velocity())
 	var drawn_heading := _look.heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
@@ -143,14 +145,14 @@ func end_the_frame(delta: float) -> bool:
 		_picture_is_stale = false
 		# What this redraw puts up is the mark as it stands now — the same answer `_draw()` asks
 		# for, cached against the clock — so a mark that drops on the next frame is taken off.
-		_was_marked = _carets and excitement.caret_strength() > 0
+		_was_marked = _carets and _excitement.caret_strength() > 0
 		queue_redraw()
 		return true
 	# A marked car draws a caret that can breathe with its own horn, and a projected approach
 	# can change its strength frame to frame with nothing else about the picture moving. The
 	# one frame after the mark comes down is what takes the caret off again.
-	if _carets and (excitement.caret_strength() > 0 or _was_marked):
-		_was_marked = excitement.caret_strength() > 0
+	if _carets and (_excitement.caret_strength() > 0 or _was_marked):
+		_was_marked = _excitement.caret_strength() > 0
 		queue_redraw()
 		return true
 	return false
@@ -166,7 +168,7 @@ func _ready() -> void:
 	set_process(false)
 
 func _process(_delta: float) -> void:
-	if not excitement.is_startled():
+	if not _excitement.is_startled():
 		set_process(false)
 		return
 	queue_redraw()
@@ -185,10 +187,10 @@ func _build_rim() -> EntityHalo:
 ## being startled is enough to skip it, which is the same hysteresis a contact uses: a pair sitting
 ## inside each other for half a second must cost one crash, not thirty.
 func crashed_into() -> void:
-	if excitement.is_startled():
+	if _excitement.is_startled():
 		return
 	_speed = 0.0
-	excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION * 2.0,
+	_excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION * 2.0,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 
 # ---------------------------------------------------------------- drawing ---
@@ -215,7 +217,7 @@ var _carets := false
 func _init() -> void:
 	super()
 	_look = WalkerLook.new(self)
-	excitement.use_rim(_rim)
+	_excitement.use_rim(_rim)
 
 ## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
 ##
@@ -223,7 +225,7 @@ func _init() -> void:
 func _kind_installed() -> void:
 	_look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
 	_carets = _look.carets()
-	excitement.take_kind(kind)
+	_excitement.take_kind(kind)
 
 ## Overrides LaneMover.restart_the_picture.
 func restart_the_picture() -> void:
@@ -290,14 +292,14 @@ func _draw() -> void:
 ## proximity gate is marked all the same: a car whose lane she is standing in is projected into
 ## her, on its current course, whether or not it has honked yet.
 ##
-## Doubled and in `MARK_LETHAL` exactly when `excitement.will_be_lethal()` says the strike box
+## Doubled and in `MARK_LETHAL` exactly when `mood().will_be_lethal()` says the strike box
 ## reaches her, because a car is exactly as lethal as a `hard_fail` event and being told apart by
 ## hue is what the doubling exists to avoid. **Breathes with the horn's own decay while one is running** —
 ## the one thing a ring does that a discrete symbol does not get for free — and holds full size
 ## the rest of the time, since a projected approach with no jolt running has no envelope of its
 ## own to breathe with.
 func _draw_mark() -> void:
-	var strength := excitement.caret_strength()
+	var strength := _excitement.caret_strength()
 	if strength <= 0:
 		return
 	# **Breathes on every drawn frame, not only on the tick.** The jolt runs down by a tick at a time,
@@ -306,8 +308,8 @@ func _draw_mark() -> void:
 	# draw-only: nothing in the simulation reads it. `_process()` below redraws a marked car with a
 	# jolt running, which is a handful of cars, and stops when the jolt does.
 	var ahead := Engine.get_physics_interpolation_fraction() / float(Engine.physics_ticks_per_second)
-	var swell := excitement.jolt_swell_after(ahead)
-	set_process(excitement.is_startled())
+	var swell := _excitement.jolt_swell_after(ahead)
+	set_process(_excitement.is_startled())
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
 	var colour := Palette.MARK_LETHAL if strength == 2 else Palette.MARK_COSTLY
