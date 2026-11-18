@@ -942,9 +942,6 @@ src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
 src/main.gd carrying
 
-# [TelemetryLog] src/telemetry/telemetry_log.gd
-src/dev/still_watch.gd path
-
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd atlas
 src/main.gd covering
