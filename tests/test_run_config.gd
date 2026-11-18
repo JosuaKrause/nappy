@@ -265,7 +265,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 				and RunCity.crowd(city).skip_motion and not RunCity.crowd(city).skip_agent_drawing,
 				"and the events and the crowd it stands are handed theirs")
 		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
-		# that nothing but a win ends (`DayController.invincible`), so a walk can take its time.
+		# that nothing but a win ends (`DayController.set_invincible()`), so a walk can take its time.
 		if invincible and city != null:
 			# Past the title and the day's brief, as a played day is, so she walks the city and its
 			# parts are handed her (`WorldSimulation.meet_her()`).
