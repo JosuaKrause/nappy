@@ -618,13 +618,13 @@ func _test_every_door_is_drawn_under_her(t: TestRunner) -> void:
 			InteriorScene.LIFT_DOOR_TEXTURE, InteriorScene.ENTRANCE_DOOR_TEXTURE]
 	var pictures := {}
 	for name: StringName in door_textures:
-		pictures[scene.atlas.region(name)] = name
+		pictures[_picture(name)] = name
 	var doors: Array[Sprite2D] = []
 	var stack: Array[Node] = [scene]
 	while not stack.is_empty():
 		var node: Node = stack.pop_back()
 		stack.append_array(node.get_children())
-		if node is Sprite2D and pictures.has((node as Sprite2D).texture):
+		if node is Sprite2D and pictures.has(_shown(node as Sprite2D)):
 			doors.append(node)
 	var expected := f.door_ids().size() + f.locked_threshold_positions().size() + (1 if f.exit_position().x >= 0 else 0)
 	for at: Vector2i in f.wall_tiles():
@@ -1904,24 +1904,34 @@ const FLASH_SCALE := 6.0
 ## Where each test makes a fresh run of its own.
 var _rig := InteriorRig.new()
 
+## The rectangle the bake gave the picture `name` on its page (`AtlasTable.region_rect()`), the one
+## every library's `region()` hands out for it, so a sprite is told by the picture it shows without
+## reaching into the library the scene draws from.
+static func _picture(name: StringName) -> Rect2:
+	return Rect2(AtlasTable.baked().region_rect(name))
+
+## The rectangle of the picture `sprite` shows, or an empty one when it shows no atlas region.
+static func _shown(sprite: Sprite2D) -> Rect2:
+	return (sprite.texture as AtlasTexture).region if sprite.texture is AtlasTexture else Rect2()
+
 ## The hallway windows as drawn: every sprite in the building showing the picture of a window,
 ## dark or lit, read off the scene's tree.
 func _windows(scene: InteriorScene) -> Array[Sprite2D]:
-	var dark := scene.atlas.region(InteriorScene.HALLWAY_WINDOW)
-	var lit := scene.atlas.region(InteriorScene.HALLWAY_WINDOW_FLASH)
+	var dark := _picture(InteriorScene.HALLWAY_WINDOW)
+	var lit := _picture(InteriorScene.HALLWAY_WINDOW_FLASH)
 	var found: Array[Sprite2D] = []
 	for node in scene.find_children("*", "Sprite2D", true, false):
 		var sprite := node as Sprite2D
-		if sprite.texture == dark or sprite.texture == lit:
+		if _shown(sprite) == dark or _shown(sprite) == lit:
 			found.append(sprite)
 	return found
 
 ## How many of `windows` show the lit picture.
-func _lit(scene: InteriorScene, windows: Array[Sprite2D]) -> int:
-	var lit := scene.atlas.region(InteriorScene.HALLWAY_WINDOW_FLASH)
+func _lit(windows: Array[Sprite2D]) -> int:
+	var lit := _picture(InteriorScene.HALLWAY_WINDOW_FLASH)
 	var count := 0
 	for sprite in windows:
-		if sprite.texture == lit:
+		if _shown(sprite) == lit:
 			count += 1
 	return count
 
@@ -1940,13 +1950,13 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	scene.stop_the_night()
 	var windows := _windows(scene)
 	t.check(not windows.is_empty(), "the building has hallway windows (%d)" % windows.size())
-	t.check(_lit(scene, windows) == 0, "the windows are dark to begin with")
+	t.check(_lit(windows) == 0, "the windows are dark to begin with")
 	var lit_ticks: Array[int] = []
 	# The watch runs at `process_frame`: after the tick's physics lit the windows and before that
 	# frame's `_process()` darkens them (the engine's fixed order), so a flash is seen on its tick.
 	var odd := {"neither": 0}
 	var watch := func(tick: int) -> void:
-		var lit := _lit(scene, windows)
+		var lit := _lit(windows)
 		if lit > 0:
 			lit_ticks.append(tick)
 		# *"All windows always need to flash together. A single window cannot flash by itself."*
@@ -1960,7 +1970,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	# A flash is over by the frame after it: it holds for 0.12s and a tick is longer.
 	t.check(lit_ticks.size() == 1,
 			"and they go dark again a frame or two later (lit on ticks %s)" % str(lit_ticks))
-	t.check(_lit(scene, windows) == 0, "all of them, with none left lit (%d)" % _lit(scene, windows))
+	t.check(_lit(windows) == 0, "all of them, with none left lit (%d)" % _lit(windows))
 	# Every coming of a row from outside lights them, not only a repeat: a plan that comes once, in
 	# the world from its first frame, lights them as it is put there.
 	var once := EventPlan.new(EventCatalogue.explosion_outside(),
@@ -1970,7 +1980,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	var none: Array[String] = []
 	events.start_day(BuildingEvents.spec(), RandomNumberGenerator.new(), none,
 			scene.start_world_position())
-	t.check(once.is_in_the_world() and _lit(scene, windows) == windows.size(),
+	t.check(once.is_in_the_world() and _lit(windows) == windows.size(),
 			"a bang from outside that comes once lights every window as it comes")
 	events.free()
 	scene.free()
@@ -2056,10 +2066,10 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunne
 	# The watch runs when `process_frame` is emitted: after the tick's physics, which lit the windows,
 	# and before that frame's `_process()` darkens them. The engine's order, the same on every frame.
 	var watch := func(tick: int) -> void:
-		var lit := _lit(scene, windows)
+		var lit := _lit(windows)
 		if lit > 0:
 			when.append(tick)
-		if _lit(twin_scene, twin_windows) > 0:
+		if _lit(twin_windows) > 0:
 			twin_when.append(tick)
 		# All of them or none, on every tick: a flash that is over leaves none lit, and one that is on
 		# has every window lit.
@@ -2118,7 +2128,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunne
 	var instances := events.instances().size()
 	var whole := [] as Array[int]
 	var count_lit := func(tick: int) -> void:
-		if _lit(scene, windows) == windows.size():
+		if _lit(windows) == windows.size():
 			whole.append(tick)
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(
 			InteriorScene.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01, FLASH_SCALE), count_lit, FLASH_SCALE)
