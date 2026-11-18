@@ -1,12 +1,11 @@
-priority: now
-after: 2026-11-11-polite-tapir
+priority: bug
 
 # azure-squirrel — A posted roadblock guard charges a straight walker and misses her on some streets · filed 2026-11-17
 
 **Where it comes from.** No words of the player's: the builder of polite-tapir's step 5 switch found
-it on 2026-11-17. The entry, its band and its reading are the filer's proposal. Read as a defect a
-refactor step finds in code it carries over (**orchestrating**, the bullet on such a defect,
-silky-lemur #1450): it waits for the refactor (inbox #1210 in gentle-owl).
+it on 2026-11-17. The entry and its reading are the filer's proposal: read as a defect a refactor
+step finds in code it carries over (**orchestrating**, the bullet on such a defect, silky-lemur
+#1450). Its band is the player's: a bug a refactor step finds is filed bug and started at once beside the refactor, "bug is higher than now. bug is a bug" (inbox #1519 in breezy-magpie).
 
 **What was found.** `docs/EVENTS.md` and `docs/MECHANICS.md` say that walking straight past a
 posted roadblock's guard meets his charge. The player: "it should be in a way that luring away the
