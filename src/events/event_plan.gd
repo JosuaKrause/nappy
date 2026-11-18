@@ -512,6 +512,11 @@ func faces() -> Vector2:
 func faces_now() -> Vector2:
 	return live.facing_now() if live and is_instance_valid(live) else facing
 
+## Whether its live event is in the world and over (`EventInstance.is_gone()`), in the moment
+## before streaming takes it off this plan; false while it is not in the world.
+func its_event_is_gone() -> bool:
+	return live != null and is_instance_valid(live) and live.is_gone()
+
 ## Whether its body is one the map records for the whole day (`EventDef.stands_as_a_fixed_body()`):
 ## standing, solid, and no door's.
 func stands_as_a_fixed_body() -> bool:

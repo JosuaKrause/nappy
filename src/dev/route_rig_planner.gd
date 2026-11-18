@@ -587,7 +587,7 @@ func door_tiles() -> Dictionary:
 		var door := _planned_position(plan)
 		var facing := plan.faces()
 		if plan.is_in_the_world():
-			if _events.event_of(plan).is_gone():
+			if plan.its_event_is_gone():
 				continue
 			door = plan.where_it_stands_now()
 			facing = plan.faces_now()

@@ -503,11 +503,6 @@ func active_count() -> int:
 func instances() -> Array[EventInstance]:
 	return world.instances
 
-## The live event standing for `plan` while it is in the world (`EventPlan.instance()`), null
-## otherwise: for the few callers that name or command it rather than ask the plan.
-func event_of(plan: EventPlan) -> EventInstance:
-	return plan.instance() as EventInstance
-
 # ------------------------------------------------------------ WorldContext ---
 
 ## **These events as one set of things that charge the baby** (`EventSources`): the door's toll
