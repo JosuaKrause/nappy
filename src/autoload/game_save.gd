@@ -227,7 +227,7 @@ var trace := RunTrace.new():
 ## `RunConfig.at_boot()` — checked first and unconditionally, since a headless boot carries no dev
 ## flag at all and would otherwise read as an ordinary release run. A test that wants the saving of
 ## a windowed run hands `configure()` a config parsed with `headless_display` false. On a debug build any dev flag at all keeps the run off
-## the save (`config.active_args` is not empty), which reaches `--seed`, `--day`, `--walk` and the
+## the save (`config.dev_flag_words()` is not empty), which reaches `--seed`, `--day`, `--walk` and the
 ## rest by construction rather than by naming each one again; `--no-save` and a flagless debug
 ## run's own empty argument list are the two ways a *windowed* debug session still answers "no" —
 ## the first because it asked to, the second because nothing here can tell a bare `tools/run.sh`

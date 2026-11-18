@@ -707,8 +707,8 @@ quits.
 **The run's configuration is resolved at each boot, and handed out from `main`.**
 `RunConfig.at_boot()` (`src/run_config.gd`) reads the command line and, on the web, the page's
 query (`window.location.search`, the one read of the address bar the game makes) and keeps every
-answer in an immutable `RunConfig`: a later write is refused with a warning and its
-arrays are read-only. `main` is the one place it is read, at each boot (no static holds it; a scene reload parses the same
+answer in an immutable `RunConfig`: its fields are private, written by `parse()` alone and read
+through one method each, and the arrays it hands out are read-only. `main` is the one place it is read, at each boot (no static holds it; a scene reload parses the same
 words again, and an immutable config makes that the same configuration; a malformed flag's warning prints again at each boot). It hands the config itself to the
 observers — `Telemetry.configure()`, `GameSave.configure()`, `VisitCounter.configure()` — and to
 the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and hands the world, the
@@ -740,7 +740,7 @@ onto a building part's name, with the command line taken out of it; the real `ma
 **A named subset of that same list also answers a release page's own query string, behind
 `?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
-invincible, etc.) so debugging the live build is easier".)* `RunConfig.live_debug` — a debug
+invincible, etc.) so debugging the live build is easier".)* `RunConfig.is_live_debug()` — a debug
 build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
 `?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`,
 `?ending=`/`?blackout=1`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
@@ -757,7 +757,7 @@ picture's path and `--after`'s wait from the configuration (`RunConfig.screensho
 `--smooth-walk`, `--flee`, `--press` and `--tap` itself, from the gated words the config holds
 (`RunConfig.dev_flag_words()`, empty on a release build), so none of it has a release-page door.
 One rig list decides what a rig is — `DevFlags`' `RIG_FLAGS`, `--tap` included, plus a movie
-recording and a scripted recipe (`RunConfig.is_rig`) — for the window lockdown, the wall-clock
+recording and a scripted recipe (`RunConfig.runs_as_a_rig()`) — for the window lockdown, the wall-clock
 quit and whether the run log is a playtest; `RigLock` (`src/dev/rig_lock.gd`) applies the
 lockdown and the quit from inside the game. `--no-telemetry`
 is not part of this: it is a documented player-facing opt-out (see docs/TELEMETRY.md), not
@@ -793,8 +793,8 @@ release one — the same axis `Telemetry.begin_run()` already uses to stay silen
 and their `Q` handler always agree, and so a test — never itself a web export — can set the member
 and drive both platform shapes; `main` hands each screen its answer (`use_platform()`) before it
 enters the tree. A debug build can preview the web shape without a real export: `--web`
-(`RunConfig.web_preview`, handed in as `QuitOption.available(config)`) forces the answer false, the
-same role `TouchInput`'s own `--touch` (`RunConfig.touch_forced`) plays for its platform fact;
+(`RunConfig.previews_the_web()`, handed in as `QuitOption.available(config)`) forces the answer false, the
+same role `TouchInput`'s own `--touch` (`RunConfig.forces_touch()`) plays for its platform fact;
 neither class reads the command line.
 
 ### Playing on a touch device
@@ -820,7 +820,7 @@ and `FOCUS_RIGHT`, each choosing its own side, and a `Symbol.TAP` disc midway be
 that lands anywhere else on the screen does nothing — and a direction key or `space` begins one in
 `Mode.TAP` instead, on the reasoning that a player pressing a key has told the screen nothing about
 a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode and side from
-`ControlsMode.from_word()` and `side_from_word()` over `RunConfig.controls_word` (the command
+`ControlsMode.from_word()` and `side_from_word()` over `RunConfig.controls_word()` (the command
 line's `--controls joystick|joystick-left|joystick-right|tap`, then the page's own `?controls=`,
 then `TAP`) before the title screen
 exists at all — the answer a rig gets if it skips the title (`--no-title`, a screenshot rig) — and
@@ -830,7 +830,7 @@ carried on to its checkpoint reload the scene and open no title, so `main._on_ti
 the title's answer on the `Sitting` (`keep_controls_word()`, read back by `controls_word()`, in the words `--controls` takes, written by
 `ControlsMode.word_for()`), and those boots' `_add_touch_controls()` take it instead of the
 configured word. The command-line door stays behind the debug build; the query door behind
-`RunConfig.live_debug`, so a release page's own `?debug=1&controls=` reaches it too
+`RunConfig.is_live_debug()`, so a release page's own `?debug=1&controls=` reaches it too
 (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags").
 
 `TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes
@@ -921,7 +921,7 @@ writes the run flow's lines off the run flow's signals and the bus, `TelemetryOb
 account through the `RunTrace` it is handed — see docs/TELEMETRY.md, "Who writes it". `begin_run()` is also inert on a web export
 (`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
 ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, read from the query the run
-read at boot (`RunConfig.page_query`), since the deployed page has no command line, and honoured
+read at boot (`RunConfig.page_query_string()`), since the deployed page has no command line, and honoured
 on a debug export only. See `docs/TELEMETRY.md` for the format and what belongs in it.
 
 The rule that governs it is one line long: **telemetry must not touch gameplay.** No RNG, no

@@ -150,7 +150,7 @@ func enabled() -> bool:
 	return _debug_build
 
 ## The command line, or nothing at all outside a debug build — the one choke point every gated
-## getter below reads through, and what `RunConfig.active_args` keeps.
+## getter below reads through, and what `RunConfig.dev_flag_words()` answers.
 func active_args() -> PackedStringArray:
 	return _given if _debug_build else PackedStringArray()
 
@@ -876,7 +876,7 @@ func recipe_draft_path() -> String:
 ## PLAYTEST-133: "since those are godot apps that launch in my view it could be that accidentally
 ## pressed a button maybe? since it takes the focus away from what I'm doing every time" — and,
 ## on the same fix, "will it also prevent godot windows from staying open indefinitely?" `main.gd`
-## reads `RunConfig.is_rig` once, at boot, to strip its own window's focus, gate out real input and
+## reads `RunConfig.runs_as_a_rig()` once, at boot, to strip its own window's focus, gate out real input and
 ## start the wall-clock quit timer below; `tools/shot.sh` and `tools/run.sh` read the identical
 ## `RIG_FLAGS` list (the marker block above) to decide the same three things on the shell side.
 

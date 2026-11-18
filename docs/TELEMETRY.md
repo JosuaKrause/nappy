@@ -413,8 +413,8 @@ so it stays behind its own dev flag rather than being folded into telemetry's ow
 
 **It is off by default on a web export**, and the page's own `?telemetry=1` query parameter is the
 one way to turn it on there — but only in a **debug** web export. `_web_override_requested()` is
-gated behind the debug build (`RunConfig.debug_build`) like every other developer flag, and reads
-the query the run read at boot (`RunConfig.page_query`): a
+gated behind the debug build (`RunConfig.is_debug_build()`) like every other developer flag, and reads
+the query the run read at boot (`RunConfig.page_query_string()`): a
 release build — the one `.github/workflows/deploy.yml` publishes — answers nothing here regardless
 of the query string, and a debug build — the one `tools/serve-web.sh` exports and serves locally —
 answers immediately. `user://` on the web is still a stranger's browser storage rather than a
