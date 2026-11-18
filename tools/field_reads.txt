@@ -842,8 +842,6 @@ src/main.gd title_card_text
 src/main.gd zoom_out_delay
 src/main.gd zoom_out_seconds
 src/main.gd zoom_override
-src/run/day_director.gd meters_override
-src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
 

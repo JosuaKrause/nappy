@@ -286,7 +286,7 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 	var flags_decide := first_day and spec.start_point() == DaySpec.Start.DOORSTEP
 	var start_at := world.start_position()
 	if flags_decide and not _flags_start.is_null():
-		start_at = _flags_start.call(config.spawn_target)
+		start_at = _flags_start.call(config.spawn_target())
 	events.stream_around(start_at)
 	if _in_a_city:
 		_start_the_crowd(start_at, today)
@@ -305,7 +305,7 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 	# After the day is running, not before: the override can put the baby straight to
 	# sleep, and start() would have reset the phase that announcement just set.
 	if flags_decide and not _flags_meters.is_null():
-		_flags_meters.call(baby, config.meters_override)
+		_flags_meters.call(baby, config.meters_override())
 
 ## The console's line for a walk just started, `ms` after the start began: what was planned and, in a
 ## city, who is on its streets and what is calm and closed.
