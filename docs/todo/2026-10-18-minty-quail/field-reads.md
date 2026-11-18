@@ -141,7 +141,7 @@ Left, each its own design question:
   - the region and seal planners' (`src/routes/`) reads of a plan and its row, with row 3a, which
     names both files;
   - the scene recipes' (`scene_recipe*`) reads of an event, with row 3c, and of the map, with the
-    map's capture and restore above.
+    tests-one-module item or row 3c, since their tests set what no game method sets.
 
   The fields they read become underscore-private behind a method, which takes the field's name unless the field is a
   yes-or-no one (designing-classes, "Fields are not API").
