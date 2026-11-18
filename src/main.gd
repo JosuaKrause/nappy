@@ -1057,7 +1057,7 @@ func _build_the_escape_building() -> void:
 ## dresses and plans it by: `City.start_day()` dresses the blocks and grows no route tree, closures
 ## or region wall, since the walk is handed in once it is planned (`DaySpec.closes_streets`), and the
 ## posters only show (`pastes_posters`); the crowd is nobody (`crowd_density`, *"no regular cars or
-## regular people on the street"*); the plan is the escape's own (`DaySpec.Draw.BAG_PER_STREET`).
+## regular people on the street"*); the plan is the escape's own (`DaySpec.walk_bag()`).
 ## It is dark from its first frame (`is_dark_from_the_start()`, which the city is built with) and
 ## stays at night (`runs_the_daylight_down()`).
 func _build_the_escape_city(spec: DaySpec) -> void:

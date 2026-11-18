@@ -5,7 +5,7 @@ extends RefCounted
 ## and boxes round its block, and they each other through it, and another lot in its block; two
 ## parallel streets with no lot between them not touching; the undrawn units near a point nearest
 ## first, and every one for an infinite radius; and a reach handed in making units that far apart
-## touch besides.
+## touch besides; and every unit answered in the order its locations first name it.
 ##
 ## Built of plain values: `Location`s made by hand on the lattice's own numbers (a junction box at
 ## `junction * CityMap.period()`, a street between two of them,
@@ -17,6 +17,7 @@ func run(t: TestRunner) -> void:
 	_test_a_lot_touches_the_ground_round_its_block(t)
 	_test_the_undrawn_units_nearest_first(t)
 	_test_a_reach_widens_what_touches(t)
+	_test_the_units_are_answered_in_the_order_first_met(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -213,3 +214,23 @@ func _test_a_reach_widens_what_touches(t: TestRunner) -> void:
 ## Whether `b` is one of the units `a` touches (`DayUnits.touching()`).
 static func _touch(units: DayUnits, a: PlacementUnit, b: PlacementUnit) -> bool:
 	return b in units.touching(a)
+
+## **`all()` answers every unit in the order the locations name them**, which for a walk laid out
+## along its own streets is the walk's own order, and a change to the array answered changes nothing
+## in the units.
+func _test_the_units_are_answered_in_the_order_first_met(t: TestRunner) -> void:
+	var units := DayUnits.of(_city(false), 1)
+	var wanted: Array[String] = [
+		_street_name(Vector2i(1, 1), true), _street_name(Vector2i(1, 2), true),
+		_street_name(Vector2i(1, 1), false), _street_name(Vector2i(2, 1), false),
+		_street_name(Vector2i(4, 1), true), _box_name(Vector2i(1, 1)), _box_name(Vector2i(2, 1)),
+		_box_name(Vector2i(1, 2)), _box_name(Vector2i(2, 2)), _box_name(Vector2i(4, 1)),
+		_box_name(Vector2i(5, 1))]
+	var named: Array[String] = []
+	for unit in units.all():
+		named.append(unit.name())
+	t.check(named == wanted, "every unit is answered, in the order its locations first name it (%s)"
+			% [named])
+	units.all().clear()
+	t.check(units.all().size() == wanted.size(),
+			"and emptying the answered array leaves the units as they were (%d)" % units.all().size())

@@ -188,6 +188,7 @@ FILES: dict[str, str] = {
     "src/events/walk_events.gd": "model",
     "src/events/walk_ground.gd": "model",
     "src/events/way_confirmation.gd": "model",
+    "src/events/whole_walk_bag.gd": "model",
     # interior: the plan and its tiles are the model; the tileset and the scene are the world.
     "src/interior/interior_map.gd": "model",
     "src/interior/interior_map_plan.gd": "model",

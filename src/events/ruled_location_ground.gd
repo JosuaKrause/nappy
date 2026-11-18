@@ -7,7 +7,7 @@ extends LocationGround
 ##   of the location's own stream, and is asked of the day's rules (`StreetInvalidation`) against
 ##   the plans it is handed and what the day stands. **Which tile, is a setting** (a mode is a
 ##   configuration): the unit draw takes the first tile no rule refuses, so nothing ranks a tile
-##   by rows on other streets (`roomiest` false); the scripted rows and the escape take the first
+##   by rows on other streets (`roomiest` false); the scripted rows take the first
 ##   tile with room all round, else the roomiest a rule leaves valid (`roomiest` true), else none.
 ##   With `roomiest` false the two spacings that never bend still hold, since
 ##   `StreetInvalidation.room()` refuses them: nothing within

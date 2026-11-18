@@ -252,7 +252,6 @@ src/events/dawn_context.gd keeps_the_walk_open
 src/events/dawn_context.gd keeps_unused_calm_clear
 src/events/dawn_context.gd one_notice_at_a_time
 src/events/dawn_phases/dawn_calm_kept_clean.gd keeps_unused_calm_clear
-src/events/dawn_phases/dawn_moments.gd caps_per_day
 src/events/day_planner.gd closes_streets
 src/events/day_planner.gd holds_the_home_streets
 src/events/day_planner.gd number
@@ -261,10 +260,6 @@ src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd number
 src/events/event_manager.gd owes_a_return
 src/events/event_manager.gd poster_pursuits
-src/events/event_scheduler.gd bag
-src/events/event_scheduler.gd bag_rows
-src/events/event_scheduler.gd caps_per_day
-src/events/event_scheduler.gd draw
 src/main.gd a_win_leads_into
 src/main.gd daylight_runs_down
 src/main.gd saved_as_under_way
@@ -490,7 +485,6 @@ src/events/event_plan.gd role
 src/events/event_scheduler.gd hard_fail
 src/events/event_scheduler.gd id
 src/events/event_scheduler.gd kind
-src/events/event_scheduler.gd max_per_day
 src/events/event_scheduler.gd obstructs_radius
 src/events/event_scheduler.gd outer_radius
 src/events/event_scheduler.gd paces
@@ -862,7 +856,6 @@ src/dev/still_watch.gd kind
 src/run/day_director.gd kind
 
 # [MarbleBag] src/city/marble_bag.gd
-src/events/event_scheduler.gd drawn
 src/events/event_spawner.gd drawn
 
 # [MoveProposal] src/world/move_proposal.gd

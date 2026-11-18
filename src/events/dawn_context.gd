@@ -139,7 +139,7 @@ func map() -> CityMap:
 	return _map
 
 ## The walk every placement is stated against (`RouteSource`): a day's tree, or the escape's
-## chains, whose streets its bag fills. Never null: a rig with no route hands a `RouteSource`
+## chains, whose streets are its units. Never null: a rig with no route hands a `RouteSource`
 ## itself, which is no walk at all.
 func walk() -> RouteSource:
 	return _walk
@@ -289,7 +289,8 @@ func hold_the_draw(draw: UnitDraw) -> void:
 	assert(_unit_draw == null, "a dawn holds one unit draw")
 	_unit_draw = draw
 
-## The day's unit draw (`hold_the_draw()`), or null where no phase held one: the escape's bag walk.
+## The day's unit draw (`hold_the_draw()`), or null where `DawnDraw` has not run: every dawn holds
+## one once it has.
 func unit_draw() -> UnitDraw:
 	return _unit_draw
 

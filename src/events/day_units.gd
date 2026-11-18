@@ -62,6 +62,12 @@ static func of(locations: Array[Location], day_seed: int, reach := 0.0) -> DayUn
 	units._work_out_touching(reach)
 	return units
 
+## **Every unit of the day, in the order the day's locations name them** (`DayLocations.all()`):
+## for a walk laid out along its own streets (`DayLocations.along()`), the walk's own order. What
+## a walk drawn whole is drawn in (`UnitDraw.draw_in_their_order()`).
+func all() -> Array[PlacementUnit]:
+	return _order.duplicate()
+
 ## The units `unit` touches, in rank order, lowest first.
 func touching(unit: PlacementUnit) -> Array[PlacementUnit]:
 	if not _touching_in_order.has(unit.name()):
