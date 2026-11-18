@@ -22,7 +22,7 @@ func _init(evaluate: Callable) -> void:
 	_evaluate = evaluate
 
 ## The three of the gate's four inputs (on the web, not a debug build, not `?debug=1` —
-## `RunConfig.readout_requested`, the same flag that keeps `count.js` itself off the page, see
+## `RunConfig.asks_for_the_readout()`, the same flag that keeps `count.js` itself off the page, see
 ## `export_presets.cfg`'s `html/head_include`) that can never change their answer for the rest of this
 ## page's life once asked — the build is not going to stop being a debug build, and `?debug=1`
 ## does not disappear from a page nobody reloads. `goatcounter_present` is the one input that

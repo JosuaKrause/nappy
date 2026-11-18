@@ -741,8 +741,8 @@ onto a building part's name, with the command line taken out of it; the real `ma
 `?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
 invincible, etc.) so debugging the live build is easier".)* `RunConfig.live_debug` — a debug
-build, or `?debug=1` (`readout_requested`) — is the gate: `?day=`, `?invincible=1`, `?layers=`,
-`?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
+build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
+`?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
 `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that

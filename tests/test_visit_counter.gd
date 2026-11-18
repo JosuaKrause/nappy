@@ -105,7 +105,7 @@ func _test_should_send_truth_table(t: TestRunner) -> void:
 	t.check(not GoatCounterOutbox.may_ever_send(true, true, false),
 		"a debug build sends nothing, on the web or off it")
 	t.check(not GoatCounterOutbox.may_ever_send(true, false, true),
-		"?debug=1 (RunConfig.readout_requested) sends nothing even on a release web build")
+		"?debug=1 (RunConfig.asks_for_the_readout()) sends nothing even on a release web build")
 	scripts.clear()
 	outbox.send("early", false)
 	t.check(scripts.is_empty(), "a missing or blocked window.goatcounter sends nothing")

@@ -12,6 +12,16 @@ extends RefCounted
 ## a component a config of its own by parsing the words it wants
 ## (`RunConfig.parse(PackedStringArray(["--invincible"]), "", true)`), never by changing one.
 ##
+## **Read through its methods** (designing-classes, "Fields are not API"): one method a field, which
+## keeps the field's name when it holds a value and takes a new one when it answers yes or no, so a
+## stored answer can become a computed one with no reader changing. The fields still public are
+## `main`'s reads alone; every other reader asks the methods under "What it says" below. The
+## class is the one value every reader is handed whole, rather than cut into a part per reader, since
+## the readers' needs overlap (a screenshot's path is the screenshot rig's and the scene recipe's, a
+## movie recording the rig lock's and the screenshot rig's) and several of its answers are derived from
+## more than one flag (`day_length_for()`, `rig_quit_seconds()`, `screenshot_rig()`), which a
+## reader handed plain values would derive again.
+##
 ## `DevFlags` is the parser and the flag manifest the shell tools read; what each flag means is
 ## its getter's doc there.
 
@@ -53,8 +63,8 @@ var _headless := true:
 var debug_build := false:
 	set(value): debug_build = _write(debug_build, value)
 ## `?debug=1` or `--debug`: the readout, and the gate on every release-safe query flag.
-var readout_requested := false:
-	set(value): readout_requested = _write(readout_requested, value)
+var _readout_requested := false:
+	set(value): _readout_requested = _write(_readout_requested, value)
 ## The release-safe bundle is open: a debug build, or a page that asked `?debug=1`.
 var live_debug := false:
 	set(value): live_debug = _write(live_debug, value)
@@ -72,8 +82,8 @@ var active_args := PackedStringArray():
 	get: return active_args.duplicate()
 	set(value): active_args = _write(active_args, value)
 ## `--no-telemetry`, the player-facing opt-out, read on every build.
-var no_telemetry := false:
-	set(value): no_telemetry = _write(no_telemetry, value)
+var _no_telemetry := false:
+	set(value): _no_telemetry = _write(_no_telemetry, value)
 
 # ------------------------------------------------------------------ the run ---
 
@@ -117,10 +127,10 @@ var web_preview := false:
 
 # ------------------------------------------------------------- what is placed ---
 
-var spawn_target := "":
-	set(value): spawn_target = _write(spawn_target, value)
-var meters_override := Vector2(-1.0, -1.0):
-	set(value): meters_override = _write(meters_override, value)
+var _spawn_target := "":
+	set(value): _spawn_target = _write(_spawn_target, value)
+var _meters_override := Vector2(-1.0, -1.0):
+	set(value): _meters_override = _write(_meters_override, value)
 var forced_row := "":
 	set(value): forced_row = _write(forced_row, value)
 var forced_interval := 0.0:
@@ -133,8 +143,8 @@ var blackout_requested := false:
 # ------------------------------------------------------------ how it is drawn ---
 
 ## The validated `--skip` words; the four booleans below are the same set, read once.
-var skip_words: Array[String] = []:
-	set(value): skip_words = _write(skip_words, value)
+var _skip_words: Array[String] = []:
+	set(value): _skip_words = _write(_skip_words, value)
 var skip_events := false:
 	set(value): skip_events = _write(skip_events, value)
 var skip_crowd := false:
@@ -145,8 +155,8 @@ var skip_motion := false:
 	set(value): skip_motion = _write(skip_motion, value)
 var ground_mode := DevFlags.GROUND_MODE_DEFAULT:
 	set(value): ground_mode = _write(ground_mode, value)
-var layers_override: Array[int] = []:
-	set(value): layers_override = _write(layers_override, value)
+var _layers_override: Array[int] = []:
+	set(value): _layers_override = _write(_layers_override, value)
 var player_view_requested := false:
 	set(value): player_view_requested = _write(player_view_requested, value)
 var overview_requested := false:
@@ -158,8 +168,8 @@ var follow_target := "":
 
 # --------------------------------------------------------------- measurement ---
 
-var spikes_requested := false:
-	set(value): spikes_requested = _write(spikes_requested, value)
+var _spikes_requested := false:
+	set(value): _spikes_requested = _write(_spikes_requested, value)
 var frame_trace_requested := false:
 	set(value): frame_trace_requested = _write(frame_trace_requested, value)
 var frame_record_requested := false:
@@ -175,11 +185,11 @@ var recording := false:
 	set(value): recording = _write(recording, value)
 var route_targets: Array[String] = []:
 	set(value): route_targets = _write(route_targets, value)
-var screenshot_path := "":
-	set(value): screenshot_path = _write(screenshot_path, value)
+var _screenshot_path := "":
+	set(value): _screenshot_path = _write(_screenshot_path, value)
 ## `--after`'s value, or `-1.0`.
-var rig_after := -1.0:
-	set(value): rig_after = _write(rig_after, value)
+var _rig_after := -1.0:
+	set(value): _rig_after = _write(_rig_after, value)
 var quit_when_still_requested := false:
 	set(value): quit_when_still_requested = _write(quit_when_still_requested, value)
 var quit_when_still_seconds := 1.0:
@@ -199,12 +209,12 @@ var recipe_path := "":
 	set(value): recipe_path = _write(recipe_path, value)
 var recipe_scripted := false:
 	set(value): recipe_scripted = _write(recipe_scripted, value)
-var recipe_validate := false:
-	set(value): recipe_validate = _write(recipe_validate, value)
-var recipe_manifest_path := "":
-	set(value): recipe_manifest_path = _write(recipe_manifest_path, value)
-var recipe_draft_path := "":
-	set(value): recipe_draft_path = _write(recipe_draft_path, value)
+var _recipe_validate := false:
+	set(value): _recipe_validate = _write(_recipe_validate, value)
+var _recipe_manifest_path := "":
+	set(value): _recipe_manifest_path = _write(_recipe_manifest_path, value)
+var _recipe_draft_path := "":
+	set(value): _recipe_draft_path = _write(_recipe_draft_path, value)
 
 # ------------------------------------------------------------------- resolving ---
 
@@ -229,12 +239,12 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config._movie = recording_movie
 	config.debug_build = debug_build
 	config._headless = headless_display
-	config.readout_requested = flags.readout_requested()
+	config._readout_requested = flags.readout_requested()
 	config.live_debug = flags.live_debug_requested()
 	config._web_debug_flag_used = flags.web_debug_flag_used()
 	config.page_query = query
 	config.active_args = flags.active_args()
-	config.no_telemetry = flags.no_telemetry()
+	config._no_telemetry = flags.no_telemetry()
 
 	config.seed_override = flags.seed_override()
 	config.day_override = flags.day_override()
@@ -254,35 +264,35 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config.touch_forced = flags.touch_forced()
 	config.web_preview = flags.web_preview()
 
-	config.spawn_target = flags.spawn_target()
-	config.meters_override = flags.meters_override()
+	config._spawn_target = flags.spawn_target()
+	config._meters_override = flags.meters_override()
 	config.forced_row = flags.forced_row()
 	config.forced_interval = flags.forced_interval()
 	config.pelican = flags.pelican()
 	config.blackout_requested = flags.blackout_requested()
 
 	var skip := flags.skip_words()
-	config.skip_words = skip
+	config._skip_words = skip
 	config.skip_events = "events" in skip
 	config.skip_crowd = "crowd" in skip
 	config.skip_shadows = "shadows" in skip
 	config.skip_motion = "motion" in skip
 	config.ground_mode = flags.ground_mode()
-	config.layers_override = flags.layers_override()
+	config._layers_override = flags.layers_override()
 	config.player_view_requested = flags.player_view_requested()
 	config.overview_requested = flags.overview_requested()
 	config.zoom_override = flags.zoom_override()
 	config.follow_target = flags.follow_target()
 
-	config.spikes_requested = flags.spikes_requested()
+	config._spikes_requested = flags.spikes_requested()
 	config.frame_trace_requested = flags.frame_trace_requested()
 	config.frame_record_requested = flags.frame_record_requested()
 
 	config.is_rig = flags.is_rig()
 	config.recording = flags.recording()
 	config.route_targets = flags.route_targets()
-	config.screenshot_path = flags.screenshot_path()
-	config.rig_after = flags.rig_after()
+	config._screenshot_path = flags.screenshot_path()
+	config._rig_after = flags.rig_after()
 	config.quit_when_still_requested = flags.quit_when_still_requested()
 	config.quit_when_still_seconds = flags.quit_when_still_seconds()
 	config.zoom_out_seconds = flags.zoom_out_seconds()
@@ -292,9 +302,9 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 
 	config.recipe_path = flags.recipe_path()
 	config.recipe_scripted = flags.recipe_scripted()
-	config.recipe_validate = flags.recipe_validate()
-	config.recipe_manifest_path = flags.recipe_manifest_path()
-	config.recipe_draft_path = flags.recipe_draft_path()
+	config._recipe_validate = flags.recipe_validate()
+	config._recipe_manifest_path = flags.recipe_manifest_path()
+	config._recipe_draft_path = flags.recipe_draft_path()
 	config._freeze()
 	return config
 
@@ -303,7 +313,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 func with_recipe(recipe_data: Dictionary) -> RunConfig:
 	return parse(_given, page_query, debug_build, _movie, recipe_data, _headless)
 
-# --------------------------------------------------------------- what follows ---
+# ------------------------------------------------------------------ what it says ---
 
 ## Whether this is a headless run: the null display server, so no player and no save.
 func is_headless() -> bool:
@@ -315,7 +325,7 @@ func is_debug_build() -> bool:
 
 ## Whether `?debug=1` or `--debug` asked for the readout.
 func asks_for_the_readout() -> bool:
-	return readout_requested
+	return _readout_requested
 
 ## Whether the release-safe bundle of query flags is open.
 func is_live_debug() -> bool:
@@ -332,6 +342,67 @@ func page_query_string() -> String:
 ## Every dev flag given on a debug build, as words (a copy), or nothing.
 func dev_flag_words() -> PackedStringArray:
 	return active_args
+
+## Whether `--no-telemetry` was given: the player's own opt-out of the run log, on every build.
+func refuses_telemetry() -> bool:
+	return _no_telemetry
+
+## Whether `--player-view` asked for the frame a player sees.
+func asks_for_the_player_view() -> bool:
+	return player_view_requested
+
+## Whether `--spikes` asked for the run log's `spike` line and the frame graph.
+func asks_for_spikes() -> bool:
+	return _spikes_requested
+
+## The validated `--skip` words, read-only.
+func skip_words() -> Array[String]:
+	return _skip_words
+
+## The overlays `--layers` starts on, read-only; empty when none was given.
+func layers_override() -> Array[int]:
+	return _layers_override
+
+## `--spawn`'s raw target word, where she starts on the boot's first walk from her doorstep, or `""`.
+func spawn_target() -> String:
+	return _spawn_target
+
+## The baby's bars `--meters` sets once the day runs (sleepiness, excitement), or `(-1, -1)`.
+func meters_override() -> Vector2:
+	return _meters_override
+
+## Whether this run is a rig rather than a person at the keyboard: a rig flag, a movie recording or a
+## scripted recipe.
+func runs_as_a_rig() -> bool:
+	return is_rig
+
+## Whether Godot's own movie writer is recording this run.
+func records_a_movie() -> bool:
+	return recording
+
+## Where `--screenshot` saves its picture, or `""`.
+func screenshot_path() -> String:
+	return _screenshot_path
+
+## `--after`'s value in seconds, or `-1.0` when not given.
+func rig_after() -> float:
+	return _rig_after
+
+## Whether `--recipe-mode scripted` has the recipe play itself, as a rig.
+func plays_the_recipe_scripted() -> bool:
+	return recipe_scripted
+
+## Whether `--recipe-validate` quits once the recipe is installed and its manifest written.
+func validates_the_recipe() -> bool:
+	return _recipe_validate
+
+## Where `--recipe-manifest` writes the recipe's manifest, or `""`.
+func recipe_manifest_path() -> String:
+	return _recipe_manifest_path
+
+## Where `--recipe-draft` writes a drafted recipe, or `""` for none.
+func recipe_draft_path() -> String:
+	return _recipe_draft_path
 
 ## Whether `--invincible` was given.
 func is_invincible() -> bool:
@@ -361,12 +432,12 @@ func escape_section_length() -> float:
 
 ## Seconds until a rig quits itself: `--after` when given, else the length of the day it plays.
 func rig_quit_seconds() -> float:
-	return DevFlags.rig_quit_seconds_from(rig_after, day_length_for(day_override))
+	return DevFlags.rig_quit_seconds_from(_rig_after, day_length_for(day_override))
 
 ## Whether `AutoScreenshot` has a capture or a timed run to drive: a `--screenshot` path, or a
 ## frame trace, a frame record or a movie recording bounded by `--after`.
 func screenshot_rig() -> bool:
-	return screenshot_path != "" \
+	return _screenshot_path != "" \
 			or ((frame_trace_requested or frame_record_requested or recording)
 				and "--after" in active_args)
 
@@ -394,7 +465,7 @@ func _write(current: Variant, value: Variant) -> Variant:
 	return current
 
 func _freeze() -> void:
-	skip_words.make_read_only()
-	layers_override.make_read_only()
+	_skip_words.make_read_only()
+	_layers_override.make_read_only()
 	route_targets.make_read_only()
 	_open = false

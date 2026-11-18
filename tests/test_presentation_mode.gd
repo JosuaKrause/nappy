@@ -79,68 +79,68 @@ func _test_the_bake_alone_decides_the_presentation(t: TestRunner) -> void:
 		"no dev flag asks for a presentation the bake did not write")
 
 func _test_readout_requested_true_for_the_documented_query_shapes(t: TestRunner) -> void:
-	t.check(_page("?debug=1").readout_requested,
+	t.check(_page("?debug=1").asks_for_the_readout(),
 		"?debug=1 requests the readout without a debug-build gate")
-	t.check(_page("?x=1&debug=1").readout_requested,
+	t.check(_page("?x=1&debug=1").asks_for_the_readout(),
 		"the debug parameter is found among other URL parameters")
-	t.check(_debug_build(["--debug"]).readout_requested, "--debug requests it on the command line")
+	t.check(_debug_build(["--debug"]).asks_for_the_readout(), "--debug requests it on the command line")
 
 func _test_readout_requested_false_for_everything_else(t: TestRunner) -> void:
-	t.check(not _page("?debug=0").readout_requested,
+	t.check(not _page("?debug=0").asks_for_the_readout(),
 		"debug=0 leaves the readout at its ordinary (debug-build) default")
-	t.check(not _page("").readout_requested,
+	t.check(not _page("").asks_for_the_readout(),
 		"an absent URL parameter leaves the readout at its ordinary default")
-	t.check(not _page("?debugx=1").readout_requested,
+	t.check(not _page("?debugx=1").asks_for_the_readout(),
 		"only the exact documented parameter name requests the readout")
 
 func _test_readout_requested_does_not_move_enabled(t: TestRunner) -> void:
 	var page := RunConfig.parse(PackedStringArray(["--spawn", "park", "--walk", "1e"]),
 			"?debug=1", false)
-	t.check(page.readout_requested and not page.debug_build and page.active_args.is_empty()
-			and page.spawn_target == "",
+	t.check(page.asks_for_the_readout() and not page.is_debug_build() and page.dev_flag_words().is_empty()
+			and page.spawn_target() == "",
 		"the readout's own release-safe flag reaches nothing the debug build gates — no spawn, "
 		+ "meter or scripted-input flag moves with it")
 
 ## `--skip`'s own words: an unknown word refuses the whole value and an empty one is simply nothing
-## to skip. Read through the configuration's `skip_words`, on the open page that gates them.
+## to skip. Read through the configuration's `skip_words()`, on the open page that gates them.
 func _test_skip_words_in_any_order(t: TestRunner) -> void:
-	t.check(_page("?debug=1&skip=events,crowd,shadows,motion").skip_words
+	t.check(_page("?debug=1&skip=events,crowd,shadows,motion").skip_words()
 			== ["events", "crowd", "shadows", "motion"],
 		"all four words are each recognised, in the order given")
-	t.check(_page("?debug=1&skip=shadows,events").skip_words == ["shadows", "events"],
+	t.check(_page("?debug=1&skip=shadows,events").skip_words() == ["shadows", "events"],
 		"the words may be given in any order")
-	t.check(_page("?debug=1&skip=crowd").skip_words == ["crowd"],
+	t.check(_page("?debug=1&skip=crowd").skip_words() == ["crowd"],
 		"a single word is its own one-element set")
-	t.check(_page("?debug=1&skip=motion").skip_words == ["motion"],
+	t.check(_page("?debug=1&skip=motion").skip_words() == ["motion"],
 		"motion, the fourth word, is recognised on its own too")
 
 func _test_skip_words_refuses_an_unknown_word(t: TestRunner) -> void:
-	t.check(_page("?debug=1&skip=events,bogus").skip_words.is_empty(),
+	t.check(_page("?debug=1&skip=events,bogus").skip_words().is_empty(),
 		"an unknown word refuses the whole value rather than the words that did parse")
-	t.check(_page("?debug=1&skip=bogus").skip_words.is_empty(),
+	t.check(_page("?debug=1&skip=bogus").skip_words().is_empty(),
 		"a lone unknown word is refused the same way")
 
 func _test_skip_words_treats_an_empty_value_as_nothing_to_skip(t: TestRunner) -> void:
-	t.check(_page("?debug=1&skip=").skip_words.is_empty(),
+	t.check(_page("?debug=1&skip=").skip_words().is_empty(),
 		"an empty value is nothing to skip — the layers flag's own precedent")
 
 func _test_skip_from_args_and_query_extract_the_raw_value(t: TestRunner) -> void:
-	t.check(_debug_build(["--debug", "--skip", "events,crowd"]).skip_words == ["events", "crowd"],
+	t.check(_debug_build(["--debug", "--skip", "events,crowd"]).skip_words() == ["events", "crowd"],
 		"the value after --skip is split on commas")
-	t.check(_debug_build(["--debug"]).skip_words.is_empty(),
+	t.check(_debug_build(["--debug"]).skip_words().is_empty(),
 		"no --skip on the command line is nothing to skip")
-	t.check(_page("?debug=1&skip=shadows").skip_words == ["shadows"],
+	t.check(_page("?debug=1&skip=shadows").skip_words() == ["shadows"],
 		"the skip parameter is read out of the query")
-	t.check(_page("?debug=1&seed=1&skip=events&day=2").skip_words == ["events"],
+	t.check(_page("?debug=1&seed=1&skip=events&day=2").skip_words() == ["events"],
 		"the skip parameter is found among other URL parameters")
-	t.check(_page("?debug=1").skip_words.is_empty(), "an absent URL parameter is nothing to skip")
+	t.check(_page("?debug=1").skip_words().is_empty(), "an absent URL parameter is nothing to skip")
 
 ## The gate: the skip words are read only while the readout was requested, even on a debug build,
 ## and the configuration's four booleans carry the same set.
 func _test_skip_is_gated_on_the_readout_being_requested(t: TestRunner) -> void:
 	var words := PackedStringArray(["--skip", "events,crowd,shadows,motion"])
 	var unasked := RunConfig.parse(words, "", true)
-	t.check(unasked.skip_words.is_empty() and not unasked.skip_events and not unasked.skip_crowd
+	t.check(unasked.skip_words().is_empty() and not unasked.skip_events and not unasked.skip_crowd
 			and not unasked.skip_shadows and not unasked.skip_motion,
 		"nothing is skipped while the readout was not requested")
 	words.append("--debug")
@@ -221,10 +221,10 @@ func _test_web_debug_flag_used_ignores_debug_alone_and_the_older_bundle(t: TestR
 
 ## `?layers=`: the bundle's gate is `live_debug_requested()`, which the truth table above pins.
 func _test_layers_from_query_is_unchanged_by_m193(t: TestRunner) -> void:
-	t.check(_page("?debug=1&layers=1,3").layers_override == [1, 3],
+	t.check(_page("?debug=1&layers=1,3").layers_override() == [1, 3],
 		"the layers parameter is read out of the query")
-	t.check(_page("?debug=1").layers_override.is_empty(), "an absent parameter is still no layer")
-	t.check(_page("?layers=1,3").layers_override.is_empty(),
+	t.check(_page("?debug=1").layers_override().is_empty(), "an absent parameter is still no layer")
+	t.check(_page("?layers=1,3").layers_override().is_empty(),
 		"and a page that never opened the bundle reads none")
 
 ## `--controls`, then the page's own `?controls=` in the open bundle: the command line wins, and a
@@ -258,15 +258,15 @@ func _test_escape_from_query(t: TestRunner) -> void:
 		"a page that never opened the bundle starts nothing")
 
 func _test_meters_from_query(t: TestRunner) -> void:
-	t.check(_page("?debug=1&meters=10,90").meters_override == Vector2(10.0, 90.0),
+	t.check(_page("?debug=1&meters=10,90").meters_override() == Vector2(10.0, 90.0),
 		"both numbers are read back")
-	t.check(_page("?debug=1&meters=%d,%d" % [Tuning.METER_MAX + 50, -5]).meters_override
+	t.check(_page("?debug=1&meters=%d,%d" % [Tuning.METER_MAX + 50, -5]).meters_override()
 			== Vector2(Tuning.METER_MAX, 0.0),
 		"each number clamps into range the same as --meters already does")
-	t.check(_page("?debug=1").meters_override == Vector2(-1.0, -1.0), "an absent value is not given")
-	t.check(_page("?debug=1&meters=10").meters_override == Vector2(-1.0, -1.0),
+	t.check(_page("?debug=1").meters_override() == Vector2(-1.0, -1.0), "an absent value is not given")
+	t.check(_page("?debug=1&meters=10").meters_override() == Vector2(-1.0, -1.0),
 		"one number refuses the whole value rather than guessing the other")
-	t.check(_page("?debug=1&meters=a,b").meters_override == Vector2(-1.0, -1.0),
+	t.check(_page("?debug=1&meters=a,b").meters_override() == Vector2(-1.0, -1.0),
 		"non-numeric words refuse the whole value")
 
 func _test_day_length_from_query(t: TestRunner) -> void:
