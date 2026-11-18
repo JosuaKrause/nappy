@@ -15,7 +15,7 @@ gameplay reads no evictable visual data, and no half-prepared ground is ever dra
 - Water is one surface per ground chunk, phased by `SceneryGround`'s clock, but
   `docs/ARCHITECTURE.md` (its water paragraph), `docs/GRAPHICS.md` (its water lines) and
   `src/city/scenery_water.gd`'s header comment describe the old arrangement. Rewrite all three.
-- `src/city/building_shadows.gd`: `_by_chunk` is never read, and the `if not streamed` it guards is
+- `src/city/building_shadows.gd`: `_by_chunk` is never read, and the `if not _streamed` it guards is
   always true there. Remove both.
 - `src/city/city.gd`: the docstring #445 rewrote keeps "This used to be ~120 lines…", which the
   present-tense rule rules out.
