@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 
 ## The layers a debug build given `--layers raw` starts on.
 func _layers(raw: String) -> Array[int]:
-	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override
+	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override()
 
 
 ## Beside `test_debug_layers.gd`'s own `_test_parse_layers_*` cases, which stop at `1..3`: `5` is

@@ -104,12 +104,12 @@ var _frame_recorder: FrameRecorder
 
 ## Hands the readout the run's configuration, and sets the members read from it.
 func configure(config: RunConfig) -> void:
-	_debug = config.debug_build
-	_readout_requested = config.readout_requested
-	_skip_words = config.skip_words
-	_layers_override = config.layers_override
-	_layer_readout_on = not config.player_view_requested or config.readout_requested
-	_spikes_requested = config.spikes_requested
+	_debug = config.is_debug_build()
+	_readout_requested = config.asks_for_the_readout()
+	_skip_words = config.skip_words()
+	_layers_override = config.layers_override()
+	_layer_readout_on = not config.asks_for_the_player_view() or config.asks_for_the_readout()
+	_spikes_requested = config.asks_for_spikes()
 
 ## Builds what the gate allows on the readout's label and layer, and shows the readout in the shape
 ## this build should have. `run` is the run whose seed and calendar day it names (`run.header()`),

@@ -803,12 +803,6 @@ src/main.gd trace
 src/dev/route_lines.gd branches
 
 # [RunConfig] src/run_config.gd
-src/dev/debug_readout.gd debug_build
-src/dev/debug_readout.gd layers_override
-src/dev/debug_readout.gd player_view_requested
-src/dev/debug_readout.gd readout_requested
-src/dev/debug_readout.gd skip_words
-src/dev/debug_readout.gd spikes_requested
 src/dev/rig_lock.gd is_rig
 src/dev/rig_lock.gd recording
 src/dev/scene_recipe_runtime.gd recipe_draft_path

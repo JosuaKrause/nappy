@@ -134,7 +134,7 @@ func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t: TestRunne
 
 ## The layers a debug build given `--layers raw` starts on.
 func _layers(raw: String) -> Array[int]:
-	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override
+	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override()
 
 
 func _test_parse_layers_reads_a_comma_list(t: TestRunner) -> void:
@@ -245,10 +245,10 @@ func _test_no_layer_node_exists_outside_a_debug_build(t: TestRunner) -> void:
 			"a release build never builds the layer node at all, not merely leaves it invisible")
 	rig.free_all()
 
-## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone (`readout_requested`,
+## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone (`asks_for_the_readout()`,
 ## with no `?layers=` in the same query) builds the node the same way a debug build does, since a
 ## release page's own `?debug=1&layers=1,3` needs somewhere to draw into — but every geometry layer
-## still starts off, exactly as an unflagged debug run's own default, because `layers_override`
+## still starts off, exactly as an unflagged debug run's own default, because `layers_override()`
 ## itself is empty without `?layers=` named.
 func _test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false, "?debug=1"))
