@@ -251,7 +251,7 @@ static func _starting_crowd(run: RunState, city: City, crowd: Crowd, ground: Dic
 			at.x = snappedf(at.x, 0.01)
 		var heading := "south" if vertical and direction > 0.0 else ("north" if vertical
 				else ("east" if direction > 0.0 else "west"))
-		found.append({"kind": "car" if agent.kind == CrowdAgent.Kind.CAR else "walker",
+		found.append({"kind": "car" if agent.is_car() else "walker",
 				"at": at, "direction": heading, "speed": snappedf(float(agent.get("_speed")), 0.0001)})
 	crowd.clear()
 	found.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:

@@ -1334,9 +1334,9 @@ func activity_snapshot() -> Dictionary:
 	for agent in _simulation.crowd().agents():
 		if not view.has_point(transform * agent.global_position):
 			continue
-		var key := "visible_cars" if agent.kind == CrowdAgent.Kind.CAR else "visible_walkers"
+		var key := "visible_cars" if agent.is_car() else "visible_walkers"
 		result[key] += 1
-		if agent.kind == CrowdAgent.Kind.WALKER:
+		if not agent.is_car():
 			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.get("_corridor")]
 			if not result.walker_streets.has(street):
 				result.walker_streets[street] = {"walkers": 0, "moving": 0}
@@ -1523,7 +1523,7 @@ func _moving_in_the_picture() -> Dictionary:
 		return counts
 	for agent in _simulation.crowd().agents():
 		if not agent.velocity().is_zero_approx() and _in_the_picture(agent.global_position):
-			counts["cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"] += 1
+			counts["cars" if agent.is_car() else "walkers"] += 1
 	return counts
 
 ## The node an observation names: a named actor, or for `row:<id>` the first live, unfinished
@@ -1610,7 +1610,7 @@ func _watch_the_crowd() -> void:
 				var jumps: Array = manifest.get("seen_to_jump", [])
 				jumps.append({"tick": tick, "from": [snappedf(was.x, 0.1), snappedf(was.y, 0.1)],
 						"to": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)],
-						"kind": "car" if agent.kind == CrowdAgent.Kind.CAR else "walker"})
+						"kind": "car" if agent.is_car() else "walker"})
 				manifest["seen_to_jump"] = jumps
 		_crowd_was[agent] = at
 

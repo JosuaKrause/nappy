@@ -47,6 +47,11 @@ var kind := Kind.WALKER:
 		kind = value
 		_install(CarStrategy.new(self) if value == Kind.CAR else WalkerStrategy.new(self))
 		_kind_installed()
+## Whether this agent is a car rather than a walker: the one question about its kind that anything
+## outside the crowd asks of it (the day director's tally, the developer's rigs and readouts).
+func is_car() -> bool:
+	return kind == Kind.CAR
+
 ## What only this agent's kind does on the lanes — `WalkerStrategy` or `CarStrategy`, installed by
 ## `kind`. Everything here that differs between a walker and a car asks it. See `LaneStrategy`.
 var _strategy: LaneStrategy

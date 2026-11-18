@@ -106,7 +106,7 @@ The events:
   `lost-crying-task-guard`, never `lost-crying-alley-robbery`, and the lesson's dog and the task
   guard sent at her are `lost-crying-charging-dog-tutorial` and `lost-crying-task-guard-sent` —
   again `pelican` for a pelican, `crowd` for
-  walkers or `traffic` for cars (`ExcitementSource.landed()` on the body's source, told apart by `CrowdAgent.kind`), or `self`
+  walkers or `traffic` for cars (`ExcitementSource.landed()` on the body's source, told apart by `CrowdAgent.is_car()`), or `self`
   for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
