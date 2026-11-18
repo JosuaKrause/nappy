@@ -240,7 +240,7 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	targets.assign(words)
 	_lines = []
 	var trace := RecordingTrace.new(_lines)
-	rig.trace = trace
+	rig.use_trace(trace)
 	_rig_city = city
 	_city_trace = RunCity.events(city).trace
 	RunCity.events(city).trace = trace

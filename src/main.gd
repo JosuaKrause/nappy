@@ -342,8 +342,8 @@ func _ready() -> void:
 	add_child(_session)
 	_session.setup(_run_log, config, EventBus, _flow, _run, _run.attempt_spend().block_arcs())
 	_run.use_trace(_session.trace())
-	_save.trace = _session.trace()
-	_sitting.atlas().trace_note = _session.trace().note
+	_save.use_trace(_session.trace())
+	_sitting.atlas().use_trace_note(_session.trace().note)
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -469,7 +469,7 @@ func _ready() -> void:
 		_resistance.name = "Resistance"
 		add_child(_resistance)
 		_pauses_with_the_game(_resistance)
-		_resistance.trace = _the_trace()
+		_resistance.use_trace(_the_trace())
 		_resistance.use_atlas(_sitting.atlas())
 		_resistance.use_bus(EventBus)
 		var events := _city_simulation.events()
@@ -1142,7 +1142,7 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	_route_rig.name = "RouteRig"
 	add_child(_route_rig)
 	_pauses_with_the_game(_route_rig)
-	_route_rig.trace = _the_trace()
+	_route_rig.use_trace(_the_trace())
 	_route_rig.setup(_city.map, _city_simulation.events(), _spawn_start, _player, _baby,
 			resistance, _day,
 			config.route_targets(), _run)
@@ -1160,7 +1160,7 @@ func _add_the_building_walker() -> void:
 	_building_walker.name = "BuildingWalker"
 	add_child(_building_walker)
 	_pauses_with_the_game(_building_walker)
-	_building_walker.trace = _the_trace()
+	_building_walker.use_trace(_the_trace())
 	_building_walker.setup(_interior.map, _player, _day)
 	_building_walker.use_continue(_on_summary_continued)
 	_flow.day_planned.connect(_building_walker.start_section.unbind(1))

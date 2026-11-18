@@ -24,9 +24,6 @@ src/events/event_spawner.gd scar
 src/events/row_ground.gd scar
 src/events/walk_ground.gd on_finish
 
-# [AtlasLibrary] src/visuals/atlas_library.gd
-src/main.gd trace_note
-
 # [AutoScreenshot] src/dev/auto_screenshot.gd
 src/main.gd before_capture
 src/main.gd simulation_clock
@@ -52,9 +49,6 @@ src/dev/roof_scale_preview.gd roof_object_parent
 # [BuildingShadows] src/city/building_shadows.gd
 src/city/city.gd falls_on
 src/city/city.gd streamed
-
-# [BuildingWalker] src/dev/building_walker.gd
-src/main.gd trace
 
 # [ChargeRecord] src/events/charge_record.gd
 src/events/event_instance.gd began
@@ -681,9 +675,6 @@ src/main.gd timing
 src/events/encounter_watch.gd landed_ever
 src/events/event_spawner.gd on_first_landing
 
-# [GameSave] src/autoload/game_save.gd
-src/main.gd trace
-
 # [GroundShape] src/ground_shape.gd
 src/dev/debug_layers.gd half_length
 src/dev/route_rig_planner.gd half_length
@@ -783,9 +774,6 @@ src/events/event_def.gd warns_for
 src/events/event_instance.gd stop_excitement
 src/events/event_instance.gd warns_for
 
-# [ResistanceDirector] src/resistance/resistance_director.gd
-src/main.gd trace
-
 # [ResistanceHappenings] src/resistance/happenings.gd
 src/dev/scene_recipe_runtime.gd column
 src/dev/scene_recipe_runtime.gd trace
@@ -795,9 +783,6 @@ src/main.gd locked_out
 
 # [RoadClosure] src/routes/road_closure.gd
 src/events/day_planner.gd segment
-
-# [RouteRig] src/dev/route_rig.gd
-src/main.gd trace
 
 # [RouteTree] src/routes/route_tree.gd
 src/dev/route_lines.gd branches

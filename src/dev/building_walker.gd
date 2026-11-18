@@ -40,9 +40,13 @@ var _point := 0
 var _pursued_shaft := {}
 var _last_position := Vector2.INF
 var _done := false
-## Where its `route` lines go: the boot's run trace, which `main` hands it before `setup()`; one
-## nobody handed writes nowhere.
-var trace := RunTrace.new()
+## Where its `route` lines go: the boot's run trace, which `main` hands it before `setup()`
+## (`use_trace()`); one nobody handed writes nowhere.
+var _trace := RunTrace.new()
+
+## Hands the walker the trace its `route` lines are written to.
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
 
 ## Hands it what it walks: the building's `map`, the `player`, the section's `day`.
 func setup(map: InteriorMapPlan, player: Stroller, day: DayController) -> void:
@@ -88,9 +92,9 @@ func start_section(spec: DaySpec) -> void:
 		_legs.append(points)
 	_done = _legs.is_empty()
 	if _done:
-		trace.note("route", "building: no way out of the building from where she stands")
+		_trace.note("route", "building: no way out of the building from where she stands")
 	else:
-		trace.note("route", "building: walking out in %d legs" % _legs.size())
+		_trace.note("route", "building: walking out in %d legs" % _legs.size())
 
 func _physics_process(_delta: float) -> void:
 	if _done or not _day or not _day.is_running():
@@ -150,7 +154,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 		return
 	_done = true
 	_release()
-	trace.note("route", "building: section ended (%s)" % GameEnums.DayResult.keys()[result])
+	_trace.note("route", "building: section ended (%s)" % GameEnums.DayResult.keys()[result])
 
 func _release() -> void:
 	Input.action_release(&"run")

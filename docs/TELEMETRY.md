@@ -1065,8 +1065,8 @@ through something it was handed:
   `RunSession` makes, which `main` hands to the run it takes from the sitting (`RunState`, and its `CityState`), to the `City` (and
   from there its posters, its `EventManager`, every instance it creates and the day's planners) and
   to the `ResistanceDirector`, and to the observers and rigs that write a line of their own: the save
-  (`GameSave.trace`), the atlas pages and the composed ground (`AtlasLibrary.trace_note`, the
-  trace's `note`), `--route`'s walkers and `--quit-when-still`. A component handed none writes nowhere, so a test builds the part it
+  (`GameSave.use_trace()`), the atlas pages and the composed ground (`AtlasLibrary.use_trace_note()`,
+  the trace's `note`), `--route`'s walkers and `--quit-when-still`. A component handed none writes nowhere, so a test builds the part it
   wants and hands it a trace that records into a list. These are the lines a decision writes at the
   point of its roll — why a placement went where it did, which way a roll fell, what a director set
   in motion — built from what is in scope there; the facts other observers need (a nerve, a

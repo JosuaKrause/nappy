@@ -571,7 +571,7 @@ func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 	var director := _director(t)
-	director.trace = RecordingTrace.new(trace_into)
+	director.use_trace(RecordingTrace.new(trace_into))
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
 	return director
 
