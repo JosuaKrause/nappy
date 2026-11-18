@@ -2414,7 +2414,7 @@ of streets that stand nothing where it stood when a refused marble was spent; th
 lilac-marten (the fuller escape) sets it from there. The bag has its own stream off the plan's
 seed, so a lost section replans the same streets. `tests/probes/escape_winnable.gd` prints
 what the plan stands and walks the game's own plan with the game's own walker (`RouteRig`,
-`--start-escape city --route tunnel`). **That walker is a plain one**: it does not play the lure, so a
+`--start-escape city --route tunnel`). **That walker is a plain one**: it does not play the lure, so the
 walks it loses are the walks into a posted roadblock band, whose guard charges a straight walker;
 a player who lures the guard off, as the next section says, is
 not the walker the probe measures. **The draw is the day's own**: `EventScheduler.build_day()`
