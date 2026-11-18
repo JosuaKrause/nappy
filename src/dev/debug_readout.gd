@@ -183,7 +183,7 @@ func draw_routes(map: CityMap) -> void:
 ## The day `spec` has been planned: its routes are the tree the city grew for it. A day that closes
 ## no streets — the escape's sections — grows none, and its lines stay as they are.
 func use_the_plan(spec: DaySpec) -> void:
-	if _route_lines and _streets and spec.closes_streets:
+	if _route_lines and _streets and spec.closes_the_streets():
 		_route_lines.refresh(_streets.route_tree())
 
 ## The day being walked: its number and its words name the readout's day line.
@@ -281,8 +281,8 @@ func _process(delta: float) -> void:
 	var header := [
 		"build %s" % _build_text,
 		"seed  %d   day %d%s" % [_run.run_seed(),
-			_run.day() if _spec.section == DaySpec.Section.NONE else _spec.number,
-			"" if _spec.title == "" else "   " + _spec.title.to_lower()],
+			_run.day() if _spec.section_kind() == DaySpec.Section.NONE else _spec.day_number(),
+			"" if _spec.title() == "" else "   " + _spec.title().to_lower()],
 	]
 	if not _skip_words.is_empty():
 		header.append("skip  %s" % ", ".join(_skip_words))

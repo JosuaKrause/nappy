@@ -24,8 +24,9 @@ func use_continue(continue_from: Callable) -> void:
 ## Answers the brief `spec` raised, one frame after the flow opens it, since `main` shows the screen
 ## right after and a frame signal ticks while the tree is paused behind it. `tree` times the frame.
 func press(tree: SceneTree, spec: DaySpec) -> void:
-	if not _sections.has(spec.section) or _continue.is_null() or _pressed.has(spec.section):
+	if not _sections.has(spec.section_kind()) or _continue.is_null() \
+			or _pressed.has(spec.section_kind()):
 		return
-	_pressed[spec.section] = true
+	_pressed[spec.section_kind()] = true
 	await tree.process_frame
 	_continue.call(RunFlow.Mode.BRIEF)

@@ -1098,7 +1098,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 	Boot.interior(main).exit_requested.emit()
 	await Boot.press_continue(t, main)
 	var city := Boot.city(main)
-	t.check(city != null and Boot.day(main).spec().section == DaySpec.Section.CITY,
+	t.check(city != null and Boot.day(main).spec().section_kind() == DaySpec.Section.CITY,
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
 	if city != null:
 		var map: CityMap = city.map
@@ -1763,12 +1763,12 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		var escape := await _boot_the_escape(t, section)
 		var main := escape.main
 		var summary := Boot.summary(main)
-		var words := _section(section).title
+		var words := _section(section).title()
 		var nerves := escape.run.header().nerves()
 		var length: float = Boot.day(main).spec().length
 		var title: Label = summary.get_node("Root/Center/Lines/Title")
 		var body: Label = summary.get_node("Root/Center/Lines/Body")
-		t.check(Boot.day(main).spec().section == section and summary.is_showing(),
+		t.check(Boot.day(main).spec().section_kind() == section and summary.is_showing(),
 				"section %d: it opens on its brief" % section)
 		t.check(title.text == words,
 				"section %d: titled with the section's own words ('%s')" % [section, title.text])
@@ -1808,7 +1808,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 
 		teach.text = ""
 		await Boot.press_continue(t, main)
-		t.check(Boot.day(main).spec().section == section and summary.is_showing()
+		t.check(Boot.day(main).spec().section_kind() == section and summary.is_showing()
 				and title.text == words,
 				"section %d: its continue is the same section again, behind its brief" % section)
 		t.check(title.text == words and body.text.contains(Texts.nerve_stars(nerves)),
@@ -1830,7 +1830,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 			# so a city that carried it across would be visibly short here.
 			Boot.day(main).tick(20.0)
 			Boot.interior(main).exit_requested.emit()
-			t.check(Boot.day(main).spec().section == DaySpec.Section.CITY and summary.is_showing(),
+			t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.CITY and summary.is_showing(),
 					"the service exit begins the second section, on its own brief")
 			t.check(is_equal_approx(Boot.day(main).seconds_left(), length),
 					"on a full clock of its own, whatever the walk down the stairs cost")
@@ -1871,7 +1871,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t: TestRunner) -> v
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
 	guard.set_process(false)
 	guard.resume(0.01, 0.0, 0.0)
-	her.global_position = Boot.day(main).spec().exits[CityEdge.Kind.TUNNEL]
+	her.global_position = Boot.day(main).spec().exit_points()[CityEdge.Kind.TUNNEL]
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
 	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
@@ -2205,7 +2205,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 	var pause := Boot.pause(main)
 	var window := main.get_node("ReturnWindow") as ReturnWindow
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
-	var words := _section(DaySpec.Section.CITY).title
+	var words := _section(DaySpec.Section.CITY).title()
 
 	t.check(summary.is_showing() and title.text == words, "the section's brief is up")
 	t.get_viewport().push_input(_action("pause"))
@@ -2230,7 +2230,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 	t.check(not pause.is_open(), "Esc does not open the pause over it")
 
 	await Boot.press_continue(t, main)
-	Boot.player(main).global_position = Boot.day(main).spec().exits[CityEdge.Kind.TUNNEL]
+	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityEdge.Kind.TUNNEL]
 	for _frame in 3:
 		await t.get_tree().physics_frame
 	t.check(summary.is_showing() and title.text == Texts.FINALE_TITLE,
@@ -2271,7 +2271,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t: TestRun
 	var day := Boot.day(main)
 	var length: float = day.spec().length
 
-	t.check(day.spec().section == DaySpec.Section.BUILDING,
+	t.check(day.spec().section_kind() == DaySpec.Section.BUILDING,
 			"the boot read the section off the save")
 	t.check(Boot.title(main).is_open() and not Boot.summary(main).is_showing(),
 			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
@@ -2313,13 +2313,13 @@ func _test_a_route_rig_carries_the_building_on_into_the_city(t: TestRunner) -> v
 	var summary := Boot.summary(main)
 	await _let_frames_pass(t, 4)
 	t.check(main.get_node_or_null("RouteRig") == null and not summary.is_showing()
-			and Boot.day(main).spec().section == DaySpec.Section.BUILDING,
+			and Boot.day(main).spec().section_kind() == DaySpec.Section.BUILDING,
 			"a route booted into the building has no city to walk yet, and its walker pressed the"
 			+ " building's brief")
 	Boot.interior(main).exit_requested.emit()
 	t.check(main.get_node_or_null("RouteRig") != null, "winning the building builds the rig with the city")
 	await _let_frames_pass(t, 4)
-	t.check(Boot.day(main).spec().section == DaySpec.Section.CITY and Boot.day(main).is_running()
+	t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.CITY and Boot.day(main).is_running()
 			and not summary.is_showing(),
 			"the rig pressed the city brief's continue: the city is walked")
 	t.check(not t.get_tree().paused, "and the tree runs")

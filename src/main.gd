@@ -417,7 +417,7 @@ func _ready() -> void:
 	# a nerve count or a resistance state that has not been charged yet. A hard run's last nerve
 	# ends the run here (`RunHeader.ending()`), and `_on_title_start()` shows that ending, or the
 	# brief, once the title itself has been dismissed. An escape section is never saved as under way
-	# (`DaySpec.saved_as_under_way`), so a resumed escape is never charged here.
+	# (`DaySpec.is_saved_as_under_way()`), so a resumed escape is never charged here.
 	#
 	# **The symbol exists before this charge**, because the charge can end the run and the run's
 	# end deletes the save, a change the symbol shows (`GameSave.clear()` announces it on
@@ -920,7 +920,7 @@ func _stand_the_world(spec: DaySpec) -> DayWorld:
 
 ## The world of `_stand_the_world()`, built where it is not yet and standing.
 func _the_world_of(spec: DaySpec) -> DayWorld:
-	if spec.world == DaySpec.World.BUILDING:
+	if spec.world_kind() == DaySpec.World.BUILDING:
 		if not _interior:
 			_build_the_escape_building()
 		_interior.start_the_night(_building_seed)
@@ -1013,7 +1013,7 @@ func _hand_the_controls_cover_to_the_events() -> void:
 ## section, the city's otherwise — the one the run flow hands down to her and asks each walking
 ## frame what its ground does to her.
 func _world_map() -> WorldMap:
-	if _flow.spec().world == DaySpec.World.BUILDING and _interior:
+	if _flow.spec().world_kind() == DaySpec.World.BUILDING and _interior:
 		return _interior.map
 	return _city.map if _city else null
 
@@ -1183,13 +1183,13 @@ func _add_the_route_rig_in_the_city() -> void:
 ## **It is also where the save is written.** A section's brief is the escape's only checkpoint, so
 ## it is the moment a closed game has to come back to, and the run's own record of which section
 ## that is (`run.facts().escape_section()`) was set as the section began. `false` because a section is
-## never saved as under way (`DaySpec.saved_as_under_way`): a resumed escape is not charged a nerve
+## never saved as under way (`DaySpec.is_saved_as_under_way()`): a resumed escape is not charged a nerve
 ## for it.
 func _show_the_section_brief() -> void:
 	_hud.visible = false
 	_flow.open_brief()
 	_save_now(false)
-	_summary.show_summary(SummaryModel.brief_for(_run, "", _flow.spec().title), _flow.mode())
+	_summary.show_summary(SummaryModel.brief_for(_run, "", _flow.spec().title()), _flow.mode())
 
 ## Where section two starts and restarts: the service exit, on the street beside the home block.
 func _finale_start_position() -> Vector2:
@@ -1362,7 +1362,7 @@ func _show_the_resume_gate() -> void:
 	# anyway because this is the screen a page the boot could not have known about belongs behind:
 	# a group whose membership depends on the day would be acquired between these two lines.
 	_sitting.atlas().open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
-	_summary.show_summary(SummaryModel.brief_for(_run, _resume_gate_note(), _flow.spec().title),
+	_summary.show_summary(SummaryModel.brief_for(_run, _resume_gate_note(), _flow.spec().title()),
 			_flow.mode())
 
 ## The day brief's one line about what opening the save cost: nothing, a nerve and the same dawn,
@@ -1386,11 +1386,11 @@ func _resume_gate_note() -> String:
 ## is actually walking.
 ##
 ## **A section of the escape is said by name every time it is engaged**, a first entry, a retry and
-## a resumed entry alike — the line its brief carries where "Day N" stands (`DaySpec.title`), said
+## a resumed entry alike — the line its brief carries where "Day N" stands (`DaySpec.title()`), said
 ## once she is walking it since the HUD runs through a pause and a line said behind the brief would
 ## spend its life there. *(2026-09-20, the player, on the escape generally: "the escape shouldn't
 ## behave any different than the rest of the game".)* And it is not saved as under way
-## (`DaySpec.saved_as_under_way`): its brief was its save.
+## (`DaySpec.is_saved_as_under_way()`): its brief was its save.
 func _engage_the_day() -> void:
 	_flow.engage()
 	_player.step_back_in()
@@ -1403,9 +1403,9 @@ func _engage_the_day() -> void:
 		_readout.show_for_the_walk()
 	if is_inside_tree():
 		get_tree().paused = false
-	if _flow.spec().title != "":
-		_hud.say_once(_flow.spec().title)
-	if _flow.spec().saved_as_under_way:
+	if _flow.spec().title() != "":
+		_hud.say_once(_flow.spec().title())
+	if _flow.spec().is_saved_as_under_way():
 		_save_now(true)
 
 ## The screen-edge half of the danger vocabulary, in its own layer.
@@ -1990,7 +1990,7 @@ func _finish_the_section(end: DayEnd) -> void:
 	var won := result == GameEnums.DayResult.WON
 	if not won:
 		EventBus.escape_lost.emit(spec.section_kind(), result)
-	elif spec.a_win_leads_into != DaySpec.Section.NONE:
+	elif spec.a_win_leads_into() != DaySpec.Section.NONE:
 		EventBus.escape_city_entered.emit()
 	else:
 		# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it
@@ -2008,8 +2008,8 @@ func _finish_the_section(end: DayEnd) -> void:
 		if not _flow.scene().lose_the_attempt():
 			_reload_the_scene()
 		return
-	if won and spec.a_win_leads_into != DaySpec.Section.NONE:
-		_start(_escape_section_spec(spec.a_win_leads_into, config.escape_section_length()))
+	if won and spec.a_win_leads_into() != DaySpec.Section.NONE:
+		_start(_escape_section_spec(spec.a_win_leads_into(), config.escape_section_length()))
 		_show_the_section_brief()
 		return
 	if won:
@@ -2024,7 +2024,7 @@ func _finish_the_section(end: DayEnd) -> void:
 	# the `run_ended` subscriber (`GameSave.clear_when_a_run_ends()`) has already cleared.
 	if not run_over:
 		_save_now(false)
-	_summary.show_summary(SummaryModel.day_over(_run, end, spec.title), _flow.mode())
+	_summary.show_summary(SummaryModel.day_over(_run, end, spec.title()), _flow.mode())
 
 ## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`
 ## says: the screen decides it by the mode it was raised in (`raised_in`, a `RunFlow.Mode` sent with
@@ -2296,7 +2296,7 @@ func _process(delta: float) -> void:
 	var world_map := _world_map()
 	if world_map and _player and not _tree_is_paused():
 		world_map.process_player(_player, delta)
-	if _city and _flow.spec().daylight_runs_down:
+	if _city and _flow.spec().runs_the_daylight_down():
 		_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_flow.spec().goal_kind() == DaySpec.Goal.HOME
 			and _day.phase() == GameEnums.DayPhase.RETURNING,

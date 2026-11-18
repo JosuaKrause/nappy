@@ -779,7 +779,7 @@ func _test_resolve_target_spawn_hands_its_name_to_the_spawn_lookup(t: TestRunner
 			"'spawn:park' asks the spawn lookup for 'park' and answers what it does (%s)" % [asked])
 
 ## `tunnel` and `bridge` are the escape city's two ways out, read off the day's spec
-## (`DaySpec.exits`, which the day's start hands a `CITY_EDGE` section from the world it stood); a
+## (`DaySpec.exit_points()`, which the day's start hands a `CITY_EDGE` section from the world it stood); a
 ## day has none, so on a day they are unavailable, and with no `ResistanceDirector` — the escape
 ## has none — `mark` and `task` are unavailable rather than a crash.
 func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestRunner) -> void:
@@ -792,7 +792,7 @@ func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestR
 	var tunnel := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL))
 	var bridge := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE))
 	clock.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
-	clock.spec().exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
+	clock.spec().use_exits({CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge})
 	t.check(planner.resolve("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
 	t.check(planner.resolve("bridge") == bridge, "'bridge' resolves to the spec's bridge")
 	var escape := RouteRigPlanner.new(_city.map, RunCity.events(_city), _no_spawn, _stroller, null, clock)
@@ -1551,7 +1551,7 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t: TestRun
 ## rig's own presses, her own `move_and_slide()`, and the events' own frame, which steps the doors,
 ## holds her and sets her down, and counts a walk under the boom
 ## (the run log's `checkpoint` line for each). The leg's end is handed to the rig as the escape's tunnel
-## would be (`DaySpec.exits`), the one target word that names a point the test chooses. The count
+## would be (`DaySpec.use_exits()`), the one target word that names a point the test chooses. The count
 ## must stay at zero while she ends up on the far side, held by a hut on the way, which is what says
 ## the leg crossed.
 func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) -> void:
@@ -1569,7 +1569,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	var to := _open_point_near(city.map, gate.global_position + axis * reach)
 	stroller.reset_at(from)
 	var day := _started_day(t, city, stroller, run)
-	day.spec().exits = {CityEdge.Kind.TUNNEL: to}
+	day.spec().use_exits({CityEdge.Kind.TUNNEL: to})
 	var rig := _started_rig(t, city, stroller, doors["resistance"], day, run, ["tunnel"])
 	await _steps(t, 2)
 	t.check(_pressed() != Vector2.ZERO and _count("no path") == 0,

@@ -17,7 +17,7 @@ seal) stands on the main road, and its cars drive its whole length, from the tun
 to the bridge at its south, with nothing on the carriageway stopping them. Where a region boundary
 crosses the main road, the crossing is always a guardhouse, whether or not the day's routes cross
 there. The escape is exempt, so its sealing of the main road, which keeps its two chains from
-joining at the spine (`DaySpec.seals_the_main_road`), stays.
+joining at the spine (`DaySpec.seals_off_the_main_road()`), stays.
 
 **The boom stays up for cars.** Asked on the board (main-road-guardhouse) how a guardhouse on the
 main road lets the cars through, with Option A, the boom stays up for cars and never lowers, her

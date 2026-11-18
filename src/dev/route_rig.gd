@@ -24,7 +24,7 @@ extends Node
 ##   straight line. She stops and presses nothing once she is there, and stays until the baby is
 ##   asleep, however long that takes — the day's own clock is what answers whether that fits.
 ## - `home` — the doorstep's own block, the centre of `CityMap.home_rect`.
-## - `tunnel` and `bridge` — the escape city's two ways out (`DaySpec.exits`, the last walkable tile
+## - `tunnel` and `bridge` — the escape city's two ways out (`DaySpec.exit_points()`, the last walkable tile
 ##   of the spine at each end), where reaching one wins the section. Unavailable on a day.
 ## - `spawn:<name>` — whatever `DevRig.for_spawn_target()` already knows how to find.
 ##
@@ -198,7 +198,7 @@ var _held := false
 var _last_position := Vector2.INF
 var _teleported := false
 ## The day this rig's queue was started for, read once in `start_day()` off the spec it is handed
-## (`DaySpec.number`: 1 to 14, or the escape's city, 16). The run's `header().day()` has already moved to the
+## (`DaySpec.day_number()`: 1 to 14, or the escape's city, 16). The run's `header().day()` has already moved to the
 ## next day by the time `DayController.day_finished` reports a win, so a line written from
 ## `_on_day_finished()` would otherwise name the wrong day.
 var _day_number := 0
@@ -231,7 +231,7 @@ func setup(map: CityMap, events: EventManager, spawn_start: Callable, player: St
 ## a probe that simply keeps going) starts the new day's targets fresh rather than chasing
 ## yesterday's mark.
 func start_day(spec: DaySpec) -> void:
-	_day_number = spec.number
+	_day_number = spec.day_number()
 	_target_index = 0
 	_elapsed_seconds = 0.0
 	_waypoints.clear()

@@ -306,7 +306,7 @@ func _say(line: String, seconds: float) -> void:
 	_teach_left = seconds
 
 ## The escape's two hint lines — *"Escape the building"* and *"Escape the city"*, each section's own
-## words (`DaySpec.title`) — said by `main` every time a section is engaged, a first entry, a retry
+## words (`DaySpec.title()`) — said by `main` every time a section is engaged, a first entry, a retry
 ## and a resumed one alike. Public because neither hangs off a telegraph; it is the same one-line
 ## lesson `_teach_the_day()` gives on day 1, for the same length of time.
 func say_once(line: String) -> void:

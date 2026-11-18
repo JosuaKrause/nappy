@@ -120,6 +120,16 @@ Left, each its own design question:
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
+- **The day spec's event readers.** The day spec (`DaySpec`) keeps `number`, `closes_streets`,
+  `world`, `holds_the_home_streets`, `keeps_the_walk_open`, `keeps_unused_calm_clear`,
+  `one_notice_at_a_time`, `owes_a_return` and `poster_pursuits` public for the events' reads (the
+  day planner, the event manager, the dawn's context, the calm kept clean), which go with the
+  events' interface (`event-interface.md`); every reader under `src/` outside the events asks its
+  methods, and the first four already have one (`day_number()`, `closes_the_streets()`,
+  `world_kind()`, `keeps_the_home_streets_clear()`). The suites' reads of `number`,
+  `holds_the_home_streets`, `keeps_the_walk_open` and `poster_pursuits`, and their two writes
+  (`tests/test_dawn_context.gd` sets `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd`
+  sets `owes_a_return`), go with that pass, which gives them another way to build their spec.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance

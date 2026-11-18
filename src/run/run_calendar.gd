@@ -221,7 +221,7 @@ func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
 			return true
 		_header.set_nerves(_header.nerves() - 1)
 		EventBus.nerves_changed.emit(_header.nerves())
-		if rules.a_loss_gives_back_the_attempt:
+		if rules.a_loss_undoes_the_attempt():
 			# Given back before the entry below rather than after it, so the one line about the
 			# nerve also says whether the day took any resistance work down with it. Given back
 			# before the `nerves <= 0` branch too: an attempt that failed did not count, and a run
@@ -243,12 +243,12 @@ func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
 				return false
 			_go_back_to_the_checkpoint()
 			return true
-		if rules.a_loss_gives_back_the_attempt:
+		if rules.a_loss_undoes_the_attempt():
 			_settled.forget(_header.day())
 		return true
 	# A section won that leads into the next settles nothing: the run goes on, and only the walk's
 	# own end does.
-	if rules.a_win_leads_into != DaySpec.Section.NONE:
+	if rules.a_win_leads_into() != DaySpec.Section.NONE:
 		return true
 	# A won day commits what it did: the attempt that stood is the one the next photograph starts
 	# from, whether or not anything calls `begin_day()` before the next `finish_day()`.
@@ -256,7 +256,7 @@ func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
 	# Not for the escape: walking out of the city gives no nerve in either mode — a normal run's
 	# escape has none to give ("the escape doesn't have nerves", the player), and a hard run gets
 	# none back at all.
-	if rules.a_win_gives_a_nerve_back:
+	if rules.a_win_regains_a_nerve():
 		regain_a_nerve_for_a_won_day()
 	if is_final_day():
 		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
