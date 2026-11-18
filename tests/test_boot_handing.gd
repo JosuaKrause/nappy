@@ -94,7 +94,7 @@ func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 	var played := await _boot(t, func(run: RunState) -> void:
 				run.start_run(SEED)
 				run.header().set_day(Tuning.RUN_LENGTH_DAYS)
-				run.facts().set_escape_section(DaySpec.Section.CITY, []))
+				run.facts().set_escape_section(DaySpec.Section.CITY), [])
 	var main := played.booted.main
 	var city := Boot.city(main)
 	t.check(city != null and city.is_ancestor_of(Boot.player(main)),

@@ -432,7 +432,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ##
 ## **The goal itself is silent until the first mark has been touched** (`CLAUDE.md`, "no quest
 ## log or marker for the resistance": *the first encounter comes with no hint at all*). A pickup
-## grants no progress, so the run's `resistance.completed_steps` rather than
+## grants no progress, so the run's `resistance().completed_steps()` rather than
 ## `has_joined_resistance()` is the test — it is non-empty the instant step 1 is touched, which
 ## is the pick-up itself rather than the perform half a day later.
 ##

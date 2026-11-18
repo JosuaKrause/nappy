@@ -22,7 +22,7 @@ var _home_door: City.HomeDoor = null
 ## door exists, so it is handed as a value rather than read off the door node.
 var _door_x_range := Vector2.ZERO
 var _map: CityMap = null
-## The run whose scars say which front burnt (`attempt_spend.scars`).
+## The run whose scars say which front burnt (`attempt_spend().scars()`).
 var _run: RunState = null
 ## Where the boarded window is written down for the run log.
 var _trace := RunTrace.new()

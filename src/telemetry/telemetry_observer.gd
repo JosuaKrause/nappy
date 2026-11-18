@@ -116,7 +116,7 @@ const BLOCKED_REPORT_INTERVAL := 3.0
 ## its making by `RunSession`, which owns both: the boot's own log, or a suite's.
 var _log: Telemetry
 ## The run being watched (`RunState`), handed in by `setup()`: what a calm arrival's block is now
-## (`attempt_spend.city_state`).
+## (`attempt_spend().block_arcs()`).
 var _run: RunState
 ## The city's map — the day's, or the escape's once she is out of the building — or null in the
 ## escape's building, which is what every street, calm-ground, closure, met-event and corridor

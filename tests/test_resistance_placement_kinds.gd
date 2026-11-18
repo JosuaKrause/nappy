@@ -378,7 +378,7 @@ func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 		seen["no_mark_yet"] = director.contact_position() == Vector2.INF
 		seen["no_events_yet"] = RunCity.events(_city).planned_count() == 0
 	var the_day := _start_the_day(t, 9, director,
-			func() -> void: run.resistance().set_progress(2, on_started))
+			func() -> void: run.resistance().set_progress(2), on_started)
 	seen["clock_running"] = _clock.is_running()
 	seen["crowd_placed"] = RunCity.crowd(_city).agent_count() > 0
 	seen["mark_on_offer"] = director.contact_position() != Vector2.INF

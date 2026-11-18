@@ -1,7 +1,7 @@
 class_name PelicanState
 extends RunSubState
 ## How many cyclists this run has drawn from its pelican bag: how far into the bag the next cyclist
-## draws. Run-scoped, a registered part of the run (`RunSubState`) held as `run.pelican`, and
+## draws. Run-scoped, a registered part of the run (`RunSubState`) held as `run.pelican()`, and
 ## the whole state of the bag — it is rebuilt from the run's seed and `MarbleBag.skip()`ped to this
 ## count, the way the poster tears' bag is
 ## (`PosterState.tears_made()`). *(pebbly-ibis, inbox #575 in feathery-lynx: "let's do a bag per run but

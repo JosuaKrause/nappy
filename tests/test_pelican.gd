@@ -243,7 +243,7 @@ func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
 	manager.free()
 	return answers
 
-## `count` answers of a fresh manager for the cyclist `def`, from wherever `_run.pelican` stands.
+## `count` answers of a fresh manager for the cyclist `def`, from wherever `_run.pelican()` stands.
 func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 	_run.header().use_seed(run_seed)
 	var manager := EventManager.new()

@@ -450,7 +450,7 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t: TestR
 ## Playtest 19 finding 5, verbatim: *"the first chalk mark is written in the status when it
 ## should not be"* — seen as `resistance ....   out there: a chalk mark` before
 ## anything had been found. `CLAUDE.md`'s own rule is that the first encounter comes with no
-## hint at all, so the goal title is silent until the run's `resistance.completed_steps` is
+## hint at all, so the goal title is silent until the run's `resistance().completed_steps()` is
 ## non-empty — which happens the instant the first mark is *touched*, not once its perform
 ## half is done a day later, because `complete_resistance_step` records a pickup too even
 ## though a pickup grants no progress. `has_joined_resistance()` (`progress > 0`) would still

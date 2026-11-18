@@ -600,7 +600,7 @@ func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Arr
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 
 ## The same hash the run calendar's `day_rng()` takes, built here without a run, whose
-## `header.run_seed` this sweep has no other use for — same stream a played day actually draws from, for a seed and a day
+## `header().run_seed()` this sweep has no other use for — same stream a played day actually draws from, for a seed and a day
 ## this test chooses rather than the run's own.
 func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
