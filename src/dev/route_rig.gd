@@ -179,8 +179,8 @@ var _door_holds := {}
 ## was touching her (a crowd she was pressing into, or a hold), which leaves `_begin_unstick()` its
 ## plain compass order.
 var _caught_away := Vector2.ZERO
-## What caught her last, for the "stuck fast" line: an event row's id, the tile type of a wall, or
-## a sentence for a stall with nothing solid touching her.
+## What caught her last, for the "stuck fast" line: the id of an event's row (`row_id()`), the
+## tile type of a wall, or a sentence for a stall with nothing solid touching her.
 var _caught_by := ""
 ## Where she stood when it did, for the same line.
 var _caught_tile := Vector2i.ZERO
@@ -430,14 +430,14 @@ func _held_at_a_door() -> bool:
 const _DOOR_HOLDS_PER_LEG := 2
 
 ## Counts a new hold against the door holding her — the nearest live door body that inspects her,
-## a hut or a post (`detain_seconds`) — and gives the leg up once one door has held her more than `_DOOR_HOLDS_PER_LEG` times.
-## Answers whether it gave up.
+## a hut or a post (`EventInstance.detains_her()`) — and gives the leg up once one door has held
+## her more than `_DOOR_HOLDS_PER_LEG` times. Answers whether it gave up.
 func _count_the_door() -> bool:
 	var here := _player.global_position
 	var door := Vector2i(-1, -1)
 	var nearest := INF
 	for instance: EventInstance in _events.instances():
-		if instance.is_finished or instance.def.detain_seconds <= 0.0:
+		if instance.is_gone() or not instance.detains_her():
 			continue
 		var distance := here.distance_to(instance.global_position)
 		if distance < nearest:
@@ -562,7 +562,7 @@ func _note_what_caught_her() -> void:
 		var body := _event_owning(hit.get_collider())
 		if body:
 			_leg_avoid.merge(_planner.ground_round_body(body))
-			_caught_by = body.def.id
+			_caught_by = body.row_id()
 		else:
 			_leg_avoid.merge(_planner.ground_round_point(hit.get_position()))
 			if _caught_by == "":

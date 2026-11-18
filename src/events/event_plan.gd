@@ -507,6 +507,43 @@ func detains_again() -> bool:
 func faces() -> Vector2:
 	return facing
 
+## Which way it faces now: its live event's facing while it is in the world
+## (`EventInstance.facing_now()`), the way its siting decided (`faces()`) otherwise.
+func faces_now() -> Vector2:
+	return live.facing_now() if live and is_instance_valid(live) else facing
+
+## Whether its live event is in the world and over (`EventInstance.is_gone()`), in the moment
+## before streaming takes it off this plan; false while it is not in the world.
+func its_event_is_gone() -> bool:
+	return live != null and is_instance_valid(live) and live.is_gone()
+
+## Whether its body is one the map records for the whole day (`EventDef.stands_as_a_fixed_body()`):
+## standing, solid, and no door's.
+func stands_as_a_fixed_body() -> bool:
+	return def.stands_as_a_fixed_body()
+
+## The pieces its body is made of, in the scene's own frame (`EventDef.body_pieces()`).
+func body_pieces() -> Array[EventDef.SolidPart]:
+	return def.body_pieces()
+
+## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture.
+func ground_shape() -> GroundShape:
+	return def.ground_shape()
+
+## How far round its centre its body stops her (`EventDef.solid_reach()`).
+func solid_reach() -> float:
+	return def.solid_reach()
+
+## How far from its centre her own centre has to come for a hold of its to begin
+## (`EventDef.detain_distance()`): a door's hut or post takes her in from there.
+func detain_distance() -> float:
+	return def.detain_distance()
+
+## The boom's shared state (`gate_state`) for a street door's boom, which the region's doors are
+## made with, or null for every other plan.
+func gate() -> RegionPlanner.GateState:
+	return gate_state
+
 ## Whether it is a loudspeaker mast still speaking today: a mast's own plan (`mast_id`, of a row
 ## that is a mast) that nothing has silenced (`silenced`).
 func is_a_live_mast() -> bool:
