@@ -200,7 +200,7 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> vo
 							through += 1
 			t.check(through == 0, "seed %d day %d: no route of the day runs through a used area "
 					% [map.city_seed(), day] + "taken off the tree (%d tiles)" % through)
-			for branch in tree.branches:
+			for branch in tree.branches():
 				t.check(not branch.area in map.shut_calm(),
 						"seed %d day %d: no branch goes to shut %s" % [map.city_seed(), day, branch.area])
 	t.check(shut > 0, "the sweep took some used areas off the tree (%d of %d used)"
@@ -410,14 +410,14 @@ func _test_a_never_used_park_is_unaffected(t: TestRunner) -> void:
 			var none: Array[Vector2i] = []
 			_repaint(map, day, none)
 			var plain := {}
-			for branch in RouteTree.for_day(map, day).branches:
+			for branch in RouteTree.for_day(map, day).branches():
 				plain[branch.area] = true
 			var used := _used_by(map, day)
 			_repaint(map, day, used)
 			if map.shut_calm().is_empty():
 				continue
 			var shut_tree := {}
-			for branch in RouteTree.for_day(map, day).branches:
+			for branch in RouteTree.for_day(map, day).branches():
 				shut_tree[branch.area] = true
 			var all_calm: Array[Vector2i] = map.calm_blocks.duplicate()
 			if map.fenced_park_block().x >= 0:

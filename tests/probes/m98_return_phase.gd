@@ -71,9 +71,9 @@ func _measure_return_phase() -> void:
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
-			if tree.branches.is_empty():
+			if tree.branches().is_empty():
 				continue
-			var branch: RouteTree.Branch = tree.branches[0]
+			var branch: RouteTree.Branch = tree.branches()[0]
 			if branch.routes.is_empty():
 				continue
 			var route: Array = branch.routes[0]

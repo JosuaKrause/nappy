@@ -69,7 +69,7 @@ func run(t: TestRunner) -> void:
 			var seconds := 0.0
 			var routes := 0
 			var tree := city.streets().route_tree()
-			for branch in tree.branches:
+			for branch in tree.branches():
 				for route: Array in branch.routes:
 					var path := _waypoints(city.map, route)
 					if path.size() < 2:

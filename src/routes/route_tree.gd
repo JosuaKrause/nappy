@@ -117,9 +117,13 @@ class Branch extends RefCounted:
 				found[cell] = true
 		return found
 
+## The branches, in the order they were grown.
+var _branches: Array[Branch] = []
+
 ## The branches, in the order they were grown. A branch's index is its **colour**, which is what
 ## the sharing is recorded in.
-var branches: Array[Branch] = []
+func branches() -> Array[Branch]:
+	return _branches
 
 ## The grid the tree was grown on. Kept rather than rebuilt, because `Corridor` and the telemetry
 ## map both need to translate a cell or a tile against the same one the tree used.
@@ -319,13 +323,13 @@ func _grow_a_branch(map: CityMap, area: ClosurePlanner.CalmArea, rng: RandomNumb
 	var sources := _access_nodes(map, area)
 	if sources.is_empty():
 		return
-	var colour := branches.size()
+	var colour := _branches.size()
 	var first := _walk_home(sources, colour, rng)
 	if _is_no_route(first):
 		return
 	var branch := Branch.new()
 	branch.area = area.block
-	branches.append(branch)
+	_branches.append(branch)
 	branch.routes.append(_adopt(first, colour))
 	# Probe two, and it is **the shortest way left** rather than a second wander. A shorter B puts
 	# less of the map in play: *"the shortest path also reduces the overall number of available
@@ -1065,7 +1069,7 @@ func cells_ahead(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
 	if branches_on(her_tile).is_empty():
 		return found
 	var her_cell := _grid.cell_of(_grid.node_at(her_tile))
-	for branch in branches:
+	for branch in _branches:
 		for route: Array in branch.routes:
 			var index := route.find(her_cell)
 			if index < 0:

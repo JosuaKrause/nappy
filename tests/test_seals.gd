@@ -247,7 +247,7 @@ func _test_the_doorstep_reaches_the_corridor(t: TestRunner) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var home := ClosurePlanner.home_street(map)
 			var tree := _tree_for(map, day)
-			if tree.branches.is_empty():
+			if tree.branches().is_empty():
 				continue
 			total += 1
 			var joined := false
@@ -463,7 +463,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 		_repaint_for(map, day)
 		var home := ClosurePlanner.home_street(map)
 		var tree := RouteTree.for_day(map, day)
-		if tree.branches.is_empty():
+		if tree.branches().is_empty():
 			continue
 		# Sealing (and its thinning pass) is run for its side effect on `map.closed_tiles`/RNG
 		# consumption alone; the guarantee below is asked of the tree, which sealing never edits.

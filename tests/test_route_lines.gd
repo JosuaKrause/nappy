@@ -199,7 +199,7 @@ func _test_a_planned_day_yields_one_polyline_per_route_from_its_first_cell_to_ca
 		for day: int in DAYS:
 			var built := _plan(BASE_SEED + i * 31, day)
 			var expected_routes := 0
-			for branch in built.tree.branches:
+			for branch in built.tree.branches():
 				expected_routes += branch.routes.size()
 			var drawn := built.lines.routes()
 			t.check(drawn.size() == expected_routes,

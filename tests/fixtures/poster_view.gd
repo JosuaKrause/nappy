@@ -21,7 +21,7 @@ static func walk(city: City, map: CityMap) -> Dictionary:
 	var tree := city.streets().route_tree()
 	if tree == null:
 		return found
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route in branch.routes:
 			var seen := {}
 			var under := {}

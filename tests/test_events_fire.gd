@@ -67,13 +67,13 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 	var tree := RouteTree.for_day(_map(), day)
 	var carries := tree.branches_on(_map().world_to_tile(unlike))
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() < 8:
 				continue
 			var shares := false
 			for colour in carries:
-				shares = shares or branch.routes.size() > 0 and colour == tree.branches.find(branch)
+				shares = shares or branch.routes.size() > 0 and colour == tree.branches().find(branch)
 			if shares:
 				continue
 			var points := PackedVector2Array()
@@ -88,7 +88,7 @@ func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 func _fire_route(day: int, outward := true) -> PackedVector2Array:
 	var tree := RouteTree.for_day(_map(), day)
 	var best: Array = []
-	for branch in tree.branches:
+	for branch in tree.branches():
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route

@@ -747,7 +747,6 @@ src/dev/scene_recipe_runtime.gd trace
 src/events/day_planner.gd segment
 
 # [RouteTree] src/routes/route_tree.gd
-src/dev/route_lines.gd branches
 
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd frame_locked
