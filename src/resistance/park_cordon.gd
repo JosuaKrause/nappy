@@ -391,7 +391,7 @@ func _edge_tiles(rect: Rect2i, stretch: Stretch) -> Array[Vector2i]:
 
 func _opens_out(runs: Array[ParkClosure], stretch: Stretch) -> bool:
 	for run in runs:
-		if run.outward != stretch.outward:
+		if run.outward() != stretch.outward:
 			continue
 		for tile in stretch.tiles:
 			if run.covers_tile(tile):

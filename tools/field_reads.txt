@@ -764,12 +764,6 @@ src/events/event_instance.gd runs_within
 # [OnHerWay] src/events/on_her_way.gd
 src/events/event_catalogue.gd at_a_front
 
-# [ParkClosure] src/routes/park_closure.gd
-src/city/city.gd joined_end
-src/city/city.gd joined_start
-src/city/city.gd outward
-src/resistance/park_cordon.gd outward
-
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd draw_support
 src/city/city.gd rail_offset

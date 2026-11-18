@@ -1203,8 +1203,8 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var fence := closure as ParkClosure
 		# An open end's post is inset on its own ground. Rails end on that post, while
 		# the collision below continues to cover the entire entrance as planned.
-		var start_inset := 0.0 if fence.joined_start else ParkClosure.POST_HALF
-		var end_inset := 0.0 if fence.joined_end else ParkClosure.POST_HALF
+		var start_inset := 0.0 if fence.start_turns_a_corner() else ParkClosure.POST_HALF
+		var end_inset := 0.0 if fence.end_turns_a_corner() else ParkClosure.POST_HALF
 		picture_width -= start_inset + end_inset
 		picture_at += (Vector2.RIGHT if across else Vector2.DOWN) * (start_inset - end_inset) * 0.5
 		run = fence.rail_ends()
@@ -1232,7 +1232,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		panel.rise = closure.end_on_rise()
 		if panel is ParkFenceMarker:
 			(panel as ParkFenceMarker).draw_support = i < panels - 1
-			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward.x * 4.0
+			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward().x * 4.0
 			(panel as ParkFenceMarker).sign_offset = at - feet[i]
 		slices.append(panel)
 	DrawLayer.add_slices(self, slices, feet)

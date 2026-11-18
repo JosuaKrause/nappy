@@ -125,7 +125,7 @@ static func edge_tiles_to_tape(map: CityMap, park: Vector2i) -> Array:
 	var needed: Array = []
 	for entry: Array in ring:
 		for run in runs:
-			if run.outward == entry[1] and run.segment.tile_rect().has_point(entry[0]):
+			if run.outward() == entry[1] and run.covers_tile(entry[0]):
 				needed.append(entry)
 				break
 	return needed
