@@ -5,7 +5,7 @@ ground mode `--ground-mode` names, defaulting to 2. The mode decides how the gro
 the camera is about to need: 1 lays every needed region in one frame, 2 at most one whole region a
 frame, 3 spreads one region over frames. The probe builds its city through
 `tests/fixtures/run_city.gd` (`RunCity.with_own_run()`), and that never hands the city a mode. Only
-the game's boot does that (`main.gd` copies `RunConfig.ground_mode` into `City.ground_mode`, which
+the game's boot does that (`main.gd` copies `RunConfig.ground_mode()` into `City.ground_mode`, which
 `City` hands to `SceneryGround.use_mode()`). So the city keeps its default, `SceneryGround.Mode.ONE`
 (mode 2), whatever the command line says, and the mode-3 check (it fails when stepping never spans
 frames) never runs. A fix hands the probe's city the mode from `DevFlags.ground_mode()` before the
