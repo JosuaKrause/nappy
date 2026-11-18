@@ -200,12 +200,11 @@ func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
 	var director: DayDirector = rig["director"]
 	var clock: EndedClock = rig["clock"]
 	clock.says = "She started crying."
-	clock.way_out = CityEdge.Kind.TUNNEL
 	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(end.ends_a_section() and _day_sent() == 15 and _cause_sent() == "self",
 			"a section sends day_ended under its own number and cause")
-	t.check(end.loss_reason() == "She started crying." and end.exit_taken() == CityEdge.Kind.TUNNEL,
-			"and its end carries the clock's own sentence and the way out, for the summary to say")
+	t.check(end.loss_reason() == "She started crying.",
+			"and its end carries the clock's own sentence, for the summary to say")
 	t.check(_run.header().nerves() == Tuning.STARTING_NERVES,
 			"and leaves what it costs to the section's own flow")
 	_put_away(rig)

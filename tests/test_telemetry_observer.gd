@@ -9,12 +9,13 @@ extends RefCounted
 ## writes, are `tests/test_telemetry.gd`'s. The observer is the one object under test, with real
 ## frames passing so its per-frame watchers run as they do in play.
 ##
-## **The player, the baby and the day's clock are built bare** (`Stroller.new()`, `Baby.new()`,
-## a `DayController`) and not faked: the observer is typed against those classes and has no
-## narrower interface to hand a fake, and what it reads off them (a position, a velocity, the
-## meters, the clock's reading) is state a case sets on the real node, as the game does. What ended
-## a day is set on `tests/ended_clock.gd`, the real clock answering it as a case says, since its
-## losing paths are the clock's own suite's. The
+## **The player and the baby are built bare** (`Stroller.new()`, `Baby.new()`) and not faked: the
+## observer is typed against those classes and has no narrower interface to hand a fake, and what
+## it reads off them (a position, a velocity, the meters) is state a case sets on the real node, as
+## the game does. **The day's clock is the shared fake clock** (`tests/ended_clock.gd`): the real
+## countdown, which a case runs with `start()` and `tick()`, answering what ended the day (the
+## loss's sentence, the way out) as the case sets it, since walking the clock's losing paths is its
+## own suite's job. The
 ## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
 ## `EventInstance` set up with a catalogue row), since the observer asks it only for
 ## `instances()` and its event sources, which answer nothing there.

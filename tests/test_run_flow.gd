@@ -123,8 +123,9 @@ func _test_a_lost_section_raises_its_outcome_or_ends_the_run(t: TestRunner) -> v
 func _test_an_authored_scene_plays_again_from_every_screen(t: TestRunner) -> void:
 	var M := RunFlow.Mode
 	var scene := AuthoredScene.new()
-	for mode: int in [M.BRIEF, M.DAY_OVER, M.BACK_TO_CHECKPOINT, M.INTO_ESCAPE, M.SECTION_LOST,
-			M.RUN_OVER, M.ENDING, M.EPILOGUE]:
+	# Every screen an authored run stands in: never a lost section's, which its runtime retries, nor
+	# the hand-over to the escape, which its director never makes.
+	for mode: int in [M.BRIEF, M.DAY_OVER, M.BACK_TO_CHECKPOINT, M.RUN_OVER, M.ENDING, M.EPILOGUE]:
 		var flow := _flow_in(mode, null, scene)
 		t.check(flow.continued(mode) == RunFlow.Step.RELOAD_SCENE and flow.mode() == M.RELOADING,
 				"an authored scene's %s plays the scene again" % M.keys()[mode])
@@ -240,10 +241,12 @@ class _HeardDirector extends DayDirector:
 		return problems
 
 ## A flow standing in `mode`, reached through the call that raises it in play, walking `spec` first
-## when one is given (started by a director that starts nothing), and configured with `scene` last
-## when one is given, as `main` configures its flow once the scene is built.
+## when one is given (started by a director that starts nothing), and configured with `scene` first
+## when one is given, as `main` authors its flow at boot, before any screen comes up.
 func _flow_in(mode: RunFlow.Mode, spec: DaySpec = null, scene: AuthoredScene = null) -> RunFlow:
 	var flow := RunFlow.new()
+	if scene:
+		flow.author(scene)
 	if spec:
 		flow.start(_HeardDirector.new(RunState.new(), []), spec)
 	match mode:
@@ -266,15 +269,15 @@ func _flow_in(mode: RunFlow.Mode, spec: DaySpec = null, scene: AuthoredScene = n
 		RunFlow.Mode.SECTION_LOST:
 			flow.section_lost(false)
 		RunFlow.Mode.RUN_OVER:
-			flow.section_lost(true)
+			var over := DayEnd.new()
+			over.mark_ending_the_run()
+			flow.day_ended(over)
 		RunFlow.Mode.ENDING:
 			flow.show_ending()
 		RunFlow.Mode.EPILOGUE:
 			flow.escape_won()
 		RunFlow.Mode.RELOADING:
 			flow.reload()
-	if scene:
-		flow.author(scene)
 	return flow
 
 # ------------------------------------------------------------- the real boot ---
