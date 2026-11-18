@@ -1985,13 +1985,13 @@ func _test_every_part_word_reaches_its_own_walkable_position(t: TestRunner) -> v
 		var her := Boot.player(escape.main)
 		var at := her.global_position
 		t.check(at != scene.start_world_position(), "'%s' teleports away from her own door" % word)
-		t.check(scene.map.is_walkable(scene.map.world_to_tile(at)),
+		t.check(scene.map().is_walkable(scene.map().world_to_tile(at)),
 				"'%s' lands on a walkable tile" % word)
 		# **And one she stays on.** A part word puts her down with nothing armed, and
 		# `process_player()` fires a transition on the frame she is standing on a door or the
 		# service exit — so a waypoint that is a threshold shows her the part on the other side of
 		# it rather than the part she asked for, silently, with the flag looking like it worked.
-		t.check(scene.map.transition_at(scene.map.world_to_tile(at)).is_empty(),
+		t.check(scene.map().transition_at(scene.map().world_to_tile(at)).is_empty(),
 				"'%s' lands somewhere that is not a door" % word)
 		_free_the_escape(t, escape)
 

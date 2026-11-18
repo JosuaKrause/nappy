@@ -432,7 +432,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var edge := DangerEdge.new()
-	edge.atlas = atlas
+	edge.use_atlas(atlas)
 	t.add_child(edge)
 	edge.setup(events, stroller)
 	await t.get_tree().process_frame

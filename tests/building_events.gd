@@ -15,7 +15,7 @@ static func events_in(parent: Node, scene: InteriorScene,
 	events.use_bus(EventBus)
 	events.stream_radius = INF
 	parent.add_child(events)
-	events.setup_world(scene.map, run)
+	events.setup_world(scene.map(), run)
 	var sets: Array[ExcitementSources] = [events.sources]
 	scene.use_excitement_sources(sets)
 	events.set_meta(&"building_seed", rng.randi())
@@ -29,7 +29,7 @@ static func restart(events: EventManager, scene: InteriorScene) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var none: Array[String] = []
-	events.start_day(spec(), rng, none, scene.map.start_world_position())
+	events.start_day(spec(), rng, none, scene.map().start_world_position())
 	scene.start_the_night(seed)
 
 ## The building section's own spec.

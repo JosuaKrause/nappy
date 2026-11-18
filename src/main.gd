@@ -931,7 +931,7 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 		# The same seed on every entry, so a retry is the same building.
 		var building_rng := RandomNumberGenerator.new()
 		building_rng.seed = _building_seed
-		return DayWorld.in_the_building(_interior.map, _building_simulation.events(), _player,
+		return DayWorld.in_the_building(_interior.map(), _building_simulation.events(), _player,
 				_baby, start_at,
 				Vector2.UP, building_rng)
 	if not _city:
@@ -1006,16 +1006,16 @@ func _hand_the_controls_cover_to_the_events() -> void:
 	if not _touch_controls:
 		return
 	if _city_simulation:
-		_city_simulation.events().use_controls(_touch_controls.covering)
+		_city_simulation.events().use_controls(_touch_controls.covering())
 	if _building_simulation:
-		_building_simulation.events().use_controls(_touch_controls.covering)
+		_building_simulation.events().use_controls(_touch_controls.covering())
 
 ## The map of the world the current spec is walked in — the building's in the escape's first
 ## section, the city's otherwise — the one the run flow hands down to her and asks each walking
 ## frame what its ground does to her.
 func _world_map() -> WorldMap:
 	if _flow.spec().world_kind() == DaySpec.World.BUILDING and _interior:
-		return _interior.map
+		return _interior.map()
 	return _city.map if _city else null
 
 ## Section one's world: the building, her in it, and the events inside it. Reaching its service
@@ -1023,7 +1023,7 @@ func _world_map() -> WorldMap:
 ## reaches the day's clock (`DayController.reach_the_exit()`).
 func _build_the_escape_building() -> void:
 	_interior = InteriorScene.new()
-	_interior.atlas = _sitting.atlas()
+	_interior.use_atlas(_sitting.atlas())
 	_interior.name = "Interior"
 	add_child(_interior)
 	_pauses_with_the_game(_interior)
@@ -1035,15 +1035,15 @@ func _build_the_escape_building() -> void:
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
-	_put_her_in(_interior.map)
+	_put_her_in(_interior.map())
 
 	# The building's events are the day's own manager, handed the building's map: no city, and the
 	# whole plan in the world at once, since the building is walked part by part through doors.
-	_building_simulation = _simulation_builder().in_the_building(_interior, _interior.map, _run)
+	_building_simulation = _simulation_builder().in_the_building(_interior, _interior.map(), _run)
 	_building_simulation.events().use_player(_player)
 	_hand_the_controls_cover_to_the_events()
 	_building_seed = _run.calendar().day_rng(_run.header().day(), "finale-interior").randi()
-	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map, _sitting.atlas())
+	SteamGrates.lay(BuildingPlan.grates(_interior.map()), _interior.map(), _sitting.atlas())
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
 	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
 	# three again when she walks out, which points them at the street.
@@ -1161,7 +1161,7 @@ func _add_the_building_walker() -> void:
 	add_child(_building_walker)
 	_pauses_with_the_game(_building_walker)
 	_building_walker.use_trace(_the_trace())
-	_building_walker.setup(_interior.map, _player, _day)
+	_building_walker.setup(_interior.map(), _player, _day)
 	_building_walker.use_continue(_on_summary_continued)
 	_flow.day_planned.connect(_building_walker.start_section.unbind(1))
 	_flow.brief_opened.connect(_building_walker.press_the_brief)
@@ -1427,8 +1427,8 @@ func _add_danger_edge() -> void:
 	layer.name = "DangerEdge"
 	_edge_layer = layer
 	_edge = DangerEdge.new()
-	_edge.timing = _sitting.kept_frame_timing()
-	_edge.atlas = _sitting.atlas()
+	_edge.use_frame_timing(_sitting.kept_frame_timing())
+	_edge.use_atlas(_sitting.atlas())
 	_edge.name = "Edge"
 	# Pinned to the fixed design box rather than full-rect, so this layer's own rotation (applied
 	# in `_apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
@@ -1459,7 +1459,7 @@ func _add_excitement_halo() -> void:
 		_halo.setup(_excitement_now(), _player, _baby)
 		return
 	_halo = ExcitementHalo.new()
-	_halo.timing = _sitting.kept_frame_timing()
+	_halo.use_frame_timing(_sitting.kept_frame_timing())
 	_halo.name = "ExcitementHalo"
 	DrawLayer.draw_on(_halo, DrawLayer.Layer.HALO)
 	_halo.setup(_excitement_now(), _player, _baby)
@@ -1720,7 +1720,7 @@ func _add_touch_controls() -> void:
 	_touch_layer = layer
 	add_child(layer)
 	_touch_controls = TOUCH_CONTROLS.instantiate()
-	_touch_controls.atlas = _sitting.atlas()
+	_touch_controls.use_atlas(_sitting.atlas())
 	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
@@ -1803,7 +1803,7 @@ func _apply_orientation() -> void:
 	# `_edge` (the screen-edge badge) is built with the first world the boot builds — see
 	# `_add_danger_edge()` — so it is null only for a script-only `main` a test drives by hand.
 	if _edge:
-		_edge.rotated = rotate
+		_edge.use_rotated(rotate)
 	_hud.set_rotated(rotate)
 
 func _screen_furniture_layers() -> Array[CanvasLayer]:
@@ -2433,7 +2433,7 @@ func _raise_save_indicator() -> void:
 	if _save_indicator:
 		return
 	_save_indicator = SaveIndicator.new()
-	_save_indicator.atlas = _sitting.atlas()
+	_save_indicator.use_atlas(_sitting.atlas())
 	add_child(_save_indicator)
 
 ## Every write goes through here. **It tells the symbol nothing**: `GameSave.write()` announces the

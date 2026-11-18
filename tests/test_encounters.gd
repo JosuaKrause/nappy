@@ -594,7 +594,7 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	var controls: TouchControls = (CONTROLS_SCENE.instantiate() as TouchControls)
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
-	events.use_controls(controls.covering)
+	events.use_controls(controls.covering())
 	var view := _view(Stroller.view_centre_of(stroller))
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
 	var corner := view.position + TouchCover.joystick().left_corner().get_center() * scale

@@ -102,11 +102,6 @@ src/simulation_builder.gd skip_motion
 src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
-# [DangerEdge] src/ui/danger_edge.gd
-src/main.gd atlas
-src/main.gd rotated
-src/main.gd timing
-
 # [DaySpec] src/day/day_spec.gd
 src/events/dawn_context.gd holds_the_home_streets
 src/events/dawn_context.gd keeps_the_walk_open
@@ -659,9 +654,6 @@ src/events/warning_board.gd trace
 src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd sends_poster_pursuits
 
-# [ExcitementHalo] src/ui/excitement_halo.gd
-src/main.gd timing
-
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
 src/events/event_spawner.gd on_first_landing
@@ -688,10 +680,6 @@ src/resistance/resistance_director.gd radius
 src/events/event_def.gd ends_the_day
 src/events/event_def.gd lets_out
 src/events/event_def.gd pursuit
-
-# [InteriorScene] src/interior/interior_scene.gd
-src/main.gd atlas
-src/main.gd map
 
 # [MarbleBag] src/city/marble_bag.gd
 src/events/event_spawner.gd drawn
@@ -775,9 +763,6 @@ src/events/day_planner.gd segment
 # [RouteTree] src/routes/route_tree.gd
 src/dev/route_lines.gd branches
 
-# [SaveIndicator] src/ui/save_indicator.gd
-src/main.gd atlas
-
 # [SceneryGround] src/city/scenery_ground.gd
 src/city/building.gd elapsed
 src/city/city.gd atlas
@@ -805,8 +790,6 @@ src/events/event_manager.gd facing
 src/main.gd carrying
 
 # [TouchControls] src/ui/touch_controls.gd
-src/main.gd atlas
-src/main.gd covering
 src/main.gd rotated
 
 # [TrafficSignals] src/city/traffic_signals.gd

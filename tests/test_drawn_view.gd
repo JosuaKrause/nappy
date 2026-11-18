@@ -392,7 +392,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	edge.atlas = atlas
+	edge.use_atlas(atlas)
 	edge.setup(manager, standing)
 	var drawn := [0]
 	edge.draw.connect(func() -> void: drawn[0] += 1)

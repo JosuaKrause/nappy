@@ -921,18 +921,18 @@ func _test_the_stop_band_sits_on_the_steering_edge(t: TestRunner) -> void:
 	rig.free()
 	_release_actions()
 
-## What the world is told the controls cover (`TouchControls.covering`, which `main` hands to
+## What the world is told the controls cover (`TouchControls.covering()`, which `main` hands to
 ## everything that asks what she can see): nothing under the tap scheme, where the whole view counts,
 ## and under the joystick each corner's painted ring or Run disc and never its invisible catch,
 ## whichever side the title chose to steer.
 func _test_the_screen_cover_follows_the_scheme_in_force(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.TAP)
-	t.check(not controls.covering.is_in_force(), "the tap scheme covers nothing: the whole view counts")
+	t.check(not controls.covering().is_in_force(), "the tap scheme covers nothing: the whole view counts")
 	var design := ScreenOrientation.DESIGN_SIZE
 	for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
 		controls.set_mode(ControlsMode.Mode.JOYSTICK, side)
-		var cover := controls.covering
+		var cover := controls.covering()
 		t.check(cover.is_in_force() and cover.design_box() == design,
 				"the joystick is in force over the design box (side %d)" % side)
 		var left_top := TouchControls.FOCUS_LEFT.y - TouchControls.RUN_RADIUS
@@ -944,7 +944,7 @@ func _test_the_screen_cover_follows_the_scheme_in_force(t: TestRunner) -> void:
 		t.check(cover.right_corner() == Rect2(right_left, left_top, design.x - right_left, design.y - left_top),
 				"and the right corner mirrors it (%s)" % cover.right_corner())
 	controls.set_mode(ControlsMode.Mode.TAP)
-	t.check(not controls.covering.is_in_force(), "back on the tap scheme the cover is out of force again")
+	t.check(not controls.covering().is_in_force(), "back on the tap scheme the cover is out of force again")
 	controls.free()
 	_release_actions()
 

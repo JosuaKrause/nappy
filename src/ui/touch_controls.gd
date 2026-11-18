@@ -192,8 +192,13 @@ var _mode := ControlsMode.Mode.TAP
 
 ## What these controls cover of the screen, and whether the scheme that covers it is in force: the
 ## one `ScreenCover` this node keeps current as the mode changes (`set_mode()`), handed on by `main`
-## to everything that asks what she can see (`VisibleView`).
-var covering := _covered_screen(false)
+## to everything that asks what she can see (`VisibleView`) through `covering()`.
+var _covering := _covered_screen(false)
+
+## What these controls cover of the screen (`ScreenCover`), the one object they keep current as the
+## mode changes, so whoever is handed it reads the scheme in force at every look.
+func covering() -> ScreenCover:
+	return _covering
 
 ## The left covered corner includes the painted ring or Run disc, never its invisible catch.
 static func _covered_left() -> Rect2:
@@ -233,7 +238,7 @@ func set_mode(mode: ControlsMode.Mode, side := ControlsMode.Side.LEFT) -> void:
 		_run_before_pause = false
 	_mode = mode
 	_steering_focus = focus
-	covering.put_in_force(mode == ControlsMode.Mode.JOYSTICK)
+	_covering.put_in_force(mode == ControlsMode.Mode.JOYSTICK)
 	if mode != ControlsMode.Mode.JOYSTICK:
 		# The buttons exist only in `JOYSTICK`; a finger still down on one must not keep running on.
 		_let_go_of_the_run_button()
@@ -297,16 +302,22 @@ var _drag_run := false
 
 var _was_paused := false
 ## The baked atlas pages the controls draw from (`AtlasLibrary`), handed by `main` before they
-## enter the tree; controls nobody handed one (a suite's) make their own when they first enter it.
-var atlas: AtlasLibrary = null
+## enter the tree (`use_atlas()`); controls nobody handed one (a suite's) make their own when they
+## first enter it.
+var _atlas: AtlasLibrary = null
+
+## Hands the controls the baked atlas pages they draw from: `main` hands the sitting's library,
+## before they enter the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"ui")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	atlas.release(&"ui")
+	_atlas.release(&"ui")
 
 ## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
 ## since it may not name the view.
@@ -934,7 +945,7 @@ func _draw_pause_button() -> void:
 	if held:
 		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * PAUSE_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(atlas.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+	draw_texture_rect(_atlas.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
 ## Run's disc, on the focus the steering side leaves free, lit while any finger holds Run.
@@ -945,7 +956,7 @@ func _draw_run_button() -> void:
 	if _run_held:
 		draw_circle(center, RUN_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * RUN_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(atlas.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
+	draw_texture_rect(_atlas.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if _run_held else 0.7))
 
 ## The steering ring at `RING_RADIUS` and a knob (the dot) at the heading she is actually walking,

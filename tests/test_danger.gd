@@ -652,7 +652,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	edge.atlas = _atlas
+	edge.use_atlas(_atlas)
 	edge.setup(manager, standing)
 	t.add_child(edge)
 
@@ -695,7 +695,7 @@ func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	edge.atlas = _atlas
+	edge.use_atlas(_atlas)
 	edge.setup(manager, standing)
 	t.add_child(edge)
 
@@ -725,7 +725,7 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	edge.atlas = _atlas
+	edge.use_atlas(_atlas)
 	edge.setup(manager, standing)
 	t.add_child(edge)
 

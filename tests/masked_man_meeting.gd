@@ -49,10 +49,10 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	player.carrying = true
-	player.set_map(scene.map)
+	player.set_map(scene.map())
 	scene.add_entity(player)
 	events.use_player(player)
-	player.global_position = scene.map.tile_to_world(
+	player.global_position = scene.map().tile_to_world(
 			(f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile)
 	if badge:
 		# The badge cases start a row on, past the door: he is already warning, and the walk
@@ -80,7 +80,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 		atlas = AtlasLibrary.new()
 		atlas.acquire(&"events")
 		edge = DangerEdge.new()
-		edge.atlas = atlas
+		edge.use_atlas(atlas)
 		edge.size = Vector2(1280.0, 720.0)
 		t.add_child(edge)
 		edge.setup(events, player)
@@ -96,7 +96,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 		state["ticks"] += 1
 		var ticks: int = state["ticks"]
 		var her := player.global_position
-		var tile := scene.map.world_to_tile(her)
+		var tile := scene.map().world_to_tile(her)
 		# The catch is the tick's: where his step put him when the tick ran.
 		var caught := man.is_lethal_at(her)
 		if met["ran"]:
@@ -108,7 +108,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 				_count_the_badge(edge, state["before"], badge_log)
 			state["before"] = {"quiet": man.is_waiting() or man.is_telegraphing(),
 					"shown": _in_sight(edge, man)}
-		if not state["turned"] and tile.y - origin.y >= int(walk[0]) and her.y >= scene.map.tile_to_world(tile).y:
+		if not state["turned"] and tile.y - origin.y >= int(walk[0]) and her.y >= scene.map().tile_to_world(tile).y:
 			state["turned"] = true
 			_hold_keys(walk[1], state["running"])
 		if not met["ran"] and not man.is_waiting() and not man.is_telegraphing():
