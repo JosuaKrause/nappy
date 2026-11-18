@@ -285,8 +285,17 @@ func use_atlas(library: AtlasLibrary) -> void:
 ## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
 ## Set once by `main` as the escape's first world is built, before she is ever drawn; nothing ever
 ## flips it back, so there is no case of switching mid-walk to account for. Her collision circle is
-## unchanged either way — see `shape`'s own doc.
+## unchanged either way — see `_shape`'s own doc.
 var carrying := false
+
+## Whether the baby is in her arms instead of ahead in the pram (`carrying`).
+func is_carrying() -> bool:
+	return carrying
+
+## Puts the baby in her arms: the escape scene's rig, which `main` hands her as it builds the escape's
+## first world.
+func use_carrying_rig() -> void:
+	carrying = true
 
 ## The map of the world she walks (`WorldMap`), handed in by whoever puts her in it (`set_map()`).
 ## Asked every physics frame whether her *current* position sits on a flight of stairs
@@ -307,13 +316,21 @@ func set_map(map: WorldMap) -> void:
 ## `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one combined physics
 ## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
 ## scene by `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and nothing
-## here touches it. `pram_shape`'s own 12px radius still sizes the pram's shadow, cue and field,
+## here touches it. `_pram_shape`'s own 12px radius still sizes the pram's shadow, cue and field,
 ## which all use the same presentation offset as its art; the pram's *collision* body is a
 ## separate, smaller datum — see `pram_body_shape` below.
-var shape := GroundShape.point(9.0)
-var pram_shape := GroundShape.point(12.0)
+var _shape := GroundShape.point(9.0)
+var _pram_shape := GroundShape.point(12.0)
 
-## The pram's own body radius, smaller than `pram_shape`'s 12px — **8px is the pinned
+## Her own ground shape, which the debug overlay draws as her shadow's outline.
+func shape() -> GroundShape:
+	return _shape
+
+## The pram's ground shape, which the debug overlay draws as the pram's shadow's outline.
+func pram_shape() -> GroundShape:
+	return _pram_shape
+
+## The pram's own body radius, smaller than `_pram_shape`'s 12px — **8px is the pinned
 ## recommendation, open to overturn** if the far half still reads as too much or too little to
 ## clip through. `PramCollisionShape2D`'s centre sits on the circumference of her own body
 ## (`Tuning.PLAYER_BODY_RADIUS`, 14px out along `facing`) rather than at the pram's drawn
@@ -1005,11 +1022,11 @@ func _draw() -> void:
 	var pram_offset := drawn.pram_offset
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
-	shape.draw_shadow(self, Vector2.ZERO)
+	_shape.draw_shadow(self, Vector2.ZERO)
 	if carrying:
 		_draw_mother(drawn)
 	else:
-		pram_shape.draw_shadow(self, pram_offset)
+		_pram_shape.draw_shadow(self, pram_offset)
 		if facing.y < 0.0:
 			_draw_pram(drawn)
 			_draw_mother(drawn)

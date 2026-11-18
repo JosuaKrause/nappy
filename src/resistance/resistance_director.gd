@@ -722,7 +722,7 @@ func _shape_the_touch(contact: ContactPoint, step: ResistanceSteps.Step) -> void
 ## *(The player: "Not the drawn swing. Place an ellipse at its base. That's the area to touch".)*
 static func _swing_base() -> Vector2:
 	var shadow := Prop._playground_frame_shape()
-	return Vector2(shadow.half_length + shadow.radius, shadow.radius)
+	return Vector2(shadow.spine_half_length() + shadow.rounding_radius(), shadow.rounding_radius())
 
 ## Where the run recorded its scar `scar_id` (`RunState.attempt_spend().scars()`), or `Vector2.INF` when it never
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site

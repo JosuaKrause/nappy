@@ -180,7 +180,7 @@ func field_runs(view: Rect2) -> Array:
 			var axis := instance.solid_axis()
 			var velocity := instance.travel_velocity()
 			var shape := instance.field_shape()
-			var spine := shape.half_length if shape != null else 0.0
+			var spine := shape.spine_half_length() if shape != null else 0.0
 			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
 				if not _may_be_seen(view, source, level, spine):
 					continue
@@ -411,11 +411,11 @@ func _draw_shadows() -> void:
 	for prop in props:
 		if prop is Prop:
 			_draw_shadow_outline((prop as Prop).shape(), prop.global_position, Vector2.RIGHT)
-	_draw_shadow_outline(_player.shape, _player.global_position, Vector2.RIGHT)
+	_draw_shadow_outline(_player.shape(), _player.global_position, Vector2.RIGHT)
 	# In the escape she carries the baby and there is no pram, so no pram shadow is drawn
 	# (`Stroller._draw()`) and none is outlined here either.
-	if not _player.carrying:
-		_draw_shadow_outline(_player.pram_shape, _pram_position(), Vector2.RIGHT)
+	if not _player.is_carrying():
+		_draw_shadow_outline(_player.pram_shape(), _pram_position(), Vector2.RIGHT)
 
 func _draw_shadow_outline(shape: GroundShape, at: Vector2, axis: Vector2) -> void:
 	_draw_closed_polyline(shape.shadow_outline(at, axis), SHADOW_COLOUR)

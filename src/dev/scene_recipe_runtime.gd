@@ -1122,8 +1122,8 @@ func _settle_starting_camera() -> void:
 ## Puts `camera` on `player` with her facing lead, at once and with no smoothing left to arrive: the
 ## first view of a scripted scene is the player, not a camera travelling to her.
 static func _settle_camera_on(camera: Camera2D, player: Stroller) -> void:
-	camera.offset = Vector2(player.facing.x,
-			player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	camera.offset = Vector2(player.facing_direction().x,
+			player.facing_direction().y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 	camera.force_update_scroll()
 	camera.reset_smoothing()
 	camera.reset_physics_interpolation()
@@ -1371,7 +1371,7 @@ func _snapshot() -> Dictionary:
 		var at := actor.global_position
 		result[label] = {"position": [snappedf(at.x, 0.0001), snappedf(at.y, 0.0001)]}
 		if actor is Stroller:
-			result[label]["carrying"] = actor.carrying
+			result[label]["carrying"] = actor.is_carrying()
 			result[label]["speed"] = snappedf(actor.current_speed(), 0.0001)
 			result[label]["gait_frame"] = actor.mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
 		elif actor is ContactPoint:
@@ -1412,7 +1412,7 @@ func _observe() -> void:
 				"running":
 					passed = actor is Stroller and actor.current_speed() > Tuning.WALK_SPEED
 				"carrying":
-					passed = actor is Stroller and actor.carrying
+					passed = actor is Stroller and actor.is_carrying()
 				"asleep", "awake":
 					# The baby's own state, the one `Baby` sets by the game's sleep rule and the
 					# pram's zzz is drawn from -- never a recipe-authored indicator.
@@ -1498,7 +1498,7 @@ func _in_the_picture(at: Vector2) -> bool:
 ## page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
 	var at := actor.global_position
-	var covering := _simulation.events().world.visible.controls if _simulation else null
+	var covering := _simulation.events().world.visible.screen_cover() if _simulation else null
 	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
 	box.position += at
 	return VisibleView.visible_share(box, _camera_world_rect(), covering) > 0.0

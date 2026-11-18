@@ -240,7 +240,7 @@ func allows_every(rules: Array[Rule], asked: Ask, at: Vector2) -> bool:
 ## not been looked through.
 func on_the_view(at: Vector2) -> bool:
 	var view: VisibleView = _view.call() if _view.is_valid() else null
-	return view != null and view.view.has_point(at)
+	return view != null and view.camera_view().has_point(at)
 
 ## Whether any part of a drawing of `box` about its feet, standing at `at`, is in the camera's whole
 ## view right now, the covered corners included: the box's centre and its four corners
@@ -395,9 +395,9 @@ static func lead_up_a_lane(box: Rect2) -> float:
 ## whether there is ground at all, such as `EventDirector`'s siting, or a rig with no camera — the
 ## view about her.
 static func seen_from(view: VisibleView, her: Vector2) -> VisibleView:
-	if view and view.view.has_area():
+	if view and view.camera_view().has_area():
 		var whole := VisibleView.new()
-		whole.look(view.view, null)
+		whole.look(view.camera_view(), null)
 		return whole
 	return VisibleView.around(her, null)
 

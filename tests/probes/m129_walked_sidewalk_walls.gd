@@ -46,7 +46,7 @@ extends RefCounted
 ##
 ## **28px, twice `Tuning.PLAYER_BODY_RADIUS` (14px), not 46.** `Tuning.PLAYER_BODY_RADIUS` is the
 ## one collision radius the whole rig moves as (`src/player/stroller.gd`, the note beside
-## `pram_shape`: *"the `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one
+## `_pram_shape`: *"the `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one
 ## combined physics radius for the whole rig"*), and the pram's own body
 ## (`Stroller.PRAM_BODY_RADIUS`, 8px) sits ahead of her **on the circumference of that circle, in
 ## the direction of travel** — never beside it — so nothing about pushing it widens her sideways.
