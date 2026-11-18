@@ -492,7 +492,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		_build_city_in_a_new_run(t)
 		var events := RunCity.events(_city)
 		var covered: Variant = TouchCover.joystick() if joystick else null
-		var day := ResistanceHappenings.NEIGHBOR_DAY
+		var day := ResistanceSteps.NEIGHBOR_DAY
 		var state := CityState.new()
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))

@@ -2261,7 +2261,7 @@ func _physics_process(delta: float) -> void:
 	if _flow.mode == RunFlow.Mode.WALKING \
 			and _day.phase in [GameEnums.DayPhase.WALKING, GameEnums.DayPhase.RETURNING] \
 			and not _tree_is_paused():
-		_run.header().set_play_ticks(_run.header().play_ticks() + 1)
+		_run.header().count_a_play_tick()
 		# The resistance first, as the tree order always had it (`Resistance` is added before `Day`):
 		# the tick a day ends on does not tick the resistance once more after the end.
 		if _resistance:

@@ -347,7 +347,7 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t: TestRunner) -> void
 	t.check(plain != null and crossed != null, "both copies of the wanted notice are baked")
 	var art := PosterArt.new()
 	var intact := PosterState.INTACT
-	run.header().set_day(ResistanceHappenings.NEIGHBOR_DAY + 2)
+	run.header().set_day(ResistanceSteps.NEIGHBOR_DAY + 2)
 	GivenRun.completed_steps(run, [ResistanceSteps.warning_step().index])
 	t.check(art.texture_for(atlas, PosterArt.Kind.WANTED, intact, run.neighbor_was_taken()) == plain,
 			"a warned neighbor's face is not crossed out")
@@ -370,7 +370,7 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t: TestRunner) -> void
 func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
-	var day := ResistanceHappenings.NEIGHBOR_DAY + 2
+	var day := ResistanceSteps.NEIGHBOR_DAY + 2
 	var art := RecordingPosterArt.new()
 	await _open(t, SEEDS[0], day, art)
 	var tiles: Array = _walls.fronts().keys()

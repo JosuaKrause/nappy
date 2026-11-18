@@ -107,9 +107,8 @@ func settled_this_act() -> Array[Vector2i]:
 ## Called when the baby falls asleep, with the calm block she is standing in. The one place
 ## the city learns anything about how the player actually played.
 func remember_where_she_settled(block: Vector2i) -> void:
-	if _settled.block_on(_header.day()).x >= 0:
+	if not _settled.remember(_header.day(), block):
 		return
-	_settled.remember(_header.day(), block)
 	_trace.note("calm", "settled in the calm block %s; tomorrow will know"
 			% RunTrace.tile(block))
 

@@ -29,11 +29,6 @@ const COLUMN_WITHIN := 480.0
 ## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
 const MARKET_GONE_BY := 90.0
 
-## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
-## Named here rather than read off `ResistanceSteps` because the neighbor's mornings are the story
-## whether or not this run is ever offered the task.
-const NEIGHBOR_DAY := 10
-
 ## How far beside her the neighbor comes out of the door, along the street: enough that the two
 ## figures do not stand in one another on the first frame, not so far that they read as strangers.
 const NEIGHBOR_BESIDE_HER := 1.5 * Tuning.TILE_SIZE
@@ -147,7 +142,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_navigator = navigator if navigator else (map.navigator() if map else null)
 	_spawn_siting = spawn_siting
 
-## Starts the day's happenings: on the mornings before `NEIGHBOR_DAY` the neighbor walks out of
+## Starts the day's happenings: on the mornings before `ResistanceSteps.NEIGHBOR_DAY` the neighbor walks out of
 ## her building beside her and off along her street.
 ##
 ## `with_its_events` false starts the day with none of them owed — no neighbor, raid, market,
@@ -173,9 +168,9 @@ func start_day(day: int, with_its_events := true) -> void:
 	_column_owed = with_its_events and day == COLUMN_DAY
 	if not with_its_events:
 		return
-	if day < NEIGHBOR_DAY:
+	if day < ResistanceSteps.NEIGHBOR_DAY:
 		morning_neighbor = _send_the_neighbor_to_work()
-	if day == NEIGHBOR_DAY:
+	if day == ResistanceSteps.NEIGHBOR_DAY:
 		_plan_the_raid()
 	# The neighbor's boarded window, from this morning on for the rest of the run
 	# (`CityFronts.board_neighbor_window()` is idempotent, so calling it again on a later day costs

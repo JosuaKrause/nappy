@@ -423,7 +423,7 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned
 ## through the real day order, since the walk is stated over the day's own closures and bodies.
 func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
-	var day := ResistanceHappenings.NEIGHBOR_DAY
+	var day := ResistanceSteps.NEIGHBOR_DAY
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))

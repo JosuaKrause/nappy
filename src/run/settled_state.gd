@@ -16,9 +16,11 @@ func block_on(on_day: int) -> Vector2i:
 
 ## Keeps `block` as where she settled on `on_day`, unless that day already has one: the record is
 ## written once (`RunCalendar.remember_where_she_settled()`).
-func remember(on_day: int, block: Vector2i) -> void:
-	if not _settled_in.has(on_day):
-		_settled_in[on_day] = block
+func remember(on_day: int, block: Vector2i) -> bool:
+	if _settled_in.has(on_day):
+		return false
+	_settled_in[on_day] = block
+	return true
 
 ## Forgets where she settled on `on_day`, which a lost day's retry has to (`RunCalendar.finish_day()`).
 func forget(on_day: int) -> void:

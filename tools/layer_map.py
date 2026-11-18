@@ -382,12 +382,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "ResistanceHappenings",
-        "the run reads the day of the neighbor's raid (NEIGHBOR_DAY) to say whether she was taken",
-        ("src/run/run_state.gd",),
-    ),
-    Exception_(
-        "names",
         "SpawnSiting",
         "a row's lead is checked against the siting's least distance",
         ("src/events/event_def.gd",),

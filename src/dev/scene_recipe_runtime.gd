@@ -413,7 +413,7 @@ static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[
 	if task.has("neighbor"):
 		if not perform or perform.target_kind != ResistanceSteps.TargetKind.NEIGHBOR:
 			errors.append("setup.task.neighbor: only day %d's neighbor has a start to pin"
-					% ResistanceHappenings.NEIGHBOR_DAY)
+					% ResistanceSteps.NEIGHBOR_DAY)
 		else:
 			_position(task.neighbor, "setup.task.neighbor", errors)
 	names["task"] = true

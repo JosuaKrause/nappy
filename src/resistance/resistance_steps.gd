@@ -11,6 +11,11 @@ extends RefCounted
 ## the mark is touched rather than waiting for the next day's dawn. Only the perform half
 ## grants progress toward `Tuning.RESISTANCE_GOAL`; picking up a note is not the errand.
 
+## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
+## Held with the steps (data) because the run's model reads it to say whether she was taken, and
+## `ResistanceHappenings` reads it for the neighbor's mornings.
+const NEIGHBOR_DAY := 10
+
 ## The same for day 11: once she has read its mark, a second loudspeaker mast's marble is one of
 ## the next this many events, and the mast is put on her route once her walk finds it a site, beside
 ## the one near the mark the task points at first. *(inbox #561 in coral-bunny:

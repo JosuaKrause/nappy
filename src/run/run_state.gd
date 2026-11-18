@@ -142,7 +142,7 @@ func has_joined_resistance() -> bool:
 ## face (`PosterArt.texture_for()`). Derived rather than saved, so a lost day gives it back with the
 ## step.
 func neighbor_was_taken() -> bool:
-	if _header.day() <= ResistanceHappenings.NEIGHBOR_DAY:
+	if _header.day() <= ResistanceSteps.NEIGHBOR_DAY:
 		return false
 	var warning := ResistanceSteps.warning_step()
 	return warning != null and not _resistance.has_completed(warning.index)
