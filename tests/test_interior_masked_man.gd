@@ -56,7 +56,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	player.carrying = true
-	player.set_map(scene.map)
+	player.set_map(scene.map())
 	scene.add_entity(player)
 	var body_collision := player.get_node("CollisionShape2D") as CollisionShape2D
 	var body_circle := body_collision.shape as CircleShape2D
@@ -78,7 +78,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 			for a: String in ["move_left", "move_right", "move_up", "move_down"]:
 				Input.action_release(a)
 			Input.action_press(action)
-			player.global_position = scene.map.tile_to_world(start)
+			player.global_position = scene.map().tile_to_world(start)
 			player.velocity = Vector2.ZERO
 			# Her own `_physics_process()` walks her on real ticks with the key held; what the walk
 			# reads is sampled after each tick, where the tick left her.
@@ -87,21 +87,21 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 			var read_the_walk := func(ticks: int) -> bool:
 				# Whether she stood on the flight before this tick: the tick's contacts are the
 				# flight's if she did.
-				var was_on_flight := scene.map.slope_dir_at(walk_state["position"]) != 0
+				var was_on_flight := scene.map().slope_dir_at(walk_state["position"]) != 0
 				walk_state["position"] = player.global_position
 				if was_on_flight:
 					walk_state["flight_contacts"] += player.get_slide_collision_count()
 				walk_state["ticks"] = ticks
-				if scene.map.world_to_tile(player.global_position).x == column \
-						and scene.map.slope_dir_at(player.global_position) == 0:
+				if scene.map().world_to_tile(player.global_position).x == column \
+						and scene.map().slope_dir_at(player.global_position) == 0:
 					return true
 				# Every tenth of a second: three ticks of the game's 30Hz.
 				if ticks % 3 != 0:
 					return false
 				var last: Vector2 = walk_state["last"]
 				var moved := player.global_position - last
-				var along := absf(last.x - scene.map.tile_to_world(start).x)
-				if scene.map.slope_dir_at(last) != 0 and scene.map.slope_dir_at(player.global_position) != 0 \
+				var along := absf(last.x - scene.map().tile_to_world(start).x)
+				if scene.map().slope_dir_at(last) != 0 and scene.map().slope_dir_at(player.global_position) != 0 \
 						and moved.length() > 1.0 and (not second_row or along >= InteriorScene.TILE * 2.0):
 					walk_state["sampled"] += 1
 					# 45 degrees off the vertical, whichever of the four diagonals.
@@ -116,9 +116,9 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 			var worst: float = walk_state["worst"]
 			var flight_contacts: int = walk_state["flight_contacts"]
 			Input.action_release(action)
-			t.check(scene.map.world_to_tile(player.global_position).x == column,
+			t.check(scene.map().world_to_tile(player.global_position).x == column,
 					"%s: she reaches the next landing (%d steps, ended on %s)"
-					% [label, steps, scene.map.world_to_tile(player.global_position) - origin])
+					% [label, steps, scene.map().world_to_tile(player.global_position) - origin])
 			t.check(sampled >= 10, "%s: the walk had samples on the flight to read (%d)" % [label, sampled])
 			t.check(worst <= _STAIR_HEADING_TOLERANCE,
 					"%s: her body heads within %.0f degrees of 45 on the flight (worst %.1f)"
@@ -212,7 +212,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var part := "stairwell_%s" % ("right" if BuildingPlan.BURNING_SIDE == "left" else "left")
 	var plan := InteriorMap.build()
-	var her := scene.map.tile_to_world((plan.door("%s:landing_lobby" % part) as InteriorMapPlan.Door).tile)
+	var her := scene.map().tile_to_world((plan.door("%s:landing_lobby" % part) as InteriorMapPlan.Door).tile)
 	# A stand-in for her: the manager is handed where she stands and tells every instance each tick.
 	var player := Node2D.new()
 	player.add_to_group("player")

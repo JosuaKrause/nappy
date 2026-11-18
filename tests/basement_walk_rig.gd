@@ -37,8 +37,8 @@ func _init(t: Node) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	_events = BuildingEvents.events_in(t, _scene, rng, _run)
-	for tile in _scene.map.basement_walk():
-		_points.append(_scene.map.tile_to_world(tile))
+	for tile in _scene.map().basement_walk():
+		_points.append(_scene.map().tile_to_world(tile))
 
 func free_rig() -> void:
 	_events.free()

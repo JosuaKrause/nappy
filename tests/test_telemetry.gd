@@ -1057,13 +1057,13 @@ func _test_no_spike_line_with_the_flag_off(t: TestRunner) -> void:
 ## error in a suite makes the gate red whether or not a test expected it. What that value means
 ## is `tests/test_atlas_loading.gd`'s, asked through `moment_for_a_load()` with nothing loaded.
 ## Asked of a library of the test's own (`AtlasLibrary.new()`), handed the suite's log to write into
-## (`trace_note`, as `main` hands the sitting's the boot's trace), so the count this test watches
+## (`use_trace_note()`, as `main` hands the sitting's the boot's trace), so the count this test watches
 ## starts at nought whatever any other library in the process holds — a `City` left standing by an
 ## earlier suite holds `events` on its own library, not on this one — and the library is dropped
 ## with the test, leaving nothing behind for the suite that runs next.
 func _test_a_baked_page_says_which_moment_loaded_it(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
-	atlas.trace_note = _log.note
+	atlas.use_trace_note(_log.note)
 	var group := EventPictures.ATLAS_GROUP
 	_log.begin_run(0)
 	atlas.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)

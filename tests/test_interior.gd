@@ -281,7 +281,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: TestRunner) -> vo
 	var f := InteriorMap.build()
 	var blocked := {}
 	for body: Node2D in scene.get_node("Collision").get_children():
-		blocked[scene.map.world_to_tile(body.position)] = true
+		blocked[scene.map().world_to_tile(body.position)] = true
 	for tile: Vector2i in f.floor_tiles():
 		if f.is_walkable(tile):
 			t.check(not blocked.has(tile), "walkable tile %s is unblocked" % tile)
@@ -413,7 +413,7 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: TestRunner) -> void:
 			forbidden[atlas.region(name)] = true
 
 	var scene := InteriorScene.new()
-	scene.atlas = atlas
+	scene.use_atlas(atlas)
 	t.add_child(scene)
 	scene.build()
 	var drawn_stairs := 0
@@ -515,7 +515,7 @@ func _strollers_on(scene: InteriorScene, tiles: Array[Vector2i]) -> Array[Stroll
 	for tile in tiles:
 		var walker: Stroller = packed.instantiate()
 		walker.carrying = true
-		walker.set_map(scene.map)
+		walker.set_map(scene.map())
 		scene.add_entity(walker)
 		walker.collision_layer = 0
 		walker.collision_mask = 0
@@ -530,7 +530,7 @@ func _strollers_on(scene: InteriorScene, tiles: Array[Vector2i]) -> Array[Stroll
 func _steer(t: TestRunner, scene: InteriorScene, walkers: Array[Stroller], tiles: Array[Vector2i],
 		name: String) -> Dictionary:
 	for index in walkers.size():
-		walkers[index].reset_at(scene.map.tile_to_world(tiles[index]))
+		walkers[index].reset_at(scene.map().tile_to_world(tiles[index]))
 	var held: Dictionary = _PRESSES[name]
 	for action: String in held:
 		Input.action_press(action, held[action])
@@ -560,7 +560,7 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Test
 	var sides: Array[String] = []
 	for side: String in ["left", "right"]:
 		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
-		for tile: Vector2i in scene.map.stairwell_tiles("stairwell_%s" % side):
+		for tile: Vector2i in scene.map().stairwell_tiles("stairwell_%s" % side):
 			var kind: InteriorTile.Kind = f.floor_kind_at(tile)
 			if not InteriorTile.is_walkable(kind) or kind == InteriorTile.Kind.DOOR:
 				continue
@@ -618,13 +618,13 @@ func _test_every_door_is_drawn_under_her(t: TestRunner) -> void:
 			InteriorScene.LIFT_DOOR_TEXTURE, InteriorScene.ENTRANCE_DOOR_TEXTURE]
 	var pictures := {}
 	for name: StringName in door_textures:
-		pictures[scene.atlas.region(name)] = name
+		pictures[_picture(name)] = name
 	var doors: Array[Sprite2D] = []
 	var stack: Array[Node] = [scene]
 	while not stack.is_empty():
 		var node: Node = stack.pop_back()
 		stack.append_array(node.get_children())
-		if node is Sprite2D and pictures.has((node as Sprite2D).texture):
+		if node is Sprite2D and pictures.has(_shown(node as Sprite2D)):
 			doors.append(node)
 	var expected := f.door_ids().size() + f.locked_threshold_positions().size() + (1 if f.exit_position().x >= 0 else 0)
 	for at: Vector2i in f.wall_tiles():
@@ -638,14 +638,14 @@ func _test_every_door_is_drawn_under_her(t: TestRunner) -> void:
 	var asked := 0
 	var over := 0
 	for door: Sprite2D in doors:
-		var foot := scene.map.world_to_tile(door.global_position - Vector2(0, 1))
+		var foot := scene.map().world_to_tile(door.global_position - Vector2(0, 1))
 		for dy in range(-2, 3):
 			for dx in range(-2, 3):
 				var tile := foot + Vector2i(dx, dy)
 				if not f.is_walkable(tile):
 					continue
 				for offset: Vector2 in offsets:
-					player.global_position = scene.map.tile_to_world(tile) + offset
+					player.global_position = scene.map().tile_to_world(tile) + offset
 					asked += 1
 					if not _drawn_over(player, door):
 						over += 1
@@ -772,12 +772,12 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 		player.set_physics_process(false)
 
 		# Her door -> the stair door at this hallway's own end.
-		player.global_position = scene.map.tile_to_world(f.door("hallway_third:%s" % side).tile)
-		var to_shaft := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
+		player.global_position = scene.map().tile_to_world(f.door("hallway_third:%s" % side).tile)
+		var to_shaft := scene.map().transition_at(scene.map().world_to_tile(player.global_position))
 		t.check(to_shaft.get("kind") == "door", "the %s stair door is a door transition" % side)
-		scene.map.process_player(player, 0.0)
+		scene.map().process_player(player, 0.0)
 		await _let_the_fade_run(t)
-		t.check(player.global_position == scene.map.tile_to_world(f.door("%s:landing_third" % part).tile),
+		t.check(player.global_position == scene.map().tile_to_world(f.door("%s:landing_third" % part).tile),
 				"the %s walk arrives at its own top landing's own door" % side)
 
 		# The level `F` approach at each floor remains on the stair route while its `D` is one cell
@@ -793,29 +793,29 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 					% [part, landing_ids[index], landing_ids[index + 1]])
 		for id: String in ["landing_third", "landing_second", "landing_first"]:
 			var landing_tile: Vector2i = f.waypoint("%s:%s" % [part, id])
-			var mid_result := scene.map.transition_at(landing_tile)
+			var mid_result := scene.map().transition_at(landing_tile)
 			t.check(mid_result.is_empty(), "%s: passing %s's `F` approach triggers nothing" % [part, id])
 
 		var bottom_door := f.door("%s:landing_lobby" % part)
-		player.global_position = scene.map.tile_to_world(bottom_door.tile)
-		var to_lobby := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
+		player.global_position = scene.map().tile_to_world(bottom_door.tile)
+		var to_lobby := scene.map().transition_at(scene.map().world_to_tile(player.global_position))
 		t.check(to_lobby.get("kind") == "door", "the %s shaft's own bottom door is a door transition" % side)
-		scene.map.process_player(player, 0.0)
+		scene.map().process_player(player, 0.0)
 		await _let_the_fade_run(t)
-		t.check(player.global_position == scene.map.tile_to_world(f.door("lobby:%s" % side).tile),
+		t.check(player.global_position == scene.map().tile_to_world(f.door("lobby:%s" % side).tile),
 				"the %s walk reaches the lobby's own door" % side)
 
 		# The lobby's own basement door, to the basement, to the exit.
-		player.global_position = scene.map.tile_to_world(f.door("lobby:basement").tile)
-		var to_basement := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
+		player.global_position = scene.map().tile_to_world(f.door("lobby:basement").tile)
+		var to_basement := scene.map().transition_at(scene.map().world_to_tile(player.global_position))
 		t.check(to_basement.get("kind") == "door", "the lobby's basement notch is a door transition")
-		scene.map.process_player(player, 0.0)
+		scene.map().process_player(player, 0.0)
 		await _let_the_fade_run(t)
-		t.check(player.global_position == scene.map.tile_to_world(f.door("basement:entry").tile),
+		t.check(player.global_position == scene.map().tile_to_world(f.door("basement:entry").tile),
 				"the %s walk reaches the basement's own entry door" % side)
 
-		player.global_position = scene.map.tile_to_world(f.exit_position())
-		var exit_result := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
+		player.global_position = scene.map().tile_to_world(f.exit_position())
+		var exit_result := scene.map().transition_at(scene.map().world_to_tile(player.global_position))
 		t.check(exit_result.get("kind") == "exit",
 				"the basement's own exit tile is a transition to the exit, reached via the %s stairwell" % side)
 
@@ -846,12 +846,12 @@ func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: TestRunner) ->
 	t.add_child(player)
 
 	var door_id := "hallway_third:left"
-	var centre := scene.map.tile_to_world(f.door(door_id).tile)
+	var centre := scene.map().tile_to_world(f.door(door_id).tile)
 
-	player.global_position = scene.map.tile_to_world(scene.map.door(scene.map.door(door_id).target_door).tile)
-	scene.map.process_player(player, 0.0)
+	player.global_position = scene.map().tile_to_world(scene.map().door(scene.map().door(door_id).target_door).tile)
+	scene.map().process_player(player, 0.0)
 	await _let_the_fade_run(t)
-	scene.map.process_player(player, 0.0)
+	scene.map().process_player(player, 0.0)
 	t.check(not await _fires_a_transition(t, scene),
 			"arriving through a door arms its release latch: standing where she arrived does not start a second transition")
 
@@ -859,25 +859,25 @@ func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: TestRunner) ->
 	# was armed with, fires nothing — an edge-detected "last tile" flag would refire here, since the
 	# tile she stepped onto in between differs from the one she arrived on.
 	player.global_position = centre + Vector2(InteriorScene.TILE, 0.0)
-	scene.map.process_player(player, 0.0)
+	scene.map().process_player(player, 0.0)
 	player.global_position = centre
-	scene.map.process_player(player, 0.0)
+	scene.map().process_player(player, 0.0)
 	t.check(not await _fires_a_transition(t, scene), "stepping one tile off the door and straight back fires nothing")
 
 	# The latch is armed with the stated radius: one tile and a half, 48px, past the door's own
 	# tile centre.
 	player.global_position = centre + Vector2(47.0, 0.0)
-	scene.map.process_player(player, 0.0)
+	scene.map().process_player(player, 0.0)
 	player.global_position = centre
-	scene.map.process_player(player, 0.0)
+	scene.map().process_player(player, 0.0)
 	t.check(not await _fires_a_transition(t, scene),
 			"47px out, inside the tile-and-a-half radius, still holds: back on the door fires nothing")
 	player.global_position = centre + Vector2(49.0, 0.0)
-	scene.map.process_player(player, 0.0)
+	scene.map().process_player(player, 0.0)
 
 	# Leaving the radius and returning fires the door again.
 	player.global_position = centre
-	scene.map.process_player(player, 0.0)
+	scene.map().process_player(player, 0.0)
 	t.check(await _fires_a_transition(t, scene),
 			"49px out clears the latch: returning to the door after leaving the latch's radius fires it again")
 
@@ -1022,21 +1022,21 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 		# first floor's landing, one cell further in than its door.
 		var approaches: Array[Vector2i] = []
 		for landing_id: String in ["landing_second", "landing_first"]:
-			var landing: Vector2i = scene.map.waypoint("stairwell_%s:%s" % [burning, landing_id])
-			if scene.map.is_walkable(landing + Vector2i.DOWN):
+			var landing: Vector2i = scene.map().waypoint("stairwell_%s:%s" % [burning, landing_id])
+			if scene.map().is_walkable(landing + Vector2i.DOWN):
 				approaches.append(landing + Vector2i.DOWN)
-		t.check(approaches.has(scene.map.world_to_tile(fire.global_position)),
+		t.check(approaches.has(scene.map().world_to_tile(fire.global_position)),
 				"the fire stands on the inner cell of a level approach in the %s shaft" % burning)
 		var reach := fire.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 		t.check(reach > 0.0, "and it is solid at all (%.0fpx)" % reach)
 		var shut := 0
 		for tile in _shaft_tiles(scene, "stairwell_%s" % burning):
-			if scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
+			if scene.map().tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut += 1
 		t.check(shut > 0, "it closes ground in its own shaft (%d tiles)" % shut)
 		var elsewhere := 0
 		for tile in _shaft_tiles(scene, "stairwell_%s" % other):
-			if scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
+			if scene.map().tile_to_world(tile).distance_to(fire.global_position) < reach:
 				elsewhere += 1
 		t.check(elsewhere == 0, "and reaches nothing in the %s shaft, which stays walkable" % other)
 		# The other egress is where the masked man is, which is the whole reason the fire is worth
@@ -1048,7 +1048,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 		t.check(man != null, "a masked man is on the stairs")
 		if man:
 			t.check(_shaft_tiles(scene, "stairwell_%s" % other).has(
-					scene.map.world_to_tile(man.global_position)),
+					scene.map().world_to_tile(man.global_position)),
 					"on the shaft the fire left open")
 	events.free()
 	scene.free()
@@ -1079,15 +1079,15 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 			events.free()
 			scene.free()
 			continue
-		var second := scene.map.waypoint("stairwell_left:landing_second") + Vector2i.DOWN
-		t.check(scene.map.world_to_tile(fire.global_position) == second,
+		var second := scene.map().waypoint("stairwell_left:landing_second") + Vector2i.DOWN
+		t.check(scene.map().world_to_tile(fire.global_position) == second,
 				"seed %d: the fire stands on the second floor's approach %s, at %s"
-				% [run_seed, second, scene.map.world_to_tile(fire.global_position)])
+				% [run_seed, second, scene.map().world_to_tile(fire.global_position)])
 		var f := InteriorMap.build()
 		var reach := fire.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 		var shut := {}
 		for tile: Vector2i in f.floor_tiles():
-			if scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
+			if scene.map().tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut[tile] = true
 		# Each flight is walked between the shaft's own doors, which is where a flight begins and ends
 		# and where a door arrival lands clear of the fire.
@@ -1130,7 +1130,7 @@ func _walks_between(f: InteriorMapPlan, shut: Dictionary, from: Vector2i, to: Ve
 
 ## Every painted grammar cell in one stairwell, including its non-walkable sides.
 func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
-	return scene.map.stairwell_tiles(part_id)
+	return scene.map().stairwell_tiles(part_id)
 
 ## *"The masked man is floating in the stairwell."* His path is the shaft's own walk, so what this
 ## asks is the two properties that make it one: every step joins two cells she could stand on, and
@@ -1167,15 +1167,15 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunne
 		var steps := man.walks()
 		t.check(steps.size() > 8,
 				"his line is the whole shaft rather than two points (%d)" % steps.size())
-		t.check(scene.map.world_to_tile(steps[0]) == f.waypoint("%s:landing_lobby" % part)
-				and scene.map.world_to_tile(steps[steps.size() - 1]) == f.waypoint(part),
+		t.check(scene.map().world_to_tile(steps[0]) == f.waypoint("%s:landing_lobby" % part)
+				and scene.map().world_to_tile(steps[steps.size() - 1]) == f.waypoint(part),
 				"and it runs landing to landing")
 		var off_the_ground := 0
 		var pinched := 0
 		var not_adjacent := 0
 		for i in range(1, steps.size()):
-			var here := scene.map.world_to_tile(steps[i - 1])
-			var next := scene.map.world_to_tile(steps[i])
+			var here := scene.map().world_to_tile(steps[i - 1])
+			var next := scene.map().world_to_tile(steps[i])
 			if not f.is_walkable(here) or not f.is_walkable(next):
 				off_the_ground += 1
 				continue
@@ -1200,7 +1200,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunne
 			if not id.begins_with("%s:" % part):
 				continue
 			doors += 1
-			var at := scene.map.tile_to_world(f.door(id).tile)
+			var at := scene.map().tile_to_world(f.door(id).tile)
 			for point in steps:
 				nearest_door = minf(nearest_door, at.distance_to(point))
 		t.check(doors == 4, "the shaft has its four doors to ask about (%d)" % doors)
@@ -1282,7 +1282,7 @@ func _test_his_run_stops_at_the_building_walls(t: TestRunner) -> void:
 		man.step(STEP)
 		if man.is_on_its_way_out():
 			leaving_frames += 1
-		if not scene.map.is_walkable(scene.map.world_to_tile(man.global_position)):
+		if not scene.map().is_walkable(scene.map().world_to_tile(man.global_position)):
 			off_the_ground += 1
 		at += STEP
 	t.check(leaving_frames > 0, "he ran his line and is leaving (%d frames)" % leaving_frames)
@@ -1322,7 +1322,7 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 	if fire:
 		reach = fire.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 		for tile: Vector2i in f.floor_tiles():
-			if f.is_walkable(tile) and scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
+			if f.is_walkable(tile) and scene.map().tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut[tile] = true
 	t.check(shut.size() > 0, "the fire actually closes ground (%d cells)" % shut.size())
 	var buried := 0
@@ -1404,7 +1404,7 @@ func _walk_distance_to_nearest(f: InteriorMapPlan, targets: Array[Vector2i]) -> 
 func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var walk := scene.map.basement_walk()
+	var walk := scene.map().basement_walk()
 	t.check(walk.size() > 8, "the basement is a walk from its entry to its exit (%d tiles)"
 			% walk.size())
 	var rng := RandomNumberGenerator.new()
@@ -1416,14 +1416,14 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 			mouse = instance
 	t.check(mouse != null, "the mouse is in the building")
 	if mouse:
-		t.check(walk.has(scene.map.world_to_tile(mouse.global_position)),
+		t.check(walk.has(scene.map().world_to_tile(mouse.global_position)),
 				"and stands on the basement's own corridor")
 		# Its dash crosses the passage it stands in, wall to wall, and never leaves the floor: the
 		# building's map stops it at the walls as an alley's stop the city's mouse.
 		var dash := mouse.walks()
 		var on_the_floor := dash.size() >= 2
 		for point in dash:
-			on_the_floor = on_the_floor and scene.map.is_walkable(scene.map.world_to_tile(point))
+			on_the_floor = on_the_floor and scene.map().is_walkable(scene.map().world_to_tile(point))
 		t.check(on_the_floor and dash[0].distance_to(dash[dash.size() - 1]) > 16.0,
 				"and darts across its passage on the floor, wall to wall (%s)" % dash)
 
@@ -1440,14 +1440,14 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 	for i in vents.size():
 		var vent: EventPlan = vents[i]
 		periods[vent.repeat_every] = true
-		var tile := scene.map.world_to_tile(vent.placed_at())
+		var tile := scene.map().world_to_tile(vent.placed_at())
 		t.check(walk.has(tile), "vent %d stands on the walk she has to take (%s)" % [i, tile])
-		t.check(vent.placed_at().is_equal_approx(scene.map.tile_to_world(tile)),
+		t.check(vent.placed_at().is_equal_approx(scene.map().tile_to_world(tile)),
 				"vent %d stands on its cell's own centre, where a one-tile passage is symmetric" % i)
-		var sideways := scene.map.is_walkable(tile + Vector2i.LEFT) \
-				or scene.map.is_walkable(tile + Vector2i.RIGHT)
-		var lengthways := scene.map.is_walkable(tile + Vector2i.UP) \
-				or scene.map.is_walkable(tile + Vector2i.DOWN)
+		var sideways := scene.map().is_walkable(tile + Vector2i.LEFT) \
+				or scene.map().is_walkable(tile + Vector2i.RIGHT)
+		var lengthways := scene.map().is_walkable(tile + Vector2i.UP) \
+				or scene.map().is_walkable(tile + Vector2i.DOWN)
 		t.check(not (sideways and lengthways),
 				"vent %d stands where the corridor is one tile wide, not on a two-row band" % i)
 		t.check(not _basement_reaches_the_exit_without(tile),
@@ -1742,23 +1742,23 @@ func _test_the_meter_does_not_fall_in_the_basement(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
-	var walk := scene.map.basement_walk()
+	var walk := scene.map().basement_walk()
 	t.check(not walk.is_empty(), "the basement has a corridor to walk")
 	var worst := 0.0
 	for tile in walk:
-		worst = maxf(worst, scene.decay_multiplier(scene.map.tile_to_world(tile)))
+		worst = maxf(worst, scene.decay_multiplier(scene.map().tile_to_world(tile)))
 	t.check(worst == 0.0 and InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER == 0.0,
 			"no tile of the basement corridor gives any decay back (%.2f)" % worst)
 	for part in PARTS:
 		if part == "basement":
 			continue
-		var at := scene.map.tile_to_world(scene.map.waypoint(part))
+		var at := scene.map().tile_to_world(scene.map().waypoint(part))
 		t.check(scene.decay_multiplier(at) == 1.0,
 				"%s is ordinary ground for the meter" % part)
 	var f := InteriorMap.build()
-	t.check(scene.decay_multiplier(scene.map.tile_to_world(f.door("lobby:basement").tile)) == 1.0,
+	t.check(scene.decay_multiplier(scene.map().tile_to_world(f.door("lobby:basement").tile)) == 1.0,
 			"the lobby's basement door is still ordinary ground")
-	t.check(scene.decay_multiplier(scene.map.tile_to_world(f.door("basement:entry").tile)) == 0.0,
+	t.check(scene.decay_multiplier(scene.map().tile_to_world(f.door("basement:entry").tile)) == 0.0,
 			"the basement's entry tile gives nothing back")
 	scene.free()
 
@@ -1783,7 +1783,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	rng.seed = 4242
 	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map), scene.map, events.atlas)
+	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map()), scene.map(), events.atlas)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
 	t.check(ground != null, "the building has its floor tiles to lie on")
 	# She joins the same layer every blow does (`InteriorScene.add_entity()`), so a stand-in there
@@ -1904,24 +1904,34 @@ const FLASH_SCALE := 6.0
 ## Where each test makes a fresh run of its own.
 var _rig := InteriorRig.new()
 
+## The rectangle the bake gave the picture `name` on its page (`AtlasTable.region_rect()`), the one
+## every library's `region()` hands out for it, so a sprite is told by the picture it shows without
+## reaching into the library the scene draws from.
+static func _picture(name: StringName) -> Rect2:
+	return Rect2(AtlasTable.baked().region_rect(name))
+
+## The rectangle of the picture `sprite` shows, or an empty one when it shows no atlas region.
+static func _shown(sprite: Sprite2D) -> Rect2:
+	return (sprite.texture as AtlasTexture).region if sprite.texture is AtlasTexture else Rect2()
+
 ## The hallway windows as drawn: every sprite in the building showing the picture of a window,
 ## dark or lit, read off the scene's tree.
 func _windows(scene: InteriorScene) -> Array[Sprite2D]:
-	var dark := scene.atlas.region(InteriorScene.HALLWAY_WINDOW)
-	var lit := scene.atlas.region(InteriorScene.HALLWAY_WINDOW_FLASH)
+	var dark := _picture(InteriorScene.HALLWAY_WINDOW)
+	var lit := _picture(InteriorScene.HALLWAY_WINDOW_FLASH)
 	var found: Array[Sprite2D] = []
 	for node in scene.find_children("*", "Sprite2D", true, false):
 		var sprite := node as Sprite2D
-		if sprite.texture == dark or sprite.texture == lit:
+		if _shown(sprite) == dark or _shown(sprite) == lit:
 			found.append(sprite)
 	return found
 
 ## How many of `windows` show the lit picture.
-func _lit(scene: InteriorScene, windows: Array[Sprite2D]) -> int:
-	var lit := scene.atlas.region(InteriorScene.HALLWAY_WINDOW_FLASH)
+func _lit(windows: Array[Sprite2D]) -> int:
+	var lit := _picture(InteriorScene.HALLWAY_WINDOW_FLASH)
 	var count := 0
 	for sprite in windows:
-		if sprite.texture == lit:
+		if _shown(sprite) == lit:
 			count += 1
 	return count
 
@@ -1940,13 +1950,13 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	scene.stop_the_night()
 	var windows := _windows(scene)
 	t.check(not windows.is_empty(), "the building has hallway windows (%d)" % windows.size())
-	t.check(_lit(scene, windows) == 0, "the windows are dark to begin with")
+	t.check(_lit(windows) == 0, "the windows are dark to begin with")
 	var lit_ticks: Array[int] = []
 	# The watch runs at `process_frame`: after the tick's physics lit the windows and before that
 	# frame's `_process()` darkens them (the engine's fixed order), so a flash is seen on its tick.
 	var odd := {"neither": 0}
 	var watch := func(tick: int) -> void:
-		var lit := _lit(scene, windows)
+		var lit := _lit(windows)
 		if lit > 0:
 			lit_ticks.append(tick)
 		# *"All windows always need to flash together. A single window cannot flash by itself."*
@@ -1960,7 +1970,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	# A flash is over by the frame after it: it holds for 0.12s and a tick is longer.
 	t.check(lit_ticks.size() == 1,
 			"and they go dark again a frame or two later (lit on ticks %s)" % str(lit_ticks))
-	t.check(_lit(scene, windows) == 0, "all of them, with none left lit (%d)" % _lit(scene, windows))
+	t.check(_lit(windows) == 0, "all of them, with none left lit (%d)" % _lit(windows))
 	# Every coming of a row from outside lights them, not only a repeat: a plan that comes once, in
 	# the world from its first frame, lights them as it is put there.
 	var once := EventPlan.new(EventCatalogue.explosion_outside(),
@@ -1970,7 +1980,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	var none: Array[String] = []
 	events.start_day(BuildingEvents.spec(), RandomNumberGenerator.new(), none,
 			scene.start_world_position())
-	t.check(once.is_in_the_world() and _lit(scene, windows) == windows.size(),
+	t.check(once.is_in_the_world() and _lit(windows) == windows.size(),
 			"a bang from outside that comes once lights every window as it comes")
 	events.free()
 	scene.free()
@@ -2056,10 +2066,10 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunne
 	# The watch runs when `process_frame` is emitted: after the tick's physics, which lit the windows,
 	# and before that frame's `_process()` darkens them. The engine's order, the same on every frame.
 	var watch := func(tick: int) -> void:
-		var lit := _lit(scene, windows)
+		var lit := _lit(windows)
 		if lit > 0:
 			when.append(tick)
-		if _lit(twin_scene, twin_windows) > 0:
+		if _lit(twin_windows) > 0:
 			twin_when.append(tick)
 		# All of them or none, on every tick: a flash that is over leaves none lit, and one that is on
 		# has every window lit.
@@ -2118,7 +2128,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunne
 	var instances := events.instances().size()
 	var whole := [] as Array[int]
 	var count_lit := func(tick: int) -> void:
-		if _lit(scene, windows) == windows.size():
+		if _lit(windows) == windows.size():
 			whole.append(tick)
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(
 			InteriorScene.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01, FLASH_SCALE), count_lit, FLASH_SCALE)
@@ -2190,7 +2200,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	t.add_child(edge)
 	edge.size = ScreenOrientation.DESIGN_SIZE
 	# The pictures a badge is drawn with, from the atlas `main` hands it.
-	edge.atlas = events.atlas
+	edge.use_atlas(events.atlas)
 	edge.setup(events, player)
 	var far := Vector2(-40000.0, -40000.0)
 	player.global_position = far
@@ -2276,6 +2286,6 @@ func _test_the_escape_building_is_dark_by_part(t: TestRunner) -> void:
 ## The light she stands in at `tile`: the scene's own modulate after the building has been asked what
 ## its ground does to somebody standing there (`process_player()`, which the run flow asks every frame).
 func _lighting_at(scene: InteriorScene, player: Node2D, tile: Vector2i) -> Color:
-	player.global_position = scene.map.tile_to_world(tile)
-	scene.map.process_player(player, 0.0)
+	player.global_position = scene.map().tile_to_world(tile)
+	scene.map().process_player(player, 0.0)
 	return scene.modulate

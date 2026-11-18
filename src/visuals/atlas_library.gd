@@ -99,11 +99,11 @@ var _resident: Dictionary = {}
 ## drops them from here.
 var _textures: Dictionary = {}
 ## Where the library's own `texture` lines go, and the ground's (`note()`): a `Callable(kind,
-## text)`, the boot's run trace's `note`, which `main` hands the sitting's library each boot. Empty,
-## the default, writes nowhere: the bake (`tools/bake_atlases.gd`), and a suite's library it hands
-## none. A `Callable` rather than a `RunTrace`, which sits on the domain model's layer, above this
-## one.
-var trace_note := Callable()
+## text)`, the boot's run trace's `note`, which `main` hands the sitting's library each boot
+## (`use_trace_note()`). Empty, the default, writes nowhere: the bake (`tools/bake_atlases.gd`), and
+## a suite's library it hands none. A `Callable` rather than a `RunTrace`, which sits on the domain
+## model's layer, above this one.
+var _trace_note := Callable()
 
 ## Group name -> the loaded page `Texture2D`, its reference count and its size.
 class Page extends RefCounted:
@@ -508,11 +508,17 @@ func acquire(group: StringName) -> void:
 				+ "at startup or in a day brief and nowhere else — see AtlasLibrary's own doc.")
 				% group)
 
-## One line about the textures in the run log, written where `trace_note` says: the library's own
-## page lines, and the composed ground's (`GroundLayers`, which builds it from this library's page).
+## Hands the library where its lines go (`note()`): a `Callable(kind, text)`, the boot's run
+## trace's `note`, or an empty one for nowhere.
+func use_trace_note(note_to: Callable) -> void:
+	_trace_note = note_to
+
+## One line about the textures in the run log, written where `use_trace_note()` says: the library's
+## own page lines, and the composed ground's (`GroundLayers`, which builds it from this library's
+## page).
 func note(kind: String, text: String) -> void:
-	if trace_note.is_valid():
-		trace_note.call(kind, text)
+	if _trace_note.is_valid():
+		_trace_note.call(kind, text)
 
 ## Drops a reference on `group`, freeing its page and every region handed out over it on the
 ## last one. A `release()` with nothing acquired is a programming error and says so.

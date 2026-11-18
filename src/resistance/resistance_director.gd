@@ -251,8 +251,13 @@ var _happenings := ResistanceHappenings.new()
 var _steps: Array[ResistanceSteps.Step] = ResistanceSteps.all()
 
 ## Where this director writes its own account of what it placed and why, for the run log — handed
-## in before `setup()`, which passes it on to the happenings; silent until then.
-var trace := RunTrace.new()
+## in by `use_trace()` before `setup()`, which passes it on to the happenings; silent until then.
+var _trace := RunTrace.new()
+
+## Hands the director the trace its account is written to, before `setup()`: `main` hands the
+## boot's run trace.
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
 
 ## The signals the resistance reports on (`EventBus`'s script), so the bus it is handed has a class.
 const _BUS := preload("res://src/autoload/event_bus.gd")
@@ -331,7 +336,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_mark_drawn = _spawn_siting.ask_of_drawing(MARK_BOX)
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
-	_happenings.use_trace(trace)
+	_happenings.use_trace(_trace)
 	_happenings.setup(map, _run, events, streets, fronts, world, _atlas, moves_by, _spawn_siting)
 
 # -------------------------------------------------------------------- telling ---
@@ -517,7 +522,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			# a front day 3's fire could have caught on, and `_burn_a_front_for_the_task()`
 			# below records the scar there and burns the building behind it — never a step with
 			# nowhere to go, and never bare sidewalk.
-			trace.note("contact", ("step %d: no recorded scar for '%s' — a front the " +
+			_trace.note("contact", ("step %d: no recorded scar for '%s' — a front the " +
 					"fire could have caught on stands in for it") % [_step.index,
 					_step.task_event_id])
 
@@ -560,7 +565,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# **A refusal is a step with nowhere to go today**, as an empty pool is: no contact, no
 	# arrow, the step neither done nor failed.
 	if at != Vector2.INF and not _she_can_be_sent_to(_ground, her, _nothing_stands_on):
-		trace.note("contact", "step %d: no way stands to %s over ground that has drawn; it has no place"
+		_trace.note("contact", "step %d: no way stands to %s over ground that has drawn; it has no place"
 				% [_step.index, "the place it was given" if _ground == NO_TILE
 				else RunTrace.tile(_ground)])
 		at = Vector2.INF
@@ -621,13 +626,13 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	if ResistanceSteps.answers_at_several_places(_step):
 		_arrow_key = _contact_key()
 	_tell_a_contact_is_on_offer()
-	trace.note("contact", "step %d on offer at %s" % [
+	_trace.note("contact", "step %d on offer at %s" % [
 		_step.index, RunTrace.tile(_map.world_to_tile(at))])
 	if mark != Vector2.INF:
 		var target := red_arrow_target()
 		if target == Vector2.INF:
 			target = _rider.global_position if _rider else at
-		trace.note("contact", "step %d stands %.0fpx from the mark it was read at" % [
+		_trace.note("contact", "step %d stands %.0fpx from the mark it was read at" % [
 			_step.index, mark.distance_to(target)])
 
 	# A guard stands where a mark or a roadblock waits (`_keeps_a_waiting_guard()`). Every other task
@@ -798,7 +803,7 @@ func _the_door_behind(shell_at: Vector2, her: Vector2) -> Vector2:
 		_ground = _frontage_she_can_be_sent_to(door, her)
 		if _ground != NO_TILE:
 			return door
-		trace.note("contact", ("step %d: the burnt building's door at %s has no ground " +
+		_trace.note("contact", ("step %d: the burnt building's door at %s has no ground " +
 				"within reach today — the facade behind the shell stands in")
 				% [_step.index, RunTrace.tile(_map.world_to_tile(door))])
 	door = shell_at + Vector2.UP * Tuning.TILE_SIZE
@@ -943,10 +948,10 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		# unguarded today rather than guarded by a robber stuck for ever where nobody can ever
 		# meet him. `docs/DECISIONS.md`, M100, "The guard robber is placed inside a building,
 		# where he is stuck for ever".
-		trace.note("roll", "%s unguarded: no walkable ground for the robber in %d draws"
+		_trace.note("roll", "%s unguarded: no walkable ground for the robber in %d draws"
 				% [kind, TRAP_DRAW_LIMIT])
 		return
-	trace.note("roll", "%s guarded (%s): robber %.0fpx away"
+	_trace.note("roll", "%s guarded (%s): robber %.0fpx away"
 			% [kind, placement, at.distance_to(guard_at)])
 	if for_mark:
 		_guard = _events.spawn_extra(robbery, guard_at)
@@ -1074,7 +1079,7 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 			return ordered[0]
 	if ordered.is_empty():
 		return Vector2.INF
-	trace.note("roll", "no spot on the far side of the roadblock from her takes its guard; "
+	_trace.note("roll", "no spot on the far side of the roadblock from her takes its guard; "
 			+ "he stands on her side, %.0fpx from it" % ordered[0].distance_to(body))
 	return ordered[0]
 
@@ -1194,7 +1199,7 @@ func _send_at_her(def: EventDef, front_door: bool, who := "a robber") -> void:
 		_events.spawn_warned(def, PackedVector2Array([place]))
 		_note_the_trap(who, place, standing, start)
 	if not _events.send_from_out_of_sight(def, her, search, arrive):
-		trace.note("roll", "task handed over unguarded: no walkable ground out of sight of her "
+		_trace.note("roll", "task handed over unguarded: no walkable ground out of sight of her "
 				+ "in %d draws" % (TRAP_DRAW_LIMIT + 4))
 
 ## The run log's line for the pursuer a task has just sent at her, created at `at` with her at `her`,
@@ -1206,7 +1211,7 @@ func _note_the_trap(who: String, at: Vector2, her: Vector2, arrival: SpawnSiting
 	elif arrival.clear:
 		run = "a clear run at her along her street, beside her" if arrival.beside \
 				else "a clear run at her"
-	trace.note("roll", "task handed over: %s sent after her from %s, %.0fpx off (%s)"
+	_trace.note("roll", "task handed over: %s sent after her from %s, %.0fpx off (%s)"
 			% [who, RunTrace.tile(_map.world_to_tile(at)), her.distance_to(at), run])
 
 ## Where the pursuer a handed-over task sets on her starts: **just out of sight of her** along its
@@ -1793,7 +1798,7 @@ func _pick_near(candidates: Array[Vector2i], rng: RandomNumberGenerator, mark: V
 	if at != Vector2.INF:
 		return at
 	var nearest := _nearest_to_the_mark(candidates, mark)
-	trace.note("contact", ("nothing qualifies where a path reaches the %.0fpx circle round her; " +
+	_trace.note("contact", ("nothing qualifies where a path reaches the %.0fpx circle round her; " +
 			"the nearest that does is %s") % [NEAR_THE_MARK, "none" if nearest == Vector2.INF
 			else "%.0fpx away" % nearest.distance_to(mark)])
 	return nearest
@@ -1905,7 +1910,7 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 			var kept := _events.keep_live(def.id, found.placed_at())
 			if kept:
 				_ground = _touched_from(found, paths, reach)
-				trace.note("contact", "the task takes the roadblock the day placed at %s, %.0fpx from the mark"
+				_trace.note("contact", "the task takes the roadblock the day placed at %s, %.0fpx from the mark"
 						% [RunTrace.tile(_map.world_to_tile(found.placed_at())),
 						found.placed_at().distance_to(her)])
 				return kept
@@ -1914,11 +1919,11 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 		var swapped := _events.swap_in_a_section(to_swap.section(), to_swap.roadblock())
 		if swapped:
 			_ground = to_swap.ground()
-			trace.note("contact", "the task's roadblock is put across a section at %s, %.0fpx from the mark"
+			_trace.note("contact", "the task's roadblock is put across a section at %s, %.0fpx from the mark"
 					% [RunTrace.tile(_map.world_to_tile(swapped.body_position())),
 					swapped.body_position().distance_to(her)])
 			return swapped
-	trace.note("contact", ("no roadblock the day placed is within %.0fpx of her paths and no " +
+	_trace.note("contact", ("no roadblock the day placed is within %.0fpx of her paths and no " +
 			"section beside her routes can take one; the task has no roadblock") % reaches.back())
 	return null
 
@@ -2180,7 +2185,7 @@ func _on_door_crossed(at: Vector2, axis: Vector2, inspected: bool) -> void:
 	if absf((at - _door_at).dot(_door_axis)) > 1.0 or absf(axis.dot(_door_axis)) < 0.99 \
 			or at.distance_to(_door_at) > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
 		return
-	trace.note("contact", "step %d: she crossed the district door at %s, %s" % [_step.index,
+	_trace.note("contact", "step %d: she crossed the district door at %s, %s" % [_step.index,
 			RunTrace.tile(_map.world_to_tile(_door_at)),
 			"let through after the inspection" if inspected else "under the boom, not inspected"])
 	_walked_under_the_door = not inspected
@@ -2283,7 +2288,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 				_ground = added[1]
 				return _map.tile_to_world(added[0])
 			var stand_in := _nearest_confirmed_mast(offered, beside, ground, mark)
-			trace.note("contact", ("no mast stands where a path reaches the %.0fpx circle round her and "
+			_trace.note("contact", ("no mast stands where a path reaches the %.0fpx circle round her and "
 					+ "none could be put up; the nearest live one a way is confirmed to is %s") % [
 					NEAR_THE_MARK, "none" if stand_in < 0
 					else "%.0fpx from the mark" % offered[stand_in].position.distance_to(mark)])
@@ -2392,11 +2397,11 @@ func _add_a_mast_near(mark: Vector2) -> Array[Vector2i]:
 					break
 	var plan := _events.queue_a_mast(feet)
 	if not plan:
-		trace.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
+		_trace.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
 				% NEAR_THE_MARK)
 		return added
 	var foot := _map.world_to_tile(plan.position)
-	trace.note("contact", "a mast is generated at %s for the task, %.0fpx from the mark"
+	_trace.note("contact", "a mast is generated at %s for the task, %.0fpx from the mark"
 			% [RunTrace.tile(foot), plan.position.distance_to(mark)])
 	added.append(foot)
 	added.append(beside_of.get(foot, foot))
@@ -2450,7 +2455,7 @@ func _silence_the_mast() -> void:
 	_events.silence_mast(_mast_id)
 	if foot != Vector2.INF:
 		_run.add_scar(DawnMasts.SILENCED_MAST, foot)
-	trace.note("contact", "mast %s is silenced for the rest of the run" % _mast_id)
+	_trace.note("contact", "mast %s is silenced for the rest of the run" % _mast_id)
 
 ## How far from where she touched the mark the neighbor has to start, at least: off screen, so they
 ## walk into view rather than appear in it — the same distance an unseen mark is kept at.
@@ -2507,7 +2512,7 @@ func _send_the_neighbor_home() -> EventInstance:
 				kept = start
 				laid_again = true
 				break
-			trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
+			_trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
 					% [_map.distance_at(field, start), RunTrace.tile(start)])
 			_ground = start
 			return _events.spawn_extra(def, path[0], path)
@@ -2611,7 +2616,7 @@ func _take_the_neighbor_away() -> void:
 		return
 	_events.retire(_taken_neighbor)
 	_taken_neighbor = null
-	trace.note("contact", "the neighbor is taken with the raid")
+	_trace.note("contact", "the neighbor is taken with the raid")
 
 ## The calendar's one step that places its contact `kind`'s way — `DOOR` or `PARK_SWING` — so the
 ## two placements above read their pool through `ResistanceSteps.target_candidates()`, the function
@@ -2964,7 +2969,7 @@ func _tick_lingering_rider(delta: float) -> void:
 	if _lingering_remaining > 0.0:
 		return
 	_lingering_rider.leave_for_a_completed_task()
-	trace.note("contact", "he stops shouting and leaves")
+	_trace.note("contact", "he stops shouting and leaves")
 	_lingering_rider = null
 
 ## *Asked for a hidden contact among look-alikes · overturned on 2026-09-13* (`docs/NARRATIVE.md`,
@@ -3013,7 +3018,7 @@ func _follow_her_between_look_alikes() -> void:
 		return
 	_rider = best
 	_contact.ride(_step, best, Vector2.ZERO)
-	trace.note("contact", "step %d retargeted onto the nearest look-alike in reach"
+	_trace.note("contact", "step %d retargeted onto the nearest look-alike in reach"
 			% _step.index)
 
 ## The distance from `instance`'s own centre within which she can touch it: every point a touch of
@@ -3081,7 +3086,7 @@ func _move_the_task_guard_to_her_target() -> void:
 	if _guards_the_roadblock(_task_guard.global_position, target) \
 			and _on_the_far_side(_task_guard.global_position, target.body_position(), approach):
 		if not over:
-			trace.note("roll", "the task's guard already stands over the roadblock she "
+			_trace.note("roll", "the task's guard already stands over the roadblock she "
 					+ "approaches, %.0fpx from it"
 					% _task_guard.global_position.distance_to(target.body_position()))
 		_task_guard_over = _arrow_key
@@ -3112,7 +3117,7 @@ func _move_the_task_guard_to_her_target() -> void:
 	_events.move_extra(_task_guard, at)
 	_task_guard_over = _arrow_key
 	_task_guard_in_band = in_band
-	trace.note("roll", "the task's guard moves, unseen, to the roadblock she approaches, "
+	_trace.note("roll", "the task's guard moves, unseen, to the roadblock she approaches, "
 			+ "%.0fpx from it%s" % [at.distance_to(target.body_position()),
 			"" if in_band else ", past its band"])
 
@@ -3130,7 +3135,7 @@ func _note_her_approach(roadblock: EventInstance) -> bool:
 			_task_drawn, roadblock.global_position):
 		return false
 	_approaches[_approach_key(roadblock)] = her - roadblock.body_position()
-	trace.note("roll", "the roadblock at %s comes on screen: its guard's side is the far one from "
+	_trace.note("roll", "the roadblock at %s comes on screen: its guard's side is the far one from "
 			% RunTrace.tile(_map.world_to_tile(roadblock.body_position()))
 			+ "her, %.0fpx off" % her.distance_to(roadblock.body_position()))
 	return true
@@ -3190,13 +3195,13 @@ func _set_the_task_guard_on_her() -> void:
 	if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
 			_task_guard.global_position):
 		_task_guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
-		trace.note("roll", "the roadblock is done: the task's guard, in her view, warns her and "
+		_trace.note("roll", "the roadblock is done: the task's guard, in her view, warns her and "
 				+ "comes after her from %.0fpx away" % _task_guard.global_position.distance_to(her))
 		return
 	var away := _task_guard.global_position.distance_to(her)
 	_events.retire(_task_guard)
 	_task_guard = null
-	trace.note("roll", "the roadblock is done: the task's guard, out of her view %.0fpx away, "
+	_trace.note("roll", "the roadblock is done: the task's guard, out of her view %.0fpx away, "
 			% away + "is sent at her under a badge")
 	_send_at_her(EventCatalogue.task_guard_sent(), false)
 
@@ -3242,7 +3247,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 				# same tracking and never fires it, since the counter asks about the chalk mark, not
 				# about whatever the task rides on. See docs/TELEMETRY.md, "The page counts visits".
 				_tell_the_mark_was_seen()
-			trace.note("contact", "step %d seen at %s after %.1fs within %.0fpx" % [
+			_trace.note("contact", "step %d seen at %s after %.1fs within %.0fpx" % [
 				_step.index, RunTrace.tile(_map.world_to_tile(at)),
 				SEEN_DWELL_SECONDS, SEEN_DISTANCE])
 		return
@@ -3354,25 +3359,25 @@ func _move_the_mark(new_world: Vector2) -> void:
 	var old_tile := _map.world_to_tile(_contact.global_position)
 	var new_tile := _map.world_to_tile(new_world)
 	if not _she_can_be_sent_to(new_tile, _player_position(), _nothing_stands_on):
-		trace.note("contact", "step %d stays at %s: no way stands to %s over ground that has drawn"
+		_trace.note("contact", "step %d stays at %s: no way stands to %s over ground that has drawn"
 				% [_step.index, RunTrace.tile(old_tile), RunTrace.tile(new_tile)])
 		return
 	_contact.global_position = new_world
-	trace.note("contact", "step %d moved to %s: never seen at %s" % [
+	_trace.note("contact", "step %d moved to %s: never seen at %s" % [
 		_step.index, RunTrace.tile(new_tile), RunTrace.tile(old_tile)])
 	_maybe_set_a_trap(_day, _rng, new_world, true, _player_position(), true)
 
 ## A warning delivered late is not a warning. The contact is gone for the rest of the run.
 func _expire(message: String) -> void:
 	_expired = true
-	trace.note("contact", "step %d %s; the contact is gone" % [_step.index, message])
+	_trace.note("contact", "step %d %s; the contact is gone" % [_step.index, message])
 	_run.fail_resistance_step(_step.index)
 	_clear()
 
 ## Records the step, and — for a mark — activates today's task right away, in the same
 ## `start_day()`'s RNG and guard state rather than waiting for tomorrow's dawn.
 func _on_contact_completed(step_index: int) -> void:
-	trace.note("contact", "step %d completed" % step_index)
+	_trace.note("contact", "step %d completed" % step_index)
 	var step := ResistanceSteps.by_index(step_index, _steps)
 	_run.complete_resistance_step(step_index, step == null or step.grants_progress)
 	# Only a pickup's mark ever stands on a mark tile (an `ALLEY` tile, or a courtyard tile past a
@@ -3392,7 +3397,7 @@ func _on_contact_completed(step_index: int) -> void:
 		return
 	if step and step.applies_package_weight:
 		_run.resistance().pick_up_package()
-		trace.note("contact", "the package is heavier now; the rest of today costs more")
+		_trace.note("contact", "the package is heavier now; the rest of today costs more")
 	# A finished task is shown by the world, never by text: the man shouting she actually handed
 	# it to — `_rider` after any retargeting in `_follow_her_between_look_alikes()` — stops
 	# shouting and walks off screen, the same departure any finished event takes. Named by
@@ -3408,13 +3413,13 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.lingers_after_handover and _rider and is_instance_valid(_rider):
 		_lingering_rider = _rider
 		_lingering_remaining = NOTE_HANDOVER_LINGER_SECONDS
-		trace.note("contact", "he took it; keeps shouting for %.1fs before he leaves"
+		_trace.note("contact", "he took it; keeps shouting for %.1fs before he leaves"
 				% NOTE_HANDOVER_LINGER_SECONDS)
 	# Warned, the neighbor runs — away from her, and away from home.
 	if step and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR and _rider \
 			and is_instance_valid(_rider):
 		_rider.leave_for_a_completed_task()
-		trace.note("contact", "the neighbor is warned and runs")
+		_trace.note("contact", "the neighbor is warned and runs")
 	# The mast she reached goes quiet where she stands: its lamp goes out and its arcs stop, which
 	# is the world answering, and it stays quiet for the rest of the run.
 	if step and step.target_kind == ResistanceSteps.TargetKind.MAST:
@@ -3433,7 +3438,7 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and _sets_a_trap_on_her(step) and not _walked_under_the_door:
 		_set_the_trap_on_her(step)
 	elif step and _sets_a_trap_on_her(step):
-		trace.note("roll", "task done under the boom: the door's own guard is after her, "
+		_trace.note("roll", "task done under the boom: the door's own guard is after her, "
 				+ "and nobody else is sent")
 	if not (step and step.needs_goal):
 		return
@@ -3475,7 +3480,7 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 	var names: Array[String] = []
 	for marble: Variant in rigged:
 		names.append(str(marble))
-	trace.note("roll", "the next %d on her route are drawn from a rigged bag: %s"
+	_trace.note("roll", "the next %d on her route are drawn from a rigged bag: %s"
 			% [rigged.size(), ", ".join(names)])
 
 func _clear() -> void:
@@ -3821,7 +3826,7 @@ func _point_the_arrow_at(key: Variant, at: Vector2, step: ResistanceSteps.Step) 
 	if moves_the_contact and not _she_can_be_sent_to_the_mast(key):
 		return
 	if not _same_key(key, _arrow_key) and _arrow_key != null:
-		trace.note("contact", "step %d: the red arrow moves to a closer target on foot"
+		_trace.note("contact", "step %d: the red arrow moves to a closer target on foot"
 				% step.index)
 	_arrow_key = key
 	if moves_the_contact:

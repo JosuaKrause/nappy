@@ -572,7 +572,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	# The page every event made here is drawn from, as `main` hands the manager its library.
 	manager.atlas = atlas
 	var edge := DangerEdge.new()
-	edge.atlas = atlas
+	edge.use_atlas(atlas)
 	edge.size = Vector2(1280.0, 720.0)
 	t.add_child(edge)
 	edge.setup(manager, player)

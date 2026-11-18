@@ -4,7 +4,7 @@ extends RefCounted
 ## controls are authored in, handed to `VisibleView` so the world layer needs no class or group from
 ## the UI to know what she cannot see *(feathery-lynx, inbox #581)*.
 ##
-## **Made and kept by the UI that owns the controls** (`TouchControls.covering`), which puts it in
+## **Made and kept by the UI that owns the controls** (`TouchControls.covering()`), which puts it in
 ## or out of force when the scheme changes (`put_in_force()`); handed to whoever asks "can she see
 ## it" (`main` hands it to each `EventManager`, `EventManager.use_controls()`). `VisibleView` lays
 ## `left_corner()` and `right_corner()` onto the world view by the ratio of the view's size to

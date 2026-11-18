@@ -53,18 +53,21 @@ extends Control
 const MARGIN := Vector4(104.0, 116.0, 104.0, 148.0)
 const CHEVRON := 19.0
 const ICON := 34.0
-## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
-## see `TouchControls.rotated`'s own doc. This control is pinned to `ScreenOrientation.DESIGN_SIZE`
-## regardless of rotation (see `main._add_danger_edge()`), so a raw canvas-space position has to
-## come back through `ScreenOrientation.to_design_space()` before it is drawn here. What is in
-## sight needs no such turn: `VisibleView` asks it of the world box the camera shows, the same
-## whichever way the window presents it.
-var rotated := false
-## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
-var timing := FrameTiming.new()
+## Whether `main` has decided a portrait touch window is presenting rotated, handed in by
+## `use_rotated()` — see `TouchControls.rotated`'s own doc. This control is pinned to
+## `ScreenOrientation.DESIGN_SIZE` regardless of rotation (see `main._add_danger_edge()`), so a raw
+## canvas-space position has to come back through `ScreenOrientation.to_design_space()` before it is
+## drawn here. What is in sight needs no such turn: `VisibleView` asks it of the world box the
+## camera shows, the same whichever way the window presents it.
+var _rotated := false
+## Where this charges its time to the frame record, handed in by `main` (`use_frame_timing()`); the
+## null sink until then.
+var _timing := FrameTiming.new()
 ## The baked atlas pages a badge's picture comes from (`AtlasLibrary`): the one `main` holds every
-## page a day draws on, handed before the edge is added. A badge only reads a region, so it holds
-## no group of its own.
+## page a day draws on, handed by `use_atlas()` before the edge is added. A badge only reads a
+## region, so it holds no group of its own. Public while `tests/test_atlas_boot.gd` finds every node
+## holding a library by the field's name: the badge acquires nothing, and reads a region only while
+## a badge is up, so the library it holds is the one thing that shows which it was handed.
 var atlas: AtlasLibrary
 
 ## The event source — see `setup()`.
@@ -78,6 +81,21 @@ var _own_view := VisibleView.new()
 ## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
 ## this control does of it.
 var model := BadgeModel.new()
+
+## Hands the edge the baked atlas pages its badges draw from: `main` hands the sitting's library,
+## before the edge is added.
+func use_atlas(library: AtlasLibrary) -> void:
+	atlas = library
+
+## Hands the edge where it charges its time to the frame record: `main` hands the sitting's kept
+## frame timing.
+func use_frame_timing(timing: FrameTiming) -> void:
+	_timing = timing
+
+## Hands the edge whether the window presents rotated: `main` hands its answer at boot and again
+## whenever the window turns.
+func use_rotated(rotate: bool) -> void:
+	_rotated = rotate
 
 ## Counted by the frame record under `FrameTiming.Draw.BADGES`, which the recorder reads off this meta
 ## since it may not name the view.
@@ -134,10 +152,10 @@ func _warnings() -> Array[PendingWarning]:
 	return _events.pending_warnings()
 
 func _process(delta: float) -> void:
-	if timing.is_on():
-		var outer := timing.enter(FrameTiming.CUES)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.CUES)
 		_watch_the_edge(delta)
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_watch_the_edge(delta)
 
@@ -235,7 +253,7 @@ func _draw() -> void:
 func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		transform: Transform2D) -> void:
 	var centre := size * 0.5
-	var at_design := ScreenOrientation.to_design_space(transform * world_position, rotated)
+	var at_design := ScreenOrientation.to_design_space(transform * world_position, _rotated)
 	var offset: Vector2 = at_design - centre
 	if offset.length() < 1.0:
 		return

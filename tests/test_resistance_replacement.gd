@@ -56,7 +56,7 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t: TestRunne
 	director.use_player(player)
 
 	var lines: Array[String] = []
-	director.trace = RecordingTrace.new(lines)
+	director.use_trace(RecordingTrace.new(lines))
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(far_alley) < 0.5,
 			"an unseen mark moves to the alley she has just come near")
@@ -414,7 +414,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 	var corner_size := corner.size * scale
 	var late := _director_on_the_neighbor(t)
 	var lines: Array[String] = []
-	late.trace = RecordingTrace.new(lines)
+	late.use_trace(RecordingTrace.new(lines))
 	var walker := late.rider()
 	t.check(walker != null, "the neighbor is walking home")
 	if walker:
@@ -451,7 +451,7 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) ->
 		var covered: Variant = TouchCover.joystick() if joystick else null
 		var late := _director_on_the_neighbor(t)
 		var lines: Array[String] = []
-		late.trace = RecordingTrace.new(lines)
+		late.use_trace(RecordingTrace.new(lines))
 		late.set_sight(events.sees)
 		var walker := late.rider()
 		t.check(walker != null, "%s scheme: the neighbor is walking home" % scheme)

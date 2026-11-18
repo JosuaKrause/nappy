@@ -138,8 +138,9 @@ static func _colour_for(net: float) -> Color:
 
 ## The sets of sources this halo picks among (`ExcitementSources`): the world's, handed in.
 var _sets: Array[ExcitementSources] = []
-## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
-var timing := FrameTiming.new()
+## Where this charges its time to the frame record, handed in by `main` (`use_frame_timing()`); the
+## null sink until then.
+var _timing := FrameTiming.new()
 var _player: Node2D
 var _baby: Baby
 
@@ -163,6 +164,11 @@ func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
 	_sets = sets
 	_player = player
 	_baby = baby
+
+## Hands the halo where it charges its time to the frame record: `main` hands the sitting's kept
+## frame timing.
+func use_frame_timing(timing: FrameTiming) -> void:
+	_timing = timing
 
 ## Every frame: tell every candidate where she is standing, pick the sources, tell each one's rim
 ## how bright it reads and what colour it is, and tell everything else zero.
@@ -194,10 +200,10 @@ func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
 ## the candidates still counts while its rim exists, and one whose body is queued for deletion gives
 ## its rim back on the spot here and is never lit again.
 func _process(_delta: float) -> void:
-	if timing.is_on():
-		var outer := timing.enter(FrameTiming.CUES)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.CUES)
 		_pick_and_predict()
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_pick_and_predict()
 

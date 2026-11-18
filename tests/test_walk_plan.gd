@@ -12,8 +12,8 @@ extends RefCounted
 ## presses is the rig a player types the words for: `AutoScreenshot.from_config()` on `--walk`, with
 ## `--smooth-walk` for the smoothed one, so the order is the game's own (the input pressed for tick
 ## `n` is read on tick `n + 1`). The abrupt rig reads a clock handed to it that counts physics ticks
-## (`simulation_clock`, the one a scene recipe hands its screenshot), so its steps change on the same
-## tick the plan's do.
+## (handed by `use_simulation_clock()`, the one a scene recipe hands its screenshot), so its steps
+## change on the same tick the plan's do.
 ##
 ## **Equal means within `TOLERANCE`**, a hundredth of a pixel: the construction is exact on open
 ## ground, and what is left is the single-precision rounding of the pressed strengths and of
@@ -71,7 +71,7 @@ func _walk_rig(script: String, smooth: bool, clock: TickClock) -> AutoScreenshot
 	if smooth:
 		words.append("--smooth-walk")
 	var rig := AutoScreenshot.from_config(RunConfig.parse(PackedStringArray(words), "", true))
-	rig.simulation_clock = clock.read
+	rig.use_simulation_clock(clock.read)
 	return rig
 
 ## Walks `script` from a standstill at the origin, smooth or abrupt, and returns where she is after
@@ -292,7 +292,7 @@ class Probe extends Node:
 func _test_the_step_clock_never_advances_a_smooth_script(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var node := _walk_rig("1w1n", true, TickClock.new())
-	node.simulation_clock = clock.read
+	node.use_simulation_clock(clock.read)
 	t.add_child(node)
 	var probe := Probe.new()
 	t.add_child(probe)

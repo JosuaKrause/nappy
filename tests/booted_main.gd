@@ -219,7 +219,9 @@ static func mode_name_drawn(title: TitleScreen) -> String:
 
 ## The `ui` atlas region the save symbol's `Icon` is drawing, or an empty `Rect2` when it has no
 ## `Icon` or the `Icon` draws no atlas region. A symbol that changed parents has re-acquired its page
-## and holds a new texture object for the same region, so pictures are compared by rectangle.
+## and holds a new texture object for the same region, so pictures are compared by rectangle: the
+## rectangle the bake gave the picture on its page (`AtlasTable.region_rect()`), which is the one every
+## library's `region()` hands out for it.
 static func _save_symbol_region(indicator: SaveIndicator) -> Rect2:
 	var icon := indicator.find_child("Icon", true, false) as TextureRect
 	if icon == null or not icon.texture is AtlasTexture:
@@ -229,11 +231,11 @@ static func _save_symbol_region(indicator: SaveIndicator) -> Rect2:
 ## Whether the save symbol is drawing the struck-through picture (`ui/save_unavailable`).
 static func save_symbol_struck(indicator: SaveIndicator) -> bool:
 	var region := _save_symbol_region(indicator)
-	return region.has_area() and region == indicator.atlas.region(&"ui/save_unavailable").region
+	return region.has_area() and region == Rect2(AtlasTable.baked().region_rect(&"ui/save_unavailable"))
 
 ## Whether the save symbol is drawing the plain picture (`ui/save`). **Missing the `Icon` is not
 ## plain**: a symbol with no icon fails this as it fails `save_symbol_struck()`, so a negative check
 ## on the struck picture is written as this and cannot pass on a symbol that draws nothing.
 static func save_symbol_plain(indicator: SaveIndicator) -> bool:
 	var region := _save_symbol_region(indicator)
-	return region.has_area() and region == indicator.atlas.region(&"ui/save").region
+	return region.has_area() and region == Rect2(AtlasTable.baked().region_rect(&"ui/save"))

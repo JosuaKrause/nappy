@@ -21,9 +21,9 @@ extends Node
 ## when the deadline passes, a rig still quits. `tools/shot.sh` (and a rig-flagged `tools/run.sh`)
 ## is the outside backstop for a process that stops running altogether.
 
-## Whether this run is a rig's (`config.runs_as_a_rig()`), and so locked out — a member, so a
-## test can set it.
-var locked_out := false
+## Whether this run is a rig's (`config.runs_as_a_rig()`), and so locked out: asked through
+## `shuts_out_real_input()`.
+var _locked_out := false
 ## The `Time.get_ticks_msec()` reading the rig quits at, or `0` for none: a person's session, or a
 ## recording, which keeps `_quit_game_seconds` instead. `0` is safe as the sentinel because
 ## `Time.get_ticks_msec()` only grows from the process's start.
@@ -51,7 +51,7 @@ var _erased_bindings: Dictionary[StringName, Array] = {}
 func setup(config: RunConfig) -> void:
 	if not config.runs_as_a_rig():
 		return
-	locked_out = true
+	_locked_out = true
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	_erase_real_input()
@@ -60,6 +60,12 @@ func setup(config: RunConfig) -> void:
 		_quit_game_seconds = _limit_seconds
 	else:
 		_quit_deadline_msec = Time.get_ticks_msec() + int(_limit_seconds * 1000.0)
+
+## Whether this lock keeps a real key or pointer press from the game: a rig's run, locked out by
+## `setup()`. The return window asks it, through `main`, so a rig's run never pauses when its
+## window loses the focus.
+func shuts_out_real_input() -> bool:
+	return _locked_out
 
 func _process(delta: float) -> void:
 	if _quit_deadline_msec != 0 and Time.get_ticks_msec() >= _quit_deadline_msec:
@@ -80,7 +86,7 @@ func _process(delta: float) -> void:
 ## (`TouchControls`), since `set_input_as_handled()` only silences the phases after `_input`; the
 ## window flag above is what keeps a pointer from reaching the window in the first place.
 func _input(event: InputEvent) -> void:
-	if locked_out and not _is_the_rigs_own_press(event):
+	if _locked_out and not _is_the_rigs_own_press(event):
 		get_viewport().set_input_as_handled()
 
 ## Whether `event` is one a rig made itself. `AutoScreenshot._tap()` sets

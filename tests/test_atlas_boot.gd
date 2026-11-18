@@ -141,13 +141,15 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 ## second load line for it. So every node under a booted `main` that holds a library — the city and
 ## its furniture, crowd and events, her, the screens' buttons and lines, the badge, the symbol, and
 ## in the escape's building the interior and its events — holds the sitting's, on the day and in
-## the building alike. A node still holding a public `atlas` it was never handed fails this by name; a
-## node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
-## recording one (`tests/recording_atlas.gd`) and every help text, mode button and closure piece
-## standing must have asked it for its page, which a node handed another library, or none, did
-## not. The cordon's figures, the contact and the crowd's agents are handed theirs where they are
-## made, and `test_park_cordon.gd`, `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd`
-## read the same off the library each is handed. And the pages the boot took for the process are
+## the building alike. A node still holding a public `atlas` it was never handed fails this by name;
+## a node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
+## recording one (`tests/recording_atlas.gd`) and every help text, mode button, closure piece, the
+## on-screen controls, the save symbol and the building standing must have asked it for its page,
+## which a node handed another library, or none, did not. The badge acquires nothing, so it keeps
+## its library public for this walk (`DangerEdge.atlas`). The cordon's figures, the contact and
+## the crowd's agents are handed theirs where they are made, and `test_park_cordon.gd`,
+## `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same off the library
+## each is handed. And the pages the boot took for the process are
 ## the sitting's library's: they still answer on it once everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
@@ -166,6 +168,9 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		var help_texts := 0
 		var mode_buttons := 0
 		var closure_pieces := 0
+		var controls := 0
+		var save_symbols := 0
+		var buildings := 0
 		var strays: Array[String] = []
 		var stack: Array[Node] = [main]
 		while not stack.is_empty():
@@ -174,6 +179,9 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 			help_texts += 1 if node is HelpText else 0
 			mode_buttons += 1 if node is ModeButton else 0
 			closure_pieces += 1 if node is ClosureMarker else 0
+			controls += 1 if node is TouchControls else 0
+			save_symbols += 1 if node is SaveIndicator else 0
+			buildings += 1 if node is InteriorScene else 0
 			if node is Sitting or not "atlas" in node:
 				continue
 			holders += 1
@@ -200,6 +208,23 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		t.check(closure_asks >= closure_pieces,
 				"%s: every closure piece asked the sitting's library for its page (%d of %d)"
 				% [where, closure_asks, closure_pieces])
+		# The on-screen controls and the save symbol take `ui` in their `_enter_tree()`, and the
+		# building `interior` in its own. Both boots here raise the symbol (only the `--escape`
+		# flag's escape, which touches no save, raises none), and only the escape stands the building.
+		var control_asks := recording.acquired_from("res://src/ui/touch_controls.gd")
+		t.check(controls > 0 and control_asks >= controls,
+				"%s: the on-screen controls asked the sitting's library for their page (%d of %d)"
+				% [where, control_asks, controls])
+		var symbol_asks := recording.acquired_from("res://src/ui/save_indicator.gd")
+		t.check(save_symbols > 0 and symbol_asks >= save_symbols,
+				"%s: the save symbol asked the sitting's library for its page (%d of %d)"
+				% [where, symbol_asks, save_symbols])
+		var building_asks := recording.acquired_from("res://src/interior/interior_scene.gd")
+		t.check(section == DaySpec.Section.NONE or buildings > 0,
+				"%s: the escape stands the building to ask about (%d)" % [where, buildings])
+		t.check(building_asks >= buildings,
+				"%s: the building asked the sitting's library for its page (%d of %d)"
+				% [where, building_asks, buildings])
 		booted.free_all()
 		t.check(atlas.region(_a_region_of(Crowd.ATLAS_GROUP)) != null
 				and atlas.region(_a_region_of(EventPictures.ATLAS_GROUP)) != null,

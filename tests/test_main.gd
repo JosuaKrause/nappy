@@ -1529,7 +1529,7 @@ func _test_return_window_is_off_under_the_override(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------ a rig's own lockdown ---
 ## M195: the rig list, through the run's configuration — the same place `RigLock` and `main` read it.
-## This is also the exact set `RigLock._input()`'s own gate (`locked_out`) and `RigLock.setup()`'s
+## This is also the exact set `RigLock._input()`'s own gate (`shuts_out_real_input()`) and `RigLock.setup()`'s
 ## window-flag/`InputMap`-erasure both key off, so a case proven here holds for all three without a
 ## live window to check them against.
 func _test_is_rig_from_args(t: TestRunner) -> void:

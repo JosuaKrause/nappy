@@ -250,7 +250,7 @@ func use_run(run: RunState) -> void:
 func use_player(player: Node2D) -> void:
 	world.player = player
 
-## **Hands the manager what the on-screen controls cover** (`TouchControls.covering`), which the
+## **Hands the manager what the on-screen controls cover** (`TouchControls.covering()`), which the
 ## day's view reads the scheme from each frame (`VisibleView.controls`); null for none, the tap
 ## scheme's whole view. Handed in by `main` from the UI that owns the controls.
 func use_controls(covering: ScreenCover) -> void:

@@ -38,8 +38,9 @@ var _clock: Callable = Time.get_ticks_msec
 var _has_left_the_game := false
 ## The viewport whose input is switched off for the window; `setup()` sets it, a test sets its own.
 var _viewport: Viewport = null
-## `--no-focus-pause` (which `--screenshot` implies) and a rig's run (`RigLock.locked_out`) are
-## never slowed by the window. Members, so a test can set either.
+## `--no-focus-pause` (which `--screenshot` implies) and a rig's run
+## (`RigLock.shuts_out_real_input()`) are never slowed by the window. Members, so a test can set
+## either.
 var _no_focus_pause := false
 var _rig := false
 ## The page-side callback the web listeners call, held for the node's lifetime: a

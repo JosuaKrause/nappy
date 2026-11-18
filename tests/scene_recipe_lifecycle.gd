@@ -186,7 +186,7 @@ func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 	await PhysicsTicks.pass_ticks(t, 3)
 	var rig_lock := main.get_node_or_null("RigLock") as RigLock
 	t.check(recipe.tick > counted and not recipe.manifest.get("playback_complete", false)
-			and (rig_lock == null or not rig_lock.locked_out),
+			and (rig_lock == null or not rig_lock.shuts_out_real_input()),
 			"%s free play has no capture deadline" % label)
 	var start := player.global_position
 	var direction := Vector2.ZERO

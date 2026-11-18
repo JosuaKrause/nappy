@@ -108,7 +108,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	_trace.clear()
-	director.trace = RecordingTrace.new(_trace)
+	director.use_trace(RecordingTrace.new(_trace))
 	var spots: Array[Vector2] = []
 	if OS.get_environment("PROBE_NO_ROWS") == "" and ROW_DAYS.has(day):
 		spots = _spots(city)

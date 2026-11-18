@@ -112,9 +112,9 @@ Left, each its own design question:
     `Building.scenery_clock`, `door_world_x_range`, `powered`, `day`, `roof_extension_rows`,
     `tint_variant`, `poster_art`, `atlas`, `footprint`, `roof_object_parent`,
     `BuildingShadows.streamed`, `falls_on`, `Crowd.view`, `timing`, `atlas`, `skip_motion`,
-    `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`)
-    keeps its direct write in the game (the city, the city scene, the blackout, the poster walls,
-    the roof previews, the simulation builder) and goes with the
+    `skip_agent_drawing`, `ClosureMarker.piece`, `kind`, `across`, `ParkFenceMarker.sign_offset`,
+    `StillWatch.trace`, `TouchControls.rotated`) keeps its direct write in the game (the city, the
+    city scene, the blackout, the poster walls, the roof previews, the simulation builder, `main`) and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
     also calls. `LaneMover.kind` goes with the same item for another reason: the game reads it
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
@@ -136,10 +136,11 @@ Left, each its own design question:
   director and the rigs. So do `MoveProposal`, `GroundShape` and `Prop.shape`. *Read as* (the orchestrator's reading):
   the map's are converted with whatever pass gives the blocked tiles an owner of their own, and the
   rest with their own classes' passes.
-- **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by
-  its own file and `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's
-  name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
-  failure. It becomes underscore-private with the tests-one-module item (`tests-one-module.md`), when
+- **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the
+  screen-edge badge) are handed in through `use_atlas()` and read by their own files and
+  `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's name (`"atlas" in
+  node`, `node.get("atlas")`), so renaming either would make that walk skip it with no failure; the
+  badge acquires no page, so no count of what it asked can stand in. Both become underscore-private with the tests-one-module item (`tests-one-module.md`), when
   that suite reads through a method the game also calls.
 - **The lines other work touches** are converted with that work:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);

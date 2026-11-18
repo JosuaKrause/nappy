@@ -206,7 +206,7 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 		warning.put_up(Vector2.ZERO)
 		source.warnings.append(warning)
 	var edge := DangerEdge.new()
-	edge.atlas = atlas
+	edge.use_atlas(atlas)
 	edge.size = Vector2(1280.0, 720.0)
 	t.add_child(edge)
 	edge.setup(source, player)

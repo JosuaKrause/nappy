@@ -250,10 +250,10 @@ func _test_ui_consumers_share_one_reference_count(t: TestRunner) -> void:
 	t.add_child(button)
 	t.check(pages.held(&"ui"), "the mode button takes the page")
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
-	controls.atlas = atlas
+	controls.use_atlas(atlas)
 	t.add_child(controls)
 	var indicator := SaveIndicator.new()
-	indicator.atlas = atlas
+	indicator.use_atlas(atlas)
 	t.add_child(indicator)
 	var help := HelpText.new()
 	help.use_atlas(atlas)
@@ -281,11 +281,11 @@ func _test_each_ui_consumer_holds_its_own_reference(t: TestRunner) -> void:
 			return node,
 		"touch controls": func(atlas: AtlasLibrary) -> Node:
 			var node: TouchControls = TOUCH_CONTROLS.instantiate()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the save indicator": func(atlas: AtlasLibrary) -> Node:
 			var node := SaveIndicator.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"the help text": func(atlas: AtlasLibrary) -> Node:
 			var node := HelpText.new()
@@ -351,7 +351,7 @@ func _test_interior_scene_acquires_and_releases_interior(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var scene := InteriorScene.new()
-	scene.atlas = atlas
+	scene.use_atlas(atlas)
 	t.add_child(scene)
 	t.check(pages.held(&"interior"),
 			"the interior scene acquires its group as it enters the tree")

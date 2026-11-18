@@ -1,6 +1,7 @@
 extends RefCounted
 ## M202, a rig's own presses reach the game: a rig's lock-out (`RigLock._input()`) marks every
-## event handled while `locked_out`, which is exactly the state every `--press` run is in —
+## event handled while it shuts out real input (`shuts_out_real_input()`), which is exactly the
+## state every `--press` run is in —
 ## `--press` is one of `DevFlags._RIG_FLAGS`, so the lockout and the flag are never apart — and a
 ## gate that swallowed every event would swallow the rig's own injected presses along with a real
 ## key or pointer, so `--press pause 3` would pause nothing and `snapshot_burst` would never arrive.
@@ -78,7 +79,7 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 	var words := PackedStringArray(["--screenshot", "scratch_unused.png", "--after", "600",
 			"--press", "pause", "0", "--press", "key:r", "1"])
 	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
-	rig.simulation_clock = clock.read
+	rig.use_simulation_clock(clock.read)
 	t.add_child(rig)
 	await UI.frames(t)
 	Input.flush_buffered_events()
@@ -143,7 +144,7 @@ func _test_the_lock_gives_the_bindings_back_when_freed(t: TestRunner) -> void:
 	t.add_child(gate)
 	var rig := _rig_config()
 	gate.setup(rig)
-	t.check(gate.locked_out and InputMap.action_get_events(&"move_right").is_empty(),
+	t.check(gate.shuts_out_real_input() and InputMap.action_get_events(&"move_right").is_empty(),
 			"a rig's lock erases the real bindings while it stands")
 	gate.setup(rig)
 	gate.free()
