@@ -1,4 +1,12 @@
-# A method named without its parentheses on a typed receiver is reported
+# minty-quail — A method named without its parentheses: what reports it, and the item closed · 2026-11-17
+
+**Why the item closes.** minty-quail's item `method-without-parentheses.md` had nothing left to
+build: the field-read check reports a method's name written without its parentheses on a receiver
+whose class is under `src/`, the engine reports one alone on a line, and the naming rule keeps a
+conversion from making new cases; what no check can see is listed below and handled by the rule
+and the search every conversion shows. The item was the orchestrator's proposal and asked for
+nothing the player said, so closing it drops no ask of theirs. Its text, as it stood when it
+closed:
 
 **Proposed, not asked for:** the whole item is the orchestrator's proposal. The player's words on the
 field-read check ask that it be made to work (inbox #1268 in olive-ferret) and say nothing of a

@@ -123,8 +123,6 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      and the developer's rigs' reads of an event, row 3c of `event-interface.md`.
    - **Tools:** `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included.
-     `method-without-parentheses.md`, a typed receiver's method named without its parentheses
-     being reported, is the orchestrator's proposal and waits for no other item.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
      pursuit and the rest as parts an event has, and every caller asking through methods). Its
      first steps, the callers outside the events folder and the live event's own behaviours and
