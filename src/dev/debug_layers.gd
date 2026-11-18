@@ -404,7 +404,7 @@ func _draw_shadows() -> void:
 		_draw_shadow_outline(instance.def.shape, instance.global_position, instance.solid_axis())
 	for agent in _agents():
 		var axis := agent.heading() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
-		_draw_shadow_outline(agent.shape, agent.global_position, axis)
+		_draw_shadow_outline(agent.shape(), agent.global_position, axis)
 	var props: Array[Node2D] = []
 	if _world is City:
 		props = (_world as City).props()

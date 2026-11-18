@@ -247,13 +247,13 @@ func _dress() -> void:
 func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
-## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
+## The drop shadow under this agent's own `shape()`, skipped for its own halo ring — the same rule
 ## `EventLook._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
 ## and a cue for what is charging her right now has nothing to say about it.
 func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
 	if canvas == _rim.entity_halo():
 		return
-	shape.draw_shadow(canvas, at, axis)
+	shape().draw_shadow(canvas, at, axis)
 
 func _draw() -> void:
 	if frame_timing != null and frame_timing.running():

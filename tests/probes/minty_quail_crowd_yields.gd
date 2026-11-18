@@ -377,16 +377,16 @@ class Meeting extends RefCounted:
 					continue
 				var overlaps := false
 				if is_car:
-					var spine := clampf(offset.dot(forward), -agent.shape.half_length,
-							agent.shape.half_length)
+					var spine := clampf(offset.dot(forward), -agent.shape().half_length,
+							agent.shape().half_length)
 					overlaps = (offset - forward * spine).length() \
-							< agent.shape.radius + figure.radius - 0.5
+							< agent.shape().radius + figure.radius - 0.5
 					var along := offset.dot(forward)
 					if standing and along > 0.0 and along < AHEAD \
-							and absf(offset.dot(side)) < agent.shape.radius + figure.radius + 4.0:
+							and absf(offset.dot(side)) < agent.shape().radius + figure.radius + 4.0:
 						for_a_figure = true
 				else:
-					overlaps = offset.length() < agent.shape.reach() + figure.radius - 0.5
+					overlaps = offset.length() < agent.shape().reach() + figure.radius - 0.5
 				if not overlaps:
 					continue
 				var key := [agent, figure]

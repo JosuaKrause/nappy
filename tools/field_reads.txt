@@ -780,7 +780,6 @@ src/main.gd map
 
 # [LaneMover] src/crowd/lane_mover.gd
 src/dev/debug_layers.gd kind
-src/dev/debug_layers.gd shape
 src/dev/scene_recipe_draft.gd kind
 src/dev/scene_recipe_runtime.gd kind
 src/dev/still_watch.gd kind
