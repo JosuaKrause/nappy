@@ -856,7 +856,8 @@ func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]
 ## An ordinary city takes the first piece's variant, as before. A stretch may show only part of a
 ## complete-context courtyard, so its first authored piece in the same canonical rectangle order
 ## supplies the tint instead; a hidden witness piece must not choose the visible colour. A tint
-## rather than a shared `variant`, which would erase the other authored rolls the buildings keep.
+## rather than a shared variant (`Building.look_variant()`), which would erase the other authored
+## rolls the buildings keep.
 ## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_lots()`.
 func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var first_variant := {}
@@ -912,7 +913,7 @@ static func block_of(rect: Rect2i) -> Vector2i:
 
 ## A home-block building's own fixed choice, keyed on nothing but the lot's own tile position —
 ## never `map.city_seed()` — so its wall/roof colour and `Building._build_windows()`'s own window
-## style and lit-window pattern (keyed on `variant` and the building's world position, itself fixed
+## style and lit-window pattern (keyed on `Building.look_variant()` and the building's world position, itself fixed
 ## since `CityMap.home_block_coordinate()` and every constant the lattice is built from are the same on every
 ## seed) no longer depend on the seed either. A non-home building keeps the per-seed roll.
 func _variant_for(rect: Rect2i) -> int:

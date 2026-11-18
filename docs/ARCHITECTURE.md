@@ -1237,7 +1237,7 @@ one figure a slice, a wide scene one
   and overview; lifecycle relocations prepare their destination before play. A city clock keeps
   resident water surfaces in phase and restores returning roof animation phases.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
-  assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
+  assembles that same lot out of 32px tiles — a front wall (the southern `Building.height()` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she
   walks on, which is not the same as keeping them off *her* — see the layer note above. A taller building therefore shows more wall and less roof, which is
   what an oblique view of a taller building should look like.

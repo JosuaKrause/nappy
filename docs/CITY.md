@@ -2238,7 +2238,7 @@ Top-down camera with a fake vertical extrusion:
   top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
   and the parapet turns.
 - **A roof carries furniture, seeded per building from its block's own starting purpose**
-  (`Building.district`) — vents, installed HVAC and connected mounted duct networks on `INDUSTRIAL`,
+  (`Building.district()`) — vents, installed HVAC and connected mounted duct networks on `INDUSTRIAL`,
   skylights and service bulkheads on `CIVIC`, mostly water tanks with vents and bulkheads on
   `RESIDENTIAL` and `COMMERCIAL`.
   Every unit sits on an interior cell — never a cell a roof's own edge tiles already draw, which
@@ -2296,7 +2296,7 @@ Top-down camera with a fake vertical extrusion:
   the potted-plant picture or the plain one, a third of them at random, rather than one variant
   for the whole escape. A two-story front carries none, since its escape would be that platform
   alone; the roll that decides an escape is still made on it, so the bound moves no stream. **Her
-  own building carries none either** (`Building.is_home_building`), since she has a stair inside
+  own building carries none either** (`Building.is_on_home_block()`), since she has a stair inside
   instead — the roll still runs on her front exactly as it does on any other `RESIDENTIAL` front,
   only the column it would have kept is dropped, so the bound moves no stream there either. The
   awning is the one piece of a front that leaves the wall plane; it stays inside the
@@ -2326,7 +2326,7 @@ Top-down camera with a fake vertical extrusion:
   wherever the extended roof sits beside a shorter column, covered or not — roof meets roof, and
   nothing is drawn where the covered front's wall would have been.
   Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's own
-  ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
+  ground row (`Building.covered_ground_cols()`, set once by `City._spawn_buildings()`), never from
   anything drawn and never from a day's own closures — a covered column stays covered for the whole
   run, the same fixed fact `CityMap.building_lots()` already is. A power station's yard is fenced
   ground with no roof to extend, so a column facing it keeps its facade (below). A partly covered
@@ -2365,7 +2365,7 @@ Top-down camera with a fake vertical extrusion:
   wall and roof alike), since four tints read as four buildings. An ordinary city takes its first
   piece's tint; an authored stretch that shows only part of the courtyard takes the first authored
   piece in the same rectangle order, so hidden context cannot choose the visible colour. The tint
-  is a field of its own rather than a shared `variant`, which seeds every other roll a building
+  is a field of its own rather than a shared variant (`Building.look_variant()`), which seeds every other roll a building
   makes. The ordinary front-and-back case (two genuinely separate buildings) keeps both lips and
   its own colour, since that step is the real, visible one.
 - **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
