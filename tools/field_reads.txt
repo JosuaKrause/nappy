@@ -802,47 +802,6 @@ src/main.gd trace
 # [RouteTree] src/routes/route_tree.gd
 src/dev/route_lines.gd branches
 
-# [RunConfig] src/run_config.gd
-src/main.gd active_args
-src/main.gd blackout_requested
-src/main.gd caption_text
-src/main.gd controls_word
-src/main.gd day_override
-src/main.gd debug_build
-src/main.gd ending_override
-src/main.gd follow_target
-src/main.gd forced_interval
-src/main.gd forced_row
-src/main.gd frame_record_requested
-src/main.gd frame_trace_requested
-src/main.gd ground_mode
-src/main.gd hard_mode_requested
-src/main.gd invincible
-src/main.gd is_rig
-src/main.gd nerves_override
-src/main.gd no_focus_pause
-src/main.gd overview_requested
-src/main.gd parent_override
-src/main.gd pelican
-src/main.gd player_view_requested
-src/main.gd quit_when_still_requested
-src/main.gd quit_when_still_seconds
-src/main.gd recipe_path
-src/main.gd recipe_scripted
-src/main.gd recording
-src/main.gd route_targets
-src/main.gd seed_override
-src/main.gd skip_crowd
-src/main.gd skip_events
-src/main.gd skip_motion
-src/main.gd skip_shadows
-src/main.gd start_escape
-src/main.gd start_escape_at
-src/main.gd title_card_text
-src/main.gd zoom_out_delay
-src/main.gd zoom_out_seconds
-src/main.gd zoom_override
-
 # [SaveIndicator] src/ui/save_indicator.gd
 src/main.gd atlas
 

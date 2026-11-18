@@ -264,8 +264,8 @@ class Worlds extends DayWorldSource:
 ## recipe's boot hands it the same run with the recipe on top.
 func configure(run_config: RunConfig) -> void:
 	config = run_config
-	_escape_scene_requested = config.start_escape
-	_no_focus_pause = config.no_focus_pause
+	_escape_scene_requested = config.starts_in_the_escape()
+	_no_focus_pause = config.skips_the_focus_pause()
 	_touch_available = TouchInput.available(config)
 
 ## Hands this boot what it calls instead of reloading the scene (a held restart, a continue that
@@ -319,12 +319,12 @@ func _ready() -> void:
 	# Before anything reads what the sitting kept: the run carried over, the title's answer, the
 	# save symbol a reload carried, the save itself.
 	_take_the_sitting()
-	if config.frame_record_requested and not _sitting.kept_frame_timing() is FrameRecord:
+	if config.asks_for_a_frame_record() and not _sitting.kept_frame_timing() is FrameRecord:
 		_sitting.use_frame_timing(FrameRecord.new())
 	# Before anything can end the run, so every boot (the escape's and a recipe's too) deletes the
 	# save when its run ends.
 	_save.clear_when_a_run_ends()
-	if not config.recipe_path.is_empty() and not _author_the_scene():
+	if not config.recipe_path().is_empty() and not _author_the_scene():
 		return
 	# Before anything the observers watch can happen: the run log's header, the save's gate and
 	# what the page counts all read this boot's configuration rather than the command line.
@@ -364,7 +364,7 @@ func _ready() -> void:
 	# clock all read as frozen even though the simulation underneath is running correctly (confirmed
 	# against the run log while building this). Off only for a recording — real play keeps the
 	# smoothing `--fixed-fps` never runs under.
-	if config.recording:
+	if config.records_a_movie():
 		get_tree().physics_interpolation = false
 	# The developer's furniture, on whichever day the boot opens — see `DebugReadout`. It starts in
 	# the shape it should have on this build rather than trusting the scene file's own default.
@@ -484,7 +484,7 @@ func _ready() -> void:
 
 	_day = DayController.new()
 	_day.name = "Day"
-	_day.set_invincible(config.invincible)
+	_day.set_invincible(config.is_invincible())
 	add_child(_day)
 	_pauses_with_the_game(_day)
 	_day.setup(_run)
@@ -492,14 +492,14 @@ func _ready() -> void:
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
-	if walks_a_day and config.frame_trace_requested:
+	if walks_a_day and config.asks_for_a_frame_trace():
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
 		trace.setup(_flow.in_the_title, _readout.readout_on, _readout.graph_on, _run_log.is_active,
-				_event_source(), _crowd_now(), _player, _day, Array(config.active_args), _run)
+				_event_source(), _crowd_now(), _player, _day, Array(config.dev_flag_words()), _run)
 
-	if walks_a_day and config.frame_record_requested:
+	if walks_a_day and config.asks_for_a_frame_record():
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
 		_frame_recorder.setup(_flow.in_the_title, _event_source(), _crowd_now(),
@@ -509,7 +509,7 @@ func _ready() -> void:
 
 	# Built before `_start()`, whose `day_planned` starts it once the day it is meant to walk
 	# actually exists — see `src/dev/route_rig.gd`.
-	if walks_a_day and not config.route_targets.is_empty():
+	if walks_a_day and not config.route_targets().is_empty():
 		_add_the_route_rig(_resistance)
 
 	# `VisitCounter`'s own "the escape: begun" — the fresh handover from a won day 14 only, never a
@@ -532,10 +532,10 @@ func _ready() -> void:
 	# see `_new_boot_camera()`'s own doc for why freeing is what does that.
 	_retire_the_boot_camera()
 
-	if config.overview_requested and _city:
+	if config.asks_for_the_overview() and _city:
 		DevRig.make_overview_camera(self, _city.camera_bounds(Stroller.CAMERA_LOOK_AHEAD), get_viewport_rect().size)
 	if walks_a_day:
-		_dev_rig.setup_follow_camera(self, config.follow_target, config.zoom_override)
+		_dev_rig.setup_follow_camera(self, config.follow_target(), config.zoom_override())
 	_add_trailer_rigs()
 	if _flow.plays_an_authored_scene():
 		_begin_the_scene(walks_a_day)
@@ -545,14 +545,14 @@ func _ready() -> void:
 	# Apart from the boot-order block above and below: `StillWatch` only reads the city's map,
 	# lights, events and crowd, `_player` and `_day`, which already exist by here, and does not
 	# affect what day starts or how.
-	if walks_a_day and config.quit_when_still_requested:
+	if walks_a_day and config.quits_when_still():
 		var still_watch := StillWatch.new()
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
 		still_watch.trace = _the_trace()
 		still_watch.setup(_city.map, _city.traffic_signals(), _event_source(), _crowd_now(), _player,
-				_day, config.quit_when_still_seconds, StillWatch.telemetry_picture_dir(_run_log),
-				config.recording)
+				_day, config.quit_when_still_seconds(), StillWatch.telemetry_picture_dir(_run_log),
+				config.records_a_movie())
 
 	# The escape's first screen — see `_open_the_first_screen_of_the_escape()`. An authored scene
 	# has already started playing above.
@@ -629,9 +629,9 @@ func _settle_the_run() -> void:
 	# the one that just earned its ending.
 	if _resume.is_empty() and _facts.escape_section() == DaySpec.Section.NONE \
 			and not carried:
-		_run.start_run(config.seed_override)
+		_run.start_run(config.seed_override())
 		_apply_the_parent_flag()
-		_run.header().set_day(config.day_override)
+		_run.header().set_day(config.day_override())
 		_apply_the_mode_flags()
 	# `VisitCounter`'s own "a run begun fresh, or resumed from the save" — fired once here for
 	# every path through this function, ordinary or handed over to the escape, since run.header().day()
@@ -656,14 +656,14 @@ func _settle_the_run() -> void:
 
 ## `--start-escape`: the escape with no run behind it, so a rig or a person can walk it on demand. A
 ## fresh run of its own, on day 1 — `--day` does not move it; an authored scene's own day does
-## (`config.day_override`, the recipe's day once `RunConfig.with_recipe()` has laid it on) — and no
-## `run_begun`, since nothing about it is a run the page should count.
+## (`config.day_override()`, the recipe's day once `RunConfig.with_recipe()` has laid it on) —
+## and no `run_begun`, since nothing about it is a run the page should count.
 func _start_the_flags_run() -> void:
 	_flow.set_opening(RunFlow.Opening.ESCAPE_BY_FLAG)
-	_run.start_run(config.seed_override)
+	_run.start_run(config.seed_override())
 	_apply_the_parent_flag()
 	if _flow.plays_an_authored_scene():
-		_run.header().set_day(config.day_override)
+		_run.header().set_day(config.day_override())
 	_apply_the_mode_flags()
 
 ## The day this boot opens on: the run's own day, or one of the escape's two sections. **Which
@@ -762,7 +762,7 @@ func _add_the_screenshot_rig() -> void:
 ## two `start_run()` calls, before anything reads the choice — `_hold_every_page_a_day_draws()`
 ## holds that parent's atlas page and `_make_player()` binds the rig to it.
 func _apply_the_parent_flag() -> void:
-	var parent := config.parent_override
+	var parent := config.parent_override()
 	if parent != "":
 		_run.header().set_parent_is_father(parent == "father")
 
@@ -773,9 +773,9 @@ func _apply_the_parent_flag() -> void:
 ## straight after each of this file's two `start_run()` calls, beside
 ## `_apply_the_parent_flag()`.
 func _apply_the_mode_flags() -> void:
-	if config.hard_mode_requested:
+	if config.asks_for_hard_mode():
 		_run.calendar().choose_mode(true)
-	var nerves := config.nerves_override
+	var nerves := config.nerves_override()
 	if nerves > 0:
 		_run.header().set_nerves(nerves)
 
@@ -785,15 +785,15 @@ func _apply_the_mode_flags() -> void:
 ## and the run its header and resistance line read. Set before `add_child()` runs the HUD's own
 ## `_ready()`.
 func _configure_the_hud() -> void:
-	_hud.configure(config.debug_build and not config.player_view_requested, config.invincible,
-			_flow.lessons_learned())
+	_hud.configure(config.is_debug_build() and not config.asks_for_the_player_view(),
+			config.is_invincible(), _flow.lessons_learned())
 	_hud.use_run(_run)
 
 ## The trailer's two additions to a shot, on any day: `--zoom-out`'s camera move, started from
 ## whichever camera is current once her own has been placed, and `--caption`/`--title-card`'s text.
 ## Both add nothing unless their flag was given.
 func _add_trailer_rigs() -> void:
-	var seconds := config.zoom_out_seconds
+	var seconds := config.zoom_out_seconds()
 	var bounds := Rect2()
 	if _city:
 		bounds = _city.camera_bounds(Stroller.CAMERA_LOOK_AHEAD)
@@ -805,8 +805,8 @@ func _add_trailer_rigs() -> void:
 		add_child(zoom_out)
 		_pauses_with_the_game(zoom_out)
 		zoom_out.setup(get_viewport().get_camera_2d(), bounds, get_viewport_rect().size, seconds,
-				config.zoom_out_delay)
-	var text := TrailerText.build(config.caption_text, config.title_card_text)
+				config.zoom_out_delay())
+	var text := TrailerText.build(config.caption_text(), config.title_card_text())
 	if text:
 		add_child(text)
 
@@ -824,7 +824,7 @@ func _make_player() -> Stroller:
 	var baby := player.get_node("Baby") as Baby
 	baby.use_bus(EventBus)
 	baby.use_frame_timing(_sitting.kept_frame_timing())
-	if config.invincible:
+	if config.is_invincible():
 		baby.freeze_excitement()
 	player.let_out_of_the_hold.connect(func() -> void:
 		if _touch_controls:
@@ -853,11 +853,12 @@ func _simulation_builder() -> SimulationBuilder:
 	_simulations.use_poster_art(_poster_art)
 	_simulations.use_the_crowds_screen(ScreenCrowdView.new(self),
 			FrameRecordTiming.new(_sitting.kept_frame_timing()))
-	_simulations.leave_out(config.skip_events, config.skip_crowd, config.skip_motion)
-	if config.pelican:
+	_simulations.leave_out(config.leaves_out_the_events(), config.leaves_out_the_crowd(),
+			config.leaves_out_the_motion())
+	if config.draws_cyclists_as_the_pelican():
 		_simulations.make_every_cyclist_a_pelican()
-	_simulations.force_a_row(config.forced_row, config.forced_interval)
-	if config.blackout_requested:
+	_simulations.force_a_row(config.forced_row(), config.forced_interval())
+	if config.asks_for_the_blackout():
 		_simulations.force_the_blackout()
 	return _simulations
 
@@ -869,9 +870,9 @@ func _new_city() -> City:
 	city.run = _run
 	city.ground_recipe = _sitting.ground_recipe()
 	city.atlas = _sitting.atlas()
-	city.ground_mode = config.ground_mode as SceneryGround.Mode
-	city.scenery_frame_locked = config.recipe_scripted
-	city.skip_shadows = config.skip_shadows
+	city.ground_mode = config.ground_mode() as SceneryGround.Mode
+	city.scenery_frame_locked = config.plays_the_recipe_scripted()
+	city.skip_shadows = config.leaves_out_the_shadows()
 	city.frame_timing = _sitting.kept_frame_timing()
 	add_child(city)
 	_pauses_with_the_game(city)
@@ -1101,7 +1102,7 @@ func _the_city_exits() -> Dictionary:
 				FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE)),
 	}
 
-## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto a building part's waypoint to
+## `--start-escape`'s raw word (`config.start_escape_at()`), mapped onto a building part's waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
 ## not recognise, which covers both "not given" and a typo alike; `InteriorScene.part_world_
 ## position()` falls back the same way for a part name it does not recognise, so the two defaults
@@ -1112,7 +1113,7 @@ func _the_city_exits() -> Dictionary:
 ## with no building built at all, so a rig or a person can look at the finale's streets without
 ## walking down three floors first. `_the_first_day()` is what reads it that way.
 func _escape_start_part() -> String:
-	return _escape_part_for(config.start_escape_at)
+	return _escape_part_for(config.start_escape_at())
 
 ## The mapping itself, with the configuration taken out of it.
 static func _escape_part_for(raw: String) -> String:
@@ -1144,7 +1145,7 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	_route_rig.trace = _the_trace()
 	_route_rig.setup(_city.map, _city_simulation.events(), _spawn_start, _player, _baby,
 			resistance, _day,
-			config.route_targets, _run)
+			config.route_targets(), _run)
 	_flow.day_planned.connect(_route_rig.start_day.unbind(1))
 	_route_rig.use_continue(_on_summary_continued)
 	_flow.brief_opened.connect(_route_rig.press_the_brief)
@@ -1153,7 +1154,7 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 ## city's rig, which needs the city, is built when the building is won). It presses the building's
 ## brief and walks her out (`BuildingWalker`, `src/dev/building_walker.gd`).
 func _add_the_building_walker() -> void:
-	if config.route_targets.is_empty() or _building_walker:
+	if config.route_targets().is_empty() or _building_walker:
 		return
 	_building_walker = BuildingWalker.new()
 	_building_walker.name = "BuildingWalker"
@@ -1171,7 +1172,7 @@ func _add_the_building_walker() -> void:
 ## the building section was booted with is built here, when the building has been won, and presses
 ## the city's brief's continue itself (`RouteRig.press_the_brief()`).
 func _add_the_route_rig_in_the_city() -> void:
-	if config.route_targets.is_empty() or not _city or _route_rig:
+	if config.route_targets().is_empty() or not _city or _route_rig:
 		return
 	_add_the_route_rig(null)
 
@@ -1221,10 +1222,10 @@ func _connect_summary_and_pause_signals() -> void:
 ## is the honest version of relaxing it and does not have to be put back.
 ##
 ## It shows the screen and stops there: the day behind it is running, exactly as it would be under
-## a real ending, and `space` restarts the run like any other finished one. `config.ending_override`
+## a real ending, and `space` restarts the run like any other finished one. `config.ending_override()`
 ## is "" on a release page nobody asked `?debug=1` of, so this cannot fire for a player.
 func _show_an_ending_for_a_rig() -> bool:
-	var wanted_arg := config.ending_override
+	var wanted_arg := config.ending_override()
 	if wanted_arg == "":
 		return false
 	var wanted := {
@@ -1301,7 +1302,7 @@ func _open_the_title() -> void:
 ## two `Symbol.JOYSTICK` buttons or its `Symbol.TAP` one, or `Mode.TAP` when a key began the run
 ## instead — and `side` is which half a joystick button chose to steer from. Both are handed
 ## straight to `_touch_controls.set_mode()`, which overrides whatever `_add_touch_controls()` set
-## from `config.controls_word` at boot — see that function's own doc for why a rig that never
+## from `config.controls_word()` at boot — see that function's own doc for why a rig that never
 ## reaches this screen keeps that earlier answer instead. `by_key` says a key began the run, which
 ## reaches the counter alone: the controls a key player gets are still `mode`'s.
 ##
@@ -1701,7 +1702,7 @@ func _add_the_return_window(viewport: Viewport) -> void:
 ## set. That is one fact main already produces for other reasons rather than a second wire main
 ## would have to remember to pull on every one of those screens.
 ##
-## `set_mode()` with `config.controls_word`'s mode and steering side gives it what a rig gets if
+## `set_mode()` with `config.controls_word()`'s mode and steering side gives it what a rig gets if
 ## the title screen is never reached at all (`--no-title`, a screenshot rig) — `--controls`, then
 ## the page's own `?controls=` in the open bundle, then `TAP`. This is only ever the **pre-title**
 ## answer: `_title` does not exist yet at this point in `_ready()`, and `main._on_title_start()` overrides
@@ -1723,7 +1724,7 @@ func _add_touch_controls() -> void:
 	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
-	var word := config.controls_word
+	var word := config.controls_word()
 	if (_flow.escape_from_a_run() or _flow.opening() == RunFlow.Opening.CARRIED_FROM_CHECKPOINT) \
 			and _sitting.controls_word() != "":
 		word = _sitting.controls_word()
@@ -1854,12 +1855,13 @@ func _start(spec: DaySpec, restarted := false) -> bool:
 ## so built when a walk starts or ends rather than kept in step with a world that is rebuilt between
 ## sections.
 func _new_director() -> DayDirector:
-	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend(), config)
+	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
 	director.use_the_world(_flow.world(), _resistance, _day)
 	director.use_worlds(_worlds)
 	director.use_the_scene(_flow.scene())
 	director.use_trace(_the_trace())
-	director.use_the_flags(_spawn_start, DevRig.apply_meter_override)
+	director.use_the_flags(_spawn_start.bind(config.spawn_target()),
+			DevRig.apply_meter_override.bind(config.meters_override()))
 	director.first_day = _first_day
 	director.escape_follows = _flow.escape_follows()
 	director.spec = _flow.spec()
@@ -1876,7 +1878,7 @@ func _spawn_start(target: String) -> Vector2:
 ## configures the flow with it (`RunFlow.author()`), which every place an authored scene differs
 ## then asks. False, with the game quitting, when the recipe does not load.
 func _author_the_scene() -> bool:
-	var result := SceneRecipeRuntime.load_recipe(config.recipe_path, config.active_args)
+	var result := SceneRecipeRuntime.load_recipe(config.recipe_path(), config.dev_flag_words())
 	if not result.errors.is_empty():
 		_scene_failed(result.errors)
 		return false
@@ -2328,10 +2330,10 @@ func _process(delta: float) -> void:
 ## they change what she is looking at, not who is steering. A playtest of act III started with
 ## `--day 9` is a playtest.
 ##
-## The second and third are `config.is_rig`, the one rig list (`DevFlags`' `RIG_FLAGS`), whose
+## The second and third are `config.runs_as_a_rig()`, the one rig list (`DevFlags`' `RIG_FLAGS`), whose
 ## flags answer nothing on a release build, so an ordinary player is never misread for a rig.
 func _somebody_is_playing() -> bool:
-	return DisplayServer.get_name() != "headless" and not config.is_rig
+	return DisplayServer.get_name() != "headless" and not config.runs_as_a_rig()
 
 ## `Esc` opens the pause. Quitting is a key one step further in: the pause screen owns `Q`.
 ##
