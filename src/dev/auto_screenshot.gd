@@ -157,7 +157,7 @@ var _tap_at := Vector2.INF
 
 ## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace,
 ## a frame record or a recording bounded by `--after` (`RunConfig.screenshot_rig()`). Returns null
-## without one of those requests, which is always outside a debug build: `config.active_args` is
+## without one of those requests, which is always outside a debug build: `config.dev_flag_words()` is
 ## empty there. `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee`, `--press` and
 ## `--tap` are parsed here, from those gated words, because this file owns what they do.
 ##
@@ -168,10 +168,10 @@ var _tap_at := Vector2.INF
 static func from_config(config: RunConfig) -> AutoScreenshot:
 	if not config.screenshot_rig():
 		return null
-	var args := config.active_args
+	var args := config.dev_flag_words()
 	var node := AutoScreenshot.new()
-	node._path = config.screenshot_path
-	node._recording = config.recording
+	node._path = config.screenshot_path()
+	node._recording = config.records_a_movie()
 	var after := args.find("--after")
 	if after != -1 and after + 1 < args.size():
 		node._seconds_to_wait = float(args[after + 1])
