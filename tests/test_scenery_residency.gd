@@ -107,7 +107,7 @@ func _scene_for(t: TestRunner, seed_value: int) -> Scene:
 	scene.scenery.setup(scene.world, scene.map, scene.ground, scene.shadows, scene.decals)
 	scene.world.add_child(scene.scenery)
 	scene.ground.use_mode(SceneryGround.Mode.ONE)
-	scene.ground.atlas = scene.atlas
+	scene.ground.use_atlas(scene.atlas)
 	scene.ground.configure(scene.map, scene.source_at,
 			GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new(), scene.atlas))
 	for key in scene.ground.keys_in(scene.home_view().grow(SceneryResidency.LOAD_MARGIN)):
@@ -248,7 +248,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 				water_count += 1
 				var ripples := water.material as ShaderMaterial
 				t.check(ripples != null
-						and float(ripples.get_shader_parameter("elapsed")) == scene.ground.elapsed
+						and float(ripples.get_shader_parameter("elapsed")) == scene.ground.elapsed()
 						and not water.is_processing(),
 						"new water chunks share one pausable city phase")
 	t.check(water_count > 1, "the phase check covers multiple water chunks")
@@ -276,7 +276,7 @@ func _test_roof_phase(t: TestRunner, seed_value: int) -> void:
 			await _run_the_city_clock(t, scene, Building.VENT_FRAME_INTERVAL * 1.25)
 			scene.scenery.update(view, true)
 			t.check(not _rotors_of(building).is_empty(), "returning fan owner reconstructs actual rotors")
-			var expected_phase := int(scene.ground.elapsed / Building.VENT_FRAME_INTERVAL) % 2 == 1
+			var expected_phase := int(scene.ground.elapsed() / Building.VENT_FRAME_INTERVAL) % 2 == 1
 			# The phase a rotor is stood at is what the building tells its drawer; that the drawer
 			# shows the phase it is told is `tests/test_roof_entities.gd`'s.
 			for entry in _drawer_of(building).standing():
@@ -365,19 +365,19 @@ func _collision_shape(building: Building) -> Shape2D:
 ## the stretch, so the view the caller chose is the view it finds again; a clock that stops short fails.
 func _run_the_city_clock(t: TestRunner, scene: Scene, seconds: float) -> void:
 	var ground := scene.ground
-	var until := ground.elapsed + seconds
+	var until := ground.elapsed() + seconds
 	var clock := Engine.time_scale
 	scene.scenery.set_process(false)
 	Engine.time_scale = 1000.0
 	var frames := 0
-	while ground.elapsed < until and frames < 600:
+	while ground.elapsed() < until and frames < 600:
 		await t.get_tree().process_frame
 		frames += 1
 	Engine.time_scale = clock
 	scene.scenery.set_process(true)
-	t.check(ground.elapsed >= until,
+	t.check(ground.elapsed() >= until,
 			"the ground's clock ran its %.2f s within 600 frames (it reached %.2f of %.2f)"
-			% [seconds, ground.elapsed, until])
+			% [seconds, ground.elapsed(), until])
 
 ## Lets `count` process frames pass. The caller sits at the start of a frame, before that frame's
 ## `_process`, whenever it has just awaited one, so each await here is exactly one `_process` of
@@ -555,7 +555,7 @@ func _test_frame_record(t: TestRunner, seed_value: int) -> void:
 	var record := FrameRecord.new()
 	var ledger := FrameLedger.new(4)
 	record.start(ledger)
-	scenery.timing = record
+	scenery.use_frame_timing(record)
 	ledger.process_start(Time.get_ticks_usec())
 	scenery.budget_usec = 1
 	scenery.update(view)
@@ -564,7 +564,7 @@ func _test_frame_record(t: TestRunner, seed_value: int) -> void:
 	ledger.keep_this_frame()
 	ledger.process_end(Time.get_ticks_usec())
 	record.stop()
-	scenery.timing = FrameTiming.new()
+	scenery.use_frame_timing(FrameTiming.new())
 	ledger.process_start(Time.get_ticks_usec())
 	var rows := ledger.rows()
 	t.check(keys.size() == 2, "the record check has two actual load-ring regions to prepare")
@@ -643,12 +643,12 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 		var away := view
 		# Put this candidate between the load and retention boundaries, while preserving size.
 		away.position.x = SceneryGround.bounds(key).end.x + SceneryResidency.LOAD_MARGIN + 1
-		scene.scenery.view = away
+		scene.scenery.use_view(away)
 		scene.scenery.update(away)
 		t.check(ground.pending().has(key) and _step_of(ground, key) == progress \
 				and _unfinished_layer(ground, key).get_instance_id() == pending_id,
 				"unfinished regions pause with the same allocation inside the retention ring")
-		scene.scenery.view = view
+		scene.scenery.use_view(view)
 		ground.cancel(key)
 		scene.scenery.update(view)
 		t.check(not ground.pending().has(key) and not ground.chunks().has(key),
@@ -661,7 +661,7 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 	ground.release(key)
 	ground.prepare_step(key)
 	layer = _unfinished_layer(ground, key)
-	ground.configure(scene.map, scene.source_at, ground.tile_set)
+	ground.configure(scene.map, scene.source_at, ground.tile_set())
 	t.check(ground.pending().is_empty() and not is_instance_valid(layer),
 			"day/reset configuration discards every unfinished allocation")
 	scene.scenery.update(scene.home_view(), true)
@@ -708,7 +708,7 @@ func _check_chunk(t: TestRunner, scene: Scene, key: Vector2i) -> void:
 						"completed region matches the current independent source lookup")
 				if source >= 0:
 					t.check(GroundCells.atlas_coords(scene.ground, tile) == GroundLayers.atlas_coords_for(
-							source, scene.map.city_seed(), tile, scene.ground.tile_set),
+							source, scene.map.city_seed(), tile, scene.ground.tile_set()),
 							"completed region preserves seeded atlas selection")
 
 func _check_coverage(t: TestRunner, scene: Scene, view: Rect2) -> void:

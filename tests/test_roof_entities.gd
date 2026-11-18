@@ -13,6 +13,15 @@ const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
 const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
 
+## The city's clock stood still at `at` seconds: all a building asks of it (`Building.scenery_clock`)
+## is the time its rotors turn by.
+class FixedClock extends SceneryGround:
+	var at := 0.0
+
+	## Overrides SceneryGround.elapsed.
+	func elapsed() -> float:
+		return at
+
 func run(t: TestRunner) -> void:
 	_test_every_placed_unit_is_drawn_at_its_foot_in_entities(t)
 	await _test_the_real_drawer_draws_each_unit_as_told(t)
@@ -83,8 +92,8 @@ func _interior_cells(building: Building) -> int:
 ## in step with the ones that were never rebuilt.
 func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
-	var clock := SceneryGround.new()
-	clock.elapsed = Building.VENT_FRAME_INTERVAL * 1.5
+	var clock := FixedClock.new()
+	clock.at = Building.VENT_FRAME_INTERVAL * 1.5
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL, drawer, clock)
 	var entities: Node2D = fixture["entities"]
 	var building: Building = fixture["building"]
@@ -107,7 +116,7 @@ func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t: TestRunner) -> 
 	for drawn in standing:
 		t.check(drawn.rotor_frame_b, "a roof drawn in the clock's second interval turns its rotors"
 				+ " on their second frame")
-	clock.elapsed = Building.VENT_FRAME_INTERVAL * 2.5
+	clock.at = Building.VENT_FRAME_INTERVAL * 2.5
 	building.draw_as(building.district(), building.look_variant() + 1, building.height())
 	var rebuilt := drawer.standing()
 	t.check(not rebuilt.is_empty(), "the rebuilt roof has units to draw")

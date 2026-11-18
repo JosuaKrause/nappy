@@ -812,8 +812,8 @@ func _scenery_bounds() -> Rect2:
 
 func _prepare_scenery() -> void:
 	if scenery_clock:
-		_vent_timer = fmod(scenery_clock.elapsed, VENT_FRAME_INTERVAL)
-		_vent_frame_b = int(scenery_clock.elapsed / VENT_FRAME_INTERVAL) % 2 == 1
+		_vent_timer = fmod(scenery_clock.elapsed(), VENT_FRAME_INTERVAL)
+		_vent_frame_b = int(scenery_clock.elapsed() / VENT_FRAME_INTERVAL) % 2 == 1
 	_build_windows()
 	_build_roof_furniture()
 	_build_roof_layers()

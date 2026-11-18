@@ -302,16 +302,16 @@ func build(city_map: CityMap) -> void:
 	map.world = self
 	navigator = map.navigator()
 	scenery = SceneryResidency.new()
-	scenery.timing = frame_timing
+	scenery.use_frame_timing(frame_timing)
 	scenery.frame_locked = scenery_frame_locked
 	scenery.setup(self, map, scenery_ground, _building_shadows, _decals)
 	add_child(scenery)
 	scenery_ground.use_mode(ground_mode)
-	scenery_ground.atlas = atlas
+	scenery_ground.use_atlas(atlas)
 	_decals.use_atlas(atlas)
 	_decals.draw_through(_scenery_drawer)
 	_decals.stream_in_chunks()
-	_building_shadows.streamed = true
+	_building_shadows.stream_in_chunks()
 	_building_shadows.draw_through(ShadowDrawer.new())
 	_building_shadows.skip_drawing(skip_shadows)
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
@@ -330,7 +330,7 @@ func build(city_map: CityMap) -> void:
 		if _recipe_shows_building(footprint):
 			shown_rects.append(footprint)
 	if map.has_stretch():
-		_building_shadows.falls_on = map.in_stretch
+		_building_shadows.use_falls_on(map.in_stretch)
 	_building_shadows.set_buildings(shown_rects)
 	if _recipe_contains(map.home_world_position()):
 		_spawn_home()
@@ -1001,7 +1001,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 ## Everything a day does to the city before its streets are closed: the repaint, the door, the
 ## ground, the litter and the block dressing.
 func _dress(state: CityState, day: int) -> void:
-	scenery.view = _home_scenery_view()
+	scenery.use_view(_home_scenery_view())
 	map.repaint(state, trace)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
@@ -1451,7 +1451,7 @@ func _spawn_boundary() -> void:
 func _paint_ground() -> void:
 	_tinted_route = null
 	scenery_ground.configure(map, scenery_ground_source, _composed_ground_tile_set())
-	var initial := scenery.view if scenery.view.has_area() else _home_scenery_view()
+	var initial := scenery.view() if scenery.view().has_area() else _home_scenery_view()
 	for key in scenery_ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
 		scenery_ground.prepare(key)
 
@@ -1471,7 +1471,7 @@ func scenery_ground_source(tile: Vector2i) -> int:
 	var source := GroundTiles.source_for(map, tile, _day)
 	if source in GroundTiles.ROUTE_KERB_SOURCES and _is_on_the_tinted_route(tile):
 		var twin := GroundTiles.route_twin_of(source)
-		if twin >= 0 and scenery_ground.tile_set.has_source(twin):
+		if twin >= 0 and scenery_ground.tile_set().has_source(twin):
 			return twin
 	return source
 
@@ -1563,7 +1563,7 @@ func _recipe_litter(day: int) -> Array[Litter.Placed]:
 ## baked region and holds no picture, so composing it twice can never accumulate layers.
 func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
-		_authored_ground_tile_set = scenery_ground.tile_set
+		_authored_ground_tile_set = scenery_ground.tile_set()
 	return GroundLayers.build_tile_set(_authored_ground_tile_set, ground_recipe, atlas)
 
 ## What the city stops at, on each of its four sides.

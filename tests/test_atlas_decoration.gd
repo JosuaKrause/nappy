@@ -28,37 +28,35 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 		var region: StringName = case[1]
 		var fraction: float = case[2]
 		var prop := Prop.new()
-		prop.kind = kind
+		prop.dress(null, kind)
 		t.add_child(prop)
 		var expected: float = float(AtlasTable.baked().native_size(region).x) * fraction
-		t.check(prop.shape != null and is_equal_approx(prop.shape.radius, expected),
+		t.check(prop.shape() != null and is_equal_approx(prop.shape().radius, expected),
 				"Prop.Kind %d's shadow radius is off the region table's own size (%.2f against %.2f)"
-				% [kind, prop.shape.radius if prop.shape else -1.0, expected])
+				% [kind, prop.shape().radius if prop.shape() else -1.0, expected])
 		prop.free()
 
 	var tree := Prop.new()
-	tree.kind = Prop.Kind.TREE
-	tree.variant = 0
-	tree.scale_factor = 1.3
+	tree.dress(null, Prop.Kind.TREE, 0, 1.3)
 	t.add_child(tree)
 	var tree_name: StringName = Prop.TREES[0]
 	var expected_tree: float = float(AtlasTable.baked().native_size(tree_name).x) * 1.3 * 0.28
-	t.check(tree.shape != null and is_equal_approx(tree.shape.radius, expected_tree),
+	t.check(tree.shape() != null and is_equal_approx(tree.shape().radius, expected_tree),
 			"a tree's shadow radius follows scale_factor off the region table's own size (%.2f against %.2f)"
-			% [tree.shape.radius if tree.shape else -1.0, expected_tree])
+			% [tree.shape().radius if tree.shape() else -1.0, expected_tree])
 	tree.free()
 
 	var frame := Prop.new()
-	frame.kind = Prop.Kind.PLAYGROUND_FRAME
+	frame.dress(null, Prop.Kind.PLAYGROUND_FRAME)
 	t.add_child(frame)
 	var frame_size := Vector2(AtlasTable.baked().native_size(Prop.SWING_FRAME))
 	var expected_radius := frame_size.y * 0.5
 	var expected_half_length := frame_size.x * 0.5 - expected_radius
-	t.check(frame.shape != null and is_equal_approx(frame.shape.radius, expected_radius)
-			and is_equal_approx(frame.shape.half_length, expected_half_length),
+	t.check(frame.shape() != null and is_equal_approx(frame.shape().radius, expected_radius)
+			and is_equal_approx(frame.shape().half_length, expected_half_length),
 			"the swing frame's capsule is sized off the region table (radius %.2f, half-length %.2f)"
-			% [frame.shape.radius if frame.shape else -1.0,
-					frame.shape.half_length if frame.shape else -1.0])
+			% [frame.shape().radius if frame.shape() else -1.0,
+					frame.shape().half_length if frame.shape() else -1.0])
 	frame.free()
 
 ## `StreetTrees.footprint_radius()` (`src/city/street_trees.gd`) plans tree clearance for the

@@ -7,7 +7,7 @@ extends Node
 ## see a rolling blackout anyway"; "yes all lights should go out".)* Once the sabotage is done
 ## (`ResistanceRunState.sabotage_went_through()`) and she is `BLACKOUT_DISTANCE` from the power station, one
 ## call to `_go_dark()` puts out every lit window and the station's own hall (`Building.powered`),
-## every traffic light (`TrafficSignals.powered`), and every loudspeaker mast
+## every traffic light (`TrafficSignals.use_power()`), and every loudspeaker mast
 ## (`EventManager.silence_all_masts()`), because the masts have no power of their own. The
 ## distance is what the story needs as well as what the picture needs: the station is off screen, so
 ## the moment is the city going dark around her rather than one building, and the minutes it takes
@@ -124,7 +124,7 @@ func _go_dark() -> void:
 		_bus.city_gone_dark.emit()
 	for building in _buildings:
 		building.powered = false
-	_signals.powered = false
+	_signals.use_power(false)
 	if _events.silence_all_masts() > 0 and _bus:
 		_bus.city_went_quiet.emit()
 
@@ -134,7 +134,7 @@ func restore() -> void:
 	_is_dark = false
 	for building in _buildings:
 		building.powered = true
-	_signals.powered = true
+	_signals.use_power(true)
 
 func _sabotaged() -> bool:
 	return _resistance.sabotage_went_through() or _forced

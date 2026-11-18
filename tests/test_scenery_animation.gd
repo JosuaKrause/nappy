@@ -366,14 +366,14 @@ func _test_water_surfaces(t: TestRunner) -> void:
 	t.check(water.material != ripples
 			and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"repeated configure keeps the shared shader while refreshing instance uniforms")
-	# A surface handed no library made one when it entered the tree.
-	t.check(water.atlas != null, "a surface handed no library makes one of its own")
+	# A surface handed no library made one when it entered the tree: the ripples above were baked from
+	# its page.
 	# A surface of its own on a library of the test's own, watched from here, so the only lines
 	# about the `ground` page are the ones that library writes.
 	var own := AtlasLibrary.new()
 	var pages := PageLog.new(own)
 	var other := SceneryWater.new()
-	other.atlas = own
+	other.use_atlas(own)
 	parent.add_child(other)
 	other.configure(cells.slice(0, 1))
 	await t.get_tree().process_frame

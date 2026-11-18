@@ -245,13 +245,15 @@ func _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t: Tes
 	var here := box.get_center()
 	var green := Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
 	# She walks up to the junction with the light green for her, which arms the watch.
-	rig.signals.elapsed = green
+	rig.signals.restart_cycle()
+	rig.signals.advance(green)
 	await _stand(t, rig, here + Vector2(-20, 0), 2)
 	await _stand(t, rig, here, 1)
-	rig.signals.elapsed = 0.0
+	rig.signals.restart_cycle()
 	await _stand(t, rig, here, _HOLD_TICKS * 3)
 	t.check(rig.triggered_at < 0, "three holds in front of a red light never fire")
-	rig.signals.elapsed = green
+	rig.signals.restart_cycle()
+	rig.signals.advance(green)
 	await _stand(t, rig, here, _HOLD_TICKS + _MARGIN)
 	t.check(rig.triggered_at >= 0, "and once the light is green for her the hold fires")
 	rig.free_all()
@@ -289,20 +291,22 @@ func _test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she
 		t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	var view := _junction_box(map, _main_junction(map, 0)).grow(20.0)
 	var far_away := map.tile_to_world(Vector2i(10, 10))
 	t.check(StillWatch.facing_a_red_light(map, signals, far_away, view),
 			"the main road's own green is a red light for the pedestrian crossing it, wherever " +
 			"on screen she is standing")
-	signals.elapsed = Tuning.signal_main_green_seconds() + 0.1
+	signals.restart_cycle()
+	signals.advance(Tuning.signal_main_green_seconds() + 0.1)
 	t.check(StillWatch.facing_a_red_light(map, signals, far_away, view),
 			"and so is its amber — the crossing arm stays red through the clearance period")
 
 func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
-	signals.elapsed = Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
+	signals.restart_cycle()
+	signals.advance(Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1)
 	var view := _junction_box(map, _main_junction(map, 0)).grow(20.0)
 	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
 			"the side arm's own green is what lets her cross the main road")
@@ -314,7 +318,7 @@ func _test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longe
 		t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	var view := _junction_box(map, _main_junction(map, 0)).grow(20.0)
 	t.check(StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(3, 3))), view),
 			"standing on the carriageway no longer ends the hold — only the light does")
@@ -322,7 +326,7 @@ func _test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longe
 func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	var far_away := map.tile_to_world(Vector2i(10, 10))
 	var view := Rect2(far_away, Vector2(50.0, 50.0))
 	t.check(not StillWatch.facing_a_red_light(map, signals, far_away,
@@ -331,7 +335,7 @@ func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: Test
 func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	# The junction beside the main road's is an ordinary crossroads, but its box is on screen.
 	var view := _junction_box(map, _main_junction(map, 0) + Vector2i(1, 0)).grow(20.0)
 	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
@@ -340,7 +344,7 @@ func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: Test
 func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	var box := _junction_box(map, _main_junction(map, 0))
 	var view := Rect2(box.end + Vector2(500.0, 500.0), Vector2(50.0, 50.0))
 	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
@@ -351,7 +355,7 @@ func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: TestR
 func _test_the_nearest_of_two_disagreeing_visible_junctions_decides(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	var red := _main_junction(map, 0)
 	var green := Vector2i(-1, -1)
 	for y in range(1, Tuning.CITY_BLOCKS.y + 1):

@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 	var trees := {}
 	for node in city.props():
 		var prop := node as Prop
-		if prop != null and prop.kind == Prop.Kind.STREET_TREE:
+		if prop != null and prop.kind() == Prop.Kind.STREET_TREE:
 			trees[city.map.world_to_tile(prop.position)] = prop
 	t.check(not trees.has(source) and trees.has(destination),
 			"real tree props use the relocated planning source")

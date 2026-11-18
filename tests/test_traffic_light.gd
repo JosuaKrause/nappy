@@ -34,7 +34,7 @@ func _test_a_head_shows_its_lamp_and_loses_it_when_the_power_goes(t: TestRunner)
 	var lit_lamps: Array = lit_head.get("lamps", [])
 	t.check(lit_head.get("picture") == TrafficLight.HEAD and lit_lamps.size() == 1,
 			"a lit signal head shows its face with one lamp on it (%s)" % [lit_head])
-	signals.powered = false
+	signals.use_power(false)
 	await UI.frames(t, 2)
 	var dark_head := head.shown()
 	var dark_lamps: Array = dark_head.get("lamps", [0])

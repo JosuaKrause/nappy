@@ -86,7 +86,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 	for tile: Vector2i in expected:
 		var plain_source := GroundTiles.source_for(city.map, tile, day)
 		var expected_atlas := GroundLayers.atlas_coords_for(plain_source, city.map.city_seed(), tile,
-				city.scenery_ground.tile_set)
+				city.scenery_ground.tile_set())
 		t.check(observed.sources.get(tile, -1) == GroundTiles.route_twin_of(plain_source),
 				"Ground's cell at %s carries its kerb source's route twin" % tile)
 		t.check(observed.atlas.get(tile, Vector2i(-1, -1)) == expected_atlas,

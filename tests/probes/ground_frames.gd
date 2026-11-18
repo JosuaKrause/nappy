@@ -95,7 +95,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	get_viewport().canvas_transform = Transform2D(0, Vector2(10000, 10000))
 	for key in keys:
 		var layer := TileMapLayer.new()
-		layer.tile_set = _city.scenery_ground.tile_set
+		layer.tile_set = _city.scenery_ground.tile_set()
 		layer.rendering_quadrant_size = 4 if mode == "quadrants" else 16
 		owner.add_child(layer)
 		layers.append(layer)
@@ -199,7 +199,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 			view.position -= direction * 92
 		# Taken outside the timed span, like the classification after the draw below.
 		var resident_before := ground.chunks().duplicate()
-		var relocating := _city.scenery.view.get_center().distance_to(view.get_center()) \
+		var relocating := _city.scenery.view().get_center().distance_to(view.get_center()) \
 				> SceneryResidency.GUARD_MARGIN
 		var tick := Time.get_ticks_usec()
 		camera.position = view.get_center()
@@ -208,8 +208,8 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		if not actual.is_equal_approx(view):
 			_failures.append("rendered viewport and checked camera view differ")
 			break
-		if _city.scenery._pending or view.size != _city.scenery.view.size \
-				or view.get_center().distance_to(_city.scenery.view.get_center()) >= 16:
+		if _city.scenery._pending or view.size != _city.scenery.view().size \
+				or view.get_center().distance_to(_city.scenery.view().get_center()) >= 16:
 			_city.scenery.update(view)
 		updates.append(Time.get_ticks_usec() - tick)
 		for key: Vector2i in ground.pending():
@@ -229,7 +229,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		# prepares its whole destination at once in every mode, so it is not counted.
 		var guarded := 0
 		var ordinary := 0
-		var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
+		var guard := _city.scenery.view().grow(SceneryResidency.GUARD_MARGIN)
 		for key: Vector2i in ground.chunks():
 			prepared_regions += int(not resident_before.has(key))
 			if not relocating and not resident_before.has(key):

@@ -17,7 +17,9 @@ enum Mode { ALL = 1, ONE = 2, STEPPED = 3 }
 ## Handed in by the city before it builds (`--ground-mode`, `use_mode()`); a test hands it to an
 ## empty ground.
 var _mode: Mode = Mode.ONE
-@export var tile_set: TileSet
+## The tile set the regions are laid from: the scene's own until `configure()` hands in the one
+## composed for the run (`tile_set()`).
+@export var _tile_set: TileSet
 ## The whole regions laid now, each a `TileMapLayer` keyed by its region (`key_for()`).
 var _chunks: Dictionary = {}
 ## Visible in-tree at their real off-screen coordinates; hidden TileMaps discard render data.
@@ -27,28 +29,42 @@ var _map: CityMap
 ## Which source each tile is painted from, asked of the city that owns the answer
 ## (`City.scenery_ground_source()`), handed in by `configure()`.
 var _source_of := Callable()
-## The city's library (`AtlasLibrary`), handed by the city before it configures the ground, and
-## handed on to every water surface a chunk stands up.
-var atlas: AtlasLibrary
+## The city's library (`AtlasLibrary`), handed in by `use_atlas()` before the city configures the
+## ground, and handed on to every water surface a chunk stands up.
+var _atlas: AtlasLibrary
 ## Whole-region prepare() time: every preparation in ALL and ONE, the guard's alone in STEPPED,
 ## whose ordinary quadrant steps use worst_step_usec.
 var worst_prepare_usec := 0
 var worst_step_usec := 0
-## One pausable city clock keeps adjacent water chunks in phase, including newly entered ones.
-var elapsed := 0.0
+## One pausable city clock keeps adjacent water chunks in phase, including newly entered ones
+## (`elapsed()`).
+var _elapsed := 0.0
 
 func _process(delta: float) -> void:
-	elapsed += delta
+	_elapsed += delta
 	for layer: TileMapLayer in _chunks.values() + _pending_layers():
 		for child: Node in layer.get_children():
 			if child is SceneryWater:
-				(child as SceneryWater).set_clock(elapsed)
+				(child as SceneryWater).set_clock(_elapsed)
 
 func configure(map: CityMap, source_of: Callable, composed: TileSet) -> void:
 	clear()
 	_map = map
 	_source_of = source_of
-	tile_set = composed
+	_tile_set = composed
+
+## The tile set the regions are laid from.
+func tile_set() -> TileSet:
+	return _tile_set
+
+## Hands in the city's library (`AtlasLibrary`), before the ground lays anything: every water surface
+## it stands up draws from it.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
+
+## The city's clock in seconds, which every water surface's ripples and the buildings' vents follow.
+func elapsed() -> float:
+	return _elapsed
 
 ## How a needed region's preparation is scheduled (`Mode`).
 func mode() -> Mode:
@@ -104,7 +120,7 @@ func prepare(key: Vector2i) -> void:
 
 func _prepare_whole(key: Vector2i) -> void:
 	var layer := TileMapLayer.new()
-	layer.tile_set = tile_set
+	layer.tile_set = _tile_set
 	layer.name = "Chunk%d_%d" % [key.x, key.y]
 	_chunks[key] = layer
 	add_child(layer)
@@ -117,11 +133,11 @@ func _prepare_whole(key: Vector2i) -> void:
 				water_cells.append(tile)
 			elif source >= 0:
 				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, tile_set))
+						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
-		water.atlas = atlas
-		water.set_clock(elapsed)
+		water.use_atlas(_atlas)
+		water.set_clock(_elapsed)
 		layer.add_child(water)
 		water.configure(water_cells)
 		water.set_process(false)
@@ -135,7 +151,7 @@ func prepare_step(key: Vector2i) -> bool:
 	var started := Time.get_ticks_usec()
 	if not _pending.has(key):
 		var created := TileMapLayer.new()
-		created.tile_set = tile_set
+		created.tile_set = _tile_set
 		created.rendering_quadrant_size = STEP_TILES
 		created.name = "Chunk%d_%d" % [key.x, key.y]
 		add_child(created)
@@ -154,11 +170,11 @@ func prepare_step(key: Vector2i) -> bool:
 				water_cells.append(tile)
 			elif source >= 0:
 				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, tile_set))
+						GroundLayers.atlas_coords_for(source, _map.city_seed(), tile, _tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
-		water.atlas = atlas
-		water.set_clock(elapsed)
+		water.use_atlas(_atlas)
+		water.set_clock(_elapsed)
 		layer.add_child(water)
 		water.configure(water_cells)
 		water.set_process(false)

@@ -642,9 +642,10 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 			named[entry.name] = placed.actor
 	if map.has_stretch():
 		simulation.crowd().use_stretch()
-	city.traffic_signals().elapsed = float(setup.get("signal_time", 0))
+	city.traffic_signals().restart_cycle()
+	city.traffic_signals().advance(float(setup.get("signal_time", 0)))
 	if setup.get("progression", {}).get("blackout", false):
-		city.traffic_signals().powered = false
+		city.traffic_signals().use_power(false)
 	player.reset_at(at, DIRECTIONS[setup.get("player", {}).get("facing", "south")])
 	baby.reset()
 	var initial: Dictionary = setup.get("player", {})

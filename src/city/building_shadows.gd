@@ -49,13 +49,24 @@ class Tiles extends RefCounted:
 	var triangles: Array[Vector2i] = []
 
 var _tiles := Tiles.new()
-var streamed := false
+## Whether the chunks are prepared near the view as it moves rather than all at once
+## (`stream_in_chunks()`).
+var _streamed := false
 var _by_chunk: Dictionary = {}
 var _resident: Dictionary = {}
 var _rects: Array[Rect2i] = []
 ## Which tiles a shadow may fall on, or empty for every tile. A task scene's stretch casts no shadow
-## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground.
-var falls_on := Callable()
+## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground. Handed in
+## by `use_falls_on()`.
+var _falls_on := Callable()
+
+## Has the shadows prepare the chunks near the view as it moves, never the whole city at once.
+func stream_in_chunks() -> void:
+	_streamed = true
+
+## Hands in which tiles a shadow may fall on: a callable taking a tile and answering whether it may.
+func use_falls_on(filter: Callable) -> void:
+	_falls_on = filter
 
 ## What every chunk's shaded tiles are drawn through (`ShadowDrawer`), handed in by the city before
 ## it builds.
@@ -78,11 +89,11 @@ func skip_drawing(skipped: bool) -> void:
 ## and builds all drawing chunks here; streamed use prepares nearby chunks on demand.
 func set_buildings(rects: Array[Rect2i]) -> void:
 	_rects = rects
-	if streamed:
+	if _streamed:
 		return
 	_tiles = _on_the_ground(_compute(rects))
 	_by_chunk = split(_tiles)
-	if not streamed:
+	if not _streamed:
 		_rebuild_chunks()
 
 func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> void:
@@ -122,11 +133,11 @@ func _tiles_for_chunk(key: Vector2i) -> Tiles:
 	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i) -> bool: return area.has_point(tile))
 	return tiles
 
-## `tiles` less those `falls_on` refuses.
+## `tiles` less those `_falls_on` refuses.
 func _on_the_ground(tiles: Tiles) -> Tiles:
-	if falls_on.is_valid():
-		tiles.full = tiles.full.filter(falls_on)
-		tiles.triangles = tiles.triangles.filter(falls_on)
+	if _falls_on.is_valid():
+		tiles.full = tiles.full.filter(_falls_on)
+		tiles.triangles = tiles.triangles.filter(_falls_on)
 	return tiles
 
 func _chunk_bounds(key: Vector2i) -> Rect2:

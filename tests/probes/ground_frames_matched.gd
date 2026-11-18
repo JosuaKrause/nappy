@@ -61,8 +61,8 @@ func _process(_delta: float) -> void:
 	_camera.position = view.get_center()
 	_camera.force_update_scroll()
 	var tick := Time.get_ticks_usec()
-	if _request.queue and (_city.scenery._pending or view.size != _city.scenery.view.size \
-			or view.get_center().distance_to(_city.scenery.view.get_center()) >= 16):
+	if _request.queue and (_city.scenery._pending or view.size != _city.scenery.view().size \
+			or view.get_center().distance_to(_city.scenery.view().get_center()) >= 16):
 		_city.scenery.update(view)
 	_queue_usec = Time.get_ticks_usec() - tick
 	_executed = true
@@ -93,7 +93,7 @@ func _finish_frame() -> void:
 	var canceled := 0
 	for key: Vector2i in after_pending:
 		sections += int(after_pending[key]) - int(before_pending.get(key, 0))
-	var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
+	var guard := _city.scenery.view().grow(SceneryResidency.GUARD_MARGIN)
 	var ordinary := 0
 	var guarded := 0
 	var evictions := 0
@@ -158,7 +158,6 @@ func _run() -> void:
 		RunCity.build(_city, CityGenerator.generate(4242))
 		_city.scenery.set_process(false)
 		_city.scenery_ground.set_process(false)
-		_city.scenery_ground.elapsed = 0
 		_city_mode = _city.scenery_ground.mode()
 		_stepped = _city.scenery_ground.mode() == SceneryGround.Mode.STEPPED
 		_camera = Camera2D.new()
@@ -190,7 +189,6 @@ func _run() -> void:
 		# All strategies settle the same shoreline view for water/quad overhead comparison.
 		at = Vector2(_city.map.world_size().x / 2, _city.map.world_size().y)
 		_city.scenery_ground.clear()
-		_city.scenery_ground.elapsed = 0
 		_camera.position = at
 		_camera.force_update_scroll()
 		var steady_view := Rect2(at - EXTENT / 2, EXTENT)

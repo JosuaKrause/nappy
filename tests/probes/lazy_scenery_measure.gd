@@ -203,11 +203,11 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 	var expected_count := GroundCells.used_cells(source).size()
 	var home := city.map.doorstep_world_position()
 	var nearby := Rect2(home - HALF_VIEW, HALF_VIEW * 2).grow(128)
-	var sheet := (source.tile_set.get_source(source.tile_set.get_source_id(0)) as TileSetAtlasSource).texture
+	var sheet := (source.tile_set().get_source(source.tile_set().get_source_id(0)) as TileSetAtlasSource).texture
 	for mode: String in ["full", "nearby", "nearby", "full"]:
 		var baseline := OS.get_static_memory_usage()
 		var layer := TileMapLayer.new()
-		layer.tile_set = source.tile_set
+		layer.tile_set = source.tile_set()
 		# Deliberately outside the tree: no renderer/physics/quadrant processing in this experiment.
 		var lo := Vector2i(-CityMap.OUTSIDE_DEPTH_TILES, -CityMap.OUTSIDE_DEPTH_TILES)
 		var hi := city.map.size + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
@@ -224,7 +224,7 @@ func _counterfactual(city: City, t: TestRunner) -> void:
 					else city._border_source(x, y)
 				if source_id >= 0 and source_id != GroundTiles.WATER:
 					layer.set_cell(tile, source_id, GroundLayers.atlas_coords_for(
-						source_id, city.map.city_seed(), tile, source.tile_set))
+						source_id, city.map.city_seed(), tile, source.tile_set()))
 					count += 1
 		var insert_ms := (Time.get_ticks_usec() - started) / 1000.0
 		var allocated := OS.get_static_memory_usage() - baseline

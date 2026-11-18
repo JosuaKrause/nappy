@@ -896,7 +896,7 @@ stands on to reach it.
 sabotage is done (`run.resistance().sabotage_went_through()`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
-(`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic
+(`Building.powered`), every traffic light on the spine (`TrafficSignals.use_power()`, see "Traffic
 signals") and every loudspeaker mast (`EventManager.silence_all_masts()`). *(The player,
 2026-09-20: "just wait until a certain distance away -- then everything is off at once".)* The
 station's own hall goes with them: on the last night its clerestory is dimly lit while the power

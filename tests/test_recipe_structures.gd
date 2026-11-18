@@ -210,7 +210,7 @@ func _emptied_pits(map: CityMap) -> Array[StreetTrees.Planted]:
 func _street_trees(city: City) -> Array[Prop]:
 	var trees: Array[Prop] = []
 	for node in city.props():
-		if node is Prop and (node as Prop).kind == Prop.Kind.STREET_TREE:
+		if node is Prop and (node as Prop).kind() == Prop.Kind.STREET_TREE:
 			trees.append(node)
 	return trees
 

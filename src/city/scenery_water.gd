@@ -8,19 +8,19 @@ extends Node2D
 const RIPPLE_SHADER: Shader = preload("res://assets/shaders/scenery_water.gdshader")
 
 var cells: Array[Vector2i] = []
-## The baked atlas pages the water's region comes from (`AtlasLibrary`), handed by the ground
-## before the surface is added; a surface nobody handed one (a suite's) makes its own when it first
+## The baked atlas pages the water's region comes from (`AtlasLibrary`), handed in by `use_atlas()`
+## (the ground does, before the surface is added); a surface nobody handed one (a suite's) makes its own when it first
 ## enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
 ## The surface's clock, in seconds: the ripples' phase (`set_clock()`).
 var _elapsed := 0.0
 var _texture: AtlasTexture
 var _ripples: ShaderMaterial
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"ground")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"ground")
 	if not cells.is_empty():
 		configure(cells)
 
@@ -29,12 +29,16 @@ func _exit_tree() -> void:
 	_texture = null
 	material = null
 	_ripples = null
-	atlas.release(&"ground")
+	_atlas.release(&"ground")
+
+## Hands in the baked atlas pages the water's region comes from, before the surface is added.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func configure(water_cells: Array[Vector2i]) -> void:
 	if cells != water_cells:
 		cells.assign(water_cells)
-	_texture = atlas.region(&"tiles/water") as AtlasTexture
+	_texture = _atlas.region(&"tiles/water") as AtlasTexture
 	_ripples = material_for(_texture, _elapsed)
 	material = _ripples
 	queue_redraw()

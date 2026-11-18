@@ -747,9 +747,9 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
 	var junction := Vector2i(map.main_road, CityMap.junction_index(lane_y))
 	# The main road's green, which is the side street's red.
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	while not signals.green_for(junction, true):
-		signals.elapsed += 0.25
+		signals.advance(0.25)
 	t.check(not signals.green_for(junction, false), "the east-west arm is red")
 	var route := PackedVector2Array([Vector2(box_x - 260.0, lane), Vector2(box_x + 400.0, lane)])
 	var car_where := WhereSheIs.nowhere()
@@ -763,7 +763,7 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	t.check(car.global_position.is_equal_approx(was_at) and nose <= box_x - Tuning.CAR_STOP_LINE_SETBACK + 0.5,
 			"on red it stands at the stop line (nose %.0f, box %.0f)" % [nose, box_x])
 	while not signals.green_for(junction, false):
-		signals.elapsed += 0.25
+		signals.advance(0.25)
 	for i in int(2.0 / STEP):
 		car.step(STEP)
 	t.check(car.global_position.x > box_x, "and on green it drives through (%.0f)"
@@ -808,9 +808,9 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
 	var signals := TrafficSignals.new(map)
 	var green := Vector2i(map.main_road, CityMap.junction_index(lane_y))
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	while not signals.green_for(green, false):
-		signals.elapsed += 0.25
+		signals.advance(0.25)
 	var tile := float(Tuning.TILE_SIZE)
 	var worst := -INF
 	var cases := 0

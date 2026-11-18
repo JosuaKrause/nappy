@@ -219,7 +219,7 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 		var by_lot := {}
 		for node in city.props():
 			var prop := node as Prop
-			if prop.kind != Prop.Kind.TREE:
+			if prop.kind() != Prop.Kind.TREE:
 				continue
 			var anchor: Vector2i = map.anchor_of(map.block_at(prop.position))
 			var lot: Array = by_lot.get(anchor, [])
@@ -384,12 +384,12 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> 
 	var checked := 0
 	for node in city.props():
 		var prop := node as Prop
-		if prop.kind != Prop.Kind.STREET_TREE:
+		if prop.kind() != Prop.Kind.STREET_TREE:
 			continue
 		checked += 1
-		t.check(prop.shape != null and prop.shape.reach() <= StreetTrees.footprint_radius() + 0.001,
+		t.check(prop.shape() != null and prop.shape().reach() <= StreetTrees.footprint_radius() + 0.001,
 				"a street tree reaches %.2fpx, over the %.2fpx the planners keep clear"
-				% [prop.shape.reach() if prop.shape else -1.0, StreetTrees.footprint_radius()])
+				% [prop.shape().reach() if prop.shape() else -1.0, StreetTrees.footprint_radius()])
 	t.check(checked > 0, "the city built street trees to check (%d)" % checked)
 	city.free()
 
@@ -422,7 +422,7 @@ func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	var tree_count := 0
 	for node in city.props():
 		var prop := node as Prop
-		if prop.kind == Prop.Kind.STREET_TREE:
+		if prop.kind() == Prop.Kind.STREET_TREE:
 			tree_count += 1
 	t.check(planted.size() > 0, "the rendering contract has a planted tree to inspect")
 	t.check(tree_count == planted.size() and tree_count > 0,

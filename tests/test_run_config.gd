@@ -267,7 +267,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 			her.global_position = Vector2(lot.get_center().x,
 					lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
 			await PhysicsTicks.pass_ticks(t, 2)
-			t.check(not city.traffic_signals().powered,
+			t.check(not city.traffic_signals().is_powered(),
 					"the blackout is handed --blackout: far from the station the lights go out")
 			var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map)
 			t.check(first >= FORCED_INTERVAL - _walk_step() and first <= FORCED_WITHIN,
@@ -335,7 +335,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	she.global_position = Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
 	await PhysicsTicks.pass_ticks(t, 2)
 	she.free()
-	t.check(not city.traffic_signals().powered, "and the blackout, which puts the lights out with no sabotage done")
+	t.check(not city.traffic_signals().is_powered(), "and the blackout, which puts the lights out with no sabotage done")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	RunCity.crowd(city).start_day(1, rng)
