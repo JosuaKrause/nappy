@@ -12,8 +12,8 @@ extends RefCounted
 ## presses is the rig a player types the words for: `AutoScreenshot.from_config()` on `--walk`, with
 ## `--smooth-walk` for the smoothed one, so the order is the game's own (the input pressed for tick
 ## `n` is read on tick `n + 1`). The abrupt rig reads a clock handed to it that counts physics ticks
-## (`simulation_clock`, the one a scene recipe hands its screenshot), so its steps change on the same
-## tick the plan's do.
+## (handed by `use_simulation_clock()`, the one a scene recipe hands its screenshot), so its steps
+## change on the same tick the plan's do.
 ##
 ## **Equal means within `TOLERANCE`**, a hundredth of a pixel: the construction is exact on open
 ## ground, and what is left is the single-precision rounding of the pressed strengths and of

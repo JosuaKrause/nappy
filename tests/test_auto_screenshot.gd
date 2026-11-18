@@ -18,10 +18,10 @@ extends RefCounted
 ## particular bearings now, not a second mechanism.)*
 ##
 ## The rig is built the way `main` builds it, by `AutoScreenshot.from_config()` from the words a
-## player types (`RunConfig.parse()`), and handed a clock the suite moves (`simulation_clock`, the
-## one a scene recipe hands its screenshot). It stands in the tree, so its own `_ready()` and
-## `_process()` run on real frames, and what a word of the script means is read off what the rig
-## presses on `Input` at a time on that clock. Every test releases whatever it pressed, since
+## player types (`RunConfig.parse()`), and handed a clock the suite moves
+## (`use_simulation_clock()`, the one a scene recipe hands its screenshot). It stands in the tree,
+## so its own `_ready()` and `_process()` run on real frames, and what a word of the script means
+## is read off what the rig presses on `Input` at a time on that clock. Every test releases whatever it pressed, since
 ## `Input`'s polled state is global and outlives the node that set it.
 
 func run(t: TestRunner) -> void:
@@ -62,7 +62,8 @@ func _ready() -> void:
 """
 
 ## A rig asked for `--after abc`, on a clock the probe moves a quarter second a frame
-## (`simulation_clock`), saying on which reading of it the capture began (`before_capture`).
+## (`use_simulation_clock()`), saying on which reading of it the capture began
+## (`use_before_capture()`).
 const AFTER_PROBE := """extends Node
 var _now := 0.0
 func _ready() -> void:

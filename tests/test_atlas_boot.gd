@@ -141,14 +141,15 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 ## second load line for it. So every node under a booted `main` that holds a library — the city and
 ## its furniture, crowd and events, her, the screens' buttons and lines, the badge, the symbol, and
 ## in the escape's building the interior and its events — holds the sitting's, on the day and in
-## the building alike. A node still holding a public `atlas` it was never handed fails this by name; a
-## node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
+## the building alike. A node still holding a public `atlas` it was never handed fails this by name;
+## a node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
 ## recording one (`tests/recording_atlas.gd`) and every help text, mode button, closure piece, the
 ## on-screen controls, the save symbol and the building standing must have asked it for its page,
 ## which a node handed another library, or none, did not. The badge acquires nothing, so it keeps
-## its library public for this walk (`DangerEdge.atlas`). The cordon's figures, the contact and the crowd's agents are handed theirs where they are
-## made, and `test_park_cordon.gd`, `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd`
-## read the same off the library each is handed. And the pages the boot took for the process are
+## its library public for this walk (`DangerEdge.atlas`). The cordon's figures, the contact and
+## the crowd's agents are handed theirs where they are made, and `test_park_cordon.gd`,
+## `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same off the library
+## each is handed. And the pages the boot took for the process are
 ## the sitting's library's: they still answer on it once everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
