@@ -42,7 +42,7 @@ func run(t: TestRunner) -> void:
 				var checksum := 0.0
 				var started := Time.get_ticks_usec()
 				for repeat in BATCH:
-					for pair: Array in RunCity.crowd(city).sources.sources_at(here):
+					for pair: Array in RunCity.crowd(city).sources().sources_at(here):
 						checksum += pair[1]
 				var elapsed := Time.get_ticks_usec() - started
 				rows.append([frame, float(elapsed) / BATCH, expected, silent,

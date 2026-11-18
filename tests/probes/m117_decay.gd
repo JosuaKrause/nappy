@@ -132,7 +132,7 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 		RunCity.crowd(city).step(STEP)
 
 		var multiplier := city.decay_multiplier(at)
-		var incoming := RunCity.crowd(city).sources.total_at(at)
+		var incoming := RunCity.crowd(city).sources().total_at(at)
 		if city.is_alley(at):
 			incoming += Baby.EXCITEMENT_FROM_ALLEY
 		crowd_total += incoming

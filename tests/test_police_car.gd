@@ -881,7 +881,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	var observer := TelemetryObserver.new(run_log)
 	observer.setup(city.run, clock, null, false)
 	observer.watch(city.map, RunCity.events(city), player, baby, city.map, city.streets(),
-			RunCity.crowd(city).sources, "")
+			RunCity.crowd(city).sources(), "")
 	t.add_child(observer)
 	clock.start(180.0)
 	t.check(car.car.closes_on(player.global_position), "the car is closing on her in its lane")

@@ -1141,7 +1141,7 @@ class ChurnEvents extends Node:
 static func _sets(manager: EventManager, crowd: Crowd = null) -> Array[ExcitementSources]:
 	var sets: Array[ExcitementSources] = [manager.sources]
 	if crowd:
-		sets.append(crowd.sources)
+		sets.append(crowd.sources())
 	return sets
 
 ## Fifteen sources each holding a rim, lit to staggered strengths in the upper half of the ramp and

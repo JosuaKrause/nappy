@@ -242,7 +242,7 @@ func _split_sweep(city: City, baby: Baby, her: Vector2) -> Array[int]:
 	stamps.append(Time.get_ticks_usec())
 	RunCity.events(city).door_holding_her_at(her)
 	stamps.append(Time.get_ticks_usec())
-	RunCity.crowd(city).sources.sources_at(her)
+	RunCity.crowd(city).sources().sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	baby._physics_process(STEP)
 	stamps.append(Time.get_ticks_usec())
