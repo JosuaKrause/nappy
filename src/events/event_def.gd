@@ -2168,6 +2168,17 @@ func is_ambient() -> bool:
 func drives() -> bool:
 	return vehicle != null
 
+## Whether it was sent at her: it comes after her (`pursuit`, however its chase starts), or the
+## caller that sends it warns of it first (`warned_first`). The park cordon walks out everyone in
+## the closed park but such a row, a car and the ambient ground.
+func was_sent_at_her() -> bool:
+	return pursuit != null or warned_first
+
+## Whether it paces a beat (`paces`): it walks its route to and fro and neither departs nor
+## expires, where an ordinary mover walks its way once.
+func paces_a_beat() -> bool:
+	return paces
+
 ## The id of the row it leaves where it ends (`Aftermath.on_finish`), or "" for a row that leaves
 ## nothing: the escape's explosion leaves its crater in the road.
 func leaves_behind() -> String:

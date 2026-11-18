@@ -492,6 +492,26 @@ func ends_the_day() -> bool:
 func field_reaches(point: Vector2) -> bool:
 	return live != null and is_instance_valid(live) and live.field_reaches(point)
 
+## Whether it is a door's boom, solid only while lowered (`EventDef.is_a_boom()`): the door's
+## line runs through it.
+func is_a_boom() -> bool:
+	return def.is_a_boom()
+
+## Whether it is a door's hut or post, armed again once she has walked away
+## (`EventDef.detains_again()`): a gatehouse of its door.
+func detains_again() -> bool:
+	return def.detains_again()
+
+## Which way it is drawn facing (`facing`), as its siting decided: along its street for a door's
+## bodies, so a door's line is read off them.
+func faces() -> Vector2:
+	return facing
+
+## Whether it is a loudspeaker mast still speaking today: a mast's own plan (`mast_id`, of a row
+## that is a mast) that nothing has silenced (`silenced`).
+func is_a_live_mast() -> bool:
+	return mast_id != "" and def.is_a_mast() and not silenced
+
 ## Makes it come again `seconds` after each of its instances came, on its own clock
 ## (`repeat_every`), in place of its row's: each of the building's vents has its own period.
 func come_again_every(seconds: float) -> void:

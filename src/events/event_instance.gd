@@ -2138,6 +2138,11 @@ func is_gone() -> bool:
 func is_on_its_way_out() -> bool:
 	return phase == Phase.LEAVING
 
+## Whether it has stopped where its route ended, for the rest of the day (`Phase.PARKED`): day 10's
+## neighbor home before she reached them.
+func has_parked() -> bool:
+	return phase == Phase.PARKED
+
 ## Whether it was created where a warning pointed, once that warning was over
 ## (`came_under_a_warning`): the badge it had carries on until it comes into view.
 func was_warned_of() -> bool:
@@ -2150,6 +2155,20 @@ func pursues() -> bool:
 ## Whether it is a car that drives (its row's `vehicle`), whose strike is its driving's.
 func drives() -> bool:
 	return def.vehicle != null
+
+## Whether it is a permanent feature of a fixed map that never appears (`EventDef.is_ambient()`).
+func is_ambient() -> bool:
+	return def.is_ambient()
+
+## Whether it was sent at her (`EventDef.was_sent_at_her()`): it comes after her, or the caller that
+## sent it warned of it first.
+func was_sent_at_her() -> bool:
+	return def.was_sent_at_her()
+
+## What it leaves at (`EventDef.departure_speed()`): its own speed if it had one, 0 for a thing that
+## stands where it was placed and has no departure of its own.
+func departure_speed() -> float:
+	return def.departure_speed()
 
 ## How long its row's telegraph lasts, in seconds.
 func telegraphs_for() -> float:
@@ -2213,6 +2232,12 @@ func is_a_boom() -> bool:
 func solid_reach() -> float:
 	return def.solid_reach()
 
+## **Whether `point` is inside its core**: within its row's core (`EventDef.core_within()`) of where
+## it stands, a disc about its centre and not the shape its field is priced in (`field_reaches()`).
+## Day 6's note is delivered the moment she is inside the man's core.
+func core_reaches(point: Vector2) -> bool:
+	return global_position.distance_to(point) <= def.core_within()
+
 ## Whether several of it count as the strongest one only (`EventDef.counts_as_one_barrier()`): the
 ## pieces of a street being held.
 func counts_as_one_barrier() -> bool:
@@ -2252,6 +2277,11 @@ func where_its_placards_point() -> Vector2:
 ## plan's `walks()` answers.
 func walks() -> PackedVector2Array:
 	return path
+
+## The beat it paces (`EventDef.paces_a_beat()`), in world space: its route for one that walks to
+## and fro along it, empty for everything else, which has no beat to stand beside.
+func beat() -> PackedVector2Array:
+	return path if def.paces_a_beat() else PackedVector2Array()
 
 ## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`), solid and silent.
 func is_only_its_barrier() -> bool:
