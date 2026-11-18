@@ -803,8 +803,6 @@ src/main.gd trace
 src/dev/route_lines.gd branches
 
 # [RunConfig] src/run_config.gd
-src/dev/rig_lock.gd is_rig
-src/dev/rig_lock.gd recording
 src/dev/scene_recipe_runtime.gd recipe_draft_path
 src/dev/scene_recipe_runtime.gd recipe_manifest_path
 src/dev/scene_recipe_runtime.gd recipe_scripted

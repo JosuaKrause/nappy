@@ -2,7 +2,7 @@ class_name RigLock
 extends Node
 ## A rig's window takes no OS focus, hears no real key or pointer press, and quits itself on a
 ## deadline: three defences for the one thing the player named about rig windows, that they take
-## the focus away and stay open (PLAYTEST-133). A no-op the instant `config.is_rig` is false, which
+## the focus away and stay open (PLAYTEST-133). A no-op the instant `config.runs_as_a_rig()` is false, which
 ## is every plain `tools/run.sh` session a person is playing.
 ##
 ## **Added first thing in `main._ready()`**, ahead of either boot's own branch, so every boot gets
@@ -21,7 +21,7 @@ extends Node
 ## when the deadline passes, a rig still quits. `tools/shot.sh` (and a rig-flagged `tools/run.sh`)
 ## is the outside backstop for a process that stops running altogether.
 
-## Whether this run is a rig's (`config.is_rig`), and so locked out — a member, so a test can set it.
+## Whether this run is a rig's (`config.runs_as_a_rig()`), and so locked out — a member, so a test can set it.
 var locked_out := false
 ## The `Time.get_ticks_msec()` reading the rig quits at, or `0` for none: a person's session, or a
 ## recording, which keeps `_quit_game_seconds` instead. `0` is safe as the sentinel because
@@ -33,7 +33,7 @@ var locked_out := false
 ## so a deadline summed from `delta` can lag the wall clock by exactly what the stall hides. Reading
 ## the clock fresh means the next call to happen, however late, quits right then.
 var _quit_deadline_msec := 0
-## **Under Godot's movie writer (`config.recording`), the same deadline in game seconds**, or `0.0`
+## **Under Godot's movie writer (`config.records_a_movie()`), the same deadline in game seconds**, or `0.0`
 ## for none. A recording runs frame-locked and saves every frame before drawing the next, so its
 ## wall clock runs several times slower than its game clock and a wall-clock deadline would end a
 ## legitimate recording partway; `delta` is exact there by construction. What stops a recording
@@ -48,14 +48,14 @@ var _erased_bindings: Dictionary[StringName, Array] = {}
 
 ## Locks a rig's run out, from `config`. Nothing happens for a run that is not a rig.
 func setup(config: RunConfig) -> void:
-	if not config.is_rig:
+	if not config.runs_as_a_rig():
 		return
 	locked_out = true
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	_erase_real_input()
 	_limit_seconds = config.rig_quit_seconds()
-	if config.recording:
+	if config.records_a_movie():
 		_quit_game_seconds = _limit_seconds
 	else:
 		_quit_deadline_msec = Time.get_ticks_msec() + int(_limit_seconds * 1000.0)
