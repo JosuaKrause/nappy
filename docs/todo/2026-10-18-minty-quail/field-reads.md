@@ -141,6 +141,20 @@ Left, each its own design question:
   name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
   failure. It becomes underscore-private with the tests-one-module item (`tests-one-module.md`), when
   that suite reads through a method the game also calls.
+- **The run's configuration's readers in `main.gd`.** The run's configuration (`RunConfig`,
+  `src/run_config.gd`, what the command line and the page's address asked for this run) answers
+  through one method per field, a value field keeping its name and a yes-or-no field taking a new
+  one, and is handed whole to its readers (the record 2026-10-18-minty-quail-brisk-lynx says why that beat
+  a part per reader or plain values). Every reader outside `main.gd` asks its methods. `main.gd`'s
+  39 lines in `tools/field_reads.txt` are converted to those methods, with a method added for each
+  field that has none, and every field goes private, `active_args`, `debug_build`, `is_rig`,
+  `recording`, `player_view_requested` and `recipe_scripted` included, whose methods exist. The
+  suites' reads of those fields (`test_run_config`, `test_main`, `test_scene_recipe_runtime`,
+  `test_scene_recipe_activity`), the comments naming them (`game_save.gd`, `dev_flags.gd`,
+  `tools/run.sh`, `tools/lib_dev_flags.sh`, `docs/ARCHITECTURE.md`) and tiny-bunny's
+  `mode-and-deadline.md` sentence naming `RunConfig.ground_mode` go with it. Once no field is
+  public, that pull request decides whether the setters' refusal of a late write, and
+  `test_run_config`'s check of it, still guard anything.
 - **The lines other work touches** are converted with that work:
   - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
