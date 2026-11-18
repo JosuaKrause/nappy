@@ -98,11 +98,8 @@ src/events/row_ground.gd power_station
 
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
-src/city/city.gd atlas
 src/city/city.gd kind
 src/city/city.gd piece
-src/city/city.gd rise
-src/city/city.gd span
 
 # [ContactPoint] src/resistance/contact_point.gd
 src/dev/scene_recipe_runtime.gd is_done

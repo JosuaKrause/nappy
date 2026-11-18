@@ -143,8 +143,8 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 ## in the escape's building the interior and its events — holds the sitting's, on the day and in
 ## the building alike. A node still holding a public `atlas` it was never handed fails this by name; a
 ## node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
-## recording one (`tests/recording_atlas.gd`) and every help text and mode button standing must have
-## asked it for its page, which a node handed another library, or none, did not. The cordon's figures,
+## recording one (`tests/recording_atlas.gd`) and every help text, mode button and closure piece
+## standing must have asked it for its page, which a node handed another library, or none, did not. The cordon's figures,
 ## the contact and the crowd's agents are handed theirs where they are made, and
 ## `test_park_cordon.gd`, `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same
 ## off the library each is handed. And the pages the boot took for the process are the sitting's
@@ -165,6 +165,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		var holders := 0
 		var help_texts := 0
 		var mode_buttons := 0
+		var closure_pieces := 0
 		var strays: Array[String] = []
 		var stack: Array[Node] = [main]
 		while not stack.is_empty():
@@ -172,6 +173,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 			stack.append_array(node.get_children())
 			help_texts += 1 if node is HelpText else 0
 			mode_buttons += 1 if node is ModeButton else 0
+			closure_pieces += 1 if node is ClosureMarker else 0
 			if node is Sitting or not "atlas" in node:
 				continue
 			holders += 1
@@ -190,6 +192,14 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		t.check(mode_buttons > 0 and recording.acquired_from("res://src/ui/mode_button.gd") >= mode_buttons,
 				"%s: every mode button asked the sitting's library for its page (%d of %d)"
 				% [where, recording.acquired_from("res://src/ui/mode_button.gd"), mode_buttons])
+		# A closure's barrier panels, posts and cause, the park's fence among them, take their page in
+		# `ClosureMarker._enter_tree()`; the building stands none.
+		var closure_asks := recording.acquired_from("res://src/routes/closure_marker.gd")
+		t.check(section != DaySpec.Section.NONE or closure_pieces > 0,
+				"the day stands closure pieces to ask about (%d)" % closure_pieces)
+		t.check(closure_asks >= closure_pieces,
+				"%s: every closure piece asked the sitting's library for its page (%d of %d)"
+				% [where, closure_asks, closure_pieces])
 		booted.free_all()
 		t.check(atlas.region(_a_region_of(Crowd.ATLAS_GROUP)) != null
 				and atlas.region(_a_region_of(EventPictures.ATLAS_GROUP)) != null,

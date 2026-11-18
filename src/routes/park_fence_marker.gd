@@ -23,10 +23,10 @@ func _draw() -> void:
 	if not residence().is_resident():
 		return
 	if piece == Piece.POST:
-		Sprites.draw_standing(self, atlas.region(JOINT), Vector2.ZERO)
+		Sprites.draw_standing(self, _atlas.region(JOINT), Vector2.ZERO)
 	elif piece == Piece.SIGN:
 		_draw_panel()
-		Sprites.draw_standing(self, atlas.region(MOUNTED_SIGN), sign_offset)
+		Sprites.draw_standing(self, _atlas.region(MOUNTED_SIGN), sign_offset)
 	else:
 		super._draw()
 
@@ -38,16 +38,16 @@ func _draw_panel() -> void:
 	# Supports are upright even when the rail travels away from the camera. The feet and
 	# y-sort origin remain on the near end of this panel's ground span.
 	if draw_support:
-		Sprites.draw_standing(self, atlas.region(JOINT), Vector2.ZERO)
+		Sprites.draw_standing(self, _atlas.region(JOINT), Vector2.ZERO)
 	_draw_rail(LOWER_RISE, 5.2)
 	_draw_rail(UPPER_RISE, RAIL_HEIGHT)
 
 ## Only the top surface stretches along the ground. The near face retains its height;
 ## stretching the whole elevation would make short archway rails shorter than park rails.
 func _draw_rail(elevation: float, face_height: float) -> void:
-	var texture := atlas.region(RAIL_ALONG)
+	var texture := _atlas.region(RAIL_ALONG)
 	var top_height := texture.get_height() - RAIL_HEIGHT
-	draw_texture_rect_region(texture, Rect2(rail_offset - 3.0, -span - elevation, 6.0, span),
+	draw_texture_rect_region(texture, Rect2(rail_offset - 3.0, -_span - elevation, 6.0, _span),
 			Rect2(0.0, 0.0, 6.0, top_height))
 	draw_texture_rect_region(texture, Rect2(rail_offset - 3.0, -elevation, 6.0, face_height),
 			Rect2(0.0, top_height, 6.0, RAIL_HEIGHT))

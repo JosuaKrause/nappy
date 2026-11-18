@@ -1164,7 +1164,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 	# after the rail, at the run midpoint rather than at a panel endpoint.
 	for feet in closure.posts(map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
-		post.atlas = atlas
+		post.use_atlas(atlas)
 		post.piece = ClosureMarker.Piece.POST
 		post.kind = closure.kind()
 		post.position = feet
@@ -1173,7 +1173,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		_spawn_barrier(closure, mouth)
 	if ClosureMarker.CAUSES.has(closure.kind()):
 		var cause := ClosureMarker.new()
-		cause.atlas = atlas
+		cause.use_atlas(atlas)
 		cause.piece = ClosureMarker.Piece.CAUSE
 		cause.kind = closure.kind()
 		cause.across = closure.barrier_runs_across()
@@ -1224,12 +1224,11 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var slices: Array[Node2D] = []
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
-		panel.atlas = atlas
+		panel.use_atlas(atlas)
 		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
 		panel.kind = closure.kind()
 		panel.across = across
-		panel.span = span
-		panel.rise = closure.end_on_rise()
+		panel.cover_slice(span, closure.end_on_rise())
 		if panel is ParkFenceMarker:
 			(panel as ParkFenceMarker).draw_support = i < panels - 1
 			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward().x * 4.0
