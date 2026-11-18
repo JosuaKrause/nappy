@@ -129,9 +129,6 @@ src/events/event_manager.gd day
 src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
-src/dev/dev_rig.gd id
-src/dev/dev_rig.gd kind
-src/dev/dev_rig.gd outer_radius
 src/dev/scene_recipe_runtime.gd aftermath
 src/dev/scene_recipe_runtime.gd id
 src/dev/scene_recipe_runtime.gd pursuit
@@ -385,7 +382,6 @@ src/events/event_instance.gd birds
 
 # [EventInstance] src/events/event_instance.gd
 src/dev/debug_readout.gd age
-src/dev/dev_rig.gd def
 src/dev/scene_recipe_runtime.gd barrier_post
 src/dev/scene_recipe_runtime.gd def
 src/dev/scene_recipe_runtime.gd departure
@@ -454,9 +450,6 @@ src/simulation_builder.gd timing
 src/simulation_builder.gd trace
 
 # [EventPlan] src/events/event_plan.gd
-src/dev/dev_rig.gd def
-src/dev/dev_rig.gd facing
-src/dev/dev_rig.gd position
 src/dev/scene_recipe_runtime.gd age
 src/dev/scene_recipe_runtime.gd def
 src/dev/scene_recipe_runtime.gd facing

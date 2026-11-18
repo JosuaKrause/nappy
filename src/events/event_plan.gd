@@ -534,6 +534,21 @@ func ground_shape() -> GroundShape:
 func solid_reach() -> float:
 	return def.solid_reach()
 
+## Whether its row is a permanent feature of a fixed map (`EventDef.is_ambient()`), which never
+## appears: the dev rig's `--spawn event` passes over it.
+func is_ambient() -> bool:
+	return def.is_ambient()
+
+## How close she comes before it notices her (`EventDef.notice_within()`), or 0 for a row that does
+## not wait for her.
+func notice_within() -> float:
+	return def.notice_within()
+
+## How far from its centre its row is heard (`EventDef.heard_within()`): its field's outer edge as a
+## disc, the distance the dev rig stands her off it by.
+func heard_within() -> float:
+	return def.heard_within()
+
 ## How far from its centre her own centre has to come for a hold of its to begin
 ## (`EventDef.detain_distance()`): a door's hut or post takes her in from there.
 func detain_distance() -> float:
