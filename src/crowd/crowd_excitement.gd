@@ -2,7 +2,7 @@ class_name CrowdExcitement
 extends ExcitementSource
 
 ## **A body in the crowd as a thing that charges the baby** (`ExcitementSource`), composed into its
-## `CrowdAgent` as `excitement`: what is a crowd body's own and nothing else — its field (the same
+## `CrowdAgent` as its private `_excitement` (handed out by `CrowdAgent.mood()`): what is a crowd body's own and nothing else — its field (the same
 ## falloff as an event's, so the crowd and the events are the same kind of quantity to the baby, plus
 ## the jolt a contact or a horn leaves, which it keeps), its own clock, how far it can reach, the
 ## walls of the map it walks, whether a car's strike box lies ahead of her, and its caret keyed on
