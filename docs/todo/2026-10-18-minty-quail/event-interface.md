@@ -437,8 +437,8 @@ keep the opt-out line on the bus as the one file that cannot be typed, with its 
 |---|---|---|
 | May a row be staged, held, made to charge or made relentless | row `pursues()`, `drives()` ok, `investigates()` ok, `parks_where_it_arrives()`, `leaves_behind()` ok, `leaves_its_body()` ok, `notice_within()` ok, `starts_by()` ok, `is_a_mast()`, `spawn_mode_on()` ok, `available_on()` ok, `most_in_a_day()` ok, `field_reach()` ok | each part |
 | Stage a plan at an age, keep it in the world, make it a mast | plan `arrive_aged(seconds)`, `keep_in_the_world()` ok, `stand_as_a_mast(id)` | the plan |
-| The live event of a plan, to name or command it | `EventManager.event_of(plan)` ok; then live `notice_her_at()` ok | streaming |
-| The route rig's hazards and bodies | live `is_a_standing_lethal_place()` ok, `lethal_reach()` ok, `stands_as_a_fixed_body()` ok; plan `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `ground_shape()` ok, `solid_reach()` ok, `gate()` ok; plan `detains_again()` ok, `detain_distance()` ok, `where_it_stands_now()` ok, `faces_now()` ok; `EventManager.event_of(plan)` ok for whether a door's live event is gone | lethal, body, hold |
+| The live event of a plan, to name or command it | `EventManager.event_of(plan)`; then live `notice_her_at()` ok | streaming |
+| The route rig's hazards and bodies | live `is_a_standing_lethal_place()` ok, `lethal_reach()` ok, `stands_as_a_fixed_body()` ok; plan `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `ground_shape()` ok, `solid_reach()` ok, `gate()` ok; plan `detains_again()` ok, `detain_distance()` ok, `where_it_stands_now()` ok, `faces_now()` ok; plan `its_event_is_gone()` ok for whether a door's live event is gone (the plan answers; the manager hands the live event only to a caller that commands it, inbox #1278 in olive-ferret) | lethal, body, hold |
 
 ### 2.9 The tests
 
@@ -626,7 +626,7 @@ counted where it only writes.
 | `duration` | 3 in | row `lasts_for()`; the field asks it for its swell |
 | `departs_at` | the catalogue | row `departure_speed()` ok |
 | `repeat_every`, `repeat_after` | 2 in | row `comes_again_every()` ok, `comes_again_after()`, asked once as a plan is made; plan `repeats()` ok |
-| `shape` | 11 in, 2 out (the happenings, `SealPlanner`) | row `ground_shape()` ok; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
+| `shape` | 11 in, 3 out (the happenings, `SealPlanner`, the debug layers) | row `ground_shape()` ok; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
 | `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()` ok; a draft copies parts, so the hand copy goes |
 | `obstructs_radius` | 10 in, 1 out (`SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()` ok, `solid_reach()` ok; the looks and the footprints ask the row's `drawn_width()` ok, twice the radius, for the run of a spread, a rank or a wide scene (floored at 11px) and for a stationary vehicle's side, its `has_a_body()` ok for whether it has a body and `obstructs_within()` ok for its shadow's disc |
 | `solid_when` | 4 in | row `is_a_boom()` ok, plan `is_a_boom()` ok, `stands_as_a_fixed_body()` ok; the body part's `solid_from()` for the live body (the row's until the body part exists ok); live `is_solid()` ok |
@@ -640,7 +640,7 @@ counted where it only writes.
 | `pulse_period`, `intensity_ramp` | 4 and 2 in | the field part's `peak_through()`, `pulses_every()` (the looks' flicker); the live event asks the row's ok, the looks and the spawner still read `pulse_period` |
 | `from_outside` | 2 in | the field part's `passes_walls()`, asked by the event's source (the row's ok) and the spawner |
 | `barrier_structure` | the manager, untyped | the field part's `counts_as_one_barrier()` ok (the row's and the live event's until the part exists), asked by `EventSources` |
-| `hard_fail` | 5 in, three untyped | row `ends_the_day()` ok, `effect()` ok; live `ends_the_day()` ok, `is_lethal_at()` ok |
+| `hard_fail` | 5 in, 1 out (the debug layers), three untyped | row `ends_the_day()` ok, `effect()` ok; live `ends_the_day()` ok, `is_lethal_at()` ok |
 | `catch_reach` (and `PursuitSpec.catch_reach`) | the catalogue, `EventDef` | row `lethal_reach()` ok, stored once in `LethalSpec` |
 | `detain_seconds` | 6 in | row and plan `detains_her()` ok, live `detains_her()` ok; `detains_for()` ok |
 | `detain_radius` | the catalogue | row `detain_distance()` ok |
@@ -701,7 +701,7 @@ field under `[EventPlan]`.
 | `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `stand_where(sited)` ok for the one writer, her walk's siting (the design's pick in place of `place_at(at)`, open to the player) |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
 | `facing` | 18 | `faces()` ok; set as the plan is built, or turned by `face(direction)` ok for a crew facing the wall it pastes |
-| `live` | about 60 (streaming, the scene recipes) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()` ok; `EventManager.event_of(plan)` ok for the live event itself; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
+| `live` | about 60 (streaming, the scene recipes) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()` ok; `EventManager.event_of(plan)` for the live event itself; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
 | `spent` | 18 | `is_spent()` ok, `spend()` ok |
 | `mast_id`, `silenced` | 17 and 5 | `is_a_mast()`, `mast_id()`, `stand_as_a_mast(id)`, `is_silenced()`, `silence()`, `is_a_live_mast()` ok |
 | `age`, `travelled`, `noticed_at`, `behaviours` | 7, 3, 4 and 3 | one `EventSave`: `keep(save)`, `saved()`; `arrive_aged(seconds)` ok for a recipe that stages an event part-way through |
