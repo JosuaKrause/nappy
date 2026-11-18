@@ -1230,8 +1230,8 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		panel.across = across
 		panel.cover_slice(span, closure.end_on_rise())
 		if panel is ParkFenceMarker:
-			(panel as ParkFenceMarker).draw_support = i < panels - 1
-			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward().x * 4.0
+			(panel as ParkFenceMarker).mount_rail(i < panels - 1,
+					-(closure as ParkClosure).outward().x * 4.0)
 			(panel as ParkFenceMarker).sign_offset = at - feet[i]
 		slices.append(panel)
 	DrawLayer.add_slices(self, slices, feet)

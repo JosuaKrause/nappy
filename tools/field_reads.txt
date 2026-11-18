@@ -762,8 +762,6 @@ src/events/event_instance.gd runs_within
 src/events/event_catalogue.gd at_a_front
 
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
-src/city/city.gd draw_support
-src/city/city.gd rail_offset
 src/city/city.gd sign_offset
 
 # [PendingWarning] src/events/pending_warning.gd
