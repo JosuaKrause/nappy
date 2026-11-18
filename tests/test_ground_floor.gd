@@ -67,8 +67,8 @@ func run(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------- fixtures ---
 
-## One `Building`, built the way `City._spawn_buildings()` builds one — the exports set, then
-## `add_child()`, which is what fires `_ready()` and rolls `_build_windows()`/`_build_front()`.
+## One `Building`, built the way `City._spawn_buildings()` builds one — its facts handed over through `stand_on()`, `stand_on_home_block()` and
+## `mark_covered_ground_cols()`, as the city hands them, then `add_child()`, which is what fires `_ready()` and rolls `_build_windows()`/`_build_front()`.
 ## `covered` is `Building.covered_ground_cols()`, empty by default — the same "nothing in
 ## front of it" a real front with clear sidewalk south of it reads as.
 static func _new_building(t: TestRunner, district: int, footprint: Vector2, height: float, is_home := false,

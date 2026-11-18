@@ -134,7 +134,8 @@ const ENTRANCE_DOOR := &"buildings/entrance_door"
 const ENTRANCE_DOOR_INDUSTRIAL := &"buildings/entrance_door_industrial"
 ## The neighbor's boarded window, from day 11 on: a 32×32 overlay, the same cell and registration
 ## as `WINDOW_DARK`, drawn over whichever window picture `_neighbor_window_col` already has so the
-## front's own lintel and sill stay. `CityFronts.board_neighbor_window()` is the only setter.
+## front's own lintel and sill stay. `CityFronts.board_neighbor_window()` picks the column and boards it through
+## `board_neighbor_window_at()`, the setter, its one caller in the game.
 const NEIGHBOR_WINDOW_SEALED := &"buildings/window_boarded_sealed"
 ## **A burnt building is drawn burnt, not only dark**: *"the *building* is what needs to be burnt"*
 ## (olive-koala, statement 4). Under `Condition.BURNT` every window of every style is the burnt-out
@@ -695,7 +696,7 @@ var _door_col := 0
 ## over whatever is in the row behind it.
 var _roof_furniture: Array[Dictionary] = []
 ## Null uses the ordinary seeded layout; an authored array replaces this roof's units.
-var recipe_roof_furniture: Variant = null
+var _recipe_roof_furniture: Variant = null
 var _has_vent := false
 var _vent_frame_b := false
 var _vent_timer := 0.0
@@ -1293,7 +1294,8 @@ func _draw_station_yard(hall: Vector2i, canvas: CanvasItem = self) -> void:
 ## Where the power station's stacks stand, in this building's own coordinates: the foot of each, at
 ## its roof cell's bottom centre (`_STACK_CELLS`, clamped to the hall and its roof). Empty for every
 ## other building. Read once by `City._spawn_buildings()`, which stands a `StationStack` on each
-## foot in its `Entities` layer; it reads nothing but the exports `City` sets before that.
+## foot in its `Entities` layer; it reads nothing but what `City` hands over before that (`stand_on()`,
+## `dress_as_power_station()`).
 func stack_feet() -> Array[Vector2]:
 	var feet: Array[Vector2] = []
 	if not _power_station:
@@ -1536,7 +1538,7 @@ func _build_roof_furniture() -> void:
 ## `{"cell": Vector2i, "cells": Array[Vector2i], "span": int, "kind": _Furniture, "texture":
 ## StringName}`, and on a duct section `"links"`, its west, east, south and north neighbours as
 ## bits 0 to 3. `cell` is the west cell of the unit's base, `cells` every roof cell its base
-## reserves, `span` how many columns that is. An authored recipe (`recipe_roof_furniture`)
+## reserves, `span` how many columns that is. An authored recipe (`_recipe_roof_furniture`)
 ## replaces the roll outright.
 ##
 ## Otherwise it is rolled over the cells `_roof_interior_cells()` offers, keyed on `_variant` and the
@@ -1555,8 +1557,8 @@ func _build_roof_furniture() -> void:
 ## `_roof_cell_edges()` gives a lip, which is where a taller column steps down beside a shorter one.
 func _roof_layout() -> Array[Dictionary]:
 	var units: Array[Dictionary] = []
-	if recipe_roof_furniture != null:
-		for entry: Dictionary in recipe_roof_furniture:
+	if _recipe_roof_furniture != null:
+		for entry: Dictionary in _recipe_roof_furniture:
 			var unit := entry.duplicate(true)
 			unit["texture"] = _furniture_texture(entry.kind)
 			units.append(unit)
@@ -1661,7 +1663,7 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 		else:
 			placed.append({"cell": cell, "kind": kind, "span": span, "cells": cells})
 	if errors.is_empty():
-		recipe_roof_furniture = placed
+		_recipe_roof_furniture = placed
 		_rebuild()
 	return errors
 
@@ -1671,7 +1673,7 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 ## names; a recipe's fixtures go through `author_roof_furniture()`, which checks each one against
 ## the production roof.
 func lay_roof_furniture(units: Array[Dictionary]) -> void:
-	recipe_roof_furniture = units
+	_recipe_roof_furniture = units
 	_rebuild()
 
 ## The cells a roof unit may stand on, in the fixed order `_roof_layout()` shuffles:
