@@ -83,7 +83,7 @@ const DRIVEN_CLEARANCE := 0.5
 var _standing := true
 
 ## The heading and what was known of her when the step was proposed, to check the proposal against
-## and to put back if it is refused; the pose itself is the step's (`MoveProposal.from`).
+## and to put back if it is refused; the pose itself is the step's (`MoveProposal.stands_at()`).
 var _heading_was := Vector2.ZERO
 var _travelled := 0.0
 var _gait_phase := 0.0

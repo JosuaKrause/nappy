@@ -32,8 +32,8 @@ extends RefCounted
 ## is one that gives way (`yields`). The pass is the map's `SeparationPass`, which each crowd body
 ## asks at its own step, between its proposal and its check.
 ##
-## **Outside a step the move stands where its mover does** (`from` and `to` both at its pose): a
-## mover joins at the pose it stands at, and anything that moves it outside its own step — a body
+## **Outside a step the move stands where its mover does** (`stands_at()` and `steps_to()` both
+## answer its pose): a mover joins at the pose it stands at, and anything that moves it outside its own step — a body
 ## recycled or pushed, a car through a turn, an event stood somewhere else — puts its move there too
 ## (`place()`). The list holds no mover, so its moves are the only poses a pass over it has.
 ##
@@ -42,7 +42,7 @@ extends RefCounted
 
 ## The pose the move was opened at: where the mover stood when it was proposed, and once
 ## committed, where it stands.
-var from := Vector2.ZERO
+var _from := Vector2.ZERO
 ## Where the mover would go, then where its check let it go.
 var to := Vector2.ZERO
 ## Whether the move is open: proposed and not yet committed.
@@ -76,19 +76,19 @@ func _init(gives_way := false) -> void:
 
 ## Opens a move at `at`, proposing to stay there until the mover says where it would go.
 func propose(at: Vector2) -> void:
-	from = at
+	_from = at
 	to = at
 	open = true
 
 ## Commits the move: the pose the mover stands at from now.
 func commit() -> Vector2:
 	open = false
-	from = to
+	_from = to
 	return to
 
 ## The pose the mover stands at now: where the step began.
 func stands_at() -> Vector2:
-	return from
+	return _from
 
 ## Where the step proposed would put the mover.
 func steps_to() -> Vector2:
@@ -122,8 +122,12 @@ func stand_on_the_list(now: bool) -> void:
 func stood_round_a_body() -> bool:
 	return stood_round
 
+## Whether the mover has parked: stands where it is for good.
+func has_parked() -> bool:
+	return parked
+
 ## **The mover stands at `at`, moved outside its own step**: joining a world, recycled, pushed, or
 ## carried along a turn. Both ends of the move are there, and an open move stays open.
 func place(at: Vector2) -> void:
-	from = at
+	_from = at
 	to = at

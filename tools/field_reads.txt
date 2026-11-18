@@ -686,10 +686,6 @@ src/events/event_instance.gd parked
 src/events/event_instance.gd radius
 src/events/event_instance.gd stood_round
 src/events/event_instance.gd to
-src/resistance/park_cordon.gd radius
-src/resistance/park_cordon.gd to
-src/world/separation_pass.gd from
-src/world/separation_pass.gd parked
 
 # [Mover] src/world/mover.gd
 src/events/event_instance.gd blocked_by
