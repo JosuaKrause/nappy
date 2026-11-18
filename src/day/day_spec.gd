@@ -188,7 +188,8 @@ var keeps_unused_calm_clear := true
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
 ## refused (`EventScheduler.clearance_around_her()`). Read through `keeps_the_home_streets_clear()`;
 ## public only for the events' reads of it (the dawn's context, the day planner, the event manager),
-## which wait for the events' interface.
+## which wait for the events' interface, and for `tests/test_dawn_context.gd`'s write of it on a bare
+## spec, to build a held and a not-held one.
 var holds_the_home_streets := true
 ## The share of its **wall**-role rows the day draws: every wall-role row's weight in a unit's bag
 ## is scaled by it, while its row marbles are measured against every wall weighed in full
