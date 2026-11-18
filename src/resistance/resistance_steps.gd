@@ -105,9 +105,10 @@ class Step extends RefCounted:
 	## True for the one perform step that makes the pram heavier for the rest of the day.
 	var applies_package_weight := false
 	## True only for day 6's note (M205, "the note costs, and the ordinary day"). `ContactPoint`
-	## completes this step the instant she is within the rider's own `inner_radius` (45px, his
-	## full-strength field) rather than the contact's own `ContactPoint.reach` (`REACH`, 36px, on
-	## every step but day 8's, whose door reaches half the sidewalk) — still instant, not a
+	## completes this step the instant she is inside the rider's own core
+	## (`EventInstance.core_reaches()`, 45px, his full-strength field) rather than the contact's
+	## own `ContactPoint.reach` (`REACH`, 36px, on every step but day 8's, whose door reaches half
+	## the sidewalk) — still instant, not a
 	## dwell: a fork proposed making her stand there for a couple of seconds first, and the player
 	## rejected it outright: "the player should stand for 2.5s? no way. the moment the player
 	## touches the inner circle it counts as delivered." False for every other step, whose
