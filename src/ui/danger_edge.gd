@@ -220,8 +220,8 @@ func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	# Exactly the badges `badges()` lists, farthest arrival first so the soonest lies on top where
-	# two overlap.
+	# Exactly the badges the model announces (`_model.announcing()`, what `badges()` hands the run
+	# log), farthest arrival first so the soonest lies on top where two overlap.
 	var badges := _model.announcing()
 	for i in range(badges.size() - 1, -1, -1):
 		_draw_arrow(badges[i]["def"] as EventDef, badges[i]["position"] as Vector2,
