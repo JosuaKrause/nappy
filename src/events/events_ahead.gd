@@ -99,14 +99,11 @@ func _siting_for(day: int, plan: EventPlan) -> WalkSiting:
 	return _siting
 
 ## **A placement context for the rows her walk sites ahead of her**, over `tree`: what the maker
-## it was handed makes (`use_sitings()`) on the walk's ground (`_ground_of_the_walk()`), and **what
-## draws the ground round a site it picks** (`draw_the_ground_round()`,
-## `WalkSiting.use_the_ground_drawer()`), so nothing it sites stands on ground whose units have not
-## drawn.
+## it was handed makes (`use_sitings()`) on the walk's ground (`_ground_of_the_walk()`). Nothing is
+## drawn round a site it picks: a beat laid in a unit that has not drawn goes before the unit's
+## draw, which is judged among it (`WalkSiting`, `UnitDraw`).
 func _a_siting(day: int, tree: RouteTree) -> WalkSiting:
-	var siting := _sitings.make(day, tree, _ground_of_the_walk())
-	siting.use_the_ground_drawer(draw_the_ground_round)
-	return siting
+	return _sitings.make(day, tree, _ground_of_the_walk())
 
 ## **The ground a siting made here stands its rows on** (`RowGround`): the walk's, as dawn made it
 ## (`WalkEvents.ground()`), so nothing sited after dawn scans the city for what dawn already
@@ -370,9 +367,9 @@ var _still_wanted := false
 ## the spread), so beyond the stream radius it is one a tick: a pull of dozens of units is spread
 ## over as many ticks, and still drains far faster than she walks into it.
 ##
-## **The band beyond the stream radius is not what keeps a siting off undrawn ground**: a place
-## her walk sites has the units round it drawn by the siting itself (`draw_the_ground_round()`,
-## which each such placement calls before its place stands), wherever the band has got to.
+## **The band beyond the stream radius is where a beat her walk lays usually stands**: a beat takes
+## a location of the nearest unit on her way that has not drawn (`WalkSiting`), which is past the
+## band, and the unit draws round it when it comes near.
 func draw_what_comes_near(at: Vector2, stream_radius: float) -> void:
 	var draw := _walk.unit_draw()
 	if not draw:
@@ -394,10 +391,10 @@ func draw_what_comes_near(at: Vector2, stream_radius: float) -> void:
 			stream_radius + Tuning.EVENT_DRAW_AHEAD).is_empty()
 
 ## **Draws now every undrawn unit any part of which lies within `reach` of `at`**, each after every
-## unit it waits for: what a placement made from her walk asks before its place stands, so
-## nothing is sited on ground whose units have not drawn. Whatever needs the ground drawn before
-## it acts on it calls it, the streaming about to look at the ground
-## (`EventManager.stream_around()`) for one. Answers whether it drew any unit.
+## unit it waits for. Whatever needs the ground drawn before it acts on it calls it: the streaming
+## about to look at the ground (`EventManager.stream_around()`), a place the resistance sends her to
+## (`ResistanceDirector`), and day 13's section swap (`swap_in_a_section()`). Answers whether it drew
+## any unit.
 func draw_the_ground_round(at: Vector2, reach: float) -> bool:
 	var draw := _walk.unit_draw()
 	if not draw:
@@ -504,8 +501,8 @@ func place_what_is_owed_ahead(delta: float) -> void:
 		def.id, verb, lead,
 		RunTrace.tile(world.map.world_to_tile(body.global_position))])
 
-## A place a marble from her route's bag named — the man shouting or the mast a rigged bag puts on
-## it — sited for the first time by the director ahead of her on the branch she is walking
+## A place a marble from her route's bag named — the mast day 11's rigged bag puts on it — sited
+## for the first time by the director ahead of her on the branch she is walking
 ## (`EventDirector._place_on_her_route()`, then `EventDirector.site_what_is_on_her_way()`). It joins
 ## the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the way
 ## `queue_a_mast()` records a mast's, and it streams in like any planned row once she walks on.
@@ -524,10 +521,10 @@ func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 			RunTrace.tile(world.map.world_to_tile(body.global_position))])
 
 ## **Rigs her route so the marbles of `ids` are among the next `size` events handed out on it** —
-## see `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them is handed to her
-## walk when its marble comes up and sited ahead of her once her walk finds it a site, by the day's
-## placement context, which is built here if the day had none, and its first scans are done now
-## rather than on the frame it is sited. Answers the rigged bag's marbles.
+## see `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them (day 11's second
+## mast) is handed to her walk when its marble comes up and laid ahead of her once her walk finds it
+## a location, by the day's placement context, which is built here if the day had none, and its
+## first scans are done now rather than on the frame it is laid. Answers the rigged bag's marbles.
 func rig_her_route(ids: Array[String], size: int) -> Array:
 	# A rig that never started a day has no route to rig, and building it a placement context for
 	# nothing would grow a route tree to no end.
@@ -541,6 +538,30 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 		if row and row.spawn_mode_on(world.day) == EventDef.SpawnMode.MAP \
 				and not row.is_sent_ahead():
 			_siting.prepare(row)
+	return rigged
+
+## **Rigs the next unit draws to stand the rows of `ids`** (`UnitDraw.rig_the_next_draw()`): a bag of
+## them, at the day's heat, goes in front of the bags the units draw from, and the next unit to draw
+## that can stand each draws it first, wherever and whenever that draw happens: day 6's man shouting
+## and day 7's van once she has read the day's mark. *(The player: "the draw doesn't have to happen at
+## the point where she touches the mark. the bag gets the biased bag in front (via the chained bags
+## mechanism) and the next draw (whenever that happens) will guarantee the shouting man"; inbox #1520
+## in breezy-magpie.)* Answers the ids rigged: none on a walk whose units do not draw as she walks
+## (the escape's, a scene recipe's), or for an id the catalogue does not hold.
+func rig_the_next_draw(ids: Array[String]) -> Array[String]:
+	var rigged: Array[String] = []
+	var draw := _walk.unit_draw()
+	if not draw:
+		return rigged
+	var rows: Array[EventDef] = []
+	for id in ids:
+		var def := EventCatalogue.by_id(id)
+		if not def:
+			push_error("a rigged draw names no event in the catalogue: '%s'" % id)
+			continue
+		rows.append(EventCatalogue.heated(def, world.run.resistance().progress()).for_day(world.day))
+		rigged.append(id)
+	draw.rig_the_next_draw(rows)
 	return rigged
 
 ## A row the director sited down her own line, warned first: the badge goes up at once, pointing

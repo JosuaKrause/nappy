@@ -5,7 +5,8 @@ extends RefCounted
 ## and boxes round its block, and they each other through it, and another lot in its block; two
 ## parallel streets with no lot between them not touching; the undrawn units near a point nearest
 ## first, and every one for an infinite radius; and a reach handed in making units that far apart
-## touch besides; and every unit answered in the order its locations first name it.
+## touch besides; every unit answered in the order its locations first name it; and every location
+## naming the unit it was grouped into.
 ##
 ## Built of plain values: `Location`s made by hand on the lattice's own numbers (a junction box at
 ## `junction * CityMap.period()`, a street between two of them,
@@ -18,6 +19,7 @@ func run(t: TestRunner) -> void:
 	_test_the_undrawn_units_nearest_first(t)
 	_test_a_reach_widens_what_touches(t)
 	_test_the_units_are_answered_in_the_order_first_met(t)
+	_test_every_location_names_the_unit_it_was_grouped_into(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -234,3 +236,19 @@ func _test_the_units_are_answered_in_the_order_first_met(t: TestRunner) -> void:
 	units.all().clear()
 	t.check(units.all().size() == wanted.size(),
 			"and emptying the answered array leaves the units as they were (%d)" % units.all().size())
+
+## **Every location names the unit it was grouped into** (`unit_of()`), and a location that is not
+## one of the day's names none.
+func _test_every_location_names_the_unit_it_was_grouped_into(t: TestRunner) -> void:
+	var locations := _city(true)
+	var units := DayUnits.of(locations, 3)
+	var every := not units.all().is_empty()
+	for unit in units.all():
+		for location in unit.locations():
+			every = every and units.unit_of(location) == unit
+	var grouped := 0
+	for unit in units.all():
+		grouped += unit.locations().size()
+	t.check(every and grouped == locations.size(),
+			"each of the %d locations names the unit holding it" % locations.size())
+	t.check(units.unit_of(_box(Vector2i(8, 8))) == null, "and a location of no unit names none")

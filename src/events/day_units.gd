@@ -32,6 +32,8 @@ var _order: Array[PlacementUnit] = []
 var _touching := {}
 ## Unit name -> the units it touches in rank order, worked out on the first ask.
 var _touching_in_order := {}
+## Location -> the unit it was grouped into (`unit_of()`), filled as the units are grouped.
+var _unit_of := {}
 
 ## **Groups `locations` (`DayLocations.all()`) into units** by kind and what each is a part of
 ## (`Location.part_of()`), in the order first met, and works out which touch which. `day_seed` is
@@ -59,6 +61,8 @@ static func of(locations: Array[Location], day_seed: int, reach := 0.0) -> DayUn
 				grouped[key] as Array[Location], day_seed)
 		units._units[unit.name()] = unit
 		units._order.append(unit)
+		for location in unit.locations():
+			units._unit_of[location] = unit
 	units._work_out_touching(reach)
 	return units
 
@@ -67,6 +71,12 @@ static func of(locations: Array[Location], day_seed: int, reach := 0.0) -> DayUn
 ## a walk drawn whole is drawn in (`UnitDraw.draw_in_their_order()`).
 func all() -> Array[PlacementUnit]:
 	return _order.duplicate()
+
+## **The unit `location` draws with**, the one it was grouped into (`of()`), or null for a location
+## that is not one of the day's: what her walk asks of a location it lays a beat on
+## (`WalkSiting`), so the unit is told and knows whether it has drawn.
+func unit_of(location: Location) -> PlacementUnit:
+	return _unit_of.get(location)
 
 ## The units `unit` touches, in rank order, lowest first.
 func touching(unit: PlacementUnit) -> Array[PlacementUnit]:

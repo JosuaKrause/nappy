@@ -18,7 +18,7 @@ var _places := {}
 var _still_ahead := true
 
 func _init() -> void:
-	super(0, null, null, FakeWalkEvents.new(), null, null, null)
+	super(null, null, FakeWalkEvents.new(), null, null, null, null)
 
 ## Sets where a plan of the row `id` is laid: `lay_ahead()` stands it at `at`. A row with none set is
 ## refused.

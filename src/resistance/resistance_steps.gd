@@ -21,23 +21,6 @@ const NEIGHBOR_DAY := 10
 ## the one near the mark the task points at first. *(inbox #561 in coral-bunny:
 ## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
 const MAST_WITHIN_THE_NEXT := 2
-## How many of the events handed out on her route after day 6's mark a man shouting's marble is one
-## of: the route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one
-## `homeless_yeller` and the rest drawn from the bag she was drawing from, and he is put on her route
-## once her walk finds him a site (`EventDirector._place_on_her_route()`). *(olive-koala, statement 2: "after touching
-## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
-## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
-## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
-## are: "maybe let's make the other rigged bags smaller, too".)* The second of the next two: at
-## `EventDirector.AHEAD_INTERVAL`, within a minute of walking.
-const TASK_CONTACT_WITHIN_THE_NEXT := 2
-## The same for day 7: once she has read its mark, a second `delivery_van`'s marble is one of the
-## next this many events, and the van is put on her route once her walk finds it a site, besides the
-## one near the mark the task points at. *(inbox #586 in olive-hedgehog: "each olive badger rigged
-## bag should be 2 or 3. use your own judgement on how soon the events should happen"; inbox #650 in
-## mossy-beaver, of which forced cases get one: "I guess that leaves only the van?")* Two is the
-## filer's proposal inside the player's "2 or 3", the size day 6's and day 11's rigs have.
-const VAN_WITHIN_THE_NEXT := 2
 
 ## How a perform step's contact is placed once its mark is touched.
 ## - `EVENT` rides a freshly spawned `EventInstance` of `task_event_id`, at a tile from
@@ -132,9 +115,18 @@ class Step extends RefCounted:
 	## once she has handed it over (day 6's man shouting).
 	var lingers_after_handover := false
 	## How many of her route's next marbles the task's row is rigged within once she has read its
-	## mark (`ResistanceDirector._rig_her_route_for()`), or 0 for a task that rigs nothing. The row
-	## is `task_event_id`, or the mast's for a `TargetKind.MAST` task.
+	## mark (`ResistanceDirector._rig_her_route_for()`), or 0 for a task that rigs nothing there. The
+	## row is the mast's, for a `TargetKind.MAST` task.
 	var rigs_within := 0
+	## Whether the task's own row (`task_event_id`) is rigged in front of the next unit draws once she
+	## has read its mark (`ResistanceDirector._rig_her_route_for()`): day 6's second man shouting and
+	## day 7's second van, stood by the next unit to draw that can stand him, wherever and whenever
+	## that draw happens. *(olive-koala, statement 2: "after touching the mark a marble bag with 1/3
+	## chance of yeller should be put in so the yeller is guaranteed to encounter a yeller in the next
+	## three events" · inbox #1520 in breezy-magpie: "the draw doesn't have to happen at the point
+	## where she touches the mark. the bag gets the biased bag in front (via the chained bags
+	## mechanism) and the next draw (whenever that happens) will guarantee the shouting man".)*
+	var rigs_the_next_draw := false
 
 static var _all: Array[Step] = []
 
@@ -345,12 +337,12 @@ static func _build() -> Array[Step]:
 			TargetKind.EVENT, false, Texts.NOTE_HEADER)
 	note_for_a_stranger.completes_at_inner_radius = true
 	note_for_a_stranger.lingers_after_handover = true
-	note_for_a_stranger.rigs_within = TASK_CONTACT_WITHIN_THE_NEXT
+	note_for_a_stranger.rigs_the_next_draw = true
 	var the_package := _perform(4, Texts.PACKAGE_TITLE, 7, "delivery_van",
 			[GameEnums.TileType.SIDEWALK], true, TargetKind.EVENT, true, Texts.PACKAGE_HEADER)
 	the_package.trap_row = "van_guard_giving_chase"
 	the_package.trap_noun = "a guard"
-	the_package.rigs_within = VAN_WITHIN_THE_NEXT
+	the_package.rigs_the_next_draw = true
 	var the_burnt_shell := _perform(6, Texts.BURNT_SHELL_TITLE, 8, "burnt_shell",
 			[GameEnums.TileType.SIDEWALK], true, TargetKind.SCAR, false, Texts.BURNT_SHELL_HEADER)
 	the_burnt_shell.at_a_front_door = true

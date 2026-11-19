@@ -11,7 +11,9 @@ extends RefCounted
 ## the next row judged without it; a row that travels a sidewalk taking one location of it, as any
 ## other sidewalk row; every open location ends recorded as drawn, one not open left alone; and the
 ## plans handed in are left as handed; and where the walk stands one event a unit, the unit draws one
-## marble and stops.
+## marble and stops. A row rigged in front of the units' draws is drawn before the unit's own bag,
+## as the same row the bag names, where the unit can stand it; it takes its room as any marble does;
+## and one the unit cannot stand stays in front, unspent.
 ##
 ## Run with stand-ins for what it is handed: the day's locations (`_Locations`, which records each
 ## draw), the ground (`_Ground`, whose refusals, refusals among a named row and weights a check
@@ -40,6 +42,9 @@ func run(t: TestRunner) -> void:
 	_test_one_marble_a_unit_stands_a_row_alone(t)
 	_test_one_marble_a_unit_an_empty_marble_leaves_it_empty(t)
 	_test_one_marble_a_unit_a_refused_row_gives_way_to_the_next(t)
+	_test_a_row_rigged_in_front_is_drawn_before_the_bag_as_the_row_the_bag_names(t)
+	_test_a_row_rigged_in_front_takes_its_room(t)
+	_test_a_row_rigged_in_front_the_unit_cannot_stand_stays_in_front(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -155,10 +160,18 @@ static func _rows(ids: Array[String]) -> Dictionary:
 
 ## `unit` drawn from `bag` among `among`, its rows the marbles' and the catalogue's.
 static func _drawn(unit: PlacementUnit, bag: _Bag, ground: _Ground, locations: _Locations,
-		among: Array[EventPlan] = [], one_marble_a_unit := false) -> Array[EventPlan]:
+		among: Array[EventPlan] = [], one_marble_a_unit := false,
+		in_front: MarbleBag = null) -> Array[EventPlan]:
 	var ids: Array[String] = ["cafe_tables", "busker", "roadblock", "chatting_mother",
 			"poster_crew", "market_stall", "leaf_blower", "homeless_yeller"]
-	return MarbleDraw.new(locations, _rows(ids), ground, one_marble_a_unit).draw(unit, bag, among)
+	return MarbleDraw.new(locations, _rows(ids), ground, one_marble_a_unit).draw(unit, bag, among,
+			in_front)
+
+## A bag in front of the units' draws holding `id`'s row, as `UnitDraw.rig_the_next_draw()` rigs one.
+static func _rigged_front(id: String) -> MarbleBag:
+	var front := MarbleBag.new([], [], 0)
+	front.rig([EventCatalogue.by_id(id)], 1)
+	return front
 
 ## Where `id` was recorded, or null.
 static func _where(locations: _Locations, id: String) -> Location:
@@ -448,3 +461,51 @@ func _test_one_marble_a_unit_a_refused_row_gives_way_to_the_next(t: TestRunner) 
 			% placed.size())
 	t.check(not ground.asks_for("cafe_tables").is_empty() and bag.said.size() == 2,
 			"the cafe was asked of the ground, and the draw stopped at the musician (%s)" % [bag.said])
+
+## **A row rigged in front is drawn before the unit's own bag**: the man shouting rigged in front of
+## a street whose bag holds a cafe and then a man shouting of its own is laid in the street and
+## answered first, the bag's cafe after, and the bag's own man refused as a second of the row in the
+## unit; the bag in front holds nothing after.
+func _test_a_row_rigged_in_front_is_drawn_before_the_bag_as_the_row_the_bag_names(t: TestRunner) -> void:
+	var front := _rigged_front("homeless_yeller")
+	var bag := _Bag.new(["cafe_tables", "homeless_yeller"] as Array[String])
+	var locations := _Locations.new()
+	var placed := _drawn(_street(), bag, _Ground.new(), locations, [] as Array[EventPlan], false, front)
+	var ids: Array[String] = []
+	for plan in placed:
+		ids.append(plan.row_id())
+	t.check(ids == ["homeless_yeller", "cafe_tables"] and _where(locations, "homeless_yeller") != null,
+			"the rigged man is drawn and laid out first, then the bag's cafe (%s)" % [ids])
+	t.check(bag.said.has(["homeless_yeller", false]),
+			"and the bag's own man shouting is refused as a second of the row in the unit (%s)"
+			% [bag.said])
+	t.check(front.peek() == null, "and nothing is left in front")
+
+## **A row rigged in front takes its room as any marble does**: a lot of one cell drawing the rigged
+## man is spoken for, and its own bag draws nothing.
+func _test_a_row_rigged_in_front_takes_its_room(t: TestRunner) -> void:
+	var bag := _Bag.new(["cafe_tables"] as Array[String])
+	var placed := _drawn(_lot(1), bag, _Ground.new(), _Locations.new(), [] as Array[EventPlan],
+			false, _rigged_front("homeless_yeller"))
+	t.check(placed.size() == 1 and placed[0].row_id() == "homeless_yeller" and bag.said.is_empty(),
+			"a one-cell lot that draws the rigged man draws no marble of its own (%d placed, %s)"
+			% [placed.size(), bag.said])
+
+## **A row rigged in front the unit cannot stand stays in front**, unspent, for the next unit to draw,
+## and the unit draws from its own bag as it would with nothing in front.
+func _test_a_row_rigged_in_front_the_unit_cannot_stand_stays_in_front(t: TestRunner) -> void:
+	var street := _street()
+	var ground := _Ground.new()
+	for location in street.locations():
+		ground.refused.append(["homeless_yeller", location])
+	var front := _rigged_front("homeless_yeller")
+	var bag := _Bag.new(["cafe_tables"] as Array[String])
+	var placed := _drawn(street, bag, ground, _Locations.new(), [] as Array[EventPlan], false, front)
+	t.check(placed.size() == 1 and placed[0].row_id() == "cafe_tables",
+			"a street that cannot stand the man draws its own cafe (%d placed)" % placed.size())
+	var still: Variant = front.peek()
+	t.check(still is EventDef and (still as EventDef).id == "homeless_yeller",
+			"and the man stays in front for the next unit")
+	t.check(ground.asks_for("homeless_yeller").size() <= street.locations().size(),
+			"asked of the unit's ground once a draw, not again for every marble (%d asks)"
+			% ground.asks_for("homeless_yeller").size())

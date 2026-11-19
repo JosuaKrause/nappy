@@ -2,14 +2,16 @@ extends RefCounted
 ## `PlacementUnit`, one unit of the day's locations: the same name, rank and stream for the same
 ## day's seed and tiles, so a unit draws alike on every start of the day, and another rank and
 ## stream for another seed; the draw order between two units total (`draws_before()`); what it
-## drew written once; and its view the most permissive of its locations'. Built of plain values: a
-## unit and its locations are state, so nothing is mocked.
+## drew written once; its view the most permissive of its locations'; and the beats her walk rigs in
+## it answered until taken back, in the order laid. Built of plain values: a unit, its locations and
+## a plan are state, so nothing is mocked.
 
 func run(t: TestRunner) -> void:
 	_test_the_same_seed_and_tiles_give_the_same_unit(t)
 	_test_two_units_are_always_ordered(t)
 	_test_what_it_drew_is_written_once(t)
 	_test_its_view_is_the_most_permissive_of_its_locations(t)
+	_test_what_her_walk_rigs_in_it_is_answered_until_taken_back(t)
 
 const STREET := Rect2i(Vector2i(6, 0), Vector2i(8, 6))
 
@@ -105,3 +107,23 @@ func _test_its_view_is_the_most_permissive_of_its_locations(t: TestRunner) -> vo
 			"one whose cells are off the route and route-adjacent is route-adjacent")
 	t.check(_lot([off, off] as Array[int]).view() == off, "one all off the route is off it")
 	t.check(_unit(3).view() == off, "and a unit with no location is off the route")
+
+## **What her walk rigs in it is answered until it is taken back**, in the order laid, once however
+## often it is laid, and drawing changes none of it.
+func _test_what_her_walk_rigs_in_it_is_answered_until_taken_back(t: TestRunner) -> void:
+	var unit := _unit(5)
+	t.check(unit.rigged().is_empty(), "a unit holds no beat until one is rigged in it")
+	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2(200, 100))
+	var crew := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2(260, 100))
+	unit.rig(fire)
+	unit.rig(crew)
+	unit.rig(fire)
+	t.check(unit.rigged() == ([fire, crew] as Array[EventPlan]),
+			"the beats rigged are answered in the order laid, each once")
+	unit.record_draw([] as Array[EventPlan])
+	t.check(unit.rigged() == ([fire, crew] as Array[EventPlan]), "and drawing changes none of it")
+	unit.unrig(fire)
+	t.check(unit.rigged() == ([crew] as Array[EventPlan]), "a beat taken back is answered no more")
+	var answered := unit.rigged()
+	answered.clear()
+	t.check(unit.rigged().size() == 1, "and what it answers is a copy")

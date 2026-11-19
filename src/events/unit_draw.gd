@@ -14,12 +14,28 @@ extends RefCounted
 ## by induction over the ranks, every unit's draw is a function of the dawn and the seed alone,
 ## which is what drawing every unit at dawn in rank order gives.
 ##
-## **No draw reads a plan her walk sites.** A plan the dawn or a unit left with no place stands
-## where her walk later puts it (day 3's fire, a poster crew; `EventDirector`), and the director
-## writes that place into the very plan, so it is kept out of what a draw is judged among: the
-## dawn's plans are copied without the ones that had no place, and a touching unit's row handed to
-## her walk (`EventDef.is_handed_to_her_walk()`) is passed over. Neither changes a draw made while
-## the plan has no place, since every rule passes over a plan that stands nowhere.
+## **A draw reads a beat her walk laid in its unit or a touching one, and no other plan her walk
+## sites.** A beat (day 3's fire, a poster crew, day 11's mast on her route; `WalkSiting`) takes a
+## location of the nearest unit on her way that has not drawn, and the unit is told
+## (`PlacementUnit.rig()`): its room starts without the location, and it and the units touching it
+## are judged among the beat, drawn or not (`PlacementUnit.rigged()`). *(The player: "repeating
+## the day has the exact same preconditions. if the player does something differently different
+## things might happen. if the player were to do exactly the same everything would behave exactly
+## the same. beats are marbles, yes"; inbox #1521 in breezy-magpie.)* So a unit a beat stands in or
+## beside draws by her path, on purpose, and every other unit by the dawn and the seed alone. A row
+## of one unit reaches another's ground only where the two touch, so no other draw needs the beat.
+## A plan the dawn or a unit left with no place is otherwise kept out of what a draw is judged
+## among: the dawn's plans are copied without the ones that had no place, and a touching unit's row
+## handed to her walk (`EventDef.is_handed_to_her_walk()`) is passed over, since where her walk puts
+## it is a beat of the unit it lands in.
+##
+## **A rigged bag goes in front of the units' draws** (`rig_the_next_draw()`): the rows a mark puts
+## on her way, day 6's man shouting and day 7's van, are drawn first by the next unit to draw that
+## can stand them, wherever and whenever that draw happens (`MarbleDraw.draw()`). *(The player:
+## "the draw doesn't have to happen at the point where she touches the mark. the bag gets the biased
+## bag in front (via the chained bags mechanism) and the next draw (whenever that happens) will
+## guarantee the shouting man"; inbox #1520 in breezy-magpie.)* It is a `MarbleBag`'s queue, which
+## holds nothing until a mark rigs it, so a day no mark rigs draws from the units' own bags alone.
 ##
 ## Drawing one unit: one bag, the one the walk's bags answer for the unit (`UnitBags`): on a day a
 ## fresh bag of the fill of the unit's view (the most permissive of its locations',
@@ -37,6 +53,9 @@ var _units: DayUnits
 var _drawing: MarbleDraw
 var _bags: UnitBags
 var _dawn: Array[EventPlan] = []
+## The bag in front of every unit's own (`rig_the_next_draw()`): rows, empty until a mark rigs it,
+## with no ordinary set behind it, so once its rows are drawn it holds nothing again.
+var _in_front := MarbleBag.new([], [], 0)
 
 ## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `bags` what answers a
 ## unit's bag (`UnitBags`: on a day, `UnitFills`); `dawn` the plans the dawn placed, copied, a
@@ -49,6 +68,17 @@ func _init(units: DayUnits, drawing: MarbleDraw, bags: UnitBags,
 	for plan in dawn:
 		if plan.is_placed():
 			_dawn.append(plan)
+
+## **Rigs the next draws to stand `rows`**: a bag of them goes in front of the units' own
+## (`MarbleBag.rig()`), and the next unit to draw draws them first, each where the unit can lay it
+## out (`MarbleDraw.draw()`); one the unit cannot stand stays in front for the unit after it. The
+## rigged bag holds the rows alone: each unit draws from a bag of its own (`UnitBags`), so there is
+## no one bag the rest of a rigged bag could be taken out of, and the player's "the next draw
+## (whenever that happens) will guarantee" is the next unit's.
+func rig_the_next_draw(rows: Array[EventDef]) -> void:
+	var marbles: Array = []
+	marbles.append_array(rows)
+	_in_front.rig(marbles, marbles.size())
 
 ## The day's units the draw draws.
 func units() -> DayUnits:
@@ -110,12 +140,15 @@ func draw_in_their_order() -> Array[EventPlan]:
 				before.append(plan)
 	return placed
 
-## Draws `unit`, every touching unit of lower rank drawn already: judged among the dawn's plans and
-## what the touching units drew, a row one of them handed to her walk passed over, which by now
-## may stand where her walk sited it.
+## Draws `unit`, every touching unit of lower rank drawn already: judged among the dawn's plans, the
+## beats her walk laid in it and in every unit touching it, drawn or not, and what the touching
+## units drew, a row one of them handed to her walk passed over, which stands where her walk laid it
+## as a beat of the unit it landed in.
 func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 	var among: Array[EventPlan] = _dawn.duplicate()
+	among.append_array(unit.rigged())
 	for other in _units.touching(unit):
+		among.append_array(other.rigged())
 		if not other.is_drawn():
 			continue
 		for plan in other.drawn():
@@ -123,9 +156,9 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 				among.append(plan)
 	return _draw_among(unit, among)
 
-## Draws `unit` among `among`, from the bag the walk's bags answer for it, and records what it
-## placed.
+## Draws `unit` among `among`, the rigged bag in front first and then the bag the walk's bags answer
+## for it, and records what it placed.
 func _draw_among(unit: PlacementUnit, among: Array[EventPlan]) -> Array[EventPlan]:
-	var placed := _drawing.draw(unit, _bags.bag_for(unit), among)
+	var placed := _drawing.draw(unit, _bags.bag_for(unit), among, _in_front)
 	unit.record_draw(placed)
 	return placed

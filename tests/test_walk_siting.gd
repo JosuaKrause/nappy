@@ -1,17 +1,20 @@
 extends RefCounted
 ## `WalkSiting`, the siting that lays the rows her walk places (a *beat*): offers a beat the free
 ## locations on her way, nearest first, and stands it on the first location the judge answers for.
-## A branch beat takes the nearest free location of the day's route tree ahead of her; a street beat
-## the nearest free location ahead on her street, out of her view; a placed beat is judged without its
-## own body and gives its location back only once it has another; a row refused in a look is not judged
-## again in it; one ask offers at most `LOCATIONS_A_LOOK` locations; a mast near the mark takes the
-## first free location of the tiles it is offered; a fire lit at dusk is laid off her path first.
+## A beat laid ahead of her takes the nearest free location of the day's route tree ahead of her, a
+## unit's that has not drawn before one a drawn unit left empty, and the unit is told (rigged, and
+## the beat taken back out on a move); a placed beat is judged without its own body and gives its
+## location back only once it has another, drawn with nothing on it where its unit has drawn since;
+## a row refused in a look is not judged again in it; one ask offers at most `LOCATIONS_A_LOOK`
+## locations; a mast near the mark takes the first free location of the tiles it is offered; a fire
+## lit at dusk is laid off her path first.
 ##
 ## Run with stand-ins for everything it is handed (`FakeRouteTree` whose cells and carried tiles a
 ## check sets, `FakeWalkEvents`, `_Locations` whose table of locations a check sets and which
-## records each take and give-back, `_Judge` which answers a plan on the first tile it is handed or
-## null for a location set to refuse, `_Ground` whose tiles a check sets and which records each
-## ask); `Location`, `EventPlan` and `EventDef` are real (state and data) on the bare lattice
+## records each take and give-back, `_Units` whose table of which unit a location is a part of a
+## check sets, `_Judge` which answers a plan on the first tile it is handed or null for a location
+## set to refuse, `_Ground` whose tiles a check sets and which records each ask); `Location`,
+## `PlacementUnit`, `EventPlan` and `EventDef` are real (state and data) on the bare lattice
 ## (`CityMap.new()`), a hand-drawn map as `tests/test_ruled_location_ground.gd` builds its own. What
 ## the judge says of a candidate is `tests/test_ruled_location_ground.gd`'s and `StreetInvalidation`'s,
 ## and which tile is a row's ground `tests/test_sited_ground.gd`'s.
@@ -19,8 +22,10 @@ extends RefCounted
 func run(t: TestRunner) -> void:
 	_test_a_branch_beat_takes_the_nearest_free_location_and_one_that_refuses_passes_it_on(t)
 	_test_a_taken_or_unavailable_location_is_never_offered_nor_a_tile_the_tree_does_not_carry(t)
-	_test_off_the_routes_it_waits_and_says_so_and_standing_still_a_street_beat_waits(t)
-	_test_a_street_beat_takes_the_nearest_free_location_ahead_out_of_her_view(t)
+	_test_off_the_routes_it_waits_and_says_so(t)
+	_test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_empty(t)
+	_test_the_unit_a_beat_takes_a_location_of_is_told_and_takes_it_back_on_a_move(t)
+	_test_a_location_given_back_in_a_unit_that_has_drawn_reads_drawn(t)
 	_test_a_placed_beat_keeps_its_location_until_another_takes_it(t)
 	_test_a_row_refused_in_a_look_is_not_judged_again_in_it(t)
 	_test_one_ask_offers_no_more_than_the_locations_a_look_allows(t)
@@ -28,10 +33,8 @@ func run(t: TestRunner) -> void:
 	_test_at_dusk_off_her_path_first_then_merely_away_and_no_location_is_taken(t)
 	_test_a_crew_faces_the_wall(t)
 	_test_laying_a_mast_asks_the_ground_only_of_tiles_on_her_way(t)
-	_test_a_pick_the_ground_round_which_draws_a_unit_is_given_up(t)
 
 const FIRE_DAY := 3
-const YELLER_DAY := 6
 ## Her tile, heading east.
 const HER := Vector2i(10, 10)
 ## The first tile (heading east along a street of two tiles) of each location of the branch.
@@ -43,6 +46,7 @@ class _Rig extends RefCounted:
 	var tree: FakeRouteTree
 	var walk := FakeWalkEvents.new()
 	var locations := _Locations.new()
+	var units := _Units.new()
 	var judge := _Judge.new()
 	var ground := _Ground.new()
 	var siting: WalkSiting
@@ -72,6 +76,15 @@ class _Locations extends DayLocations:
 	func give_back(location: Location, plan: EventPlan) -> void:
 		given_back.append([location, plan])
 		location.give_back(plan)
+
+## Which unit a location is a part of, as a check sets it: none for a location it names no unit
+## for, which the siting counts as drawn.
+class _Units extends DayUnits:
+	var table := {}
+
+	## Overrides DayUnits.unit_of.
+	func unit_of(location: Location) -> PlacementUnit:
+		return table.get(location)
 
 ## What judges a location: answers a plan on the first tile handed, or null for a location (or a
 ## row) set to refuse, and records each ask.
@@ -107,10 +120,6 @@ class _Ground extends SitedGround:
 	func tiles_of(_def: EventDef) -> Dictionary:
 		return set_of_tiles
 
-	## Overrides SitedGround.is_a_wall_by_cost.
-	func is_a_wall_by_cost(_def: EventDef) -> bool:
-		return false
-
 	## Overrides SitedGround.prepare.
 	func prepare(_def: EventDef) -> void:
 		pass
@@ -132,10 +141,10 @@ static func _location(x: int, y: int, available := true, width := 4) -> Location
 	return Location.new(null, 0, tiles, Vector2(tiles.get_center()) * float(Tuning.TILE_SIZE),
 			PlacementView.View.ON_THE_ROUTE, available, Location.Kind.SIDEWALK)
 
-## The siting over stand-ins for `day`, her way ahead the cells over `first_cell` to `last_cell` along
+## The siting over stand-ins, her way ahead the cells over `first_cell` to `last_cell` along
 ## the row `ROW_Y` (a cell is two tiles square), every tile of them carried by the tree and the
 ## row's ground.
-static func _rig(day: int, first_cell: int, last_cell: int) -> _Rig:
+static func _rig(first_cell: int, last_cell: int) -> _Rig:
 	var rig := _Rig.new()
 	rig.tree = FakeRouteTree.new(rig.map)
 	var cells := {}
@@ -148,9 +157,24 @@ static func _rig(day: int, first_cell: int, last_cell: int) -> _Rig:
 				carried.append(tile)
 				rig.ground.set_of_tiles[tile] = 1
 	rig.tree.set_cells_ahead(cells).set_carried_tiles(carried)
-	rig.siting = WalkSiting.new(day, rig.map, rig.tree, rig.walk, rig.locations, rig.judge,
-			rig.ground)
+	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations, rig.units,
+			rig.judge, rig.ground)
 	return rig
+
+## A unit of the street kind holding `locations`, drawn or not, and named for each of them in the
+## rig's table of units.
+static func _unit_of(rig: _Rig, locations: Array[Location], drawn := false) -> PlacementUnit:
+	var tiles := locations[0].tiles()
+	for location in locations:
+		tiles = tiles.merge(location.tiles())
+	var unit := PlacementUnit.new(PlacementGround.Kind.STREET, tiles,
+			Rect2(Vector2(tiles.position) * float(Tuning.TILE_SIZE),
+					Vector2(tiles.size) * float(Tuning.TILE_SIZE)), locations, 1)
+	if drawn:
+		unit.record_draw([] as Array[EventPlan])
+	for location in locations:
+		rig.units.table[location] = unit
+	return unit
 
 static func _her() -> Vector2:
 	return Vector2(HER) * float(Tuning.TILE_SIZE) + Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
@@ -170,7 +194,7 @@ static func _asked(judge: _Judge) -> Array[Location]:
 ## The nearest free location with ground on her branch takes a branch beat, and a location the judge
 ## refuses passes it to the next.
 func _test_a_branch_beat_takes_the_nearest_free_location_and_one_that_refuses_passes_it_on(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 50)
+	var rig := _rig(24, 50)
 	var l50 := _location(50, ROW_Y)
 	var l60 := _location(60, ROW_Y)
 	var l70 := _location(70, ROW_Y)
@@ -194,7 +218,7 @@ func _test_a_branch_beat_takes_the_nearest_free_location_and_one_that_refuses_pa
 ## What is never offered: a location taken, one unavailable, a tile the tree does not carry, a tile
 ## nearer than the stream radius and its hysteresis.
 func _test_a_taken_or_unavailable_location_is_never_offered_nor_a_tile_the_tree_does_not_carry(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 16, 50)
+	var rig := _rig(16, 50)
 	var near := _location(30, ROW_Y)
 	var taken := _location(50, ROW_Y)
 	var unavailable := _location(60, ROW_Y, false)
@@ -202,8 +226,8 @@ func _test_a_taken_or_unavailable_location_is_never_offered_nor_a_tile_the_tree_
 	var free := _location(80, ROW_Y)
 	taken.take(EventPlan.new(EventCatalogue.by_id("cafe_tables"), taken.centre()))
 	rig.tree = _tree_without(rig, uncarried.tiles())
-	rig.siting = WalkSiting.new(FIRE_DAY, rig.map, rig.tree, rig.walk, rig.locations, rig.judge,
-			rig.ground)
+	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations, rig.units,
+			rig.judge, rig.ground)
 	rig.locations.table = [near, taken, unavailable, uncarried, free] as Array[Location]
 	var fire := _unplaced("burning_building")
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
@@ -232,9 +256,9 @@ static func _tree_without(rig: _Rig, rect: Rect2i) -> FakeRouteTree:
 		cells[Vector2i(cell, ROW_Y / 2)] = float((cell * 2 - HER.x) * Tuning.TILE_SIZE)
 	return tree.set_cells_ahead(cells).set_carried_tiles(carried)
 
-## Off the day's routes a branch beat waits and says why; standing still a street beat waits.
-func _test_off_the_routes_it_waits_and_says_so_and_standing_still_a_street_beat_waits(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 50)
+## Off the day's routes a beat waits and says why.
+func _test_off_the_routes_it_waits_and_says_so(t: TestRunner) -> void:
+	var rig := _rig(24, 50)
 	rig.locations.table = [_location(50, ROW_Y)] as Array[Location]
 	rig.tree.set_cells_ahead({})
 	var fire := _unplaced("burning_building")
@@ -243,60 +267,99 @@ func _test_off_the_routes_it_waits_and_says_so_and_standing_still_a_street_beat_
 	rig.siting.end_look()
 	t.check(rig.siting.waits().has("she is off the day's routes") and rig.judge.asks.is_empty(),
 			"and says she is off the routes, asking the judge nothing")
-	var yeller := _unplaced("homeless_yeller")
-	var street := _rig(YELLER_DAY, 24, 50)
-	street.locations.table = [_location(80, ROW_Y)] as Array[Location]
-	street.siting.begin_look(_her(), Vector2.ZERO)
-	t.check(not street.siting.lay_ahead(yeller), "standing still a street beat is not laid")
-	street.siting.end_look()
-	t.check(street.siting.waits().has("she is not walking anywhere"), "and says she is not walking")
 
-## A street beat (a row met on her street) takes the nearest free location ahead of her on her
-## street whose offered tiles are out of her view and inside the stream radius, and never a tile
-## behind her, beyond five tiles of her line of travel or past the stream radius.
-func _test_a_street_beat_takes_the_nearest_free_location_ahead_out_of_her_view(t: TestRunner) -> void:
-	var rig := _rig(YELLER_DAY, 24, 50)
-	var here := Vector2i(60, 40)
-	var in_view := _location(62, 40)
-	var near := _location(80, 40)
-	var further := _location(84, 40)
-	var beside := _location(80, 50)
-	var behind := _location(40, 40)
-	var beyond := _location(92, 40)
-	var all := [in_view, near, further, beside, behind, beyond] as Array[Location]
-	rig.locations.table = all
-	for location in all:
-		var rect := location.tiles()
-		for y in range(rect.position.y, rect.end.y):
-			for x in range(rect.position.x, rect.end.x):
-				rig.ground.set_of_tiles[Vector2i(x, y)] = 1
-	var her := Vector2(here) * float(Tuning.TILE_SIZE)
-	var yeller := _unplaced("homeless_yeller")
-	rig.judge.refuses = [near] as Array[Location]
-	rig.siting.begin_look(her, Vector2.RIGHT)
-	var laid := rig.siting.lay_ahead(yeller)
+## The free locations of units that have not drawn are offered before those a drawn unit left
+## empty, however much nearer those are, and a drawn unit's are offered where no undrawn one takes
+## the beat or none is on her way.
+func _test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_empty(t: TestRunner) -> void:
+	var rig := _rig(24, 50)
+	var drawn_near := _location(50, ROW_Y)
+	var undrawn_far := _location(70, ROW_Y)
+	var undrawn_further := _location(80, ROW_Y)
+	rig.locations.table = [drawn_near, undrawn_far, undrawn_further] as Array[Location]
+	_unit_of(rig, [drawn_near] as Array[Location], true)
+	_unit_of(rig, [undrawn_far, undrawn_further] as Array[Location])
+	rig.judge.refuses = [undrawn_far] as Array[Location]
+	var fire := _unplaced("burning_building")
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	var laid := rig.siting.lay_ahead(fire)
 	rig.siting.end_look()
-	t.check(laid and _asked(rig.judge) == ([near, further] as Array[Location]),
-			"he is offered the free locations ahead of her on her street, nearest along her heading first, "
-			+ "and never one in her view, behind her, off her street or past the stream radius (%d asks)"
-			% rig.judge.asks.size())
-	t.check(rig.locations.taken.size() == 1 and rig.locations.taken[0][0] == further,
-			"and the one the judge answers for is taken")
-	var van := _unplaced("delivery_van")
-	var van_rig := _rig(7, 24, 50)
-	t.check(EventScheduler.role_for(van.row(), 7) == GameEnums.BlockerRole.WALL,
-			"the van is a wall on the day it is laid (the guard that the row is one by its fit)")
-	van_rig.locations.table = [_location(80, 40)] as Array[Location]
-	van_rig.ground.set_of_tiles[Vector2i(80, 40)] = 1
-	van_rig.siting.begin_look(her, Vector2.RIGHT)
-	var van_laid := van_rig.siting.lay_ahead(van)
-	van_rig.siting.end_look()
-	t.check(van_laid, "and a wall by its fit alone is laid on her street as well")
+	t.check(laid and undrawn_further.is_taken() and not drawn_near.is_taken(),
+			"a beat takes a location of a unit that has not drawn over a nearer one a drawn unit left empty")
+	t.check(_asked(rig.judge) == ([undrawn_far, undrawn_further] as Array[Location]),
+			"the undrawn unit's locations are asked first, nearest first (%d asks)" % rig.judge.asks.size())
+	var fallback := _rig(24, 50)
+	var drawn_a := _location(50, ROW_Y)
+	var undrawn_b := _location(70, ROW_Y)
+	fallback.locations.table = [drawn_a, undrawn_b] as Array[Location]
+	_unit_of(fallback, [drawn_a] as Array[Location], true)
+	_unit_of(fallback, [undrawn_b] as Array[Location])
+	fallback.judge.refuses = [undrawn_b] as Array[Location]
+	var second := _unplaced("burning_building")
+	fallback.siting.begin_look(_her(), Vector2.RIGHT)
+	var fell_back := fallback.siting.lay_ahead(second)
+	fallback.siting.end_look()
+	t.check(fell_back and drawn_a.is_taken() and _asked(fallback.judge) == ([undrawn_b, drawn_a] as Array[Location]),
+			"where no undrawn unit's location takes it, one a drawn unit left empty does, after them")
+	var all_drawn := _rig(24, 50)
+	var only := _location(60, ROW_Y)
+	all_drawn.locations.table = [only] as Array[Location]
+	_unit_of(all_drawn, [only] as Array[Location], true)
+	var third := _unplaced("burning_building")
+	all_drawn.siting.begin_look(_her(), Vector2.RIGHT)
+	t.check(all_drawn.siting.lay_ahead(third) and only.is_taken(),
+			"and with every unit on her way drawn, the ground a drawn unit left empty takes it")
+	all_drawn.siting.end_look()
+
+## The unit a beat takes a location of is told (`PlacementUnit.rig()`), and a beat moved elsewhere is
+## taken back out of it and laid in the new location's unit.
+func _test_the_unit_a_beat_takes_a_location_of_is_told_and_takes_it_back_on_a_move(t: TestRunner) -> void:
+	var rig := _rig(24, 50)
+	var l60 := _location(60, ROW_Y)
+	var l70 := _location(70, ROW_Y)
+	rig.locations.table = [l60, l70] as Array[Location]
+	var first := _unit_of(rig, [l60] as Array[Location])
+	var second := _unit_of(rig, [l70] as Array[Location])
+	var fire := _unplaced("burning_building")
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	rig.siting.lay_ahead(fire)
+	rig.siting.end_look()
+	t.check(first.rigged() == ([fire] as Array[EventPlan]) and second.rigged().is_empty(),
+			"the unit of the location the beat took holds it, and no other unit does")
+	rig.judge.refuses = [l60] as Array[Location]
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	var moved := rig.siting.lay_ahead(fire)
+	rig.siting.end_look()
+	t.check(moved and first.rigged().is_empty() and second.rigged() == ([fire] as Array[EventPlan]),
+			"moved, it is taken out of the old unit and held by the new one")
+	t.check(l60.is_open() and not l60.is_drawn(),
+			"and the old location, its unit undrawn, is open again for the unit's draw")
+
+## A location given back after its unit has drawn round the beat reads drawn with nothing on it,
+## since its unit will not draw again.
+func _test_a_location_given_back_in_a_unit_that_has_drawn_reads_drawn(t: TestRunner) -> void:
+	var rig := _rig(24, 50)
+	var l60 := _location(60, ROW_Y)
+	var l70 := _location(70, ROW_Y)
+	rig.locations.table = [l60, l70] as Array[Location]
+	var first := _unit_of(rig, [l60] as Array[Location])
+	_unit_of(rig, [l70] as Array[Location])
+	var fire := _unplaced("burning_building")
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	rig.siting.lay_ahead(fire)
+	rig.siting.end_look()
+	first.record_draw([] as Array[EventPlan])
+	rig.judge.refuses = [l60] as Array[Location]
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	var moved := rig.siting.lay_ahead(fire)
+	rig.siting.end_look()
+	t.check(moved and l60.is_drawn() and not l60.is_open() and not l60.is_taken(),
+			"given back once its unit has drawn, the location is drawn with nothing on it, not open")
 
 ## A placed beat is judged among the walk's plans but itself, keeps its location where nothing
 ## else takes it, and gives it back the moment another does.
 func _test_a_placed_beat_keeps_its_location_until_another_takes_it(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 50)
+	var rig := _rig(24, 50)
 	var l50 := _location(50, ROW_Y)
 	var l60 := _location(60, ROW_Y)
 	rig.locations.table = [l50, l60] as Array[Location]
@@ -328,7 +391,7 @@ func _test_a_placed_beat_keeps_its_location_until_another_takes_it(t: TestRunner
 
 ## A row refused in a look is not judged again in it; laying a plan, or a new look, asks again.
 func _test_a_row_refused_in_a_look_is_not_judged_again_in_it(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 50)
+	var rig := _rig(24, 50)
 	rig.locations.table = [_location(50, ROW_Y), _location(60, ROW_Y)] as Array[Location]
 	rig.judge.refuses_rows = ["burning_building"] as Array[String]
 	var fire := _unplaced("burning_building")
@@ -353,7 +416,7 @@ func _test_a_row_refused_in_a_look_is_not_judged_again_in_it(t: TestRunner) -> v
 
 ## One ask offers no more locations than a look allows.
 func _test_one_ask_offers_no_more_than_the_locations_a_look_allows(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 100)
+	var rig := _rig(24, 100)
 	var table: Array[Location] = []
 	for i in 14:
 		table.append(_location(50 + i * 6, ROW_Y))
@@ -371,7 +434,7 @@ func _test_one_ask_offers_no_more_than_the_locations_a_look_allows(t: TestRunner
 ## A caller that brings the tiles (the mast near the mark) has them taken by the first free location
 ## that takes one, in the order offered, a taken one passed over.
 func _test_among_offered_tiles_the_first_free_location_in_the_order_offered_takes_it(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 50)
+	var rig := _rig(24, 50)
 	var l50 := _location(50, ROW_Y)
 	var l60 := _location(60, ROW_Y)
 	var l70 := _location(70, ROW_Y)
@@ -391,7 +454,7 @@ func _test_among_offered_tiles_the_first_free_location_in_the_order_offered_take
 ## At dusk the fire is laid at least `DUSK_CLEAR_OF_HER` from where she finished, off the routes first,
 ## else merely away, and no location is taken.
 func _test_at_dusk_off_her_path_first_then_merely_away_and_no_location_is_taken(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 50)
+	var rig := _rig(24, 50)
 	var finished := Vector2(20, 10) * float(Tuning.TILE_SIZE)
 	var close := _location(24, ROW_Y)
 	var on_the_routes := _location(60, ROW_Y)
@@ -403,8 +466,8 @@ func _test_at_dusk_off_her_path_first_then_merely_away_and_no_location_is_taken(
 			for x in range(rect.position.x, rect.end.x):
 				rig.ground.set_of_tiles[Vector2i(x, y)] = 1
 	rig.tree = _tree_without(rig, off_the_routes.tiles())
-	rig.siting = WalkSiting.new(FIRE_DAY, rig.map, rig.tree, rig.walk, rig.locations, rig.judge,
-			rig.ground)
+	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations, rig.units,
+			rig.judge, rig.ground)
 	var fire := _unplaced("burning_building")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
@@ -424,7 +487,7 @@ func _test_at_dusk_off_her_path_first_then_merely_away_and_no_location_is_taken(
 
 ## A crew is turned to face the wall it pastes; the fire is not turned.
 func _test_a_crew_faces_the_wall(t: TestRunner) -> void:
-	var rig := _rig(4, 24, 50)
+	var rig := _rig(24, 50)
 	rig.locations.table = [_location(50, ROW_Y)] as Array[Location]
 	var crew := _SpyPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF)
 	var fire := _SpyPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
@@ -439,7 +502,7 @@ func _test_a_crew_faces_the_wall(t: TestRunner) -> void:
 ## Laying a mast asks the ground only of tiles on the cells of her way: never of the rest of the
 ## ground the row has.
 func _test_laying_a_mast_asks_the_ground_only_of_tiles_on_her_way(t: TestRunner) -> void:
-	var rig := _rig(11, 24, 30)
+	var rig := _rig(24, 30)
 	rig.locations.table = [_location(50, ROW_Y), _location(56, ROW_Y)] as Array[Location]
 	for x in range(100, 400):
 		rig.ground.set_of_tiles[Vector2i(x, 20)] = 1
@@ -455,25 +518,3 @@ func _test_laying_a_mast_asks_the_ground_only_of_tiles_on_her_way(t: TestRunner)
 			and off_her_way == 0,
 			"the ground is asked of tiles on the cells of her way alone, not of the ground's %d tiles (%d asks, %d off her way)"
 			% [rig.ground.set_of_tiles.size(), rig.ground.asked.size(), off_her_way])
-
-## A pick the ground round which draws a unit is given up for this look, with the reason, and stands
-## when asked again with nothing left to draw.
-func _test_a_pick_the_ground_round_which_draws_a_unit_is_given_up(t: TestRunner) -> void:
-	var rig := _rig(FIRE_DAY, 24, 50)
-	var l50 := _location(50, ROW_Y)
-	rig.locations.table = [l50] as Array[Location]
-	var draws: Array[bool] = [true, false]
-	var asked_round: Array[Vector2] = []
-	rig.siting.use_the_ground_drawer(func(at: Vector2, _reach: float) -> bool:
-		asked_round.append(at)
-		return draws.pop_front())
-	var fire := _unplaced("burning_building")
-	rig.siting.begin_look(_her(), Vector2.RIGHT)
-	var first := rig.siting.lay_ahead(fire)
-	t.check(not first and not fire.is_placed() and not l50.is_taken()
-			and rig.siting.waits().has("the ground round its site had not drawn"),
-			"a pick that drew a unit is given up, takes no location and says why")
-	var second := rig.siting.lay_ahead(fire)
-	rig.siting.end_look()
-	t.check(second and fire.is_placed() and l50.is_taken() and asked_round.size() == 2,
-			"and stands when asked again with nothing left to draw (%d asks of the drawer)" % asked_round.size())

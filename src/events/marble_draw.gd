@@ -33,6 +33,10 @@ extends RefCounted
 ## - **Off the streets every marble takes one location**: a junction box, an alley's thirds, a
 ##   park's or a square's cells, every row the size of one.
 ##
+## - **A row rigged in front of the units' draws is drawn first** (`in_front`, `UnitDraw.rig_the_next_draw()`:
+##   day 6's man shouting, day 7's van), before the unit's own bag, where the unit accepts it as it
+##   accepts a marble of its own; one it does not accept stays in front, unspent, for the next unit
+##   to draw. It takes its room as any marble does, so the unit's own bag draws one marble fewer.
 ## - **Where the walk stands one event a unit** (`one_marble_a_unit`,
 ##   `DaySpec.stands_one_event_a_street()`), the unit draws one marble: a row's stands alone in
 ##   it and an empty one leaves it with nothing. A row the bag's `accepts` refuses stays in the bag and
@@ -95,10 +99,13 @@ func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
 	_one_marble_a_unit = one_marble_a_unit
 
 ## **Draws `unit`'s marbles from `bag` and lays its rows out**, judged among `among`: answers the
-## events placed, in the order drawn, a row handed to her walk among them with no position. Every
-## location of the unit left open is recorded as drawn; one not open (unavailable, taken or drawn)
-## is left as it is. `among` is left as handed.
-func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[EventPlan]:
+## events placed, in the order drawn, a row handed to her walk among them with no position. A row
+## rigged in `in_front` (`UnitDraw.rig_the_next_draw()`) is drawn before the bag's first marble
+## where the unit accepts it, and left there otherwise. Every location of the unit left open is
+## recorded as drawn; one not open (unavailable, taken or drawn) is left as it is. `among` is left
+## as handed.
+func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan],
+		in_front: MarbleBag = null) -> Array[EventPlan]:
 	var room := UnitRoom.of(unit)
 	var street := unit.kind() == PlacementGround.Kind.STREET
 	var open := _open_of(unit)
@@ -107,26 +114,36 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 	var laid: Array[_Placing] = []
 	var trials := {}
 	# The lambdas read `drawn`, `laid` and `trials` by reference, so each is changed in place.
-	var accepts := func(id: String) -> bool:
-		var def: EventDef = _rows[id]
+	var accepts_row := func(def: EventDef) -> bool:
 		if drawn.has(def):
 			return false
 		if not room.fits(_share_of(def, street)):
 			return false
 		var trial := _lay_out(laid, drawn, def, unit, open, among, scales)
-		trials[id] = trial
+		trials[def.id] = trial
 		return not trial.is_empty()
+	var accepts := func(id: String) -> bool:
+		var def: EventDef = _rows[id]
+		return accepts_row.call(def)
 	var weight := func(id: String) -> float:
 		var def: EventDef = _rows.get(id)
 		return _weight(def, unit, open, scales) if def else 0.0
+	# Asked of the rigged bag until a row there is refused: it stays in front for the next unit.
+	var asks_in_front := in_front != null
 	while room.is_open():
-		var marble := bag.draw(accepts, weight)
-		if marble == ViewBag.EMPTY:
+		var def: EventDef = null
+		if asks_in_front:
+			def = _from_the_front(in_front, accepts_row)
+			asks_in_front = def != null
+		if def == null:
+			var marble := bag.draw(accepts, weight)
+			if marble != ViewBag.EMPTY:
+				def = _rows[marble]
+		if def == null:
 			room.take(EventDef.StreetShare.A_LOCATION)
 		else:
-			var def: EventDef = _rows[marble]
 			drawn.append(def)
-			var trial: Array[_Placing] = trials[marble]
+			var trial: Array[_Placing] = trials[def.id]
 			laid.assign(trial)
 			room.take(_share_of(def, street))
 		if _one_marble_a_unit:
@@ -142,6 +159,20 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 			if placing.row() == def:
 				placed.append(placing.plan())
 	return placed
+
+## **The row rigged in front, drawn out of `in_front`, where the unit accepts it** (`accepts_row`,
+## `func(def: EventDef) -> bool`), else null with it left where it is. A row the day's bags also name
+## is taken as the bags name it, so it counts as the same row for "at most one of a row in a unit".
+func _from_the_front(in_front: MarbleBag, accepts_row: Callable) -> EventDef:
+	var next: Variant = in_front.peek()
+	if not next is EventDef:
+		return null
+	var rigged := next as EventDef
+	var row: EventDef = _rows.get(rigged.id, rigged)
+	if not accepts_row.call(row):
+		return null
+	in_front.draw()
+	return row
 
 ## **Where every row of `drawn` and `def` stands**, laid largest first, or empty where one cannot
 ## stand. `laid` is where `drawn` stood: the rows laid before `def` stand as they stood, since
