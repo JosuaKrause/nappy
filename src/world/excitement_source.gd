@@ -235,12 +235,6 @@ func _contribution_stamp() -> float:
 func wall_grid() -> WorldMap:
 	return null
 
-## Whether a wall stands between a source at `source_at` and her at `her_at`, deep enough to keep
-## its excitement from her.
-func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
-	var grid := wall_grid()
-	return grid != null and grid.wall_between(source_at, her_at)
-
 ## The last line `contribution_at()` asked about and its answer, kept by value. The answer depends
 ## on nothing but the two points and the map, so a body moved from outside is a new key and nothing
 ## here can answer stale the way a clock-keyed cache of the field would.
@@ -249,8 +243,10 @@ var _wall_to := Vector2.INF
 var _wall_grid: WorldMap = null
 var _wall_answer := false
 
-## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the projection asks a
-## different pair at every step and would only push the frame's own pair out.
+## Whether a wall stands between a source at `source_at` and her at `her_at`, deep enough to keep
+## its excitement from her, through that one-line cache, for `contribution_at()` alone: the
+## projection asks the map itself (`_sample_expected_landed()`), a different pair at every step, which
+## would only push the frame's own pair out.
 func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
 	var grid := wall_grid()
 	if source_at != _wall_from or her_at != _wall_to or grid != _wall_grid:
