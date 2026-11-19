@@ -418,6 +418,12 @@ class TranscriptionTests(unittest.TestCase):
         playtest = {path: text + "\n> " + more + "\n" for path, text in FILED_PLAYTEST.items()}
         self.assertEqual(ci_transcription.check([captured], playtest), [])
 
+    def test_a_comment_of_the_agents_blocks_alone_adds_no_words_to_check(self) -> None:
+        bot = "nappy-claude-orchestrator[bot]"
+        agents = f"{ci_transcription.APPEND_MARKER}\n\n### Read as (the agent's interpretation)\n\nread as a bag"
+        comments: list[dict[str, object]] = [{"user": {"login": bot}, "body": agents}]
+        self.assertEqual(ci_transcription.appended_words(bot, ("inbox", "captured"), comments), ())
+
     def test_a_marked_comment_counts_only_from_a_capture_identity_on_a_captured_note(self) -> None:
         bot = "nappy-claude-orchestrator[bot]"
         marked = f"{ci_transcription.APPEND_MARKER}\n\nmore words"
