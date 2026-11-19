@@ -2,16 +2,12 @@ extends RefCounted
 ## The screen-edge badge's control (`DangerEdge`) alone: what it hands its badge model each frame
 ## about what she can see. Which dangers get a badge and when is the model's, checked in
 ## `tests/test_badge_model.gd` with a rectangle for a view and the edge's drawing there too; here
-## the edge is handed an event source of its own, a stand-in answering the live events and the day's
-## view as `EventManager` does (`instances()`, `visible_view()`), and one stand-in live event, the
-## military convoy, moved by hand between real frames. What is checked is that the edge asks the view
+## the edge is handed a stand-in `EventManager` answering the live events it is brought
+## (`instances()`), whose own view (`visible_view()`) the rig looks through about her, and one
+## stand-in live event, the military convoy, moved by hand between real frames. What is checked is that the edge asks the view
 ## she has: a badge comes down on the frame any of its thing is in sight, and nothing just past the
 ## screen's edge, inside the badge's margin, is raised one fresh. The edge is hidden, so it draws
 ## nothing and is handed no atlas.
-
-## The convoy's drawn box about its feet, read off `EventFootprints.drawn_box_of()`: all of it
-## stands above its feet, so a convoy just above the view is wholly out of sight.
-const CONVOY_BOX := Rect2(-30.0, -38.0, 60.0, 38.0)
 
 func run(t: TestRunner) -> void:
 	await _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t)
@@ -76,10 +72,11 @@ func _test_nothing_in_the_margin_is_raised_a_badge_fresh(t: TestRunner) -> void:
 ## The edge watching the stand-in source, with her standing at the origin and the convoy at `at`.
 func _rig(t: TestRunner, at: Vector2) -> Dictionary:
 	var source := _Source.new()
+	source.visible_view().look_from(Vector2.ZERO)
 	t.add_child(source)
 	var her := Node2D.new()
 	t.add_child(her)
-	var convoy := _Coming.new(EventCatalogue.by_id("military_convoy"), CONVOY_BOX)
+	var convoy := _Coming.new(EventCatalogue.by_id("military_convoy"), _convoy_box())
 	convoy.position = at
 	source.bring(convoy)
 	var edge := DangerEdge.new()
@@ -96,7 +93,14 @@ func _put_away(rig: Dictionary) -> void:
 ## any of its drawn box.
 static func _in_sight(at: Vector2) -> bool:
 	var view := Rect2(-Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
-	return view.has_point(at) or view.intersects(Rect2(at + CONVOY_BOX.position, CONVOY_BOX.size))
+	var box := _convoy_box()
+	return view.has_point(at) or view.intersects(Rect2(at + box.position, box.size))
+
+## The convoy's drawn box about its feet, driving along a north-south line as it does here, read off
+## the row (`EventFootprints.drawn_box_of()`, what `EventInstance.drawn_box()` asks): a change to its
+## picture or its footprint moves the box both the edge and `_in_sight()` are checked against.
+static func _convoy_box() -> Rect2:
+	return EventFootprints.drawn_box_of(EventCatalogue.by_id("military_convoy"), true)
 
 ## Whether the convoy's badge is on the edge.
 static func _up(edge: DangerEdge) -> bool:
@@ -112,11 +116,11 @@ static func _next_frame(t: TestRunner) -> void:
 	while Engine.get_process_frames() == asked_in:
 		await t.get_tree().process_frame
 
-## An event source the edge reads as it reads `EventManager`: the live events it was brought, and
-## the day's view, about her at the origin with nothing covering it.
-class _Source extends Node:
+## The day's events, holding the live events it was brought. Its view is the manager's own, which the
+## rig looks through about her at the origin with nothing covering it; with no player handed in, the
+## manager's own tick never looks it through again.
+class _Source extends EventManager:
 	var _coming: Array[EventInstance] = []
-	var _view := VisibleView.around(Vector2.ZERO, null)
 
 	## Puts `instance` in the world, among the live events.
 	func bring(instance: EventInstance) -> void:
@@ -124,11 +128,9 @@ class _Source extends Node:
 		instance.set_process(false)
 		_coming.append(instance)
 
+	## Overrides EventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return _coming
-
-	func visible_view() -> VisibleView:
-		return _view
 
 ## A live event of `row` the edge reads: its row, its name in the log and the box it draws, standing
 ## wherever it is put, set up for nothing else and hidden.

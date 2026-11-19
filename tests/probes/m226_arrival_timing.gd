@@ -12,13 +12,20 @@ const STEP := 1.0 / 60.0
 const LIMIT := 30.0
 const IDS := ["cyclist", "loose_dog", "fire_truck", "military_convoy"]
 
-class Source extends Node:
+## The day's events, holding the instances and the warnings the probe hands it. Its view is the
+## manager's own (`visible_view()`), which the probe looks through from her each frame, as the
+## manager's own tick does (`EventManager._look_through_the_camera()`).
+class Source extends EventManager:
 	var live: Array[EventInstance] = []
-	var warnings: Array[PendingWarning] = []
+	var pending: Array[PendingWarning] = []
+
+	## Overrides EventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return live
+
+	## Overrides EventManager.pending_warnings.
 	func pending_warnings() -> Array[PendingWarning]:
-		return warnings
+		return pending
 
 func run(t: TestRunner) -> void:
 	var encounters: Array[Dictionary] = M207Lead.encounters()
@@ -94,7 +101,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		var warning := PendingWarning.new(def, encounter["where"], arrive)
 		warning.is_pelican = pelican
 		if warning.put_up(her):
-			source.warnings.append(warning)
+			source.pending.append(warning)
 	else:
 		var route: PackedVector2Array = encounter["path"]
 		var instance := EventInstance.new()
@@ -117,6 +124,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 				for part in drawing_parts(instance):
 					if view.intersects(Rect2(instance.position + part.position, part.size)):
 						result.entry = clock
+		source.visible_view().look_from(Stroller.view_centre_of(player))
 		edge._measure(STEP)
 		var badged := not edge.announcing().is_empty()
 		if badged and result.badge_start == INF:
@@ -132,9 +140,9 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		where.tell(her)
 		for instance in source.live:
 			instance.step(STEP)
-		for warning: PendingWarning in source.warnings.duplicate():
+		for warning: PendingWarning in source.pending.duplicate():
 			if warning.tick(STEP, her):
-				source.warnings.erase(warning)
+				source.pending.erase(warning)
 	viewport.canvas_transform = saved_transform
 	edge.free()
 	player.free()

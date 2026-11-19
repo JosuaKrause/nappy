@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name DangerEdge
 extends Control
 ## What is coming, drawn at the edge of the screen while it is still off it.
@@ -28,14 +27,13 @@ extends Control
 ## Not in the HUD, deliberately: the HUD listens to `EventBus` and holds no reference to the
 ## world, and this needs to ask the world where things are every frame. `main` owns it.
 ##
-## **What it reads is an event source, not a day.** The one thing asked of `_events` is
-## `instances() -> Array[EventInstance]`, which `EventManager` answers in the city and in the
-## building alike — so the masked man coming up a stairwell is
-## announced exactly the way a fire engine coming down a street is. See `setup()`.
+## **What it reads is the day's events, not a day.** It asks the `EventManager` it is handed for
+## `instances()`, which the manager answers in the city and in the building alike — so the masked
+## man coming up a stairwell is announced exactly the way a fire engine coming down a street is.
+## See `setup()`.
 ##
-## **And a warning can be up before its thing exists.** A source that also answers
-## `pending_warnings() -> Array[PendingWarning]` — `EventManager` does — has things on their way
-## that are not in the world yet: a cyclist, the day-3 dog, the fire engine, day 13's
+## **And a warning can be up before its thing exists.** The manager's `pending_warnings()` are
+## things on their way that are not in the world yet: a cyclist, the day-3 dog, the fire engine, day 13's
 ## column, the resistance's own robber and guard. Each gets its badge from the moment its warning goes
 ## up, pointing at the place it will come from, which moves only with her, for the at most one second
 ## the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
@@ -70,14 +68,9 @@ var _timing := FrameTiming.new()
 ## a badge is up, so the library it holds is the one thing that shows which it was handed.
 var atlas: AtlasLibrary
 
-## The event source — see `setup()`.
-var _events: Node
+## The day's events — see `setup()`.
+var _events: EventManager
 var _player: Node2D
-## What she can see, when the event source does not keep the day's own (`EventManager.
-## visible_view()`): a stand-in source a test hands over. Looked through once a frame from her
-## camera, in the tap scheme's whole view unless the test hands it the controls' `ScreenCover`
-## (`VisibleView.controls`).
-var _own_view := VisibleView.new()
 ## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
 ## this control does of it.
 var _model := BadgeModel.new()
@@ -102,28 +95,19 @@ func use_rotated(rotate: bool) -> void:
 func _init() -> void:
 	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.BADGES)
 
-## `events` is anything that answers `instances() -> Array[EventInstance]`: an `EventManager`, the
-## city's on a day and in the escape's city, the building's in the escape's building. **Called
+## `events` is the `EventManager` whose instances and warnings the badges are for: the city's on a
+## day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
 ## building's, so one badge serves both sections; an id the new source no longer carries simply
 ## drops out of `_model._watch` on the next `_measure()`.
-func setup(events: Node, player: Node2D) -> void:
+func setup(events: EventManager, player: Node2D) -> void:
 	_events = events
 	_player = player
 
-## The live instances, typed — the event source is duck-typed (see `setup()`), so its answer is
-## read through here rather than at every loop, which is what keeps each loop variable an
-## `EventInstance` to the analyser.
-func _live() -> Array[EventInstance]:
-	return _events.instances()
-
-## What she can see this frame: the day's own view where the event source keeps one
-## (`EventManager.visible_view()`), so the badge and everything else that asks agree on it frame for
-## frame, and otherwise this edge's own, looked through from her camera.
+## What she can see this frame: the day's own view (`EventManager.visible_view()`), so the badge
+## and everything else that asks agree on it frame for frame.
 func _view() -> VisibleView:
-	if _events and _events.has_method("visible_view"):
-		return _events.visible_view()
-	return _own_view
+	return _events.visible_view()
 
 ## Whether something at `world_position` is in sight (`VisibleView.sees()`), counting `margin`
 ## screen px past the edge as in sight as well — the one test the badge asks.
@@ -143,13 +127,6 @@ func _shows(instance: EventInstance) -> bool:
 ## design box's width.
 static func world_per_screen_px() -> float:
 	return Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
-
-## The warnings that are up for something not in the world yet, or none for a source that has no
-## such thing (a test's stand-in).
-func _warnings() -> Array[PendingWarning]:
-	if not _events.has_method("pending_warnings"):
-		return []
-	return _events.pending_warnings()
 
 func _process(delta: float) -> void:
 	if _timing.is_on():
@@ -188,13 +165,11 @@ func _measure(delta: float) -> void:
 	_model.clear_badges()
 	if not _events or not _player or delta <= 0.0:
 		return
-	if not (_events.has_method("visible_view")):
-		_own_view.look_from(Stroller.view_centre_of(_player))
 	var subjects: Array = []
-	for instance in _live():
+	for instance in _events.instances():
 		if not instance.is_gone():
 			subjects.append(_subject_of(instance))
-	for warning in _warnings():
+	for warning in _events.pending_warnings():
 		if warning.points_at() != Vector2.INF:
 			subjects.append(_subject_of_warning(warning))
 	_model.step(delta, _player.global_position, subjects, _sees)
