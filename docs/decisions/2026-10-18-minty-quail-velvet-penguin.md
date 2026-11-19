@@ -23,7 +23,8 @@ those stand-ins to extend `EventManager` and for its fallback to a view of its o
   in the escape's first section, or null before either exists, when `_measure()` and `_draw()`
   return at once as before. Every suite and rig that hands the edge something hands a real manager
   (`tests/masked_man_meeting.gd`, `test_pelican.gd`, `test_interior.gd`, `test_events_pursuit.gd`,
-  `test_danger.gd`, `test_drawn_view.gd`). Only the three stand-ins lacked `visible_view()`.
+  `test_danger.gd`, `test_drawn_view.gd`). Only two stand-ins lacked `visible_view()` and reached it, `test_badge_model.gd`'s and the
+  arrival probe's.
 - **The three stand-ins extend `EventManager`** and override only what their test hands in, so the
   rest of each is the manager's own:
   - `_Source` in `tests/test_badge_model.gd` overrides `pending_warnings()` and returns the warnings
