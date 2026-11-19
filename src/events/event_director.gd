@@ -715,7 +715,9 @@ const ON_HER_WAY_LOOK := 1.0
 ## Sites, or re-sites, whatever the day planned and left for her walk to place: a tile of the row's
 ## own ground (a building face for the fire and the crews) on the day's own route tree **on the
 ## branch she is walking**, in the nearest free location of it beyond the streaming band, a unit's
-## that has not drawn where there is one (`WalkSiting.lay_ahead()`), off screen. Returns every plan
+## that has not drawn where there is one (`WalkSiting.lay_ahead()`), off screen; and a row a mark
+## rigged on her path just ahead of her instead, straight ahead and just out of her view
+## (`rig_the_next_draw()`, `WalkSiting.lay_just_ahead()`). Returns every plan
 ## this call moved, so the caller can give back the ground the old body was standing on and take the
 ## new — `EventsAhead.site_what_is_on_her_way()` is that caller — and a place from her route's bag
 ## sited for the first time, which the caller adds to the day's plan (`is_from_her_route()`).

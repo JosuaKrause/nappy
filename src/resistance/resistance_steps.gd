@@ -118,14 +118,15 @@ class Step extends RefCounted:
 	## mark (`ResistanceDirector._rig_her_route_for()`), or 0 for a task that rigs nothing there. The
 	## row is the mast's, for a `TargetKind.MAST` task.
 	var rigs_within := 0
-	## Whether the task's own row (`task_event_id`) is rigged in front of the next unit draws once she
+	## Whether the task's own row (`task_event_id`) is rigged for the next draw on her path once she
 	## has read its mark (`ResistanceDirector._rig_her_route_for()`): day 6's second man shouting and
-	## day 7's second van, stood by the next unit to draw that can stand him, wherever and whenever
-	## that draw happens. *(olive-koala, statement 2: "after touching the mark a marble bag with 1/3
-	## chance of yeller should be put in so the yeller is guaranteed to encounter a yeller in the next
-	## three events" · inbox #1520 in breezy-magpie: "the draw doesn't have to happen at the point
-	## where she touches the mark. the bag gets the biased bag in front (via the chained bags
-	## mechanism) and the next draw (whenever that happens) will guarantee the shouting man".)*
+	## day 7's second van, laid by her walk straight ahead of her on her branch, just out of her view
+	## (`WalkSiting.lay_just_ahead()`). *(olive-koala, statement 2: "after touching the mark a marble
+	## bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to encounter a yeller
+	## in the next three events" · inbox #1520 in breezy-magpie: "the draw doesn't have to happen at
+	## the point where she touches the mark. the bag gets the biased bag in front (via the chained bags
+	## mechanism) and the next draw (whenever that happens) will guarantee the shouting man" · inbox
+	## #1549: "you would draw only for the path and only just ahead".)*
 	var rigs_the_next_draw := false
 
 static var _all: Array[Step] = []

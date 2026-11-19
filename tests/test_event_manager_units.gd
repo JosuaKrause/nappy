@@ -190,9 +190,10 @@ const WALK_SECONDS := 170.0
 ## location a drawn unit left empty. With the rest of the day drawn after the walk, nothing a unit
 ## drew stands within `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row
 ## on the crew's location, and every unit that drew otherwise than on the day drawn whole holds a
-## crew, touches a unit that does, or touches a unit that drew otherwise (a unit is judged among the
-## draws of the touching units drawn before it, so a difference can carry): no unit differs out of
-## nowhere, and some unit far from every crew is compared.
+## crew, touches a unit that does, or is reached from such a unit along touching units that drew
+## otherwise (a unit is judged among the draws of the touching units drawn before it, so a difference
+## can carry, and two touching units that both differ do not excuse each other): no unit differs out
+## of nowhere, and some unit far from every crew is compared.
 func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
 	var map := _city.map
@@ -289,19 +290,32 @@ func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) 
 		var line := Rig.what_the_units_drew(map, [unit] as Array[PlacementUnit])
 		if line != str(whole_by_unit.get(unit.name(), "")):
 			differ[unit.name()] = unit
-	var out_of_nowhere: Array[String] = []
+	# A difference carries from a unit beside a crew along touching units that differ, so it is
+	# followed from there: a differing unit that walk never reaches differs out of nowhere, and two
+	# touching units that both differ cannot excuse each other.
+	var reached := {}
+	var queue: Array[PlacementUnit] = []
 	for name: String in differ:
 		if beside.has(name):
-			continue
-		var carried := false
-		for other in _units().touching(differ[name] as PlacementUnit):
-			carried = carried or differ.has(other.name())
-		if not carried:
+			reached[name] = true
+			queue.append(differ[name] as PlacementUnit)
+	var head := 0
+	while head < queue.size():
+		var at := queue[head]
+		head += 1
+		for other in _units().touching(at):
+			if differ.has(other.name()) and not reached.has(other.name()):
+				reached[other.name()] = true
+				queue.append(other)
+	var out_of_nowhere: Array[String] = []
+	for name: String in differ:
+		if not reached.has(name):
 			out_of_nowhere.append(name)
 	t.check(kept.size() > beside.size() + differ.size() and out_of_nowhere.is_empty(),
 			"every unit that drew otherwise than on the day drawn whole holds a crew, touches one, "
-			+ "or touches a unit that drew otherwise (%d units, %d beside a crew, %d differ; out of "
-			% [kept.size(), beside.size(), differ.size()] + "nowhere: %s)" % [out_of_nowhere])
+			+ "or is reached from one along touching units that drew otherwise (%d units, %d beside a "
+			% [kept.size(), beside.size()] + "crew, %d differ; out of nowhere: %s)"
+			% [differ.size(), out_of_nowhere])
 	events.use_player(null)
 	rig.free()
 

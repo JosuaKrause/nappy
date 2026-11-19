@@ -181,7 +181,7 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 ## it does not cover a unit a beat stands in or beside, which draws by her path on purpose: one long
 ## enough for a crew to stand on her way is in `test_event_manager_units.gd`, with what its units
 ## draw held against the day drawn whole. Neither covers the moments, the rows her route's bag rigs
-## and the rows a mark rigs in front of the units' draws, which follow her walk on purpose.
+## and the rows a mark rigs just ahead of her, which follow her walk on purpose.
 func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS

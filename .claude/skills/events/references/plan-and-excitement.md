@@ -11,18 +11,21 @@ of the *plan*. `EventScheduler.build_day()` plans the dawn's part and prepares t
 day's locations; each unit of them (a street, a junction box, an alley, a park or a square) draws
 as she comes near it (`UnitDraw`, `EventsAhead.draw_what_comes_near()`), after every touching unit
 of lower rank, so every unit's draw is the same whatever her path, what drawing every unit at dawn
-would give, but for a unit a beat of her walk or a row a mark rigged stands in or beside (below). A unit within the stream radius of her is drawn before the streaming looks there
-(`EventManager.stream_around()` and the manager's tick). What streams is the *instantiation*.
+would give, but for a unit a beat of her walk stands in or beside (below). A unit within the stream
+radius of her is drawn before the streaming looks there (`EventManager.stream_around()` and the
+manager's tick). What streams is the *instantiation*.
 
 **A beat her walk lays takes a location, in a unit that has not drawn where her way has one, and
 that unit draws round it** (`WalkSiting`, `PlacementUnit.rig()`). The unit's room starts without
 the location and its draw, and the draws of the units touching it, are judged among the beat
-(`UnitDraw`); nothing is drawn round a beat first. **A row a mark rigs in front of the units'
-draws** (day 6's man shouting, day 7's van; `UnitDraw.rig_the_next_draw()`) is drawn first by the
-next unit to draw that can stand it. So a unit a beat or a rigged row stands in or beside draws by
-her path, on purpose, as can a unit touching one whose draw that changed, since a unit is judged
-among the draws of the touching units drawn before it: a beat is a marble, and a day replayed the
-same way draws the same (inbox #1521 in breezy-magpie). **A place the resistance sends her to is asked by where it stands** (`WayConfirmation`, asked wherever a
+(`UnitDraw`); nothing is drawn round a beat first. **A row a mark rigs** (day 6's man shouting,
+day 7's van; `EventManager.rig_the_next_draw()`) is the next thing her walk lays, as a beat, just
+ahead of her, straight ahead and out of her view (`WalkSiting.lay_just_ahead()`), where the ground
+has drawn (inbox #1520 in breezy-magpie). So a unit a beat stands in or beside draws by her path,
+on purpose, as can a unit touching one whose draw that changed, since a unit is judged among the
+draws of the touching units drawn before it: a beat is a marble, and a day replayed the same way
+draws the same (inbox #1521 in breezy-magpie). **A place the resistance sends her to is asked by
+where it stands** (`WayConfirmation`, asked wherever a
 contact is stood or moved, `ResistanceDirector._she_can_be_sent_to()`): inside the ground already
 drawn round her (the stream radius, and round where she reads a mark as far as its task is looked
 for and `Tuning.EVENT_DRAW_AHEAD` beyond) it stands as it is, her own paths reaching it without
@@ -55,8 +58,8 @@ yet.
 something has to be true of a day, it has to be decided where the day is: at dawn
 (`EventScheduler.build_day()`) or by a unit's own draw (`UnitDraw`), each of which reads what is
 fixed before she moves (the seed, the day, the run as the day starts), and a unit's draw besides
-the beats her walk laid in it or a touching unit and the rows a mark rigged in front of it, whose
-place is her walk's on purpose; never the streaming.
+the beats her walk laid in it or a touching unit, a row a mark rigged among them, whose place is
+her walk's on purpose; never the streaming.
 
 ## Excitement is a pure query
 

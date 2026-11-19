@@ -3454,13 +3454,14 @@ func _on_contact_completed(step_index: int) -> void:
 ## see a yeller. after touching the mark a marble bag with 1/3 chance of yeller should be put in so
 ## the yeller is guaranteed to encounter a yeller in the next three events" · inbox #561 in coral-bunny: "day 11 is
 ## going to be a x=3", then "let's make the other rigged bags smaller, too".)* The man shouting and
-## the van are rigged in front of the next unit draws (`ResistanceSteps.Step.rigs_the_next_draw`,
-## `EventManager.rig_the_next_draw()`), so the next unit to draw that can stand one stands it,
-## wherever and whenever that draw happens (inbox #1520 in breezy-magpie: "the draw doesn't have
-## to happen at the point where she touches the mark. the bag gets the biased bag in front (via
-## the chained bags mechanism) and the next draw (whenever that happens) will guarantee the shouting
-## man"). The mast's route bag is rigged with a bag of `ResistanceSteps.MAST_WITHIN_THE_NEXT`
-## marbles, the mast and the rest drawn from the bag she was drawing from
+## the van are rigged for the next draw on her path (`ResistanceSteps.Step.rigs_the_next_draw`,
+## `EventManager.rig_the_next_draw()`), which her walk lays straight ahead of her on her branch,
+## just out of her view (inbox #1520 in breezy-magpie: "the draw doesn't have to happen at the
+## point where she touches the mark. the bag gets the biased bag in front (via the chained bags
+## mechanism) and the next draw (whenever that happens) will guarantee the shouting man"; inbox
+## #1549: "you would draw only for the path and only just ahead"). The mast's route bag is rigged
+## with a bag of `ResistanceSteps.MAST_WITHIN_THE_NEXT` marbles, the mast and the rest drawn from
+## the bag she was drawing from
 ## (`EventManager.rig_her_route()`), and the mast it names is laid ahead of her on the branch she is
 ## walking. Each is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
 ## the man shouting is a look-alike the any-instance contact follows her onto
@@ -3475,7 +3476,7 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 		var drawn_ids: Array[String] = [task.task_event_id]
 		var into_the_draw := _events.rig_the_next_draw(drawn_ids)
 		if not into_the_draw.is_empty():
-			_trace.note("roll", "the next unit to draw stands a rigged %s"
+			_trace.note("roll", "the next draw on her path stands a rigged %s"
 					% ", ".join(into_the_draw))
 		return
 	if task.rigs_within <= 0:

@@ -36,8 +36,9 @@ extends RefCounted
 ## units, how many drew other rows or other places than on the same dawn drawn whole with no walk
 ## (the city made again and the day planned again, every unit drawn), how many of those a beat
 ## stands or stood in, or touch a unit one does or did (a beat moved off a unit leaves what the unit
-## drew round it as drawn), how many of the rest touch a unit that differs (a unit is judged among
-## the draws of the touching units drawn before it, so a difference can carry), and how many are
+## drew round it as drawn), how many of the rest are reached from those along touching units that
+## differ (a unit is judged among the draws of the touching units drawn before it, so a difference
+## can carry; two touching units that differ do not excuse each other), and how many are
 ## none of those (expected none: a difference out of nowhere is a defect); `WR all` sums the days.
 ## **What it lays is day 3's fire**: a sidewalk poster crew pastes a building's blank wall, which
 ## only the built city knows (`SitingMaker.make()` hands the siting the day's fronts), so a crew a
@@ -592,8 +593,9 @@ static func _holding(units: DayUnits, plan: EventPlan) -> PlacementUnit:
 ## beside-a-beat, carried, unexplained]`: against the same day of the same city planned again
 ## (`_Day.planned()`, the city made again) and drawn whole with no walk, the units that drew other
 ## rows or other places; of those, the ones a beat was laid in (`held_a_beat`, by name, moved off
-## later or not) or touching one; of the rest, the ones touching a unit that differs, since a unit is
-## judged among the draws of the touching units drawn before it; and those that are none of these.
+## later or not) or touching one; of the rest, the ones reached from those along touching units
+## that differ (carried), since a unit is judged among the draws of the touching units drawn before
+## it, so two touching units that differ do not excuse each other; and those that are none of these.
 static func _drew_by_her_path(units: DayUnits, map: CityMap, day: int, i: int,
 		held_a_beat: Dictionary) -> Array[int]:
 	var whole := _Day.planned(day, i)
@@ -614,14 +616,27 @@ static func _drew_by_her_path(units: DayUnits, map: CityMap, day: int, i: int,
 		if _what_it_drew(map, unit) != str(drawn_whole.get(unit.name(), "")):
 			differ[unit.name()] = unit
 	var counts: Array[int] = [units.all().size(), differ.size(), 0, 0, 0]
+	var reached := {}
+	var queue: Array[PlacementUnit] = []
+	for name: String in differ:
+		if beside.has(name):
+			reached[name] = true
+			queue.append(differ[name] as PlacementUnit)
+	var head := 0
+	while head < queue.size():
+		var at := queue[head]
+		head += 1
+		for other in units.touching(at):
+			if differ.has(other.name()) and not reached.has(other.name()):
+				reached[other.name()] = true
+				queue.append(other)
 	for name: String in differ:
 		if beside.has(name):
 			counts[2] += 1
-			continue
-		var carried := false
-		for other in units.touching(differ[name] as PlacementUnit):
-			carried = carried or differ.has(other.name())
-		counts[3 if carried else 4] += 1
+		elif reached.has(name):
+			counts[3] += 1
+		else:
+			counts[4] += 1
 	return counts
 
 ## What `unit` drew, as its rows and the tiles they stand on, a row handed to her walk as `walk`.

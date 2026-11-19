@@ -1,22 +1,34 @@
-# polite-tapir — Step 4's last pull request: a beat goes first in a unit that has not drawn, and a mark rigs the next unit draw · 2026-11-18
+# polite-tapir — Step 4's last pull request: a beat goes first in a unit that has not drawn, and a mark's rigged row is laid straight ahead of her · 2026-11-18
 
 **What it is.** Placement step 4's last pull request (polite-tapir's `placement-by-construction.md`,
 step 4: the beats become rigged marbles), the design's pull request 4
 (`.claude/briefs/designs/placement-step4-rigged-marbles-design.md` in the orchestrator's checkout, not
-tracked), built by an Opus agent from the written design and the player's two board answers, since
+tracked), built by Opus agents from the written design and the player's board answers, since
 Fable's quota was out; the player chose that it waits for Fable's review before it merges (inbox
 #1547). It closes the item: step 4 was the last step left, so `placement-by-construction.md` goes.
 
-**The player's answers it builds** (breezy-magpie): to beat-changes-its-unit, "repeating the day has
-the exact same preconditions. if the player does something differently different things might
-happen. if the player were to do exactly the same everything would behave exactly the same. beats
-are marbles, yes" (inbox #1521 in breezy-magpie); to beats-on-her-street, "the draw doesn't have to
-happen at the point where she touches the mark. the bag gets the biased bag in front (via the
-chained bags mechanism) and the next draw (whenever that happens) will guarantee the shouting man"
-(inbox #1520 in breezy-magpie), built on the orchestrator's reading in the item: the mark puts a
-rigged bag in front of the bag the units ahead of her draw from (`MarbleBag`'s queue of bags and
-`rig()`), and the next unit to draw stands him, wherever and whenever that draw happens; day 7's van
-the same way.
+**What was asked and answered** (the board, breezy-magpie and inbox #1549):
+
+- To beat-changes-its-unit: "repeating the day has the exact same preconditions. if the player does
+  something differently different things might happen. if the player were to do exactly the same
+  everything would behave exactly the same. beats are marbles, yes" (inbox #1521 in breezy-magpie).
+- To beats-on-her-street, which asked whether day 6's second man shouting and day 7's second van
+  are laid on her street or as the item's letter had them: "the draw doesn't have to happen at the
+  point where she touches the mark. the bag gets the biased bag in front (via the chained bags
+  mechanism) and the next draw (whenever that happens) will guarantee the shouting man" (inbox
+  #1520 in breezy-magpie). The first build read "the next draw" as the next unit of the city to
+  draw, wherever it was; review 1 measured that he was then in her view on none of 12 walks, the
+  van neither, against 9 of 12 each on main, which loses what he is rigged for (olive-koala 2: "the
+  yeller is guaranteed to encounter a yeller in the next three events").
+- To man-and-van-met, which put those numbers to the player with the options (as built; the next
+  stretch to fill in ahead of her on her way; on her street just out of view, as on main): "why?
+  you would draw only for the path and only just ahead" (inbox #1549). **Read as** (the
+  orchestrator's, written back on the board): the rigged bag stays in front, but only a place on
+  her path just ahead of her may take its draw; the stretches just ahead have already filled in
+  when she reads the mark, so the draw lands on the first empty place on her path just ahead, out
+  of her view, the way a beat is laid on a place a filled stretch left empty. Which of the measured
+  rules below meets that best was the orchestrator's choice inside those words, not put back to the
+  player: straight ahead on her branch.
 
 **What was built.**
 
@@ -28,18 +40,29 @@ the same way.
   drew is recorded as drawn with nothing on it. `UnitDraw` judges a unit among the beats rigged in it
   and in every unit touching it, drawn or not. Nothing is drawn round a pick any more: the ground
   drawer (`WalkSiting.use_the_ground_drawer()`) and its give-up are deleted.
-- **A mark rigs the next unit draw.** `UnitDraw.rig_the_next_draw()` puts a bag of the rows a mark
-  rigs in front of the units' draws (a `MarbleBag` with no ordinary set, its marbles
-  `MarbleDraw.Rigged`, an id and its row); `MarbleDraw.draw()` draws a row there first where the
-  unit accepts it as it accepts its own marbles, taking its room, and leaves one it refuses in front
-  for the next unit. `ResistanceDirector._rig_her_route_for()` rigs day 6's man shouting and day 7's
-  van there (`ResistanceSteps.Step.rigs_the_next_draw`); day 11's mast still rigs her route's bag
-  and is laid as a beat. `UnitDraw.drew_from_the_front()` says which plan came from the bag in front,
-  and `EventsAhead` writes an `ahead` run-log line where it landed and how far from her.
+- **A mark rigs the next draw on her path, and it is laid straight ahead of her.**
+  `ResistanceDirector._rig_her_route_for()` rigs day 6's man shouting and day 7's van
+  (`ResistanceSteps.Step.rigs_the_next_draw`, `EventManager.rig_the_next_draw()`); the director
+  puts each on the list of what her walk lays (`EventDirector.rig_the_next_draw()`), holding the
+  rigged rows alone, and the next look lays it (`WalkSiting.lay_just_ahead()`) on the first free
+  location of its own ground, nearest to walk to first, within `JUST_AHEAD` (the stream radius,
+  900px) down her branch and straight from her, within `PATH_HALF_WIDTH` (five tiles) of a cell of
+  her branch, ahead along her heading within five tiles of her line of travel, and with none of what
+  it draws in the camera's view grown by its lead and a tile. The ground there has drawn, so it
+  takes a location a drawn unit left empty, its unit is told as for a beat, and it is in the world
+  on the frame it is laid. It joins the day's plan when first laid, as a place from her route's bag
+  does (`EventDirector.is_from_her_route()`), and the run log's `ahead` line says where. Day 11's mast
+  still goes through her route's bag and is laid as a beat.
 - **Deleted, nothing reaching them:** the street-beat path of `WalkSiting` (`_on_her_street()`,
-  `_could_be_in_her_view()`, `STREET_HALF_WIDTH`, the siting's day), `EventDef.is_met_on_her_street()`
-  with `meet_on_her_street()` and its catalogue call, `SitedGround.is_a_wall_by_cost()`,
-  `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT` and `VAN_WITHIN_THE_NEXT`.
+  `STREET_HALF_WIDTH`, the siting's day; its view test lives on in `_could_be_in_her_view()`),
+  `EventDef.is_met_on_her_street()` with `meet_on_her_street()` and its catalogue call,
+  `SitedGround.is_a_wall_by_cost()`, `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT` and
+  `VAN_WITHIN_THE_NEXT`; and the first build's bag in front of the units' draws
+  (`UnitDraw.rig_the_next_draw()`, `drew_from_the_front()`, `MarbleDraw.Rigged` and its rigged draw).
+- **The day 6 and day 7 suites hold the meeting**: reading the mark, then walking the day's longest
+  route until he is laid and on the way she was heading after that, he is laid out of the camera's
+  view, comes into her view, and (the man) is in the world once she is near, a check counted on
+  every walk.
 
 **What it measured** (each probe on the branch, against the runs after pull request 3 and on main
 in the design's folder):
@@ -61,43 +84,49 @@ in the design's folder):
   17.8ms on average over 511 attempts (18.0 on main); the worst frame of any walk 937ms (983 on
   main); no wait on undrawn ground.
 - `tests/probes/m180_crews_on_her_way.gd`: every crew a day drew is laid and met, 10 of 10.
-- `tests/probes/calm_pelican_day7_van_met.gd`, twelve walks each of mark, task, calm and home: the
-  rigged van drawn on 9 and the man on 11, **neither ever in her view**, each drawn 1,000 to 2,000px
-  from her and her walk coming no nearer than 416 to 1,477px; on main the van was seen on 9 of 12
-  and the man on 8. The board question named this cost ("met about as rarely as the far band
-  measured").
+- `tests/probes/calm_pelican_day7_van_met.gd`, twelve walks each of mark, task, calm and home (the
+  probe's walk follows shortest paths, not the route tree, so it turns off her branch where a
+  player may), each rule run on the same tree, and main beside them in a checkout of main on the
+  same machine, which matched review 1's figures:
+
+  | Where the rigged row is laid | man shouting: seen (laid) | van: seen (laid) |
+  |---|---|---|
+  | main: her street just out of view, after a route bag of two | 9 | 9 |
+  | (a) the first free location on her branch, out of view, within 900px | 10 (12) | 5 (11) |
+  | (b) the same, straight ahead of her only (built) | 8 (11) | 8 (9) |
+  | (b) first, then (a) in the same look | 9 (12) | 5 (11) |
+
+  Under (b) the man is laid 306 to 833px from her and the van 295 to 600px. Under (a) the van went
+  about 320px to her side, up a fork or round a turn of her branch she did not take: the view is
+  wider than it is tall, so the nearest place out of view is often beside her. (b) first with (a)
+  in the same look kept that, since the fallback fired on the first look after the mark, before
+  her line had moved on to a free place straight ahead. A rigged row in front of every unit's
+  draw, as this pull request first built it, was in her view on 0 of 12 walks for either (review 1).
 - `tests/probes/placement_rows.gd` prints what it printed before the change, line for line.
 
 **Departures from the written design, each open to Fable and the player.**
 
-1. **Day 6's man shouting and day 7's van are no beats.** The design's Q1 had two answers, both
-   laid by the siting; the player's answer is neither, and the build follows the orchestrator's
-   reading of it: the next unit to draw stands them. So the street-beat path the design kept (its
-   pick (b)) is deleted rather than kept, and so is the row flag it read.
+1. **Day 6's man shouting and day 7's van are laid by her walk, straight ahead of her, rather than
+   as either of the design's Q1 answers.** The design's pick (b), the street-beat path, is deleted;
+   what lays them now is the beats' own siting on her branch, narrowed to straight ahead.
 2. **The rigged bag holds the rows alone.** `MarbleBag.rig()` fills a rigged bag of `x` with marbles
-   taken from the bag being drawn from, but every unit draws from a bag of its own, so there is no
-   one bag to take them from; the bag in front holds the ensured rows and nothing else, and the
-   player's "the next draw (whenever that happens) will guarantee" is the next unit's. The other
-   way: a bag of `x` filled with empty marbles, which puts him within the next `x` marbles of
-   whichever units draw. The guarantee is no longer "within the next two events handed out on her
-   route" (olive-koala 2's "in the next three events"), which the answer replaces.
+   taken from the bag being drawn from; the rows a mark rigs are laid by her walk instead, so there
+   is no bag to take the rest from, and "the next draw" on her path is his. The guarantee is no
+   longer "within the next two events handed out on her route" (olive-koala 2's "in the next three
+   events"), which the answers replace.
 3. **Which units may differ by her path is wider than the design said.** Its acceptance read
    "`differ` equals `beside-a-beat`", but a unit is judged among the draws of the touching units
    drawn before it, so a difference can carry along touching units, and a beat moved off a unit
-   leaves what that unit drew round it as drawn (the design's 3.5). `WR` prints both: carried (none
-   measured) and in or beside a unit a beat stood in, moved off or not.
-   `tests/test_event_manager_units.gd` holds that no unit differs out of nowhere.
-4. **What the design did not name:** `UnitDraw.drew_from_the_front()` and the run-log line; the
-   siting treats a location no unit holds as drawn; `EventsAhead.rig_the_next_draw()` rigs nothing on
-   a walk whose units do not draw as she walks, so a scene recipe's day 6 or 7 has no second man or
-   van; the probe's walk is handed its unit draw, which it lacked, so a beat it laid was rigged in
-   units nothing drew; the day 6 and day 7 suites walk on toward ground that has not drawn where
-   their route ends first, since only a unit that draws can stand him; the events skill's own line
-   that every unit's draw is the same whatever her path is narrowed besides its
-   `plan-and-excitement.md` paragraph.
+   leaves what that unit drew round it as drawn (the design's 3.5). `WR` prints both: carried,
+   followed from a unit a beat stands or stood in or beside through touching units that differ, so
+   two touching units that differ do not excuse each other (none measured), and beside a beat.
+   `tests/test_event_manager_units.gd` holds that no unit differs out of nowhere, by the same walk.
+4. **What the design did not name:** the run-log line where a rigged row is laid; the siting treats
+   a location no unit holds as drawn; the probe's walk is handed its unit draw, which it lacked, so a
+   beat it laid was rigged in units nothing drew; the events skill's own line that every unit's draw
+   is the same whatever her path is narrowed besides its `plan-and-excitement.md` paragraph.
 
-**Open to Fable and the player.** Whether "the next unit to draw" is the reading the player meant,
-given that the rigged man and van are now drawn on most walks and seen on none of the probe's: the
-other ways are the next unit to draw ahead of her on the branch she walks (the beats' rule, whose
-far band the records sandy-magpie and olive-badger-2 measured at 1 and 0 walks of 12), or his old
-place on her street just out of view (seen on 8 and 9 of 12).
+**Not built, open to overturn.** (b) first with a *delayed* fallback to (a): straight ahead for a
+few looks, and the rest of her branch only once none of them found a place. It would lay the man
+and van on the walks where (b) lays nothing before the probe's walk ends (1 and 3 of 12), at the
+cost of a wait constant and of the side places that (a) showed she often misses; not measured.

@@ -265,10 +265,9 @@ list, so the ensured marble is one of the next `x` events handed out on her rout
 is met as it is handed out; a place's is handed to her walk, and the place is met once her walk
 finds it a site, which can be after an event behind it, or never; and a row sent ahead of her
 that has no room when its marble is drawn waits for a later turn that has some (below), so it too
-can be met after an event behind it, or never. **The units' draws have a bag in front of them too**
-(`UnitDraw.rig_the_next_draw()`, a `MarbleBag`'s queue holding nothing until a mark rigs it): a row
-rigged there is drawn first by the next unit to draw that can stand it, wherever and whenever that
-draw happens, and one a unit cannot stand stays in front for the next. These rigs stand:
+can be met after an event behind it, or never. **A mark can rig the next draw on her path too**
+(`EventManager.rig_the_next_draw()`): the row it rigs is the next thing her walk lays, on her path
+just ahead of her, the next look after the mark (`WalkSiting.lay_just_ahead()`). These rigs stand:
 
 - **On day one, two of the first three marbles drawn are dog walkers**
   (`EventDirector.DAY_ONE_DOG_WALKERS` within `DAY_ONE_DOG_WALKERS_WITHIN`): the dog-walker decision
@@ -283,20 +282,24 @@ draw happens, and one a unit cannot stand stays in front for the next. These rig
   three come in place of some of what the director sends, at its unchanged clock: pace kept over
   the rig's order.
 
-- **After day 6's mark, the next unit to draw stands a second man shouting**
-  (`ResistanceSteps.Step.rigs_the_next_draw`, `EventManager.rig_the_next_draw()`; [olive-koala](playtests/2026-10-03-olive-koala.md) 2: "the
+- **After day 6's mark, the next draw on her path stands a second man shouting**
+  (`ResistanceSteps.Step.rigs_the_next_draw`, `EventManager.rig_the_next_draw()`; [olive-koala](playtests/2026-09-27-olive-koala.md) 2: "the
   yeller is guaranteed to encounter a yeller in the next three events"; inbox #1520 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md):
   "the draw doesn't have to happen at the point where she touches the mark. the bag gets the biased
   bag in front (via the chained bags mechanism) and the next draw (whenever that happens) will
-  guarantee the shouting man"). Reading the mark puts a bag holding his row in front of the bags the
-  units draw from, and the next unit to draw that can stand him draws him first and lays him out
-  among its own rows, under every rule a unit's own man shouting is under: usually a unit at the edge
-  of the band round her that draws as she walks on, ahead of her or to either side. A unit draws
-  before anything of it is streamed in, so he is never seen to appear; whether she then meets him is
-  her walk's (`tests/test_day6_yeller_met.gd`; `tests/probes/calm_pelican_day7_van_met.gd` measures
-  how often a played walk sees him). On a walk whose units do not draw as she walks (a scene
-  recipe's) nothing is rigged. He is a look-alike the day's any-instance contact follows her onto,
-  besides the one her reading the mark spawns near it.
+  guarantee the shouting man"; and, of where that draw is taken, inbox #1549: "you would draw only
+  for the path and only just ahead"). Reading the mark puts him on the list of what her walk lays,
+  and the next look lays him on the first free location of his own ground on her branch within
+  `WalkSiting.JUST_AHEAD` (the stream radius, 900px) down it and straight from her, straight ahead
+  of her (ahead along her heading, within `WalkSiting.PATH_HALF_WIDTH`, five tiles, of her line of
+  travel) and with none of what he draws in the camera's view, under every rule a unit's own man
+  shouting is under. The ground there has drawn, so he takes a location a drawn unit left empty, and
+  he is in the world on the frame he is laid. Straight ahead, because the view is wider than it is
+  tall: without it, the nearest place out of view is often up a fork or round a turn of her branch
+  she does not take. So keeping on her way brings him into her view (`tests/test_day6_yeller_met.gd`);
+  `tests/probes/calm_pelican_day7_van_met.gd` measures how often a walk that turns off sees him. He is
+  a look-alike the day's any-instance contact follows her onto, besides the one her reading the mark
+  spawns near it.
 - **After day 11's mark, a second loudspeaker mast's marble is one of the next two**
   (`ResistanceSteps.MAST_WITHIN_THE_NEXT`), put on her route the same way on the sidewalk or square, besides
   the mast near the mark the task points at first (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "let it point to the closest one
@@ -304,13 +307,13 @@ draw happens, and one a unit cannot stand stays in front for the next. These rig
   It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot. Like every mast it
   is put down wherever a site's own rules, door clearance, the unused calm, spacing and a way out
   allow on her branch; it waits only when none does.
-- **After day 7's mark, the next unit to draw stands a second `delivery_van`**, rigged in front of
-  the units' draws as day 6's man shouting is (inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md): "each olive badger rigged bag should be 2 or 3";
-  inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md): "I guess that leaves only the van?"; inbox #1520 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md), whose
-  question asked of the man shouting and the van together), besides the van near the mark the task
-  rides, which stays the task. It stands under every rule a unit's own van is under: a van leaves no
-  line past it on the sidewalk it stands on, so no unit puts one on a sidewalk a route runs along,
-  and a unit that cannot stand it leaves it in front for the next (`tests/test_day7_van.gd`).
+- **After day 7's mark, the next draw on her path stands a second `delivery_van`**, laid just ahead
+  of her as day 6's man shouting is (inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md): "each olive badger rigged bag should be 2 or 3";
+  inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md): "I guess that leaves only the van?"; inbox #1520 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md) and inbox
+  #1549, whose questions asked of the man shouting and the van together), besides the van near the
+  mark the task rides, which stays the task. It stands under every rule a unit's own van is under: a
+  van leaves no line past it on the sidewalk it stands on, so it is never put on a sidewalk a route
+  runs along, and her path reaches the far sidewalk of her street for it (`tests/test_day7_van.gd`).
   `tests/probes/calm_pelican_day7_van_met.gd` measures how often a played walk sees it, and how
   often it stood on her line.
 - **Each of the return leg's patrols** — see "The return owes her patrols" below.
@@ -1469,10 +1472,10 @@ Each item quotes the code on this branch.
    draws first, so a unit's draw is the same whatever order the units are drawn in. **A beat her
    walk lays on her branch takes a location in the nearest unit on her way that has not drawn**
    (`WalkSiting`): that unit draws round it, its room starting without the location, and it and the
-   units touching it are judged among the beat (`UnitDraw`, `PlacementUnit.rigged()`); and the rows
-   a mark rigs in front of the units' draws are drawn by the next unit that can stand them
-   (`UnitDraw.rig_the_next_draw()`). So a unit a beat or a rigged row stands in or beside draws by
-   her path, on purpose, as can a unit touching one whose draw that changed (a unit is judged among
+   units touching it are judged among the beat (`UnitDraw`, `PlacementUnit.rigged()`); a row a mark
+   rigs (day 6's man shouting, day 7's van) is laid the same way just ahead of her, on a location a
+   drawn unit left empty (`WalkSiting.lay_just_ahead()`). So a unit a beat stands in or beside draws
+   by her path, on purpose, as can a unit touching one whose draw that changed (a unit is judged among
    the draws of the touching units drawn before it), and every other unit draws the same whatever
    her path (inbox #1521 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md): "beats are marbles, yes"). A place the resistance sends her to lies inside the ground
    already drawn round her or has the units along a way from home and round it drawn first
@@ -1522,9 +1525,6 @@ Each item quotes the code on this branch.
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
      owes her walk, each laid ahead of her (`WalkSiting.lay_ahead()`).
-   - **The bag in front of the units' draws** (`UnitDraw.rig_the_next_draw()`, a `MarbleBag` with no
-     ordinary set) holds the rows a mark rigs, day 6's man shouting and day 7's van, each drawn first
-     by the next unit that can stand it.
    - **The escape's bag** is one bag for the whole walk (`WholeWalkBag`), not a view's: every
      street of the walk draws one marble from it, empty marbles among them, by the same unit draw
      as a day's, and a marble a street refuses stays in it.
@@ -2592,8 +2592,8 @@ and the street she starts on, every route's first stretch, which the tree does n
 barricade the run left across a route's sidewalk or across her own street is not stood that day,
 and a spoiler whose body would cover a route tile stands on the nearest tile of its own cell of the
 park that covers none, since a used park is shut by the events placed in it (PLAYTEST-140 8).
-Nothing is dropped after planning, so the day is never illegal on the way. A walk's sitings (the dusk fire, day 7's
-route van, day 11's added mast and the rest) and an authored scene's row are asked the same rules.
+Nothing is dropped after planning, so the day is never illegal on the way. A walk's sitings (the dusk fire, day 6's
+second man shouting and day 7's second van, day 11's added mast and the rest) and an authored scene's row are asked the same rules.
 The escape's draw asks none of the route rules, since its walk grows no corridor
 (`RouteSource.corridor()`), and its walk is kept open by its own rule (`WalkOpenRule`).
 `tests/probes/walk_rows.gd` counts the route tiles home no longer reaches after the dawn and after

@@ -825,7 +825,8 @@ func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
 func rig_her_route(ids: Array[String], size: int) -> Array:
 	return ahead.rig_her_route(ids, size)
 
-## Rigs the next unit draws to stand the rows of `ids` for a task (`EventsAhead.rig_the_next_draw()`).
+## Rigs the next draw on her path to stand the rows of `ids` for a task, laid just ahead of her
+## (`EventsAhead.rig_the_next_draw()`).
 func rig_the_next_draw(ids: Array[String]) -> Array[String]:
 	return ahead.rig_the_next_draw(ids)
 

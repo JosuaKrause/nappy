@@ -1892,8 +1892,9 @@ Three consequences, all of them chosen:
   street, a junction box, an alley, a park or a square, each drawing its locations as she comes
   near it, `UnitDraw`) follow from the seed and the day number whatever her path, which is what
   makes a retry worth having in a game about learning a route; the exception is a unit a beat of her
-  walk or a row a mark rigged stands in or beside, which draws round it. What is sited from her walk (the
-  moments, day 3's fire, the poster crews' walls, a task's places) is sited from the walk she takes
+  walk stands in or beside, which draws round it. What is sited from her walk (the moments, day 3's
+  fire, the poster crews' walls, a task's places, day 6's second man shouting and day 7's second
+  van) is sited from the walk she takes
   then: *"if the player does something differently different things might happen. if the player
   were to do exactly the same everything would behave exactly the same. beats are marbles, yes"*
   (inbox #1521 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md)).

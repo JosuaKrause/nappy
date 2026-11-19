@@ -40,11 +40,10 @@ The review's tracks run beside minty-quail's, module by module (inbox #1268 in o
 module by module makes sense and can be parallelized"). The tracks are the review's worked-out
 detail, which the player approved.
 
-- **Placement** is built, its last step filed as the record polite-tapir-feathery-kestrel; nothing
-  else changed where events go while it was open (inbox #1185 in gentle-owl). Where it meets
-  minty-quail: the rows of minty-quail's `event-interface.md` that follow placement (its dawn, the
-  event manager's parts, the resistance and the scene recipes) wait on it no longer, and what is
-  left of minty-quail's `re-derived-cases.md` (the scene recipes' own ground scans) is open.
+- **Placement** is closed (record polite-tapir-feathery-kestrel). The rows of minty-quail's
+  `event-interface.md` that come after it (its dawn, the event manager's parts, the resistance and
+  the scene recipes) are open, and so is what is left of minty-quail's `re-derived-cases.md` (the
+  scene recipes' own ground scans).
 - **The standing layer breaks** (`standing-layer-breaks.md`): one pull request per group, each in
   its module's turn of minty-quail's order (within a module, its dead code, then its standing
   breaks, then its interface and field reads, then its suites). Dawn planning's reads stand in the
