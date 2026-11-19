@@ -114,10 +114,10 @@ rows=(
 # - TrafficSignals and TrafficLight sit under src/city/ and GroundShape at the top of src/; the
 #   crowd-traffic skill's description names TrafficSignals, and GroundShape.tiles_under() is the
 #   crowd's footprint rule.
-# - The four files named after palette.gd draw the cues: the mark and its color, the car's caret,
-#   the exclamation mark over the stroller, and the warning board that raises it. drawn_view.gd,
-#   in src/world/ since it draws nothing, is the box every off-screen redraw gate asks, which the
-#   cues skill's redraw-gate rules are about.
+# - The first four files named after palette.gd draw the cues: the mark and its color, the car's
+#   caret, the exclamation mark over the stroller, and the warning board that raises it. The fifth,
+#   drawn_view.gd, in src/world/ since it draws nothing, is the box every off-screen redraw gate
+#   asks, which the cues skill's redraw-gate rules are about.
 # - The six files named after tuning.gd hold the numbers the balance skill's description names
 #   outside Tuning: the catalogue's caps and weights, the role-by-view weights, the crowd's
 #   busyness, the baby's excitement, the city's decay multipliers and the field's falloff.
