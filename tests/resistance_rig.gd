@@ -369,21 +369,6 @@ static func _through_alley_tiles(map: CityMap) -> Array[Vector2i]:
 				break
 	return tiles
 
-## The two through-alley tiles closest together in the built test city — `[player_at, nearer,
-## other]`, `player_at` sitting exactly on `nearer` so it is always the globally nearest one to
-## itself, and `other` confirmed within `ResistanceDirector.NOTICE_RADIUS` of it. Empty if the city has no pair
-## that close, which the relocation test below skips on rather than asserting through.
-func _two_nearby_alleys() -> Array:
-	var alleys := _through_alleys()
-	for tile in alleys:
-		var at := _city.map.tile_to_world(tile)
-		for other in alleys:
-			if other == tile:
-				continue
-			if at.distance_to(_city.map.tile_to_world(other)) <= ResistanceDirector.NOTICE_RADIUS:
-				return [at, tile, other]
-	return []
-
 ## Whether `tile` is the one a mark stands on, worked out from the map alone: the second or the
 ## second-to-last tile of a through-alley along its long axis, or the walkable alley or courtyard
 ## tile beside a courtyard passage's mouth that is not itself a mouth.

@@ -12,7 +12,7 @@ const OWNED_FLAGS := ["--seed", "--day", "--spawn", "--parent", "--meters", "--w
 		"--title-card", "--start-escape", "--blackout", "--overview", "--day-length",
 		"--press", "--tap", "--ending", "--quit-when-still", "--skip", "--smooth-walk"]
 
-var data: Dictionary = {}
+var _data: Dictionary = {}
 ## The walk the scene was installed into (`install()`), handed in by the run flow.
 var _walk_spec: DaySpec = null
 var built: Dictionary = {}
@@ -50,7 +50,7 @@ var _last_positions: Dictionary = {}
 var _resistance: ResistanceDirector
 ## A draft run's record of the walk (`--recipe-draft`), or null.
 var _draft: SceneRecipeDraft
-## The recipe as its file has it, which a draft run writes its stretch into; `data` is the copy it
+## The recipe as its file has it, which a draft run writes its stretch into; `_data` is the copy it
 ## plays (`SceneRecipeDraft.base_of()`).
 var _written: Dictionary = {}
 
@@ -481,28 +481,28 @@ func configure(result: Dictionary, config: RunConfig, run: RunState,
 	_config = config
 	_run = run
 	_end_game = end_game
-	data = result.data
+	_data = result.data
 	_written = result.get("written", result.data)
 	built = result
 	if config.recipe_draft_path() != "":
 		_draft = SceneRecipeDraft.new()
 	manifest = result.manifest.duplicate(true)
 	_scripted = config.plays_the_recipe_scripted()
-	manifest["recipe"] = data.get("name", "")
-	manifest["recipe_sha256"] = JSON.stringify(data, "", true).sha256_text()
+	manifest["recipe"] = _data.get("name", "")
+	manifest["recipe_sha256"] = JSON.stringify(_data, "", true).sha256_text()
 	manifest["engine"] = Engine.get_version_info().string
 	manifest["physics_ticks_per_second"] = Engine.physics_ticks_per_second
 	manifest["playback_complete"] = false
 	manifest["observations"] = []
-	manifest["setup"] = data.get("setup", {}).duplicate(true)
+	manifest["setup"] = _data.get("setup", {}).duplicate(true)
 	manifest["anchors"] = {}
 	for label: String in result.anchors:
 		var at: Vector2 = result.anchors[label]
 		manifest.anchors[label] = [at.x, at.y]
-	_plan = WalkPlan.make(AutoScreenshot.parse_script(str(data.get("playback", {}).get("walk", ""))),
-			Engine.physics_ticks_per_second, bool(data.get("playback", {}).get("smooth", false)))
-	_observations = data.get("playback", {}).get("observations", [])
-	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
+	_plan = WalkPlan.make(AutoScreenshot.parse_script(str(_data.get("playback", {}).get("walk", ""))),
+			Engine.physics_ticks_per_second, bool(_data.get("playback", {}).get("smooth", false)))
+	_observations = _data.get("playback", {}).get("observations", [])
+	_duration_ticks = roundi(float(_data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
 	if config.screenshot_path() != "":
 		_capture_tick = ceili(maxf(config.rig_after(), 0.0) * Engine.physics_ticks_per_second
 				- 0.00001)
@@ -524,7 +524,7 @@ func position_of(value: Variant, errors: Array[String]) -> Vector2:
 
 func start_position() -> Vector2:
 	var errors: Array[String] = []
-	return position_of(data.get("setup", {}).get("player", {}).get("at", "doorstep"), errors)
+	return position_of(_data.get("setup", {}).get("player", {}).get("at", "doorstep"), errors)
 
 ## The map the recipe's city section is built to (`built.map`).
 ##
@@ -536,7 +536,7 @@ func city_map() -> CityMap:
 ##
 ## Overrides AuthoredScene.lessons_learned.
 func lessons_learned() -> bool:
-	return bool(data.get("setup", {}).get("tutorial_complete", false))
+	return bool(_data.get("setup", {}).get("tutorial_complete", false))
 
 ## Overrides AuthoredScene.plays_by_script.
 func plays_by_script() -> bool:
@@ -565,7 +565,7 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	_resistance = resistance
 	named = {"player": player}
 	var errors: Array[String] = []
-	var setup: Dictionary = data.get("setup", {})
+	var setup: Dictionary = _data.get("setup", {})
 	var map := city.map
 	for roof: Dictionary in setup.get("roof_fixtures", []):
 		var found := false
@@ -676,9 +676,9 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 ## is met, so a day-14 scene starts with it met. False, with the scene stopped, when the director
 ## refused it.
 func _start_the_task() -> bool:
-	if not data.get("setup", {}).has("task"):
+	if not _data.get("setup", {}).has("task"):
 		return true
-	var task: Dictionary = data.setup.task
+	var task: Dictionary = _data.setup.task
 	var errors: Array[String] = []
 	if not _resistance:
 		errors.append("setup.task: this boot has no resistance director")
@@ -726,7 +726,7 @@ var _task_from := Vector2.INF
 ## reaches them, a rider finishing, a deadline): the manifest's `task.expired_tick` records when,
 ## `task` names nothing from then on, and an observation that still asks about it fails on that.
 func _bind_task_names() -> void:
-	if not _resistance or not data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
+	if not _resistance or not _data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
 		return
 	var contact: ContactPoint = _resistance.contact()
 	if _resistance.read_mark():
@@ -834,7 +834,7 @@ func _select_structures(errors: Array[String]) -> void:
 	var region := _city.streets().region_plan()
 	if not region:
 		return
-	var setup: Dictionary = data.get("setup", {})
+	var setup: Dictionary = _data.get("setup", {})
 	var selected := RegionPlanner.RegionPlan.new()
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
@@ -886,7 +886,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 	var lined := StreetTrees.segment_keys_with_trees(map)
 	var emptied: Array[Vector2i] = []
 	var route := _city.streets().route_tree()
-	for entry: Dictionary in data.get("setup", {}).get("seals", []):
+	for entry: Dictionary in _data.get("setup", {}).get("seals", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := _city.map.street_network().by_key(key)
 		if not _segment_inside_extent(segment):
@@ -913,7 +913,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 
 func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		standing: Array[EventPlan] = []) -> Array[EventPlan]:
-	var setup: Dictionary = data.get("setup", {})
+	var setup: Dictionary = _data.get("setup", {})
 	var plans: Array[EventPlan] = []
 	var map := _city.map
 	# The scene's plan builder over the city's map, made here as the event manager makes the city's.
@@ -923,7 +923,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
-	if data.get("kind", "city") == "escape":
+	if _data.get("kind", "city") == "escape":
 		finale = FinalePlanner.route(map)
 		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
 		# seal empties, the soft seals cleared); what they place is not the scene's.
@@ -1098,9 +1098,9 @@ func begin() -> void:
 	# reset its smoothed screen centre once the player's camera owns the viewport, which is true
 	# here. Settle that state before the excluded moving lead-in begins so a movie never records the
 	# camera travelling from its boot position toward an already-moving actor.
-	if data.get("playback", {}).get("settled_camera", false):
+	if _data.get("playback", {}).get("settled_camera", false):
 		_settle_starting_camera()
-	var playback: Dictionary = data.get("playback", {})
+	var playback: Dictionary = _data.get("playback", {})
 	var camera: Dictionary = playback.get("camera", {})
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
 	if camera.get("fixed", false):
@@ -1633,8 +1633,8 @@ func _write_the_draft() -> int:
 	var problems: Array[String] = []
 	var pinned: Array[Vector2] = []
 	var errors: Array[String] = []
-	for field: String in data.get("setup", {}).get("task", {}):
-		pinned.append(position_of(data.setup.task[field], errors))
+	for field: String in _data.get("setup", {}).get("task", {}):
+		pinned.append(position_of(_data.setup.task[field], errors))
 	var drafted := _draft.compose(_written, _run, _city, _simulation.crowd(), start_position(),
 			pinned, problems)
 	for problem in problems:

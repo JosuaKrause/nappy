@@ -102,14 +102,6 @@ enum StreetKind {
 	PEDESTRIAN, ## A retail precinct. No carriageway at all: loud with people, and safe.
 }
 
-enum District {
-	RESIDENTIAL,
-	PARK,
-	COMMERCIAL,
-	INDUSTRIAL,
-	CIVIC,
-}
-
 ## What a block *is* on a given day, as opposed to how it is laid out.
 ##
 ## The street lattice and the block boundaries are fixed for the run; this is not. Each

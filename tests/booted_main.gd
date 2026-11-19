@@ -233,6 +233,13 @@ static func save_symbol_struck(indicator: SaveIndicator) -> bool:
 	var region := _save_symbol_region(indicator)
 	return region.has_area() and region == Rect2(AtlasTable.baked().region_rect(&"ui/save_unavailable"))
 
+## Whether the save symbol shows at all, fully or fading: its `Icon` draws at an alpha above zero,
+## which the symbol sets from its timeline on every change and every frame it is up. A symbol with
+## no `Icon` shows nothing.
+static func save_symbol_shows(indicator: SaveIndicator) -> bool:
+	var icon := indicator.find_child("Icon", true, false) as TextureRect
+	return icon != null and icon.modulate.a > 0.0
+
 ## Whether the save symbol is drawing the plain picture (`ui/save`). **Missing the `Icon` is not
 ## plain**: a symbol with no icon fails this as it fails `save_symbol_struck()`, so a negative check
 ## on the struck picture is written as this and cannot pass on a symbol that draws nothing.

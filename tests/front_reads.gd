@@ -128,10 +128,6 @@ func stood() -> Array[Dictionary]:
 					"foot": entry.at})
 	return found
 
-## How many pictures the front shows.
-func picture_count() -> int:
-	return _shown.size()
-
 ## The window picture drawn in wall cell (`col`, `row`), or `&""` where none is.
 func window_at(col: int, row: int) -> StringName:
 	for entry in painted():
@@ -146,15 +142,6 @@ func window_cells() -> Array[Vector2i]:
 		if window_pictures().has(entry.picture):
 			found.append(Vector2i(entry.col, entry.row))
 	return found
-
-## How many wall cells show a lit window.
-func lit_windows() -> int:
-	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
-	var count := 0
-	for entry in painted():
-		if lit.has(entry.picture):
-			count += 1
-	return count
 
 ## The window picture of every wall cell the front draws one in, row by row and column by column
 ## within a row: the style and which cells are lit, in one list.

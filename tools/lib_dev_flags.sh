@@ -205,7 +205,7 @@ _tuning_day_length_seconds() {
 # Whole seconds tools/shot.sh's own external kill (or a rig-flagged tools/run.sh's) waits before
 # deciding the in-game timer did not fire and killing the process from outside: the same
 # script-length-plus-margin-under-a-ceiling formula `DevFlags.rig_quit_seconds_from()` computes,
-# plus its own RIG_KILL_GRACE_SECONDS. Args are the dev flags being forwarded to the game --
+# plus its own kill_grace. Args are the dev flags being forwarded to the game --
 # an --after value takes precedence over --day-length, the same order the GDScript side reads.
 rig_kill_after_seconds() {
     local margin ceiling grace day_length after=""
@@ -240,8 +240,8 @@ rig_kill_after_seconds() {
 # tools/record.sh and tools/trailer.sh launch with), given the dev flags being forwarded. Under the
 # writer the game counts its own deadline -- the same script-plus-margin-under-a-ceiling one -- in
 # game seconds rather than wall seconds (`RigLock._process()`), so this stretches that deadline by
-# `movie_slowdown` (`DevFlags.RIG_MOVIE_SLOWDOWN`, the wall seconds a recorded game second may
-# take) and adds the same kill grace.
+# `movie_slowdown` (the wall seconds a recorded game second may take, from the
+# `RIG_QUIT_SECONDS` block) and adds the same kill grace.
 rig_kill_after_movie_seconds() {
     local margin ceiling grace slowdown day_length after=""
     margin="$(_rig_quit_constant margin)"

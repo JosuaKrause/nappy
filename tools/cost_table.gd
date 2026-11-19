@@ -56,8 +56,6 @@ const TITLE_DISTANCE_AWAKE := "Walking at a fixed distance — awake"
 const TITLE_DISTANCE_ASLEEP := "Walking at a fixed distance — asleep"
 const TITLE_PASS_AWAKE := "The pass — awake"
 const TITLE_PASS_ASLEEP := "The pass — asleep"
-const TABLE_TITLES := [TITLE_GEOMETRY, TITLE_DISTANCE_AWAKE, TITLE_DISTANCE_ASLEEP,
-		TITLE_PASS_AWAKE, TITLE_PASS_ASLEEP]
 
 const ID_WIDTH := 20
 

@@ -101,10 +101,18 @@ extends RefCounted
 ## END_RIG_FLAGS
 ##
 ## The numbers `rig_quit_seconds_from()` below turns into a rig's own deadline, read by the same
-## shell helper (`tools/lib_dev_flags.sh`) so an external kill (`RIG_KILL_GRACE_SECONDS` past the
-## deadline) can never compute a shorter wait than the deadline the game itself is timing against.
-## See `rig_quit_seconds_from()`'s own doc for what each name means, and `RIG_MOVIE_SLOWDOWN` for
-## `movie_slowdown`.
+## shell helper (`tools/lib_dev_flags.sh`) so an external kill (`kill_grace` past the deadline) can
+## never compute a shorter wait than the deadline the game itself is timing against. See
+## `rig_quit_seconds_from()`'s own doc for what `margin` and `ceiling` mean. `kill_grace` is how
+## long `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) external kill waits past the deadline
+## it computes with the same formula, before it decides the in-game timer did not fire: generous
+## enough that a slow atlas rebuild or a slow machine's boot never races it. `movie_slowdown` is how
+## many wall-clock seconds a recorded game second may take before `tools/record.sh` and
+## `tools/trailer.sh` kill Godot from outside. Under the movie writer the game counts its own
+## deadline in game seconds (`RigLock._process()`), so a wall-clock limit is only the outside backstop
+## for a process that stopped running; this factor stretches the game-second deadline into one,
+## generous against the slowest measured recording (a frame-by-frame PNG at 60fps records a game
+## second in about four).
 ##
 ## RIG_QUIT_SECONDS
 ##   margin 15.0
@@ -901,17 +909,6 @@ static func _is_rig_from_args(args: PackedStringArray) -> bool:
 ## out of the `RIG_QUIT_SECONDS` marker block above.
 const RIG_QUIT_MARGIN_SECONDS := 15.0
 const RIG_QUIT_CEILING_SECONDS := 240.0
-## How long `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) external kill waits past the
-## deadline it computes with the same formula, before it decides the in-game timer did not fire —
-## generous enough that a slow atlas rebuild or a slow machine's boot never races it.
-const RIG_KILL_GRACE_SECONDS := 15.0
-## How many wall-clock seconds a recorded game second may take before `tools/record.sh` and
-## `tools/trailer.sh` kill Godot from outside. Under the movie writer the game counts its own
-## deadline in game seconds (`RigLock._process()`), so a wall-clock limit is only the outside backstop
-## for a process that stopped running; this factor stretches the game-second deadline into one,
-## generous against the slowest measured recording (a frame-by-frame PNG at 60fps records a game
-## second in about four).
-const RIG_MOVIE_SLOWDOWN := 10.0
 
 ## Pure: seconds until a rig quits itself. `after` is `--after`'s own value (a screenshot or
 ## timed-trace rig's wait, the common case) or `-1.0` for "not given"; `day_length` is the longest

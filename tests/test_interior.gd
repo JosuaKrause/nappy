@@ -1359,34 +1359,6 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 	events.free()
 	scene.free()
 
-## Walking distance in px from every walkable cell to the nearest of `targets`, eight-connected,
-## with a diagonal step costing `TILE * sqrt(2)` rather than one step — the flights are runs of
-## diagonal cells, so counting them as unit steps understates the walk by forty percent.
-func _walk_distance_to_nearest(f: InteriorMapPlan, targets: Array[Vector2i]) -> Dictionary:
-	var best := {}
-	var queue: Array[Vector2i] = []
-	for tile in targets:
-		best[tile] = 0.0
-		queue.append(tile)
-	var head := 0
-	while head < queue.size():
-		var here: Vector2i = queue[head]
-		head += 1
-		var cost: float = best[here]
-		for dx in range(-1, 2):
-			for dy in range(-1, 2):
-				if dx == 0 and dy == 0:
-					continue
-				var next := here + Vector2i(dx, dy)
-				if not f.is_walkable(next):
-					continue
-				var step := InteriorScene.TILE * (sqrt(2.0) if dx != 0 and dy != 0 else 1.0)
-				if best.has(next) and float(best[next]) <= cost + step:
-					continue
-				best[next] = cost + step
-				queue.append(next)
-	return best
-
 ## *"Maybe some mice. ... Maybe some steam in the basement etc."* The mouse and every vent stand on
 ## the basement's own corridor, which has no branches — so they are things she walks past rather
 ## than things she may happen not to find.
