@@ -14,6 +14,14 @@ barrier who charges her when she walks past his post instead of luring him away)
 round buildings, as the day-13 task guard's pursuit does through `ChaseWay` (`src/world/chase_way.gd`),
 so a straight walker who turns the next corner before he reaches her is still caught.
 
+**What it overturns, with the player's agreement.** The record `2026-10-18-minty-quail-28` (the walk
+field and the task guard's way) took the plan's pick F3, open to overturn: only the day-13 task guard
+paths round buildings, and every other pursuer still chases straight. Asked for: only the task guard
+paths round buildings · overturned to: the posted roadblock guard paths round buildings too, on
+2026-11-18, because the board question corner-turner offered it as the orchestrator's pick and the
+player answered "sure, your pick" (inbox #1534 in velvet-alpaca). Every other pursuer still chases
+straight.
+
 **Why it matters.** Luring the guard away is the way past a roadblock: "it should be in a way that
 luring away the guard is enough" (inbox #771 in minty-lemur). The entry azure-squirrel (record
 `2026-11-17-azure-squirrel`) found that he catches a straight walker about 400px past his band (he

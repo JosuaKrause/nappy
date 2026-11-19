@@ -2,7 +2,7 @@
 
 The posted roadblock guard's pursuit follows her round buildings, as the day-13 task guard's does
 (`ChaseWay`), so a walker who goes straight past his post and turns the next corner before he reaches
-her is caught as a straight walker is (the entry's README has the player's answer and the reading).
+her is caught as a straight walker is (the entry's README has the player's answer and the reading). It overturns, for this one pursuer and with the player's agreement, the record `2026-10-18-minty-quail-28`'s pick that only the task guard paths round buildings; every other pursuer still chases straight.
 
 What a fix owes:
 
