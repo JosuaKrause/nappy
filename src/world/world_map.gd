@@ -435,10 +435,6 @@ func navigator() -> Navigator:
 		_navigator = weakref(held)
 	return held
 
-## A way from `from` to `to` round whatever stands between, for `mover` (`Navigator.path()`).
-func path(from: Vector2, to: Vector2, mover: Mover) -> PackedVector2Array:
-	return navigator().path(from, to, mover)
-
 ## The part of the step `delta` from `from` that `mover` takes (`Navigator.step()`).
 func step(from: Vector2, delta: Vector2, mover: Mover) -> Vector2:
 	return navigator().step(from, delta, mover)

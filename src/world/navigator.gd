@@ -41,11 +41,7 @@ func _init(map: WorldMap = null) -> void:
 func map() -> WorldMap:
 	return _map
 
-## Whether `mover` may stand on `tile` (`WorldMap.passable()`).
-func passable(tile: Vector2i, mover: Mover) -> bool:
-	return _map.passable(tile, mover)
-
-## Whether `mover` may stand at the world point `at`.
+## Whether `mover` may stand at the world point `at` (`WorldMap.passable()` of its tile).
 func passable_at(at: Vector2, mover: Mover) -> bool:
 	return _map.passable(_map.world_to_tile(at), mover)
 
