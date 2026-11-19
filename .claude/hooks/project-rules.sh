@@ -86,7 +86,7 @@ rows=(
 	"src/events/** => events"
 	"src/city/** src/routes/** => city"
 	"src/crowd/** src/city/traffic_signals.gd src/city/traffic_light.gd src/ground_shape.gd => crowd-traffic"
-	"src/ui/** sprites.gd palette.gd src/events/views/event_look.gd src/crowd/crowd_agent.gd src/player/stroller.gd src/events/warning_board.gd => cues"
+	"src/ui/** sprites.gd palette.gd src/events/views/event_look.gd src/crowd/crowd_agent.gd src/player/stroller.gd src/events/warning_board.gd src/world/drawn_view.gd => cues"
 	"src/telemetry/** src/autoload/telemetry.gd => telemetry"
 	"src/autoload/tuning.gd src/events/event_catalogue.gd src/events/event_scheduler.gd src/crowd/crowd_lanes.gd src/player/baby.gd src/city/city.gd src/field.gd src/events/dawn_phases/ruled_roadblock_ground.gd src/events/ruled_location_ground.gd src/events/dawn_phases/dawn_masts.gd src/events/dawn_phases/dawn_spoilers.gd src/events/placement_density.gd src/events/unit_fills.gd => balance"
 	"tools/*.py pyproject.toml uv.lock .python-version => python-tooling"
@@ -115,7 +115,9 @@ rows=(
 #   crowd-traffic skill's description names TrafficSignals, and GroundShape.tiles_under() is the
 #   crowd's footprint rule.
 # - The four files named after palette.gd draw the cues: the mark and its color, the car's caret,
-#   the exclamation mark over the stroller, and the warning board that raises it.
+#   the exclamation mark over the stroller, and the warning board that raises it. drawn_view.gd,
+#   in src/world/ since it draws nothing, is the box every off-screen redraw gate asks, which the
+#   cues skill's redraw-gate rules are about.
 # - The six files named after tuning.gd hold the numbers the balance skill's description names
 #   outside Tuning: the catalogue's caps and weights, the role-by-view weights, the crowd's
 #   busyness, the baby's excitement, the city's decay multipliers and the field's falloff.
