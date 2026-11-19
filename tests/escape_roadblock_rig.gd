@@ -426,7 +426,8 @@ const REACTION := 0.3
 ## `Tuning.ACCELERATION` as hers does, until he charges; `REACTION` later turned and run straight
 ## back, until every charge has given up; then standing until each guard who charged has left his
 ## post for good (at most 30s); then `walk()` from there to `to`. Answers `{"lure": …, "after": …}`, each in
-## `walk()`'s shape; `after` is empty when the lure itself was caught.
+## `walk()`'s shape, the lure's with `nearest` as well, the closest any charging guard came to her
+## in px; `after` is empty when the lure itself was caught.
 static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		to: Vector2, meter: Meter) -> Dictionary:
 	var made := build(t, map, group)
@@ -456,10 +457,12 @@ static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 			frames += 1
 	frames = 0
 	var since := 0.0
+	var nearest := INF
 	while not caught and _charging(instances) > 0 and frames < int(20.0 / STEP):
 		for instance in instances:
 			if instance.is_chasing():
 				lured[instance] = true
+				nearest = minf(nearest, instance.global_position.distance_to(her))
 		var wanted := 0.0 if since < REACTION else -Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
@@ -483,7 +486,8 @@ static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		meter.feed(instances, her, false, true)
 		frames += 1
 	var luring := {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value,
-			"caught": caught, "charged": lured.size(), "strongest": 0.0, "at": her}
+			"caught": caught, "charged": lured.size(), "strongest": 0.0, "at": her,
+			"nearest": nearest}
 	if caught:
 		stage.close()
 		return {"lure": luring, "after": {}}

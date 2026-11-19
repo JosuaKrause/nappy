@@ -934,7 +934,7 @@ static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted:
 ## band, and once he charges turns the first corner into the cross street, hugging the building's
 ## face, and on round it (`RoadblockRig.walk()`). A chase straight at her slides along the face she
 ## is round, keeping only the sliver of its step that runs along it, and loses her; his way round
-## (`PursuitSpec.paths_round_buildings`, `ChaseWay`) brings him round the corner after her. With the
+## (`PursuitSpec.walks_round_buildings()`, `ChaseWay`) brings him round the corner after her. With the
 ## band 112, 144 and 176px short of the cross street, all inside the 400px or so his charge takes to
 ## reach a straight walker.
 func _test_a_posted_guard_follows_her_round_the_corner(t: TestRunner) -> void:

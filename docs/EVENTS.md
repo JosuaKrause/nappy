@@ -2339,11 +2339,11 @@ Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the res
 on her the moment she has done a task, never at dawn — every task but the roadblock, which keeps a
 guard waiting at it, and the neighbor, which has neither (`ResistanceDirector._sets_a_trap_on_her()`).
 The roadblock's waiting guard comes after her the moment she has done its task, from wherever he
-stands, and he is the one pursuer who walks round buildings toward her: where no clear line runs to
-her he follows the walk to her over the ground she can walk, refreshed as she moves, rather than
-the straight line every other chase slides along walls
-(`EventInstance.notice_her_at()`, `_chase_way`), since he may start a city away. His notice,
-stand-off and lunge are every pursuer's.
+stands, and he walks round buildings toward her: where no clear line runs to her he follows the
+walk to her over the ground she can walk, refreshed as she moves, rather than the straight line
+every other chase slides along walls (`EventInstance.notice_her_at()`, `ChaseWay`), since he may
+start a city away. The roadblock's posted guard is the one other pursuer who does ("The escape —
+the walk filled before she sets off"). His notice, stand-off and lunge are every pursuer's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
@@ -2465,14 +2465,21 @@ obstacle survivable")* Four things make that true:
   inside his radius once his 2.0s warning has run.
 
 So walking straight past a posted band meets his charge and is caught along his street, in both
-directions: the warning's 2.0s runs while she walks on, so he charges with her 106-123px ahead, and
-he closes the gap at 38px/s more than her walk, so he reaches her some 400px past the band (the
-record azure-squirrel has the walks it was measured on). Where his street ends sooner, nothing
-checks a walk that turns the next corner first: his chase runs straight at her, and the rig holds her
-at the wall instead of turning her. Walking in until his hand goes up, standing
+directions: the warning's 2.0s runs while she walks on, so he charges with her 106-123px ahead, sets
+off round the end of his own band rather than sliding along it, and closes the gap at 38px/s more
+than her walk, so he reaches her some 260px past the band (`tests/probes/escape_roadblock_cost.gd`
+prints where it catches each walk). **Turning the next corner gets her nothing**: once he is after
+her, where no clear line runs to her he walks the way to her round buildings, as day 13's task guard
+does (`PursuitSpec.walks_round_buildings()`, `ChaseWay`), so a walker who turns the corner past his
+post where his street ends sooner is caught round it *(inbox #1534 in velvet-alpaca: asked whether
+she may get away by turning the next corner, "sure, your pick", the pick being that he follows
+her)*. His notice, warning, speed and give-up are the row's; only the way he heads changes. Walking
+in until his hand goes up, standing
 until he charges, running back until he gives up and then walking past costs what the run costs
 and nothing more, awake or asleep. `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) walks exactly that on every roadblock street of two seeds' plans,
-in both directions (it requires every straight walk past a posted guard caught), and on seed 4216201080 booted from the building through `main.tscn`; it walks
+in both directions (it requires every straight walk past a posted guard caught, the walk turning the
+first corner it comes to once he charges), walks the turn on a hand-drawn street that ends at a
+corner, round a building a chase straight at her loses her behind, and on seed 4216201080 booted from the building through `main.tscn`; it walks
 her in at every band from all round it and requires his warning to start in her view and above the
 street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over more seeds, and
 `tests/probes/escape_roadblock_spacing.gd` how many bands a plan stands and how near the nearest

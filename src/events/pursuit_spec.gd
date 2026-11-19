@@ -126,6 +126,12 @@ func is_drawn_over_the_street() -> bool:
 func walks_round_buildings() -> bool:
 	return paths_round_buildings
 
+## Has the man walk round buildings toward her once he is after her (`walks_round_buildings()`).
+## Called by the catalogue as it builds the row. Exported, so the hunting copy
+## `EventDef.at_heat()` duplicates carries it.
+func follow_her_round_buildings() -> void:
+	paths_round_buildings = true
+
 ## A pursuer at `speed` that notices her first, the shape most rows start from.
 static func at(chase_speed: float) -> PursuitSpec:
 	var spec := PursuitSpec.new()

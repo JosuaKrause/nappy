@@ -1110,9 +1110,10 @@ telegraphs hands her more ground in two seconds than the entire chase can take b
 owed by an ordinary pursuer is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
-**And it stops at walls.** A chase is a straight line at whatever is chasing her (all but day 13's
-task guard, set on her from wherever he stands, who walks the way to her round buildings where no
-clear line runs to her: `docs/EVENTS.md`, the resistance's trap), and every step of it goes through
+**And it stops at walls.** A chase is a straight line at whatever is chasing her (all but two, who
+walk the way to her round buildings where no clear line runs to her: day 13's task guard, set on her
+from wherever he stands, `docs/EVENTS.md`, the resistance's trap; and the roadblock's posted guard,
+so turning a corner past his post is no way past him), and every step of it goes through
 the one navigator every mover moves by (`Navigator.step()`): it is refused where it would enter
 ground a figure on foot may not stand on — a building, a precinct's post, a closure, a soft seal or
 a stationary body (`CityMap.passable()`) — sliding along whichever single axis is still open when
@@ -1811,8 +1812,10 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
-charge, which catches a straight walker along his street, some 400px past the band. A walk that turns
-the next corner first, where his street ends sooner, is checked by nothing yet.
+charge, which catches a straight walker along his street, some 260px past the band, and a walker who
+turns the next corner first is caught round it: once he is after her he walks the way to her round
+buildings where no clear line runs to her *(inbox #1534 in velvet-alpaca: "sure, your pick", the
+pick being that he follows her round the corner)*.
 Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
 (`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk
