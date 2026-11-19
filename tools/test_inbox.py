@@ -709,6 +709,15 @@ class AppendTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual([args[6:9] for args, _ in fake.writes], [["issue", "close", "5"]])
 
+    def test_close_requires_nothing_of_an_agents_only_append_and_still_a_quote_beside_it(self) -> None:
+        note = inbox.note_from_api(issue(5, author=BOT, labels=("inbox", "captured")))
+        text = {"p.md": inbox.normalize("> " + BODY)}
+        agents = inbox.format_blocks([("context", "asked"), ("reading", "read as a bag")])
+        only = inbox.Comment(BOT, "t1", f"{inbox.APPEND_MARKER}\n\n{agents}")
+        self.assertEqual(inbox.unfiled_words(note, [only], text), [])
+        beside = inbox.Comment(BOT, "t2", marked(MORE))
+        self.assertTrue(inbox.unfiled_words(note, [only, beside], text))
+
     def test_the_marker_is_not_part_of_the_words_and_the_question_need_not_be_copied(self) -> None:
         note = inbox.note_from_api(issue(5, author=BOT, labels=("inbox", "captured")))
         text = {"p.md": inbox.normalize("> " + BODY + "\n> " + MORE)}

@@ -20,7 +20,8 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
                              lone quote is marked like the rest
     append N                 adds the player's further words on a captured note's topic to note N as a
                              comment marked so the tool tells it from a question; the same blocks,
-                             or the agent's only (a reading or a note alone: no words of the player's)
+                             or the agent's only (a reading, a note, a context: no words of the
+                             player's)
     correct N --line-file F  posts on note N a comment marking the line in F as not the player's
                              (refused unless it is one whole line of N's body or appended words),
                              with --context-file, --reading-file or --note-file blocks
@@ -64,11 +65,12 @@ or one the capture script opened as one of `CAPTURE_BOTS` with its tag, the labe
 repository is public and the label alone admits anybody, so every other issue is skipped here and
 fails `tools/ci_transcription.py`, the CI check that reads a filing pull request's `Filed from #N`
 lines; these constants and that check's must agree, and `tools/test_inbox.py` compares them
-whenever the check is present. A comment counts as the player's words only when the player wrote
-it, or when it is words `append` added to a captured note: a comment by a capture identity whose
-first line is `APPEND_MARKER`, which only `append` writes and which counts on a note opened by a
-capture identity alone (a note the player wrote gets the player's own comments). The marker is an
-HTML comment, so it does not show on the issue; it is not part of the words.
+whenever the check is present. A comment holds the player's words only when the player wrote
+it, or in the quote blocks of an `append` comment on a captured note: a comment by a capture identity
+whose first line is `APPEND_MARKER`, which only `append` writes and which counts on a note opened by
+a capture identity alone (a note the player wrote gets the player's own comments). The rest of an
+`append` comment is the agent's. The marker is an HTML comment, so it does not show on the issue; it
+is not part of the words.
 
 **A band is a label** (dotted-quail, statement 2): `queue_now`, `queue_next`, `queue_later` or
 `queue_parked` (and `queue_bug`, above `now`), read by that exact pattern, so a label outside it is
@@ -108,8 +110,8 @@ PLAYER = "JosuaKrause"
 # body, so the body stays the player's words alone. `tools/ci_transcription.py` holds the same.
 CAPTURE_BOTS = ("nappy-claude-orchestrator[bot]", "nappy-codex-coder[bot]")
 CAPTURE_LABEL = "captured"
-# The first line of a comment `append` writes: the player's further words on a captured note, told
-# from an `ask` question. `tools/ci_transcription.py` holds the same.
+# The first line of a comment `append` writes on a captured note (the player's further words, the
+# agent's blocks, or both), told from an `ask` question. `tools/ci_transcription.py` holds the same.
 APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/inbox.py append -->"
 # Separates what the words answered (above it) from the words (below it) in one append comment, so a
 # failed post can never leave the context alone on the issue or duplicate it on a retry.
@@ -271,12 +273,6 @@ def appended_parts(note: Note, comment: Comment) -> tuple[str, str] | None:
     if not is_captured(note) or comment.author not in CAPTURE_BOTS:
         return None
     return split_append(comment.body)
-
-
-def appended_words(note: Note, comment: Comment) -> str | None:
-    """The player's words `append` added in `comment` on `note`, markers removed, or None when it is not one."""
-    parts = appended_parts(note, comment)
-    return parts[1] if parts is not None else None
 
 
 Block = tuple[str, str]  # (kind, text); kind is a key of MARKS
