@@ -77,6 +77,7 @@ func run(t: TestRunner) -> void:
 	await _test_a_real_touch_on_the_continue_button_reaches_the_summary(t)
 	await _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t)
 	await _test_a_continue_press_flashes_before_it_is_acted_on(t)
+	await _test_a_double_tap_continues_the_summary_once(t)
 	t.get_tree().paused = was_paused
 
 ## A fresh run, started on the seed every test here reads it on.
@@ -1297,6 +1298,27 @@ func _test_a_continue_press_flashes_before_it_is_acted_on(t: TestRunner) -> void
 			"and only clears once the second frame boundary has passed")
 	t.check(carried_on[0] == 1, "which is also when the day actually starts")
 
+	t.get_tree().paused = false
+	summary.free()
+
+## **A fumbled double tap continues the summary once.** A tap's continue is held two frames so the
+## press is seen (`_test_a_continue_press_flashes_before_it_is_acted_on`), and a second tap can land
+## inside them, before the first has continued; it is the same press, so the day the summary carries
+## on into is started once, not twice. A click on a laptop goes through the same acknowledgement.
+func _test_a_double_tap_continues_the_summary_once(t: TestRunner) -> void:
+	var summary := _summary(t, true)
+	_show_day_over(summary, GameEnums.DayResult.WON)
+	await UI.frames(t)
+	var carried_on := [0]
+	summary.continued.connect(func(_raised_in: int) -> void: carried_on[0] += 1)
+	UI.push(summary, UI.touch_at(Vector2(20.0, 20.0), true))
+	UI.push(summary, UI.touch_at(Vector2(20.0, 20.0), false))
+	await UI.frames(t, 1)
+	t.check(carried_on[0] == 0, "the first tap is still being acknowledged when the second lands")
+	UI.push(summary, UI.touch_at(Vector2(24.0, 22.0), true))
+	await UI.frames(t, 4)
+	t.check(carried_on[0] == 1,
+			"and the two taps continue the summary once (%d continues)" % carried_on[0])
 	t.get_tree().paused = false
 	summary.free()
 
