@@ -374,8 +374,13 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t: TestRunner) -> void:
 		await t.get_tree().process_frame
 	t.check(_glow_has_arrived(halo),
 			"the glow has finished easing — the exact state a rim used to stop re-tracing in")
-	t.check(halo.is_showing(),
-			"and it is still drawn, which is what makes `_process()` ask for another trace anyway")
+	var redrawn := [0]
+	halo.draw.connect(func() -> void: redrawn[0] += 1)
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.check(redrawn[0] > 0,
+			"and it is still drawn afresh (%d draws over two frames), which is what makes `_process()` ask "
+			% redrawn[0] + "for another trace anyway")
 
 	# And the silhouette genuinely changes underneath it: the same car, one sector on.
 	look.view = 4

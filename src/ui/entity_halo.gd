@@ -184,7 +184,7 @@ func _has_settled() -> bool:
 ## nothing below it, and `_process()` asks for a fresh trace on every frame it is true, whether or
 ## not either channel is still easing. Nothing about a steady glow says the body under it is
 ## steady — see `_process()`.
-func is_showing() -> bool:
+func _is_showing() -> bool:
 	return _alpha > 0.0
 
 ## Eases the drawn alpha and colour toward their targets, one shared per-frame step size driving
@@ -232,7 +232,7 @@ func _process(delta: float) -> void:
 		set_instance_shader_parameter("halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
 	# The frame a fade finally reaches zero still redraws once, which is what clears the last rim
 	# off the screen; after that a dark halo costs nothing at all.
-	if not settled or snapped or is_showing():
+	if not settled or snapped or _is_showing():
 		queue_redraw()
 
 ## The ring this rim is traced at: `HALO_OFFSETS` translations `HALO_MARGIN` out, all riding
@@ -256,7 +256,7 @@ static func trace_offsets(bob: float) -> Array[Vector2]:
 ## has to be handed the offset rather than left to discover it. See `Sprites.BASE_TRANSFORM_META` for
 ## what it looked like when it was not: twelve copies stacked on the body and no ring.
 func _on_draw() -> void:
-	if not is_showing():
+	if not _is_showing():
 		return
 	var bob: float = _bob.call()
 	for offset in trace_offsets(bob):

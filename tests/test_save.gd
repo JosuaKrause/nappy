@@ -1098,9 +1098,9 @@ func _test_a_deletion_raises_and_settles_the_symbol(t: TestRunner) -> void:
 		var timeline := SaveIndicator.Showing.new()
 		var indicator := SaveIndicator.new(timeline)
 		t.add_child(indicator)
-		t.check(not indicator.is_showing(), "nothing shows before a deletion")
+		t.check(not Boot.save_symbol_shows(indicator), "nothing shows before a deletion")
 		t.check(_save.clear() == GameSave.Result.CONFIRMED, "the deletion is kept")
-		t.check(indicator.is_showing() and timeline.pending == 0,
+		t.check(Boot.save_symbol_shows(indicator) and timeline.pending == 0,
 				"the symbol is up and the deletion is already answered")
 		t.check(Boot.save_symbol_plain(indicator), "plain, since it was kept")
 		indicator.free()
@@ -1155,14 +1155,14 @@ func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t: TestRunner) -> v
 		var indicator := SaveIndicator.new()
 		t.add_child(indicator)
 		run.calendar().finish_day(GameEnums.DayResult.WON)
-		t.check(not indicator.is_showing(), "a day that does not end the run shows nothing")
+		t.check(not Boot.save_symbol_shows(indicator), "a day that does not end the run shows nothing")
 
 		run.header().set_day(Tuning.RUN_LENGTH_DAYS)
 		run.calendar().begin_day()
 		run.calendar().finish_day(GameEnums.DayResult.WON)
 		t.check(run.header().ending() != GameEnums.Ending.NONE, "the final day ends the run")
 		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "which deletes the save")
-		t.check(indicator.is_showing() and Boot.save_symbol_plain(indicator),
+		t.check(Boot.save_symbol_shows(indicator) and Boot.save_symbol_plain(indicator),
 				"and the symbol shows the deletion, kept")
 		indicator.free()
 	)
@@ -1184,7 +1184,7 @@ func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t: TestRunner) -> 
 		t.check(resume.get("day_under_way", false), "it resumes with its day under way")
 		var kept_going := run.calendar().finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 		t.check(not kept_going and not FileAccess.file_exists(_SCRATCH_PATH), "the charge ends the run and deletes it")
-		t.check(indicator.is_showing(), "and the symbol that was already there shows it")
+		t.check(Boot.save_symbol_shows(indicator), "and the symbol that was already there shows it")
 		indicator.free()
 	)
 
@@ -1196,7 +1196,7 @@ func _test_a_restart_with_no_save_left_shows_nothing(t: TestRunner) -> void:
 		t.add_child(indicator)
 		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "the run's end already deleted the save")
 		t.check(_save.clear() == GameSave.Result.REFUSED, "so the restart's deletion is refused")
-		t.check(not indicator.is_showing(), "and the symbol stays dark")
+		t.check(not Boot.save_symbol_shows(indicator), "and the symbol stays dark")
 		indicator.free()
 	)
 
@@ -1225,7 +1225,7 @@ func _test_the_restarts_symbol_survives_the_scene_reload(t: TestRunner) -> void:
 	old_main.free()
 	t.check(is_instance_valid(indicator), "so freeing the scene it came from does not free it")
 	t.check(SaveIndicator.carried(sitting) == indicator, "and the next boot finds it")
-	t.check(timeline.pending == 1 and indicator.is_showing(), "still showing the pending deletion")
+	t.check(timeline.pending == 1 and Boot.save_symbol_shows(indicator), "still showing the pending deletion")
 
 	EventBus.save_deletion_settled.emit(deletion, false)
 	t.check(Boot.save_symbol_struck(indicator) and timeline.pending == 0,
@@ -1273,7 +1273,7 @@ func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t: Tes
 		_save.write(run, true)
 		t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
 		t.check(timeline.begun == 1, "and the symbol began once for it, with nobody relaying it")
-		t.check(indicator.is_showing() and timeline.pending == 0 and Boot.save_symbol_plain(indicator),
+		t.check(Boot.save_symbol_shows(indicator) and timeline.pending == 0 and Boot.save_symbol_plain(indicator),
 				"and that one change is already answered, showing the plain picture")
 		indicator.free()
 		run.header().set_ending(GameEnums.Ending.BAD)

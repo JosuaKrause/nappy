@@ -456,7 +456,7 @@ func _test_entity_halo_eases_toward_its_target(t: TestRunner) -> void:
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
+	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and frames > 0
 			and traced[0] - traced_before == frames * EntityHalo.HALO_OFFSETS,
 			"a rim holding a steady target is settled *and* drawn, and traced afresh every frame "
 			+ "(%d copies over %d frames), because the body under a steady glow moves"
@@ -476,7 +476,7 @@ func _test_entity_halo_eases_toward_its_target(t: TestRunner) -> void:
 	var drawn_before: int = drawn_frames[0]
 	traced_before = traced[0]
 	await _frames_for(t, clock, 0.05)
-	t.check(not halo.is_showing() and drawn_frames[0] == drawn_before and traced[0] == traced_before,
+	t.check(_drawn(halo).a == 0.0 and drawn_frames[0] == drawn_before and traced[0] == traced_before,
 			"and a rim drawing nothing stops asking to be traced, so the per-frame trace is paid "
 			+ "for by the handful of sources that are actually lit rather than by every body")
 	halo.free()
@@ -503,7 +503,7 @@ func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t: TestRunner) -> void
 	await _frames_for(t, clock, 0.2)
 	var traced_before: int = traced[0]
 	await _frames_for(t, clock, 0.05)
-	t.check(not halo.is_showing() and traced[0] == traced_before,
+	t.check(_drawn(halo).a == 0.0 and traced[0] == traced_before,
 			"a rim left a hair above zero reaches zero and stops being traced, not left showing")
 	halo.free()
 	clock.free()
@@ -779,7 +779,7 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t: TestRunner) -> vo
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
+	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and frames > 0
 			and drawn[0] == frames,
 			"the flock's own rim is settled, lit and drawn again on every frame (%d of %d) while "
 			% [drawn[0], frames] + "its birds keep moving, where it once held the freeze frame the "

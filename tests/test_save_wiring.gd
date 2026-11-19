@@ -415,7 +415,7 @@ func _test_a_game_closed_between_days_writes_nothing_at_opening(t: TestRunner) -
 	t.check(heard.is_empty() and FileAccess.get_file_as_string(_SCRATCH_PATH) == before,
 			"opening it writes nothing")
 	var indicator := _one(main, "SaveIndicator") as SaveIndicator
-	t.check(indicator != null and not indicator.is_showing(), "and the symbol stays dark")
+	t.check(indicator != null and not Boot.save_symbol_shows(indicator), "and the symbol stays dark")
 
 	_shut(t, main)
 	_save.clear()
@@ -522,7 +522,7 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t: TestRunner) -> void:
 	var main := await _boot(t, _windowed(), Calls.new(), home)
 
 	var own := _one(main, "SaveIndicator") as SaveIndicator
-	t.check(own != null and own.is_showing(),
+	t.check(own != null and Boot.save_symbol_shows(own),
 			"the symbol is raised before the resumed run's charge, so the deletion it makes is announced")
 	t.check(run.header().ending() != GameEnums.Ending.NONE and not FileAccess.file_exists(_SCRATCH_PATH),
 			"the charge spent the last nerve, ended the run and deleted the save")
@@ -575,7 +575,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t: TestRunner
 			"a won day 14 puts day 14's summary up with the run in the building")
 	var day_fourteen := _next_operation()
 	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))
-	t.check(indicator.is_showing(), "and the symbol shows day 14's pending save")
+	t.check(Boot.save_symbol_shows(indicator), "and the symbol shows day 14's pending save")
 	await Boot.press_continue(t, main)
 	t.check(calls.reloads.size() == 1, "continuing past day 14's summary reloads into the escape")
 	var sitting := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
@@ -584,7 +584,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t: TestRunner
 	_shut(t, main)
 	t.check(is_instance_valid(indicator) and SaveIndicator.carried(sitting) == indicator,
 			"so the reload does not free it, and the escape's boot adopts it")
-	t.check(is_instance_valid(indicator) and indicator.is_showing() and Boot.save_symbol_plain(indicator),
+	t.check(is_instance_valid(indicator) and Boot.save_symbol_shows(indicator) and Boot.save_symbol_plain(indicator),
 			"still shown, not struck, for day 14's save after the reload")
 	if is_instance_valid(indicator):
 		indicator.free()

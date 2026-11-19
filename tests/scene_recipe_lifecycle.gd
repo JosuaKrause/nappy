@@ -100,7 +100,7 @@ func _scripted_boot(t: TestRunner, path: String, label: String) -> Dictionary:
 	var reloads: Array[int] = []
 	var booted := await _boot(t, path, "scripted", home, reloads)
 	var recipe := scene_of(booted.main)
-	var initial := _start_of(t, booted, run, recipe, label)
+	var initial := _start_of(t, booted, run, recipe, _authored(path), label)
 	t.check(recipe != null and recipe.plays_by_script() and not recipe.manifest.get("setup_failed", false),
 			"%s boots real scripted Main" % label)
 	booted.free_all()
@@ -108,9 +108,10 @@ func _scripted_boot(t: TestRunner, path: String, label: String) -> Dictionary:
 	return initial
 
 ## What a scene started from: its actors and the events installed, as the manifest records them at
-## `begin()`, and the run's day and seed. Empty when no scene stands.
+## `begin()`, and the run's day and seed, held against `authored`, the recipe as its file has it
+## (`_authored()`). Empty when no scene stands.
 func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime,
-		label: String) -> Dictionary:
+		authored: Dictionary, label: String) -> Dictionary:
 	if recipe == null or recipe.manifest.get("setup_failed", false):
 		return {}
 	var actors: Dictionary = recipe.manifest.initial_actors
@@ -118,13 +119,13 @@ func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneR
 	var start: Array = player_start.get("position", [0, 0])
 	t.check(Vector2(start[0], start[1]).is_equal_approx(recipe.start_position()),
 			"%s starts her where the recipe puts her" % label)
-	var setup: Dictionary = recipe.data.get("setup", {})
+	var setup: Dictionary = authored.get("setup", {})
 	var authored_day: Variant = setup.get("day")
 	t.check(authored_day == null or run.header().day() == int(authored_day),
 			"%s starts the run on its authored day (day %d)" % [label, run.header().day()])
 	t.check(_quits.is_empty() and not t.get_tree().paused,
 			"%s boots without ending the game, running" % label)
-	_meters_hold(t, booted.main, recipe, label)
+	_meters_hold(t, booted.main, recipe, authored, label)
 	for collection: String in ["events", "actors"]:
 		var entries: Array = setup.get(collection, [])
 		for entry: Dictionary in entries:
@@ -139,18 +140,19 @@ func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneR
 ## multiplier, `City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER`), and no more than the meter holds: what raises it (the crowd and every event near her) is not
 ## bounded by what the scene installs, so a rise is not checked. An escape and a
 ## full sleep meter start her asleep (`Baby.force_sleep()`).
-func _meters_hold(t: TestRunner, main: Node, recipe: SceneRecipeRuntime, label: String) -> void:
+func _meters_hold(t: TestRunner, main: Node, recipe: SceneRecipeRuntime, authored: Dictionary,
+		label: String) -> void:
 	var baby := Boot.baby(main)
 	if baby == null:
 		return
-	var setup: Dictionary = recipe.data.get("setup", {})
-	var authored: Dictionary = setup.get("player", {})
-	var asleep: bool = recipe.data.get("kind", "city") == "escape" \
-			or float(authored.get("sleep", 0)) >= Tuning.METER_MAX
+	var setup: Dictionary = authored.get("setup", {})
+	var player: Dictionary = setup.get("player", {})
+	var asleep: bool = authored.get("kind", "city") == "escape" \
+			or float(player.get("sleep", 0)) >= Tuning.METER_MAX
 	var seconds := float(recipe.tick) / Engine.physics_ticks_per_second
 	var sleep_rate := maxf(Tuning.sleepiness_gain_calm(1), Baby.SLEEPINESS_DRAIN_IDLE)
-	var sleep_from := Tuning.METER_MAX if asleep else float(authored.get("sleep", 0))
-	var excite_from := float(authored.get("excitement", 0))
+	var sleep_from := Tuning.METER_MAX if asleep else float(player.get("sleep", 0))
+	var excite_from := float(player.get("excitement", 0))
 	t.check(absf(baby.sleepiness_level() - sleep_from) <= sleep_rate * seconds + 0.01
 			and baby.excitement_level() <= Tuning.METER_MAX
 			and baby.excitement_level() >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER * seconds - 0.01,
@@ -171,7 +173,7 @@ func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 	var recipe := scene_of(main)
 	var player := Boot.player(main)
 	var city := Boot.city(main) if Boot.interior(main) == null else null
-	var initial := _start_of(t, booted, run, recipe, label)
+	var initial := _start_of(t, booted, run, recipe, _authored(path), label)
 	t.check(not initial.is_empty() and player != null and not recipe.plays_by_script(),
 			"%s boots and completes real free-play lifecycle" % label)
 	if initial.is_empty() or player == null:
@@ -204,7 +206,7 @@ func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 		t.check(result.bounded_returned, "%s permits physical exit and return without resetting" % label)
 	if map.has_stretch():
 		await _walk_at_the_void(t, player, map, label)
-	if recipe.data.get("kind", "city") == "escape":
+	if _authored(path).get("kind", "city") == "escape":
 		await _lose_the_escape(t, recipe, reloads, label)
 	else:
 		await _win_the_day(t, main, run, reloads, label)
@@ -212,7 +214,7 @@ func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 			"%s: played and left without ending the game or writing a save" % label)
 	if reloads.size() == 1:
 		var again := await _boot(t, path, "free", home, reloads)
-		var again_initial := _start_of(t, again, run, scene_of(again.main), label)
+		var again_initial := _start_of(t, again, run, scene_of(again.main), _authored(path), label)
 		t.check(again_initial == initial,
 				"%s real summary continuation or escape retry restores authored day and actors" % label)
 		again.free_all()
@@ -335,6 +337,13 @@ func _press(direction: Vector2) -> void:
 		Input.action_press("move_down" if direction.y > 0 else "move_up", absf(direction.y))
 
 ## The scene recipe a booted `main` plays: the runtime it builds as its own child, or null.
+## The recipe a scene plays, as its file at `path` has it: the runtime plays the recipe as the file
+## loads (`SceneRecipeRuntime.load_recipe()`), and no suite here boots a draft, the one run that
+## changes it.
+static func _authored(path: String) -> Dictionary:
+	var recipe: Dictionary = SceneRecipe.load_file(path)["data"]
+	return recipe
+
 static func scene_of(main: Node) -> SceneRecipeRuntime:
 	for child in main.get_children():
 		if child is SceneRecipeRuntime:
