@@ -14,6 +14,7 @@ func run(t: TestRunner) -> void:
 	_test_every_guarded_target_sends_a_robber_from_off_screen(t)
 	await _test_the_handover_sets_a_robber_on_her_from_off_screen(t)
 	await _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t)
+	await _test_a_director_handed_no_siting_sites_the_trap_on_the_maps_navigator(t)
 	_test_a_trap_rechecks_the_camera_when_its_warning_expires(t)
 	await _test_the_robber_after_her_is_announced_before_he_can_catch_her(t)
 	await _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t)
@@ -619,6 +620,29 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t: TestRunner) -
 			starts.append(start)
 		player.free()
 		director.free()
+
+## A director handed no siting and no navigator builds its own siting on the map's navigator
+## (`ResistanceDirector.setup()`), over the events' view and the streets' region, and the one start
+## it sites that way is a trap sent at her: handing the note over still puts the robber's warning
+## up, and once it is over he stands just out of her sight, on legal ground by the city's own siting.
+func _test_a_director_handed_no_siting_sites_the_trap_on_the_maps_navigator(t: TestRunner) -> void:
+	_build_city_in_a_new_run(t)
+	var director := ResistanceDirector.new()
+	director.use_bus(EventBus)
+	t.add_child(director)
+	director.set_process(false)
+	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city)
+	director.start_day(6, _rng(6, "resistance"), 300.0)
+	_read_the_mark(director)
+	var her := director.contact_position()
+	_watch_the_screen_round(director, her)
+	var player := _rig_player(t, her)
+	director.use_player(player)
+	await _step_a_frame(t)
+	t.check(director.contact().is_done, "no siting handed: she hands the note over")
+	_check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", "no siting handed")
+	player.free()
+	director.free()
 
 ## **He is warned of before he exists, the warning is short, and he arrives chasing.** *(Amendment 7
 ## of M226, the player: "why would the robber walk towards her when it spawns as pursuing robber? the
