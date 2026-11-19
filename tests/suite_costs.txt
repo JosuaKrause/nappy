@@ -111,6 +111,7 @@ test_home_block.gd 32339
 test_hud.gd 3047
 test_interior.gd 65212
 test_invincible.gd 6068
+test_lane_mover.gd 1300
 test_loose_dog_arrives.gd 13756
 test_loss_cause.gd 32
 test_main.gd 15596
