@@ -48,11 +48,12 @@ func _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t: TestRunner) ->
 
 ## **Nothing just past the screen's edge is raised a badge fresh.** A thing sitting on the boundary
 ## would otherwise trade places with its own badge every frame, so the edge counts the badge's margin
-## (`BadgeModel.SCREEN_MARGIN` screen px, `DangerEdge.world_per_screen_px()` world px each) as in
-## sight when it asks whether to raise one. The convoy closes on her from inside that margin, wholly
+## (`BadgeModel.SCREEN_MARGIN` screen px, each the world the view shows across the design box over its
+## width) as in sight when it asks whether to raise one. The convoy closes on her from inside that margin, wholly
 ## out of sight on every frame, and is raised no badge on any of them.
 func _test_nothing_in_the_margin_is_raised_a_badge_fresh(t: TestRunner) -> void:
-	var margin := BadgeModel.SCREEN_MARGIN * DangerEdge.world_per_screen_px()
+	var margin := BadgeModel.SCREEN_MARGIN * Tuning.VIEW_HALF_EXTENT.x * 2.0 \
+			/ ScreenOrientation.DESIGN_SIZE.x
 	var top := -Tuning.VIEW_HALF_EXTENT.y
 	var rig := _rig(t, Vector2(0.0, top - margin + 10.0))
 	var edge: DangerEdge = rig["edge"]
