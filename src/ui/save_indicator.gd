@@ -290,7 +290,7 @@ func _on_save_changed(operation: int, result: int) -> void:
 		_settle(operation, result == GameSave.Result.CONFIRMED)
 
 ## Whether the symbol is up at all — fully shown or fading.
-func is_showing() -> bool:
+func _is_showing() -> bool:
 	return not _showing.is_idle()
 
 ## Hands the symbol to `home`, the `Sitting` `main` keeps across the scene reload the held restart
@@ -299,7 +299,7 @@ func is_showing() -> bool:
 ## boot builds its own. Does nothing once it is already there (an idle one stays, and the next boot
 ## adopts it again), or off the tree.
 func outlive_the_scene(home: Sitting) -> void:
-	if get_tree() == null or home == null or not is_showing():
+	if get_tree() == null or home == null or not _is_showing():
 		return
 	if get_parent() != home:
 		reparent(home, false)

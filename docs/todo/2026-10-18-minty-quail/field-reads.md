@@ -68,9 +68,7 @@ own:
   `walk_ground.gd`, `event_director.gd`), which the placement rewrite
   rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
   row 3b's.
-- `src/main.gd`, which waits for no other item (who builds the event manager and the crowd is the
-  record 2026-11-11-polite-tapir-snowy-toad), and the city scene
-  (`src/city/city.gd`), row 3c's.
+- The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
 - **The screen-edge badge** (`src/ui/danger_edge.gd`, the record 2026-10-18-minty-quail-tawny-toad)
