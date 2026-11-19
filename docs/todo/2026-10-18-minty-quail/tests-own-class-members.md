@@ -30,6 +30,18 @@ receiver the check cannot type, an untyped value, a Variant, or an engine-typed 
 silences that access's warning, counts as read. These thin out as `typed-everywhere.md` types the remaining files, and
 whatever the check then lists joins the scope.
 
+**What is left, by module.** Outside the events and the resistance, the `[own file only]` group holds
+two owners: the scene recipe runtime's `manifest`, `named`, `start_position` and `tick`
+(`src/dev/scene_recipe_runtime.gd`), which waits with the scene recipes for the events' interface
+row 3c and the scene recipes' own pass (`city-hand-ins.md`); and the screen-edge badge's control's
+`model`, `sees` and `view` (`src/ui/danger_edge.gd`), which waits for nothing. Under `src/events/`,
+waiting for the events' interface rows: the officer behaviour's `trail` and `vehicle`, the calm
+areas' `unused`, the catalogue's `all`, the live event's `charge_radius`, `chase_age`,
+`clear_line_to`, `look`, `notice_time` and `phase`, the event manager's `ahead`, `checkpoints`,
+`spawner`, `streaming` and `warnings`, the plan's `ends`, the location's `section`, the pending
+warning's `place` and the event look's `drawn_heading`; and in the `[no reader]` group, the pending
+warning's `left`. Nothing under `src/resistance/` is left in either group.
+
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
 also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member
 becomes internal, its tests moving to what the class does outward, or, where nothing outside can confirm the behavior,

@@ -38,7 +38,7 @@ static func _hard_fail_suffix(reason: String, struck_by := "") -> String:
 	return (struck_by if struck_by != "" else reason).replace("_", "-")
 
 ## What ended a crying day: whichever group in `landed_by_group` (read off the live world by
-## `DayDirector.landed_by_group()`) landed the most on her over the crying window — a catalogue id (hyphenated),
+## `DayDirector._landed_by_group()`) landed the most on her over the crying window — a catalogue id (hyphenated),
 ## `crowd` for walkers, `traffic` for cars, or `self` for her own running and standing in an alley.
 ##
 ## **Ties, and the window reading entirely empty, pick the alphabetically first key that is

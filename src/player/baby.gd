@@ -179,7 +179,7 @@ var _decay_history: Array[Array] = []
 ## gameplay.** `EXCITEMENT_FROM_RUNNING` and
 ## `EXCITEMENT_FROM_ALLEY` are folded into `incoming` with no source object of their own
 ## (`_update_excitement()` below), so this is where "what she did to herself" is kept for whatever
-## names the cause of a crying day — see `DayDirector.landed_by_group()`.
+## names the cause of a crying day — see `DayDirector._landed_by_group()`.
 var _self_landed_history: Array[Array] = []
 
 ## `[when, points]` entries of the bar's own would-be overflow while sitting at
@@ -361,7 +361,7 @@ func _prune_self_landed_history() -> void:
 
 ## The sum of every entry still inside `ExcitementSource.WINDOW` — her own running and alley share of
 ## what has landed on her, the same sliding sum `landed()` gives every other source. Read only by
-## `DayDirector.landed_by_group()`, naming what ended a crying day for `VisitCounter`.
+## `DayDirector._landed_by_group()`, naming what ended a crying day for `VisitCounter`.
 func self_landed() -> float:
 	_prune_self_landed_history()
 	var total := 0.0

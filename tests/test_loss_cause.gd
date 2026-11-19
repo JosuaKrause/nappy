@@ -52,7 +52,7 @@ func _test_crying_cause_suffix(t: TestRunner) -> void:
 		"an empty window falls back to her own unattributed share")
 
 ## The pelican is named `pelican` in the cause, never its row's `cyclist` *(inbox #527 in azure-tapir)*: a hard fail
-## through `EventManager.what_struck_her()`'s own name, and a crying loss through the grouping `DayDirector.landed_by_group()` reads, checked in
+## through `EventManager.what_struck_her()`'s own name, and a crying loss through the grouping `DayDirector._landed_by_group()` reads, checked in
 ## `tests/test_day_director.gd`.
 func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 	t.check(_hard_fail("cyclist", "pelican") == "pelican",
