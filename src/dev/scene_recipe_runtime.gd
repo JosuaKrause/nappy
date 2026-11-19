@@ -596,20 +596,23 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	for entry: Dictionary in setup.get("events", []):
 		for plan in simulation.events().plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
-				if not plan.live:
+				if not plan.is_in_the_world():
 					errors.append("event %s is not live at its required initial position" % entry.name)
 				else:
-					named[entry.name] = plan.live
+					# Named and commanded, so asked of the event manager, which hands a plan's live
+					# event to the caller that commands it.
+					var event := simulation.events().event_of(plan)
+					named[entry.name] = event
 					if plan.get_meta("recipe_charging", false):
 						# Set on her from the first frame, as a guard sent after her is: no radius
 						# to cross and no warning to stand through.
-						plan.live.notice_her_at(at, 0.0)
+						event.notice_her_at(at, 0.0)
 					if plan.get_meta("recipe_relentless", false):
-						_relentless.append(plan.live)
+						_relentless.append(event)
 					if plan.get_meta("recipe_hold", false):
-						_held.append(plan.live)
+						_held.append(event)
 						# Never streamed out either, however far she runs from it.
-						plan.kept_live = true
+						plan.keep_in_the_world()
 	simulation.crowd().start_day(_run.header().day(),
 			_run.calendar().day_rng(_run.header().day(), "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
@@ -660,8 +663,10 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 	manifest["initial_actors"] = _snapshot()
 	manifest["installed_events"] = []
 	for plan in simulation.events().plans():
-		manifest.installed_events.append({"row": plan.def.id,
-				"position": [plan.position.x, plan.position.y], "facing": [plan.facing.x, plan.facing.y]})
+		var placed := plan.placed_at()
+		var facing := plan.faces()
+		manifest.installed_events.append({"row": plan.row_id(),
+				"position": [placed.x, placed.y], "facing": [facing.x, facing.y]})
 	return errors
 
 ## `setup.task`, started once her own camera is the one on screen: the boot camera is gone by
@@ -726,17 +731,17 @@ func _bind_task_names() -> void:
 	var contact: ContactPoint = _resistance.contact()
 	if _resistance.read_mark():
 		named["mark"] = _resistance.read_mark()
-	elif contact and contact.step.is_pickup and not contact.is_done:
+	elif contact and contact.task_step().is_pickup and not contact.is_finished():
 		named["mark"] = contact
 		return
-	if (not contact or contact.step.is_pickup) and manifest.task.has("read_tick"):
+	if (not contact or contact.task_step().is_pickup) and manifest.task.has("read_tick"):
 		if not manifest.task.has("expired_tick"):
 			manifest.task["expired_tick"] = tick
 			named.erase("task")
 			print("[SceneRecipe] setup.task: the task expired at tick %d" % tick)
 			write_manifest()
 		return
-	if not contact or contact.step.is_pickup:
+	if not contact or contact.task_step().is_pickup:
 		manifest["setup_failed"] = true
 		for problem in _resistance.scene_task_errors():
 			print("[SceneRecipe] " + problem)
@@ -774,14 +779,15 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
 		return
 	var happening := ResistanceHappenings.new()
-	happening.trace = _city.trace
+	happening.use_trace(_city.trace)
 	happening.setup(map, _city.run, _simulation.events(), _city.streets(), _city.fronts(), _city,
 			_city.atlas, null, _simulation.events().spawn_siting())
 	happening.start_day(_run.header().day())
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
 			bottom)
-	for i in happening.column.size():
-		named["truck_%d" % (i + 1)] = happening.column[i]
+	var trucks := happening.column_trucks()
+	for i in trucks.size():
+		named["truck_%d" % (i + 1)] = trucks[i]
 
 func _install_posters(entries: Array, errors: Array[String]) -> void:
 	var fronts := _simulation.poster_walls().fronts()
@@ -930,11 +936,11 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		# not an authored scene's event list.
 	elif _city.streets().region_plan():
 		for body in _city.streets().region_plan().wall_bodies:
-			if _inside_extent(body.position):
+			if _inside_extent(body.placed_at()):
 				plans.append(body)
 		for body in _city.streets().region_plan().door_bodies:
-			doors.append(body.position)
-			if _inside_extent(body.position):
+			doors.append(body.placed_at())
+			if _inside_extent(body.placed_at()):
 				plans.append(body)
 	if not finale:
 		plans.append_array(_authored_seals(errors))
@@ -958,7 +964,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			def = EventCatalogue.heated(def, int(entry.heat))
 		var plan: EventPlan
 		var why: Array[String] = []
-		if def.role == EventDef.Role.MAST:
+		if def.is_a_mast():
 			plan = _mast_placement(def, builder, at, plans)
 		elif finale:
 			plan = _finale_placement(def, builder, at, player_at, finale, plans,
@@ -967,7 +973,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
 			var route := director._crossing_ahead_of(player_at, heading, def)
-			if not def.available_on(_run.header().day()) or def.pursuit == null or route.is_empty() \
+			if not def.available_on(_run.header().day()) or not def.pursues() or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
 					or not DoorClearanceRule.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
@@ -992,13 +998,16 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		var requested := PackedVector2Array()
 		for point: Variant in entry.get("path", []):
 			requested.append(position_of(point, errors))
-		if not requested.is_empty() and requested != plan.path:
+		if not requested.is_empty() and requested != plan.walks():
 			errors.append("event %s.path is not its production route for route_seed" % entry.name)
-		for point in plan.path:
+		for point in plan.walks():
 			if not _inside_extent(point):
 				errors.append("event %s route leaves the authored extent" % entry.name)
-		plan.age = float(entry.get("age", 0))
-		if plan.age > plan.def.telegraph_time:
+		# Staged part-way through its telegraph. No row a recipe's placements accept comes again
+		# (`EventPlan.repeats()`), so the age is its one instance's.
+		var age := float(entry.get("age", 0))
+		plan.arrive_aged(age)
+		if age > plan.telegraphs_for():
 			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
 		plan.set_meta("recipe_name", entry.name)
 		if bool(entry.get("hold", false)):
@@ -1006,19 +1015,19 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 				errors.append(hold_refusal_message(str(entry.name), def))
 		plan.set_meta("recipe_hold", bool(entry.get("hold", false)))
 		if bool(entry.get("charging", false)):
-			if charging_refusal(plan.def) != "":
+			if charging_refusal(plan.row()) != "":
 				errors.append("event %s.charging is refused: row %s %s"
-						% [entry.name, plan.def.id, charging_refusal(plan.def)])
+						% [entry.name, plan.row_id(), charging_refusal(plan.row())])
 		plan.set_meta("recipe_charging", bool(entry.get("charging", false)))
-		if bool(entry.get("relentless", false)) and relentless_refusal(plan.def) != "":
+		if bool(entry.get("relentless", false)) and relentless_refusal(plan.row()) != "":
 			errors.append("event %s.relentless is refused: row %s %s"
-					% [entry.name, plan.def.id, relentless_refusal(plan.def)])
+					% [entry.name, plan.row_id(), relentless_refusal(plan.row())])
 		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
-		if def.role == EventDef.Role.MAST:
+		if def.is_a_mast():
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
-			plan.mast_id = str(entry.mast_id) if entry.has("mast_id") \
-					else DawnMasts.added_mast_id(plan.position)
+			plan.stand_as_a_mast(str(entry.mast_id) if entry.has("mast_id") \
+					else DawnMasts.added_mast_id(plan.placed_at()))
 		plans.append(plan)
 	return plans
 
@@ -1100,7 +1109,7 @@ func begin() -> void:
 	if camera.has("zoom_out"):
 		var zoom := ZoomOutCamera.new()
 		_zoom = zoom
-		zoom.simulation_clock = elapsed
+		zoom.use_simulation_clock(elapsed)
 		add_child(zoom)
 		var bounds := _city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, _city.map.size)).grow(
 				float(camera.get("landscape_margin", 0)))
@@ -1153,15 +1162,15 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 ## walk straight away from her that a pursuer on foot leaves by, so every row whose departure is
 ## anything else is refused, each with its own reason.
 static func hold_refusal(def: EventDef) -> String:
-	if def.pursuit == null:
+	if not def.pursues():
 		return "does not pursue her, so it has no straight walk away to hold"
-	if def.vehicle != null:
+	if def.drives():
 		return "drives, and a car leaves by its own rules"
 	if def.investigates():
 		return "lets men out, who walk back to it"
-	if def.stops_where_it_arrives:
+	if def.parks_where_it_arrives():
 		return "parks where it arrives"
-	if def.aftermath.on_finish != "":
+	if def.leaves_behind() != "":
 		return "hands on to another event when it finishes"
 	if def.leaves_its_body():
 		return "leaves a barrier standing as a guard walks off"
@@ -1174,7 +1183,7 @@ static func hold_refusal(def: EventDef) -> String:
 ## wait has no radius to skip, and one that sets off beside her or runs its own line does not
 ## charge by that rule.
 static func charging_refusal(def: EventDef) -> String:
-	if def.pursuit == null or def.notice_within() <= 0.0:
+	if not def.pursues() or def.notice_within() <= 0.0:
 		return "does not wait for her, so it has no radius to skip"
 	if def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 		return "sets off beside her, on its own clock"
@@ -1184,7 +1193,7 @@ static func charging_refusal(def: EventDef) -> String:
 ## pursuer from giving up because she ran (`_keep_the_pursuers_coming()`), so a row that does not
 ## pursue her has nothing to keep.
 static func relentless_refusal(def: EventDef) -> String:
-	if def.pursuit == null:
+	if not def.pursues():
 		return "does not pursue her, so it has no chase to keep going"
 	return ""
 
@@ -1196,15 +1205,15 @@ static func hold_refusal_message(event_name: String, def: EventDef) -> String:
 var _relentless: Array[EventInstance] = []
 
 ## **A relentless pursuer never gives up because she ran.** A pursuer that has seen her run for
-## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventPursuit.outrun_for`), right for a played
-## day, and a guard who stops coming half a second into a mother's run in a trailer shot. Each physics
-## tick this clears that running clock, so it never gets near the limit; nothing else about the
-## chase changes, and the game's rule is untouched.
+## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventPursuit`'s clock of her running), right for a
+## played day, and a guard who stops coming half a second into a mother's run in a trailer shot.
+## Each physics tick this has it forget that running clock (`EventInstance.forget_her_run()`), so it
+## never gets near the limit; nothing else about the chase changes, and the game's rule is untouched.
 func _keep_the_pursuers_coming() -> void:
 	for instance in _relentless:
-		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving \
-				and instance.pursuit != null:
-			instance.pursuit.outrun_for = 0.0
+		if is_instance_valid(instance) and not instance.is_gone() \
+				and not instance.is_on_its_way_out():
+			instance.forget_her_run()
 
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
@@ -1224,13 +1233,11 @@ func _process(delta: float) -> void:
 	if get_tree().paused:
 		return
 	for instance in _held:
-		if not is_instance_valid(instance) or instance.is_finished or not instance.is_leaving:
+		if not is_instance_valid(instance) or instance.is_gone() or not instance.is_on_its_way_out():
 			continue
-		if instance.departure.walks_a_way() \
-				or (instance.on_foot != null and instance.on_foot.walks_back()) \
-				or (instance.barrier_post and instance.barrier_post.has_left_its_body()):
+		if not instance.walks_straight_away():
 			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
-					% instance.def.id
+					% instance.row_id()
 			manifest["stopped_tick"] = tick
 			push_error(manifest["playback_error"])
 			if _active:
@@ -1240,7 +1247,7 @@ func _process(delta: float) -> void:
 			return
 		# Walked here, once a drawn frame, so its manager does not step it and it is drawn where this
 		# puts it rather than interpolated between physics ticks; its look still redraws it.
-		instance.held_by_hand = true
+		instance.hold_by_hand()
 		instance.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		instance.walk_on_by_hand(delta)
 
@@ -1349,8 +1356,14 @@ func activity_snapshot() -> Dictionary:
 			result.moving_crowd += 1
 	for event in _simulation.events().instances():
 		if view.has_point(transform * event.global_position):
-			result.visible_events[event.def.id] = int(result.visible_events.get(event.def.id, 0)) + 1
+			result.visible_events[event.row_id()] = int(result.visible_events.get(event.row_id(), 0)) + 1
 	return result
+
+## Whether `event` is chasing her now: a pursuer neither waiting for her, telegraphing, gone nor
+## on its way out. What the manifest's `pursuing` records and the `pursuing` observation asks.
+static func _is_pursuing(event: EventInstance) -> bool:
+	return event.pursues() and not event.is_waiting() and not event.is_telegraphing() \
+			and not event.is_gone() and not event.is_on_its_way_out()
 
 func _release_input() -> void:
 	TouchControls.set_axis(&"move_left", &"move_right", 0)
@@ -1375,12 +1388,12 @@ func _snapshot() -> Dictionary:
 			result[label]["speed"] = snappedf(actor.current_speed(), 0.0001)
 			result[label]["gait_frame"] = actor.mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
 		elif actor is ContactPoint:
-			result[label]["done"] = actor.is_done
+			result[label]["done"] = (actor as ContactPoint).is_finished()
 		elif actor is EventInstance:
-			result[label]["row"] = actor.def.id
-			result[label]["telegraphing"] = actor.is_telegraphing()
-			result[label]["pursuing"] = actor.def.pursuit != null and not actor.is_waiting() \
-					and not actor.is_telegraphing() and not actor.is_finished and not actor.is_leaving
+			var event := actor as EventInstance
+			result[label]["row"] = event.row_id()
+			result[label]["telegraphing"] = event.is_telegraphing()
+			result[label]["pursuing"] = _is_pursuing(event)
 	return result
 
 func _observe() -> void:
@@ -1419,9 +1432,7 @@ func _observe() -> void:
 					var baby := actor.get_node_or_null("Baby") as Baby if actor is Stroller else null
 					passed = baby != null and baby.is_asleep() == (check.condition == "asleep")
 				"pursuing":
-					passed = actor is EventInstance and actor.def.pursuit != null \
-							and not actor.is_telegraphing() and not actor.is_waiting() \
-							and not actor.is_finished and not actor.is_leaving
+					passed = actor is EventInstance and _is_pursuing(actor as EventInstance)
 				"near_player":
 					# What ties one actor to her: a pursuer that closes on her stays this close.
 					passed = is_instance_valid(_player) and actor.global_position.distance_to(
@@ -1439,11 +1450,13 @@ func _observe() -> void:
 					passed = not _box_in_either_view(actor.global_position,
 							Vector2(float(check.half[0]), float(check.half[1])))
 				"offered":
-					passed = actor is ContactPoint and not actor.is_done and _resistance != null \
+					passed = actor is ContactPoint and not (actor as ContactPoint).is_finished() \
+							and _resistance != null \
 							and _resistance.contact() == actor
 				"done":
-					passed = actor is ContactPoint and actor.is_done \
-							and actor.step.index in _run.resistance().completed_steps()
+					passed = actor is ContactPoint and (actor as ContactPoint).is_finished() \
+							and (actor as ContactPoint).task_step().index \
+							in _run.resistance().completed_steps()
 				"arrowed":
 					passed = _resistance != null and _resistance.red_arrow_target() != Vector2.INF \
 							and _resistance.red_arrow_target().is_equal_approx(actor.global_position)
@@ -1498,7 +1511,7 @@ func _in_the_picture(at: Vector2) -> bool:
 ## page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
 	var at := actor.global_position
-	var covering := _simulation.events().world.visible.screen_cover() if _simulation else null
+	var covering := _simulation.events().visible_view().screen_cover() if _simulation else null
 	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
 	box.position += at
 	return VisibleView.visible_share(box, _camera_world_rect(), covering) > 0.0
@@ -1534,7 +1547,7 @@ func subject_of(label: String) -> Node2D:
 	if not _simulation or not _simulation.events():
 		return null
 	for instance in _simulation.events().instances():
-		if instance.def.id == label.trim_prefix(ROW_SUBJECT) and not instance.is_finished:
+		if instance.row_id() == label.trim_prefix(ROW_SUBJECT) and not instance.is_gone():
 			return instance
 	return null
 
@@ -1581,7 +1594,7 @@ func _watch_the_void() -> void:
 		if instance.is_waiting() and _city.map.is_void(tile):
 			_in_the_void[instance] = true
 			var found: Array = manifest.get("in_the_void", [])
-			found.append({"tile": [tile.x, tile.y], "row": instance.def.id, "tick": tick})
+			found.append({"tile": [tile.x, tile.y], "row": instance.row_id(), "tick": tick})
 			manifest["in_the_void"] = found
 
 ## Where each of the crowd stood last tick, to catch one that leaves or enters in view.

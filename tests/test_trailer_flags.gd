@@ -1,7 +1,7 @@
 extends RefCounted
 ## The trailer's own logic (M204): the `--parent` flag, `ZoomOutCamera`'s move and `TrailerText`'s
 ## fade and tree shape, each driven the way the game drives it: a `RunConfig` parsed from the words
-## a trailer shot is launched with, a camera moved by the clock it is handed (`simulation_clock`, the
+## a trailer shot is launched with, a camera moved by the clock it is handed (`use_simulation_clock()`, the
 ## physics time a saved recipe supplies) and a text node on real frames. `zoom_out_seconds()`,
 ## `zoom_out_delay()`, `caption_text()`, `title_card_text()` and `player_view_requested()` are
 ## exercised end to end by `tools/trailer.sh`'s own render rather than by this suite, the same as
@@ -41,7 +41,7 @@ func _test_parent_refuses_an_unknown_word(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------ ZoomOutCamera ---
 
-## The clock a saved recipe hands the move (`simulation_clock`), moved by the test.
+## The clock a saved recipe hands the move (`use_simulation_clock()`), moved by the test.
 class Clock:
 	var now := 0.0
 
@@ -71,7 +71,7 @@ func _pulled_back(t: TestRunner, start: Vector2, start_zoom: float, bounds: Rect
 	var clock := Clock.new()
 	clock.now = at
 	var move := ZoomOutCamera.new()
-	move.simulation_clock = clock.read
+	move.use_simulation_clock(clock.read)
 	move.setup(hers, bounds, _VIEWPORT, 1.0, 0.0)
 	t.add_child(move)
 	# The move runs in the frame after the one that signals; the second frame has run it.

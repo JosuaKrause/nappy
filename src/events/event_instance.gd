@@ -601,6 +601,11 @@ func _process(_delta: float) -> void:
 ## itself (`SceneRecipeRuntime`). Its drawing goes on.
 var held_by_hand := false
 
+## Takes it into the hand that walks it (`held_by_hand`): its manager stops stepping it, and the
+## hand walks it on (`walk_on_by_hand()`). A scene recipe's held event, once it is leaving.
+func hold_by_hand() -> void:
+	held_by_hand = true
+
 ## **Walks it on by hand by `delta` seconds**, for the hand that holds it (`held_by_hand`, a scene
 ## recipe's held event, `SceneRecipeRuntime`): the straight walk away along its heading at its
 ## departure's own pace (`EventDeparture.speed()`), its stride advancing by the ground covered, as
@@ -2156,6 +2161,22 @@ func was_warned_of() -> bool:
 ## Whether it comes after her (its row's `pursuit`).
 func pursues() -> bool:
 	return def.pursuit != null
+
+## **Forgets how long she has been running from it** (`EventPursuit.forget_her_run()`), so its
+## chase does not give up because she ran; nothing for an event with no pursuit. A scene recipe's
+## relentless pursuer, every tick.
+func forget_her_run() -> void:
+	if pursuit != null:
+		pursuit.forget_her_run()
+
+## **Whether, leaving, it walks straight away from her** at its departure's pace, the departure's
+## plain branch (`EventDeparture.leave()`) that `walk_on_by_hand()` reproduces: not a walk down a
+## way it was given (`EventDeparture.walks_a_way()`), a man walking back to the vehicle that let
+## him out (`EventOfficer.walks_back()`), nor a guard who has left his barrier standing
+## (`EventBarrierPost.has_left_its_body()`).
+func walks_straight_away() -> bool:
+	return not (departure.walks_a_way() or (on_foot != null and on_foot.walks_back()) \
+			or (barrier_post != null and barrier_post.has_left_its_body()))
 
 ## Whether it is a car that drives (its row's `vehicle`), whose strike is its driving's.
 func drives() -> bool:

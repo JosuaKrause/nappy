@@ -191,6 +191,11 @@ func pause_a_held_notice(delta: float) -> void:
 	if _figure.place().distance_to(her) < _figure.charge_radius():
 		_figure.hold_the_notice(delta)
 
+## Forgets how long she has been running from it (`outrun_for`), so it does not give up yet: a
+## scene recipe's relentless pursuer, through its event (`EventInstance.forget_her_run()`).
+func forget_her_run() -> void:
+	outrun_for = 0.0
+
 ## **She ran, so it backs off**: seconds of her running, not seconds of the gap opening, since a
 ## corner, a kerb or a body in the way resets a gap-based timer while she is plainly running. A
 ## charger that waits for her is shaken off only once he has charged: while he warns, running inside

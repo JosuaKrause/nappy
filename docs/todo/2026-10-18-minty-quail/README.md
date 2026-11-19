@@ -118,7 +118,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      their conversion, and what is left of them is their reads of other classes' fields, which the
      records of their typing list by class: among them the building's
      write of `WorldMap.world`, which goes with the map interface's world half (the design
-     review's standing breaks), and the developer's rigs' reads of an event, row 3c of `event-interface.md`.
+     review's standing breaks), and the scene recipes' read of a row's `id`, row 4b of `event-interface.md`.
    - **Tools:** `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
