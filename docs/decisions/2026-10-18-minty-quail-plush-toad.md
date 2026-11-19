@@ -26,7 +26,7 @@ were changed for the camera's hand-in, past the brief's literal fence, since the
 `simulation_clock`.
 
 **Left in the runtime:** the row's `id` (4b); the city's, the city map's and the world map's fields
-(the scene recipes' own pass with `AuthoredScene`); the calls to the private
+(the scene recipes' own pass with `AuthoredScene`); the region plan's `wall_bodies` and `door_bodies` (3a); the calls to the private
 `EventDirector._crossing_ahead_of()` (3b) and `ResistanceHappenings._bring_the_column()`.
 
 **Proposed, not asked for, open to the player:** the departures above; the method names.
