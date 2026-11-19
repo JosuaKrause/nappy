@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 extends Node2D
 ## Boot scene: generate the city, drop the player on the doorstep, then the HUD.
 ##
@@ -17,6 +16,11 @@ const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
 const HUD := preload("res://scenes/ui/hud.tscn")
 const DAY_SUMMARY := preload("res://scenes/ui/day_summary.tscn")
+## The HUD's and the day summary's scripts, the types `_hud` and `_summary` are held as: neither
+## script has a `class_name`, so a name typed through its preloaded script is how its calls are
+## typed calls.
+const HudScript := preload("res://src/ui/hud.gd")
+const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 const PAUSE_SCREEN := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE_SCREEN := preload("res://scenes/ui/title_screen.tscn")
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
@@ -123,7 +127,7 @@ var _session: RunSession
 ## The trace this boot hands game logic: the session's, or a silent one for a script-only `main`.
 func _the_trace() -> RunTrace:
 	return _session.trace() if _session else RunTrace.new()
-var _hud: CanvasLayer
+var _hud: HudScript
 ## Kept because the telemetry observer asks it what she is being warned about; the layer around it
 ## is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
@@ -145,7 +149,7 @@ var _touch_controls: TouchControls
 ## Built in `_ready()` for `_touch_controls` to live on — `_apply_orientation()` needs somewhere to
 ## rotate, the same reason it exists before the controls question used to be answered.
 var _touch_layer: CanvasLayer
-var _summary: CanvasLayer
+var _summary: DaySummaryScript
 var _pause: PauseScreen
 var _title: TitleScreen
 ## The small corner symbol a change in the save state shows — see `SaveIndicator`'s own doc. Raised
@@ -1879,10 +1883,11 @@ func _spawn_start(target: String) -> Vector2:
 ## then asks. False, with the game quitting, when the recipe does not load.
 func _author_the_scene() -> bool:
 	var result := SceneRecipeRuntime.load_recipe(config.recipe_path(), config.dev_flag_words())
-	if not result.errors.is_empty():
-		_scene_failed(result.errors)
+	var errors: Array = result["errors"]
+	if not errors.is_empty():
+		_scene_failed(errors)
 		return false
-	configure(config.with_recipe(result.data))
+	configure(config.with_recipe(result["data"]))
 	var scene := SceneRecipeRuntime.new()
 	scene.configure(result, config, _run, _end_with)
 	add_child(scene)
