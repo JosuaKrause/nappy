@@ -72,7 +72,7 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 	for frame in int(round(6.0 / STEP)):
 		if walked_first and frame == 2:
 			figure.place(at)
-		crowd.set_focus(at)
+		crowd.use_focus(FakeCrowdFocus.new(at))
 		crowd.step(STEP)
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
@@ -129,7 +129,7 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 		if frame == int(round(stand / STEP)):
 			speed_when_it_left = car.speed()
 			map.moves.leave(figure)
-		crowd.set_focus(at)
+		crowd.use_focus(FakeCrowdFocus.new(at))
 		crowd.step(STEP)
 		if figure.is_on_the_list() and _overlaps(car, figure):
 			overlapping += 1

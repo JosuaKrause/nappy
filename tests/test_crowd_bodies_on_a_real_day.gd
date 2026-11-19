@@ -78,7 +78,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 			var in_a_car := 0
 			var reached_a_car := 0
 			for frame in int(round(20.0 / STEP)):
-				RunCity.crowd(city).set_focus(at)
+				RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 				RunCity.crowd(city).step(STEP)
 				for agent in RunCity.crowd(city).agents():
 					if map.is_obstructed(map.world_to_tile(agent.position)):

@@ -354,7 +354,7 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 	t.check(run.posters().is_torn(sheet) and bus.times("poster_torn") == 1,
 			"met, her push tears the sheet, said on the bus the walls were handed")
 	t.check(not signals.is_powered(), "and the blackout, handed --blackout, puts the lights out round her")
-	crowd.set_focus(walker.global_position)
+	crowd.use_focus(FakeCrowdFocus.new(walker.global_position))
 	her.global_position = walker.global_position
 	await PhysicsTicks.pass_ticks(t, 2)
 	t.check(bus.times("crowd_bumped") > 0, "and the crowd bumps her, standing on a walker")
@@ -416,7 +416,7 @@ func _test_a_body_on_a_lane_takes_the_car_there_away(t: TestRunner) -> void:
 	rng.seed = hash("%d:%d" % [RECYCLE_SEED, 8])
 	crowd.start_day(8, rng, Vector2.ZERO, false)
 	crowd.clear()
-	crowd.set_focus(Vector2.ZERO)
+	crowd.use_focus(FakeCrowdFocus.new(Vector2.ZERO))
 	# The first of the lane tiles a car may stand on (the crowd refuses a place in a junction, at a
 	# crossing and the like).
 	var car: CrowdAgent = null

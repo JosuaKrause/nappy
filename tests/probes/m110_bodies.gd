@@ -75,7 +75,7 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var car_frames := 0
 	var stopped := 0
 	for frame in int(round(SECONDS / STEP)):
-		RunCity.crowd(city).set_focus(at)
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 		RunCity.crowd(city).step(STEP)
 		for agent in RunCity.crowd(city).agents():
 			var caught := map.is_obstructed(map.world_to_tile(agent.position))

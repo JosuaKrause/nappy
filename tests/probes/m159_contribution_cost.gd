@@ -26,7 +26,7 @@ func run(t: TestRunner) -> void:
 				var direction := Vector2.DOWN if frame < 90 else \
 					(Vector2.RIGHT if (frame - 90) / 60 % 2 == 0 else Vector2.LEFT)
 				here += direction * Tuning.WALK_SPEED * STEP
-				RunCity.crowd(city).set_focus(here)
+				RunCity.crowd(city).use_focus(FakeCrowdFocus.new(here))
 				RunCity.crowd(city).step(STEP)
 				if frame < 150:
 					continue

@@ -147,6 +147,9 @@ src/
 	car_look.gd           a car's picture: five views in three layers, its bob over its wheels
 	crowd_view.gd         what the crowd is handed of the screen: the drawn box and the camera's
 	                      square, and the out-of-view rule built on them (`ScreenCrowdView` answers)
+	crowd_focus.gd        where the crowd's simulated patch stands, asked once a tick (`StrollerFocus`
+	                      answers with her position)
+	stroller_focus.gd     the game's `CrowdFocus`: the patch stands where she does
 	crowd_timing.gd       the sink the crowd charges its time and draws to; the null sink here,
 	                      `FrameRecordTiming` feeds the record
 	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers

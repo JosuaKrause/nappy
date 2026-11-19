@@ -140,7 +140,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 			here += (path[next] - here).normalized() * step
 		seconds += STEP
 		RunCity.events(city).stream_around(here)
-		RunCity.crowd(city).set_focus(here)
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(here))
 		RunCity.crowd(city).step(STEP)
 		var rates := [0.0, 0.0, 0.0]
 		var barrier := [0.0, 0.0, 0.0]

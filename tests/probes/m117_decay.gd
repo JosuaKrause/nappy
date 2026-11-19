@@ -128,7 +128,7 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 			gap = at.distance_to(toward)
 		if gap > 0.0:
 			at += (toward - at) / gap * step
-		RunCity.crowd(city).set_focus(at)
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 		RunCity.crowd(city).step(STEP)
 
 		var multiplier := city.decay_multiplier(at)
