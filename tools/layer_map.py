@@ -34,9 +34,9 @@ LAYER_TEXT: dict[str, str] = {
     "on-screen texts, the art's pages and the value types the rows are written in",
     "model": "the domain model: pure state and plans with no scene of their own -- the map and its interface "
     "(WorldMap and its records), its generation, the routes, the closures, the run's sub-states, the building's plan",
-    "world": "the world: the navigator, passability, the draw layers, the screen cover and what the world can "
-    "see, and the scene nodes that draw the world's own ground and furniture (the map interface and its "
-    "records are the model's) and the rim a body draws round itself",
+    "world": "the world: the navigator, passability, the draw layers, the screen cover, what the world can "
+    "see and the box the camera draws, and the scene nodes that draw the world's own ground and furniture "
+    "(the map interface and its records are the model's) and the rim a body draws round itself",
     "simulation": "simulation: everything that moves or happens -- her, the baby, the crowd, the events and "
     "their behaviours and looks, the resistance -- and the drawing of each, which it composes",
     "flow": "run flow: a day started and finished from its spec, the screens' order",
@@ -325,15 +325,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "DrawLayer",
         "the map interface adds a node to its world on a draw layer, the world's half of it",
         ("src/world/world_map.gd",),
-    ),
-    Exception_(
-        "names",
-        "DrawnView",
-        "an event's look asks the view whether its picture is on the screen",
-        (
-            "src/events/views/event_look.gd",
-            "src/events/views/roadblock_look.gd",
-        ),
     ),
     Exception_(
         "names",
