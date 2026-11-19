@@ -2095,11 +2095,6 @@ func _crossing_ahead_of(agent: CrowdAgent) -> Vector2:
 		was_paint = paint
 	return Vector2.INF
 
-## How far a point is in front of an agent, along the street it is on. Negative once the agent
-## has gone past it.
-func _distance_along(agent: CrowdAgent, point: Vector2) -> float:
-	return agent.heading().dot(point - agent.global_position)
-
 ## A grid where every street is equally loud is a grid with nothing to choose between. The
 ## arterial has to be the loud one, and it has to be the *same* one every morning.
 func _test_the_arterial_is_the_busiest_street(t: TestRunner) -> void:

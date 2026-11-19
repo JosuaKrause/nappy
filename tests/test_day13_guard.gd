@@ -240,9 +240,6 @@ static func _a_clear_line(map: CityMap, from: Vector2, to: Vector2) -> bool:
 			return false
 	return true
 
-func robbery_edge_of(roadblock: EventInstance) -> float:
-	return EventCatalogue.by_id("alley_robbery").notice_within() + ContactPoint.body_reach(roadblock)
-
 ## Whether any part of a waiting robber standing at `feet` (22 by 44px above his feet, a few px to
 ## spare) is in the test's view.
 func _guard_in_view(feet: Vector2) -> bool:

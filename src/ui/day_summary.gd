@@ -46,9 +46,8 @@ signal restart_requested()
 ## the mark there is no need to mention tasks in the day brief at all"). A task is announced at
 ## the mark and nowhere else — see `Hud._on_resistance_step_completed()`.
 @onready var _brief: Label = $Root/Center/Lines/Brief
-## Always empty — see `PauseScreen._hint`'s own doc for why the label stays but nothing writes to
-## it any more: the continue/restart pair already says what a tap does, and nothing left to say
-## here does not name a key.
+## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* The continue/restart
+## pair already says what a tap does, and nothing left to say here does not name a key.
 @onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
 @onready var _continue_column: VBoxContainer = $Root/Center/Lines/Buttons/ContinueColumn
@@ -59,9 +58,8 @@ signal restart_requested()
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `TitleScreen` and `PauseScreen` each read it once into their own member instead of asking at
-## every use site. No longer chooses the hint's own wording (`_hint` is always empty now — see
-## its own doc), but still gates `_wants_rotation()` and the mouse branch in
-## `_handle_restart_touch()` below.
+## every use site. It does not choose the hint's wording (`_hint` is always empty); it gates
+## `_wants_rotation()` and the mouse branch in `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
 
 ## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
@@ -128,7 +126,7 @@ func _refresh_buttons() -> void:
 ## widths (`SentenceLines.break_for_label()`), the title only when it is prose (`title_is_prose`: the
 ## clock line, a section's words, rather than "Day N of 14" or an ending's title). `_hint` is always
 ## empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still carries on, but
-## the continue/restart pair already says what a tap does — see `PauseScreen._hint`'s own doc.
+## the continue/restart pair already says what a tap does.
 func show_summary(model: SummaryModel, raised_in: int) -> void:
 	_raised_in = raised_in
 	_heading.text = model.heading_text()

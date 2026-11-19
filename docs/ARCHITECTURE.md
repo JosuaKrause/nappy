@@ -693,7 +693,7 @@ node path, from the root or as the current scene.
 ### `GameEnums`
 
 An autoload's name cannot also be a `class_name`, so the enums that signals and exports
-need to annotate (`BabyState`, `DayResult`, `Ending`, `EventKind`, `TileType`, `District`)
+need to annotate (`BabyState`, `DayResult`, `Ending`, `EventKind`, `TileType`)
 live in `src/game_enums.gd` rather than on an autoload.
 
 ### Verifying visuals

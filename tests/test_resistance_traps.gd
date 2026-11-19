@@ -552,21 +552,6 @@ func _robbers_on_the_street() -> int:
 			count += 1
 	return count
 
-## Whether `at` would actually be in sight with the camera on `her` and led toward `at` the way
-## `Stroller` leads it when she faces what she is walking toward — the worst-case lead, since a
-## start behind her would only pull the camera the other way. Asked of the tap scheme's
-## `VisibleView`, whose whole view is the one the director places against in either scheme — the
-## test the director places against (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over the same view): the
-## joystick's covered corners only ever take ground out of sight, so a point out of the whole view
-## is out of both.
-func _is_really_on_screen(_t: TestRunner, her: Vector2, at: Vector2) -> bool:
-	var bearing := at - her
-	var lead := Vector2.ZERO
-	if bearing.length() > 0.001:
-		var dir := bearing.normalized()
-		lead = Vector2(dir.x, dir.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-	return VisibleView.around(her + lead, null).sees(at)
-
 ## *(PLAYTEST-71: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
 ## yeller so it runs towards her from offscreen"; "we need a version of the robber that is not
 ## frozen when spawned"; M226: warned first, "1s warning should be enough".)* Handing the note over

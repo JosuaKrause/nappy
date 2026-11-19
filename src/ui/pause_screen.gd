@@ -24,11 +24,6 @@ signal quit_requested()
 @onready var _continue_caption: Label = $Root/Center/Lines/Buttons/ContinueColumn/ContinueCaption
 @onready var _restart_caption: Label = $Root/Center/Lines/Buttons/RestartColumn/RestartCaption
 @onready var _body: HelpText = $Root/Center/Lines/Body
-## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space`/`esc`/`r`/`q`
-## keep working, and the continue/restart pair already says what a tap does — there is nothing
-## left for a sentence here to say that does not name a key, so the label stays only to be looked
-## at and found blank rather than for a function to keep writing "" into.
-@onready var _hint: Label = $Root/Center/Lines/Hint
 @onready var _buttons: HBoxContainer = $Root/Center/Lines/Buttons
 @onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
 @onready var _restart_button: ModeButton = $Root/Center/Lines/Buttons/RestartColumn/Restart
@@ -311,9 +306,9 @@ func _acknowledge_and_resume() -> void:
 
 ## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game —
 ## **except on the web**, where `QuitOption.available()` is false and the key is not handled at
-## all. None of the four is named on screen any more — see `_hint`'s own doc — so a keyboard
-## player learns them from playing rather than from a sentence, the compromise this milestone
-## settled on in place of deleting them outright. Handled here rather than in `main` so that the
+## all. None of the four is named on screen (*(2026-09-06: "never should it be mentioned to the
+## user".)* The scene's Hint label stays blank and nothing writes to it), so a keyboard player
+## learns them from playing rather than from a sentence. Handled here rather than in `main` so that the
 ## screen owns its own keys while it is up, and `main` only owns the one that opens it.
 ##
 ## **`space` continues**, because it is the key the title screen and the between-days summary mean

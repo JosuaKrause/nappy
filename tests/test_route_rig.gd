@@ -194,20 +194,6 @@ func _release() -> void:
 	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
 	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 
-## The first tile of `type` the map has, at least `margin` tiles clear of every edge, scanned
-## rather than hard-coded, so a change to the generator's own layout cannot make this suite pass
-## on a coincidence. `t.check`s that one exists rather than crashing on `Vector2i(-1, -1)` if a
-## future seed or a future generator ever ran out.
-func _find_tile(t: TestRunner, type: GameEnums.TileType, margin: int = 3) -> Vector2i:
-	for y in range(margin, _city.map.size.y - margin):
-		for x in range(margin, _city.map.size.x - margin):
-			var tile := Vector2i(x, y)
-			if _city.map.tile_at(tile) == type:
-				return tile
-	t.check(false, "seed %d day %d has a %s tile to test against, clear of the map edge"
-			% [SEED, DAY, type])
-	return Vector2i(-1, -1)
-
 ## Whether `tile` is ground a straight cut may cross: open, unobstructed and not plain `ROAD`.
 func _cuttable(tile: Vector2i) -> bool:
 	return _city.map.is_open(tile) and not _city.map.is_obstructed(tile) \
@@ -339,7 +325,7 @@ func _end_rig(rig: RouteRig, day: DayController) -> void:
 
 # ---------------------------------------------------------- straight cuts ---
 
-## An open square of `size` tiles on cuttable ground, its top-left tile, scanned like `_find_tile()`.
+## An open square of `size` tiles on cuttable ground, its top-left tile, scanned rather than hard-coded.
 func _find_open_square(t: TestRunner, size: int) -> Vector2i:
 	for y in range(3, _city.map.size.y - 3 - size):
 		for x in range(3, _city.map.size.x - 3 - size):
@@ -415,7 +401,7 @@ func _test_a_straight_run_on_plain_road_is_never_cut(t: TestRunner) -> void:
 ## The left end of a straight run of `length` tiles along one row that a cut may cross all the way
 ## down, with the row above and the row below it cuttable too (the cut samples a body's width
 ## either side of its line), and none of it a crossing already; answers `Vector2i(-1, -1)` if
-## there is none. Scanned rather than hard-coded, like `_find_tile()`.
+## there is none. Scanned rather than hard-coded.
 func _find_cuttable_row(length: int) -> Vector2i:
 	for y in range(4, _city.map.size.y - 4):
 		for x in range(4, _city.map.size.x - 4 - length):
@@ -501,7 +487,7 @@ func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t: Te
 ## front, and the same on the three tiles either side along the street — the site a `delivery_van`
 ## (`pavement_side = AT_THE_KERB`) is parked on — far enough from the doorstep that nothing this
 ## suite walks passes it, and with no body's clearance already reaching its frontage tile.
-## Quiet (`_site_is_quiet()`). Scanned rather than hard-coded, like `_find_tile()`. Answers
+## Quiet (`_site_is_quiet()`). Scanned rather than hard-coded. Answers
 ## `Vector2i(-1, -1)` if none.
 func _find_kerb_site(t: TestRunner, planner: RouteRigPlanner) -> Vector2i:
 	var doorstep := _city.map.world_to_tile(_city.map.doorstep_world_position())

@@ -74,10 +74,6 @@ func release(walker: Node2D) -> void:
 	if at >= 0:
 		queue.remove_at(at)
 
-## How many are waiting behind whoever is inside.
-func waiting() -> int:
-	return queue.size()
-
 ## How many walkers this hut has altogether — inside and waiting. **The quantity the queue cap is
 ## stated over**, rather than the waiting line alone: before anybody has been let in, the line
 ## *is* everybody, and a cap that only counted the waiters would let an unbounded number commit in
