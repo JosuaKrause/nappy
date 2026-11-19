@@ -97,9 +97,9 @@ FILES: dict[str, str] = {
     # city: the map, its generation and its run-scoped state are the model; the scene and its
     # furniture (the folder's own layer) are the world; the ways out of the city are data, since
     # the texts and the day's spec are keyed on them.
-    "src/city/city_exit.gd": "data",
     "src/city/block_layout.gd": "model",
     "src/city/block_plan.gd": "model",
+    "src/city/city_exit.gd": "data",
     "src/city/city_generator.gd": "model",
     "src/city/city_map.gd": "model",
     "src/city/city_state.gd": "model",

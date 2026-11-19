@@ -21,5 +21,8 @@ enum Kind {
 ## The way out's word, "tunnel" or "bridge", for a line of the run log. `kind` is an `int`
 ## because the kind travels as one, and a parameter typed as this script's enum refuses a value
 ## another script typed as `CityExit.Kind` (**godot**'s rare traps, "A cross-script enum").
+## **Any value but `TUNNEL` reads as "bridge"**, -1 included, so a caller checks for no way out
+## taken (-1) first, as `TelemetryObserver._won_line()` does; a finale chain's kind is always a
+## member.
 static func name_of(kind: int) -> String:
 	return "tunnel" if kind == Kind.TUNNEL else "bridge"
