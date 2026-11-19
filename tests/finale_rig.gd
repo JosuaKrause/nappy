@@ -967,7 +967,10 @@ const _CROSS_STREET_TILES := 6
 ## **A street that ends at a corner**: `_CORNER_STREET`, open sidewalk between buildings, meets a
 ## cross street `_CROSS_STREET_TILES` deep across its north end, which runs east past a building
 ## `_CORNER_BUILDING_TILES` wide and turns back south down the next street, as wide as hers. Every
-## other tile is building, so the only way on from the end of her street is round the corner.
+## other tile is building, so the only way on from the end of her street is round the corner. The
+## generator makes no street exactly like this (parallel streets stand a block apart, and a street has
+## a carriageway); the shape a player meets is a building two tiles wide between her street and an
+## alley, the narrowest the generator leaves beside one, where a straight chase is held behind it.
 static func _a_street_that_ends_at_a_corner() -> CityMap:
 	var size := Vector2i(_CORNER_STREET.end.x + _CORNER_BUILDING_TILES + _CORNER_STREET.size.x + 4,
 			_CORNER_STREET.end.y)
