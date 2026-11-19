@@ -73,9 +73,8 @@ exposes (drawing, a signal, input and frames) or the member is removed or needs 
   the player half of its live tick, which also shoves, warns and strikes, while the rigs tick with
   `step()`, which has none; so a stroller handed through `use_player()` moves no field there, real
   frames would add bumps and strikes to every check, and recycling would drop the cars and walkers
-  under test. **Open**, a change to `src/` and so a question first: hand the crowd a focus source, so
-  that where the simulated patch stands is a game input apart from who she is, which would let
-  `set_focus` go.
+  under test. It goes: the entry cozy-yak (the crowd is handed a focus source, and `set_focus` goes)
+  hands the crowd a focus source, the player's answer (grassy-bison #1561).
 - `EventLook.drawn_rect_now` (record minty-quail-olive-sparrow): the caret is drawn straight onto the event and no
   recorder holds it.
 - The balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and
