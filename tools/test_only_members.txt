@@ -71,10 +71,6 @@ src/events/event_plan.gd ends
 src/events/location.gd section
 src/events/pending_warning.gd place
 src/events/views/event_look.gd drawn_heading
-src/run/day_director.gd day
-src/run/day_director.gd events
-src/run/day_director.gd landed_by_group
-src/run/day_director.gd player
 src/ui/danger_edge.gd model
 src/ui/danger_edge.gd sees
 src/ui/danger_edge.gd view

@@ -101,7 +101,7 @@ The events:
   its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
   landed the most on her over every source's own window (`ExcitementSource.WINDOW`, 5s) at the moment she
   cried: the row id of the event that landed it (`ExcitementSource.landed()` on the event's source, grouped by
-  `EventInstance.logged_name()` in `DayDirector.landed_by_group()`) — a catalogue row's, or one of the three rows met on one occasion that
+  `EventInstance.logged_name()` in `DayDirector._landed_by_group()`) — a catalogue row's, or one of the three rows met on one occasion that
   sit outside the catalogue's list, so a day cried away mostly under day 13's task guard is
   `lost-crying-task-guard`, never `lost-crying-alley-robbery`, and the lesson's dog and the task
   guard sent at her are `lost-crying-charging-dog-tutorial` and `lost-crying-task-guard-sent` —
