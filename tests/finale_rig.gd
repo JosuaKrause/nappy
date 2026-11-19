@@ -86,6 +86,7 @@ const CASES: Array[String] = [
 	"_test_a_route_rig_presses_only_the_first_brief_of_a_section",
 	"_test_a_handover_does_not_open_on_the_title",
 	"_test_the_held_restart_from_the_escape_clears_the_section",
+	"_test_a_posted_guard_follows_her_round_the_corner",
 ]
 
 ## The cases at `indices` of `CASES`, in the order given. A case may be a coroutine.
@@ -869,6 +870,7 @@ func _stand_her_at(t: TestRunner, manager: EventManager, at: Vector2) -> Strolle
 ## over more seeds.
 func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> void:
 	var crossings := 0
+	var turned := 0
 	for seed_value: int in [4242, 77]:
 		var built := RoadblockRig.plan_for(seed_value)
 		var map: CityMap = built["map"]
@@ -892,6 +894,7 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 				var posted := RoadblockRig.walk(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
 				_check_a_posted_walk_is_caught(t, where, posted)
+				turned += 1 if int(posted["turned"]) > 0 else 0
 				var lured := RoadblockRig.lure(t, map, group, from, to,
 						RoadblockRig.Meter.new(Tuning.EXCITEMENT_WAKE_THRESHOLD, false))
 				var after: Dictionary = lured["after"]
@@ -905,16 +908,81 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t: TestRunner) -> vo
 						"%s: and the band charges her nothing on the way (%.1f/s at most, %.1f points)"
 						% [where, after["strongest"], after["cost"]])
 	t.check(crossings > 0, "there were roadblock crossings to walk (%d)" % crossings)
+	# Seed 77's street (7,0,1) ends 209px past its band, inside the 400px or so his charge takes to
+	# reach a straight walker, so walking it forward turns the corner with him behind her.
+	t.check(turned > 0, "a walk straight past a posted guard turned the corner where its street ended (%d)"
+			% turned)
 
 ## **Every walk straight past a posted guard is caught**, on every crossing: the walk is the control
 ## that shows the lure walk beside it is not walking past nothing, and the player's rule is that luring
 ## the guard off is the way past (inbox #771 in minty-lemur). The warning runs its clock while she
 ## walks on, so the charge starts with her already past him, and it closes the gap at 38px/s more
 ## than her walk: on every street the rig walks her along the sidewalk to where the ground ends, and
-## a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has caught her.
+## a charge that has begun is followed on (`RoadblockRig.TAIL`) until it has caught her, **round the
+## corner where her street ends sooner**, since he follows her round buildings (`ChaseWay`) and
+## turning the next corner is no way past him (inbox #1534 in velvet-alpaca).
 static func _check_a_posted_walk_is_caught(t: TestRunner, where: String, posted: Dictionary) -> void:
 	t.check(posted["caught"] and posted["charged"] > 0,
 			"%s: walking straight past a posted guard is caught (%d charged)" % [where, posted["charged"]])
+
+## **He follows her round the corner.** *(Inbox #1534 in velvet-alpaca, asked whether a walker who
+## goes straight past a posted guard and turns the next corner before he reaches her may get away:
+## "sure, your pick", the pick being that he follows her round it.)* Walking straight past his post
+## where his street ends sooner than his charge reaches her, and turning the corner round the
+## building she walked beside, is caught as a straight walk is. One interaction on a hand-drawn map
+## (`_a_street_that_ends_at_a_corner()`): she walks up the sidewalk beside the building, past the
+## band, and once he charges turns the first corner into the cross street, hugging the building's
+## face, and on round it (`RoadblockRig.walk()`). A chase straight at her slides along the face she
+## is round, keeping only the sliver of its step that runs along it, and loses her; his way round
+## (`PursuitSpec.walks_round_buildings()`, `ChaseWay`) brings him round the corner after her. With the
+## band 112, 144 and 176px short of the cross street, all inside the 400px or so his charge takes to
+## reach a straight walker.
+func _test_a_posted_guard_follows_her_round_the_corner(t: TestRunner) -> void:
+	var map := _a_street_that_ends_at_a_corner()
+	var def := EventCatalogue.escape_roadblock()
+	var lane := map.tile_to_world(Vector2i(_CORNER_STREET.end.x - 1, 0)).x
+	var corner := float(_CORNER_STREET.position.y * Tuning.TILE_SIZE)
+	for post_row: int in [_CORNER_STREET.position.y + 3, _CORNER_STREET.position.y + 4,
+			_CORNER_STREET.position.y + 5]:
+		var post := map.tile_to_world(Vector2i(_CORNER_STREET.position.x + 1, post_row))
+		var group: Array[EventPlan] = [EventPlan.new(def, post)]
+		# She starts out of his notice, twice its radius short of the band.
+		var from := Vector2(lane, post.y + 2.0 * def.notice_within())
+		var to := Vector2(lane, corner - _CROSS_STREET_TILES * Tuning.TILE_SIZE)
+		var walked := RoadblockRig.walk(t, map, group, from, to, RoadblockRig.Meter.new(0.0, true))
+		t.check(walked["charged"] == 1 and int(walked["turned"]) > 0,
+				"the band %.0fpx short of the cross street: he charges and she turns the corner (%d turns)"
+				% [post.y - corner, walked["turned"]])
+		t.check(walked["caught"], "the band %.0fpx short of the cross street: he follows her round the corner and catches her (at %s)"
+				% [post.y - corner, map.world_to_tile(walked["at"])])
+
+## Her street in `_a_street_that_ends_at_a_corner()`, in tiles: six wide, running north to the cross
+## street.
+const _CORNER_STREET := Rect2i(10, 8, 6, 40)
+## How wide the building between her street and the next is, in tiles, and the cross street across
+## the top of both.
+const _CORNER_BUILDING_TILES := 2
+const _CROSS_STREET_TILES := 6
+
+## **A street that ends at a corner**: `_CORNER_STREET`, open sidewalk between buildings, meets a
+## cross street `_CROSS_STREET_TILES` deep across its north end, which runs east past a building
+## `_CORNER_BUILDING_TILES` wide and turns back south down the next street, as wide as hers. Every
+## other tile is building, so the only way on from the end of her street is round the corner. The
+## generator makes no street exactly like this (parallel streets stand a block apart, and a street has
+## a carriageway); the shape a player meets is a building two tiles wide between her street and an
+## alley, the narrowest the generator leaves beside one, where a straight chase is held behind it.
+static func _a_street_that_ends_at_a_corner() -> CityMap:
+	var size := Vector2i(_CORNER_STREET.end.x + _CORNER_BUILDING_TILES + _CORNER_STREET.size.x + 4,
+			_CORNER_STREET.end.y)
+	var map := CityMap.new(size)
+	map.fill_rect(Rect2i(Vector2i.ZERO, size), GameEnums.TileType.BUILDING)
+	map.fill_rect(_CORNER_STREET, GameEnums.TileType.SIDEWALK)
+	var next := Rect2i(_CORNER_STREET.end.x + _CORNER_BUILDING_TILES, _CORNER_STREET.position.y,
+			_CORNER_STREET.size.x, _CORNER_STREET.size.y)
+	map.fill_rect(next, GameEnums.TileType.SIDEWALK)
+	map.fill_rect(Rect2i(_CORNER_STREET.position.x, _CORNER_STREET.position.y - _CROSS_STREET_TILES,
+			next.end.x - _CORNER_STREET.position.x, _CROSS_STREET_TILES), GameEnums.TileType.SIDEWALK)
+	return map
 
 ## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
 ## where one's guard notices her while she deals with the other: their notices, each

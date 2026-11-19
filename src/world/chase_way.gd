@@ -2,10 +2,14 @@ class_name ChaseWay
 extends RefCounted
 ## **The way a walker follows toward somebody who may be a city away**, round the buildings between
 ## them: a `WalkField` sweep out from her over the ground a figure on foot can walk, kept fresh as she
-## moves and read a step at a time (`Navigator.way_to()` makes one for a mover). Only day 13's task
-## guard has one (`EventInstance.notice_her_at()`); every other pursuer starts within sight of her
-## with a straight run at her and keeps the straight line the navigator's step slides along walls.
-## *(curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine".)*
+## moves and read a step at a time (`Navigator.way_to()` makes one for a mover). Two pursuers have
+## one: day 13's task guard, set on her from wherever he stands (`EventInstance.notice_her_at()`;
+## *curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine"*), and
+## the roadblock's posted guard, whose row asks for it (`PursuitSpec.walks_round_buildings()`), so
+## turning the next corner past his post is no way past him *(inbox #1534 in velvet-alpaca, "sure,
+## your pick", the pick being that he follows her round the corner)*. Every other pursuer starts
+## within sight of her with a straight run at her and keeps the straight line the navigator's step
+## slides along walls.
 ##
 ## **Where there is a clear line to her the walker goes straight at her**, exactly as without a way;
 ## only where a building stands between them does it follow the walk instead. The walk is a sweep out

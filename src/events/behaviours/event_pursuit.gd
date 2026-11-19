@@ -119,8 +119,9 @@ func _chase(delta: float) -> void:
 	var step := minf(_pursuit.speed * delta, range_to_her)
 	if _figure.is_telegraphing():
 		step = _close_through_the_telegraph(delta, step, range_to_her, standoff)
-	# **Day 13's task guard walks round buildings toward her** (`Figure.way_round_to_her()`):
-	# where no clear line runs to her he follows the walk instead. Only the direction changes.
+	# **A guard with a way round walks round buildings toward her** (`Figure.way_round_to_her()`:
+	# the roadblock's posted guard, and day 13's task guard once set on her): where no clear line
+	# runs to her he follows the walk instead. Only the direction changes.
 	var way_round: ChaseWay = _figure.way_round_to_her()
 	if way_round != null:
 		way_round.keep_fresh(_where.at(), _figure.place())

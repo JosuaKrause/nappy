@@ -826,6 +826,12 @@ func leaves_its_body() -> bool:
 		chase = hunts.pursuit
 	return chase != null and chase.leaves_its_body
 
+## Whether its pursuer walks round buildings toward her once he is after her
+## (`PursuitSpec.walks_round_buildings()`): the roadblock's hunting copy, whose posted guard follows
+## her round a corner. False for a row that does not pursue.
+func walks_round_buildings() -> bool:
+	return pursuit != null and pursuit.walks_round_buildings()
+
 ## Whether it pursues with a chase that begins in `start`'s way.
 func starts_by(start: PursuitSpec.Start) -> bool:
 	return pursuit != null and pursuit.start == start

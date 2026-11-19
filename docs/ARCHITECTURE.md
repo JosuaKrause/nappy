@@ -478,7 +478,8 @@ src/
 	                      the chase way's walk to her
 	chase_way.gd          the way a chaser follows to her round the buildings between them: a sweep
 	                      out from her kept fresh as she moves, read a step at a time; made by
-	                      `Navigator.way_to()`, held by day 13's task guard alone
+	                      `Navigator.way_to()`, held by day 13's task guard and the posted roadblock
+	                      guard
 	visible_view.gd       what she can see: the camera's view less the corners the joystick's
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
