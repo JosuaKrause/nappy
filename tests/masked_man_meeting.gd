@@ -107,7 +107,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 			if not (state["before"] as Dictionary).is_empty():
 				_count_the_badge(edge, state["before"], badge_log)
 			state["before"] = {"quiet": man.is_waiting() or man.is_telegraphing(),
-					"shown": _in_sight(edge, man)}
+					"shown": _in_sight(events, man)}
 		if not state["turned"] and tile.y - origin.y >= int(walk[0]) and her.y >= scene.map().tile_to_world(tile).y:
 			state["turned"] = true
 			_hold_keys(walk[1], state["running"])
@@ -156,13 +156,13 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 	return met
 
 ## Whether she can see any of `man`: the point he stands at, or any of what he draws, asked of the
-## edge's own view (`DangerEdge.sees()`, and `VisibleView.sees_any()` on the drawn box
+## events' view (`EventManager.sees()`, the view the edge reads, and `VisibleView.sees_any()` on the drawn box
 ## `EventInstance.drawn_box()`).
-func _in_sight(edge: DangerEdge, man: EventInstance) -> bool:
-	if edge.sees(man.global_position):
+func _in_sight(events: EventManager, man: EventInstance) -> bool:
+	if events.sees(man.global_position):
 		return true
 	var box := man.drawn_box()
-	return box.has_area() and edge.view().sees_any(Rect2(man.global_position + box.position, box.size))
+	return box.has_area() and events.visible_view().sees_any(Rect2(man.global_position + box.position, box.size))
 
 ## One drawn frame of the edge watching him (`meet()` with `badge`), counted against
 ## `then`, what the tick the frame measured held (`quiet`: he is still waiting or warning; `shown`:

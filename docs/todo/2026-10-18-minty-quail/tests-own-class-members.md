@@ -31,10 +31,9 @@ silences that access's warning, counts as read. These thin out as `typed-everywh
 whatever the check then lists joins the scope.
 
 **What is left, by module.** Outside the events and the resistance, the `[own file only]` group holds
-two owners: the scene recipe runtime's `manifest`, `named`, `start_position` and `tick`
+one owner: the scene recipe runtime's `manifest`, `named`, `start_position` and `tick`
 (`src/dev/scene_recipe_runtime.gd`), which waits with the scene recipes for the events' interface
-row 3c and the scene recipes' own pass (`city-hand-ins.md`); and the screen-edge badge's control's
-`model`, `sees` and `view` (`src/ui/danger_edge.gd`), which waits for nothing. Under `src/events/`,
+row 3c and the scene recipes' own pass (`city-hand-ins.md`). Under `src/events/`,
 waiting for the events' interface rows: the officer behaviour's `trail` and `vehicle`, the calm
 areas' `unused`, the catalogue's `all`, the live event's `charge_radius`, `chase_age`,
 `clear_line_to`, `look`, `notice_time` and `phase`, the event manager's `ahead`, `checkpoints`,
