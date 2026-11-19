@@ -7,8 +7,9 @@ observers and the view are siblings that do not name each other (inbox #904 in f
 item's sentence for it, the orchestrator's proposal, gave it a pull request of its own that hands the
 run log what its observer reads of the badges. Fable's quota is out and the player answered "yes,
 continue with one fable task at a time and use opus for it" (grassy-bison #1560), so an Opus agent
-designed and built it in Fable's place; the pull request (#1567) carries the `fable-only` label and is
-held unmerged until Fable reviews the design (entry grassy-ibis).
+designed and built it in Fable's place; the pull request (#1567) carries the `fable-only` label. It was
+held unmerged for Fable's review of the design (entry grassy-ibis) until the player lifted that
+hold while Fable's quota is out (inbox #1571), and merged on its Opus review.
 
 **What was built.** The run log read one thing of the badges each frame, `announcing()`, taking each
 badge's id, distance and approach for its two `edge badge` lines; `DangerEdge` passed the call through
