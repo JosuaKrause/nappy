@@ -10,10 +10,10 @@
 #                                  the runner prints the order and a command that replays it
 #   tools/test.sh --repeat 3 ...  the chosen suites three times in one process (any mode but
 #                                  --record-costs); a failure names its pass
-#   (the three full-run modes -- default, --serial, --record-costs -- exit 3 while another test run is alive)
 #   tools/test.sh --record-costs  run everything locally, then refresh tests/suite_costs.txt from it
 #                                  (tools/ci-costs.sh refreshes the same file from recent CI runs'
 #                                  own timings instead, with no local run needed)
+#   (the three full-run modes -- default, --serial, --record-costs -- exit 3 while another test run is alive)
 #
 # A full run is sharded -- locally across several Godot processes, in CI across matrix jobs, one
 # runner per shard. The reason is the shape of the suite rather than a preference: the work is
@@ -48,7 +48,9 @@
 # `tests/tests.tscn` on its command line -- the scene whose script is tests/run_tests.gd), from any
 # worktree, excluding this script's own ancestors, and exits 3 naming the processes it saw. A named-suite
 # run, `--shard I/N` (one CI runner's share) and `--plan` are never refused. TEST_ALLOW_PARALLEL_RUN=1
-# skips the check (a proposal, for the player's own runs on a machine they know is idle enough).
+# skips the check (a builder's proposal, for the player's own runs on a machine they know is idle enough).
+# The guard is not complete: a named-suite filter that matches every suite is a full run it does not
+# refuse, and a full run still baking atlases or importing has no test process yet for another to see.
 #
 # A shard that hangs is killed after a limit that follows the plan (see SHARD_TIMEOUT_OVERRIDE_S
 # below) and reported by name rather than left to block the run forever -- see
@@ -105,7 +107,8 @@ its own.
 A full run (no suite names, or --serial, or --record-costs) refuses to start, exit 3, while another
 Godot process running the test scene (tests/tests.tscn, from any worktree) is alive, and prints the
 processes it saw: several full runs at once have used tens of gigabytes. Named-suite runs, --shard
-I/N and --plan are never refused. TEST_ALLOW_PARALLEL_RUN=1 skips the check.
+I/N and --plan are never refused. TEST_ALLOW_PARALLEL_RUN=1 skips the check (the builder's
+proposal, for the player's own runs; an agent never sets it).
   --serial          everything, in one process (what a shard failure is debugged in)
   --plan            print the shard split (TEST_SHARDS processes) with each shard's planned
                      time and kill limit, and run nothing
@@ -265,7 +268,7 @@ if [[ $plan_only -eq 0 && -z "$shard_arg" && $# -eq 0 && "${TEST_ALLOW_PARALLEL_
         echo "tools/test.sh: refusing a full run -- another test run is alive on this machine:" >&2
         echo "$others" >&2
         echo "Several full runs at once use tens of gigabytes. Wait for it, run named suites (tools/test.sh crowd)," >&2
-        echo "or leave the full run to CI. TEST_ALLOW_PARALLEL_RUN=1 skips this check." >&2
+        echo "or leave the full run to CI." >&2
         exit 3
     fi
 fi
