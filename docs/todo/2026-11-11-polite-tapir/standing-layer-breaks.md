@@ -27,8 +27,7 @@ review; a builder runs it again):
   the run log (`RunSession`, `TelemetryObserver`); the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's type tests where she is not handed in
   (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
-  of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; `DrawnView`,
-  named by two looks; and the scheduler naming `City.BURNT_FRONTAGE_SCAR`.
+  of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; and the scheduler naming `City.BURNT_FRONTAGE_SCAR`.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
@@ -39,8 +38,7 @@ review; a builder runs it again):
   (`EventFootprints` three times, `EventInstance` once); row 3a of minty-quail's `event-interface.md`
   settles them.
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
-  that finishes this item lists what is left:* **the rest** ends as follows. `DrawnView` goes on the world layer in
-  the map, beside `VisibleView`: it names only the engine, as the halo's rim did. The `DangerEdge`
+  that finishes this item lists what is left:* **the rest** ends as follows. The `DangerEdge`
   uses in the run log (`RunSession`'s edge field and `watch()`'s edge parameter,
   `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
   own, which hands the run log what its observer reads of the danger edge, the badges that are
