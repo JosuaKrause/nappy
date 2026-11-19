@@ -596,7 +596,6 @@ func _test_the_horn_watches_further_than_the_strike_does(t: TestRunner) -> void:
 	t.check(Tile.is_road(map.tile_type_at_world(rig.global_position)),
 			"she stands on the carriageway ahead of the car")
 	agent.lane().see_no_pedestrian()
-	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(agent.global_position))
 	# The first tick that sounds the horn: how far off she was, and what the give-way scan had
 	# written for the car on that same tick. The physics frames the suite lets pass are not counted
 	# on, since a frame that follows a long stretch of work runs several ticks to catch up.
@@ -835,7 +834,6 @@ func _test_walking_into_somebody_displaces_and_startles_them(t: TestRunner) -> v
 	EventBus.crowd_bumped.connect(on_bump)
 	RunCity.simulation(_city).meet_her(rig)
 	RunCity.crowd(_city).use_bus(EventBus)
-	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(here))
 	var frames := 0
 	while frames < 120 and (bumps.is_empty() or walker.is_touched()):
 		await _city.get_tree().physics_frame
@@ -1656,7 +1654,6 @@ func _check_a_gate_across_a_bucket_edge_holds_the_car(t: TestRunner, vertical: b
 	t.check(run.x >= 0, "%s: this city has a straight stretch of street with a lane near a bucket edge" % way)
 	if run.x < 0:
 		return
-	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(1))
 	RunCity.crowd(_city).clear()
 	var start_tile := run.y + 1 if direction > 0.0 else run.y + Tuning.BLOCK_SIZE - 2
@@ -1897,7 +1894,6 @@ func _test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t: TestRunner) -> 
 	t.check(run.x >= 0, "this city has a straight stretch of street to drive a car on")
 	if run.x < 0:
 		return
-	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(1))
 	RunCity.crowd(_city).clear()
 	var car: CrowdAgent = _rig.agent_on(_city, map, CrowdAgent.Kind.CAR, run.x,
@@ -2054,7 +2050,6 @@ func _test_the_morning_resolve_is_not_drawn_as_a_slide(t: TestRunner) -> void:
 ## (`_test_the_same_day_makes_the_same_crowd`).
 func _start_a_day_marked(day: int, stream_day := -1) -> Array[_ResetMark]:
 	var rng_day := day if stream_day < 0 else stream_day
-	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(day, _rng(rng_day))
 	var layer := RunCity.crowd(_city).agents()[0].get_parent()
 	var marks: Array[_ResetMark] = []
@@ -2192,14 +2187,13 @@ func _test_nothing_walks_into_a_hard_blocker(t: TestRunner) -> void:
 			continue
 		at = _city.map.tile_rect_to_world(segment.tile_rect()).get_center()
 		break
-	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(1), at)
 	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 
 	var worst := 0
 	var frames := int(round(40.0 / STEP))
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in frames:
-		RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 		RunCity.crowd(_city).step(STEP)
 		var inside := 0
 		for agent in RunCity.crowd(_city).agents():

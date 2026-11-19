@@ -86,8 +86,8 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	RunCity.crowd(city).start_day(day, crowd_rng, at)
 	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
 
+	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(SECONDS / STEP)):
-		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 		RunCity.crowd(city).step(STEP)
 		for agent: CrowdAgent in RunCity.crowd(city).agents():
 			if agent.kind != CrowdAgent.Kind.CAR:

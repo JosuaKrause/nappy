@@ -84,6 +84,7 @@ func run(t: TestRunner) -> void:
 					print("CROWD_CADENCE_JSON " + JSON.stringify(
 							_run_once(city, rig, city_seed, day, walk, per_tick)))
 		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	rig.free()
 	t.check(true, "ran")
@@ -102,6 +103,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	crowd.start_day(day, rng, start)
 	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
+	crowd.use_focus(StrollerFocus.new(rig))
 	crowd.use_bus(EventBus)
 	var with_events := OS.get_environment("CADENCE_EVENTS") != ""
 	var meeting: YIELDS.Meeting = null

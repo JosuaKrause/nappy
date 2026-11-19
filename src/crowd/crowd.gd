@@ -190,8 +190,8 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 ## (`hard_fail_triggered`) and a horn sounded at her (`car_near_miss`). Handed in by `use_bus()`;
 ## with none, a rig's, the crowd tells nobody.
 var _bus: _BUS
-## The patch of city being simulated. Held here, moved onto its focus source (`_focus`) every tick, and
-## read by every agent when it recycles.
+## The patch of city being simulated. Held here, moved onto its focus source (`_focus`) every
+## tick, and read by every agent when it recycles.
 var _field: CrowdField
 ## Where the cars are, by lane. Filled by `space_out_the_traffic()` out of the buckets it already
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
@@ -281,7 +281,8 @@ func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: 
 			Rect2i(Vector2i.ZERO, map.size_in_tiles())).get_center())
 
 ## Hands the crowd the player it makes way for. Called once the world is live and she walks it
-## (`WorldSimulation.meet_her()`); null takes her away.
+## (`WorldSimulation.meet_her()`); null takes her away, and not the focus source `meet_her()` hands
+## beside her (`use_focus()`): a teardown that frees her calls `meet_her(null)`, which drops both.
 func use_player(player: Stroller) -> void:
 	_player = player
 

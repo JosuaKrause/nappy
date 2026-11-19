@@ -32,8 +32,8 @@ func run(t: TestRunner) -> void:
 		var most := 0
 		var total := 0
 		var frames := int(round(30.0 / STEP))
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 		for frame in frames:
-			RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 			RunCity.crowd(city).step(STEP)
 			var near := 0
 			for agent in RunCity.crowd(city).agents():

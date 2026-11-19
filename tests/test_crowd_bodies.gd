@@ -96,8 +96,8 @@ func _walk(crowd: Crowd, map: CityMap, watched: CrowdAgent, at: Vector2,
 	var deepest := watched.position.y
 	var shallowest := watched.position.y
 	var lane_x := watched.position.x
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(seconds / STEP)):
-		crowd.use_focus(FakeCrowdFocus.new(at))
 		crowd.step(STEP)
 		for agent in crowd.agents():
 			if map.is_obstructed(map.world_to_tile(agent.position)):
@@ -235,8 +235,8 @@ func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t: TestRunne
 	var near := _footway_span(corridor, true)
 	var inside := 0
 	var past_the_junction := 0
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(12.0 / STEP)):
-		crowd.use_focus(FakeCrowdFocus.new(at))
 		crowd.step(STEP)
 		for agent in crowd.agents():
 			if map.is_obstructed(map.world_to_tile(agent.position)):
@@ -462,8 +462,8 @@ func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: A
 	var standing := 0
 	var inside := 0
 	var turned := 0
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(20.0 / STEP)):
-		crowd.use_focus(FakeCrowdFocus.new(at))
 		crowd.step(STEP)
 		for walker in walkers:
 			if walker.travelling_vertically() == vertical:

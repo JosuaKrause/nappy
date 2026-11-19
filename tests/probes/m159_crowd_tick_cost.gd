@@ -41,7 +41,8 @@ const REPETITIONS := 3
 const WARMUP := 150
 const WINDOW := 600
 ## The split's columns, in the order the tick runs them: `_advance_the_world()`'s calls and
-## `space_out_the_traffic()`'s inside it, then the player half, then the agents' steps.
+## `space_out_the_traffic()`'s inside it, then the focus and the player half (one column), then the
+## agents' steps.
 const PARTS: Array[String] = ["signals", "pockets", "resolve", "keep_room", "index",
 		"claims", "give_way", "gates", "doors", "player", "agents"]
 
@@ -73,6 +74,7 @@ func run(t: TestRunner) -> void:
 							("seed %d, day %d, %s walk, repetition %d: the split tick moves every "
 							+ "agent exactly as the real one") % [city_seed, day, walk, repetition])
 		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	rig.free()
 
@@ -91,6 +93,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	crowd.start_day(day, rng, start)
 	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
+	crowd.use_focus(StrollerFocus.new(rig))
 	crowd.use_bus(EventBus)
 	# Thirty-two zero bytes rather than an empty array, which `HashingContext.update()` refuses.
 	var chain := PackedByteArray()
@@ -134,8 +137,8 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		"processor": OS.get_processor_name()}
 
 ## The tick, call by call, in `Crowd._tick_the_crowd()`'s own order: `_advance_the_world()` (with
-## `space_out_the_traffic()` opened up inside it), `_meet_the_player()` and then
-## `_step_the_agents()`. Returns each call's
+## `space_out_the_traffic()` opened up inside it), `_follow_the_focus()`, `_meet_the_player()` and
+## then `_step_the_agents()`. Returns each call's
 ## microseconds in `PARTS` order.
 func _split_tick(crowd: Crowd) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
@@ -158,6 +161,7 @@ func _split_tick(crowd: Crowd) -> Array[int]:
 	stamps.append(Time.get_ticks_usec())
 	crowd._hold_walkers_at_doors(STEP)
 	stamps.append(Time.get_ticks_usec())
+	crowd._follow_the_focus()
 	crowd._meet_the_player()
 	stamps.append(Time.get_ticks_usec())
 	crowd._step_the_agents(STEP)

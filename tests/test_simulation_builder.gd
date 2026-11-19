@@ -335,13 +335,13 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 	var crowd := simulation.crowd()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = RUN_SEED
-	crowd.start_day(1, rng, Vector2.ZERO)
-	crowd.clear()
 	var street_rig := CrowdStreetRig.new()
 	var stretch: Vector2i = street_rig.a_straight_run(map, Tuning.BLOCK_SIZE)
-	var walker: CrowdAgent = street_rig.place_on(crowd, map, CrowdAgent.Kind.WALKER, stretch.x, 1,
-			float(stretch.y + 2) * Tuning.TILE_SIZE, 1.0)
-	walker.set_physics_process(false)
+	var on_it := Vector2(float(stretch.x), float(stretch.y + 2)) * Tuning.TILE_SIZE
+	var far := Vector2.ZERO if on_it.distance_to(Vector2.ZERO) > on_it.distance_to(map.world_size()) \
+			else map.world_size()
+	crowd.start_day(1, rng, far)
+	crowd.clear()
 	# She presses into the sheet, her pram's body against the wall.
 	var sheet_face := map.tile_rect_to_world(Rect2i(sheet, Vector2i.ONE))
 	var her := _her(t, Vector2(sheet_face.get_center().x, sheet_face.position.y + 24.0))
@@ -354,10 +354,21 @@ func _test_meeting_her_reaches_the_crowd_the_walls_and_the_blackout(t: TestRunne
 	t.check(run.posters().is_torn(sheet) and bus.times("poster_torn") == 1,
 			"met, her push tears the sheet, said on the bus the walls were handed")
 	t.check(not signals.is_powered(), "and the blackout, handed --blackout, puts the lights out round her")
-	crowd.use_focus(FakeCrowdFocus.new(walker.global_position))
-	her.global_position = walker.global_position
+	# A walker on a stretch of street beyond where the day's patch was started (the map's corner),
+	# and her standing on it: the patch is where the crowd's focus source puts it, and the source
+	# `meet_her()` handed it is hers, so the walker is kept and bumped; a crowd handed no source
+	# recycles it to somewhere else, out of her way.
+	var walker: CrowdAgent = street_rig.place_on(crowd, map, CrowdAgent.Kind.WALKER, stretch.x, 1,
+			float(stretch.y + 2) * Tuning.TILE_SIZE, 1.0)
+	walker.set_physics_process(false)
+	var was := walker.global_position
+	t.check(was.distance_to(far) > CrowdField.new(map, far).half_extent() + CrowdAgent.ENTRY_SPREAD
+			+ Tuning.TILE_SIZE, "the walker stands beyond where the day started the patch")
+	her.global_position = was
 	await PhysicsTicks.pass_ticks(t, 2)
 	t.check(bus.times("crowd_bumped") > 0, "and the crowd bumps her, standing on a walker")
+	t.check(walker.global_position.distance_to(was) < Tuning.TILE_SIZE,
+			"the walker stays under her: the patch follows the source `meet_her()` handed the crowd")
 	her.free()
 	_free(made)
 	bus.free()
