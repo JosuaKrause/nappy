@@ -95,7 +95,8 @@ FILES: dict[str, str] = {
     "src/autoload/event_bus.gd": "model",
     "src/autoload/sitting.gd": "model",
     # city: the map, its generation and its run-scoped state are the model; the scene and its
-    # furniture (the folder's own layer) are the world.
+    # furniture (the folder's own layer) are the world. A tree's pictures and the ground its trunk
+    # takes are data, which the street trees' planner and the prop that draws a tree both read.
     "src/city/block_layout.gd": "model",
     "src/city/block_plan.gd": "model",
     "src/city/city_generator.gd": "model",
@@ -113,6 +114,7 @@ FILES: dict[str, str] = {
     "src/city/street_trees.gd": "model",
     "src/city/street_layout.gd": "model",
     "src/city/through_roads.gd": "model",
+    "src/city/tree_pictures.gd": "data",
     "src/city/blackout.gd": "simulation",
     "src/city/poster_walls.gd": "simulation",
     "src/city/recipe_city_builder.gd": "root",
@@ -367,12 +369,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "the map interface hands out its navigator, the world's half of it",
         ("src/world/world_map.gd",),
         more=(("src/world/world_map.gd", 3),),
-    ),
-    Exception_(
-        "names",
-        "Prop",
-        "the street trees' planner names the tree props it places",
-        ("src/city/street_trees.gd",),
     ),
     Exception_(
         "names",

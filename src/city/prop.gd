@@ -7,10 +7,8 @@ enum Kind { TREE, PLAYGROUND_FRAME, BOLLARD, STREET_TREE, SACK, SACK_PILE }
 
 ## Region names in the "decoration" atlas group (`CityDecals.DECORATION_ATLAS`), whose lifetime
 ## is the city's: `City.build()` acquires the group on its library before any prop is spawned and
-## `City._exit_tree()` releases it, so every region asked for below is always available.
-## `AtlasTable.native_size()` answers with nothing acquired, which is what lets
-## `StreetTrees.footprint_radius()` plan tree clearance off `TREES` ahead of any city existing.
-const TREES: Array[StringName] = [&"props/tree_a", &"props/tree_b"]
+## `City._exit_tree()` releases it, so every region asked for below is always available. A tree's
+## pictures and its ground shape are `TreePictures`', which the street trees' planner reads too.
 const SWING_FRAME := &"props/swing_frame"
 const BOLLARD := &"props/bollard"
 const SACK := &"props/garbage_sack"
@@ -98,9 +96,7 @@ static func bollard_shape() -> GroundShape:
 func _compute_shape() -> GroundShape:
 	match _kind:
 		Kind.TREE, Kind.STREET_TREE:
-			var size := Vector2(AtlasTable.baked().native_size(TREES[absi(_variant) % TREES.size()])) \
-					* _scale_factor
-			return GroundShape.point(size.x * 0.28)
+			return TreePictures.shape(_variant, _scale_factor)
 		Kind.PLAYGROUND_FRAME:
 			return _playground_frame_shape()
 		Kind.BOLLARD:
@@ -144,7 +140,7 @@ static func _playground_frame_shape() -> GroundShape:
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:
-	var name: StringName = TREES[absi(_variant) % TREES.size()]
+	var name := TreePictures.region(_variant)
 	# The size is read off the region table rather than off the drawn texture, since `scale_factor()`
 	# is applied here and the two answer the same number either way — a region reports its
 	# source's own size.

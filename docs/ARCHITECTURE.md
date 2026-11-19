@@ -104,6 +104,8 @@ src/
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
 	prop.gd               small scenery, feet-anchored so it y-sorts against the player
+	tree_pictures.gd      the pictures a tree is drawn as and the ground its trunk takes; the
+	                      props draw with it and the street trees' planner keeps it clear
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
 	traffic_light_drawer.gd  what a signal head draws itself through; the city hands it in
