@@ -15,10 +15,9 @@ extends RefCounted
 ## the nearest unit within `Tuning.EVENT_DRAW_AHEAD` beyond it; what a draw places joins her walk,
 ## a row handed to her walk owed to the director (`EventDirector.owe_on_her_way()`). Every tick
 ## the director sites what it sites on her way (`EventDirector.due()`,
-## `site_what_is_on_her_way()`), its siting handed what draws the ground round a pick, as the
-## manager hands it (`WalkSiting.use_the_ground_drawer()`): the units within
-## `Tuning.EVENT_DRAW_AHEAD` of a pick draw before it stands, and a pick that drew one is given up.
-## After the walk every unit left is drawn. A placed row counts once it comes within the stream
+## `site_what_is_on_her_way()`), a beat taking a location of the nearest unit on her way that has
+## not drawn where there is one, and that unit drawing round it (`WalkSiting`, `UnitDraw`). After the
+## walk every unit left is drawn. A placed row counts once it comes within the stream
 ## radius of her, the moment it would stream in, under its row, its view and its kind of ground:
 ## a row the director sites on her way among them, once sited (day 3's fire), but not a place her
 ## route's bag hands it. Prints `WH day row count`, what the director hands out on her walk
@@ -27,16 +26,21 @@ extends RefCounted
 ## the stream radius of her door, and in the second half of the walk out), summed over the seeds,
 ## and per seed and day `WT day seed siting ticks median p99 worst total`, the director's siting's
 ## tick costs in microseconds, and `WP day seed microseconds`, the dawn's planning of each
-## (`EventScheduler.build_day()`, which draws no unit). **And whether what her walk sited stands on
-## drawn ground**: per day, summed over the seeds, `WS day sitings on-undrawn gave-up nearest`,
-## the places the director sited or moved on her way, how many of them had an undrawn unit within
-## `Tuning.EVENT_DRAW_AHEAD` when sited (expected none), how many picks the siting gave up because
-## the ground round them had not drawn, and the smallest gap, in px, between a place sited from
-## her walk and a row a unit drew, measured with every unit drawn (`EventPlan.gap_to()`; expected
-## no less than `EventScheduler.EVENT_SPACING_ANY`); `WS all` sums the days. **What it sites is
-## day 3's fire**: a sidewalk poster crew pastes a building's blank wall, which only the built
-## city knows (`SitingMaker.make()` hands the siting the day's fronts), so a crew a unit
-## hands to her walk stays unplaced here; a crew sited on drawn ground is
+## (`EventScheduler.build_day()`, which draws no unit). **And where the beats her walk laid stand**:
+## per day, summed over the seeds, `WS day laid in-undrawn in-empty nearest`, the beats the
+## director laid or moved on her way, how many took a location of a unit that had not drawn, how
+## many one a drawn unit left empty, and the smallest gap, in px, between a beat and a row a unit
+## drew, measured with every unit drawn (`EventPlan.gap_to()`; expected no less than
+## `EventScheduler.EVENT_SPACING_ANY`); `WS all` sums the days. **And which units drew by her path**:
+## per day, summed over the seeds, `WR day units differ beside-a-beat carried unexplained`, the
+## units, how many drew other rows or other places than on the same dawn drawn whole with no walk
+## (the city made again and the day planned again, every unit drawn), how many of those hold a beat
+## or touch a unit that does, how many of the rest touch a unit that differs (a unit is judged among
+## the draws of the touching units drawn before it, so a difference can carry), and how many are
+## none of those (expected none: a difference out of nowhere is a defect); `WR all` sums the days.
+## **What it lays is day 3's fire**: a sidewalk poster crew pastes a building's blank wall, which
+## only the built city knows (`SitingMaker.make()` hands the siting the day's fronts), so a crew a
+## unit hands to her walk stays unplaced here; a crew laid in a unit before it draws is
 ## `tests/test_event_manager_units.gd`'s, against the game's own manager. Each day is planned
 ## as the game plans it: its closures, holds, region wall and seals first, the seals and the wall's
 ## bodies handed in as standing.
@@ -179,17 +183,6 @@ class _Drawing extends RefCounted:
 			elif plan.row().is_handed_to_her_walk():
 				_director.owe_on_her_way(plan, _siting)
 
-	## Draws every undrawn unit any part of which lies within `reach` of `at`, each with every
-	## unit it waits for, what they place joining the walk, and answers whether it drew any: what
-	## the siting is handed to draw the ground round a pick
-	## (`EventsAhead.draw_the_ground_round()`).
-	func round_a_site(at: Vector2, reach: float) -> bool:
-		var near := draw.units().undrawn_within(at, reach)
-		for unit in near:
-			while not unit.is_drawn():
-				join(_one_towards(unit))
-		return not near.is_empty()
-
 	## Draws what her place at `at` (on `tile`) asks for. Answers what was placed.
 	func near(at: Vector2, tile: Vector2i) -> Array[EventPlan]:
 		var placed: Array[EventPlan] = []
@@ -253,6 +246,92 @@ class _Drawing extends RefCounted:
 			longest = maxi(longest, length)
 		return longest
 
+## **One day of one city, planned as the game plans it** (`_Day.planned()`): what a walk and the
+## same day drawn whole with no walk are each started from, the city made again each time, so a
+## second plan of it is the first plan exactly.
+class _Day extends RefCounted:
+	var map: CityMap
+	var tree: RouteTree
+	var region_plan: RegionPlanner.RegionPlan
+	var seals: Array[EventPlan] = []
+	var doors := PackedVector2Array()
+	var corridor: Corridor
+	var dawn: DawnContext
+	## When the dawn's own planning began, in microseconds, for the `WP` line.
+	var planned_at := 0
+
+	## Day `day` of the `i`th city: its closures, holds, region wall and seals first, the seals and
+	## the wall's bodies handed in as standing, then its dawn, its units left undrawn.
+	static func planned(day: int, i: int) -> _Day:
+		var the_day := _Day.new()
+		var map := CityGenerator.generate(BASE + i * STEP)
+		# The run's mast sites, worked out once on the city as built, as the game does.
+		var sites := MastSites.compute(map)
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var spec := DaySpec.for_day(day)
+		# The day's own closures, holds, region wall and seals, planned as the game plans them
+		# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
+		# stand as the day's standing and hold their locations.
+		var region_plan := RegionPlanner.plan_day(map, spec, tree)
+		var closure_rng := RandomNumberGenerator.new()
+		closure_rng.seed = hash("placement_rows closures:%d:%d" % [i, day])
+		var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
+		map.close_streets(closures)
+		map.clear_day_holds()
+		for closure: RoadClosure in closures:
+			map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+		for segment: StreetNetwork.Segment in region_plan.walls:
+			map.hold_segment(segment.key(), HeldStreets.Why.WALL)
+		for segment: StreetNetwork.Segment in region_plan.doors:
+			map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
+		for segment: StreetNetwork.Segment in map.network.around_blocks(
+				Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
+			map.hold_segment(segment.key(), HeldStreets.Why.HOME)
+		var boundary := {}
+		for segment in region_plan.walls:
+			boundary[segment.key()] = true
+		for segment in region_plan.doors:
+			boundary[segment.key()] = true
+		for rect in region_plan.alley_walls:
+			boundary[rect.position] = true
+		for rect in region_plan.alley_doors:
+			boundary[rect.position] = true
+		var seal_rng := RandomNumberGenerator.new()
+		seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
+		var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary,
+				map.held_streets())
+		for seal in seals:
+			seal.stand_as_a_seal()
+		var doors := PackedVector2Array()
+		for body in region_plan.door_bodies:
+			doors.append(body.position)
+		var standing: Array[EventPlan] = []
+		standing.append_array(seals)
+		standing.append_array(region_plan.wall_bodies)
+		for body in region_plan.wall_bodies:
+			body.stand_in_the_wall()
+		var corridor := Corridor.of(tree)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("placement_view_mix:%d:%d" % [i, day])
+		var guarded := ResistanceSteps.guarded_row_on(day)
+		var consumed: Array[String] = []
+		the_day.planned_at = Time.get_ticks_usec()
+		var dawn: DawnContext = GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
+				.on(tree).doors(doors).standing(standing) \
+				.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null) \
+				.undrawn().planned()
+		the_day.map = map
+		the_day.tree = tree
+		the_day.region_plan = region_plan
+		the_day.seals = seals
+		the_day.doors = doors
+		the_day.corridor = corridor
+		the_day.dawn = dawn
+		return the_day
+
 func run(t: TestRunner) -> void:
 	for reach in REACHES:
 		_walk_every_day(reach)
@@ -270,9 +349,10 @@ func _walk_every_day(reach: float) -> void:
 	var all_chain := 0
 	var all_costs: Array[int] = []
 	var all_sitings := 0
-	var all_on_undrawn := 0
-	var all_gave_up := 0
+	var all_in_undrawn := 0
+	var all_in_empty := 0
 	var all_nearest := INF
+	var all_by_her_path: Array[int] = [0, 0, 0, 0, 0]
 	var all_marbles: Array[int] = [0, 0, 0, 0]
 	var all_both_closed: Array[int] = [0, 0, 0, 0, 0, 0]
 	for day in range(1, 15):
@@ -289,77 +369,29 @@ func _walk_every_day(reach: float) -> void:
 		# Route tiles cut off from home, after the dawn's plan and at the end of her walk.
 		var cut_at_dawn := 0
 		var cut_after_walk := 0
-		# What her walk sited: how many places, how many on ground not yet drawn, how many picks
-		# given up for it, and the smallest gap to a row a unit drew.
+		# What her walk laid: how many beats, how many in a unit that had not drawn, how many on a
+		# location a drawn unit left empty, and the smallest gap to a row a unit drew.
 		var sitings := 0
-		var on_undrawn := 0
-		var gave_up := 0
+		var in_undrawn := 0
+		var in_empty := 0
 		var nearest := INF
+		# The units, and which drew by her path (`_drew_by_her_path()`).
+		var by_her_path: Array[int] = [0, 0, 0, 0, 0]
 		# What the units placed by share, the marbles they drew and the empty ones.
 		var marbles: Array[int] = [0, 0, 0, 0]
 		# What each of the day's rules refused, and the streets by view: counted, both closed.
 		var refused := {}
 		var both_closed: Array[int] = [0, 0, 0, 0, 0, 0]
 		for i in SEEDS:
-			var map := CityGenerator.generate(BASE + i * STEP)
-			# The run's mast sites, worked out once on the city as built, as the game does.
-			var sites := MastSites.compute(map)
-			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
-			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
-			var spec := DaySpec.for_day(day)
-			# The day's own closures, holds, region wall and seals, planned as the game plans them
-			# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
-			# stand as the day's standing and hold their locations.
-			var region_plan := RegionPlanner.plan_day(map, spec, tree)
-			var closure_rng := RandomNumberGenerator.new()
-			closure_rng.seed = hash("placement_rows closures:%d:%d" % [i, day])
-			var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
-			map.close_streets(closures)
-			map.clear_day_holds()
-			for closure: RoadClosure in closures:
-				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
-			for segment: StreetNetwork.Segment in region_plan.walls:
-				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-			for segment: StreetNetwork.Segment in region_plan.doors:
-				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-			for segment: StreetNetwork.Segment in map.network.around_blocks(
-					Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
-				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
-			var boundary := {}
-			for segment in region_plan.walls:
-				boundary[segment.key()] = true
-			for segment in region_plan.doors:
-				boundary[segment.key()] = true
-			for rect in region_plan.alley_walls:
-				boundary[rect.position] = true
-			for rect in region_plan.alley_doors:
-				boundary[rect.position] = true
-			var seal_rng := RandomNumberGenerator.new()
-			seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
-			var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary,
-					map.held_streets())
-			for seal in seals:
-				seal.stand_as_a_seal()
-			var doors := PackedVector2Array()
-			for body in region_plan.door_bodies:
-				doors.append(body.position)
-			var standing: Array[EventPlan] = []
-			standing.append_array(seals)
-			standing.append_array(region_plan.wall_bodies)
-			for body in region_plan.wall_bodies:
-				body.stand_in_the_wall()
-			var corridor := Corridor.of(tree)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("placement_view_mix:%d:%d" % [i, day])
-			var guarded := ResistanceSteps.guarded_row_on(day)
-			var consumed: Array[String] = []
-			var planned_from := Time.get_ticks_usec()
-			var dawn: DawnContext = GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
-					.on(tree).doors(doors).standing(standing) \
-					.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null) \
-					.undrawn().planned()
+			var the_day := _Day.planned(day, i)
+			var planned_from := the_day.planned_at
+			var map := the_day.map
+			var tree := the_day.tree
+			var region_plan := the_day.region_plan
+			var seals := the_day.seals
+			var doors := the_day.doors
+			var corridor := the_day.corridor
+			var dawn := the_day.dawn
 			if the_games:
 				print("WP %d %d %d" % [day, i, Time.get_ticks_usec() - planned_from])
 			var drawing := _Drawing.new(dawn.unit_draw() if the_games
@@ -378,7 +410,10 @@ func _walk_every_day(reach: float) -> void:
 				cut_at_dawn += _report_cut_off(map, grid, routes, reached_bare, plans, day, i,
 						"dawn")
 			var walk := WalkEvents.new()
-			walk.take(plans, CalmAreas.of(map), doors, null, dawn.locations())
+			# The walk carries the draw its units draw with, as a day's walk does, so a beat the
+			# siting lays is rigged in a unit this walk draws.
+			walk.take(plans, CalmAreas.of(map), doors, null, dawn.locations(), null,
+					drawing.draw)
 			# The walk's sitings are judged against the walk itself, as the game's are, and lay a
 			# beat on the locations the units draw into: made by the game's maker, over a world
 			# that holds this probe's city and a run of its own.
@@ -392,10 +427,6 @@ func _walk_every_day(reach: float) -> void:
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])
 			director.start_day(day, plans, director_rng, siting)
 			drawing.walked_by(walk, director, siting)
-			# The game's siting draws the ground round its pick; the wider reach is measured for
-			# its draw alone and sites nothing.
-			if the_games:
-				siting.use_the_ground_drawer(drawing.round_a_site)
 			var sited := {}
 			var route := _longest_route(tree)
 			if route.size() < 2:
@@ -436,9 +467,13 @@ func _walk_every_day(reach: float) -> void:
 					for plan in moved:
 						sited[plan] = true
 						sitings += 1
-						if not drawing.draw.units().undrawn_within(plan.placed_at(),
-								Tuning.EVENT_DRAW_AHEAD).is_empty():
-							on_undrawn += 1
+						# The units draw before the director sites, so a unit still undrawn now
+						# was undrawn when the beat was laid.
+						var holding := _holding(drawing.draw.units(), plan)
+						if holding and not holding.is_drawn():
+							in_undrawn += 1
+						elif holding:
+							in_empty += 1
 					if tick % 10 == 0:
 						for plan in walk.plans():
 							if counted.has(plan) or not plan.is_placed() or plan.is_a_fixed_part():
@@ -457,7 +492,6 @@ func _walk_every_day(reach: float) -> void:
 				var counted_marbles := drawing.marbles()
 				for k in marbles.size():
 					marbles[k] += counted_marbles[k]
-			gave_up += int(siting.waits().get("the ground round its site had not drawn", 0))
 			for plan: EventPlan in sited:
 				if not plan.is_placed():
 					continue
@@ -494,6 +528,9 @@ func _walk_every_day(reach: float) -> void:
 			for name: String in by_rule:
 				refused[name] = int(refused.get(name, 0)) + int(by_rule[name])
 			_count_both_closed(map, corridor, walk.plans(), both_closed)
+			var drew_by_her_path := _drew_by_her_path(drawing.draw.units(), map, day, i)
+			for k in by_her_path.size():
+				by_her_path[k] += drew_by_her_path[k]
 			print("WT %d %d siting %s" % [day, i, _costs(siting_ticks)])
 		if not the_games:
 			continue
@@ -511,11 +548,15 @@ func _walk_every_day(reach: float) -> void:
 			print("WB %d %d %d %d" % [day, view, both_closed[view * 2], both_closed[view * 2 + 1]])
 			all_both_closed[view * 2] += both_closed[view * 2]
 			all_both_closed[view * 2 + 1] += both_closed[view * 2 + 1]
-		print("WS %d %d %d %d %.0f" % [day, sitings, on_undrawn, gave_up, nearest])
+		print("WS %d %d %d %d %.0f" % [day, sitings, in_undrawn, in_empty, nearest])
 		all_sitings += sitings
-		all_on_undrawn += on_undrawn
-		all_gave_up += gave_up
+		all_in_undrawn += in_undrawn
+		all_in_empty += in_empty
 		all_nearest = minf(all_nearest, nearest)
+		print("WR %d %d %d %d %d %d" % [day, by_her_path[0], by_her_path[1], by_her_path[2],
+				by_her_path[3], by_her_path[4]])
+		for k in by_her_path.size():
+			all_by_her_path[k] += by_her_path[k]
 		for key: String in by_view:
 			print("WV %d %s %d" % [day, key, by_view[key]])
 		for key: String in by_kind:
@@ -528,10 +569,62 @@ func _walk_every_day(reach: float) -> void:
 		print("WC all %d %d" % [all_cut_at_dawn, all_cut_after_walk])
 		print("WZ all %d %d %d %d" % [all_marbles[0], all_marbles[1], all_marbles[2],
 				all_marbles[3]])
-		print("WS all %d %d %d %.0f" % [all_sitings, all_on_undrawn, all_gave_up, all_nearest])
+		print("WS all %d %d %d %.0f" % [all_sitings, all_in_undrawn, all_in_empty, all_nearest])
+		print("WR all %d %d %d %d %d" % [all_by_her_path[0], all_by_her_path[1],
+				all_by_her_path[2], all_by_her_path[3], all_by_her_path[4]])
 		for view in 3:
 			print("WB all %d %d %d" % [view, all_both_closed[view * 2],
 					all_both_closed[view * 2 + 1]])
+
+## The unit of `units` `plan`, a beat her walk laid, is rigged in (`PlacementUnit.rigged()`), or null.
+static func _holding(units: DayUnits, plan: EventPlan) -> PlacementUnit:
+	for unit in units.all():
+		if unit.rigged().has(plan):
+			return unit
+	return null
+
+## **Which of `units`, the walked day's every one drawn, drew by her path**, as `[units, differ,
+## beside-a-beat, carried, unexplained]`: against the same day of the same city planned again
+## (`_Day.planned()`, the city made again) and drawn whole with no walk, the units that drew other
+## rows or other places; of those, the ones that hold a beat or touch a unit that does; of the
+## rest, the ones touching a unit that differs, since a unit is judged among the draws of the
+## touching units drawn before it; and those that are none of these.
+static func _drew_by_her_path(units: DayUnits, map: CityMap, day: int, i: int) -> Array[int]:
+	var whole := _Day.planned(day, i)
+	var whole_draw := whole.dawn.unit_draw()
+	var drawn_whole := {}
+	for unit in whole_draw.units().all():
+		whole_draw.draw(unit)
+		drawn_whole[unit.name()] = _what_it_drew(whole.map, unit)
+	var beside := {}
+	for unit in units.all():
+		if unit.rigged().is_empty():
+			continue
+		beside[unit.name()] = true
+		for other in units.touching(unit):
+			beside[other.name()] = true
+	var differ := {}
+	for unit in units.all():
+		if _what_it_drew(map, unit) != str(drawn_whole.get(unit.name(), "")):
+			differ[unit.name()] = unit
+	var counts: Array[int] = [units.all().size(), differ.size(), 0, 0, 0]
+	for name: String in differ:
+		if beside.has(name):
+			counts[2] += 1
+			continue
+		var carried := false
+		for other in units.touching(differ[name] as PlacementUnit):
+			carried = carried or differ.has(other.name())
+		counts[3 if carried else 4] += 1
+	return counts
+
+## What `unit` drew, as its rows and the tiles they stand on, a row handed to her walk as `walk`.
+static func _what_it_drew(map: CityMap, unit: PlacementUnit) -> String:
+	var parts: Array[String] = []
+	for plan in unit.drawn():
+		parts.append("%s@%s" % [plan.row_id(), "walk" if plan.row().is_handed_to_her_walk()
+				else str(map.world_to_tile(plan.placed_at()))])
+	return ", ".join(parts)
 
 ## Adds, per view of `corridor` (`counts[view * 2]` the streets counted, `counts[view * 2 + 1]` those
 ## both closed), the streets of `map` with neither sidewalk walkable past the obstructing bodies of
