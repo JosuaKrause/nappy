@@ -7,7 +7,10 @@ extends RefCounted
 ## location back only once it has another, drawn with nothing on it where its unit has drawn since;
 ## a row refused in a look is not judged again in it; one ask offers at most `LOCATIONS_A_LOOK`
 ## locations; a mast near the mark takes the first free location of the tiles it is offered; a fire
-## lit at dusk is laid off her path first.
+## lit at dusk is laid off her path first. A row a mark rigs (`lay_just_ahead()`) takes the nearest
+## free location straight ahead of her on her branch and out of her view, within `JUST_AHEAD`: never
+## one in her view, never one beyond that reach, and never one up a side street of her branch nearer
+## to walk to; with none, it waits and says why.
 ##
 ## Run with stand-ins for everything it is handed (`FakeRouteTree` whose cells and carried tiles a
 ## check sets, `FakeWalkEvents`, `_Locations` whose table of locations a check sets and which
@@ -33,6 +36,9 @@ func run(t: TestRunner) -> void:
 	_test_at_dusk_off_her_path_first_then_merely_away_and_no_location_is_taken(t)
 	_test_a_crew_faces_the_wall(t)
 	_test_laying_a_mast_asks_the_ground_only_of_tiles_on_her_way(t)
+	_test_a_row_a_mark_rigs_is_laid_just_ahead_out_of_her_view(t)
+	_test_a_row_a_mark_rigs_passes_over_a_side_street_of_her_branch(t)
+	_test_a_row_a_mark_rigs_waits_where_nothing_just_ahead_is_out_of_her_view(t)
 
 const FIRE_DAY := 3
 ## Her tile, heading east.
@@ -518,3 +524,68 @@ func _test_laying_a_mast_asks_the_ground_only_of_tiles_on_her_way(t: TestRunner)
 			and off_her_way == 0,
 			"the ground is asked of tiles on the cells of her way alone, not of the ground's %d tiles (%d asks, %d off her way)"
 			% [rig.ground.set_of_tiles.size(), rig.ground.asked.size(), off_her_way])
+
+# ------------------------------------------------------------- just ahead ---
+
+## **A row a mark rigs takes the nearest free location straight ahead of her, out of her view**: of a
+## location 4 tiles ahead (in her view), one 16 tiles ahead (out of it) and one 40 tiles ahead (past
+## `WalkSiting.JUST_AHEAD`), the man shouting is laid on the second and the other two are never
+## offered; the location is taken for the day.
+func _test_a_row_a_mark_rigs_is_laid_just_ahead_out_of_her_view(t: TestRunner) -> void:
+	var rig := _rig(5, 40)
+	var near := _location(14, ROW_Y)
+	var ahead := _location(26, ROW_Y)
+	var far := _location(50, ROW_Y)
+	rig.locations.table = [near, ahead, far] as Array[Location]
+	var man := _unplaced("homeless_yeller")
+	rig.walk.set_plans([man] as Array[EventPlan])
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	var laid := rig.siting.lay_just_ahead(man)
+	rig.siting.end_look()
+	t.check(laid and man.is_placed() and _asked(rig.judge) == [ahead],
+			"laid on the first location out of her view and within reach, the others never offered (%s)"
+			% [_asked(rig.judge)])
+	t.check(rig.locations.taken.size() == 1 and rig.locations.taken[0][0] == ahead,
+			"and the location is taken for the day")
+
+## **A side street of her branch is not straight ahead of her**: her branch forks up a street 8
+## tiles ahead, and a location 10 tiles up it is nearer to walk to than one 16 tiles ahead on her line
+## and out of her view (the view is wider than it is tall); the man is laid on her line all the same.
+func _test_a_row_a_mark_rigs_passes_over_a_side_street_of_her_branch(t: TestRunner) -> void:
+	var rig := _rig(5, 40)
+	var cells := rig.tree.cells_ahead(_her(), Vector2.RIGHT, INF)
+	# The fork: cells up the street at tile column 18, as near to walk to as 8 tiles and up.
+	for step in range(1, 6):
+		cells[Vector2i(9, ROW_Y / 2 - step)] = float((8 + step * 2) * Tuning.TILE_SIZE)
+	rig.tree.set_cells_ahead(cells)
+	var up_the_side := Location.new(null, 0, Rect2i(Vector2i(18, 0), Vector2i(2, 4)),
+			Vector2(19.0, 2.0) * float(Tuning.TILE_SIZE), PlacementView.View.ON_THE_ROUTE, true,
+			Location.Kind.SIDEWALK)
+	for y in 4:
+		for x in 2:
+			rig.ground.set_of_tiles[Vector2i(18 + x, y)] = 1
+	var ahead := _location(26, ROW_Y)
+	rig.locations.table = [up_the_side, ahead] as Array[Location]
+	var man := _unplaced("homeless_yeller")
+	rig.walk.set_plans([man] as Array[EventPlan])
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	var laid := rig.siting.lay_just_ahead(man)
+	rig.siting.end_look()
+	t.check(laid and _asked(rig.judge) == [ahead],
+			"the location up the side street is never offered, and the man is laid on her line (%s)"
+			% [_asked(rig.judge)])
+
+## **Where nothing just ahead of her is out of her view, it waits and says so**: a location in her
+## view and one past `WalkSiting.JUST_AHEAD` leave the man unplaced, nothing asked of the judge.
+func _test_a_row_a_mark_rigs_waits_where_nothing_just_ahead_is_out_of_her_view(t: TestRunner) -> void:
+	var rig := _rig(5, 40)
+	rig.locations.table = [_location(14, ROW_Y), _location(50, ROW_Y)] as Array[Location]
+	var man := _unplaced("homeless_yeller")
+	rig.walk.set_plans([man] as Array[EventPlan])
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	var laid := rig.siting.lay_just_ahead(man)
+	rig.siting.end_look()
+	t.check(not laid and not man.is_placed() and rig.judge.asks.is_empty(),
+			"nothing is laid and nothing judged")
+	t.check(rig.siting.waits().size() == 1,
+			"and the wait is counted with its reason (%s)" % [rig.siting.waits()])

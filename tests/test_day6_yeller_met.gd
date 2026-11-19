@@ -1,57 +1,58 @@
 extends RefCounted
 ## Day 6's second man shouting is one she meets *(olive-koala, statement 2: "the yeller is
-## guaranteed to encounter a yeller in the next three events")*, and the draw that stands him need
-## not happen where she reads the mark *(inbox #1520 in breezy-magpie: "the draw doesn't have to
-## happen at the point where she touches the mark. the bag gets the biased bag in front (via the
-## chained bags mechanism) and the next draw (whenever that happens) will guarantee the shouting
-## man")*. Reading the mark rigs a bag in front of the units' draws (`EventManager.rig_the_next_draw()`,
-## `UnitDraw.rig_the_next_draw()`), and the next unit to draw that can stand him draws him first.
+## guaranteed to encounter a yeller in the next three events")*: reading the mark rigs the next draw
+## on her path with him *(inbox #1520 in breezy-magpie: "the bag gets the biased bag in front (via
+## the chained bags mechanism) and the next draw (whenever that happens) will guarantee the shouting
+## man")*, and that draw is taken only on her path and just ahead of her *(inbox #1549: "you would
+## draw only for the path and only just ahead")* (`EventManager.rig_the_next_draw()`,
+## `WalkSiting.lay_just_ahead()`).
 ##
-## **What is checked is the guarantee, on every walk**: once she has read the mark, a unit drawn
-## after it draws him out of the bag in front (`UnitDraw.drew_from_the_front()`), standing out of her
-## view on the tick it draws (what he draws, `EventFootprints.footprint_of()` at his place, misses the
-## camera's view round her, `Tuning.VIEW_HALF_EXTENT`), so he is never seen to appear; and once she
-## is within `Tuning.EVENT_STREAM_RADIUS` of him, one of the world's men shouting stands there
-## (`EventManager.instances()`). Whether she then meets him is her walk's: the unit that draws next
-## lies wherever her walk takes the streaming band, and `tests/probes/calm_pelican_day7_van_met.gd`
-## measures how often a played walk sees him.
+## **What is checked is the meeting, on every walk**: reading the mark, then walking the day's
+## longest route out and back until he is laid and on the way she was heading after that (keeping on
+## her way, which is what the rule promises; a fork of her branch she turns off at is a walk the
+## probe below measures), her walk lays him with none of what he draws
+## (`EventFootprints.footprint_of()` at his place) in the camera's view round her, led along her
+## heading, so he is never seen to appear; he then comes into her view (`Tuning.VIEW_HALF_EXTENT`
+## round her); and once she is within `Tuning.EVENT_STREAM_RADIUS` of him, one of the world's men
+## shouting stands there (`EventManager.instances()`), a check that runs on every walk. How often a
+## walk that leaves her branch sees him is `tests/probes/calm_pelican_day7_van_met.gd`'s to measure.
 ##
-## Walks the way `--route mark,task,calm,home` does, at `Tuning.WALK_SPEED`, running what the
-## manager's own tick runs for her walk, the units drawing as she comes near them
-## (`EventManager.stream_around()`), so he is drawn where a played day draws him; and where that
-## walk ends before he is drawn, on walking toward the nearest unit that has not drawn, until he is,
-## since only a unit that draws can stand him and the ground she has walked has drawn. A sweep
-## of the walks, not one: which unit draws next depends on the city. Run by name:
+## Runs what the manager's own tick runs for her walk, at `Tuning.WALK_SPEED`, the units drawing as
+## she comes near them (`EventManager.stream_around()`). Combines the director, the siting and the
+## streaming on a real city on purpose: the guarantee is the meeting, which spans them. A sweep of
+## cities, not one: where he can stand depends on the city. Run by name:
 ## `tools/test.sh day6_yeller_met`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99]
 const DAY := 6
-## The seed of the run each walk's city stands in, fixed so a walk repeats. The check does not depend
-## on it: it holds on seed 1 as well.
+## The seed of the run each walk's city stands in, fixed so a walk repeats.
 const RUN_SEED := 2
 const ROW := "homeless_yeller"
 const STEP := 0.1
-const SETTLE_SECONDS := 12.0
-## How many more legs she walks, each to the nearest unit that has not drawn, where the walk ends
-## before he is drawn.
-const MORE_LEGS := 6
 
 func run(t: TestRunner) -> void:
 	var outcomes: Array[String] = []
 	var kept := 0
+	var in_the_world_asked := 0
 	for seed_value in SEEDS:
-		var outcome := _walk(t, seed_value)
-		outcomes.append(outcome)
-		if outcome == "kept":
+		var walk := _walk(t, seed_value)
+		outcomes.append(walk[0])
+		if walk[0] == "kept":
 			kept += 1
+		if walk[1]:
+			in_the_world_asked += 1
 	t.check(kept == SEEDS.size(),
-			"on every walk of day %d a unit drawn after the mark draws the rigged man shouting, out " % DAY
-			+ "of her view, and he is in the world once she is within the stream radius of him (%s)"
+			"on every walk of day %d her walk lays the rigged man shouting out of her view, he comes " % DAY
+			+ "into her view, and he is in the world once she is within the stream radius of him (%s)"
 			% [outcomes])
+	t.check(in_the_world_asked == SEEDS.size(),
+			"and whether he is in the world was asked on every walk (%d of %d)"
+			% [in_the_world_asked, SEEDS.size()])
 
-## "kept", "no mark", "never drawn", or what about where he was drawn broke the guarantee.
-func _walk(t: TestRunner, seed_value: int) -> String:
+## `[outcome, whether the in-the-world check ran]`: "kept", "no mark", "never laid", or what broke
+## the guarantee.
+func _walk(t: TestRunner, seed_value: int) -> Array:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
@@ -60,9 +61,6 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	# The units draw as she walks; the man the mark rigged is the one a unit drew out of the bag in
-	# front (`_the_rigged_man()`).
-	var draw := RunCity.events(city).walk_events().unit_draw()
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
@@ -80,93 +78,80 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	player.global_position = city.map.doorstep_world_position()
 	RunCity.events(city).use_player(player)
-	var map := city.map
 	var outcome := "no mark"
+	var asked := false
 	var mark := resistance.current_step()
-	if mark and mark.is_pickup:
-		var seen := {"man": null, "read": false, "outcome": "never drawn", "streamed": false}
+	var path := _the_longest_route(city)
+	if mark and mark.is_pickup and path.size() >= 2:
+		# Out from the doorstep end and back, so she is never put down on ground that has not drawn.
+		resistance.contact().complete_now()
+		var back := path.duplicate()
+		back.reverse()
+		path.append_array(back)
+		player.global_position = path[0]
+		var seen := {"man": null, "outcome": "never laid", "met": false, "asked": false,
+				"nearest": INF, "laid": ""}
 		var tick := func() -> void:
 			var events := RunCity.events(city)
 			events.ahead.site_what_is_on_her_way(STEP)
 			events.ahead.place_what_is_owed_ahead(STEP)
 			events.stream_around(player.global_position)
-			if seen["read"] and seen["man"] == null:
-				var man := _the_rigged_man(draw)
-				if man:
-					seen["man"] = man
-					seen["outcome"] = "drawn in her view" if _in_the_cameras_view(man,
-							player.global_position, player.velocity.normalized()) else "kept"
-			var drawn_man: EventPlan = seen["man"]
-			if drawn_man and not seen["streamed"] and seen["outcome"] == "kept" \
-					and drawn_man.distance_from(player.global_position) < Tuning.EVENT_STREAM_RADIUS:
-				seen["streamed"] = true
-				seen["outcome"] = _in_the_world(events, drawn_man)
-		_along(player, _path(map, player.global_position, [map.world_to_tile(
-				resistance.contact_position())]), tick)
-		resistance.contact().complete_now()
-		seen["read"] = true
-		seen["drawn_at_the_mark"] = _drawn_count(draw)
-		var task_man: EventInstance = resistance.rider()
-		if task_man:
-			_along(player, _path(map, player.global_position, _beside(map,
-					task_man.global_position)), tick)
-		_along(player, _path(map, player.global_position, map.calm_tiles()), tick)
-		player.velocity = Vector2.ZERO
-		for i in int(SETTLE_SECONDS / STEP):
-			tick.call()
-		var home: Array[Vector2i] = [map.world_to_tile(map.doorstep_world_position())]
-		_along(player, _path(map, player.global_position, home), tick)
-		# Where the walk home ends before he is drawn, she walks on toward ground that has not
-		# drawn, until he is.
-		var legs := 0
-		while seen["man"] == null and legs < MORE_LEGS:
-			var toward := _undrawn_ground(map, draw, player.global_position)
-			if toward.is_empty():
+			var man: EventPlan = seen["man"]
+			if man == null:
+				man = _the_rigged_man(city)
+				if man == null:
+					return
+				seen["man"] = man
+				seen["laid"] = "she at %s heading %s, he at %s" % [player.global_position,
+						player.velocity.normalized(), man.placed_at()]
+				seen["outcome"] = "laid in her view" if _in_the_cameras_view(man,
+						player.global_position, player.velocity.normalized()) \
+						else "laid, never in her view"
+			if seen["outcome"] == "laid in her view":
+				return
+			seen["nearest"] = minf(float(seen["nearest"]),
+					man.placed_at().distance_to(player.global_position))
+			var off := (man.placed_at() - player.global_position).abs()
+			if off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y:
+				seen["met"] = true
+			if not seen["asked"] \
+					and man.distance_from(player.global_position) < Tuning.EVENT_STREAM_RADIUS:
+				seen["asked"] = true
+				var in_world := _in_the_world(events, man)
+				seen["outcome"] = in_world if in_world != "kept" else "kept, not yet met"
+			if seen["met"] and seen["outcome"] == "kept, not yet met":
+				seen["outcome"] = "kept"
+		# Her branch until he is laid, then on the way she was heading: what the rule promises
+		# (`WalkSiting.lay_just_ahead()`) is that keeping on her way brings him into view.
+		for point in path:
+			if seen["man"] != null:
 				break
-			_along(player, _path(map, player.global_position, toward), tick)
-			legs += 1
+			_along(player, [point] as Array[Vector2], tick)
+		if seen["man"] != null:
+			var heading := player.velocity.normalized()
+			_along(player, [player.global_position + heading * WalkSiting.JUST_AHEAD] as Array[Vector2],
+					tick)
 		outcome = seen["outcome"]
-		if seen["man"] == null:
-			outcome += " (%d units drew after the mark)" % (_drawn_count(draw) - int(seen["drawn_at_the_mark"]))
+		if outcome != "kept" and seen["man"] != null:
+			outcome += " (%s; nearest she came %.0fpx)" % [seen["laid"], float(seen["nearest"])]
+		asked = bool(seen["asked"])
 	player.free()
 	resistance.free()
 	city.free()
-	return outcome
+	return [outcome, asked]
 
-## The walkable tiles of the nearest unit that has not drawn, or none where every unit has.
-func _undrawn_ground(map: CityMap, draw: UnitDraw, her: Vector2) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	for unit in draw.units().undrawn_within(her, INF):
-		var rect := unit.tiles()
-		for y in range(rect.position.y, rect.end.y):
-			for x in range(rect.position.x, rect.end.x):
-				var tile := Vector2i(x, y)
-				if map.is_walkable(tile) and not map.is_obstructed(tile) and not map.is_closed(tile):
-					found.append(tile)
-		if not found.is_empty():
-			return found
-	return found
-
-## How many of the day's units have drawn.
-func _drawn_count(draw: UnitDraw) -> int:
-	var count := 0
-	for unit in draw.units().all():
-		if unit.is_drawn():
-			count += 1
-	return count
-
-## The man shouting a unit drew out of the bag in front (`UnitDraw.drew_from_the_front()`), or null
-## while no unit has.
-func _the_rigged_man(draw: UnitDraw) -> EventPlan:
-	for unit in draw.units().all():
-		for plan in unit.drawn():
-			if plan.row_id() == ROW and draw.drew_from_the_front(plan):
-				return plan
+## The man shouting the mark rigged once her walk has laid him (the walk's plan of the row the
+## director put on her way, `EventDirector.is_from_her_route()`), or null while he is not laid.
+func _the_rigged_man(city: City) -> EventPlan:
+	var events := RunCity.events(city)
+	for plan in events.walk_events().plans():
+		if plan.row_id() == ROW and plan.is_placed() \
+				and events.ahead.director().is_from_her_route(plan):
+			return plan
 	return null
 
-## "kept" when one of the world's men shouting stands where `man` was drawn (within a tile, the
+## "kept" when one of the world's men shouting stands where `man` was laid (within a tile, the
 ## band middle a pacing body is laid on), or what is wrong.
 func _in_the_world(events: EventManager, man: EventPlan) -> String:
 	var nearest := INF
@@ -174,12 +159,12 @@ func _in_the_world(events: EventManager, man: EventPlan) -> String:
 		if instance.def.id == ROW:
 			nearest = minf(nearest, instance.global_position.distance_to(man.placed_at()))
 	if nearest == INF:
-		return "drawn but not in the world once she was near"
+		return "laid but not in the world once she was near"
 	if nearest > Tuning.TILE_SIZE:
-		return "in the world %.0fpx from where he was drawn" % nearest
+		return "in the world %.0fpx from where he was laid" % nearest
 	return "kept"
 
-## Whether any of what the man draws, standing where he was drawn, meets the camera's view round
+## Whether any of what the man draws, standing where he was laid, meets the camera's view round
 ## `her`, led `Stroller.CAMERA_LOOK_AHEAD` along her `heading` as the camera leads her.
 func _in_the_cameras_view(man: EventPlan, her: Vector2, heading: Vector2) -> bool:
 	var box := EventFootprints.footprint_of(man.row())
@@ -198,48 +183,18 @@ func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
 			tick.call()
 			player.global_position += toward.normalized() * stride
 
-## The shortest walkable path from `from` to the nearest of `goals`, as tile centres.
-func _path(map: CityMap, from: Vector2, goals: Array[Vector2i]) -> Array[Vector2]:
-	var start := map.world_to_tile(from)
-	var wanted := {}
-	for goal in goals:
-		wanted[goal] = true
-	var came := {start: start}
-	var queue: Array[Vector2i] = [start]
-	var head := 0
-	var found := Vector2i(-1, -1)
-	while head < queue.size():
-		var tile: Vector2i = queue[head]
-		head += 1
-		if wanted.has(tile):
-			found = tile
-			break
-		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var next := tile + step
-			if came.has(next) or not map.is_walkable(next) or map.is_closed(next) \
-					or (map.is_obstructed(next) and not wanted.has(next)):
-				continue
-			came[next] = tile
-			queue.append(next)
+## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
+func _the_longest_route(city: City) -> Array[Vector2]:
+	var tree := city.streets().route_tree()
+	var longest: Array = []
+	for branch in tree.branches():
+		for route: Array in branch.routes:
+			if route.size() > longest.size():
+				longest = route
 	var points: Array[Vector2] = []
-	if found == Vector2i(-1, -1):
-		return points
-	var at := found
-	while at != start:
-		points.push_front(map.tile_to_world(at))
-		at = came[at]
+	for i in range(longest.size() - 1, -1, -1):
+		points.append(tree.cell_centre(longest[i]))
 	return points
-
-## The walkable, unobstructed tiles within two tiles of `at`: where she stands to touch a body.
-func _beside(map: CityMap, at: Vector2) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	var centre := map.world_to_tile(at)
-	for dy in range(-2, 3):
-		for dx in range(-2, 3):
-			var tile := centre + Vector2i(dx, dy)
-			if map.is_walkable(tile) and not map.is_obstructed(tile) and not map.is_closed(tile):
-				found.append(tile)
-	return found
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

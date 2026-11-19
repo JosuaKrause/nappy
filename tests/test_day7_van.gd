@@ -1,24 +1,27 @@
 extends RefCounted
 ## Day 7's van gets a second instance on her way, from a rigged bag *(inbox #586 in
 ## olive-hedgehog: "each olive badger rigged bag should be 2 or 3"; inbox #650 in mossy-beaver: "I
-## guess that leaves only the van?")*, stood by the next unit to draw that can stand it, wherever
-## and whenever that draw happens *(inbox #1520 in breezy-magpie, of day 6's man shouting and day
-## 7's van: "the bag gets the biased bag in front (via the chained bags mechanism) and the next draw
-## (whenever that happens) will guarantee the shouting man")*.
+## guess that leaves only the van?")*, laid by the next draw on her path, just ahead of her
+## *(inbox #1520 in breezy-magpie, of day 6's man shouting and day 7's van: "the bag gets the biased
+## bag in front (via the chained bags mechanism) and the next draw (whenever that happens) will
+## guarantee the shouting man"; inbox #1549: "you would draw only for the path and only just
+## ahead")*.
 ##
-## Holds, through a real city: reading day 7's mark rigs a bag holding one `delivery_van` in front
-## of the units' draws (`EventManager.rig_the_next_draw()`); walking the day's longest route out and
-## back, and on toward ground that has not drawn where that walk ends first, a unit drawn after the
-## mark draws the van out of the bag in front (`UnitDraw.drew_from_the_front()`), under the day's
-## rules a unit's own van is under: with no part of what it draws in the camera's view of her on the
-## tick it draws, on no tile a route of the day runs along, cutting none of the day's routes and
-## leaving her a way home and a way to it — while the van the task rides, placed near the mark, stays
-## where it is. How often a played walk sees it is `tests/probes/calm_pelican_day7_van_met.gd`'s to
-## measure.
+## Holds, through a real city: reading day 7's mark rigs the next draw on her path with one
+## `delivery_van` (`EventManager.rig_the_next_draw()`); walking the day's longest route until it is
+## laid, and on the way she was heading after that (keeping on her way, which is what the rule
+## promises; a fork of her branch she turns off at is a walk the probe below measures), she meets it: her walk lays it straight ahead of her on her branch (`WalkSiting.lay_just_ahead()`)
+## with no part of what it draws in the camera's view of her on the tick it is laid, and keeping on
+## her way brings it into her view (`Tuning.VIEW_HALF_EXTENT` round her). It is laid under the day's
+## rules a unit's own van is under: on no tile a route of the day runs along, cutting none of the
+## day's routes and leaving her a way home and a way to it — while the van the task rides, placed
+## near the mark, stays where it is. How often a walk that leaves her branch sees it is
+## `tests/probes/calm_pelican_day7_van_met.gd`'s to measure.
 ##
 ## The units draw as she walks (`EventManager.stream_around()`). The tiles the van shuts are read
-## off the tick it is drawn, which other units drawing on that tick add their own bodies to, so that
-## check holds of both.
+## off the tick it is laid, which units drawing on that tick add their own bodies to, so that check
+## holds of both. Combines the director, the siting and the streaming on a real city on purpose: the
+## guarantee is the meeting, which spans them.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
@@ -28,19 +31,16 @@ const DAY := 7
 const RUN_SEED := 2
 const ROW := "delivery_van"
 const STEP := 0.1
-## How many legs she walks toward ground that has not drawn, where the longest route out and back
-## ends before the van is drawn.
-const MORE_LEGS := 6
 
 func run(t: TestRunner) -> void:
 	var met := 0
 	for seed_value in SEEDS:
 		if _a_mark_puts_a_van_on_her_way(t, seed_value):
 			met += 1
-	t.check(met == SEEDS.size(), "a unit drawn after the mark draws the rigged van in every city "
-			+ "(%d of %d)" % [met, SEEDS.size()])
+	t.check(met == SEEDS.size(), "she meets the rigged van in every city (%d of %d)"
+			% [met, SEEDS.size()])
 
-## Answers whether a unit drew the rigged van in this city.
+## Answers whether she met the rigged van in this city: laid, and later in her view.
 func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -50,7 +50,6 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	var draw := RunCity.events(city).walk_events().unit_draw()
 
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
@@ -71,8 +70,8 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	t.check(task_van != null and task_van.def.id == ROW,
 			"seed %d: reading it puts the task's van near the mark" % seed_value)
 	var task_van_at := task_van.global_position if task_van else Vector2.INF
-	t.check(_the_rigged_van(draw) == null,
-			"seed %d: no unit has drawn the rigged van as she reads the mark" % seed_value)
+	t.check(_the_rigged_van(city) == null,
+			"seed %d: the rigged van is not laid yet as she reads the mark" % seed_value)
 
 	# Out from the doorstep end and back, so she is never put down on ground that has not drawn.
 	var path := _the_longest_route(city)
@@ -90,7 +89,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	t.check(path.size() >= 2 and RunCity.events(city).world.has_player(), "a route to walk and her on it")
 	var map := city.map
 	var seen := {"van": null, "her": Vector2.INF, "heading": Vector2.ZERO,
-			"tiles": [] as Array[Vector2i]}
+			"tiles": [] as Array[Vector2i], "met": false}
 	var tick := func() -> void:
 		var obstructed_before := map.obstructed_tiles.duplicate()
 		var events := RunCity.events(city)
@@ -98,9 +97,13 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 		events.ahead.site_what_is_on_her_way(STEP)
 		events.ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
-		if seen["van"] != null:
+		var laid: EventPlan = seen["van"]
+		if laid != null:
+			var off := (laid.placed_at() - player.global_position).abs()
+			if off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y:
+				seen["met"] = true
 			return
-		var van := _the_rigged_van(draw)
+		var van := _the_rigged_van(city)
 		if van == null:
 			return
 		seen["van"] = van
@@ -113,30 +116,32 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 		seen["tiles"] = its
 	if path.size() >= 2:
 		player.global_position = path[0]
-		_along(player, path, tick)
-		var legs := 0
-		while seen["van"] == null and legs < MORE_LEGS:
-			var toward := _undrawn_ground(map, draw, player.global_position)
-			if toward.is_empty():
+		# Her branch until the van is laid, then on the way she was heading: what the rule promises
+		# (`WalkSiting.lay_just_ahead()`) is that keeping on her way brings it into view.
+		for point in path:
+			if seen["van"] != null:
 				break
-			_along(player, _path(map, player.global_position, toward), tick)
-			legs += 1
+			_along(player, [point] as Array[Vector2], tick)
+		if seen["van"] != null:
+			_along(player, [player.global_position + player.velocity.normalized()
+					* WalkSiting.JUST_AHEAD] as Array[Vector2], tick)
 	var plan: EventPlan = seen["van"]
-	t.check(plan != null, "seed %d: a unit drawn after the mark draws the rigged van" % seed_value)
+	t.check(plan != null, "seed %d: her walk lays the rigged van" % seed_value)
+	t.check(bool(seen["met"]), "seed %d: and keeping on her way brings it into her view" % seed_value)
 	if plan:
 		var her: Vector2 = seen["her"]
 		var heading: Vector2 = seen["heading"]
 		var its_tiles: Array[Vector2i] = seen["tiles"]
-		var where_drawn := plan.placed_at()
-		var tile := map.world_to_tile(where_drawn)
+		var where_laid := plan.placed_at()
+		var tile := map.world_to_tile(where_laid)
 		# What it draws, where it is drawn, against the camera's view as it leads her
 		# (`Stroller.CAMERA_LOOK_AHEAD` along her heading, `Stroller.OBLIQUE_Y` of it up or down).
 		var box := EventFootprints.footprint_of(plan.def)
-		var drawn := Rect2(where_drawn + box.position, box.size)
+		var drawn := Rect2(where_laid + box.position, box.size)
 		var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 		var view := Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 		t.check(not view.intersects(drawn, true),
-				"seed %d: no part of it is in the camera's view on the tick it is drawn, so it is never seen to appear (%s, view %s)"
+				"seed %d: no part of it is in the camera's view on the tick it is laid, so it is never seen to appear (%s, view %s)"
 				% [seed_value, drawn, view])
 		var corridor := Corridor.of(city.streets().route_tree())
 		t.check(not corridor.carries_a_route(tile),
@@ -157,30 +162,17 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	player.free()
 	resistance.free()
 	city.free()
-	return plan != null
+	return plan != null and bool(seen["met"])
 
-## The van a unit drew out of the bag in front (`UnitDraw.drew_from_the_front()`), or null while no
-## unit has.
-func _the_rigged_van(draw: UnitDraw) -> EventPlan:
-	for unit in draw.units().all():
-		for plan in unit.drawn():
-			if plan.row_id() == ROW and draw.drew_from_the_front(plan):
-				return plan
+## The van the mark rigged once her walk has laid it (the walk's plan of the row the director put on
+## her way, `EventDirector.is_from_her_route()`), or null while it is not laid.
+func _the_rigged_van(city: City) -> EventPlan:
+	var events := RunCity.events(city)
+	for plan in events.walk_events().plans():
+		if plan.row_id() == ROW and plan.is_placed() \
+				and events.ahead.director().is_from_her_route(plan):
+			return plan
 	return null
-
-## The walkable tiles of the nearest unit that has not drawn, or none where every unit has.
-func _undrawn_ground(map: CityMap, draw: UnitDraw, her: Vector2) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	for unit in draw.units().undrawn_within(her, INF):
-		var rect := unit.tiles()
-		for y in range(rect.position.y, rect.end.y):
-			for x in range(rect.position.x, rect.end.x):
-				var tile := Vector2i(x, y)
-				if map.is_walkable(tile) and not map.is_obstructed(tile) and not map.is_closed(tile):
-					found.append(tile)
-		if not found.is_empty():
-			return found
-	return found
 
 ## Walks her through `points` at `Tuning.WALK_SPEED`, a tick a step.
 func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
@@ -191,38 +183,6 @@ func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
 			player.velocity = toward.normalized() * Tuning.WALK_SPEED
 			tick.call()
 			player.global_position += toward.normalized() * stride
-
-## The shortest walkable path from `from` to the nearest of `goals`, as tile centres.
-func _path(map: CityMap, from: Vector2, goals: Array[Vector2i]) -> Array[Vector2]:
-	var start := map.world_to_tile(from)
-	var wanted := {}
-	for goal in goals:
-		wanted[goal] = true
-	var came := {start: start}
-	var queue: Array[Vector2i] = [start]
-	var head := 0
-	var found := Vector2i(-1, -1)
-	while head < queue.size():
-		var tile: Vector2i = queue[head]
-		head += 1
-		if wanted.has(tile):
-			found = tile
-			break
-		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var next := tile + step
-			if came.has(next) or not map.is_walkable(next) or map.is_closed(next) \
-					or (map.is_obstructed(next) and not wanted.has(next)):
-				continue
-			came[next] = tile
-			queue.append(next)
-	var points: Array[Vector2] = []
-	if found == Vector2i(-1, -1):
-		return points
-	var at := found
-	while at != start:
-		points.push_front(map.tile_to_world(at))
-		at = came[at]
-	return points
 
 ## How many of the day's routes she can walk without `body` standing (x), and how many of those
 ## `body` cuts (y): routes whose own ground — the tiles of their cells —

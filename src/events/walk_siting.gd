@@ -52,10 +52,10 @@ const DUSK_CLEAR_OF_HER := Tuning.EVENT_STREAM_RADIUS
 ## part from it. *(The player, of day 6's man shouting and day 7's van: "you would draw only for the
 ## path and only just ahead", inbox #1549.)*
 const JUST_AHEAD := Tuning.EVENT_STREAM_RADIUS
-## How far to either side of the cells her branch runs through her path reaches for a row a mark
-## rigs: from the sidewalk a route walks to the far kerb, so the far sidewalk of her street is on her
-## path, where a van stands (the day's rules keep a van off the sidewalk a route walks,
-## `RouteSidewalkRule`).
+## How far to either side of the cells her branch runs through, and of her line of travel, her path
+## reaches for a row a mark rigs: from the sidewalk a route walks to the far kerb, so the far sidewalk
+## of her street is on her path, where a van stands (the day's rules keep a van off the sidewalk a
+## route walks, `RouteSidewalkRule`).
 const PATH_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
 ## How many locations one ask offers before it waits.
 const LOCATIONS_A_LOOK := 8
@@ -155,8 +155,11 @@ func lay_ahead(plan: EventPlan) -> bool:
 ## **Lays `plan`, a row a mark rigs (day 6's man shouting, day 7's van), on her path just ahead of
 ## her**, or answers false and leaves it as it is, with the reason in `waits()`: on the first free
 ## location, nearest to walk to first, that holds tiles of its ground within `JUST_AHEAD` of her
-## down the branch she walks and straight from her, within `PATH_HALF_WIDTH` of that branch, and
-## out of her view, which the day's rules accept. The ground there has drawn, so the location is one
+## down the branch she walks and straight from her, within `PATH_HALF_WIDTH` of that branch,
+## straight ahead of her (ahead along her heading, within `PATH_HALF_WIDTH` of her line of travel)
+## and out of her view, which the day's rules accept. Straight ahead, because the view is wider than
+## it is tall: ground beside her leaves the view sooner than ground ahead, so without it the nearest
+## place out of view is often round the corner of a fork or a turn she does not take. The ground there has drawn, so the location is one
 ## a drawn unit left empty, the way a beat is laid on one where her way has no undrawn unit; its
 ## unit is told, so the units touching it that draw later are judged among it. *(The player: "you
 ## would draw only for the path and only just ahead", inbox #1549.)* A wait is ordinary (she is off
@@ -307,7 +310,8 @@ func _on_her_branch(def: EventDef) -> Dictionary:
 ## **The free locations holding tiles of `def`'s ground on her path just ahead of her**, as
 ## `location -> its tiles`, at most `LOCATIONS_A_LOOK`, the nearest to walk to first: a tile counts
 ## when it lies within `PATH_HALF_WIDTH` of the centre of a cell of her branch she reaches within
-## `JUST_AHEAD` (`RouteTree.cells_ahead()`), and within `JUST_AHEAD` of her, and none of what
+## `JUST_AHEAD` (`RouteTree.cells_ahead()`), within `JUST_AHEAD` of her, ahead of her along her
+## heading and within `PATH_HALF_WIDTH` of her line of travel, and none of what
 ## `def` draws standing on it could be in her view (`_could_be_in_her_view()`); how near is how far
 ## down her branch the nearest such cell lies. Empty with the reason in `waits()`.
 func _just_ahead_on_her_path(def: EventDef) -> Dictionary:
@@ -336,6 +340,9 @@ func _just_ahead_on_her_path(def: EventDef) -> Dictionary:
 				var feet := _map.tile_to_world(tile)
 				if feet.distance_to(centre) > PATH_HALF_WIDTH \
 						or feet.distance_to(_at) > JUST_AHEAD or not _ground.takes(def, tile):
+					continue
+				var offset := feet - _at
+				if offset.dot(_heading) <= 0.0 or absf(offset.cross(_heading)) > PATH_HALF_WIDTH:
 					continue
 				walked_to[tile] = down
 				found.append(tile)
