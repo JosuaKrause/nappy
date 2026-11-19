@@ -3,9 +3,8 @@ extends RefCounted
 ## all touch drawn in every order they can be asked for, the draws and what each is judged among the
 ## same every time; a unit asked for draws the touching units of lower rank it waits for first, down
 ## a chain, and is judged among the dawn's plans, the draws of the units touching it and the beats
-## her walk laid in it or a touching unit, and no other plan her walk sites; the bag a mark rigs in
-## front is handed to every unit's draw, and stays in front for the next unit where one leaves it;
-## a unit draws once; a unit whose locations are in
+## her walk laid in it or a touching unit, and no other plan her walk sites; a unit draws once; a
+## unit whose locations are in
 ## different views draws from the bag of the most permissive of them; and a unit draws from the
 ## fill of its view and its kind of ground. A walk drawn whole (`draw_in_their_order()`) draws every
 ## unit in the order its units are in, never asks which touch, judges each among the dawn's plans and
@@ -16,14 +15,13 @@ extends RefCounted
 ## order set by hand), the day's fills (`_Fills`, a fill set by hand for each view and ground, which
 ## records each ask), one bag for the walk (`_Bags`, which records each ask) and the unit's draw
 ## (`_Drawing`, which records each call and answers one plan for it, drawing one marble from the bag
-## it is handed, and takes the row rigged in front unless set to leave it); the units are real (`PlacementUnit`, state), each of a location or two made by
+## it is handed); the units are real (`PlacementUnit`, state), each of a location or two made by
 ## hand, and so are the bags (`ViewBag`).
 
 func run(t: TestRunner) -> void:
 	_test_every_order_of_asking_draws_the_same(t)
 	_test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t)
 	_test_a_draw_is_judged_among_a_beat_rigged_in_its_unit_or_a_touching_one(t)
-	_test_the_bag_rigged_in_front_is_drawn_by_the_next_unit_that_takes_it(t)
 	_test_a_unit_draws_once(t)
 	_test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t)
 	_test_a_unit_draws_from_the_fill_of_its_view_and_its_ground(t)
@@ -97,17 +95,12 @@ class _Drawing extends MarbleDraw:
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	## Unit name -> true for a unit whose draw also hands a poster crew to her walk, with no place.
 	var hands_over := {}
-	## Unit name -> true for a unit whose draw leaves the row rigged in front where it is.
-	var leaves_the_front := {}
-	## `[unit name, the id of the row rigged in front it was handed, "" for none]` per call.
-	var fronts: Array = []
 
 	func _init() -> void:
 		super(null, {}, null)
 
 	## Overrides MarbleDraw.draw.
-	func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan],
-			in_front: MarbleBag = null) -> Array[EventPlan]:
+	func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[EventPlan]:
 		var seen: Array[String] = []
 		var rows: Array[String] = []
 		for plan in among:
@@ -120,13 +113,6 @@ class _Drawing extends MarbleDraw:
 		var plan := EventPlan.new(cafe, unit.locations()[0].centre())
 		unit_of[plan.placed_at()] = name
 		var placed: Array[EventPlan] = [plan]
-		var front: Variant = in_front.peek() if in_front else null
-		var rigged := front as MarbleDraw.Rigged
-		fronts.append([name, rigged.id() if rigged else ""])
-		if rigged and not leaves_the_front.has(name):
-			in_front.draw()
-			placed.append(EventPlan.new(rigged.row(), unit.locations()[0].centre()
-					+ Vector2(32.0, 0.0)))
 		if hands_over.has(name):
 			placed.append(EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF))
 		return placed
@@ -264,30 +250,6 @@ func _test_a_draw_is_judged_among_a_beat_rigged_in_its_unit_or_a_touching_one(t:
 	t.check(far_rows == ["roadblock", "cafe_tables"],
 			"a unit touching neither is judged among no beat, and the crew and the dawn's set piece, "
 			+ "given a place but laid in no unit, are in no draw's judgment (%s)" % [far_rows])
-
-## **The bag a mark rigs goes in front of every unit's draw** (`rig_the_next_draw()`): a unit drawn
-## before it is handed nothing in front; the next unit to draw is handed the row, and one that
-## leaves it hands it on to the unit after; once a unit has taken it, nothing is in front again.
-func _test_the_bag_rigged_in_front_is_drawn_by_the_next_unit_that_takes_it(t: TestRunner) -> void:
-	var drawing := _Drawing.new()
-	var made: Array[PlacementUnit] = [_unit(0), _unit(1), _unit(2), _unit(3)]
-	var draw := UnitDraw.new(_Units.new(), drawing, _fills(), _dawn())
-	draw.draw(made[0])
-	var yeller := EventCatalogue.by_id("homeless_yeller")
-	draw.rig_the_next_draw({"homeless_yeller": yeller})
-	drawing.leaves_the_front[made[1].name()] = true
-	draw.draw(made[1])
-	var placed := draw.draw(made[2])
-	draw.draw(made[3])
-	var handed: Array[String] = []
-	for front: Array in drawing.fronts:
-		handed.append(str(front[1]))
-	t.check(handed == ["", "homeless_yeller", "homeless_yeller", ""],
-			"nothing is in front before the rig; the next unit is handed the man, and the one after "
-			+ "it too where the first left him; nothing once he is drawn (%s)" % [handed])
-	t.check(placed.any(func(plan: EventPlan) -> bool: return plan.row() == yeller)
-			and made[2].drawn().any(func(plan: EventPlan) -> bool: return plan.row() == yeller),
-			"and the unit that drew him holds him as drawn")
 
 func _test_a_unit_draws_once(t: TestRunner) -> void:
 	var drawing := _Drawing.new()

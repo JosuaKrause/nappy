@@ -407,17 +407,14 @@ func draw_the_ground_round(at: Vector2, reach: float) -> bool:
 ## **What a draw placed joins the walk**: a placed row through the streaming, its body recorded
 ## where it stands, as a row placed after dawn is (`EventStreaming.add()`); a row handed to her
 ## walk (`EventDef.is_handed_to_her_walk()`, drawn with no position) added to the walk unplaced
-## and owed to the director, to site on her way, as one the dawn left is (`start_day()`); a row a
-## mark rigged in front of the draws noted where it landed; and the walk's reach told what now
-## stands in the way (`DayReach.shut_more()`).
+## and owed to the director, to site on her way, as one the dawn left is (`start_day()`); and the
+## walk's reach told what now stands in the way (`DayReach.shut_more()`).
 func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
 	if placed.is_empty():
 		return
 	for plan in placed:
 		if plan.is_placed():
 			_streaming.add(plan)
-			if _walk.unit_draw().drew_from_the_front(plan):
-				_note_where_a_rigged_row_landed(plan)
 			continue
 		_walk.add(plan)
 		if _director and plan.row().is_handed_to_her_walk():
@@ -425,18 +422,6 @@ func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
 	var reach := _walk.reach()
 	if reach:
 		reach.shut_more(placed)
-
-## Where a row a mark rigged in front of the units' draws landed (`rig_the_next_draw()`), because
-## nothing else records it: which unit draws it first depends on the walk she took.
-func _note_where_a_rigged_row_landed(plan: EventPlan) -> void:
-	var where := RunTrace.tile(world.map.world_to_tile(plan.position))
-	if not world.has_player():
-		world.trace.note("ahead", "%s a mark rigged is drawn at %s" % [plan.def.id, where])
-		return
-	var her := world.player.global_position
-	world.trace.note("ahead", "%s a mark rigged is drawn at %s, %.0fpx from her at %s"
-			% [plan.def.id, where, plan.position.distance_to(her),
-			RunTrace.tile(world.map.world_to_tile(her))])
 
 ## **Day 13's task roadblock `plan` across `section`**, a route-adjacent section of the day's
 ## locations, when no roadblock the day placed is close by where she read the mark
@@ -516,7 +501,8 @@ func place_what_is_owed_ahead(delta: float) -> void:
 		def.id, verb, lead,
 		RunTrace.tile(world.map.world_to_tile(body.global_position))])
 
-## A place a marble from her route's bag named — the mast day 11's rigged bag puts on it — sited
+## A place a marble from her route's bag named — the mast day 11's rigged bag puts on it — or a row a
+## mark rigged just ahead of her (day 6's man shouting, day 7's van; `rig_the_next_draw()`), sited
 ## for the first time by the director ahead of her on the branch she is walking
 ## (`EventDirector._place_on_her_route()`, then `EventDirector.site_what_is_on_her_way()`). It joins
 ## the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the way
@@ -555,28 +541,34 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 			_siting.prepare(row)
 	return rigged
 
-## **Rigs the next unit draws to stand the rows of `ids`** (`UnitDraw.rig_the_next_draw()`): a bag of
-## them, at the day's heat, goes in front of the bags the units draw from, and the next unit to draw
-## that can stand each draws it first, wherever and whenever that draw happens: day 6's man shouting
-## and day 7's van once she has read the day's mark. *(The player: "the draw doesn't have to happen at
-## the point where she touches the mark. the bag gets the biased bag in front (via the chained bags
-## mechanism) and the next draw (whenever that happens) will guarantee the shouting man"; inbox #1520
-## in breezy-magpie.)* Answers the ids rigged: none on a walk whose units do not draw as she walks
-## (the escape's, a scene recipe's), or for an id the catalogue does not hold.
+## **Rigs the next draw on her path to stand the rows of `ids`**, at the day's heat
+## (`EventDirector.rig_the_next_draw()`): day 6's man shouting and day 7's van once she has read the
+## day's mark, each laid by the next look on the first free location on her path just ahead of her,
+## out of her view (`WalkSiting.lay_just_ahead()`), by the day's placement context, which is built
+## here if the day had none, and its first scans are done now rather than on the frame it is laid.
+## *(The player: "the bag gets the biased bag in front (via the chained bags mechanism) and the next
+## draw (whenever that happens) will guarantee the shouting man", inbox #1520 in breezy-magpie; "you
+## would draw only for the path and only just ahead", inbox #1549.)* Answers the ids rigged: none on
+## a rig that never started a day, or for an id the catalogue does not hold.
 func rig_the_next_draw(ids: Array[String]) -> Array[String]:
 	var rigged: Array[String] = []
-	var draw := _walk.unit_draw()
-	if not draw:
+	# A rig that never started a day has no path to lay on, and building it a placement context
+	# for nothing would grow a route tree to no end.
+	if not _director or not _director.route_bag():
 		return rigged
-	var rows := {}
+	if not _siting:
+		_siting = _a_siting(world.day, _day_tree)
+	var rows: Array[EventDef] = []
 	for id in ids:
 		var def := EventCatalogue.by_id(id)
 		if not def:
 			push_error("a rigged draw names no event in the catalogue: '%s'" % id)
 			continue
-		rows[id] = EventCatalogue.heated(def, world.run.resistance().progress()).for_day(world.day)
+		var row := EventCatalogue.heated(def, world.run.resistance().progress()).for_day(world.day)
+		_siting.prepare(row)
+		rows.append(row)
 		rigged.append(id)
-	draw.rig_the_next_draw(rows)
+	_director.rig_the_next_draw(rows, _siting)
 	return rigged
 
 ## A row the director sited down her own line, warned first: the badge goes up at once, pointing

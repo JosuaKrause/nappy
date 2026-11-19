@@ -1,7 +1,8 @@
 extends RefCounted
 ## Measurement probe for olive-badger's day-7 route van: once reading the mark rigs a second
-## `delivery_van` in front of the units' draws (`EventManager.rig_the_next_draw()`) and the next unit
-## that can stand it draws it, does a played walk ever bring it into her view? Not a suite: it
+## `delivery_van` in front of the next draw on her path (`EventManager.rig_the_next_draw()`) and her
+## walk lays it on her path just ahead of her (`WalkSiting.lay_just_ahead()`), does a played walk
+## bring it into her view? Not a suite: it
 ## prints what each walk met, so it lives under `tests/probes/` and runs only by name:
 ##
 ##     tools/test.sh probes/calm_pelican_day7_van_met.gd      (prints DAY7_VAN lines)
@@ -12,17 +13,18 @@ extends RefCounted
 ## what the manager's own tick runs for her walk (`EventsAhead.site_what_is_on_her_way()`,
 ## `EventsAhead.place_what_is_owed_ahead()`, `EventStreaming.stream_around()`), at `Tuning.WALK_SPEED`.
 ##
-## **What is counted**, per seed: whether a unit drew the rigged van during her walk
-## (`UnitDraw.drew_from_the_front()`); where it stands — how far from her when its unit drew, and how
-## near her own later walk ever came to it; and whether it was ever inside her view
-## (`Tuning.VIEW_HALF_EXTENT` round her, the player's unrotated screen). Of each van drawn, too: whether any of what it draws (`EventFootprints.footprint_of()`) was in
-## the camera's view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, on the tick its unit
-## drew it; whether its tile carries one of the day's routes (`Corridor.carries_a_route()`); and
+## **What is counted**, per seed: whether her walk laid the rigged van (the walk's plan of the row
+## the director put on her way, `EventDirector.is_from_her_route()`); where it stands — how far from
+## her when it was laid, and how near her own later walk ever came to it; and whether it was ever
+## inside her view (`Tuning.VIEW_HALF_EXTENT` round her, the player's unrotated screen). Of each van
+## laid, too: whether any of what it draws (`EventFootprints.footprint_of()`) was in the camera's
+## view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, on the tick it was laid; whether its
+## tile carries one of the day's routes (`Corridor.carries_a_route()`); and
 ## whether her later walk passed within its body and hers (`obstructs_radius` plus
 ## `Tuning.PLAYER_BODY_RADIUS`) of its feet — stood on the line she walked.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The day and row measured, and the same for day 6's man shouting, rigged and drawn the same way.
+## The day and row measured, and the same for day 6's man shouting, rigged and laid the same way.
 const CASES := [[7, "delivery_van"], [6, "homeless_yeller"]]
 const STEP := 0.1
 const SETTLE_SECONDS := 12.0
@@ -146,13 +148,11 @@ class Walk extends RefCounted:
 		events.ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
 		if van == null:
-			var draw := events.walk_events().unit_draw()
-			for unit in draw.units().all():
-				for plan in unit.drawn():
-					if plan.row_id() == row and draw.drew_from_the_front(plan):
-						van = plan
-						drawn_at = walked
-						drawn_phase = phase
+			for plan in events.walk_events().plans():
+				if plan.row_id() == row and events.ahead.director().is_from_her_route(plan):
+					van = plan
+					drawn_at = walked
+					drawn_phase = phase
 		if van and van.is_placed():
 			if sited_at < 0.0:
 				sited_at = walked
@@ -177,20 +177,20 @@ class Walk extends RefCounted:
 
 	func outcome() -> String:
 		if van == null:
-			return "not drawn"
+			return "never laid"
 		if seen_at >= 0.0:
 			return "seen"
-		return "drawn, never in view"
+		return "laid, never in view"
 
 	func detail() -> String:
 		var where := "-"
 		if van and van.is_placed():
 			var on_her_line := nearest_after <= van.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 			where = "she at %s heading %s, van at %s; " % [her_at_siting, heading_at_siting,
-					van.position] + "drawn %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when its unit drew %s; on a route %s; on her line %s" \
+					van.position] + "laid %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when laid %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
-		return "walked %.0fs, drawn at %.0fs (%s) | %s | seen at %s" % [walked, drawn_at,
+		return "walked %.0fs, laid at %.0fs (%s) | %s | seen at %s" % [walked, drawn_at,
 				drawn_phase, where, "%.0fs" % seen_at if seen_at >= 0.0 else "never"]
 
 ## The shortest walkable path from `from` to the nearest of `goals`, as tile centres, over ground

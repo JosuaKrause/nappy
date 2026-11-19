@@ -140,9 +140,13 @@ var _route_rows := {}
 var _met_today := {}
 ## The ids the ordinary bag is filled with today.
 var _ordinary_rows := {}
-## The plans a marble put on her route (`_place_on_her_route()`). Not in the day's
-## plan until first sited: `EventManager` adds one there then (`is_from_her_route()`).
+## The plans a marble put on her route (`_place_on_her_route()`), and those a mark rigged just ahead
+## of her (`rig_the_next_draw()`). Not in the day's plan until first sited: `EventManager` adds one
+## there then (`is_from_her_route()`).
 var _placed_from_the_route := {}
+## The plans a mark rigged (`rig_the_next_draw()`), as `plan -> true`: laid on her path just ahead
+## of her (`WalkSiting.lay_just_ahead()`) rather than past the streaming band.
+var _just_ahead := {}
 var _next_in := 0.0
 ## Whether `owe_the_return()` has already handed today its return-phase patrols. Set once and
 ## never cleared until `start_day()`, so a baby that wakes and settles again does not owe a
@@ -169,7 +173,8 @@ var _way_on: WayOn = null
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
 ## in `start_day()`, or handed over as a unit draws one as she walks (`owe_on_her_way()`); and the
 ## places a marble from her route's bag names, added the moment the marble is drawn
-## (`_place_on_her_route()`). Emptied as each one is put in the world.
+## (`_place_on_her_route()`), and the rows a mark rigs (`rig_the_next_draw()`). Emptied as each one
+## is put in the world.
 var _on_her_way: Array[EventPlan] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
@@ -212,6 +217,7 @@ func start_day(day: int, plans: Array[EventPlan],
 	_day = day
 	_met_today.clear()
 	_placed_from_the_route.clear()
+	_just_ahead.clear()
 	_return_patrols_left = 0
 	_patrol_bag_left = 0
 	_fill_the_route_bag(day, heat, rng)
@@ -629,6 +635,25 @@ func _place_on_her_route(def: EventDef) -> void:
 func is_from_her_route(plan: EventPlan) -> bool:
 	return _placed_from_the_route.has(plan)
 
+## **Rigs the next draw on her path to stand `rows`**, day 6's man shouting or day 7's van once she
+## has read the day's mark: each goes on the list of what her walk lays, unplaced, and the next look
+## lays it on the first free location on her path just ahead of her, out of her view
+## (`site_what_is_on_her_way()`, `WalkSiting.lay_just_ahead()`). *(The player: "the bag gets the
+## biased bag in front (via the chained bags mechanism) and the next draw (whenever that happens)
+## will guarantee the shouting man", inbox #1520 in breezy-magpie; and, of where that draw is taken:
+## "you would draw only for the path and only just ahead", inbox #1549.)* The bag in front holds the
+## rigged rows and nothing else, so the next draw on her path is his. It joins the day's plan when
+## first laid, as a place from her route's bag does (`is_from_her_route()`). `siting` is the day's
+## placement context, taken where the day had none.
+func rig_the_next_draw(rows: Array[EventDef], siting: WalkSiting) -> void:
+	if not _siting:
+		_siting = siting
+	for row in rows:
+		var waiting := EventPlan.new(row, Vector2.INF)
+		_on_her_way.append(waiting)
+		_placed_from_the_route[waiting] = true
+		_just_ahead[waiting] = true
+
 ## **A row a unit drew as she walks and handed to her walk** (`plan`, unplaced: the sidewalk poster
 ## crew), owed to her walk as one the dawn left is (`start_day()` reads those off the day's plan),
 ## sited on her way like any other (`site_what_is_on_her_way()`). `siting` is the day's placement
@@ -758,7 +783,9 @@ func site_what_is_on_her_way(delta: float, at: Vector2,
 			continue
 		if not plan.is_placed() and _waits_its_turn(plan):
 			continue
-		if not _siting.lay_ahead(plan):
+		var laid := _siting.lay_just_ahead(plan) if _just_ahead.has(plan) \
+				else _siting.lay_ahead(plan)
+		if not laid:
 			continue
 		_behind_her[plan] = 0.0
 		moved.append(plan)

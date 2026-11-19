@@ -15,8 +15,10 @@ extends RefCounted
 ## which is what drawing every unit at dawn in rank order gives.
 ##
 ## **A draw reads a beat her walk laid in its unit or a touching one, and no other plan her walk
-## sites.** A beat (day 3's fire, a poster crew, day 11's mast on her route; `WalkSiting`) takes a
-## location of the nearest unit on her way that has not drawn, and the unit is told
+## sites.** A beat (day 3's fire, a poster crew, day 11's mast on her route, and day 6's man
+## shouting and day 7's van a mark rigs just ahead of her; `WalkSiting`) takes a location on her
+## way, of the nearest unit that has not drawn where the beat's siting offers one, and the unit is
+## told
 ## (`PlacementUnit.rig()`): its room starts without the location, and it and the units touching it
 ## are judged among the beat, drawn or not (`PlacementUnit.rigged()`). *(The player: "repeating
 ## the day has the exact same preconditions. if the player does something differently different
@@ -28,14 +30,6 @@ extends RefCounted
 ## among: the dawn's plans are copied without the ones that had no place, and a touching unit's row
 ## handed to her walk (`EventDef.is_handed_to_her_walk()`) is passed over, since where her walk puts
 ## it is a beat of the unit it lands in.
-##
-## **A rigged bag goes in front of the units' draws** (`rig_the_next_draw()`): the rows a mark puts
-## on her way, day 6's man shouting and day 7's van, are drawn first by the next unit to draw that
-## can stand them, wherever and whenever that draw happens (`MarbleDraw.draw()`). *(The player:
-## "the draw doesn't have to happen at the point where she touches the mark. the bag gets the biased
-## bag in front (via the chained bags mechanism) and the next draw (whenever that happens) will
-## guarantee the shouting man"; inbox #1520 in breezy-magpie.)* It is a `MarbleBag`'s queue, which
-## holds nothing until a mark rigs it, so a day no mark rigs draws from the units' own bags alone.
 ##
 ## Drawing one unit: one bag, the one the walk's bags answer for the unit (`UnitBags`): on a day a
 ## fresh bag of the fill of the unit's view (the most permissive of its locations',
@@ -53,11 +47,6 @@ var _units: DayUnits
 var _drawing: MarbleDraw
 var _bags: UnitBags
 var _dawn: Array[EventPlan] = []
-## The bag in front of every unit's own (`rig_the_next_draw()`): rows, empty until a mark rigs it,
-## with no ordinary set behind it, so once its rows are drawn it holds nothing again.
-var _in_front := MarbleBag.new([], [], 0)
-## The plans a unit drew out of the bag in front (`drew_from_the_front()`), as `plan -> true`.
-var _from_the_front := {}
 
 ## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `bags` what answers a
 ## unit's bag (`UnitBags`: on a day, `UnitFills`); `dawn` the plans the dawn placed, copied, a
@@ -70,24 +59,6 @@ func _init(units: DayUnits, drawing: MarbleDraw, bags: UnitBags,
 	for plan in dawn:
 		if plan.is_placed():
 			_dawn.append(plan)
-
-## **Rigs the next draws to stand `rows`** (`id -> EventDef`): a bag of them goes in front of the units' own
-## (`MarbleBag.rig()`), and the next unit to draw draws them first, each where the unit can lay it
-## out (`MarbleDraw.draw()`); one the unit cannot stand stays in front for the unit after it. The
-## rigged bag holds the rows alone: each unit draws from a bag of its own (`UnitBags`), so there is
-## no one bag the rest of a rigged bag could be taken out of, and the player's "the next draw
-## (whenever that happens) will guarantee" is the next unit's.
-func rig_the_next_draw(rows: Dictionary) -> void:
-	var marbles: Array = []
-	for id: String in rows:
-		var row: EventDef = rows[id]
-		marbles.append(MarbleDraw.Rigged.new(id, row))
-	_in_front.rig(marbles, marbles.size())
-
-## **Whether `plan` is a row a unit drew out of the bag in front** (`rig_the_next_draw()`) rather than
-## out of its own: where a mark's row landed, which the run log records (`EventsAhead`).
-func drew_from_the_front(plan: EventPlan) -> bool:
-	return _from_the_front.has(plan)
 
 ## The day's units the draw draws.
 func units() -> DayUnits:
@@ -165,13 +136,9 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 				among.append(plan)
 	return _draw_among(unit, among)
 
-## Draws `unit` among `among`, the rigged bag in front first and then the bag the walk's bags answer
-## for it, and records what it placed.
+## Draws `unit` among `among`, from the bag the walk's bags answer for it, and records what it
+## placed.
 func _draw_among(unit: PlacementUnit, among: Array[EventPlan]) -> Array[EventPlan]:
-	var rigged_before := _in_front.draws_made()
-	var placed := _drawing.draw(unit, _bags.bag_for(unit), among, _in_front)
-	# The rows drawn out of the bag in front come first in what a draw answers, in the order drawn.
-	for i in mini(_in_front.draws_made() - rigged_before, placed.size()):
-		_from_the_front[placed[i]] = true
+	var placed := _drawing.draw(unit, _bags.bag_for(unit), among)
 	unit.record_draw(placed)
 	return placed
