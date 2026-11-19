@@ -46,30 +46,50 @@ already hold, so the clash with the rule that such a read is converted or the fi
 `tools/check_test_only_members.py` counted a call on an engine value in a file whose opt-out line
 silenced its warning as a reader of every class's member of that name. `main`'s untyped
 `_hud.use_atlas()`, `_hud.use_run()`, `_summary.is_showing()` and `result.data` were so counted for
-five members no game file reads outside its own: `Sitting.use_atlas`, `EventManager.use_run`,
-`EntityHalo.is_showing`, `SaveIndicator.is_showing` and `SceneRecipeRuntime.data`. Each takes a
-`[kept]` line in `tools/test_only_members.txt` saying so, as `Crowd.step` and `PendingWarning.def`
-did when the scene recipes' untyped reads were typed: the two hand-ins in the hand-ins' group, the
-other three with the item that converts their suites (`tests-one-module.md`, and for the recipe's
-`data` the scene recipes' own pass).
+five members no game file reads outside its own:
+
+- **`Sitting.use_atlas` and `EventManager.use_run` are hand-ins** and take lines in the list's
+  hand-ins' `[kept]` group: the game hands its own value in (the sitting keeps the library it makes;
+  the manager takes its run in `setup()`), and `tests/test_atlas_boot.gd` and
+  `tests/test_event_parts.gd` hand theirs in.
+- **`EntityHalo.is_showing()`, `SaveIndicator.is_showing()` and `SceneRecipeRuntime.data` go
+  internal** (`_is_showing()`, `_data`), since only their own files read them, and their suites read
+  what each class does outward instead:
+  - the halo's suites read what the rim draws: the shader's `halo_colour` alpha, exactly zero where
+    the rim is out (`tests/test_halo.gd`, whose two checks of a settled rim already held it drawn at
+    its target and so drop the read), and the rim drawn afresh on the frames after its glow settles
+    (`tests/test_car_views.gd`);
+  - the save suites read whether the symbol's `Icon` draws at an alpha above zero, through
+    `Boot.save_symbol_shows()` beside the helpers that already read which picture it draws
+    (`tests/test_save.gd`, `tests/test_save_wiring.gd`);
+  - the scene recipes' lifecycle suite reads the recipe as its file has it (`_authored()`), which is
+    what the runtime plays, since no suite there boots a draft.
+
+Each moved check was shown to fail with the class mutated, the mutation reverted and never
+committed: the save symbol raised by no change (34 failures) and raised from its first frame (26);
+the rim no longer asking for a redraw once settled (the three redraw checks), counting as showing at
+zero alpha (the two checks of a dark rim), and a fade a hair short of zero never snapped (the hair
+check); and the recipe's meters seeded at zero (the meters check), an authored event not recorded
+(the installed-events check), and the recipe's day read one later in `DevFlags`, which is where the
+authored day reaches the run (the authored-day check).
 
 ## Rejected, with the reason
 
-- **A `class_name` on `hud.gd` and `day_summary.gd`**: it edits two files of the view outside this
-  pass's files for what a preloaded constant does in `main` alone, and `HUD` is already `main`'s
-  name for the HUD's scene.
-- **Making the three non-hand-in members internal now**, the plainer reading of the test-only rule
-  (a failure is fixed, not listed): it rewrites `tests/test_save.gd`, `tests/test_car_views.gd`
-  and `tests/scene_recipe_lifecycle.gd` and three files of other modules, the scene recipes
-  among them, which wait for their own pass.
+- **A `class_name` on `hud.gd` and `day_summary.gd`**: it edits two files of the view for what a
+  preloaded constant does in `main` alone, and `HUD` is already `main`'s name for the HUD's scene.
+- **`[kept]` lines for the three members that went internal**, built first: refused in review,
+  since each had a reader in its own file and a way for its suite to read it outward, so the lines
+  only deferred the conversion the `[own file only]` group asks for, and that group only shrinks.
 
 ## Verified
 
 `tools/check.sh` boots with no error or warning; the suites that boot `main` (`test_main`,
 `test_boot_handing`, `test_run_config` and nineteen more, `test_held_restart` and `test_invincible`
-among them) pass; `check_layers.py`, `check_field_reads.py --base origin/main` and
+among them) pass, and so do the suites of the three members made internal (`test_save`,
+`test_save_wiring`, `test_halo`, `test_car_views` and the three scene recipe lifecycle suites);
+`check_layers.py`, `check_field_reads.py --base origin/main` and
 `check_test_only_members.py --base origin/main` pass, and `check_field_reads.py --summary` counts
 one file fewer under `src/` carrying the opt-out line.
 
 **Proposed, not asked for, open to the player:** typing the two screens through preloaded scripts;
-the five `[kept]` lines in place of converting their members in this pass.
+the outward reads chosen for the three members made internal.
