@@ -46,6 +46,8 @@ func run(t: TestRunner) -> void:
 	_test_the_start_flags_decide_only_a_walk_from_her_doorstep(t)
 	_test_the_start_hands_on_the_ways_out_of_the_world(t)
 	_test_the_start_hands_the_clock_her_and_her_front_door(t)
+	_test_the_scenery_round_her_is_prepared_where_she_is_put_down(t)
+	_test_a_won_walk_home_lights_the_fire_she_never_met(t)
 
 func _on_day_ended(day: int, result: int, cause: String, elapsed: float) -> void:
 	_ended.append([day, result, cause, elapsed])
@@ -573,6 +575,85 @@ func _test_the_start_hands_the_clock_her_and_her_front_door(t: TestRunner) -> vo
 			% [won])
 	_put_the_start_away(rig)
 
+## **The scenery round where she is put down is ready for the walk's first frame.** Once she is put
+## down, and before the clock runs, the city's dressing is asked to prepare its scenery over what her
+## camera shows (`CityDressing.prepare_scenery_in()`): the world her camera sees at its zoom, centred
+## where she stands. An authored scene's day asks the same once the scene has installed itself; the
+## stand-in scene places nobody, so she is where the test stood her. Her camera is a real one under
+## the fake her, current, in the tree, as the game's own is.
+func _test_the_scenery_round_her_is_prepared_where_she_is_put_down(t: TestRunner) -> void:
+	for scene_day: bool in [false, true]:
+		var spec := DaySpec.for_day(1, 210.0)
+		var scene: _FakeScene = _FakeScene.new(_asked) if scene_day else null
+		var rig := _start_rig(t, spec, false, scene)
+		if scene:
+			scene.clock = rig["clock"]
+		var camera := _stand_her_in_the_tree(t, rig)
+		var player: _FakeStroller = rig["player"]
+		player.position = Vector2(300.0, 420.0)
+		_start(rig["director"], spec)
+		var city: _FakeDressing = rig["city"]
+		var where := player.global_position
+		var shown := player.get_viewport_rect().size / camera.zoom
+		var walk := "an authored scene's day" if scene_day else "a day"
+		t.check(city.prepared.size() == 1 and city.prepared[0].get_center().is_equal_approx(where)
+				and city.prepared[0].size.is_equal_approx(shown),
+				"on %s the scenery is prepared once, over the %s her camera shows round %s (%s)"
+				% [walk, shown, where, city.prepared])
+		var order: Array[String] = ["reset_at (100.0, 200.0) (0.0, 1.0)", "prepare", "baby reset"]
+		if scene_day:
+			order.assign(["install running", "prepare"])
+		t.check(_asked_in_order(order), "%s: after she is put down and before the day runs (%s)"
+				% [walk, _asked])
+		_put_the_start_away(rig)
+		if scene:
+			scene.free()
+
+## Stands the rig's her in the tree with a camera of her own, named as her scene names it, at the
+## scene's zoom and current, as the game's own her stands: the view the start prepares round her is
+## read off it. **Not interpolated**: the real her resets her camera's interpolation when she is put
+## down (`Stroller.reset_at()`), so it draws from where she now stands; the fake her does not, and a
+## camera off interpolation is the same answer without it.
+func _stand_her_in_the_tree(t: TestRunner, rig: Dictionary) -> Camera2D:
+	var player: _FakeStroller = rig["player"]
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.zoom = Vector2(2.0, 2.0)
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	player.add_child(camera)
+	t.add_child(player)
+	camera.make_current()
+	return camera
+
+## **A won walk home lights the fire she never met, where she stands; nothing else does.** Day 3's
+## fire burns on a won day it was never met on (`EventManager.light_what_she_never_met()`), asked at
+## her position when the day ends, so a won day leaves the run its fire, scar and shell. A lost day
+## gives everything back, so it asks nothing, and the escape's city section, won at a way out rather
+## than at her door, asks nothing either. Each is a start in a city world, then its end.
+func _test_a_won_walk_home_lights_the_fire_she_never_met(t: TestRunner) -> void:
+	var cases: Array[Array] = [
+		[DaySpec.for_day(1, 210.0), GameEnums.DayResult.WON, true, "a won day walked home"],
+		[DaySpec.for_day(1, 210.0), GameEnums.DayResult.LOST_TIMEOUT, false, "a lost day"],
+		[DaySpec.for_section(DaySpec.Section.CITY, 180.0), GameEnums.DayResult.WON, false,
+				"the escape's city section won"],
+	]
+	for case: Array in cases:
+		var spec: DaySpec = case[0]
+		var rig := _start_rig(t, spec)
+		_stand_her_in_the_tree(t, rig)
+		var director: DayDirector = rig["director"]
+		director.start(spec)
+		var player: _FakeStroller = rig["player"]
+		player.position = Vector2(640.0, 96.0)
+		director.finish_day(case[1])
+		var lit := _asked.filter(func(line: String) -> bool: return line.begins_with("light"))
+		var wanted: Array = []
+		if case[2]:
+			wanted.append("light (640.0, 96.0)")
+		t.check(lit == wanted, "%s asks %s to be lit (%s)"
+				% [case[3], "what she never met" if case[2] else "nothing", lit])
+		_put_the_start_away(rig)
+
 # ------------------------------------------------------------------- fakes ---
 
 ## Stands the one world it is handed, for every spec, and notes each ask.
@@ -589,11 +670,13 @@ class _FakeWorlds extends DayWorldSource:
 		_asked.append("stand %d" % spec.number)
 		return _world
 
-## The city's dressing, noting how it is dressed and tinted. No `City`: what the director asks of
+## The city's dressing, noting how it is dressed, tinted and prepared. No `City`: what the director asks of
 ## the city scene is all it answers.
 class _FakeDressing extends CityDressing:
 	var _asked: Array[String]
 	var tinted: RouteSource
+	## Every view the scenery was asked to be prepared over, in order.
+	var prepared: Array[Rect2] = []
 
 	func _init(asked: Array[String]) -> void:
 		_asked = asked
@@ -624,6 +707,11 @@ class _FakeDressing extends CityDressing:
 	func tint_the_route(route: RouteSource) -> void:
 		tinted = route
 		_asked.append("tint")
+
+	## Overrides CityDressing.prepare_scenery_in.
+	func prepare_scenery_in(view: Rect2) -> void:
+		prepared.append(view)
+		_asked.append("prepare")
 
 ## A map that notes whether the act's spent calm was handed to it, and whose one home tile is at
 ## `home`, every other point a road.
@@ -703,6 +791,11 @@ class _FakeEvents extends EventManager:
 		var none: Array[EventPlan] = []
 		return none
 
+	## Overrides EventManager.light_what_she_never_met.
+	func light_what_she_never_met(at: Vector2) -> bool:
+		_asked.append("light %s" % at)
+		return false
+
 ## A resistance that notes its day being started.
 class _FakeResistance extends ResistanceDirector:
 	var _asked: Array[String]
@@ -714,7 +807,7 @@ class _FakeResistance extends ResistanceDirector:
 	func start_day(day: int, _rng: RandomNumberGenerator, day_length: float) -> void:
 		_asked.append("resistance %d %d" % [day, roundi(day_length)])
 
-## Her, noting where she is put down and facing which way.
+## Her, noting where she is put down and facing which way, and standing there.
 class _FakeStroller extends Stroller:
 	var _asked: Array[String]
 	var put_at := Vector2.INF
@@ -725,6 +818,7 @@ class _FakeStroller extends Stroller:
 	## Overrides Stroller.reset_at.
 	func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 		put_at = where
+		position = where
 		_asked.append("reset_at %s %s" % [where, look])
 
 ## The baby, noting being reset and put to sleep.
