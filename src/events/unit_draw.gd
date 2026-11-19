@@ -56,6 +56,8 @@ var _dawn: Array[EventPlan] = []
 ## The bag in front of every unit's own (`rig_the_next_draw()`): rows, empty until a mark rigs it,
 ## with no ordinary set behind it, so once its rows are drawn it holds nothing again.
 var _in_front := MarbleBag.new([], [], 0)
+## The plans a unit drew out of the bag in front (`drew_from_the_front()`), as `plan -> true`.
+var _from_the_front := {}
 
 ## `units` the day's units; `drawing` draws one unit (`MarbleDraw`); `bags` what answers a
 ## unit's bag (`UnitBags`: on a day, `UnitFills`); `dawn` the plans the dawn placed, copied, a
@@ -79,6 +81,11 @@ func rig_the_next_draw(rows: Array[EventDef]) -> void:
 	var marbles: Array = []
 	marbles.append_array(rows)
 	_in_front.rig(marbles, marbles.size())
+
+## **Whether `plan` is a row a unit drew out of the bag in front** (`rig_the_next_draw()`) rather than
+## out of its own: where a mark's row landed, which the run log records (`EventsAhead`).
+func drew_from_the_front(plan: EventPlan) -> bool:
+	return _from_the_front.has(plan)
 
 ## The day's units the draw draws.
 func units() -> DayUnits:
@@ -159,6 +166,10 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 ## Draws `unit` among `among`, the rigged bag in front first and then the bag the walk's bags answer
 ## for it, and records what it placed.
 func _draw_among(unit: PlacementUnit, among: Array[EventPlan]) -> Array[EventPlan]:
+	var rigged_before := _in_front.draws_made()
 	var placed := _drawing.draw(unit, _bags.bag_for(unit), among, _in_front)
+	# The rows drawn out of the bag in front come first in what a draw answers, in the order drawn.
+	for i in mini(_in_front.draws_made() - rigged_before, placed.size()):
+		_from_the_front[placed[i]] = true
 	unit.record_draw(placed)
 	return placed

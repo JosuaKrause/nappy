@@ -407,14 +407,17 @@ func draw_the_ground_round(at: Vector2, reach: float) -> bool:
 ## **What a draw placed joins the walk**: a placed row through the streaming, its body recorded
 ## where it stands, as a row placed after dawn is (`EventStreaming.add()`); a row handed to her
 ## walk (`EventDef.is_handed_to_her_walk()`, drawn with no position) added to the walk unplaced
-## and owed to the director, to site on her way, as one the dawn left is (`start_day()`); and the
-## walk's reach told what now stands in the way (`DayReach.shut_more()`).
+## and owed to the director, to site on her way, as one the dawn left is (`start_day()`); a row a
+## mark rigged in front of the draws noted where it landed; and the walk's reach told what now
+## stands in the way (`DayReach.shut_more()`).
 func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
 	if placed.is_empty():
 		return
 	for plan in placed:
 		if plan.is_placed():
 			_streaming.add(plan)
+			if _walk.unit_draw().drew_from_the_front(plan):
+				_note_where_a_rigged_row_landed(plan)
 			continue
 		_walk.add(plan)
 		if _director and plan.row().is_handed_to_her_walk():
@@ -422,6 +425,18 @@ func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
 	var reach := _walk.reach()
 	if reach:
 		reach.shut_more(placed)
+
+## Where a row a mark rigged in front of the units' draws landed (`rig_the_next_draw()`), because
+## nothing else records it: which unit draws it first depends on the walk she took.
+func _note_where_a_rigged_row_landed(plan: EventPlan) -> void:
+	var where := RunTrace.tile(world.map.world_to_tile(plan.position))
+	if not world.has_player():
+		world.trace.note("ahead", "%s a mark rigged is drawn at %s" % [plan.def.id, where])
+		return
+	var her := world.player.global_position
+	world.trace.note("ahead", "%s a mark rigged is drawn at %s, %.0fpx from her at %s"
+			% [plan.def.id, where, plan.position.distance_to(her),
+			RunTrace.tile(world.map.world_to_tile(her))])
 
 ## **Day 13's task roadblock `plan` across `section`**, a route-adjacent section of the day's
 ## locations, when no roadblock the day placed is close by where she read the mark

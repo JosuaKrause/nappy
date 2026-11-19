@@ -1,45 +1,47 @@
 extends RefCounted
-## Day 7's van gets a second instance on her route, from a rigged bag *(inbox #586 in
+## Day 7's van gets a second instance on her way, from a rigged bag *(inbox #586 in
 ## olive-hedgehog: "each olive badger rigged bag should be 2 or 3"; inbox #650 in mossy-beaver: "I
-## guess that leaves only the van?")*.
+## guess that leaves only the van?")*, stood by the next unit to draw that can stand it, wherever
+## and whenever that draw happens *(inbox #1520 in breezy-magpie, of day 6's man shouting and day
+## 7's van: "the bag gets the biased bag in front (via the chained bags mechanism) and the next draw
+## (whenever that happens) will guarantee the shouting man")*.
 ##
-## Holds, through a real city: reading day 7's mark rigs her route with a bag of
-## `ResistanceSteps.VAN_WITHIN_THE_NEXT` holding one `delivery_van`; walking the day's route, the van's marble
-## is among that many events handed out on it, and a van is then put on her route — ahead of her on
-## the street she is walking, with no part of what it draws in the camera's view (led along her
-## heading), where she can walk to it, in the world at once, and where keeping on her way brings it
-## into view; on no tile a route of the day runs along, and leaving her a way home — while the van
-## the task rides, placed near the mark, stays where it is. How often a played walk sees it is
-## `tests/probes/calm_pelican_day7_van_met.gd`'s to measure.
+## Holds, through a real city: reading day 7's mark rigs a bag holding one `delivery_van` in front
+## of the units' draws (`EventManager.rig_the_next_draw()`); walking the day's longest route out and
+## back, and on toward ground that has not drawn where that walk ends first, a unit drawn after the
+## mark draws the van out of the bag in front (`UnitDraw.drew_from_the_front()`), under the day's
+## rules a unit's own van is under: with no part of what it draws in the camera's view of her on the
+## tick it draws, on no tile a route of the day runs along, cutting none of the day's routes and
+## leaving her a way home and a way to it — while the van the task rides, placed near the mark, stays
+## where it is. How often a played walk sees it is `tests/probes/calm_pelican_day7_van_met.gd`'s to
+## measure.
 ##
-## The units draw as she walks (`EventManager.stream_around()`), and a van one of them drew is
-## told from hers by the row the unit holds as drawn (`_a_unit_drew()`). The tiles her van shuts
-## are read off the tick it stands, which a unit drawing on that tick adds its own bodies to, so
-## that check holds of both.
+## The units draw as she walks (`EventManager.stream_around()`). The tiles the van shuts are read
+## off the tick it is drawn, which other units drawing on that tick add their own bodies to, so that
+## check holds of both.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
 const DAY := 7
-## The seed of the run each city stands in (a run of its own, held by the city). The checks depend on
-## it: the day's streams come from it (`RunCalendar.day_rng()`, among them the one that seeds the
-## route bag and the sitings on her route), and on any seed but 2 the van's marble is not among the
-## next two events on her route.
+## The seed of the run each city stands in (a run of its own, held by the city), fixed so a walk
+## repeats.
 const RUN_SEED := 2
 const ROW := "delivery_van"
 const STEP := 0.1
+## How many legs she walks toward ground that has not drawn, where the longest route out and back
+## ends before the van is drawn.
+const MORE_LEGS := 6
 
 func run(t: TestRunner) -> void:
 	var met := 0
 	for seed_value in SEEDS:
-		if _a_mark_puts_a_van_on_her_route(t, seed_value):
+		if _a_mark_puts_a_van_on_her_way(t, seed_value):
 			met += 1
-	t.check(met > 0, "a van is put on her route in at least one city (%d of %d)"
-			% [met, SEEDS.size()])
-	_test_the_van_is_sited_wholly_out_of_the_camera_view(t)
+	t.check(met == SEEDS.size(), "a unit drawn after the mark draws the rigged van in every city "
+			+ "(%d of %d)" % [met, SEEDS.size()])
 
-## Answers whether a second van was put on her route in this city.
-func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
-	var size := ResistanceSteps.VAN_WITHIN_THE_NEXT
+## Answers whether a unit drew the rigged van in this city.
+func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
@@ -48,7 +50,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	var units := RunCity.events(city).walk_events().unit_draw().units().undrawn_within(Vector2.ZERO, INF)
+	var draw := RunCity.events(city).walk_events().unit_draw()
 
 	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
@@ -63,22 +65,20 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == DAY,
 			"seed %d: day %d opens on its mark" % [seed_value, DAY])
-	var bag := RunCity.events(city).ahead.director().route_bag()
 	if mark:
 		resistance.contact().complete_now()
 	var task_van: EventInstance = resistance.rider()
 	t.check(task_van != null and task_van.def.id == ROW,
 			"seed %d: reading it puts the task's van near the mark" % seed_value)
 	var task_van_at := task_van.global_position if task_van else Vector2.INF
-	# The plans standing once the mark is read: the dawn's rows and the task's own van. A van that
-	# is not among them was put on her route (it joins the day's plan when it is first sited).
-	var standing := RunCity.events(city).plans().duplicate()
-	var rigged := bag.bag_in_front()
-	t.check(rigged.size() == size and rigged.count(ROW) == 1,
-			"seed %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
-			% [seed_value, size, ROW, rigged])
+	t.check(_the_rigged_van(draw) == null,
+			"seed %d: no unit has drawn the rigged van as she reads the mark" % seed_value)
 
+	# Out from the doorstep end and back, so she is never put down on ground that has not drawn.
 	var path := _the_longest_route(city)
+	var back := path.duplicate()
+	back.reverse()
+	path.append_array(back)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -88,81 +88,55 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	player.set_physics_process(false)
 	RunCity.events(city).use_player(player)
 	t.check(path.size() >= 2 and RunCity.events(city).world.has_player(), "a route to walk and her on it")
-	var placed: Array[EventPlan] = []
-	var drawn_within := false
-	var her_at_siting := Vector2.INF
-	var where_sited := Vector2.INF
-	var heading_at_siting := Vector2.ZERO
-	var live_at_once := false
-	var its_tiles: Array[Vector2i] = []
+	var map := city.map
+	var seen := {"van": null, "her": Vector2.INF, "heading": Vector2.ZERO,
+			"tiles": [] as Array[Vector2i]}
+	var tick := func() -> void:
+		var obstructed_before := map.obstructed_tiles.duplicate()
+		var events := RunCity.events(city)
+		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
+		events.ahead.site_what_is_on_her_way(STEP)
+		events.ahead.place_what_is_owed_ahead(STEP)
+		events.stream_around(player.global_position)
+		if seen["van"] != null:
+			return
+		var van := _the_rigged_van(draw)
+		if van == null:
+			return
+		seen["van"] = van
+		seen["her"] = player.global_position
+		seen["heading"] = player.velocity.normalized()
+		var its: Array[Vector2i] = []
+		for tile: Vector2i in map.obstructed_tiles:
+			if not obstructed_before.has(tile):
+				its.append(tile)
+		seen["tiles"] = its
 	if path.size() >= 2:
-		var index := 0
-		var direction := 1
 		player.global_position = path[0]
-		var handed := 0
-		var walked := 0.0
-		while (handed < size or placed.is_empty()) and walked < 600.0:
-			var next: Vector2 = path[index + direction] if index + direction >= 0 \
-					and index + direction < path.size() else Vector2.INF
-			if next == Vector2.INF:
-				direction = -direction
-				continue
-			var toward := next - player.global_position
-			if toward.length() < Tuning.WALK_SPEED * STEP:
-				player.global_position = next
-				index += direction
-				continue
-			player.velocity = toward.normalized() * Tuning.WALK_SPEED
-			var owed_before := RunCity.events(city).owed_ahead()
-			var plans_before := RunCity.events(city).plans().size()
-			var obstructed_before := city.map.obstructed_tiles.duplicate()
-			# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-			RunCity.events(city).ahead.site_what_is_on_her_way(STEP)
-			RunCity.events(city).ahead.place_what_is_owed_ahead(STEP)
-			RunCity.events(city).stream_around(player.global_position)
-			if RunCity.events(city).owed_ahead() < owed_before and handed < size:
-				handed += 1
-				if handed == size:
-					drawn_within = _a_place_from_her_route(RunCity.events(city), standing, units) != null
-			for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
-				if plan.def.id == ROW and not standing.has(plan) \
-						and not _a_unit_drew(units, plan):
-					placed.append(plan)
-					her_at_siting = player.global_position
-					where_sited = plan.position
-					heading_at_siting = player.velocity.normalized()
-					RunCity.events(city).stream_around(player.global_position)
-					live_at_once = plan.live != null
-					for tile: Vector2i in city.map.obstructed_tiles:
-						if not obstructed_before.has(tile):
-							its_tiles.append(tile)
-			player.global_position += player.velocity * STEP
-			walked += STEP
-	t.check(drawn_within, "seed %d: the van's marble is among the next %d events on her route"
-			% [seed_value, size])
-	t.check(placed.size() == 1, "seed %d: one van is put on her route (%d)"
-			% [seed_value, placed.size()])
-	if placed.size() == 1:
-		var plan := placed[0]
-		var map := city.map
-		var tile := map.world_to_tile(where_sited)
-		# A van leaves no line past it on a sidewalk a route runs along, so it is put on the street
-		# she is walking, just out of her sight ahead of her (`WalkSiting.lay_ahead()`).
-		var offset := where_sited - her_at_siting
-		t.check(offset.dot(heading_at_siting) > 0.0
-				and absf(offset.cross(heading_at_siting)) <= 5.0 * Tuning.TILE_SIZE,
-				"seed %d: it stands ahead of her on the street she is walking (%s)"
-				% [seed_value, offset])
+		_along(player, path, tick)
+		var legs := 0
+		while seen["van"] == null and legs < MORE_LEGS:
+			var toward := _undrawn_ground(map, draw, player.global_position)
+			if toward.is_empty():
+				break
+			_along(player, _path(map, player.global_position, toward), tick)
+			legs += 1
+	var plan: EventPlan = seen["van"]
+	t.check(plan != null, "seed %d: a unit drawn after the mark draws the rigged van" % seed_value)
+	if plan:
+		var her: Vector2 = seen["her"]
+		var heading: Vector2 = seen["heading"]
+		var its_tiles: Array[Vector2i] = seen["tiles"]
+		var where_drawn := plan.placed_at()
+		var tile := map.world_to_tile(where_drawn)
 		# What it draws, where it is drawn, against the camera's view as it leads her
 		# (`Stroller.CAMERA_LOOK_AHEAD` along her heading, `Stroller.OBLIQUE_Y` of it up or down).
 		var box := EventFootprints.footprint_of(plan.def)
-		var drawn := Rect2(where_sited + box.position, box.size)
-		var lead := Vector2(heading_at_siting.x, heading_at_siting.y * Stroller.OBLIQUE_Y) \
-				* Stroller.CAMERA_LOOK_AHEAD
-		var view := Rect2(her_at_siting + lead - Tuning.VIEW_HALF_EXTENT,
-				Tuning.VIEW_HALF_EXTENT * 2.0)
+		var drawn := Rect2(where_drawn + box.position, box.size)
+		var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+		var view := Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 		t.check(not view.intersects(drawn, true),
-				"seed %d: no part of it is in the camera's view when it is put there, so it is never seen to appear (%s, view %s)"
+				"seed %d: no part of it is in the camera's view on the tick it is drawn, so it is never seen to appear (%s, view %s)"
 				% [seed_value, drawn, view])
 		var corridor := Corridor.of(city.streets().route_tree())
 		t.check(not corridor.carries_a_route(tile),
@@ -171,87 +145,84 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 		t.check(not its_tiles.is_empty() and routes.x > 0 and routes.y == 0,
 				"seed %d: its body (%d tiles) cuts none of the %d routes of the day she could walk without it (%d cut)"
 				% [seed_value, its_tiles.size(), routes.x, routes.y])
-		t.check(_walkable_from(map, her_at_siting).has(
-				map.world_to_tile(map.doorstep_world_position())),
+		t.check(_walkable_from(map, her).has(map.world_to_tile(map.doorstep_world_position())),
 				"seed %d: with it standing she can still walk home from where she was" % seed_value)
 		var grid := ReachabilityGrid.build(map)
-		var reached := grid.flood([map.world_to_tile(her_at_siting)])
+		var reached := grid.flood([map.world_to_tile(her)])
 		t.check(grid.reaches(tile, {}, reached),
 				"seed %d: she can walk to it from where she was" % seed_value)
-		t.check(live_at_once and plan.position == where_sited,
-				"seed %d: it is in the world at once, and stays where it was put" % seed_value)
-		t.check(_keeping_on_brings_it_into_view(map, her_at_siting, heading_at_siting, where_sited),
-				"seed %d: keeping on the way she was walking, over walkable ground, it comes into her view"
-				% seed_value)
 	t.check(task_van != null and is_instance_valid(task_van) and not task_van.is_finished
 			and task_van.global_position == task_van_at and resistance.rider() == task_van,
 			"seed %d: the task's own van stays where it was placed, and stays the task" % seed_value)
 	player.free()
 	resistance.free()
 	city.free()
-	return placed.size() == 1
+	return plan != null
 
-## **No part of the route van is in the camera's view the frame it is created** ("Nothing may be
-## seen to appear", `docs/EVENTS.md`): asked of `WalkSiting.lay_ahead()` directly, in a look begun from
-## every third cell of the day's longest route with her walking it either way, its drawing
-## (`EventFootprints.footprint_of()`, where it is drawn round its feet) against the 640x360 view led
-## `Stroller.CAMERA_LOOK_AHEAD` along her heading as the camera leads her.
-func _test_the_van_is_sited_wholly_out_of_the_camera_view(t: TestRunner) -> void:
-	var seed_value: int = SEEDS[0]
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	t.add_child(city)
-	RunCity.build(city, CityGenerator.generate(seed_value))
-	var state := CityState.new()
-	state.begin_day(city.map.block_plans, DAY)
-	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	var consumed: Array[String] = []
-	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	var siting := _siting_of(city)
-	var def := EventCatalogue.by_id(ROW)
-	var box := EventFootprints.footprint_of(def)
-	var path := _the_longest_route(city)
-	var sited := 0
-	var seen: Array[String] = []
-	for i in range(1, path.size(), 3):
-		for way: int in [1, -1]:
-			var from: Vector2 = path[i - 1] if way == 1 else path[i]
-			var to: Vector2 = path[i] if way == 1 else path[i - 1]
-			if from.distance_to(to) < 1.0:
-				continue
-			var heading := (to - from).normalized()
-			var plan := EventPlan.new(def, Vector2.INF)
-			siting.begin_look(from, heading)
-			var laid := siting.lay_ahead(plan)
-			siting.end_look()
-			if not laid:
-				continue
-			sited += 1
-			var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) \
-					* Stroller.CAMERA_LOOK_AHEAD
-			var view := Rect2(from + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
-			if view.intersects(Rect2(plan.position + box.position, box.size), true):
-				seen.append("%s heading %s" % [city.map.world_to_tile(from), heading])
-	t.check(sited > 0 and seen.is_empty(),
-			"no van sited ahead of her is drawn in the camera's view as it is put there (%d sited, %d seen: %s)"
-			% [sited, seen.size(), seen.slice(0, 3)])
-	city.free()
+## The van a unit drew out of the bag in front (`UnitDraw.drew_from_the_front()`), or null while no
+## unit has.
+func _the_rigged_van(draw: UnitDraw) -> EventPlan:
+	for unit in draw.units().all():
+		for plan in unit.drawn():
+			if plan.row_id() == ROW and draw.drew_from_the_front(plan):
+				return plan
+	return null
 
-## Whether walking on from `from` along `heading`, over walkable ground and no further than the
-## streaming radius, brings `van` inside her view (`Tuning.VIEW_HALF_EXTENT` round her) — that it
-## stands on the way she is walking rather than across a building or past where the street ends.
-func _keeping_on_brings_it_into_view(map: CityMap, from: Vector2, heading: Vector2,
-		van: Vector2) -> bool:
-	var at := from
-	var gone := 0.0
-	while gone <= Tuning.EVENT_STREAM_RADIUS:
-		var off := (van - at).abs()
-		if off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y:
-			return true
-		at += heading * 8.0
-		gone += 8.0
-		if not map.is_walkable(map.world_to_tile(at)):
-			return false
-	return false
+## The walkable tiles of the nearest unit that has not drawn, or none where every unit has.
+func _undrawn_ground(map: CityMap, draw: UnitDraw, her: Vector2) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for unit in draw.units().undrawn_within(her, INF):
+		var rect := unit.tiles()
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				var tile := Vector2i(x, y)
+				if map.is_walkable(tile) and not map.is_obstructed(tile) and not map.is_closed(tile):
+					found.append(tile)
+		if not found.is_empty():
+			return found
+	return found
+
+## Walks her through `points` at `Tuning.WALK_SPEED`, a tick a step.
+func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
+	for point in points:
+		while player.global_position.distance_to(point) > 1.0:
+			var toward := point - player.global_position
+			var stride := minf(toward.length(), Tuning.WALK_SPEED * STEP)
+			player.velocity = toward.normalized() * Tuning.WALK_SPEED
+			tick.call()
+			player.global_position += toward.normalized() * stride
+
+## The shortest walkable path from `from` to the nearest of `goals`, as tile centres.
+func _path(map: CityMap, from: Vector2, goals: Array[Vector2i]) -> Array[Vector2]:
+	var start := map.world_to_tile(from)
+	var wanted := {}
+	for goal in goals:
+		wanted[goal] = true
+	var came := {start: start}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	var found := Vector2i(-1, -1)
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		if wanted.has(tile):
+			found = tile
+			break
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + step
+			if came.has(next) or not map.is_walkable(next) or map.is_closed(next) \
+					or (map.is_obstructed(next) and not wanted.has(next)):
+				continue
+			came[next] = tile
+			queue.append(next)
+	var points: Array[Vector2] = []
+	if found == Vector2i(-1, -1):
+		return points
+	var at := found
+	while at != start:
+		points.push_front(map.tile_to_world(at))
+		at = came[at]
+	return points
 
 ## How many of the day's routes she can walk without `body` standing (x), and how many of those
 ## `body` cuts (y): routes whose own ground — the tiles of their cells —
@@ -275,17 +246,17 @@ static func _routes_it_cuts(city: City, body: Array[Vector2i]) -> Vector2i:
 						ground[cell * ReachabilityGrid.CELL + Vector2i(dx, dy)] = true
 			var first: Vector2i = route[0]
 			var last: Vector2i = route[route.size() - 1]
-			if not _along(map, ground, first, last, its):
+			if not _along_route(map, ground, first, last, its):
 				continue
 			walkable += 1
-			if not _along(map, ground, first, last, {}):
+			if not _along_route(map, ground, first, last, {}):
 				cut += 1
 	return Vector2i(walkable, cut)
 
 ## Whether some tile of cell `last` is reached from a tile of cell `first` over `ground` alone,
 ## walkable, open and unobstructed — the tiles of `ignoring` counted as unobstructed, as though the
 ## body standing on them were not there.
-static func _along(map: CityMap, ground: Dictionary, first: Vector2i, last: Vector2i,
+static func _along_route(map: CityMap, ground: Dictionary, first: Vector2i, last: Vector2i,
 		ignoring: Dictionary) -> bool:
 	var open := func(tile: Vector2i) -> bool:
 		return ground.has(tile) and map.is_walkable(tile) and not map.is_closed(tile) \
@@ -329,27 +300,6 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 			reached[next] = true
 			queue.append(next)
 	return reached
-
-## Whether one of the day's `units` drew `plan`, and it is not the van her route was handed.
-func _a_unit_drew(units: Array[PlacementUnit], plan: EventPlan) -> bool:
-	return units.any(func(unit: PlacementUnit) -> bool: return unit.drawn().has(plan))
-
-## The van a marble from her route's bag handed to her walk to site, sited or not; null when none
-## has been.
-func _a_place_from_her_route(events: EventManager, standing: Array[EventPlan],
-		units: Array[PlacementUnit]) -> EventPlan:
-	for plan: EventPlan in events.plans():
-		if plan.def.id == ROW and not standing.has(plan) and not _a_unit_drew(units, plan):
-			return plan
-	return null
-
-## The placement context the game builds for her walk (`EventsAhead.start_day()`), made by the maker
-## the game hands its events (`SitingMaker`), on a ground under the day's own home-street rule.
-func _siting_of(city: City) -> WalkSiting:
-	var events := RunCity.events(city)
-	return SitingMaker.new(events.world, events.walk_events()).make(DAY,
-			city.streets().route_tree(), EventScheduler.row_ground(city.map, null,
-			DaySpec.for_day(DAY).holds_the_home_streets))
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
