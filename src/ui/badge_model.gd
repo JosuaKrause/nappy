@@ -1,5 +1,5 @@
 class_name BadgeModel
-extends RefCounted
+extends EdgeBadges
 ## **Which dangers get a screen-edge badge, when it goes up and when it comes down.** The decision
 ## `DangerEdge` draws, made in one place that is handed plain data and can be stepped in a test with
 ## no scene, no camera and no frame timing: the live dangers and the warnings that are up
@@ -212,6 +212,7 @@ func clear_badges() -> void:
 ## What is on the edge right now, nearest arrival first, one entry per badge: `{id, distance,
 ## approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
 ## is nothing between `coming` and this list: every badge is in it, and `DangerEdge` draws exactly it.
+## Overrides EdgeBadges.announcing.
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
 	for i in coming.size():

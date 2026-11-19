@@ -126,7 +126,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 						result.entry = clock
 		source.visible_view().look_from(Stroller.view_centre_of(player))
 		edge._measure(STEP)
-		var badged := not edge.announcing().is_empty()
+		var badged := not edge.badges().announcing().is_empty()
 		if badged and result.badge_start == INF:
 			result.badge_start = clock
 		if had_badge and not badged and result.badge_removed == INF:

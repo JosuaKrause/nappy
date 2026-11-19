@@ -128,8 +128,8 @@ var _session: RunSession
 func _the_trace() -> RunTrace:
 	return _session.trace() if _session else RunTrace.new()
 var _hud: HudScript
-## Kept because the telemetry observer asks it what she is being warned about; the layer around it
-## is kept only so the title screen can take it off the street.
+## Kept because the run log is handed what it announces (`badges()`), to say what she is being
+## warned about; the layer around it is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
 var _edge_layer: CanvasLayer
 ## What is currently charging the meter, drawn under the world rather than over it — see
@@ -970,7 +970,7 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 func _watch_the_walk() -> void:
 	if not _walk_watched and _session:
 		_walk_watched = true
-		_session.watch(_day, _resistance, _edge)
+		_session.watch(_day, _resistance, _edge.badges() if _edge else null)
 
 ## Whether the run log's session has been handed what it watches every walk with — once a boot.
 var _walk_watched := false

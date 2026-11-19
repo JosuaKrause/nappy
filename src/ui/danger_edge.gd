@@ -206,21 +206,23 @@ static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	subject.heard_within = def.heard_within()
 	return subject
 
-## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
-## arrival first. For the telemetry observer, which has to be able to say what she was warned
-## about and whether she then did anything about it, which nothing else in the log can say. `id`
-## is the name the log calls the thing by (`EventInstance.logged_name()`): the row's id, or
-## `pelican` for the pelican, from its warning on.
-func announcing() -> Array[Dictionary]:
-	return _model.announcing()
+## The badges this edge has up (`EdgeBadges.announcing()`: `{id, distance, approach}` per badge,
+## nearest arrival first): its `BadgeModel`, held as the read-only `EdgeBadges`, the one object for
+## the edge's life, which the escape's re-pointing (`setup()`) keeps. For the run log, which has to
+## be able to say what she was warned about and whether she then did anything about it, which
+## nothing else in the log can say: `main` hands it to the run log's session (`RunSession.watch()`),
+## which may not name this view. `id` is the name the log calls the thing by
+## (`EventInstance.logged_name()`): the row's id, or `pelican` for the pelican, from its warning on.
+func badges() -> EdgeBadges:
+	return _model
 
 func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	# Exactly the badges `announcing()` lists, farthest arrival first so the soonest lies on top where
+	# Exactly the badges `badges()` lists, farthest arrival first so the soonest lies on top where
 	# two overlap.
-	var badges := announcing()
+	var badges := _model.announcing()
 	for i in range(badges.size() - 1, -1, -1):
 		_draw_arrow(badges[i]["def"] as EventDef, badges[i]["position"] as Vector2,
 				float(badges[i]["distance"]), transform)

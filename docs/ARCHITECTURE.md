@@ -530,6 +530,9 @@ src/
 	                      quoted sentence anywhere else under src/
 	meter_bar.gd
 	home_arrow.gd         the one moment the game says "this way", while she carries a sleeper home
+	edge_badges.gd        the badges up at the screen edge as the run log reads them (`EdgeBadges`, on the
+	                      model's layer, below the observers and the view): the badge model extends it, and
+	                      `main` hands the edge's to the run log, which may not name the view
 	badge_model.gd        which dangers get a screen-edge badge and when: plain data in, badges out, no scene
 	danger_edge.gd        the screen-edge badge: builds the model's inputs each frame and draws what it decides
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
