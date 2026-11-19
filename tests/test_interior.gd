@@ -2191,7 +2191,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	var stroller := Stroller.new()
 	var layers := DebugLayers.new()
 	t.add_child(layers)
-	layers.setup(events, null, scene, stroller)
+	layers.setup(events, null, scene, Callable(), stroller)
 	var bodies := DebugLayers.collision_nodes_under(scene).size()
 	t.check(bodies > 0, "the building's own bodies are found (%d)" % bodies)
 	# Its fields read the building's instances: with nothing else on the map, every one that is not

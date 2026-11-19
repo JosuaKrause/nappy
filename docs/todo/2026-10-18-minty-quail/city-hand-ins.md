@@ -40,8 +40,6 @@ modules that do not wait for the events"), not this item.
   it extends, `src/run/authored_scene.gd`), and `SceneRecipeDraft.record()` and `compose()`
   (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 3 waits for `install()` to take a
   narrow interface instead.
-- The debug layers (`src/dev/debug_layers.gd`) ask the world they are handed whether it is a `City`
-  and read its props through `City.props()`.
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.

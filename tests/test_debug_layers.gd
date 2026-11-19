@@ -176,9 +176,9 @@ func _test_the_escapes_second_world_hands_the_event_routes_its_events(t: TestRun
 	instance_b.setup(EventCatalogue.by_id("police_patrol"), route_b[0], route_b)
 	city.live = [instance_b]
 	var event_routes := rig.readout.get_node("EventRouteLines") as EventRouteLines
-	rig.readout.show_the_world(building, null, rig.world, null, null)
+	rig.readout.show_the_world(building, null, rig.world, Callable(), null, null)
 	t.check(event_routes.routes() == [route_a], "the first world's events are the ones drawn")
-	rig.readout.show_the_world(city, null, rig.world, null, null)
+	rig.readout.show_the_world(city, null, rig.world, Callable(), null, null)
 	t.check(rig.readout.get_node("EventRouteLines") == event_routes
 			and event_routes.routes() == [route_b],
 			"the second world reuses the one node and draws only the new world's events")
@@ -221,7 +221,7 @@ class Rig:
 		readout.setup(config, label, layer, run.header(), null, Callable())
 		readout.watch(player, null, null)
 		t.add_child(readout)
-		readout.show_the_world(null, null, world, null, null)
+		readout.show_the_world(null, null, world, Callable(), null, null)
 
 	## The layer node the readout built, or null where it built none.
 	func layers() -> DebugLayers:

@@ -40,7 +40,8 @@ extends Node2D
 ## **The building shows what the city shows.** Nothing here needs a day: the events are the
 ## world's `EventManager`, the city's or the building's alike, asked only for `instances()`, the
 ## crowd may be null, and the world is any `Node2D` whose subtree holds
-## the bodies — `City` or `InteriorScene`. Only the props are a city's, and a building has none.
+## the bodies — `City` or `InteriorScene`. Only the props are a city's: they are handed as a source
+## (`setup()`'s `props`), and a building hands none.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same
 ## amber the caret already uses for "worth going round", so this view speaks the vocabulary the
@@ -71,21 +72,34 @@ var _redraw_owed := false
 var _events: EventManager
 ## Null where there is no crowd: the escape's building.
 var _crowd: Crowd
-## Whose subtree the bodies are walked from: the `City`, or the escape's `InteriorScene`.
+## Whose subtree the bodies are walked from: the `City`, or the escape's `InteriorScene`. Only a
+## `Node2D` root is asked of it, so nothing here tests what kind of world it is.
 var _world: Node2D
+## Answers the world's props, rebuilt each day; invalid where the world has none (the escape's
+## building).
+var _props: Callable
 var _player: Stroller
 
 ## **Called again when the escape walks out of the service door**, with the city in place of the
 ## building, so the one node and the state of its three switches carry across the section change.
-func setup(events: EventManager, crowd: Crowd, world: Node2D, player: Stroller) -> void:
+func setup(events: EventManager, crowd: Crowd, world: Node2D, props: Callable,
+		player: Stroller) -> void:
 	_events = events
 	_crowd = crowd
 	_world = world
+	_props = props
 	_player = player
 
 ## The live instances: the one question this layer asks its event source.
 func _live() -> Array[EventInstance]:
 	return _events.instances()
+
+## The world's props now, or none where the world hands no source.
+func _current_props() -> Array[Node2D]:
+	if not _props.is_valid():
+		return []
+	var props: Array[Node2D] = _props.call()
+	return props
 
 ## The crowd's agents, or none where there is no crowd.
 func _agents() -> Array[CrowdAgent]:
@@ -408,10 +422,7 @@ func _draw_shadows() -> void:
 	for agent in _agents():
 		var axis := agent.heading() if agent.is_car() else Vector2.RIGHT
 		_draw_shadow_outline(agent.shape(), agent.global_position, axis)
-	var props: Array[Node2D] = []
-	if _world is City:
-		props = (_world as City).props()
-	for prop in props:
+	for prop in _current_props():
 		if prop is Prop:
 			_draw_shadow_outline((prop as Prop).shape(), prop.global_position, Vector2.RIGHT)
 	_draw_shadow_outline(_player.shape(), _player.global_position, Vector2.RIGHT)

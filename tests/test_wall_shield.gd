@@ -725,7 +725,7 @@ func _test_the_fields_layer_cuts_a_moved_source_again(t: TestRunner) -> void:
 	var source := _Source.new()
 	source.live.append(musician)
 	var layers := DebugLayers.new()
-	layers.setup(source, null, null, null)
+	layers.setup(source, null, null, Callable(), null)
 	var everywhere := Rect2(-1e5, -1e5, 2e5, 2e5)
 	var first: Array = layers.field_runs(everywhere)
 	var again: Array = layers.field_runs(everywhere)
@@ -781,7 +781,7 @@ func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> v
 	var source := _Source.new()
 	source.live.append(emitter)
 	var layers := DebugLayers.new()
-	layers.setup(source, null, null, null)
+	layers.setup(source, null, null, Callable(), null)
 	var view := Rect2(Vector2(-320.0, -180.0), Vector2(640.0, 360.0))
 	var seen := 0
 	var unseen := 0
