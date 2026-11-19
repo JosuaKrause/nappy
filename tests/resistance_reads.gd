@@ -63,7 +63,7 @@ static func mast_at(director: ResistanceDirector, events: EventManager) -> Strin
 ## are doors she walks through, not a block. The soft seals' bands (`CityMap.soft_sealed_tiles()`) are
 ## blocked on top, as the director blocks them: the red arrow reads a band as ground she cannot walk,
 ## so a place reached only through one is not a place the arrow can lead her to. `[grid, blocked,
-## reached]`, the shape `home_reach()` answers and `reaches_home()` takes. Plans standing within a
+## reached]`, the shape `reaches_home()` takes. Plans standing within a
 ## tile and a half of a point in `except_near` are left out: a task's own body, placed after the day's
 ## first placement asked, does not shut its own tile.
 static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Array:
@@ -85,14 +85,7 @@ static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Ar
 	blocked.merge(city.map.soft_sealed_tiles())
 	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
 
-## The tiles her paths reach from home under `blocked` (the day's obstruction), as
-## `[grid, blocked, reached]` for `reaches_home()`: the same `ReachabilityGrid` flood from the home
-## block that the director's placements are asked of.
-static func home_reach(map: CityMap, blocked: Dictionary) -> Array:
-	var grid := ReachabilityGrid.build(map)
-	return [grid, blocked, grid.flood([map.home_rect.position], blocked)]
-
-## Whether `tile` is reachable from home in a `home_reach()`.
+## Whether `tile` is reachable from home in the `reach` `day_reachability()` answers.
 static func reaches_home(reach: Array, tile: Vector2i) -> bool:
 	var grid: ReachabilityGrid = reach[0]
 	return grid.reaches(tile, reach[1], reach[2])

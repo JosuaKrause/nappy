@@ -62,26 +62,6 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 			best = i
 	return best
 
-## A way out of the doorstep that does not carry `unlike` — the other side of a fork, for the check
-## that an unseen fire follows the branch she actually took.
-func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
-	var tree := RouteTree.for_day(_map(), day)
-	var carries := tree.branches_on(_map().world_to_tile(unlike))
-	for branch in tree.branches():
-		for route: Array in branch.routes:
-			if route.size() < 8:
-				continue
-			var shares := false
-			for colour in carries:
-				shares = shares or branch.routes.size() > 0 and colour == tree.branches().find(branch)
-			if shares:
-				continue
-			var points := PackedVector2Array()
-			for i in route.size():
-				points.append(tree.cell_centre(route[route.size() - 1 - i]))
-			return points
-	return PackedVector2Array()
-
 ## The day's longest route as the line she walks — out from the doorstep to the calm area when
 ## `outward`, home again when not. A route is grown from the area to the doorstep, so the walk out
 ## is the array reversed.

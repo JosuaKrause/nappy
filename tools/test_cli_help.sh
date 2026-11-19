@@ -732,7 +732,7 @@ done
 
 # rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
 # passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
-# silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after
+# silently falls back to the day's own length times `movie_slowdown`, killing a hung Godot after
 # about 38 minutes instead of about 4 for a short shot. Checked two ways: the function itself
 # answers differently for a short --after than for none at all, and trailer.sh's own call site is
 # grepped for the exact --after shape rather than a bare value, which is the one thing that would

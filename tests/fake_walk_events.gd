@@ -3,7 +3,7 @@ extends WalkEvents
 ## A stand-in for the walk's events whose answers a check sets: handed to a placement made while
 ## she walks (`WalkSiting`) in place of the real one, so the check plans no walk. It
 ## answers what a siting asks (the walk's plans, every plan but the one being sited, where today's
-## doors stand and the day's calm areas) and records the one write a placement makes (`add()`).
+## doors stand, none, and the day's calm areas, none) and records the one write a placement makes (`add()`).
 ## The real object's own logic is checked once, in `tests/test_walk_events.gd`. A helper, not a
 ## suite: the runner loads only `test_*.gd`.
 
@@ -11,22 +11,10 @@ extends WalkEvents
 var added: Array[EventPlan] = []
 
 var _fake_plans: Array[EventPlan] = []
-var _fake_calm: CalmAreas = null
-var _fake_doors := PackedVector2Array()
 
 ## Sets the walk's plans.
 func set_plans(plans: Array[EventPlan]) -> FakeWalkEvents:
 	_fake_plans = plans.duplicate()
-	return self
-
-## Sets the day's calm areas.
-func set_calm(calm: CalmAreas) -> FakeWalkEvents:
-	_fake_calm = calm
-	return self
-
-## Sets where today's doors stand.
-func set_doors(doors: PackedVector2Array) -> FakeWalkEvents:
-	_fake_doors = doors
 	return self
 
 ## Overrides WalkEvents.add.
@@ -48,8 +36,8 @@ func everything_but(besides: EventPlan = null) -> Array[EventPlan]:
 
 ## Overrides WalkEvents.doors.
 func doors() -> PackedVector2Array:
-	return _fake_doors
+	return PackedVector2Array()
 
 ## Overrides WalkEvents.calm.
 func calm() -> CalmAreas:
-	return _fake_calm
+	return null

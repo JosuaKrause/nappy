@@ -46,9 +46,6 @@ const BAKED_ROOT := "res://assets/atlases/baked/"
 ## this file in a headless `--script` run, where a checkout with no `.godot/` has no class-name
 ## cache for a `class_name` to resolve against.
 const AtlasTableScript := preload("res://src/visuals/atlas_table.gd")
-## Which group every picture belongs to, its lifetime and its padding kind. Checked in, and the
-## one file a new consumer edits.
-const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
 ## Where the authoring pictures live. `art/` carries a `.gdignore`, so the engine imports nothing
 ## under it and exports nothing from it; these two constants are read by the bake alone, through
 ## `FileAccess`, and never by a `load()`. The running game never sees a constituent picture.
