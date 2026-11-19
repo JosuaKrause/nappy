@@ -5,7 +5,8 @@ extends RefCounted
 ## **The start on fakes.** The world comes from a `DayWorldSource` the director is handed, so a start
 ## here is handed a fake one standing a world of fakes — the city's dressing that records how it is
 ## dressed, a small map of its own, events that record how they are planned, a crowd, a resistance,
-## her and the baby — with today's streets, the day's clock and the run's calendar real, since they
+## her (stood in the tree with a real camera where a check reads the view she has) and the baby —
+## with today's streets, the day's clock and the run's calendar real, since they
 ## are plain state. No city is generated and no day is planned, and the director is handed no
 ## `City`: an authored scene alone is handed one, a stand-in never built, to install itself into.
 ## What is checked is the director's own order, what each of the spec's settings makes it do, for a

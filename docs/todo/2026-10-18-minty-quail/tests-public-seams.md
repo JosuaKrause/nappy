@@ -75,13 +75,8 @@ ticks give, and is kept with its reason:
 - **No test isolates the raid's wait for the patrol car's beat to be out of her view** in
   `ResistanceHappenings._maybe_raid()`: deleting that check fails nothing, since the vans' own check
   holds the raid back; the happenings' tests gain one that fails without it.
-- **No test catches removing the day director's ask of the city's dressing to prepare the scenery
-  round where she is put down** (`CityDressing.prepare_scenery_in()`, asked from `DayDirector.start()`;
-  the home's ground is already loaded, and `test_camera_start.gd`'s dawn check does not fail without
-  the call), or `DaySummary`'s `_continuing` guard.
 - **`PlanBuilder._cross_street_path`** serves no catalogue row today, since the director sites the
   cat; it wants a row or removing.
-- **A recycled walker's heading** when it chooses its lane again has no suite guarding it.
 - **`test_route_bag.gd`** reads a place waiting for its site in the director's private
   list, which nothing a game class asks reads. `test_day7_van.gd` reads the rigged bag through
   `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the
