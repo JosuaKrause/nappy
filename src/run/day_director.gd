@@ -371,8 +371,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# rather than after it, and before `RunCalendar.finish_day()`, which is what commits a won
 	# day's spending. A lost day gives everything back, so it is asked of a win only. See
 	# `EventManager.light_what_she_never_met()`. Only a day walked home has one.
-	if result == GameEnums.DayResult.WON and _player and _in_a_city \
-			and _spec.goal_kind() == DaySpec.Goal.HOME:
+	if result == GameEnums.DayResult.WON and _player and _spec.goal_kind() == DaySpec.Goal.HOME:
 		_events.light_what_she_never_met(_player.global_position)
 	# What ended the day, read once in the frame it ended (see `_landed_by_group()`).
 	var cause := _loss_cause(result)
