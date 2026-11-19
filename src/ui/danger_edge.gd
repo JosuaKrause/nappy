@@ -80,7 +80,7 @@ var _player: Node2D
 var _own_view := VisibleView.new()
 ## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
 ## this control does of it.
-var model := BadgeModel.new()
+var _model := BadgeModel.new()
 
 ## Hands the edge the baked atlas pages its badges draw from: `main` hands the sitting's library,
 ## before the edge is added.
@@ -106,7 +106,7 @@ func _init() -> void:
 ## city's on a day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
 ## building's, so one badge serves both sections; an id the new source no longer carries simply
-## drops out of `model._watch` on the next `_measure()`.
+## drops out of `_model._watch` on the next `_measure()`.
 func setup(events: Node, player: Node2D) -> void:
 	_events = events
 	_player = player
@@ -120,24 +120,24 @@ func _live() -> Array[EventInstance]:
 ## What she can see this frame: the day's own view where the event source keeps one
 ## (`EventManager.visible_view()`), so the badge and everything else that asks agree on it frame for
 ## frame, and otherwise this edge's own, looked through from her camera.
-func view() -> VisibleView:
+func _view() -> VisibleView:
 	if _events and _events.has_method("visible_view"):
 		return _events.visible_view()
 	return _own_view
 
 ## Whether something at `world_position` is in sight (`VisibleView.sees()`), counting `margin`
 ## screen px past the edge as in sight as well — the one test the badge asks.
-func sees(world_position: Vector2, margin := 0.0) -> bool:
-	return view().sees(world_position, margin * world_per_screen_px())
+func _sees(world_position: Vector2, margin := 0.0) -> bool:
+	return _view().sees(world_position, margin * world_per_screen_px())
 
 ## Whether she can see any of `instance`: the point it stands at, or any of what it draws
 ## (`EventInstance.drawn_box()`). Coming into sight is the badge's job done by the thing itself, so the
 ## badge goes off the moment the first of it shows, not only once its feet do.
 func _shows(instance: EventInstance) -> bool:
-	if sees(instance.global_position):
+	if _sees(instance.global_position):
 		return true
 	var box := instance.drawn_box()
-	return box.has_area() and view().sees_any(Rect2(instance.global_position + box.position, box.size))
+	return box.has_area() and _view().sees_any(Rect2(instance.global_position + box.position, box.size))
 
 ## World px per design-space screen px at the camera's zoom: the world the view shows across the
 ## design box's width.
@@ -168,7 +168,7 @@ func _process(delta: float) -> void:
 ## not redraw at all.
 func _watch_the_edge(delta: float) -> bool:
 	_measure(delta)
-	var badges := model.has_badges()
+	var badges := _model.has_badges()
 	var asked := badges or _drew_badges
 	_drew_badges = badges
 	if asked:
@@ -185,7 +185,7 @@ var _drew_badges := false
 ## be called for reasons that have nothing to do with a frame elapsing. Everything below the line is
 ## drawing.
 func _measure(delta: float) -> void:
-	model.clear_badges()
+	_model.clear_badges()
 	if not _events or not _player or delta <= 0.0:
 		return
 	if not (_events.has_method("visible_view")):
@@ -197,7 +197,7 @@ func _measure(delta: float) -> void:
 	for warning in _warnings():
 		if warning.points_at() != Vector2.INF:
 			subjects.append(_subject_of_warning(warning))
-	model.step(delta, _player.global_position, subjects, sees)
+	_model.step(delta, _player.global_position, subjects, _sees)
 
 ## The facts the model reads about a live instance.
 func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
@@ -237,7 +237,7 @@ static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 ## is the name the log calls the thing by (`EventInstance.logged_name()`): the row's id, or
 ## `pelican` for the pelican, from its warning on.
 func announcing() -> Array[Dictionary]:
-	return model.announcing()
+	return _model.announcing()
 
 func _draw() -> void:
 	if not _events or not _player:
