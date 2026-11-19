@@ -25,4 +25,7 @@ correction.
 **Item:** `fable-reviews-held-pull-requests.md`.
 
 The band `now` is the filer's proposal; the notes carried no band label. The entry has no `after:`
-line: it waits on Fable's quota, not on another entry.
+line: it waits on Fable's quota, not on another entry, and the queue has no line for that wait, so it
+prints in `now` though nothing here can start until the quota is back. It carries no `fable-only: true`
+line: that label marks work as Fable's to design, and this entry's work is Fable judging designs
+already written; each held pull request carries the label from polite-tapir, the entry it builds.

@@ -3,9 +3,13 @@
 **What waits.** Every pull request that builds polite-tapir work an Opus agent designed in Fable's
 place, while Fable's quota is out, stays open and unmerged after its adversarial review passes. The
 first is #1548 (the beats become rigged marbles in the units ahead of her, polite-tapir placement
-step 4's last pull request; approved, CI green). Each group of polite-tapir's standing layer breaks
-that Opus designs and builds joins it, one at a time: the next group starts only once the one before
-has its pull request open and reviewed (grassy-bison #1560).
+step 4's last pull request). Each group of polite-tapir's standing layer breaks that Opus designs and
+builds joins it, one at a time (grassy-bison #1560). **Read as** (the orchestrator's, open to the
+player's correction): "one fable task at a time" means one design-and-build agent at a time, so the
+next group starts once the one before has its pull request open and reviewed, not once Fable has
+reviewed it; the plainer other reading, one held pull request at a time, would stop all of
+polite-tapir's work until Fable's quota returns, which the player's "yes, continue" is read as not
+asking for.
 
 **What is done when the quota is back.** A Fable agent is briefed per pull request, oldest first, with
 the design review's text for that work (`docs/todo/2026-11-11-polite-tapir/`), the pull request's
