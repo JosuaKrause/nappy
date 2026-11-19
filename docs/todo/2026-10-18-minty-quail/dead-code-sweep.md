@@ -18,7 +18,7 @@ the code last, or that nothing ever did.
 
 **Where the rest is:** the survey (`check_test_only_members.py`, a scan for members named nowhere in
 `src/`, `tests/`, `tools/` or `scenes/`, and the check's receiver typing for a public member no
-file reaches whose name another class shares) finds these, in the events and one in the run's day director; each is read before
+file reaches whose name another class shares) finds these, in the events; each is read before
 it goes, and a member only tests reach stays where its test is the only check of behaviour the game
 uses.
 
@@ -29,5 +29,3 @@ uses.
 - `src/resistance/`: nothing.
 
 The pass after these runs the survey again.
-
-**Outside the events, one find a test pass made** (the record minty-quail-rosy-bunny): `DayDirector.finish_day()`'s `_in_a_city` term, which only a won walk home in a world with no city would reach, and no game path makes one (the only world without a city is the escape's building, whose goal is the service exit); it goes with `tests/test_day_director.gd`'s `_test_a_won_day_with_a_player_and_no_city_ends`, which stands on the same setup.
