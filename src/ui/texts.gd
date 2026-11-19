@@ -299,16 +299,16 @@ const FINALE_TITLE := "You are out."
 ## The bridge's body, which is also the one for an exit `FINALE_BODY` has no entry for.
 const FINALE_BODY_DEFAULT := "The water is under you and the city is behind you. " \
 		+ "She does not wake."
-## The key is a `CityEdge.Kind`.
+## The key is a `CityExit.Kind`.
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,
 ## and the city is still there. The two differ only in what she is standing on. Plain prose, one
 ## space between sentences: `DaySummary` breaks it through `SentenceLines.break_for_label()`,
 ## the same helper the rest of this file's prose goes through, rather than a `\n` of its own.
 const FINALE_BODY := {
-	CityEdge.Kind.TUNNEL:
+	CityExit.Kind.TUNNEL:
 		"The mountain closes over the road behind you. "
 		+ "She does not wake.",
-	CityEdge.Kind.BRIDGE: FINALE_BODY_DEFAULT,
+	CityExit.Kind.BRIDGE: FINALE_BODY_DEFAULT,
 }
 ## `%s` the body, `%s` the time the escape took as a clock.
 const FINALE_OUT_IN := "%s\n\nOut in: %s"

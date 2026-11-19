@@ -10,7 +10,7 @@ var says := ""
 ## The raw reason of the hard fail that ended the day, `""` for none: what `hard_fail_reason()`
 ## answers.
 var struck_by := ""
-## The way out of the city she took (`CityEdge.Kind`), -1 for none: what `exit_taken()` answers.
+## The way out of the city she took (`CityExit.Kind`), -1 for none: what `exit_taken()` answers.
 var way_out := -1
 
 ## Overrides DayController.loss_reason.

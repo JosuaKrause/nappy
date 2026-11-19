@@ -76,7 +76,7 @@ var _section := Section.NONE
 ## of it, which waits for the events' interface.
 var world := World.CITY
 var goal := Goal.HOME
-## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityEdge.Kind` -> position, the
+## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityExit.Kind` -> position, the
 ## last walkable tile of the spine at each end rather than where the portal's picture is anchored.
 ## Handed in by the start once the world it stands in is stood (`DayWorld.exits()`, through
 ## `use_exits()`); empty for any other goal. Read through `exit_points()`.
@@ -384,7 +384,7 @@ func seconds_on_the_clock() -> float:
 func crowd_share() -> float:
 	return crowd_density
 
-## The finale's exits by `CityEdge.Kind`, each the point the walk ends at (`_exits`).
+## The finale's exits by `CityExit.Kind`, each the point the walk ends at (`_exits`).
 func exit_points() -> Dictionary:
 	return _exits
 

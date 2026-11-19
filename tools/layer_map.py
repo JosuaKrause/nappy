@@ -95,7 +95,9 @@ FILES: dict[str, str] = {
     "src/autoload/event_bus.gd": "model",
     "src/autoload/sitting.gd": "model",
     # city: the map, its generation and its run-scoped state are the model; the scene and its
-    # furniture (the folder's own layer) are the world.
+    # furniture (the folder's own layer) are the world; the ways out of the city are data, since
+    # the texts and the day's spec are keyed on them.
+    "src/city/city_exit.gd": "data",
     "src/city/block_layout.gd": "model",
     "src/city/block_plan.gd": "model",
     "src/city/city_generator.gd": "model",
@@ -281,19 +283,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "City",
         "a row's ground reads the burnt frontage's scar name off the city scene",
         ("src/events/row_ground.gd",),
-    ),
-    Exception_(
-        "names",
-        "CityEdge",
-        "the tunnel-or-bridge kind lives on the edge's drawing class",
-        (
-            "src/finale/finale_planner.gd",
-            "src/ui/texts.gd",
-        ),
-        more=(
-            ("src/finale/finale_planner.gd", 10),
-            ("src/ui/texts.gd", 2),
-        ),
     ),
     Exception_(
         "names",

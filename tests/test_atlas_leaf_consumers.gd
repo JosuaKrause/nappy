@@ -137,7 +137,7 @@ func _test_street_kit_consumers_share_one_reference_count(t: TestRunner) -> void
 	light.mount(atlas, null, Vector2i.ZERO, null)
 	t.add_child(light)
 	var edge := CityEdge.new()
-	edge.dress(atlas, CityEdge.Kind.TUNNEL)
+	edge.dress(atlas, CityEdge.Piece.TUNNEL)
 	t.add_child(edge)
 	var park := ParkFenceMarker.new()
 	park.use_atlas(atlas)
@@ -174,7 +174,7 @@ func _test_each_street_kit_consumer_holds_its_own_reference(t: TestRunner) -> vo
 			return node,
 		"the city edge": func(atlas: AtlasLibrary) -> Node:
 			var node := CityEdge.new()
-			node.dress(atlas, CityEdge.Kind.TUNNEL)
+			node.dress(atlas, CityEdge.Piece.TUNNEL)
 			return node,
 		"the park fence": func(atlas: AtlasLibrary) -> Node:
 			var node := ParkFenceMarker.new()
@@ -207,7 +207,7 @@ func _test_city_edge_also_holds_ground(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var edge := CityEdge.new()
-	edge.dress(atlas, CityEdge.Kind.TUNNEL)
+	edge.dress(atlas, CityEdge.Piece.TUNNEL)
 	t.add_child(edge)
 	t.check(pages.held(&"street_kit"), "the city edge holds street_kit on its own")
 	t.check(pages.held(&"ground"), "and holds ground alongside it, for the mountain tile")

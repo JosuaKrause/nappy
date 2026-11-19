@@ -40,7 +40,7 @@ var _exits := {}
 ## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, what dresses the
 ## city for the day `dressing` and its events, her and the baby in it, put down at `start` facing
 ## `facing`. Its walk is won at her front door on `home_map` — the city's own map on a walk home,
-## null on one that is not — or at `exits`, the ways out of the city by `CityEdge.Kind`, empty on a
+## null on one that is not — or at `exits`, the ways out of the city by `CityExit.Kind`, empty on a
 ## walk with none. Its walk is planned on the spec's own stream of the run
 ## (`DaySpec.events_stream()`). `scene_city` is the city whole, handed only where an authored scene
 ## installs itself into it (`scene_city()`), null otherwise.
@@ -158,7 +158,7 @@ func plan_rng() -> RandomNumberGenerator:
 func home_map() -> CityMap:
 	return _home_map
 
-## The ways out of the world by `CityEdge.Kind`, each the world point a walk out of it ends at, which
+## The ways out of the world by `CityExit.Kind`, each the world point a walk out of it ends at, which
 ## the spec is handed (`DaySpec.use_exits()`): the escape city's two, empty in any other world.
 func exits() -> Dictionary:
 	return _exits
