@@ -45,11 +45,11 @@ extends RefCounted
 
 ## The run's calendar, handed in.
 var calendar: RunCalendar
-var events: EventManager
+var _events: EventManager
 var resistance: ResistanceDirector
-var player: Stroller
+var _player: Stroller
 var baby: Baby
-var day: DayController
+var _day: DayController
 ## Whether the world being walked is a city (`DayWorld.is_in_a_city()`): the one answer every
 ## city branch below keys on. False in the escape's building and before any world is handed.
 var _in_a_city := false
@@ -125,19 +125,19 @@ func use_the_flags(start: Callable, meters: Callable) -> void:
 func use_the_world(world: DayWorld, the_resistance: ResistanceDirector,
 		the_day: DayController) -> void:
 	resistance = the_resistance
-	day = the_day
-	events = world.events() if world else null
-	player = world.player() if world else null
+	_day = the_day
+	_events = world.events() if world else null
+	_player = world.player() if world else null
 	baby = world.baby() if world else null
 	_in_a_city = world != null and world.is_in_a_city()
 	_city_map = world.city_map() if world else null
 	_streets = world.streets() if world else null
 	_crowd = world.crowd() if world else null
 	_dressing = world.dressing() if world else null
-	if events:
-		events.use_player(player)
+	if _events:
+		_events.use_player(_player)
 	if resistance:
-		resistance.use_player(player)
+		resistance.use_player(_player)
 
 ## Hands the director the day being walked, which `finish_day()` ends: `main` hands the run flow's
 ## own to every director it builds, and `start()` hands itself the one it starts.
@@ -157,7 +157,7 @@ func use_escape_follows(follows: bool) -> void:
 ## The day about to be walked, handed to the day's clock.
 func use_the_day(the_spec: DaySpec) -> void:
 	use_the_spec(the_spec)
-	day.use_the_spec(the_spec)
+	_day.use_the_spec(the_spec)
 
 ## **Starts the walk `the_spec` describes**: a day, an authored scene's day, or a section of the
 ## escape, the first time or again after a loss. Writes nothing to the save itself: each caller
@@ -194,11 +194,11 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 	# so the lines the dressing and the plan write are under the walk's own header.
 	if stood.is_valid():
 		stood.call(world)
-	use_the_world(world, resistance, day)
+	use_the_world(world, resistance, _day)
 	# What the walk is won at, as the world it stands in answers it: the ways out, which the clock
 	# reads off the spec it was just handed, and her and her front door's map, which it reads itself.
 	_spec.use_exits(world.exits())
-	day.use_the_walk(world.home_map(), world.player())
+	_day.use_the_walk(world.home_map(), world.player())
 	# The city becomes today's city before anything is placed in it: the scheduler has to see the
 	# parks that are still parks, not yesterday's.
 	if _in_a_city:
@@ -207,9 +207,9 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 	if _scene:
 		# Over a running clock, as a played day's sleep would come: a scene that puts the baby to
 		# sleep at its start has her owe the walk home on a day.
-		day.start(_spec.seconds_on_the_clock())
+		_day.start(_spec.seconds_on_the_clock())
 		# The scene's events run under the very spec the clock and the HUD were just handed.
-		errors = _scene.install(world.scene_city(), world.scene_simulation(), player, baby, _spec,
+		errors = _scene.install(world.scene_city(), world.scene_simulation(), _player, baby, _spec,
 				resistance)
 		if errors.is_empty():
 			_prepare_the_scenery_round_her()
@@ -266,7 +266,8 @@ func _plan_the_walk(world: DayWorld, today: int) -> void:
 	if not rng:
 		rng = calendar.day_rng(today, _spec.events_stream())
 	var none: Array[String] = []
-	events.start_day(_spec, rng, spend.consumed_one_shots() if _spec.spends_the_one_shots() else none,
+	_events.start_day(_spec, rng,
+			spend.consumed_one_shots() if _spec.spends_the_one_shots() else none,
 			world.start_position())
 	if not _in_a_city:
 		return
@@ -279,11 +280,11 @@ func _plan_the_walk(world: DayWorld, today: int) -> void:
 	# **The kerb tint follows the plan's walk.** A day's tree is tinted as it is grown
 	# (`City._close_streets()`); a walk handed in — the escape's two chains — is tinted once it is
 	# planned, on every start of the section, a restart's included.
-	var walk := events.walk() as FinalePlanner.Plan
+	var walk := _events.walk() as FinalePlanner.Plan
 	_dressing.tint_the_route(walk)
 	# Written as well as printed: the shape of the walk is the one thing worth knowing before
 	# anything else in the log means anything, and a run with telemetry off still has a console.
-	var summary := walk.summary(events.plans().size())
+	var summary := walk.summary(_events.plans().size())
 	print("[Main] finale planned: %s" % summary)
 	_trace.note("plan", "finale: %s" % summary)
 
@@ -303,7 +304,7 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 	var start_at := world.start_position()
 	if flags_decide and not _flags_start.is_null():
 		start_at = _flags_start.call()
-	events.stream_around(start_at)
+	_events.stream_around(start_at)
 	if _in_a_city:
 		_start_the_crowd(start_at, today)
 		# The smallest wiring for the checkpoint gates: `DayStreets.region_plan()` is already valid
@@ -312,12 +313,12 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 		# no-op day for `Crowd`. A walk that grows no tree stands no wall and has no gates.
 		if _streets.region_plan():
 			_crowd.set_gates(_streets.region_plan().gates)
-	player.reset_at(start_at, world.start_facing())
+	_player.reset_at(start_at, world.start_facing())
 	_prepare_the_scenery_round_her()
 	baby.reset()
 	if _spec.starts_with_the_baby_asleep():
 		baby.force_sleep()
-	day.start(_spec.seconds_on_the_clock())
+	_day.start(_spec.seconds_on_the_clock())
 	# After the day is running, not before: the override can put the baby straight to
 	# sleep, and start() would have reset the phase that announcement just set.
 	if flags_decide and not _flags_meters.is_null():
@@ -328,15 +329,15 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 func _print_the_start(ms: int) -> void:
 	if _in_a_city:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
-				% [_spec.day_number(), ms, calendar.current_act(), events.planned_count(),
-				events.active_count(), events.owed_ahead(), _crowd.agent_count(),
-				day.seconds_total()]
+				% [_spec.day_number(), ms, calendar.current_act(), _events.planned_count(),
+				_events.active_count(), _events.owed_ahead(), _crowd.agent_count(),
+				_day.seconds_total()]
 				+ "| calm: %s | closed: %s" % [_city_map.calm_summary(spend.block_arcs()),
 				_streets.closure_summary()])
 	else:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %.0fs"
-				% [_spec.day_number(), ms, calendar.current_act(), events.planned_count(),
-				events.active_count(), events.owed_ahead(), day.seconds_total()])
+				% [_spec.day_number(), ms, calendar.current_act(), _events.planned_count(),
+				_events.active_count(), _events.owed_ahead(), _day.seconds_total()])
 
 ## Today's crowd, as dense as the spec says (`DaySpec.crowd_share()`), built round `at`: a day's
 ## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular
@@ -361,8 +362,8 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# Captured here, before anything below touches the clock, so the summary reads the instant
 	# the day actually ended. Clamped because `_process()` can call `_end()` one frame after the
 	# seconds left have gone slightly negative.
-	var elapsed := clampf(day.seconds_total() - day.seconds_left(), 0.0, day.seconds_total())
-	var end := DayEnd.new(result, day.loss_reason(), elapsed, day.exit_taken())
+	var elapsed := clampf(_day.seconds_total() - _day.seconds_left(), 0.0, _day.seconds_total())
+	var end := DayEnd.new(result, _day.loss_reason(), elapsed, _day.exit_taken())
 	# **A day she wins with day 3's fire never met still burns.** The row's only day is day 3 and it
 	# is spent when it enters the world, so a won day on which every siting was refused would leave
 	# the run with no fire, no scar and no shell for day 4 to come out to. Lit here, off her path,
@@ -370,15 +371,15 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# rather than after it, and before `RunCalendar.finish_day()`, which is what commits a won
 	# day's spending. A lost day gives everything back, so it is asked of a win only. See
 	# `EventManager.light_what_she_never_met()`. Only a day walked home has one.
-	if result == GameEnums.DayResult.WON and player and _in_a_city \
+	if result == GameEnums.DayResult.WON and _player and _in_a_city \
 			and _spec.goal_kind() == DaySpec.Goal.HOME:
-		events.light_what_she_never_met(player.global_position)
-	# What ended the day, read once in the frame it ended (see `landed_by_group()`).
+		_events.light_what_she_never_met(_player.global_position)
+	# What ended the day, read once in the frame it ended (see `_landed_by_group()`).
 	var cause := _loss_cause(result)
 	# Every charge still running ends for the page's charging counter, cut short by the day, on the
 	# day it was charged — a section she walks out of or loses as much as a day.
-	if events:
-		events.end_the_charges_still_running()
+	if _events:
+		_events.end_the_charges_still_running()
 	# The one place a day's attempt ends, with everything about it. Before the calendar moves, so
 	# the outcome is written above the nerve it cost.
 	EventBus.day_ended.emit(finished_day, result, cause, elapsed)
@@ -420,10 +421,10 @@ func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 func _loss_cause(result: GameEnums.DayResult) -> String:
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
-			return LossCause.of(result, day.hard_fail_reason(),
-					events.what_struck_her() if events else "")
+			return LossCause.of(result, _day.hard_fail_reason(),
+					_events.what_struck_her() if _events else "")
 		GameEnums.DayResult.LOST_CRYING:
-			return LossCause.of(result, "", "", landed_by_group())
+			return LossCause.of(result, "", "", _landed_by_group())
 	return ""
 
 ## The impure half `LossCause.of()`'s crying cause is named for: every live event's own `landed()`
@@ -435,13 +436,13 @@ func _loss_cause(result: GameEnums.DayResult) -> String:
 ## Read once, in the same physics frame `Baby._update_state()` decided she was crying —
 ## `EventBus.baby_state_changed` -> `DayController._on_baby_state_changed()` -> `_end()` ->
 ## `day_finished` all run synchronously in that one call, so nothing has aged out of the window.
-func landed_by_group() -> Dictionary:
+func _landed_by_group() -> Dictionary:
 	var by_group := {}
-	if events:
+	if _events:
 		# Each live event's own `landed()` under the name the logs give it
 		# (`EventInstance.logged_name()`), so a pelican's share is `pelican`'s rather than added to
 		# the cyclists' *(inbox #527 in azure-tapir)*. Only positive shares are kept.
-		for instance in events.instances():
+		for instance in _events.instances():
 			var points := instance.excitement.landed()
 			if points > 0.0:
 				var name := instance.logged_name()
@@ -464,11 +465,11 @@ func landed_by_group() -> Dictionary:
 ## camera shows. Nothing to prepare for a world with no city, or a player outside the tree, which
 ## has no viewport to measure — never the case in the running game.
 func _prepare_the_scenery_round_her() -> void:
-	if not _in_a_city or not player or not player.is_inside_tree():
+	if not _in_a_city or not _player or not _player.is_inside_tree():
 		return
-	var camera: Camera2D = player.get_node("Camera2D")
+	var camera: Camera2D = _player.get_node("Camera2D")
 	camera.force_update_scroll()
-	var size := player.get_viewport_rect().size / camera.zoom
+	var size := _player.get_viewport_rect().size / camera.zoom
 	var angle := camera.global_rotation
 	var world_size := Vector2(absf(cos(angle)) * size.x + absf(sin(angle)) * size.y,
 			absf(sin(angle)) * size.x + absf(cos(angle)) * size.y)

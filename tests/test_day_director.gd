@@ -60,8 +60,9 @@ func _cause_sent() -> String:
 	var sent: Array = _ended.back()
 	return sent[2]
 
-## The director over a bare world, on a run of its own freshly started on `SEED`.
-func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
+## The director over a bare world, on a run of its own freshly started on `SEED`, with `player`
+## in it where one is given, handed in the world as the game hands her (`use_the_world()`).
+func _rig(t: TestRunner, spec := DaySpec.new(), player: Stroller = null) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
 	var clock := EndedClock.new()
@@ -79,13 +80,13 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	events.setup_world(map, _run)
 	t.add_child(events)
 	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())
-	# A world with no city: the open ground and its events, nobody in it.
-	director.use_the_world(DayWorld.in_the_building(map, events, null, null, Vector2.ZERO,
+	# A world with no city: the open ground and its events, nobody in it but `player`.
+	director.use_the_world(DayWorld.in_the_building(map, events, player, null, Vector2.ZERO,
 			Vector2.DOWN, null), null, clock)
 	director.use_the_spec(spec)
 	_ended.clear()
 	EventBus.day_ended.connect(_on_day_ended)
-	return {"director": director, "clock": clock, "nodes": [clock, events]}
+	return {"director": director, "clock": clock, "events": events, "nodes": [clock, events]}
 
 func _put_away(rig: Dictionary) -> void:
 	EventBus.day_ended.disconnect(_on_day_ended)
@@ -108,33 +109,38 @@ func _test_a_timeout_costs_a_nerve_and_names_no_cause(t: TestRunner) -> void:
 func _test_a_crying_day_is_named_by_what_landed_the_most(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
-	t.check(director.landed_by_group().is_empty(), "the bare world landed nothing")
 	director.finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(_cause_sent() == "self",
 			"a crying day with nothing in the world that landed is her own")
 	_put_away(rig)
 
 ## The pelican's share of the meter is its own group, never added to the cyclists' *(inbox #527 in
-## azure-tapir)*, so a crying day it landed the most on is lost to the pelican.
+## azure-tapir)*, so a crying day it landed the most on is lost to the pelican, and one a cyclist
+## landed the most on beside it is lost to the cyclist. Read off the cause `day_ended` carries: the
+## two shares merged would name the cyclist both times, either one dropped would name the other
+## both times.
 func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
-	var rig := _rig(t)
-	var director: DayDirector = rig["director"]
-	var def := EventCatalogue.by_id("cyclist")
-	var kid := director.events.spawn_extra(def, Vector2.ZERO)
-	# Warned of as the pelican, as the director's rider is (`spawn_warned()` makes the pelican of the
-	# roll its warning made).
-	var pelican := director.events.spawn_warned(def,
-			PackedVector2Array([Vector2.ZERO, Vector2(500.0, 0.0)]), true)
-	t.check(pelican.is_pelican, "the rider warned of as the pelican is the pelican")
-	kid.excitement.accumulate_landed(3.0)
-	pelican.excitement.accumulate_landed(5.0)
-	t.check(director.landed_by_group() == {"cyclist": 3.0, "pelican": 5.0},
-			"the pelican's share is its own group (%s)" % [director.landed_by_group()])
-	director.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(_cause_sent() == "pelican",
-			"so a crying day the pelican landed the most on is lost to the pelican")
-	director.events.clear()
-	_put_away(rig)
+	for case: Array in [[3.0, 5.0, "pelican"], [5.0, 3.0, "cyclist"]]:
+		var rig := _rig(t)
+		var director: DayDirector = rig["director"]
+		var events: EventManager = rig["events"]
+		var def := EventCatalogue.by_id("cyclist")
+		var kid := events.spawn_extra(def, Vector2.ZERO)
+		# Warned of as the pelican, as the director's rider is (`spawn_warned()` makes the
+		# pelican of the roll its warning made).
+		var pelican := events.spawn_warned(def,
+				PackedVector2Array([Vector2.ZERO, Vector2(500.0, 0.0)]), true)
+		t.check(pelican.is_pelican, "the rider warned of as the pelican is the pelican")
+		var kid_landed: float = case[0]
+		var pelican_landed: float = case[1]
+		kid.excitement.accumulate_landed(kid_landed)
+		pelican.excitement.accumulate_landed(pelican_landed)
+		director.finish_day(GameEnums.DayResult.LOST_CRYING)
+		t.check(_cause_sent() == case[2], ("with the cyclist landing %.0f and the pelican %.0f, "
+				+ "the crying day is lost to the %s (got %s)") % [kid_landed, pelican_landed,
+				case[2], _cause_sent()])
+		events.clear()
+		_put_away(rig)
 
 func _test_a_hard_fail_is_named_by_its_reason(t: TestRunner) -> void:
 	var rig := _rig(t)
@@ -158,10 +164,9 @@ func _test_a_won_day_moves_the_calendar_on(t: TestRunner) -> void:
 ## `finish_day()` requires only the clock and the run: a won day walked home with a player but no
 ## city (nothing to light the unmet fire in) still ends.
 func _test_a_won_day_with_a_player_and_no_city_ends(t: TestRunner) -> void:
-	var rig := _rig(t)
-	var director: DayDirector = rig["director"]
 	var player := Stroller.new()
-	director.player = player
+	var rig := _rig(t, DaySpec.new(), player)
+	var director: DayDirector = rig["director"]
 	var end := director.finish_day(GameEnums.DayResult.WON)
 	t.check(_day_sent() == 1 and _run.header().day() == 2, "the day ends and the calendar moves")
 	player.free()
