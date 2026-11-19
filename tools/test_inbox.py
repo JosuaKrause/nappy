@@ -527,7 +527,11 @@ class AppendTests(unittest.TestCase):
                 fake, "--role", "claude-orchestrator", "append", "5", "--context-file", str(context),
                 "--reading-file", str(reading), stdin="",
             )  # fmt: skip
-            self.assertEqual(code, 1)  # no quote block: nothing is posted
+            self.assertEqual(code, 0)  # the agent's blocks alone are posted: they hold none of the player's words
+            self.assertEqual(
+                inbox.parse_blocks((fake.writes.pop()[1] or "").partition("\n")[2]),
+                [("context", "Asked: generic how?"), ("reading", "a bag of any kind")],
+            )
             quote = Path(folder) / "q.md"
             quote.write_text(MORE, encoding="utf-8")
             code, out, _ = run(
@@ -583,6 +587,28 @@ class AppendTests(unittest.TestCase):
         self.assertEqual(len(attempts), 2)
         self.assertEqual(attempts[0], attempts[1])
         self.assertEqual(len(fake.writes), 1)
+
+    def test_an_appended_reading_alone_shows_and_drafts_as_the_agents_and_adds_no_quote(self) -> None:
+        body = f"{inbox.APPEND_MARKER}\n\n{inbox.format_blocks([('reading', 'read as a bag')])}"
+        fake = self.captured()
+        fake.reads[f"repos/{REPO}/issues/5/comments"] = [{"user": {"login": BOT}, "created_at": "t1", "body": body}]
+        _, out, _ = run(fake, "show", "5")
+        self.assertIn("t1 (appended)", out)
+        self.assertIn("read as a bag", out)
+        self.assertNotIn("direct quote", out)
+        _, out, _ = run(fake, "draft", "5")
+        self.assertIn("**Read as:**", out)
+        self.assertEqual(out.count("**The player's words.**"), 0)
+
+    def test_append_refuses_a_marker_in_an_agents_only_comment(self) -> None:
+        fake = self.captured()
+        with tempfile.TemporaryDirectory() as folder:
+            reading = Path(folder) / "r.md"
+            reading.write_text(f"{inbox.MARKS['quote']}\nx", encoding="utf-8")
+            code, _, err = run(fake, "--role", "claude-orchestrator", "append", "5", "--reading-file", str(reading))
+        self.assertEqual(code, 1)
+        self.assertIn("only this tool writes", err)
+        self.assertEqual(fake.writes, [])
 
     def test_only_append_writes_a_marker_line(self) -> None:
         fake = self.captured()

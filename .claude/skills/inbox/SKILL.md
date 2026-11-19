@@ -164,7 +164,8 @@ same identity rules as `capture`, led by a marker line (an HTML comment, invisib
 only the script writes, so the tool tells them from a question asked with `ask`; one comment, so a
 failed post leaves nothing alone on the issue and a retry duplicates nothing. `ask`, `capture`,
 `append` and `correct` refuse text with a mark or marker line in it. `append` refuses a note that is
-not captured, since a note the player wrote gets the player's own comments, and a closed one.
+not captured, since a note the player wrote gets the player's own comments, and a closed one. A reading or a
+note alone may be appended, with no quote block, which is how a conclusion lands on its note (**board**); it holds none of the player's words, so `close --pr` and the transcription check copy nothing from it.
 
 **A line the player did not say that reached a quote anyway is corrected in a comment on that note,
 never by a new note** (inbox #767 in minty-lemur):

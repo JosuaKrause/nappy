@@ -19,7 +19,8 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
                              --note-file are the agent's. Each is repeatable and kept in order, and a
                              lone quote is marked like the rest
     append N                 adds the player's further words on a captured note's topic to note N as a
-                             comment marked so the tool tells it from a question; the same blocks
+                             comment marked so the tool tells it from a question; the same blocks,
+                             or the agent's only (a reading or a note alone: no words of the player's)
     correct N --line-file F  posts on note N a comment marking the line in F as not the player's
                              (refused unless it is one whole line of N's body or appended words),
                              with --context-file, --reading-file or --note-file blocks
@@ -628,10 +629,11 @@ def default_title(text: str) -> str:
     return first[: cut if cut > 0 else TITLE_LENGTH] + "…"
 
 
-def check_blocks(blocks: Sequence[Block], what: str) -> None:
+def check_blocks(blocks: Sequence[Block], what: str, *, quote_needed: bool = True) -> None:
+    """Refuses a mark in any block, and, when `quote_needed`, blocks holding no quote of the player's words."""
     for _, text in blocks:
         refuse_markers(text, what)
-    if not any(kind == "quote" for kind, _ in blocks):
+    if quote_needed and not any(kind == "quote" for kind, _ in blocks):
         raise InboxError(
             f"{what} has no block of the player's words (--quote-file or --body-file); nothing was written"
         )
@@ -661,10 +663,11 @@ def cmd_ask(github: GitHub, role: str, number: int, text: str) -> int:
 
 
 def cmd_append(github: GitHub, role: str, number: int, blocks: Sequence[Block]) -> int:
-    """Adds `blocks`, the player's further words among them, to captured note `number`, marked as `append`'s.
+    """Adds `blocks` to captured note `number`, marked as `append`'s.
 
-    The comment is a run of marked blocks under the marker line. A note the player wrote gets the
-    player's own comments, and a closed note is filed.
+    The blocks are the player's further words, or the agent's only (a reading, a note, a context), which
+    hold no words of the player's to copy anywhere. The comment is a run of marked blocks under the marker
+    line. A note the player wrote gets the player's own comments, and a closed note is filed.
     """
     note = open_note(github, number)
     if not is_captured(note):
@@ -672,7 +675,7 @@ def cmd_append(github: GitHub, role: str, number: int, blocks: Sequence[Block]) 
             f"#{number} was not opened by the capture script, so it takes the player's own comments;"
             " words are appended only to a captured note"
         )
-    check_blocks(blocks, "the appended comment")
+    check_blocks(blocks, "the appended comment", quote_needed=False)
     comment = ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"]
     print(github.write(role, comment, f"{APPEND_MARKER}\n\n{format_blocks(blocks)}").strip())
     return 0
