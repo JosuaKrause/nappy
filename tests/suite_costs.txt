@@ -52,6 +52,7 @@ test_crowd_streets.gd 34957
 test_crowd_traffic.gd 61517
 test_crowd_yields.gd 967
 test_danger.gd 17955
+test_danger_edge.gd 1700
 test_day13_guard.gd 40738
 test_day6_yeller_met.gd 12059
 test_day7_van.gd 15363
