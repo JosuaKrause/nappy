@@ -18,11 +18,12 @@ static func event_gross(source: EventInstance, player_position: Vector2, sensiti
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
+	var grid := source.excitement.wall_grid()
 	for i in steps:
 		var time := float(i + 1) * dt
 		var sample := player_position + source.excitement.player_velocity * time - velocity * time
 		var rate := source.field_at(sample, live_intensity, velocity)
-		if rate > 0.0 and source.excitement._walled_off(source.global_position, sample):
+		if rate > 0.0 and grid != null and grid.wall_between(source.global_position, sample):
 			rate = 0.0
 		landed += rate * dt
 	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
