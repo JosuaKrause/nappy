@@ -102,6 +102,17 @@ enum Start {
 ## warning (inbox #771 in minty-lemur).
 @export var warns_over_the_street := false
 
+## Whether the man **walks round buildings toward her once he is after her**: where no clear line
+## runs to her he follows the walk to her over the ground she can walk (`ChaseWay`, made by
+## `Navigator.way_to()`), refreshed as she moves, rather than the straight line every other chase
+## slides along walls. The roadblock's posted guard, so a walker who goes straight past his post and
+## turns the next corner is caught as a straight walker is *(inbox #1534 in velvet-alpaca: asked
+## whether he follows her round the corner or she may get away, "sure, your pick", the pick being
+## that he follows her)*. Only the way he heads changes: his notice, his warning, his speed and when
+## he gives up are the row's. Day 13's task guard has a way too, given when she is set on him from
+## wherever he stands (`EventInstance.notice_her_at()`), not by his row.
+@export var paths_round_buildings := false
+
 ## Whether it stands still in its alert pose for its notice rather than closing on her (`stands`).
 func stands_for_its_notice() -> bool:
 	return stands
@@ -110,6 +121,10 @@ func stands_for_its_notice() -> bool:
 ## (`warns_over_the_street`).
 func is_drawn_over_the_street() -> bool:
 	return warns_over_the_street
+
+## Whether the man walks round buildings toward her once he is after her (`paths_round_buildings`).
+func walks_round_buildings() -> bool:
+	return paths_round_buildings
 
 ## A pursuer at `speed` that notices her first, the shape most rows start from.
 static func at(chase_speed: float) -> PursuitSpec:

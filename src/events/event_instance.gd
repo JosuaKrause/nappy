@@ -316,6 +316,10 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 			_mover, trace, _move)
 	_move.radius = _mover.radius
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
+	# A pursuer whose row walks round buildings to her (the roadblock's posted guard) holds his way
+	# from the start; it sweeps nothing until he is after her (`EventPursuit`).
+	if definition.walks_round_buildings():
+		_chase_way = _navigator.way_to(_mover, _sight)
 	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
@@ -936,7 +940,8 @@ func give_up_the_chase() -> void:
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
 ## has him stand still in his warning for it (`is_standing_for_its_notice()`): in her view, day
 ## 13's guard raises his warning for a second and then charges. From
-## here he walks round buildings toward her (`_chase_way`), since he may start a city away.
+## here he walks round buildings toward her (`_chase_way`), since he may start a city away, and he
+## no longer warns by radius (`warns_by_radius()`, `_set_on_her`).
 func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	if pursuit == null:
 		return
@@ -949,6 +954,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 		_charge.warned = false
 	if _chase_way == null:
 		_chase_way = _navigator.way_to(_mover, _sight)
+	_set_on_her = true
 	_notice_time = notice
 	_stands_for_this_notice = stand
 	_notice_her()
@@ -957,15 +963,23 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 		_heading = toward.normalized()
 	pursuit.was_set_on_her(her)
 
-# ------------------------------------------------------ the task guard's way to her ---
+# ------------------------------------------------------------- the way round to her ---
 
 ## The way he walks to her round buildings rather than straight at her (`ChaseWay`, made by
-## `Navigator.way_to()`), or null for a pursuer who chases straight: set by `notice_her_at()`, which
-## only day 13's done task calls, for the waiting guard it sets on her from wherever he stands — at
-## another roadblock, a city away, with blocks between them. Every other pursuer starts within sight
-## of her or just off screen with a straight run at her, so it keeps the straight line its step
-## through the navigator slides along walls (`EventPursuit`, `Navigator.step()`). *Proposed, not asked for:* the way round is for this guard alone.
+## `Navigator.way_to()`), or null for a pursuer who chases straight. Two pursuers have one: the
+## roadblock's posted guard, from `setup()`, since his row asks for it
+## (`EventDef.walks_round_buildings()`), so a walker who turns the next corner past his post is
+## caught as a straight walker is; and day 13's task guard, from `notice_her_at()`, which only the
+## done task calls, for the waiting guard it sets on her from wherever he stands — at another
+## roadblock, a city away, with blocks between them. Every other pursuer starts within sight of her
+## or just off screen with a straight run at her, so it keeps the straight line its step through the
+## navigator slides along walls (`EventPursuit`, `Navigator.step()`). *Proposed, not asked for:* the
+## way round is for these two guards alone.
 var _chase_way: ChaseWay
+## Whether `notice_her_at()` set it on her, by what she did rather than by what it saw (day 13's
+## task guard): a pursuer set on her so keeps a timed notice rather than warning by radius
+## (`warns_by_radius()`), whether or not it has a way round.
+var _set_on_her := false
 ## The notice `notice_her_at()` was given, in seconds, or negative for the row's own
 ## `telegraph_time` (`notice_time()`).
 var _notice_time := -1.0
@@ -1354,14 +1368,14 @@ func chase_age() -> float:
 ## outside the radius before that, the warning stops and it waits again (`EventPursuit`), its
 ## clock reset; still inside when it runs out, it charges.
 ##
-## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_chase_way`):
+## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_set_on_her`):
 ## he is sent after her from wherever he stands, often a city away, so a radius he has to be inside
 ## would leave him nothing to do; he keeps his timed notice. Nor one with no trigger — the day-3 dog
 ## and everything sent at her from off screen, whose approach or badge is the warning — nor one that
 ## sets off beside her, whose notice is a clock by construction.
 func warns_by_radius() -> bool:
 	return def.waits_for_her() and (def.pursuit != null or def.runs_its_own_line()) \
-			and not def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and _chase_way == null
+			and not def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and not _set_on_her
 
 ## **The stand-off a pursuer closes to and holds**, `PursuitSpec.standoff()` over
 ## `EventDef.standoff_reach()`: the distance a pursuer that comes for her through its telegraph
@@ -2001,8 +2015,9 @@ class Figure:
 	func charge_radius() -> float:
 		return _of.charge_radius()
 
-	## The way it walks round buildings to her (`ChaseWay`), once she was set on it from wherever it
-	## stood (`EventInstance.notice_her_at()`); null for a pursuer who chases straight.
+	## The way it walks round buildings to her (`ChaseWay`): the posted roadblock guard's from the
+	## start, day 13's task guard's once she was set on him from wherever he stood
+	## (`EventInstance.notice_her_at()`); null for a pursuer who chases straight.
 	func way_round_to_her() -> ChaseWay:
 		return _of._chase_way
 

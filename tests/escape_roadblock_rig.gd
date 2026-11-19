@@ -124,6 +124,20 @@ static func _as_far_as_ground_goes(map: CityMap, from: Vector2, way: Vector2) ->
 static func _on_ground(map: CityMap, was: Vector2, wanted: Vector2) -> Vector2:
 	return wanted if _she_fits(map, wanted) else was
 
+## **Which way she turns where the ground ahead stops her**: of the two ways square to `heading`,
+## the one her body fits along further (up to `BEYOND`), so at a street's end she turns the corner
+## into the cross street rather than standing at the wall; `Vector2.ZERO` where neither takes a
+## step.
+static func _the_way_round(map: CityMap, at: Vector2, heading: Vector2) -> Vector2:
+	var best := Vector2.ZERO
+	var best_gone := 0.0
+	for side: Vector2 in [Vector2(-heading.y, heading.x), Vector2(heading.y, -heading.x)]:
+		var gone := _open_along(map, at, side, BEYOND)
+		if gone > best_gone:
+			best = side
+			best_gone = gone
+	return best
+
 static func _she_fits(map: CityMap, at: Vector2) -> bool:
 	var reach := Tuning.PLAYER_BODY_RADIUS - 1.0
 	for offset: Vector2 in [Vector2.ZERO, Vector2(reach, 0), Vector2(-reach, 0),
@@ -276,8 +290,18 @@ static func _charging(instances: Array[EventInstance]) -> int:
 ## At a walk from `from` to `to` past the street's roadblocks, `built` (from `build()`) or a fresh
 ## set, which it frees. Answers `cost` (the meter's peak less where it started), `peak`, `end`,
 ## `caught`, `charged` (how many guards charged her), `strongest` (the most any of them charged a
-## second at her on the way) and `at`, where she stopped. A charge begun when her line ends is followed
-## on (`TAIL`).
+## second at her on the way), `at`, where she stopped, and `turned`, how many corners she turned.
+## A charge begun when her line ends is followed on (`TAIL`).
+##
+## **Once a charge is under way she turns the first corner she comes to**, round the building she
+## was walking beside (`_its_corner_is_open()`: the corner at her street's end, or an alley mouth),
+## as a walker with a guard behind her would, so the building stands between them; and where the
+## ground ahead stops her she turns along it (`_the_way_round()`). Before he charges she keeps to
+## her line, so his warning is met as on a straight walk.
+##
+## Also `chase_frames`, `chase_usec` and `chase_worst_usec`: how many frames a charge was under way,
+## and the wall-clock microseconds those frames' ticks took in all and at most, what a probe prints
+## as the chase's cost.
 static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		to: Vector2, meter: Meter, built: Array = []) -> Dictionary:
 	var made: Array = built if not built.is_empty() else build(t, map, group)
@@ -289,14 +313,20 @@ static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 	meter.peak = meter.value
 	var her := from
 	var heading := (to - from).normalized()
+	var beside := _the_building_side(map, from, heading)
 	var length := from.distance_to(to)
 	var walked := 0.0
 	var caught := false
 	var charged := {}
 	var strongest := 0.0
+	var turned := 0
+	var timing := {"chase_frames": 0, "chase_usec": 0, "chase_worst_usec": 0}
 	while walked < length:
-		her = _on_ground(map, her, from + heading * walked)
-		if tick(where, instances, her, false, heading):
+		if turned == 0:
+			her = _on_ground(map, her, from + heading * walked)
+		else:
+			her = _on_ground(map, her, _ahead(map, her, heading))
+		if _timed_tick(where, instances, her, heading, timing):
 			caught = true
 			break
 		for instance in instances:
@@ -305,19 +335,88 @@ static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 			strongest = maxf(strongest, instance.excitement.contribution_at(her))
 		meter.feed(instances, her, false, false)
 		walked += Tuning.WALK_SPEED * STEP
+		if turned == 0 and _charging(instances) > 0 and _its_corner_is_open(map, her, beside):
+			heading = beside
+			turned += 1
 	# A charge that has begun is not over where her line ends: she walks on at the same pace until
-	# every charge has caught her or given up (`TAIL`), as she would past the end of a street.
+	# every charge has caught her or given up (`TAIL`), as she would past the end of a street, round
+	# the first corner and along the ground where it stops her.
 	var tail := 0
 	while not caught and _charging(instances) > 0 and tail < int(TAIL / STEP):
-		her = _on_ground(map, her, her + heading * Tuning.WALK_SPEED * STEP)
-		if tick(where, instances, her, false, heading):
+		if turned == 0 and _its_corner_is_open(map, her, beside):
+			heading = beside
+			turned += 1
+		var next := her + heading * Tuning.WALK_SPEED * STEP
+		if not _she_fits(map, next):
+			var way_round := _the_way_round(map, her, heading)
+			if way_round != Vector2.ZERO:
+				heading = way_round
+				turned += 1
+				next = her + heading * Tuning.WALK_SPEED * STEP
+		her = _on_ground(map, her, next)
+		if _timed_tick(where, instances, her, heading, timing):
 			caught = true
 			break
 		meter.feed(instances, her, false, false)
 		tail += 1
 	stage.close()
 	return {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value, "caught": caught,
-			"charged": charged.size(), "strongest": strongest, "at": her}
+			"charged": charged.size(), "strongest": strongest, "at": her, "turned": turned,
+			"chase_frames": timing["chase_frames"], "chase_usec": timing["chase_usec"],
+			"chase_worst_usec": timing["chase_worst_usec"]}
+
+## A step on from `her` along `heading`, or along the ground where it stops her there
+## (`_the_way_round()`): her walk after she has turned off her line.
+static func _ahead(map: CityMap, her: Vector2, heading: Vector2) -> Vector2:
+	var next := her + heading * Tuning.WALK_SPEED * STEP
+	if _she_fits(map, next):
+		return next
+	var way_round := _the_way_round(map, her, heading)
+	return her + way_round * Tuning.WALK_SPEED * STEP
+
+## How deep, in px, the ground beside her has to open for her to turn into it: three tiles, past
+## the frontage she was walking beside, so a doorway's notch is no corner and a cross street or an
+## alley mouth is.
+const CORNER_DEPTH := 3.0 * Tuning.TILE_SIZE
+
+## **The side of her line the buildings stand on**: of the two ways square to `heading` at `at`,
+## the one the ground stops her body sooner along, or `Vector2.ZERO` where both run open past
+## `CORNER_DEPTH` (no frontage beside her to turn round).
+static func _the_building_side(map: CityMap, at: Vector2, heading: Vector2) -> Vector2:
+	var nearest := Vector2.ZERO
+	var nearest_gone := INF
+	for side: Vector2 in [Vector2(-heading.y, heading.x), Vector2(heading.y, -heading.x)]:
+		var gone := _open_along(map, at, side, CORNER_DEPTH)
+		if gone < CORNER_DEPTH and gone < nearest_gone:
+			nearest = side
+			nearest_gone = gone
+	return nearest
+
+## Whether the ground on `beside` (`_the_building_side()`) opens at `at` at least `CORNER_DEPTH`
+## deep: the building she was walking beside has ended, at a corner or an alley's mouth.
+static func _its_corner_is_open(map: CityMap, at: Vector2, beside: Vector2) -> bool:
+	return beside != Vector2.ZERO and _open_along(map, at, beside, CORNER_DEPTH) >= CORNER_DEPTH
+
+## How far, in px and up to `limit`, her body fits along `way` from `at`, in `LANE_SCAN` steps.
+static func _open_along(map: CityMap, at: Vector2, way: Vector2, limit: float) -> float:
+	var gone := 0.0
+	while gone < limit and _she_fits(map, at + way * (gone + LANE_SCAN)):
+		gone += LANE_SCAN
+	return gone
+
+## `tick()` at a walk along `heading`, its wall-clock time added to `timing` (`walk()`'s
+## `chase_frames`, `chase_usec`, `chase_worst_usec`) when a charge was under way as it began.
+static func _timed_tick(where: WhereSheIs, instances: Array[EventInstance], her: Vector2,
+		heading: Vector2, timing: Dictionary) -> bool:
+	var chasing := _charging(instances) > 0
+	var began := Time.get_ticks_usec()
+	var caught := tick(where, instances, her, false, heading)
+	if chasing:
+		var took := Time.get_ticks_usec() - began
+		timing["chase_frames"] = int(timing["chase_frames"]) + 1
+		timing["chase_usec"] = int(timing["chase_usec"]) + took
+		timing["chase_worst_usec"] = maxi(int(timing["chase_worst_usec"]), took)
+	return caught
 
 ## Her reaction to a charge, in seconds, in `lure()`.
 const REACTION := 0.3

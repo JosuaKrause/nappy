@@ -76,7 +76,7 @@ static func start(map: WorldMap, targets: Array[Dictionary],
 ## every stationary solid body standing and a precinct's posts, and outside an authored scene's
 ## stretch. What that record leaves out she walks through here as she does in the street: a mobile
 ## row, which moves out of her way, and a door's own bodies, which let a walker through. One reading
-## for every sweep, so the red arrow and day 13's guard set on her (`ChaseWay`)
+## for every sweep, so the red arrow and a guard walking round buildings to her (`ChaseWay`)
 ## never disagree about where she can walk; a caller lays it out once for each state of what blocks
 ## her (`WorldMap.day_record_version`, `WorldMap.obstruction_version`).
 static func ground_for(map: WorldMap) -> PackedInt32Array:

@@ -2001,6 +2001,13 @@ static func _curfew_announce() -> EventDef:
 ## (`EventInstance.warns_by_radius()`). His stand-off is measured from `lethal_reach()`, his 28px
 ## catch, the number `Tuning.validate_pursuit()` states the contract over.
 ##
+## **He follows her round a corner.** Once he is after her, where no clear line runs to her he walks
+## the way to her round buildings (`PursuitSpec.paths_round_buildings`, `ChaseWay`), so walking
+## straight past his post and turning the next corner is caught as a straight walk is, and luring
+## him off stays the way past *(inbox #1534 in velvet-alpaca, "sure, your pick", the pick being that
+## he follows her round the corner; inbox #771 in minty-lemur: "it should be in a way that luring
+## away the guard is enough")*.
+##
 ## **The catch is a man's reach, not a barrier's.** `PursuitSpec.catch_reach` is 28px, read off
 ## `masked_pursuer`: the same fiction, the same distance at which a masked man takes the baby. It is
 ## separate from `inner_radius` because the field is a street being held, cored on the band, while
@@ -2056,6 +2063,7 @@ static func _roadblock() -> EventDef:
 	chase.warns_for = CHARGER_WARNING
 	chase.leaves_its_body = true
 	chase.warns_over_the_street = true
+	chase.paths_round_buildings = true
 	def.hunts = HuntSpec.pursuing(chase)
 	def.barrier_structure = true
 	def.span_the_street()

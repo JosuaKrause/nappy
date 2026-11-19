@@ -238,7 +238,9 @@ func _search(start: Vector2i, mover: Mover, avoid: Rect2i, arrived: Callable) ->
 	return PackedVector2Array()
 
 ## **A way for `mover` to follow somebody round the buildings between them** (`ChaseWay`), seeing
-## along `sight`: made once by a figure that is set on her from a city away, and kept by it.
+## along `sight`: made once by a pursuer that walks round buildings to her (the roadblock's posted
+## guard, from the start; day 13's task guard, when he is set on her from a city away), and kept by
+## it.
 func way_to(mover: Mover, sight: Mover) -> ChaseWay:
 	return ChaseWay.new(self, mover, sight)
 
@@ -258,8 +260,9 @@ const REACH_STEP := Tuning.TILE_SIZE / 8.0
 ## one coming round it.
 ##
 ## **The straight chase is the one a start is sited for.** Every pursuer sent at her from a start
-## chases straight; only day 13's task guard walks round buildings (`way_to()`), and he is in the
-## world already when he is set on her, so no start is sited for his way.
+## chases straight; only the roadblock's posted guard and day 13's task guard walk round buildings
+## (`way_to()`), and both are in the world already when they come for her, so no start is sited for
+## their way.
 func reaches(from: Vector2, to: Vector2, mover: Mover, limit: float,
 		avoid := Callable()) -> bool:
 	var at := from

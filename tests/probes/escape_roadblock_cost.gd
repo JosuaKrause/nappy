@@ -12,7 +12,8 @@ extends RefCounted
 ## and from `Tuning.EXCITEMENT_WAKE_THRESHOLD` awake, the baby a bang earlier on
 ## the walk has just woken. Three walks each:
 ##
-## - **posted**: straight past at a walk, the guards at their posts. Ends at a catch.
+## - **posted**: straight past at a walk, the guards at their posts, round the corner where the
+##   street ends while a charge is under way. Ends at a catch.
 ## - **lure**: in at a walk until a guard's hand goes up, standing until he charges, then turned and
 ##   run straight back 0.3s later at `Tuning.ACCELERATION` until every charge has given up, then
 ##   standing until each guard who charged has left his post for good.
@@ -75,19 +76,35 @@ func _measure(t: TestRunner, awake: bool) -> void:
 		var costs: Array[float] = []
 		var caught := 0
 		var charged := 0
+		var turned := 0
+		var turned_caught := 0
+		var frames := 0
+		var usec := 0
+		var worst := 0
 		for w: Dictionary in walks:
 			costs.append(w["cost"])
 			caught += 1 if w["caught"] else 0
 			charged += 1 if w["charged"] > 0 else 0
+			if int(w.get("turned", 0)) > 0:
+				turned += 1
+				turned_caught += 1 if w["caught"] else 0
+			frames += int(w.get("chase_frames", 0))
+			usec += int(w.get("chase_usec", 0))
+			worst = maxi(worst, int(w.get("chase_worst_usec", 0)))
 		costs.sort()
 		if costs.is_empty():
 			continue
 		print("ESCAPE_ROADBLOCK %s | %-6s | %d walks | caught %d | charged in %d | cost min %.1f median %.1f max %.1f"
 				% [tag, key, walks.size(), caught, charged, costs[0], costs[costs.size() / 2],
 				costs[costs.size() - 1]])
+		if key == "posted":
+			print("ESCAPE_ROADBLOCK %s | posted | turned a corner %d | caught after turning %d | chase ticks %d, mean %.3f ms, worst %.3f ms"
+					% [tag, turned, turned_caught, frames, usec / 1000.0 / maxi(frames, 1),
+					worst / 1000.0])
 
 static func _say(w: Dictionary) -> String:
 	if w.is_empty():
 		return "not walked (caught in the lure)"
-	return "cost %.1f (peak %.1f end %.1f), %d charged%s" % [w["cost"], w["peak"], w["end"],
-			w["charged"], ", CAUGHT" if w["caught"] else ""]
+	var turned := int(w.get("turned", 0))
+	return "cost %.1f (peak %.1f end %.1f), %d charged%s%s" % [w["cost"], w["peak"], w["end"],
+			w["charged"], ", turned %d" % turned if turned > 0 else "", ", CAUGHT" if w["caught"] else ""]
