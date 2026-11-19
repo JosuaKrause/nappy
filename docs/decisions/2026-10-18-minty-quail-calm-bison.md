@@ -9,11 +9,12 @@ the code as it is, through public seams and real frames. Tests only; no behaviou
 
 - **The director's fallback to the map's navigator** (`tests/test_resistance_traps.gd`). A director
   handed no navigator and no siting (`ResistanceDirector.setup()`) builds its spawn siting on the
-  map's own navigator, over the events' view and the streets' region. The check hands one the test
-  city's parts and nothing else, hands the note over with her standing on it, and asks of the trap
-  everything the city-sited handover asks (`_check_the_trap_comes_from_off_screen()`): the robber's
-  warning is up with nothing in the world, and once it is over he stands just out of her sight, on
-  legal ground, never waiting, and catches her where she stands.
+  map's own navigator, over the events' view and the streets' region. The check runs the same day-6 handover twice in fresh cities of one seed, once with the city's
+  siting and once with the director handed none, and asks the robber's start of each: it is exactly
+  the same place. A start has a fallback of its own, so only the place says which navigator decided
+  it, and the city-sited start has a clear run at her (checked as a premise), which a navigator
+  refusing every line would not give. Each handover also asks everything the city-sited handover asks
+  of the trap (`_check_the_trap_comes_from_off_screen()`).
 - **The raid's wait for the patrol car's beat to be out of her view**
   (`tests/test_resistance_placement_kinds.gd`, beside the raid's other checks, which hold the real
   siting). The beat reaches further from her door than the vans stand, so a view that is the car's own
@@ -25,9 +26,10 @@ the code as it is, through public seams and real frames. Tests only; no behaviou
 
 **Mutations run**, each reverted and never committed:
 
-- Making the setup use the handed navigator alone (`var moves_by := navigator`) leaves the
-  fallback siting with no navigator, and the trap's first search stops with the engine's
-  "Nonexistent function 'clear_line' in base 'Nil'", so the suite fails.
+- Handing the fallback siting a navigator that refuses every `clear_line()` and `reaches()`, in
+  place of the map's, fails the check as a check: the start is 460px from the city-sited one. Making
+  the setup use the handed navigator alone (`var moves_by := navigator`) leaves the siting none and
+  stops the trap's search with the engine's "Nonexistent function 'clear_line' in base 'Nil'".
 - Deleting the patrol car's loop over the beat in `ResistanceHappenings._maybe_raid()` fails the
   new check's wait (the raid arrives at once); the vans' own check does not hold it back, and the
   other raid checks still pass.

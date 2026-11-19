@@ -623,15 +623,35 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t: TestRunner) -
 
 ## A director handed no siting and no navigator builds its own siting on the map's navigator
 ## (`ResistanceDirector.setup()`), over the events' view and the streets' region, and the one start
-## it sites that way is a trap sent at her: handing the note over still puts the robber's warning
-## up, and once it is over he stands just out of her sight, on legal ground by the city's own siting.
+## it sites that way is a trap sent at her. Handing the note over still puts the robber's warning
+## up and once it is over he stands just out of her sight; and he stands exactly where the city's own
+## siting, built on that same navigator, puts him for the same note: a start has a fallback of its
+## own, so only the place itself says which navigator decided it. The city-sited start has a clear
+## run at her, which a navigator that refuses every line would not have given, so the two agreeing
+## is not the fallback's doing.
 func _test_a_director_handed_no_siting_sites_the_trap_on_the_maps_navigator(t: TestRunner) -> void:
+	var fallback := await _the_robber_start_of_a_handover(t, false)
+	var cities := await _the_robber_start_of_a_handover(t, true)
+	t.check(fallback != Vector2.INF and cities != Vector2.INF,
+			"both handovers send the robber, or this test checks nothing")
+	t.close_to(fallback.distance_to(cities), 0.0,
+			"a director handed no siting sites him where the city's own siting does", 0.01)
+
+## Where the yeller's handover on day 6 starts the robber sent after her (`INF` when none), in a
+## fresh city: by a director handed the city's own siting, or one handed none and no navigator.
+func _the_robber_start_of_a_handover(t: TestRunner, city_siting: bool) -> Vector2:
 	_build_city_in_a_new_run(t)
-	var director := ResistanceDirector.new()
-	director.use_bus(EventBus)
-	t.add_child(director)
-	director.set_process(false)
-	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city)
+	var director: ResistanceDirector
+	if city_siting:
+		director = _director(t)
+	else:
+		director = ResistanceDirector.new()
+		director.use_bus(EventBus)
+		t.add_child(director)
+		director.set_process(false)
+		director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(),
+				_city)
+	var label := "the city's siting" if city_siting else "no siting handed"
 	director.start_day(6, _rng(6, "resistance"), 300.0)
 	_read_the_mark(director)
 	var her := director.contact_position()
@@ -639,10 +659,17 @@ func _test_a_director_handed_no_siting_sites_the_trap_on_the_maps_navigator(t: T
 	var player := _rig_player(t, her)
 	director.use_player(player)
 	await _step_a_frame(t)
-	t.check(director.contact().is_done, "no siting handed: she hands the note over")
-	_check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", "no siting handed")
+	t.check(director.contact().is_done, "%s: she hands the note over" % label)
+	var start := _check_the_trap_comes_from_off_screen(t, her, "robber_giving_chase", label)
+	if city_siting and start != Vector2.INF:
+		var siting := RunCity.spawn_siting(_city)
+		var asked := siting.ask(EventFootprints.footprint_of(EventCatalogue.by_id("robber_giving_chase")),
+				Mover.on_foot(EventInstance.FIGURE_RADIUS), her)
+		t.check(siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, start),
+				"the city-sited start has a clear run at her, or the two starts cannot tell the navigators apart")
 	player.free()
 	director.free()
+	return start
 
 ## **He is warned of before he exists, the warning is short, and he arrives chasing.** *(Amendment 7
 ## of M226, the player: "why would the robber walk towards her when it spawns as pursuing robber? the

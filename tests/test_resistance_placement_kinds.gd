@@ -1082,13 +1082,13 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) 
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(_raid_since(before).is_empty(), "and only on day 10")
 
-## **The patrol car's beat is held to the view on its own**, apart from the vans. The beat runs
-## `RAID_PATROL_REACH_TILES` either side of her door, further than the vans' `RAID_VAN_OFFSET_TILES`,
-## so a view that holds one end of the beat and neither van is one only the patrol car's own check
-## can refuse (`ResistanceHappenings._maybe_raid()`): the view is the car's own drawing box standing
-## at the beat's far end, and the raid holds back; with the view looking at nothing the same tick brings it. The two
-## premises are checked first, or the test would pass on the vans' check alone: neither van would
-## be drawn in that view, and the car would.
+## **The patrol car's beat is held to the view on its own**, apart from the vans. The beat
+## runs `RAID_PATROL_REACH_TILES` either side of her door, further than the vans'
+## `RAID_VAN_OFFSET_TILES`, so a view that holds one end of the beat and neither van is one only
+## the patrol car's own check can refuse (`ResistanceHappenings._maybe_raid()`): the view is the
+## car's own drawing box standing at the beat's far end, and the raid holds back; with the view
+## looking at nothing the same tick brings it. The two premises are checked first, or the test
+## would pass on the vans' check alone: neither van would be drawn in that view, and the car would.
 func _test_the_raid_waits_for_the_patrol_cars_beat_to_be_out_of_her_view(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
