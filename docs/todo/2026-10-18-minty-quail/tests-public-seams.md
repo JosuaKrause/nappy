@@ -68,13 +68,6 @@ ticks give, and is kept with its reason:
 
 **Open: what a test still reads that the game does not, or does not check.**
 
-- **The resistance director's fallback to the map's navigator is untested:** a director handed no
-  city siting builds its spawn siting on it, and the one start it sites that way is a trap sent at
-  her (`_send_at_her()`). The test it needs is a director handed a city whose spawn siting is unset,
-  with that trap sited.
-- **No test isolates the raid's wait for the patrol car's beat to be out of her view** in
-  `ResistanceHappenings._maybe_raid()`: deleting that check fails nothing, since the vans' own check
-  holds the raid back; the happenings' tests gain one that fails without it.
 - **`PlanBuilder._cross_street_path`** serves no catalogue row today, since the director sites the
   cat; it wants a row or removing.
 - **`test_route_bag.gd`** reads a place waiting for its site in the director's private

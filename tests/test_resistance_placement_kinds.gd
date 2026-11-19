@@ -36,6 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_the_morning_neighbors_way_is_over_drawn_ground(t)
 	_test_the_neighbors_walk_home_is_over_drawn_ground(t)
 	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
+	_test_the_raid_waits_for_the_patrol_cars_beat_to_be_out_of_her_view(t)
 	_test_the_sealed_door_stands_after_a_reload(t)
 	_test_a_lost_day_ten_restores_the_ordinary_door(t)
 	_test_the_neighbor_window_is_boarded_from_day_eleven(t)
@@ -1080,6 +1081,45 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) 
 	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY + 1)
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(_raid_since(before).is_empty(), "and only on day 10")
+
+## **The patrol car's beat is held to the view on its own**, apart from the vans. The beat
+## runs `RAID_PATROL_REACH_TILES` either side of her door, further than the vans'
+## `RAID_VAN_OFFSET_TILES`, so a view that holds one end of the beat and neither van is one only
+## the patrol car's own check can refuse (`ResistanceHappenings._maybe_raid()`): the view is the
+## car's own drawing box standing at the beat's far end, and the raid holds back; with the view
+## looking at nothing the same tick brings it. The two premises are checked first, or the test
+## would pass on the vans' check alone: neither van would be drawn in that view, and the car would.
+func _test_the_raid_waits_for_the_patrol_cars_beat_to_be_out_of_her_view(t: TestRunner) -> void:
+	_build_city_in_a_new_run(t)
+	var happenings := ResistanceHappenings.new()
+	happenings.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, RunCity.spawn_siting(_city))
+	happenings.start_day(ResistanceSteps.NEIGHBOR_DAY)
+	var door := _city.map.doorstep_world_position()
+	var door_tile := _city.map.world_to_tile(door)
+	var corridor := door_tile.y - CityMap.corridor_offset(door_tile.y)
+	var far_side := corridor + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
+	var lane := corridor + Tuning.SIDEWALK_WIDTH
+	var beat_end := _city.map.tile_to_world(
+			Vector2i(door_tile.x + ResistanceHappenings.RAID_PATROL_REACH_TILES, lane))
+	var van_box := EventFootprints.footprint_of(EventCatalogue.by_id("night_raid"))
+	var car_box := EventFootprints.footprint_of(EventCatalogue.by_id("police_patrol"))
+	_look_at(Rect2(beat_end + car_box.position, car_box.size))
+	var van_in_view := false
+	for side: int in [-1, 1]:
+		var van_at := _city.map.tile_to_world(
+				Vector2i(door_tile.x + side * ResistanceHappenings.RAID_VAN_OFFSET_TILES, far_side))
+		van_in_view = van_in_view or _would_show(van_box, van_at)
+	t.check(not van_in_view and _would_show(car_box, beat_end),
+			"the view holds the patrol car's far end and neither van, or this test checks the vans alone")
+	var before := _street()
+	var away := door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0)
+	happenings.tick(STEP, away, Vector2.ZERO)
+	t.check(_raid_since(before).is_empty(),
+			"the raid waits while the patrol car's beat would be drawn in her view, the vans out of it")
+	_look_at(Rect2())
+	happenings.tick(STEP, away, Vector2.ZERO)
+	t.check(_raid_since(before).size() == 3, "and arrives the moment none of it would be")
 
 ## Sealed on day 11 and after a save/load: `City.build()` reads the run's scars once, at boot,
 ## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `City.build()`
