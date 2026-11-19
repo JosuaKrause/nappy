@@ -60,6 +60,27 @@ var _locations: DayLocations
 var _rows: Dictionary
 var _ground: LocationGround
 var _one_marble_a_unit := false
+## The rows drawn out of the bag in front that the day's bags do not name (`id -> EventDef`), kept
+## apart from `_rows`, which the bags' fills are worked out from.
+var _rigged_rows := {}
+
+## **A row rigged in front of the units' draws** (`UnitDraw.rig_the_next_draw()`): its id, which the
+## day's bags name it by where they hold it, and the row to draw where they do not.
+class Rigged extends RefCounted:
+	var _id: String
+	var _row: EventDef
+
+	func _init(id: String, row: EventDef) -> void:
+		_id = id
+		_row = row
+
+	## The id the row is named by.
+	func id() -> String:
+		return _id
+
+	## The row, as the caller rigged it.
+	func row() -> EventDef:
+		return _row
 
 ## One row of a layout: the row, what it takes of its unit, the location it stands in and its
 ## event as the location holds it.
@@ -114,36 +135,35 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan],
 	var laid: Array[_Placing] = []
 	var trials := {}
 	# The lambdas read `drawn`, `laid` and `trials` by reference, so each is changed in place.
-	var accepts_row := func(def: EventDef) -> bool:
+	var accepts_row := func(id: String, def: EventDef) -> bool:
 		if drawn.has(def):
 			return false
 		if not room.fits(_share_of(def, street)):
 			return false
 		var trial := _lay_out(laid, drawn, def, unit, open, among, scales)
-		trials[def.id] = trial
+		trials[id] = trial
 		return not trial.is_empty()
 	var accepts := func(id: String) -> bool:
 		var def: EventDef = _rows[id]
-		return accepts_row.call(def)
+		return accepts_row.call(id, def)
 	var weight := func(id: String) -> float:
 		var def: EventDef = _rows.get(id)
 		return _weight(def, unit, open, scales) if def else 0.0
 	# Asked of the rigged bag until a row there is refused: it stays in front for the next unit.
 	var asks_in_front := in_front != null
 	while room.is_open():
-		var def: EventDef = null
+		var id := ViewBag.EMPTY
 		if asks_in_front:
-			def = _from_the_front(in_front, accepts_row)
-			asks_in_front = def != null
-		if def == null:
-			var marble := bag.draw(accepts, weight)
-			if marble != ViewBag.EMPTY:
-				def = _rows[marble]
-		if def == null:
+			id = _from_the_front(in_front, accepts_row)
+			asks_in_front = id != ViewBag.EMPTY
+		if id == ViewBag.EMPTY:
+			id = bag.draw(accepts, weight)
+		if id == ViewBag.EMPTY:
 			room.take(EventDef.StreetShare.A_LOCATION)
 		else:
+			var def: EventDef = _rows.get(id, _rigged_rows.get(id))
 			drawn.append(def)
-			var trial: Array[_Placing] = trials[def.id]
+			var trial: Array[_Placing] = trials[id]
 			laid.assign(trial)
 			room.take(_share_of(def, street))
 		if _one_marble_a_unit:
@@ -160,19 +180,22 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan],
 				placed.append(placing.plan())
 	return placed
 
-## **The row rigged in front, drawn out of `in_front`, where the unit accepts it** (`accepts_row`,
-## `func(def: EventDef) -> bool`), else null with it left where it is. A row the day's bags also name
-## is taken as the bags name it, so it counts as the same row for "at most one of a row in a unit".
-func _from_the_front(in_front: MarbleBag, accepts_row: Callable) -> EventDef:
+## **The id of the row rigged in front, drawn out of `in_front`, where the unit accepts it**
+## (`accepts_row`, `func(id: String, def: EventDef) -> bool`), else `ViewBag.EMPTY` with it left where it
+## is. A row the day's bags also name is taken as the bags name it, so it counts as the same row for
+## "at most one of a row in a unit"; one they do not name is drawn as rigged (`_rigged_rows`).
+func _from_the_front(in_front: MarbleBag, accepts_row: Callable) -> String:
 	var next: Variant = in_front.peek()
-	if not next is EventDef:
-		return null
-	var rigged := next as EventDef
-	var row: EventDef = _rows.get(rigged.id, rigged)
-	if not accepts_row.call(row):
-		return null
+	if not next is Rigged:
+		return ViewBag.EMPTY
+	var rigged := next as Rigged
+	var row: EventDef = _rows.get(rigged.id(), rigged.row())
+	if not accepts_row.call(rigged.id(), row):
+		return ViewBag.EMPTY
 	in_front.draw()
-	return row
+	if not _rows.has(rigged.id()):
+		_rigged_rows[rigged.id()] = rigged.row()
+	return rigged.id()
 
 ## **Where every row of `drawn` and `def` stands**, laid largest first, or empty where one cannot
 ## stand. `laid` is where `drawn` stood: the rows laid before `def` stand as they stood, since

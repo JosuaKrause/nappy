@@ -568,13 +568,13 @@ func rig_the_next_draw(ids: Array[String]) -> Array[String]:
 	var draw := _walk.unit_draw()
 	if not draw:
 		return rigged
-	var rows: Array[EventDef] = []
+	var rows := {}
 	for id in ids:
 		var def := EventCatalogue.by_id(id)
 		if not def:
 			push_error("a rigged draw names no event in the catalogue: '%s'" % id)
 			continue
-		rows.append(EventCatalogue.heated(def, world.run.resistance().progress()).for_day(world.day))
+		rows[id] = EventCatalogue.heated(def, world.run.resistance().progress()).for_day(world.day)
 		rigged.append(id)
 	draw.rig_the_next_draw(rows)
 	return rigged

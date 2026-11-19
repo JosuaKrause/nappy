@@ -40,20 +40,18 @@ The review's tracks run beside minty-quail's, module by module (inbox #1268 in o
 module by module makes sense and can be parallelized"). The tracks are the review's worked-out
 detail, which the player approved.
 
-- **Placement:** `placement-by-construction.md`'s steps.
-  Nothing else changes where events go until it is done (inbox #1185 in gentle-owl). Where it meets
-  minty-quail: the first steps of minty-quail's
-  `event-interface.md` (the callers outside the events folder, the live event's behaviours and
-  looks) run beside placement, and its dawn, the event manager's parts, the resistance and the
-  scene recipes follow placement; what is left of minty-quail's
-  `re-derived-cases.md` (the scene recipes' own ground scans) closes with placement or after it.
+- **Placement** is built, its last step filed as the record polite-tapir-feathery-kestrel; nothing
+  else changed where events go while it was open (inbox #1185 in gentle-owl). Where it meets
+  minty-quail: the rows of minty-quail's `event-interface.md` that follow placement (its dawn, the
+  event manager's parts, the resistance and the scene recipes) wait on it no longer, and what is
+  left of minty-quail's `re-derived-cases.md` (the scene recipes' own ground scans) is open.
 - **The standing layer breaks** (`standing-layer-breaks.md`): one pull request per group, each in
   its module's turn of minty-quail's order (within a module, its dead code, then its standing
   breaks, then its interface and field reads, then its suites). Dawn planning's reads stand in the
   walk's ground, and row 3a of minty-quail's `event-interface.md` settles them; the building's pass in minty-quail's order
   (`src/interior/`, `src/finale/`) takes its one read of `WorldMap.world` with the map interface's
   world half.
-- **The baseline** (`baseline-measurements.md`): a reading when placement closes and one after the
+- **The baseline** (`baseline-measurements.md`): a reading with placement closed and one after the
   events' field-read conversion (row 4b of minty-quail's `event-interface.md`), for the remeasure
   that closes minty-quail.
 
@@ -64,7 +62,7 @@ events' fields are behind methods no probe runs on both the old tree and the new
 that capturing them blocks nothing: "sure". *Read as, with the specifics proposed by the
 orchestrator and open to the player's correction:* the baseline is `v0.29.0`, the tree minty-quail's
 first review read. The before-numbers are in `docs/evidence/minty-quail-baseline-2026-11-09/`
-(record mossy-raven), and `baseline-measurements.md` takes one background reading of winnability and frame time when placement closes and one after the
+(record mossy-raven), and `baseline-measurements.md` takes one background reading of winnability and frame time with placement closed and one after the
 events' field-read conversion, so the end remeasure can say which half moved a number. None of it
 blocks a step or changes the player's "remeasuring at the very end" (inbox #813 in curly-moose): a
 reading is recorded, not judged.

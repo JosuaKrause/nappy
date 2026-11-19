@@ -49,8 +49,8 @@ review; a builder runs it again):
   for no other item; `Prop` as a data constant, in a pull request of its own; `GameSave` and
   `HelpText` in the view's pass; the
   calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`; and `RowGround`'s
-  `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`, read by `_burns_its_front()`) when placement
-  closes, since no step of `placement-by-construction.md` rewrites that read.
+  `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`, read by `_burns_its_front()`) now, since
+  placement is closed and no step of it rewrote that read.
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
   default for it that a new file has to opt out of.

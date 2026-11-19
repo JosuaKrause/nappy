@@ -121,10 +121,11 @@ class _Drawing extends MarbleDraw:
 		unit_of[plan.placed_at()] = name
 		var placed: Array[EventPlan] = [plan]
 		var front: Variant = in_front.peek() if in_front else null
-		fronts.append([name, (front as EventDef).id if front is EventDef else ""])
-		if front is EventDef and not leaves_the_front.has(name):
+		var rigged := front as MarbleDraw.Rigged
+		fronts.append([name, rigged.id() if rigged else ""])
+		if rigged and not leaves_the_front.has(name):
 			in_front.draw()
-			placed.append(EventPlan.new(front as EventDef, unit.locations()[0].centre()
+			placed.append(EventPlan.new(rigged.row(), unit.locations()[0].centre()
 					+ Vector2(32.0, 0.0)))
 		if hands_over.has(name):
 			placed.append(EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF))
@@ -273,7 +274,7 @@ func _test_the_bag_rigged_in_front_is_drawn_by_the_next_unit_that_takes_it(t: Te
 	var draw := UnitDraw.new(_Units.new(), drawing, _fills(), _dawn())
 	draw.draw(made[0])
 	var yeller := EventCatalogue.by_id("homeless_yeller")
-	draw.rig_the_next_draw([yeller] as Array[EventDef])
+	draw.rig_the_next_draw({"homeless_yeller": yeller})
 	drawing.leaves_the_front[made[1].name()] = true
 	draw.draw(made[1])
 	var placed := draw.draw(made[2])

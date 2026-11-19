@@ -11,14 +11,18 @@ of the *plan*. `EventScheduler.build_day()` plans the dawn's part and prepares t
 day's locations; each unit of them (a street, a junction box, an alley, a park or a square) draws
 as she comes near it (`UnitDraw`, `EventsAhead.draw_what_comes_near()`), after every touching unit
 of lower rank, so every unit's draw is the same whatever her path, what drawing every unit at dawn
-would give. A unit within the stream radius of her is drawn before the streaming looks there
+would give, but for a unit a beat of her walk or a row a mark rigged stands in or beside (below). A unit within the stream radius of her is drawn before the streaming looks there
 (`EventManager.stream_around()` and the manager's tick). What streams is the *instantiation*.
 
-**A place her walk sites stands on ground whose units have drawn, and no draw reads it.**
-A placement made from her walk draws the units within `Tuning.EVENT_DRAW_AHEAD` of its place
-first (`EventsAhead.draw_the_ground_round()`); a place the director sites ahead of her, for one,
-gives up a pick that drew a unit and asks again (`WalkSiting.lay_ahead()`). **A place
-the resistance sends her to is asked by where it stands** (`WayConfirmation`, asked wherever a
+**A beat her walk lays takes a location, in a unit that has not drawn where her way has one, and
+that unit draws round it** (`WalkSiting`, `PlacementUnit.rig()`). The unit's room starts without
+the location and its draw, and the draws of the units touching it, are judged among the beat
+(`UnitDraw`); nothing is drawn round a beat first. **A row a mark rigs in front of the units'
+draws** (day 6's man shouting, day 7's van; `UnitDraw.rig_the_next_draw()`) is drawn first by the
+next unit to draw that can stand it. So a unit a beat or a rigged row stands in or beside draws by
+her path, on purpose, as can a unit touching one whose draw that changed, since a unit is judged
+among the draws of the touching units drawn before it: a beat is a marble, and a day replayed the
+same way draws the same (inbox #1521 in breezy-magpie). **A place the resistance sends her to is asked by where it stands** (`WayConfirmation`, asked wherever a
 contact is stood or moved, `ResistanceDirector._she_can_be_sent_to()`): inside the ground already
 drawn round her (the stream radius, and round where she reads a mark as far as its task is looked
 for and `Tuning.EVENT_DRAW_AHEAD` beyond) it stands as it is, her own paths reaching it without
@@ -32,9 +36,9 @@ A moment the director sends at her (a cat across her
 path, a pursuer; `EventsAhead.place_what_is_owed_ahead()`) is no place: it starts in her view or
 just off her screen, inside the stream radius, where every unit has drawn. The red arrow's choice
 among several places that answer a task is no place either: it is made again twice a second over
-the ground as it has drawn. A unit's draw is never judged among a plan her walk sites
-(`UnitDraw`), so where her walk put a thing changes no drawn row. **A new placement made from her
-walk draws the ground round its place first, and a new place the resistance sends her to is asked
+the ground as it has drawn. A unit's draw is judged among the beats laid in it or in a unit
+touching it, and among no other plan her walk sites. **A new kind of place made from her walk
+takes a location through `WalkSiting`, and a new place the resistance sends her to is asked
 `_she_can_be_sent_to()`**, or it is judged against a walk that does not hold that ground's rows
 yet.
 
@@ -49,9 +53,10 @@ yet.
 
 **Do not move a guarantee out of the dawn or a unit's own draw and into the streaming.** If
 something has to be true of a day, it has to be decided where the day is: at dawn
-(`EventScheduler.build_day()`) or by a unit's own draw (`UnitDraw`), each of which reads only what
-is fixed before she moves (the seed, the day, the run as the day starts) and nothing her walk
-does.
+(`EventScheduler.build_day()`) or by a unit's own draw (`UnitDraw`), each of which reads what is
+fixed before she moves (the seed, the day, the run as the day starts), and a unit's draw besides
+the beats her walk laid in it or a touching unit and the rows a mark rigged in front of it, whose
+place is her walk's on purpose; never the streaming.
 
 ## Excitement is a pure query
 

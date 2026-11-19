@@ -275,7 +275,8 @@ src/
 	                      it is part of and the run a route starting in it may lie on
 	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
 	                      an alley, a park or a square (its kind of ground); its name, its rank and
-	                      its stream for the day, and its view, the most permissive of its locations'
+	                      its stream for the day, its view, the most permissive of its locations',
+	                      and the beats her walk laid in it
 	unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
 	                      sections and half-filled ones, what share of a street (a section, a
 	                      location) a marble may still take
@@ -286,9 +287,11 @@ src/
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
 	                      every touching unit of lower rank, from the bag the walk's bags answer
 	                      for it (`UnitBags`: on a day, one fresh bag of the fill `UnitFills`
-	                      answers for its view and kind of ground), judged among the dawn's plans
-	                      and the touching units' draws, never a plan her walk sites; a walk drawn
-	                      whole is drawn at dawn in its units' order, each among everything before it
+	                      answers for its view and kind of ground), judged among the dawn's plans,
+	                      the touching units' draws and the beats her walk laid in the unit or a
+	                      touching one; the rows a mark rigs in front drawn by the next unit that
+	                      can stand them; a walk drawn whole is drawn at dawn in its units' order,
+	                      each among everything before it
 	whole_walk_bag.gd     one bag every unit of a walk draws from, a refused marble left in it for the
 	                      next unit: the escape's
 	unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
@@ -303,9 +306,10 @@ src/
 	view_bag.gd           a bag of marbles drawn without putting back: a unit's, of its view's and
 	                      ground's fill, or a whole walk's; every row possible there as often as its
 	                      weight, and the empty event, only what the unit accepts
-	marble_draw.gd        one unit's draw: a marble drawn before it is placed, the unit's rows laid
-	                      out again largest first as each is added, what the room left or the
-	                      layout cannot hold left out, at most one of a row in the unit
+	marble_draw.gd        one unit's draw: a row rigged in front first, then a marble drawn before it
+	                      is placed, the unit's rows laid out again largest first as each is added,
+	                      what the room left or the layout cannot hold left out, at most one of a
+	                      row in the unit
 	location_ground.gd    what the dawn draw and her walk's siting ask of the day: a row's event at a
 	                      location if valid among the plans it is handed (on a tile of the draw's
 	                      choosing or a tile the siting brings), the location's own weight; the
@@ -365,8 +369,8 @@ src/
 	                       and the day's units drawn as she comes near them
 	siting_maker.gd       makes a day's siting from the walk's rules and locations; what the events
 	                       ahead are handed, so a test hands in one that answers a stand-in
-	walk_siting.gd        lays the rows her walk places: the free locations on her way, the first
-	                       the day's rules take
+	walk_siting.gd        lays the rows her walk places: the free locations on her way, a unit's
+	                       that has not drawn first, the first the day's rules take
 	sited_ground.gd       the tiles a row her walk lays may stand on: a crew's fronts, a mast's
 	                       sites
 	event_director.gd     sites what the day planned and did not place, from her own walk:
@@ -1288,13 +1292,15 @@ field with its value before and after (`tests/shared_state.gd`).
   successors, summed excitement. Its header gives the reason it builds one: an instance freed but
   left in the list and a successor spawned but never tracked are invisible to a data-level test.
 - `test_event_manager_units.gd` — the manager against a real generated city, the day's units
-  drawn as she comes near them: a unit draws before the streaming looks at its ground, and what
-  her walk sites, swaps in or takes away draws the units round it first. Its header gives the
-  reason it builds a city: each rule is the order of two parts the manager owns.
+  drawn as she comes near them: a unit draws before the streaming looks at its ground, a beat her
+  walk lays stands in a unit before it draws, and what the resistance swaps in or takes away draws
+  the units round it first. Its header gives the reason it builds a city: each rule is the order of
+  two parts the manager owns.
 - `test_walk_siting.gd` — the siting that lays the rows her walk places, over stand-ins for the
-  route tree, the locations and the judge: the nearest free location on her branch or her
-  street takes a beat, a placed beat gives its location back only once it has another, a mast
-  near the mark and the fire lit at dusk take the first location offered; and
+  route tree, the locations, the units and the judge: the nearest free location on her branch, a
+  unit's that has not drawn first, takes a beat and its unit is told, a placed beat gives its
+  location back only once it has another, a mast near the mark and the fire lit at dusk take the
+  first location offered; and
   `test_sited_ground.gd`, the tiles a row her walk lays may stand on.
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —

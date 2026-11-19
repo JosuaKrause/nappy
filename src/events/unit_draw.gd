@@ -71,15 +71,17 @@ func _init(units: DayUnits, drawing: MarbleDraw, bags: UnitBags,
 		if plan.is_placed():
 			_dawn.append(plan)
 
-## **Rigs the next draws to stand `rows`**: a bag of them goes in front of the units' own
+## **Rigs the next draws to stand `rows`** (`id -> EventDef`): a bag of them goes in front of the units' own
 ## (`MarbleBag.rig()`), and the next unit to draw draws them first, each where the unit can lay it
 ## out (`MarbleDraw.draw()`); one the unit cannot stand stays in front for the unit after it. The
 ## rigged bag holds the rows alone: each unit draws from a bag of its own (`UnitBags`), so there is
 ## no one bag the rest of a rigged bag could be taken out of, and the player's "the next draw
 ## (whenever that happens) will guarantee" is the next unit's.
-func rig_the_next_draw(rows: Array[EventDef]) -> void:
+func rig_the_next_draw(rows: Dictionary) -> void:
 	var marbles: Array = []
-	marbles.append_array(rows)
+	for id: String in rows:
+		var row: EventDef = rows[id]
+		marbles.append(MarbleDraw.Rigged.new(id, row))
 	_in_front.rig(marbles, marbles.size())
 
 ## **Whether `plan` is a row a unit drew out of the bag in front** (`rig_the_next_draw()`) rather than

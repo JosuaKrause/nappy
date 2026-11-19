@@ -5,8 +5,8 @@ extends RefCounted
 ## one object holding the answer, so nothing works it out again (inbox #1156 in gray-dolphin).
 ##
 ## **Two units touch when they share a junction box, or border the same alley, park or square**
-## (the item, step 2 of `docs/todo/2026-11-11-polite-tapir/placement-by-construction.md`), stated on
-## tile rects so no street network is asked:
+## (`docs/EVENTS.md`, "The three views and the placement order"; the record
+## 2026-11-11-polite-tapir), stated on tile rects so no street network is asked:
 ##
 ## - a street **meets** the two junction boxes at its ends; a box meets itself;
 ## - a lot (an alley, a park or a square) has a **frame**, every block its tiles overlap grown by a

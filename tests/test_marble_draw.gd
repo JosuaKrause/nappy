@@ -170,7 +170,7 @@ static func _drawn(unit: PlacementUnit, bag: _Bag, ground: _Ground, locations: _
 ## A bag in front of the units' draws holding `id`'s row, as `UnitDraw.rig_the_next_draw()` rigs one.
 static func _rigged_front(id: String) -> MarbleBag:
 	var front := MarbleBag.new([], [], 0)
-	front.rig([EventCatalogue.by_id(id)], 1)
+	front.rig([MarbleDraw.Rigged.new(id, EventCatalogue.by_id(id))], 1)
 	return front
 
 ## Where `id` was recorded, or null.
@@ -503,8 +503,8 @@ func _test_a_row_rigged_in_front_the_unit_cannot_stand_stays_in_front(t: TestRun
 	var placed := _drawn(street, bag, ground, _Locations.new(), [] as Array[EventPlan], false, front)
 	t.check(placed.size() == 1 and placed[0].row_id() == "cafe_tables",
 			"a street that cannot stand the man draws its own cafe (%d placed)" % placed.size())
-	var still: Variant = front.peek()
-	t.check(still is EventDef and (still as EventDef).id == "homeless_yeller",
+	var still := front.peek() as MarbleDraw.Rigged
+	t.check(still != null and still.id() == "homeless_yeller",
 			"and the man stays in front for the next unit")
 	t.check(ground.asks_for("homeless_yeller").size() <= street.locations().size(),
 			"asked of the unit's ground once a draw, not again for every marble (%d asks)"

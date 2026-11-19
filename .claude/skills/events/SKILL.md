@@ -205,8 +205,9 @@ are `references/flocks-and-moving-pictures.md`.
 
 **Do not move a guarantee out of the dawn (`EventScheduler.build_day()`) or a unit's own draw
 (`UnitDraw`) and into the streaming.** Every guarantee is stated over a day and is a property of
-the plan, which the dawn and each unit's draw make the same whatever her path; what streams is the
-instantiation, and a spent plan stays spent while a running one resumes. **Do not add a code path that feeds her
+the plan, which the dawn and each unit's draw make the same whatever her path, but for a unit a
+beat her walk laid or a row a mark rigged stands in or beside, which draws round it on purpose
+(inbox #1521 in breezy-magpie); what streams is the instantiation, and a spent plan stays spent while a running one resumes. **Do not add a code path that feeds her
 excitement meter from outside `Baby`**: `Baby` asks the world for its sources and sums them, and anything
 that emits is an `ExcitementSource`, which asks whether a wall stands between it and her. The
 reasons and the traps (the stream radius against the widest field, what a stream-out carries, the

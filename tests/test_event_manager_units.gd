@@ -189,8 +189,10 @@ const WALK_SECONDS := 170.0
 ## rigged in a unit; at least one in a unit that had not drawn when it was laid, every other on a
 ## location a drawn unit left empty. With the rest of the day drawn after the walk, nothing a unit
 ## drew stands within `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row
-## on the crew's location, and every unit that neither holds a crew nor touches one that does drew
-## what it draws on the day drawn whole.
+## on the crew's location, and every unit that drew otherwise than on the day drawn whole holds a
+## crew, touches a unit that does, or touches a unit that drew otherwise (a unit is judged among the
+## draws of the touching units drawn before it, so a difference can carry): no unit differs out of
+## nowhere, and some unit far from every crew is compared.
 func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
 	var map := _city.map
@@ -282,19 +284,24 @@ func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) 
 			% EventScheduler.EVENT_SPACING_ANY + "(the nearest %.0fpx)" % nearest)
 	t.check(on_its_location == 0,
 			"no unit holding a crew drew a row on the crew's location (%d did)" % on_its_location)
-	var compared := 0
-	var differ: Array[String] = []
+	var differ := {}
 	for unit in kept:
-		if beside.has(unit.name()):
-			continue
-		compared += 1
 		var line := Rig.what_the_units_drew(map, [unit] as Array[PlacementUnit])
 		if line != str(whole_by_unit.get(unit.name(), "")):
-			differ.append(unit.name())
-	t.check(compared > 0 and differ.is_empty(),
-			"every unit that neither holds a crew nor touches one that does drew what it draws on "
-			+ "the day drawn whole (%d compared, %d beside a crew; differ: %s)"
-			% [compared, beside.size(), differ])
+			differ[unit.name()] = unit
+	var out_of_nowhere: Array[String] = []
+	for name: String in differ:
+		if beside.has(name):
+			continue
+		var carried := false
+		for other in _units().touching(differ[name] as PlacementUnit):
+			carried = carried or differ.has(other.name())
+		if not carried:
+			out_of_nowhere.append(name)
+	t.check(kept.size() > beside.size() + differ.size() and out_of_nowhere.is_empty(),
+			"every unit that drew otherwise than on the day drawn whole holds a crew, touches one, "
+			+ "or touches a unit that drew otherwise (%d units, %d beside a crew, %d differ; out of "
+			% [kept.size(), beside.size(), differ.size()] + "nowhere: %s)" % [out_of_nowhere])
 	events.use_player(null)
 	rig.free()
 

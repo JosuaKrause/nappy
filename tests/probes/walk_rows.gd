@@ -34,8 +34,9 @@ extends RefCounted
 ## `EventScheduler.EVENT_SPACING_ANY`); `WS all` sums the days. **And which units drew by her path**:
 ## per day, summed over the seeds, `WR day units differ beside-a-beat carried unexplained`, the
 ## units, how many drew other rows or other places than on the same dawn drawn whole with no walk
-## (the city made again and the day planned again, every unit drawn), how many of those hold a beat
-## or touch a unit that does, how many of the rest touch a unit that differs (a unit is judged among
+## (the city made again and the day planned again, every unit drawn), how many of those a beat
+## stands or stood in, or touch a unit one does or did (a beat moved off a unit leaves what the unit
+## drew round it as drawn), how many of the rest touch a unit that differs (a unit is judged among
 ## the draws of the touching units drawn before it, so a difference can carry), and how many are
 ## none of those (expected none: a difference out of nowhere is a defect); `WR all` sums the days.
 ## **What it lays is day 3's fire**: a sidewalk poster crew pastes a building's blank wall, which
@@ -428,6 +429,8 @@ func _walk_every_day(reach: float) -> void:
 			director.start_day(day, plans, director_rng, siting)
 			drawing.walked_by(walk, director, siting)
 			var sited := {}
+			# The units a beat was laid in, moved off later or not, by name.
+			var held_a_beat := {}
 			var route := _longest_route(tree)
 			if route.size() < 2:
 				continue
@@ -470,6 +473,8 @@ func _walk_every_day(reach: float) -> void:
 						# The units draw before the director sites, so a unit still undrawn now
 						# was undrawn when the beat was laid.
 						var holding := _holding(drawing.draw.units(), plan)
+						if holding:
+							held_a_beat[holding.name()] = true
 						if holding and not holding.is_drawn():
 							in_undrawn += 1
 						elif holding:
@@ -528,7 +533,7 @@ func _walk_every_day(reach: float) -> void:
 			for name: String in by_rule:
 				refused[name] = int(refused.get(name, 0)) + int(by_rule[name])
 			_count_both_closed(map, corridor, walk.plans(), both_closed)
-			var drew_by_her_path := _drew_by_her_path(drawing.draw.units(), map, day, i)
+			var drew_by_her_path := _drew_by_her_path(drawing.draw.units(), map, day, i, held_a_beat)
 			for k in by_her_path.size():
 				by_her_path[k] += drew_by_her_path[k]
 			print("WT %d %d siting %s" % [day, i, _costs(siting_ticks)])
@@ -586,10 +591,11 @@ static func _holding(units: DayUnits, plan: EventPlan) -> PlacementUnit:
 ## **Which of `units`, the walked day's every one drawn, drew by her path**, as `[units, differ,
 ## beside-a-beat, carried, unexplained]`: against the same day of the same city planned again
 ## (`_Day.planned()`, the city made again) and drawn whole with no walk, the units that drew other
-## rows or other places; of those, the ones that hold a beat or touch a unit that does; of the
-## rest, the ones touching a unit that differs, since a unit is judged among the draws of the
-## touching units drawn before it; and those that are none of these.
-static func _drew_by_her_path(units: DayUnits, map: CityMap, day: int, i: int) -> Array[int]:
+## rows or other places; of those, the ones a beat was laid in (`held_a_beat`, by name, moved off
+## later or not) or touching one; of the rest, the ones touching a unit that differs, since a unit is
+## judged among the draws of the touching units drawn before it; and those that are none of these.
+static func _drew_by_her_path(units: DayUnits, map: CityMap, day: int, i: int,
+		held_a_beat: Dictionary) -> Array[int]:
 	var whole := _Day.planned(day, i)
 	var whole_draw := whole.dawn.unit_draw()
 	var drawn_whole := {}
@@ -598,7 +604,7 @@ static func _drew_by_her_path(units: DayUnits, map: CityMap, day: int, i: int) -
 		drawn_whole[unit.name()] = _what_it_drew(whole.map, unit)
 	var beside := {}
 	for unit in units.all():
-		if unit.rigged().is_empty():
+		if unit.rigged().is_empty() and not held_a_beat.has(unit.name()):
 			continue
 		beside[unit.name()] = true
 		for other in units.touching(unit):
