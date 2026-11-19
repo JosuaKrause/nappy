@@ -77,11 +77,35 @@ Fields of classes under `src/` that `src/ui/danger_edge.gd`, `tests/test_badge_m
 - Receiver's class not told: `tests/test_visible_view.gd:90` `source.live`
 - Receiver's class not told: `tests/test_visible_view.gd:96` `source.live`
 
+## main merged: the danger edge's own suite
+
+`main` gained `tests/test_danger_edge.gd` (the record 2026-10-18-minty-quail-rosy-bunny), the badge's
+control checked alone. Its stand-in event source extended a bare `Node` and kept a view of its own,
+and it no longer parses against `setup(events: EventManager, …)`. The merge was clean in text, and
+this was its one semantic conflict.
+
+- **Its `_Source` is an `EventManager` fake like the other three.** It overrides `instances()` alone,
+  keeping the live events it is brought. Its view is the manager's own, which the rig looks through
+  about her at the origin (`visible_view().look_from(Vector2.ZERO)`). With nothing covering it, that
+  is the box the stand-in's `VisibleView.around(Vector2.ZERO, null)` was. The fake stays in the tree,
+  since the convoy it is brought is its child. With no player handed in, the manager's own tick never
+  looks the view through again, and it steps nothing, because its own list of instances is empty.
+- **The convoy's drawn box is read off the row** (`EventFootprints.drawn_box_of(row, true)`, the call
+  `EventInstance.drawn_box()` makes for a body running north to south), not typed in a constant
+  beside a comment that named the function. The suite's own sight test and the edge are then
+  checked against the box the game would draw, so a change to the convoy's picture or footprint
+  cannot leave the margin check passing on a stale box. The box is the same today,
+  `Rect2(-30, -38, 60, 38)`.
+- **The suite still fails under a mutation**, reverted and never committed. Making the edge's sight
+  test drop its margin (`_sees()` asking `VisibleView.sees()` with no margin) fails "and no badge was
+  raised on any of them (24 frames up)". The convoy comes down from above, so its feet enter the
+  view before any of its box; a mutation of `_shows()`'s drawn-box half is not one this suite can see.
+
 ## Verified
 
-- `tools/check.sh` boots clean.
+- `tools/check.sh` boots clean, before and after the merge of `main`.
 - `test_badge_model`, `test_visible_view`, `test_drawn_view`, `test_interior_masked_man` and
-  `test_interior_masked_man_badge` pass.
+  `test_interior_masked_man_badge` pass; after the merge, `test_danger_edge` with the first four.
 - The arrival-timing probe (`tools/test.sh probes/m226_arrival_timing.gd`) passes. It prints the same
   27 rows at the head as with `origin/main`'s badge and probe run the same day. Its three
   vertical fire-engine rows differ from the evidence kept in October
