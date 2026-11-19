@@ -1779,7 +1779,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 	if not car:
 		city.free()
 		return
-	RunCity.crowd(city).set_focus(car.global_position)
+	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(car.global_position))
 
 	var gate := RegionPlanner.GateState.new()
 	gate.position = car.global_position + car.heading() * 150.0

@@ -110,7 +110,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 			aside += 1.0
 		for looking: Vector2 in [middle, middle + across * aside, middle - across * aside]:
 			_look_at(camera, looking)
-			crowd.set_focus(looking)
+			crowd.use_focus(FakeCrowdFocus.new(looking))
 			watch.ends_seen = watch.ends_seen and aside < 4096.0 and (looking != middle
 					or not view.beyond_every_view(middle, CrowdAgent.ENTRY_PICTURE_ROOM, looking))
 			await _walk_every_end_off(crowd, city.map, camera, view, ends, looking, label, watch)

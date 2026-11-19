@@ -114,7 +114,7 @@ func _the_day_ends_with_her_ahead(city: City, car: CrowdAgent, gap: float, secon
 	_fails.clear()
 	for frame in int(round(seconds / STEP)):
 		await city.get_tree().physics_frame
-	RunCity.crowd(city).use_player(null)
+	RunCity.simulation(city).meet_her(null)
 	her.free()
 	return _fails.has("car_strike")
 

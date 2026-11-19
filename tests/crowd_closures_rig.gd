@@ -158,8 +158,8 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t: TestRunner) -> void:
 	var in_the_bodies := 0
 	var cars_on_the_street := 0
 	var walkers_on_the_street := 0
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(20.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent: CrowdAgent in RunCity.crowd(_city).agents():
 			var tile := _city.map.world_to_tile(agent.position)
@@ -212,7 +212,7 @@ func _test_nobody_is_placed_in_a_sealed_junction(t: TestRunner) -> void:
 	for arm: StreetNetwork.Segment in sealed["arms"]:
 		_city.map.hold_segment(arm.key(), HeldStreets.Why.SEAL)
 	RunCity.crowd(_city).start_day(1, _rng(1), at)
-	RunCity.crowd(_city).set_focus(at)
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 
 	# The guard against a vacuous sweep: "no car stands in a pocket" passes on its own where the
 	# seals made no pocket at all. Asked of a record flooded from the same map and its seals, the way
@@ -243,8 +243,8 @@ func _test_nobody_is_placed_in_a_sealed_junction(t: TestRunner) -> void:
 	var car_frames := 0
 	var walkers_moving := 0
 	var walker_positions := {}
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(20.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent: CrowdAgent in RunCity.crowd(_city).agents():
 			if not rect.has_point(_city.map.world_to_tile(agent.position)):
@@ -285,6 +285,7 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t: TestRunner) -> void:
 	var rect: Rect2i = sealed["rect"]
 	var at: Vector2 = sealed["at"]
 	_city.map.clear_day_holds()
+	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(2), at)
 	_advance_watching(4.0, at)
 	for arm: StreetNetwork.Segment in sealed["arms"]:
@@ -303,8 +304,8 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t: TestRunner) -> void:
 				and rect.has_point(_city.map.world_to_tile(agent.position)):
 			standing_at[agent.get_instance_id()] = agent.position
 	var lowest := watched
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(3.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		lowest = mini(lowest, _inside(rect, CrowdAgent.Kind.CAR))
 	t.check(lowest == watched,
@@ -327,8 +328,8 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t: TestRunner) -> void:
 	# boundary.
 	var inward := signf(_city.map.world_size().x * 0.5 - at.x)
 	var away := at + Vector2(620.0 * (inward if inward != 0.0 else 1.0), 0.0)
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(away))
 	for frame in int(round(3.0 / STEP)):
-		RunCity.crowd(_city).set_focus(away)
 		RunCity.crowd(_city).step(STEP)
 	t.check(_inside(rect, CrowdAgent.Kind.CAR) == 0,
 			"and every one of them is gone once the view has moved off it (%d left)"
@@ -369,8 +370,8 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t: TestRunner) -> v
 	var arm_rect := arm.tile_rect()
 	var seen_outside := {}
 	var entered := 0
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(20.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent: CrowdAgent in RunCity.crowd(_city).agents():
 			if agent.lane().kind() != CrowdAgent.Kind.WALKER:
@@ -412,6 +413,7 @@ func _test_a_turn_around_commits_to_its_new_heading(t: TestRunner) -> void:
 	for arm: StreetNetwork.Segment in sealed["arms"]:
 		arm_rects.append(arm.tile_rect())
 	_city.map.clear_day_holds()
+	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(3), at)
 	_advance_watching(3.0, at)
 	for arm: StreetNetwork.Segment in sealed["arms"]:
@@ -423,8 +425,8 @@ func _test_a_turn_around_commits_to_its_new_heading(t: TestRunner) -> void:
 	var reversals := 0
 	var too_soon := 0
 	var soonest := INF
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(8.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent: CrowdAgent in RunCity.crowd(_city).agents():
 			var id := agent.get_instance_id()
@@ -533,6 +535,7 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t: TestRunner) -> vo
 	_city.map.clear_day_holds()
 	var traffic := TrafficIndex.new()
 	RunCity.crowd(_city).use_traffic(traffic)
+	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(1, _rng(4), at)
 	_advance_watching(3.0, at)
 	# **One arm, and the count matters in both directions.** Holding every arm is what the pocket
@@ -551,12 +554,12 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t: TestRunner) -> vo
 	var worst := 0.0
 	var worst_line := ""
 	var before := {}
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(30.0 / STEP)):
 		before.clear()
 		for agent: CrowdAgent in RunCity.crowd(_city).agents():
 			if agent.lane().kind() == CrowdAgent.Kind.CAR:
 				before[agent.get_instance_id()] = [agent.position, agent.is_turning()]
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		# After the step, because `Crowd.space_out_the_traffic()` rebuilds the index at the end of one
 		# and a claim only has to outlive the frame it was made in — so this is the follower the next
@@ -621,8 +624,8 @@ func _inside(rect: Rect2i, kind := -1) -> int:
 ## Runs the crowd with the view held on one spot, which is what a rig has instead of a player: the
 ## field's centre is where the camera is. See `CrowdAgent._out_of_view()`.
 func _advance_watching(seconds: float, at: Vector2) -> void:
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for i in int(round(seconds / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 
 ## One ordinary junction to seal: its four arms, its own box as a tile rect, and the centre of that
@@ -716,8 +719,8 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 
 	var frames_inside := 0
 	var walkers_on_the_segment := 0
+	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(20.0 / STEP)):
-		RunCity.crowd(city).set_focus(at)
 		RunCity.crowd(city).step(STEP)
 		for agent: CrowdAgent in RunCity.crowd(city).agents():
 			var tile := map.world_to_tile(agent.position)
@@ -800,6 +803,7 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 			< RegionPlanner.region_of_junction(map, door.b)
 	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
 	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
+	RunCity.crowd(city).use_focus(null)
 	RunCity.crowd(city).start_day(used_day, _rng(used_day), mouth.get_center())
 	RunCity.crowd(city).set_gates(city.streets().region_plan().gates)
 	RunCity.crowd(city).clear()
@@ -1269,8 +1273,8 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 	# further up the corridor.
 	var walkers_seen := 0
 	var cars_seen := 0
+	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(12.0 / STEP)):
-		RunCity.crowd(city).set_focus(at)
 		RunCity.crowd(city).step(STEP)
 		for agent in RunCity.crowd(city).agents():
 			var segment := map.network.segment_containing(map.world_to_tile(agent.position))
@@ -1303,8 +1307,8 @@ func _test_only_cars_go_over_the_bridge(t: TestRunner) -> void:
 
 	var worst_walker := 0.0
 	var worst_car := 0.0
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(30.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent in RunCity.crowd(_city).agents():
 			var overrun: float = agent.position.y - limit
@@ -1342,8 +1346,8 @@ func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t: TestRunner) -> void:
 	# past the absorbed corridor several times over in that, which is what gives the count
 	# something to be zero about. A longer watch is the same refusal asked again.
 	var cars_inside := 0
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(15.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent in RunCity.crowd(_city).agents():
 			if agent.lane().kind() != CrowdAgent.Kind.CAR:
@@ -1370,8 +1374,8 @@ func _test_agents_do_not_overrun_an_ordinary_edge(t: TestRunner) -> void:
 	RunCity.crowd(_city).start_day(1, _rng(2), at)
 
 	var worst := 0.0
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(20.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent in RunCity.crowd(_city).agents():
 			worst = maxf(worst, agent.position.x - limit)
@@ -1404,8 +1408,8 @@ func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t: TestRunner) -> 
 		RunCity.crowd(_city).start_day(1, _rng(10 + i), at)
 		var walkers_out := 0
 		var off_spine_cars_out := 0
+		RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 		for frame in int(round(20.0 / STEP)):
-			RunCity.crowd(_city).set_focus(at)
 			RunCity.crowd(_city).step(STEP)
 			for agent in RunCity.crowd(_city).agents():
 				if _city.map.in_bounds(_city.map.world_to_tile(agent.position)):
@@ -1461,8 +1465,8 @@ func _test_spine_cars_are_put_out_of_sight(t: TestRunner) -> void:
 		var landed := 0
 		var in_view := 0
 		var too_deep := 0
+		RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 		for frame in int(round(40.0 / STEP)):
-			RunCity.crowd(_city).set_focus(at)
 			RunCity.crowd(_city).step(STEP)
 			for agent in RunCity.crowd(_city).agents():
 				if agent.lane().kind() != CrowdAgent.Kind.CAR or not _city.map.is_main_road(
@@ -1507,8 +1511,8 @@ func _test_cars_do_not_drive_on_across_the_mountain(t: TestRunner) -> void:
 		var departing_north := 0.0
 		var furthest_south := 0.0
 		var seen_past_the_edge := 0
+		RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 		for frame in int(round(30.0 / STEP)):
-			RunCity.crowd(_city).set_focus(at)
 			RunCity.crowd(_city).step(STEP)
 			for agent in RunCity.crowd(_city).agents():
 				if agent.lane().kind() != CrowdAgent.Kind.CAR:
@@ -1554,8 +1558,8 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t: TestRunner) -> void
 		i += 1
 		var inbound := 0
 		var outbound := 0
+		RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 		for frame in int(round(20.0 / STEP)):
-			RunCity.crowd(_city).set_focus(at)
 			RunCity.crowd(_city).step(STEP)
 			for agent in RunCity.crowd(_city).agents():
 				if agent.lane().kind() != CrowdAgent.Kind.CAR:
@@ -1603,8 +1607,8 @@ func _test_nobody_enters_across_a_plain_edge(t: TestRunner) -> void:
 		RunCity.crowd(_city).start_day(1, _rng(30 + i), at)
 		i += 1
 		var out_of_bounds := 0
+		RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 		for frame in int(round(10.0 / STEP)):
-			RunCity.crowd(_city).set_focus(at)
 			RunCity.crowd(_city).step(STEP)
 			for agent in RunCity.crowd(_city).agents():
 				if _city.map.in_bounds(_city.map.world_to_tile(agent.position)):
@@ -1642,8 +1646,8 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t: TestRunner) -> void:
 	var lo := INF
 	var hi := -INF
 	var samples := 0
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(30.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent in RunCity.crowd(_city).agents():
 			if not landings.landed(agent) or agent.lane().kind() != CrowdAgent.Kind.WALKER:
@@ -1701,8 +1705,8 @@ func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t: TestRu
 	var landings := Landings.new(RunCity.crowd(_city))
 	var worst := {CrowdAgent.Kind.WALKER: INF, CrowdAgent.Kind.CAR: INF}
 	var samples := {CrowdAgent.Kind.WALKER: 0, CrowdAgent.Kind.CAR: 0}
+	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(60.0 / STEP)):
-		RunCity.crowd(_city).set_focus(at)
 		RunCity.crowd(_city).step(STEP)
 		for agent in RunCity.crowd(_city).agents():
 			if not landings.landed(agent) or not agent.travelling_vertically() \
@@ -1746,6 +1750,7 @@ func _test_day_start_keeps_room_for_its_own_picture(t: TestRunner) -> void:
 	RunCity.build(city, map)
 	var size := map.world_size()
 	var at := Vector2(Tuning.TILE_SIZE, size.y * 0.5)
+	RunCity.crowd(city).use_focus(null)
 	RunCity.crowd(city).start_day(1, _rng(40), at)
 	var worst := INF
 	for agent in RunCity.crowd(city).agents():

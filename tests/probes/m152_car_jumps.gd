@@ -237,7 +237,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 					agent._speed, car._room_to_stop_in(), car._distance_to_the_blockage(),
 					agent._blocked_in, car._turned_on_this_approach]
 
-		RunCity.crowd(city).set_focus(focus)
+		RunCity.crowd(city).use_focus(FakeCrowdFocus.new(focus))
 		RunCity.crowd(city).step(STEP)
 
 		for agent: CrowdAgent in RunCity.crowd(city).agents():
