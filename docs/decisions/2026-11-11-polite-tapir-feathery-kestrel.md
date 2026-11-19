@@ -5,7 +5,8 @@ step 4: the beats become rigged marbles), the design's pull request 4
 (`.claude/briefs/designs/placement-step4-rigged-marbles-design.md` in the orchestrator's checkout, not
 tracked), built by Opus agents from the written design and the player's board answers, since
 Fable's quota was out; the player chose that it waits for Fable's review before it merges (inbox
-#1547). It closes the item: step 4 was the last step left, so `placement-by-construction.md` goes.
+#1547), a hold the player lifted while Fable's
+quota is out (inbox #1571). It closes the item: step 4 was the last step left, so `placement-by-construction.md` goes.
 
 **What was asked and answered** (the board, breezy-magpie and inbox #1549):
 
