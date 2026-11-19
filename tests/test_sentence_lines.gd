@@ -141,7 +141,7 @@ func _test_every_ending_and_finale_body_breaks_only_between_sentences(t: TestRun
 	for ending: GameEnums.Ending in Texts.ENDING_BODY.keys():
 		var source: String = Texts.ENDING_BODY[ending]
 		_check_breaks_only_between_sentences(t, source, body, "the %s ending's body" % ending)
-	for kind: CityEdge.Kind in Texts.FINALE_BODY.keys():
+	for kind: CityExit.Kind in Texts.FINALE_BODY.keys():
 		var source: String = Texts.FINALE_BODY[kind]
 		_check_breaks_only_between_sentences(t, source, body, "the finale body for exit kind %d" % kind)
 	summary.queue_free()

@@ -33,7 +33,10 @@ extends ScenerySprite
 ##   ground: a car leaving over the bridge is *on* the deck, and a deck that sorted against it
 ##   would sometimes be painted over the car.
 
-enum Kind {
+## Which piece of the edge a node draws. Which way out of the city she takes is not this: that is
+## `CityExit.Kind`, the value the finale, the day and the texts key on, while these are the
+## drawing's own parts, the tunnel being two of them.
+enum Piece {
 	TUNNEL,   ## North: the portal's face, and the mountain over the road beyond it.
 	TUNNEL_DARK,  ## North: the dark inside the portal's opening, over whatever drives into it.
 	BRIDGE,   ## South: the deck runs out between two parapets.
@@ -70,15 +73,15 @@ const BRIDGE_DECK_PX := 1280.0
 ## steps — it is visibly darker at the front than at the back while it is going in.
 const RAMP_STEP_PX := 8.0
 
-@export var kind := Kind.TUNNEL
+@export var piece := Piece.TUNNEL
 ## The baked atlas pages this exit draws from (`AtlasLibrary`), handed by the city before it is
 ## added; an exit nobody handed one (a suite's) makes its own when it first enters the tree.
 var _atlas: AtlasLibrary = null
 
-## Dresses the exit before it is added: drawn from `library` as `as_kind`.
-func dress(library: AtlasLibrary, as_kind: Kind) -> void:
+## Dresses the piece before it is added: drawn from `library` as `as_piece`.
+func dress(library: AtlasLibrary, as_piece: Piece) -> void:
 	_atlas = library
-	kind = as_kind
+	piece = as_piece
 
 ## `AtlasLibrary` reference-counts, so acquiring both groups on every piece of every exit is one
 ## page load each, regardless of how many `CityEdge` instances the city spawns.
@@ -94,24 +97,24 @@ func _exit_tree() -> void:
 
 ## Whether this piece belongs in a layer over the entities.
 func overhangs() -> bool:
-	return kind == Kind.TUNNEL_DARK
+	return piece == Piece.TUNNEL_DARK
 
 ## Whether this piece belongs in the y-sorted entity layer rather than under it.
 func occludes() -> bool:
-	return kind == Kind.TUNNEL
+	return piece == Piece.TUNNEL
 
 func _draw() -> void:
 	if not residence().is_resident():
 		return
-	match kind:
-		Kind.TUNNEL:
+	match piece:
+		Piece.TUNNEL:
 			_blit(TUNNEL, Vector2(-0.5, -1.0))
 			_roof_the_tunnel()
-		Kind.TUNNEL_DARK:
+		Piece.TUNNEL_DARK:
 			_swallow_the_road()
-		Kind.BRIDGE:
+		Piece.BRIDGE:
 			_lay_the_deck()
-		Kind.ROAD_EAST:
+		Piece.ROAD_EAST:
 			_blit(ROAD_ON, Vector2(0.0, -0.5))
 		_:
 			_blit(ROAD_ON, Vector2(-1.0, -0.5))
@@ -130,7 +133,7 @@ func _lay_the_deck() -> void:
 ##
 ## Overrides ScenerySprite._scenery_bounds.
 func _scenery_bounds() -> Rect2:
-	if kind != Kind.BRIDGE:
+	if piece != Piece.BRIDGE:
 		return super._scenery_bounds()
 	return Rect2(global_position + Vector2(-128.0, -256.0), Vector2(256.0, BRIDGE_DECK_PX + 256.0))
 

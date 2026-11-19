@@ -103,6 +103,8 @@ src/
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
+	city_exit.gd          the two ways out of the city, the tunnel or the bridge, as a value (data:
+	                      the texts, the day's spec and the finale key on it)
 	prop.gd               small scenery, feet-anchored so it y-sorts against the player
 	tree_pictures.gd      the pictures a tree is drawn as and the ground its trunk takes; the
 	                      props draw with it and the street trees' planner keeps it clear
@@ -488,6 +490,9 @@ src/
 	visible_view.gd       what she can see: the camera's view less the corners the joystick's
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
+	drawn_view.gd         what can be on the screen: the camera's view grown by two tiles, worked out
+	                      once a process frame per viewport, the one box every off-screen redraw
+	                      gate asks (`DrawnView`); the covered corners count, unlike `VisibleView`
 	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,

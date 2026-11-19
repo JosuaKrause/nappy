@@ -28,7 +28,7 @@ since `EntityHalo` re-draws the body every frame: the halo stands where the body
 body does not. Sweep the continuous quantity in a test and assert the key moved with it.
 
 **A gate that skips off screen is a promise about everything the drawing covers, and it redraws on
-its first frame back.** `DrawnView` (`src/ui/drawn_view.gd`) is the one box, the view grown by two
+its first frame back.** `DrawnView` (`src/world/drawn_view.gd`) is the one box, the view grown by two
 tiles, that `CrowdAgent` and an event's look skip their redraw and caret projection outside of. The
 box a thing is tested against has to hold every pixel its drawing can reach, not the picture at its
 own point: a street fire's flames run the whole burning front, hundreds of pixels from where it
