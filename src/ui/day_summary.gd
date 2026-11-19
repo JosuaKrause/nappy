@@ -58,8 +58,8 @@ signal restart_requested()
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `TitleScreen` and `PauseScreen` each read it once into their own member instead of asking at
-## every use site. No longer chooses the hint's own wording (`_hint` is always empty now), but still gates `_wants_rotation()` and the mouse branch in
-## `_handle_restart_touch()` below.
+## every use site. It does not choose the hint's wording (`_hint` is always empty); it gates
+## `_wants_rotation()` and the mouse branch in `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
 
 ## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which

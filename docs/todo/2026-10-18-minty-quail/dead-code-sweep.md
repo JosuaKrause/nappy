@@ -18,8 +18,9 @@ the code last, or that nothing ever did.
 
 **Where the rest is:** the survey (`check_test_only_members.py`, a scan for members named nowhere in
 `src/`, `tests/`, `tools/` or `scenes/`, and the check's receiver typing for a public member no
-file reaches whose name another class shares) finds these, in the events (every other module's finds are deleted); each is read before it goes,
-and a member only tests reach stays where its test is the only check of behaviour the game uses.
+file reaches whose name another class shares) finds these, all in the events; each is read before
+it goes, and a member only tests reach stays where its test is the only check of behaviour the game
+uses.
 
 - `src/events/`, for the events' interface rows that rewrite its files (`event-interface.md`):
   `EventDef.effect()`, which nothing calls (4b); `PendingWarning.left`, which only tests read (the
