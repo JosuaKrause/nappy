@@ -1100,10 +1100,10 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 ## city actually happens.
 func _the_city_exits() -> Dictionary:
 	return {
-		CityEdge.Kind.TUNNEL: _city.map.tile_to_world(
-				FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL)),
-		CityEdge.Kind.BRIDGE: _city.map.tile_to_world(
-				FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE)),
+		CityExit.Kind.TUNNEL: _city.map.tile_to_world(
+				FinalePlanner.exit_tile(_city.map, CityExit.Kind.TUNNEL)),
+		CityExit.Kind.BRIDGE: _city.map.tile_to_world(
+				FinalePlanner.exit_tile(_city.map, CityExit.Kind.BRIDGE)),
 	}
 
 ## `--start-escape`'s raw word (`config.start_escape_at()`), mapped onto a building part's waypoint to

@@ -91,12 +91,12 @@ func _test_an_ending_has_no_continue_and_names_its_day_when_bad(t: TestRunner) -
 	t.check(not good.body("").contains("made it to day"), "the good ending names no day")
 
 func _test_the_epilogue_names_the_way_out_and_its_clock(t: TestRunner) -> void:
-	var end := DayEnd.new(GameEnums.DayResult.WON, "", 42.5, CityEdge.Kind.TUNNEL)
+	var end := DayEnd.new(GameEnums.DayResult.WON, "", 42.5, CityExit.Kind.TUNNEL)
 	var model := SummaryModel.epilogue(end)
 	t.check(model.kind == SummaryModel.Kind.EPILOGUE and model.offers_continue()
 			and model.heading_text() == Texts.FINALE_HEADING and model.title_text() == Texts.FINALE_TITLE,
 			"the epilogue has its heading and title, and a continue back to the title")
-	t.check(model.body_sentence() == Texts.FINALE_BODY[CityEdge.Kind.TUNNEL]
+	t.check(model.body_sentence() == Texts.FINALE_BODY[CityExit.Kind.TUNNEL]
 			and model.body("P") == Texts.FINALE_OUT_IN % ["P", RunState.format_clock(42.5)],
 			"its body is the way she took and the clock she took it on")
 

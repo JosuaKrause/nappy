@@ -583,9 +583,9 @@ func _spawn_the_edge_of_the_city() -> void:
 ## lethal for the same reason every other carriageway is. See `CityEdge` — *the city goes on and
 ## this is how you would leave it*.
 func _spawn_spine_exits() -> void:
-	_spawn_exit(CityEdge.Kind.TUNNEL, tunnel_world_position())
-	_spawn_exit(CityEdge.Kind.TUNNEL_DARK, tunnel_world_position())
-	_spawn_exit(CityEdge.Kind.BRIDGE, bridge_world_position())
+	_spawn_exit(CityEdge.Piece.TUNNEL, tunnel_world_position())
+	_spawn_exit(CityEdge.Piece.TUNNEL_DARK, tunnel_world_position())
+	_spawn_exit(CityEdge.Piece.BRIDGE, bridge_world_position())
 
 ## The spine's own centre line, in world space — where both exits are anchored, and the one place
 ## that arithmetic lives now that the finale asks where the ways out are as well as drawing them.
@@ -604,9 +604,9 @@ func bridge_world_position() -> Vector2:
 ## The dark inside the tunnel goes in a layer of its own above the entities, so it lands on a car
 ## as the car drives in; the portal's face is y-sorted with them; the bridge and the road are
 ## ground and go under them. `CityEdge` says why the dark cannot be y-sorted too.
-func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
+func _spawn_exit(piece: CityEdge.Piece, at: Vector2) -> void:
 	var exit := CityEdge.new()
-	exit.dress(atlas, kind)
+	exit.dress(atlas, piece)
 	exit.position = at
 	if exit.overhangs():
 		add_entity(exit, DrawLayer.Layer.OVERHEAD)

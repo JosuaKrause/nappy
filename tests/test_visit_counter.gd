@@ -347,7 +347,7 @@ func _test_listening_touches_no_gameplay_state(t: TestRunner) -> void:
 	bus.escape_begun.emit()
 	bus.escape_city_entered.emit()
 	bus.escape_lost.emit(DaySpec.Section.BUILDING, GameEnums.DayResult.LOST_CRYING)
-	bus.escape_out.emit(CityEdge.Kind.TUNNEL)
+	bus.escape_out.emit(CityExit.Kind.TUNNEL)
 	bus.controls_chosen.emit(false, true)
 	bus.run_mode_chosen.emit(true, 1)
 	bus.went_back_to_a_checkpoint.emit(4, 6)
@@ -1029,7 +1029,7 @@ func _test_every_event_opts_out_of_sessions(t: TestRunner) -> void:
 	counter.bus.escape_begun.emit()
 	counter.bus.escape_city_entered.emit()
 	counter.bus.escape_lost.emit(DaySpec.Section.CITY, GameEnums.DayResult.LOST_TIMEOUT)
-	counter.bus.escape_out.emit(CityEdge.Kind.BRIDGE)
+	counter.bus.escape_out.emit(CityExit.Kind.BRIDGE)
 	counter.bus.controls_chosen.emit(true, false)
 	t.check(counter.sent.size() >= 20,
 		"there were events to check (%d)" % counter.sent.size())
@@ -1079,7 +1079,7 @@ func _test_an_escape_section_is_counted_as_a_day_of_its_own(t: TestRunner) -> vo
 	counter.bus.city_gone_dark.emit()
 	counter.bus.player_detained.emit("checkpoint_post")
 	counter.bus.day_ended.emit(city, GameEnums.DayResult.WON, "", 90.0)
-	counter.bus.escape_out.emit(CityEdge.Kind.BRIDGE)
+	counter.bus.escape_out.emit(CityExit.Kind.BRIDGE)
 	var b := "nappy-day-%d-" % building
 	var c := "nappy-day-%d-" % city
 	t.check(counter.sent == [b + "began", b + "masked-pursuer-warned", b + "masked-pursuer-chased",

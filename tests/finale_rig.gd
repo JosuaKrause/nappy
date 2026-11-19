@@ -173,13 +173,13 @@ func _test_each_chain_reaches_its_own_edge(t: TestRunner) -> void:
 		for chain: FinalePlanner.Chain in plan.chains:
 			t.check(chain.complete, "seed %d: a chain is walkable end to end" % seed_value)
 			var exit := FinalePlanner.exit_tile(map, chain.exit_kind)
-			var name := "tunnel" if chain.exit_kind == CityEdge.Kind.TUNNEL else "bridge"
+			var name := "tunnel" if chain.exit_kind == CityExit.Kind.TUNNEL else "bridge"
 			t.check(chain.cells.has(exit / ReachabilityGrid.CELL),
 					"seed %d: the %s chain reaches its own edge" % [seed_value, name])
 			t.check(Tile.is_road(map.tile_at(exit)),
 					"seed %d: the %s ends on the spine's own carriageway" % [seed_value, name])
 			# And it is the *last* of it: she is out under the portal, not a street short of it.
-			var from_the_edge: int = exit.y if chain.exit_kind == CityEdge.Kind.TUNNEL \
+			var from_the_edge: int = exit.y if chain.exit_kind == CityExit.Kind.TUNNEL \
 					else map.size.y - 1 - exit.y
 			t.check(from_the_edge <= CityEdge.TUNNEL_DEPTH_TILES,
 					"seed %d: and within the portal's own depth of the map edge (%d rows)"
@@ -262,11 +262,11 @@ func _test_both_exits_are_reachable_through_the_open_cells_alone(t: TestRunner) 
 					continue
 				reached[next] = true
 				queue.append(next)
-		for kind: CityEdge.Kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := grid.node_at(FinalePlanner.exit_tile(map, kind))
 			t.check(exit >= 0 and reached.has(exit),
 					"seed %d: the %s is reached from the door through open cells only"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 
 ## *"Roadblocks currently are impossible to get past. One sidewalk must be open if they're
 ## en-route. The escape's street should not have fully blocking events like in the normal game"*
@@ -297,7 +297,7 @@ func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t: TestRun
 		bodies += _block_every_body(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind: CityEdge.Kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -306,7 +306,7 @@ func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t: TestRun
 					if reached.has(at + Vector2i(dx, dy)):
 						found = true
 			t.check(found, "seed %d: the %s is reached from the door past every body standing"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(bodies > 0, "there were escape bodies to stand in the way (%d)" % bodies)
 
 ## **And past every lethal reach that stands**: from the door both exits are reached with her
@@ -326,7 +326,7 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunn
 		reaches += _block_every_standing_reach(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind: CityEdge.Kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -335,7 +335,7 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunn
 					if reached.has(at + Vector2i(dx, dy)):
 						found = true
 			t.check(found, "seed %d: the %s is reached from the door past every standing lethal reach"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(reaches > 0, "there were standing lethal reaches to keep out of (%d)" % reaches)
 	# The rule's own reading of one van and one roadblock, on open sidewalk: the van holds her off
 	# its 54px reach as well as its body, the roadblock — whose guard pursues — its band alone.
@@ -384,7 +384,7 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> voi
 		_block_every_standing_reach(t, map, whole, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind: CityEdge.Kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -393,7 +393,7 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> voi
 					if reached.has(at + Vector2i(dx, dy)):
 						found = true
 			t.check(found, "seed %d, a van a street: the %s is reached past every van's reach"
-					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(vans > 80, "there were streets full of vans to walk past (%d)" % vans)
 
 ## Marks every grid point within the lethal reach of a row the plan stands that is not mobile, is
@@ -1196,7 +1196,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 		_block_every_body(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
 				FinalePlanner.service_exit_world_position(map))
-		for kind: CityEdge.Kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+		for kind: CityExit.Kind in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
 			var found := false
@@ -1204,7 +1204,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 				for dx in range(-2, 3):
 					found = found or reached.has(at + Vector2i(dx, dy))
 			t.check(found, "seed %d: the %s is reached from the door past every body standing"
-					% [PLAYERS_SEED, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+					% [PLAYERS_SEED, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 		var crossings := 0
 		for street: Array in RoadblockRig.roadblock_streets(map, plan, placements):
 			var segment: StreetNetwork.Segment = street[0]
@@ -1939,7 +1939,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t: TestRunner) -> v
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
 	guard.set_process(false)
 	guard.resume(0.01, 0.0, 0.0)
-	her.global_position = Boot.day(main).spec().exit_points()[CityEdge.Kind.TUNNEL]
+	her.global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
 	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
@@ -2298,7 +2298,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t: TestRunne
 	t.check(not pause.is_open(), "Esc does not open the pause over it")
 
 	await Boot.press_continue(t, main)
-	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityEdge.Kind.TUNNEL]
+	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	for _frame in 3:
 		await t.get_tree().physics_frame
 	t.check(summary.is_showing() and title.text == Texts.FINALE_TITLE,
