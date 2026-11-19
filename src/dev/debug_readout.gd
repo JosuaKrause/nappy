@@ -134,11 +134,11 @@ func watch(player: Stroller, baby: Baby, day: DayController) -> void:
 	_day = day
 
 ## The world she is walking: its events, its crowd (null in the escape's building), the node whose
-## subtree holds the bodies the bounding boxes trace, its map, and the day's streets when it is a
-## city. Called once per world, so walking out of the service door points the overlays at the city
+## subtree holds the bodies the bounding boxes trace, the source of its props (an invalid Callable
+## in the building), its map, and the day's streets when it is a city. Called once per world, so walking out of the service door points the overlays at the city
 ## with whatever `1`–`3` had switched on still on.
-func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: WorldMap,
-		streets: DayStreets) -> void:
+func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, props: Callable,
+		map: WorldMap, streets: DayStreets) -> void:
 	_events = events
 	_crowd = crowd
 	_map = map
@@ -146,13 +146,13 @@ func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: Worl
 	if not _gate():
 		return
 	if _debug_layers:
-		_debug_layers.setup(events, crowd, world, _player)
+		_debug_layers.setup(events, crowd, world, props, _player)
 		_event_routes.setup(events)
 		return
 	_debug_layers = DebugLayers.new()
 	_debug_layers.name = "DebugLayers"
 	DrawLayer.draw_on(_debug_layers, DrawLayer.Layer.DEBUG)
-	_debug_layers.setup(events, crowd, world, _player)
+	_debug_layers.setup(events, crowd, world, props, _player)
 	_debug_layers.apply_initial_state(_layers_override)
 	add_child(_debug_layers)
 	_debug_layers.process_mode = Node.PROCESS_MODE_PAUSABLE

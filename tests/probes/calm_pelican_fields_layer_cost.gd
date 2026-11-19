@@ -48,7 +48,7 @@ func run(t: TestRunner) -> void:
 		RunCity.events(city).use_player(stroller)
 		stroller.set_physics_process(false)
 		var layers := DebugLayers.new()
-		layers.setup(RunCity.events(city), RunCity.crowd(city), city, stroller)
+		layers.setup(RunCity.events(city), RunCity.crowd(city), city, city.props, stroller)
 		print("FIELDS seed %d: %d events live, %d crowd" % [city_seed,
 				RunCity.events(city).instances().size(), RunCity.crowd(city).agents().size()])
 

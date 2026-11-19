@@ -1673,7 +1673,8 @@ func _screen_name() -> String:
 func _add_debug_layers() -> void:
 	if not _readout:
 		return
-	_readout.show_the_world(_event_source(), _crowd_now(), _world_now(), _world_map(),
+	var props: Callable = _city.props if _city else Callable()
+	_readout.show_the_world(_event_source(), _crowd_now(), _world_now(), props, _world_map(),
 			_city.streets() if _city else null)
 
 ## The day's planned routes over the city — see `DebugReadout.draw_routes()`.
