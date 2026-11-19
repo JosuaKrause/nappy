@@ -61,7 +61,7 @@ errors. What remains is this item's own conversion, which predates the review, s
 minty-quail rather than polite-tapir.
 
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
-is the files open work rewrites, typed by that work or after it, and three kept for a reason of their
+is the files open work rewrites, typed by that work or after it, and two kept for a reason of their
 own:
 
 - The event scheduler, the walk's ground and the event director (`src/events/event_scheduler.gd`,
@@ -71,12 +71,6 @@ own:
 - The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
-- **The screen-edge badge** (`src/ui/danger_edge.gd`, the record 2026-10-18-minty-quail-tawny-toad)
-  holds its event source as a `Node` and asks it with `has_method()`, since three stand-ins for it
-  extend a bare `Node`: `_Source` in `tests/test_badge_model.gd` and `tests/test_visible_view.gd`, and
-  `Source` in `tests/probes/m226_arrival_timing.gd`. It waits for those suites' conversion to public
-  seams (`tests-public-seams.md`), when the stand-ins extend `EventManager` and the badge's fallback
-  to a view of its own goes.
 - **The run log's observer** (`src/telemetry/telemetry_observer.gd`, the record
   2026-10-18-minty-quail-woolly-marten) keeps `unsafe_property_access` for one read, the event
   manager's `sources` in its breakdown of where the excitement comes from (`_meters()`), which waits

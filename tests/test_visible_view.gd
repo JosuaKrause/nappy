@@ -34,7 +34,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
 	var source := _Source.new()
-	source.view.controls = controls.covering()
+	source.use_controls(controls.covering())
 	var edge := DangerEdge.new()
 	edge.use_atlas(atlas)
 	t.add_child(edge)
@@ -49,7 +49,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 					else TouchControls.FOCUS_RIGHT
 			t.check(controls.run_button_center() == other,
 					"the title's side puts Run on the opposite focus, rotated=%s" % rotated)
-			source.view.look_from(player.global_position)
+			source.visible_view().look_from(player.global_position)
 			for design: Vector2 in [Vector2(350.0, 620.0), Vector2(930.0, 620.0)]:
 				at = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
 				t.check(await _badge_sees(t, edge, source, row, at),
@@ -60,13 +60,13 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 						"both covered corners remain unseen on either side")
 				var way := (at - player.global_position).normalized()
 				var arrival := SpawnSiting.just_out_of_sight(
-						SpawnSiting.seen_from(source.view, player.global_position),
+						SpawnSiting.seen_from(source.visible_view(), player.global_position),
 						EventFootprints.footprint_of(row), player.global_position, way)
 				var box := EventFootprints.footprint_of(row)
-				t.check(not source.view.view.intersects(Rect2(arrival + box.position, box.size)),
+				t.check(not source.visible_view().view.intersects(Rect2(arrival + box.position, box.size)),
 						"the same covered bearing places the whole arrival outside the camera")
 		controls.set_mode(ControlsMode.Mode.TAP)
-		source.view.look_from(player.global_position)
+		source.visible_view().look_from(player.global_position)
 		t.check(await _badge_sees(t, edge, source, row, at)
 				and controls.run_button_center() == Vector2.INF,
 				"tap mode reveals the corner and removes the Run disc")
@@ -268,17 +268,15 @@ func _test_a_rotated_window_shows_the_same_world_under_the_same_corners(t: TestR
 			"every point lands at the same design-box place turned or not, and is in sight under the "
 			+ "turned controls exactly when the view says it is (%d of %d)" % [agreed, points])
 
-## A duck-typed event source for `DangerEdge.setup()` that keeps a view of its own, the way
-## `EventManager` does.
-class _Source extends Node:
+## The day's events for `DangerEdge.setup()`, holding the live instances a test hands it. Its view
+## is the manager's own (`visible_view()`, the controls handed by `use_controls()`), which the test
+## looks through in place of the manager's tick.
+class _Source extends EventManager:
 	var live: Array[EventInstance] = []
-	var view := VisibleView.new()
 
+	## Overrides EventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return live
-
-	func visible_view() -> VisibleView:
-		return view
 
 ## **The badge stays up for a thing under a corner the joystick's controls cover** (dappled-swan's
 ## warnings-and-placement): a cyclist riding at her inside the left corner's rectangle is out of
@@ -302,7 +300,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 		bike.resume(EventCatalogue.by_id("cyclist").telegraph_time, 0.0)
 		bike.came_under_a_warning = true
 		source.live.append(bike)
-		source.view.look(VisibleView.around(her, null).view, TouchCover.joystick() if joystick else null)
+		source.visible_view().look(VisibleView.around(her, null).view, TouchCover.joystick() if joystick else null)
 		var edge := DangerEdge.new()
 		edge.use_atlas(atlas)
 		edge.setup(source, player)

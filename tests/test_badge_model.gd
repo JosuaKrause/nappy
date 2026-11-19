@@ -195,7 +195,6 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 	var atlas := _PictureAtlas.new()
 	atlas.acquire(&"events")
 	var source := _Source.new()
-	t.add_child(source)
 	var player := Node2D.new()
 	t.add_child(player)
 	var def := EventCatalogue.by_id("fire_truck")
@@ -204,7 +203,7 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 		var warning := PendingWarning.new(def,
 				func(_her: Vector2) -> Vector2: return at, func(_p: Vector2, _her: Vector2) -> bool: return true)
 		warning.put_up(Vector2.ZERO)
-		source.warnings.append(warning)
+		source.held.append(warning)
 	var edge := DangerEdge.new()
 	edge.use_atlas(atlas)
 	edge.size = Vector2(1280.0, 720.0)
@@ -244,13 +243,16 @@ class _PictureAtlas extends AtlasLibrary:
 		passes.append(_asked)
 		_asked = []
 
-## An event source with nothing in the world and the warnings it is given.
-class _Source extends Node:
-	var warnings: Array[PendingWarning] = []
-	func instances() -> Array[EventInstance]:
-		return []
+## The day's events with nothing in the world and the warnings it is given, standing in for the
+## warnings the manager's own board holds (`EventManager.pending_warnings()`). Its view is the
+## manager's own, never looked through here, so it sees nothing: a warning is announced on screen or
+## off, so the six are announced as the game announces them.
+class _Source extends EventManager:
+	var held: Array[PendingWarning] = []
+
+	## Overrides EventManager.pending_warnings.
 	func pending_warnings() -> Array[PendingWarning]:
-		return warnings
+		return held
 
 func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t: TestRunner) -> void:
 	# Seen, then out past the edge but inside the margin band: the band only decides whether a badge
