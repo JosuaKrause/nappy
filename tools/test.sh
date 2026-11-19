@@ -10,6 +10,7 @@
 #                                  the runner prints the order and a command that replays it
 #   tools/test.sh --repeat 3 ...  the chosen suites three times in one process (any mode but
 #                                  --record-costs); a failure names its pass
+#   (the three full-run modes -- default, --serial, --record-costs -- exit 3 while another test run is alive)
 #   tools/test.sh --record-costs  run everything locally, then refresh tests/suite_costs.txt from it
 #                                  (tools/ci-costs.sh refreshes the same file from recent CI runs'
 #                                  own timings instead, with no local run needed)
@@ -39,6 +40,15 @@
 # list). The runner prints each pass's order with a command replaying it, whichever shard it was.
 # A repeated run prints its timings in a shape the cost readers do not match (tests/run_tests.gd),
 # and `--record-costs` refuses `--repeat` besides.
+#
+# **A full run refuses to start while another test run is alive on the machine.** Full-run modes are
+# the sharded default, `--serial` and `--record-costs`: each is minutes of several Godot processes,
+# and several of them at once (agents in different worktrees, say) have used tens of gigabytes. Before
+# any work, the script looks for a Godot process running the test scene (`--headless` and
+# `tests/tests.tscn` on its command line -- the scene whose script is tests/run_tests.gd), from any
+# worktree, excluding this script's own ancestors, and exits 3 naming the processes it saw. A named-suite
+# run, `--shard I/N` (one CI runner's share) and `--plan` are never refused. TEST_ALLOW_PARALLEL_RUN=1
+# skips the check (a proposal, for the player's own runs on a machine they know is idle enough).
 #
 # A shard that hangs is killed after a limit that follows the plan (see SHARD_TIMEOUT_OVERRIDE_S
 # below) and reported by name rather than left to block the run forever -- see
@@ -91,6 +101,11 @@ itself reads off OS.get_cmdline_user_args(), which is why this script does not
 reject an argument it does not itself recognise (the runner checks only its own options)
 -- only --serial, --plan, --record-costs, --shard, --shuffle, --repeat, --help and -h are
 its own.
+
+A full run (no suite names, or --serial, or --record-costs) refuses to start, exit 3, while another
+Godot process running the test scene (tests/tests.tscn, from any worktree) is alive, and prints the
+processes it saw: several full runs at once have used tens of gigabytes. Named-suite runs, --shard
+I/N and --plan are never refused. TEST_ALLOW_PARALLEL_RUN=1 skips the check.
   --serial          everything, in one process (what a shard failure is debugged in)
   --plan            print the shard split (TEST_SHARDS processes) with each shard's planned
                      time and kill limit, and run nothing
@@ -233,6 +248,26 @@ if [[ -n "$shard_arg" ]]; then
         exit 2
     fi
     shard_index=$(( shard_index - 1 ))
+fi
+
+# The guard described in the header: full-run modes only (no suite names, no --shard, not --plan).
+if [[ $plan_only -eq 0 && -z "$shard_arg" && $# -eq 0 && "${TEST_ALLOW_PARALLEL_RUN:-}" != "1" ]]; then
+    # This script's own ancestors are never "another run" (a wrapper whose command line names the scene).
+    own=" "
+    p=$$
+    while [[ -n "$p" && "$p" -gt 1 ]]; do
+        own+="$p "
+        p="$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')"
+    done
+    others="$(ps -axo pid=,command= | grep -F 'tests/tests.tscn' | grep -F -e '--headless' | grep -v 'grep' \
+        | while read -r pid cmd; do [[ "$own" == *" $pid "* ]] || echo "  $pid $cmd"; done)"
+    if [[ -n "$others" ]]; then
+        echo "tools/test.sh: refusing a full run -- another test run is alive on this machine:" >&2
+        echo "$others" >&2
+        echo "Several full runs at once use tens of gigabytes. Wait for it, run named suites (tools/test.sh crowd)," >&2
+        echo "or leave the full run to CI. TEST_ALLOW_PARALLEL_RUN=1 skips this check." >&2
+        exit 3
+    fi
 fi
 
 # project.godot and docs/ARCHITECTURE.md have been found rewritten after runs like this one, by a

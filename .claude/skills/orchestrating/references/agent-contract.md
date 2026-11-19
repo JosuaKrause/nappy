@@ -117,6 +117,7 @@ Run these before committing; each catches a different class of bug:
 ./tools/telemetry.sh          # what the last run actually did, in order
 ```
 
+`tools/test.sh` refuses a full run (no suite names, `--serial`, `--record-costs`) while another test run is going on the machine, so a refusal is waited out or left to CI, never worked around.
 The full suite is CI's, on the merge result, and `PARTIAL RUN` is expected — unless the brief says
 this is one of **verify**'s local-full-run cases. Otherwise, once the touched suites say the change
 is done, push and open the PR, and CI's run is the full run (inbox #870 in minty-dolphin). If CI

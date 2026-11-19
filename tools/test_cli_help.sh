@@ -815,6 +815,23 @@ wok_out="$(
 )"
 check_that "wait_or_kill refuses a limit that is not whole seconds and leaves the caller's fd 9 alone" \
     '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$wok_out" != *"still running"* && "$(cat "$wok_fd_file")" == "after" ]]'
+# The full-run guard: a live process whose command line names the test scene refuses a full run
+# (exit 3, before the Godot stub is touched) and spares --plan.
+guard_stub="$work_dir/guard-live-run.sh"
+printf '#!/usr/bin/env bash\nsleep 60\n' > "$guard_stub"
+chmod +x "$guard_stub"
+"$guard_stub" --headless --path /elsewhere res://tests/tests.tscn -- fake &
+guard_pid=$!
+rm -f "$GODOT_MARKER"
+guard_out="$(./tools/test.sh 2>&1)"; guard_status=$?
+check_that "test.sh full-run refusal exits 3, names the process, runs nothing" \
+    '[[ $guard_status -eq 3 && "$guard_out" == *"$guard_pid"* && ! -f "$GODOT_MARKER" ]]'
+check_that "test.sh --serial and --record-costs are refused too" \
+    '[[ "$(./tools/test.sh --serial >/dev/null 2>&1; echo $?)" == 3 && "$(./tools/test.sh --record-costs >/dev/null 2>&1; echo $?)" == 3 ]]'
+check_that "test.sh --plan is not refused" './tools/test.sh --plan >/dev/null 2>&1'
+kill "$guard_pid" 2>/dev/null; wait "$guard_pid" 2>/dev/null
+check_that "test.sh --help mentions the full-run refusal" '[[ "$(./tools/test.sh --help 2>&1)" == *"refuses to start"* ]]'
+
 check_that "test.sh --help lists --shuffle and --repeat" \
     '[[ "$(./tools/test.sh --help 2>&1)" == *"--shuffle SEED"*"--repeat N"* ]]'
 # A flag test.sh does not know reaches the runner on a filtered run. Run in a scratch project of its
