@@ -617,7 +617,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t: TestRunner) -> void:
 			% [distance, Tuning.CAR_ZEBRA_SIGHT, Crowd.CAR_HORN_SIGHT])
 	t.check(not first.is_empty() and first["ahead"] == Vector2.INF,
 			"and the give-way scan still does not see her from beyond its own watch")
-	RunCity.crowd(_city).use_player(null)
+	RunCity.simulation(_city).meet_her(null)
 	rig.free()
 
 ## Playtest 05, finding 2: *"the cars are not consistently driving on the right side."* True, and
@@ -839,7 +839,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t: TestRunner) -> v
 		await _city.get_tree().physics_frame
 		frames += 1
 	EventBus.crowd_bumped.disconnect(on_bump)
-	RunCity.crowd(_city).use_player(null)
+	RunCity.simulation(_city).meet_her(null)
 	t.check(not first.is_empty(), "walking into somebody is announced")
 	if first.is_empty():
 		rig.free()
@@ -2050,6 +2050,7 @@ func _test_the_morning_resolve_is_not_drawn_as_a_slide(t: TestRunner) -> void:
 ## (`_test_the_same_day_makes_the_same_crowd`).
 func _start_a_day_marked(day: int, stream_day := -1) -> Array[_ResetMark]:
 	var rng_day := day if stream_day < 0 else stream_day
+	RunCity.crowd(_city).use_focus(null)
 	RunCity.crowd(_city).start_day(day, _rng(rng_day))
 	var layer := RunCity.crowd(_city).agents()[0].get_parent()
 	var marks: Array[_ResetMark] = []
@@ -2188,7 +2189,6 @@ func _test_nothing_walks_into_a_hard_blocker(t: TestRunner) -> void:
 		at = _city.map.tile_rect_to_world(segment.tile_rect()).get_center()
 		break
 	RunCity.crowd(_city).start_day(1, _rng(1), at)
-	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(at))
 
 	var worst := 0
 	var frames := int(round(40.0 / STEP))
