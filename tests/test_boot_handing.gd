@@ -3,12 +3,15 @@ extends RefCounted
 ## the player only from when the old lookup by the `player` group would first have found her (not
 ## behind the title, where `Stroller.stand_aside()` has taken her out of every way the world can
 ## touch her), and every world's events are handed the cover of the on-screen controls (the day's
-## city, the escape's city), so the joystick scheme's covered corners are out of sight in each.
+## city, the escape's city), so the joystick scheme's covered corners are out of sight in each, and
+## the day director is handed the run's `--spawn` target and `--meters` override, which move where she
+## starts and what the baby's bars hold once the first day runs.
 ##
 ## **Combined by composition, for this reason:** the guarantee is what `main` hands the worlds it builds
 ## (the crowd her, the events the controls' cover), and `main` is the composition root that does the
 ## handing: the crowd, the events and the screens are the real ones so that what the crowd does with
-## her can be read off the crowd itself.
+## her can be read off the crowd itself, and the flags' bound arguments are read off where she stands
+## and what the baby holds after the title's press starts the day.
 
 ## **Booted and driven as a player drives it** (`tests/booted_main.gd`): the title's button pressed
 ## through the viewport, real frames let pass behind it, and the booted parts found in the tree. Each
@@ -38,6 +41,7 @@ func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_the_crowd_does_not_meet_her_behind_the_title(t)
 	await _test_the_escapes_city_is_handed_the_controls_cover(t)
+	await _test_the_day_director_is_handed_the_spawn_target_and_the_meters(t)
 
 ## A boot of a run made for it (`tests/seat.gd`): the seat holds the run the game plays and the node
 ## its sitting is parked in, and `booted` is the boot over it. Freed by `end()`.
@@ -113,4 +117,24 @@ func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 	visible.look_from(Stroller.view_centre_of(Boot.player(main)))
 	t.check(visible.sees(corner),
 			"and in the tap scheme it is")
+	played.end()
+
+## `--spawn` and `--meters` reach where they act: `main._new_director()` binds the run's spawn target
+## and meters override into the day director's flag callables, and the first day's start applies
+## them. Read off the booted game: she stands away from her doorstep, where `--spawn arterial` sent
+## her, and the baby holds the bars the flag gave (a dropped argument leaves her on the doorstep and
+## the bars at the day's own start). The boot is held still, so the bars have not drifted.
+func _test_the_day_director_is_handed_the_spawn_target_and_the_meters(t: TestRunner) -> void:
+	var played := await _boot(t, Callable(),
+			["--seed", str(SEED), "--spawn", "arterial", "--meters", "30", "60"])
+	var main := played.booted.main
+	var doorstep := Boot.city(main).map.doorstep_world_position()
+	await Boot.press_title(t, main, "Tap")
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(Boot.player(main).global_position.distance_to(doorstep) > Tuning.TILE_SIZE,
+			"the day starts her away from her doorstep, where --spawn sent her")
+	var baby := Boot.baby(main)
+	t.check(absf(baby.sleepiness_level() - 30.0) < 1.0 and absf(baby.excitement_level() - 60.0) < 1.0,
+			"and the baby starts on the bars --meters gave (sleepiness %.1f, excitement %.1f)"
+			% [baby.sleepiness_level(), baby.excitement_level()])
 	played.end()

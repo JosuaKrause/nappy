@@ -36,6 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_skip_words_treats_an_empty_value_as_nothing_to_skip(t)
 	_test_skip_from_args_and_query_extract_the_raw_value(t)
 	_test_skip_is_gated_on_the_readout_being_requested(t)
+	_test_each_skip_word_answers_only_its_own_question(t)
 	_test_seed_from_query_takes_a_valid_seed_under_debug(t)
 	_test_seed_from_query_ignores_the_seed_without_debug(t)
 	_test_seed_from_query_refuses_non_positive_and_malformed_values(t)
@@ -154,6 +155,19 @@ func _test_skip_is_gated_on_the_readout_being_requested(t: TestRunner) -> void:
 	var page := RunConfig.parse(PackedStringArray(), "?debug=1&skip=shadows", false)
 	t.check(page.leaves_out_the_shadows() and not page.leaves_out_the_events(),
 		"a release page that asked ?debug=1 skips what its own ?skip= names")
+
+## Each `--skip` word alone answers yes to its own question and no to the other three, so no word
+## is read as another's (crowd for events, shadows for motion).
+func _test_each_skip_word_answers_only_its_own_question(t: TestRunner) -> void:
+	var words := ["events", "crowd", "shadows", "motion"]
+	for word: String in words:
+		var config := RunConfig.parse(PackedStringArray(["--debug", "--skip", word]), "", true)
+		var answers := {
+			"events": config.leaves_out_the_events(), "crowd": config.leaves_out_the_crowd(),
+			"shadows": config.leaves_out_the_shadows(), "motion": config.leaves_out_the_motion()}
+		for asked: String in words:
+			t.check(answers[asked] == (asked == word),
+					"--skip %s alone: leaves out %s is %s" % [word, asked, asked == word])
 
 ## `?seed=`'s positive integer, honoured on a page that asked `?debug=1`.
 func _test_seed_from_query_takes_a_valid_seed_under_debug(t: TestRunner) -> void:
