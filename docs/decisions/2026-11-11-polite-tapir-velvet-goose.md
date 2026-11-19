@@ -6,8 +6,9 @@ olive-ferret). This group is `DrawnView`, named by two event looks (simulation) 
 `src/ui/` (view); the item's sentence, the orchestrator's proposal, put it on the world layer beside
 `VisibleView`, since it names only the engine. Fable's quota is out and the player answered "yes,
 continue with one fable task at a time and use opus for it" (grassy-bison #1560), so an Opus agent
-designed and built it in Fable's place; the pull request (#1569) carries the `fable-only` label and is
-held unmerged until Fable reviews the design (entry grassy-ibis).
+designed and built it in Fable's place; the pull request (#1569) carries the `fable-only` label. It was
+held unmerged for Fable's review of the design (entry grassy-ibis) until the player lifted that
+hold while Fable's quota is out (inbox #1571), and merged on its Opus review.
 
 **What was built.** `DrawnView`, the box of the world the camera draws grown by two tiles, which every
 off-screen redraw gate asks, names only the engine and keeps its once-a-frame answer as meta on the
