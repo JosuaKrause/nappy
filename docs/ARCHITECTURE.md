@@ -106,6 +106,8 @@ src/
 	city_exit.gd          the two ways out of the city, the tunnel or the bridge, as a value (data:
 	                      the texts, the day's spec and the finale key on it)
 	prop.gd               small scenery, feet-anchored so it y-sorts against the player
+	tree_pictures.gd      the pictures a tree is drawn as and the ground its trunk takes; the
+	                      props draw with it and the street trees' planner keeps it clear
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
 	traffic_light_drawer.gd  what a signal head draws itself through; the city hands it in

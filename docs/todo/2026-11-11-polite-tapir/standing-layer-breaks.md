@@ -23,7 +23,7 @@ review; a builder runs it again):
 - **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
   `walk_ground.gd`): the live event, its picture footprints and her class's constants.
 - **The rest**, small misplacements: the task calendar
-  computing on the map; the props' trees; the danger badge's class named by
+  computing on the map; the danger badge's class named by
   the run log (`RunSession`, `TelemetryObserver`); the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's type tests where she is not handed in
   (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
@@ -43,7 +43,7 @@ review; a builder runs it again):
   `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
   own, which hands the run log what its observer reads of the danger edge, the badges that are
   announcing (the orchestrator's proposal). `interior_scene.gd`'s `Stroller` goes with the
-  building's pass; `Prop` as a data constant, in a pull request of its own; `GameSave` and
+  building's pass; `GameSave` and
   `HelpText` in the view's pass; the
   calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`; and `RowGround`'s
   `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`, read by `_burns_its_front()`) when placement
