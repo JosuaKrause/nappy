@@ -2452,7 +2452,7 @@ obstacle survivable")* Four things make that true:
   both guards can notice her: their notices, `EventDef.notice` round each band, never overlap, so
   two bands are at least twice the guard's 180px radius, 360px, apart on one street or on two
   (`OneNoticeRule._keeps_its_notice_to_itself()`, a refusal at placement, which the city section's
-  spec turns on: `DaySpec.one_notice_at_a_time`). *(Inbox #771 in minty-lemur: "two
+  spec turns on: `DaySpec.notices_one_at_a_time()`). *(Inbox #771 in minty-lemur: "two
   roadblocks are right next to each other and the second guard is invisible (hidden) until it
   already charges")* Dealing with a band happens inside its guard's notice, so she meets one band
   and its guard at a time, across a junction or a corner as well as along a street, and no guard
@@ -2506,7 +2506,7 @@ below, and is never offered the ground she starts on.
 **Three of a day's rules are not the escape's, each by the player's word** *(inbox #785 in minty-lemur, asked
 which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's
 streets and the caps)*, each a setting of the city section's spec
-(`DaySpec.keeps_unused_calm_clear` and `holds_the_home_streets` turned off, and the walk's own bag, `walk_bag()`, filled):
+(`DaySpec.keeps_the_unused_calm_clean()` and `keeps_the_home_streets_clear()` turned off, and the walk's own bag, `walk_bag()`, filled):
 
 - **The calm a day leaves alone** (`CalmAreas.unused_ground()`: nothing's field may reach a calm
   area she has not used yet). The escape is the climax and the chains pass a calm area at every
@@ -2550,7 +2550,7 @@ is a walk that ends the section; a pursuer's reach moves with him and warns firs
 counts at its band. A refused candidate is never a fallback, so a street with no such ground simply
 carries one fewer. The rule is one class
 (`WalkGround`), stated over the walk it is handed (`RouteSource`), which any spec that keeps the
-walk open (`DaySpec.keeps_the_walk_open`, the city section's) has the judge ask; a day keeps its
+walk open (`DaySpec.keeps_her_walk_open()`, the city section's) has the judge ask; a day keeps its
 routes through its corridor's own rules instead.
 
 | id | kind | where | Behaviour |
