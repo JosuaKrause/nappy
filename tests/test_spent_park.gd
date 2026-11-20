@@ -293,7 +293,7 @@ func _test_the_fence_turns_each_corner_on_one_post(t: TestRunner) -> void:
 					posts[at] = true
 			for fence in fences:
 				t.check(fence.barrier_width() > 0.0, "seed %d %s: a run of %s has length"
-						% [map.city_seed(), block, fence.street_key()])
+						% [map.city_seed(), block, fence.mouth_rects()[0]])
 				# Where the line ends, worked out from its middle and its length alone (not from
 				# `rail_ends()`, which the posts are built from): a joined end stands on the corner it
 				# turns, an open end's post `ParkClosure.POST_HALF` in from it.

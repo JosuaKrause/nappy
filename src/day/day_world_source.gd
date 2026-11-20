@@ -1,7 +1,7 @@
 class_name DayWorldSource
 extends RefCounted
 ## Where the day director gets the world a spec is walked in (`DayDirector.start()`): asked to stand
-## a spec's world (`DaySpec.world`), it answers that world standing, with her in it (`DayWorld`). A
+## a spec's world (`DaySpec.world_kind()`), it answers that world standing, with her in it (`DayWorld`). A
 ## world is built the first time it is asked for and is the same world on every later ask, so a
 ## retried day or section walks the world it already has.
 ##

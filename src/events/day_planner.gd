@@ -8,7 +8,7 @@ extends RefCounted
 ##   catalogue's rows (`EventScheduler.build_day()`, on the `DawnContext` this makes) and the
 ##   region's wall and doors, against the route tree the city grew this morning;
 ## - **the escape's city** (`plan_the_escape_city()`), whose spec closes no streets of a tree
-##   (`DaySpec.closes_streets`): its walk is the two chains `FinalePlanner.route()` grows, the seals
+##   (`DaySpec.closes_the_streets()`): its walk is the two chains `FinalePlanner.route()` grows, the seals
 ##   are the same `SealPlanner.plan_day()` off them and the events the same `build_day()` on them;
 ## - **the escape's building** (`DaySpec.World.BUILDING`): the building's own placements
 ##   (`BuildingPlan.plan()`), the one walk allowed its own way of placing (minty-lemur #785).
