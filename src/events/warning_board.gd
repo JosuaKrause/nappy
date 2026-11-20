@@ -115,12 +115,11 @@ func run(delta: float, here: Vector2) -> void:
 	for warning in _pending:
 		if not warning.tick(delta, here):
 			still_up.append(warning)
-		elif warning.withdrawn:
+		elif warning.was_withdrawn():
 			world.trace.note("ahead", "%s's warning is withdrawn after %.2fs: nowhere out of sight to "
-					% [warning.logged_name(), warning.shown] + "put it at %s"
+					% [warning.logged_name(), warning.shown_for()] + "put it at %s"
 					% RunTrace.tile(world.map.world_to_tile(here)))
-			if warning.on_withdrawn.is_valid():
-				warning.on_withdrawn.call()
+			warning.ask_again()
 	_pending = still_up
 
 # ------------------------------------------------------- the mark over her head ---
@@ -173,17 +172,17 @@ func warn_about_the_ground_she_is_on() -> void:
 		# A car that drives warns the way a crowd car's horn does: `SOON`, while it is closing on her
 		# in its lane on the carriageway (`EventCarDriving.closes_on()`), which is the car's own
 		# contract — `Tuning.CAR_HORN_TIME` before its strike.
-		if instance.def.vehicle != null:
-			if instance.car and instance.car.closes_on(here):
+		if instance.drives():
+			if instance.closes_on(here):
 				body.warn(Stroller.Alert.SOON, WARNING_HOLD, WARNING_SOURCE)
 			continue
-		if instance.is_finished or not instance.def.hard_fail:
+		if instance.is_gone() or not instance.ends_the_day():
 			continue
 		# A barrier whose guard has left his post for good is waiting for nobody: he never notices
 		# her or charges again (`EventBarrierPost.is_spent()`), so it has nothing to warn of.
-		if instance.barrier_post and instance.barrier_post.is_spent():
+		if instance.has_lost_its_guard():
 			continue
-		var gap := instance.global_position.distance_to(here) - instance.def.inner_radius
+		var gap := instance.global_position.distance_to(here) - instance.core_within()
 		# `SOON` is anything that cannot kill her *yet* — a telegraph running, or a pursuer that has
 		# not noticed her. Without the second half a man standing in an alley raises `NOW` — one
 		# step from the end of the day — from two hundred pixels away, which is the marks-everything
@@ -192,7 +191,7 @@ func warn_about_the_ground_she_is_on() -> void:
 		# It keeps the whole outer radius, because that is exactly what the fairness contract
 		# promises her time to walk out of. Only `NOW` is about a moment.
 		if instance.is_telegraphing() or instance.is_waiting():
-			if gap + instance.def.inner_radius <= instance.def.outer_radius:
+			if gap + instance.core_within() <= instance.heard_within():
 				body.warn(Stroller.Alert.SOON, WARNING_HOLD, WARNING_SOURCE)
 			continue
 		var to_her := here - instance.global_position

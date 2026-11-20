@@ -401,9 +401,9 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 	var warning := _warning_for(RunCity.events(_city), row_id)
 	if warning == null:
 		return INF
-	while RunCity.events(_city).pending_warnings().has(warning) and warning.shown < 5.0:
+	while RunCity.events(_city).pending_warnings().has(warning) and warning.shown_for() < 5.0:
 		RunCity.events(_city).warnings.run(STEP, her)
-	return warning.shown
+	return warning.shown_for()
 
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned
 ## through the real day order, since the walk is stated over the day's own closures and bodies.

@@ -119,10 +119,10 @@ func _test_a_warning_with_nowhere_to_put_it_is_withdrawn(t: TestRunner) -> void:
 	var arrive := func(_at: Vector2, _her: Vector2) -> bool: return true
 	var withdrawn := [false]
 	var warning := board.warn_first(def, Vector2.ZERO, where, arrive)
-	warning.on_withdrawn = func() -> void: withdrawn[0] = true
+	warning.when_withdrawn(func() -> void: withdrawn[0] = true)
 	for _i in 60:
 		board.run(STEP, Vector2.ZERO)
-	t.check(warning.withdrawn and withdrawn[0] and board.pending_warnings().is_empty(),
+	t.check(warning.was_withdrawn() and withdrawn[0] and board.pending_warnings().is_empty(),
 			"a warning whose ground has no place for its row when its time is up is withdrawn, " +
 			"and its caller is told")
 	t.check(board.warn_first(def, Vector2.ZERO, func(_her: Vector2) -> Vector2: return Vector2.INF,
