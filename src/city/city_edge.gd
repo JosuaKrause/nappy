@@ -1,7 +1,7 @@
 class_name CityEdge
 extends ScenerySprite
-## Where the main road leaves the map: a tunnel at the north end of the spine, a bridge at its
-## south end, and the east-west spine simply carrying on.
+## Where the main road leaves the map: a tunnel at the north end of the spine, with the dark ramp
+## inside its opening, and a bridge at the south end.
 ##
 ## **She can walk into one, and a car will kill her there.** That is the point: it makes the end of
 ## the map an emergent end rather than an artificial one. A wall says *the game stops here*; a
