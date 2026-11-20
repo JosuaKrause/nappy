@@ -1263,8 +1263,9 @@ enum Role {
 ## **The rows this one brings after it** — see `Aftermath`; empty for a row that brings none.
 @export var aftermath := Aftermath.new()
 
-## Which act the row belongs to, narratively. No game code reads it (`first_day` decides when a row
-## can appear), but `tests/test_acts.gd` asserts every row's `act_tag` against the act its
+## Which act the row belongs to, narratively. Only `own_first_day()` reads it, for a `SCRIPTED` row,
+## whose own day is the first day of its act (`first_day` decides when any other row can appear);
+## `tests/test_acts.gd` asserts every row's `act_tag` against the act its
 ## `first_day` falls in. It is where a per-act palette or sound would key off.
 @export var act_tag := 1
 

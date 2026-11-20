@@ -465,7 +465,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## from there, placed and `hard_fail` the same way) are both exempt without this line doing
 ## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
 ## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
-## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursuit` rather than
+## the other way a pursuer reaches this exemption. Stating it over `pursues()` (its row's `pursuit`) rather than
 ## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
 ## say, which `EventScheduler.role_for` would classify ahead of the `hard_fail` check.
