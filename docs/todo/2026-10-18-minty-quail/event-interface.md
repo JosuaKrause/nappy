@@ -348,7 +348,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does it move, pace a beat, pursue | row `moves()` ok, `paces_a_beat()` ok, `pursues()` ok | route, pursuit |
 | How is its route built (asked by the plan builder, which is handed the part) | the route part's `kind()`, `tiles()` | route |
 | Is it scenery, is it the mast | row `is_scenery()` ok, `is_a_mast()` ok | the row |
-| What does it leave or call in | row `scar_id()`, `leaves_behind()` ok, `calls_in()` | aftermath |
+| What does it leave or call in | row `scar_id()` ok, `leaves_behind()` ok, `calls_in()` | aftermath |
 | Where does a plan stand, walk, face | plan `is_placed()` ok, `placed_at()` ok, `walks()` ok, `stands_still()` ok, `ends()` ok, `faces()` | the plan |
 | How far is a plan from a point or another plan | plan `distance_from(at)` ok, `gap_to(other)` ok | the plan |
 | Does a plan block her way, and what disc does it shut | plan `obstructs()` ok, `blocking_radius()` ok, `clearance(her_reach)` ok | the plan, asking body and lethal |
@@ -660,10 +660,10 @@ counted where it only writes.
 | `stops_where_it_arrives` | 3 in | row `parks_where_it_arrives()` ok; live `has_parked()` |
 | `flock_size`, `flock_spread` | 5 and 4 in | row `is_a_flock()` ok; `EventFlock` is handed `FlockSpec` |
 | `look` | 13 in (every look) | row `picture()` ok; each look is handed its `LookSpec` |
-| `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only (meanwhile the row's `casts_a_shadow()`, `drags_a_lead()` and `vanishes_into_its_hold()` ok, asked by the footprints; `warning_picture` still a listed read) |
+| `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only (meanwhile the row's `casts_a_shadow()`, `drags_a_lead()` and `vanishes_into_its_hold()` ok, asked by the footprints, and `may_be_drawn_as_a_pelican()` ok, asked by the spawner; `warning_picture` still a listed read) |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
 | `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods; meanwhile, until the look is handed the spec, the van's look reads it off the row it is handed (`_row.abduction`), its two fields under their own names |
-| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 1 out (`SealPlanner`); 10 lines of the spec | row `burns_its_front()` ok (asked by `RowGround`, through `Aftermath.leaves_the_scar()`), `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
+| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 1 out (`SealPlanner`); 10 lines of the spec | row `burns_its_front()` ok (asked by `RowGround`, through `Aftermath.leaves_the_scar()`), `scar_id()` ok (asked by the spawner), `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
 | `_cost_cache` | private | stays inside `FieldSpec`, worked out when the spec is built |
 
 ### 4.2 The live event (`EventInstance`)
