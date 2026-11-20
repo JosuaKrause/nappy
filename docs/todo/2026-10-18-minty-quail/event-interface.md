@@ -701,7 +701,7 @@ field under `[EventPlan]`.
 | `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`spawn_mode_on(day)` ok, `is_sent_ahead()` ok, `is_a_one_shot()` ok, `calls_in()` ok, `pursues()` ok, `ends_the_day()` ok, `detains_her()` ok, `detains_again()` ok, `detain_distance()` ok, `is_a_boom()` ok, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `telegraphs_for()` ok) |
 | `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `stand_where(sited)` ok for her walk's siting (the design's pick in place of `place_at(at)`, open to the player) and `came_at(at)` ok for streaming's record of where a plan that comes where she stands last came |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
-| `facing` | 18 | `faces()` ok; set as the plan is built, or turned by `face(direction)` ok for a crew facing the wall it pastes |
+| `facing` | 18 | `faces()` ok; set as the plan is built, or turned by `face(direction)` ok: a crew facing the wall it pastes, a van backed in by the plan builder, a door body's axis set by the region planner |
 | `live` | about 60 (streaming) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()` ok; `EventManager.event_of(plan)` ok for the live event itself, to a caller that commands it; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
 | `spent` | 18 | `is_spent()` ok, `spend()` ok |
 | `mast_id`, `silenced` | 17 and 5 | `is_a_mast()` ok, `mast_id()` ok, `stand_as_a_mast(id)` ok, `is_silenced()` ok, `silence()` ok, `is_a_live_mast()` ok |

@@ -244,7 +244,8 @@ func stand_where(sited: EventPlan) -> void:
 func came_at(at: Vector2) -> void:
 	position = at
 
-## Turns the plan to face `direction`: a crew faces the wall it pastes.
+## Turns the plan to face `direction`: a crew faces the wall it pastes, the plan builder backs a
+## van in, the region planner sets a door body's axis.
 func face(direction: Vector2) -> void:
 	facing = direction
 

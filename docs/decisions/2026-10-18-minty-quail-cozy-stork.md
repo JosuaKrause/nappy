@@ -11,8 +11,9 @@ asks a method. The plan gains `came_at(at)` (streaming's record of where a plan 
 `is_sent_ahead()`, `is_a_one_shot()` and `calls_in()`; the row's `calls_in()` asks a new `Aftermath.calls_in()`. The six
 fields stay public for the suites and probes, each a `[kept]` line until row 4a. `tools/field_reads.txt` loses
 twenty-six lines. The excitement fingerprint and the tick sweep's chain hashes are the same on main and the branch;
-nothing a player sees or the run log records changes. Streaming's step measured about 70 µs a tick slower in one run
-each side, a noisy reading kept for the end remeasure.
+nothing a player sees or the run log records changes. Streaming's step (`stream_around()`) costs about 60 µs a tick more, slower in each of thirty-six paired
+runs, from three plan questions a plan a tick where it read fields; it is measured and reported, not held (inbox #1278
+in olive-ferret), and row 3b's rewrite of that loop and the end remeasure take it up.
 
 **Open to overturn:** fork F3 of the design (the suites' reads of the six fields wait for row 4a); and the builder's,
 where the design was silent: the row asks its aftermath through `Aftermath.calls_in()` rather than reading its field.
