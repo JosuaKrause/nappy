@@ -22,7 +22,7 @@ func run(t: TestRunner) -> void:
 		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 		t.add_child(city)
 		RunCity.build(city, CityGenerator.generate(seed_value))
-		RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		for day: int in DAYS:
 			for walk_name: String in ["out and back", "turns back"]:
 				_walk_one(t, city, seed_value, day, walk_name)

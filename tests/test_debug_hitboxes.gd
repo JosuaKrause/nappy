@@ -36,7 +36,7 @@ func _test_the_bounding_box_layer_draws_every_enabled_body(t: TestRunner) -> voi
 	closures_rng.seed = hash("m100-debug-layers:closures:%d" % day)
 	city.start_day(state, day, closures_rng)
 
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 	var consumed: Array[String] = []
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("m100-debug-layers:events:%d" % day)

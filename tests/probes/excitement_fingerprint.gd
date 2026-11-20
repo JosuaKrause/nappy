@@ -102,7 +102,7 @@ func _the_building(t: TestRunner, seed_value: int) -> int:
 	t.add_child(scene)
 	var rng := own_run.calendar().day_rng(own_run.header().day(), "finale-interior")
 	var events := BuildingEvents.events_in(t, scene, rng, own_run)
-	var sets: Array[ExcitementSources] = [events.sources]
+	var sets: Array[ExcitementSources] = [events.excitement_sources()]
 	var printed := _walk(t, "building seed %d" % seed_value, scene, sets, events, null,
 			scene.map().start_world_position(), BUILDING_TICKS)
 	events.clear()

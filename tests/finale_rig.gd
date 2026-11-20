@@ -1759,7 +1759,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
 	var plans: Array[EventPlan] = [
 		EventPlan.new(burst, city.map.tile_to_world(road))]

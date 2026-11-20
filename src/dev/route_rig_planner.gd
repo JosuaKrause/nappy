@@ -491,7 +491,7 @@ const _CAUGHT_CLEARANCE := Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 ## re-plan check, for a body now lying over a waypoint still ahead.
 ##
 ## **Every body the day has, not only the ones streamed in near her.** `EventManager` builds an
-## instance only once she is within `EventManager.stream_radius` of its plan and takes it away
+## instance only once she is within `EventManager.stream_radius()` of its plan and takes it away
 ## again once she leaves, but it records every planned body in `obstructed_tiles` at dawn, because
 ## "a body is a body whether or not the player has come near enough to stream it in". A plan that
 ## knew only the live ones kept meeting a van streaming in over a waypoint a few tiles ahead, and

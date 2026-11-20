@@ -156,7 +156,7 @@ func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 			"the building's simulation stands its events alone (%s)" % [_children_of(simulation)])
 	t.check(simulation.crowd() == null and simulation.poster_walls() == null,
 			"with no crowd and no walls")
-	t.check(simulation.events().stream_radius == INF,
+	t.check(simulation.events().streaming.stream_radius() == INF,
 			"its events stream the whole plan, since the building is walked through doors")
 	var stretch: Vector2i = CrowdStreetRig.new().a_straight_run(map, Tuning.BLOCK_SIZE)
 	var at := map.tile_to_world(Vector2i(stretch.x * CityMap.period() + 1, stretch.y + 2))
@@ -201,7 +201,7 @@ func _test_the_world_answers_her_from_the_events_then_the_crowd(t: TestRunner) -
 	t.check(order == events_then_crowd,
 			"the world answers her from the events' set and then the crowd's (%s)" % [order])
 	var sets := simulation.excitement_sources()
-	t.check(sets.size() == 2 and sets[0] == events.sources and sets[1] == crowd.sources(),
+	t.check(sets.size() == 2 and sets[0] == events.excitement_sources() and sets[1] == crowd.sources(),
 			"and the simulation answers the same sets in the same order, for the halo")
 	_free(made)
 
@@ -265,9 +265,18 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	var ordinary := _city(t)
 	var events := _simulation(ordinary).events()
 	var crowd := _simulation(ordinary).crowd()
-	t.check(not events.skip_drawing and events.pelican_rig == EventSpawner.PelicanRig.BAG
+	t.check(not events.world.skip_drawing
 			and not crowd.skip_agent_drawing and not crowd.skip_motion and crowd.view == null,
 			"a builder handed nothing stands an ordinary run's events and crowd")
+	# Not every cyclist is the pelican without `--pelican`: a full bag of 399 cyclists and one
+	# pelican (`EventSpawner.CYCLISTS_IN_THE_BAG`) rolls the pelican once, whatever the run's seed.
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var pelicans := 0
+	for _roll in EventSpawner.CYCLISTS_IN_THE_BAG + EventSpawner.PELICANS_IN_THE_BAG:
+		if events.spawner.rolls_a_pelican(cyclist):
+			pelicans += 1
+	t.check(pelicans == EventSpawner.PELICANS_IN_THE_BAG,
+			"a builder handed no --pelican leaves the pelican to the run's bag (%d of a full bag)" % pelicans)
 	_free(ordinary)
 	var builder := SimulationBuilder.new()
 	builder.leave_out(true, true, true)
@@ -282,12 +291,12 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	var made := _city(t, builder)
 	events = _simulation(made).events()
 	crowd = _simulation(made).crowd()
-	t.check(events.skip_drawing and crowd.skip_agent_drawing and crowd.skip_motion,
+	t.check(events.world.skip_drawing and crowd.skip_agent_drawing and crowd.skip_motion,
 			"--skip events, crowd and motion reach the events and the crowd")
-	t.check(events.pelican_rig == EventSpawner.PelicanRig.ALWAYS,
+	t.check(events.spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"--pelican reaches the events")
 	t.check(crowd.view == view and crowd.timing == timing, "the screen reaches the crowd")
-	t.check(events.trace == trace and events.atlas == atlas and events.timing == frames
+	t.check(events.world.trace == trace and events.world.atlas == atlas and events.world.timing == frames
 			and crowd.atlas == atlas,
 			"and what the events and the crowd are equipped with reaches each")
 	_free(made)
@@ -396,7 +405,7 @@ func _test_a_body_on_a_lane_takes_the_car_there_away(t: TestRunner) -> void:
 	var first := _city(t, null, null, false, [], MapCache.of(RECYCLE_SEED), RECYCLE_SEED)
 	var map: CityMap = first["map"]
 	var events := _simulation(first).events()
-	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	events.stream_within(Tuning.EVENT_STREAM_RADIUS)
 	events.use_body_listener(func(tiles: Array[Vector2i]) -> void: told.append_array(tiles))
 	_start(first, spec)
 	events.draw_the_ground_round(Vector2.ZERO, INF)
@@ -413,7 +422,7 @@ func _test_a_body_on_a_lane_takes_the_car_there_away(t: TestRunner) -> void:
 	var made := _city(t, null, null, false, [], MapCache.of(RECYCLE_SEED), RECYCLE_SEED)
 	map = made["map"]
 	events = _simulation(made).events()
-	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	events.stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(made, spec)
 	var crowd := _simulation(made).crowd()
 	var rng := RandomNumberGenerator.new()
