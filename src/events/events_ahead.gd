@@ -199,7 +199,7 @@ var _sent_warning: PendingWarning = null
 ## ("nothing influences across them"). Which of above and below he is tried from first is a hash of
 ## the run and the tear count, not a roll.
 ##
-## **One at a time, and nothing on a walk with no poster pursuits** (`DaySpec.poster_pursuits`,
+## **One at a time, and nothing on a walk with no poster pursuits** (`DaySpec.sends_a_pursuer_for_a_torn_poster()`,
 ## false for the escape's sections). A pursuit marble drawn while his warning is up or while he is
 ## still after her (`_a_pursuer_is_after_her()`) sends nobody more; once he has caught her, given up
 ## or run out his chase, the next marble sends the next one. *(Proposed, not asked for: the README

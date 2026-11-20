@@ -333,8 +333,8 @@ func _test_a_day_starts_in_its_order(t: TestRunner) -> void:
 	_run.resistance().pick_up_package()
 	var errors := _start(director, spec)
 	t.check(errors.is_empty(), "a day's start stands")
-	t.check(_asked_in_order(["started 1", "stand %d" % spec.number, "stood", "dress start_day",
-			"set_act 1", "plan %s" % spec.number, "refresh_street_trees", "resistance 1 210",
+	t.check(_asked_in_order(["started 1", "stand %d" % spec.day_number(), "stood", "dress start_day",
+			"set_act 1", "plan %s" % spec.day_number(), "refresh_street_trees", "resistance 1 210",
 			"stream (100.0, 200.0)", "crowd start_day", "reset_at (100.0, 200.0) (0.0, 1.0)",
 			"baby reset"]),
 			"a day is announced, stood, dressed, planned, peopled and put down in that order (%s)"
@@ -656,7 +656,7 @@ class _FakeWorlds extends DayWorldSource:
 
 	## Overrides DayWorldSource.stand.
 	func stand(spec: DaySpec) -> DayWorld:
-		_asked.append("stand %d" % spec.number)
+		_asked.append("stand %d" % spec.day_number())
 		return _world
 
 ## The city's dressing, noting how it is dressed, tinted and prepared. No `City`: what the director asks of
@@ -765,7 +765,7 @@ class _FakeEvents extends EventManager:
 		planned_on = rng
 		one_shots_spent = consumed_one_shots
 		planned_around = focus
-		_asked.append("plan %d" % spec.number)
+		_asked.append("plan %d" % spec.day_number())
 
 	## Overrides EventManager.stream_around.
 	func stream_around(at: Vector2) -> void:

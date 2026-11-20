@@ -94,10 +94,8 @@ func _test_a_walk_with_no_corridor_is_laid_out_along_its_streets(t: TestRunner) 
 func _test_the_ground_she_starts_on_is_kept_where_the_home_streets_are_not_held(
 		t: TestRunner) -> void:
 	var walk := _Walk.new()
-	var held := DaySpec.new()
-	held.holds_the_home_streets = true
-	var not_held := DaySpec.new()
-	not_held.holds_the_home_streets = false
+	var held := DaySpec.for_day(1)
+	var not_held := DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 	var of_a_day := DawnContext.new(held, 7, null, walk, null, null, Callable())
 	var of_the_escape := DawnContext.new(not_held, 7, null, walk, null, null, Callable())
 	t.check(of_a_day.ground_she_starts_on() == Vector2.INF,
