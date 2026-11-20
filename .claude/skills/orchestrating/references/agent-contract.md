@@ -16,7 +16,7 @@ area until they are read, but it sees no shell command, so a change made through
 refusal and the reading is yours to do first. **Nor can it see what is in your context**: on the same edit made again it looks in your
 transcript for a tool call that reads each skill it named (a `Read` of the whole file, the `Skill` tool, or another tool call, a shell or script command, that
 names the file), refuses again naming those with none, and lets the third attempt through whatever the
-transcript shows. A refusal is answered by reading every skill it names that is not already in your context, whole,
+transcript shows (the orchestrator's proposal, sandy-trout, which the player approved, inbox #1588 in teal-quail). A refusal is answered by reading every skill it names that is not already in your context, whole,
 before the edit is made again, and never by a helper that retries a refused edit on its own.
 This file carries what a builder needs of **verify** and **committing**, so neither is read for an
 ordinary task, and a tool the brief names explains itself: run `tools/<name> --help`.
@@ -205,6 +205,3 @@ that did not happen.
   **designing-classes** (plush-kestrel) and open to the player's correction.
 - **The ten minutes between reads of CI's state** ("CI's state is read through GraphQL, sparingly")
   are the filer's proposal (amber-swan), open to the player's correction.
-- **The hook's check of a retried edit against the transcript** (what counts as a read, and the pass at the
-  third attempt whatever it shows, "Read first") is the orchestrator's proposal (sandy-trout, board question
-  rules-hook-read-check), open to the player's correction.
