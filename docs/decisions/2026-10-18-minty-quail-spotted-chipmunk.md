@@ -8,8 +8,8 @@ private", from the Opus design of row 3b (kept in the orchestrator's design fold
 **What was built.** `DaySpec`'s `number`, `holds_the_home_streets`, `owes_a_return` and `poster_pursuits` are private;
 the suites and rigs ask `day_number()`, `keeps_the_home_streets_clear()`, `owes_her_a_return()` and
 `sends_a_pursuer_for_a_torn_poster()`, and the two suites that set a field on a bare spec build the spec the game builds
-(`for_day()`, `for_section()`): the dawn's context suite builds its two specs that way, and the finale rig's check that a
-day owes its return only as its spec says contrasts day 13's spec with the escape city's, the one that owes none. Their
+(`for_day()`, `for_section()`): the dawn's context suite builds its two specs that way, and the finale rig holds that a day's
+spec owes its return leg on day 13's spec, beside its check that the escape city's owes none. Their
 four `[kept]` lines leave `tools/test_only_members.txt`; the doc comments that named the fields name the methods.
 Nothing a player sees or the run log records changes.
 
