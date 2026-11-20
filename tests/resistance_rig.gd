@@ -410,7 +410,7 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
 	var day := ResistanceSteps.NEIGHBOR_DAY
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := _director(t)
@@ -551,7 +551,7 @@ func _start_the_day_on(t: TestRunner, day: int, seed_value: int,
 	GivenRun.alley_tiles(run, [])
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())

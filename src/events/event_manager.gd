@@ -600,11 +600,11 @@ func step_the_encounters(delta: float) -> void:
 ## (`EventInstance.step()`). What the tick made before it (a successor, a repeat, a streamed or
 ## summoned row) takes its first step on the tick it is made; what is made during or after it (an
 ## officer, a door's guard, anything an event's own step sets off) takes its first on the next,
-## since the step runs over a copy. One a hand holds (`EventInstance.held_by_hand`) is left as it
+## since the step runs over a copy. One a hand holds (`EventInstance.is_held_by_hand()`) is left as it
 ## stands.
 func _step_them(delta: float) -> void:
 	for instance: EventInstance in world.instances().duplicate():
-		if is_instance_valid(instance) and not instance.held_by_hand:
+		if is_instance_valid(instance) and not instance.is_held_by_hand():
 			instance.step(delta)
 
 ## **Tells where she is, once a tick** (`WhereSheIs.tell()`, `EventWorld.where_she_is()`), which
@@ -646,7 +646,7 @@ func _tell_them_where_she_is() -> void:
 	world.where_she_is().tell(world.player().global_position, pram,
 			world.visible_view().camera_view(), running, awake, held)
 	for instance in world.instances():
-		instance.excitement.set_outranked(instance.def.barrier_structure and instance != strongest)
+		instance.source().set_outranked(instance.counts_as_one_barrier() and instance != strongest)
 
 func check_hard_fails() -> void:
 	if _hard_failed or not world.has_player():
@@ -659,9 +659,9 @@ func check_hard_fails() -> void:
 			# The charge's own catch, counted whatever the day does (`EventInstance.report_the_catch()`).
 			instance.report_the_catch()
 			# Ahead of the hard fail, which ends the day and sends its loss.
-			if instance.is_pelican:
+			if instance.is_drawn_as_a_pelican():
 				world.reports().tell_pelican_struck_her(instance)
-			world.reports().tell_hard_fail_triggered(instance.def.id)
+			world.reports().tell_hard_fail_triggered(instance.row_id())
 			return
 
 # ------------------------------------------------------------ the doors' intents ---

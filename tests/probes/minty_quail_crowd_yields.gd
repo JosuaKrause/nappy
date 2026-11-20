@@ -101,7 +101,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	city.run.header().set_day(day)
 	var state := city.run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())

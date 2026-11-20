@@ -223,7 +223,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	run.header().set_day(13)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, 13)
+	state.begin_day(_city.map.plans_by_block(), 13)
 	_city.start_day(state, 13, _rng(13, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(13), _rng(13, "events"), [],
 			_city.map.doorstep_world_position())
@@ -333,7 +333,7 @@ func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var before := _robbers_on_the_street()
@@ -767,7 +767,7 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
 	robber.setup(def, start, PackedVector2Array(), Vector2.RIGHT, null, null, robber_where)
-	robber.came_under_a_warning = true
+	robber.arrive_from_its_warning()
 	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		robber.resume(EventSpawner.age_when_warned(def), 0.0)
 	var stroller := _rig_player(t, Vector2.ZERO)

@@ -46,7 +46,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)

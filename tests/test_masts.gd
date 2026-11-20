@@ -255,11 +255,11 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 	# and silencing does not move `age` — without its own cache invalidation this would go on
 	# answering the pre-silence figure for the rest of the tick, exactly the defect
 	# `ExcitementSource.invalidate_contribution()`'s own doc warns `_finish()` about.
-	var _primed := plan.live.excitement.contribution_at(nearby)
+	var _primed := plan.live.source().contribution_at(nearby)
 
 	t.check(RunCity.events(_city).silence_mast(target.id()), "silencing a mast by id finds it")
 	t.check(is_zero_approx(plan.live.current_intensity()), "a silenced mast's field is gone")
-	t.check(is_zero_approx(plan.live.excitement.contribution_at(nearby)),
+	t.check(is_zero_approx(plan.live.source().contribution_at(nearby)),
 			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
 	t.check(not plan.live.is_finished, "but the mast still stands — it has not left")
 
@@ -269,7 +269,7 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 	RunCity.events(_city).stream_around(target.foot())
 	t.check(plan.live != null, "and walking back streams it in again")
 	if plan.live:
-		t.check(plan.live.silenced, "still silenced — for the rest of the day")
+		t.check(plan.live.is_silenced(), "still silenced — for the rest of the day")
 		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:

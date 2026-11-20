@@ -57,7 +57,7 @@ func _hard_positions(map: CityMap, segment: StreetNetwork.Segment, def: EventDef
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
 func _seal_rng(map: CityMap, day: int) -> RandomNumberGenerator:
@@ -640,7 +640,7 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * step
 		travelled += Tuning.WALK_SPEED * step
-		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
+		paid += (instance.source().contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
 	return paid
 
 # ------------------------------------------------------------------ street trees ---

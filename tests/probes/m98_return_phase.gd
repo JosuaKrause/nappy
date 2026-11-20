@@ -68,7 +68,7 @@ func _measure_return_phase() -> void:
 		for day in ACT_SAMPLE_DAYS:
 			var act := Tuning.act_for_day(day)
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			if tree.branches().is_empty():

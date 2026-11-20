@@ -84,13 +84,7 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 		facing: Vector2) -> Array[Vector2i]:
 	var nothing: Array[Vector2i] = []
-	if def == null or def.shape == null or def.obstructs_radius <= 0.0:
-		return nothing
-	# A moving wall pins her, so the catalogue exempts anything mobile from being solid at all; a
-	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` at a
-	# hut or a post and for a car by `Crowd._stop_for_gates()` at the boom — which detains nobody,
-	# so it is named by its own flag rather than by `detain_seconds`.
-	if def.mobile or def.detain_seconds > 0.0 or def.solid_when == EventDef.SolidWhen.WHILE_LOWERED:
+	if def == null or not def.stands_as_a_fixed_body():
 		return nothing
 	var placed := BodyStance.stands_at(map, def, at)
 	# A hard seal's own body and a region wall's are recorded like any other, and that is what a
@@ -119,7 +113,7 @@ func spawn(def: EventDef, at: Vector2,
 # ------------------------------------------------------------------------ the pelican ---
 # *(minty-hedgehog, statement 8: "One in ~400 bikers should be a pelican riding a bicycle instead.
 # Needs to be svg only".)* A picture and nothing else: the rider it is drawn for keeps the row's
-# own def, field, lethal radius, speed and cost (`EventInstance.is_pelican`).
+# own def, field, lethal radius, speed and cost (`EventInstance.is_drawn_as_a_pelican()`).
 
 ## The run's pelican bag holds this many cyclists and one pelican, the player's own one in four
 ## hundred *(pebbly-ibis, inbox #575 in feathery-lynx: "have one shared biker/pelican marble bag
@@ -165,7 +159,7 @@ var _pelican_bag_seed := 0
 ## rebuilt from it. `--pelican` (`PelicanRig.ALWAYS`, set by `SimulationBuilder`) answers yes for every one
 ## without changing what is drawn.
 func rolls_a_pelican(def: EventDef) -> bool:
-	if not def.may_be_a_pelican:
+	if not def.may_be_drawn_as_a_pelican():
 		return false
 	var drew: bool = _the_pelican_bag().draw()
 	world.run().pelican().count_a_draw()
@@ -183,7 +177,7 @@ func rolls_a_pelican(def: EventDef) -> bool:
 func _the_pelican_bag() -> MarbleBag:
 	var seed_value := hash("%d:%s" % [world.run().header().run_seed(), PELICAN_STREAM])
 	if _pelican_bag == null or _pelican_bag_seed != seed_value \
-			or _pelican_bag.drawn != world.run().pelican().draws():
+			or _pelican_bag.draws_made() != world.run().pelican().draws():
 		var marbles := []
 		marbles.resize(CYCLISTS_IN_THE_BAG)
 		marbles.fill(false)
@@ -194,19 +188,20 @@ func _the_pelican_bag() -> MarbleBag:
 		_pelican_bag.skip(world.run().pelican().draws())
 	return _pelican_bag
 
-## Makes `instance` the pelican, as it is created: the picture (`EventInstance.is_pelican`) and the
-## pelican's own telemetry — `EventBus.pelican_spawned` now, a place on the list
-## `report_the_pelicans_in_view()` watches until it is first on screen, and
-## `EventBus.pelican_excited_her` on the first share of the meter its field lands
-## (`ExcitementSource.on_first_landing`), told once and read back by nothing here.
+## Makes `instance` the pelican, as it is created: the picture
+## (`EventInstance.be_drawn_as_the_pelican()`) and the pelican's own telemetry —
+## `EventBus.pelican_spawned` now, a place on the list `report_the_pelicans_in_view()` watches until
+## it is first on screen, and `EventBus.pelican_excited_her` on the first share of the meter its
+## field lands (`ExcitementSource.when_it_first_lands()`), told once and read back by nothing here.
 func _ride_as_a_pelican(instance: EventInstance) -> void:
-	instance.is_pelican = true
+	instance.be_drawn_as_the_pelican()
 	_unseen_pelicans.append(instance)
 	# The world's reports as a local, so the callback an instance's source keeps holds neither this
 	# spawner nor the world.
 	var reports := world.reports()
-	instance.excitement.on_first_landing = func() -> void:
+	var told_when_it_lands := func() -> void:
 		reports.tell_pelican_excited_her(instance)
+	instance.source().when_it_first_lands(told_when_it_lands)
 	reports.tell_pelican_spawned(instance)
 
 ## Pelicans created and not yet on screen. Untyped, so a pelican freed before it was ever seen can
@@ -224,7 +219,7 @@ func report_the_pelicans_in_view() -> void:
 		return
 	var still_unseen: Array = []
 	for pelican: Variant in _unseen_pelicans:
-		if not is_instance_valid(pelican) or (pelican as EventInstance).is_finished:
+		if not is_instance_valid(pelican) or (pelican as EventInstance).is_gone():
 			continue
 		var instance := pelican as EventInstance
 		var box := instance.drawn_box()
@@ -257,14 +252,14 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.
 	record_the_body(instance.get_instance_id(), def, at, facing)
-	if def.aftermath.scar != "" and record_scar:
+	if def.scar_id() != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
 		world.trace().note("scar", "%s left at %s by %s" % [
-			def.aftermath.scar, RunTrace.tile(world.map().world_to_tile(instance.global_position)),
+			def.scar_id(), RunTrace.tile(world.map().world_to_tile(instance.global_position)),
 			def.id])
-		world.run().add_scar(def.aftermath.scar, instance.global_position)
-		_mark_the_block(def.aftermath.scar, instance.global_position)
+		world.run().add_scar(def.scar_id(), instance.global_position)
+		_mark_the_block(def.scar_id(), instance.global_position)
 	return instance
 
 ## An event that leaves a scar may also move the block it happened to along its arc — if the
@@ -279,7 +274,7 @@ func _mark_the_block(scar_id: String, at: Vector2) -> void:
 		return
 	if not world.city_map():
 		return
-	world.run().attempt_spend().block_arcs().apply_cause(world.city_map().block_plans, world.city_map().block_at(at),
+	world.run().attempt_spend().block_arcs().apply_cause(world.city_map().plans_by_block(), world.city_map().block_at(at),
 			cause as GameEnums.BlockCause, world.run().header().day())
 
 ## Which scars move a block along its arc. Keyed by scar id rather than by event id, because
@@ -295,15 +290,15 @@ const _CAUSES := {
 ## freeing it here and risking a reference something else still holds this frame. Unlike a mast
 ## going quiet, the thing retired here really is leaving.
 func retire(instance: EventInstance) -> void:
-	if instance and is_instance_valid(instance) and not instance.is_finished:
-		instance._finish()
+	if instance and is_instance_valid(instance) and not instance.is_gone():
+		instance.end_now()
 
 ## **Moves one unplanned instance to `at` with everything it is in the middle of** — its phase, its
 ## notice and every behaviour's state (`EventInstance.move_to()`) — rather than retiring it and
 ## making it again: the resistance director's own use, when day 13's task guard follows her to the
 ## roadblock she is making for. Its body's footprint goes with it.
 func move_extra(instance: EventInstance, at: Vector2) -> void:
-	if not instance or not is_instance_valid(instance) or instance.is_finished:
+	if not instance or not is_instance_valid(instance) or instance.is_gone():
 		return
 	world.map().release_obstruction(instance.get_instance_id())
 	instance.move_to(at)
@@ -320,7 +315,7 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 ## (the resistance's sent robber and guard), which is created with its telegraph spent, chasing from
 ## its first frame.
 ##
-## **`came_under_a_warning` is set before `resume()`**, which reads it: a resume otherwise restores
+## **`arrive_from_its_warning()` is told before `resume()`**, which reads it: a resume otherwise restores
 ## an instance streamed back in, and takes a pursuer that never waits to have begun its chase
 ## before it streamed out, so a pursuer created here would never report the chase it starts.
 ##
@@ -328,10 +323,10 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 ## it means nothing for any other row.
 func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> EventInstance:
 	var instance := spawn(as_warned(def), path[0], path)
-	instance.came_under_a_warning = true
-	if def.pursuit == null or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
+	instance.arrive_from_its_warning()
+	if not def.pursues() or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.resume(age_when_warned(def), 0.0)
-	if pelican and def.may_be_a_pelican:
+	if pelican and def.may_be_drawn_as_a_pelican():
 		_ride_as_a_pelican(instance)
 	return instance
 
@@ -343,12 +338,13 @@ func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> 
 ## a second has it created at the loud of its beat and pass her at the quiet, which halves what a
 ## pass costs (`docs/COSTS.md`, `tests/probes/m174_pass.gd`, which creates it at this same age).
 static func age_when_warned(def: EventDef) -> float:
-	var spent := def.telegraph_time
-	if def.pulse_period <= 0.0 or not def.mobile or def.speed <= 0.0:
+	var spent := def.telegraphs_for()
+	if def.pulses_every() <= 0.0 or not def.moves() or def.speed <= 0.0:
 		return spent
 	var flight := SpawnSiting.least_distance() / (def.speed + Tuning.WALK_SPEED)
-	var loud_on_her := def.pulse_period * 0.5 - flight
-	return loud_on_her + ceilf((spent - loud_on_her) / def.pulse_period - 0.001) * def.pulse_period
+	var beat := def.pulses_every()
+	var loud_on_her := beat * 0.5 - flight
+	return loud_on_her + ceilf((spent - loud_on_her) / beat - 0.001) * beat
 
 ## `def` as a row warned of before it exists (`EventDef.warns_before_it_exists()`): itself when it
 ## already is one — `cyclist`, the fire engine, the resistance's two pursuers — and
@@ -456,22 +452,22 @@ static func _where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 		return Vector2.INF
 	return at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 
-## **A row from outside the walls is shown by the world as it comes** (`EventDef.from_outside`,
+## **A row from outside the walls is shown by the world as it comes** (`EventDef.passes_walls()`,
 ## `WorldContext.bang_outside()`): every coming, planned or not, the first or a repeat.
 func show_the_bang(def: EventDef) -> void:
 	var drawn_in := world.drawn_in()
-	if def.from_outside and drawn_in:
+	if def.passes_walls() and drawn_in:
 		drawn_in.bang_outside()
 
 ## An event that leaves something behind where it stopped — how a fire engine ends its run
 ## at a fire. The successor is placed at the finishing position, not at a planned tile, so
 ## the two are always consistent.
 func successor_of(instance: EventInstance) -> EventInstance:
-	if instance.def.aftermath.on_finish == "":
+	if instance.leaves_behind() == "":
 		return null
-	var def := EventCatalogue.by_id(instance.def.aftermath.on_finish)
+	var def := EventCatalogue.by_id(instance.leaves_behind())
 	if not def:
 		push_error("event '%s' spawns unknown '%s'"
-				% [instance.def.id, instance.def.aftermath.on_finish])
+				% [instance.row_id(), instance.leaves_behind()])
 		return null
 	return create(def, instance.global_position)

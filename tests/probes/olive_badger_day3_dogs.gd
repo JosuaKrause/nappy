@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.city_seed(), day])

@@ -80,7 +80,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	builder.use_the_crowds_screen(view, CrowdTiming.new())
 	RunCity.build(city, map, builder)
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 1)
+	state.begin_day(city.map.plans_by_block(), 1)
 	city.start_recipe_day(state, 1, run.calendar().day_rng())
 	var camera := Camera2D.new()
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS

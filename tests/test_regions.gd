@@ -70,7 +70,7 @@ func _stands_in_the_mouth(map: CityMap, body: EventPlan, rect: Rect2i,
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
 func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) -> void:

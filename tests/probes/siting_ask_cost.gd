@@ -20,7 +20,7 @@ func run(t: TestRunner) -> void:
 	RunCity.build(city, CityGenerator.generate(CITY_SEED))
 	for day in DAYS:
 		var state := CityState.new()
-		state.begin_day(city.map.block_plans, day)
+		state.begin_day(city.map.plans_by_block(), day)
 		var closures := RandomNumberGenerator.new()
 		closures.seed = hash("siting-ask-cost:%d" % day)
 		city.start_day(state, day, closures)

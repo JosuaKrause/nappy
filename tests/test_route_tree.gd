@@ -444,7 +444,7 @@ func _plan(map: CityMap, day: int) -> Day:
 	planned.map = map
 	planned.day = day
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])

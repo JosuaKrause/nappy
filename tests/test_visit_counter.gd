@@ -659,7 +659,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 			warned_where)
 	t.add_child(warned)
 	warned.set_process(false)
-	warned.came_under_a_warning = true
+	warned.arrive_from_its_warning()
 	warned.resume(def.telegraph_time, 0.0)
 	for i in 10:
 		warned_where.tell(her)

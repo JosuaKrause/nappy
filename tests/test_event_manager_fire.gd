@@ -531,7 +531,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 			var to_reach := arrived.age
 			var reaches := func() -> bool:
 				return arrived.is_lethal_at(her_at) if arrived.def.hard_fail \
-						else arrived.excitement.contribution_at(her_at) > 0.0
+						else arrived.source().contribution_at(her_at) > 0.0
 			var on_her_at_once: bool = reaches.call()
 			while not reaches.call() and to_reach < 10.0:
 				RunCity.events(_city).world.where_she_is().tell(her_at)

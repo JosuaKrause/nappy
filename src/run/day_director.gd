@@ -442,7 +442,7 @@ func _landed_by_group() -> Dictionary:
 		# (`EventInstance.logged_name()`), so a pelican's share is `pelican`'s rather than added to
 		# the cyclists' *(inbox #527 in azure-tapir)*. Only positive shares are kept.
 		for instance in _events.instances():
-			var points := instance.excitement.landed()
+			var points := instance.source().landed()
 			if points > 0.0:
 				var name := instance.logged_name()
 				by_group[name] = float(by_group.get(name, 0.0)) + points

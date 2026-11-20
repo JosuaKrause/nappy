@@ -41,7 +41,7 @@ func _test_the_dark_spine_keeps_moving(t: TestRunner) -> void:
 	# measured is the lights, not the day's density.
 	var day := Tuning.RUN_LENGTH_DAYS
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng("closures"))
 	var lit: Vector2 = await _spine_traffic(t)
 	var lit_samples := _sampled_cars

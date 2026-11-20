@@ -398,7 +398,7 @@ func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Arra
 	GivenRun.alley_tiles(run, [])
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var player := _rig_player(t, her)
@@ -638,9 +638,9 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 
 	t.check(not rider.is_leaving,
 			"the one she reached keeps shouting the instant the note is handed over")
-	t.check(rider.excitement.contribution_at(rider.global_position) > 0.0,
+	t.check(rider.source().contribution_at(rider.global_position) > 0.0,
 			"and still charges her, since he has not started leaving yet")
-	t.check(not decoy.is_leaving and decoy.excitement.contribution_at(decoy.global_position) > 0.0,
+	t.check(not decoy.is_leaving and decoy.source().contribution_at(decoy.global_position) > 0.0,
 			"a look-alike she never reached is left exactly alone, still shouting")
 
 	director.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS - STEP)
@@ -650,10 +650,10 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 	director.tick(2.0 * STEP)
 	t.check(rider.is_leaving,
 			"and stops shouting and leaves once he has lingered that long")
-	t.close_to(rider.excitement.contribution_at(rider.global_position), 0.0,
+	t.close_to(rider.source().contribution_at(rider.global_position), 0.0,
 			"and contributes nothing to the meter the same frame", 0.001)
 	t.check(not decoy.is_leaving, "a look-alike she never reached is still left exactly alone")
-	t.check(decoy.excitement.contribution_at(decoy.global_position) > 0.0,
+	t.check(decoy.source().contribution_at(decoy.global_position) > 0.0,
 			"still shouting, still emitting")
 
 	director.free()
@@ -714,7 +714,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 
 	instance.leave_for_a_completed_task()
 	t.check(instance.is_leaving, "he stops the instant she hands him the note")
-	t.close_to(instance.excitement.contribution_at(instance.global_position), 0.0,
+	t.close_to(instance.source().contribution_at(instance.global_position), 0.0,
 			"and contributes nothing the same frame", 0.001)
 
 	var before := instance.global_position
@@ -722,7 +722,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 	instance.departure.leave(EventDeparture.LEAVING_GIVES_UP)
 	t.check(not instance.is_finished,
 			"still leaving past the backstop's own six seconds, since she is still watching")
-	t.close_to(instance.excitement.contribution_at(instance.global_position), 0.0,
+	t.close_to(instance.source().contribution_at(instance.global_position), 0.0,
 			"and still contributes nothing")
 	t.check(instance.global_position.distance_to(her) > before_distance,
 			"farther away than when he started, not stalled")
@@ -819,7 +819,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	# without it the station's front door — and everything else outside the home's region — is
 	# measured against a day the game never starts.
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, Tuning.RUN_LENGTH_DAYS)
+	state.begin_day(_city.map.plans_by_block(), Tuning.RUN_LENGTH_DAYS)
 	_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
 	RunCity.events(_city).stream_within(INF)
 	RunCity.events(_city).start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
@@ -834,7 +834,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
 		mast.step(STEP)
 	var nearby := site.foot() + Vector2(50.0, 0.0)
-	t.check(mast.excitement.contribution_at(nearby) > 0.0,
+	t.check(mast.source().contribution_at(nearby) > 0.0,
 			"the mast reaches its own nearby sidewalk while it is on")
 
 	var quiet: Array[bool] = []
@@ -865,7 +865,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	she.free()
 	t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 	t.check(mast.is_silenced(), "the mast is marked silenced")
-	t.close_to(mast.excitement.contribution_at(nearby), 0.0,
+	t.close_to(mast.source().contribution_at(nearby), 0.0,
 			"the mast contributes nothing afterwards")
 
 	EventBus.city_went_quiet.disconnect(handler)

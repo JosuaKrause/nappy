@@ -30,7 +30,7 @@ func _one_day(heat: int, day: int) -> void:
 		# The run's mast sites, worked out once on the city as built, as the game does.
 		var sites := MastSites.compute(map)
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var spec := DaySpec.for_day(day)

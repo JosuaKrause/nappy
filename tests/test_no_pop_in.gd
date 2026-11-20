@@ -63,7 +63,7 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 	if path.is_empty() and row.mobile and row.pursuit == null:
 		path = PackedVector2Array([at, her + (her - at)])
 	instance.setup(row, at, path, Vector2.RIGHT, null, null, instance_where)
-	instance.came_under_a_warning = true
+	instance.arrive_from_its_warning()
 	if row.pursuit == null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.resume(EventSpawner.age_when_warned(row), 0.0)
 	instance_where.tell(her)

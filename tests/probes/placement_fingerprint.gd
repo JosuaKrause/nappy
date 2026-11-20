@@ -48,7 +48,7 @@ func _the_escape_city(t: TestRunner, seed_value: int, day: int) -> int:
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, day)
+	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
@@ -80,7 +80,7 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, day)
+	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
 	var consumed: Array[String] = []

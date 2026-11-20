@@ -261,7 +261,7 @@ func _measure() -> void:
 ## The corridor, exactly as `tests/probes/m129_zero_cost_line.gd` plans it.
 func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	return RouteTree.for_day(map, day)
 

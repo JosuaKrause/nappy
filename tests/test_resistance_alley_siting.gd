@@ -593,7 +593,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 		var consumed: Array[String] = []
 		for day in range(4, 15):
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var events_rng := RandomNumberGenerator.new()
@@ -649,7 +649,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 	RunCity.events(city).stream_within(INF)
 
 	var closure_state := CityState.new()
-	closure_state.begin_day(city.map.block_plans, day)
+	closure_state.begin_day(city.map.plans_by_block(), day)
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
 	city.start_day(closure_state, day, closure_rng)
@@ -750,7 +750,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t: TestRunner) 
 	var map := city.map
 
 	var closure_state := CityState.new()
-	closure_state.begin_day(map.block_plans, day)
+	closure_state.begin_day(map.plans_by_block(), day)
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
 	city.start_day(closure_state, day, closure_rng)

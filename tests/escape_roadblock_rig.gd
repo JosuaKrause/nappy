@@ -31,7 +31,7 @@ const TAIL := 10.0
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 1)
+	state.begin_day(map.plans_by_block(), 1)
 	map.repaint(state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -245,7 +245,7 @@ class Meter extends RefCounted:
 	func feed(instances: Array[EventInstance], her: Vector2, running: bool, idle: bool) -> void:
 		var strongest := 0.0
 		for instance in instances:
-			strongest = maxf(strongest, instance.excitement.contribution_at(her))
+			strongest = maxf(strongest, instance.source().contribution_at(her))
 		var incoming := strongest + (Baby.EXCITEMENT_FROM_RUNNING if running else 0.0)
 		incoming *= Baby.SLEEPING_SENSITIVITY if asleep else 1.0
 		var decay := Baby.EXCITEMENT_DECAY_IDLE if idle else (
@@ -329,7 +329,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		for instance in instances:
 			if instance.is_chasing():
 				charged[instance] = true
-			strongest = maxf(strongest, instance.excitement.contribution_at(her))
+			strongest = maxf(strongest, instance.source().contribution_at(her))
 		meter.feed(instances, her, false, false)
 		walked += Tuning.WALK_SPEED * STEP
 		if turned == 0 and _charging(instances) > 0 and _its_corner_is_open(map, her, beside):

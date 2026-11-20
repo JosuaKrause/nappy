@@ -84,7 +84,7 @@ func run(t: TestRunner) -> void:
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
 ## Every (map, day) pair worth sampling: `Tuning.REGION_WALL_FIRST_DAY` through the end of the run,
@@ -387,7 +387,7 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	# (`DayDirector._dress_the_city()`) calls `city.start_day()` before its `_plan_the_walk()`
 	# calls `events.start_day()`.
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	var closures_rng := RandomNumberGenerator.new()
 	closures_rng.seed = hash("checkpoint-wiring-closures:%d:%d" % [BASE_SEED, day])
 	city.start_day(state, day, closures_rng)
@@ -805,7 +805,7 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 
 	var entry := centre + axis * 60.0
 	stroller.global_position = entry
-	var beside_it := loud.excitement.contribution_at(entry)
+	var beside_it := loud.source().contribution_at(entry)
 	var would_leak := beside_it * EventCatalogue.CHECKPOINT_DETAIN_SECONDS
 	t.check(would_leak > TOLL_TOLERANCE * 4.0,
 			("a leak would be worth %.1f points of the loudspeaker beside the door over the hold, " +
@@ -820,9 +820,9 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	# releases her, and the baby, ticked after it, spends the tick on whatever that left standing.
 	var guard := PhysicsTicks.ticks_for(EventCatalogue.CHECKPOINT_DETAIN_SECONDS) + 10
 	# What the loudspeaker has landed on her by the end of each tick the hold was still running.
-	var landed_in_the_hold := loud.excitement.landed()
+	var landed_in_the_hold := loud.source().landed()
 	while hut.is_chatting() and guard > 0:
-		landed_in_the_hold = loud.excitement.landed()
+		landed_in_the_hold = loud.source().landed()
 		guard -= 1
 		await PhysicsTicks.pass_ticks(t, 1)
 	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
@@ -880,7 +880,7 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 	var summed := 0.0
 	var strongest := 0.0
 	for body in kit:
-		var rate := body.excitement.contribution_at(there)
+		var rate := body.source().contribution_at(there)
 		summed += rate
 		strongest = maxf(strongest, rate)
 	t.check(summed > strongest * 1.5,
@@ -903,7 +903,7 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 
 	var candidates: Array[EventExcitement] = []
 	for structure in kit:
-		candidates.append(structure.excitement)
+		candidates.append(structure.source())
 	var picked := await HaloRig.lit_among(t, candidates, there)
 	t.check(picked.size() == 1,
 			("and the halo draws one rim, on that same body: a rim on a structure landing nothing " +
@@ -917,7 +917,7 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 	t.check(not stroller.is_detained(), "she is not taken in again by the step")
 	var now_strongest := 0.0
 	for body in kit:
-		now_strongest = maxf(now_strongest, body.excitement.contribution_at(stroller.global_position))
+		now_strongest = maxf(now_strongest, body.source().contribution_at(stroller.global_position))
 	t.close_to(manager.excitement_sources().total_at(stroller.global_position), now_strongest,
 			"and a step along the wall re-asks it rather than keeping the first answer", 0.01)
 

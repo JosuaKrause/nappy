@@ -177,7 +177,7 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) ->
 	var day := def.first_day
 	var map := CityGenerator.generate(4242)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var role := _role_it_places_as(def, day, map, Corridor.of(RouteTree.for_day(map, day)))
 	t.check(role == GameEnums.BlockerRole.FRICTION,

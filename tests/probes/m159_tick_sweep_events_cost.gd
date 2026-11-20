@@ -93,7 +93,7 @@ func run(t: TestRunner) -> void:
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String,
 		walk: String) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	city.start_day(state, day, _rng("closures", city_seed, day))
 	var start := city.map.doorstep_world_position()
 	var consumed: Array[String] = []
@@ -295,7 +295,7 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 		state.append(float(instance.is_finished))
 		state.append(float(instance.is_leaving))
 		state.append(float(instance.is_telegraphing()))
-		state.append(instance.excitement.landed())
+		state.append(instance.source().landed())
 	state.append(float(RunCity.events(city).pending_warnings().size()))
 	state.append(float(RunCity.events(city).active_count()))
 	for agent in RunCity.crowd(city).agents():

@@ -73,7 +73,7 @@ func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t: TestRunner) -> v
 	var map := _map()
 	var plan := BlockPlan.of(GameEnums.BlockPurpose.PARK)
 	plan.force_open_on(ResistanceSteps.swing_day())
-	map.block_plans[PARK] = plan
+	map.plan_block(PARK, plan)
 	var swing: Array[Vector2i] = [Vector2i(9, 9)]
 	var none: Array[Vector2i] = []
 	var day := ResistanceSteps.swing_day()

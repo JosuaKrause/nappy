@@ -86,7 +86,7 @@ func _test_an_event_hears_a_point_only_through_the_tick(t: TestRunner) -> void:
 	var robber := _instance(def, told)
 	var before := robber.sight_line_to_her()
 	robber.notice_her_at(Vector2(5000.0, 5000.0))
-	robber.excitement.set_her_motion(Vector2(92.0, 0.0), 6.0, 0.8)
+	robber.source().set_her_motion(Vector2(92.0, 0.0), 6.0, 0.8)
 	t.check(before != Vector2.ZERO and robber.sight_line_to_her() == before,
 			"a pursuer set on a far point still hears her where the tick's word put her")
 	told.tell(Vector2(-80.0, 0.0))

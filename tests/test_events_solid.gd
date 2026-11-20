@@ -236,7 +236,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 		var map := CityGenerator.generate(BASE_SEED + i * 137)
 		for day: int in DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -350,7 +350,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 		var map := CityGenerator.generate(BASE_SEED + i * 173)
 		for day: int in DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)

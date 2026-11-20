@@ -100,7 +100,7 @@ func run_cases(t: TestRunner, indices: Array[int]) -> void:
 ## the escape is planned on.
 static func _paint_day_one(map: CityMap) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 1)
+	state.begin_day(map.plans_by_block(), 1)
 	map.repaint(state)
 
 static func _plan_for(seed_value: int) -> Dictionary:
@@ -537,13 +537,13 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 		var plan := EventPlan.new(def, post)
 		var guard := stage.stand(plan)
 		var told := stage.manager.world.where_she_is()
-		var strongest := guard.excitement.contribution_at(beside)
+		var strongest := guard.source().contribution_at(beside)
 		# In inside his radius: he warns.
 		told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 		guard.step(step)
 		var warned := guard.is_standing_for_its_notice()
-		strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
-				guard.excitement.contribution_at(told.at())))
+		strongest = maxf(strongest, maxf(guard.source().contribution_at(beside),
+				guard.source().contribution_at(told.at())))
 		# She stays inside his radius until his warning has run: he charges. She runs; he gives up
 		# and walks away.
 		var waited := 0
@@ -557,21 +557,21 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 			guard.step(step)
 			charged = charged or guard.is_chasing()
 			if guard.is_chasing():
-				strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
-						guard.excitement.contribution_at(guard.global_position + Vector2(0.0, 40.0))))
+				strongest = maxf(strongest, maxf(guard.source().contribution_at(beside),
+						guard.source().contribution_at(guard.global_position + Vector2(0.0, 40.0))))
 			frames += 1
 		var her := told.at()
 		told.tell(her)
 		var leaving := guard.is_leaving and guard.barrier_post.is_spent()
-		strongest = maxf(strongest, guard.excitement.contribution_at(beside))
+		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		frames = 0
 		while guard.is_leaving and frames < int(30.0 / step):
 			told.tell(her)
 			guard.step(step)
-			strongest = maxf(strongest, guard.excitement.contribution_at(beside))
+			strongest = maxf(strongest, guard.source().contribution_at(beside))
 			frames += 1
 		var gone := guard.barrier_post.is_spent() and not guard.is_leaving and guard.is_solid()
-		strongest = maxf(strongest, guard.excitement.contribution_at(beside))
+		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		t.check(warned and charged and leaving and gone,
 				"%s guard warns, charges, is shaken off and leaves the band standing solid" % name)
 		t.check(strongest == 0.0,
@@ -582,7 +582,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 		stage.manager.streaming.stream_in(plan)
 		var streamed := plan.live
 		t.check(streamed.barrier_post.is_spent() and streamed.is_solid()
-				and streamed.excitement.contribution_at(beside) == 0.0,
+				and streamed.source().contribution_at(beside) == 0.0,
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
 		stage.close()
 
@@ -1288,7 +1288,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 	var map_of_days := MapCache.of(SEEDS[0])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var state := CityState.new()
-		state.begin_day(map_of_days.block_plans, day)
+		state.begin_day(map_of_days.plans_by_block(), day)
 		map_of_days.repaint(state)
 		var tree := RouteTree.for_day(map_of_days, day)
 		for roll in 4:
@@ -1644,7 +1644,7 @@ func _test_the_finale_city_grows_no_corridor(t: TestRunner) -> void:
 	var run := city.run
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
-	run.attempt_spend().block_arcs().begin_day(city.map.block_plans, 1)
+	run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), 1)
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(run.attempt_spend().block_arcs(), 1, run.calendar().day_rng(1, "closures"), spec)
 	t.check(city.streets().route_tree() == null and city.streets().closures().is_empty(),

@@ -138,7 +138,7 @@ func _maps_to_plan_days_on() -> Array[CityMap]:
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
 func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) -> void:
@@ -275,18 +275,18 @@ func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 func _test_an_older_save_with_the_station_block_advanced_still_loads(t: TestRunner) -> void:
 	var map := MapCache.of(BASE_SEED)
 	var block := map.power_station.position
-	var plan: BlockPlan = map.block_plans[block]
+	var plan: BlockPlan = map.plans_by_block()[block]
 	t.check(plan.step_count() == 1, "the station's block has a one-step arc (%d)" % plan.step_count())
 	var saved := {"stage": [{"x": block.x, "y": block.y, "v": 2}],
 			"changed_on": [{"x": block.x, "y": block.y, "v": 5}]}
 	var data: Dictionary = JSON.parse_string(JSON.stringify(saved))
 	var state := CityState.new()
 	state.restore(data)
-	t.check(state.purpose_of(map.block_plans, block) == GameEnums.BlockPurpose.BIG_BUILDING,
+	t.check(state.purpose_of(map.plans_by_block(), block) == GameEnums.BlockPurpose.BIG_BUILDING,
 			"a stage past the station's arc reads as the station")
-	state.begin_day(map.block_plans, Tuning.POWER_STATION_DAY)
+	state.begin_day(map.plans_by_block(), Tuning.POWER_STATION_DAY)
 	map.repaint(state)
-	t.check(state.purpose_of(map.block_plans, block) == GameEnums.BlockPurpose.BIG_BUILDING,
+	t.check(state.purpose_of(map.plans_by_block(), block) == GameEnums.BlockPurpose.BIG_BUILDING,
 			"and stays the station once the day's arcs have advanced")
 	var solid := true
 	for tile in map.rect_tiles(CityMap.blocks_tile_rect(map.power_station)):
@@ -294,7 +294,7 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t: TestRunn
 			solid = false
 			break
 	t.check(solid, "the station's mass is still solid after the repaint")
-	t.check(not state.calm_blocks(map.block_plans).is_empty(), "the city still has calm ground")
+	t.check(not state.calm_blocks(map.plans_by_block()).is_empty(), "the city still has calm ground")
 
 # --------------------------------------------------------------------- drawing ---
 

@@ -248,9 +248,9 @@ func _stand(t: TestRunner, atlas: AtlasLibrary, where: WhereSheIs, row: EventDef
 	rig.instance = instance
 	match drive:
 		"pelican":
-			instance.is_pelican = true
+			instance.be_drawn_as_the_pelican()
 		"silenced":
-			instance.silenced = true
+			instance.silence()
 		"boom":
 			instance.gate_state = RegionPlanner.GateState.new()
 		"points":

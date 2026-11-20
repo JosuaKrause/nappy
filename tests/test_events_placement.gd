@@ -113,7 +113,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 	var gaps_walled := {}
 	for day: int in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
@@ -323,7 +323,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 func _repainted_city(day: int) -> CityMap:
 	var map := MapCache.of(4242)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	return map
 
@@ -441,7 +441,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 		var map := MapCache.of(4242 + i * 97)
 		for day: int in [4, 9, 14]:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
@@ -506,7 +506,7 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 		for i in 3:
 			var map := MapCache.of(4242 + i * 97)
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var corridor := Corridor.of(RouteTree.for_day(map, day))
 			var locations := DayLocations.lay_out(map, corridor)
@@ -589,7 +589,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 		var map := MapCache.of(map_seed)
 		for day: int in [1, 3, 5, 8, 11, 14]:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
@@ -701,7 +701,7 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 	var first := ""
 	for day: int in [1, 5, 9, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
@@ -840,7 +840,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 	var first := ""
 	for day: int in [1, 5, 9, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
@@ -925,7 +925,7 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 	# is for is only that the check ran against real ground at all.
 	for day: int in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)

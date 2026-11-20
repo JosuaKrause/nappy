@@ -39,7 +39,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 
 	var day := 1
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("m145-route-kerbs:closures:%d" % day)
 	city.start_day(state, day, rng)

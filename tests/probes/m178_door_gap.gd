@@ -40,7 +40,7 @@ func run(_t: TestRunner) -> void:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
 		for day: int in _days():
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)

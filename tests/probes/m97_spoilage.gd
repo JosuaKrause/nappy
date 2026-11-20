@@ -69,13 +69,13 @@ func _reproduce_zero_density_visits() -> void:
 			# and `m64_measure.gd` use, since `begin_day` replays every scheduled step up to the
 			# day asked for rather than requiring the days in between.
 			var settle_state := CityState.new()
-			settle_state.begin_day(map.block_plans, settle_day)
+			settle_state.begin_day(map.plans_by_block(), settle_day)
 			map.repaint(settle_state)
 			var candidates := map.calm_blocks.duplicate()
 
 			# The city as it is the next day, when the roll fires.
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 

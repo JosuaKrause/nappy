@@ -222,7 +222,8 @@ func stream_in(plan: EventPlan) -> void:
 	# A guard spent before the stream-out comes back as only his barrier, never as a guard again
 	# (`EventBarrierPost.restore()`).
 	plan.live.restore_behaviours(plan.behaviours)
-	plan.live.silenced = plan.is_silenced()
+	if plan.is_silenced():
+		plan.live.silence()
 	plan.was_live = true
 	world.take_in(plan.live)
 
@@ -305,9 +306,9 @@ func mast_foot(mast_id: String) -> Vector2:
 	return Vector2.INF
 
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
-## arcs and no field, so this silences the plan (`EventPlan.silence()`) and its live instance's own mirror rather
-## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never
-## does. Returns whether a mast with that id was found. Matches every plan whose `mast_id()` is this
+## arcs and no field, so this silences the plan (`EventPlan.silence()`) and its live instance
+## (`EventInstance.silence()`) rather than finishing it: `EventInstance.end_now()` is for something
+## that leaves, and a mast never does. Returns whether a mast with that id was found. Matches every plan whose `mast_id()` is this
 ## one — a mast's ordinary broadcast and, on `DawnMasts.CURFEW_ANNOUNCE_DAY`, its curfew announcement
 ## too, so silencing a mast mid-announcement silences both at once.
 ##
@@ -323,11 +324,7 @@ func silence_mast(mast_id: String) -> bool:
 		found = true
 		plan.silence()
 		if plan.live:
-			plan.live.silenced = true
-			# The same invalidation `_finish()` does for `is_finished` — `age` does not move the
-			# instant this flips, so the cache the present rate keeps would otherwise go on
-			# answering the pre-silence contribution for the rest of this tick.
-			plan.live.excitement.invalidate_contribution()
+			plan.live.silence()
 	return found
 
 ## Silences every mast, for the rest of the day. The masts stop because the power does: this is what
@@ -342,8 +339,7 @@ func silence_all_masts() -> int:
 		silenced[plan.mast_id()] = true
 		plan.silence()
 		if plan.live:
-			plan.live.silenced = true
-			plan.live.excitement.invalidate_contribution()
+			plan.live.silence()
 	return silenced.size()
 
 ## How many sited events the day is carrying, live or waiting to be walked past. This is the

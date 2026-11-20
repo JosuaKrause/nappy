@@ -60,7 +60,7 @@ var _rng := RandomNumberGenerator.new()
 ## -1 before it has.
 var _picked := -1
 ## Marbles drawn so far.
-var drawn := 0
+var _drawn := 0
 ## Whether this bag is a shared bag (`shared()`): a marble in other bags that is drawn from rather
 ## than spent whole, and that is filled again when empty rather than retired.
 var _is_shared := false
@@ -115,7 +115,7 @@ func draw() -> Variant:
 		var inner := marble as MarbleBag
 		var given: Variant = inner.draw()
 		_picked = -1
-		drawn += 1
+		_drawn += 1
 		if inner.ran_empty():
 			_retire(inner)
 		return given
@@ -126,19 +126,19 @@ func draw() -> Variant:
 	_picked = -1
 	if bag.is_empty():
 		_queue.pop_front()
-	drawn += 1
+	_drawn += 1
 	return answer
 
-## How many marbles have been drawn from this bag so far (see `drawn`).
+## How many marbles have been drawn from this bag so far.
 func draws_made() -> int:
-	return drawn
+	return _drawn
 
 ## Whether the draws so far have emptied every bag in the queue — the last draw took the last
 ## marble there was, and only a fresh fill of the ordinary set could give another. A bag marble whose
 ## inner bag has run empty is spent and leaves the outer bag for good (`draw()`), whatever the inner
 ## bag's ordinary set holds.
 func ran_empty() -> bool:
-	return drawn > 0 and _queue.is_empty()
+	return _drawn > 0 and _queue.is_empty()
 
 ## Takes a spent bag marble out of every bag in the queue and out of the ordinary set, so it is
 ## never drawn again; a bag left empty by it is dropped from the queue.
@@ -184,7 +184,7 @@ func _put_in_front(marbles: Array) -> void:
 ##
 ## The marbles are taken from the bag being drawn from, filled first if there is none; one that
 ## runs out part way is followed by the next bag in the queue, an ordinary one filled for it if need
-## be. Taking them is not drawing: `drawn` counts only what `draw()` has handed out. **A bag marble
+## be. Taking them is not drawing: `draws_made()` counts only what `draw()` has handed out. **A bag marble
 ## is not taken whole**: the rig draws one marble from its inner bag, the way drawing it would, and
 ## leaves it in the bag it stands in — so the rigged bag holds `size` plain marbles and its ensured
 ## one comes within `size` draws ("x defines how soon we want to get the guaranteed event").

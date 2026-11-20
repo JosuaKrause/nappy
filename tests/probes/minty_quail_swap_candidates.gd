@@ -123,7 +123,7 @@ func _start(t: TestRunner, seed_value: int) -> City:
 	city.run.header().set_day(DAY)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, DAY)
+	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), DAY)
 	city.start_day(city.run.attempt_spend().block_arcs(), DAY, city.run.calendar().day_rng(DAY, "closures"),
 			spec)
 	var consumed: Array[String] = []

@@ -330,7 +330,7 @@ func _measure() -> void:
 ## handed to the repaint first, as `main._start()` does.
 func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	_used = _used_by(map, day)
 	if _used_parks() == UsedParks.SHUT and not _used.is_empty():

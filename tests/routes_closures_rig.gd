@@ -410,7 +410,7 @@ func _plan(map: CityMap, day: int) -> Array[RoadClosure]:
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
 ## The real thing, with no memory of having been asked before — what `case_closures_are_

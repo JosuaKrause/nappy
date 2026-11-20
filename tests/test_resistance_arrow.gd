@@ -524,7 +524,7 @@ func _start_the_finale(t: TestRunner, seed_value: int) -> Array:
 	GivenRun.alley_tiles(_city.run, [])
 	var state := _city.run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())

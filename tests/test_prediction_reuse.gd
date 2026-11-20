@@ -29,13 +29,13 @@ class ToldCrowdSource extends CrowdExcitement:
 class CountedEvent extends EventInstance:
 	var sampling_runs: int:
 		get:
-			return (excitement as Source).sampling_runs
+			return (_excitement as Source).sampling_runs
 
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim()
-		excitement = Source.new(self)
-		excitement.use_rim(rim)
+		var rim: SourceRim = _excitement.rim()
+		_excitement = Source.new(self)
+		_excitement.use_rim(rim)
 
 	class Source extends ToldEventSource:
 		var sampling_runs := 0
@@ -69,9 +69,9 @@ class CountedCrowd extends CrowdAgent:
 class ReferenceEvent extends EventInstance:
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim()
-		excitement = Source.new(self)
-		excitement.use_rim(rim)
+		var rim: SourceRim = _excitement.rim()
+		_excitement = Source.new(self)
+		_excitement.use_rim(rim)
 
 	class Source extends ToldEventSource:
 		## Overrides ExcitementSource.expected_gross_at.
@@ -113,7 +113,7 @@ func _copy_definition(original: EventDef) -> EventDef:
 
 func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: String) -> void:
 	var expected := Reference.event_gross(source, at,
-			(source.excitement as ToldEventSource).told_sensitivity)
+			(source.source() as ToldEventSource).told_sensitivity)
 	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " repeats exactly")
@@ -171,9 +171,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id + " player velocity")
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id + " sensitivity")
-		source.silenced = true
+		source.silence()
 		_event_parity(t, source, at, definition.id + " silence")
-		source.silenced = false
+		source._silenced = false
 		if source.def.detain_seconds > 0.0:
 			source.hold.start()
 			_event_parity(t, source, at, definition.id + " chatting")

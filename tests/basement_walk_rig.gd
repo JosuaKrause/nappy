@@ -122,5 +122,5 @@ func _tick(at: Vector2, awake: bool) -> float:
 		if instance.def.id != "basement_steam":
 			continue
 		instance.step(STEP)
-		incoming += instance.excitement.contribution_at(at)
+		incoming += instance.source().contribution_at(at)
 	return incoming

@@ -45,7 +45,7 @@ func run(t: TestRunner) -> void:
 		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:
 			var state := CityState.new()
-			state.begin_day(city.map.block_plans, day)
+			state.begin_day(city.map.plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())

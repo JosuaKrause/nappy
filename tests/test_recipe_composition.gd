@@ -114,7 +114,7 @@ func run(t: TestRunner) -> void:
 			+ "busiest other corridor's walkers, against %.2f on the uniform day)")
 			% [ordinary_share, uniform_share])
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 1)
+	state.begin_day(city.map.plans_by_block(), 1)
 	city.start_recipe_day(state, 1, city.run.calendar().day_rng())
 	var oversized: Dictionary = recipe.duplicate(true)
 	oversized.setup = {"day": 1, "background": {"crowd": true, "crowd_scope": "city",
