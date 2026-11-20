@@ -458,7 +458,7 @@ func _ready() -> void:
 		_city.add_entity(_player)
 		_player.clear_camera_limits()
 		_baby = _player.get_node("Baby")
-		_put_her_in(_city.map)
+		_put_her_in(_city.map, _city)
 
 	_build_the_screens()
 
@@ -478,7 +478,7 @@ func _ready() -> void:
 		_resistance.use_bus(EventBus)
 		var events := _city_simulation.events()
 		_resistance.setup(_city.map, _run, events, _city.streets(), _city.fronts(), _city,
-				_city.navigator, events.spawn_siting())
+				_city.navigator(), events.spawn_siting())
 		_resistance.use_player(_player)
 		# The director's own question about her view — no camera of its own, so it asks the day's
 		# one view (`VisibleView`) rather than growing a second one: "has she seen this" for a
@@ -842,8 +842,8 @@ func _make_player() -> Stroller:
 func _build_the_city(dark_from_the_start := false) -> void:
 	_city = _new_city()
 	_city.build(_city_map())
-	_city_simulation = _simulation_builder().in_the_city(_city, _city.map, _city.streets(),
-			_city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
+	_city_simulation = _simulation_builder().in_the_city(_city, _city.map, _city.navigator(),
+			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
 ## **The boot's simulation builder**, made the first time a world needs one: equipped with this
 ## boot's trace, atlas and frame timing, the bus, the torn posters' textures, the crowd's view of
@@ -975,15 +975,16 @@ func _watch_the_walk() -> void:
 ## Whether the run log's session has been handed what it watches every walk with — once a boot.
 var _walk_watched := false
 
-## Hands her and the baby the map of the world she now walks (`WorldMap`): the stroller asks it how
-## the ground under her turns a press (`Stroller.set_map()`), and the baby asks its world how loud it
-## is and what the ground does to her (`Baby.set_world()`); and a city's events are handed her
+## Hands her and the baby the map of the world she now walks (`WorldMap`) and the world that draws
+## it (`WorldContext`): the stroller asks the map how the ground under her turns a press
+## (`Stroller.set_map()`), and the baby asks the world how loud it is and what the ground does to
+## her (`Baby.set_world()`); and a city's events are handed her
 ## (`EventManager.use_player()`), and each world's events are handed what the controls cover
 ## (`_hand_the_controls_cover_to_the_events()`). Called whenever she is put into
 ## a world, so neither ever asks a world she has left.
-func _put_her_in(map: WorldMap) -> void:
+func _put_her_in(map: WorldMap, world: WorldContext) -> void:
 	_player.set_map(map)
-	_baby.set_world(map.world)
+	_baby.set_world(world)
 	if _city_simulation:
 		_city_simulation.events().use_player(_player)
 	_hand_the_controls_cover_to_the_events()
@@ -1014,13 +1015,25 @@ func _hand_the_controls_cover_to_the_events() -> void:
 	if _building_simulation:
 		_building_simulation.events().use_controls(_touch_controls.covering())
 
+## Whether the current spec is walked in the escape's building (its first section) rather than the
+## city: the one answer `_world_map()` and `_world_drawn()` both read.
+func _walks_the_building() -> bool:
+	return _flow.spec().world_kind() == DaySpec.World.BUILDING and _interior != null
+
 ## The map of the world the current spec is walked in — the building's in the escape's first
-## section, the city's otherwise — the one the run flow hands down to her and asks each walking
-## frame what its ground does to her.
+## section, the city's otherwise — the one the run flow hands down to her.
 func _world_map() -> WorldMap:
-	if _flow.spec().world_kind() == DaySpec.World.BUILDING and _interior:
+	if _walks_the_building():
 		return _interior.map()
 	return _city.map if _city else null
+
+## The world the current spec is walked in, as the scene that draws it (`WorldContext`): the
+## building's in the escape's first section, the city's otherwise. The run flow asks it what its
+## ground does to her each walking frame.
+func _world_drawn() -> WorldContext:
+	if _walks_the_building():
+		return _interior
+	return _city
 
 ## Section one's world: the building, her in it, and the events inside it. Reaching its service
 ## exit is the section's goal, so the exit's own moment — once its fade has covered the screen —
@@ -1039,7 +1052,7 @@ func _build_the_escape_building() -> void:
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
-	_put_her_in(_interior.map())
+	_put_her_in(_interior.map(), _interior)
 
 	# The building's events are the day's own manager, handed the building's map: no city, and the
 	# whole plan in the world at once, since the building is walked part by part through doors.
@@ -1047,7 +1060,7 @@ func _build_the_escape_building() -> void:
 	_building_simulation.events().use_player(_player)
 	_hand_the_controls_cover_to_the_events()
 	_building_seed = _run.calendar().day_rng(_run.header().day(), "finale-interior").randi()
-	SteamGrates.lay(BuildingPlan.grates(_interior.map()), _interior.map(), _sitting.atlas())
+	SteamGrates.lay(BuildingPlan.grates(_interior.map()), _interior, _sitting.atlas())
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
 	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
 	# three again when she walks out, which points them at the street.
@@ -1079,7 +1092,7 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 		_city.add_entity(_player)
 	# Told, not discovered: she now walks the street's map and the baby asks the street, not the
 	# building behind her.
-	_put_her_in(_city.map)
+	_put_her_in(_city.map, _city)
 	_player.clear_camera_limits()
 	# Built here for a boot straight onto the street, and pointed at the street here when she has
 	# walked out of the building, which built them first — see `_add_danger_edge()`.
@@ -2301,9 +2314,9 @@ func _process(delta: float) -> void:
 	# and its service exit; nothing in the city. Nothing of the walk is asked while a screen stands
 	# in front of it: this node runs through a pause (it has to, or Esc would not answer), so without
 	# this the door under her feet would keep being tested against a section that has not begun.
-	var world_map := _world_map()
-	if world_map and _player and not _tree_is_paused():
-		world_map.process_player(_player, delta)
+	var drawn := _world_drawn()
+	if drawn and _player and not _tree_is_paused():
+		drawn.process_player(_player, delta)
 	if _city and _flow.spec().runs_the_daylight_down():
 		_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_flow.spec().goal_kind() == DaySpec.Goal.HOME

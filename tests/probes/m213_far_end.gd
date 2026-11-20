@@ -169,7 +169,7 @@ func _on_screen(t: TestRunner) -> void:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
 		director.setup(map, own_run, null, null, null, null, null,
-				SpawnSiting.new(map, map.navigator(), func() -> VisibleView: return view))
+				SpawnSiting.new(map, Navigator.new(map), func() -> VisibleView: return view))
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)

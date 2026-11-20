@@ -248,11 +248,15 @@ var _idle_phase_offset := 0.0
 ## **The map of the world this instance stands in** (`WorldMap`), handed in by the manager that makes
 ## it: the questions about the ground that are not about moving over it — where a body stands on a
 ## pavement, which way a spread lies, which alley a mouse crosses, whether a wall keeps this field
-## from her — and the world it adds what it draws beside itself to (`WorldMap.add_entity()`: its
-## band, the far guard walking off, the slices of a long picture). The city's map outdoors, the
+## from her. The city's map outdoors, the
 ## building's indoors, and open ground (`WorldMap.open_ground()`) for a data rig that names none,
 ## where every street question answers "no street" and nothing is walled.
 var _map: WorldMap
+## **The world this instance is drawn in** (`WorldContext`), handed in by `setup()` as the manager
+## makes it: what it adds what it draws beside itself to (`add_beside_it()`, `add_slices_beside_it()`:
+## its band, the far guard walking off, the slices of a long picture). Null for a rig that draws it in
+## no world.
+var _drawn_in: WorldContext
 ## **How this figure moves, and what it sees along**: every step, walk, way round and way out, and
 ## every notice, lunge and catch line, go through it (`Navigator`), asked as `_mover`. Handed in by
 ## `setup()` — `EventManager` hands every figure its world's own — or, for a rig that hands none, one
@@ -302,7 +306,8 @@ var _clock := 0.0
 ## is nowhere.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
 		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null,
-		where: WhereSheIs = null) -> void:
+		where: WhereSheIs = null, drawn_in: WorldContext = null) -> void:
+	_drawn_in = drawn_in
 	def = definition
 	path = route
 	_where = WhereSheIs.nowhere()
@@ -310,7 +315,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		_where = where.handle_for_an_event()
 	excitement.use_row_and_where_she_is(definition, _where)
 	_map = map if map else WorldMap.open_ground()
-	_navigator = navigator if navigator else _map.navigator()
+	_navigator = navigator if navigator else Navigator.new(_map)
 	_mover = mover_for(definition)
 	_behaviours = EventBehaviours.compose(self, definition, _where, _figure, _map, _navigator,
 			_mover, trace, _move)
@@ -1845,13 +1850,27 @@ func _exit_tree() -> void:
 	if look:
 		look.release_nodes()
 
-## Adds `node` to the world this instance stands in, on the entity layer (`WorldMap.add_entity()`),
-## or beside it in its own parent on a map no world draws — a rig that stands it under a bare node.
+## Adds `node` to the world this instance is drawn in, on the entity layer
+## (`WorldContext.add_entity()`), or beside it in its own parent where no world draws it — a rig that
+## stands it under a bare node.
 func add_beside_it(node: Node2D) -> void:
-	if _map.has_world():
-		_map.add_entity(node)
+	if _is_drawn_in_a_world():
+		_drawn_in.add_entity(node)
 	else:
 		get_parent().add_child(node)
+
+## Puts `slices` of a long picture into the world at their `feet`, each ahead of this instance in the
+## tree so that at a tie of feet its caret is drawn over its own picture (`DrawLayer.add_slices()`),
+## or beside it where no world draws it (`DrawLayer.add_slices_beside()`).
+func add_slices_beside_it(slices: Array[Node2D], feet: PackedVector2Array) -> void:
+	if _is_drawn_in_a_world():
+		DrawLayer.add_slices(_drawn_in, slices, feet, DrawLayer.Layer.ENTITIES, self)
+	else:
+		DrawLayer.add_slices_beside(self, slices, feet)
+
+## Whether a world draws this instance and is still standing.
+func _is_drawn_in_a_world() -> bool:
+	return _drawn_in != null and is_instance_valid(_drawn_in)
 
 ## A point `offset` along whichever axis this instance spreads on (`EventBody.spread_at()`) — local
 ## X by default, local Y on an east-west street. See `_spread_is_vertical`.

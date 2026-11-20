@@ -37,8 +37,8 @@ extends Node
 ## — that many distance checks per physics tick is nothing, and a spatial hash would be more code with more
 ## ways to be subtly wrong. Revisit if an act ever wants hundreds of sources at once.
 ##
-## **This node owns no instance as a scene child.** Every `EventInstance` is added to the world its
-## map is drawn in (`WorldMap.add_entity()`), under that world's y-sorted entity layer rather than
+## **This node owns no instance as a scene child.** Every `EventInstance` is added to the world it
+## is drawn in (`draw_in()`, `WorldContext.add_entity()`), under that world's y-sorted entity layer rather than
 ## under here, so `EventInstance._ready()` sets its own physics interpolation rather than inheriting
 ## the setting from this node.
 
@@ -174,14 +174,13 @@ func _notification(what: int) -> void:
 ## **Hands the manager the city's parts its events read**: the map it places on; today's streets
 ## (`DayStreets`), the city's own, which a day is planned against and a siting reads its region off;
 ## the lights a car that drives stops at (`TrafficSignals`); the run its events belong to; the
-## navigator its figures move by, or the map's own (`WorldMap.navigator()`) for a rig that hands
+## navigator its figures move by, or one over the map (`Navigator.new(map)`) for a rig that hands
 ## none; and the poster walls a crew pastes on. The city's plan builder is made here, once a city,
 ## over `map` (`EventWorld.plan_builder()`), and so is where something sent at her may start
 ## (`spawn_siting()`).
 ## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
 ## against the streets it hands, so it hands streets whose day it began (`DayStreets.begin_day()`).
 ##
-## The map is already drawn in its world (`WorldMap.world`): the caller sets it first.
 func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = null,
 		run: RunState = null, navigator: Navigator = null,
 		poster_walls: PosterWalls = null) -> void:
@@ -194,7 +193,7 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 	world.use_poster_walls(poster_walls)
 	world.signals = signals
 	world.run = run
-	world.use_navigator(navigator if navigator else map.navigator())
+	world.use_navigator(navigator if navigator else Navigator.new(map))
 	var director := EventDirector.new(map, world.navigator())
 	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
 			streets.siting_region if streets else Callable())
@@ -223,7 +222,7 @@ func setup_world(map: WorldMap, run: RunState) -> void:
 	ahead.drop_director()
 	world.signals = null
 	world.map = map
-	world.use_navigator(map.navigator())
+	world.use_navigator(Navigator.new(map))
 	world.run = run
 
 ## The event bus script, so the bus handed in has a class.
@@ -239,6 +238,13 @@ func use_bus(bus: _BUS) -> void:
 	world.reports().use_bus(bus)
 	if bus and not bus.return_phase_started.is_connected(_owe_the_return):
 		bus.return_phase_started.connect(_owe_the_return)
+
+## **Hands the manager the world its events are drawn in** (`WorldContext`): every instance is added
+## to it, on its y-sorted entity layer, and a row from outside the walls is shown coming by it. Null
+## for none, a rig's: an event then adds what it draws beside itself next to itself. Handed in by
+## whoever builds the world (`SimulationBuilder`), before `setup()`.
+func draw_in(drawn_in: WorldContext) -> void:
+	world.use_drawing(drawn_in)
 
 ## Hands the manager the run its events belong to, for a rig that never calls `setup()`.
 func use_run(run: RunState) -> void:

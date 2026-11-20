@@ -525,8 +525,8 @@ func _manager(t: TestRunner) -> EventManager:
 	# hands it), so a plan put in by `_door_instance()` stays in however far a test walks her.
 	var world := WorldContext.new()
 	var map := WorldMap.open_ground()
-	map.world = world
 	var manager := EventManager.new()
+	manager.draw_in(world)
 	manager.setup_world(map, run)
 	manager.stream_radius = INF
 	manager.add_child(world)
@@ -787,7 +787,7 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	# silences everything else — is `ExcitementSources.all_at()`'s), rather than a rig that summed
 	# the instances itself.
 	var manager := _manager(t)
-	var world := manager.world.map.world
+	var world := manager.world.drawn_in()
 	var sets: Array[ExcitementSources] = [manager.sources]
 	world.use_excitement_sources(sets)
 	var stroller := _real_stroller(t)

@@ -57,7 +57,6 @@ src/main.gd frame_timing
 src/main.gd ground_mode
 src/main.gd ground_recipe
 src/main.gd map
-src/main.gd navigator
 src/main.gd run
 src/main.gd scenery_frame_locked
 src/main.gd skip_shadows
@@ -668,7 +667,6 @@ src/events/behaviours/event_notice_run.gd length
 src/events/behaviours/event_notice_run.gd on_expired
 
 # [WorldMap] src/world/world_map.gd
-src/city/city.gd world
 src/crowd/car_strategy.gd separation
 src/crowd/crowd.gd separation
 src/crowd/crowd_pockets.gd day_record_version
@@ -683,12 +681,8 @@ src/dev/scene_recipe_runtime.gd size
 src/events/dawn_phases/dawn_roadblock_count.gd size
 src/events/dawn_phases/ruled_roadblock_ground.gd size
 src/events/event_instance.gd moves
-src/events/event_spawner.gd world
 src/events/plan_builder.gd size
-src/events/views/spread_look.gd world
 src/events/walk_ground.gd size
-src/interior/interior_scene.gd world
-src/main.gd world
 src/resistance/park_cordon.gd moves
 src/resistance/resistance_director.gd day_record_version
 src/resistance/resistance_director.gd obstruction_version

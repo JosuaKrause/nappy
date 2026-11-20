@@ -1,13 +1,14 @@
 class_name Navigator
 extends RefCounted
-## **The one way anything that walks or drives across a world moves, bar the crowd's lane step**: each map builds one
-## (`WorldMap.navigator()`), and it is handed to every mover by whoever builds it — the city to its
-## event manager, its crowd and the resistance, the event manager to every figure it makes — rather
-## than fetched. A step, a walk down a list of points, a way round, a way out and whether a chase
-## reaches somebody (`reaches()`) are all asked of the map's one blocked record through the mover's
-## own layers (`Mover`, `WorldMap.passable()`), so a cat, a bike, a pursuer, a departing dog, a man
-## walking back to his van and the masked man on the building's stairs are all stopped by what stops
-## her.
+## **The one way anything that walks or drives across a world moves, bar the crowd's lane step**:
+## whoever builds a world builds one over its map (`City.build()`, `EventManager.setup_world()`) and
+## hands it to every mover — the city to its event manager, its crowd and the resistance, the event
+## manager to every figure it makes — rather than fetched. **A navigator holds nothing but its map**,
+## so two over one map answer every question alike. A step, a walk down a list of points, a way
+## round, a way out and whether a chase reaches somebody (`reaches()`) are all asked of the map's one
+## blocked record through the mover's own layers (`Mover`, `WorldMap.passable()`), so a cat, a bike,
+## a pursuer, a departing dog, a man walking back to his van and the masked man on the building's
+## stairs are all stopped by what stops her.
 ##
 ## **Every step is swept**: the tiles the whole step crosses are asked, not only the one it lands
 ## on, so a long frame cannot carry a chaser through a wall a tile thick. And it keeps the mover's

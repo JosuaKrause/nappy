@@ -150,10 +150,16 @@ const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
 var map: CityMap
-## How everything that moves over `map` moves (`Navigator`): the map's own (`WorldMap.navigator()`),
+## How everything that moves over `map` moves (`Navigator`): built over the map by `build()` and
 ## held here for as long as the city stands, so the events, the crowd and whatever else moves over
-## the map share the one.
-var navigator: Navigator
+## the map share the one (`navigator()`).
+var _navigator: Navigator
+
+## How everything that moves over `map` moves: the navigator `build()` made, which the builder hands
+## to the events and the crowd, and `main` to the resistance.
+func navigator() -> Navigator:
+	return _navigator
+
 ## Today's streets as dawn left them (`DayStreets`): the route tree, the region wall and doors, the
 ## closures and the region a siting reads. Made with the city, written only by the city's dawn
 ## (`_close_streets()`, `start_recipe_day()`), and handed to whoever asks (`streets()`).
@@ -298,9 +304,7 @@ func build(city_map: CityMap) -> void:
 	if atlas == null:
 		atlas = AtlasLibrary.new()
 	map = city_map
-	# The city draws this map: what is added to the world through it comes here.
-	map.world = self
-	navigator = map.navigator()
+	_navigator = Navigator.new(map)
 	scenery = SceneryResidency.new()
 	scenery.use_frame_timing(frame_timing)
 	scenery.frame_locked = scenery_frame_locked

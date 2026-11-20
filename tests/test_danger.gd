@@ -919,7 +919,7 @@ func _manager(t: TestRunner) -> EventManager:
 	var manager := EventManager.new()
 	var holder := WorldContext.new()
 	manager.add_child(holder)
-	map.world = holder
+	manager.draw_in(holder)
 	manager.setup_world(map, run)
 	t.add_child(manager)
 	return manager
