@@ -36,7 +36,7 @@ var _spec := DaySpec.new()
 
 ## **Takes the walk's spec**, as the manager is handed it: for the pursuer on foot, and for the two
 ## settings of the walk this keeps, whether a torn poster sends a pursuer and whether the home's
-## streets are the walk's. Nothing else writes the two, so they are always the spec's.
+## streets are the walk's. Nothing else in the game writes the two, so in play they are always the spec's.
 func use_the_walk_of(spec: DaySpec) -> void:
 	_spec = spec
 	sends_poster_pursuits = spec.sends_a_pursuer_for_a_torn_poster()
