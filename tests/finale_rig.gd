@@ -76,7 +76,7 @@ const CASES: Array[String] = [
 	"_test_only_a_won_last_day_with_every_task_done_hands_over",
 	"_test_every_part_word_reaches_its_own_walkable_position",
 	"_test_the_escape_owes_no_return_leg",
-	"_test_a_day_owes_its_return_only_as_its_spec_says",
+	"_test_a_days_spec_owes_its_return_leg",
 	"_test_nothing_the_escape_places_stands_in_a_street_tree",
 	"_test_the_escape_pauses_the_same_way_a_day_does",
 	"_test_pause_does_not_open_over_a_section_brief_or_the_epilogue",
@@ -2098,29 +2098,24 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 					% RunCity.events(city).owed_ahead())
 	city.free()
 
-## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
-## and the same city, a day's spec owes the return its rows and a spec that says it owes none
-## (the escape's `DaySpec.for_section()`) is owed none, by the same `start_day()`. So what decides it is the
-## spec the run flow hands over (`EventManager.start_day()`), never a branch in the manager.
-func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
+## **A day's spec owes its return leg**: on an act IV day, the spec the game builds for a day
+## (`DaySpec.for_day()`) hands `EventManager.start_day()` a walk that owes the return its rows when
+## `return_phase_started` fires. That a spec that owes none is owed none is
+## `_test_the_escape_owes_no_return_leg`'s, on the escape's own spec.
+func _test_a_days_spec_owes_its_return_leg(t: TestRunner) -> void:
 	var an_act_iv_day := 13
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEEDS[0]))
 	city.run.header().set_day(an_act_iv_day)
-	var owed := {}
-	for owes: bool in [true, false]:
-		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS) if owes \
-				else DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-		var consumed: Array[String] = []
-		RigStreets.begin(city.streets(), city.map, spec)
-		RunCity.events(city).start_day(spec, city.run.calendar().day_rng(an_act_iv_day), consumed)
-		var before := RunCity.events(city).owed_ahead()
-		EventBus.return_phase_started.emit()
-		owed[owes] = RunCity.events(city).owed_ahead() - before
-	t.check(int(owed[true]) > 0, "a day's spec owes its return rows (%d)" % owed[true])
-	t.check(int(owed[false]) == 0,
-			"and a spec that owes none is owed none on the same day (%d)" % owed[false])
+	var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
+	var consumed: Array[String] = []
+	RigStreets.begin(city.streets(), city.map, spec)
+	RunCity.events(city).start_day(spec, city.run.calendar().day_rng(an_act_iv_day), consumed)
+	var before := RunCity.events(city).owed_ahead()
+	EventBus.return_phase_started.emit()
+	var owed := RunCity.events(city).owed_ahead() - before
+	t.check(owed > 0, "a day's spec owes its return rows (%d)" % owed)
 	city.free()
 
 ## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's

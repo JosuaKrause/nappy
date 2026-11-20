@@ -59,10 +59,8 @@ enum Goal {
 ## save written before this enum moved here reads the same.
 enum Section { NONE, BUILDING, CITY }
 
-## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
-## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
-## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
-## past it — its plan's random streams and its save are keyed by it. Read through `day_number()`.
+## The day number (`day_number()`): 1 to 14 for the days, and `BUILDING_DAY` and `CITY_DAY` for the
+## escape's two sections.
 var _number := 1
 ## The day's own words where "Day N of 14" stands, on its brief and its outcome screen, and the
 ## line the HUD says once she is walking it: "" for a day, "Escape the building" or "Escape the
@@ -348,7 +346,10 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 	spec._seals_the_main_road = true
 	spec._seals_every_street_off_the_walk = true
 
-## The day number every counter, loss line and run log header names (`_number`).
+## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
+## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
+## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
+## past it — its plan's random streams and its save are keyed by it (`_number`).
 func day_number() -> int:
 	return _number
 
