@@ -242,10 +242,12 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 	instance.atlas = world.atlas
 	instance.drawer = world.drawer
 	instance.trace = world.trace
-	instance.setup(def, at, path, facing, world.map, world.navigator(), world.where_she_is())
+	var drawn_in := world.drawn_in()
+	instance.setup(def, at, path, facing, world.map, world.navigator(), world.where_she_is(),
+			drawn_in)
 	instance.signals = world.signals
 	instance.points_at = world.where_protests_point
-	world.map.add_entity(instance)
+	drawn_in.add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.
@@ -452,8 +454,9 @@ static func _where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 ## **A row from outside the walls is shown by the world as it comes** (`EventDef.from_outside`,
 ## `WorldContext.bang_outside()`): every coming, planned or not, the first or a repeat.
 func show_the_bang(def: EventDef) -> void:
-	if def.from_outside and world.map.has_world():
-		world.map.world.bang_outside()
+	var drawn_in := world.drawn_in()
+	if def.from_outside and drawn_in:
+		drawn_in.bang_outside()
 
 ## An event that leaves something behind where it stopped — how a fire engine ends its run
 ## at a fire. The successor is placed at the finishing position, not at a planned tile, so

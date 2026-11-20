@@ -110,7 +110,7 @@ func _test_every_street_kit_region_is_baked_on_its_group(t: TestRunner) -> void:
 		ClosureMarker.POST,
 		ParkFenceMarker.RAIL_ALONG, ParkFenceMarker.JOINT, ParkFenceMarker.MOUNTED_SIGN,
 		TrafficLight.HEAD, TrafficLight.HEAD_BACK, TrafficLight.HEAD_SIDE,
-		CityEdge.TUNNEL, CityEdge.BRIDGE, CityEdge.ROAD_ON,
+		CityEdge.TUNNEL, CityEdge.BRIDGE,
 	]
 	names.append_array(ClosureMarker.CAUSES.values())
 	names.append_array(ClosureMarker.CAUSES_VERTICAL.values())

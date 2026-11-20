@@ -78,7 +78,7 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
 	events.add_child(holder)
-	map.world = holder
+	events.draw_in(holder)
 	events.setup_world(map, _run)
 	t.add_child(events)
 	var director := DayDirector.new(_run.calendar(), _run.facts(), _run.attempt_spend())

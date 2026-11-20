@@ -303,12 +303,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "DrawLayer",
-        "the map interface adds a node to its world on a draw layer, the world's half of it",
-        ("src/world/world_map.gd",),
-    ),
-    Exception_(
-        "names",
         "EventFootprints",
         "the day's planning reads the live events' picture geometry",
         ("src/events/walk_ground.gd",),
@@ -335,13 +329,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "Navigator",
-        "the map interface hands out its navigator, the world's half of it",
-        ("src/world/world_map.gd",),
-        more=(("src/world/world_map.gd", 3),),
-    ),
-    Exception_(
-        "names",
         "RegionPlanner",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
@@ -359,12 +346,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "her class's constants (the camera's look-ahead) and type tests are read where she is not handed in",
         ("src/interior/interior_scene.gd",),
         more=(("src/interior/interior_scene.gd", 2),),
-    ),
-    Exception_(
-        "names",
-        "WorldContext",
-        "the map interface answers with its world's context, the world's half of it",
-        ("src/world/world_map.gd",),
     ),
     Exception_(
         "names",

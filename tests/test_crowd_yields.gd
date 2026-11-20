@@ -233,8 +233,8 @@ func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var run := RunState.new()
 	run.start_run(SEED)
 	var map := CityMap.new()
-	map.world = world
 	var manager := EventManager.new()
+	manager.draw_in(world)
 	manager.setup_world(map, run)
 	t.add_child(manager)
 	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)

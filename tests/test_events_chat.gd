@@ -62,18 +62,18 @@ func _chat_manager(t: TestRunner) -> EventManager:
 	run.start_run(RUN_SEED)
 	# Open ground, so no wall keeps a field from her (`ExcitementSource.contribution_at()`).
 	var map := WorldMap.open_ground()
-	# The world the map is drawn in, as the city and the building hand theirs: the layer a
-	# spawned event is added to (`WorldMap.add_entity()`).
+	# The world the events are drawn in, as the city and the building hand theirs: the layer a
+	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	map.world = holder
 	var manager := EventManager.new()
+	manager.draw_in(holder)
 	manager.setup_world(map, run)
 	t.add_child(manager)
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
-	var holder := manager.world.map.world
+	var holder := manager.world.drawn_in()
 	manager.free()
 	holder.free()
 

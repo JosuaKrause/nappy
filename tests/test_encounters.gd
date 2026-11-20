@@ -65,20 +65,20 @@ func _manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(SEED)
 	var map := CityMap.new()
-	# The world the map is drawn in, as the city and the building hand theirs: the layer a
-	# spawned event is added to (`WorldMap.add_entity()`).
+	# The world the events are drawn in, as the city and the building hand theirs: the layer a
+	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	map.world = holder
 	var manager := EventManager.new()
 	# The game's bus, which this suite listens on, as whoever stands a manager hands it.
 	manager.use_bus(EventBus)
+	manager.draw_in(holder)
 	manager.setup_world(map, run)
 	t.add_child(manager)
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
-	var holder := manager.world.map.world
+	var holder := manager.world.drawn_in()
 	manager.free()
 	holder.free()
 

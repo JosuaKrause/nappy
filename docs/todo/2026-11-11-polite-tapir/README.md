@@ -47,9 +47,7 @@ detail, which the player approved.
 - **The standing layer breaks** (`standing-layer-breaks.md`): one pull request per group, each in
   its module's turn of minty-quail's order (within a module, its dead code, then its standing
   breaks, then its interface and field reads, then its suites). Dawn planning's reads stand in the
-  walk's ground, and row 3a of minty-quail's `event-interface.md` settles them; the building's pass in minty-quail's order
-  (`src/interior/`, `src/finale/`) takes its one read of `WorldMap.world` with the map interface's
-  world half.
+  walk's ground, and row 3a of minty-quail's `event-interface.md` settles them.
 - **The baseline** (`baseline-measurements.md`): a reading with placement closed and one after the
   events' field-read conversion (row 4b of minty-quail's `event-interface.md`), for the remeasure
   that closes minty-quail.

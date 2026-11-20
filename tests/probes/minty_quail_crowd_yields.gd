@@ -189,7 +189,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var cordon := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas, park,
+	var cordon := ParkCordon.new(city.map, city.navigator(), RunCity.events(city), city, city.atlas, park,
 			RunCity.spawn_siting(city), RunCity.events(city).walk_events().reach().shut())
 	for tick in CORDON_TICKS:
 		_tick_events(city)

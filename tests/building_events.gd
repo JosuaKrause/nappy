@@ -15,6 +15,7 @@ static func events_in(parent: Node, scene: InteriorScene,
 	events.use_bus(EventBus)
 	events.stream_radius = INF
 	parent.add_child(events)
+	events.draw_in(scene)
 	events.setup_world(scene.map(), run)
 	var sets: Array[ExcitementSources] = [events.sources]
 	scene.use_excitement_sources(sets)

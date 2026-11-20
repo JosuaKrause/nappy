@@ -128,7 +128,7 @@ var _run: RunState
 ## Hands the happenings the map they place on, the run they belong to, the day's events, today's
 ## streets, the fronts they change, the world and atlas the cordon draws with — each the director's
 ## own, and any but the map and the run null for none, as a bare-map rig hands them — the navigator
-## what they send walks by — the director's own, or the map's (`WorldMap.navigator()`) for a rig
+## what they send walks by — the director's own, or one over the map (`Navigator.new(map)`) for a rig
 ## that hands none — and the siting the raid is held to (`spawn_siting`), or none, where nothing the
 ## raid puts down or the cordon's officers walk in as is ever held back for being in view.
 func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreets,
@@ -143,7 +143,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_atlas = atlas
 	# The plan builder is the day's events' own, or none for a rig with no events.
 	_builder = events.plan_builder() if events else null
-	_navigator = navigator if navigator else (map.navigator() if map else null)
+	_navigator = navigator if navigator else (Navigator.new(map) if map else null)
 	_spawn_siting = spawn_siting
 
 ## Starts the day's happenings: on the mornings before `ResistanceSteps.NEIGHBOR_DAY` the neighbor walks out of

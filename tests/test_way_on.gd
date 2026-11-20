@@ -34,7 +34,7 @@ static func _lattice() -> CityMap:
 
 ## The way on over `map` as it stands now.
 static func _way_on(map: CityMap) -> WayOn:
-	return WayOn.new(map, map.navigator(), ThroughRoads.over(map, Mover.vehicle()))
+	return WayOn.new(map, Navigator.new(map), ThroughRoads.over(map, Mover.vehicle()))
 
 ## The centre of the lane of corridor `index` that drives `direction` (a unit along one axis).
 static func _lane(index: int, direction: Vector2i) -> float:
