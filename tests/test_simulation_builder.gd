@@ -296,7 +296,7 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	t.check(events.spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"--pelican reaches the events")
 	t.check(crowd.view == view and crowd.timing == timing, "the screen reaches the crowd")
-	t.check(events.world.trace == trace and events.world.atlas == atlas and events.world.timing == frames
+	t.check(events.world.trace() == trace and events.world.atlas == atlas and events.world.timing == frames
 			and crowd.atlas == atlas,
 			"and what the events and the crowd are equipped with reaches each")
 	_free(made)

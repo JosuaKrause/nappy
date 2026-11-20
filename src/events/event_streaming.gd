@@ -64,7 +64,7 @@ func add(plan: EventPlan) -> void:
 ## sites on her way, the first time or again (day 3's fire, a poster crew, a route's mast before it
 ## is in the world; `EventsAhead.site_what_is_on_her_way()`).
 func move_the_body(plan: EventPlan) -> void:
-	world.map.release_obstruction(plan.get_instance_id())
+	world.map().release_obstruction(plan.get_instance_id())
 	_record_and_tell(plan)
 
 ## Records `plan`'s body on the map, then tells the listener the tiles it covers, so what the
@@ -82,7 +82,7 @@ func _record_and_tell(plan: EventPlan) -> void:
 func swap_section(olds: Array[EventPlan], new: EventPlan) -> EventInstance:
 	for old in olds:
 		old.spend()
-		world.map.release_obstruction(old.get_instance_id())
+		world.map().release_obstruction(old.get_instance_id())
 		if old.is_in_the_world():
 			stream_out(old)
 	add(new)
@@ -191,7 +191,7 @@ func stream_in(plan: EventPlan) -> void:
 	plan.live = _spawner.create(plan.def, plan.position, plan.path, first_time, plan.facing)
 	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where it
 	# becomes something that happened — see `DawnOneShots`. The list is the one
-	# `start_day` was handed, which in a played game is `world.run.attempt_spend().consumed_one_shots()`
+	# `start_day` was handed, which in a played game is `world.run().attempt_spend().consumed_one_shots()`
 	# and in a rig is the rig's own.
 	if first_time and plan.row().is_a_set_piece_on_her_way() and not plan.def.id in _consumed:
 		_consumed.append(plan.def.id)
@@ -224,7 +224,7 @@ func stream_in(plan: EventPlan) -> void:
 	plan.live.restore_behaviours(plan.behaviours)
 	plan.live.silenced = plan.is_silenced()
 	plan.was_live = true
-	world.instances.append(plan.live)
+	world.take_in(plan.live)
 
 ## **Whether `instance` is near enough to `at` for her to be watching it** — within
 ## `Tuning.OUT_OF_SIGHT`, the distance beyond which nothing can be seen. A plan is streamed out by
@@ -250,9 +250,9 @@ func stream_out(plan: EventPlan) -> void:
 	# his barrier is the one that comes back, as only the barrier.
 	if plan.live.is_leaving and not (plan.live.barrier_post and plan.live.barrier_post.is_spent()):
 		plan.spent = true
-		world.map.release_obstruction(plan.get_instance_id())
-	world.map.release_obstruction(plan.live.get_instance_id())
-	world.instances.erase(plan.live)
+		world.map().release_obstruction(plan.get_instance_id())
+	world.map().release_obstruction(plan.live.get_instance_id())
+	world.let_go(plan.live)
 	plan.live.take_out()
 	plan.live = null
 
@@ -274,7 +274,7 @@ func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 			_spawner.retire(plan.live)
 			continue
 		plan.spent = true
-		world.map.release_obstruction(plan.get_instance_id())
+		world.map().release_obstruction(plan.get_instance_id())
 	return taken
 
 ## **Takes today's plans standing inside `rect` that are not in the world out of the day**, every
@@ -291,7 +291,7 @@ func take_away_the_unseen_within(rect: Rect2) -> int:
 			continue
 		taken += 1
 		plan.spent = true
-		world.map.release_obstruction(plan.get_instance_id())
+		world.map().release_obstruction(plan.get_instance_id())
 	return taken
 
 ## Today's own foot for a mast id, or `Vector2.INF` if today carries no mast with that id — the
@@ -359,7 +359,7 @@ func planned_count() -> int:
 func retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
 	var successors: Array[EventInstance] = []
-	for instance in world.instances:
+	for instance in world.instances():
 		if instance.is_finished:
 			var successor := _spawner.successor_of(instance)
 			if successor:
@@ -367,16 +367,16 @@ func retire_finished() -> void:
 			_mark_plan_spent(instance)
 			# The body is gone from the street, so the ground under it is open again. Its plan gives
 			# back its own copy in `_mark_plan_spent()`; this is the instance's.
-			world.map.release_obstruction(instance.get_instance_id())
+			world.map().release_obstruction(instance.get_instance_id())
 			instance.take_out()
 		else:
 			survivors.append(instance)
-	if successors.is_empty() and survivors.size() == world.instances.size():
+	if successors.is_empty() and survivors.size() == world.instances().size():
 		return
 	survivors.append_array(successors)
 	# Assigned in place rather than reassigned: `EventManager.instances()` hands this array out by reference,
 	# and the danger-edge indicator holds it across frames.
-	world.instances.assign(survivors)
+	world.keep_only(survivors)
 
 ## An event that has finished has finished for the day: its plan is spent, so walking back past
 ## the place it happened does not start it over. This is the half of streaming that a rebuilt
@@ -392,7 +392,7 @@ func _mark_plan_spent(instance: EventInstance) -> void:
 			plan.spent = true
 			# A spent plan is a body that has left, so its ground opens again — the plan's own half
 			# of the release. See "the bodies in the street".
-			world.map.release_obstruction(plan.get_instance_id())
+			world.map().release_obstruction(plan.get_instance_id())
 			return
 
 # ------------------------------------------------------------- what comes again ---
@@ -427,7 +427,7 @@ func bring_back_what_repeats(delta: float) -> void:
 				# Nobody for its charge to stand on, and the bang still goes off.
 				_spawner.show_the_bang(plan.def)
 				continue
-			plan.position = world.player.global_position
+			plan.position = world.player().global_position
 		stream_in(plan)
 
 ## Finds the plans of the walk just started that come again (`_repeating`). A day's own plan has
@@ -444,7 +444,7 @@ func find_what_repeats() -> void:
 ## one (`repeat_after`) begins now.
 func _done_for_now(plan: EventPlan) -> void:
 	plan.live = null
-	world.map.release_obstruction(plan.get_instance_id())
+	world.map().release_obstruction(plan.get_instance_id())
 	plan.age = plan.arrives_aged
 	plan.travelled = 0.0
 	plan.noticed_at = INF

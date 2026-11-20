@@ -150,7 +150,7 @@ func _guard_is_after_her() -> bool:
 ## street all still drawn, so a lorry reversing beside the two of them is part of what that
 ## conversation costs. A door is the opposite — she goes in.
 func door_holding_her_at(world_position: Vector2) -> EventInstance:
-	for instance in world.instances:
+	for instance in world.instances():
 		if not instance.detains_again() or not instance.is_chatting():
 			continue
 		if instance.global_position.distance_to(world_position) <= instance.detain_distance():
@@ -186,7 +186,7 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 ## says *she has not walked back in, she has not left yet*. One step outside the circle clears it
 ## and the ordinary distance check below re-arms the door exactly as if it had never fired.
 func check_detentions() -> void:
-	var body := world.player as Stroller
+	var body := world.player() as Stroller
 	if not world.has_player() or not body:
 		return
 	_release_finished_holds()
@@ -215,8 +215,8 @@ func check_detentions() -> void:
 	# docs/TELEMETRY.md, "The page counts visits".
 	world.reports().tell_player_detained(nearest.row_id())
 	var awake := world.where_she_is().baby_is_awake()
-	world.trace.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
-		nearest.row_id(), RunTrace.tile(world.map.world_to_tile(nearest.global_position)),
+	world.trace().note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
+		nearest.row_id(), RunTrace.tile(world.map().world_to_tile(nearest.global_position)),
 		nearest.detains_for(),
 		"awake" if awake else "asleep",
 		("+%.0f" % Tuning.CHAT_EXCITEMENT) if awake else "+0 (asleep)"])
@@ -235,12 +235,12 @@ func hold_that_would_begin(at: Vector2) -> EventInstance:
 	# `Tuning.CHAT_EXCITEMENT` twice for one crossing. Asked of the instances rather than of
 	# `Stroller.is_detained()`, because a hold and the input lock it sets run on two clocks that can
 	# end a frame apart, and it is the hold that owns the release.
-	for instance in world.instances:
+	for instance in world.instances():
 		if instance.is_chatting():
 			return null
 	var nearest: EventInstance = null
 	var nearest_range := INF
-	for instance in world.instances:
+	for instance in world.instances():
 		if not instance.detains_her() or instance.is_gone() or instance.is_on_its_way_out():
 			continue
 		if instance.is_chatting():
@@ -271,7 +271,7 @@ func hold_that_would_begin(at: Vector2) -> EventInstance:
 ##
 ## `false` for an alley door, which has no boom, so a post's trigger is untouched.
 func _on_a_booms_carriageway(door_body: EventInstance, at: Vector2) -> bool:
-	for instance in world.instances:
+	for instance in world.instances():
 		if not instance.is_a_boom():
 			continue
 		var axis := instance.facing_now()
@@ -302,10 +302,10 @@ func _on_a_booms_carriageway(door_body: EventInstance, at: Vector2) -> bool:
 ## behind her — walking her out through the world would mean colliding with the very body that is
 ## detaining her, which is the thing `Stroller.teleport_to()`'s own doc explains at length.
 func _release_finished_holds() -> void:
-	var body := world.player as Stroller
+	var body := world.player() as Stroller
 	if not world.has_player() or not body:
 		return
-	for instance in world.instances:
+	for instance in world.instances():
 		if not instance.detains_again() or not _door_entry_side.has(instance):
 			continue
 		if instance.is_chatting():
@@ -328,8 +328,8 @@ func _release_finished_holds() -> void:
 		# move her, and showing her there would draw her standing at the place she went in.
 		_latch_everything_she_was_let_out_into(released_at)
 		door_crossed.emit(instance.global_position, axis, true)
-		world.trace.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
-			instance.row_id(), RunTrace.tile(world.map.world_to_tile(instance.global_position)),
+		world.trace().note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
+			instance.row_id(), RunTrace.tile(world.map().world_to_tile(instance.global_position)),
 			instance.detains_for(), _compass_of(axis, released_along)])
 
 ## Arms a `ReleaseLatch` for **every** redetaining body whose own trigger `at` is inside, not only
@@ -343,7 +343,7 @@ func _release_finished_holds() -> void:
 ## come out of is the whole door, and every part of it waits until she has walked out of its own
 ## circle.
 func _latch_everything_she_was_let_out_into(at: Vector2) -> void:
-	for instance in world.instances:
+	for instance in world.instances():
 		if not instance.detains_again() or instance.is_gone() or instance.is_on_its_way_out():
 			continue
 		var reach := instance.detain_distance()
@@ -395,7 +395,7 @@ func _update_door_release_latches(her: Vector2) -> void:
 ## reach across that line it happened inside, so the three bodies of a street door cover the street
 ## kerb to kerb between them and a line through a door never extends past the door.
 func watch_the_door_lines(delta := 0.0) -> void:
-	var body := world.player as Stroller
+	var body := world.player() as Stroller
 	if not world.has_player() or not body:
 		return
 	var here := body.global_position
@@ -407,7 +407,7 @@ func watch_the_door_lines(delta := 0.0) -> void:
 		return
 	var called_off := _run_the_crossing_warning(here, delta)
 	var crossed: EventInstance = null
-	for instance in world.instances:
+	for instance in world.instances():
 		if not instance.detains_again() and not instance.is_a_boom():
 			continue
 		if _where_she_crossed(instance.global_position, instance.facing_now(),
@@ -416,8 +416,8 @@ func watch_the_door_lines(delta := 0.0) -> void:
 			break
 	if not crossed:
 		return
-	world.trace.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
-		crossed.row_id(), RunTrace.tile(world.map.world_to_tile(crossed.global_position)),
+	world.trace().note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
+		crossed.row_id(), RunTrace.tile(world.map().world_to_tile(crossed.global_position)),
 		heading_name(here - was),
 		(", the boom up" if crossed.is_raised() else ", the boom down")
 		if crossed.is_a_boom() else ""])
@@ -467,8 +467,8 @@ func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 	_crossed_to = signf((here - crossed.global_position).dot(crossed.facing_now()))
 	_crossing_for = 0.0
 	_crossing_warning.start(_crossing_for, CROSSING_WARNING)
-	world.trace.note("checkpoint", "%s at %s warns her: back across within %.1fs or a guard comes" % [
-		hut.row_id(), RunTrace.tile(world.map.world_to_tile(hut.global_position)),
+	world.trace().note("checkpoint", "%s at %s warns her: back across within %.1fs or a guard comes" % [
+		hut.row_id(), RunTrace.tile(world.map().world_to_tile(hut.global_position)),
 		CROSSING_WARNING])
 	return true
 
@@ -531,7 +531,7 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	return false
 
 func _call_off_the_crossing(why: String) -> void:
-	world.trace.note("checkpoint", "the crossing's warning is called off after %.1fs: %s"
+	world.trace().note("checkpoint", "the crossing's warning is called off after %.1fs: %s"
 			% [_crossing_for, why])
 	_crossing = null
 	_crossing_hut = null
@@ -573,7 +573,7 @@ func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := fa
 	var axis := door.facing_now()
 	var hut: EventInstance = null
 	var nearest := INF
-	for instance in world.instances:
+	for instance in world.instances():
 		if not instance.detains_again() or instance.is_gone() or instance.is_on_its_way_out():
 			continue
 		if absf(instance.facing_now().dot(axis)) < 0.99 \
@@ -601,7 +601,7 @@ func warn_at_the_doors() -> void:
 	var warned := {}
 	if is_instance_valid(_crossing_hut):
 		warned[_crossing_hut.get_instance_id()] = true
-	for instance in world.instances:
+	for instance in world.instances():
 		if instance.detains_again():
 			var warns := warned.has(instance.get_instance_id())
 			# `VisitCounter`'s own "door-guard-warned", each time a guard raises his hand: the

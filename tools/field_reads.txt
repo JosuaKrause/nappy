@@ -379,57 +379,17 @@ src/routes/region_planner.gd facing
 src/routes/region_planner.gd gate_state
 
 # [EventWorld] src/events/event_world.gd
-src/events/checkpoint_controller.gd instances
-src/events/checkpoint_controller.gd map
-src/events/checkpoint_controller.gd player
-src/events/checkpoint_controller.gd trace
-src/events/day_planner.gd city_map
-src/events/day_planner.gd map
-src/events/day_planner.gd run
-src/events/day_planner.gd trace
 src/events/event_manager.gd atlas
-src/events/event_manager.gd city_map
-src/events/event_manager.gd day
 src/events/event_manager.gd drawer
-src/events/event_manager.gd instances
-src/events/event_manager.gd map
-src/events/event_manager.gd player
 src/events/event_manager.gd points_at
-src/events/event_manager.gd run
 src/events/event_manager.gd signals
 src/events/event_manager.gd skip_drawing
 src/events/event_manager.gd timing
-src/events/event_manager.gd trace
-src/events/event_manager.gd visible
-src/events/event_sources.gd instances
 src/events/event_spawner.gd atlas
-src/events/event_spawner.gd city_map
-src/events/event_spawner.gd day
 src/events/event_spawner.gd drawer
-src/events/event_spawner.gd instances
-src/events/event_spawner.gd map
-src/events/event_spawner.gd player
-src/events/event_spawner.gd run
 src/events/event_spawner.gd signals
 src/events/event_spawner.gd skip_drawing
 src/events/event_spawner.gd timing
-src/events/event_spawner.gd trace
-src/events/event_spawner.gd visible
-src/events/event_streaming.gd instances
-src/events/event_streaming.gd map
-src/events/event_streaming.gd player
-src/events/events_ahead.gd city_map
-src/events/events_ahead.gd day
-src/events/events_ahead.gd instances
-src/events/events_ahead.gd map
-src/events/events_ahead.gd player
-src/events/events_ahead.gd run
-src/events/events_ahead.gd trace
-src/events/events_ahead.gd visible
-src/events/warning_board.gd instances
-src/events/warning_board.gd map
-src/events/warning_board.gd player
-src/events/warning_board.gd trace
 
 # [EventsAhead] src/events/events_ahead.gd
 src/events/event_manager.gd holds_the_home_streets
