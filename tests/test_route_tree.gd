@@ -456,7 +456,7 @@ func _plan(map: CityMap, day: int) -> Day:
 	planned.closures = ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng, planned.tree)
 	var closed := {}
 	for closure in planned.closures:
-		closed[closure.segment.key()] = true
+		closed[closure.street_key()] = true
 	planned.blocked = map.blocked_segments(closed)
 	planned.home = ClosurePlanner.home_street(map)
 	planned.areas = ClosurePlanner.calm_areas(map)

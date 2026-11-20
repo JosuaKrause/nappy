@@ -40,7 +40,7 @@ func _test_a_walk_kept_open_stands_one_event_a_street(t: TestRunner) -> void:
 		specs.append(DaySpec.for_section(which, 60.0))
 	var kept_open := 0
 	for spec in specs:
-		if spec.keeps_the_walk_open:
+		if spec.keeps_her_walk_open():
 			kept_open += 1
 			t.check(spec.stands_one_event_a_street(),
 					"day %d keeps the walk open and stands one event a street" % spec.number)

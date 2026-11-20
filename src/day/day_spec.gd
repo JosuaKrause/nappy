@@ -63,8 +63,8 @@ enum Section { NONE, BUILDING, CITY }
 ## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
 ## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
 ## past it — its plan's random streams and its save are keyed by it. Read through `day_number()`;
-## public only for the events' reads of it (the day planner, the event manager), which wait for the
-## events' interface.
+## public only for the event manager's read of it, which waits for the events' interface, and for
+## the suites' reads.
 var number := 1
 ## The day's own words where "Day N of 14" stands, on its brief and its outcome screen, and the
 ## line the HUD says once she is walking it: "" for a day, "Escape the building" or "Escape the
@@ -72,9 +72,8 @@ var number := 1
 var _title := ""
 ## Which section of the escape this is, `Section.NONE` for a day. Read through `section_kind()`.
 var _section := Section.NONE
-## Where the walk is (`World`). Read through `world_kind()`; public only for the day planner's read
-## of it, which waits for the events' interface.
-var world := World.CITY
+## Where the walk is (`World`). Read through `world_kind()`.
+var _world := World.CITY
 var goal := Goal.HOME
 ## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityExit.Kind` -> position, the
 ## last walkable tile of the spine at each end rather than where the portal's picture is anchored.
@@ -181,15 +180,14 @@ var _drawn_before_she_sets_off := false
 ## (`CalmAreas.unused_ground()`, `DawnCalmKeptClean`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
 ## there (minty-lemur #785).
-var keeps_unused_calm_clear := true
+var _keeps_unused_calm_clear := true
 ## Whether the home's streets are the day's: nothing on the street her front door opens onto
 ## (`RowGround.tiles_for()`) or round the home block (`CityMap.held`). The
 ## escape keeps its own rule instead, by the player's word (minty-lemur #785): she sets off from the
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
 ## refused (`EventScheduler.clearance_around_her()`). Read through `keeps_the_home_streets_clear()`;
-## public only for the events' reads of it (the dawn's context, the day planner, the event manager),
-## which wait for the events' interface, and for `tests/test_dawn_context.gd`'s write of it on a bare
-## spec, to build a held and a not-held one.
+## public only for the event manager's read of it, which waits for the events' interface, and for
+## `tests/test_dawn_context.gd`'s write of it on a bare spec, to build a held and a not-held one.
 var holds_the_home_streets := true
 ## The share of its **wall**-role rows the day draws: every wall-role row's weight in a unit's bag
 ## is scaled by it, while its row marbles are measured against every wall weighed in full
@@ -202,12 +200,12 @@ var wall_row_share := 1.0
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## Whether no two waiting guards may notice her from the same ground
 ## (`OneNoticeRule._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
-var one_notice_at_a_time := false
+var _one_notice_at_a_time := false
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined, past every body and every standing lethal reach (`WalkGround`): the escape's, whose
 ## bodies stand on the one walk rather than off it. A day keeps its routes through its corridor's own
 ## rules instead (`StreetInvalidation`: a route's junctions, its walked sidewalk, a beat's opening).
-var keeps_the_walk_open := false
+var _keeps_the_walk_open := false
 
 # --------------------------------------------------------- how its streets are sealed ---
 
@@ -223,9 +221,8 @@ var _seal_pictures := SealPictures.DAY
 ## Whether the walk's streets are grown as a day's route tree and closed off it
 ## (`City._close_streets()`: the tree, the region wall, the closures), or handed in with the walk
 ## (`City.tint_the_route()`): the escape's chains are planned after the city is dressed. Read
-## through `closes_the_streets()`; public only for the day planner's read of it, which waits for the
-## events' interface.
-var closes_streets := true
+## through `closes_the_streets()`.
+var _closes_streets := true
 ## Whether the main road is sealed off the walk like any other street. A day's tree never routes
 ## along the spine and sealing it too would wall the one street she is meant to cross freely; the
 ## escape's chains end on it, so leaving the rest of it open would join them at the one street that
@@ -302,7 +299,7 @@ static func for_section(which: int, section_length: float, section_title := "") 
 	spec.poster_pursuits = false
 	spec.crowd_density = 0.0
 	spec.pastes_posters = false
-	spec.closes_streets = false
+	spec._closes_streets = false
 	spec._photographs_the_dawn = false
 	spec._runs_the_resistance = false
 	spec._starts_asleep = true
@@ -310,13 +307,13 @@ static func for_section(which: int, section_length: float, section_title := "") 
 	spec._shuts_the_spent_calm = false
 	if which == Section.BUILDING:
 		spec.number = BUILDING_DAY
-		spec.world = World.BUILDING
+		spec._world = World.BUILDING
 		spec.goal = Goal.SERVICE_EXIT
 		spec._start = Start.FLAT
 		spec._a_win_leads_into = Section.CITY
 	else:
 		spec.number = CITY_DAY
-		spec.world = World.CITY
+		spec._world = World.CITY
 		spec.goal = Goal.CITY_EDGE
 		spec._start = Start.SERVICE_EXIT
 		spec._events_stream = "finale"
@@ -345,12 +342,12 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
-	spec.keeps_unused_calm_clear = false
+	spec._keeps_unused_calm_clear = false
 	spec.holds_the_home_streets = false
 	spec._one_event_a_street = true
 	spec._drawn_before_she_sets_off = true
-	spec.one_notice_at_a_time = true
-	spec.keeps_the_walk_open = true
+	spec._one_notice_at_a_time = true
+	spec._keeps_the_walk_open = true
 	spec._seal_pictures = SealPictures.ESCAPE
 	spec._seals_the_main_road = true
 	spec._seals_every_street_off_the_walk = true
@@ -367,9 +364,9 @@ func goal_kind() -> Goal:
 func section_kind() -> Section:
 	return _section
 
-## Where the walk is, the city or the building (`world`).
+## Where the walk is, the city or the building (`_world`).
 func world_kind() -> World:
-	return world
+	return _world
 
 ## The day's own words where "Day N of 14" stands, "" for a day of the calendar (`_title`).
 func title() -> String:
@@ -394,7 +391,7 @@ func counts_in_hundredths() -> bool:
 
 ## Whether the day grows its closures at dawn.
 func closes_the_streets() -> bool:
-	return closes_streets
+	return _closes_streets
 
 ## Where she is put down as the walk starts (`Start`).
 func start_point() -> Start:
@@ -466,6 +463,21 @@ func use_exits(the_exits: Dictionary) -> void:
 func keeps_the_home_streets_clear() -> bool:
 	return holds_the_home_streets
 
+## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
+## joined (`_keeps_the_walk_open`): the escape's.
+func keeps_her_walk_open() -> bool:
+	return _keeps_the_walk_open
+
+## Whether no two waiting guards may notice her from the same ground (`_one_notice_at_a_time`): the
+## escape's.
+func notices_one_at_a_time() -> bool:
+	return _one_notice_at_a_time
+
+## Whether the calm areas she has not used this act are kept clear of everything the dawn places
+## (`_keeps_unused_calm_clear`).
+func keeps_the_unused_calm_clean() -> bool:
+	return _keeps_unused_calm_clear
+
 ## Which seal pictures close the streets off the walk (`_seal_pictures`).
 func seal_pictures() -> SealPictures:
 	return _seal_pictures
@@ -487,7 +499,7 @@ func pastes_the_posters() -> bool:
 ## **Whether the region wall divides the city today**, with its doors and the gatehouses at them:
 ## every day from the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) to the last, and neither section
 ## of the escape, since the building has no streets and the escape's city grows no day's tree to
-## stand a wall against (`closes_streets` is off). Worked out once, by `for_day()`, and asked by
+## stand a wall against (`closes_the_streets()` is off). Worked out once, by `for_day()`, and asked by
 ## what the wall makes harder to navigate rather than compared with the day number again: the
 ## catalogue's walls kept (`wall_row_share`), the closures (`ClosurePlanner.closures_wanted()`) and
 ## the seals (`SealPlanner.plan_day()`), each thinned by a share of its own. *(azure-puffin, point

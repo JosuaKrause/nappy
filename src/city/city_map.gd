@@ -228,7 +228,7 @@ var calm_blocks: Array[Vector2i] = []
 var playgrounds: Array[Rect2i] = []
 var _home_block := Vector2i.ZERO
 var _alley_rects: Array[Rect2i] = []
-var square_rects: Array[Rect2i] = []
+var _square_rects: Array[Rect2i] = []
 var courtyard_rects: Array[Rect2i] = []
 var home_rect := Rect2i()
 var _seed_used := 0
@@ -536,9 +536,9 @@ func precinct_stretches() -> Array[Vector4i]:
 func alley_lots() -> Array[Rect2i]:
 	return _alley_rects
 
-## The tile rect of every plaza (`square_rects`).
+## The tile rect of every plaza (`_square_rects`).
 func square_lots() -> Array[Rect2i]:
-	return square_rects
+	return _square_rects
 
 ## The region the junction `node` (`StreetNetwork.node_of()`) belongs to, or `-1` for one past the
 ## regions recorded or never claimed (`_region_of_junction`).
@@ -831,9 +831,9 @@ func plan_of(block: Vector2i) -> BlockPlan:
 func carve_block(block: Vector2i, layout: BlockLayout) -> void:
 	_block_layouts[block] = layout
 
-## Records a plaza (`square_rects`).
+## Records a plaza (`_square_rects`).
 func add_square(rect: Rect2i) -> void:
-	square_rects.append(rect)
+	_square_rects.append(rect)
 
 ## Records a through-alley (`_alley_rects`).
 func add_alley(rect: Rect2i) -> void:
@@ -1028,7 +1028,7 @@ func copy() -> CityMap:
 	twin.playgrounds = playgrounds.duplicate()
 	twin._home_block = _home_block
 	twin._alley_rects = _alley_rects.duplicate()
-	twin.square_rects = square_rects.duplicate()
+	twin._square_rects = _square_rects.duplicate()
 	twin.courtyard_rects = courtyard_rects.duplicate()
 	twin.home_rect = home_rect
 	twin._seed_used = _seed_used
@@ -1092,7 +1092,7 @@ func capture() -> Dictionary:
 			"power_station_door_key": _power_station_door_key,
 			"tiles": tiles.duplicate(), "building_rects": _building_rects.duplicate(),
 			"big_buildings": _big_buildings.duplicate(), "alley_rects": _alley_rects.duplicate(),
-			"square_rects": square_rects.duplicate(), "courtyard_rects": courtyard_rects.duplicate(),
+			"square_rects": _square_rects.duplicate(), "courtyard_rects": courtyard_rects.duplicate(),
 			"zones": zones, "block_plans": plans, "block_layouts": layouts,
 			"precincts": _precinct_spans.duplicate(), "absent_segments": absent,
 			"built_over": _built_over.duplicate(), "region_of_junction": _region_of_junction.duplicate(),
@@ -1117,7 +1117,7 @@ static func restored(facts: Dictionary) -> CityMap:
 	map._building_rects.assign(facts["building_rects"])
 	map._big_buildings.assign(facts["big_buildings"])
 	map._alley_rects.assign(facts["alley_rects"])
-	map.square_rects.assign(facts["square_rects"])
+	map._square_rects.assign(facts["square_rects"])
 	map.courtyard_rects.assign(facts["courtyard_rects"])
 	var plans: Dictionary = facts["block_plans"]
 	for block: Vector2i in plans:

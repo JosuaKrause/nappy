@@ -737,9 +737,9 @@ func _test_closures_and_seals_never_land_on_a_boundary(t: TestRunner) -> void:
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 					closure_rng, tree, region_plan)
 			for closure in closures:
-				t.check(not boundary.has(closure.segment.key()),
+				t.check(not boundary.has(closure.street_key()),
 						"seed %d day %d: closure at %s does not land on a region boundary"
-						% [map.city_seed(), day, closure.segment.key()])
+						% [map.city_seed(), day, closure.street_key()])
 
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])

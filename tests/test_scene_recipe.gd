@@ -142,7 +142,7 @@ func _test_closures(t: TestRunner, map: CityMap) -> void:
 	t.check(not planned.is_empty(), "closure comparison has a production-selected candidate")
 	if planned.is_empty():
 		return
-	var key := planned[0].segment.key()
+	var key := planned[0].street_key()
 	var input := _recipe()
 	input.setup.day = 1
 	input.city.closures = [{"segment": [key.x, key.y, key.z], "kind": "roadworks"}]
@@ -162,8 +162,9 @@ func _test_a_closure_must_fit_a_bounded_window(t: TestRunner, map: CityMap) -> v
 	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng)
 	if planned.is_empty():
 		return
-	var street := planned[0].segment.tile_rect()
-	var key := planned[0].segment.key()
+	var mouths := planned[0].mouth_rects()
+	var street := mouths[0].merge(mouths[1])
+	var key := planned[0].street_key()
 	var whole := Rect2i(Vector2i.ZERO, map.size_in_tiles())
 	var short := Rect2i(street.position, street.size - Vector2i.ONE)
 	for window: Rect2i in [whole, short]:

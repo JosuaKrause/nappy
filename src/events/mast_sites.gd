@@ -168,7 +168,7 @@ static func _junction_sites(map: CityMap) -> Array[Vector2]:
 ## rather than offering a point nothing can stand on.
 static func _square_sites(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
-	for rect in map.square_rects:
+	for rect in map.square_lots():
 		var snapped := _snap_to_ground(map, map.tile_rect_to_world(rect).get_center())
 		if snapped != Vector2.INF:
 			found.append(snapped)
@@ -180,10 +180,10 @@ static func _square_sites(map: CityMap) -> Array[Vector2]:
 ## stretch of sidewalk rather than a crossing.
 static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
-	if map.main_road < 0:
+	if map.main_road_corridor() < 0:
 		return found
 	var period := CityMap.period()
-	var x := map.main_road * period + Tuning.STREET_WIDTH / 2
+	var x := map.main_road_corridor() * period + Tuning.STREET_WIDTH / 2
 	var count := StreetNetwork.junction_count()
 	for jy in maxi(count.y - 1, 0):
 		var y := jy * period + Tuning.STREET_WIDTH + Tuning.BLOCK_SIZE / 2
@@ -220,7 +220,7 @@ static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 	var reach := EventCatalogue.mast().heard_within()
 	var seen := {}
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		var anchor := map.anchor_of(block)
 		if seen.has(anchor):
 			continue
@@ -264,7 +264,7 @@ static func possible_door_points(map: CityMap) -> PackedVector2Array:
 	for segment in RegionPlanner.boundary_segments(map):
 		var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 				< RegionPlanner.region_of_junction(map, segment.b)
-		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+		var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
 		var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
 		points.append_array(PackedVector2Array(
 				SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)))

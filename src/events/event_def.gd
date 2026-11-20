@@ -245,6 +245,10 @@ enum WarningPicture {
 @export var noun := ""
 @export var noun_plural := ""
 
+## What the run log calls `count` of it: `noun` for one, `noun_plural` for more.
+func noun_for(count: int) -> String:
+	return noun if count == 1 else noun_plural
+
 ## This row's own ground shape, the datum its shadow and its solid body (when it has one) are both
 ## derived from. A plain `var` since `GroundShape` is a `RefCounted` and cannot export. `null` for
 ## every row whose `look` is `NONE`, set by every other. See `solid()` and `docs/EVENTS.md`, "Solid
@@ -516,6 +520,11 @@ func spawn_mode_on(day: int) -> SpawnMode:
 	if from_day_after and day > from_day_after.after_day:
 		return from_day_after.spawn_mode
 	return spawn_mode
+
+## Whether `day` is past the day this row's siting switches (`from_day_after`): false for a row with no
+## switch. `charging_dog` is sprinkled into the route only once its first siting has switched.
+func is_past_its_switch_on(day: int) -> bool:
+	return from_day_after != null and day > from_day_after.after_day
 
 ## How this row notices her on `day`: `notice` through `from_day_after.after_day`, the switch's own
 ## past it. An instance reads `notice` off the def it was handed, so a placement past the switch is
@@ -907,6 +916,11 @@ enum HeatResponse {
 }
 
 @export var heat_response := HeatResponse.NONE
+
+## Whether, at the heat that hunts, it stops being a place and starts being a hunter
+## (`heat_response` `HUNTS`), the lethal rung: `roadblock`'s guard and the two vans.
+func hunts_for_her() -> bool:
+	return heat_response == HeatResponse.HUNTS
 
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Being *forced* to reroute
 ## is a different pressure from choosing to.
@@ -1849,7 +1863,18 @@ func nearest_it_is_created() -> float:
 ## (`PendingWarning.down_her_line()`), under a warning first when it `telegraphs`, at once when it
 ## does not.
 func comes_down_her_line() -> bool:
-	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
+	return comes_toward_her() and not keeps_to_the_carriageway()
+
+## Whether the director sends it toward her, on whatever ground (`spawn_mode` `TOWARD_PLAYER`):
+## down her sidewalk on foot (`comes_down_her_line()` answers for that half) or down the carriageway
+## beside her (`keeps_to_the_carriageway()`).
+func comes_toward_her() -> bool:
+	return spawn_mode == SpawnMode.TOWARD_PLAYER
+
+## Whether the row's own siting is on the map (`spawn_mode` `MAP`), before any switch by day:
+## `spawn_mode_on()` answers for a day.
+func is_placed_on_the_map() -> bool:
+	return spawn_mode == SpawnMode.MAP
 
 ## **How old an instance of this row is at `point` of its beat** (0 at the beat's start, short of 1
 ## at its end), its telegraph spent: what a row the director sends ahead of her down her line is

@@ -4,12 +4,12 @@ extends DawnPhase
 ## one the spoilers leave alone joins the calm ground nothing may reach
 ## (`DawnContext.keep_clean()`). It runs after the fixed parts and the scars stand, whose
 ## spoiling it reads, and before the first judge asks the day's rules, which are built over that
-## ground once. A walk whose spec keeps no calm clear (`DaySpec.keeps_unused_calm_clear`) decides
+## ground once. A walk whose spec keeps no calm clear (`DaySpec.keeps_the_unused_calm_clean()`) decides
 ## nothing. Model: no node.
 
 ## Overrides DawnPhase.run.
 func run(context: DawnContext) -> void:
-	if context.spec().keeps_unused_calm_clear:
+	if context.spec().keeps_the_unused_calm_clean():
 		context.keep_clean(_kept_clean(context.calm(), context.events()))
 
 ## **The calm area the day keeps clean, where only construction can keep one**: `NONE` while an area

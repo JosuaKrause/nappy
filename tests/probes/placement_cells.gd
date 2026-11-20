@@ -56,7 +56,7 @@ func run(t: TestRunner) -> void:
 			map.close_streets(closures)
 			map.clear_day_holds()
 			for closure: RoadClosure in closures:
-				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
 			for segment: StreetNetwork.Segment in region_plan.walls:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment: StreetNetwork.Segment in region_plan.doors:
