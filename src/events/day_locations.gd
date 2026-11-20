@@ -279,7 +279,7 @@ func sections_in(view: int) -> Array[Location]:
 ## Assigns `plan`, an event that spans the street (`EventDef.spans_the_street()`), to `section` for
 ## the day: the section and its two sidewalk locations are taken, so no draw happens for them.
 func assign(section: Location, plan: EventPlan) -> void:
-	assert(plan.row().spans_the_street(),
+	assert(plan.spans_the_street(),
 			"DayLocations.assign(): only an event that spans the street takes a section")
 	(_streets[section.segment().key()] as StreetLocations).take_section(section, plan)
 

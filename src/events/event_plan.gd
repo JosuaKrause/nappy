@@ -622,6 +622,36 @@ func is_a_one_shot() -> bool:
 func calls_in() -> String:
 	return def.calls_in()
 
+## How far round where it stands its field reaches, the stretch a siting keeps clear of the
+## fields of others (`EventDef.field_reach()`).
+func field_reach() -> float:
+	return def.field_reach()
+
+## How far round where it stands a route's line is kept clear of it (`EventDef.line_reach()`).
+func line_reach() -> float:
+	return def.line_reach()
+
+## Whether it takes a whole section of its street when it is placed (`EventDef.spans_the_street()`).
+func spans_the_street() -> bool:
+	return def.spans_the_street()
+
+## Whether the dawn hands it to her walk, to be sited on her way with no position
+## (`EventDef.is_handed_to_her_walk()`).
+func is_handed_to_her_walk() -> bool:
+	return def.is_handed_to_her_walk()
+
+## Whether her walk places it rather than the dawn or a unit's draw (`EventDef.is_sited_from_her_walk()`).
+func is_sited_from_her_walk() -> bool:
+	return def.is_sited_from_her_walk()
+
+## Whether it is a set piece sited on her way (`EventDef.is_a_set_piece_on_her_way()`).
+func is_a_set_piece_on_her_way() -> bool:
+	return def.is_a_set_piece_on_her_way()
+
+## Whether her walk stands it at a building's front (`EventDef.stands_at_a_front()`).
+func stands_at_a_front() -> bool:
+	return def.stands_at_a_front()
+
 ## Whether its row is a loudspeaker mast (`EventDef.is_a_mast()`).
 func is_a_mast() -> bool:
 	return def.is_a_mast()

@@ -307,6 +307,6 @@ static func _open_of(unit: PlacementUnit) -> Array[Location]:
 ## the poster crew) with no position (`EventScheduler.owed_to_her_walk()`), for her walk to site;
 ## any other plan as drawn.
 static func _as_drawn(plan: EventPlan) -> EventPlan:
-	if plan.row().is_handed_to_her_walk():
+	if plan.is_handed_to_her_walk():
 		return EventScheduler.owed_to_her_walk(plan)
 	return plan

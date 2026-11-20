@@ -107,9 +107,9 @@ static func _cumulative_lane_reach_of(def: EventDef) -> float:
 static func _physical_bodies_of(rows: Array[EventPlan]) -> Array:
 	var found: Array = []
 	for plan in rows:
-		if plan.row().obstructs_within() > 0.0:
+		if plan.obstructs_within() > 0.0:
 			var at := plan.body_at()
-			found.append(Vector3(at.x, at.y, plan.row().obstructs_within()))
+			found.append(Vector3(at.x, at.y, plan.obstructs_within()))
 	return found
 
 ## The same question over an arbitrary run of a street's ground, which is what lets the width rule
@@ -126,7 +126,7 @@ static func closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 			var at := map.tile_to_world(tile)
 			var taken := false
 			for plan in rows:
-				if plan.denies(at, plan.row().line_reach()):
+				if plan.denies(at, plan.line_reach()):
 					taken = true
 					break
 			if not taken:
