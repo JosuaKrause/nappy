@@ -386,7 +386,7 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
 	t.check(pursuer.hard_fail and pursuer.pursuit != null, "alley_robbery is lethal and pursues")
 	var off_wall := EventPlan.new(pursuer, Vector2.ZERO)
-	off_wall.role = GameEnums.BlockerRole.FRICTION
+	off_wall.give_role(GameEnums.BlockerRole.FRICTION)
 	t.check(not off_wall.keeps_its_field_clear(),
 			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
 
@@ -396,13 +396,13 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	t.check(stationary.hard_fail and stationary.pursuit == null,
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")
 	var off_wall_stationary := EventPlan.new(stationary, Vector2.ZERO)
-	off_wall_stationary.role = GameEnums.BlockerRole.FRICTION
+	off_wall_stationary.give_role(GameEnums.BlockerRole.FRICTION)
 	t.check(off_wall_stationary.keeps_its_field_clear(),
 			"and a lethal row that does not pursue keeps its field clear off the WALL role too")
 
 	# And the exemption the other way: the same row classified a wall is the one the rule lets off.
 	var walled := EventPlan.new(stationary, Vector2.ZERO)
-	walled.role = GameEnums.BlockerRole.WALL
+	walled.give_role(GameEnums.BlockerRole.WALL)
 	t.check(not walled.keeps_its_field_clear(),
 			"while a lethal wall is the exemption the rule makes, and keeps nothing clear")
 

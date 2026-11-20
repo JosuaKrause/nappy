@@ -224,7 +224,7 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 ## it never stands at. A one-shot owed to her walk is planned unplaced by `DawnOneShots`.
 static func owed_to_her_walk(plan: EventPlan) -> EventPlan:
 	var owed := EventPlan.new(plan.def, Vector2.INF)
-	owed.role = plan.role
+	owed.give_role(plan.role())
 	return owed
 
 ## The tiles of one street of the walk a given row may stand on: **the day's own ground for the row**
