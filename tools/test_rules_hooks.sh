@@ -16,8 +16,10 @@
 #     before
 #   - the retry, where the payload carries a transcript_path: it passes where the transcript shows,
 #     for each skill the refusal named, a tool call that reads it (a Read of its file, the Skill
-#     tool, a shell command or a script naming its path), a read before the refusal included and
-#     the refusal's own index (a tool result) not; where a skill shows none it is refused again,
+#     tool, a shell command or a script naming its file), a read before the refusal included and
+#     the refusal's own index (a tool result) not; a Read with an offset or a limit, and a Write,
+#     Edit, NotebookEdit, Agent or SendMessage naming the file, are no read; a skill let through
+#     at its third attempt in a call that refuses another is named in that refusal; where a skill shows none it is refused again,
 #     naming that skill alone, and what the hook looks for; the third attempt passes with context
 #     saying no read was seen; a transcript that cannot be read passes with context saying so; a
 #     sub-agent's own transcript (beside the parent's, by agent_id) is the one read, and a payload
@@ -633,7 +635,7 @@ whose_reading="unless you have read it whole in this context"
 
 rules_call_at "$clock" main-session "" Edit "$gd_file"
 assert_rules "main session, first .gd edit -> refused, naming godot" deny "godot,"
-assert_rules_say "the refusal says the edit passes when made again" "Then make this edit again: it passes."
+assert_rules_say "the refusal says the edit passes when made again" "Then make this edit again: it passes once the session transcript shows a tool call that reads each skill named here."
 assert_rules_say "the refusal says an edit made within the window does not" \
     "(One made within 2 seconds of this refusal is refused as a call of the same message.)"
 assert_rules_say "the refusal says whose reading counts" "$whose_reading"
@@ -735,7 +737,7 @@ tx_call "$tx_read" Read "$(jq -nc --arg p "$godot_skill" '{file_path: $p}')"
 tx_skill="$tx_dir/skill.jsonl"
 tx_call "$tx_skill" Skill '{"skill":"godot"}'
 tx_shell="$tx_dir/shell.jsonl"
-tx_call "$tx_shell" Bash "$(jq -nc --arg c "cat $godot_skill | head -50" '{command: $c}')"
+tx_call "$tx_shell" Bash "$(jq -nc --arg c "cat $godot_skill" '{command: $c}')"
 tx_repl="$tx_dir/repl.jsonl"
 tx_call "$tx_repl" REPL "$(jq -nc --arg c "await file('$godot_skill').text()" '{code: $c}')"
 tx_none="$tx_dir/none.jsonl"
@@ -748,12 +750,31 @@ tx_call "$tx_none" Skill '{"skill":"city"}'
 for read_kind in read skill shell repl; do
     rules_call "tx-$read_kind" "" Edit "$gd_file" "$tx_dir/$read_kind.jsonl"
     assert_rules "a $read_kind in the transcript, first .gd edit -> still refused (the read before it counts at the retry)" deny "godot,"
-    assert_rules_say "the refusal says the edit made again is judged by the transcript" "judged by the session transcript"
+    assert_rules_say "the refusal says what the retry is judged by" "it passes once the session transcript shows a tool call that reads each skill named here"
     rules_age "tx-$read_kind" ""
     rules_call "tx-$read_kind" "" Edit "$gd_file" "$tx_dir/$read_kind.jsonl"
     assert_rules "the retry with the skill read by a $read_kind -> let through" none ""
     assert_eq "a skill shown read is marked, so a later edit of the area is not judged again" \
         ok "$(cat "$state_root/tx-$read_kind/godot")"
+done
+
+# What does not count as a read: a Read with a limit or an offset (a partial read), and the input
+# of a tool that writes a text or sends one, though it names the skill's file.
+tx_limit="$tx_dir/limit.jsonl"
+tx_call "$tx_limit" Read "$(jq -nc --arg p "$godot_skill" '{file_path: $p, limit: 50}')"
+tx_offset="$tx_dir/offset.jsonl"
+tx_call "$tx_offset" Read "$(jq -nc --arg p "$godot_skill" '{file_path: $p, offset: 10}')"
+tx_writes="$tx_dir/writes.jsonl"
+tx_call "$tx_writes" Write "$(jq -nc --arg p "$godot_skill" '{file_path: "/tmp/brief.md", content: ("read " + $p + " first")}')"
+tx_call "$tx_writes" Edit "$(jq -nc --arg p "$godot_skill" '{file_path: "/tmp/doc.md", old_string: "a", new_string: $p}')"
+tx_call "$tx_writes" Agent "$(jq -nc --arg p "$godot_skill" '{description: "x", prompt: ("Read " + $p)}')"
+tx_call "$tx_writes" SendMessage "$(jq -nc --arg p "$godot_skill" '{to: "x", message: ("read " + $p)}')"
+tx_call "$tx_writes" NotebookEdit "$(jq -nc --arg p "$godot_skill" '{notebook_path: "/tmp/n.ipynb", new_source: $p}')"
+for not_read in limit offset writes; do
+    rules_call "tx-$not_read" "" Edit "$gd_file" "$tx_dir/$not_read.jsonl"
+    rules_age "tx-$not_read" ""
+    rules_call "tx-$not_read" "" Edit "$gd_file" "$tx_dir/$not_read.jsonl"
+    assert_rules "the retry whose transcript holds only a $not_read naming the skill's file -> refused again" deny "godot,"
 done
 
 # No read in the transcript: refused again, naming the skill, saying what the hook looks for; the
@@ -763,7 +784,7 @@ assert_rules "no read, first .gd edit -> refused" deny "godot,"
 rules_age tx-none ""
 rules_call tx-none "" Edit "$gd_file" "$tx_none"
 assert_rules "no read, the retry -> refused again, naming godot" deny "godot,"
-assert_rules_say "the second refusal says what the hook looks for" "shows no tool call that reads them: the hook looks for a Read of a skill's file, the Skill tool naming it, or any tool call whose input holds its path"
+assert_rules_say "the second refusal says what the hook looks for" "shows no tool call that reads them: the hook looks for a Read of a skill's whole file (no offset or limit), the Skill tool naming it, or another tool call, a shell command or a script, that names its file"
 assert_rules_say "the second refusal names the transcript it looked in" "the transcript at $tx_none"
 assert_rules_say "the second refusal says the third attempt passes" "is let through at the third attempt"
 rules_call_at "$(($(cat "$state_root/tx-none/godot") + 1))" tx-none "" Edit "$gd_file" "$tx_none"
@@ -787,6 +808,21 @@ assert_rules "a sub-agent's first edit under src/city/ -> refused" deny "city,go
 rules_age tx-part2 sub-agent-p
 rules_call tx-part2 sub-agent-p Edit "src/city/zz_probe.gd" "$tx_dir/tx-part2.jsonl"
 assert_rules "only designing-classes missing from the sub-agent's transcript -> refused naming it alone" deny "designing-classes,"
+
+# A skill let through at its third attempt in the call that refuses another for the first time is
+# named in that refusal, so the session is told it went through unread.
+mkdir -p "$tx_dir/tx-mix/subagents"
+cp "$tx_none" "$tx_dir/tx-mix/subagents/agent-sub-agent-m.jsonl"
+rules_call tx-mix sub-agent-m Edit "$gd_file" "$tx_dir/tx-mix.jsonl"
+rules_age tx-mix sub-agent-m
+rules_call tx-mix sub-agent-m Edit "$gd_file" "$tx_dir/tx-mix.jsonl"
+rules_age tx-mix sub-agent-m
+rules_call tx-mix sub-agent-m Edit "src/city/zz_probe.gd" "$tx_dir/tx-mix.jsonl"
+assert_rules "a second area's first edit, the first area's skill refused once already -> refused for the new skills" deny "city,designing-classes,"
+rules_age tx-mix sub-agent-m
+rules_call tx-mix sub-agent-m Edit "src/city/zz_probe.gd" "$tx_dir/tx-mix.jsonl"
+assert_rules "the retry: godot at its third attempt, designing-classes for the first time (city is read) -> refused naming designing-classes" deny "designing-classes,"
+assert_rules_say "that refusal says godot went through unread at the third attempt" "Let through unread, at the third attempt after one refusal each: godot."
 
 # A transcript that is not there cannot be checked: the edit passes, with context saying so.
 rules_call tx-gone "" Edit "$gd_file" "$tx_dir/not-there.jsonl"

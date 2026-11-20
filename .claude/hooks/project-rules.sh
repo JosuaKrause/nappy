@@ -16,17 +16,22 @@
 # says it was not seen read: no skill costs more than two refusals.
 #
 # What counts as a read, anywhere in the transcript and so before the first refusal too: a `Read`
-# of the skill's SKILL.md, a `Skill` call naming it, or any other tool call whose input holds its
-# path (.claude/skills/<name>/SKILL.md), a shell `cat` or a script that reads the file among
-# them. Only a tool call's input is searched: the refusal's own index names the path too, and
-# sits in the transcript as a tool result.
+# of the skill's SKILL.md with neither offset nor limit (a partial read is no read), a `Skill`
+# call naming it, or another tool call, a shell command or a script, whose input names the file
+# (.claude/skills/<name>/SKILL.md). A shell command or a script is not told from a partial read
+# of the file, so naming it counts. The input of a Write, Edit, MultiEdit, NotebookEdit, Agent,
+# Task or SendMessage call never counts: a brief that names a skill's path does not read it. Only
+# a tool call's input is searched: the refusal's own index names the path too, and sits in the
+# transcript as a tool result.
 #
 # The transcript. The payload's `transcript_path` is the main session's transcript; a
 # sub-agent's own lives beside it, at <that path without .jsonl>/subagents/agent-<agent_id>.jsonl
 # (an `agent_id` in the payload; a path already of that shape is used as it is). Where the file
 # cannot be read the reads cannot be checked, so the edit passes with a line of context saying
-# so; a payload with no `transcript_path` passes as it always did. The search is a `grep` for the
-# two strings a read can hold, then `jq` over the few lines that hold one.
+# so; a payload with no `transcript_path` passes as it always did. The search is a `perl` (`grep`
+# where there is none) pass for the two strings a read can hold, then `jq` over the few lines
+# that hold one: on an 87 MB transcript under the harness's environment, perl takes about a third
+# of a second where BSD grep with two patterns takes about one and a half.
 #
 # Named once per skill per session: the marker files under $STATE record what has been named. A
 # marker written by a refusal holds the time of it, and an edit that arrives within
@@ -346,7 +351,7 @@ if [ -n "$fresh" ]; then
 		}'
 		exit 0
 	fi
-	printf 'Refused once, so that the rules are read before the edit. %s is governed by the project skills below, and their text is not put into context for you. %s. Then make this edit again: it passes. (One made within %s seconds of this refusal is refused as a call of the same message.) The edit made again is judged by the session transcript: it must show a tool call that reads each skill named here.\n\n%s' \
+	printf 'Refused once, so that the rules are read before the edit. %s is governed by the project skills below, and their text is not put into context for you. %s. Then make this edit again: it passes once the session transcript shows a tool call that reads each skill named here. (One made within %s seconds of this refusal is refused as a call of the same message.)\n\n%s' \
 		"$rel" "$how" "$BATCH_SECONDS" "$index" | deny
 	exit 0
 fi
@@ -371,13 +376,29 @@ if [ -n "$agent" ]; then
 	esac
 fi
 
+# Prints the lines of transcript $1 that hold one of the two strings a read can hold. perl's
+# index() takes about a fifth of what BSD grep with two patterns does on a large transcript.
+transcript_lines() {
+	if command -v perl >/dev/null 2>&1; then
+		perl -ne 'print if index($_, "/SKILL.md") >= 0 || index($_, "\"skill\"") >= 0' "$1" 2>/dev/null
+	else
+		grep -a -F -e '/SKILL.md' -e '"skill"' "$1" 2>/dev/null
+	fi
+}
+
 # Prints the skills a tool call in transcript $1 reads, each once, on one line: a Skill call's
-# name (a plugin prefix cut), and every .claude/skills/<name>/SKILL.md in any tool call's input.
+# name (a plugin prefix cut), a Read's file when it has neither offset nor limit, and every
+# .claude/skills/<name>/SKILL.md in the input of any other tool call but those that write a text
+# or send one (a brief naming a skill's path does not read it).
 skills_read() {
-	grep -a -F -e '/SKILL.md' -e '"skill"' "$1" 2>/dev/null | jq -rR '
+	transcript_lines "$1" | jq -rR '
+		def named: scan("\\.claude/skills/([A-Za-z0-9_-]+)/SKILL\\.md") | .[0];
 		fromjson? | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use") |
-		(if .name == "Skill" then (.input.skill // empty | tostring | sub("^.*:"; "")) else empty end),
-		((.input | tostring) | scan("\\.claude/skills/([A-Za-z0-9_-]+)/SKILL\\.md") | .[0])' 2>/dev/null \
+		if .name == "Skill" then (.input.skill // empty | tostring | sub("^.*:"; ""))
+		elif .name == "Read" then
+			(select(.input.limit == null and .input.offset == null) | (.input.file_path // empty | tostring | named))
+		elif (.name | IN("Write", "Edit", "MultiEdit", "NotebookEdit", "Agent", "Task", "SendMessage")) then empty
+		else (.input | tostring | named) end' 2>/dev/null \
 		| sort -u | tr '\n' ' '
 }
 
@@ -422,8 +443,12 @@ if [ -n "$unseen" ]; then
 		printf '%s\n' "$now" 2>/dev/null > "$state/$skill"
 		index+="$(rules_index_entry "$skills" "$skill")"$'\n'
 	done
-	printf 'Refused again. %s is governed by the project skills below, and the transcript at %s shows no tool call that reads them: the hook looks for a Read of a skill'"'"'s file, the Skill tool naming it, or any tool call whose input holds its path (.claude/skills/<name>/SKILL.md). %s. Then make this edit again: it passes once each shows a read. A skill that reached you another way, and so shows none, is let through at the third attempt. (One made within %s seconds of this refusal is refused as a call of the same message.)\n\n%s' \
-		"$rel" "$transcript" "$how" "$BATCH_SECONDS" "$index" | deny
+	passed=""
+	if [ -n "$forgiven" ]; then
+		passed=" Let through unread, at the third attempt after one refusal each: ${forgiven% }."
+	fi
+	printf 'Refused again. %s is governed by the project skills below, and the transcript at %s shows no tool call that reads them: the hook looks for a Read of a skill'"'"'s whole file (no offset or limit), the Skill tool naming it, or another tool call, a shell command or a script, that names its file (.claude/skills/<name>/SKILL.md). %s. Then make this edit again: it passes once each shows a read. A skill that reached you another way, and so shows none, is let through at the third attempt.%s (One made within %s seconds of this refusal is refused as a call of the same message.)\n\n%s' \
+		"$rel" "$transcript" "$how" "$passed" "$BATCH_SECONDS" "$index" | deny
 	exit 0
 fi
 
