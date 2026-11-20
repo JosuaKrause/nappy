@@ -81,8 +81,9 @@ var kept_live := false
 ##
 ## It is recorded rather than re-derived because it is not a function of the def: the same
 ## `cyclist` row is a wall on a day it is rolled and nothing at all when the director sites one
-## in front of her, and the telemetry map has to be able to say which. Only that map and
-## `keeps_its_field_clear()` read it: it decides where the plan went, it does not decide anything
+## in front of her, and the telemetry map has to be able to say which. The map and
+## `keeps_its_field_clear()` read it, and `stand_where()` and `EventScheduler.owed_to_her_walk()`
+## carry it from one plan to another: it decides where the plan went, it does not decide anything
 ## afterwards.
 var _role := GameEnums.BlockerRole.NONE
 ## True once it has been in the world at least once. What it is *for* is the bookkeeping
@@ -247,7 +248,8 @@ func give_role(given: GameEnums.BlockerRole) -> void:
 	_role = given
 
 ## The role the day placed this for (`give_role()`; `GameEnums.BlockerRole.NONE` until one is
-## given): the telemetry map colours a plan by it, and `keeps_its_field_clear()` asks it.
+## given): the telemetry map colours a plan by it, `keeps_its_field_clear()` asks it, and
+## `EventScheduler.owed_to_her_walk()` copies it onto the plan it makes.
 func role() -> GameEnums.BlockerRole:
 	return _role
 

@@ -78,8 +78,17 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			t.check(RunCity.events(_city).plans().has(added_plan),
 					"seed %d: the task went to the mast put up for it, one of the day's plans"
 					% seed_value)
+			# A mast queued afresh, lit (the call the task makes), is put out by the sabotage.
+			var offered: Array[Vector2i] = []
+			for tile: Vector2i in edge:
+				offered.append(tile)
+			for tile: Vector2i in inside:
+				offered.append(tile)
+			var fresh := RunCity.events(_city).queue_a_mast(offered)
+			t.check(fresh != null and not fresh.is_silenced(),
+					"seed %d: a mast queued afresh is lit" % seed_value)
 			RunCity.events(_city).silence_all_masts()
-			t.check(added_plan.is_silenced(),
+			t.check(fresh != null and fresh.is_silenced(),
 					"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
 			# The same night as the game plans it: the mast is there unless that night's
 			# closures, holds or district doors leave it no room, and then it is absent.
