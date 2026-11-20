@@ -24,7 +24,7 @@ review; a builder runs it again):
   computing on the map; the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's type tests where she is not handed in
   (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
-  of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; and the scheduler naming `City.BURNT_FRONTAGE_SCAR`.
+  of the neighbor's raid; and the row's check against `SpawnSiting`'s least distance.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
@@ -36,9 +36,7 @@ review; a builder runs it again):
   that finishes this item lists what is left:* **the rest** ends as follows. `interior_scene.gd`'s `Stroller` goes with the
   building's pass; `GameSave` and
   `HelpText` in the view's pass; the
-  calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`; and `RowGround`'s
-  `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`, read by `_burns_its_front()`), which waits
-  for nothing.
+  calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`.
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
   default for it that a new file has to opt out of.

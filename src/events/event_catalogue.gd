@@ -4,6 +4,11 @@ extends RefCounted
 ## assertable over the whole catalogue in a test. See docs/EVENTS.md for the catalogue table and
 ## the reasoning behind each row.
 
+## The id of the burnt-shell row, and the `run.attempt_spend().scars()` id day 3's fire leaves
+## (`_burning_building()`'s own `aftermath.scar`): read by `EventDef.burns_its_front()` and by
+## `CityFronts.mark_the_burnt_frontage()`, which turns the building behind the scar burnt.
+const BURNT_SHELL_ID := "burnt_shell"
+
 ## The other answer to *prevents the player from walking past it*: **off**, and one line from being
 ## on. True makes the crash a `hard_fail` row, as a fire is, so the gaps end the day rather than
 ## costing more of it than she can carry. The built default is the expensive reading, because a
@@ -1041,7 +1046,7 @@ static func _fire_truck() -> EventDef:
 ## a building the city draws" (`EventDef.Pavement`), is therefore this row's placement choice. A
 ## proposal, open to overturn if a fire that can also catch on the un-drawn walls matters more than
 ## a burnt shell with a real facade behind it. **Never on the power station's front**
-## (`RowGround._burns_its_front()`): its facade does not draw burnt, and its transformer yard
+## (`EventDef.burns_its_front()`): its facade does not draw burnt, and its transformer yard
 ## has no wall to burn.
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
@@ -1064,7 +1069,7 @@ static func _burning_building() -> EventDef:
 	# look to draw, but nothing stands here to be solid, and no shadow is drawn (`draws_body_shadow`).
 	def.shape = GroundShape.point(30.0)
 	def.draws_body_shadow = false
-	def.aftermath.scar = "burnt_shell"
+	def.aftermath.scar = BURNT_SHELL_ID
 	def.aftermath.on_sight = "fire_truck"
 	return def
 
@@ -1085,7 +1090,7 @@ static func _burning_building() -> EventDef:
 ## `outer_radius` 90 → 78.
 static func _burnt_shell() -> EventDef:
 	var def := EventDef.new()
-	def.id = "burnt_shell"
+	def.id = BURNT_SHELL_ID
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
@@ -2663,7 +2668,7 @@ static func _firefight() -> EventDef:
 # seal pictures, so that no single barrier becomes the city's signature."). Each is `SCRIPTED` with
 # `scripted_day = 0`, a day nobody plays, so `EventDef.available_on()` never rolls one and the
 # ordinary scheduler never sites one, the shape `barricade` uses to keep out of the day's own bags.
-# `SealPlanner._effective_first_day` reads `act_tag` instead, so `act_tag` is what gates the day a
+# `EventDef.own_first_day()` reads `act_tag` instead, so `act_tag` is what gates the day a
 # seal may use the row, not `first_day`.
 #
 # **Silent, like every other seal candidate**: each carries `intensity = 0.0`. Radii still have to

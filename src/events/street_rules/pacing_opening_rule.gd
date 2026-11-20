@@ -41,10 +41,10 @@ static func _leaves_a_pacing_beats_opening(candidate: EventPlan, map: CityMap, c
 	var reach := candidate.row().line_reach()
 	var streets := {}
 	var here := map.street_network().segment_containing(map.world_to_tile(candidate.placed_at()))
-	if candidate.row().paces and here and corridor.depth(here.tile_rect().position) == 0:
+	if candidate.paces_a_beat() and here and corridor.depth(here.tile_rect().position) == 0:
 		streets[here.key()] = here
 	for plan in already:
-		if plan == candidate or not plan.row().paces or not plan.counts_against_the_line():
+		if plan == candidate or not plan.paces_a_beat() or not plan.counts_against_the_line():
 			continue
 		var theirs := map.street_network().segment_containing(map.world_to_tile(plan.placed_at()))
 		if not theirs or corridor.depth(theirs.tile_rect().position) != 0:

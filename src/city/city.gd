@@ -249,10 +249,6 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## was added on, and the moment it happens on its own day is `CityFronts.seal_home_door()`'s,
 ## called live.
 const SEALED_DOOR_SCAR := "sealed_door"
-## `run.attempt_spend().scars()` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
-## `aftermath.scar`), read by `CityFronts.mark_the_burnt_frontage()` the same way
-## `_door_texture_for_today()` reads `SEALED_DOOR_SCAR` above.
-const BURNT_FRONTAGE_SCAR := "burnt_shell"
 ## The street door sprite `_spawn_home()` built, kept so the dawn can put it right
 ## (`_sync_home_door()`) and handed to the fronts, which swap its texture live the moment day 10's
 ## raid actually arrives (`CityFronts.seal_home_door()`), instead of waiting for a day that never

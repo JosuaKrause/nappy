@@ -213,7 +213,7 @@ static func _pick_by_what_it_denies(defs: Array[EventDef], rng: RandomNumberGene
 	var total := 0.0
 	for def in defs:
 		var reach := _denial_radius(def)
-		var weight := def.weight * reach * reach
+		var weight := def.drawn_as_often() * reach * reach
 		weights.append(weight)
 		total += weight
 	var roll := rng.randf() * total
@@ -269,7 +269,7 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
 ## whatever its rate does further out, so the floor is its own `inner_radius`.
 static func _denial_radius(def: EventDef) -> float:
-	return maxf(def.inner_radius, def.reach_above(CALM_ZONE_DENIAL_RATE))
+	return maxf(def.core_within(), def.reach_above(CALM_ZONE_DENIAL_RATE))
 
 ## The tile of `tiles` nearest `to`.
 static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
@@ -308,11 +308,11 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 			minf(ground.size.x, ground.size.y) / 16.0)
 	var suitable: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
-		if def.hard_fail or def.mobile:
+		if def.ends_the_day() or def.moves():
 			continue
-		if def.obstructs_radius > allowed:
+		if def.obstructs_within() > allowed:
 			continue
-		if def.spawn_mode != EventDef.SpawnMode.MAP:
+		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 			continue
 		if def.is_handed_to_her_walk():
 			continue

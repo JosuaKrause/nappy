@@ -22,7 +22,7 @@ func run(context: DawnContext) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY or events.has_a_pursuit():
 		return
 	for def in EventCatalogue.available_on(day, context.heat()):
-		if def.pursuit == null or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
+		if not def.pursues() or def.spawn_mode_on(day) != EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		events.add(EventPlan.new(def, Vector2.INF))
 		context.note("plan", "day %d owes no pursuit, so the run lesson is added: %s"
