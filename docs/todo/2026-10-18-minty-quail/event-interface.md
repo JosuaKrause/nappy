@@ -348,7 +348,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does it move, pace a beat, pursue | row `moves()` ok, `paces_a_beat()` ok, `pursues()` ok | route, pursuit |
 | How is its route built (asked by the plan builder, which is handed the part) | the route part's `kind()`, `tiles()` | route |
 | Is it scenery, is it the mast | row `is_scenery()` ok, `is_a_mast()` ok | the row |
-| What does it leave or call in | row `scar_id()`, `leaves_behind()` ok, `calls_in()` | aftermath |
+| What does it leave or call in | row `scar_id()`, `leaves_behind()` ok, `calls_in()` ok | aftermath |
 | Where does a plan stand, walk, face | plan `is_placed()` ok, `placed_at()` ok, `walks()` ok, `stands_still()` ok, `ends()` ok, `faces()` | the plan |
 | How far is a plan from a point or another plan | plan `distance_from(at)` ok, `gap_to(other)` ok | the plan |
 | Does a plan block her way, and what disc does it shut | plan `obstructs()` ok, `blocking_radius()` ok, `clearance(her_reach)` ok | the plan, asking body and lethal |
@@ -663,7 +663,7 @@ counted where it only writes.
 | `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only (meanwhile the row's `casts_a_shadow()`, `drags_a_lead()` and `vanishes_into_its_hold()` ok, asked by the footprints; `warning_picture` still a listed read) |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
 | `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods; meanwhile, until the look is handed the spec, the van's look reads it off the row it is handed (`_row.abduction`), its two fields under their own names |
-| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 1 out (`SealPlanner`); 10 lines of the spec | row `burns_its_front()` ok (asked by `RowGround`, through `Aftermath.leaves_the_scar()`), `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
+| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 1 out (`SealPlanner`); 10 lines of the spec | row `burns_its_front()` ok (asked by `RowGround`, through `Aftermath.leaves_the_scar()`), `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()` ok (asking `Aftermath.calls_in()`), `has_an_aftermath()`; a draft's `without_its_aftermath()` |
 | `_cost_cache` | private | stays inside `FieldSpec`, worked out when the spec is built |
 
 ### 4.2 The live event (`EventInstance`)
@@ -698,8 +698,8 @@ field under `[EventPlan]`.
 
 | Field | Reads | Replaced by |
 |---|---|---|
-| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`pursues()` ok, `ends_the_day()` ok, `detains_her()` ok, `detains_again()` ok, `detain_distance()` ok, `is_a_boom()` ok, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `telegraphs_for()` ok) |
-| `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `stand_where(sited)` ok for the one writer, her walk's siting (the design's pick in place of `place_at(at)`, open to the player) |
+| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`spawn_mode_on(day)` ok, `is_sent_ahead()` ok, `is_a_one_shot()` ok, `calls_in()` ok, `pursues()` ok, `ends_the_day()` ok, `detains_her()` ok, `detains_again()` ok, `detain_distance()` ok, `is_a_boom()` ok, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `telegraphs_for()` ok) |
+| `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `stand_where(sited)` ok for her walk's siting (the design's pick in place of `place_at(at)`, open to the player) and `came_at(at)` ok for streaming's record of where a plan that comes where she stands last came |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
 | `facing` | 18 | `faces()` ok; set as the plan is built, or turned by `face(direction)` ok for a crew facing the wall it pastes |
 | `live` | about 60 (streaming) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()` ok; `EventManager.event_of(plan)` ok for the live event itself, to a caller that commands it; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
@@ -709,7 +709,7 @@ field under `[EventPlan]`.
 | `role` | 6 | `role()` ok, `give_role()` ok |
 | `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it, and `come_first_in(seconds)` ok, by which the building's plan says when an event first comes, tells streaming rather than writing a field |
 | `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 (streaming) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
-| `gate_state` | 1 | `gate()` ok, set as the region's doors are made |
+| `gate_state` | 1 | `gate()` ok, set as the region's doors are made by `stand_as_the_boom_of(gate)` ok |
 | `permanent` | 1 (the plan's own `spoils()`) | `make_permanent()` ok for the writers |
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
 
