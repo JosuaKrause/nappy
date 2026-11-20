@@ -7,7 +7,7 @@ folder), built by a Sonnet agent.
 
 **What was built.** A pending warning's state (`place`, `offset`, `shown`, `withdrawn`, `on_withdrawn`, `is_pelican`) is
 private; callers ask `points_at()`, `shown_for()`, `was_withdrawn()`, `when_withdrawn(retry)` with `ask_again()`, and
-`be_drawn_as_the_pelican()`, and the duplicate `left` property is deleted. The live event answers three new questions,
+`be_logged_as_the_pelican()` (it changes only the name the run log gives the warning), and the duplicate `left` property is deleted. The live event answers three new questions,
 `has_lost_its_guard()`, `core_within()` and `heard_within()`, which the warning board asks with `drives()`,
 `closes_on()`, `is_gone()` and `ends_the_day()` instead of reading fields; the board writes its run-log line before
 `ask_again()`, so the log keeps its order. The spawner, `EventsAhead`, the suites, rigs and probes ask the methods
