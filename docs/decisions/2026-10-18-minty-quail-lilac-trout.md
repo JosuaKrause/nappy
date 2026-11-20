@@ -18,7 +18,9 @@ design's twelve lines. Nothing a player sees or the run log records changes.
 suite would read it (the suite asks streaming's); two pelican-rig checks ask `spawner.rolls_a_pelican()`, and an ordinary
 run's guard (no `--pelican`, so not every cyclist is the pelican) is held by drawing a full bag through the builder's
 spawner and finding exactly one; the masts' shared clock is held by `test_masts` comparing two masts' own ages, so
-streaming has no `broadcast_clock()` and no kept line; suite reads of the manager's old `trace`, `atlas`, `timing` and
+streaming has no `broadcast_clock()` and no kept line; the boot test, which held every public library holder to
+the sitting's library, holds the event manager (its library now private) by counting the managers in its walk and the
+pages the recording library saw them request; suite reads of the manager's old `trace`, `atlas`, `timing` and
 `skip_drawing` go through the events' world until row 3b's pull request that converts it.
 
 **The item.** Row 3b stays open until its last pull request; `field-reads.md` loses the run log's observer from its
