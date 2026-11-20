@@ -7,31 +7,28 @@ extends RefCounted
 ## once — a city's day, the escape's building, a rig's open ground — is the world every part sees.
 ## Nothing here is fetched: the manager writes each field as it is handed it.
 
-## The live instances, in the order they came into the world. Shared by reference — the danger
-## edge and the halo hold it across frames — so it is changed in place, never reassigned.
-var instances: Array[EventInstance] = []
-## The map of the world these events stand in (`WorldMap`): every instance is made on it and stopped
-## by its walls, and its blocked record holds their bodies. Open ground until a world is handed
-## over, for a rig that never hands one.
-var map: WorldMap = WorldMap.open_ground()
-## The city's own map, for planning a day over it — its holds, its route tree, its blocks — or null
-## where the world is not the city (`EventManager.setup_world()`).
-var city_map: CityMap
+## The live instances, in the order they came into the world (`instances()`). Shared by reference —
+## the danger edge and the halo hold it across frames — so it is changed in place, never
+## reassigned.
+var _instances: Array[EventInstance] = []
+## The map of the world these events stand in (`map()`). Open ground until a world is handed over,
+## for a rig that never hands one.
+var _map: WorldMap = WorldMap.open_ground()
+## The city's own map (`city_map()`), or null where the world is not the city
+## (`EventManager.setup_world()`).
+var _city_map: CityMap
 ## The lights a car that drives stops at, the crowd's own (`EventInstance.signals`): handed in by
 ## `EventManager.setup()`; none in a world with no streets.
 var signals: TrafficSignals
 ## Where the manager, the day's planning and every instance it creates write their own account for
-## the run log — the city's, set before `EventManager.setup()`; silent until then.
-var trace := RunTrace.new()
-## The run these events belong to (`RunState`): its seed and day streams, its scars, its heat, the
-## calm she has used this act and the pelican bag's draws. Handed in with the map
-## (`EventManager.setup()`), or by `EventManager.use_run()` for a rig that never calls `setup()`.
-var run: RunState
-## The player, handed in by `EventManager.use_player()`, or null for none in the world.
-var player: Node2D
-## Today's own day number, kept for the streams drawn while the day runs (a summoned row's entry, a
-## pursuer's start, the dusk fire) and for the rows a day sends.
-var day := 0
+## the run log (`trace()`) — the city's, handed in before `EventManager.setup()`; silent until then.
+var _trace := RunTrace.new()
+## The run these events belong to (`run()`).
+var _run: RunState
+## The player (`player()`), or null for none in the world.
+var _player: Node2D
+## Today's own day number (`day()`).
+var _day := 0
 ## `--skip events`: every instance made here skips its own drawing.
 var skip_drawing := false
 ## Where every instance this world makes charges its time to the frame record; the null sink until
@@ -57,8 +54,8 @@ var points_at := Callable()
 ## `EventManager.sees()` by `main`), the poster crews and the page's counter. What the resistance
 ## places and removes asks the siting's `DRAWING_OFF_THE_VIEW` of the same view instead. One instance for
 ## the day, never replaced, so a caller may keep it. Set at the top of each physics tick by
-## `EventManager._look_through_the_camera()`.
-var visible := VisibleView.new()
+## `EventManager._look_through_the_camera()`. Asked as `visible_view()`.
+var _visible := VisibleView.new()
 
 ## Today's streets (`streets()`), handed in by `EventManager.setup()`; null where the world is
 ## not the city.
@@ -125,16 +122,91 @@ func use_poster_walls(walls: PosterWalls) -> void:
 func plan_builder() -> PlanBuilder:
 	return _plan_builder
 
-## The city's own map (`city_map`), asked through a method by a class that makes something over it
-## (`SitingMaker`), or null where the world is not the city.
-func the_city_map() -> CityMap:
-	return city_map
+## **The live instances**, in the order they came into the world: the one array, shared by
+## reference (the danger edge and the halo hold it across frames), changed only by `take_in()`,
+## `let_go()`, `keep_only()` and `let_go_of_every_event()`. A caller that changes the world while
+## it walks the array walks a `duplicate()`.
+func instances() -> Array[EventInstance]:
+	return _instances
+
+## Brings `instance` into the world, after the ones already there.
+func take_in(instance: EventInstance) -> void:
+	_instances.append(instance)
+
+## Lets `instance` go from the world's list: it stays alive for whoever holds it.
+func let_go(instance: EventInstance) -> void:
+	_instances.erase(instance)
+
+## Keeps only `survivors`, in their order, in the one shared array.
+func keep_only(survivors: Array[EventInstance]) -> void:
+	_instances.assign(survivors)
+
+## Empties the world's list; the instances themselves are the caller's to take out.
+func let_go_of_every_event() -> void:
+	_instances.clear()
+
+## **The map of the world these events stand in** (`WorldMap`): every instance is made on it and
+## stopped by its walls, and its blocked record holds their bodies.
+func map() -> WorldMap:
+	return _map
+
+## **The city's own map**, for planning a day over it — its holds, its route tree, its blocks — or
+## null where the world is not the city; asked by a class that makes something over it
+## (`SitingMaker`).
+func city_map() -> CityMap:
+	return _city_map
+
+## Hands the world the map its events stand on and the city's own map over it, or null for `city`
+## where the world is not the city (`EventManager.setup()`, `EventManager.setup_world()`).
+func use_map(map: WorldMap, city: CityMap) -> void:
+	_map = map
+	_city_map = city
+
+## The run these events belong to (`RunState`): its seed and day streams, its scars, its heat, the
+## calm she has used this act and the pelican bag's draws. Null for a rig that hands none.
+func run() -> RunState:
+	return _run
+
+## Hands the world the run its events belong to (`EventManager.setup()`, `use_run()`).
+func use_run(run: RunState) -> void:
+	_run = run
+
+## The player, or null for none in the world.
+func player() -> Node2D:
+	return _player
+
+## Hands the world the player (`EventManager.use_player()`); null for none.
+func use_player(player: Node2D) -> void:
+	_player = player
+
+## Today's own day number, kept for the streams drawn while the day runs (a summoned row's entry, a
+## pursuer's start, the dusk fire) and for the rows a day sends.
+func day() -> int:
+	return _day
+
+## Tells the world which day it is (`EventManager`, as a walk starts).
+func take_the_day(day: int) -> void:
+	_day = day
+
+## Where the manager, the day's planning and every instance it creates write their own account for
+## the run log; the silent one until a trace is handed in.
+func trace() -> RunTrace:
+	return _trace
+
+## Hands the world the trace the run log is written through (`EventManager.use_trace()`).
+func use_trace(trace: RunTrace) -> void:
+	_trace = trace
+
+## What she can see this frame (`VisibleView`): the one instance for the world's life, so a caller
+## may keep it. Named for what it answers, since `visible()` would read as a yes-or-no question.
+func visible_view() -> VisibleView:
+	return _visible
 
 ## A stream of the run's own for `day`, named `stream` (`RunState.run_rng()`): the same stream
 ## whenever it is asked, and a different one on another run's seed, so a part of the events seeds
 ## what it draws from it without reaching into the run (`SitingMaker`).
 func day_stream(for_day: int, stream: String) -> RandomNumberGenerator:
-	return run.run_rng("%s:%d" % [stream, for_day])
+	return _run.run_rng("%s:%d" % [stream, for_day])
 
 ## Hands the world the city's plan builder. See `plan_builder()`.
 func use_plan_builder(builder: PlanBuilder) -> void:
@@ -144,8 +216,8 @@ func use_navigator(navigator: Navigator) -> void:
 	_navigator = navigator
 
 func navigator() -> Navigator:
-	if _navigator == null or _navigator.map() != map:
-		_navigator = Navigator.new(map)
+	if _navigator == null or _navigator.map() != _map:
+		_navigator = Navigator.new(_map)
 	return _navigator
 
 ## The world these events are drawn in (`WorldContext`): what every instance is added to
@@ -170,9 +242,9 @@ func drawn_in() -> WorldContext:
 ## her, warns her or strikes her there, so a lethal thing on the doorstep cannot end a day nobody is
 ## playing. A rig's stand-in that is not a `Stroller` has no title to stand aside for.
 func has_player() -> bool:
-	if player == null or not is_instance_valid(player):
+	if _player == null or not is_instance_valid(_player):
 		return false
-	return not (player is Stroller) or player.is_in_group("player")
+	return not (_player is Stroller) or _player.is_in_group("player")
 
 ## `points_at` asked now, so an instance made before the resistance handed it in points too.
 func where_protests_point() -> Vector2:

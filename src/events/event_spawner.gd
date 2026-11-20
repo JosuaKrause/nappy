@@ -57,8 +57,8 @@ var _sight_reported: Dictionary = {}
 ## out, and answers the tiles it recorded (none for the latter). Safe to call for every plan and
 ## every instance: the deciding is all in `obstructed_footprint()`.
 func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> Array[Vector2i]:
-	var tiles := obstructed_footprint(world.map, def, at, facing)
-	world.map.obstruct_tiles(owner, tiles)
+	var tiles := obstructed_footprint(world.map(), def, at, facing)
+	world.map().obstruct_tiles(owner, tiles)
 	return tiles
 
 ## The tiles a row's own solid body stands on when it is sited at `at` looking `facing`, or an
@@ -113,7 +113,7 @@ static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 func spawn(def: EventDef, at: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := create(def, at, path)
-	world.instances.append(instance)
+	world.take_in(instance)
 	return instance
 
 # ------------------------------------------------------------------------ the pelican ---
@@ -156,14 +156,14 @@ var _pelican_bag_seed := 0
 ## bag for every day of the run, so a full run meets at most one pelican. The run's seed and the
 ## order it sends its cyclists in decide which of them is the pelican, the same way they decide
 ## everything else the director sends. Nothing but a cyclist draws from it. The count drawn is kept
-## in `world.run.pelican()` (saved, and set back to the day's dawn by a lost day), and the bag is
+## in `world.run().pelican()` (saved, and set back to the day's dawn by a lost day), and the bag is
 ## rebuilt from it. `--pelican` (`PelicanRig.ALWAYS`, set by `SimulationBuilder`) answers yes for every one
 ## without changing what is drawn.
 func rolls_a_pelican(def: EventDef) -> bool:
 	if not def.may_be_a_pelican:
 		return false
 	var drew: bool = _the_pelican_bag().draw()
-	world.run.pelican().count_a_draw()
+	world.run().pelican().count_a_draw()
 	match pelican_rig:
 		PelicanRig.ALWAYS:
 			return true
@@ -171,14 +171,14 @@ func rolls_a_pelican(def: EventDef) -> bool:
 			return false
 	return drew
 
-## The run's pelican bag with `world.run.pelican().draws()` marbles already drawn, from the bag's own
+## The run's pelican bag with `world.run().pelican().draws()` marbles already drawn, from the bag's own
 ## stream off the run's seed, so a save, a lost day's give-back and a retry all draw the cyclists
 ## the run would have drawn. Rebuilt whenever the run, or the count a save or a lost day put back,
 ## disagrees with the bag.
 func _the_pelican_bag() -> MarbleBag:
-	var seed_value := hash("%d:%s" % [world.run.header().run_seed(), PELICAN_STREAM])
+	var seed_value := hash("%d:%s" % [world.run().header().run_seed(), PELICAN_STREAM])
 	if _pelican_bag == null or _pelican_bag_seed != seed_value \
-			or _pelican_bag.drawn != world.run.pelican().draws():
+			or _pelican_bag.drawn != world.run().pelican().draws():
 		var marbles := []
 		marbles.resize(CYCLISTS_IN_THE_BAG)
 		marbles.fill(false)
@@ -186,7 +186,7 @@ func _the_pelican_bag() -> MarbleBag:
 			marbles.append(true)
 		_pelican_bag = MarbleBag.shared(marbles, seed_value)
 		_pelican_bag_seed = seed_value
-		_pelican_bag.skip(world.run.pelican().draws())
+		_pelican_bag.skip(world.run().pelican().draws())
 	return _pelican_bag
 
 ## Makes `instance` the pelican, as it is created: the picture (`EventInstance.is_pelican`) and the
@@ -211,7 +211,7 @@ var _unseen_pelicans: Array = []
 
 ## `EventBus.pelican_sighted` for each pelican on its first frame properly on screen — the same test
 ## an encounter's seen makes, `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box visible to her
-## (`world.visible`, `VisibleView`), so `pelican-seen` and `seen-pelican` answer the same question —
+## (`world.visible_view()`, `VisibleView`), so `pelican-seen` and `seen-pelican` answer the same question —
 ## and then never again for that pelican. Telemetry only: it decides nothing and changes nothing
 ## gameplay reads.
 func report_the_pelicans_in_view() -> void:
@@ -224,7 +224,7 @@ func report_the_pelicans_in_view() -> void:
 		var instance := pelican as EventInstance
 		var box := instance.drawn_box()
 		var drawn := Rect2(box.position + instance.global_position, box.size)
-		if world.visible.share_of(drawn) >= Tuning.ENCOUNTER_SEEN_SHARE:
+		if world.visible_view().share_of(drawn) >= Tuning.ENCOUNTER_SEEN_SHARE:
 			world.reports().tell_pelican_sighted(instance)
 		else:
 			still_unseen.append(instance)
@@ -241,9 +241,9 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 	instance.timing = world.timing
 	instance.atlas = world.atlas
 	instance.drawer = world.drawer
-	instance.trace = world.trace
+	instance.trace = world.trace()
 	var drawn_in := world.drawn_in()
-	instance.setup(def, at, path, facing, world.map, world.navigator(), world.where_she_is(),
+	instance.setup(def, at, path, facing, world.map(), world.navigator(), world.where_she_is(),
 			drawn_in)
 	instance.signals = world.signals
 	instance.points_at = world.where_protests_point
@@ -255,10 +255,10 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 	if def.aftermath.scar != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
-		world.trace.note("scar", "%s left at %s by %s" % [
-			def.aftermath.scar, RunTrace.tile(world.map.world_to_tile(instance.global_position)),
+		world.trace().note("scar", "%s left at %s by %s" % [
+			def.aftermath.scar, RunTrace.tile(world.map().world_to_tile(instance.global_position)),
 			def.id])
-		world.run.add_scar(def.aftermath.scar, instance.global_position)
+		world.run().add_scar(def.aftermath.scar, instance.global_position)
 		_mark_the_block(def.aftermath.scar, instance.global_position)
 	return instance
 
@@ -272,10 +272,10 @@ func _mark_the_block(scar_id: String, at: Vector2) -> void:
 	var cause: int = _CAUSES.get(scar_id, -1)
 	if cause < 0:
 		return
-	if not world.city_map:
+	if not world.city_map():
 		return
-	world.run.attempt_spend().block_arcs().apply_cause(world.city_map.block_plans, world.city_map.block_at(at),
-			cause as GameEnums.BlockCause, world.run.header().day())
+	world.run().attempt_spend().block_arcs().apply_cause(world.city_map().block_plans, world.city_map().block_at(at),
+			cause as GameEnums.BlockCause, world.run().header().day())
 
 ## Which scars move a block along its arc. Keyed by scar id rather than by event id, because
 ## what matters to a block is what was left behind, not which siren left it.
@@ -300,7 +300,7 @@ func retire(instance: EventInstance) -> void:
 func move_extra(instance: EventInstance, at: Vector2) -> void:
 	if not instance or not is_instance_valid(instance) or instance.is_finished:
 		return
-	world.map.release_obstruction(instance.get_instance_id())
+	world.map().release_obstruction(instance.get_instance_id())
 	instance.move_to(at)
 	record_the_body(instance.get_instance_id(), instance.def, instance.global_position,
 			instance.facing_now())
@@ -366,7 +366,7 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 	for plan in plans:
 		if not plan.live or plan.def.aftermath.on_sight == "" or _sighted.get(plan, false):
 			continue
-		if not world.visible.sees(plan.live.global_position):
+		if not world.visible_view().sees(plan.live.global_position):
 			continue
 		# `VisitCounter`'s own "seen-fire" — the moment she could see it, whether or not the
 		# engine's warning can be put up below: a summon that finds no road off screen to wait on
@@ -398,20 +398,20 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 	if not summoned:
 		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.aftermath.on_sight])
 		return false
-	var inward := world.map.pavement_inward(world.map.world_to_tile(at))
+	var inward := world.map().pavement_inward(world.map().world_to_tile(at))
 	if inward == Vector2i.ZERO:
 		return false
 	var along := Vector2(inward.y, inward.x)
-	var road_at := _where_the_summoned_row_stops(world.city_map, at)
+	var road_at := _where_the_summoned_row_stops(world.city_map(), at)
 	var headings: Array[Vector2] = [along, -along]
-	if world.run.calendar().day_rng(world.day, "sighted:%s" % source.id).randf() < 0.5:
+	if world.run().calendar().day_rng(world.day(), "sighted:%s" % source.id).randf() < 0.5:
 		headings.reverse()
-	var her := world.player.global_position if world.player else at
+	var her := world.player().global_position if world.player() else at
 	for heading in headings:
 		var reach := _road_left(road_at, heading)
 		var travel := -heading
 		var where := func(standing: Vector2) -> Vector2:
-			return PendingWarning.on_its_route(summoned, standing, road_at, travel, reach, world.visible)
+			return PendingWarning.on_its_route(summoned, standing, road_at, travel, reach, world.visible_view())
 		var arrive := func(place: Vector2, _standing: Vector2) -> bool:
 			spawn_warned(summoned, PackedVector2Array([place, road_at]))
 			return true
@@ -424,7 +424,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 ## How far the road runs from `from` along the axis-aligned `heading` before the map's edge, less
 ## half a tile — as far up its street as a summoned row may wait.
 func _road_left(from: Vector2, heading: Vector2) -> float:
-	var size := world.city_map.world_size()
+	var size := world.city_map().world_size()
 	var room := INF
 	if heading.x > 0.0:
 		room = size.x - from.x

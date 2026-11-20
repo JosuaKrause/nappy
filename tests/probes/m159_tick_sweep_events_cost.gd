@@ -195,7 +195,7 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 		events.ahead.site_what_is_on_her_way(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.stream_around(events.world.player.global_position)
+		events.stream_around(events.world.player().global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
 		events.ahead.place_what_is_owed_ahead(delta)
@@ -210,7 +210,7 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 		events._watch_the_encounters(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.warnings.run(delta, events.world.player.global_position)
+		events.warnings.run(delta, events.world.player().global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._tell_them_where_she_is()

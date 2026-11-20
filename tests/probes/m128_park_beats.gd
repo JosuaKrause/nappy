@@ -140,7 +140,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	instance.setup(def, busker_at)
 	t.add_child(instance)
 	instance.set_process(false)
-	RunCity.events(city).world.instances.append(instance)
+	RunCity.events(city).world.take_in(instance)
 
 	var step := 1.0 / 60.0
 	var warm_up := int(ceil((def.telegraph_time + 0.1) / step))
@@ -173,7 +173,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 			result = elapsed
 			break
 
-	RunCity.events(city).world.instances.erase(instance)
+	RunCity.events(city).world.let_go(instance)
 	stroller.free()
 	instance.free()
 	return result

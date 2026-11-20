@@ -135,7 +135,7 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	var streaming := manager.streaming
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def.aftermath.scar != "", "the fire leaves a scar")
-	t.check(manager.world.run.attempt_spend().scars().is_empty(), "and the run starts with none")
+	t.check(manager.world.run().attempt_spend().scars().is_empty(), "and the run starts with none")
 	var at := Vector2(6000.0, 6000.0)
 	var plan := EventPlan.new(def, at)
 	var plans: Array[EventPlan] = [plan]
@@ -145,7 +145,7 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	for _i in 3:
 		streaming.stream_around(at)
 		streaming.stream_around(far)
-	var added := manager.world.run.attempt_spend().scars().size()
+	var added := manager.world.run().attempt_spend().scars().size()
 	t.check(added == 1, "three times in and out records the fire's scar once (%d)" % added)
 	_free_manager(manager)
 

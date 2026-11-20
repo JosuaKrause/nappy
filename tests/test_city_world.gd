@@ -34,7 +34,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City)
 	var def := EventCatalogue.by_id("cyclist")
 	var instance := EventInstance.new()
 	instance.setup(def, spot)
-	RunCity.events(city).world.instances.append(instance)
+	RunCity.events(city).world.take_in(instance)
 	var charged := 0.0
 	for pair: Array in city.excitement_sources_at(spot):
 		charged += pair[1]
@@ -42,7 +42,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City)
 			"the event's own field reaches the spot it stands on")
 	t.check(charged > 0.0,
 			"and the city lists it among what charges her there (%.2f/s)" % charged)
-	RunCity.events(city).world.instances.erase(instance)
+	RunCity.events(city).world.let_go(instance)
 	instance.free()
 
 ## On a calm tile the city answers the calm curve for the lot the tile lies in (more than the street's

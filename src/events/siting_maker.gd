@@ -26,7 +26,7 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 	var fronts := {}
 	if _world.poster_walls():
 		fronts = _world.poster_walls().fronts()
-	return _assemble(day, _world.the_city_map(), tree, _walk, _world.plan_builder(), ground, fronts,
+	return _assemble(day, _world.city_map(), tree, _walk, _world.plan_builder(), ground, fronts,
 			_world.day_stream(day, "siting").seed)
 
 ## **A siting from pieces** (`make()` hands it the world's). `base` seeds the streams its judge builds
