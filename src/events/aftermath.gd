@@ -19,6 +19,11 @@ extends Resource
 ## her position; see `EventSpawner.summon_what_has_been_sighted()`.
 @export var on_sight := ""
 
+## The id of the row it calls in the moment it is first seen (`on_sight`), or "" for one that
+## calls none.
+func calls_in() -> String:
+	return on_sight
+
 ## The id of the scar it leaves on the run (`scar`), or "" for none.
 func scar_id() -> String:
 	return scar

@@ -94,7 +94,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 func _siting_for(day: int, plan: EventPlan) -> WalkSiting:
 	if not _siting:
 		_siting = _a_siting(day, _day_tree)
-	_siting.prepare(plan.def)
+	_siting.prepare(plan.row())
 	return _siting
 
 ## **A placement context for the rows her walk sites ahead of her**, over `tree`: what the maker
@@ -340,7 +340,7 @@ func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 	var plan := EventPlan.new(def, Vector2.INF)
 	if not siting.lay_among(plan, offered):
 		return null
-	plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.position))
+	plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
 	_streaming.add(plan)
 	return plan
 
@@ -511,12 +511,12 @@ func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 	# silenced by `EventStreaming.silence_mast()` and counts for
 	# `EventStreaming.silence_all_masts()`.
 	if plan.row().is_a_mast():
-		plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.position))
+		plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
 	_streaming.add(plan)
 	# Where, because nothing else records it: the siting depends on the walk she took.
 	world.trace().note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
-			% [plan.def.id, plan.position.distance_to(body.global_position),
-			RunTrace.tile(world.map().world_to_tile(plan.position)),
+			% [plan.row_id(), plan.placed_at().distance_to(body.global_position),
+			RunTrace.tile(world.map().world_to_tile(plan.placed_at())),
 			CheckpointController.heading_name((body as CharacterBody2D).velocity.normalized()),
 			RunTrace.tile(world.map().world_to_tile(body.global_position))])
 
@@ -731,13 +731,13 @@ func site_what_is_on_her_way(delta: float) -> void:
 		# A mast's id is its foot (`DawnMasts.added_mast_id()`), so a mast moved before it was
 		# ever in the world is named by where it now stands.
 		if plan.mast_id() != "":
-			plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.position))
+			plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
 		# Where and why, because nothing else records it: the siting depends on the walk she took
 		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
 		# write, for the same reason.
 		world.trace().note("ahead", "%s is sited %.0fpx ahead of her at %s, %s of where she is at %s" % [
-			plan.def.id, plan.position.distance_to(body.global_position),
-			RunTrace.tile(world.map().world_to_tile(plan.position)),
+			plan.row_id(), plan.placed_at().distance_to(body.global_position),
+			RunTrace.tile(world.map().world_to_tile(plan.placed_at())),
 			CheckpointController.heading_name(body.velocity.normalized()),
 			RunTrace.tile(world.map().world_to_tile(body.global_position))])
 
@@ -767,7 +767,7 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		return false
 	for plan in _walk.plans():
 		# The fire is the set piece a run owes; a crew she never met simply was not met.
-		if not plan.row().is_a_set_piece_on_her_way() or plan.was_live or plan.spent:
+		if not plan.row().is_a_set_piece_on_her_way() or plan.was_live or plan.is_spent():
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
 		var rng := world.run().calendar().day_rng(world.day(), "dusk-fire")
@@ -777,16 +777,16 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		_streaming.stream_out(plan)
 		# It is over the moment it is recorded: the day has ended, and a plan left unspent would be
 		# streamed back in by the next `stream_around` a rig made on the same day.
-		plan.spent = true
+		plan.spend()
 		world.map().release_obstruction(plan.get_instance_id())
 		# `VisitCounter`'s own "fire-unmet" — a won day on which this row was lit off her path
 		# rather than met. See docs/TELEMETRY.md, "The page counts visits".
-		world.reports().tell_event_lit_unmet(plan.def.id)
+		world.reports().tell_event_lit_unmet(plan.row_id())
 		# Where and why, because nothing else records it: which site a dusk fire took depends on
 		# where she finished the day, and no seed reproduces that from outside.
 		world.trace().note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
-				% [plan.def.id, RunTrace.tile(world.map().world_to_tile(plan.position)),
-				plan.position.distance_to(at)] + "finished the day, " + _what_her_walk_waited_on())
+				% [plan.row_id(), RunTrace.tile(world.map().world_to_tile(plan.placed_at())),
+				plan.placed_at().distance_to(at)] + "finished the day, " + _what_her_walk_waited_on())
 		return true
 	return false
 

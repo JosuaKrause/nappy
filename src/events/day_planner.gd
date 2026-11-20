@@ -198,7 +198,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# where the boundary is.
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
-		doors.append(body.position)
+		doors.append(body.placed_at())
 	# What obstructs the day whatever the catalogue does: the seals just planned and the region
 	# wall's own bodies, which the day's rules read with what it places (`StreetInvalidation`).
 	var standing: Array[EventPlan] = []

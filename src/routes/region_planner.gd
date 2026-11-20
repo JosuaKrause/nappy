@@ -65,7 +65,7 @@ const _WALL_DEF_ID := "roadblock"
 
 ## The shared state of one checkpoint gate: its own ground point and whether the boom is up right
 ## now. Built once per street door in `_add_door_bodies`, held by the `checkpoint_gate` instance
-## through `EventPlan.gate_state` (which is what it draws raised or lowered from) and
+## through `EventPlan.gate()` (which is what it draws raised or lowered from) and
 ## by `Crowd` through `RegionPlan.gates` (which is what actually raises and lowers it — see
 ## `Crowd._stop_for_gates()`). A `RefCounted` rather than two separate copies, so the two systems
 ## can never disagree about whether a boom is up.
@@ -663,14 +663,14 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## player, on a walled alley's own two guards per mouth: "one guard in alleys on each end.")* The
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
 ## reach — so `EventDef.guard_sides` is set here to the one side that does, the same way
-## `body.def.solid()` already mutates the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
+## `body.row().solid()` already mutates the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
 ## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventPlan:
 	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
-	body.def.solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
-	body.def.guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
+	body.row().solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
+	body.row().guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
 	return body
 
 ## Which side of a mouth body's own band is the street side, in `EventDef.guard_sides`'s own `-1`/
@@ -691,7 +691,7 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 
 ## The along-street axis a door's own bodies share: `RIGHT` for a segment/alley that runs
 ## east-west (`horizontal`), `DOWN` for one that runs north-south. Carried on every door body's own
-## `EventPlan.facing`, which is what lets a stationary instance answer "which side of the crossing is
+## `EventPlan.faces()`, which is what lets a stationary instance answer "which side of the crossing is
 ## she on" without a second lookup — see `EventManager`'s detention teleport.
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
@@ -728,9 +728,9 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 		var def_id := "checkpoint_gate" if i == road_index else "checkpoint_hut"
 		var def := SealPlanner.sealed_variant(EventCatalogue.by_id(def_id), true)
 		var body := EventPlan.new(def, positions[i])
-		body.facing = axis
+		body.face(axis)
 		if i == road_index:
-			body.gate_state = gate
+			body.stand_as_the_boom_of(gate)
 		body.stand_as_a_door()
 		plan.door_bodies.append(body)
 
@@ -744,7 +744,7 @@ static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan)
 	for at_start: bool in [true, false]:
 		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
 		var body := EventPlan.new(def, map.tile_rect_to_world(mouth).get_center())
-		body.facing = axis
+		body.face(axis)
 		body.stand_as_a_door()
 		plan.door_bodies.append(body)
 

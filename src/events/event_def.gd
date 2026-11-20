@@ -839,6 +839,11 @@ func lies_as_a_spread() -> bool:
 func burns_its_front() -> bool:
 	return aftermath.leaves_the_scar(EventCatalogue.BURNT_SHELL_ID)
 
+## The id of the row it calls in the moment it is first seen (`Aftermath.on_sight`), or "" for a row
+## that calls none: the burning building calls the fire engine in.
+func calls_in() -> String:
+	return aftermath.calls_in()
+
 ## Seconds after one of its instances ends that the next comes, or 0 for a row that does not come
 ## again on a clock (`repeat_after`). A plan made of it starts from this.
 func comes_again_after() -> float:

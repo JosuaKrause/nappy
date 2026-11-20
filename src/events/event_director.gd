@@ -199,7 +199,7 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## manager streams the sited events from, so the two halves of a day cannot disagree about what is
 ## owed.
 ##
-## Asked over `plan.def.spawn_mode_on(day)` rather than `spawn_mode` alone, so a row whose siting
+## Asked over `plan.spawn_mode_on(day)` rather than `spawn_mode` alone, so a row whose siting
 ## changes after its own `first_day` — `charging_dog` past `Tuning.RUN_TAUGHT_DAY` — is owed to the
 ## director only on the days it actually answers `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`. Without this
 ## the scheduler's dawn would place the row on a tile *and* the
@@ -238,19 +238,19 @@ func start_day(day: int, plans: Array[EventPlan],
 		# here. The huts and posts are the bodies that inspect her and the boom is the one that does
 		# not; all three keep their clear ground.
 		if plan.is_door() and plan.is_placed():
-			_doors.append(plan.position)
+			_doors.append(plan.placed_at())
 		# A place the day planned and left unsited, read off the same list for the same reason.
 		if plan.row().is_sited_from_her_walk() and not plan.is_placed():
 			_on_her_way.append(plan)
-		var mode := plan.def.spawn_mode_on(day)
+		var mode := plan.spawn_mode_on(day)
 		# A row the director sends ahead of her is owed as a moment where the dawn left it unplaced
 		# (`DawnMoments`); placed, it is a place something else stood (the escape's bag, a recipe).
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
-				or (plan.def.is_sent_ahead() and not plan.is_placed()):
-			if plan.def.pursuit != null and not lesson:
-				lesson = plan.def
+				or (plan.is_sent_ahead() and not plan.is_placed()):
+			if plan.pursues() and not lesson:
+				lesson = plan.row()
 			# The dawn decides how many the route is owed; the bag decides which each one is.
-			_owed.append(null if _route_rows.has(plan.def.id) else plan.def)
+			_owed.append(null if _route_rows.has(plan.row_id()) else plan.row())
 	_owe_the_sprinkled_dog(day)
 	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
@@ -798,10 +798,10 @@ func site_what_is_on_her_way(delta: float, at: Vector2,
 ## crews on the one stretch of street the nearest free locations cover; one at a time, each is met on its own and
 ## the next is sited as the last comes into reach, so they are spread along the day's walk.
 func _waits_its_turn(plan: EventPlan) -> bool:
-	if plan.def.kind == GameEnums.EventKind.ONE_SHOT:
+	if plan.is_a_one_shot():
 		return false
 	for other in _on_her_way:
-		if other != plan and other.def.id == plan.def.id and other.is_placed():
+		if other != plan and other.is_the_same_row_as(plan) and other.is_placed():
 			return true
 	return false
 
@@ -810,7 +810,7 @@ func _waits_its_turn(plan: EventPlan) -> bool:
 func _forget_what_is_real() -> void:
 	var still_ours: Array[EventPlan] = []
 	for plan in _on_her_way:
-		if plan.was_live or plan.spent:
+		if plan.was_live or plan.is_spent():
 			_behind_her.erase(plan)
 			continue
 		still_ours.append(plan)
@@ -832,10 +832,10 @@ func _forget_what_is_real() -> void:
 ## thinned seal — because the alternative is re-siting the fire every time she leaves the sidewalk.
 func _is_no_longer_on_her_way(plan: EventPlan, at: Vector2, heading: Vector2,
 		elapsed: float) -> bool:
-	var toward := plan.position - at
+	var toward := plan.placed_at() - at
 	var still_ahead := toward.length_squared() < 1.0 \
 			or (toward.normalized().dot(heading) > ON_HER_WAY_BEHIND
-			and _siting.still_ahead_of(at, heading, plan.position))
+			and _siting.still_ahead_of(at, heading, plan.placed_at()))
 	if still_ahead:
 		_behind_her[plan] = 0.0
 		return false

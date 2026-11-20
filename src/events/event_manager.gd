@@ -344,8 +344,8 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bod
 	if records_its_bodies:
 		for placed in plan.placements():
 			if placed.is_placed():
-				spawner.record_the_body(placed.get_instance_id(), placed.def, placed.position,
-						placed.facing)
+				spawner.record_the_body(placed.get_instance_id(), placed.row(),
+						placed.placed_at(), placed.faces())
 	if plan.belongs_to_a_day():
 		ahead.start_day(world.day(), plan.walk() as RouteTree)
 	else:
