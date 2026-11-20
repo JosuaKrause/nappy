@@ -156,7 +156,7 @@ var map: CityMap
 var _navigator: Navigator
 
 ## How everything that moves over `map` moves: the navigator `build()` made, which the builder hands
-## to the events, the crowd and the resistance.
+## to the events and the crowd, and `main` to the resistance.
 func navigator() -> Navigator:
 	return _navigator
 
