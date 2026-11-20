@@ -589,7 +589,8 @@ func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) 
 		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
-		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT, map)
+		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().on(map))
 		# Past its own telegraph, so the field is the rate the row states rather than the damped one
 		# a telegraph holds it to. Never added to the tree: `contribution_at()` is a pure query.
 		instance.age = 10.0

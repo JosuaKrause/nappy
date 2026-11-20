@@ -170,9 +170,10 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> v
 		var world := WorldContext.new()
 		t.add_child(world)
 		var instance := EventInstance.new()
-		instance.atlas = atlas
 		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
-				_ground_in(vertical), null, null, world)
+				EventSurroundings.new().on(_ground_in(vertical)) \
+					.drawn_in(world) \
+					.drawn_from(atlas))
 		world.add_entity(instance)
 		await t.get_tree().process_frame
 		var slices := _slices_of(instance)
@@ -217,9 +218,10 @@ func _test_the_slices_go_with_their_event(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var instance := EventInstance.new()
-	instance.atlas = atlas
-	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
-			PackedVector2Array(), Vector2.RIGHT, WorldMap.open_ground(), null, null, world)
+	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(WorldMap.open_ground()) \
+				.drawn_in(world) \
+				.drawn_from(atlas))
 	world.add_entity(instance)
 	await t.get_tree().process_frame
 	var layer := world.layers().node(DrawLayer.Layer.ENTITIES)
@@ -275,11 +277,12 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 			var world := WorldContext.new()
 			t.add_child(world)
 			var instance := EventInstance.new()
-			instance.atlas = atlas
 			var drawer := RecordingEventDrawer.new(atlas)
-			instance.drawer = drawer
-			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
-					Vector2.RIGHT, _ground_in(vertical), null, null, world)
+			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(), Vector2.RIGHT,
+					EventSurroundings.new().on(_ground_in(vertical)) \
+						.drawn_in(world) \
+						.drawn_from(atlas) \
+						.drawing_through(drawer))
 			world.add_entity(instance)
 			await t.get_tree().process_frame
 			var slices := _slices_of(instance)

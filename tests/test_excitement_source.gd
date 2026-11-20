@@ -111,8 +111,8 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 	var def := EventCatalogue.by_id("cyclist")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]),
-			Vector2.RIGHT, null, null, instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	for _i in int(ceil(def.telegraph_time / 0.1)) + 1:
 		instance.step(0.1)
 	instance_where.tell(instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0))

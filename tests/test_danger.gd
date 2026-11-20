@@ -41,6 +41,7 @@ func run(t: TestRunner) -> void:
 	_atlas.release(&"events")
 
 const MapCache := preload("res://tests/city_map_cache.gd")
+const DrawnEvent := preload("res://tests/drawn_event.gd")
 const CrowdStreetRig := preload("res://tests/crowd_street_rig.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
@@ -932,7 +933,7 @@ func _free_manager(manager: EventManager) -> void:
 ## holds for that draw is read back. One entry for a costly mark, two stacked for a lethal one
 ## (`colour`, and `size.x` its width), none when no mark is wanted.
 func _carets(t: TestRunner, instance: EventInstance) -> Array[Dictionary]:
-	var drawer := instance.drawer as RecordingEventDrawer
+	var drawer := DrawnEvent.drawer_of(instance)
 	if not instance.is_inside_tree():
 		t.add_child(instance)
 	instance.queue_redraw()
@@ -955,9 +956,10 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 func _instance(def: EventDef, route := PackedVector2Array(),
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.atlas = _atlas
-	instance.drawer = RecordingEventDrawer.new(_atlas)
-	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT, null, null, where)
+	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT,
+			EventSurroundings.new().hearing(where) \
+				.drawn_from(_atlas) \
+				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(_atlas))))
 	return instance
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`

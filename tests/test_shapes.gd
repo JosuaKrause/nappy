@@ -233,8 +233,9 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 		if positions.is_empty():
 			continue
 		var instance := EventInstance.new()
-		instance.atlas = atlas
-		instance.setup(def, positions[0], PackedVector2Array(), Vector2.RIGHT, map)
+		instance.setup(def, positions[0], PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().on(map) \
+					.drawn_from(atlas))
 		t.add_child(instance)
 
 		var along := _along_axis(segment)

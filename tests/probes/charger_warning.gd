@@ -60,8 +60,8 @@ static func _waiting_chargers() -> Array[EventDef]:
 static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(0.0, def.notice_within() + 20.0)

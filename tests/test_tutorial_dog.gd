@@ -174,7 +174,8 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 
 	var her := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, her)
+	dog.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
 	# Inside the field (`outer_radius`) but outside the trigger (`EventDef.notice`) — the "on sight"
 	# band alley_robbery's own shape leaves room for.
 	her.tell(Vector2((hot.outer_radius + hot.notice_within()) * 0.5, 0.0))
@@ -198,7 +199,8 @@ func _test_day_3_dog_still_charges_the_moment_it_streams_in(t: TestRunner) -> vo
 	t.check(def.notice_within() <= 0.0, "day 3's own def is untouched by the switch")
 	var her := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, her)
+	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
 	her.tell(Vector2(1000.0, 1000.0))
 	dog.step(STEP)
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),

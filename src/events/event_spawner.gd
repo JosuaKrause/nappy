@@ -232,22 +232,15 @@ func report_the_pelicans_in_view() -> void:
 
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be
-## missed by whichever path created the event.
+## missed by whichever path created the event. `gate` is the shared boom state of a street door's
+## boom (`EventPlan.gate()`), handed to the event's one setup call; null for any other.
 func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
-		facing := Vector2.RIGHT) -> EventInstance:
+		facing := Vector2.RIGHT, gate: RegionPlanner.GateState = null) -> EventInstance:
 	show_the_bang(def)
 	var instance := EventInstance.new(world.reports())
-	instance.skip_draw = world.skip_drawing
-	instance.timing = world.timing
-	instance.atlas = world.atlas
-	instance.drawer = world.drawer
-	instance.trace = world.trace()
-	var drawn_in := world.drawn_in()
-	instance.setup(def, at, path, facing, world.map(), world.navigator(), world.where_she_is(),
-			drawn_in)
-	instance.signals = world.signals
-	instance.points_at = world.where_protests_point
-	drawn_in.add_entity(instance)
+	var surroundings := world.surroundings()
+	instance.setup(def, at, path, facing, surroundings, gate)
+	surroundings.world_drawn_in().add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.

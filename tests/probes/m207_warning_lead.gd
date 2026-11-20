@@ -164,7 +164,8 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var created_where := WhereSheIs.nowhere()
 	var arrive := func(place: Vector2, _at: Vector2) -> bool:
 		var created := EventInstance.new()
-		created.setup(def, place, PackedVector2Array(), Vector2.RIGHT, null, null, created_where)
+		created.setup(def, place, PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().hearing(created_where))
 		created.arrive_from_its_warning()
 		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
 		# resistance's sent robber and guard) with its telegraph spent.
@@ -397,7 +398,8 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var spawn: Vector2 = encounter.get("spawn", path[0] if path.size() > 0 else Vector2.ZERO)
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, spawn, path, Vector2.RIGHT, null, null, instance_where)
+	instance.setup(def, spawn, path, Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	if encounter.has("age"):
 		instance.resume(float(encounter["age"]), 0.0)
 	var her: Vector2 = encounter["her"]
@@ -459,7 +461,8 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path: PackedVector2Array = route.call(place, at)
 		var instance := EventInstance.new()
-		instance.setup(def, path[0], path, Vector2.RIGHT, null, null, instance_where)
+		instance.setup(def, path[0], path, Vector2.RIGHT,
+				EventSurroundings.new().hearing(instance_where))
 		instance.arrive_from_its_warning()
 		if def.pursuit == null:
 			instance.resume(EventSpawner.age_when_warned(def), 0.0)

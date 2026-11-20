@@ -178,13 +178,13 @@ func _test_event_parts(t: TestRunner) -> void:
 	for id: String in ["car_accident", "burst_water_main"]:
 		for vertical: bool in [false, true]:
 			var instance := EventInstance.new()
-			instance.atlas = atlas
 			var laid := RecordingSceneryDrawer.new()
 			var pictures := RecordingEventDrawer.new(atlas)
 			pictures.scenery_drawer = laid
-			instance.drawer = pictures
-			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(),
-					Vector2.RIGHT, EastWestStreet.new() if vertical else WorldMap.open_ground())
+			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+					EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+						.drawn_from(atlas) \
+						.drawing_through(pictures))
 			t.add_child(instance)
 			t.check(instance.runs_vertically() == vertical, "%s stands on the axis asked for" % id)
 			# The slices go into the world on the idle frame after the instance is made.

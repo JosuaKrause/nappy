@@ -91,8 +91,8 @@ func _test_the_gate_stores_the_key_it_compared(t: TestRunner) -> void:
 	fresh.free()
 	var atlas := AtlasLibrary.new()
 	var instance := EventInstance.new()
-	instance.atlas = atlas
-	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO)
+	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().drawn_from(atlas))
 	# In the tree, as the manager keeps it: its own frames draw it, so its atlas page is held, on
 	# the library it was handed, as the manager holds it.
 	atlas.acquire(EventPictures.ATLAS_GROUP)
@@ -337,8 +337,8 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t: TestRunner) -> void:
 		return
 	var her := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]),
-			Vector2.RIGHT, null, null, her)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
 	# Ticks with nobody's position known, so the gate caches an answer for this `age` against
 	# `Vector2.INF` — the state the running game is in on any frame whose event `_process()` runs
 	# before whoever tells where she is (`WhereSheIs.tell()`).
@@ -456,8 +456,8 @@ func _test_separated_details_keep_the_owner_key_stable(t: TestRunner) -> void:
 func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("alley_robbery"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT, null, null, instance_where)
+	instance.setup(EventCatalogue.by_id("alley_robbery"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	# Far enough out that he never stops waiting, in two places 180° apart.
 	instance_where.tell(Vector2(9000.0, 0.0))
 	instance.step(STEP)
@@ -490,14 +490,13 @@ func _test_a_chatting_mother_moves_her_key_while_frozen(t: TestRunner) -> void:
 ## advanced by `Crowd` — and the gate never moves, never strides and never telegraphs, so that bit
 ## is the only thing between a raised boom and a lowered one reaching the screen.
 func _test_a_raised_boom_moves_the_gates_key(t: TestRunner) -> void:
+	var state := RegionPlanner.GateState.new()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("checkpoint_gate"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.DOWN)
+			Vector2.DOWN, null, state)
 	instance.step(STEP)
 	_asks(instance)
-	var state := RegionPlanner.GateState.new()
 	state.raised = true
-	instance.gate_state = state
 	instance.step(STEP)
 	t.check(_asks(instance), "raising the boom moves the gate's key")
 	instance.free()
@@ -508,8 +507,8 @@ func _test_a_raised_boom_moves_the_gates_key(t: TestRunner) -> void:
 func _test_a_leaving_event_moves_its_key(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT, null, null, instance_where)
+	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	instance_where.tell(Vector2(-400.0, 0.0))
 	instance.step(STEP)
 	_asks(instance)
@@ -553,8 +552,8 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void
 func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("abduction"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT, null, null, instance_where)
+	instance.setup(EventCatalogue.by_id("abduction"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.check(not _never_settles(instance), "an idle van is gated like any other vehicle")
 	instance_where.tell(instance.global_position)
 	instance.step(STEP)

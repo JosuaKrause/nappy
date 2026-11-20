@@ -24,6 +24,7 @@ extends RefCounted
 ## take them).
 
 const SEED := 8817
+const DrawnEvent := preload("res://tests/drawn_event.gd")
 const STEP := 1.0 / 60.0
 const EastWestStreet := preload("res://tests/east_west_street.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
@@ -348,7 +349,8 @@ func _test_it_patrols_while_it_waits(t: TestRunner) -> void:
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(hot, path[0], path, Vector2.RIGHT, null, null, instance_where)
+	instance.setup(hot, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	# Nowhere near her own trigger radius, so nothing here is about noticing.
@@ -374,7 +376,8 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> vo
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(300.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(hot, path[0], path, Vector2.RIGHT, null, null, instance_where)
+	instance.setup(hot, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
@@ -398,7 +401,8 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(hot, path[0], path, Vector2.RIGHT, null, null, instance_where)
+	instance.setup(hot, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, -40.0)
@@ -411,7 +415,7 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var officer := EventInstance.new()
 	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(6))
 	officer.setup(out, instance.door_for_its_officer(out), PackedVector2Array(), Vector2.RIGHT,
-			null, null, officer_where)
+			EventSurroundings.new().hearing(officer_where))
 	instance.let_out(officer)
 	for i in int(round(3.0 / STEP)):
 		instance_where.tell(her)
@@ -470,15 +474,16 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	var band := EventInstance.new()
 	# Drawn through a drawer that records what it is told instead of painting it, since this rig
 	# holds no atlas, handed before `setup()` as its manager's spawner hands the real one.
-	band.drawer = RecordingEventDrawer.new()
-	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT, null, null, band_where)
+	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(band_where) \
+				.drawing_through(DrawnEvent.recording(band, RecordingEventDrawer.new())))
 	t.add_child(band)
 	band_where.tell(post + Vector2(cold.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0))
 	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
 	var segments := 0
-	for entry in (band.drawer as RecordingEventDrawer).draws:
+	for entry in DrawnEvent.drawer_of(band).draws:
 		if entry.picture == EventPictures.roadblock_segment_texture(band.runs_vertically()):
 			segments += 1
 	t.check(segments > 0, "the band was drawn in the frames that passed (%d segments)" % segments)
@@ -490,7 +495,8 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT, null, null, guard_where)
+	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(guard_where))
 	t.add_child(guard)
 	guard.set_process(false)
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
@@ -568,7 +574,8 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> v
 			# End-on, he stands on an east-west street, which his band reads its axis off as it
 			# does in a city; broadside, on open ground.
 			guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-					EastWestStreet.new() if vertical else null, null, guard_where)
+					EventSurroundings.new().on(EastWestStreet.new() if vertical else null) \
+						.hearing(guard_where))
 			t.check(guard.runs_vertically() == vertical, "%s: the band runs %s" % [what,
 					"down the screen" if vertical else "across it"])
 			t.add_child(guard)
@@ -607,7 +614,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path, Vector2.RIGHT, null, null, first_where)
+	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
@@ -647,7 +654,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path, Vector2.RIGHT, null, null, first_where)
+	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, 0.0)
@@ -665,7 +672,8 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 
 	var second_where := WhereSheIs.nowhere()
 	var second := EventInstance.new()
-	second.setup(hot, path[0], path, Vector2.RIGHT, null, null, second_where)
+	second.setup(hot, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().hearing(second_where))
 	t.add_child(second)
 	second.resume(age, travelled, noticed_at)
 	t.check(not second.is_waiting(),
@@ -727,7 +735,8 @@ func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, first_where)
+	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(def.notice_within() - 10.0, 0.0)

@@ -112,7 +112,8 @@ func _car_bodies(map: CityMap, events: EventManager) -> Array:
 		# The instance the spawner would make for the plan: where it stands and which way its
 		# pieces are laid out are what it decides when it is set up.
 		var sited := EventInstance.new()
-		sited.setup(plan.def, plan.position, PackedVector2Array(), plan.facing, map)
+		sited.setup(plan.def, plan.position, PackedVector2Array(), plan.facing,
+				EventSurroundings.new().on(map))
 		var placed := sited.position
 		var vertical := sited.runs_vertically()
 		sited.free()

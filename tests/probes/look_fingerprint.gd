@@ -99,6 +99,8 @@ class Rig extends RefCounted:
 	var last_nodes := ""
 	## What a protest is handed to point at (`points`).
 	var point := Vector2.ZERO
+	## The boom state a gate is handed (`boom`), which the drive raises and lowers.
+	var gate: RegionPlanner.GateState
 
 	func point_now() -> Vector2:
 		return point
@@ -237,13 +239,18 @@ func _stand(t: TestRunner, atlas: AtlasLibrary, where: WhereSheIs, row: EventDef
 	rig.holder = Node2D.new()
 	t.add_child(rig.holder)
 	var instance := EventInstance.new()
-	instance.atlas = atlas
-	instance.drawer = RecordingEventDrawer.new(atlas)
 	var map: WorldMap = EastWestStreet.new() if ground == "street" else WorldMap.open_ground()
 	var route := PackedVector2Array()
 	if row.speed > 0.0:
 		route = PackedVector2Array([AT, AT + Vector2(900.0, 0.0)])
-	instance.setup(row, AT, route, Vector2.RIGHT, map, null, where)
+	var surroundings := EventSurroundings.new().on(map).hearing(where).drawn_from(atlas) \
+			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(atlas)))
+	if drive == "boom":
+		rig.gate = RegionPlanner.GateState.new()
+	if drive == "points":
+		rig.point = AT + Vector2(0.0, -400.0)
+		surroundings.pointing_protests_with(Callable(rig, "point_now"))
+	instance.setup(row, AT, route, Vector2.RIGHT, surroundings, rig.gate)
 	rig.holder.add_child(instance)
 	rig.instance = instance
 	match drive:
@@ -251,11 +258,6 @@ func _stand(t: TestRunner, atlas: AtlasLibrary, where: WhereSheIs, row: EventDef
 			instance.be_drawn_as_the_pelican()
 		"silenced":
 			instance.silence()
-		"boom":
-			instance.gate_state = RegionPlanner.GateState.new()
-		"points":
-			rig.point = AT + Vector2(0.0, -400.0)
-			instance.points_at = Callable(rig, "point_now")
 	return rig
 
 ## Where she is at `tick` under `drive`.
@@ -280,9 +282,9 @@ func _act(rig: Rig, tick: int) -> void:
 				instance.give_up_the_chase()
 		"boom":
 			if tick == SWITCH_ON_AT:
-				instance.gate_state.raised = true
+				rig.gate.raised = true
 			elif tick == SWITCH_OFF_AT:
-				instance.gate_state.raised = false
+				rig.gate.raised = false
 		"hand":
 			if tick == SWITCH_ON_AT:
 				instance.raise_its_guards_hand(true)
@@ -312,7 +314,7 @@ func _sample(rig: Rig, tick: int, seen: Seen) -> void:
 	if not rig.alive():
 		return
 	var instance := rig.instance
-	var drawer := instance.drawer as RecordingEventDrawer
+	var drawer := DrawnEvent.drawer_of(instance)
 	var prefix := "LK %s %s %s t%d" % [rig.ground, rig.label, rig.drive, tick]
 	var script := instance.look.get_script() as Script
 	seen.looks[script.get_global_name()] = true

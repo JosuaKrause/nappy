@@ -238,8 +238,9 @@ func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 		map.fill_rect(Rect2i(0, 1, 8, 1), GameEnums.TileType.ROAD)
 		map.fill_rect(Rect2i(3, 3, 2, 2), ground)
 		var car := EventInstance.new()
-		car.skip_draw = true
-		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT, map)
+		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().on(map) \
+					.drawing_nothing())
 		t.add_child(car)
 		var her := _centre(Vector2i(3, 3))
 		t.check(car.clear_line_to(her), "a car sees her standing on %s" % ground)
@@ -256,9 +257,9 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 	var on_time := cat.telegraph_time + whole / cat.speed
 	for run: float in [whole, whole * 0.5, TILE]:
 		var instance := EventInstance.new()
-		instance.skip_draw = true
 		var path := PackedVector2Array([Vector2(-run, 0.0), Vector2(run, 0.0)])
-		instance.setup(cat, path[0], path)
+		instance.setup(cat, path[0], path, Vector2.RIGHT,
+				EventSurroundings.new().drawing_nothing())
 		t.add_child(instance)
 		instance.set_process(false)
 		instance.hold_still_longer(cat.crouch_for_a_run(run))
@@ -370,8 +371,9 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 		var recorded := EventSpawner.obstructed_footprint(map, plan.def, plan.position,
 				plan.facing)
 		var instance := EventInstance.new()
-		instance.skip_draw = true
-		instance.setup(plan.def, plan.position, PackedVector2Array(), plan.facing, map)
+		instance.setup(plan.def, plan.position, PackedVector2Array(), plan.facing,
+				EventSurroundings.new().on(map) \
+					.drawing_nothing())
 		var built := Footprint.new()
 		var centres := instance.solid_part_centres()
 		var shapes := instance.solid_part_shapes()

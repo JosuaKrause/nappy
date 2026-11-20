@@ -7,10 +7,10 @@ extends RefCounted
 ## `stands_side_on()`, `solid_axis()`, `solid_part_centres()`, `solid_part_shapes()`).
 ##
 ## **It is handed what never changes under it** (its row, the map, where she is, the node its
-## collision body stands under, and how it lies where it landed) and **tells nothing upward**: the
+## collision body stands under, how it lies where it landed, and the boom state its arm is) and **tells nothing upward**: the
 ## event asks it, and tells it what happened (it came into the world, it started, its arm moved, its
 ## guard left it), handing it what changes with each call (where the event stands, which way it
-## heads, whether the arm is up). Until the row is written as its parts it asks the row under the
+## heads). Until the row is written as its parts it asks the row under the
 ## body part's names (`EventDef.has_a_body()`, `solid_from()`, `body_pieces()` and the rest).
 ##
 ## **The body and the day's blocked record are one solid read twice**: the body is built from the
@@ -44,12 +44,16 @@ var _own_tiles_at := Vector2.INF
 ## What `follow_the_arm()` last set a boom's shapes to, so a boom standing still in either position
 ## costs a comparison rather than a deferred call a frame.
 var _arm_was_open := false
+## The boom state a boom's arm is, shared with `Crowd` (`RegionPlanner.GateState`), which only the
+## crowd writes; null for every row but a street door's boom, and read as lowered then.
+var _gate: RegionPlanner.GateState
 
 ## Handed, as its event is set up, its row, the map, where she is, the node its collision body
 ## stands under, where it landed (`at`), the way it was sited facing (`face`), and whether the
-## street it landed on runs it down the screen (`vertical`).
+## street it landed on runs it down the screen (`vertical`), and the boom state its arm is (`gate`).
 func _init(row: EventDef, map: WorldMap, where: WhereSheIs, holder: Node2D, at: Vector2,
-		face: Vector2, vertical: bool) -> void:
+		face: Vector2, vertical: bool, gate: RegionPlanner.GateState = null) -> void:
+	_gate = gate
 	_row = row
 	_map = map
 	_where = where
@@ -99,10 +103,13 @@ func solid_axis(heading: Vector2) -> Vector2:
 func is_in_place() -> bool:
 	return _obstruction != null
 
-## **Whether it is solid right now**: its body is down, and it is not a boom whose arm is up
-## (`arm_is_up`).
-func is_solid(arm_is_up: bool) -> bool:
-	return _obstruction != null and not (_row.is_a_boom() and arm_is_up)
+## **Whether it is solid right now**: its body is down, and it is not a boom whose arm is up.
+func is_solid() -> bool:
+	return _obstruction != null and not (_row.is_a_boom() and _arm_is_up())
+
+## Whether its boom's arm is up: its gate's state, lowered with none.
+func _arm_is_up() -> bool:
+	return _gate != null and _gate.raised
 
 ## Whether its body is still to come down once it starts (`EventDef.SolidWhen.ONCE_IT_STARTS`).
 func waits_to_come_down() -> bool:
@@ -188,7 +195,7 @@ func come_down_clear_of_her(at: Vector2, heading: Vector2) -> void:
 		return
 	go_down(heading)
 
-## **A boom's body follows its arm** (`arm_is_up`): solid while it is down, not while it is up. The
+## **A boom's body follows its arm**: solid while it is down, not while it is up. The
 ## shapes are switched rather than the body freed and rebuilt, so nothing that holds the body (the
 ## debug view's bounding-box layer) ever sees it vanish; nothing for any other row.
 ##
@@ -196,9 +203,10 @@ func come_down_clear_of_her(at: Vector2, heading: Vector2) -> void:
 ## fact both halves read, and `Crowd._stop_for_gates()` does not lower it while she is under it, so
 ## the body cannot go down around her: following the arm is enough. Deferred, because the switch
 ## can land while the physics server is mid-query.
-func follow_the_arm(arm_is_up: bool) -> void:
+func follow_the_arm() -> void:
 	if not _row.is_a_boom() or _obstruction == null:
 		return
+	var arm_is_up := _arm_is_up()
 	if arm_is_up == _arm_was_open:
 		return
 	_arm_was_open = arm_is_up

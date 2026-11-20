@@ -8,11 +8,14 @@ extends RefCounted
 
 ## The building's events in `scene`, added under `parent`, started from `rng`'s next draw. The seed
 ## is kept on the manager's metadata so `restart()` starts the same building again. The manager is
-## handed `run`, the caller's own `RunState`.
+## handed `run`, the caller's own `RunState`, and `atlas` as the pages it draws from where the caller
+## holds them (a manager handed none makes its own on entering the tree).
 static func events_in(parent: Node, scene: InteriorScene,
-		rng: RandomNumberGenerator, run: RunState) -> EventManager:
+		rng: RandomNumberGenerator, run: RunState, atlas: AtlasLibrary = null) -> EventManager:
 	var events := EventManager.new()
 	events.use_bus(EventBus)
+	if atlas != null:
+		events.use_atlas(atlas)
 	events.stream_within(INF)
 	parent.add_child(events)
 	events.draw_in(scene)

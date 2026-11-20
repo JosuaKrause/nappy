@@ -315,7 +315,8 @@ func _test_an_event_is_silent_behind_a_wall(t: TestRunner) -> void:
 ## `setup()` as the spawner hands it the world's, so both copies stand exactly where they were put.
 func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map)
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	instance.age = def.telegraph_time + 1.0
 	return instance
 

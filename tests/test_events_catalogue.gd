@@ -476,7 +476,8 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 
 	var van := EventCatalogue.by_id("delivery_van")
 	var parked := EventInstance.new()
-	parked.setup(van, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT, map)
+	parked.setup(van, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	t.check(parked.position.is_equal_approx(map.tile_to_world(kerb_tile)),
 			"'delivery_van' (AT_THE_KERB) is left exactly where it was placed, not re-centred")
 	parked.free()
@@ -486,7 +487,8 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 	# in the direction `CityMap.pavement_inward()` already answers for this lane.
 	var barrier := EventCatalogue.by_id("construction")
 	var centred := EventInstance.new()
-	centred.setup(barrier, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT, map)
+	centred.setup(barrier, map.tile_to_world(kerb_tile), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	var band_centre := map.tile_to_world(kerb_tile) \
 			+ Vector2(map.pavement_inward(kerb_tile)) * (Tuning.TILE_SIZE * 0.5)
 	t.check(centred.position.is_equal_approx(band_centre),
@@ -604,7 +606,8 @@ func _test_a_spread_rotates_with_the_street(t: TestRunner) -> void:
 ## on, as the scheduler's placement does when it makes the instance.
 func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("construction"), at, PackedVector2Array(), Vector2.RIGHT, map)
+	instance.setup(EventCatalogue.by_id("construction"), at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	var vertical := instance.runs_vertically()
 	instance.free()
 	return vertical
@@ -861,8 +864,9 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
-		instance.atlas = atlas
-		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT, map)
+		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().on(map) \
+					.drawn_from(atlas))
 		t.add_child(instance)
 		instance.set_process(false)
 		var street := "east-west" if vertical else "north-south"

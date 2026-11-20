@@ -88,7 +88,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		var route_of: Callable = encounter["route"]
 		var route: PackedVector2Array = route_of.call(place, at)
 		var instance := EventInstance.new()
-		instance.setup(def, place, route, Vector2.RIGHT, null, null, where)
+		instance.setup(def, place, route, Vector2.RIGHT, EventSurroundings.new().hearing(where))
 		instance.arrive_from_its_warning()
 		if pelican:
 			instance.be_drawn_as_the_pelican()
@@ -107,7 +107,8 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	else:
 		var route: PackedVector2Array = encounter["path"]
 		var instance := EventInstance.new()
-		instance.setup(def, route[0], route, Vector2.RIGHT, null, null, where)
+		instance.setup(def, route[0], route, Vector2.RIGHT,
+				EventSurroundings.new().hearing(where))
 		instance.resume(float(encounter.get("age", 0.0)), 0.0)
 		source.add_child(instance)
 		source.live.append(instance)

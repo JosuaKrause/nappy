@@ -128,8 +128,8 @@ func _test_waiting_robber_holds_frame_a(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	# Well outside `EventDef.notice`, so he stays `is_waiting()` for the whole run.
 	instance_where.tell(Vector2(9999.0, 9999.0))
 	for i in 120:
@@ -323,8 +323,8 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.check(not instance.look.victim_gait_is_stepping(), "no take is running yet")
 	instance_where.tell(instance.global_position)
 	instance.abduction.step(0.0)

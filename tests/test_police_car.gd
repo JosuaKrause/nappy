@@ -39,9 +39,10 @@ func _patrol() -> EventDef:
 
 ## A live car of `def` on `route`, in the tree so its body exists, stepped by hand.
 func _car(t: TestRunner, def: EventDef, route: PackedVector2Array, map: CityMap,
-		where: WhereSheIs) -> EventInstance:
+		where: WhereSheIs, lights: TrafficSignals = null) -> EventInstance:
 	var car := EventInstance.new()
-	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), map, null, where)
+	car.setup(def, route[0], route, (route[1] - route[0]).normalized(),
+			EventSurroundings.new().on(map).hearing(where).stopping_at(lights))
 	t.add_child(car)
 	car.set_process(false)
 	return car
@@ -753,8 +754,7 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	t.check(not signals.green_for(junction, false), "the east-west arm is red")
 	var route := PackedVector2Array([Vector2(box_x - 260.0, lane), Vector2(box_x + 400.0, lane)])
 	var car_where := WhereSheIs.nowhere()
-	var car := _car(t, _patrol(), route, map, car_where)
-	car.signals = signals
+	var car := _car(t, _patrol(), route, map, car_where, signals)
 	var was_at := car.global_position
 	for i in int(5.0 / STEP):
 		was_at = car.global_position
@@ -829,8 +829,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 				for out: float in [0.0, 64.0, 96.0]:
 					var her: Vector2 = Vector2((float(first + k) + 0.5) * tile, lane - out)
 					var car_where := WhereSheIs.nowhere()
-					var car := _car(t, _patrol(), route, map, car_where)
-					car.signals = signals
+					var car := _car(t, _patrol(), route, map, car_where, signals)
 					var player := _her(t, her, Vector2.UP)
 					var furthest := -INF
 					for i in int(6.0 / STEP):

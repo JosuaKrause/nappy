@@ -512,7 +512,8 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 		# Where the row's body stands once sited at `at`: the instance the spawner makes puts a
 		# stationary, unpinned body on the middle of its pavement band when it is set up.
 		var sited := EventInstance.new()
-		sited.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map)
+		sited.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().on(map))
 		var placed := sited.position
 		sited.free()
 		var axis := BodyStance.body_axis(map, def, placed, Vector2.RIGHT)

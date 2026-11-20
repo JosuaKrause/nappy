@@ -72,7 +72,7 @@ func run(t: TestRunner) -> void:
 ## The city's events paint through a recording drawer from here on, handed to the world the way
 ## the manager hands the real one, so a check reads the pictures an event was drawn with.
 func _record_the_drawing() -> void:
-	_events.world.drawer = RecordingEventDrawer.new(_events.world.atlas)
+	_events.world.use_drawer(RecordingEventDrawer.new())
 
 func _day_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

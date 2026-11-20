@@ -266,17 +266,9 @@ src/events/behaviours/event_behaviours.gd pursuit
 src/events/behaviours/event_behaviours.gd route
 src/events/behaviours/event_behaviours.gd unreachable
 src/events/event_excitement.gd age
-src/events/event_spawner.gd atlas
 src/events/event_spawner.gd def
-src/events/event_spawner.gd drawer
-src/events/event_spawner.gd points_at
-src/events/event_spawner.gd signals
-src/events/event_spawner.gd skip_draw
-src/events/event_spawner.gd timing
-src/events/event_spawner.gd trace
 src/events/event_streaming.gd age
 src/events/event_streaming.gd barrier_post
-src/events/event_streaming.gd gate_state
 src/events/event_streaming.gd is_finished
 src/events/event_streaming.gd is_leaving
 src/events/views/event_look.gd age
@@ -300,19 +292,6 @@ src/events/event_streaming.gd travelled
 src/events/event_streaming.gd wait_began
 src/events/event_streaming.gd was_live
 src/events/events_ahead.gd was_live
-
-# [EventWorld] src/events/event_world.gd
-src/events/event_manager.gd atlas
-src/events/event_manager.gd drawer
-src/events/event_manager.gd points_at
-src/events/event_manager.gd signals
-src/events/event_manager.gd skip_drawing
-src/events/event_manager.gd timing
-src/events/event_spawner.gd atlas
-src/events/event_spawner.gd drawer
-src/events/event_spawner.gd signals
-src/events/event_spawner.gd skip_drawing
-src/events/event_spawner.gd timing
 
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
