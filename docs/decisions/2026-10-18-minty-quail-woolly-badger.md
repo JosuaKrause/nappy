@@ -26,8 +26,8 @@ probe's output is identical on the base and the branch.
 `plan.row().x()` (fork F1 of the design, from rule 1 of event-interface.md's section 2.1); the method names; the
 `Aftermath.leaves_the_scar()` addition.
 
-**Rejected** (the design's): `act()` and `is_scripted()` on the row (section 4.1), since `own_first_day()` leaves them
-asked by nobody; a cache key string the row gives (`ground_key()`, section 3), since the keys built from the row's
+**Rejected** (the design's): `is_scripted()` on the row (section 4.1), since `own_first_day()` leaves it asked by
+nobody (`act()` stays for row 4a, whose test rewrite asks it for `tests/test_acts.gd`'s read of `act_tag`); a cache key string the row gives (`ground_key()`, section 3), since the keys built from the row's
 answers are the same strings.
 
 **The item.** Row 3a stays open in `event-interface.md` until its last pull request; polite-tapir's
