@@ -22,21 +22,25 @@ var _streaming: EventStreaming
 var _walk: WalkEvents
 var _spawner: EventSpawner
 var _warnings: WarningBoard
-## Whether a torn poster sends a pursuer on this walk (`DaySpec.poster_pursuits`), as the manager
-## is handed the spec.
+## Whether a torn poster sends a pursuer on this walk
+## (`DaySpec.sends_a_pursuer_for_a_torn_poster()`), as `use_the_walk_of()` takes it from the spec.
 var sends_poster_pursuits := true
-## Whether the home's streets are the walk's (`DaySpec.holds_the_home_streets`), as the manager is
-## handed the spec: the rule the ground of a walk no dawn planned is made under
-## (`_ground_of_the_walk()`), so what is sited while she walks keeps the rule the walk was started
-## under. A day's ground, made at dawn, carries the day's own.
+## Whether the home's streets are the walk's (`DaySpec.keeps_the_home_streets_clear()`), as
+## `use_the_walk_of()` takes it from the spec: the rule the ground of a walk no dawn planned is
+## made under (`_ground_of_the_walk()`), so what is sited while she walks keeps the rule the walk
+## was started under. A day's ground, made at dawn, carries the day's own.
 var holds_the_home_streets := true
 ## The walk's spec, as the manager is handed it: whether the region wall stands in it says which man
 ## is the pursuer on foot (`EventCatalogue.on_foot_on()`). Until one is handed in, one with no wall.
 var _spec := DaySpec.new()
 
-## Takes the walk's spec, as the manager is handed it, for the pursuer on foot.
+## **Takes the walk's spec**, as the manager is handed it: for the pursuer on foot, and for the two
+## settings of the walk this keeps, whether a torn poster sends a pursuer and whether the home's
+## streets are the walk's. Nothing else in the game writes the two, so in play they are always the spec's.
 func use_the_walk_of(spec: DaySpec) -> void:
 	_spec = spec
+	sends_poster_pursuits = spec.sends_a_pursuer_for_a_torn_poster()
+	holds_the_home_streets = spec.keeps_the_home_streets_clear()
 
 func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawner,
 		warnings: WarningBoard, walk: WalkEvents) -> void:
@@ -57,11 +61,6 @@ func use_director(director: EventDirector, spawn_siting: SpawnSiting) -> void:
 	_director = director
 	_director.force(_forced_row, _forced_interval)
 	_spawn_siting = spawn_siting
-
-## No director: a world that is not the city, where nothing is sited while she walks.
-func drop_director() -> void:
-	_director = null
-	_spawn_siting = null
 
 ## Whether a director sites anything ahead of her in this world.
 func has_director() -> bool:

@@ -29,7 +29,7 @@ func run(t: TestRunner) -> void:
 ## A view looked through `rig`, with `controls` the controls it is to read the scheme from.
 static func _view_through(rig: Node2D, controls: TouchControls) -> VisibleView:
 	var made := VisibleView.new()
-	made.controls = controls.covering()
+	made.use_cover(controls.covering())
 	made.look_from(Stroller.view_centre_of(rig))
 	return made
 

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name EventManager
 extends Node
 ## **A day's events, in whatever world she walks**: the one thing the run flow, the resistance, the
@@ -30,7 +29,8 @@ extends Node
 ##
 ## **Handed what it depends on, never fetching it**: the city's map, today's streets, the lights,
 ## the run, the navigator and the poster walls (`setup()`), or a world that is not the city
-## (`setup_world()`); the run alone for a rig that sets up neither (`use_run()`); the player
+## (`setup_world()`), one or the other and once, since a manager is set up for one world and
+## asserts so; the run alone for a rig that sets up neither (`use_run()`); the player
 ## (`use_player()`); the walk's spec (`use_the_spec()`).
 ##
 ## Lookup is a linear scan. Only what is inside `EVENT_STREAM_RADIUS` is live, a few dozen at most
@@ -181,9 +181,13 @@ func _notification(what: int) -> void:
 ## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
 ## against the streets it hands, so it hands streets whose day it began (`DayStreets.begin_day()`).
 ##
+## **A manager is set up once, for one world** (`setup()` or `setup_world()`, never both nor
+## either twice): nothing is undone by a second call, so one is refused in a debug run.
 func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = null,
 		run: RunState = null, navigator: Navigator = null,
 		poster_walls: PosterWalls = null) -> void:
+	assert(not _set_up, "a manager is set up for one world")
+	_set_up = true
 	world.use_map(map, map)
 	world.work_out_mast_sites(map)
 	world.use_plan_builder(PlanBuilder.new(map, EventInstance.mover_for, EventFootprints.stands_at,
@@ -205,20 +209,19 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 func spawn_siting() -> SpawnSiting:
 	return _spawn_siting
 
-## The siting `spawn_siting()` answers, made by `setup()` and dropped by `setup_world()`.
+## The siting `spawn_siting()` answers, made by `setup()`; null in a world that is not the city.
 var _spawn_siting: SpawnSiting
+## Whether `setup()` or `setup_world()` has been called: a manager is set up for one world.
+var _set_up := false
 
 ## Hands the manager a world that is not the city — the escape's building — whose events stand on
 ## `map` and move by its navigator, belonging to `run`: no city to plan a day over, no director
 ## siting anything ahead of her, no lights. What runs there is the building's own plan
-## (`start_day()` with the building's spec).
+## (`start_day()` with the building's spec). Set up once, like `setup()`, which it is the
+## alternative to: the city's parts `setup()` makes are never made, so there is nothing to undo.
 func setup_world(map: WorldMap, run: RunState) -> void:
-	_spawn_siting = null
-	world.use_plan_builder(null)
-	world.use_streets(null)
-	world.use_poster_walls(null)
-	ahead.drop_director()
-	world.signals = null
+	assert(not _set_up, "a manager is set up for one world")
+	_set_up = true
 	world.use_map(map, null)
 	world.use_navigator(Navigator.new(map))
 	world.use_run(run)
@@ -255,10 +258,10 @@ func use_player(player: Node2D) -> void:
 	world.use_player(player)
 
 ## **Hands the manager what the on-screen controls cover** (`TouchControls.covering()`), which the
-## day's view reads the scheme from each frame (`VisibleView.controls`); null for none, the tap
+## day's view reads the scheme from each frame (`VisibleView.use_cover()`); null for none, the tap
 ## scheme's whole view. Handed in by `main` from the UI that owns the controls.
 func use_controls(covering: ScreenCover) -> void:
-	world.visible_view().controls = covering
+	world.visible_view().use_cover(covering)
 
 ## `--force <id> [seconds]`: the one row the director hands out from the next day on, every
 ## `interval` seconds, or "" for the ordinary day. See `EventDirector.force()`.
@@ -303,7 +306,7 @@ func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Ar
 	_begin(spec)
 	streaming.use_the_spent_one_shots(consumed_one_shots)
 	var plan := _planner.plan(spec, rng, consumed_one_shots)
-	_take(spec, plan, focus, plan.is_a_day)
+	_take(spec, plan, focus, plan.belongs_to_a_day())
 
 ## **The first half of every walk's start**, before anything is planned: clears whatever was here
 ## (so the planning sees the map without yesterday's holds and bodies) and takes the walk's settings.
@@ -322,13 +325,13 @@ func _begin(spec: DaySpec) -> void:
 ## a walk planned whole hands it nothing. `world.day()` is the plan's: the day's own number for a day,
 ## the run's last day for the escape's sections.
 func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bodies: bool) -> void:
-	world.take_the_day(spec.number if plan.is_a_day else world.run().header().day())
-	_encounters.day = spec.number
-	_walk = plan.walk
+	world.take_the_day(spec.day_number() if plan.belongs_to_a_day() else world.run().header().day())
+	_encounters.count_under(spec.day_number())
+	_walk = plan.walk()
 	# Where she can get to from home, worked out as the walk starts, from what it planned and the
 	# map's closures and soft seals as they stand now, and told what each unit draws (`DayReach`).
-	var reach := DayReach.of(world.city_map(), plan.placements) if world.city_map() else null
-	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations(),
+	var reach := DayReach.of(world.city_map(), plan.placements()) if world.city_map() else null
+	_walk_events.take(plan.placements(), plan.calm(), plan.doors(), reach, plan.locations(),
 			plan.ground(), plan.unit_draw())
 	# Every stationary solid body the walk has sited, where `records_its_bodies` (a day, a scene
 	# recipe), recorded per tile so the crowd goes round it — see `CityMap.obstructed_tiles`. Taken
@@ -339,12 +342,12 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2, records_its_bod
 	# refuses against is already on the map; a unit's draws are recorded as each unit draws
 	# (`EventStreaming.add()`).
 	if records_its_bodies:
-		for placed in plan.placements:
+		for placed in plan.placements():
 			if placed.is_placed():
 				spawner.record_the_body(placed.get_instance_id(), placed.def, placed.position,
 						placed.facing)
-	if plan.is_a_day:
-		ahead.start_day(world.day(), plan.walk as RouteTree)
+	if plan.belongs_to_a_day():
+		ahead.start_day(world.day(), plan.walk() as RouteTree)
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day())
@@ -375,9 +378,7 @@ func walk() -> RouteSource:
 ## their bodies recorded as a day's are.
 func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
 		focus: Vector2, calm: CalmAreas = null) -> void:
-	var plan := DayPlanner.Plan.new()
-	plan.placements = plans
-	plan.is_a_day = false
+	var plan := DayPlanner.Plan.new(plans, null, PackedVector2Array(), false)
 	# The recipe's walk is sited against the calm areas its rows were placed against, or, handed
 	# none, those a day's would be as the map stands.
 	if calm:
@@ -389,7 +390,7 @@ func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
 	# have them (`_take()`).
 	_take(spec, plan, focus, true)
 	world.take_the_day(day)
-	_encounters.day = day
+	_encounters.count_under(day)
 	_recipe_plan = true
 
 ## **The day's calm areas as the map stands now** (`DayPlanner.calm_as_the_map_stands()`): what a
@@ -406,14 +407,16 @@ func stand_down() -> void:
 	set_physics_process(false)
 
 ## **The walk's own settings, out of the spec the run flow hands in**: whether falling asleep owes
-## her a return (`DaySpec.owes_a_return`), whether a torn poster sends a pursuer
-## (`DaySpec.poster_pursuits`) and whether what is sited after dawn keeps off the home's streets
-## (`DaySpec.holds_the_home_streets`, which `EventsAhead` keeps as the rule it makes a ground under for a walk no dawn planned; a day's ground keeps the rule it was made under at dawn). Every walk hands its spec in as it starts (`start_day()`); a rig may
-## hand another in mid-walk, which sets the rule of a ground made after it for a walk no dawn planned and leaves a day's ground, and so a day's later sitings, as dawn made it. Until one is handed in, a day's settings (`DaySpec`'s own defaults).
+## her a return (`DaySpec.owes_her_a_return()`), and the two `EventsAhead` takes from the spec
+## itself (`use_the_walk_of()`): whether a torn poster sends a pursuer and whether what is sited
+## after dawn keeps off the home's streets, which `EventsAhead` keeps as the rule it makes a ground
+## under for a walk no dawn planned; a day's ground keeps the rule it was made under at dawn. Every
+## walk hands its spec in as it starts (`start_day()`); a rig may hand another in mid-walk, which
+## sets the rule of a ground made after it for a walk no dawn planned and leaves a day's ground, and
+## so a day's later sitings, as dawn made it. Until one is handed in, a day's settings (`DaySpec`'s
+## own defaults).
 func use_the_spec(spec: DaySpec) -> void:
-	_owes_a_return = spec.owes_a_return
-	ahead.sends_poster_pursuits = spec.poster_pursuits
-	ahead.holds_the_home_streets = spec.holds_the_home_streets
+	_owes_a_return = spec.owes_her_a_return()
 	ahead.use_the_walk_of(spec)
 
 ## **Every charge still running ends for its counter as cut short** (`EventInstance.
@@ -600,7 +603,7 @@ func step_the_encounters(delta: float) -> void:
 ## since the step runs over a copy. One a hand holds (`EventInstance.held_by_hand`) is left as it
 ## stands.
 func _step_them(delta: float) -> void:
-	for instance in world.instances().duplicate():
+	for instance: EventInstance in world.instances().duplicate():
 		if is_instance_valid(instance) and not instance.held_by_hand:
 			instance.step(delta)
 
@@ -638,10 +641,10 @@ func _tell_them_where_she_is() -> void:
 	# Her pram's own body, on her circumference along her facing — what a car that drives keeps clear
 	# of as well as her (`WhereSheIs.pram_at()`). None while she carries the baby.
 	var pram := Vector2.INF
-	if stroller != null and not stroller.carrying:
-		pram = stroller.global_position + stroller.facing * Tuning.PLAYER_BODY_RADIUS
-	world.where_she_is().tell(world.player().global_position, pram, world.visible_view().view, running,
-			awake, held)
+	if stroller != null and not stroller.is_carrying():
+		pram = stroller.global_position + stroller.facing_direction() * Tuning.PLAYER_BODY_RADIUS
+	world.where_she_is().tell(world.player().global_position, pram,
+			world.visible_view().camera_view(), running, awake, held)
 	for instance in world.instances():
 		instance.excitement.set_outranked(instance.def.barrier_structure and instance != strongest)
 

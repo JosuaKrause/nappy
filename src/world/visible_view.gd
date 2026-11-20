@@ -46,8 +46,8 @@ extends RefCounted
 ##
 ## Two ways to ask. `visible_share()` is the one-off question. A caller asking about many things in
 ## one frame keeps an instance, sets it once a frame — `look_from()` the camera's centre (given the
-## controls' `ScreenCover` in `controls`), or `look()` from a view a rig chose — which lays the two
-## corners onto the view there and then, and asks
+## controls' `ScreenCover` handed in by `use_cover()`), or `look()` from a view a rig chose — which
+## lays the two corners onto the view there and then, and asks
 ## `sees()`, `share_of()` or `clear_of_sight()` for each thing, so the corners are worked out once a
 ## frame rather than once a thing. `EventManager` keeps the day's one instance, set at the top of its
 ## physics frame (`EventManager.visible_view()`).
@@ -61,19 +61,24 @@ var _joystick := false
 var _left := Rect2()
 var _right := Rect2()
 ## What the on-screen controls cover and whether their scheme is in force, **handed in** by whoever
-## owns the controls (`EventManager.use_controls()`, from `main`) for `look_from()` to read the
-## scheme from each frame. `null` where nothing built them (a rig, a test), which is the tap scheme's
+## owns the controls (`use_cover()`, by `EventManager.use_controls()` from `main`) for
+## `look_from()` to read the scheme from each frame. `null` where nothing built them (a rig, a test), which is the tap scheme's
 ## whole view.
-var controls: ScreenCover = null
+var _controls: ScreenCover = null
+
+## **Hands in what the on-screen controls cover**, for `look_from()` to read the scheme from each
+## frame; null for none, the tap scheme's whole view.
+func use_cover(covering: ScreenCover) -> void:
+	_controls = covering
 
 ## The world the camera shows, as `look()` was last told: empty until it has been told.
 func camera_view() -> Rect2:
 	return view
 
-## What the on-screen controls cover and whether their scheme is in force, as handed in (`controls`);
-## `null` where nothing built them.
+## What the on-screen controls cover and whether their scheme is in force, as handed in
+## (`use_cover()`); `null` where nothing built them.
 func screen_cover() -> ScreenCover:
-	return controls
+	return _controls
 
 ## A view of `Tuning.VIEW_HALF_EXTENT` either side of `centre`, covered by `covering` — what a rig
 ## with no camera stands in for the camera's view with. A `covering` that is null or not in force is
@@ -96,9 +101,9 @@ func look(at_view: Rect2, covering: ScreenCover) -> void:
 
 ## Sets this frame's view from the point the camera is drawing from, `centre` (what
 ## `Stroller.view_centre_of()` answers): `Tuning.VIEW_HALF_EXTENT` about it, and the corners from the
-## controls handed in `controls`, while their scheme is in force.
+## controls handed in `use_cover()`, while their scheme is in force.
 func look_from(centre: Vector2) -> void:
-	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), controls)
+	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), _controls)
 
 ## `visible_share()` for `rect` against what `look()` was last told.
 func share_of(rect: Rect2) -> float:

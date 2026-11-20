@@ -63,8 +63,7 @@ enum Section { NONE, BUILDING, CITY }
 ## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
 ## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
 ## past it — its plan's random streams and its save are keyed by it. Read through `day_number()`;
-## public only for the event manager's read of it, which waits for the events' interface, and for
-## the suites' reads.
+## public only for the suites' reads.
 var number := 1
 ## The day's own words where "Day N of 14" stands, on its brief and its outcome screen, and the
 ## line the HUD says once she is walking it: "" for a day, "Escape the building" or "Escape the
@@ -462,6 +461,16 @@ func use_exits(the_exits: Dictionary) -> void:
 ## (`holds_the_home_streets`): every day's rule, and not the escape's.
 func keeps_the_home_streets_clear() -> bool:
 	return holds_the_home_streets
+
+## Whether falling asleep owes her a walk home on this walk (`owes_a_return`): every day's does, a
+## section of the escape does not.
+func owes_her_a_return() -> bool:
+	return owes_a_return
+
+## Whether a torn poster sends a pursuer on foot at her on this walk (`poster_pursuits`): every
+## day's does, the escape's never.
+func sends_a_pursuer_for_a_torn_poster() -> bool:
+	return poster_pursuits
 
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined (`_keeps_the_walk_open`): the escape's.

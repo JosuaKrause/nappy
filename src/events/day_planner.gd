@@ -24,19 +24,44 @@ extends RefCounted
 ## **One walk's plan**: what it places, the walk it was placed against, and what of it is kept
 ## past dawn.
 class Plan extends RefCounted:
+	## Everything the walk places, in the order it is handed to the streaming (`placements()`).
+	var _placements: Array[EventPlan] = []
+	## The walk the placements are stated against (`walk()`).
+	var _walk: RouteSource = null
+	## Where today's region doors stand, for what the director sites after dawn (`doors()`).
+	var _doors := PackedVector2Array()
+	## Whether it is a day's plan (`belongs_to_a_day()`).
+	var _belongs_to_a_day := true
+	## The calm areas the walk was planned against (`calm()`).
+	var _calm: CalmAreas = null
+
+	## **A plan of `placements`, stated against `walk`**, whose region doors stand at `doors`
+	## (a day's only) and which is a day's unless `belongs_to_a_day` says it is not.
+	func _init(placements: Array[EventPlan], walk: RouteSource = null,
+			doors := PackedVector2Array(), belongs_to_a_day := true) -> void:
+		_placements = placements
+		_walk = walk
+		_doors = doors
+		_belongs_to_a_day = belongs_to_a_day
+
 	## Everything the walk places, in the order it is handed to the streaming.
-	var placements: Array[EventPlan] = []
+	func placements() -> Array[EventPlan]:
+		return _placements
+
 	## The walk the placements are stated against (`RouteSource`): the day's route tree, the
 	## escape's two chains (`FinalePlanner.Plan`), or null in the building.
-	var walk: RouteSource = null
+	func walk() -> RouteSource:
+		return _walk
+
 	## Where today's region doors stand, for what the director sites after dawn: a day's only.
-	var doors := PackedVector2Array()
+	func doors() -> PackedVector2Array:
+		return _doors
+
 	## Whether it is a day's plan: its bodies recorded for the crowd, and the director siting
 	## after dawn what the day left for her walk. False for a walk planned whole before she sets
 	## off (the escape's two sections), whose plans that come again come on their own clocks.
-	var is_a_day := true
-	## The calm areas the walk was planned against (`calm()`).
-	var _calm: CalmAreas = null
+	func belongs_to_a_day() -> bool:
+		return _belongs_to_a_day
 
 	## **The calm areas the walk was planned against**: a day's own (`CalmAreas.of()` made once in
 	## `_plan_a_day()`), which what is sited while she walks is stated against too; null for the
@@ -218,10 +243,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# `region_plan.door_bodies` stays the one place that answers "where do today's doors stand"
 	# without filtering.
 	placements.append_array(region_plan.door_bodies)
-	var result := Plan.new()
-	result.placements = placements
-	result.walk = tree
-	result.doors = doors
+	var result := Plan.new(placements, tree, doors)
 	result.use_calm(calm)
 	result.use_locations(dawn.locations())
 	result.use_ground(dawn.ground())
@@ -242,12 +264,9 @@ func calm_as_the_map_stands() -> CalmAreas:
 ## the day's holds are cleared once the walk is placed rather than left for a rig that ran a day
 ## on the same map.
 func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
-	var result := Plan.new()
 	var walk := FinalePlanner.route(world.city_map())
-	result.walk = walk
-	result.placements = plan_the_escape_city(world.city_map(), walk, rng, spec, world.plan_builder(),
-			true, world.trace())
-	result.is_a_day = false
+	var result := Plan.new(plan_the_escape_city(world.city_map(), walk, rng, spec,
+			world.plan_builder(), true, world.trace()), walk, PackedVector2Array(), false)
 	world.city_map().clear_day_holds()
 	return result
 
@@ -293,7 +312,5 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 ## The building's own placements on its map, from `rng` (`BuildingPlan.plan()`). Its world is not
 ## the city, so there is nothing to hold.
 func _plan_the_building(rng: RandomNumberGenerator) -> Plan:
-	var result := Plan.new()
-	result.placements = BuildingPlan.plan(world.map() as InteriorMapPlan, rng)
-	result.is_a_day = false
-	return result
+	return Plan.new(BuildingPlan.plan(world.map() as InteriorMapPlan, rng), null,
+			PackedVector2Array(), false)

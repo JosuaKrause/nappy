@@ -82,12 +82,6 @@ src/simulation_builder.gd skip_motion
 src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
-# [DaySpec] src/day/day_spec.gd
-src/events/event_manager.gd holds_the_home_streets
-src/events/event_manager.gd number
-src/events/event_manager.gd owes_a_return
-src/events/event_manager.gd poster_pursuits
-
 # [DaySwitch] src/events/day_switch.gd
 src/events/event_catalogue.gd after_day
 src/events/event_catalogue.gd notice
@@ -95,9 +89,6 @@ src/events/event_catalogue.gd spawn_mode
 src/events/event_def.gd after_day
 src/events/event_def.gd notice
 src/events/event_def.gd spawn_mode
-
-# [EncounterWatch] src/events/encounter_watch.gd
-src/events/event_manager.gd day
 
 # [EventBehaviour] src/events/behaviours/event_behaviour.gd
 src/events/event_instance.gd steps_each_tick
@@ -391,10 +382,6 @@ src/events/event_spawner.gd signals
 src/events/event_spawner.gd skip_drawing
 src/events/event_spawner.gd timing
 
-# [EventsAhead] src/events/events_ahead.gd
-src/events/event_manager.gd holds_the_home_streets
-src/events/event_manager.gd sends_poster_pursuits
-
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
 src/events/event_spawner.gd on_first_landing
@@ -479,8 +466,6 @@ src/main.gd trace
 
 # [Stroller] src/player/stroller.gd
 src/events/checkpoint_controller.gd outright_moves
-src/events/event_manager.gd carrying
-src/events/event_manager.gd facing
 
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd rotated
@@ -491,8 +476,6 @@ src/events/event_def.gd field_from_its_centre
 
 # [VisibleView] src/world/visible_view.gd
 src/events/encounter_watch.gd view
-src/events/event_manager.gd controls
-src/events/event_manager.gd view
 
 # [Warning] src/events/warning.gd
 src/events/behaviours/event_notice_run.gd cancel_if
