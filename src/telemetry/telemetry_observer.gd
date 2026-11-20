@@ -145,9 +145,11 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _resistance: ResistanceDirector
-## The screen-edge badges. Optional: everything else here is reachable from the world, and this
-## one lives in a `CanvasLayer` that `main` owns.
-var _edge: DangerEdge
+## The screen-edge badges up each frame, handed in by `setup()`: what the edge announces
+## (`DangerEdge.badges()`, which `main` hands on), since this may not name the view the badges are
+## drawn in. Optional: everything else here is reachable from the world; handed none, it is the base,
+## which has no badges up, so no `edge badge` line is written.
+var _edge_badges := EdgeBadges.new()
 
 # Tile and ground state, so a transition can be spotted.
 var _was_calm := false
@@ -262,12 +264,13 @@ func _init(run_log: Telemetry) -> void:
 ## section the way they read a day; the resistance, null where the run has none (the escape); whether
 ## `--spikes` was given; and the badges.
 func setup(run: RunState, clock: DayController, resistance: ResistanceDirector, spikes: bool,
-		edge: DangerEdge = null) -> void:
+		badges: EdgeBadges = null) -> void:
 	_spikes_on = spikes
 	_run = run
 	_day = clock
 	_resistance = resistance
-	_edge = edge
+	if badges:
+		_edge_badges = badges
 	EventBus.return_phase_started.connect(_on_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
@@ -655,10 +658,8 @@ func _watch_the_cues(delta: float) -> void:
 				_log.snapshot("mark-now")
 		_mark = level
 
-	if not _edge:
-		return
 	var up := {}
-	for badge in _edge.announcing():
+	for badge in _edge_badges.announcing():
 		var id: String = badge["id"]
 		up[id] = true
 		if _badges.has(id):

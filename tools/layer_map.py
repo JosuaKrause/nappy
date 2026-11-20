@@ -220,7 +220,10 @@ FILES: dict[str, str] = {
     # called only by the scene nodes that draw the world's ground, so it stands with them.
     "src/visuals/ground_layers.gd": "world",
     # ui: the texts are data; the frame graph is a developer's readout; the halo's rim is the drawing
-    # a body composes of itself, so it stands in the world beside the excitement source that holds it.
+    # a body composes of itself, so it stands in the world beside the excitement source that holds it;
+    # the badges up at the screen edge, as the run log reads them without naming the view, are state
+    # with no scene, below the observers and the view both, and the badge model extends them.
+    "src/ui/edge_badges.gd": "model",
     "src/ui/entity_halo.gd": "world",
     "src/ui/source_rim.gd": "world",
     "src/ui/texts.gd": "data",
@@ -297,19 +300,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "CityMap",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "DangerEdge",
-        "telemetry to be handed what it reports",
-        (
-            "src/telemetry/run_session.gd",
-            "src/telemetry/telemetry_observer.gd",
-        ),
-        more=(
-            ("src/telemetry/run_session.gd", 2),
-            ("src/telemetry/telemetry_observer.gd", 2),
-        ),
     ),
     Exception_(
         "names",

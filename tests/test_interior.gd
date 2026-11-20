@@ -2181,7 +2181,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	man.global_position -= Vector2(30.0, 0.0)
 	await _frames(t, 3)
 	var announced: Array[String] = []
-	for badge in edge.announcing():
+	for badge in edge.badges().announcing():
 		announced.append(badge["id"])
 	t.check(announced.has("masked_pursuer"),
 			"the masked man closing on her from off screen raises a badge (%s)" % str(announced))
