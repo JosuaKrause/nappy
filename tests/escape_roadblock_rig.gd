@@ -159,7 +159,6 @@ class Stage extends RefCounted:
 	var world: WorldContext
 	var manager: EventManager
 	var _map: WorldMap
-	var _was_world: WorldContext
 	## Each plan stood, with whether it had been live and what it held.
 	var _stood: Array = []
 	var _successors: Array[EventInstance] = []
@@ -169,13 +168,12 @@ class Stage extends RefCounted:
 	## case that lets real frames draw them.
 	func _init(t: Node, map: WorldMap, atlas: AtlasLibrary = null) -> void:
 		_map = map
-		_was_world = map.world if map.has_world() else null
 		world = WorldContext.new()
 		if t != null:
 			t.add_child(world)
 		var run := RunState.new()
-		map.world = world
 		manager = EventManager.new()
+		manager.draw_in(world)
 		manager.setup_world(map, run)
 		if atlas != null:
 			manager.atlas = atlas
@@ -212,7 +210,6 @@ class Stage extends RefCounted:
 				_map.release_obstruction(plan.live.get_instance_id())
 			plan.was_live = stood[1]
 			plan.live = stood[2]
-		_map.world = _was_world
 		world.free()
 
 ## Lets the idle frames pass that a made event's drawing nodes wait for (`EventLook.build_nodes()`

@@ -56,8 +56,8 @@ static func build(city: City, map: CityMap, builder: SimulationBuilder = null,
 	city.build(map)
 	var stands := builder if builder else new_builder()
 	stands.equip(city.trace, city.atlas, city.frame_timing)
-	stands.in_the_city(city, city.map, city.streets(), city.traffic_signals(), city.buildings(),
-			city.run, dark_from_the_start)
+	stands.in_the_city(city, city.map, city.navigator(), city.streets(), city.traffic_signals(),
+			city.buildings(), city.run, dark_from_the_start)
 
 ## What stands in `city` (`WorldSimulation`): its events, its crowd, its poster walls and its
 ## blackout.

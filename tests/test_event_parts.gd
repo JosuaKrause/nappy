@@ -26,9 +26,9 @@ func _manager(t: TestRunner) -> EventManager:
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var map := CityMap.new()
-	map.world = holder
 	var run := RunState.new()
 	var manager := EventManager.new()
+	manager.draw_in(holder)
 	manager.setup_world(map, run)
 	return manager
 
@@ -45,7 +45,7 @@ func _her(t: TestRunner) -> Stroller:
 	return her
 
 func _free_manager(manager: EventManager) -> void:
-	var holder := manager.world.map.world
+	var holder := manager.world.drawn_in()
 	manager.free()
 	holder.free()
 
@@ -209,9 +209,9 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var map := CityMap.new()
-	map.world = holder
 	var run := RunState.new()
 	var manager := EventManager.new()
+	manager.draw_in(holder)
 	manager.setup_world(map, run)
 	t.add_child(manager)
 	var def := EventCatalogue.by_id("alley_robbery")

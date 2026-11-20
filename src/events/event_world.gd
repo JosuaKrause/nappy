@@ -10,9 +10,9 @@ extends RefCounted
 ## The live instances, in the order they came into the world. Shared by reference — the danger
 ## edge and the halo hold it across frames — so it is changed in place, never reassigned.
 var instances: Array[EventInstance] = []
-## The map of the world these events stand in (`WorldMap`): every instance is made on it, added to
-## its world through it and stopped by its walls, and its blocked record holds their bodies. Open
-## ground until a world is handed over, for a rig that never hands one.
+## The map of the world these events stand in (`WorldMap`): every instance is made on it and stopped
+## by its walls, and its blocked record holds their bodies. Open ground until a world is handed
+## over, for a rig that never hands one.
 var map: WorldMap = WorldMap.open_ground()
 ## The city's own map, for planning a day over it — its holds, its route tree, its blocks — or null
 ## where the world is not the city (`EventManager.setup_world()`).
@@ -71,7 +71,7 @@ var _poster_walls: PosterWalls
 var _plan_builder: PlanBuilder
 
 ## How every figure made here moves over `map` (`Navigator`): the one handed in by
-## `EventManager.setup()`, or the map's own (`WorldMap.navigator()`) where none was handed for it —
+## `EventManager.setup()`, or one over the map (`Navigator.new(map)`) where none was handed for it —
 ## a rig that sets the map itself.
 var _navigator: Navigator
 
@@ -145,8 +145,24 @@ func use_navigator(navigator: Navigator) -> void:
 
 func navigator() -> Navigator:
 	if _navigator == null or _navigator.map() != map:
-		_navigator = map.navigator()
+		_navigator = Navigator.new(map)
 	return _navigator
+
+## The world these events are drawn in (`WorldContext`): what every instance is added to
+## (`EventSpawner.create()`) and handed (`EventInstance.setup()`), and what shows a row coming from
+## outside the walls. Handed in by `EventManager.draw_in()`; null for none, or one freed since, for
+## a rig that draws nowhere.
+var _drawn_in: WorldContext
+
+## Hands the world the world it is drawn in. See `drawn_in()`.
+func use_drawing(drawn_in: WorldContext) -> void:
+	_drawn_in = drawn_in
+
+## The world these events are drawn in, or null where none was handed or it was freed.
+func drawn_in() -> WorldContext:
+	if _drawn_in == null or not is_instance_valid(_drawn_in):
+		return null
+	return _drawn_in
 
 ## Whether she is in the world: handed in, not freed since, and not stood aside for the title
 ## screen. `Stroller.stand_aside()` takes her out of the `player` group, which is the whole of

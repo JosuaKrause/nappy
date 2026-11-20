@@ -800,9 +800,9 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var open_ground := WorldMap.open_ground()
-	open_ground.world = holder
 	var run := RunState.new()
 	var manager := EventManager.new()
+	manager.draw_in(holder)
 	manager.setup_world(open_ground, run)
 	t.add_child(manager)
 	var band_plan := EventPlan.new(EventCatalogue.escape_roadblock(),

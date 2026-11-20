@@ -93,7 +93,7 @@ for skill in $fresh; do
 	index+="$(rules_index_entry "$skills" "$skill")"$'\n'
 done
 
-printf 'These project skills govern this whole session, because they decide things that are settled before the first tool call. Their text is not put into context for you: read each one whole now, before anything else (the Skill tool by its name, or Read on its path under %s).\n\n%s\nThe skills that govern a file are named the same way at the first edit there, which is refused once so that they are read before the edit is made again.\n' \
+printf 'These project skills govern this whole session, because they decide things that are settled before the first tool call. Their text is not put into context for you: read each one whole now, before anything else (the Skill tool by its name, or Read on its path under %s).\n\n%s\nThe skills that govern a file are named the same way at the first edit there, which is refused so that they are read: the edit made again passes once the session transcript shows each read (project-rules.sh).\n' \
 	"$root" "$index" | jq -Rs '{
   hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: . },
   suppressOutput: true

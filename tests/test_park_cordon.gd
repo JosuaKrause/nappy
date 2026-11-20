@@ -214,9 +214,9 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 		var view := VisibleView.new()
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT * scale,
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
-		var siting := SpawnSiting.new(_city.map, _city.navigator,
+		var siting := SpawnSiting.new(_city.map, _city.navigator(),
 				func() -> VisibleView: return view)
-		var cordon := ParkCordon.new(_city.map, _city.navigator, RunCity.events(_city), _city, _city.atlas,
+		var cordon := ParkCordon.new(_city.map, _city.navigator(), RunCity.events(_city), _city, _city.atlas,
 				fixture.park, siting,
 				ResistanceReads.day_reachability(_city)[1])
 		cordon.tick(STEP, swing)
@@ -249,7 +249,7 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 	var swing: Vector2 = fixture.swing
 	happenings.cordon.clear()
 	var recording := RecordingAtlas.new()
-	var cordon := ParkCordon.new(_city.map, _city.navigator, RunCity.events(_city), _city, recording,
+	var cordon := ParkCordon.new(_city.map, _city.navigator(), RunCity.events(_city), _city, recording,
 			fixture.park, RunCity.spawn_siting(_city), ResistanceReads.day_reachability(_city)[1])
 	var waited := 0.0
 	while waited < PATIENCE and (CordonInTheWorld.tapes(_city).is_empty()
@@ -635,7 +635,7 @@ func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map, _city.navigator, RunCity.events(_city), _city,
+			var cordon := ParkCordon.new(_city.map, _city.navigator(), RunCity.events(_city), _city,
 					_city.atlas, fixture.park, RunCity.spawn_siting(_city),
 					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0

@@ -158,7 +158,7 @@ static func resistance(main: Node) -> ResistanceDirector:
 	return main.get_node_or_null("Resistance") as ResistanceDirector
 
 ## Her, in whichever world she stands: on its entities layer, the node both worlds name `Entities`
-## (`WorldMap.add_entity()`), read by path since a suite asks every tick.
+## (`WorldContext.add_entity()`), read by path since a suite asks every tick.
 static func player(main: Node) -> Stroller:
 	for world_name: String in ["City", "Interior"]:
 		var her := main.get_node_or_null(world_name + "/Entities/Stroller") as Stroller

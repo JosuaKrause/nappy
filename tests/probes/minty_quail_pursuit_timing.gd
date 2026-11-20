@@ -222,7 +222,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var before := RunCity.events(city).instances().duplicate()
 	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"),
 			area.position + area.size * Vector2(0.25, 0.3))
-	var cordon := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas, park,
+	var cordon := ParkCordon.new(city.map, city.navigator(), RunCity.events(city), city, city.atlas, park,
 			RunCity.spawn_siting(city), RunCity.events(city).walk_events().reach().shut())
 	var run := Run.new(before)
 	var chain := HashingContext.new()

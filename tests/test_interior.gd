@@ -775,7 +775,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 		player.global_position = scene.map().tile_to_world(f.door("hallway_third:%s" % side).tile)
 		var to_shaft := scene.map().transition_at(scene.map().world_to_tile(player.global_position))
 		t.check(to_shaft.get("kind") == "door", "the %s stair door is a door transition" % side)
-		scene.map().process_player(player, 0.0)
+		scene.process_player(player, 0.0)
 		await _let_the_fade_run(t)
 		t.check(player.global_position == scene.map().tile_to_world(f.door("%s:landing_third" % part).tile),
 				"the %s walk arrives at its own top landing's own door" % side)
@@ -800,7 +800,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 		player.global_position = scene.map().tile_to_world(bottom_door.tile)
 		var to_lobby := scene.map().transition_at(scene.map().world_to_tile(player.global_position))
 		t.check(to_lobby.get("kind") == "door", "the %s shaft's own bottom door is a door transition" % side)
-		scene.map().process_player(player, 0.0)
+		scene.process_player(player, 0.0)
 		await _let_the_fade_run(t)
 		t.check(player.global_position == scene.map().tile_to_world(f.door("lobby:%s" % side).tile),
 				"the %s walk reaches the lobby's own door" % side)
@@ -809,7 +809,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 		player.global_position = scene.map().tile_to_world(f.door("lobby:basement").tile)
 		var to_basement := scene.map().transition_at(scene.map().world_to_tile(player.global_position))
 		t.check(to_basement.get("kind") == "door", "the lobby's basement notch is a door transition")
-		scene.map().process_player(player, 0.0)
+		scene.process_player(player, 0.0)
 		await _let_the_fade_run(t)
 		t.check(player.global_position == scene.map().tile_to_world(f.door("basement:entry").tile),
 				"the %s walk reaches the basement's own entry door" % side)
@@ -832,7 +832,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 ## Asked through what the latch does to the door, which is all the building lets be seen: a door
 ## that fires starts the fade to black (`FadeLayer/Fade`, which `_start_door_transition()` raises
 ## on the frames after), and one the latch holds starts nothing. Drives
-## the map's `process_player()` (`WorldMap.process_player()`), the call the running game makes, and
+## the building's `process_player()` (`WorldContext.process_player()`), the call the running game makes, and
 ## lets real frames pass after each so the fade has the frames it needs to show. She arrives by
 ## walking onto the counterpart door and letting the fade run, as in the game. `player` is a plain
 ## `Node2D` rather than a `Stroller`: a door puts anything that is not a `Stroller` at the door by a
@@ -849,9 +849,9 @@ func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: TestRunner) ->
 	var centre := scene.map().tile_to_world(f.door(door_id).tile)
 
 	player.global_position = scene.map().tile_to_world(scene.map().door(scene.map().door(door_id).target_door).tile)
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	await _let_the_fade_run(t)
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	t.check(not await _fires_a_transition(t, scene),
 			"arriving through a door arms its release latch: standing where she arrived does not start a second transition")
 
@@ -859,25 +859,25 @@ func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: TestRunner) ->
 	# was armed with, fires nothing — an edge-detected "last tile" flag would refire here, since the
 	# tile she stepped onto in between differs from the one she arrived on.
 	player.global_position = centre + Vector2(InteriorScene.TILE, 0.0)
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	player.global_position = centre
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	t.check(not await _fires_a_transition(t, scene), "stepping one tile off the door and straight back fires nothing")
 
 	# The latch is armed with the stated radius: one tile and a half, 48px, past the door's own
 	# tile centre.
 	player.global_position = centre + Vector2(47.0, 0.0)
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	player.global_position = centre
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	t.check(not await _fires_a_transition(t, scene),
 			"47px out, inside the tile-and-a-half radius, still holds: back on the door fires nothing")
 	player.global_position = centre + Vector2(49.0, 0.0)
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 
 	# Leaving the radius and returning fires the door again.
 	player.global_position = centre
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	t.check(await _fires_a_transition(t, scene),
 			"49px out clears the latch: returning to the door after leaving the latch's radius fires it again")
 
@@ -1755,7 +1755,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	rng.seed = 4242
 	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map()), scene.map(), events.atlas)
+	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map()), scene, events.atlas)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
 	t.check(ground != null, "the building has its floor tiles to lie on")
 	# She joins the same layer every blow does (`InteriorScene.add_entity()`), so a stand-in there
@@ -2259,5 +2259,5 @@ func _test_the_escape_building_is_dark_by_part(t: TestRunner) -> void:
 ## its ground does to somebody standing there (`process_player()`, which the run flow asks every frame).
 func _lighting_at(scene: InteriorScene, player: Node2D, tile: Vector2i) -> Color:
 	player.global_position = scene.map().tile_to_world(tile)
-	scene.map().process_player(player, 0.0)
+	scene.process_player(player, 0.0)
 	return scene.modulate

@@ -18,8 +18,6 @@ reason.
 **The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
 review; a builder runs it again):
 
-- **The map interface's world half** (5 uses in `world_map.gd`): it hands out the navigator and adds
-  nodes on a draw layer, which follows from the map interface being the model's (inbox #904 in freckled-moose).
 - **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
   `walk_ground.gd`): the live event, its picture footprints and her class's constants.
 - **The rest**, small misplacements: the task calendar
@@ -31,8 +29,6 @@ review; a builder runs it again):
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
-- The map interface's world half is split off or declared a permanent exception in
-  designing-classes.
 - Dawn planning's reads of live-event geometry stand in `src/events/walk_ground.gd`
   (`EventFootprints` three times, `EventInstance` once); row 3a of minty-quail's `event-interface.md`
   settles them.

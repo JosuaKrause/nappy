@@ -198,7 +198,7 @@ func _ready() -> void:
 	_sleepiness = starting_sleepiness
 
 ## The world she is in, told rather than discovered: whoever places her (`main`, as it puts her
-## into each world, `WorldMap.world`; a test, for a stand-in) hands her the `WorldContext` she asks
+## into each world; a test, for a stand-in) hands her the `WorldContext` she asks
 ## about excitement, calm ground, alleys and decay, and hands her the next one when the world
 ## changes. The rig is reparented from the building to the city without `_ready()` running again,
 ## and the building is still in the tree, so nothing she found for herself could tell her which

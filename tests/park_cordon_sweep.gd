@@ -223,7 +223,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	cordon.clear()
-	var again := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas,
+	var again := ParkCordon.new(city.map, city.navigator(), RunCity.events(city), city, city.atlas,
 			park, RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
 	again.use_bus(EventBus)
 	her[0] = swing
@@ -254,7 +254,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"), spot)
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
-	var cordon := ParkCordon.new(city.map, city.navigator, RunCity.events(city), city, city.atlas, park,
+	var cordon := ParkCordon.new(city.map, city.navigator(), RunCity.events(city), city, city.atlas, park,
 			RunCity.spawn_siting(city), ResistanceReads.day_reachability(city)[1])
 	cordon.use_bus(EventBus)
 	var her := [swing]

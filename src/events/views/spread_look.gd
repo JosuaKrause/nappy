@@ -302,10 +302,7 @@ func _attach_the_slices() -> void:
 		feet.append(event.body_position() + at)
 	var nodes: Array[Node2D] = []
 	nodes.assign(_slices)
-	if event.world_map().has_world():
-		DrawLayer.add_slices(event.world_map().world, nodes, feet, DrawLayer.Layer.ENTITIES, event)
-	else:
-		DrawLayer.add_slices_beside(event, nodes, feet)
+	event.add_slices_beside_it(nodes, feet)
 	_move_the_slices(true)
 
 ## Keeps the slices at the body's feet, shown while the instance is, and redrawn when asked. A
