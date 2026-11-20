@@ -6,7 +6,7 @@ passed with nothing checking the reading: its header held that a hook judging th
 for good on a skill that reached the session another way". The agent contract was then changed to say a
 refusal is answered by reading, never by a retry (#1511), and two builders still retried a refused edit
 without reading the skills it named (the orchestrating session's observation on 2026-11-17 and 2026-11-18,
-the third Sonnet builder of polite-tapir step 4's 3b part and the finisher of a run's parts). The written rule
+the first builder of polite-tapir step 4's 3b part and the finisher of a run's parts). The written rule
 alone did not hold.
 
 **What was built.** On a retry, the hook reads the transcript of the session or the sub-agent making the call
