@@ -187,7 +187,9 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 			holders += 1
 			if node.get("atlas") != atlas and strays.size() < 5:
 				strays.append(str(main.get_path_to(node)))
-		t.check(holders > 5, "%s: the boot built nodes that draw from a library (%d)"
+		# A guard that the sweep was not vacuous: the event manager hands its library to its live events
+		# through `use_atlas()` and keeps it private, so the nodes left holding a public one are few.
+		t.check(holders > 0, "%s: the boot built nodes that draw from a library (%d)"
 				% [where, holders])
 		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
 				% [where, ", ".join(strays)])
