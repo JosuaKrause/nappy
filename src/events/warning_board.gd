@@ -116,9 +116,9 @@ func run(delta: float, here: Vector2) -> void:
 		if not warning.tick(delta, here):
 			still_up.append(warning)
 		elif warning.was_withdrawn():
-			world.trace.note("ahead", "%s's warning is withdrawn after %.2fs: nowhere out of sight to "
+			world.trace().note("ahead", "%s's warning is withdrawn after %.2fs: nowhere out of sight to "
 					% [warning.logged_name(), warning.shown_for()] + "put it at %s"
-					% RunTrace.tile(world.map.world_to_tile(here)))
+					% RunTrace.tile(world.map().world_to_tile(here)))
 			warning.ask_again()
 	_pending = still_up
 
@@ -164,11 +164,11 @@ func run(delta: float, here: Vector2) -> void:
 ## what makes the mark work for something that never moves: a reversing lorry cannot come to her, so
 ## the only way it becomes about her is that she is walking into it.
 func warn_about_the_ground_she_is_on() -> void:
-	var here := world.player.global_position
-	var body := world.player as Stroller
+	var here := world.player().global_position
+	var body := world.player() as Stroller
 	if not body:
 		return
-	for instance in world.instances:
+	for instance in world.instances():
 		# A car that drives warns the way a crowd car's horn does: `SOON`, while it is closing on her
 		# in its lane on the carriageway (`EventCarDriving.closes_on()`), which is the car's own
 		# contract — `Tuning.CAR_HORN_TIME` before its strike.

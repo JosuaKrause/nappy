@@ -132,7 +132,7 @@ func plan(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) ->
 ## A day's plan, the day being `spec.day_number()`.
 func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
 	var day := spec.day_number()
-	var city_map := world.city_map
+	var city_map := world.city_map()
 	# Today's streets as dawn left them (`EventWorld.streets()`): the corridor the city grew this
 	# morning, the region wall and doors grown from it, and the closures placed off both. Read
 	# rather than grown again so that the walls, the friction and the picture are all stated against
@@ -178,14 +178,14 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	for rect in region_plan.alley_doors:
 		boundary[rect.position] = true
 	# **Planned before `build_day`.** `SealPlanner.plan_day` is a pure function of the map, the day,
-	# `tree` and its own RNG stream (`world.run.calendar().day_rng(day, "seals")`, never shared
+	# `tree` and its own RNG stream (`world.run().calendar().day_rng(day, "seals")`, never shared
 	# with the catalogue's), so planning it first changes which seals a day gets not at all —
 	# only how soon `build_day` can see where they landed. `held` is `city_map.held_streets()`
 	# itself: a hard seal's segment is marked there as it is placed, so the catalogue never
 	# offers a candidate row that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a
 	# fully blocked street").
 	var seals := SealPlanner.plan_day(city_map, spec, tree,
-			world.run.calendar().day_rng(day, "seals"), boundary, city_map.held_streets())
+			world.run().calendar().day_rng(day, "seals"), boundary, city_map.held_streets())
 	# Each says it is a seal, one of the city's fixed parts (`EventPlan.is_a_fixed_part()`), which day
 	# 13's swap never takes.
 	for seal in seals:
@@ -215,19 +215,19 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
 	# The day's calm areas, made once here where the map, the run and the day meet, and handed
 	# to the scheduler, which hands them to every pass that asks about calm ground.
-	var calm := CalmAreas.of(city_map, world.run.calendar().settled_this_act(), day, target)
+	var calm := CalmAreas.of(city_map, world.run().calendar().settled_this_act(), day, target)
 	# The day's guarded-band task row, day 13's roadblock, stood beside her routes at dawn so that one
 	# is close by wherever she reads its mark; none on any other day.
 	var guarded := ResistanceSteps.guarded_row_on(day)
 	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
-			world.run.resistance().progress()) if guarded != "" else null
+			world.run().resistance().progress()) if guarded != "" else null
 	var dawn := DawnContext.new(spec, rng.seed, city_map, tree, calm, world.plan_builder(),
 			EventScheduler.row_ground)
-	dawn.use_the_run(consumed, world.run.attempt_spend().scars(), world.run.resistance().progress())
+	dawn.use_the_run(consumed, world.run().attempt_spend().scars(), world.run().resistance().progress())
 	dawn.use_the_doors(doors)
 	dawn.use_what_stands(standing)
 	dawn.use_mast_sites(world.mast_sites())
-	dawn.use_trace(world.trace)
+	dawn.use_trace(world.trace())
 	dawn.use_the_roadblock_row(beside)
 	EventScheduler.build_day(dawn)
 	var placements := dawn.events().placements()
@@ -254,7 +254,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 ## (`CalmAreas.of()`): what a scene recipe's walk, planned by hand rather than here, is sited
 ## against (`EventManager.start_recipe()`).
 func calm_as_the_map_stands() -> CalmAreas:
-	return CalmAreas.of(world.city_map, world.run.calendar().settled_this_act())
+	return CalmAreas.of(world.city_map(), world.run().calendar().settled_this_act())
 
 # ------------------------------------------------------------ the escape's city ---
 
@@ -264,10 +264,10 @@ func calm_as_the_map_stands() -> CalmAreas:
 ## the day's holds are cleared once the walk is placed rather than left for a rig that ran a day
 ## on the same map.
 func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
-	var walk := FinalePlanner.route(world.city_map)
-	var result := Plan.new(plan_the_escape_city(world.city_map, walk, rng, spec,
-			world.plan_builder(), true, world.trace), walk, PackedVector2Array(), false)
-	world.city_map.clear_day_holds()
+	var walk := FinalePlanner.route(world.city_map())
+	var result := Plan.new(plan_the_escape_city(world.city_map(), walk, rng, spec,
+			world.plan_builder(), true, world.trace()), walk, PackedVector2Array(), false)
+	world.city_map().clear_day_holds()
 	return result
 
 ## **What the escape puts in the city, on its walk `walk`**: each placed by the day's own code under
@@ -312,5 +312,5 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 ## The building's own placements on its map, from `rng` (`BuildingPlan.plan()`). Its world is not
 ## the city, so there is nothing to hold.
 func _plan_the_building(rng: RandomNumberGenerator) -> Plan:
-	return Plan.new(BuildingPlan.plan(world.map as InteriorMapPlan, rng), null,
+	return Plan.new(BuildingPlan.plan(world.map() as InteriorMapPlan, rng), null,
 			PackedVector2Array(), false)

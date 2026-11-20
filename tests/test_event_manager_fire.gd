@@ -296,7 +296,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 		events.streaming.add(plan)
 		sighted.clear()
 		var warnings_before := events.pending_warnings().size()
-		events.world.visible.look(view, TouchCover.joystick() if joystick else null)
+		events.world.visible_view().look(view, TouchCover.joystick() if joystick else null)
 		events.spawner.summon_what_has_been_sighted(events.plans())
 		var summoned := events.pending_warnings().size() > warnings_before
 		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
