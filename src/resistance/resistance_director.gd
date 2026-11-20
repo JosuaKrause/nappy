@@ -3449,15 +3449,21 @@ func _on_contact_completed(step_index: int) -> void:
 	# every mast at once, the masts because they run on the same power. That is `Blackout`'s, and
 	# it watches the flag set above rather than this call.
 
-## **After a mark, the task's own row is rigged onto her route** — the man shouting on day 6, a
+## **After a mark, the task's own row is rigged onto her way** — the man shouting on day 6, a
 ## delivery van on day 7 and a loudspeaker mast on day 11. *(olive-koala, statement 2: "right now the first mark I almost never
 ## see a yeller. after touching the mark a marble bag with 1/3 chance of yeller should be put in so
 ## the yeller is guaranteed to encounter a yeller in the next three events" · inbox #561 in coral-bunny: "day 11 is
-## going to be a x=3", then "let's make the other rigged bags smaller, too".)* The route's bag is
-## rigged with a bag of `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT` (`VAN_WITHIN_THE_NEXT` for the van,
-## `MAST_WITHIN_THE_NEXT` for the mast) marbles, the row and the rest drawn from the bag she was drawing from
-## (`EventManager.rig_her_route()`), and the place it names is put ahead of her on the branch she is
-## walking. It is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
+## going to be a x=3", then "let's make the other rigged bags smaller, too".)* The man shouting and
+## the van are rigged for the next draw on her path (`ResistanceSteps.Step.rigs_the_next_draw`,
+## `EventManager.rig_the_next_draw()`), which her walk lays straight ahead of her on her branch,
+## just out of her view (inbox #1520 in breezy-magpie: "the draw doesn't have to happen at the
+## point where she touches the mark. the bag gets the biased bag in front (via the chained bags
+## mechanism) and the next draw (whenever that happens) will guarantee the shouting man"; inbox
+## #1549: "you would draw only for the path and only just ahead"). The mast's route bag is rigged
+## with a bag of `ResistanceSteps.MAST_WITHIN_THE_NEXT` marbles, the mast and the rest drawn from
+## the bag she was drawing from
+## (`EventManager.rig_her_route()`), and the mast it names is laid ahead of her on the branch she is
+## walking. Each is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
 ## the man shouting is a look-alike the any-instance contact follows her onto
 ## (`_follow_her_between_look_alikes()`), the mast is a second one on her way while the task's
 ## arrow points at the one near the mark first (inbox #561 in coral-bunny: "let it point to the closest one first"),
@@ -3465,6 +3471,13 @@ func _on_contact_completed(step_index: int) -> void:
 ## mossy-beaver: "I guess that leaves only the van?").
 func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 	if not task or not _events:
+		return
+	if task.rigs_the_next_draw:
+		var drawn_ids: Array[String] = [task.task_event_id]
+		var into_the_draw := _events.rig_the_next_draw(drawn_ids)
+		if not into_the_draw.is_empty():
+			_trace.note("roll", "the next draw on her path stands a rigged %s"
+					% ", ".join(into_the_draw))
 		return
 	if task.rigs_within <= 0:
 		return

@@ -140,7 +140,8 @@ Left, each its own design question:
   badge acquires no page, so no count of what it asked can stand in. Both become underscore-private with the tests-one-module item (`tests-one-module.md`), when
   that suite reads through a method the game also calls.
 - **The lines other work touches** are converted with that work:
-  - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
+  - `src/events/`, what the placement rewrite left (closed, polite-tapir's record
+    polite-tapir-feathery-kestrel) going with the events' own conversion;
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
     reads of other classes' fields wait for those classes' passes;

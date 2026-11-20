@@ -17,5 +17,5 @@ makes one ground per authored row of a scene recipe, `SceneRecipeRuntime._finale
 escape actor, and a scene recipe's walk carries no ground, so `EventsAhead._ground_of_the_walk()` makes
 one per siting and the resistance director one per ask. The fix is the recipe runtime making one
 `RowGround` for its scene and handing it to all three, its walk included. Placement by construction
-(polite-tapir's `placement-by-construction.md`) replaces the code `recipe_placement()` sits in, so it
-is done there or after.
+is closed (polite-tapir's record polite-tapir-feathery-kestrel) and left `recipe_placement()` where it
+sits, so the fix waits on nothing.

@@ -795,20 +795,6 @@ func is_a_set_piece_on_her_way() -> bool:
 func is_a_mast() -> bool:
 	return role == Role.MAST
 
-## **Whether her walk lays the row on the street she is walking** when her route's bag hands it to
-## her, just out of her view, rather than on the branch of the day's routes ahead of her. Day 6's
-## man shouting is laid so, though he is no wall: the rigged bag draws his marble so she meets him
-## (olive-koala 2: "guaranteed to encounter a yeller in the next three events"), and the route band
-## of the branch she is walking lies past her walk (a branch she leaves, or 1,300px and more ahead),
-## where the street she is on offers him within the streaming radius, in the world at once.
-func is_met_on_her_street() -> bool:
-	return _met_on_her_street
-
-## Marks the row as one her walk lays on the street she is walking (`is_met_on_her_street()`).
-## Called by the catalogue as it builds the row.
-func meet_on_her_street() -> void:
-	_met_on_her_street = true
-
 ## Its notice radius, or 0 for a row with no wait: the number every "how close before it notices"
 ## rule reads.
 func notice_within() -> float:
@@ -1111,10 +1097,6 @@ func detain_distance() -> float:
 ## location (inbox #1185 in gentle-owl: "events that span the street get placed in a section (eg roadblock in the
 ## middle of the street)"). `roadblock` alone today. Read through `spans_the_street()`.
 @export var _spans_the_street := false
-
-## Whether her walk lays the row on the street she is walking (`is_met_on_her_street()`); exported
-## so the copies `EventDirector._routed()` makes carry it, as `_spans_the_street` is.
-@export var _met_on_her_street := false
 
 ## **Whether this row takes a whole section of a street** when it is placed, its two sidewalk
 ## locations with it (`DayLocations.assign()`), rather than one sidewalk location.

@@ -56,11 +56,6 @@ func takes(def: EventDef, tile: Vector2i) -> bool:
 		return false
 	return not def.is_a_mast() or _a_mast_may_stand(tile)
 
-## Whether `def` is a wall by what it costs to walk through, as the walk's ground reads it
-## (`RowGround.is_a_wall_by_cost()`): a row that is a wall by its fit alone is laid on her street.
-func is_a_wall_by_cost(def: EventDef) -> bool:
-	return _ground.is_a_wall_by_cost(def)
-
 ## Does at a day's start the scan the first ask for `def` would do mid-walk: the scan for ground
 ## `def` may stand on and the set a tile asks about. It is a scan of the whole city, which at dawn
 ## is part of a load and mid-walk is a hitch on the one beat of the day she is meant to be watching.

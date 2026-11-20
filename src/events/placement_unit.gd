@@ -13,9 +13,14 @@ extends RefCounted
 ## draws** (`DayUnits`, `UnitDraw`): of two that touch, the lower rank always draws first, which is
 ## what makes a unit's draw the same whatever her path.
 ##
+## **A beat her walk lays in it goes first** (`rig()`, by `WalkSiting`): it holds its location, so
+## the unit's room starts without it, and the unit's draw and the draws of the units touching it
+## are judged among it (`UnitDraw`). *(The player: "beats are marbles, yes", inbox #1521 in
+## breezy-magpie.)*
+##
 ## Pure state: no node, and **no reference to another unit**, since two `RefCounted` objects holding
 ## each other leak at exit; `DayUnits` holds which touch which, by name. What it drew is written
-## once, by `UnitDraw`. Model.
+## once, by `UnitDraw`, and what her walk rigs in it by `WalkSiting`. Model.
 
 ## In `PlacementGround.Kind`'s order; a unit's name enters its rank and stream seeds, so a
 ## member added to or reordered in that enum moves every draw.
@@ -31,6 +36,8 @@ var _rank := 0
 var _drawn := false
 var _placed: Array[EventPlan] = []
 var _view: int = PlacementView.View.OFF_THE_ROUTE
+## The beats her walk has laid in the unit and not taken back, in the order laid (`rig()`).
+var _rigged: Array[EventPlan] = []
 
 ## `tiles` is the ground the unit is: its street's rect, its box, its alley's rect, its lot's
 ## bounds (`Location.part_of()`); `bounds` the same in world space; `locations` its locations, a
@@ -104,6 +111,21 @@ func is_drawn() -> bool:
 ## until it has drawn.
 func drawn() -> Array[EventPlan]:
 	return _placed.duplicate()
+
+## **Lays `plan`, a beat her walk places, in the unit** (`WalkSiting`): what the unit's draw, and
+## the draws of the units touching it, are judged among besides the dawn's plans and each other's
+## rows (`UnitDraw`). Laid once however often it is told.
+func rig(plan: EventPlan) -> void:
+	if not _rigged.has(plan):
+		_rigged.append(plan)
+
+## Takes `plan` back out: her walk laid it somewhere else.
+func unrig(plan: EventPlan) -> void:
+	_rigged.erase(plan)
+
+## The beats her walk has laid in the unit and not taken back, in the order laid.
+func rigged() -> Array[EventPlan]:
+	return _rigged.duplicate()
 
 ## Records what the unit's draw placed (`UnitDraw`), once.
 func record_draw(plans: Array[EventPlan]) -> void:
