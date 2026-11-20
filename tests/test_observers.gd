@@ -127,6 +127,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Arr
 	await _continue_while_paused(t, main)
 
 	var lines := _lines_kept(run_log.lines)
+	_check_the_badges_reach_the_observer(t, main, run_log)
 	t.check(counter.sent == [
 			"nappy-run-fresh", "nappy-day-1-began",
 			"nappy-controls-joystick", "nappy-mode-normal",
@@ -169,6 +170,48 @@ func _check_the_observer_runs_after(t: TestRunner, main: Node, world: Array, boo
 	for node: Node in world:
 		t.check(node != null and observer.is_greater_than(node),
 				"in %s the observer processes after %s" % [boot, node.name if node else "null"])
+
+## **The badges the edge has up reach the run log** (`DangerEdge.badges()`, which `main` hands
+## `RunSession.watch()`, which hands it to the observer): a hand-off lost anywhere on the way leaves
+## the observer its base `EdgeBadges`, which has none, and would read as a day with no badges. So
+## the edge's own badge model is stepped with a warning up (a pending `BadgeModel.Subject`, which is
+## announced whether in sight or not) and the observer watches one frame of it, called straight
+## after so no frame of the edge's own clears it first; the run log then holds one `edge badge`
+## line for it. Asked once the day's lines are taken for the baseline, so it adds none to them.
+func _check_the_badges_reach_the_observer(t: TestRunner, main: Node, run_log: RecordingLog) -> void:
+	var edge := _edge_of(main) as DangerEdge
+	var found := main.find_children("*", "TelemetryObserver", true, false)
+	t.check(edge != null and not found.is_empty(), "the boot built the edge and the observer")
+	if edge == null or found.is_empty():
+		return
+	var observer: TelemetryObserver = found[0]
+	var model := edge.badges() as BadgeModel
+	t.check(model != null, "the edge's badges are its badge model")
+	if model == null:
+		return
+	var before := _edge_badge_lines(run_log)
+	var warning := BadgeModel.Subject.new()
+	warning.pending = true
+	warning.position = Vector2(600.0, 0.0)
+	warning.left = 1.0
+	warning.approach_speed = 190.0
+	warning.logged_name = "fire_truck"
+	warning.payload = EventCatalogue.by_id("fire_truck")
+	model.step(0.1, Vector2.ZERO, [warning],
+			func(_at: Vector2, _margin: float) -> bool: return false)
+	observer._process(0.1)
+	var written := _edge_badge_lines(run_log).size() - before.size()
+	t.check(before.is_empty() and written == 1,
+			"a badge the edge has up is written by the run log's observer (%d line(s), %d before)"
+			% [written, before.size()])
+
+## The run log's `edge badge` lines, in the recording log's shape.
+static func _edge_badge_lines(run_log: RecordingLog) -> Array[String]:
+	var found: Array[String] = []
+	for line in run_log.lines:
+		if line.get_slice(" ", 1) == "cue" and line.contains("edge badge"):
+			found.append(line)
+	return found
 
 # --------------------------------------------------------------- the escape ---
 
@@ -216,7 +259,7 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 	t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.CITY and summary.is_showing(),
 			"through the service door, the city opens on its brief")
 	await _continue_while_paused(t, main)
-	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityEdge.Kind.TUNNEL]
+	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	Boot.day(main).tick(0.0)
 
 	var lines := _lines_kept(run_log.lines)

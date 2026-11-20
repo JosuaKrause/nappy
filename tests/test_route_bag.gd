@@ -69,7 +69,7 @@ func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t: TestRunner)
 ## is drawn rather than fixed.
 func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t: TestRunner) -> void:
 	var ordinary := MarbleBag.in_proportion({"cat": 2.5, "cyclist": 1.5, "dog": 3.0}, 2.0)
-	var x := ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT
+	var x := ResistanceSteps.MAST_WITHIN_THE_NEXT
 	for seed_value: int in [1, 2, 3, 4, 5]:
 		for drawn_first: int in [0, 3]:
 			var bag := MarbleBag.new([], ordinary, seed_value)
@@ -430,13 +430,13 @@ func _test_day_3s_charging_dogs_keep_their_share(t: TestRunner) -> void:
 			"day %d's bag holds %d charging dogs in %d marbles, within half a marble of its share %.3f"
 			% [day, dogs, marbles.size(), share])
 
-## Day 6's man shouting and day 11's second mast, through a real city: reading the mark rigs her
-## route with a bag of the task's size holding the row once; walking the day's route, its marble is
-## one of that many events handed out on it, and the place is put ahead of her past the streaming
-## band on ground the route runs along, reachable from where she is, and in the world when she walks
-## to it.
+## Day 11's second mast, through a real city: reading the mark rigs her route with a bag of the
+## task's size holding the mast once; walking the day's route, its marble is one of that many events
+## handed out on it, and the mast is put ahead of her past the streaming band on ground the route
+## runs along, reachable from where she is, and in the world when she walks to it. Day 6's man
+## shouting and day 7's van are rigged for the next draw on her path instead, laid just ahead of her
+## (`tests/test_day6_yeller_met.gd`, `tests/test_day7_van.gd`).
 func _test_after_the_mark_the_task_row_is_put_on_her_route(t: TestRunner) -> void:
-	_a_mark_puts_a_place_on_her_route(t, 6, "homeless_yeller", ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT)
 	_a_mark_puts_a_place_on_her_route(t, 11, "loudspeaker", ResistanceSteps.MAST_WITHIN_THE_NEXT)
 
 ## **A place marble that cannot be sited holds nothing up.** Day 11's case: the return's patrols are

@@ -82,7 +82,7 @@ const _TREES := {
 
 
 ## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
-## than asked for. `Prop.TREES` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
+## than asked for. `TreePictures.REGIONS` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
 ## `_dress_block` below rolls the prop's `scale_factor()` as large as 1.25x, so the widest either canopy is ever
 ## drawn is 50px; two canopies planted any closer than their own width overlap and read as one
 ## shape rather than as two trees, which is the clump this spacing exists to stop.
@@ -583,9 +583,9 @@ func _spawn_the_edge_of_the_city() -> void:
 ## lethal for the same reason every other carriageway is. See `CityEdge` — *the city goes on and
 ## this is how you would leave it*.
 func _spawn_spine_exits() -> void:
-	_spawn_exit(CityEdge.Kind.TUNNEL, tunnel_world_position())
-	_spawn_exit(CityEdge.Kind.TUNNEL_DARK, tunnel_world_position())
-	_spawn_exit(CityEdge.Kind.BRIDGE, bridge_world_position())
+	_spawn_exit(CityEdge.Piece.TUNNEL, tunnel_world_position())
+	_spawn_exit(CityEdge.Piece.TUNNEL_DARK, tunnel_world_position())
+	_spawn_exit(CityEdge.Piece.BRIDGE, bridge_world_position())
 
 ## The spine's own centre line, in world space — where both exits are anchored, and the one place
 ## that arithmetic lives now that the finale asks where the ways out are as well as drawing them.
@@ -604,9 +604,9 @@ func bridge_world_position() -> Vector2:
 ## The dark inside the tunnel goes in a layer of its own above the entities, so it lands on a car
 ## as the car drives in; the portal's face is y-sorted with them; the bridge and the road are
 ## ground and go under them. `CityEdge` says why the dark cannot be y-sorted too.
-func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
+func _spawn_exit(piece: CityEdge.Piece, at: Vector2) -> void:
 	var exit := CityEdge.new()
-	exit.dress(atlas, kind)
+	exit.dress(atlas, piece)
 	exit.position = at
 	if exit.overhangs():
 		add_entity(exit, DrawLayer.Layer.OVERHEAD)

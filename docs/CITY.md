@@ -1326,8 +1326,8 @@ steered onto her on purpose: *"the fire needs to spawn on the current path the p
 be accounted for as potentially in one of two places at the very least
 (M50-the-city-points-somewhere). So a row she must meet is sited on her way, and
 `EventDef.validate()` refuses a one-shot that is not (`on_her_way`): placed at dawn it would stand in
-one place and be met only if she walked there. The walk's draw is to carry it next, a rigged marble
-landing on the next location she comes to (placement by construction's walk draws).
+one place and be met only if she walked there. Her walk lays it on a location of the next unit on
+her way that has not drawn (`docs/EVENTS.md`, "A set piece happens where she is going").
 
 It stays a **place** rather than a moment: a tile, a body, a field, and every question the corridor
 asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning building is not

@@ -140,9 +140,13 @@ var _route_rows := {}
 var _met_today := {}
 ## The ids the ordinary bag is filled with today.
 var _ordinary_rows := {}
-## The plans a marble put on her route (`_place_on_her_route()`). Not in the day's
-## plan until first sited: `EventManager` adds one there then (`is_from_her_route()`).
+## The plans a marble put on her route (`_place_on_her_route()`), and those a mark rigged just ahead
+## of her (`rig_the_next_draw()`). Not in the day's plan until first sited: `EventManager` adds one
+## there then (`is_from_her_route()`).
 var _placed_from_the_route := {}
+## The plans a mark rigged (`rig_the_next_draw()`), as `plan -> true`: laid on her path just ahead
+## of her (`WalkSiting.lay_just_ahead()`) rather than past the streaming band.
+var _just_ahead := {}
 var _next_in := 0.0
 ## Whether `owe_the_return()` has already handed today its return-phase patrols. Set once and
 ## never cleared until `start_day()`, so a baby that wakes and settles again does not owe a
@@ -169,7 +173,8 @@ var _way_on: WayOn = null
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
 ## in `start_day()`, or handed over as a unit draws one as she walks (`owe_on_her_way()`); and the
 ## places a marble from her route's bag names, added the moment the marble is drawn
-## (`_place_on_her_route()`). Emptied as each one is put in the world.
+## (`_place_on_her_route()`), and the rows a mark rigs (`rig_the_next_draw()`). Emptied as each one
+## is put in the world.
 var _on_her_way: Array[EventPlan] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
@@ -212,6 +217,7 @@ func start_day(day: int, plans: Array[EventPlan],
 	_day = day
 	_met_today.clear()
 	_placed_from_the_route.clear()
+	_just_ahead.clear()
 	_return_patrols_left = 0
 	_patrol_bag_left = 0
 	_fill_the_route_bag(day, heat, rng)
@@ -520,8 +526,8 @@ func route_bag() -> MarbleBag:
 ## **Rigs her route so the marbles of `ids` are among the next `size` events handed out on it**:
 ## a bag of `size` marbles, `ids` and the rest drawn from the bag she was drawing from, is drawn from
 ## first, and that bag carries on with what it has left once the rigged one is empty
-## (`MarbleBag.rig()`). A row that is not one the director sites — the man shouting, a mast, a
-## place — is handed to her walk to site ahead of her when its marble comes up
+## (`MarbleBag.rig()`). A row that is not one the director sites — a mast, a place — is handed to
+## her walk to site ahead of her when its marble comes up
 ## (`_place_on_her_route()`), and waits there for a legal site without holding up the events behind
 ## it. Answers the rigged bag's marbles, or nothing under `--force`, whose queue is the forced row's
 ## alone, and on a rig with no day.
@@ -597,15 +603,15 @@ func _next_on_the_route() -> EventDef:
 ## it gives up: more than a whole bag, so it only stops on a bag whose every row is spent.
 const ROUTE_SKIP_LIMIT := 64
 
-## A marble that names a place rather than a moment — the man shouting or the mast a rigged bag puts
-## on her route — is handed out the moment it is drawn, like any other marble: its owed slot and
-## the marble are spent, and the place goes on the list of what her walk sites
-## (`site_what_is_on_her_way()`), unplaced, the way day 3's fire waits there. That half sites it on
-## its own cadence: on the nearest free location of the branch of the day's route tree she is
-## walking, past the streaming band, or on her street just out of her view (`WalkSiting`), through
-## every acceptance rule a dawn placement is under, so it is never seen to appear, it is reachable on
-## the route she is walking, and it is in the world once she walks on; and it re-sites it ahead of her
-## if she turns away before it has been.
+## A marble that names a place rather than a moment — the mast day 11's rigged bag puts on her
+## route — is handed out the moment it is drawn, like any other marble: its owed slot and the marble
+## are spent, and the place goes on the list of what her walk sites (`site_what_is_on_her_way()`),
+## unplaced, the way day 3's fire waits there. That half sites it on its own cadence: on the nearest
+## free location of the branch of the day's route tree she is walking, past the streaming band, in a
+## unit that has not drawn where her way has one (`WalkSiting`), through every acceptance rule a
+## dawn placement is under, so it is never seen to appear, it is reachable on the route she is
+## walking, and it is in the world once she walks on; and it re-sites it ahead of her if she turns
+## away before it has been.
 ##
 ## **A place that cannot be sited yet holds nothing up.** A refusal is ordinary — she is off the
 ## day's routes, or walking home inside the streaming band of the branch's end — so the events
@@ -628,6 +634,25 @@ func _place_on_her_route(def: EventDef) -> void:
 ## which joins the day's plan when it is first sited rather than at dawn.
 func is_from_her_route(plan: EventPlan) -> bool:
 	return _placed_from_the_route.has(plan)
+
+## **Rigs the next draw on her path to stand `rows`**, day 6's man shouting or day 7's van once she
+## has read the day's mark: each goes on the list of what her walk lays, unplaced, and the next look
+## lays it on the first free location on her path just ahead of her, out of her view
+## (`site_what_is_on_her_way()`, `WalkSiting.lay_just_ahead()`). *(The player: "the bag gets the
+## biased bag in front (via the chained bags mechanism) and the next draw (whenever that happens)
+## will guarantee the shouting man", inbox #1520 in breezy-magpie; and, of where that draw is taken:
+## "you would draw only for the path and only just ahead", inbox #1549.)* The bag in front holds the
+## rigged rows and nothing else, so the next draw on her path is his. It joins the day's plan when
+## first laid, as a place from her route's bag does (`is_from_her_route()`). `siting` is the day's
+## placement context, taken where the day had none.
+func rig_the_next_draw(rows: Array[EventDef], siting: WalkSiting) -> void:
+	if not _siting:
+		_siting = siting
+	for row in rows:
+		var waiting := EventPlan.new(row, Vector2.INF)
+		_on_her_way.append(waiting)
+		_placed_from_the_route[waiting] = true
+		_just_ahead[waiting] = true
 
 ## **A row a unit drew as she walks and handed to her walk** (`plan`, unplaced: the sidewalk poster
 ## crew), owed to her walk as one the dawn left is (`start_day()` reads those off the day's plan),
@@ -688,10 +713,11 @@ const ON_HER_WAY_BEHIND := -0.5
 const ON_HER_WAY_LOOK := 1.0
 
 ## Sites, or re-sites, whatever the day planned and left for her walk to place: a tile of the row's
-## own ground (a building face for the fire and the crews) on the day's own route tree — day 7's
-## route van and day 6's rigged man shouting on the street she is walking instead — **on the branch
-## she is walking**, in the nearest free location of it beyond the streaming band
-## (`WalkSiting.lay_ahead()`), off screen. Returns every plan
+## own ground (a building face for the fire and the crews) on the day's own route tree **on the
+## branch she is walking**, in the nearest free location of it beyond the streaming band, a unit's
+## that has not drawn where there is one (`WalkSiting.lay_ahead()`), off screen; and a row a mark
+## rigged on her path just ahead of her instead, straight ahead and just out of her view
+## (`rig_the_next_draw()`, `WalkSiting.lay_just_ahead()`). Returns every plan
 ## this call moved, so the caller can give back the ground the old body was standing on and take the
 ## new — `EventsAhead.site_what_is_on_her_way()` is that caller — and a place from her route's bag
 ## sited for the first time, which the caller adds to the day's plan (`is_from_her_route()`).
@@ -723,9 +749,9 @@ const ON_HER_WAY_LOOK := 1.0
 ## frontage, for the fire and the crews), or a candidate stands in a door's clear ground — this answers with nothing and asks again a second later, from
 ## wherever she has got to. A day she walks into a corner is a day it waits.
 ##
-## **And nothing is sited on ground whose units have not drawn.** The siting draws the units of
-## the day's locations round its pick before the pick stands, and gives up a pick that drew one
-## (`WalkSiting.lay_ahead()`): the next look judges against what they drew.
+## **And a beat goes first in a unit that has not drawn.** The siting offers the locations of the
+## nearest unit on her way that has not drawn before those a drawn unit left empty, and the unit
+## draws round the beat (`WalkSiting.lay_ahead()`, `UnitDraw`).
 func site_what_is_on_her_way(delta: float, at: Vector2,
 		velocity: Vector2) -> Array[EventPlan]:
 	var moved: Array[EventPlan] = []
@@ -759,7 +785,9 @@ func site_what_is_on_her_way(delta: float, at: Vector2,
 			continue
 		if not plan.is_placed() and _waits_its_turn(plan):
 			continue
-		if not _siting.lay_ahead(plan):
+		var laid := _siting.lay_just_ahead(plan) if _just_ahead.has(plan) \
+				else _siting.lay_ahead(plan)
+		if not laid:
 			continue
 		_behind_her[plan] = 0.0
 		moved.append(plan)

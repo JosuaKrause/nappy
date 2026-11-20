@@ -9,19 +9,20 @@ extends WalkSiting
 
 ## Each look begun, as `[at, heading]`.
 var looks: Array[Array] = []
-## Every plan `lay_ahead()` was asked about, in order.
+## Every plan `lay_ahead()` or `lay_just_ahead()` was asked about, in order.
 var asked: Array[EventPlan] = []
-## Every call, in order: "begin_look", "lay_ahead", "end_look", "lay_among", "lay_off_her_path".
+## Every call, in order: "begin_look", "lay_ahead", "lay_just_ahead", "end_look", "lay_among",
+## "lay_off_her_path".
 var calls: Array[String] = []
 
 var _places := {}
 var _still_ahead := true
 
 func _init() -> void:
-	super(0, null, null, FakeWalkEvents.new(), null, null, null)
+	super(null, null, FakeWalkEvents.new(), null, null, null, null)
 
-## Sets where a plan of the row `id` is laid: `lay_ahead()` stands it at `at`. A row with none set is
-## refused.
+## Sets where a plan of the row `id` is laid: `lay_ahead()` and `lay_just_ahead()` stand it at `at`.
+## A row with none set is refused.
 func set_place(id: String, at: Vector2) -> FakeWalkSiting:
 	_places[id] = at
 	return self
@@ -48,6 +49,12 @@ func end_look() -> void:
 func lay_ahead(plan: EventPlan) -> bool:
 	asked.append(plan)
 	calls.append("lay_ahead")
+	return _lay_at_its_place(plan)
+
+## Overrides WalkSiting.lay_just_ahead.
+func lay_just_ahead(plan: EventPlan) -> bool:
+	asked.append(plan)
+	calls.append("lay_just_ahead")
 	return _lay_at_its_place(plan)
 
 ## Overrides WalkSiting.lay_among.

@@ -238,8 +238,8 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 	results.clear()
 	var city := _rig(t)
 	city.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, 180.0))
-	city.spec().use_exits({CityEdge.Kind.TUNNEL: Vector2(1000.0, 0.0),
-			CityEdge.Kind.BRIDGE: Vector2(-1000.0, 0.0)})
+	city.spec().use_exits({CityExit.Kind.TUNNEL: Vector2(1000.0, 0.0),
+			CityExit.Kind.BRIDGE: Vector2(-1000.0, 0.0)})
 	city.day_finished.connect(on_finished)
 	city.start(180.0)
 	city.reach_the_exit()
@@ -248,7 +248,7 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 			+ "from its two ways out (%s)" % [results])
 	_her.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
 	city.tick(0.016)
-	t.check(results == [GameEnums.DayResult.WON] and city.exit_taken() == CityEdge.Kind.BRIDGE,
+	t.check(results == [GameEnums.DayResult.WON] and city.exit_taken() == CityExit.Kind.BRIDGE,
 			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"
 			% [results, city.exit_taken()])
 	city.free()

@@ -34,9 +34,9 @@ LAYER_TEXT: dict[str, str] = {
     "on-screen texts, the art's pages and the value types the rows are written in",
     "model": "the domain model: pure state and plans with no scene of their own -- the map and its interface "
     "(WorldMap and its records), its generation, the routes, the closures, the run's sub-states, the building's plan",
-    "world": "the world: the navigator, passability, the draw layers, the screen cover and what the world can "
-    "see, and the scene nodes that draw the world's own ground and furniture (the map interface and its "
-    "records are the model's) and the rim a body draws round itself",
+    "world": "the world: the navigator, passability, the draw layers, the screen cover, what the world can "
+    "see and the box the camera draws, and the scene nodes that draw the world's own ground and furniture "
+    "(the map interface and its records are the model's) and the rim a body draws round itself",
     "simulation": "simulation: everything that moves or happens -- her, the baby, the crowd, the events and "
     "their behaviours and looks, the resistance -- and the drawing of each, which it composes",
     "flow": "run flow: a day started and finished from its spec, the screens' order",
@@ -95,9 +95,12 @@ FILES: dict[str, str] = {
     "src/autoload/event_bus.gd": "model",
     "src/autoload/sitting.gd": "model",
     # city: the map, its generation and its run-scoped state are the model; the scene and its
-    # furniture (the folder's own layer) are the world.
+    # furniture (the folder's own layer) are the world; the ways out of the city are data, since
+    # the texts and the day's spec are keyed on them. A tree's pictures and the ground its trunk
+    # takes are data, which the street trees' planner and the prop that draws a tree both read.
     "src/city/block_layout.gd": "model",
     "src/city/block_plan.gd": "model",
+    "src/city/city_exit.gd": "data",
     "src/city/city_generator.gd": "model",
     "src/city/city_map.gd": "model",
     "src/city/city_state.gd": "model",
@@ -113,6 +116,7 @@ FILES: dict[str, str] = {
     "src/city/street_trees.gd": "model",
     "src/city/street_layout.gd": "model",
     "src/city/through_roads.gd": "model",
+    "src/city/tree_pictures.gd": "data",
     "src/city/blackout.gd": "simulation",
     "src/city/poster_walls.gd": "simulation",
     "src/city/recipe_city_builder.gd": "root",
@@ -216,7 +220,10 @@ FILES: dict[str, str] = {
     # called only by the scene nodes that draw the world's ground, so it stands with them.
     "src/visuals/ground_layers.gd": "world",
     # ui: the texts are data; the frame graph is a developer's readout; the halo's rim is the drawing
-    # a body composes of itself, so it stands in the world beside the excitement source that holds it.
+    # a body composes of itself, so it stands in the world beside the excitement source that holds it;
+    # the badges up at the screen edge, as the run log reads them without naming the view, are state
+    # with no scene, below the observers and the view both, and the badge model extends them.
+    "src/ui/edge_badges.gd": "model",
     "src/ui/entity_halo.gd": "world",
     "src/ui/source_rim.gd": "world",
     "src/ui/texts.gd": "data",
@@ -284,19 +291,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "CityEdge",
-        "the tunnel-or-bridge kind lives on the edge's drawing class",
-        (
-            "src/finale/finale_planner.gd",
-            "src/ui/texts.gd",
-        ),
-        more=(
-            ("src/finale/finale_planner.gd", 10),
-            ("src/ui/texts.gd", 2),
-        ),
-    ),
-    Exception_(
-        "names",
         "CityGenerator",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
@@ -309,31 +303,9 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "DangerEdge",
-        "telemetry to be handed what it reports",
-        (
-            "src/telemetry/run_session.gd",
-            "src/telemetry/telemetry_observer.gd",
-        ),
-        more=(
-            ("src/telemetry/run_session.gd", 2),
-            ("src/telemetry/telemetry_observer.gd", 2),
-        ),
-    ),
-    Exception_(
-        "names",
         "DrawLayer",
         "the map interface adds a node to its world on a draw layer, the world's half of it",
         ("src/world/world_map.gd",),
-    ),
-    Exception_(
-        "names",
-        "DrawnView",
-        "an event's look asks the view whether its picture is on the screen",
-        (
-            "src/events/views/event_look.gd",
-            "src/events/views/roadblock_look.gd",
-        ),
     ),
     Exception_(
         "names",
@@ -367,12 +339,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "the map interface hands out its navigator, the world's half of it",
         ("src/world/world_map.gd",),
         more=(("src/world/world_map.gd", 3),),
-    ),
-    Exception_(
-        "names",
-        "Prop",
-        "the street trees' planner names the tree props it places",
-        ("src/city/street_trees.gd",),
     ),
     Exception_(
         "names",

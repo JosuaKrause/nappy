@@ -35,10 +35,11 @@ var _trace := RunTrace.new()
 ## tree at all, rather than one checking a flag sixty times a second.
 var _observer: TelemetryObserver
 ## What every walk is watched with besides its world, handed in by `watch()`: the day's clock, the
-## resistance (null where the run has none, as in the escape) and the screen-edge badges.
+## resistance (null where the run has none, as in the escape) and the screen-edge badges up each
+## frame (`EdgeBadges`, null where the boot has no edge), which is all the log reads of the edge.
 var _clock: DayController
 var _resistance: ResistanceDirector
-var _edge: DangerEdge
+var _badges: EdgeBadges
 ## The world the walk being walked stands in (`RunFlow.world_stood`), null before the first: what a
 ## day's header names its city seed by, and what its plan lines and dawn and dusk maps are drawn from
 ## where it is a city.
@@ -106,13 +107,14 @@ func burst(context: String) -> void:
 # -------------------------------------------------------------------- watching ---
 
 ## What every walk of the boot is watched with that no world holds: the day's clock, the resistance
-## (null in the escape, which has no subquest) and the screen-edge badges. `main` hands them once, as
+## (null in the escape, which has no subquest) and the screen-edge badges, as the edge offers what it
+## announces (`DangerEdge.badges()`), since the log may not name the view. `main` hands them once, as
 ## its first world stands, before the walk is announced; the observer itself is built when the first
 ## world stands while a log is open, and handed each walk's world as it stands.
-func watch(clock: DayController, resistance: ResistanceDirector, edge: DangerEdge) -> void:
+func watch(clock: DayController, resistance: ResistanceDirector, badges: EdgeBadges) -> void:
 	_clock = clock
 	_resistance = resistance
-	_edge = edge
+	_badges = badges
 
 ## **Built after the world it watches, and processed after it too.** Siblings process in tree order,
 ## and the observer stamps each line with the day's clock and reads the resistance and the
@@ -130,7 +132,7 @@ func _new_observer() -> TelemetryObserver:
 	# Part of the game, not the frame around it: it stops with the pause like the day it watches.
 	watcher.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(watcher)
-	watcher.setup(_run, _clock, _resistance, _config.asks_for_spikes(), _edge)
+	watcher.setup(_run, _clock, _resistance, _config.asks_for_spikes(), _badges)
 	return watcher
 
 # ---------------------------------------------------------------------- a walk ---

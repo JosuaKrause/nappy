@@ -2,8 +2,9 @@ extends RefCounted
 ## `UnitDraw`, the day's units drawn each after every touching unit of lower rank: three units that
 ## all touch drawn in every order they can be asked for, the draws and what each is judged among the
 ## same every time; a unit asked for draws the touching units of lower rank it waits for first, down
-## a chain, and is judged among the dawn's plans and the draws of the units touching it only, a
-## plan her walk sites never among them; a unit draws once; a unit whose locations are in
+## a chain, and is judged among the dawn's plans, the draws of the units touching it and the beats
+## her walk laid in it or a touching unit, and no other plan her walk sites; a unit draws once; a
+## unit whose locations are in
 ## different views draws from the bag of the most permissive of them; and a unit draws from the
 ## fill of its view and its kind of ground. A walk drawn whole (`draw_in_their_order()`) draws every
 ## unit in the order its units are in, never asks which touch, judges each among the dawn's plans and
@@ -20,7 +21,7 @@ extends RefCounted
 func run(t: TestRunner) -> void:
 	_test_every_order_of_asking_draws_the_same(t)
 	_test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t)
-	_test_no_draw_is_judged_among_a_plan_her_walk_sites(t)
+	_test_a_draw_is_judged_among_a_beat_rigged_in_its_unit_or_a_touching_one(t)
 	_test_a_unit_draws_once(t)
 	_test_a_unit_of_mixed_views_draws_from_the_most_permissive_bag(t)
 	_test_a_unit_draws_from_the_fill_of_its_view_and_its_ground(t)
@@ -204,39 +205,51 @@ func _test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t: TestRunner)
 	t.check(_readable(drawing.calls, ranked).back() == "u3 among dawn",
 			"and draws alone, among the dawn's plans, when asked for")
 
-## **No draw is judged among a plan her walk sites.** A crew the lower of two touching units handed
-## to her walk, and a set piece the dawn left with no place, are each sited since, the place
-## written into the very plan as the director writes it (`EventDirector.site_what_is_on_her_way()`);
-## the higher unit, drawn after, is judged among the dawn's placed row and the lower unit's placed
-## row and neither of the two, so where her walk put them changes nothing it draws.
-func _test_no_draw_is_judged_among_a_plan_her_walk_sites(t: TestRunner) -> void:
+## **A draw is judged among a beat her walk laid in its unit or a touching one, and no other plan
+## her walk sites.** A fire her walk laid in the lowest of three units is rigged in it
+## (`PlacementUnit.rig()`, as `WalkSiting` does); the unit drawing is judged among it, and so is a unit
+## touching it, drawn after; a unit that touches neither is not. A crew a unit handed to her walk and
+## a set piece the dawn left with no place, each since given a place but laid in no unit, are in no
+## draw's judgment.
+func _test_a_draw_is_judged_among_a_beat_rigged_in_its_unit_or_a_touching_one(t: TestRunner) -> void:
 	var drawing := _Drawing.new()
-	var ranked := _ranked([_unit(0), _unit(1)] as Array[PlacementUnit])
+	var ranked := _ranked([_unit(0), _unit(1), _unit(2)] as Array[PlacementUnit])
 	var low := ranked[0]
-	var high := ranked[1]
+	var mid := ranked[1]
+	var far := ranked[2]
 	drawing.hands_over[low.name()] = true
 	var units := _Units.new()
-	units.table = {low.name(): [high], high.name(): [low]}
+	units.table = {low.name(): [mid], mid.name(): [low, far], far.name(): [mid]}
 	var dawn := _dawn()
-	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
-	dawn.append(fire)
+	var unsited := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
+	dawn.append(unsited)
 	var draw := UnitDraw.new(units, drawing, _fills(), dawn)
+	var beat := EventPlan.new(EventCatalogue.by_id("poster_crew"), low.bounds().get_center())
+	low.rig(beat)
 	var crew: EventPlan = null
 	for plan in draw.draw(low):
 		if not plan.is_placed():
 			crew = plan
-	t.check(crew != null and crew.row().is_handed_to_her_walk() and low.drawn().has(crew),
-			"the lower unit hands a crew to her walk, with no place, and holds it as drawn")
+	t.check(crew != null and crew.row().is_handed_to_her_walk(),
+			"the lowest unit hands a crew to her walk, with no place (the guard that there is one)")
 	if crew == null:
 		return
-	crew.position = high.bounds().get_center()
-	fire.position = high.bounds().get_center() + Vector2(64.0, 0.0)
-	draw.draw(high)
-	var rows: Array = drawing.calls[1][3]
-	t.check(crew.is_placed() and fire.is_placed() and rows == ["roadblock", "cafe_tables"],
-			"sited since, neither the crew nor the dawn's set piece is among what the next unit "
-			+ "is judged among: the dawn's placed row and the lower unit's placed row alone (%s)"
-			% [rows])
+	crew.position = far.bounds().get_center()
+	unsited.position = far.bounds().get_center() + Vector2(64.0, 0.0)
+	draw.draw(mid)
+	draw.draw(far)
+	var low_rows: Array = drawing.calls[0][3]
+	var mid_rows: Array = drawing.calls[1][3]
+	var far_rows: Array = drawing.calls[2][3]
+	t.check(low_rows == ["roadblock", "poster_crew"],
+			"the unit the beat is rigged in is judged among it besides the dawn's placed row (%s)"
+			% [low_rows])
+	t.check(mid_rows == ["roadblock", "poster_crew", "cafe_tables"],
+			"a unit touching it is judged among the beat as well as the lower unit's draw (%s)"
+			% [mid_rows])
+	t.check(far_rows == ["roadblock", "cafe_tables"],
+			"a unit touching neither is judged among no beat, and the crew and the dawn's set piece, "
+			+ "given a place but laid in no unit, are in no draw's judgment (%s)" % [far_rows])
 
 func _test_a_unit_draws_once(t: TestRunner) -> void:
 	var drawing := _Drawing.new()

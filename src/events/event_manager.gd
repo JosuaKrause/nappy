@@ -544,8 +544,9 @@ func _tick_the_events(delta: float) -> void:
 		_look_through_the_camera()
 		# The day's units she comes near draw first, before anything is streamed in: every unit
 		# within the stream radius of her whole, so the streaming finds no row of it missing
-		# (`EventsAhead.draw_what_comes_near()`). What is sited below draws the ground round its
-		# own site (`WalkSiting.lay_ahead()`).
+		# (`EventsAhead.draw_what_comes_near()`). A beat sited below takes a location of a unit
+		# that has not drawn where her way has one, and that unit draws round it
+		# (`WalkSiting.lay_ahead()`).
 		ahead.draw_what_comes_near(world.player.global_position, stream_radius)
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn. Nothing is sited in a world with no
@@ -713,8 +714,8 @@ func take_away_the_unseen_within(rect: Rect2) -> int:
 	return streaming.take_away_the_unseen_within(rect)
 
 ## **Draws every undrawn unit of the day any part of which lies within `reach` of `at`**, each after
-## every unit it waits for (`EventsAhead.draw_the_ground_round()`): what a placement made from her
-## walk asks before it looks at ground. Answers whether it drew any unit.
+## every unit it waits for (`EventsAhead.draw_the_ground_round()`): what a place the resistance
+## sends her to asks before it looks at ground. Answers whether it drew any unit.
 func draw_the_ground_round(at: Vector2, reach: float) -> bool:
 	return ahead.draw_the_ground_round(at, reach)
 
@@ -823,6 +824,11 @@ func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
 ## Rigs her route's bag for a task (`EventsAhead.rig_her_route()`).
 func rig_her_route(ids: Array[String], size: int) -> Array:
 	return ahead.rig_her_route(ids, size)
+
+## Rigs the next draw on her path to stand the rows of `ids` for a task, laid just ahead of her
+## (`EventsAhead.rig_the_next_draw()`).
+func rig_the_next_draw(ids: Array[String]) -> Array[String]:
+	return ahead.rig_the_next_draw(ids)
 
 ## Lights the set piece she never met, at dusk on a won day
 ## (`EventsAhead.light_what_she_never_met()`).

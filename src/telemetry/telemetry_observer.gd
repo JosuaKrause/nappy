@@ -145,9 +145,11 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _resistance: ResistanceDirector
-## The screen-edge badges. Optional: everything else here is reachable from the world, and this
-## one lives in a `CanvasLayer` that `main` owns.
-var _edge: DangerEdge
+## The screen-edge badges up each frame, handed in by `setup()`: what the edge announces
+## (`DangerEdge.badges()`, which `main` hands on), since this may not name the view the badges are
+## drawn in. Optional: everything else here is reachable from the world; handed none, it is the base,
+## which has no badges up, so no `edge badge` line is written.
+var _edge_badges := EdgeBadges.new()
 
 # Tile and ground state, so a transition can be spotted.
 var _was_calm := false
@@ -262,12 +264,13 @@ func _init(run_log: Telemetry) -> void:
 ## section the way they read a day; the resistance, null where the run has none (the escape); whether
 ## `--spikes` was given; and the badges.
 func setup(run: RunState, clock: DayController, resistance: ResistanceDirector, spikes: bool,
-		edge: DangerEdge = null) -> void:
+		badges: EdgeBadges = null) -> void:
 	_spikes_on = spikes
 	_run = run
 	_day = clock
 	_resistance = resistance
-	_edge = edge
+	if badges:
+		_edge_badges = badges
 	EventBus.return_phase_started.connect(_on_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
@@ -402,15 +405,14 @@ func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 
 ## A won day's `home` line: the margin, and in the escape where she got out — through the
 ## building's service exit, or by the tunnel or the bridge out of the city
-## (`DayController.exit_taken()`, a `CityEdge.Kind`).
+## (`DayController.exit_taken()`, a `CityExit.Kind`).
 func _won_line() -> String:
 	if _escape_section == "":
 		return "WON, %.1fs to spare" % _day.seconds_left()
 	if _day.exit_taken() < 0:
 		return "out of %s, %.1fs to spare | %s" % [_escape_section, _day.seconds_left(), _meters()]
 	return "escaped by the %s, %.1fs to spare | %s" % [
-		"tunnel" if _day.exit_taken() == CityEdge.Kind.TUNNEL else "bridge", _day.seconds_left(),
-		_meters()]
+		CityExit.name_of(_day.exit_taken()), _day.seconds_left(), _meters()]
 
 # ------------------------------------------------------------------- watching ---
 
@@ -656,10 +658,8 @@ func _watch_the_cues(delta: float) -> void:
 				_log.snapshot("mark-now")
 		_mark = level
 
-	if not _edge:
-		return
 	var up := {}
-	for badge in _edge.announcing():
+	for badge in _edge_badges.announcing():
 		var id: String = badge["id"]
 		up[id] = true
 		if _badges.has(id):

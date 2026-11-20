@@ -599,7 +599,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
 	var badged := false
-	for badge in edge.announcing():
+	for badge in edge.badges().announcing():
 		badged = badged or badge["id"] == "cyclist"
 	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
 
@@ -653,7 +653,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 					Rect2(bike.global_position + box.position, box.size)):
 				into_sight = since
 			var still_badged := false
-			for badge in edge.announcing():
+			for badge in edge.badges().announcing():
 				still_badged = still_badged or badge["id"] == "cyclist"
 			if gone == INF and not still_badged:
 				gone = since

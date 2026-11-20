@@ -103,7 +103,11 @@ src/
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
+	city_exit.gd          the two ways out of the city, the tunnel or the bridge, as a value (data:
+	                      the texts, the day's spec and the finale key on it)
 	prop.gd               small scenery, feet-anchored so it y-sorts against the player
+	tree_pictures.gd      the pictures a tree is drawn as and the ground its trunk takes; the
+	                      props draw with it and the street trees' planner keeps it clear
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
 	traffic_light_drawer.gd  what a signal head draws itself through; the city hands it in
@@ -278,7 +282,8 @@ src/
 	                      it is part of and the run a route starting in it may lie on
 	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
 	                      an alley, a park or a square (its kind of ground); its name, its rank and
-	                      its stream for the day, and its view, the most permissive of its locations'
+	                      its stream for the day, its view, the most permissive of its locations',
+	                      and the beats her walk laid in it
 	unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
 	                      sections and half-filled ones, what share of a street (a section, a
 	                      location) a marble may still take
@@ -289,9 +294,10 @@ src/
 	unit_draw.gd          the day's units drawn one at a time as she comes near them, each after
 	                      every touching unit of lower rank, from the bag the walk's bags answer
 	                      for it (`UnitBags`: on a day, one fresh bag of the fill `UnitFills`
-	                      answers for its view and kind of ground), judged among the dawn's plans
-	                      and the touching units' draws, never a plan her walk sites; a walk drawn
-	                      whole is drawn at dawn in its units' order, each among everything before it
+	                      answers for its view and kind of ground), judged among the dawn's plans,
+	                      the touching units' draws and the beats her walk laid in the unit or a
+	                      touching one; a walk drawn whole is drawn at dawn in its units' order,
+	                      each among everything before it
 	whole_walk_bag.gd     one bag every unit of a walk draws from, a refused marble left in it for the
 	                      next unit: the escape's
 	unit_fills.gd         the day's bag fills, one for each view and kind of ground: the declared
@@ -368,8 +374,9 @@ src/
 	                       and the day's units drawn as she comes near them
 	siting_maker.gd       makes a day's siting from the walk's rules and locations; what the events
 	                       ahead are handed, so a test hands in one that answers a stand-in
-	walk_siting.gd        lays the rows her walk places: the free locations on her way, the first
-	                       the day's rules take
+	walk_siting.gd        lays the rows her walk places: the free locations on her way, a unit's
+	                       that has not drawn first, the first the day's rules take; a row a mark
+	                       rigs straight ahead of her on her branch, just out of her view
 	sited_ground.gd       the tiles a row her walk lays may stand on: a crew's fronts, a mast's
 	                       sites
 	event_director.gd     sites what the day planned and did not place, from her own walk:
@@ -486,6 +493,9 @@ src/
 	visible_view.gd       what she can see: the camera's view less the corners the joystick's
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
+	drawn_view.gd         what can be on the screen: the camera's view grown by two tiles, worked out
+	                      once a process frame per viewport, the one box every off-screen redraw
+	                      gate asks (`DrawnView`); the covered corners count, unlike `VisibleView`
 	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,
@@ -533,6 +543,9 @@ src/
 	                      quoted sentence anywhere else under src/
 	meter_bar.gd
 	home_arrow.gd         the one moment the game says "this way", while she carries a sleeper home
+	edge_badges.gd        the badges up at the screen edge as the run log reads them (`EdgeBadges`, on the
+	                      model's layer, below the observers and the view): the badge model extends it, and
+	                      `main` hands the edge's to the run log, which may not name the view
 	badge_model.gd        which dangers get a screen-edge badge and when: plain data in, badges out, no scene
 	danger_edge.gd        the screen-edge badge: builds the model's inputs each frame and draws what it decides
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
@@ -1291,13 +1304,16 @@ field with its value before and after (`tests/shared_state.gd`).
   successors, summed excitement. Its header gives the reason it builds one: an instance freed but
   left in the list and a successor spawned but never tracked are invisible to a data-level test.
 - `test_event_manager_units.gd` — the manager against a real generated city, the day's units
-  drawn as she comes near them: a unit draws before the streaming looks at its ground, and what
-  her walk sites, swaps in or takes away draws the units round it first. Its header gives the
-  reason it builds a city: each rule is the order of two parts the manager owns.
+  drawn as she comes near them: a unit draws before the streaming looks at its ground, a beat her
+  walk lays stands in a unit before it draws, and what the resistance swaps in or takes away draws
+  the units round it first. Its header gives the reason it builds a city: each rule is the order of
+  two parts the manager owns.
 - `test_walk_siting.gd` — the siting that lays the rows her walk places, over stand-ins for the
-  route tree, the locations and the judge: the nearest free location on her branch or her
-  street takes a beat, a placed beat gives its location back only once it has another, a mast
-  near the mark and the fire lit at dusk take the first location offered; and
+  route tree, the locations, the units and the judge: the nearest free location on her branch, a
+  unit's that has not drawn first, takes a beat and its unit is told, a placed beat gives its
+  location back only once it has another, a row a mark rigs takes the nearest free location
+  straight ahead of her and out of her view, a mast near the mark and the fire lit at dusk take the
+  first location offered; and
   `test_sited_ground.gd`, the tiles a row her walk lays may stand on.
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —

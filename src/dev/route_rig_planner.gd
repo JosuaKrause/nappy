@@ -121,9 +121,9 @@ func resolve(word: String) -> Vector2:
 		"home":
 			return _map.home_world_position()
 		"tunnel":
-			return _day.spec().exit_points().get(CityEdge.Kind.TUNNEL, Vector2.INF)
+			return _day.spec().exit_points().get(CityExit.Kind.TUNNEL, Vector2.INF)
 		"bridge":
-			return _day.spec().exit_points().get(CityEdge.Kind.BRIDGE, Vector2.INF)
+			return _day.spec().exit_points().get(CityExit.Kind.BRIDGE, Vector2.INF)
 		_:
 			if word.begins_with("spawn:"):
 				return _spawn_start.call(word.get_slice(":", 1))

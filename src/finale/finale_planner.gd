@@ -47,8 +47,8 @@ class CalmArea extends RefCounted:
 
 ## One way out, from the door to an edge.
 class Chain extends RefCounted:
-	## `CityEdge.Kind.TUNNEL` or `CityEdge.Kind.BRIDGE`.
-	var exit_kind := CityEdge.Kind.TUNNEL
+	## `CityExit.Kind.TUNNEL` or `CityExit.Kind.BRIDGE`.
+	var exit_kind := CityExit.Kind.TUNNEL
 	## The three calm areas it runs through, in the order it meets them.
 	var stops: Array[CalmArea] = []
 	## Every `ReachabilityGrid` node the walk covers, in order, and the cells they sit in.
@@ -131,7 +131,7 @@ class Plan extends RouteSource:
 		var parts: Array[String] = []
 		for chain in chains:
 			parts.append("%s via %d calm, %d cells%s" % [
-				"tunnel" if chain.exit_kind == CityEdge.Kind.TUNNEL else "bridge",
+				CityExit.name_of(chain.exit_kind),
 				chain.stops.size(), chain.cells.size(), "" if chain.complete else " (incomplete)"])
 		parts.append("%d open streets, %d placements" % [open_streets.size(), placements])
 		return " | ".join(parts)
@@ -163,15 +163,15 @@ static func route(map: CityMap) -> Plan:
 	northern.reverse()
 	var southern := areas.slice(areas.size() - per_chain)
 
-	var tunnel := _grow(grid, start, northern, exit_tile(map, CityEdge.Kind.TUNNEL),
-			CityEdge.Kind.TUNNEL, {})
+	var tunnel := _grow(grid, start, northern, exit_tile(map, CityExit.Kind.TUNNEL),
+			CityExit.Kind.TUNNEL, {})
 	# The tunnel chain's own cells are forbidden to the bridge chain, except the cell she starts
 	# in: *"they part at the service exit, or as near it as the lattice allows"*, and the door
 	# itself is one cell that both walks have to leave from.
 	var taken := tunnel.cells.duplicate()
 	taken.erase(_cell_of(start))
-	var bridge := _grow(grid, start, southern, exit_tile(map, CityEdge.Kind.BRIDGE),
-			CityEdge.Kind.BRIDGE, taken)
+	var bridge := _grow(grid, start, southern, exit_tile(map, CityExit.Kind.BRIDGE),
+			CityExit.Kind.BRIDGE, taken)
 
 	result.chains = [tunnel, bridge]
 	for chain in result.chains:
@@ -182,8 +182,8 @@ static func route(map: CityMap) -> Plan:
 		result._open_keys[segment.key()] = true
 	result._start = map.tile_to_world(start)
 	result._starts_in = map.street_network().segment_containing(start)
-	result._ends = [map.tile_to_world(exit_tile(map, CityEdge.Kind.TUNNEL)),
-			map.tile_to_world(exit_tile(map, CityEdge.Kind.BRIDGE))]
+	result._ends = [map.tile_to_world(exit_tile(map, CityExit.Kind.TUNNEL)),
+			map.tile_to_world(exit_tile(map, CityExit.Kind.BRIDGE))]
 	return result
 
 ## One chain: the door, each stop in turn, then the edge. Each leg is a shortest walk on the grid
@@ -291,8 +291,8 @@ static func service_exit_world_position(map: CityMap) -> Vector2:
 ## picture at the same place; this is the tile the chain has to reach to be standing in it.
 static func exit_tile(map: CityMap, exit_kind: int) -> Vector2i:
 	var column := map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH
-	var row := 0 if exit_kind == CityEdge.Kind.TUNNEL else map.size_in_tiles().y - 1
-	var step := 1 if exit_kind == CityEdge.Kind.TUNNEL else -1
+	var row := 0 if exit_kind == CityExit.Kind.TUNNEL else map.size_in_tiles().y - 1
+	var step := 1 if exit_kind == CityExit.Kind.TUNNEL else -1
 	# The outermost rows are painted as the border band rather than as city, so the first walkable
 	# tile inward is the one the walk can actually end on.
 	for i in Tuning.STREET_WIDTH:

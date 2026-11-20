@@ -372,10 +372,10 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t: TestRunner) -> void:
 					"seed %d: a pit at %s stands in a street mouth" % [map.city_seed(), tree.tile])
 	t.check(checked > 0, "there were pits to check (%d)" % checked)
 
-## `StreetTrees.footprint_radius()` is what the scheduler and the seals keep clear, and it is
-## computed from `Prop`'s own textures rather than read off a live prop, because every caller is a
-## headless planner with no scene. This is the thing that stops the copy drifting: a real street
-## tree, built by a real `City`, has to carry exactly the shape the planners assumed.
+## `TreePictures.widest_reach()` is what the scheduler and the seals keep clear round a pit, read at a
+## tree picture's own size because every caller is a headless planner with no scene. A real street
+## tree, built by a real `City`, has to reach no further, which holds the city to dressing its street
+## trees at the size the planners assumed.
 func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
@@ -387,9 +387,9 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> 
 		if prop.kind() != Prop.Kind.STREET_TREE:
 			continue
 		checked += 1
-		t.check(prop.shape() != null and prop.shape().reach() <= StreetTrees.footprint_radius() + 0.001,
+		t.check(prop.shape() != null and prop.shape().reach() <= TreePictures.widest_reach() + 0.001,
 				"a street tree reaches %.2fpx, over the %.2fpx the planners keep clear"
-				% [prop.shape().reach() if prop.shape() else -1.0, StreetTrees.footprint_radius()])
+				% [prop.shape().reach() if prop.shape() else -1.0, TreePictures.widest_reach()])
 	t.check(checked > 0, "the city built street trees to check (%d)" % checked)
 	city.free()
 

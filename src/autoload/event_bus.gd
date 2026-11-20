@@ -231,7 +231,7 @@ signal escape_city_entered()
 ## again from its own start. `section` is a `DaySpec.Section` and `result` a `GameEnums.DayResult`,
 ## both as `int`. The page counts every one alike, as one sequence.
 signal escape_lost(section: int, result: int)
-## The tunnel or the bridge was reached, by `exit_kind` (a `CityEdge.Kind` as `int`). The run's
+## The tunnel or the bridge was reached, by `exit_kind` (a `CityExit.Kind` as `int`). The run's
 ## own `run_ended` fires beside this, a moment later.
 signal escape_out(exit_kind: int)
 

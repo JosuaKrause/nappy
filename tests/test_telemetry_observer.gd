@@ -30,6 +30,11 @@ extends RefCounted
 ## generated one (`CityMapCache.of()`, a copy of a city built once per process, no `City` node) for
 ## the one case that plans a day from it.
 ##
+## **The screen-edge badges are a stand-in** where a case hands them (`StandInBadges`, an `EdgeBadges`
+## answering the list the case sets, in the shape the badge model answers), since the badges are the
+## edge's own decision and `tests/test_badge_model.gd` tests it; every other case hands none, the base
+## with no badges up.
+##
 ## The case that plans a day beside the observer
 ## (`_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay`) is a combined suite for a
 ## stated reason: it pins a guarantee between the observer and the planner, that four hundred frames
@@ -70,7 +75,7 @@ class Rig extends RefCounted:
 	var _own_day: WatchedDayParts
 
 	func _init(parent: Node, run_log: Telemetry, map: WorldMap = null, day: WatchedDayParts = null,
-			spikes := false) -> void:
+			spikes := false, badges: EdgeBadges = null) -> void:
 		observer = TelemetryObserver.new(run_log)
 		baby.use_bus(EventBus)
 		tree = parent.get_tree()
@@ -78,10 +83,10 @@ class Rig extends RefCounted:
 			_own_day = WatchedDayParts.new(StreetMap.full())
 			day = _own_day
 		if day != null:
-			observer.setup(day.run, clock, null, spikes)
+			observer.setup(day.run, clock, null, spikes, badges)
 			observer.watch(day.map, day.events, player, baby, day.map, day.streets, day.crowd, "")
 		else:
-			observer.setup(null, clock, null, spikes)
+			observer.setup(null, clock, null, spikes, badges)
 			observer.watch(map, null, player, baby, null, null, null, "the building")
 		parent.add_child(observer)
 		clock.start(LENGTH)
@@ -169,6 +174,15 @@ class StandInSource extends FakeEventManager:
 	func instances() -> Array[EventInstance]:
 		return live
 
+## The screen-edge badges as the observer reads them (`announcing()`): the list a case sets, each
+## entry the `id`, `distance` and `approach` the badge model answers for a badge that is up.
+class StandInBadges extends EdgeBadges:
+	var up: Array[Dictionary] = []
+
+	## Overrides EdgeBadges.announcing.
+	func announcing() -> Array[Dictionary]:
+		return up
+
 func run(t: TestRunner) -> void:
 	await _test_the_escape_is_in_the_run_log_as_a_day_is(t)
 	_test_a_retried_section_restarts_the_clock(t)
@@ -182,6 +196,7 @@ func run(t: TestRunner) -> void:
 	await _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t)
 	await _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
 	await _test_the_observer_watches_its_frames_on_real_frames(t)
+	await _test_a_badge_it_is_handed_is_written_as_it_goes_up_and_comes_down(t)
 	for made in _made:
 		made.free()
 
@@ -277,7 +292,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 	_log.set_clock(40.0)
 	clock.tick(40.0)
-	clock.way_out = CityEdge.Kind.TUNNEL
+	clock.way_out = CityExit.Kind.TUNNEL
 	observer.day_finished(GameEnums.DayResult.WON)
 
 	_log.end_run()
@@ -615,3 +630,44 @@ func _test_the_observer_watches_its_frames_on_real_frames(t: TestRunner) -> void
 	t.check(framed, "the observer's frames write the frame line once a second of them has passed")
 	_log.end_run()
 	rig.free_all()
+
+## **The screen-edge badges it is handed are written when one goes up and when it comes down**
+## (`setup()`'s `EdgeBadges`, the edge's badge model in the game, which `main` hands on through
+## `RunSession.watch()`): one `cue` line as a badge first appears, with how far and how fast its thing
+## is coming, however many frames it stays up; and one as it is gone, with how long it was up and
+## where its thing is now, here nowhere, since the case's events hold none.
+func _test_a_badge_it_is_handed_is_written_as_it_goes_up_and_comes_down(t: TestRunner) -> void:
+	_fresh_log()
+	var badges := StandInBadges.new()
+	var rig := Rig.new(t, _log, null, null, false, badges)
+	_log.begin_run(0)
+	_log.begin_day(1, 1, 1, 1, Rig.LENGTH)
+	await rig.frame()
+	t.check(_badge_lines().is_empty(), "with no badge up, no edge badge line is written")
+
+	badges.up = [{"id": "fire_truck", "distance": 640.0, "approach": 190.0}]
+	for i in 15:
+		await rig.frame()
+	var lines := _badge_lines()
+	t.check(lines.size() == 1 and lines[0].ends_with(
+			"cue edge badge: fire_truck at 640px, closing 190px/s"),
+			"a badge going up is written once, with its distance and approach, while it stays up (got %s)"
+			% [lines])
+
+	badges.up = []
+	await rig.frame()
+	await rig.frame()
+	lines = _badge_lines()
+	t.check(lines.size() == 2 and lines[1].ends_with(
+			"cue edge badge gone: fire_truck after 1.5s, no longer in the world"),
+			"its coming down is written once, with how long it was up and where its thing is (got %s)"
+			% [lines])
+	rig.free_all()
+
+## The `cue` lines about the screen-edge badges.
+func _badge_lines() -> Array[String]:
+	var found: Array[String] = []
+	for line in _lines_of("cue"):
+		if line.contains("edge badge"):
+			found.append(line)
+	return found

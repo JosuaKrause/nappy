@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
 			on_camera = on_camera or view.view.intersects(world)
 			in_visible_area = in_visible_area or view.sees_any(world)
 		var badge := false
-		for announcement in edge.announcing():
+		for announcement in edge.badges().announcing():
 			badge = badge or announcement.id == "charging_dog"
 		var state := "%s/%s/%s" % [on_camera, in_visible_area, badge]
 		var id := instance.get_instance_id()

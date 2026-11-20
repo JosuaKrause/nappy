@@ -11,8 +11,10 @@ extends RefCounted
 ## marbles behind it through (calm-pelican-6); and its looks at what her walk lays (`site_what_is_on_her_way()`),
 ## handed a stand-in for the day's siting (`FakeWalkSiting`): a look asks each plan owed once,
 ## between one `begin_look()` and one `end_look()`, no oftener than once a walking second; a placed plan behind her
-## for three walking seconds is asked again and one that has been in the world never; and the next crew waits
-## while one is laid and not yet real.
+## for three walking seconds is asked again and one that has been in the world never; the next crew waits
+## while one is laid and not yet real; and a row a mark rigs (`rig_the_next_draw()`) is laid at the
+## next look by `WalkSiting.lay_just_ahead()`, never `lay_ahead()`, and joins the day's plan as a
+## place from her route (`is_from_her_route()`).
 ##
 ## On a hand-drawn map, one street running the whole length of the map (`_street()`, north-south or
 ## the same map turned), with plans made by hand: plans and rows are data, built as they are, and
@@ -75,6 +77,7 @@ func run(t: TestRunner) -> void:
 	_test_a_look_asks_each_owed_plan_once_between_one_begin_and_one_end(t)
 	_test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t)
 	_test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t)
+	_test_a_row_a_mark_rigs_is_laid_just_ahead_at_the_next_look(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
 ## sidewalk (`CityMap.corridor_offset()` 0 to 5), and building east of it. Turned where `vertical`
@@ -512,3 +515,20 @@ func _test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t: TestRunner)
 	_walk_for(director, 3.0)
 	t.check(siting.asked.has(second) and second.is_placed(),
 			"once the first is in the world the next is asked and laid")
+
+## **A row a mark rigs is laid just ahead of her at the next look**: rigged once she has walked past
+## `EventDirector.ON_HER_WAY_AFTER`, the man shouting is asked of `lay_just_ahead()` and never of
+## `lay_ahead()`, is laid within a look, and is a place from her route, which joins the day's plan
+## when first laid.
+func _test_a_row_a_mark_rigs_is_laid_just_ahead_at_the_next_look(t: TestRunner) -> void:
+	var siting := FakeWalkSiting.new().set_place("homeless_yeller", _her() + Vector2.UP * 500.0)
+	var director := _director_with_a_siting([] as Array[EventPlan], siting)
+	_walk_for(director, EventDirector.ON_HER_WAY_AFTER + 1.0)
+	director.rig_the_next_draw([EventCatalogue.by_id("homeless_yeller")] as Array[EventDef], siting)
+	var moved := _walk_for(director, EventDirector.ON_HER_WAY_LOOK + 0.2)
+	t.check(moved.size() == 1 and moved[0].row_id() == "homeless_yeller" and moved[0].is_placed(),
+			"the man is laid within a look of the rig (%d moved)" % moved.size())
+	t.check(siting.calls.has("lay_just_ahead") and not siting.calls.has("lay_ahead"),
+			"by lay_just_ahead() and never lay_ahead() (%s)" % [siting.calls])
+	t.check(not moved.is_empty() and director.is_from_her_route(moved[0]),
+			"and he joins the day's plan as a place from her route")

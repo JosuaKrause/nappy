@@ -546,7 +546,7 @@ rule for the track: a new line there asks a method, and where the method is miss
 pull request adds it to `event_def.gd` or to the plan under the name below**, so the events'
 conversion finds nothing to redo in those files.
 
-| Step of polite-tapir's `placement-by-construction.md` | What it asks | Method |
+| Step of polite-tapir's placement by construction (closed, record polite-tapir-feathery-kestrel) | What it asks | Method |
 |---|---|---|
 | 1, the route's ground rule (no body's disc and no lethal row's inner disc on a route's tile off the sidewalks) | does a plan block; the disc it shuts; where it stands | plan `obstructs()` ok, `blocking_radius()` ok, `placed_at()` ok |
 | 1 | is a row asked the route rules at all (not scenery, not a pursuer, not a mast, not a door) | plan `counts_against_the_line()` ok |

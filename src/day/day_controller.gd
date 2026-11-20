@@ -23,7 +23,7 @@ signal day_finished(result: GameEnums.DayResult)
 ## What this day is: its goal and its clock. Handed in by whoever starts the day, before `start()`
 ## (`use_the_spec()`); an ordinary day until then.
 var _spec := DaySpec.new()
-## Which way out a `DaySpec.Goal.CITY_EDGE` day was won by, as a `CityEdge.Kind`, or `-1` until one
+## Which way out a `DaySpec.Goal.CITY_EDGE` day was won by, as a `CityExit.Kind`, or `-1` until one
 ## is reached. Reset by every `start()`.
 var _exit_reached := -1
 
@@ -128,7 +128,7 @@ func loss_reason() -> String:
 func hard_fail_reason() -> String:
 	return _hard_fail_reason
 
-## Which way out of the city she took (`CityEdge.Kind`, as an `int`), or -1 when she took none.
+## Which way out of the city she took (`CityExit.Kind`, as an `int`), or -1 when she took none.
 func exit_taken() -> int:
 	return _exit_reached
 

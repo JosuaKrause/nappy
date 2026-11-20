@@ -51,13 +51,6 @@ const _CURB_OFFSETS := [1, 4]
 ## bound rather than a `while true`, so a hostile seed ends with fewer runs instead of hanging.
 const _RUN_TRIES := 240
 
-## The fraction of a tree sprite's own width its ground shape reaches, out of
-## `Prop._compute_shape()` — the point the shadow is drawn from and the footprint an event is kept
-## out of. Mirrored here rather than read off a `Prop`, because every caller of `footprint_tiles()`
-## is a headless planner with no scene to build one in; `tests/test_blocks.gd` compares this
-## against a real street tree's own `shape.reach()` so the two cannot drift apart unnoticed.
-const _FOOTPRINT_FRACTION := 0.28
-
 ## Chance a candidate pit inside a run is actually planted, rolled in scan order. What stops a run
 ## from being a perfectly regular colonnade — the first roll to succeed sets the phase and
 ## `STREET_TREE_PIT_SPACING` sets the rest, so the row jitters without ever crowding.
@@ -211,21 +204,6 @@ static func segment_keys_with_trees(map: CityMap) -> Dictionary:
 		keys[tree.segment_key] = true
 	return keys
 
-## How far a street tree's own ground shape reaches from its trunk, in px — `Prop`'s street tree
-## is a `GroundShape.point` of exactly this, and the widest of the sprites it may be drawn as is
-## what a planner has to keep clear, since which variant a pit gets is decided where the prop is
-## built rather than here. Read from `AtlasTable.native_size()`, which answers with nothing
-## acquired — every caller here runs ahead of any `City` existing. The planners' determinism rests
-## on this number, and the region table's size is the source picture's own:
-## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` compares every baked
-## region, `props/tree_a` and `props/tree_b` included, against the imported picture pixel for
-## pixel, size included.
-static func footprint_radius() -> float:
-	var widest := 0.0
-	for name: StringName in Prop.TREES:
-		widest = maxf(widest, float(AtlasTable.baked().native_size(name).x) * _FOOTPRINT_FRACTION)
-	return widest
-
 ## Every tile a standing street tree stands on or reaches over, as a set — the ground
 ## `RowGround.tiles_for()` refuses a candidate row, the same way it refuses a closed
 ## street, and the ground `SealPlanner` steps its own bodies aside from.
@@ -234,9 +212,13 @@ static func footprint_radius() -> float:
 ## closed or hard-sealed for the day, so it is already refused by the segment it is on; keeping
 ## this answer a fact about the *city* rather than about the day is what lets it be asked before
 ## the day's plan exists.
+##
+## **The reach is the widest tree picture's** (`TreePictures.widest_reach()`), the same answer the
+## street tree's prop takes its ground shape from, since which picture a pit gets is decided where
+## the prop is built rather than here.
 static func footprint_tiles(map: CityMap) -> Dictionary:
 	var tiles := {}
-	var radius := footprint_radius()
+	var radius := TreePictures.widest_reach()
 	for tree in planted(map):
 		var low := ((tree.position - Vector2.ONE * radius) / float(Tuning.TILE_SIZE)).floor()
 		var high := ((tree.position + Vector2.ONE * radius) / float(Tuning.TILE_SIZE)).floor()

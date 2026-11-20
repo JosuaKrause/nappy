@@ -3,12 +3,13 @@ extends RefCounted
 ##
 ## `tests/test_event_manager.gd` is the manager's wiring over a day and holds that two walks draw
 ## the same units; this suite is the wiring between the manager, her walk and the unit draw
-## (`EventsAhead`, `UnitDraw`): a unit draws before the streaming looks at its ground, and every
-## placement made from her walk draws the units round its place before the place stands, so
-## nothing her walk sites or takes away changes what a unit draws. A real city, because each rule
-## is about the order of two parts the manager owns (the draw and the streaming, the draw and a
-## siting, the draw and a take-away) over the units a generated day lays out and the routes her
-## walk is sited on, which a hand-made unit and a fake siting would not show. It is a suite of its
+## (`EventsAhead`, `UnitDraw`): a unit draws before the streaming looks at its ground; a beat her walk
+## lays stands in a unit before it draws, and changes no draw but that unit's and the units touching
+## it; and what the resistance swaps in or takes away draws the units round it first, so it changes
+## no unit's draw. A real city, because each rule is about the order of two parts the manager owns
+## (the draw and the streaming, the draw and a siting, the draw and a take-away) over the units a
+## generated day lays out and the routes her walk is sited on, which a hand-made unit and a fake
+## siting would not show. It is a suite of its
 ## own because its walks take a real tick each.
 ##
 ## **Each case reads the day drawn whole first** (`_the_day_drawn_whole()`): the same city and day
@@ -21,9 +22,6 @@ const Rig := preload("res://tests/event_manager_rig.gd")
 const DAY := 4
 
 var _city: City
-## What made the day's siting, which keeps it for the case that reads what the walk gave up
-## (handed to the events in `_start()`, before the day starts).
-var _siting_maker: KeepingSitingMaker
 ## Moves her down the route a walking test sets it, on its own physics tick, before the city's.
 var _walker: Rig.Walker
 
@@ -32,7 +30,7 @@ func run(t: TestRunner) -> void:
 	var tests: Array[Callable] = [
 		_test_a_unit_near_her_draws_before_the_streaming_looks,
 		_test_streaming_round_a_place_draws_its_units_first,
-		_test_what_her_walk_sites_stands_on_drawn_ground,
+		_test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws,
 		_test_an_area_cleared_of_its_rows_draws_first,
 		_test_a_swap_changes_no_units_draw,
 		_test_the_walks_reach_is_told_what_a_unit_draws,
@@ -59,7 +57,6 @@ class _Drew extends RefCounted:
 ## Starts the day at her door, at a played day's stream radius. Answers the units the start left
 ## undrawn: all but the ones round her door.
 func _start() -> Array[PlacementUnit]:
-	_siting_maker = KeepingSitingMaker.on(RunCity.events(_city))
 	Rig.start(_city, DAY, [], _home())
 	return _units().undrawn_within(Vector2.ZERO, INF)
 
@@ -179,23 +176,31 @@ func _test_streaming_round_a_place_draws_its_units_first(t: TestRunner) -> void:
 	t.check(in_the_world and counted[0] > 0,
 			"and every row they drew within the radius is in the world (%d rows)" % counted[0])
 
-## How many crews her walk has to site before the walking test stops.
+## How many crews her walk has to lay before the walking test stops.
 const SITINGS := 4
 ## The longest the walking test walks, in seconds of walking.
 const WALK_SECONDS := 170.0
 
-## **What her walk sites stands on drawn ground, and changes no unit's draw**
-## (`WalkSiting.lay_ahead()`, `EventsAhead.draw_the_ground_round()`). She walks the
-## day's longest route out and back, through the manager's own tick, until her walk has sited
-## `SITINGS` poster crews, each a row a unit drew as she walked and handed to her walk
-## (`EventsAhead._take_what_was_drawn()`, `EventDirector.owe_on_her_way()`). At each siting no
-## undrawn unit lies within `Tuning.EVENT_DRAW_AHEAD` of the site; the walk gave up at least one
-## pick the ground round which had not drawn, so the rule had work to do; and with the rest of the
-## day drawn after the walk, every unit drew what it draws on the day drawn whole, and nothing a
-## unit drew stands within `EventScheduler.EVENT_SPACING_ANY` of a sited crew.
-func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
+## **A beat her walk lays stands in a unit before it draws, and changes no draw but its unit's and
+## the touching units'** (`WalkSiting.lay_ahead()`, `PlacementUnit.rig()`, `UnitDraw`). She walks the
+## day's longest route out and back at a played day's stream radius, through the manager's own tick,
+## until her walk has laid `SITINGS` poster crews, each a row a unit drew as she walked and handed to
+## her walk (`EventsAhead._take_what_was_drawn()`, `EventDirector.owe_on_her_way()`). Each crew is
+## rigged in a unit; at least one in a unit that had not drawn when it was laid, every other on a
+## location a drawn unit left empty. With the rest of the day drawn after the walk, nothing a unit
+## drew stands within `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row
+## on the crew's location, and every unit that drew otherwise than on the day drawn whole holds a
+## crew, touches a unit that does, or is reached from such a unit along touching units that drew
+## otherwise (a unit is judged among the draws of the touching units drawn before it, so a difference
+## can carry, and two touching units that both differ do not excuse each other): no unit differs out
+## of nowhere, and some unit far from every crew is compared.
+func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
+	var map := _city.map
 	_the_day_drawn_whole()
+	var whole_by_unit := {}
+	for line in _whole.split("\n"):
+		whole_by_unit[line.get_slice(": ", 0)] = line
 	var kept := _start()
 	var told: Array[String] = []
 	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
@@ -210,7 +215,9 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 	_walker.next = 0
 	var sited_at := {}
 	var sitings := 0
-	var on_undrawn_ground := 0
+	var before_its_unit_drew := 0
+	var on_drawn_ground := 0
+	var in_no_unit := 0
 	var bodies_sited := 0
 	var sited_and_not_told := 0
 	var walked := 0.0
@@ -223,45 +230,101 @@ func _test_what_her_walk_sites_stands_on_drawn_ground(t: TestRunner) -> void:
 				continue
 			sited_at[plan] = plan.placed_at()
 			sitings += 1
-			var footprint := EventSpawner.obstructed_footprint(_city.map, plan.def,
+			var footprint := EventSpawner.obstructed_footprint(map, plan.def,
 					plan.position, plan.facing)
 			if not footprint.is_empty():
 				bodies_sited += 1
 				if not told.has(str(footprint)):
 					sited_and_not_told += 1
-			if not _units().undrawn_within(plan.placed_at(), Tuning.EVENT_DRAW_AHEAD).is_empty():
-				on_undrawn_ground += 1
+			# The manager's tick draws before it sites, so a unit still undrawn now was undrawn
+			# when the crew was laid.
+			var unit := _holding(plan)
+			if unit == null:
+				in_no_unit += 1
+			elif unit.is_drawn():
+				on_drawn_ground += 1
+			else:
+				before_its_unit_drew += 1
 	_walker.rig = null
 	t.check(sitings >= SITINGS,
-			"her walk sites the crews the units it drew handed to her walk (%d sitings in %.0fs)"
+			"her walk lays the crews the units it drew handed to her walk (%d in %.0fs)"
 			% [sitings, walked])
 	t.check(bodies_sited > 0 and sited_and_not_told == 0,
-			"each siting with a body told the listener where it stands (%d told of %d with a body)"
+			"each crew with a body told the listener where it stands (%d told of %d with a body)"
 			% [bodies_sited - sited_and_not_told, bodies_sited])
 	events.use_body_listener(Callable())
-	t.check(on_undrawn_ground == 0,
-			"and at no siting does an undrawn unit lie within %.0fpx of the site (%d of %d did)"
-			% [Tuning.EVENT_DRAW_AHEAD, on_undrawn_ground, sitings])
-	var siting := _siting_maker.latest()
-	var gave_up := int(siting.waits().get("the ground round its site had not drawn", 0)) \
-			if siting else 0
-	t.check(gave_up > 0,
-			"the walk gave up a pick the ground round which had not drawn (%d times)" % gave_up)
+	t.check(in_no_unit == 0 and before_its_unit_drew > 0,
+			"every crew is rigged in a unit, and at least one in a unit that had not drawn when it "
+			+ "was laid (%d before its unit drew, %d on drawn ground, %d in no unit)"
+			% [before_its_unit_drew, on_drawn_ground, in_no_unit])
 	events.draw_the_ground_round(Vector2.ZERO, INF)
-	t.check(Rig.what_the_units_drew(_city.map, kept) == _whole and _whole != "",
-			"with the rest drawn after the walk, every unit drew what it draws on the day drawn "
-			+ "whole")
 	var nearest := INF
+	var on_its_location := 0
+	var beside: Dictionary = {}
 	for crew: EventPlan in sited_at:
-		for unit in kept:
+		var unit := _holding(crew)
+		if unit == null:
+			continue
+		beside[unit.name()] = true
+		for other in _units().touching(unit):
+			beside[other.name()] = true
+		var tile := map.world_to_tile(crew.placed_at())
+		for location in unit.locations():
+			if not location.tiles().has_point(tile):
+				continue
 			for plan in unit.drawn():
+				if plan.is_placed() and location.tiles().has_point(map.world_to_tile(plan.placed_at())):
+					on_its_location += 1
+	for unit in kept:
+		for plan in unit.drawn():
+			for crew: EventPlan in sited_at:
 				if plan != crew and plan.is_placed():
 					nearest = minf(nearest, crew.gap_to(plan))
 	t.check(nearest >= EventScheduler.EVENT_SPACING_ANY,
-			"and nothing a unit drew stands within %.0fpx of a sited crew (the nearest %.0fpx)"
-			% [EventScheduler.EVENT_SPACING_ANY, nearest])
+			"with the rest drawn after the walk, nothing a unit drew stands within %.0fpx of a crew "
+			% EventScheduler.EVENT_SPACING_ANY + "(the nearest %.0fpx)" % nearest)
+	t.check(on_its_location == 0,
+			"no unit holding a crew drew a row on the crew's location (%d did)" % on_its_location)
+	var differ := {}
+	for unit in kept:
+		var line := Rig.what_the_units_drew(map, [unit] as Array[PlacementUnit])
+		if line != str(whole_by_unit.get(unit.name(), "")):
+			differ[unit.name()] = unit
+	# A difference carries from a unit beside a crew along touching units that differ, so it is
+	# followed from there: a differing unit that walk never reaches differs out of nowhere, and two
+	# touching units that both differ cannot excuse each other.
+	var reached := {}
+	var queue: Array[PlacementUnit] = []
+	for name: String in differ:
+		if beside.has(name):
+			reached[name] = true
+			queue.append(differ[name] as PlacementUnit)
+	var head := 0
+	while head < queue.size():
+		var at := queue[head]
+		head += 1
+		for other in _units().touching(at):
+			if differ.has(other.name()) and not reached.has(other.name()):
+				reached[other.name()] = true
+				queue.append(other)
+	var out_of_nowhere: Array[String] = []
+	for name: String in differ:
+		if not reached.has(name):
+			out_of_nowhere.append(name)
+	t.check(kept.size() > beside.size() + differ.size() and out_of_nowhere.is_empty(),
+			"every unit that drew otherwise than on the day drawn whole holds a crew, touches one, "
+			+ "or is reached from one along touching units that drew otherwise (%d units, %d beside a "
+			% [kept.size(), beside.size()] + "crew, %d differ; out of nowhere: %s)"
+			% [differ.size(), out_of_nowhere])
 	events.use_player(null)
 	rig.free()
+
+## The unit `plan`, a beat her walk laid, is rigged in, or null.
+func _holding(plan: EventPlan) -> PlacementUnit:
+	for unit in _units().all():
+		if unit.rigged().has(plan):
+			return unit
+	return null
 
 ## **An area cleared of its rows draws its units first** (`EventManager.take_away_within()`,
 ## `take_away_the_unseen_within()`): asked to clear a far unit's ground of the row that unit draws,

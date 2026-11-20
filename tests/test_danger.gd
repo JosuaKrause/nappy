@@ -667,7 +667,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 		standing.global_position += Vector2(Tuning.WALK_SPEED * delta, 0.0)
 		walked += delta
 		await t.get_tree().process_frame
-		announced_while_walking = announced_while_walking or not edge.announcing().is_empty()
+		announced_while_walking = announced_while_walking or not edge.badges().announcing().is_empty()
 	t.check(not announced_while_walking,
 			"walking towards something lethal does not announce it at the edge of the screen")
 
@@ -678,7 +678,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 		engine.global_position -= Vector2(def.speed * delta, 0.0)
 		driven += delta
 		await t.get_tree().process_frame
-	t.check(edge.announcing().size() == 1, "a fire engine actually coming down the street does")
+	t.check(edge.badges().announcing().size() == 1, "a fire engine actually coming down the street does")
 
 	edge.free()
 	standing.free()
@@ -710,7 +710,7 @@ func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 		cat.global_position -= Vector2(def.approach_speed() * delta, 0.0)
 		ran += delta
 		await t.get_tree().process_frame
-		announced = announced or not edge.announcing().is_empty()
+		announced = announced or not edge.badges().announcing().is_empty()
 	t.check(not announced, "a cat running at her from off screen gets no badge at the edge")
 
 	edge.free()
@@ -737,11 +737,11 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner
 		engine.global_position -= Vector2(def.speed * delta, 0.0)
 		driven += delta
 		await t.get_tree().process_frame
-	t.check(edge.announcing().size() == 1, "a live instance closing from off screen is badged")
+	t.check(edge.badges().announcing().size() == 1, "a live instance closing from off screen is badged")
 	manager.retire(engine)
 	manager.streaming.retire_finished()
 	await t.get_tree().process_frame
-	t.check(edge.announcing().is_empty(),
+	t.check(edge.badges().announcing().is_empty(),
 			"an instance _events.instances() no longer carries loses its badge, not left to sit there forever")
 
 	edge.free()

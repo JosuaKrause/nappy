@@ -1,23 +1,28 @@
 class_name WalkSiting
 extends RefCounted
-## **Lays the rows her walk places** (a *beat*: the fire, the poster crews, the route mast, day 6's
-## man shouting, day 7's van, day 11's mast near the mark, and the fire lit at dusk): offers a beat
-## the free locations on her way and stands it on the first tile of the first location the day's
-## rules leave valid, through the judge a unit's own draw uses (`LocationGround.offer_on()`).
-## Nothing rolls a tile and nothing ranks tiles by room (docs/EVENTS.md, "A set piece happens where
-## she is going"). The location is taken for the day (`DayLocations.take_for_her_walk()`), so no
-## draw fills it and no other beat stands on it.
+## **Lays the rows her walk places** (a *beat*: the fire, the poster crews, the route mast, day 11's
+## mast near the mark, and the fire lit at dusk): offers a beat the free locations on her way and
+## stands it on the first tile of the first location the day's rules leave valid, through the judge
+## a unit's own draw uses (`LocationGround.offer_on()`). Nothing rolls a tile and nothing ranks tiles
+## by room (docs/EVENTS.md, "A set piece happens where she is going"). The location is taken for the
+## day (`DayLocations.take_for_her_walk()`), so no draw fills it and no other beat stands on it, and
+## the unit it is a part of is told (`PlacementUnit.rig()`), so the unit's draw and the draws of the
+## units touching it are judged among the beat (`UnitDraw`). *(The player: "beats are marbles,
+## yes", inbox #1521 in breezy-magpie.)* Day 6's man shouting and day 7's van a mark rigs are laid
+## the same way, just ahead of her (`lay_just_ahead()`).
 ##
 ## **A free location** is one nothing stands on and no fixed part holds
 ## (`Location.is_available()`, not `Location.is_taken()`).
 ##
-## **Which locations are offered** is the row's: a *branch beat* (every row but the two below) is
-## offered the free locations holding tiles of its ground on the cells of the day's route tree ahead
-## of her on the branch she walks (`RouteTree.cells_ahead()`), nearest to walk to first; a *street
-## beat* (a row met on her street, `EventDef.is_met_on_her_street()`, and a wall by its fit alone)
-## the free locations holding tiles of its ground ahead of her on the street she is walking, just out
-## of the camera's view; a mast near the mark the locations holding the tiles the resistance offers;
-## the fire lit at dusk the locations off her path first, then any, away from where she finished.
+## **Which locations are offered** is the beat's: one laid ahead of her (`lay_ahead()`) is offered
+## the free locations holding tiles of its ground on the cells of the day's route tree ahead of her
+## on the branch she walks (`RouteTree.cells_ahead()`), **those of units that have not drawn first**
+## (the nearest unit on her way that has not drawn, before it draws, so the unit draws round the
+## beat), nearest to walk to first, and then those a drawn unit left empty; a row a mark rigs
+## (`lay_just_ahead()`) the free locations on her path just ahead of her and out of her view,
+## nearest to walk to first; a mast near the mark the locations holding the tiles the resistance
+## offers; the fire lit at dusk the locations off her path first, then any, away from where she
+## finished.
 ##
 ## **Nothing placed while she walks is asked whether she can still get away.** The day's safe routes
 ## are fixed before the day starts, and nothing placed during the walk may close one, so there is
@@ -31,7 +36,7 @@ extends RefCounted
 ##
 ## Handed everything it asks; its constructor derives nothing, so a test hands in stand-ins.
 
-## No branch beat is laid nearer than this, straight from her: the stream radius and its
+## No beat is laid ahead of her nearer than this, straight from her: the stream radius and its
 ## hysteresis, so it is never in the world on the frame it is laid. The near end is a distance
 ## across the block, since streaming is a radius, and a site 1,200px along a route that doubles back
 ## can be 500px from her and so real, and unmovable, on the frame it was placed.
@@ -39,29 +44,39 @@ const NOT_YET_REAL := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESI
 ## How far from where she finished the day a fire lit at dusk stands: the stream radius, so the site
 ## is ground she was never near enough to have it exist in front of her.
 const DUSK_CLEAR_OF_HER := Tuning.EVENT_STREAM_RADIUS
-## How far either side of her line of travel her street reaches: from her sidewalk to the far kerb,
-## and no further, since a block's frontage is past it.
-const STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
+## **How far ahead of her a row a mark rigs may be laid** (`lay_just_ahead()`), down her branch and
+## straight from her: the stream radius. Inside it every unit has drawn
+## (`EventsAhead.draw_what_comes_near()`), so the place is one a drawn unit left empty; what is laid
+## there is in the world on the frame it is laid, out of her view, so nothing moves it again; and it
+## is ground she walks into within ten seconds at `Tuning.WALK_SPEED`, before the way she takes can
+## part from it. *(The player, of day 6's man shouting and day 7's van: "you would draw only for the
+## path and only just ahead", inbox #1549.)*
+const JUST_AHEAD := Tuning.EVENT_STREAM_RADIUS
+## How far to either side of the cells her branch runs through, and of her line of travel, her path
+## reaches for a row a mark rigs: from the sidewalk a route walks to the far kerb, so the far sidewalk
+## of her street is on her path, where a van stands (the day's rules keep a van off the sidewalk a
+## route walks, `RouteSidewalkRule`).
+const PATH_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
 ## How many locations one ask offers before it waits.
 const LOCATIONS_A_LOOK := 8
 ## How many locations a fire lit at dusk is offered in each of its two passes.
 const DUSK_LOCATIONS := 24
 
-## Why `lay_ahead()` gave up a pick the ground round which had not drawn, as `waits()` counts it.
-const _ITS_GROUND_HAD_NOT_DRAWN := "the ground round its site had not drawn"
+## Why an ask laid nothing, as `waits()` counts it.
 const _BROKE_A_RULE := "every location offered broke a placement rule"
 const _OFF_THE_ROUTES := "she is off the day's routes"
 const _NO_GROUND_ON_THE_BRANCH := "no free ground of its own on the branch ahead of her"
-const _NOT_WALKING := "she is not walking anywhere"
-const _NO_GROUND_ON_HER_STREET := "no free location ahead of her on the street she is walking"
+const _NO_GROUND_JUST_AHEAD := "no free ground of its own on her path just ahead of her, out of her view"
 
-var _day: int
 var _map: CityMap
 ## The day's routes themselves: a siting on the branch she is walking needs the ordered chain of
 ## cells (`RouteTree.cells_ahead()`).
 var _tree: RouteTree
 var _walk: WalkEvents
 var _locations: DayLocations
+## The day's units, which a location names (`DayUnits.unit_of()`): whether its unit has drawn, and
+## the unit a beat laid on it is rigged in.
+var _units: DayUnits
 ## The judge of a location (`LocationGround.offer_on()`): the day's rules, with a candidate built on
 ## each tile handed, the first none refuses.
 var _judge: LocationGround
@@ -72,6 +87,8 @@ var _at := Vector2.ZERO
 var _heading := Vector2.ZERO
 ## The cells ahead of her in walking order, asked of the tree on the first branch ask of a look.
 var _cells: Array[Vector2i] = []
+## The same cells -> how far she walks down her branch to reach each (`RouteTree.cells_ahead()`).
+var _walked_to := {}
 var _cells_asked := false
 ## A row -> its ground by cell of the route tree (`cell -> its tiles, in row-then-column order`), worked
 ## out once a row, so a look walks the cells of her branch and asks only the tiles of the row's
@@ -84,21 +101,18 @@ var _nowhere := {}
 var _laid := {}
 ## Why asks laid nothing, as `reason -> how many asks`.
 var _waits := {}
-## What draws the ground round a site before it stands (`use_the_ground_drawer()`); none until one
-## is handed in.
-var _draws_the_ground_round := Callable()
 
-## `day` is the day laid for (a row's role is the day's), `tree` the day's route tree, `walk` the
-## walk's events (its plans, which every beat is spaced and judged among, its doors and its calm),
-## `locations` the day's locations, `judge` the day's rules over them and `ground` the tiles a row
-## may stand on.
-func _init(for_day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
-		locations: DayLocations, judge: LocationGround, ground: SitedGround) -> void:
-	_day = for_day
+## `tree` is the day's route tree, `walk` the walk's events (its plans,
+## which every beat is spaced and judged among, its doors and its calm), `locations` the day's
+## locations, `units` the units they are grouped into (the walk's draw's), `judge` the day's rules
+## over them and `ground` the tiles a row may stand on.
+func _init(map: CityMap, tree: RouteTree, walk: WalkEvents, locations: DayLocations,
+		units: DayUnits, judge: LocationGround, ground: SitedGround) -> void:
 	_map = map
 	_tree = tree
 	_walk = walk
 	_locations = locations
+	_units = units
 	_judge = judge
 	_ground = ground
 
@@ -107,52 +121,68 @@ func prepare(def: EventDef) -> void:
 	_ground.prepare(def)
 	_ground_by_cell(def)
 
-## **Hands the siting what draws the ground round a site**: `draws_round` is `func(at: Vector2,
-## reach: float) -> bool`, which draws every undrawn unit of the day's locations any part of which
-## lies within `reach` of `at`, what they place joining the walk's plans, and answers whether it drew
-## any (`EventsAhead.draw_the_ground_round()`). `lay_ahead()` asks it of every pick it makes and gives
-## the pick up for this look where it drew a unit, so no unit's draw reads a plan her walk lays and
-## no beat stands beside a unit that has not drawn.
-func use_the_ground_drawer(draws_round: Callable) -> void:
-	_draws_the_ground_round = draws_round
-
 ## **Starts a look from where she is**: every `lay_ahead()` until `end_look()` reads one way ahead,
 ## asked of the route tree once, and a row refused in it is not judged again in it.
 func begin_look(at: Vector2, heading: Vector2) -> void:
 	_at = at
 	_heading = heading
 	_cells.clear()
+	_walked_to.clear()
 	_cells_asked = false
 	_nowhere.clear()
 
 ## Ends a look; nothing is kept past it.
 func end_look() -> void:
 	_cells.clear()
+	_walked_to.clear()
 	_cells_asked = false
 	_nowhere.clear()
 
-## **Lays `plan` ahead of her**, on her street for a street beat and on her branch for any other, or
-## answers false and leaves it as it is, with the reason in `waits()`: a wait is ordinary (she is
-## off the day's routes, or walking home inside the streaming band of the branch's end) and the
-## answer is to ask again a look later, from wherever she has got to, never to place it somewhere
+## **Lays `plan` ahead of her** on the branch she walks, in a unit that has not drawn where her way
+## has one, or answers false and leaves it as it is, with the reason in `waits()`: a wait is ordinary
+## (she is off the day's routes, or walking home inside the streaming band of the branch's end) and
+## the answer is to ask again a look later, from wherever she has got to, never to place it somewhere
 ## illegal. A placed plan is judged without its own body (what the day's plans are judged among
-## leaves it out) and gives its old location back only once it has another. Inside a look.
+## leaves it out) and gives its old location back only once it has another. Nothing is drawn round
+## a pick first: a unit that has not drawn draws round the beat, and one that has is part of what
+## the beat is judged among. Inside a look.
 func lay_ahead(plan: EventPlan) -> bool:
 	var def := plan.row()
 	if not plan.is_placed() and _nowhere.has(def):
 		return _waited(_BROKE_A_RULE)
-	var offers := _on_her_street(def) if _is_met_on_her_street(def) else _on_her_branch(def)
+	return _lay_on_the_first(plan, _on_her_branch(def))
+
+## **Lays `plan`, a row a mark rigs (day 6's man shouting, day 7's van), on her path just ahead of
+## her**, or answers false and leaves it as it is, with the reason in `waits()`: on the first free
+## location, nearest to walk to first, that holds tiles of its ground within `JUST_AHEAD` of her
+## down the branch she walks and straight from her, within `PATH_HALF_WIDTH` of that branch,
+## straight ahead of her (ahead along her heading, within `PATH_HALF_WIDTH` of her line of travel)
+## and out of her view, which the day's rules accept. Straight ahead, because the view is wider than
+## it is tall: ground beside her leaves the view sooner than ground ahead, so without it the nearest
+## place out of view is often round the corner of a fork or a turn she does not take. The ground there has drawn, so the location is one
+## a drawn unit left empty, the way a beat is laid on one where her way has no undrawn unit; its
+## unit is told, so the units touching it that draw later are judged among it. *(The player: "you
+## would draw only for the path and only just ahead", inbox #1549.)* A wait is ordinary (she is off
+## the day's routes, or the stretch just ahead has no free ground of the row's out of her view) and
+## the answer is to ask again a look later, from wherever she has got to. Inside a look.
+func lay_just_ahead(plan: EventPlan) -> bool:
+	var def := plan.row()
+	if not plan.is_placed() and _nowhere.has(def):
+		return _waited(_BROKE_A_RULE)
+	return _lay_on_the_first(plan, _just_ahead_on_her_path(def))
+
+## Stands `plan` on the first location of `offers` (`location -> its tiles`, in the order offered)
+## the day's rules accept a tile of, judged without its own body, or answers false; a row refused
+## everywhere while unplaced is not judged again in the look.
+func _lay_on_the_first(plan: EventPlan, offers: Dictionary) -> bool:
 	if offers.is_empty():
 		return false
+	var def := plan.row()
 	var among := _walk.everything_but(plan)
 	for location: Location in offers:
 		var sited := _judge.offer_on(def, location, _tiles_of(offers, location), among)
 		if not sited:
 			continue
-		if _draws_the_ground_round.is_valid() and _draws_the_ground_round.call(
-				sited.placed_at(), Tuning.EVENT_DRAW_AHEAD):
-			# The units just drawn joined the walk's plans, which this pick was not judged among.
-			return _waited(_ITS_GROUND_HAD_NOT_DRAWN)
 		_stand(plan, sited, location)
 		return true
 	if not plan.is_placed():
@@ -232,29 +262,24 @@ func waits() -> Dictionary:
 
 # ---------------------------------------------------------------- the offers ---
 
-## Whether `def` is laid on the street she is walking rather than on her branch: a row the catalogue
-## marks as met there, and a wall by its fit alone, which is never put on a sidewalk a route runs
-## along (`RouteSidewalkRule`: "the far side of a street answers a van, and nothing answers a van on
-## the side the route is drawn down"), so the branch she may leave is the wrong place for it.
-func _is_met_on_her_street(def: EventDef) -> bool:
-	if def.is_met_on_her_street():
-		return true
-	return EventScheduler.role_for(def, _day) == GameEnums.BlockerRole.WALL \
-			and not _ground.is_a_wall_by_cost(def)
-
 ## **The free locations holding tiles of `def`'s ground on her branch**, as `location -> its tiles`,
-## nearest to walk to first, at most `LOCATIONS_A_LOOK`; empty with the reason in `waits()`. A tile
-## counts when the tree itself carries it (a cell is not always one piece: `ReachabilityGrid` splits
-## it into a node per connected component and a route carries nodes, so a second node the route
-## never touches is no site) and it is at least `NOT_YET_REAL` from her.
+## at most `LOCATIONS_A_LOOK`: those of units that have not drawn first, nearest to walk to first,
+## then those a drawn unit left empty, nearest first; empty with the reason in `waits()`. So a beat
+## takes a location of the nearest unit on her way before it draws where there is one, and falls
+## back to drawn ground only where none takes it: near a branch's end, and on a walk whose units all
+## drew as it started. A tile counts when the tree itself carries it (a cell is not always one
+## piece: `ReachabilityGrid` splits it into a node per connected component and a route carries
+## nodes, so a second node the route never touches is no site) and it is at least `NOT_YET_REAL`
+## from her. A location no unit holds counts as drawn.
 func _on_her_branch(def: EventDef) -> Dictionary:
-	var offers := {}
+	var undrawn := {}
+	var drawn := {}
 	if not _cells_asked:
 		_cells_asked = true
 		_cells = _cells_in_walking_order()
 	if _cells.is_empty():
 		_waited(_OFF_THE_ROUTES)
-		return offers
+		return undrawn
 	var ground_by_cell := _ground_by_cell(def)
 	for cell in _cells:
 		if ground_by_cell.has(cell):
@@ -266,16 +291,94 @@ func _on_her_branch(def: EventDef) -> Dictionary:
 				var location := _locations.holding(tile, _map.tile_at(tile))
 				if not _is_free(location):
 					continue
-				if not offers.has(location) and offers.size() >= LOCATIONS_A_LOOK:
+				var tier := undrawn if _before_its_unit_draws(location) else drawn
+				if not tier.has(location) and tier.size() >= LOCATIONS_A_LOOK:
 					continue
 				if _tree.branches_on(tile).is_empty():
 					continue
-				_group(offers, location, tile)
-		if offers.size() >= LOCATIONS_A_LOOK:
+				_group(tier, location, tile)
+		if undrawn.size() >= LOCATIONS_A_LOOK:
 			break
-	if offers.is_empty():
+	for location: Location in drawn:
+		if undrawn.size() >= LOCATIONS_A_LOOK:
+			break
+		undrawn[location] = drawn[location]
+	if undrawn.is_empty():
 		_waited(_NO_GROUND_ON_THE_BRANCH)
+	return undrawn
+
+## **The free locations holding tiles of `def`'s ground on her path just ahead of her**, as
+## `location -> its tiles`, at most `LOCATIONS_A_LOOK`, the nearest to walk to first: a tile counts
+## when it lies within `PATH_HALF_WIDTH` of the centre of a cell of her branch she reaches within
+## `JUST_AHEAD` (`RouteTree.cells_ahead()`), within `JUST_AHEAD` of her, ahead of her along her
+## heading and within `PATH_HALF_WIDTH` of her line of travel, and none of what
+## `def` draws standing on it could be in her view (`_could_be_in_her_view()`); how near is how far
+## down her branch the nearest such cell lies. Empty with the reason in `waits()`.
+func _just_ahead_on_her_path(def: EventDef) -> Dictionary:
+	var offers := {}
+	if not _cells_asked:
+		_cells_asked = true
+		_cells = _cells_in_walking_order()
+	if _cells.is_empty():
+		_waited(_OFF_THE_ROUTES)
+		return offers
+	# Each tile of the row's ground near the branch -> how far down the branch its nearest cell is.
+	var walked_to := {}
+	var found: Array[Vector2i] = []
+	var reach := ceili(PATH_HALF_WIDTH / Tuning.TILE_SIZE)
+	for cell in _cells:
+		var down := float(_walked_to[cell])
+		if down > JUST_AHEAD:
+			break
+		var centre := _tree.cell_centre(cell)
+		var middle := _map.world_to_tile(centre)
+		for dy in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var tile := middle + Vector2i(dx, dy)
+				if walked_to.has(tile):
+					continue
+				var feet := _map.tile_to_world(tile)
+				if feet.distance_to(centre) > PATH_HALF_WIDTH \
+						or feet.distance_to(_at) > JUST_AHEAD or not _ground.takes(def, tile):
+					continue
+				var offset := feet - _at
+				if offset.dot(_heading) <= 0.0 or absf(offset.cross(_heading)) > PATH_HALF_WIDTH:
+					continue
+				walked_to[tile] = down
+				found.append(tile)
+	for tile in found:
+		var location := _locations.holding(tile, _map.tile_at(tile))
+		if not _is_free(location):
+			continue
+		if not offers.has(location) and offers.size() >= LOCATIONS_A_LOOK:
+			continue
+		if _could_be_in_her_view(def, _map.tile_to_world(tile), _at):
+			continue
+		_group(offers, location, tile)
+	if offers.is_empty():
+		_waited(_NO_GROUND_JUST_AHEAD)
 	return offers
+
+## Whether any of what `def` draws, standing at `feet`, could be in the camera's view while she
+## stands at `her`: its footprint where it is drawn (`EventFootprints.footprint_of()`, a van's
+## reaching 56.5px up from its feet and 28.5px down) against the 640x360 view round her
+## (`Tuning.VIEW_HALF_EXTENT`), grown on every side by the camera's lead
+## (`Stroller.CAMERA_LOOK_AHEAD` along her facing, `Stroller.OBLIQUE_Y` of it up or down), since the
+## lead eases toward a new facing over a turn, and by a tile to spare.
+func _could_be_in_her_view(def: EventDef, feet: Vector2, her: Vector2) -> bool:
+	var box := EventFootprints.footprint_of(def)
+	var drawn := Rect2(feet + box.position, box.size) if box.has_area() \
+			else Rect2(feet, Vector2.ZERO)
+	var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD,
+			Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y) + Vector2.ONE * Tuning.TILE_SIZE
+	var view := Rect2(her - Tuning.VIEW_HALF_EXTENT - lead,
+			(Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
+	return view.intersects(drawn, true)
+
+## Whether `location`'s unit has not drawn yet, so a beat laid on it goes before the unit's draw.
+func _before_its_unit_draws(location: Location) -> bool:
+	var unit := _units.unit_of(location) if _units else null
+	return unit != null and not unit.is_drawn()
 
 ## **`def`'s ground by the cell of the route tree each tile lies in**, each cell's tiles in row-then-
 ## column order, worked out once a row: a tree has far more tiles than a row's ground, so a look asks
@@ -296,75 +399,17 @@ func _ground_by_cell(def: EventDef) -> Dictionary:
 	var kept: Dictionary = _by_cell[def]
 	return kept
 
-## The cells of the tree ahead of her, nearest to walk to first.
+## The cells of the tree ahead of her, nearest to walk to first, each with how far she walks down
+## her branch to reach it recorded in `_walked_to`.
 func _cells_in_walking_order() -> Array[Vector2i]:
 	var ahead := _tree.cells_ahead(_at, _heading, INF)
 	var cells: Array[Vector2i] = []
 	for cell: Vector2i in ahead:
 		cells.append(cell)
+		_walked_to[cell] = float(ahead[cell])
 	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 			return float(ahead[a]) < float(ahead[b]))
 	return cells
-
-## **The free locations holding tiles of `def`'s ground ahead of her on her street**, as `location ->
-## its tiles`, by how far along her heading each location's first tile lies, at most
-## `LOCATIONS_A_LOOK`; empty with the reason in `waits()`. The tiles are the ones within the stream
-## radius, ahead of her, within `STREET_HALF_WIDTH` of her line of travel, with the whole of what the
-## row draws out of the camera's view: a thing created at once is placed past the view's own edge
-## (`Offscreen.boundary()`'s rule), so it is in the world where she will see it in a few seconds if
-## she keeps walking that way, and like anything in the world it is not moved again.
-## *(Proposed, not asked for: "on her route" read as the street she is walking.)*
-func _on_her_street(def: EventDef) -> Dictionary:
-	var offers := {}
-	if _heading.length_squared() < 0.5:
-		_waited(_NOT_WALKING)
-		return offers
-	var found: Array = []
-	var centre := _map.world_to_tile(_at)
-	var reach := ceili(Tuning.EVENT_STREAM_RADIUS / Tuning.TILE_SIZE)
-	var scanned := 0
-	for dy in range(-reach, reach + 1):
-		for dx in range(-reach, reach + 1):
-			var tile := centre + Vector2i(dx, dy)
-			if not _ground.takes(def, tile):
-				continue
-			var offset := _map.tile_to_world(tile) - _at
-			var along := offset.dot(_heading)
-			if along <= 0.0 or offset.length() > Tuning.EVENT_STREAM_RADIUS \
-					or absf(offset.cross(_heading)) > STREET_HALF_WIDTH:
-				continue
-			if _could_be_in_her_view(def, _map.tile_to_world(tile), _at):
-				continue
-			if _is_free(_locations.holding(tile, _map.tile_at(tile))):
-				found.append([int(along / Tuning.TILE_SIZE), scanned, tile])
-				scanned += 1
-	found.sort_custom(func(a: Array, b: Array) -> bool:
-			return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
-	for entry: Array in found:
-		var tile: Vector2i = entry[2]
-		var location := _locations.holding(tile, _map.tile_at(tile))
-		if not offers.has(location) and offers.size() >= LOCATIONS_A_LOOK:
-			continue
-		_group(offers, location, tile)
-	if offers.is_empty():
-		_waited(_NO_GROUND_ON_HER_STREET)
-	return offers
-
-## Whether any of what `def` draws, standing at `feet`, could be in the camera's view while she
-## stands at `her`: its footprint where it is drawn (`EventFootprints.footprint_of()`, a van's
-## reaching 56.5px up from its feet and 28.5px down) against the 640x360 view round her
-## (`Tuning.VIEW_HALF_EXTENT`), grown on every side by the camera's lead
-## (`Stroller.CAMERA_LOOK_AHEAD` along her facing, `Stroller.OBLIQUE_Y` of it up or down), since the
-## lead eases toward a new facing over a turn, and by a tile to spare.
-func _could_be_in_her_view(def: EventDef, feet: Vector2, her: Vector2) -> bool:
-	var box := EventFootprints.footprint_of(def)
-	var drawn := Rect2(feet + box.position, box.size) if box.has_area() \
-			else Rect2(feet, Vector2.ZERO)
-	var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD,
-			Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y) + Vector2.ONE * Tuning.TILE_SIZE
-	var view := Rect2(her - Tuning.VIEW_HALF_EXTENT - lead,
-			(Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
-	return view.intersects(drawn, true)
 
 # --------------------------------------------------------------------- laying ---
 
@@ -385,7 +430,8 @@ func _tiles_of(grouped: Dictionary, location: Location) -> Array[Vector2i]:
 	return tiles
 
 ## **Stands `plan` where `sited` was judged, on `location`**: gives its old location back (only now
-## that another is found), takes the new for the day, and turns a crew to face the wall it pastes,
+## that another is found), takes the new for the day, rigs the beat in the new location's unit, and
+## turns a crew to face the wall it pastes,
 ## its back to the street (`PlanBuilder.build()` turned it by the dawn's own side, out of a wall it
 ## was never going to stand at).
 func _stand(plan: EventPlan, sited: EventPlan, location: Location) -> void:
@@ -394,14 +440,28 @@ func _stand(plan: EventPlan, sited: EventPlan, location: Location) -> void:
 	if plan.row().stands_at_a_front():
 		plan.face(Vector2.UP)
 	_locations.take_for_her_walk(location, plan)
+	var unit := _units.unit_of(location) if _units else null
+	if unit:
+		unit.rig(plan)
 	_laid[plan] = location
 	_nowhere.clear()
 
-## Gives back the location `plan` took, where it took one.
+## **Gives back the location `plan` took**, where it took one, and takes the beat out of its unit
+## (`PlacementUnit.unrig()`). A location whose unit has drawn while the beat stood there is recorded
+## as drawn with nothing on it, so nothing reads it as open in a unit that will not draw again; what
+## the unit drew round the beat stays as drawn.
 func _give_back(plan: EventPlan) -> void:
-	if _laid.has(plan):
-		_locations.give_back(_laid[plan] as Location, plan)
-		_laid.erase(plan)
+	if not _laid.has(plan):
+		return
+	var location: Location = _laid[plan]
+	_locations.give_back(location, plan)
+	_laid.erase(plan)
+	var unit := _units.unit_of(location) if _units else null
+	if not unit:
+		return
+	unit.unrig(plan)
+	if unit.is_drawn() and location.is_open():
+		_locations.record(location, null)
 
 ## Records why an ask laid nothing and answers false. See `waits()`.
 func _waited(reason: String) -> bool:
