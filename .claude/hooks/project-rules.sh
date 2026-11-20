@@ -6,9 +6,27 @@
 # path to the skills in .claude/skills/ that govern it, and answers with their index: each skill's
 # name, path, size and one-line description (lib_rules_index.sh says why an index and never the
 # text). The first edit of an area is denied with that index as the reason, which the harness
-# shows to the session; the same edit made again passes. Reading is the step between the two, and
-# the retry is how a session says it has read: nothing watches the reads themselves, since a hook
-# that judged them could refuse an edit for good on a skill that reached the session another way.
+# shows to the session. Reading is the step between that and the same edit made again, and the
+# retry is how a session says it has read: the hook then looks in the transcript of the session
+# or sub-agent making the call (see "The transcript" below) for a tool call that reads each skill
+# the refusal named, and passes the edit where every one shows a read. A refused skill with no
+# read is named again, alone, and the edit is refused again. A skill can reach a session another
+# way (pasted in, kept in a compaction's summary) and show no read, so a skill that has been
+# refused a second time for it is let through at the third attempt, with a line of context that
+# says it was not seen read: no skill costs more than two refusals.
+#
+# What counts as a read, anywhere in the transcript and so before the first refusal too: a `Read`
+# of the skill's SKILL.md, a `Skill` call naming it, or any other tool call whose input holds its
+# path (.claude/skills/<name>/SKILL.md), a shell `cat` or a script that reads the file among
+# them. Only a tool call's input is searched: the refusal's own index names the path too, and
+# sits in the transcript as a tool result.
+#
+# The transcript. The payload's `transcript_path` is the main session's transcript; a
+# sub-agent's own lives beside it, at <that path without .jsonl>/subagents/agent-<agent_id>.jsonl
+# (an `agent_id` in the payload; a path already of that shape is used as it is). Where the file
+# cannot be read the reads cannot be checked, so the edit passes with a line of context saying
+# so; a payload with no `transcript_path` passes as it always did. The search is a `grep` for the
+# two strings a read can hold, then `jq` over the few lines that hold one.
 #
 # Named once per skill per session: the marker files under $STATE record what has been named. A
 # marker written by a refusal holds the time of it, and an edit that arrives within
@@ -17,10 +35,11 @@
 # window is a clock standing in for "the same message", and it is wrong both ways, which is why
 # it is short. A session that had read the skills before and makes the edit again at once can
 # land inside it, so that refusal says both things it can be, and that the edit is made again.
-# And an edit of the area after the window passes whether or not anything was read: that is the
-# mechanism's limit, since nothing watches the reads. A marker whose time is in the future (the
-# clock stepped back) counts as old: the edit passes and the marker is emptied, so that it
-# cannot refuse an edit later, when the clock reaches it.
+# An edit of the area after the window is the retry that the transcript check judges; a marker
+# holds a refusal's time until the check passes the skill, and "ok" after. A marker whose time is
+# in the future (the clock stepped back) counts as old: the edit passes and the marker is
+# emptied, so that it cannot refuse an edit later, when the clock reaches it. A skill's
+# `<skill>.misses` file, beside its marker, is written when the check refused it once.
 #
 # A sub-agent's PreToolUse payload carries its own `agent_id`, but `session_id` is the
 # *parent's* -- an orchestrator and every sub-agent it spawns share one session_id. Keyed on
@@ -51,6 +70,7 @@ tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
 path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 session=$(printf '%s' "$input" | jq -r '.session_id // "nosession"' 2>/dev/null)
 agent=$(printf '%s' "$input" | jq -r '.agent_id // empty' 2>/dev/null)
+tpath=$(printf '%s' "$input" | jq -r '.transcript_path // empty' 2>/dev/null)
 
 # Repo root: this script lives at <root>/.claude/hooks/
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -237,6 +257,7 @@ done
 now=$(date +%s)
 fresh=""
 recent=0
+pending=""
 for skill in $wanted; do
 	[ -f "$skills/$skill/SKILL.md" ] || continue
 	if [ -f "$state/$skill" ]; then
@@ -249,6 +270,8 @@ for skill in $wanted; do
 					: 2>/dev/null > "$state/$skill"
 				elif [ "$since" -lt "$BATCH_SECONDS" ]; then
 					recent=1
+				else
+					pending="$pending$skill "
 				fi
 				;;
 		esac
@@ -323,7 +346,7 @@ if [ -n "$fresh" ]; then
 		}'
 		exit 0
 	fi
-	printf 'Refused once, so that the rules are read before the edit. %s is governed by the project skills below, and their text is not put into context for you. %s. Then make this edit again: it passes. (One made within %s seconds of this refusal is refused as a call of the same message.)\n\n%s' \
+	printf 'Refused once, so that the rules are read before the edit. %s is governed by the project skills below, and their text is not put into context for you. %s. Then make this edit again: it passes. (One made within %s seconds of this refusal is refused as a call of the same message.) The edit made again is judged by the session transcript: it must show a tool call that reads each skill named here.\n\n%s' \
 		"$rel" "$how" "$BATCH_SECONDS" "$index" | deny
 	exit 0
 fi
@@ -334,6 +357,79 @@ if [ "$recent" -eq 1 ]; then
 	printf 'Refused, because a refusal naming the skills that govern %s was given less than %s seconds ago: this edit was sent in the same message as the one refused then, or it was made again within %s seconds of the refusal. If you have not read the skills that refusal names, read each one whole first; if you have read the skills named, make it again.\n' \
 		"$rel" "$BATCH_SECONDS" "$BATCH_SECONDS" | deny
 	exit 0
+fi
+
+# The retry: every skill whose refusal is past its window and not yet passed. Where the payload
+# carries no transcript there is nothing to look in, and the edit passes.
+[ -n "$pending" ] && [ -n "$tpath" ] || exit 0
+
+transcript="$tpath"
+if [ -n "$agent" ]; then
+	case "$tpath" in
+		*/subagents/agent-*.jsonl) ;;
+		*) transcript="${tpath%.jsonl}/subagents/agent-$agent.jsonl" ;;
+	esac
+fi
+
+# Prints the skills a tool call in transcript $1 reads, each once, on one line: a Skill call's
+# name (a plugin prefix cut), and every .claude/skills/<name>/SKILL.md in any tool call's input.
+skills_read() {
+	grep -a -F -e '/SKILL.md' -e '"skill"' "$1" 2>/dev/null | jq -rR '
+		fromjson? | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use") |
+		(if .name == "Skill" then (.input.skill // empty | tostring | sub("^.*:"; "")) else empty end),
+		((.input | tostring) | scan("\\.claude/skills/([A-Za-z0-9_-]+)/SKILL\\.md") | .[0])' 2>/dev/null \
+		| sort -u | tr '\n' ' '
+}
+
+say() {
+	jq -Rs '{
+	  hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: . },
+	  suppressOutput: true
+	}'
+}
+
+if [ ! -r "$transcript" ]; then
+	for skill in $pending; do
+		printf 'ok\n' 2>/dev/null > "$state/$skill"
+	done
+	printf '%s is governed by the project skills %s. The hook could not read the transcript at %s, so it did not check that they were read. Read each one whole (the Skill tool by its name, or Read on its path under %s), unless you have read it whole in this context.\n' \
+		"$rel" "${pending% }" "$transcript" "$root" | say
+	exit 0
+fi
+
+has_read=" $(skills_read "$transcript") "
+unseen=""
+forgiven=""
+for skill in $pending; do
+	case "$has_read" in
+		*" $skill "*) printf 'ok\n' 2>/dev/null > "$state/$skill" ;;
+		*)
+			# Refused for this once already: the skill may have reached the session another way.
+			if [ -s "$state/$skill.misses" ]; then
+				forgiven="$forgiven$skill "
+				printf 'ok\n' 2>/dev/null > "$state/$skill"
+			else
+				unseen="$unseen$skill "
+			fi
+			;;
+	esac
+done
+
+if [ -n "$unseen" ]; then
+	index=""
+	for skill in $unseen; do
+		printf '1\n' 2>/dev/null > "$state/$skill.misses"
+		printf '%s\n' "$now" 2>/dev/null > "$state/$skill"
+		index+="$(rules_index_entry "$skills" "$skill")"$'\n'
+	done
+	printf 'Refused again. %s is governed by the project skills below, and the transcript at %s shows no tool call that reads them: the hook looks for a Read of a skill'"'"'s file, the Skill tool naming it, or any tool call whose input holds its path (.claude/skills/<name>/SKILL.md). %s. Then make this edit again: it passes once each shows a read. A skill that reached you another way, and so shows none, is let through at the third attempt. (One made within %s seconds of this refusal is refused as a call of the same message.)\n\n%s' \
+		"$rel" "$transcript" "$how" "$BATCH_SECONDS" "$index" | deny
+	exit 0
+fi
+
+if [ -n "$forgiven" ]; then
+	printf '%s is governed by the project skills %s, which the transcript at %s shows no tool call reading. The edit passes at the third attempt, so that a skill that reached the session another way costs two refusals at most. Read each one whole (the Skill tool by its name, or Read on its path under %s), unless you have read it whole in this context.\n' \
+		"$rel" "${forgiven% }" "$transcript" "$root" | say
 fi
 
 exit 0

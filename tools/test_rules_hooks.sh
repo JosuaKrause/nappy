@@ -11,13 +11,23 @@
 # Asserts:
 #   - project-rules.sh refuses the first edit of an area with the index of the skills that govern
 #     it (each one's name, path, size and the opening of its description, never its text), and
-#     lets the same edit through once it is made again; a second area in the same session is
-#     refused in its turn, naming only the skills not named before
+#     lets the same edit through once it is made again where the payload carries no transcript;
+#     a second area in the same session is refused in its turn, naming only the skills not named
+#     before
+#   - the retry, where the payload carries a transcript_path: it passes where the transcript shows,
+#     for each skill the refusal named, a tool call that reads it (a Read of its file, the Skill
+#     tool, a shell command or a script naming its path), a read before the refusal included and
+#     the refusal's own index (a tool result) not; where a skill shows none it is refused again,
+#     naming that skill alone, and what the hook looks for; the third attempt passes with context
+#     saying no read was seen; a transcript that cannot be read passes with context saying so; a
+#     sub-agent's own transcript (beside the parent's, by agent_id) is the one read, and a payload
+#     naming the sub-agent's file itself is read as it is; a cut last line hides nothing, and a
+#     60 MB transcript is searched in well under the hook's timeout
 #   - the window after a refusal, with the hook's clock set to the second: an edit in the same
 #     second or one second after is refused in one line that is true of a call of the same message
 #     and of an edit made again too soon, and is not counted from; from two seconds after, the same
-#     edit passes, and so does an edit elsewhere in the area that nothing was read for (the
-#     mechanism's limit: nothing watches the reads); a marker stamped in the future (the clock
+#     edit passes, and so does an edit elsewhere in the area that nothing was read for, where the
+#     payload carries no transcript to look in; a marker stamped in the future (the clock
 #     stepped back) lets the edit pass and is emptied, so it refuses nothing when the clock
 #     reaches it
 #   - the refusal, the context beside a spawn and the context where no marker can be written all
@@ -512,12 +522,14 @@ rules_read() {
 rules_unbounded=""
 
 # One call of project-rules.sh: $1 session, $2 agent ("" for the main session), $3 tool, $4 the
-# file's path under $root ("" for a call that names no file).
+# file's path under $root ("" for a call that names no file), $5 the payload's transcript_path
+# (the payload has none when it is empty).
 rules_call() {
     local payload
-    payload=$(jq -n --arg s "$1" --arg a "$2" --arg t "$3" --arg p "${4:+$root/$4}" \
+    payload=$(jq -n --arg s "$1" --arg a "$2" --arg t "$3" --arg p "${4:+$root/$4}" --arg tp "${5:-}" \
         '{session_id: $s, tool_name: $t, tool_input: (if $p == "" then {} else {file_path: $p} end)}
-         + (if $a == "" then {} else {agent_id: $a} end)')
+         + (if $a == "" then {} else {agent_id: $a} end)
+         + (if $tp == "" then {} else {transcript_path: $tp} end)')
     rules_read "project-rules.sh, $3 ${4:-(no file)}" \
         "$(printf '%s' "$payload" | "$root/.claude/hooks/project-rules.sh")"
 }
@@ -652,7 +664,7 @@ assert_rules "two seconds after the refusal, the same edit made again -> let thr
 rules_call_at "$((clock + 2))" main-session "" Write "$gd_file"
 assert_rules "every later edit of the area -> let through" none ""
 
-# The mechanism's limit: nothing watches whether the skills were read, so once the window is over
+# A payload with no transcript_path gives the hook nothing to look in, so once the window is over
 # any edit of the area passes, the refused one never having been made again.
 rules_call_at "$clock" unread-session "" Edit "$gd_file"
 assert_rules "another session's first .gd edit -> refused" deny "godot,"
@@ -700,6 +712,138 @@ assert_rules "no writable state directory, first .gd edit -> context naming godo
 assert_rules_say "that context says whose reading counts" "$whose_reading"
 unwritable_call
 assert_rules "no writable state directory, the next edit -> context again, still not a refusal" context "godot,"
+
+# ------------------------------------------------- the retry passes after the reads are seen ---
+# The retry of a refused edit is judged by the transcript the payload points at: each skill the
+# refusal named has to show a tool call that reads it. Fixture transcripts, one JSON line per
+# message, the shapes the harness writes.
+tx_dir="$work_dir/transcripts"
+mkdir -p "$tx_dir/sub-session/subagents" "$tx_dir/tx-part2/subagents"
+# $1 file  $2 tool name  $3 the input as JSON
+tx_call() {
+    jq -nc --arg n "$2" --argjson i "$3" \
+        '{type: "assistant", message: {content: [{type: "text", text: "going on"}, {type: "tool_use", name: $n, input: $i}]}}' >> "$1"
+}
+godot_skill="$root/.claude/skills/godot/SKILL.md"
+# The refusal's own index sits in the transcript as a tool result and names the path too: it is no read.
+tx_refusal() {
+    jq -nc --arg t "- godot (.claude/skills/godot/SKILL.md, 17 KB): Godot traps" \
+        '{type: "user", message: {content: [{type: "tool_result", content: $t}]}}' >> "$1"
+}
+tx_read="$tx_dir/read.jsonl"
+tx_call "$tx_read" Read "$(jq -nc --arg p "$godot_skill" '{file_path: $p}')"
+tx_skill="$tx_dir/skill.jsonl"
+tx_call "$tx_skill" Skill '{"skill":"godot"}'
+tx_shell="$tx_dir/shell.jsonl"
+tx_call "$tx_shell" Bash "$(jq -nc --arg c "cat $godot_skill | head -50" '{command: $c}')"
+tx_repl="$tx_dir/repl.jsonl"
+tx_call "$tx_repl" REPL "$(jq -nc --arg c "await file('$godot_skill').text()" '{code: $c}')"
+tx_none="$tx_dir/none.jsonl"
+tx_refusal "$tx_none"
+tx_call "$tx_none" Read '{"file_path":"/somewhere/else/SKILL.md"}'
+tx_call "$tx_none" Skill '{"skill":"city"}'
+
+# A retry with the read shown by a Read, by the Skill tool, by a shell command and by a script
+# passes; the refusal of the first edit is the same with or without a transcript.
+for read_kind in read skill shell repl; do
+    rules_call "tx-$read_kind" "" Edit "$gd_file" "$tx_dir/$read_kind.jsonl"
+    assert_rules "a $read_kind in the transcript, first .gd edit -> still refused (the read before it counts at the retry)" deny "godot,"
+    assert_rules_say "the refusal says the edit made again is judged by the transcript" "judged by the session transcript"
+    rules_age "tx-$read_kind" ""
+    rules_call "tx-$read_kind" "" Edit "$gd_file" "$tx_dir/$read_kind.jsonl"
+    assert_rules "the retry with the skill read by a $read_kind -> let through" none ""
+    assert_eq "a skill shown read is marked, so a later edit of the area is not judged again" \
+        ok "$(cat "$state_root/tx-$read_kind/godot")"
+done
+
+# No read in the transcript: refused again, naming the skill, saying what the hook looks for; the
+# third attempt passes with a line of context; the fourth is nothing.
+rules_call tx-none "" Edit "$gd_file" "$tx_none"
+assert_rules "no read, first .gd edit -> refused" deny "godot,"
+rules_age tx-none ""
+rules_call tx-none "" Edit "$gd_file" "$tx_none"
+assert_rules "no read, the retry -> refused again, naming godot" deny "godot,"
+assert_rules_say "the second refusal says what the hook looks for" "shows no tool call that reads them: the hook looks for a Read of a skill's file, the Skill tool naming it, or any tool call whose input holds its path"
+assert_rules_say "the second refusal names the transcript it looked in" "the transcript at $tx_none"
+assert_rules_say "the second refusal says the third attempt passes" "is let through at the third attempt"
+rules_call_at "$(($(cat "$state_root/tx-none/godot") + 1))" tx-none "" Edit "$gd_file" "$tx_none"
+assert_rules "the edit within the window after the second refusal -> refused in one line" deny ""
+rules_age tx-none ""
+rules_call tx-none "" Edit "$gd_file" "$tx_none"
+assert_rules "no read, the third attempt -> let through with context" context ""
+assert_rules_say "the context says no read was seen" "shows no tool call reading"
+assert_rules_say "the context says the third attempt passes" "The edit passes at the third attempt"
+rules_call tx-none "" Edit "$gd_file" "$tx_none"
+assert_rules "the attempt after that -> nothing" none ""
+
+# A second area is judged on its own skills: a sub-agent (city, godot, designing-classes) whose
+# transcript shows godot and the Skill call for city is refused for designing-classes alone.
+tx_part="$tx_dir/part.jsonl"
+tx_call "$tx_part" Read "$(jq -nc --arg p "$godot_skill" '{file_path: $p}')"
+tx_call "$tx_part" Skill '{"skill":"city"}'
+cp "$tx_part" "$tx_dir/tx-part2/subagents/agent-sub-agent-p.jsonl"
+rules_call tx-part2 sub-agent-p Edit "src/city/zz_probe.gd" "$tx_dir/tx-part2.jsonl"
+assert_rules "a sub-agent's first edit under src/city/ -> refused" deny "city,godot,designing-classes,"
+rules_age tx-part2 sub-agent-p
+rules_call tx-part2 sub-agent-p Edit "src/city/zz_probe.gd" "$tx_dir/tx-part2.jsonl"
+assert_rules "only designing-classes missing from the sub-agent's transcript -> refused naming it alone" deny "designing-classes,"
+
+# A transcript that is not there cannot be checked: the edit passes, with context saying so.
+rules_call tx-gone "" Edit "$gd_file" "$tx_dir/not-there.jsonl"
+rules_age tx-gone ""
+rules_call tx-gone "" Edit "$gd_file" "$tx_dir/not-there.jsonl"
+assert_rules "the retry with a transcript that is not there -> let through with context" context ""
+assert_rules_say "that context says the transcript could not be read" "could not read the transcript at"
+
+# A sub-agent's payload carries the parent's transcript_path: its own transcript is read, beside
+# it, at <session>/subagents/agent-<agent_id>.jsonl, and the parent's reads do not count for it.
+cp "$tx_read" "$tx_dir/sub-session/subagents/agent-sub-agent-q.jsonl"
+cp "$tx_none" "$tx_dir/sub-session.jsonl"
+rules_call sub-session sub-agent-q Edit "$gd_file" "$tx_dir/sub-session.jsonl"
+assert_rules "a sub-agent's first .gd edit -> refused" deny "godot,"
+rules_age sub-session sub-agent-q
+rules_call sub-session sub-agent-q Edit "$gd_file" "$tx_dir/sub-session.jsonl"
+assert_rules "the retry, the read in the sub-agent's own transcript only -> let through" none ""
+cp "$tx_read" "$tx_dir/sub-session.jsonl"
+cp "$tx_none" "$tx_dir/sub-session/subagents/agent-sub-agent-r.jsonl"
+rules_call sub-session sub-agent-r Edit "$gd_file" "$tx_dir/sub-session.jsonl"
+rules_age sub-session sub-agent-r
+rules_call sub-session sub-agent-r Edit "$gd_file" "$tx_dir/sub-session.jsonl"
+assert_rules "the retry, the read in the parent's transcript only -> refused again" deny "godot,"
+cp "$tx_read" "$tx_dir/sub-session/subagents/agent-sub-agent-s.jsonl"
+rules_call sub-session sub-agent-s Edit "$gd_file" "$tx_dir/sub-session/subagents/agent-sub-agent-s.jsonl"
+rules_age sub-session sub-agent-s
+rules_call sub-session sub-agent-s Edit "$gd_file" "$tx_dir/sub-session/subagents/agent-sub-agent-s.jsonl"
+assert_rules "a payload whose transcript_path is the sub-agent's own file is read as it is -> let through" none ""
+
+# A transcript ending in a line cut short hides nothing.
+printf '{"type":"assistant","message":{"content":[{"type":"tool_use","na' >> "$tx_read"
+rules_call tx-torn "" Edit "$gd_file" "$tx_read"
+rules_age tx-torn ""
+rules_call tx-torn "" Edit "$gd_file" "$tx_read"
+assert_rules "a transcript ending in a cut line is still read -> let through" none ""
+
+# The search stays quick on a big transcript: 60 MB of messages that hold neither string, one read.
+tx_big="$tx_dir/big.jsonl"
+yes '{"type":"assistant","message":{"content":[{"type":"text","text":"padding padding padding padding padding padding padding padding"}]}}' \
+    | head -c 60000000 > "$tx_big"
+echo >> "$tx_big"
+tx_call "$tx_big" Read "$(jq -nc --arg p "$godot_skill" '{file_path: $p}')"
+rules_call tx-big "" Edit "$gd_file" "$tx_big"
+rules_age tx-big ""
+tx_start=$(now)
+rules_call tx-big "" Edit "$gd_file" "$tx_big"
+tx_took=$(awk -v a="$tx_start" -v b="$(now)" 'BEGIN { printf "%.2f", b - a }')
+assert_rules "the retry over a 60 MB transcript -> let through" none ""
+echo "info the retry's check of a 60 MB transcript took $tx_took s"
+if [ "${CI:-}" = true ]; then
+    checks=$((checks + 1))
+    if awk -v t="$tx_took" 'BEGIN { exit !(t < 5) }'; then
+        echo "ok   the retry's check of a 60 MB transcript took under half the hook's timeout"
+    else
+        fail "the retry's check of a 60 MB transcript took $tx_took s"
+    fi
+fi
 
 # ---------------------------------------------------------------- per-agent marker keying -----
 rules_call main-session sub-agent-a Edit "$gd_file"

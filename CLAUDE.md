@@ -65,7 +65,9 @@ does to the route decision. If the answer is "nothing", it is decoration.
 The rules live in `.claude/skills/`, one per kind of work. **A `PreToolUse` hook,
 `.claude/hooks/project-rules.sh`, refuses the first `Edit`/`Write` of an area until the skills that
 govern it are read whole** (inbox #1267 in olive-ferret): the refusal names each skill with its path and size, and
-the same edit made again passes. No hook prints a skill's text to a Claude Code session, since the
+the same edit made again passes once the transcript of the session or sub-agent making it shows a tool call that
+reads each skill named (a skill with none is named again, and the third attempt passes whatever the transcript shows, so a skill
+that reached the session another way costs two refusals at most). No hook prints a skill's text to a Claude Code session, since the
 harness cuts a long hook output to its opening.
 
 **A rule you have to remember to load is not a rule**: every skill exists to stop a mistake already
