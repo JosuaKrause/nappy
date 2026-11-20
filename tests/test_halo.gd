@@ -1139,7 +1139,7 @@ class ChurnEvents extends Node:
 
 ## The halo's sets for a manager's events and, where there is one, a crowd.
 static func _sets(manager: EventManager, crowd: Crowd = null) -> Array[ExcitementSources]:
-	var sets: Array[ExcitementSources] = [manager.sources]
+	var sets: Array[ExcitementSources] = [manager.excitement_sources()]
 	if crowd:
 		sets.append(crowd.sources())
 	return sets

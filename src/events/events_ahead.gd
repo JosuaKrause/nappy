@@ -353,7 +353,7 @@ var _asked_at := Vector2i(-1, -1)
 var _still_wanted := false
 
 ## **Draws what her place asks for** (the day's units, `WalkEvents.unit_draw()`): every undrawn
-## unit any part of which lies within the stream radius (`stream_radius`, the manager's) of `at`
+## unit any part of which lies within the stream radius (`EventStreaming.stream_radius()`, handed in by the manager) of `at`
 ## at once, each with every unit it waits for, so no row of it is missing when the streaming looks
 ## there; else one unit of the nearest wanted one's pull (`UnitDraw.draw_one_towards()`), a unit
 ## being wanted once any part of it lies within `Tuning.EVENT_DRAW_AHEAD` beyond the stream radius.

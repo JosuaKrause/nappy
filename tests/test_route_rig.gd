@@ -122,7 +122,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	city.run = run
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED))
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
@@ -228,8 +228,8 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	var trace := RecordingTrace.new(_lines)
 	rig.use_trace(trace)
 	_rig_city = city
-	_city_trace = RunCity.events(city).trace
-	RunCity.events(city).trace = trace
+	_city_trace = RunCity.events(city).world.trace
+	RunCity.events(city).use_trace(trace)
 	rig.setup(city.map, RunCity.events(city), _no_spawn, stroller, baby, resistance, day, targets, run)
 	rig.start_day(day.spec())
 	return rig
@@ -317,7 +317,7 @@ func _steps(t: TestRunner, count: int) -> void:
 
 ## Gives the city's events back their trace and frees what a rig test built.
 func _end_rig(rig: RouteRig, day: DayController) -> void:
-	RunCity.events(_rig_city).trace = _city_trace
+	RunCity.events(_rig_city).use_trace(_city_trace)
 	_rig_city = null
 	rig.free()
 	day.free()
@@ -1584,7 +1584,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	# not have counted anything.
 	var lane := gate.global_position + Vector2(-axis.y, axis.x) * 16.0
 	var told: Array[String] = []
-	RunCity.events(city).trace = RecordingTrace.new(told)
+	RunCity.events(city).use_trace(RecordingTrace.new(told))
 	stroller.reset_at(lane - axis * 20.0)
 	RunCity.events(city).checkpoints.watch_the_door_lines()
 	stroller.global_position = lane + axis * 20.0

@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 class_name TelemetryObserver
 extends Node
 ## Watches the player and writes down what happened to them.
@@ -1181,10 +1180,8 @@ func _on_near_miss(at: Vector2) -> void:
 ## the two named terms by came from her: running, or standing in an alley.
 func _meters() -> String:
 	var here := _player.global_position
-	# `sources` is read off a `Node` view of the manager: the field read waits for the events'
-	# interface, and this one receiver is why the file keeps its opt-out line.
-	var source: Node = _source()
-	var events_charge: EventSources = source.sources if source else null
+	var source := _source()
+	var events_charge: EventSources = source.excitement_sources() if source else null
 	var from_events := events_charge.total_at(here) if events_charge else 0.0
 	var from_crowd := _crowd.total_at(here) if _crowd else 0.0
 	return "exc %.0f, in %.1f/s (crowd %.1f, events %.1f), sleep %.0f" % [

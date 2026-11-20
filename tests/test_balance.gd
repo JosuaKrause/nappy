@@ -242,7 +242,7 @@ func _quietest_park() -> Vector2:
 		if spot == Vector2.INF:
 			continue
 		RunCity.events(_city).stream_around(spot)
-		var here := RunCity.events(_city).sources.total_at(spot)
+		var here := RunCity.events(_city).excitement_sources().total_at(spot)
 		if here < quietest:
 			quietest = here
 			best = spot

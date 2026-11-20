@@ -646,7 +646,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 	var day := 7
 	_build_city_in_a_new_run(t, seed_value)
 	var city := _city
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 
 	var closure_state := CityState.new()
 	closure_state.begin_day(city.map.block_plans, day)
