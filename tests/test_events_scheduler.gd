@@ -470,15 +470,15 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			wrong.append("no place for its warning with her %.0fpx up from the kerb"
 					% her.distance_to(kerb))
 			continue
-		while created.is_empty() and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
+		while created.is_empty() and warning.shown_for() < Tuning.WARNING_ALONE_MAX + 5.0:
 			warning.tick(STEP, her)
 		if created.is_empty():
 			wrong.append("never created with her %.0fpx up from the kerb" % her.distance_to(kerb))
 			continue
 		var engine := created[0]
 		var place := engine.global_position
-		if warning.shown > Tuning.WARNING_ALONE_MAX + STEP + 0.001:
-			wrong.append("its badge was up alone %.2fs" % warning.shown)
+		if warning.shown_for() > Tuning.WARNING_ALONE_MAX + STEP + 0.001:
+			wrong.append("its badge was up alone %.2fs" % warning.shown_for())
 		elif (place - kerb).dot(travel) >= 0.0:
 			wrong.append("created at the kerb or past it at %v" % place)
 		elif not SpawnSiting.is_out_of_sight(VisibleView.around(her, null),
@@ -489,7 +489,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			her_where.tell(her)
 			engine.step(STEP)
 			to_reach += STEP
-		var badge_to_reach := warning.shown + to_reach
+		var badge_to_reach := warning.shown_for() + to_reach
 		if badge_to_reach + 0.001 < truck.minimum_telegraph():
 			wrong.append("its field reaches her %.2fs after the badge with her %.0fpx up from the "
 					% [badge_to_reach, her.distance_to(kerb)]
