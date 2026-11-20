@@ -146,7 +146,8 @@ func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 ## recording one (`tests/recording_atlas.gd`) and every help text, mode button, closure piece, the
 ## on-screen controls, the save symbol and the building standing must have asked it for its page,
 ## which a node handed another library, or none, did not. The badge acquires nothing, so it keeps
-## its library public for this walk (`DangerEdge.atlas`). The cordon's figures, the contact and
+## its library public for this walk (`DangerEdge.atlas`). The events' manager keeps its private and
+## takes its page in `_enter_tree()`, so the sitting's library counts it among the askers too. The cordon's figures, the contact and
 ## the crowd's agents are handed theirs where they are made, and `test_park_cordon.gd`,
 ## `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same off the library
 ## each is handed. And the pages the boot took for the process are
@@ -171,6 +172,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		var controls := 0
 		var save_symbols := 0
 		var buildings := 0
+		var managers := 0
 		var strays: Array[String] = []
 		var stack: Array[Node] = [main]
 		while not stack.is_empty():
@@ -182,13 +184,15 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 			controls += 1 if node is TouchControls else 0
 			save_symbols += 1 if node is SaveIndicator else 0
 			buildings += 1 if node is InteriorScene else 0
+			managers += 1 if node is EventManager else 0
 			if node is Sitting or not "atlas" in node:
 				continue
 			holders += 1
 			if node.get("atlas") != atlas and strays.size() < 5:
 				strays.append(str(main.get_path_to(node)))
-		# A guard that the sweep was not vacuous: the event manager hands its library to its live events
-		# through `use_atlas()` and keeps it private, so the nodes left holding a public one are few.
+		# A guard that the sweep was not vacuous: the nodes holding a public library are the ones that
+		# draw from it themselves; a node handed its library through `use_atlas()` keeps it private and
+		# is held to the sitting's by what it asked of it, below.
 		t.check(holders > 0, "%s: the boot built nodes that draw from a library (%d)"
 				% [where, holders])
 		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
@@ -221,6 +225,12 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) ->
 		t.check(save_symbols > 0 and symbol_asks >= save_symbols,
 				"%s: the save symbol asked the sitting's library for its page (%d of %d)"
 				% [where, symbol_asks, save_symbols])
+		# The events' manager keeps its library private and takes its page in `_enter_tree()`, on the
+		# day and in the building alike: one handed another library, or none, asks the sitting's nothing.
+		var manager_asks := recording.acquired_from("res://src/events/event_manager.gd")
+		t.check(managers > 0 and manager_asks >= managers,
+				"%s: the event manager asked the sitting's library for its page (%d of %d)"
+				% [where, manager_asks, managers])
 		var building_asks := recording.acquired_from("res://src/interior/interior_scene.gd")
 		t.check(section == DaySpec.Section.NONE or buildings > 0,
 				"%s: the escape stands the building to ask about (%d)" % [where, buildings])
