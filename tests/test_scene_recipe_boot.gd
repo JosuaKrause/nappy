@@ -23,10 +23,10 @@ func _test_a_day_scene_runs_under_the_days_spec(t: TestRunner) -> void:
 	var booted: Boot.Booted = await seat.boot(t, _scratch("day"), ["--recipe", DAY_RECIPE])
 	var day := Boot.day(booted.main)
 	var city := Boot.city(booted.main)
-	t.check(day != null and city != null and day.spec().number == 1 and day.spec().poster_pursuits
-			and day.spec().holds_the_home_streets,
+	t.check(day != null and city != null and day.spec().day_number() == 1 and day.spec().sends_a_pursuer_for_a_torn_poster()
+			and day.spec().keeps_the_home_streets_clear(),
 			"the authored day's clock runs on a day's spec (day %d)"
-			% (day.spec().number if day else -1))
+			% (day.spec().day_number() if day else -1))
 	if day and city:
 		_check_the_events_run_under(t, day, city, "the day scene")
 	booted.free_all()
@@ -37,8 +37,8 @@ func _test_an_escape_scene_runs_under_the_sections_spec(t: TestRunner) -> void:
 	var booted: Boot.Booted = await seat.boot(t, _scratch("escape"), ["--recipe", ESCAPE_RECIPE])
 	var day := Boot.day(booted.main)
 	var city := Boot.city(booted.main)
-	t.check(day != null and city != null and not day.spec().poster_pursuits
-			and not day.spec().holds_the_home_streets,
+	t.check(day != null and city != null and not day.spec().sends_a_pursuer_for_a_torn_poster()
+			and not day.spec().keeps_the_home_streets_clear(),
 			"the authored escape's clock runs on the city section's spec")
 	if day and city:
 		_check_the_events_run_under(t, day, city, "the escape scene")
@@ -48,9 +48,9 @@ func _test_an_escape_scene_runs_under_the_sections_spec(t: TestRunner) -> void:
 ## The scene's events took their settings from the spec the clock runs on, and the clock was
 ## started for that spec's length.
 func _check_the_events_run_under(t: TestRunner, day: DayController, city: City, scene: String) -> void:
-	t.check(RunCity.events(city).ahead.sends_poster_pursuits == day.spec().poster_pursuits
+	t.check(RunCity.events(city).ahead.sends_poster_pursuits == day.spec().sends_a_pursuer_for_a_torn_poster()
 			and RunCity.events(city).ahead.holds_the_home_streets
-					== day.spec().holds_the_home_streets,
+					== day.spec().keeps_the_home_streets_clear(),
 			"%s's events run under the spec its clock runs on" % scene)
 	t.check(is_equal_approx(day.seconds_total(), day.spec().length),
 			"%s's clock is started for that spec's length (%.1fs of %.1fs)"

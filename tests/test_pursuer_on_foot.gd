@@ -277,7 +277,7 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	_done(city, her)
 	# A city of its own for the escape, where nothing is after her or owed yet, so what refuses
-	# him is the escape's walk (`DaySpec.poster_pursuits`) and not the pursuer already sent.
+	# him is the escape's walk (`DaySpec.sends_a_pursuer_for_a_torn_poster()`) and not the pursuer already sent.
 	rig = _city_with_her(t, 6)
 	city = rig[0]
 	her = rig[1]

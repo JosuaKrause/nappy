@@ -2001,7 +2001,7 @@ func _test_the_two_sections_are_the_two_days_after_the_last(t: TestRunner) -> vo
 	var numbers: Array[int] = []
 	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
 		var escape := await _boot_the_escape(t, section)
-		numbers.append(Boot.day(escape.main).spec().number)
+		numbers.append(Boot.day(escape.main).spec().day_number())
 		_free_the_escape(t, escape)
 	t.check(numbers[0] == Tuning.RUN_LENGTH_DAYS + 1 and numbers[1] == numbers[0] + 1,
 			"and they are the two days after the last (%d and %d)" % [numbers[0], numbers[1]])
@@ -2100,7 +2100,7 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 
 ## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
 ## and the same city, a day's spec owes the return its rows and a spec that says it owes none
-## (`DaySpec.owes_a_return` false) is owed none, by the same `start_day()`. So what decides it is the
+## (the escape's `DaySpec.for_section()`) is owed none, by the same `start_day()`. So what decides it is the
 ## spec the run flow hands over (`EventManager.start_day()`), never a branch in the manager.
 func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
 	var an_act_iv_day := 13
@@ -2110,8 +2110,8 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
 	city.run.header().set_day(an_act_iv_day)
 	var owed := {}
 	for owes: bool in [true, false]:
-		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
-		spec.owes_a_return = owes
+		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS) if owes \
+				else DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 		var consumed: Array[String] = []
 		RigStreets.begin(city.streets(), city.map, spec)
 		RunCity.events(city).start_day(spec, city.run.calendar().day_rng(an_act_iv_day), consumed)
