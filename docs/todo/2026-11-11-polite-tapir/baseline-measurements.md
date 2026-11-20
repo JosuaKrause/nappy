@@ -10,12 +10,13 @@ nothing", the player: "sure" (inbox #1268 in olive-ferret).
 repository, so the end remeasure has something to compare with. *The specifics are the
 orchestrator's, proposed and open to the player's correction.*
 
-**What is left** (the first reading is built: `docs/evidence/minty-quail-baseline-2026-11-09/`,
-`v0.29.0` beside today's `main`, record mossy-raven):
+**What is left** (two readings are built in `docs/evidence/minty-quail-baseline-2026-11-09/`: `v0.29.0`
+beside a mid-refactor `main`, record mossy-raven, and a third column with placement closed, record
+polite-tapir-velvet-heron):
 
-- **Two more readings, in the background:** winnability and frame time on `main` when placement
-  closes, and again after the events' field-read conversion, each added to the same folder as a
-  further column, with the same commands and seeds, and the machine's load noted before each run.
+- **One more reading, in the background:** winnability and frame time after the events' field-read
+  conversion (row 4b of minty-quail's `event-interface.md`), added to the same folder as a further
+  column, with the same commands and seeds, and the machine's load noted before each run.
 - **The escape's mix and walks, listed for the end remeasure** (step 5's switch, the record
   polite-tapir-coral-badger; `tests/probes/escape_winnable.gd`, 24 seeds): main before the switch planned 0.66
   dangers a street and 34% of streets with none (trucks 167, explosions 193, vans 91, roadblocks 44),
