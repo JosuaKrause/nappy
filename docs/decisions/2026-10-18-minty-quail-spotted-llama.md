@@ -15,9 +15,10 @@ lines (one more than the design listed: streaming asks `plan.is_a_mast()` where 
 player sees or the run log records changes.
 
 **Open to overturn:** fork F3 of the design (the six placement fields' suite reads stay public until row 4a, as rows 2a
-and 2b left theirs); the builder's choices, that a resistance suite no longer un-silences a plan before silencing it (no
-game verb un-silences one, so that check now holds by construction, left for row 4a's or row 5's ruling on the suites),
-and that the spoilage probe asks `plan.spoils()` instead of re-deriving it.
+and 2b left theirs); and the builder's choice that the spoilage probe asks `plan.spoils()` instead of re-deriving it.
+No suite line writes a value no game verb gives: `test_resistance_reach_relocated`'s sabotage check queues a fresh lit
+mast through `EventManager.queue_a_mast()` and checks that `silence_all_masts()` silences it, so the guarantee its header
+promises is held.
 
 **The item.** Row 1 of section 5 (the run log's map asking the plan's `role()`) is done and leaves the table;
 row 3a stays open until its last pull request; its text in section 5 says which of the plan's fields are
