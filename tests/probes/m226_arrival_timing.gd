@@ -99,7 +99,8 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		return true
 	if encounter.get("warned", false):
 		var warning := PendingWarning.new(def, encounter["where"], arrive)
-		warning.is_pelican = pelican
+		if pelican:
+			warning.be_logged_as_the_pelican()
 		if warning.put_up(her):
 			source.pending.append(warning)
 	else:

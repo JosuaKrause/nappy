@@ -429,14 +429,14 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 		t.check(warning != null and _live("robber_giving_chase").is_empty(),
 				"camera-only movement starts with a real warning and no trap")
 		if warning != null:
-			var initial := warning.place
+			var initial := warning.points_at()
 			var bearing := (initial - her).normalized()
 			view.look(Rect2(her + bearing * 30.0 - Tuning.VIEW_HALF_EXTENT,
 					Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
-			RunCity.events(_city).warnings.run(warning.left * 0.5, her)
-			t.check(warning.place == initial and _live("robber_giving_chase").is_empty(),
+			RunCity.events(_city).warnings.run(warning.seconds_left() * 0.5, her)
+			t.check(warning.points_at() == initial and _live("robber_giving_chase").is_empty(),
 					"camera movement neither moves the badge nor creates its trap early")
-			RunCity.events(_city).warnings.run(warning.left + STEP, her)
+			RunCity.events(_city).warnings.run(warning.seconds_left() + STEP, her)
 			var sent := _live("robber_giving_chase")
 			var trap: EventInstance = sent[0] if sent.size() == 1 else null
 			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
@@ -476,8 +476,8 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 			"%s: the moment she does it, %s's warning is up with nothing in the world" % [label, row_id])
 	if warning == null:
 		return Vector2.INF
-	t.check(warning.left <= Tuning.WARNING_ALONE_MAX + 0.001,
-			"%s: for %.2fs alone, at most a second" % [label, warning.left])
+	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX + 0.001,
+			"%s: for %.2fs alone, at most a second" % [label, warning.seconds_left()])
 	var shown := _run_the_traps_warning(row_id, her)
 	var sent := _live(row_id)
 	var chaser: EventInstance = sent[0] if sent.size() == 1 else null

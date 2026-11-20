@@ -23,8 +23,7 @@ it goes, and a member only tests reach stays where its test is the only check of
 uses.
 
 - `src/events/`, for the events' interface rows that rewrite its files (`event-interface.md`):
-  `EventDef.effect()`, which nothing calls (4b); `PendingWarning.left`, which only tests read (the
-  `[no reader]` group of `tools/test_only_members.txt`; 3b); `EventHold.stop()`, a hold ended by
+  `EventDef.effect()`, which nothing calls (4b); `EventHold.stop()`, a hold ended by
   hand "for a rig", which no rig calls (4b, with the hold's part).
 - `src/resistance/`: nothing.
 

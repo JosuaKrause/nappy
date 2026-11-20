@@ -2239,6 +2239,23 @@ func telegraphs_for() -> float:
 func ends_the_day() -> bool:
 	return def.ends_the_day()
 
+## How far from its centre its core reaches (`EventDef.core_within()`): the radius inside which
+## she is in it, and where the gap to her is measured from.
+func core_within() -> float:
+	return def.core_within()
+
+## How far from its centre its row is heard (`EventDef.heard_within()`): the outer edge of its
+## field as a disc, which the mark over her head keeps the whole of while it telegraphs.
+func heard_within() -> float:
+	return def.heard_within()
+
+## **Whether its guard is gone for good**, leaving only a barrier that waits for nobody
+## (`EventBarrierPost.is_spent()`): the guard has set off from it for good, or is on his way out
+## having left his body, which `is_only_its_barrier()` does not yet say. False for anything with no
+## barrier.
+func has_lost_its_guard() -> bool:
+	return barrier_post != null and barrier_post.is_spent()
+
 ## **Whether this car is closing on `point` with the mark over her head**
 ## (`EventCarDriving.closes_on()`): false for anything that does not drive.
 func closes_on(point: Vector2) -> bool:
