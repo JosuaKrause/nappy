@@ -392,7 +392,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 | How far out is its field's edge (the badge's gap) | row `heard_within()` ok | field |
 | Which colour, which icon | row `ends_the_day()` ok, `picture()` ok | lethal, look |
 | Is it gone, did it come under a warning, is it charging, is it in view | live `is_gone()` ok, `was_warned_of()` ok, `has_charged()` ok, `drawn_box()` ok | the live event |
-| A warning with nothing in the world yet (`PendingWarning`) | `row()` ok, `points_at()` ok, `seconds_left()` ok, `logged_name()` ok, `shown_for()` ok, `was_withdrawn()` ok, `when_withdrawn(retry)` ok with `ask_again()` ok, `be_drawn_as_the_pelican()` ok | the warning |
+| A warning with nothing in the world yet (`PendingWarning`) | `row()` ok, `points_at()` ok, `seconds_left()` ok, `logged_name()` ok, `shown_for()` ok, `was_withdrawn()` ok, `when_withdrawn(retry)` ok with `ask_again()` ok, `be_logged_as_the_pelican()` ok | the warning |
 | The run lesson's hint: is this a pursuer, how long does it telegraph | live `pursues()` ok, `telegraphs_for()` ok | pursuit, warning |
 | The halo, the caret and the mark over her head | `ExcitementSource` ok: `contribution_at()`, `expected_gross_at()`, `will_be_lethal()`, its rim | field |
 | The debug view's fields layer | live `field_rings()` ok (the radii it draws, a `Vector2` of its core and its outer edge, one bird's reach for a flock), `ends_the_day()` ok, `field_shape()` ok, `solid_axis()` ok, `ground_shape()` ok, `is_gone()` ok, `source()` ok (the walls its outline is cut by) | field, body |
