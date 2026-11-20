@@ -96,17 +96,17 @@ func _init(the_world: EventWorld) -> void:
 ## the day's dawn, which owes her walk none of them a second time; one is spent where it becomes
 ## real, `EventStreaming.stream_in()`).
 func plan(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
-	if spec.world == DaySpec.World.BUILDING:
+	if spec.world_kind() == DaySpec.World.BUILDING:
 		return _plan_the_building(rng)
-	if not spec.closes_streets:
+	if not spec.closes_the_streets():
 		return _plan_the_escape_city(spec, rng)
 	return _plan_a_day(spec, rng, consumed)
 
 # ------------------------------------------------------------------- a day ---
 
-## A day's plan, the day being `spec.number`.
+## A day's plan, the day being `spec.day_number()`.
 func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
-	var day := spec.number
+	var day := spec.day_number()
 	var city_map := world.city_map
 	# Today's streets as dawn left them (`EventWorld.streets()`): the corridor the city grew this
 	# morning, the region wall and doors grown from it, and the closures placed off both. Read
@@ -126,13 +126,13 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# why `SealPlanner.plan_day` is planned ahead of `build_day` below (see that call's own note).
 	city_map.clear_day_holds()
 	for closure in streets.closures():
-		city_map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+		city_map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
 	for segment in region_plan.walls:
 		city_map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.doors:
 		city_map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
-	if spec.holds_the_home_streets:
-		for segment in city_map.network.around_blocks(Rect2i(city_map.home_block_coordinate(), Vector2i.ONE)):
+	if spec.keeps_the_home_streets_clear():
+		for segment in city_map.street_network().around_blocks(Rect2i(city_map.home_block_coordinate(), Vector2i.ONE)):
 			city_map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	# Apart from the catalogue's own events on purpose — see `SealPlanner`'s own doc. It seals everything

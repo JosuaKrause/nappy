@@ -207,7 +207,7 @@ func _closure_access_vs_rim_sweep() -> void:
 			var real := ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng_a, tree)
 			sum_closures_with_filter += real.size()
 			for closure in real:
-				if rim.has(closure.segment.key()):
+				if rim.has(closure.street_key()):
 					sum_closures_with_filter_on_rim += 1
 
 			# The ablation: the same candidate weighting and the same accept-if-invariant-holds

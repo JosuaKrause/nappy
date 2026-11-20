@@ -384,8 +384,8 @@ func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 			for closure in closures:
 				if closure is ParkClosure:
 					continue
-				for at_a: bool in [true, false]:
-					for tile in map.rect_tiles(closure.segment.mouth_rect(at_a)):
+				for mouth: Rect2i in closure.mouth_rects():
+					for tile in map.rect_tiles(mouth):
 						barriers[tile] = true
 			var field := map.walk_field(home, barriers)
 			var reachable := 0

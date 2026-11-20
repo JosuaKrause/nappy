@@ -8,7 +8,7 @@ extends RefCounted
 ## and a route's ground off the streets kept free of bodies and of cost), the calm she has not used
 ## and the doors' clear ground; on a day's walk, one sidewalk of every street of her routes kept
 ## open past the bodies drawn on it (`OneSidewalkOpenRule`); the escape's on top, one notice at a
-## time (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`), its
+## time (`DaySpec.notices_one_at_a_time()`) and its walk kept open (`DaySpec.keeps_her_walk_open()`), its
 ## own stricter rule in place of the one sidewalk.
 ##
 ## `room()` answers what a placement weighs a candidate by: `-INF` where a rule refuses it, else the

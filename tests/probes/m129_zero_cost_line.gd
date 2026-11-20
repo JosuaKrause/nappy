@@ -379,7 +379,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 
 	map.clear_day_holds()
 	for closure in closures:
-		map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+		map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
 	for segment in region_plan.walls:
 		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.doors:

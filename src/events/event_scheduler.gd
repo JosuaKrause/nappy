@@ -533,7 +533,7 @@ static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 ## `ReachabilityGrid.flood()` takes. Public because the probes that measure what a day closes paint
 ## the same set, and a second copy of this loop would be a second answer to the same question.
 static func blocked_by(map: CityMap, blockers: Array[EventPlan]) -> Dictionary:
-	var blocked := map.closed_tiles.duplicate()
+	var blocked := map.closed_tile_set().duplicate()
 	for plan in blockers:
 		block_a_disc(map, blocked, plan.body_at(), plan.blocking_radius())
 	return blocked

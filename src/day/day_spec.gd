@@ -181,7 +181,7 @@ var _drawn_before_she_sets_off := false
 ## (`CalmAreas.unused_ground()`, `DawnCalmKeptClean`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
 ## there (minty-lemur #785).
-var keeps_unused_calm_clear := true
+var _keeps_unused_calm_clear := true
 ## Whether the home's streets are the day's: nothing on the street her front door opens onto
 ## (`RowGround.tiles_for()`) or round the home block (`CityMap.held`). The
 ## escape keeps its own rule instead, by the player's word (minty-lemur #785): she sets off from the
@@ -202,12 +202,12 @@ var wall_row_share := 1.0
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## Whether no two waiting guards may notice her from the same ground
 ## (`OneNoticeRule._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
-var one_notice_at_a_time := false
+var _one_notice_at_a_time := false
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined, past every body and every standing lethal reach (`WalkGround`): the escape's, whose
 ## bodies stand on the one walk rather than off it. A day keeps its routes through its corridor's own
 ## rules instead (`StreetInvalidation`: a route's junctions, its walked sidewalk, a beat's opening).
-var keeps_the_walk_open := false
+var _keeps_the_walk_open := false
 
 # --------------------------------------------------------- how its streets are sealed ---
 
@@ -345,12 +345,12 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
-	spec.keeps_unused_calm_clear = false
+	spec._keeps_unused_calm_clear = false
 	spec.holds_the_home_streets = false
 	spec._one_event_a_street = true
 	spec._drawn_before_she_sets_off = true
-	spec.one_notice_at_a_time = true
-	spec.keeps_the_walk_open = true
+	spec._one_notice_at_a_time = true
+	spec._keeps_the_walk_open = true
 	spec._seal_pictures = SealPictures.ESCAPE
 	spec._seals_the_main_road = true
 	spec._seals_every_street_off_the_walk = true
@@ -465,6 +465,21 @@ func use_exits(the_exits: Dictionary) -> void:
 ## (`holds_the_home_streets`): every day's rule, and not the escape's.
 func keeps_the_home_streets_clear() -> bool:
 	return holds_the_home_streets
+
+## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
+## joined (`_keeps_the_walk_open`): the escape's.
+func keeps_her_walk_open() -> bool:
+	return _keeps_the_walk_open
+
+## Whether no two waiting guards may notice her from the same ground (`_one_notice_at_a_time`): the
+## escape's.
+func notices_one_at_a_time() -> bool:
+	return _one_notice_at_a_time
+
+## Whether the calm areas she has not used this act are kept clear of everything the dawn places
+## (`_keeps_unused_calm_clear`).
+func keeps_the_unused_calm_clean() -> bool:
+	return _keeps_unused_calm_clear
 
 ## Which seal pictures close the streets off the walk (`_seal_pictures`).
 func seal_pictures() -> SealPictures:
