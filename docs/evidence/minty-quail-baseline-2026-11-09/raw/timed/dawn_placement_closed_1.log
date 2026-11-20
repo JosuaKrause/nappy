@@ -1,0 +1,98 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SCRIPT ERROR: Parse Error: Could not find type "Planned" under base "EventScheduler".
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:80)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Too many arguments for "build_day()" call. Expected at most 1 but received 13.
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:91)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Invalid argument for "build_day()" function: argument 1 should be "DawnContext" but is "DaySpec".
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:91)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Cannot get return value of call to "build_day()" because it returns "void".
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:91)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Cannot get property "placements" on a null object.
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:93)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Function "placements()" not found in base null.
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:91)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "built" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:91)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "mode" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:96)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "id" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:112)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: Parameter "t" has no static type. (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:28)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: The property "home_block" is not present on the inferred type "CityMap" (but may be present on a subtype). (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:61)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: "for" iterator variable "plan" has no static type. (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:95)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: The method "spawn_mode_on()" is not present on the inferred type "Variant" (but may be present on a subtype). (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:96)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: The method "is_placed()" is not present on the inferred type "Variant" (but may be present on a subtype). (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:100)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: The method "placed_at()" is not present on the inferred type "Variant" (but may be present on a subtype). (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:103)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: The method "row_id()" is not present on the inferred type "Variant" (but may be present on a subtype). (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:112)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+SCRIPT ERROR: Parse Error: The method "check()" is not present on the inferred type "Variant" (but may be present on a subtype). (Warning treated as error.)
+          at: GDScript::reload (res://tests/probes/dawn_planning_time.gd:123)
+          GDScript backtrace (most recent call first):
+              [0] _run_suite (res://tests/run_tests.gd:157)
+              [1] _ready (res://tests/run_tests.gd:127)
+ERROR: Failed to load script "res://tests/probes/dawn_planning_time.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+   GDScript backtrace (most recent call first):
+       [0] _run_suite (res://tests/run_tests.gd:157)
+       [1] _ready (res://tests/run_tests.gd:127)
+-- dawn_planning_time.gd                LOAD FAIL
+
+FAIL  res://tests/probes/dawn_planning_time.gd failed to load (parse error or missing script)
+0 checks, 1 failures
+PARTIAL RUN — only suites matching probes/dawn_planning_time.gd. Not a green build.

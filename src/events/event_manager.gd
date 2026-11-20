@@ -163,7 +163,7 @@ func _exit_tree() -> void:
 
 ## **Lets go of the warnings when the manager goes**, so the parts go with it. A warning still up
 ## holds the callbacks that put its row in the world or owe it again (`PendingWarning.arrive`,
-## `on_withdrawn`), and those hold the part that raised it (`EventsAhead`, `EventSpawner`), which
+## the retry `when_withdrawn()` hands it), and those hold the part that raised it (`EventsAhead`, `EventSpawner`), which
 ## holds the board the warning is on: a ring of references nothing else breaks, which would keep
 ## the parts, the world and its map alive past the manager.
 func _notification(what: int) -> void:

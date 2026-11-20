@@ -431,16 +431,16 @@ func _on_run_bout_began(day: int) -> void:
 ## screen, and when it's hitting the player. it must appear as its own entry")*. Each signal fires
 ## once per pelican where it is emitted (`EventBus`'s own doc on each), so each sends once; the
 ## instance it carries is not read.
-func _on_pelican_spawned(_instance: Variant) -> void:
+func _on_pelican_spawned(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-spawned"))
 
-func _on_pelican_sighted(_instance: Variant) -> void:
+func _on_pelican_sighted(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-seen"))
 
-func _on_pelican_excited_her(_instance: Variant) -> void:
+func _on_pelican_excited_her(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-excited"))
 
-func _on_pelican_struck_her(_instance: Variant) -> void:
+func _on_pelican_struck_her(_instance: Node2D) -> void:
 	_send_event(_day_event_name(_counted_day(), "pelican-hit"))
 
 ## Every tear, not the first of an attempt: every event opts out of the site's sessions so that

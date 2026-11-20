@@ -595,7 +595,8 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 		return true
 	var warning := _warnings.warn_first(def, her, where, arrive)
 	if warning:
-		warning.is_pelican = pelican
+		if pelican:
+			warning.be_logged_as_the_pelican()
 
 ## A row the director sends ahead of her warned of first in the lane of the road beside her (the
 ## convoy, `EventDef.is_warned_in_its_lane()`), sited on `sited` (`EventDirector.due()`: its first
@@ -685,7 +686,7 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 	var warning := _warnings.warn_first(def, her, where, arrive)
 	if warning:
 		_pursuer_failure_logged = false
-		warning.on_withdrawn = func() -> void: _owe_pursuer_again(def)
+		warning.when_withdrawn(func() -> void: _owe_pursuer_again(def))
 		return
 	# Nowhere off screen to stand down her heading: the lesson is not lost, it is owed again on
 	# the next placement retry (`place_what_is_owed_ahead()`).

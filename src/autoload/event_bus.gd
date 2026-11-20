@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends Node
 ## Global signal hub.
 ##
@@ -84,10 +83,11 @@ signal save_deleted(operation: int, result: int)
 signal save_deletion_settled(operation: int, kept: bool)
 
 # ------------------------------------------------------------------- events ---
-# `instance` is an `EventInstance`, left untyped: this autoload is loaded before the class is.
+# `instance` is a live event, an `EventInstance`, typed as the `Node2D` it is: this autoload is model,
+# and the model may not name the simulation's class. A listener that reads the event casts it.
 
-signal event_telegraphed(instance)
-signal event_activated(instance)
+signal event_telegraphed(instance: Node2D)
+signal event_activated(instance: Node2D)
 signal hard_fail_triggered(reason: String)
 ## `EventSpawner.summon_what_has_been_sighted()`'s own first frame an `aftermath.on_sight` row (only
 ## `burning_building` today) is actually on screen — fired once per plan whether or not the warning
@@ -157,22 +157,22 @@ signal run_bout_began(day: int)
 # (`EventInstance.is_pelican`). *(Inbox #527 in azure-tapir, the player: "I explicitly asked for specific pelican
 # telemetry. when the pelican spawns, when it's on screen, and when it's hitting the player. it
 # must appear as its own entry and it needs to be more granular than standard event telemetry".)*
-# Each carries the pelican's own `EventInstance`, untyped for the reason the section above gives.
+# Each carries the pelican's own `EventInstance`, typed `Node2D` for the reason the section above gives.
 # Listen-only, for `VisitCounter` and the run log — see docs/TELEMETRY.md, "The page counts visits".
 
 ## `EventManager.spawn_warned()`'s own moment a pelican is created, its warning over.
-signal pelican_spawned(instance)
+signal pelican_spawned(instance: Node2D)
 ## `EventSpawner.report_the_pelicans_in_view()`'s own first frame a pelican is on screen — once
 ## per pelican.
-signal pelican_sighted(instance)
+signal pelican_sighted(instance: Node2D)
 ## The first share of the meter a pelican's field lands on her, heard through its source's
 ## first-landing callback (`EventSpawner._ride_as_a_pelican()`) — once per pelican. The cyclist's
 ## field reaches 90px and its lethal reach 33px, so a pelican that strikes her has almost always
 ## sent this first.
-signal pelican_excited_her(instance)
+signal pelican_excited_her(instance: Node2D)
 ## `EventManager.check_hard_fails()`'s own moment a pelican's lethal reach covers her, emitted
 ## just before the `hard_fail_triggered` that ends the day, so it is sent ahead of the loss.
-signal pelican_struck_her(instance)
+signal pelican_struck_her(instance: Node2D)
 
 # ------------------------------------------------------------------- bodies ---
 # Reported rather than logged where they happen: the crowd is a gameplay file and the telemetry
