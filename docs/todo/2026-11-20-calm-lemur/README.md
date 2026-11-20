@@ -2,8 +2,8 @@ priority: now
 
 # calm-lemur — Fable looks over the work that merged without it · filed 2026-11-20
 
-**The ask.** Asked which pull requests held only for Fable's review were simplest to merge, the
-player: "we can lift the fable need there for now", and "yes" to merging them in the order proposed
+**The ask.** Asked by the player for the simplest items that needed a review right now, the
+orchestrator listed the pull requests held only for Fable's review, and the player: "we can lift the fable need there for now", and "yes" to merging them in the order proposed
 (inbox #1571 in teal-quail). Then: "so once fable is available again it can look over it. but we can
 just completely work without it for now. if it later finds any issues we can do follow ups", and "so
 nothing should be blocking right now" (inbox #1571 in teal-quail).
