@@ -198,7 +198,7 @@ func _solid_at(node: Node2D, point: Vector2) -> bool:
 # `GroundShape.BAND_RADIUS`) toward each kerb rather than `reach()`, and a hard seal stops being
 # hard at exactly the kerbs nothing here would have caught. So this is the one fact the whole
 # hard-seal guarantee rests on, checked directly against a real `EventInstance` on a real street of
-# each orientation, rather than trusted from `_spread_is_vertical`'s own reasoning.
+# each orientation, rather than trusted from `BodyStance.lies_vertically_at()`'s own reasoning.
 
 const _HARD_SEAL_SEED := 424242
 

@@ -20,7 +20,6 @@ src/events/event_def.gd on_finish
 src/events/event_spawner.gd on_finish
 src/events/event_spawner.gd on_sight
 src/events/event_spawner.gd scar
-src/events/walk_ground.gd on_finish
 
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
@@ -297,12 +296,6 @@ src/events/plan_builder.gd path_length_tiles
 src/events/plan_builder.gd path_mode
 src/events/ruled_location_ground.gd id
 src/events/views/event_vehicle_look.gd abduction
-src/events/walk_ground.gd aftermath
-src/events/walk_ground.gd hard_fail
-src/events/walk_ground.gd mobile
-src/events/walk_ground.gd obstructs_radius
-src/events/walk_ground.gd pursuit
-src/events/walk_ground.gd shape
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
 src/resistance/happenings.gd solid_parts
@@ -399,14 +392,7 @@ src/events/events_ahead.gd def
 src/events/events_ahead.gd position
 src/events/events_ahead.gd spent
 src/events/events_ahead.gd was_live
-src/events/plan_builder.gd def
 src/events/plan_builder.gd facing
-src/events/plan_builder.gd path
-src/events/plan_builder.gd position
-src/events/walk_ground.gd def
-src/events/walk_ground.gd facing
-src/events/walk_ground.gd path
-src/events/walk_ground.gd position
 src/routes/region_planner.gd def
 src/routes/region_planner.gd facing
 src/routes/region_planner.gd gate_state

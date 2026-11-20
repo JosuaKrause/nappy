@@ -6,30 +6,27 @@ extends RefCounted
 ## plan's body stands.
 ##
 ## **It is handed everything it asks**, so a test builds one over a hand-drawn map with stand-ins
-## and no scene tree: the map, and three questions another class answers, each as a function. Whoever
-## makes a builder names them (the game's are `EventInstance.mover_for`, `EventFootprints.stands_at`
-## and `StreetInvalidation.room_around`, `tests/game_plan_builder.gd` for a suite); this file names
-## none of them. The row, the tile, the stream and the plans to keep room from are the question,
+## and no scene tree: the map, and two questions another class answers, each as a function. Whoever
+## makes a builder names them (the game's are `EventInstance.mover_for` and
+## `StreetInvalidation.room_around`, `tests/game_plan_builder.gd` for a suite); this file names
+## neither of them. The row, the tile, the stream and the plans to keep room from are the question,
 ## handed per call. Every method is a function of what it is handed and the map, the one thing a
 ## call changes being the stream's position. Model: no node, and nothing held but what it is handed.
 
 var _map: CityMap
 ## `(row: EventDef) -> Mover`: what stops the row as it moves.
 var _walks_as: Callable
-## `(map: WorldMap, row: EventDef, at: Vector2) -> Vector2`: where a body built at `at` stands.
-var _stands_at: Callable
 ## `(candidate: EventPlan, already: Array[EventPlan]) -> float`: the candidate's room among the
 ## placed plans, `-INF` for none.
 var _room_among: Callable
 ## Whether a route passes today's bodies (`without_todays_bodies()`).
 var _passes_todays_bodies := false
 
-## A builder over `map` that asks `walks_as` what stops a moving row, `stands_at` where a body
-## stands and `room_among` the room a candidate has among placed plans.
-func _init(map: CityMap, walks_as: Callable, stands_at: Callable, room_among: Callable) -> void:
+## A builder over `map` that asks `walks_as` what stops a moving row and `room_among` the room a
+## candidate has among placed plans.
+func _init(map: CityMap, walks_as: Callable, room_among: Callable) -> void:
 	_map = map
 	_walks_as = walks_as
-	_stands_at = stands_at
 	_room_among = room_among
 
 ## **A builder like this one whose routes are not stopped by today's bodies** (`Mover.BODIES`
@@ -37,7 +34,7 @@ func _init(map: CityMap, walks_as: Callable, stands_at: Callable, room_among: Ca
 ## it. At dawn no body is on the map, so it builds what this one does; while she walks it keeps
 ## what was sited or is live from changing a unit's draw (`DawnDraw`).
 func without_todays_bodies() -> PlanBuilder:
-	var builder := PlanBuilder.new(_map, _walks_as, _stands_at, _room_among)
+	var builder := PlanBuilder.new(_map, _walks_as, _room_among)
 	builder._passes_todays_bodies = true
 	return builder
 
@@ -85,8 +82,9 @@ func place_at(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 ## `EventInstance.setup()` makes of a stationary body, which is where a waiting guard's band stands
 ## and where he notices her from (`OneNoticeRule`).
 func body_stands_at(plan: EventPlan) -> Vector2:
-	return _stands_at.call(_map, plan.def,
-			plan.path[0] if plan.path.size() > 0 else plan.position)
+	var route := plan.walks()
+	return BodyStance.stands_at(_map, plan.row(),
+			route[0] if route.size() > 0 else plan.placed_at())
 
 ## Distance in tiles from a tile to the edge of the map along a direction, less a
 ## one-block margin so a route always ends inside the city rather than against the wall.

@@ -526,22 +526,22 @@ func _planned_body_tiles(plan: EventPlan) -> Dictionary:
 ## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` it will have.
 func _planned_parts(plan: EventPlan) -> Array:
 	var at := _planned_position(plan)
-	var vertical := EventInstance._spread_is_vertical(_map, at)
+	var vertical := BodyStance.lies_vertically_at(_map, at)
 	var centres := PackedVector2Array()
 	var shapes: Array[GroundShape] = []
 	for piece in plan.body_pieces():
 		var offset := piece.offset_for(vertical)
 		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
 		shapes.append(piece.ground_shape())
-	return [centres, shapes, EventFootprints.body_axis(_map, plan.row(), at, plan.faces())]
+	return [centres, shapes, BodyStance.body_axis(_map, plan.row(), at, plan.faces())]
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
 ## stationary solid row that `pavement_side` does not pin to an edge, or onto the kerb beside its
-## lane for a row that stands at its kerb (`EventFootprints.stands_at()`).
+## lane for a row that stands at its kerb (`BodyStance.stands_at()`).
 func _planned_position(plan: EventPlan) -> Vector2:
 	var route := plan.walks()
-	return EventFootprints.stands_at(_map, plan.row(),
+	return BodyStance.stands_at(_map, plan.row(),
 			route[0] if route.size() > 0 else plan.placed_at())
 
 ## Where a door body stands now: its live event's place while it is in the world

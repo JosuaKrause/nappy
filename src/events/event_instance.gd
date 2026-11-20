@@ -325,7 +325,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	# from the start; it sweeps nothing until he is after her (`EventPursuit`).
 	if definition.walks_round_buildings():
 		_chase_way = _navigator.way_to(_mover, _sight)
-	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
+	var start := BodyStance.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
 	look = EventLooks.for_row(self, definition, drawer, skip_draw, barrier_post)
@@ -333,7 +333,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
 	_body = EventBody.new(definition, _map, _where, self, position, face,
-			_spread_is_vertical(_map, position))
+			BodyStance.lies_vertically_at(_map, position))
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventBody.is_walked_round()`).
 	_move.stood_round = _body.is_walked_round()
@@ -359,34 +359,10 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		# actually landed in rather than a flat offset, and cut to the ground it fits on.
 		path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
 
-## **A spread's rotation is a property of the street it stands on**, not a field on the row: a
-## barrier that lies correctly across a north-south street lies along the kerb — parallel to the
-## traffic, blocking nothing — on an east-west one, unless the direction it spreads in changes with
-## the street. `CityMap.corridor_offset` answers which axis a tile's corridor runs on without
-## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, a barricade seal across a
-## street) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either
-## (`WorldMap.corridor_offsets()`).
-##
-## A tile whose two coordinates are **both** inside a corridor band is a junction — belonging to
-## two streets at once, with no single direction to be wrong about — and a tile whose coordinates
-## are **neither** is off any corridor at all: a square, a park, a courtyard. Both keep the spread's
-## default lay along local X, the smallest answer for ground that is not a street to lie across.
-static func _spread_is_vertical(map: WorldMap, at: Vector2) -> bool:
-	var tile := map.world_to_tile(at)
-	var alley := map.alley_at(tile)
-	if alley.has_area():
-		# An alley's barrier closes its short mouth, so a horizontal alley gets a vertical
-		# spread and a vertical alley keeps the default horizontal spread.
-		return alley.size.x > alley.size.y
-	var offsets := map.corridor_offsets(tile)
-	var on_a_north_south_street := offsets.x >= 0
-	var on_an_east_west_street := offsets.y >= 0
-	return on_an_east_west_street and not on_a_north_south_street
-
 ## The alley (`WorldMap.alley_at()`) that `at` falls inside, in **world** space, or an empty
 ## `Rect2` when it is not inside any — open ground, the building, or a placement that has fallen
-## off the lattice. `corridor_offset` cannot answer this the way `_spread_is_vertical`
-## does above: an alley is cut into the middle of a block rather than laid on the periodic street
+## off the lattice. `corridor_offset` cannot answer this the way `BodyStance.lies_vertically_at()`
+## does: an alley is cut into the middle of a block rather than laid on the periodic street
 ## pattern that function reads, so its own tiles are never on a corridor at all.
 static func _alley_rect_at(map: WorldMap, at: Vector2) -> Rect2:
 	var rect := map.alley_at(map.world_to_tile(at))
@@ -410,7 +386,7 @@ static func _alley_crossing_path(map: WorldMap, at: Vector2) -> PackedVector2Arr
 		return PackedVector2Array([Vector2(rect.position.x, at.y),
 				Vector2(rect.position.x + rect.size.x, at.y)])
 	# Narrower in Y, or square (never happens at `ALLEY_WIDTH_TILES` 2 against a block-length
-	# alley, but ties go the same way `_spread_is_vertical` ties do): a horizontal alley, walked
+	# alley, but ties go the same way `BodyStance.lies_vertically_at()` ties do): a horizontal alley, walked
 	# along X, crossed along Y.
 	return PackedVector2Array([Vector2(at.x, rect.position.y),
 			Vector2(at.x, rect.position.y + rect.size.y)])
@@ -1099,10 +1075,10 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 ## (the axis of a spread, which side a parked vehicle shows, its idle phase), and its field is asked
 ## afresh. `EventManager.move_extra()` is the caller, which records its body again.
 func move_to(at: Vector2) -> void:
-	var stands := EventFootprints.stands_at(_map, def, at)
+	var stands := BodyStance.stands_at(_map, def, at)
 	global_position = stands
 	_move.place(position)
-	_body.land_at(stands, _heading, _spread_is_vertical(_map, stands))
+	_body.land_at(stands, _heading, BodyStance.lies_vertically_at(_map, stands))
 	_idle_phase_offset = _position_roll(101)
 	excitement.invalidate_contribution()
 	reset_physics_interpolation()
@@ -1727,7 +1703,7 @@ func spread_axis() -> Vector2:
 	return _body.spread_axis()
 
 ## The ground-plane direction this instance's own solid body's spine lies along
-## (`EventFootprints.solid_axis_of()`): its heading for a car that drives, its street's axis for a
+## (`BodyStance.solid_axis_of()`): its heading for a car that drives, its street's axis for a
 ## spread, the side it shows for a stationary vehicle. Read by its body, its field, its behaviours,
 ## its look's shadow and `DebugLayers`, so a segment is turned one way everywhere
 ## (`EventBody.solid_axis()`).
@@ -1873,12 +1849,12 @@ func _is_drawn_in_a_world() -> bool:
 	return _drawn_in != null and is_instance_valid(_drawn_in)
 
 ## A point `offset` along whichever axis this instance spreads on (`EventBody.spread_at()`) — local
-## X by default, local Y on an east-west street. See `_spread_is_vertical`.
+## X by default, local Y on an east-west street. See `BodyStance.lies_vertically_at()`.
 func spread_at(offset: float) -> Vector2:
 	return _body.spread_at(offset)
 
 ## Whether its spread runs down the screen rather than across it (`EventBody.runs_vertically()`,
-## decided from the street it landed on by `_spread_is_vertical()`).
+## decided from the street it landed on by `BodyStance.lies_vertically_at()`).
 func runs_vertically() -> bool:
 	return _body.runs_vertically()
 

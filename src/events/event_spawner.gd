@@ -92,18 +92,18 @@ static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 	# so it is named by its own flag rather than by `detain_seconds`.
 	if def.mobile or def.detain_seconds > 0.0 or def.solid_when == EventDef.SolidWhen.WHILE_LOWERED:
 		return nothing
-	var placed := EventFootprints.stands_at(map, def, at)
+	var placed := BodyStance.stands_at(map, def, at)
 	# A hard seal's own body and a region wall's are recorded like any other, and that is what a
 	# walker actually meets. The hold on their segment is a car's answer — a car cannot turn round
 	# against a barrier, so it has to turn at the last junction, before it can see one — and it is
 	# nobody else's: a walker walks the street up to the body and turns where it stands, so the
 	# record has to say where the body is. It is also what keeps a crash walkable on its pavements,
 	# since a row solid in parts records its pieces and the two cars are the only pieces there are.
-	var axis := EventFootprints.body_axis(map, def, placed, facing)
+	var axis := BodyStance.body_axis(map, def, placed, facing)
 	# Which way round a piece's own offset is laid is `EventInstance.spread_at()`'s question, and
 	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
 	# way is a body recorded across the street from the car it belongs to.
-	var spread_vertical := EventInstance._spread_is_vertical(map, placed)
+	var spread_vertical := BodyStance.lies_vertically_at(map, placed)
 	# The footprint the instance builds its physics body from
 	# (`EventFootprints.solid_footprint_of()`), so the record and the body are one solid.
 	return EventFootprints.solid_footprint_of(def, axis, spread_vertical).tiles(placed)

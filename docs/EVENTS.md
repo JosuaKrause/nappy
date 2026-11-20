@@ -69,8 +69,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it stops near her and a man on foot gets out, whose catch costs her), `HUNTS` (it stops being a place and starts being a hunter; the two vans hunt on foot, letting out men whose catch ends the day) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `has_a_spread` | Whether the row draws itself as a **spread**, laid along its street's axis: segments or one scene fitted across `obstructs_radius` (`construction`, `burnt_shell`, `market_stall`, `roadblock`, `barricade`, `scaffolding`, `collapsed_frontage`, `cafe_tables`, and the wide seal scenes `fallen_tree`, `car_accident`, `burst_water_main`). Row data, kept by every copy; a spread is never offered a corner (`RowGround.tiles_for()`) |
-| `stands_along_its_street` | Whether the row stands along its street like a spread without being drawn as one: `protest` and `firefight`. Its drawn box and its body's spine follow the street's axis (`EventFootprints.drawn_box_of()`, `solid_axis_of()`); it never asks a spread's corner question |
-| `lies_across_its_street` | Whether a stationary vehicle lies across its street rather than along it: `burnt_out_car`, where `moving_van` stands along the kerb (`EventFootprints.stands_side_on()`) |
+| `stands_along_its_street` | Whether the row stands along its street like a spread without being drawn as one: `protest` and `firefight`. Its drawn box and its body's spine follow the street's axis (`EventFootprints.drawn_box_of()`, `BodyStance.solid_axis_of()`); it never asks a spread's corner question |
+| `lies_across_its_street` | Whether a stationary vehicle lies across its street rather than along it: `burnt_out_car`, where `moving_van` stands along the kerb (`BodyStance.stands_side_on()`) |
 | `warning_picture` | The pictures a row standing in its warning is drawn in, whose largest decides whether that warning would stand in her view (`EventFootprints.warning_picture_size()`): `GUARD_ALERT` (the default), `DOG_ALERT` (`charging_dog`), `ROBBER_ALERT` (`alley_robbery`) |
 | `trails_a_lead` | Whether it trails a slack lead behind it, which everything it can put on the screen includes (`EventFootprints.footprint_of()`): `loose_dog` |
 | `hides_in_its_hold` | Whether its own hold hides the whole of it (`EventFootprints.hidden_by_its_hold()`): `checkpoint_post`, one guard and nothing else; a hut or a gate is drawn through its hold |
@@ -1215,7 +1215,7 @@ to look at but the picture it paints is the whole of what the player sees.
 `_draw_spread` and `_draw_cafe` lay their segments along local X by default — the right way to
 block a north-south street, where the traffic runs along Y and a barrier across it has to span X.
 On an east-west street the same default would lie parallel to the traffic and block nothing, so
-`EventInstance._spread_is_vertical()` rotates the lay onto local Y whenever the tile it is asked
+`BodyStance.lies_vertically_at()` rotates the lay onto local Y whenever the tile it is asked
 about sits on a corridor running that way. **It is a property of the street, decided in `setup()`
 and held by the live event's body (`EventBody.runs_vertically()`), and never a field a row sets** — two rows on the same street face the same way for the
 same reason, and `CityMap.corridor_offset` answers it for a `ROAD` or `CROSSING` tile exactly as it
@@ -1744,7 +1744,7 @@ lane tile it is never re-centred off — it leaves `(SIDEWALK_WIDTH * TILE_SIZE 
 22 = 26px` to the frontage, narrower than the 28px she needs (`2 * PLAYER_BODY_RADIUS`). So
 `EventScheduler._closes_the_band_by_its_own_placement` reads a row's own numbers against the exact
 edge its `pavement_side` stands it at — the kerb or the frontage lane's own tile centre, or the
-band's true middle for `ANY` (where `EventFootprints._centred_on_the_pavement_band()` always puts a
+band's true middle for `ANY` (where `BodyStance`'s recentring on the pavement band always puts a
 stationary, unpinned body) — rather than against a fixed threshold, so a row narrow enough to slip
 under the cost clause is still caught if its body alone leaves no edge-to-edge gap that wide. The
 same reading is also why `poster_crew` stands `AGAINST_THE_BUILDING` rather than `ANY`: centred, an

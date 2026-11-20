@@ -102,7 +102,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(hot.has_a_spread, "and so does a heated copy")
 
-## **Where a body stands once built is `EventFootprints.stands_at()`'s one answer**, which a body
+## **Where a body stands once built is `BodyStance.stands_at()`'s one answer**, which a body
 ## moved after dawn (`EventInstance.move_to()`) takes as a new body does: on a pavement lane, a
 ## stationary solid row the pavement does not pin is stood on the middle of its band; on a
 ## carriageway lane, a row that spans the street is stood on the kerb beside it; a mobile row, a
@@ -119,7 +119,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var at := map.tile_to_world(lane)
 	var solid_unpinned := 0
 	for def in EventCatalogue.all():
-		var stands := EventFootprints.stands_at(map, def, at)
+		var stands := BodyStance.stands_at(map, def, at)
 		var is_centred := def.stands_on_its_band_middle()
 		if is_centred:
 			solid_unpinned += 1
@@ -137,7 +137,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var on_the_road := map.tile_to_world(road)
 	var at_the_kerb := 0
 	for def in EventCatalogue.all():
-		var stands := EventFootprints.stands_at(map, def, on_the_road)
+		var stands := BodyStance.stands_at(map, def, on_the_road)
 		var kerbed := def.stands_at_its_kerb()
 		if kerbed:
 			at_the_kerb += 1
@@ -147,7 +147,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
 ## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside
-## one of. `EventFootprints._centred_on_the_pavement_band()` moves a stationary, unpinned
+## one of. `BodyStance._centred_on_the_pavement_band()` moves a stationary, unpinned
 ## (`pavement_side == ANY`) body from the lane tile `EventScheduler` chose to the middle of that
 ## whole band, so this is half of the *band*, not half of a *lane*.
 const _SIDEWALK_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
@@ -507,7 +507,7 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 ## let's use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road",
 ## inbox #1465 in spry-plover). On a hand-drawn street of each axis, a roadblock put on either
 ## carriageway lane is solid from the frontage on its own side to the far kerb and nowhere past it,
-## read along the band's own line through where its body stands (`EventFootprints.stands_at()`) and
+## read along the band's own line through where its body stands (`BodyStance.stands_at()`) and
 ## the shape the row collides as. The map is real because the guarantee is the row's width and
 ## where the map stands it together: neither alone says where the band ends.
 func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> void:
@@ -528,8 +528,8 @@ func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> vo
 			var tile := Vector2i(lane, off_the_corridor) if across_x \
 					else Vector2i(off_the_corridor, lane)
 			var placed := map.tile_to_world(tile)
-			var stands := EventFootprints.stands_at(map, row, placed)
-			var axis := EventFootprints.body_axis(map, row, stands, Vector2.RIGHT)
+			var stands := BodyStance.stands_at(map, row, placed)
+			var axis := BodyStance.body_axis(map, row, stands, Vector2.RIGHT)
 			var own_low := lane * 2 < Tuning.STREET_WIDTH
 			var own_edge := 0.0 if own_low else street
 			var far_kerb := street - sidewalk if own_low else sidewalk
@@ -616,19 +616,19 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
-	t.check(not EventFootprints.stands_side_on(EventCatalogue.by_id("moving_van"),
+	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("moving_van"),
 			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
 			"a moving van on a north-south street uses its end view")
-	t.check(EventFootprints.stands_side_on(EventCatalogue.by_id("moving_van"),
+	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("moving_van"),
 			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
 			"a moving van on an east-west street uses its side view")
-	t.check(EventFootprints.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
+	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
 			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
 			"a burnt car across a north-south street uses its side view")
-	t.check(not EventFootprints.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
+	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
 			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
 			"a burnt car across an east-west street uses its end view")
-	t.check(EventFootprints.stands_side_on(
+	t.check(BodyStance.stands_side_on(
 			EventCatalogue.by_id("moving_van"), WorldMap.open_ground(), Vector2.ZERO, Vector2.RIGHT),
 			"off-street or data-level placement follows the vehicle's own default facing")
 
@@ -655,7 +655,7 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 ## **A spread never lands on a corner.** `RowGround._is_a_corner()` refuses any tile whose two
 ## coordinates are both inside a corridor band to a row `EventDef.has_a_spread` names — see
 ## `docs/DECISIONS.md`, "a spread on a corner is placed as if the corner were nothing": such a tile
-## has no single street for `_spread_is_vertical` or `_centred_on_the_pavement_band` to answer about.
+## has no single street for `BodyStance.lies_vertically_at()` or `BodyStance._centred_on_the_pavement_band()` to answer about.
 ## Walked over the **planned** placements of several seeds and every day of a run, rather than over
 ## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
 ## are two different bugs.

@@ -917,7 +917,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	var plans: Array[EventPlan] = []
 	var map := _city.map
 	# The scene's plan builder over the city's map, made here as the event manager makes the city's.
-	var builder := PlanBuilder.new(map, EventInstance.mover_for, EventFootprints.stands_at,
+	var builder := PlanBuilder.new(map, EventInstance.mover_for,
 			StreetInvalidation.room_around)
 	var tree := _city.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null

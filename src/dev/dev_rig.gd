@@ -311,8 +311,8 @@ static func first_event_position(events: EventManager, map: CityMap, trace: RunT
 ## on** rather than along local Y unconditionally. A fixed `Vector2(0.0, radius * scale)` is a step
 ## along the street's own length on a north-south street — which never leaves the carriageway a
 ## north-south corridor's width is measured across (`CityMap.corridor_offset(tile.x)`) — and only
-## happens to clear the road on an east-west one, whose width runs the other way. `_spread_is_vertical`
-## is the one place that already answers which axis a street's *width* is on — it is the same
+## happens to clear the road on an east-west one, whose width runs the other way.
+## `BodyStance.lies_vertically_at()` is the one place that already answers which axis a street's *width* is on — it is the same
 ## question `EventInstance.spread_at()` asks to lay an obstruction across the carriageway it blocks
 ## — so reusing it here is the same answer applied to the opposite side of the same obstruction,
 ## rather than a second guess about the street's orientation.
@@ -322,7 +322,7 @@ static func first_event_position(events: EventManager, map: CityMap, trace: RunT
 ## a row that waits (`EventDef.notice`), where `radius` already carries its own margin and the step
 ## has to reach the full distance rather than a fraction of it.
 static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: float = 0.6) -> Vector2:
-	var vertical := EventInstance._spread_is_vertical(map, at)
+	var vertical := BodyStance.lies_vertically_at(map, at)
 	return Vector2(0.0, radius * scale) if vertical else Vector2(radius * scale, 0.0)
 
 ## The walkable tile nearest `near`, and further than `beyond` from `outside_of` where one is handed:
