@@ -676,8 +676,9 @@ func leave_if_unseen() -> void:
 
 ## Whether this agent is far enough from the camera that taking it away cannot be seen.
 ##
-## **`CrowdField.centre_point()` is the camera.** `Crowd._physics_process()` puts it on the player
-## every frame and a rig puts it wherever it is looking, so the distance from it is the distance from the
+## **`CrowdField.centre_point()` is the camera.** The crowd puts it on its focus source
+## (`CrowdFocus`, her in the game) every tick and a rig hands one standing wherever it is looking,
+## so the distance from it is the distance from the
 ## middle of the screen — and `Tuning.OUT_OF_SIGHT` (420px) is the round number outside the
 ## viewport's own far corner at this zoom, which is what *nothing vanishes while you are looking at
 ## it* has always been measured against.

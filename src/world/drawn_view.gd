@@ -9,7 +9,9 @@ extends RefCounted
 ## costs her, its timing — and only its picture is left as it was last drawn. A retained canvas item
 ## keeps its last draw list and moving its node still moves it, so a thing that comes back into the
 ## box redraws once from its current state on that frame, before the margin has let any of it onto
-## the screen. `CrowdView` (for the crowd's agents) and `EventInstance` are the two callers.
+## the screen. Three callers ask it: an event's look (`EventLook._in_the_drawn_view()`), the
+## roadblock's look for the band left at the post (`RoadblockLook._shows_its_nodes()`), and the
+## crowd's view of the screen (`ScreenCrowdView.drawn_box()`), which hands the box to its agents.
 ##
 ## **Not `VisibleView`, and the two are not to be merged.** That one answers "has she seen it", with
 ## the controls' covered corners taken out; this one answers "can any of it be on the screen", and a

@@ -21,7 +21,7 @@ func run(t: TestRunner) -> void:
 		_check_label(t, Texts.DAY_BRIEF[day], brief, "day %d's brief" % day)
 	for ending: GameEnums.Ending in Texts.ENDING_BODY.keys():
 		_check_label(t, Texts.ENDING_BODY[ending], body, "ending %d's body" % ending)
-	for kind: CityEdge.Kind in Texts.FINALE_BODY.keys():
+	for kind: CityExit.Kind in Texts.FINALE_BODY.keys():
 		_check_label(t, Texts.FINALE_BODY[kind], body, "finale body %d" % kind)
 	_check_label(t, Texts.RESUMED_DAY_LOST, note, "the resumed-day note")
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,

@@ -358,7 +358,7 @@ static func _move_street_trees(map: CityMap, moves: Array, errors: Array[String]
 			if tree == other:
 				continue
 			var other_tile: Vector2i = selected.get(other.tile, other.tile)
-			if map.tile_to_world(tile).distance_to(map.tile_to_world(other_tile)) < StreetTrees.footprint_radius() * 2:
+			if map.tile_to_world(tile).distance_to(map.tile_to_world(other_tile)) < TreePictures.widest_reach() * 2:
 				errors.append("tree_moves.to: overlaps an existing street tree")
 	if errors.is_empty():
 		map.set_recipe_tree_moves(selected)

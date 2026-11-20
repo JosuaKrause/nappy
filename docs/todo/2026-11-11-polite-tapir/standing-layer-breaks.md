@@ -23,11 +23,10 @@ review; a builder runs it again):
 - **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
   `walk_ground.gd`): the live event, its picture footprints and her class's constants.
 - **The rest**, small misplacements: the task calendar
-  computing on the map; the city edge's kinds; the props' trees; the save indicator reading `GameSave`; the
+  computing on the map; the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's type tests where she is not handed in
   (`interior_scene.gd`); the run reading `ResistanceHappenings`' day
-  of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; `DrawnView`,
-  named by two looks; and the scheduler naming `City.BURNT_FRONTAGE_SCAR`.
+  of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; and the scheduler naming `City.BURNT_FRONTAGE_SCAR`.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
@@ -38,10 +37,8 @@ review; a builder runs it again):
   (`EventFootprints` three times, `EventInstance` once); row 3a of minty-quail's `event-interface.md`
   settles them.
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
-  that finishes this item lists what is left:* **the rest** ends as follows. `DrawnView` goes on the world layer in
-  the map, beside `VisibleView`: it names only the engine, as the halo's rim did. `interior_scene.gd`'s `Stroller` goes with the
-  building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, wait
-  for no other item; `Prop` as a data constant, in a pull request of its own; `GameSave` and
+  that finishes this item lists what is left:* **the rest** ends as follows. `interior_scene.gd`'s `Stroller` goes with the
+  building's pass; `GameSave` and
   `HelpText` in the view's pass; the
   calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`; and `RowGround`'s
   `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`, read by `_burns_its_front()`) when placement

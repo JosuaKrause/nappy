@@ -292,7 +292,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 	_log.set_clock(40.0)
 	clock.tick(40.0)
-	clock.way_out = CityEdge.Kind.TUNNEL
+	clock.way_out = CityExit.Kind.TUNNEL
 	observer.day_finished(GameEnums.DayResult.WON)
 
 	_log.end_run()

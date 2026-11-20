@@ -160,7 +160,7 @@ static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	return model
 
 ## The escape's own last screen: the tunnel or the bridge behind her (`end.exit_taken()`, a
-## `CityEdge.Kind`), and the clock she took it on to the millisecond — and nothing triumphant
+## `CityExit.Kind`), and the clock she took it on to the millisecond — and nothing triumphant
 ## (`docs/NARRATIVE.md`, "No triumphalism"). Not a fourth ending: an ending is a run's outcome, and
 ## this is the last screen of the sequence the run hands over to.
 static func epilogue(end: DayEnd) -> SummaryModel:

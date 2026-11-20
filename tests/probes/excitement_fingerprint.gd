@@ -144,6 +144,7 @@ func _walk(t: TestRunner, walk: String, world: WorldContext, sources: Array[Exci
 	events.stream_around(start)
 	if crowd:
 		crowd._player = rig
+		crowd.use_focus(StrollerFocus.new(rig))
 		crowd.use_bus(EventBus)
 	var here := start
 	var reached := {}
@@ -175,6 +176,7 @@ func _walk(t: TestRunner, walk: String, world: WorldContext, sources: Array[Exci
 	events.use_player(null)
 	if crowd:
 		crowd._player = null
+		crowd.use_focus(null)
 	halo.free()
 	rig.free()
 	return printed

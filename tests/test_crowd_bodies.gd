@@ -96,8 +96,8 @@ func _walk(crowd: Crowd, map: CityMap, watched: CrowdAgent, at: Vector2,
 	var deepest := watched.position.y
 	var shallowest := watched.position.y
 	var lane_x := watched.position.x
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(seconds / STEP)):
-		crowd.set_focus(at)
 		crowd.step(STEP)
 		for agent in crowd.agents():
 			if map.is_obstructed(map.world_to_tile(agent.position)):
@@ -235,8 +235,8 @@ func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t: TestRunne
 	var near := _footway_span(corridor, true)
 	var inside := 0
 	var past_the_junction := 0
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(12.0 / STEP)):
-		crowd.set_focus(at)
 		crowd.step(STEP)
 		for agent in crowd.agents():
 			if map.is_obstructed(map.world_to_tile(agent.position)):
@@ -330,7 +330,7 @@ func _test_a_car_a_drawn_body_lands_on_is_recycled_out_of_view(t: TestRunner, cr
 		var clear_of_it := place_on(crowd, map, CrowdAgent.Kind.CAR, corridor, lane,
 				float((covered_along + 8) * tile) + 16.0, 1.0)
 		var focus: Vector2 = checks[what]
-		crowd.set_focus(on_it.position if focus == Vector2.INF else focus)
+		crowd.use_focus(FakeCrowdFocus.new(on_it.position if focus == Vector2.INF else focus))
 		var was := on_it.position
 		var stayed := clear_of_it.position
 		crowd.recycle_cars_on(covered)
@@ -349,7 +349,7 @@ func _test_a_car_a_drawn_body_lands_on_is_recycled_out_of_view(t: TestRunner, cr
 	crowd.clear()
 	var half_over := place_on(crowd, map, CrowdAgent.Kind.CAR, corridor, lane,
 			float(covered_along * tile) + 36.0, 1.0)
-	crowd.set_focus(far_from_her)
+	crowd.use_focus(FakeCrowdFocus.new(far_from_her))
 	var half_over_was := half_over.position
 	t.check(not covered.has(map.world_to_tile(half_over.position)),
 			"the car's centre is on a tile the body leaves clear")
@@ -360,7 +360,7 @@ func _test_a_car_a_drawn_body_lands_on_is_recycled_out_of_view(t: TestRunner, cr
 	crowd.clear()
 	var walker := place_on(crowd, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(covered_along * tile) + 16.0, 1.0)
-	crowd.set_focus(far_from_her)
+	crowd.use_focus(FakeCrowdFocus.new(far_from_her))
 	var stood := walker.position
 	var sidewalk: Array[Vector2i] = [map.world_to_tile(walker.position)]
 	crowd.recycle_cars_on(sidewalk)
@@ -462,8 +462,8 @@ func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: A
 	var standing := 0
 	var inside := 0
 	var turned := 0
+	crowd.use_focus(FakeCrowdFocus.new(at))
 	for frame in int(round(20.0 / STEP)):
-		crowd.set_focus(at)
 		crowd.step(STEP)
 		for walker in walkers:
 			if walker.travelling_vertically() == vertical:

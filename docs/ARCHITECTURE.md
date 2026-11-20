@@ -103,7 +103,11 @@ src/
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
+	city_exit.gd          the two ways out of the city, the tunnel or the bridge, as a value (data:
+	                      the texts, the day's spec and the finale key on it)
 	prop.gd               small scenery, feet-anchored so it y-sorts against the player
+	tree_pictures.gd      the pictures a tree is drawn as and the ground its trunk takes; the
+	                      props draw with it and the street trees' planner keeps it clear
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
 	traffic_light_drawer.gd  what a signal head draws itself through; the city hands it in
@@ -147,6 +151,9 @@ src/
 	car_look.gd           a car's picture: five views in three layers, its bob over its wheels
 	crowd_view.gd         what the crowd is handed of the screen: the drawn box and the camera's
 	                      square, and the out-of-view rule built on them (`ScreenCrowdView` answers)
+	crowd_focus.gd        where the crowd's simulated patch stands, asked once a tick (`StrollerFocus`
+	                      answers with her position)
+	stroller_focus.gd     the game's `CrowdFocus`: the patch stands where she does
 	crowd_timing.gd       the sink the crowd charges its time and draws to; the null sink here,
 	                      `FrameRecordTiming` feeds the record
 	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers
@@ -483,6 +490,9 @@ src/
 	visible_view.gd       what she can see: the camera's view less the corners the joystick's
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
+	drawn_view.gd         what can be on the screen: the camera's view grown by two tiles, worked out
+	                      once a process frame per viewport, the one box every off-screen redraw
+	                      gate asks (`DrawnView`); the covered corners count, unlike `VisibleView`
 	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,

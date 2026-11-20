@@ -89,7 +89,7 @@ func _spine_traffic(t: TestRunner) -> Vector2:
 				totals.stopped += 1
 		return false
 	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(40.0, 1.0), PhysicsTicks.FASTER, sample)
-	RunCity.crowd(_city).use_player(null)
+	RunCity.simulation(_city).meet_her(null)
 	her.free()
 	_sampled_cars = totals.samples
 	return Vector2(totals.speed / maxf(1.0, totals.samples),

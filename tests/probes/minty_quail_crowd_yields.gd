@@ -77,6 +77,7 @@ func run(t: TestRunner) -> void:
 		for day: int in [3, 12, 13]:
 			_a_day(t, city, seed_value, day)
 		RunCity.crowd(city)._player = null
+		RunCity.crowd(city).use_focus(null)
 		city.free()
 	t.check(_lines > 0, "there were runs to print (%d)" % _lines)
 
@@ -316,6 +317,7 @@ class Meeting extends RefCounted:
 		RunCity.crowd(_city).start_day(int(_label.day), rng, player.global_position)
 		RunCity.crowd(_city).set_gates(_city.streets().region_plan().gates)
 		RunCity.crowd(_city)._player = player
+		RunCity.crowd(_city).use_focus(StrollerFocus.new(player))
 		RunCity.crowd(_city).use_bus(EventBus)
 
 	func tick_the_crowd() -> void:

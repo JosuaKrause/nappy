@@ -180,6 +180,9 @@ var _pushed := Mover.of(Mover.GROUND | Mover.TODAY)
 ## Whom the crowd makes way for, bumps and strikes: handed in once the world is live and she walks it
 ## (`use_player()`, `WorldSimulation.meet_her()`), none until then and in a rig that has none.
 var _player: Stroller
+## Where the patch of simulated streets stands, asked once a tick (`_follow_the_focus()`); none
+## leaves the patch where `start_day()` put it.
+var _focus: CrowdFocus
 ## The signals the crowd reports on (`EventBus`'s script), preloaded so the bus it is handed has a
 ## type to be held as.
 const _BUS := preload("res://src/autoload/event_bus.gd")
@@ -187,8 +190,8 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 ## (`hard_fail_triggered`) and a horn sounded at her (`car_near_miss`). Handed in by `use_bus()`;
 ## with none, a rig's, the crowd tells nobody.
 var _bus: _BUS
-## The patch of city being simulated. Held here, moved onto the player every physics frame, and
-## read by every agent when it recycles.
+## The patch of city being simulated. Held here, moved onto its focus source (`_focus`) every
+## tick, and read by every agent when it recycles.
 var _field: CrowdField
 ## Where the cars are, by lane. Filled by `space_out_the_traffic()` out of the buckets it already
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
@@ -278,9 +281,20 @@ func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: 
 			Rect2i(Vector2i.ZERO, map.size_in_tiles())).get_center())
 
 ## Hands the crowd the player it makes way for. Called once the world is live and she walks it
-## (`WorldSimulation.meet_her()`); null takes her away.
+## (`WorldSimulation.meet_her()`); null takes her away, and not the focus source `meet_her()` hands
+## beside her (`use_focus()`): a teardown that frees her calls `meet_her(null)`, which drops both.
 func use_player(player: Stroller) -> void:
 	_player = player
+
+## Hands the crowd the source that says where its patch of simulated streets stands (`CrowdFocus`):
+## the patch is on it from here and follows it on every tick, `step()` and the live tick alike. The
+## game hands one answering with her position, when she is handed in (`WorldSimulation.meet_her()`);
+## a rig hands one answering a point it sets. None leaves the patch where `start_day()` put it; a
+## source held when a day starts moves the patch off `start_day()`'s focus on the next tick, so a rig
+## that starts a day somewhere other than where its last source stood hands none first.
+func use_focus(focus: CrowdFocus) -> void:
+	_focus = focus
+	_follow_the_focus()
 
 ## Hands the crowd the bus it reports her bumps, a car's strike and a horn on. The game hands it
 ## the `EventBus` autoload as it stands the crowd (`SimulationBuilder`), before `setup()`; all three
@@ -389,15 +403,10 @@ func _resolve_and_settle() -> void:
 	for agent in _agents:
 		agent.reset_physics_interpolation()
 
-## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself, in the
-## player half of its live tick. No game class calls this; it stays for the tests (curly-rabbit
-## #1095), which tick the crowd with `step()`, the half with no player in it: a stroller handed
-## through `use_player()` moves no field there, real frames would add shoves, warnings and strikes
-## to every check, and recycling would drop the cars and walkers under test. What makes it so is
-## that where the patch stands is fused with who she is; a focus source handed to the crowd would
-## let this go.
-func set_focus(at: Vector2) -> void:
-	_field.centre_on(at)
+## Moves the patch of simulated streets onto where its focus source says, if it has one.
+func _follow_the_focus() -> void:
+	if _focus and _field:
+		_field.centre_on(_focus.where())
 
 ## A new agent with everything the crowd hands every one it makes: the flags it runs under, the
 ## day's traffic, doors, home segments and pockets, what the screen shows and what it charges its
@@ -575,6 +584,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 ## resolve before anything reads it; see `crowd_rig.gd`, "cars do not drive through each other".
 func step(delta: float) -> void:
 	_advance_the_world(delta)
+	_follow_the_focus()
 	_step_the_agents(delta)
 
 ## Every agent's own step (`LaneMover.step()`), in the crowd's order: the last thing a tick does,
@@ -1196,6 +1206,7 @@ func _tick_the_crowd(delta: float) -> void:
 	if skip_motion:
 		return
 	_advance_the_world(delta)
+	_follow_the_focus()
 	_meet_the_player()
 	_step_the_agents(delta)
 
@@ -1206,7 +1217,6 @@ func _meet_the_player() -> void:
 	if not _player:
 		return
 	var here := _player.global_position
-	_field.centre_on(here)
 	var on_the_road := Tile.is_road(_map.tile_type_at_world(here))
 	var shove := Vector2.ZERO
 	var closing := false

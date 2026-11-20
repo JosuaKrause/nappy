@@ -64,6 +64,7 @@ func excitement_sources() -> Array[ExcitementSources]:
 func meet_her(player: Stroller) -> void:
 	if _crowd:
 		_crowd.use_player(player)
+		_crowd.use_focus(StrollerFocus.new(player) if player else null)
 	if _posters:
 		_posters.use_player(player)
 	if _blackout:

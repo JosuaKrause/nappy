@@ -3,14 +3,15 @@ extends RefCounted
 ## already covers the atlas contract every group shares (every member baked, no two regions
 ## overlap, geometry answered with nothing acquired, a page arriving and leaving with its
 ## references); this suite covers what is specific to this family: a prop's shadow reads its size
-## from the region table rather than from a loaded texture, and `StreetTrees.footprint_radius()` plans
-## clearance off the same table its planted trees are drawn from. The group's lifetime while a `City`
+## from the region table rather than from a loaded texture, and the clearance the street trees'
+## planner keeps round a pit (`TreePictures.widest_reach()`) covers every picture a street tree's prop
+## may be drawn as. The group's lifetime while a `City`
 ## stands (read once, released when the city is freed) is a fact about `City` and is
 ## `tests/test_city_atlas_holds.gd`'s.
 
 func run(t: TestRunner) -> void:
 	_test_shadow_sizes_read_the_region_table(t)
-	_test_street_tree_footprint_matches_the_region_table(t)
+	_test_the_street_tree_footprint_covers_every_picture(t)
 
 ## A prop's shadow radius (and the swing frame's capsule) come from `AtlasTable.baked().native_size()`,
 ## not from `get_size()` on a loaded texture — the change `docs/TODO.md`'s M171 decoration item
@@ -39,7 +40,7 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	var tree := Prop.new()
 	tree.dress(null, Prop.Kind.TREE, 0, 1.3)
 	t.add_child(tree)
-	var tree_name: StringName = Prop.TREES[0]
+	var tree_name := TreePictures.region(0)
 	var expected_tree: float = float(AtlasTable.baked().native_size(tree_name).x) * 1.3 * 0.28
 	t.check(tree.shape() != null and is_equal_approx(tree.shape().radius, expected_tree),
 			"a tree's shadow radius follows scale_factor() off the region table's own size (%.2f against %.2f)"
@@ -59,16 +60,24 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 					frame.shape().half_length if frame.shape() else -1.0])
 	frame.free()
 
-## `StreetTrees.footprint_radius()` (`src/city/street_trees.gd`) plans tree clearance for the
-## closure and event planners off `AtlasTable.baked().native_size()` now, ahead of any `City` existing —
-## the same table `Prop`'s own shadow reads, rather than a second source of the same number.
-## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` already establishes
-## that `native_size()` is bit-identical to the SVG import this used to read (see the docstring on
-## `footprint_radius()` itself), so this only pins the planner and the region table together.
-func _test_street_tree_footprint_matches_the_region_table(t: TestRunner) -> void:
+## `TreePictures.widest_reach()` is the reach `StreetTrees.footprint_tiles()` keeps the day's events
+## out of round every pit, ahead of any `City` existing, and a pit's prop picks its picture from its
+## own variant where it is built. So a street tree drawn as any picture reaches no further than that,
+## or an event could stand under a canopy; and the widest reaches exactly that, or the planners refuse
+## ground no tree takes. Each is built the way `City` builds a street tree: `Prop.new()`, dressed with
+## no scale, then `add_child()`.
+func _test_the_street_tree_footprint_covers_every_picture(t: TestRunner) -> void:
 	var widest := 0.0
-	for name: StringName in Prop.TREES:
-		widest = maxf(widest, float(AtlasTable.baked().native_size(name).x) * 0.28)
-	t.check(is_equal_approx(StreetTrees.footprint_radius(), widest),
-			"StreetTrees.footprint_radius() (%.2f) is the widest street tree's region size times 0.28 (%.2f)"
-			% [StreetTrees.footprint_radius(), widest])
+	for variant in TreePictures.REGIONS.size():
+		var tree := Prop.new()
+		tree.dress(null, Prop.Kind.STREET_TREE, variant)
+		t.add_child(tree)
+		var reach := tree.shape().reach() if tree.shape() else INF
+		t.check(reach <= TreePictures.widest_reach() + 0.001,
+				"a street tree drawn as %s reaches %.2fpx, within the %.2fpx the planners keep clear"
+				% [TreePictures.region(variant), reach, TreePictures.widest_reach()])
+		widest = maxf(widest, reach)
+		tree.free()
+	t.check(is_equal_approx(widest, TreePictures.widest_reach()),
+			"and the widest street tree reaches exactly the planners' clearance (%.2f against %.2f)"
+			% [widest, TreePictures.widest_reach()])

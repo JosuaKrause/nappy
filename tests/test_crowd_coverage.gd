@@ -24,8 +24,8 @@ func run(t: TestRunner) -> void:
 	# The player moves to the far corner and the overview stays where it is: the frames below still
 	# find the crowd moving in every quadrant (the per-quadrant checks of physical movement), where a
 	# field that followed her would recycle the far quadrants' bodies into a box round the corner.
-	crowd.set_focus(Vector2.ZERO)
-	crowd.set_focus(map.world_size())
+	crowd.use_focus(FakeCrowdFocus.new(Vector2.ZERO))
+	crowd.use_focus(FakeCrowdFocus.new(map.world_size()))
 	var area_scale := map.world_size().x * map.world_size().y \
 			/ pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0)
 	var initial := crowd.recipe_coverage()
@@ -71,10 +71,13 @@ func run(t: TestRunner) -> void:
 	# field round there would have recycled.
 	var away := _farthest_quarter(map, focus)
 	t.check(_offset(away, focus) > _reach(map, away), "the field has somewhere else to go")
-	crowd.set_focus(away)
+	var source := FakeCrowdFocus.new(focus)
+	crowd.use_focus(source)
+	source.move_to(away)
 	for frame in 3:
 		crowd.step(1.0 / 30.0)
-	t.check(_all_round(crowd, map, away), "normal field follows focus again")
+	t.check(_all_round(crowd, map, away),
+			"the field follows its focus source on the rig's step(), which has no player in it")
 	crowd.start_day(1, rng, focus, false, true)
 	t.check(crowd.agent_count() == 0, "city-view extent does not enable unrequested population")
 	_rig.free_crowd(crowd)

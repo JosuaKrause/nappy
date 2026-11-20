@@ -208,7 +208,7 @@ func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
 ## and the epilogue's tunnel-or-bridge line read it there (`main._finish_the_section()`,
 ## `SummaryModel.epilogue()`).
 func _test_a_city_section_won_carries_the_way_out(t: TestRunner) -> void:
-	for way: int in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+	for way: int in [CityExit.Kind.TUNNEL, CityExit.Kind.BRIDGE]:
 		var rig := _rig(t, DaySpec.for_section(DaySpec.Section.CITY, 60.0))
 		var director: DayDirector = rig["director"]
 		var clock: EndedClock = rig["clock"]
@@ -222,7 +222,7 @@ func _test_a_city_section_won_carries_the_way_out(t: TestRunner) -> void:
 # ------------------------------------------------------------------ the start ---
 
 ## The ways out of a fake city world a walk out of the city is won at, far from where she starts.
-const EXITS := {CityEdge.Kind.TUNNEL: Vector2(900.0, 200.0), CityEdge.Kind.BRIDGE: Vector2(-900.0, 200.0)}
+const EXITS := {CityExit.Kind.TUNNEL: Vector2(900.0, 200.0), CityExit.Kind.BRIDGE: Vector2(-900.0, 200.0)}
 
 ## Everything the fakes below are asked, in the order they are asked, as `"what detail"` lines.
 var _asked: Array[String] = []
@@ -532,9 +532,9 @@ func _test_the_start_hands_on_the_ways_out_of_the_world(t: TestRunner) -> void:
 	player.position = Vector2(100.0, 200.0)
 	clock.tick(0.01)
 	t.check(clock.is_running(), "standing where she starts wins nothing")
-	player.position = EXITS[CityEdge.Kind.TUNNEL]
+	player.position = EXITS[CityExit.Kind.TUNNEL]
 	clock.tick(0.01)
-	t.check(not clock.is_running() and clock.exit_taken() == CityEdge.Kind.TUNNEL,
+	t.check(not clock.is_running() and clock.exit_taken() == CityExit.Kind.TUNNEL,
 			"at the tunnel the world names, the section is won by the tunnel (%s, %d)"
 			% [clock.is_running(), clock.exit_taken()])
 	_put_the_start_away(rig)

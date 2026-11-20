@@ -259,7 +259,7 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 	t.check(Boot.day(main).spec().section_kind() == DaySpec.Section.CITY and summary.is_showing(),
 			"through the service door, the city opens on its brief")
 	await _continue_while_paused(t, main)
-	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityEdge.Kind.TUNNEL]
+	Boot.player(main).global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	Boot.day(main).tick(0.0)
 
 	var lines := _lines_kept(run_log.lines)

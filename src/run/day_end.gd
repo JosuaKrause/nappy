@@ -14,7 +14,7 @@ var _result := GameEnums.DayResult.WON
 var _reason := ""
 ## The day's clock at the instant it ended, clamped to the day's length.
 var _elapsed_seconds := 0.0
-## Which way out of the city she took (`CityEdge.Kind`, as an `int`), or -1 when she took none.
+## Which way out of the city she took (`CityExit.Kind`, as an `int`), or -1 when she took none.
 var _exit_reached := -1
 var _is_section := false
 var _hands_over_to_the_escape := false
@@ -60,7 +60,7 @@ func loss_reason() -> String:
 func lasted_seconds() -> float:
 	return _elapsed_seconds
 
-## Which way out of the city she took (`CityEdge.Kind`, as an `int`), or -1 when she took none.
+## Which way out of the city she took (`CityExit.Kind`, as an `int`), or -1 when she took none.
 func exit_taken() -> int:
 	return _exit_reached
 
