@@ -109,8 +109,8 @@ Left, each its own design question:
   kept clean are private, asked through `world_kind()`, `closes_the_streets()`,
   `keeps_her_walk_open()`, `notices_one_at_a_time()` and `keeps_the_unused_calm_clean()`. The suites' reads of `number`, `holds_the_home_streets` and
   `poster_pursuits`, and their two writes (`tests/test_dawn_context.gd` sets
-  `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd` sets `owes_a_return`), go with that
-  pass, which gives them another way to build their spec.
+  `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd` sets `owes_a_return`), go with row 3b's
+  last pull request (3b-10 of its design), which gives them another way to build their spec.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance

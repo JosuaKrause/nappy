@@ -718,8 +718,7 @@ Other classes of the folder with listed lines, each converted in the pull reques
 file: `EventWorld` (52 lines, the context the event manager hands its own parts), `EventManager`
 (read by the simulation's builder and its product and the resistance director), `ChargeRecord` (3),
 `EventStreaming` (3), `Warning` (3),
-`EventsAhead` (2), `EventFlock`,
-`EncounterWatch`, `EventSpawner` (1 each).
+`EventFlock`, `EventSpawner` (1 each).
 
 ## 5. The pull requests, in order
 
