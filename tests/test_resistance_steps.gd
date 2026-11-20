@@ -812,7 +812,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 
 	# A live mast, the way day 5 onwards leaves one — planned for real, at one of
 	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: silencing reads
-	# `EventPlan.mast_id`, which only a real plan carries.
+	# `EventPlan.mast_id()`, which only a real plan carries.
 	var site := MastSites.compute(_city.map)[0]
 	# The real day order, `City.start_day()` first: it is what holds today's region plan and
 	# closures, which the walk is planned and the day's reach (`DayReach`) worked out over, and
@@ -823,17 +823,17 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
 	RunCity.events(_city).stream_within(INF)
 	RunCity.events(_city).start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
-			_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot)
+			_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot())
 	var mast_plan: EventPlan = null
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id == site.id and plan.def.id == "loudspeaker":
+		if plan.mast_id() == site.id() and plan.def.id == "loudspeaker":
 			mast_plan = plan
 	t.check(mast_plan != null and mast_plan.live != null,
 			"the mast at her focus is live from the day it was started")
 	var mast := mast_plan.live
 	for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
 		mast.step(STEP)
-	var nearby := site.foot + Vector2(50.0, 0.0)
+	var nearby := site.foot() + Vector2(50.0, 0.0)
 	t.check(mast.excitement.contribution_at(nearby) > 0.0,
 			"the mast reaches its own nearby sidewalk while it is on")
 
@@ -856,7 +856,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 		director.contact().complete_now()
 
 	t.check(run.resistance().sabotage_went_through(), "completing it does the sabotage")
-	t.check(quiet.is_empty() and not mast.silenced,
+	t.check(quiet.is_empty() and not mast.is_silenced(),
 			"and the masts are still speaking at the door: they stop with the power")
 	var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
 	# She walks far enough from the station, a physics tick or two (the blackout watches her there).
@@ -864,7 +864,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, 2)
 	she.free()
 	t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
-	t.check(mast.silenced, "the mast is marked silenced")
+	t.check(mast.is_silenced(), "the mast is marked silenced")
 	t.close_to(mast.excitement.contribution_at(nearby), 0.0,
 			"the mast contributes nothing afterwards")
 

@@ -92,7 +92,7 @@ func _role_and_depth_sweep() -> void:
 				placed_total += 1
 				var tile := map.world_to_tile(plan.position)
 				var depth := mini(corridor.depth(tile), 2)
-				var role_name: String = role_names[plan.role]
+				var role_name: String = role_names[plan.role()]
 				var rd := "%s:%d" % [role_name, depth]
 				by_role_depth[rd] = int(by_role_depth.get(rd, 0)) + 1
 				if plan.def.id in named:
@@ -100,7 +100,7 @@ func _role_and_depth_sweep() -> void:
 					by_id_depth[idd] = int(by_id_depth.get(idd, 0)) + 1
 					var idr := "%s:%s" % [plan.def.id, role_name]
 					by_id_role[idr] = int(by_id_role.get(idr, 0)) + 1
-				if depth == 0 and plan.role == GameEnums.BlockerRole.FRICTION \
+				if depth == 0 and plan.role() == GameEnums.BlockerRole.FRICTION \
 						and not plan.def.mobile and plan.def.obstructs_radius > 0.0:
 					sum_solid_friction_on_corridor += 1
 					var segment := map.network.segment_containing(tile)

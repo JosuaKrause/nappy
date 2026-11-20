@@ -127,7 +127,9 @@ touches (the path table in `CLAUDE.md`). Look for:
 - a doc the change made false and left as it was;
 - anything the description claims that the diff does not do.
 
-The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
+The reviewer does not edit the branch, check it out in a worktree an agent is using, run `git stash`
+(`refs/stash` is one stack shared by every worktree of the repository, its scratch checkout's included),
+or merge. It
 may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
 it is checking (`../orchestrating/references/worktrees-and-disk.md`, "The worktree", says what a
 sparse worktree leaves out; `tools/agent-setup.sh --detach <ref> <name>` makes it, detached at the

@@ -15,11 +15,11 @@ func run(t: TestRunner) -> void:
 	t.check(not sited.counts_against_the_line(),
 			"a mast being sited, with no id yet, does not count against the line")
 	var fixed := EventPlan.new(mast, here)
-	fixed.mast_id = "site-0"
+	fixed.stand_as_a_mast("site-0")
 	t.check(not fixed.counts_against_the_line(),
 			"a fixed mast does not count against the line")
 	var added := EventPlan.new(mast, here)
-	added.mast_id = DawnMasts.added_mast_id(here)
+	added.stand_as_a_mast(DawnMasts.added_mast_id(here))
 	t.check(not added.counts_against_the_line(),
 			"a queued or routed mast, named by its foot, does not count against the line")
 	var shouting := EventPlan.new(yeller, here)
@@ -28,6 +28,6 @@ func run(t: TestRunner) -> void:
 	var announcing := EventPlan.new(EventCatalogue.by_id("curfew_announce"), here)
 	t.check(announcing.def.role != EventDef.Role.MAST and announcing.counts_against_the_line(),
 			"the curfew announcement, a row of its own, counts when no mast carries it")
-	announcing.mast_id = "site-0"
+	announcing.stand_as_a_mast("site-0")
 	t.check(not announcing.counts_against_the_line(),
 			"and does not once a mast carries it, whatever the row's own role")

@@ -67,7 +67,7 @@ func _events_per_street_by_band() -> void:
 				on_street_total += 1
 				var band := mini(corridor.depth(tile), 2)
 				events[band] += 1
-				if plan.role == GameEnums.BlockerRole.FRICTION:
+				if plan.role() == GameEnums.BlockerRole.FRICTION:
 					friction[band] += 1
 
 	var d := maxf(1.0, float(days))

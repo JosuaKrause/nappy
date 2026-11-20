@@ -15,7 +15,7 @@ func run(t: TestRunner) -> void:
 ## — a `loudspeaker` plan under `DawnMasts.added_mast_id()`, on the edge of the circle and out
 ## of her view — or, where the scheduler's acceptance refused all of it, the nearest live mast.
 ## Reaching it silences it and records its scar; day 14's sabotage (`silence_all_masts()`) puts
-## that very plan out when it is lit again; and the next day's and the last night's masts, planned
+## out a mast queued afresh and lit; and the next day's and the last night's masts, planned
 ## from the scars, stand it again at its own foot, silenced. Before, the task went to the nearest of
 ## the city's six masts, 1,377px and 3,948px away on two of these cities.
 func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunner) -> void:
@@ -36,12 +36,12 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 		# The task's mast, by the public link: the contact stands on its foot.
 		var added_plan: EventPlan = null
 		for plan in RunCity.events(_city).plans():
-			if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-") \
-					and RunCity.events(_city).mast_foot(plan.mast_id).distance_to(
+			if plan.def.id == "loudspeaker" and plan.mast_id().begins_with("added-") \
+					and RunCity.events(_city).mast_foot(plan.mast_id()).distance_to(
 					director.contact_position()) < 0.5:
 				added_plan = plan
 		for plan in RunCity.events(_city).plans():
-			if plan.def.id != "loudspeaker" or plan.mast_id.begins_with("added-") or plan.silenced:
+			if plan.def.id != "loudspeaker" or plan.mast_id().begins_with("added-") or plan.is_silenced():
 				continue
 			var foot_tile := _city.map.world_to_tile(plan.position)
 			# The tile she touches it from: the first beside the foot she can stand on, the
@@ -57,7 +57,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 				break
 		if not site_near and added_plan != null:
 			added[0] += 1
-			var mast_id := added_plan.mast_id
+			var mast_id := added_plan.mast_id()
 			var foot := RunCity.events(_city).mast_foot(mast_id)
 			t.check(foot != Vector2.INF and edge.has(_city.map.world_to_tile(foot)),
 					"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
@@ -71,23 +71,30 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 				if String(scar["id"]) == DawnMasts.SILENCED_MAST \
 						and (scar["position"] as Vector2).distance_to(foot) < 1.0:
 					scarred = true
-			t.check(scarred and added_plan.silenced,
+			t.check(scarred and added_plan.is_silenced(),
 					"seed %d: reaching it silences it and records its scar" % seed_value)
-			# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
-			# with the others — it is that one mast's plan this asks about.
 			t.check(RunCity.events(_city).plans().has(added_plan),
 					"seed %d: the task went to the mast put up for it, one of the day's plans"
 					% seed_value)
-			added_plan.silenced = false
+			# Day 14's sabotage: a mast queued afresh and lit (the call the task makes) is put out
+			# by `silence_all_masts()`.
+			var offered: Array[Vector2i] = []
+			for tile: Vector2i in edge:
+				offered.append(tile)
+			for tile: Vector2i in inside:
+				offered.append(tile)
+			var fresh := RunCity.events(_city).queue_a_mast(offered)
+			t.check(fresh != null and not fresh.is_silenced(),
+					"seed %d: a mast queued afresh is lit" % seed_value)
 			RunCity.events(_city).silence_all_masts()
-			t.check(added_plan.silenced,
+			t.check(fresh != null and fresh.is_silenced(),
 					"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
 			# The same night as the game plans it: the mast is there unless that night's
 			# closures, holds or district doors leave it no room, and then it is absent.
 			_plan_the_day(14, seed_value)
 			var on_day_14 := false
 			for plan in RunCity.events(_city).plans():
-				if plan.mast_id == mast_id and plan.silenced:
+				if plan.mast_id() == mast_id and plan.is_silenced():
 					on_day_14 = true
 			var no_room := _the_day_leaves_no_room_for(foot)
 			if not no_room:
@@ -98,7 +105,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			_plan_the_day(12, seed_value)
 			var stands_again := false
 			for plan in RunCity.events(_city).plans():
-				if plan.mast_id == mast_id and plan.silenced \
+				if plan.mast_id() == mast_id and plan.is_silenced() \
 						and plan.position.distance_to(foot) < 1.0:
 					stands_again = true
 			t.check(stands_again, "seed %d: and the next day stands it again, silenced"
@@ -108,7 +115,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			# director's — and then the nearest live mast is the task's, which the director says.
 			var generated := 0
 			for plan in RunCity.events(_city).plans():
-				if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-"):
+				if plan.def.id == "loudspeaker" and plan.mast_id().begins_with("added-"):
 					generated += 1
 			var stands_on := ResistanceReads.mast_at(director, RunCity.events(_city))
 			t.check(generated == 0 and stands_on != "" and not stands_on.begins_with("added-"),

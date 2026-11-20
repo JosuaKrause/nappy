@@ -180,7 +180,7 @@ func _ask_the_arrows_mast(t: TestRunner, seed_value: int, held: Dictionary) -> v
 	var far_foot := Vector2.INF
 	var beside := Vector2i(-1, -1)
 	for plan in RunCity.events(_city).plans():
-		if plan.def.id != "loudspeaker" or plan.silenced or not plan.is_placed() \
+		if plan.def.id != "loudspeaker" or plan.is_silenced() or not plan.is_placed() \
 				or plan.position.distance_to(first) < 0.5:
 			continue
 		if far_foot != Vector2.INF \

@@ -535,10 +535,10 @@ func _test_the_map_picture_marks_what_the_day_placed(t: TestRunner) -> void:
 	var roles := {}
 	for plan in plans:
 		if plan.is_placed():
-			roles[plan.role] = true
-			t.check(seen.has(_mark_of(plan.role)),
+			roles[plan.role()] = true
+			t.check(seen.has(_mark_of(plan.role())),
 					"and every role the day placed in is in the picture (%s is not)"
-					% GameEnums.BlockerRole.keys()[plan.role])
+					% GameEnums.BlockerRole.keys()[plan.role()])
 	t.check(roles.size() == 4, "and the four roles are all drawn (%d of 4)" % roles.size())
 	_check_a_glyph_says_what_it_is(t, map, plans)
 
@@ -557,16 +557,16 @@ func _what_a_day_placed(map: CityMap) -> Array[EventPlan]:
 				GameEnums.BlockerRole.NONE][i]
 		var plan := EventPlan.new(lethal if i % 2 == 0 else costly,
 				map.tile_to_world(Vector2i(along, 20 + i * 12)))
-		plan.role = role
+		plan.give_role(role)
 		plans.append(plan)
 	# A routed one: a band between two points, both on the same street.
 	var routed := EventPlan.new(costly, map.tile_to_world(Vector2i(along, 80)),
 			PackedVector2Array([map.tile_to_world(Vector2i(along, 80)),
 			map.tile_to_world(Vector2i(along, 100))]))
-	routed.role = GameEnums.BlockerRole.FRICTION
+	routed.give_role(GameEnums.BlockerRole.FRICTION)
 	plans.append(routed)
 	var unsited := EventPlan.new(costly, Vector2.INF)
-	unsited.role = GameEnums.BlockerRole.SET_PIECE
+	unsited.give_role(GameEnums.BlockerRole.SET_PIECE)
 	plans.append(unsited)
 	return plans
 
@@ -595,7 +595,7 @@ func _check_a_glyph_says_what_it_is(t: TestRunner, map: CityMap,
 		var only: Array[EventPlan] = [plan]
 		var image := TelemetryMap.render(map, [], null, only)
 		var at := map.world_to_tile(plan.position)
-		var colour := _mark_of(plan.role)
+		var colour := _mark_of(plan.role())
 		t.check(_tile_colour(image, at) == colour,
 				"%s is marked on the tile the day put it on" % plan.def.id)
 		t.check(_tile_colour(image, at + Vector2i(1, 0)) == colour, "and reaches a tile across")

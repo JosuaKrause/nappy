@@ -18,7 +18,7 @@ extends RefCounted
 ## - **seal bodies** and **alley mouths**: the bodies the seal pass places, and how many of them stand
 ##   in a through-alley's mouth;
 ## - **closures**: `ClosurePlanner.plan_day`'s street closures, the fenced park's own fence left out;
-## - **walls** and **friction**: placed catalogue rows by `EventPlan.role`, from
+## - **walls** and **friction**: placed catalogue rows by `EventPlan.role()`, from
 ##   `EventScheduler.build_day` run against the seals and the region wall the way
 ##   `EventManager.start_day` runs it.
 ##
@@ -122,9 +122,9 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 			.on(tree).doors(doors).standing(standing).plan().placements():
 		if not plan.is_placed():
 			continue
-		if plan.role == GameEnums.BlockerRole.WALL:
+		if plan.role() == GameEnums.BlockerRole.WALL:
 			walls += 1
-		elif plan.role == GameEnums.BlockerRole.FRICTION:
+		elif plan.role() == GameEnums.BlockerRole.FRICTION:
 			friction += 1
 	return {"off": off_tree, "sealed": sealed.size(), "bodies": seals.size(), "mouths": mouths,
 			"closures": street_closures, "walls": walls, "friction": friction}

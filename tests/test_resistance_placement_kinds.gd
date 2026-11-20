@@ -727,9 +727,9 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	# The mast the contact stands at the foot of, read off the day's plans.
 	var mast_id := ""
 	for plan in RunCity.events(_city).plans():
-		var foot := RunCity.events(_city).mast_foot(plan.mast_id) if plan.mast_id != "" else Vector2.INF
+		var foot := RunCity.events(_city).mast_foot(plan.mast_id()) if plan.mast_id() != "" else Vector2.INF
 		if foot != Vector2.INF and director.contact_position().distance_to(foot) < 0.5:
-			mast_id = plan.mast_id
+			mast_id = plan.mast_id()
 	t.check(mast_id != "", "the contact stands on the foot of a live mast")
 	t.check(director.red_arrow_target() == director.contact_position(),
 			"and the red arrow points at it")
@@ -737,12 +737,12 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	director.contact().complete_now()
 	var silenced_today := true
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id == mast_id and not plan.silenced:
+		if plan.mast_id() == mast_id and not plan.is_silenced():
 			silenced_today = false
 	t.check(silenced_today, "reaching it silences that mast today")
 	var others_live := false
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id != "" and plan.mast_id != mast_id and not plan.silenced:
+		if plan.mast_id() != "" and plan.mast_id() != mast_id and not plan.is_silenced():
 			others_live = true
 	t.check(others_live, "and only that mast")
 
@@ -756,11 +756,11 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	var quiet_tomorrow := false
 	var live_tomorrow := false
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id == "":
+		if plan.mast_id() == "":
 			continue
-		if plan.mast_id == mast_id:
-			quiet_tomorrow = plan.silenced
-		elif not plan.silenced:
+		if plan.mast_id() == mast_id:
+			quiet_tomorrow = plan.is_silenced()
+		elif not plan.is_silenced():
 			live_tomorrow = true
 	t.check(quiet_tomorrow, "it is still silenced the next day")
 	t.check(live_tomorrow, "while the others speak")
@@ -784,8 +784,8 @@ func _test_the_mast_task_favors_the_near_mast(t: TestRunner) -> void:
 		return
 	var mark: Vector2 = found[0]
 	var plans: Array[EventPlan] = [found[1], found[2]]
-	plans[0].mast_id = "near"
-	plans[1].mast_id = "far"
+	plans[0].stand_as_a_mast("near")
+	plans[1].stand_as_a_mast("far")
 	RunCity.events(_city).start_recipe(plans, DaySpec.for_day(11), 11, mark)
 	var director := _director(t)
 	var player := _rig_player(t, mark)

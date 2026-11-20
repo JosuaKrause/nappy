@@ -34,8 +34,8 @@ extends DawnPhase
 ##
 ## **A mast she silenced on an earlier day stands silenced**: the run's scars
 ## (`DawnContext.scars()`) carry a `SILENCED_MAST` entry at its foot
-## (`ResistanceDirector._silence_the_mast()`), and its plans are made with `EventPlan.silenced`
-## already set — the pole and horns are there, the lamp is out and there is no field, for the
+## (`ResistanceDirector._silence_the_mast()`), and its plans are made already silenced
+## (`EventPlan.silence()`) — the pole and horns are there, the lamp is out and there is no field, for the
 ## rest of the run.
 ##
 ## **So does a mast queued for day 11's task** (`EventManager.queue_a_mast()`): a
@@ -84,7 +84,7 @@ static func _plans(context: DawnContext) -> Array[EventPlan]:
 		var foot: Vector2 = scar["position"]
 		var at_a_site := false
 		for site in sites:
-			if site.foot.distance_to(foot) < Tuning.TILE_SIZE:
+			if site.foot().distance_to(foot) < Tuning.TILE_SIZE:
 				at_a_site = true
 				break
 		var tile := map.world_to_tile(foot)
@@ -94,25 +94,27 @@ static func _plans(context: DawnContext) -> Array[EventPlan]:
 				loudspeaker.field_reach()):
 			continue
 		var added := EventPlan.new(loudspeaker, foot)
-		added.mast_id = added_mast_id(foot)
-		added.silenced = true
+		added.stand_as_a_mast(added_mast_id(foot))
+		added.silence()
 		planned.append(added)
 	for site in sites:
-		var tile := map.world_to_tile(site.foot)
+		var tile := map.world_to_tile(site.foot())
 		if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 			continue
-		if not DoorClearanceRule.clear_of_the_doors(site.foot, PackedVector2Array(), doors,
+		if not DoorClearanceRule.clear_of_the_doors(site.foot(), PackedVector2Array(), doors,
 				loudspeaker.field_reach()):
 			continue
-		var quiet := _was_silenced(site.foot, day, scars)
-		var mast := EventPlan.new(loudspeaker, site.foot)
-		mast.mast_id = site.id
-		mast.silenced = quiet
+		var quiet := _was_silenced(site.foot(), day, scars)
+		var mast := EventPlan.new(loudspeaker, site.foot())
+		mast.stand_as_a_mast(site.id())
+		if quiet:
+			mast.silence()
 		planned.append(mast)
 		if curfew:
-			var announcement := EventPlan.new(curfew, site.foot)
-			announcement.mast_id = site.id
-			announcement.silenced = quiet
+			var announcement := EventPlan.new(curfew, site.foot())
+			announcement.stand_as_a_mast(site.id())
+			if quiet:
+				announcement.silence()
 			planned.append(announcement)
 	return planned
 
