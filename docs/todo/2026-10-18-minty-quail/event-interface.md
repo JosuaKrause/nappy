@@ -413,9 +413,9 @@ shared state. What it asks, and what the event is asked on its behalf:
 **What the bus carries about an event.** Six signals of the bus (`src/autoload/event_bus.gd`:
 `event_telegraphed`, `event_activated` and the four `pelican_*`) carry the live event typed `Node2D`, what a
 live event is and what the model may name, since the layer map has the bus on the model layer and
-typing them `EventInstance` would make the model name the simulation; the listeners read
-`as EventInstance` as the run log's does (row 3b's first pull request, the record
-minty-quail-curly-penguin). *Proposed, not asked for:* the type; the plainer alternative was to keep the
+typing them `EventInstance` would make the model name the simulation; the run log's observer reads
+its `as EventInstance`, and the other listeners take an `EventInstance`, which is all a signal carries (row 3b's first pull request, the record
+minty-quail-curly-penguin). *Proposed, not asked for:* the type; the plainer alternative is to keep the
 opt-out line on the bus as the one file that cannot be typed, with its reason.
 
 ### 2.7 The resistance
