@@ -89,7 +89,6 @@ src/events/event_catalogue.gd spawn_mode
 src/events/event_def.gd after_day
 src/events/event_def.gd notice
 src/events/event_def.gd spawn_mode
-src/events/event_director.gd after_day
 
 # [EventBehaviour] src/events/behaviours/event_behaviour.gd
 src/events/event_instance.gd steps_each_tick
@@ -208,17 +207,11 @@ src/events/event_catalogue.gd warned_first
 src/events/event_catalogue.gd warning_picture
 src/events/event_catalogue.gd weight
 src/events/event_catalogue.gd when_it_stops
-src/events/event_director.gd from_day_after
 src/events/event_director.gd id
 src/events/event_director.gd kind
-src/events/event_director.gd max_per_day
-src/events/event_director.gd offscreen_notice
 src/events/event_director.gd placement
 src/events/event_director.gd pursuit
 src/events/event_director.gd shape
-src/events/event_director.gd spawn_mode
-src/events/event_director.gd still_while_telegraphing
-src/events/event_director.gd weight
 src/events/event_excitement.gd core_intensity
 src/events/event_excitement.gd core_radius
 src/events/event_excitement.gd falloff_power
@@ -259,12 +252,7 @@ src/events/event_spawner.gd speed
 src/events/event_spawner.gd telegraph_time
 src/events/event_streaming.gd id
 src/events/event_streaming.gd kind
-src/events/events_ahead.gd heat_response
 src/events/events_ahead.gd id
-src/events/events_ahead.gd noun
-src/events/events_ahead.gd noun_plural
-src/events/events_ahead.gd pursuit
-src/events/events_ahead.gd vehicle
 src/events/pending_warning.gd id
 src/events/plan_builder.gd path_length_tiles
 src/events/plan_builder.gd path_mode
@@ -329,9 +317,6 @@ src/events/event_streaming.gd gate_state
 src/events/event_streaming.gd is_finished
 src/events/event_streaming.gd is_leaving
 src/events/event_streaming.gd silenced
-src/events/events_ahead.gd def
-src/events/events_ahead.gd is_finished
-src/events/events_ahead.gd is_leaving
 src/events/views/event_look.gd age
 src/events/views/fire_look.gd age
 src/events/views/rank_look.gd age
