@@ -426,7 +426,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	var warning: PendingWarning = sent[0] if not sent.is_empty() else null
 	events.pelican_rig = EventSpawner.PelicanRig.BAG
 	stroller.velocity = Vector2.ZERO
-	t.check(warning != null and warning.is_pelican and warning.logged_name() == "pelican",
+	t.check(warning != null and warning.logged_name() == "pelican",
 			"the roll is made as the warning goes up, so the warning is already the pelican's")
 	# The danger edge measures on a real frame, as it does in play.
 	var atlas := AtlasLibrary.new()

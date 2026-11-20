@@ -19,10 +19,10 @@ extends RefCounted
 ## off as it comes into sight.
 ##
 ## **The badge holds still.** Its place is fixed against her when the warning goes up and moves only
-## with her own walking (`offset`): it is never re-planned while it is up, so it neither jumps
+## with her own walking (`_offset`): it is never re-planned while it is up, so it neither jumps
 ## between pieces of ground nor slides along a road as she walks.
 ##
-## **Where its ground has no place for it when its time is up, it is withdrawn** (`withdrawn`): the
+## **Where its ground has no place for it when its time is up, it is withdrawn** (`was_withdrawn()`): the
 ## badge goes down and nothing comes. A second is the most it may be up alone, so it does not wait
 ## for ground the way a longer warning could.
 ##
@@ -37,21 +37,17 @@ extends RefCounted
 
 ## The row the badge draws: its silhouette, its colour, and how fast it will close.
 var def: EventDef
-## Where the badge points, in world px: her, plus `offset`. Moves only with her.
-var place := Vector2.INF
+## Where the badge points, in world px: her, plus `_offset`. Moves only with her.
+var _place := Vector2.INF
 ## Where the badge points from her, fixed when the warning goes up (`put_up()`).
-var offset := Vector2.INF
+var _offset := Vector2.INF
 ## How long the warning has been up, in seconds: the clock `_clock` is read against.
-var shown := 0.0
-## Seconds of the badge alone still to run.
-var left: float:
-	get:
-		return _clock.left(shown)
+var _shown := 0.0
 ## The badge's clock, `EventDef.warned_for()` long from the moment it is made.
 var _clock := Warning.new()
 ## Whether it came to nothing: when its time was up its ground had no place for the thing, or the
 ## thing could not be created there, so the badge went down with nothing in the world.
-var withdrawn := false
+var _withdrawn := false
 ## `func(her: Vector2) -> Vector2`: where the thing would be created for her standing at `her` —
 ## on its own ground, just out of sight — or `Vector2.INF` where there is none.
 var _where: Callable
@@ -60,16 +56,16 @@ var _where: Callable
 var _arrive: Callable
 ## Called once if the warning is withdrawn, so the caller that put it up can ask again — the fire
 ## engine's summons, which would otherwise never come. Empty for a caller with nothing to retry.
-var on_withdrawn := Callable()
+var _retry := Callable()
 ## Whether the cyclist this warns of is the pelican, rolled as the warning went up
 ## (`EventSpawner.rolls_a_pelican()`). Read by the telemetry alone (`logged_name()`): the badge
 ## draws the row's own silhouette either way.
-var is_pelican := false
+var _is_pelican := false
 
 ## What the run log calls the thing this warns of — `EventInstance.logged_name()` before there is
 ## an instance to ask.
 func logged_name() -> String:
-	return EventInstance.named_for_the_log(def.id, is_pelican)
+	return EventInstance.named_for_the_log(def.id, _is_pelican)
 
 func _init(row: EventDef, where: Callable, arrive: Callable) -> void:
 	def = row
@@ -84,21 +80,21 @@ func put_up(her: Vector2) -> bool:
 	var at: Vector2 = _where.call(her)
 	if at == Vector2.INF:
 		return false
-	offset = at - her
-	place = at
+	_offset = at - her
+	_place = at
 	return true
 
 ## Runs the clock with her standing at `her`, the place moving with her, and once its time is up
 ## creates the thing where its ground now has a place for it, or withdraws the warning. True once it
 ## is over, either way.
 func tick(delta: float, her: Vector2) -> bool:
-	place = her + offset
-	shown += delta
-	if not _clock.has_run(shown):
+	_place = her + _offset
+	_shown += delta
+	if not _clock.has_run(_shown):
 		return false
 	var at: Vector2 = _where.call(her)
 	if at == Vector2.INF or not bool(_arrive.call(at, her)):
-		withdrawn = true
+		_withdrawn = true
 	return true
 
 ## How far down her line, past just out of sight, a place may be moved to reach its ground or a
@@ -141,7 +137,7 @@ static func down_her_line(map: CityMap, row: EventDef, her: Vector2, direction: 
 			for side: float in [1.0, -1.0]:
 				var at := level + across * (float(step) * side)
 				if siting.allows(SpawnSiting.Rule.OPEN_TO_IT, asked, at) \
-						and row.placement.has(map.tile_at(map.world_to_tile(at))) \
+						and row.stands_on(map.tile_at(map.world_to_tile(at))) \
 						and siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
 					return at
 				if step == 0:
@@ -259,10 +255,35 @@ static func lane_ends(map: CityMap, going: Vector2) -> Vector2:
 func row() -> EventDef:
 	return def
 
-## Where the badge points, in world px (`place`), or `Vector2.INF` before it is put up.
+## Where the badge points, in world px (`_place`), or `Vector2.INF` before it is put up.
 func points_at() -> Vector2:
-	return place
+	return _place
 
 ## Seconds of the badge alone still to run.
 func seconds_left() -> float:
-	return _clock.left(shown)
+	return _clock.left(_shown)
+
+## How long the warning has been up, in seconds.
+func shown_for() -> float:
+	return _shown
+
+## Whether it came to nothing: when its time was up its ground had no place for the thing, or the
+## thing could not be created there, so the badge went down with nothing in the world.
+func was_withdrawn() -> bool:
+	return _withdrawn
+
+## Hands it the call that asks again if the warning is withdrawn (`ask_again()`), so the caller that
+## put it up is not left without the thing: the fire engine's summons, which would otherwise never
+## come. A warning never handed one has nothing to retry.
+func when_withdrawn(retry: Callable) -> void:
+	_retry = retry
+
+## Calls the retry it was handed (`when_withdrawn()`); nothing for a warning with none.
+func ask_again() -> void:
+	if _retry.is_valid():
+		_retry.call()
+
+## Tells it that the cyclist it warns of is the pelican, so the run log names it so
+## (`logged_name()`); the badge draws the row's own silhouette either way.
+func be_drawn_as_the_pelican() -> void:
+	_is_pelican = true

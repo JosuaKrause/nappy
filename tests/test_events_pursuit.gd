@@ -604,7 +604,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
 
 	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
-	var offset := warning.place - her
+	var offset := warning.points_at() - her
 	var elapsed := 0.0
 	var looked := 0
 	var jumped := 0
@@ -624,7 +624,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 			came_at = elapsed
 			break
 		looked += 1
-		if not (warning.place - her).is_equal_approx(offset):
+		if not (warning.points_at() - her).is_equal_approx(offset):
 			jumped += 1
 	t.check(looked > 0 and jumped == 0,
 			"it was watched (%d frames) and its place kept its offset from her every frame (%d not)"

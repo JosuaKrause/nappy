@@ -263,7 +263,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 					happenings._rng.state])
 			printed += 1
 			continue
-		var pointed := warning.place
+		var pointed := warning.points_at()
 		var shown := 0.0
 		while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
 			RunCity.events(city).warnings.run(STEP, her)
@@ -275,7 +275,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 				RunCity.events(city).retire(truck)
 		happenings.column.clear()
 		_print("%s column from %s: badge %s withdrawn %s trucks %s (rng %d -> %d)" % [label,
-				_point(her), _point(pointed), warning.withdrawn, trucks, before,
+				_point(her), _point(pointed), warning.was_withdrawn(), trucks, before,
 				happenings._rng.state])
 		printed += 1
 	return printed
