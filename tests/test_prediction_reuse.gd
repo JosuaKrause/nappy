@@ -391,7 +391,7 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 		source.age = 3.0
 		manager.add_child(source)
 		source.set_process(false)
-		manager.world.instances.append(source)
+		manager.world.take_in(source)
 		source.source().accumulate_landed(20.0)
 		sources.append(source)
 		rims.append(HaloRig.told(source))
@@ -428,7 +428,7 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 			for i in managers.size():
 				managers[i].retire(sources[i])
 	for manager: EventManager in managers:
-		manager.world.instances.clear()
+		manager.world.let_go_of_every_event()
 	await t.get_tree().process_frame
 	for halo: ExcitementHalo in halos:
 		halo.free()

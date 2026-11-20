@@ -228,7 +228,7 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	var trace := RecordingTrace.new(_lines)
 	rig.use_trace(trace)
 	_rig_city = city
-	_city_trace = RunCity.events(city).world.trace
+	_city_trace = RunCity.events(city).world.trace()
 	RunCity.events(city).use_trace(trace)
 	rig.setup(city.map, RunCity.events(city), _no_spawn, stroller, baby, resistance, day, targets, run)
 	rig.start_day(day.spec())

@@ -209,7 +209,7 @@ func _test_the_view_is_about_the_centre_it_is_handed_and_follows_the_scheme(t: T
 	joystick_view.look_from(body.global_position)
 	t.check(_sees_the_corners(joystick_view),
 			"controls that were not handed in are not read from her tree")
-	joystick_view.controls = controls.covering()
+	joystick_view.use_cover(controls.covering())
 	joystick_view.look_from(body.global_position)
 	t.check(not _sees_the_corners(joystick_view),
 			"the controls in the joystick scheme turn the covered corners on")

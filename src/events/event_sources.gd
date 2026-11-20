@@ -36,7 +36,7 @@ func sources_at(at: Vector2) -> Array:
 	var sources: Array = []
 	var strongest: EventExcitement = null
 	var strongest_rate := 0.0
-	for instance in _world.instances:
+	for instance in _world.instances():
 		var source := instance.source()
 		var contribution := source.contribution_at(at)
 		if contribution <= 0.0:
@@ -53,7 +53,7 @@ func sources_at(at: Vector2) -> Array:
 
 ## Overrides ExcitementSources.every_source.
 func every_source(into: Array) -> void:
-	for instance in _world.instances:
+	for instance in _world.instances():
 		into.append(instance.source())
 
 ## Overrides ExcitementSources.holds_her_alone.
@@ -67,7 +67,7 @@ func holds_her_alone(at: Vector2) -> bool:
 func strongest_barrier_at(at: Vector2) -> EventInstance:
 	var strongest: EventInstance = null
 	var strongest_rate := 0.0
-	for instance in _world.instances:
+	for instance in _world.instances():
 		if not instance.counts_as_one_barrier():
 			continue
 		var contribution := instance.source().contribution_at(at)

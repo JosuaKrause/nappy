@@ -107,7 +107,7 @@ func _lane_rig(t: TestRunner, def: EventDef) -> Array:
 ## One real physics tick, the manager's own (`EventManager._physics_process()`), which steps every
 ## instance, with her running while `running` says so; it covers `SPEED` times `STEP`.
 func _frame(t: TestRunner, city: City, running := false) -> void:
-	(RunCity.events(city).world.player as _Her).running = running
+	(RunCity.events(city).world.player() as _Her).running = running
 	await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), SPEED)
 
 ## Whether `car` is out of the world: finished, or handed to `queue_free()` by a retirement or a

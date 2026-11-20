@@ -81,12 +81,6 @@ src/simulation_builder.gd skip_motion
 src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
-# [DaySpec] src/day/day_spec.gd
-src/events/event_manager.gd holds_the_home_streets
-src/events/event_manager.gd number
-src/events/event_manager.gd owes_a_return
-src/events/event_manager.gd poster_pursuits
-
 # [DaySwitch] src/events/day_switch.gd
 src/events/event_catalogue.gd after_day
 src/events/event_catalogue.gd notice
@@ -94,9 +88,6 @@ src/events/event_catalogue.gd spawn_mode
 src/events/event_def.gd after_day
 src/events/event_def.gd notice
 src/events/event_def.gd spawn_mode
-
-# [EncounterWatch] src/events/encounter_watch.gd
-src/events/event_manager.gd day
 
 # [EventBehaviour] src/events/behaviours/event_behaviour.gd
 src/events/event_instance.gd steps_each_tick
@@ -365,61 +356,17 @@ src/routes/region_planner.gd facing
 src/routes/region_planner.gd gate_state
 
 # [EventWorld] src/events/event_world.gd
-src/events/checkpoint_controller.gd instances
-src/events/checkpoint_controller.gd map
-src/events/checkpoint_controller.gd player
-src/events/checkpoint_controller.gd trace
-src/events/day_planner.gd city_map
-src/events/day_planner.gd map
-src/events/day_planner.gd run
-src/events/day_planner.gd trace
 src/events/event_manager.gd atlas
-src/events/event_manager.gd city_map
-src/events/event_manager.gd day
 src/events/event_manager.gd drawer
-src/events/event_manager.gd instances
-src/events/event_manager.gd map
-src/events/event_manager.gd player
 src/events/event_manager.gd points_at
-src/events/event_manager.gd run
 src/events/event_manager.gd signals
 src/events/event_manager.gd skip_drawing
 src/events/event_manager.gd timing
-src/events/event_manager.gd trace
-src/events/event_manager.gd visible
-src/events/event_sources.gd instances
 src/events/event_spawner.gd atlas
-src/events/event_spawner.gd city_map
-src/events/event_spawner.gd day
 src/events/event_spawner.gd drawer
-src/events/event_spawner.gd instances
-src/events/event_spawner.gd map
-src/events/event_spawner.gd player
-src/events/event_spawner.gd run
 src/events/event_spawner.gd signals
 src/events/event_spawner.gd skip_drawing
 src/events/event_spawner.gd timing
-src/events/event_spawner.gd trace
-src/events/event_spawner.gd visible
-src/events/event_streaming.gd instances
-src/events/event_streaming.gd map
-src/events/event_streaming.gd player
-src/events/events_ahead.gd city_map
-src/events/events_ahead.gd day
-src/events/events_ahead.gd instances
-src/events/events_ahead.gd map
-src/events/events_ahead.gd player
-src/events/events_ahead.gd run
-src/events/events_ahead.gd trace
-src/events/events_ahead.gd visible
-src/events/warning_board.gd instances
-src/events/warning_board.gd map
-src/events/warning_board.gd player
-src/events/warning_board.gd trace
-
-# [EventsAhead] src/events/events_ahead.gd
-src/events/event_manager.gd holds_the_home_streets
-src/events/event_manager.gd sends_poster_pursuits
 
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
@@ -505,8 +452,6 @@ src/main.gd trace
 
 # [Stroller] src/player/stroller.gd
 src/events/checkpoint_controller.gd outright_moves
-src/events/event_manager.gd carrying
-src/events/event_manager.gd facing
 
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd rotated
@@ -517,8 +462,6 @@ src/events/event_def.gd field_from_its_centre
 
 # [VisibleView] src/world/visible_view.gd
 src/events/encounter_watch.gd view
-src/events/event_manager.gd controls
-src/events/event_manager.gd view
 
 # [Warning] src/events/warning.gd
 src/events/behaviours/event_notice_run.gd cancel_if

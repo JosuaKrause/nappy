@@ -63,7 +63,6 @@ minty-quail rather than polite-tapir.
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
 is the files open work rewrites, typed by that work or after it:
 
-- The event manager (`src/events/event_manager.gd`), which row 3b of `event-interface.md` rewrites.
 - The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
@@ -102,26 +101,28 @@ Left, each its own design question:
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
 - **The day spec's event readers.** The day spec (`DaySpec`) keeps `number`,
-  `holds_the_home_streets`, `owes_a_return` and `poster_pursuits` public for the event manager's
-  reads (row 3b of `event-interface.md`) and the suites'; every other reader asks its methods
-  (`day_number()`, `keeps_the_home_streets_clear()`). The day's world, whether it closes streets,
+  `holds_the_home_streets`, `owes_a_return` and `poster_pursuits` public for the suites alone (each a
+  `[kept]` line); every reader under `src/` asks its methods (`day_number()`,
+  `keeps_the_home_streets_clear()`, `owes_her_a_return()`, `sends_a_pursuer_for_a_torn_poster()`). The day's world, whether it closes streets,
   whether the walk is kept open, whether one notice is given at a time and whether the unused calm is
   kept clean are private, asked through `world_kind()`, `closes_the_streets()`,
   `keeps_her_walk_open()`, `notices_one_at_a_time()` and `keeps_the_unused_calm_clean()`. The suites' reads of `number`, `holds_the_home_streets` and
   `poster_pursuits`, and their two writes (`tests/test_dawn_context.gd` sets
-  `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd` sets `owes_a_return`), go with that
-  pass, which gives them another way to build their spec.
+  `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd` sets `owes_a_return`), go with row 3b's
+  last pull request (3b-10 of its design), which gives them another way to build their spec.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
   director and the rigs. *Read as* (the orchestrator's reading): they are converted with whatever
   pass gives the blocked tiles an owner of their own. The fields the events read of
   `MoveProposal` (`to`, `radius`, `parked`, `open`, `stood_round`), `GroundShape` (`kind`,
-  `half_length`, `radius`, `half_extents`), `Stroller` (`carrying`, `facing`, `outright_moves`) and
-  `VisibleView` (`view`, `controls`) stay public and go private with the events' interface
+  `half_length`, `radius`, `half_extents`), `Stroller` (`outright_moves`) and `VisibleView` (`view`)
+  stay public and go private with the events' interface
   (`event-interface.md`); every reader under `src/` outside the events asks their methods.
   `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask
-  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public too.
+  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public too, as are `Stroller.carrying` and `facing`, which the game
+  asks through `is_carrying()` and `facing_direction()` and the suites still read (`[kept]` lines);
+  `VisibleView.controls` is private, set through `use_cover()`.
 - **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the
   screen-edge badge) are handed in through `use_atlas()` and read by their own files and
   `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's name (`"atlas" in

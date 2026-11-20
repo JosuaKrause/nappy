@@ -16,7 +16,4 @@ static func hand_in(events: EventManager, placements: Array[EventPlan]) -> void:
 
 ## Overrides DayPlanner.plan.
 func plan(_spec: DaySpec, _rng: RandomNumberGenerator, _consumed: Array[String]) -> DayPlanner.Plan:
-	var result := DayPlanner.Plan.new()
-	result.placements = _placements
-	result.is_a_day = false
-	return result
+	return DayPlanner.Plan.new(_placements, null, PackedVector2Array(), false)
