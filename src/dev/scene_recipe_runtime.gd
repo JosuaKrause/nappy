@@ -972,7 +972,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		elif def.spawn_mode_on(_run.header().day()) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
-			var route := director._crossing_ahead_of(player_at, heading, def)
+			var route := director.crossing_ahead_of(player_at, heading, def)
 			if not def.available_on(_run.header().day()) or not def.pursues() or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
 					or not DoorClearanceRule.clear_of_the_doors(at, route, doors, def.field_reach()):

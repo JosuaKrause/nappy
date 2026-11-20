@@ -237,7 +237,7 @@ static func encounters() -> Array[Dictionary]:
 	var up := Vector2.UP
 	var right := Vector2.RIGHT
 
-	# `cat_dash`: `EventDirector._crossing_ahead_of()` — across her line, `ahead_of_player_lead()` in
+	# `cat_dash`: `EventDirector.crossing_ahead_of()` — across her line, `ahead_of_player_lead()` in
 	# front of her, from one side `CROSSING_REACH_TILES` away.
 	var cat := EventCatalogue.by_id("cat_dash")
 	for heading: Vector2 in [up, right]:

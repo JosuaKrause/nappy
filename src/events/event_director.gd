@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name EventDirector
 extends RefCounted
 ## Places the events whose content is *the moment they happen to you* rather than *where they
@@ -103,7 +102,7 @@ const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 
 ## How far to either side of the crossing point the run reaches at most. A street's width, so the
 ## cat comes out of one kerb and is gone into the other; a run is cut where something solid stands
-## sooner (`_crossing_ahead_of()`).
+## sooner (`crossing_ahead_of()`).
 const CROSSING_REACH_TILES := Tuning.STREET_WIDTH
 
 var _map: CityMap
@@ -432,7 +431,7 @@ func _bag_the_next(count: int) -> void:
 ## directly, so this stays in step with whichever day the row's siting actually changes on.
 func _owe_the_sprinkled_dog(day: int) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
-	if not dog or day <= (dog.from_day_after.after_day if dog.from_day_after else 0):
+	if not dog or not dog.is_past_its_switch_on(day):
 		return
 	if _rng.randf() < CHARGING_DOG_SPRINKLE_CHANCE:
 		_owed.push_front(dog)
@@ -480,9 +479,9 @@ static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
 	var other_weights := {}
 	for def in _route_rows_on(day, heat):
-		weights[def.id] = def.weight
+		weights[def.id] = def.drawn_as_often()
 		if not ROUTE_BAG_SHARE_OF.has(def.id):
-			other_weights[def.id] = def.weight
+			other_weights[def.id] = def.drawn_as_often()
 	var others := MarbleBag.in_proportion(other_weights, ROUTE_BAG_MARBLES_PER_WEIGHT).size()
 	var counts := {}
 	for id: String in ROUTE_BAG_SHARE_OF:
@@ -575,7 +574,7 @@ static func _routed(def: EventDef, heat: int) -> EventDef:
 ## mast site may be (`MastSites.is_eligible()`, asked by `SitedGround`). A copy, never
 ## the shared heated row every dawn placement of it reads (`EventCatalogue.heated()`).
 static func _with_ground(def: EventDef) -> EventDef:
-	if not def.placement.is_empty() or def.spawn_mode != EventDef.SpawnMode.MAP:
+	if not def.ground_kinds().is_empty() or not def.is_placed_on_the_map():
 		return def
 	var placed := def.duplicate() as EventDef
 	placed.shape = def.shape
@@ -593,7 +592,7 @@ func _next_on_the_route() -> EventDef:
 		if id == null:
 			return null
 		var def: EventDef = _route_rows.get(id)
-		if def and (not _ordinary_rows.has(id) or int(_met_today.get(id, 0)) < def.max_per_day):
+		if def and (not _ordinary_rows.has(id) or int(_met_today.get(id, 0)) < def.most_in_a_day()):
 			return def
 		_route.draw()
 		_handed_from_the_route()
@@ -1057,9 +1056,9 @@ func _sited(next: EventDef, at: Vector2, heading: Vector2, view: VisibleView) ->
 	var crossing_point: Variant = null
 	if next.is_warned_in_its_lane():
 		path = _in_the_lane_beside_her(at, heading, next, view)
-	elif next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
+	elif next.comes_toward_her():
 		path = _toward_her_on_the_road(at, heading, next, view) \
-				if next.placement.has(GameEnums.TileType.ROAD) \
+				if next.keeps_to_the_carriageway() \
 				else _toward_her(at, heading, next)
 	else:
 		var crossing := _crossing_with_its_crouch(at, heading, next)
@@ -1159,25 +1158,25 @@ func _roll_interval() -> float:
 ## to `_owed` at all — it is not sited off her heading by this function, it is not sited by this
 ## function. A pursuer arriving here is always the teaching day's own dog, dead ahead on purpose,
 ## because the lesson depends on being unavoidable.
-func _crossing_ahead_of(at: Vector2, heading: Vector2,
+func crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
 	return _crossing_with_its_crouch(at, heading, def)[0]
 
-## `_crossing_ahead_of()`'s run, and how much longer than its telegraph it crouches before running
+## `crossing_ahead_of()`'s run, and how much longer than its telegraph it crouches before running
 ## it (`EventDef.crouch_for_a_run()`), as `[path, seconds, point]`: the crouch is the run's own, so it is
 ## worked out where the run is, and the point is where the run meets her line (`Vector2.ZERO` with
 ## an empty path).
 func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = null) -> Array:
 	var none := [PackedVector2Array(), 0.0, Vector2.ZERO]
 	var lead := Offscreen.lead(heading, def.chase_speed() + Tuning.WALK_SPEED,
-				def.offscreen_notice) \
-			if def and def.pursuit != null \
+				def.warned_for()) \
+			if def and def.pursues() \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
 	var centre := at + heading * lead
 	var mover := EventInstance.mover_for(def) if def else Mover.on_foot()
 	if not _navigator.passable_at(centre, mover):
 		return none
-	if def and def.pursuit != null:
+	if def and def.pursues():
 		return [PackedVector2Array([centre]), 0.0, centre]
 	var across := Vector2(-heading.y, heading.x) * float(CROSSING_REACH_TILES * Tuning.TILE_SIZE)
 	# The side it comes from is a coin flip, so a player cannot learn to watch one shoulder.
@@ -1210,7 +1209,7 @@ func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = nu
 		finish = minf(behind, ahead)
 	if start < nearest or start + finish < Tuning.TILE_SIZE:
 		return none
-	if def and not def.still_while_telegraphing and start < across.length() - 0.01:
+	if def and not def.holds_still() and start < across.length() - 0.01:
 		return none
 	return [PackedVector2Array([centre - way * start, centre + way * finish]),
 			def.crouch_for_a_run(start) if def else 0.0, centre]
