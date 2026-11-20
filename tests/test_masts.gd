@@ -192,7 +192,7 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
 	return null
 
 ## Two masts, met minutes apart, still read the same broadcast clock — the mechanism behind "all
-## masts speak at once". `age` is set from `EventStreaming.broadcast_clock` at the moment each one
+## masts speak at once". `age` is set from `EventStreaming.broadcast_clock()` at the moment each one
 ## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
 ## mast that is "younger" — it is telling the same time as every other one.
 func _test_they_all_speak_together(t: TestRunner) -> void:
