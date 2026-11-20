@@ -8,16 +8,17 @@ orchestrator's design folder), built by a Sonnet agent.
 **What was built.** The event manager's setter properties become methods: `use_protest_target()` (was `points_at`,
 written by the resistance director), `use_trace()`, `use_timing()`, `use_atlas()`, `draw_nothing()` (was
 `skip_drawing`), `stream_within()` (was `stream_radius`), `rig_the_pelican()` (was `pelican_rig`), `use_planner()`
-and `excitement_sources()` (was `sources`). Streaming answers `advance_the_broadcast()`, `broadcast_clock()`,
-`use_the_spent_one_shots()`, `stream_within()` and `stream_radius()`, and the spawner `rig_the_pelican()`, their
+and `excitement_sources()` (was `sources`). Streaming answers `advance_the_broadcast()`, `use_the_spent_one_shots()`,
+`stream_within()` and `stream_radius()`, and the spawner `rig_the_pelican()`, their
 fields private. `SimulationBuilder`, `WorldSimulation` and `ResistanceDirector` call them; the run log's observer
 loses its opt-out line, so it is typed; the suites, rigs and probes follow by script. `tools/field_reads.txt` loses the
 design's twelve lines. Nothing a player sees or the run log records changes.
 
 **Open to overturn (the builder's, where the design was silent):** no `stream_radius()` on the manager, since only a
-suite would read it (the suite asks streaming's); two pelican-rig checks ask `spawner.rolls_a_pelican()`, and the check
-that the default rig is the run's bag goes as a check of a default; `EventStreaming.broadcast_clock()`, read only by
-`test_masts`, is a kept line with its reason; suite reads of the manager's old `trace`, `atlas`, `timing` and
+suite would read it (the suite asks streaming's); two pelican-rig checks ask `spawner.rolls_a_pelican()`, and an ordinary
+run's guard (no `--pelican`, so not every cyclist is the pelican) is held by drawing a full bag through the builder's
+spawner and finding exactly one; the masts' shared clock is held by `test_masts` comparing two masts' own ages, so
+streaming has no `broadcast_clock()` and no kept line; suite reads of the manager's old `trace`, `atlas`, `timing` and
 `skip_drawing` go through the events' world until row 3b's pull request that converts it.
 
 **The item.** Row 3b stays open until its last pull request; `field-reads.md` loses the run log's observer from its
