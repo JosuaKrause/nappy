@@ -1121,7 +1121,7 @@ func _on_city_went_quiet() -> void:
 ## distance-driven `near` lines below say nothing about, since a pelican seen across the street
 ## never comes within its 90px. *(Inbox #527 in azure-tapir: "when the pelican spawns, when it's on screen, and
 ## when it's hitting the player".)*
-func _on_pelican_sighted(instance: Variant) -> void:
+func _on_pelican_sighted(instance: Node2D) -> void:
 	var pelican := instance as EventInstance
 	if not pelican or not _player:
 		return
@@ -1132,7 +1132,7 @@ func _on_pelican_sighted(instance: Variant) -> void:
 ## The pelican's lethal reach covering her (`EventBus.pelican_struck_her`), written above the
 ## `lost` line it ends the day with — and the only line that says so under `--invincible`, where
 ## the day goes on.
-func _on_pelican_struck_her(instance: Variant) -> void:
+func _on_pelican_struck_her(instance: Node2D) -> void:
 	var pelican := instance as EventInstance
 	if not pelican or not _player:
 		return
