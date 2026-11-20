@@ -64,10 +64,8 @@ minty-quail rather than polite-tapir.
 is the files open work rewrites, typed by that work or after it, and two kept for a reason of their
 own:
 
-- The event scheduler, the walk's ground and the event director (`src/events/event_scheduler.gd`,
-  `walk_ground.gd`, `event_director.gd`), which the placement rewrite
-  rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
-  row 3b's.
+- The walk's ground and the event director (`src/events/walk_ground.gd`, `event_director.gd`), which
+  rows 3a and 3b of `event-interface.md` rewrite; and the event manager (`event_manager.gd`), row 3b's.
 - The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.

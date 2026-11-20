@@ -613,7 +613,7 @@ counted where it only writes.
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
 | `act_tag` | 1 in, 1 out (`SealPlanner`) | row `act()`; set by `EventDraft.from_day(first_day, act)` |
 | `kind` | 3 in, 1 out (`SealPlanner`) | row and plan `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()` |
-| `first_day`, `last_day`, `scripted_day` | the catalogue; `SealPlanner` copies `first_day` | row `available_on(day)` ok; a draft for the copy |
+| `first_day`, `last_day`, `scripted_day` | the catalogue; `SealPlanner` asks the row's `own_first_day()` (3a) | row `available_on(day)` ok, `own_first_day()` ok |
 | `weight` | the catalogue; `at_heat()` | row `drawn_as_often()` ok, `drawn_as_often_on(ground)` |
 | `max_per_day` | 3 in, 1 out (the scene recipes) | row `most_in_a_day()` ok |
 | `placement` | 4 in (the scheduler nine times, the director, the pending warning) | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `ground_key()` |
