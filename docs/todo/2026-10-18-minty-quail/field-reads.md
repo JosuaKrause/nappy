@@ -69,10 +69,6 @@ own:
 - The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
-- **The run log's observer** (`src/telemetry/telemetry_observer.gd`, the record
-  2026-10-18-minty-quail-woolly-marten) keeps `unsafe_property_access` for one read, the event
-  manager's `sources` in its breakdown of where the excitement comes from (`_meters()`), which waits
-  for the event manager's parts (row 3b of `event-interface.md`).
 
 **What is left: the conversion**, one pull request per area, each deleting the lines it converts
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
