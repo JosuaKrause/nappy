@@ -41,7 +41,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is
 	# about a run's whole chain — one-shots, successors, scars — which is a property of the
 	# fourteen *plans*, so it puts every day in the world at once. See `EventManager`.
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 
 	var resistance := ResistanceDirector.new()
 	resistance.use_bus(EventBus)

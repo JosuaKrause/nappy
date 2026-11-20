@@ -4,7 +4,7 @@ extends Node
 ## **A day's events, in whatever world she walks**: the one thing the run flow, the resistance, the
 ## city and the observers talk to about events. It starts a day (`start_day()`), steps its live
 ## instances once a physics tick in a fixed order (`_tick_the_events()`), answers what charges the
-## baby at a point (`sources`), sees what struck her (`check_hard_fails()`) and
+## baby at a point (`excitement_sources()`), sees what struck her (`check_hard_fails()`) and
 ## ends the day's charges. The work behind that face is handed to the parts that own it, each handed
 ## the one `EventWorld` they share:
 ##
@@ -59,60 +59,55 @@ var ahead: EventsAhead
 ## walks under a raised boom and the guard a crossing sets on her, over this manager's own live
 ## instances.
 var checkpoints: CheckpointController
-## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
-## resistance (`ResistanceDirector.setup()`, its `_pointable_objective()`) and asked on behalf of
-## every instance made here. Unset where there is no resistance, and a protest then points at
+## The baked atlas pages this manager holds the events' group on (`AtlasLibrary`), handed in before
+## it enters the tree (`use_atlas()`); a manager nobody handed one (a suite's) makes its own when it
+## first enters the tree.
+var _atlas: AtlasLibrary = null
+
+## **Hands in what a protest points at**, answering a world point or `Vector2.INF` for nothing: the
+## resistance's (`ResistanceDirector.setup()`, its `_pointable_objective()`), asked on behalf of
+## every instance made here. Never handed where there is no resistance, and a protest then points at
 ## nothing.
-var points_at := Callable():
-	set(value):
-		points_at = value
-		world.points_at = value
-## Where the manager, the day's planning and every instance it creates write their own account for
-## the run log — the run's, set before `setup()` by whoever stands it (`SimulationBuilder`); silent
+func use_protest_target(where: Callable) -> void:
+	world.points_at = where
+
+## **Hands in where the manager, the day's planning and every instance it creates write their own
+## account for the run log**: the run's, handed in before `setup()` by whoever stands the manager
+## (`SimulationBuilder`); silent until then.
+func use_trace(trace: RunTrace) -> void:
+	world.trace = trace
+
+## **Makes every instance this manager makes skip its own drawing** (`--skip events`), handed in
+## before `setup()` by whoever stands it (`SimulationBuilder`).
+func draw_nothing() -> void:
+	world.skip_drawing = true
+
+## **Hands in where the manager and every instance it creates charge their time to the frame
+## record**, before `setup()` by whoever stands the manager (`SimulationBuilder`); the null sink
 ## until then.
-var trace := RunTrace.new():
-	set(value):
-		trace = value
-		world.trace = value
-## `--skip events`, handed in before `setup()` by whoever stands it (`SimulationBuilder`): every
-## instance this makes skips its own drawing.
-var skip_drawing := false:
-	set(value):
-		skip_drawing = value
-		world.skip_drawing = value
-## Where the manager and every instance it creates charge their time to the frame record, handed in
-## before `setup()` by whoever stands it (`SimulationBuilder`); the null sink until then.
-var timing := FrameTiming.new():
-	set(value):
-		timing = value
-		world.timing = value
-## The baked atlas pages this manager holds the events' group on and every instance it creates
-## draws from (`AtlasLibrary`), handed in before it enters the tree by whoever stands it
-## (`SimulationBuilder`); a manager nobody handed one (a suite's) makes its own when it first enters
-## the tree.
-## Each atlas comes with the one drawer every instance made here paints through (`EventDrawer`,
-## `EventWorld.drawer`).
-var atlas: AtlasLibrary = null:
-	set(value):
-		atlas = value
-		world.atlas = value
-		world.drawer = EventDrawer.new(value)
-## How close the player has to be for a planned event to exist (`EventStreaming.stream_radius`).
-## `INF` turns streaming off and puts the whole day in the world at once, every unit of the day's
-## drawn at the walk's start, which is what the escape's building and a test rig with no player
-## want.
-var stream_radius: float:
-	get:
-		return streaming.stream_radius
-	set(value):
-		streaming.stream_radius = value
-## What a rig makes `EventSpawner.rolls_a_pelican()` answer (`EventSpawner.pelican_rig`): `--pelican` sets
-## every rider the pelican.
-var pelican_rig: EventSpawner.PelicanRig:
-	get:
-		return spawner.pelican_rig
-	set(value):
-		spawner.pelican_rig = value
+func use_timing(timing: FrameTiming) -> void:
+	world.timing = timing
+
+## **Hands in the baked atlas pages** this manager holds the events' group on and every instance it
+## creates draws from (`AtlasLibrary`), before it enters the tree, by whoever stands it
+## (`SimulationBuilder`). Each atlas comes with the one drawer every instance made here paints
+## through (`EventDrawer`, `EventWorld.drawer`).
+func use_atlas(atlas: AtlasLibrary) -> void:
+	_atlas = atlas
+	world.atlas = atlas
+	world.drawer = EventDrawer.new(atlas)
+
+## **Sets how close the player has to be for a planned event to exist**
+## (`EventStreaming.stream_within()`). `INF` turns streaming off and puts the whole day in the world
+## at once, every unit of the day's drawn at the walk's start, which is what the escape's building
+## and a test rig with no player want.
+func stream_within(radius: float) -> void:
+	streaming.stream_within(radius)
+
+## **Makes every rider the pelican, or none, or leaves it to the run's bag**
+## (`EventSpawner.rig_the_pelican()`): `--pelican` hands in `PelicanRig.ALWAYS`.
+func rig_the_pelican(rig: EventSpawner.PelicanRig) -> void:
+	spawner.rig_the_pelican(rig)
 var _hard_failed := false
 
 ## Whether falling asleep owes her a return on this walk (`DaySpec.owes_a_return`), as the run flow
@@ -121,7 +116,12 @@ var _owes_a_return := true
 ## What plans each walk `start_day()` starts, chosen by its spec (`DaySpec`): a day's, the escape
 ## city's or the building's (`DayPlanner`), handed the one world every part shares. A rig that hands
 ## a walk's placements in on purpose hands its own planner in its place.
-var planner: DayPlanner
+var _planner: DayPlanner
+
+## **Hands in what plans each walk** `start_day()` starts, in place of the day planner this makes: a rig
+## that hands a walk's placements in on purpose (`GivenPlanner`).
+func use_planner(planner: DayPlanner) -> void:
+	_planner = planner
 ## The walk the last plan was stated against (`walk()`).
 var _walk: RouteSource = null
 
@@ -131,14 +131,14 @@ var _recipe_plan := false
 ## Builds the parts, each handed the one world, and connects the doors' intents and crossings.
 func _init() -> void:
 	warnings = WarningBoard.new(world)
-	planner = DayPlanner.new(world)
+	_planner = DayPlanner.new(world)
 	spawner = EventSpawner.new(world, warnings)
 	streaming = EventStreaming.new(world, spawner, _walk_events)
 	ahead = EventsAhead.new(world, streaming, spawner, warnings, _walk_events)
 	ahead.use_sitings(SitingMaker.new(world, _walk_events))
 	checkpoints = CheckpointController.new(world, spawner.spawn, EventCatalogue.door_guard())
 	_encounters = EncounterWatch.new(world.reports())
-	sources = EventSources.new(world, checkpoints)
+	_sources = EventSources.new(world, checkpoints)
 	checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
 			door_crossed.emit(at, axis, inspected))
 	checkpoints.takes_her_in.connect(_take_her_in)
@@ -154,12 +154,12 @@ func _init() -> void:
 ## `_enter_tree()`/`_exit_tree()` rather than `_ready()`, so a manager that leaves the tree and
 ## comes back keeps the count right.
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(EventPictures.ATLAS_GROUP)
+	if _atlas == null:
+		use_atlas(AtlasLibrary.new())
+	_atlas.acquire(EventPictures.ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	atlas.release(EventPictures.ATLAS_GROUP)
+	_atlas.release(EventPictures.ATLAS_GROUP)
 
 ## **Lets go of the warnings when the manager goes**, so the parts go with it. A warning still up
 ## holds the callbacks that put its row in the world or owe it again (`PendingWarning.arrive`,
@@ -303,8 +303,8 @@ func _owe_the_return() -> void:
 func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
 	_begin(spec)
-	streaming.consumed = consumed_one_shots
-	var plan := planner.plan(spec, rng, consumed_one_shots)
+	streaming.use_the_spent_one_shots(consumed_one_shots)
+	var plan := _planner.plan(spec, rng, consumed_one_shots)
 	_take(spec, plan, focus, plan.is_a_day)
 
 ## **The first half of every walk's start**, before anything is planned: clears whatever was here
@@ -385,7 +385,7 @@ func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
 	if calm:
 		plan.use_calm(calm)
 	elif world.city_map:
-		plan.use_calm(planner.calm_as_the_map_stands())
+		plan.use_calm(_planner.calm_as_the_map_stands())
 	_begin(spec)
 	# Its rows' bodies are recorded as a day's are, before its way on is made, so its through roads
 	# have them (`_take()`).
@@ -398,7 +398,7 @@ func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
 ## scene recipe's rows are placed against, handed back to `start_recipe()` so its walk sites against
 ## the same ones.
 func calm_as_the_map_stands() -> CalmAreas:
-	return planner.calm_as_the_map_stands()
+	return _planner.calm_as_the_map_stands()
 
 ## Everything in this world stops, because she is not in it any more: the escape's building once
 ## she has walked out of its service exit into the city. Every instance goes, its charge counted cut
@@ -521,7 +521,12 @@ func event_of(plan: EventPlan) -> EventInstance:
 ## alone inside a held door, a region boundary's structures as their strongest, everything else
 ## summed. Handed to the world the events stand in (`WorldContext.use_excitement_sources()`),
 ## which hands it to the baby and the halo.
-var sources: EventSources
+var _sources: EventSources
+
+## What charges the baby in this world's events, handed to the world they stand in
+## (`WorldContext.use_excitement_sources()`).
+func excitement_sources() -> EventSources:
+	return _sources
 
 ## The region door whose hold is running right now and whose trigger circle `world_position` lies
 ## inside, or null: `CheckpointController.door_holding_her_at()`. Inside a door, the door's toll is
@@ -532,16 +537,16 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 # ------------------------------------------------------------------ ticking ---
 
 func _physics_process(delta: float) -> void:
-	if timing.is_on():
-		var outer := timing.enter(FrameTiming.EVENTS)
+	if world.timing.is_on():
+		var outer := world.timing.enter(FrameTiming.EVENTS)
 		_tick_the_events(delta)
-		timing.leave(outer)
+		world.timing.leave(outer)
 	else:
 		_tick_the_events(delta)
 
 ## The manager's own tick, timed under `FrameTiming.EVENTS`.
 func _tick_the_events(delta: float) -> void:
-	streaming.broadcast_clock += delta
+	streaming.advance_the_broadcast(delta)
 	streaming.retire_finished()
 	streaming.bring_back_what_repeats(delta)
 	var she_is_here := world.has_player()
@@ -553,7 +558,7 @@ func _tick_the_events(delta: float) -> void:
 		# (`EventsAhead.draw_what_comes_near()`). A beat sited below takes a location of a unit
 		# that has not drawn where her way has one, and that unit draws round it
 		# (`WalkSiting.lay_ahead()`).
-		ahead.draw_what_comes_near(world.player.global_position, stream_radius)
+		ahead.draw_what_comes_near(world.player.global_position, streaming.stream_radius())
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn. Nothing is sited in a world with no
 		# director.
@@ -627,7 +632,7 @@ func _tell_them_where_she_is() -> void:
 	var stroller := world.player as Stroller
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	var awake: bool = stroller == null or stroller.baby_is_awake()
-	var strongest := sources.strongest_barrier_at(world.player.global_position)
+	var strongest := _sources.strongest_barrier_at(world.player.global_position)
 	# Inside a district door's hold, nothing but the door's toll reaches her
 	# (`door_holding_her_at()`), so a man who would stop her waits for her outside
 	# (`WhereSheIs.is_held_at_a_door()`).
@@ -697,7 +702,7 @@ func _let_her_out(at: Vector2) -> void:
 ## a walk starts and wherever she is put down (her doorstep, a scene's start, the developer's
 ## `--spawn`).
 func stream_around(at: Vector2) -> void:
-	ahead.draw_the_ground_round(at, stream_radius)
+	ahead.draw_the_ground_round(at, streaming.stream_radius())
 	streaming.stream_around(at)
 
 ## The planned instance of the row `id` within a tile of `at`, put in the world and kept there

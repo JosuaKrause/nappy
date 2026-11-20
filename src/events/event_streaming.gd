@@ -5,7 +5,7 @@ extends RefCounted
 ## and every unit of the day's locations draws the same whatever order it is drawn in, as she comes
 ## near it (`UnitDraw`, `EventsAhead.draw_what_comes_near()`), which is what keeps every invariant
 ## stated over a day (one usable park, a walkable route to it, determinism); a plan becomes an
-## `EventInstance` only when the player comes within `stream_radius` of it (`stream_in()`), and goes
+## `EventInstance` only when the player comes within `stream_radius()` of it (`stream_in()`), and goes
 ## again when she leaves (`stream_out()`), carrying what it was in the middle of — except a plan a
 ## task rides, which `keep_live()` puts in the world at once and keeps there. A plan that comes
 ## again (`EventPlan.repeats()`) is brought back on its own clock
@@ -97,7 +97,7 @@ func clear() -> void:
 		plan.live = null
 	_walk.clear()
 	_repeating.clear()
-	broadcast_clock = 0.0
+	_broadcast_clock = 0.0
 
 ## The plans of the walk that come again (`EventPlan.repeats()`), found once when a
 ## walk starts so the per-frame pass over them (`bring_back_what_repeats()`) asks nothing of the
@@ -108,18 +108,40 @@ var _repeating: Array[EventPlan] = []
 ## age, at the moment it streams in (`stream_in()`), which is what makes six masts met minutes
 ## apart still speak in phase: they are not coordinated frame to frame, they are all telling the
 ## same time. Reset with the rest of the day in `clear()`.
-var broadcast_clock := 0.0
+var _broadcast_clock := 0.0
+
+## Lets `delta` seconds pass on the city's broadcast clock (`broadcast_clock()`).
+func advance_the_broadcast(delta: float) -> void:
+	_broadcast_clock += delta
+
+## The seconds the city's broadcast clock has run since the day started: what every mast reads when it
+## streams in, whenever that is.
+func broadcast_clock() -> float:
+	return _broadcast_clock
 
 ## The run's spent one-shots — `start_day`'s own argument, kept because one kind of one-shot is
 ## spent while the day is running rather than while it is being planned. See `stream_in()`. Empty
 ## until a day has been started, which is the finale's case and is right: an escape spends nothing.
-var consumed: Array[String] = []
+var _consumed: Array[String] = []
+
+## Hands in the run's spent one-shots, which a one-shot spent while the day runs is added to
+## (`stream_in()`). The list is shared by reference, never copied: the run's own is the one that grows.
+func use_the_spent_one_shots(spent: Array[String]) -> void:
+	_consumed = spent
 
 ## How close the player has to be for a planned event to exist. `INF` turns streaming off and
 ## puts the whole day in the world at once, which is what a test rig with no player wants —
 ## `tests/test_event_manager.gd` and the full run suites (`tests/full_run_rig.gd`) are about a day's whole event set
 ## rather than about what one player walked past.
-var stream_radius := Tuning.EVENT_STREAM_RADIUS
+var _stream_radius := Tuning.EVENT_STREAM_RADIUS
+
+## Sets how close the player has to be for a planned event to exist. See `stream_radius()`.
+func stream_within(radius: float) -> void:
+	_stream_radius = radius
+
+## How close the player has to be for a planned event to exist, `INF` when streaming is off.
+func stream_radius() -> float:
+	return _stream_radius
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
 ## of it. Idempotent, and cheap: one distance check per planned event.
@@ -133,7 +155,7 @@ var stream_radius := Tuning.EVENT_STREAM_RADIUS
 ## `EventPlan.is_placed()` and `EventPlan.distance_from()`, which answer the same number by the same
 ## expression, and only a route goes to `distance_from()`.
 func stream_around(at: Vector2) -> void:
-	var stream_out_beyond := stream_radius + Tuning.EVENT_STREAM_HYSTERESIS
+	var stream_out_beyond := _stream_radius + Tuning.EVENT_STREAM_HYSTERESIS
 	for plan in _walk.plans():
 		# A plan waiting to come again is brought back on its own clock, not by her distance.
 		if plan.spent or plan.comes_in > 0.0:
@@ -144,7 +166,7 @@ func stream_around(at: Vector2) -> void:
 		var distance := position.distance_to(at) if plan.path.size() < 2 \
 				else plan.distance_from(at)
 		if plan.live == null:
-			if distance <= stream_radius:
+			if distance <= _stream_radius:
 				stream_in(plan)
 		elif not plan.kept_live and distance > stream_out_beyond \
 				and not _could_be_watched(plan.live, at):
@@ -176,8 +198,8 @@ func stream_in(plan: EventPlan) -> void:
 	# becomes something that happened — see `DawnOneShots`. The list is the one
 	# `start_day` was handed, which in a played game is `world.run.attempt_spend().consumed_one_shots()`
 	# and in a rig is the rig's own.
-	if first_time and plan.row().is_a_set_piece_on_her_way() and not plan.def.id in consumed:
-		consumed.append(plan.def.id)
+	if first_time and plan.row().is_a_set_piece_on_her_way() and not plan.def.id in _consumed:
+		_consumed.append(plan.def.id)
 	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
 	# is a harmless no-op assignment rather than a special case here.
 	plan.live.gate_state = plan.gate_state
@@ -199,8 +221,8 @@ func stream_in(plan: EventPlan) -> void:
 	# **A mast's own age is the broadcast clock, not `plan.age`.** Every mast reads the same clock
 	# at every stream-in, first time or the fifth, so two masts met minutes apart still read the
 	# same pulse phase — "all masts speak at once" is true because they are all telling the same
-	# time, not because anything coordinates them frame to frame. See `broadcast_clock` below.
-	var resume_age := broadcast_clock if plan.mast_id != "" else plan.age
+	# time, not because anything coordinates them frame to frame. See `_broadcast_clock` below.
+	var resume_age := _broadcast_clock if plan.mast_id != "" else plan.age
 	plan.live.resume(resume_age, plan.travelled, plan.noticed_at)
 	# A guard spent before the stream-out comes back as only his barrier, never as a guard again
 	# (`EventBarrierPost.restore()`).

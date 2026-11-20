@@ -22,7 +22,7 @@ func run(t: TestRunner) -> void:
 ## her handed to the city's events as the game does. Frees what an earlier attempt left standing.
 func _day_nine(t: TestRunner) -> Array:
 	_build_city_in_a_new_run(t)
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
 	var read := _read_the_mark_on(t, 9, SEED)
 	var player: Stroller = read[2]
 	RunCity.events(_city).use_player(player)
@@ -50,7 +50,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		var player: Stroller = day[1]
 		var events := RunCity.events(_city)
 		var walks_told: Array[String] = []
-		events.trace = RecordingTrace.new(walks_told)
+		events.use_trace(RecordingTrace.new(walks_told))
 		var step := director.current_step()
 		t.check(step != null and step.target_kind == ResistanceSteps.TargetKind.DOOR,
 				"day 9's mark puts the crossing on offer")
@@ -383,7 +383,7 @@ func _test_the_frames_see_a_crossing(t: TestRunner) -> void:
 	var player: Stroller = day[1]
 	var events := RunCity.events(_city)
 	var walks_told: Array[String] = []
-	events.trace = RecordingTrace.new(walks_told)
+	events.use_trace(RecordingTrace.new(walks_told))
 	if _door_position(director) == Vector2.INF:
 		t.check(false, "day 9's door is named")
 		_end_the_attempt(director, player)

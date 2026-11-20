@@ -1755,7 +1755,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	rng.seed = 4242
 	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map()), scene, events.atlas)
+	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map()), scene, events.world.atlas)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
 	t.check(ground != null, "the building has its floor tiles to lie on")
 	# She joins the same layer every blow does (`InteriorScene.add_entity()`), so a stand-in there
@@ -2150,7 +2150,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	var baby := Baby.new()
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
-	var sets: Array[ExcitementSources] = [events.sources]
+	var sets: Array[ExcitementSources] = [events.excitement_sources()]
 	halo.setup(sets, player, baby)
 	player.global_position = fire.global_position + Vector2(fire.row().core_within() * 0.5, 0.0)
 	# Past its notice, the way the explosion outside comes: a fire still telegraphing
@@ -2172,7 +2172,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	t.add_child(edge)
 	edge.size = ScreenOrientation.DESIGN_SIZE
 	# The pictures a badge is drawn with, from the atlas `main` hands it.
-	edge.use_atlas(events.atlas)
+	edge.use_atlas(events.world.atlas)
 	edge.setup(events, player)
 	var far := Vector2(-40000.0, -40000.0)
 	player.global_position = far

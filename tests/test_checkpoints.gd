@@ -379,7 +379,7 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	RunCity.build(city, map)
 	# No player in this rig, so nothing would ever stream in on its own — see
 	# `test_event_manager.gd`'s own `_build_city()` for the same reasoning.
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 	# `city.start_day()` first, unlike `test_event_manager.gd`'s own rigs, which begin the city's
 	# streets themselves (`RigStreets.begin()`) — this test is specifically about
 	# `EventManager.start_day()` placing the doors off the region plan the city's own dawn grew
@@ -521,14 +521,14 @@ func _manager(t: TestRunner) -> EventManager:
 	run.start_run(RUN_SEED)
 	# The map is drawn in a world of its own, as a city's is (`City.build()`), which every event the
 	# manager makes is added to; it is the manager's child, so the events go when it does. The whole
-	# plan is in reach wherever she stands (`EventManager.stream_radius`, as the escape's building
+	# plan is in reach wherever she stands (`EventManager.stream_within()`, as the escape's building
 	# hands it), so a plan put in by `_door_instance()` stays in however far a test walks her.
 	var world := WorldContext.new()
 	var map := WorldMap.open_ground()
 	var manager := EventManager.new()
 	manager.draw_in(world)
 	manager.setup_world(map, run)
-	manager.stream_radius = INF
+	manager.stream_within(INF)
 	manager.add_child(world)
 	t.add_child(manager)
 	return manager
@@ -788,7 +788,7 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	# the instances itself.
 	var manager := _manager(t)
 	var world := manager.world.drawn_in()
-	var sets: Array[ExcitementSources] = [manager.sources]
+	var sets: Array[ExcitementSources] = [manager.excitement_sources()]
 	world.use_excitement_sources(sets)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -836,7 +836,7 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	# And the moment she is out, the street is back: the silence is a fact about being inside a
 	# door, not a shield the door leaves behind it.
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(manager.sources.total_at(stroller.global_position) > 0.0,
+	t.check(manager.excitement_sources().total_at(stroller.global_position) > 0.0,
 			"released, the fields around the door charge her again")
 
 	stroller.free()
@@ -888,12 +888,12 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 			"corner where nothing overlapped would pass this test with the rule deleted")
 			% [summed, strongest])
 
-	t.close_to(manager.sources.total_at(there), strongest,
+	t.close_to(manager.excitement_sources().total_at(there), strongest,
 			"the whole boundary kit charges the strongest of it and not the sum (%.1f/s against a "
-			% manager.sources.total_at(there) + "sum of %.1f/s)" % summed, 0.01)
+			% manager.excitement_sources().total_at(there) + "sum of %.1f/s)" % summed, 0.01)
 
 	var landed_on: Array[ExcitementSource] = []
-	for pair: Array in manager.sources.sources_at(there):
+	for pair: Array in manager.excitement_sources().sources_at(there):
 		landed_on.append(pair[0])
 	t.check(landed_on.size() == 1, "one source reaches the bar, not five (%d)" % landed_on.size())
 	if landed_on.size() == 1:
@@ -918,7 +918,7 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 	var now_strongest := 0.0
 	for body in kit:
 		now_strongest = maxf(now_strongest, body.excitement.contribution_at(stroller.global_position))
-	t.close_to(manager.sources.total_at(stroller.global_position), now_strongest,
+	t.close_to(manager.excitement_sources().total_at(stroller.global_position), now_strongest,
 			"and a step along the wall re-asks it rather than keeping the first answer", 0.01)
 
 	stroller.free()
@@ -1993,7 +1993,7 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	RunCity.events(city).trace = RecordingTrace.new(walks_told)
+	RunCity.events(city).use_trace(RecordingTrace.new(walks_told))
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])
@@ -2053,7 +2053,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	RunCity.events(city).trace = RecordingTrace.new(walks_told)
+	RunCity.events(city).use_trace(RecordingTrace.new(walks_told))
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])

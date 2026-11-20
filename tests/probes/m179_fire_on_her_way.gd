@@ -48,7 +48,7 @@ func run(t: TestRunner) -> void:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		RunCity.build(city, CityGenerator.generate(seed_value))
-		RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+		RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		for walk_name: String in ["out and back", "turns back", "off the path", "stays near home"]:
 			var result := _walk_one(t, city, seed_value, walk_name)
 			walks += 1
@@ -208,7 +208,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 	var steps := int(from.distance_to(to) / (Tuning.WALK_SPEED * STEP))
 	for i in steps:
 		var at: Vector2 = from.lerp(to, float(i) / float(maxi(steps - 1, 1)))
-		cost += RunCity.events(city).sources.total_at(at) * STEP
+		cost += RunCity.events(city).excitement_sources().total_at(at) * STEP
 	var parked := 0
 	for instance in RunCity.events(city).instances():
 		parked += 1 if instance.def.id == "fire_truck" and instance.is_parked else 0

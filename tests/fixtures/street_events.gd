@@ -19,6 +19,6 @@ static func over(t: TestRunner, map: CityMap, run: RunState, streets: DayStreets
 	manager.add_child(holder)
 	manager.draw_in(holder)
 	manager.setup(map, streets, null, run)
-	manager.stream_radius = stream_radius
+	manager.stream_within(stream_radius)
 	t.add_child(manager)
 	return manager

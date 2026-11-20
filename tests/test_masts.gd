@@ -167,7 +167,7 @@ func _build_city(t: TestRunner) -> void:
 	# skips streaming while no player is handed in (`EventWorld.has_player()`), the same reason
 	# `test_event_manager.gd` gives.
 	# Streaming below is driven by hand, at whatever real moment each check wants a mast live.
-	RunCity.events(_city).stream_radius = 10.0
+	RunCity.events(_city).stream_within(10.0)
 
 func _sites() -> Array[MastSites.Site]:
 	return MastSites.compute(_map)
@@ -205,7 +205,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	var b := sites[1]
 
 	await _advance(9.0)
-	var clock_a: float = RunCity.events(_city).streaming.broadcast_clock
+	var clock_a: float = RunCity.events(_city).streaming.broadcast_clock()
 	RunCity.events(_city).stream_around(a.foot)
 	var plan_a := _plan_for(a.id)
 	t.check(plan_a != null and plan_a.live != null, "the first mast is live")
@@ -214,7 +214,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 				"a mast's age is the broadcast clock at the moment it streams in", 0.05)
 
 	await _advance(6.0)
-	var clock_b: float = RunCity.events(_city).streaming.broadcast_clock
+	var clock_b: float = RunCity.events(_city).streaming.broadcast_clock()
 	RunCity.events(_city).stream_around(b.foot)
 	var plan_b := _plan_for(b.id)
 	t.check(plan_b != null and plan_b.live != null, "the second mast is live")

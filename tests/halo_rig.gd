@@ -76,7 +76,7 @@ class DecayedBaby extends Baby:
 		return decay
 
 ## The one set a halo is handed, over a list of sources a test edits: the stand-in for a world's
-## own set (`EventManager.sources`, `Crowd.sources()`), handed in where the game hands those.
+## own set (`EventManager.excitement_sources()`, `Crowd.sources()`), handed in where the game hands those.
 class ListSet extends ExcitementSources:
 	var sources: Array[ExcitementSource] = []
 

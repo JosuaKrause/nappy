@@ -27,7 +27,7 @@ var _sources: Array[ExcitementSources] = []
 ## Takes the events standing in the world: every simulation has them. Called once by the builder.
 func hold_the_events(events: EventManager) -> void:
 	_events = events
-	_sources = [events.sources]
+	_sources = [events.excitement_sources()]
 
 ## Takes a city's own parts beside its events: the crowd, the poster walls and the blackout. Called
 ## once by the builder, for a city.
@@ -35,7 +35,7 @@ func hold_the_city_parts(crowd: Crowd, posters: PosterWalls, blackout: Blackout)
 	_crowd = crowd
 	_posters = posters
 	_blackout = blackout
-	_sources = [_events.sources, crowd.sources()]
+	_sources = [_events.excitement_sources(), crowd.sources()]
 
 ## The day's events in this world.
 func events() -> EventManager:

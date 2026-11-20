@@ -169,7 +169,7 @@ func _start_a_day(manager: EventManager, day: int) -> void:
 ## no city is built around it.
 func _manager(t: TestRunner, atlas: AtlasLibrary) -> EventManager:
 	var manager := EventManager.new()
-	manager.atlas = atlas
+	manager.use_atlas(atlas)
 	manager.setup_world(StreetMap.full(), RunState.new())
 	t.add_child(manager)
 	return manager
