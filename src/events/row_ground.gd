@@ -12,7 +12,7 @@ extends RefCounted
 ## **It is handed everything it asks**: the map; the walk's corridor (`Corridor`), or none for a
 ## walk with no routes, where a role asks nothing more than the row does; whether she sets off
 ## from the home's front door, whose street nothing then stands on
-## (`DaySpec.holds_the_home_streets`); how many times over a tile is offered (`Weights`); and
+## (`DaySpec.keeps_the_home_streets_clear()`); how many times over a tile is offered (`Weights`); and
 ## whether a wall is one by what it costs to walk through, as a function. Whoever makes a ground
 ## names them. The game's are `EventScheduler.row_ground()`'s: the scheduler's own numbers and its
 ## own reading of a wall, neither of which this file names.

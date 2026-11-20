@@ -235,7 +235,7 @@ static func owed_to_her_walk(plan: EventPlan) -> EventPlan:
 ## as the regular game? it doesn't seem like it does. it should, though.")* The walk names the
 ## streets that exist for it, so the rect takes the place of a day's corridor weighting.
 ## `ground` is the walk's ground (`row_ground()`), made under the spec's home-street rule
-## (`DaySpec.holds_the_home_streets`): the escape keeps it off, since she never sets off from that
+## (`DaySpec.keeps_the_home_streets_clear()`): the escape keeps it off, since she never sets off from that
 ## door there. It refuses a street tree's ground *(2026-09-12, the player: "trees read like
 ## obstacles (they add noise) so it makes detecting actual obstacles harder")*.
 ##
@@ -269,7 +269,7 @@ static func street_ground(map: CityMap, ground: RowGround, segment: StreetNetwor
 ## (`EVENT_PRECINCT_WEIGHT`, `EVENT_CORRIDOR_WEIGHT`, `EVENT_WALL_RIM_WEIGHT`,
 ## `EVENT_WALL_GAP_WEIGHT`, `WALL_DEEP_WEIGHT`), and which wall is one by its cost
 ## (`_is_a_wall_by_cost()`). `corridor` is null for a walk with no routes; `from_the_door` is the
-## spec's home-street rule (`DaySpec.holds_the_home_streets`), a day's where none is said.
+## spec's home-street rule (`DaySpec.keeps_the_home_streets_clear()`), a day's where none is said.
 ##
 ## **One ground a walk**: the dawn's context makes the day's (`DawnContext.ground()`, with this
 ## function) and the day's planner hands it on with the plan (`DayPlanner.Plan.ground()`), so

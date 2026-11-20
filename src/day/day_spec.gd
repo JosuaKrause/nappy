@@ -59,12 +59,9 @@ enum Goal {
 ## save written before this enum moved here reads the same.
 enum Section { NONE, BUILDING, CITY }
 
-## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
-## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
-## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
-## past it — its plan's random streams and its save are keyed by it. Read through `day_number()`;
-## public only for the suites' reads.
-var number := 1
+## The day number (`day_number()`): 1 to 14 for the days, and `BUILDING_DAY` and `CITY_DAY` for the
+## escape's two sections.
+var _number := 1
 ## The day's own words where "Day N of 14" stands, on its brief and its outcome screen, and the
 ## line the HUD says once she is walking it: "" for a day, "Escape the building" or "Escape the
 ## city" for a section. Read through `title()`.
@@ -138,10 +135,10 @@ var _shuts_the_spent_calm := true
 ## Whether falling asleep owes her a walk home, and with it the return leg's own pressure on the
 ## events (`EventManager._owe_the_return()`): every day's does. A section is outbound from its first
 ## frame to its last, and the baby is put to sleep at the top of each attempt, so it owes none.
-var owes_a_return := true
+var _owes_a_return := true
 ## Whether a torn poster sends a pursuer on foot at her (`EventManager.send_a_pursuer()`): on every
 ## day, and never in the escape.
-var poster_pursuits := true
+var _poster_pursuits := true
 ## How many of the act's walkers and cars are on its streets, as a share of the act's own
 ## (`Tuning.crowd_pedestrians()`, `crowd_cars()`): all of them on a day, and nobody in either of the
 ## escape's sections — *"no regular cars or regular people on the street"*.
@@ -184,10 +181,8 @@ var _keeps_unused_calm_clear := true
 ## (`RowGround.tiles_for()`) or round the home block (`CityMap.held`). The
 ## escape keeps its own rule instead, by the player's word (minty-lemur #785): she sets off from the
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
-## refused (`EventScheduler.clearance_around_her()`). Read through `keeps_the_home_streets_clear()`;
-## public only for the event manager's read of it, which waits for the events' interface, and for
-## `tests/test_dawn_context.gd`'s write of it on a bare spec, to build a held and a not-held one.
-var holds_the_home_streets := true
+## refused (`EventScheduler.clearance_around_her()`). Read through `keeps_the_home_streets_clear()`.
+var _holds_the_home_streets := true
 ## The share of its **wall**-role rows the day draws: every wall-role row's weight in a unit's bag
 ## is scaled by it, while its row marbles are measured against every wall weighed in full
 ## (`UnitFills`), so a wall's place goes to empty and a unit draws a wall that much less often.
@@ -272,7 +267,7 @@ var _region_wall_stands := false
 ## One of the fourteen days, `day_length` seconds long.
 static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpec:
 	var spec := DaySpec.new()
-	spec.number = day
+	spec._number = day
 	spec.length = day_length
 	spec._region_wall_stands = day >= Tuning.REGION_WALL_FIRST_DAY
 	if spec.region_wall_stands():
@@ -294,8 +289,8 @@ static func for_section(which: int, section_length: float, section_title := "") 
 	spec._a_loss_gives_back_the_attempt = false
 	spec._a_win_gives_a_nerve_back = false
 	spec._saved_as_under_way = false
-	spec.owes_a_return = false
-	spec.poster_pursuits = false
+	spec._owes_a_return = false
+	spec._poster_pursuits = false
 	spec.crowd_density = 0.0
 	spec.pastes_posters = false
 	spec._closes_streets = false
@@ -305,13 +300,13 @@ static func for_section(which: int, section_length: float, section_title := "") 
 	spec._spends_the_one_shots = false
 	spec._shuts_the_spent_calm = false
 	if which == Section.BUILDING:
-		spec.number = BUILDING_DAY
+		spec._number = BUILDING_DAY
 		spec._world = World.BUILDING
 		spec.goal = Goal.SERVICE_EXIT
 		spec._start = Start.FLAT
 		spec._a_win_leads_into = Section.CITY
 	else:
-		spec.number = CITY_DAY
+		spec._number = CITY_DAY
 		spec._world = World.CITY
 		spec.goal = Goal.CITY_EDGE
 		spec._start = Start.SERVICE_EXIT
@@ -342,7 +337,7 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
 	spec._keeps_unused_calm_clear = false
-	spec.holds_the_home_streets = false
+	spec._holds_the_home_streets = false
 	spec._one_event_a_street = true
 	spec._drawn_before_she_sets_off = true
 	spec._one_notice_at_a_time = true
@@ -351,9 +346,12 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 	spec._seals_the_main_road = true
 	spec._seals_every_street_off_the_walk = true
 
-## The day number every counter, loss line and run log header names (`number`).
+## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
+## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
+## `run.header().day()` stays on the last day while the escape is walked, since the run has not moved
+## past it — its plan's random streams and its save are keyed by it (`_number`).
 func day_number() -> int:
-	return number
+	return _number
 
 ## What ends the day for a win (`Goal`).
 func goal_kind() -> Goal:
@@ -458,19 +456,19 @@ func use_exits(the_exits: Dictionary) -> void:
 	_exits = the_exits
 
 ## Whether nothing stands on the street her front door opens onto or round the home block
-## (`holds_the_home_streets`): every day's rule, and not the escape's.
+## (`_holds_the_home_streets`): every day's rule, and not the escape's.
 func keeps_the_home_streets_clear() -> bool:
-	return holds_the_home_streets
+	return _holds_the_home_streets
 
-## Whether falling asleep owes her a walk home on this walk (`owes_a_return`): every day's does, a
+## Whether falling asleep owes her a walk home on this walk (`_owes_a_return`): every day's does, a
 ## section of the escape does not.
 func owes_her_a_return() -> bool:
-	return owes_a_return
+	return _owes_a_return
 
-## Whether a torn poster sends a pursuer on foot at her on this walk (`poster_pursuits`): every
+## Whether a torn poster sends a pursuer on foot at her on this walk (`_poster_pursuits`): every
 ## day's does, the escape's never.
 func sends_a_pursuer_for_a_torn_poster() -> bool:
-	return poster_pursuits
+	return _poster_pursuits
 
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined (`_keeps_the_walk_open`): the escape's.

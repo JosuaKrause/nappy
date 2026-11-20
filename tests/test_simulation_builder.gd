@@ -458,5 +458,5 @@ static func _start(made: Dictionary, spec: DaySpec) -> void:
 	RigStreets.begin(made["streets"] as DayStreets, made["map"] as CityMap, spec)
 	var events := _simulation(made).events()
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [RECYCLE_SEED, spec.number])
+	rng.seed = hash("%d:%d" % [RECYCLE_SEED, spec.day_number()])
 	events.start_day(spec, rng, [] as Array[String], Vector2.ZERO)
