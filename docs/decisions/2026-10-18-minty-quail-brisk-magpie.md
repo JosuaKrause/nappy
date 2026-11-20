@@ -13,9 +13,9 @@ hand; a script (in the pull request's description, rerun after any merge of `mai
 `src/events/` and seven suites and probes. `tools/field_reads.txt` loses the forty `[EventWorld]` lines the design
 named. Nothing a player sees or the run log records changes. The per-frame cost is measured beside it, base against head.
 
-**Open to overturn (the builder's, where the design was silent):** `visible_view()` rather than `visible()`, which would
-read as a yes-or-no question; `use_map()` taking both maps; the `walk_rows` probe handing open ground as the world's map,
-as before.
+**Open to overturn (the builder's, where the design was silent):** the `walk_rows` probe hands open ground as the world's
+map, as before. `visible_view()` (rather than `visible()`, which would read as a yes-or-no question) and the two-map
+`use_map()` are the design's.
 
 **The item.** Row 3b stays open until its last pull request; section 4 counts `EventWorld`'s eleven remaining listed
-lines, its drawing hand-ins, which row 3b's later pull requests take.
+lines, what the live event is handed, which row 3b's later pull requests take.
