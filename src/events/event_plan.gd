@@ -239,6 +239,11 @@ func stand_where(sited: EventPlan) -> void:
 	facing = sited.facing
 	_role = sited._role
 
+## Records where a plan that comes where she stands last came (`come_where_she_stands()`): the
+## explosion outside's charge, which `EventStreaming` brings back on her spot each time.
+func came_at(at: Vector2) -> void:
+	position = at
+
 ## Turns the plan to face `direction`: a crew faces the wall it pastes.
 func face(direction: Vector2) -> void:
 	facing = direction
@@ -575,6 +580,12 @@ func heard_within() -> float:
 func detain_distance() -> float:
 	return def.detain_distance()
 
+## Makes it the boom of a street door, drawn raised or lowered from `shared`, the state the region's
+## doors are made with (`gate()`). Called by `RegionPlanner._add_door_bodies()` as it makes the
+## door's boom, and by nothing else.
+func stand_as_the_boom_of(shared: RegionPlanner.GateState) -> void:
+	gate_state = shared
+
 ## The boom's shared state (`gate_state`) for a street door's boom, which the region's doors are
 ## made with, or null for every other plan.
 func gate() -> RegionPlanner.GateState:
@@ -592,6 +603,23 @@ func stand_as_a_mast(id: String) -> void:
 ## The id of the mast this is the plan of (`stand_as_a_mast()`), `""` for every other plan.
 func mast_id() -> String:
 	return _mast_id
+
+## Which `EventDef.SpawnMode` its row is sited in on `day` (`EventDef.spawn_mode_on()`).
+func spawn_mode_on(day: int) -> EventDef.SpawnMode:
+	return def.spawn_mode_on(day)
+
+## Whether the director sends its row ahead of her on an ordinary day (`EventDef.is_sent_ahead()`).
+func is_sent_ahead() -> bool:
+	return def.is_sent_ahead()
+
+## Whether its row is a one-shot, a set piece a day owes once (`EventDef.is_a_one_shot()`).
+func is_a_one_shot() -> bool:
+	return def.is_a_one_shot()
+
+## The id of the row its live event calls in once it is first seen (`EventDef.calls_in()`), or ""
+## for a row that calls none: the burning building's entering fire engine.
+func calls_in() -> String:
+	return def.calls_in()
 
 ## Whether its row is a loudspeaker mast (`EventDef.is_a_mast()`).
 func is_a_mast() -> bool:

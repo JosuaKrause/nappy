@@ -369,7 +369,7 @@ static func as_warned(def: EventDef) -> EventDef:
 ## player, as `EventsAhead.place_what_is_owed_ahead()` is.
 func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 	for plan in plans:
-		if not plan.live or plan.def.aftermath.on_sight == "" or _sighted.get(plan, false):
+		if not plan.live or plan.calls_in() == "" or _sighted.get(plan, false):
 			continue
 		if not world.visible_view().sees(plan.live.global_position):
 			continue
@@ -379,8 +379,8 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 		# not once per retry.
 		if not _sight_reported.get(plan, false):
 			_sight_reported[plan] = true
-			world.reports().tell_event_sighted(plan.def.id)
-		if _summon_the_sighted_row(plan.def, plan.live.global_position, plan):
+			world.reports().tell_event_sighted(plan.row_id())
+		if _summon_the_sighted_row(plan.row(), plan.live.global_position, plan):
 			_sighted[plan] = true
 
 ## Warns of the row `source.aftermath.on_sight` names, coming along `at`'s own street to `at` — `at`

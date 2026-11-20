@@ -223,7 +223,7 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 ## becomes as a unit draws it (`MarbleDraw`), so no row drawn after it is spaced from a place
 ## it never stands at. A one-shot owed to her walk is planned unplaced by `DawnOneShots`.
 static func owed_to_her_walk(plan: EventPlan) -> EventPlan:
-	var owed := EventPlan.new(plan.def, Vector2.INF)
+	var owed := EventPlan.new(plan.row(), Vector2.INF)
 	owed.give_role(plan.role())
 	return owed
 

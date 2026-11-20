@@ -207,9 +207,7 @@ src/events/event_catalogue.gd warning_picture
 src/events/event_catalogue.gd weight
 src/events/event_catalogue.gd when_it_stops
 src/events/event_director.gd id
-src/events/event_director.gd kind
 src/events/event_director.gd placement
-src/events/event_director.gd pursuit
 src/events/event_director.gd shape
 src/events/event_excitement.gd core_intensity
 src/events/event_excitement.gd core_radius
@@ -249,8 +247,6 @@ src/events/event_spawner.gd shape
 src/events/event_spawner.gd solid_when
 src/events/event_spawner.gd speed
 src/events/event_spawner.gd telegraph_time
-src/events/event_streaming.gd id
-src/events/event_streaming.gd kind
 src/events/events_ahead.gd id
 src/events/pending_warning.gd id
 src/events/plan_builder.gd path_length_tiles
@@ -316,44 +312,22 @@ src/events/views/rank_look.gd age
 src/run/day_director.gd excitement
 
 # [EventPlan] src/events/event_plan.gd
-src/events/day_planner.gd position
-src/events/event_director.gd def
-src/events/event_director.gd position
-src/events/event_director.gd spent
 src/events/event_director.gd was_live
-src/events/event_manager.gd def
-src/events/event_manager.gd facing
-src/events/event_manager.gd position
-src/events/event_scheduler.gd def
-src/events/event_spawner.gd def
 src/events/event_spawner.gd live
 src/events/event_streaming.gd age
 src/events/event_streaming.gd arrives_aged
 src/events/event_streaming.gd at_her
 src/events/event_streaming.gd behaviours
 src/events/event_streaming.gd comes_in
-src/events/event_streaming.gd def
-src/events/event_streaming.gd facing
-src/events/event_streaming.gd gate_state
 src/events/event_streaming.gd kept_live
 src/events/event_streaming.gd live
 src/events/event_streaming.gd noticed_at
-src/events/event_streaming.gd path
-src/events/event_streaming.gd position
 src/events/event_streaming.gd repeat_after
 src/events/event_streaming.gd repeat_every
-src/events/event_streaming.gd spent
 src/events/event_streaming.gd travelled
 src/events/event_streaming.gd wait_began
 src/events/event_streaming.gd was_live
-src/events/events_ahead.gd def
-src/events/events_ahead.gd position
-src/events/events_ahead.gd spent
 src/events/events_ahead.gd was_live
-src/events/plan_builder.gd facing
-src/routes/region_planner.gd def
-src/routes/region_planner.gd facing
-src/routes/region_planner.gd gate_state
 
 # [EventWorld] src/events/event_world.gd
 src/events/event_manager.gd atlas

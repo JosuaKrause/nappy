@@ -48,7 +48,7 @@ func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 		if def.sidewalk_lane() == EventDef.Pavement.AGAINST_THE_BUILDING:
 			# Backing in, so it faces *out* of the wall it is against: the box is the end that is
 			# coming towards you and it has to be the end that is in the yard.
-			placed.facing = -Vector2(_map.pavement_inward(tile))
+			placed.face(-Vector2(_map.pavement_inward(tile)))
 		return placed
 	match def.path_mode:
 		EventDef.PathMode.CROSS_STREET:
