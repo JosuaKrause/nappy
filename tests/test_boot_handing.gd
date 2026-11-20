@@ -105,7 +105,7 @@ func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 			"the escape's city is built, and she stands in it")
 	var controls := Boot.touch_controls(main)
 	var visible: VisibleView = RunCity.events(city).world.visible
-	t.check(visible.controls == controls.covering(),
+	t.check(visible.screen_cover() == controls.covering(),
 			"and its events hold the controls' cover")
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	visible.look_from(Stroller.view_centre_of(Boot.player(main)))

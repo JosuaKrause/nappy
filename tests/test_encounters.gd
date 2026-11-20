@@ -86,7 +86,7 @@ func _free_manager(manager: EventManager) -> void:
 func _watch() -> EncounterWatch:
 	# Reporting on the game's bus, which this suite listens on.
 	var watch := EncounterWatch.new(ToldEvents.on(EventBus))
-	watch.day = DAY
+	watch.count_under(DAY)
 	return watch
 
 ## An instance of the row `id` standing at `at`, in the tree and never ticking on its own.
@@ -311,7 +311,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t: TestRunner) -> void:
 	other.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, [other] as Array[EventInstance], AWAY, 0.5)
 	watch.end_day()
-	watch.day = DAY + 1
+	watch.count_under(DAY + 1)
 	t.check(_influenced == ["%d:homeless_yeller:unseen" % DAY],
 			"the end of a day ends every encounter still open, under the day it happened on (%s)"
 			% [_influenced])

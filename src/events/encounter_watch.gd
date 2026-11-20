@@ -113,9 +113,14 @@ var _hold_source := Callable()
 var _hold_frame := -1
 var _hold: EventInstance = null
 
-## The day the signals carry. Set by `EventManager.start_day()`; an influence still waiting when the
-## next day starts goes out under the day it happened on.
-var day := 0
+## The day the signals carry (`count_under()`); an influence still waiting when the next day starts
+## goes out under the day it happened on.
+var _day := 0
+
+## **Counts the encounters that follow under `day`**, handed in by the manager as it starts a walk
+## (`EventManager.start_day()`) and again by a scene recipe's walk, which counts under its own.
+func count_under(day: int) -> void:
+	_day = day
 
 ## One frame. `visible` is what she can see this frame (`VisibleView.look()` already told), `her`
 ## where she stands, `running` whether she is running, `hold_source` the game's own question of
@@ -189,14 +194,14 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 		return
 	if not record.seen and share >= Tuning.ENCOUNTER_SEEN_SHARE:
 		record.seen = true
-		_reports.tell_encounter_seen(day, record.name)
+		_reports.tell_encounter_seen(_day, record.name)
 		if record.influence_waiting:
 			record.influence_waiting = false
-			_reports.tell_encounter_influenced(day, record.name, true)
+			_reports.tell_encounter_influenced(_day, record.name, true)
 	if not record.influenced and _is_meaningful(instance, record, her):
 		record.influenced = true
 		if record.seen:
-			_reports.tell_encounter_influenced(day, record.name, true)
+			_reports.tell_encounter_influenced(_day, record.name, true)
 		else:
 			record.influence_waiting = true
 	record.landed_last = instance.source().landed_ever
@@ -264,11 +269,11 @@ func _close(record: Record) -> void:
 	record.open = false
 	if record.influence_waiting:
 		record.influence_waiting = false
-		_reports.tell_encounter_influenced(day, record.name, false)
+		_reports.tell_encounter_influenced(_day, record.name, false)
 
 func _watch_the_running(running: bool) -> void:
 	if running and not _running and _clock - _ran_last >= RUN_BOUT_GAP:
-		_reports.tell_run_bout_began(day)
+		_reports.tell_run_bout_began(_day)
 	_running = running
 	if running:
 		_ran_last = _clock
