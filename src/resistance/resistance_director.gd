@@ -332,7 +332,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	# A protest's placards point where this director's red arrow does (`_pointable_objective()`):
 	# the day's events are handed the question rather than looking the director up.
 	if events:
-		events.points_at = _pointable_objective
+		events.use_protest_target(_pointable_objective)
 	_mark_drawn = _spawn_siting.ask_of_drawing(MARK_BOX)
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)

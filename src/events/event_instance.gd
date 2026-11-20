@@ -1818,7 +1818,7 @@ func rim() -> EntityHalo:
 ## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
 var look: EventLook
 
-## What a protest points its placards at, handed in by whoever knows (`EventManager.points_at`,
+## What a protest points its placards at, handed in by whoever knows (`EventManager.use_protest_target()`,
 ## from the resistance's `_pointable_objective()`) after `setup()`; unset, it points at nothing.
 ## Asked as `where_its_placards_point()`.
 var points_at := Callable()

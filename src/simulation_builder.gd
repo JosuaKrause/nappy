@@ -146,12 +146,12 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 
 ## **The simulation of a world that is not the city**, standing under `world`: the escape's
 ## building, whose events stand on `map` and belong to `run`. The whole plan is in the world at
-## once (`EventManager.stream_radius`), since the building is walked part by part through doors;
+## once (`EventManager.stream_within()`), since the building is walked part by part through doors;
 ## no crowd, no walls to paste, no power to cut.
 func in_the_building(world: WorldContext, map: WorldMap, run: RunState) -> WorldSimulation:
 	var simulation := _stand_under(world)
 	var events := _new_events()
-	events.stream_radius = INF
+	events.stream_within(INF)
 	simulation.add_child(events)
 	events.draw_in(world)
 	events.setup_world(map, run)
@@ -175,11 +175,12 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 func _new_events() -> EventManager:
 	var events := EventManager.new()
 	events.name = "Events"
-	events.trace = _trace
-	events.skip_drawing = _skip_event_drawing
-	events.timing = _timing
-	events.atlas = _atlas
+	events.use_trace(_trace)
+	if _skip_event_drawing:
+		events.draw_nothing()
+	events.use_timing(_timing)
+	events.use_atlas(_atlas)
 	events.use_bus(_bus)
 	if _every_cyclist_a_pelican:
-		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
+		events.rig_the_pelican(EventSpawner.PelicanRig.ALWAYS)
 	return events

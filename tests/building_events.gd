@@ -13,11 +13,11 @@ static func events_in(parent: Node, scene: InteriorScene,
 		rng: RandomNumberGenerator, run: RunState) -> EventManager:
 	var events := EventManager.new()
 	events.use_bus(EventBus)
-	events.stream_radius = INF
+	events.stream_within(INF)
 	parent.add_child(events)
 	events.draw_in(scene)
 	events.setup_world(scene.map(), run)
-	var sets: Array[ExcitementSources] = [events.sources]
+	var sets: Array[ExcitementSources] = [events.excitement_sources()]
 	scene.use_excitement_sources(sets)
 	events.set_meta(&"building_seed", rng.randi())
 	restart(events, scene)

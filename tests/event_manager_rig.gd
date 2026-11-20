@@ -31,7 +31,7 @@ static func build_city(t: TestRunner, builder: SimulationBuilder = null) -> City
 	var city := RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	RunCity.build(city, MapCache.of(SEED), builder)
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 	return city
 
 ## The stream a day's events are planned from.

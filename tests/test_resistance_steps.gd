@@ -821,7 +821,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, Tuning.RUN_LENGTH_DAYS)
 	_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
 	RunCity.events(_city).start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
 			_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot())
 	var mast_plan: EventPlan = null

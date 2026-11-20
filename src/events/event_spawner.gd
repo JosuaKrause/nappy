@@ -131,9 +131,14 @@ const PELICANS_IN_THE_BAG := 1
 const PELICAN_STREAM := "pelican-bag"
 
 ## What a rig makes `rolls_a_pelican()` answer: the bag's own marble, or every rider one or the
-## other, the way `stream_radius` lets one turn the streaming off.
+## other, the way `EventManager.stream_within()` lets one turn the streaming off.
 enum PelicanRig { BAG, ALWAYS, NEVER }
-var pelican_rig := PelicanRig.BAG
+var _pelican_rig := PelicanRig.BAG
+
+## Makes `rolls_a_pelican()` answer as `rig` says: the bag's own marble, or every rider one or the
+## other. `--pelican` is `PelicanRig.ALWAYS` (`SimulationBuilder`).
+func rig_the_pelican(rig: PelicanRig) -> void:
+	_pelican_rig = rig
 ## The run's bag, brought to where the run is by `_the_pelican_bag()`; a shared bag
 ## (`MarbleBag.shared()`) whose marbles are `true` for the pelican and `false` for a cyclist.
 var _pelican_bag: MarbleBag = null
@@ -164,7 +169,7 @@ func rolls_a_pelican(def: EventDef) -> bool:
 		return false
 	var drew: bool = _the_pelican_bag().draw()
 	world.run.pelican().count_a_draw()
-	match pelican_rig:
+	match _pelican_rig:
 		PelicanRig.ALWAYS:
 			return true
 		PelicanRig.NEVER:
