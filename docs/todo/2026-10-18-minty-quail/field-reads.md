@@ -107,13 +107,13 @@ Left, each its own design question:
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
-- **The day spec's event readers.** The day spec (`DaySpec`) keeps `number`, `closes_streets`,
-  `world`, `holds_the_home_streets`, `owes_a_return` and `poster_pursuits` public for the event
-  manager's reads (row 3b of `event-interface.md`) and the suites'; every other reader asks its
-  methods (`day_number()`, `closes_the_streets()`, `world_kind()`, `keeps_the_home_streets_clear()`),
-  and whether the walk is kept open, one notice is given at a time and the unused calm is kept clean
-  are private, asked through `keeps_her_walk_open()`, `notices_one_at_a_time()` and
-  `keeps_the_unused_calm_clean()`. The suites' reads of `number`, `holds_the_home_streets` and
+- **The day spec's event readers.** The day spec (`DaySpec`) keeps `number`,
+  `holds_the_home_streets`, `owes_a_return` and `poster_pursuits` public for the event manager's
+  reads (row 3b of `event-interface.md`) and the suites'; every other reader asks its methods
+  (`day_number()`, `keeps_the_home_streets_clear()`). The day's world, whether it closes streets,
+  whether the walk is kept open, whether one notice is given at a time and whether the unused calm is
+  kept clean are private, asked through `world_kind()`, `closes_the_streets()`,
+  `keeps_her_walk_open()`, `notices_one_at_a_time()` and `keeps_the_unused_calm_clean()`. The suites' reads of `number`, `holds_the_home_streets` and
   `poster_pursuits`, and their two writes (`tests/test_dawn_context.gd` sets
   `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd` sets `owes_a_return`), go with that
   pass, which gives them another way to build their spec.
