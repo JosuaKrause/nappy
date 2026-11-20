@@ -2495,7 +2495,7 @@ regular game? it doesn't seem like it does. it should, though.")* So every refus
 tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
 (`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
 spread, the power station's front; all but the street the
-home's front door opens onto, a door the escape never sets off from (`DaySpec.holds_the_home_streets`
+home's front door opens onto, a door the escape never sets off from (`DaySpec.keeps_the_home_streets_clear()`
 off; `docs/CITY.md`, "The escape"). What is sited after dawn asks a ground under the same setting: a day's own,
 handed on from dawn (`WalkEvents.ground()`), and on a walk no dawn of a day planned one `EventsAhead`
 makes under the walk's spec (`_ground_of_the_walk()`), so a row placed while she walks keeps the rule

@@ -1,5 +1,5 @@
 extends RefCounted
-## **What is sited after dawn keeps the walk's own home-street rule** (`DaySpec.holds_the_home_streets`),
+## **What is sited after dawn keeps the walk's own home-street rule** (`DaySpec.keeps_the_home_streets_clear()`),
 ## not always a day's: the placement context the events ask for after dawn
 ## (`WalkSiting`, made by the `SitingMaker` the events are handed) refuses the street her front door opens onto on a walk that holds
 ## the home's streets, as the dawn placement does, and offers it on a walk that does not (the escape's

@@ -25,7 +25,7 @@ func _test_every_marble_of_a_walk_bag_names_a_row(t: TestRunner) -> void:
 				continue
 			named += 1
 			t.check(spec.walk_bag_rows().has(marble),
-					"day %d's walk bag marble %s names a row" % [spec.number, marble])
+					"day %d's walk bag marble %s names a row" % [spec.day_number(), marble])
 	t.check(named > 0, "some spec walks a bag with rows in it (%d marbles named)" % named)
 	t.check(DaySpec.EMPTY_MARBLE == ViewBag.EMPTY, "the spec's empty marble is the bag's")
 
@@ -43,7 +43,7 @@ func _test_a_walk_kept_open_stands_one_event_a_street(t: TestRunner) -> void:
 		if spec.keeps_her_walk_open():
 			kept_open += 1
 			t.check(spec.stands_one_event_a_street(),
-					"day %d keeps the walk open and stands one event a street" % spec.number)
+					"day %d keeps the walk open and stands one event a street" % spec.day_number())
 	t.check(kept_open > 0, "some spec keeps its walk open (%d)" % kept_open)
 
 func _test_the_region_wall_stands_from_its_first_day(t: TestRunner) -> void:
@@ -63,7 +63,7 @@ func _test_neither_section_of_the_escape_has_the_region_wall(t: TestRunner) -> v
 	for which: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
 		var spec := DaySpec.for_section(which, 60.0)
 		t.check(not spec.region_wall_stands(),
-				"the escape's section %d (day %d) has no region wall" % [which, spec.number])
+				"the escape's section %d (day %d) has no region wall" % [which, spec.day_number()])
 
 ## The catalogue's walls are thinned on exactly the days the region wall stands: the spec's own
 ## share follows its own answer, over every day of the run.

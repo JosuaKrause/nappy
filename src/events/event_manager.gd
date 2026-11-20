@@ -110,7 +110,7 @@ func rig_the_pelican(rig: EventSpawner.PelicanRig) -> void:
 	spawner.rig_the_pelican(rig)
 var _hard_failed := false
 
-## Whether falling asleep owes her a return on this walk (`DaySpec.owes_a_return`), as the run flow
+## Whether falling asleep owes her a return on this walk (`DaySpec.owes_her_a_return()`), as the run flow
 ## hands it in (`use_the_spec()`): a day's, `DaySpec`'s own default, until a spec is handed in.
 var _owes_a_return := true
 ## What plans each walk `start_day()` starts, chosen by its spec (`DaySpec`): a day's, the escape
@@ -271,7 +271,7 @@ func force(row: String, interval: float) -> void:
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
 ## `RETURNING`, for the day she is walking.
 ##
-## **A walk that owes no return is owed none** (`DaySpec.owes_a_return`, false for the escape's
+## **A walk that owes no return is owed none** (`DaySpec.owes_her_a_return()`, false for the escape's
 ## sections, which have no walk home). `Baby.force_sleep()` emits this signal, and the escape
 ## force-sleeps her at the top of every section and every retry, so without the setting a walk that
 ## is outbound from its first frame to its last would be handed the return leg's own pressure at the
@@ -291,9 +291,9 @@ func _owe_the_return() -> void:
 ## `focus` is where the player will be standing when the walk starts, so the events already
 ## around her are in the world on the first frame rather than appearing during it.
 ##
-## **A day is keyed by its own number** (`DaySpec.number`): its streams and the rows it sends. **The
+## **A day is keyed by its own number** (`DaySpec.day_number()`): its streams and the rows it sends. **The
 ## escape's sections keep the run's last day**, on whose streams their plans are drawn
-## (`DaySpec.number`'s own doc), and count her encounters under their own number. A day leaves the
+## (`DaySpec.day_number()`'s own doc), and count her encounters under their own number. A day leaves the
 ## director what it owes her walk (`EventsAhead.start_day()`) and records its bodies for
 ## the crowd; a walk planned whole before she sets off owes the director nothing
 ## (`EventsAhead.start_a_given_walk()`), and a plan of it that comes again
