@@ -94,12 +94,15 @@ func force_the_blackout() -> void:
 ## `dark_from_the_start` is the escape's city, dark from its first frame
 ## (`DaySpec.is_dark_from_the_start()`).
 ##
+## `navigator` is the city's own (`City.navigator`), the one the events, the crowd and the resistance all
+## move by.
+##
 ## `world` is told what charges her on its streets, and its day's dressing is what the walls paste
 ## by (`CityDressing.day_dressed`).
-func in_the_city(world: CityDressing, map: CityMap, streets: DayStreets, signals: TrafficSignals,
-		buildings: Array[Building], run: RunState, dark_from_the_start := false) -> WorldSimulation:
+func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, streets: DayStreets,
+		signals: TrafficSignals, buildings: Array[Building], run: RunState,
+		dark_from_the_start := false) -> WorldSimulation:
 	var simulation := _stand_under(world)
-	var navigator := map.navigator()
 
 	var posters := PosterWalls.new()
 	posters.name = "Posters"
@@ -111,6 +114,7 @@ func in_the_city(world: CityDressing, map: CityMap, streets: DayStreets, signals
 
 	var events := _new_events()
 	simulation.add_child(events)
+	events.draw_in(world)
 	events.setup(map, streets, signals, run, navigator, posters)
 	events.force(_forced_row, _forced_interval)
 	posters.watch_events(events)
@@ -149,6 +153,7 @@ func in_the_building(world: WorldContext, map: WorldMap, run: RunState) -> World
 	var events := _new_events()
 	events.stream_radius = INF
 	simulation.add_child(events)
+	events.draw_in(world)
 	events.setup_world(map, run)
 	simulation.hold_the_events(events)
 	world.use_excitement_sources(simulation.excitement_sources())

@@ -17,7 +17,7 @@ static func over(t: TestRunner, map: CityMap, run: RunState, streets: DayStreets
 	manager.use_bus(EventBus)
 	var holder := WorldContext.new()
 	manager.add_child(holder)
-	map.world = holder
+	manager.draw_in(holder)
 	manager.setup(map, streets, null, run)
 	manager.stream_radius = stream_radius
 	t.add_child(manager)

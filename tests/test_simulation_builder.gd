@@ -53,9 +53,6 @@ func _city(t: TestRunner, builder: SimulationBuilder = null, bus: _BUS = null,
 		map = StreetMap.full()
 	var world := CityDressing.new()
 	t.add_child(world)
-	# The map is drawn in this world, as a built city says of its own (`City.build()`), so what the
-	# events stream in has somewhere to stand.
-	map.world = world
 	for building in buildings:
 		world.add_child(building)
 	var run := RunState.new()
@@ -65,8 +62,8 @@ func _city(t: TestRunner, builder: SimulationBuilder = null, bus: _BUS = null,
 	if builder == null:
 		builder = SimulationBuilder.new()
 		builder.use_bus(bus)
-	var simulation := builder.in_the_city(world, map, streets, signals, buildings, run,
-			dark_from_the_start)
+	var simulation := builder.in_the_city(world, map, Navigator.new(map), streets, signals, buildings,
+			run, dark_from_the_start)
 	return {"world": world, "map": map, "streets": streets, "signals": signals, "run": run,
 			"simulation": simulation}
 
@@ -150,9 +147,6 @@ func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var map := StreetMap.full()
-	# The map is drawn in this world, as the building's is in its scene, so what the events stand
-	# has somewhere to stand.
-	map.world = world
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	var simulation := SimulationBuilder.new().in_the_building(world, map, run)
@@ -244,7 +238,6 @@ func _test_both_worlds_events_report_on_the_bus_it_was_handed(t: TestRunner) -> 
 	var world := WorldContext.new()
 	t.add_child(world)
 	var building_map := StreetMap.full()
-	building_map.world = world
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	var building := builder.in_the_building(world, building_map, run)

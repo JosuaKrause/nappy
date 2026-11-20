@@ -384,7 +384,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	var holder := WorldContext.new()
 	var manager := EventManager.new()
 	manager.add_child(holder)
-	map.world = holder
+	manager.draw_in(holder)
 	manager.setup_world(map, run)
 	t.add_child(manager)
 	# After it enters the tree: entering turns on the tick of a node that defines one.

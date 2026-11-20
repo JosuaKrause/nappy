@@ -150,7 +150,7 @@ const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
 var map: CityMap
-## How everything that moves over `map` moves (`Navigator`): the map's own (`WorldMap.navigator()`),
+## How everything that moves over `map` moves (`Navigator`): built over the map by `build()` and
 ## held here for as long as the city stands, so the events, the crowd and whatever else moves over
 ## the map share the one.
 var navigator: Navigator
@@ -298,9 +298,7 @@ func build(city_map: CityMap) -> void:
 	if atlas == null:
 		atlas = AtlasLibrary.new()
 	map = city_map
-	# The city draws this map: what is added to the world through it comes here.
-	map.world = self
-	navigator = map.navigator()
+	navigator = Navigator.new(map)
 	scenery = SceneryResidency.new()
 	scenery.use_frame_timing(frame_timing)
 	scenery.frame_locked = scenery_frame_locked

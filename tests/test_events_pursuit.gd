@@ -560,9 +560,9 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	# streets, lights or poster walls), as a rig that builds no city hands them.
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	map.world = holder
 	var run := RunState.new()
 	var manager := EventManager.new()
+	manager.draw_in(holder)
 	manager.setup(map, null, null, run)
 	var player := Node2D.new()
 	t.add_child(player)

@@ -440,12 +440,13 @@ src/
 	world_map.gd          the one map interface the city's map and the building's implement and
 	                      everything in a world is handed: tile conversions, passability, the
 	                      line walk, the wall's depth, the blocked record, the street questions,
-	                      the navigator, adding to its world, what its ground does to her walk;
+	                      what its ground does to her walk (`slope_dir_at()`); it names nothing of
+	                      the world, which hands out the navigator and the draw layers;
 	                      open ground (`open_ground()`) for a rig with no world
 	world_context.gd      the only questions the baby may ask the world (how loud it is here: the
 	                      answer of the sets of sources it is handed), adding a node to the
-	                      world on a draw layer (`add_entity()`), and what its ground does to her
-	                      each frame and how it shows a bang outside
+	                      world on a draw layer (`add_entity()`), what its ground does to her
+	                      each frame (`process_player()`) and how it shows a bang outside
 	excitement_source.gd  one thing that charges her (`ExcitementSource`), composed by an event and
 	                      a crowd body alike: the ledger of what it landed and its window, its first
 	                      landing, the walls, what she is doing, the cached present rate, the
@@ -482,7 +483,9 @@ src/
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
 	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a
-	                      city away; handed to every mover by whoever builds it
+	                      city away; holds nothing but its map, so whoever builds a world builds
+	                      one over it (`City.build()`, `EventManager.setup_world()`) and hands it
+	                      to every mover
 	walk_field.gd         the walking-distance sweep over a map's ground, out from the places it is
 	                      begun from, a slice a frame: the red arrow's "closest by walking" and
 	                      the chase way's walk to her
@@ -1119,16 +1122,19 @@ The city and the building implement one map interface, `WorldMap` (`src/world/wo
 handed its map by whoever builds it, never fetches it — the event manager and each event, the
 navigator, the stroller and the run log — and asks it every question about the ground: which tile a
 point is on, whether a mover may stand there (`passable()`), whether a line is clear
-(`clear_line()`), whether a wall keeps a field from her (`wall_between()`), a way round
-(`navigator()`), the list every mover's move for the tick stands on (`moves`, a `ProposedMoves`
+(`clear_line()`), whether a wall keeps a field from her (`wall_between()`), the list every mover's move for the tick stands on (`moves`, a `ProposedMoves`
 of `MoveProposal`s, each proposed, checked by its mover and then committed) and the pass over it a
-crowd body gives way through (`separation`, a `SeparationPass`), adding something to
-the world on a draw layer (`add_entity()`, through the world node that draws the map), what the ground does to her walk (`process_player()`, the building's
-doors; `slope_dir_at()`, its flights), and the street questions, which a map with no streets answers
+crowd body gives way through (`separation`, a `SeparationPass`), what the ground does to her walk
+(`slope_dir_at()`, the building's flights), and the street questions, which a map with no streets answers
 "no street here". The line walk, the wall's depth, the blocked record and the tile conversions are
 written once in `WorldMap`, over each map's own answer about its ground. A rig with no world stands
 an event on open ground (`WorldMap.open_ground()`), where nothing is walled and every way is
-straight; nothing asks whether it has a map. Which world a day spec is walked in is the run flow's
+straight; nothing asks whether it has a map. **The map names nothing of the world**: the way round
+is the navigator's (`Navigator`, over a map, which whoever builds a world builds and hands on: the
+city holds its own, `City.navigator`, and `SimulationBuilder` hands it to the events, the crowd and
+the resistance; the building's events build theirs), and what is drawn in the world is the world's
+(`WorldContext`, handed to the event manager by `EventManager.draw_in()`, which hands it to each
+event it makes). Which world a day spec is walked in is the run flow's
 choice (`main`), which hands that world's map down.
 
 ## WorldContext
@@ -1145,7 +1151,10 @@ simulation, `SimulationBuilder`; each an `ExcitementSources` in the world layer)
 door rule stated once (`ExcitementSources.all_at()`). The world names no event and no crowd, so it
 depends on nothing above it. `InteriorScene` (the escape's building) is a third implementor: its
 set is the day's own `EventManager`'s, run on the building's map, it has no crowd, and its basement
-gives no decay back. `main` hands her the world she walks
+gives no decay back. `WorldContext` is also the world's own service to what stands in it: the draw layers a node is
+added on (`add_entity()`), a bang from outside the walls (`bang_outside()`) and what its ground does
+to her each frame (`process_player()`, the building's doors and light), which the run flow asks of
+the world she walks. `main` hands her the world she walks
 (`Baby.set_world()`) each time it puts her into one. Adding an event type therefore never touches
 the meter code, and the meters can be unit-tested against a fake world.
 

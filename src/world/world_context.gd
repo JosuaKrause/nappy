@@ -94,8 +94,8 @@ var _layers: WorldLayers
 func bang_outside() -> void:
 	pass
 
-## What this world's ground does to her each frame she walks it, asked through its map
-## (`WorldMap.process_player()`): the building's doors fade her through and its light follows the
+## What this world's ground does to her each frame she walks it, asked by the run flow
+## (`main`) of the world she walks: the building's doors fade her through and its light follows the
 ## part she is in. Nothing in a world whose ground does nothing to her walk.
 func process_player(_player: Node2D, _delta: float) -> void:
 	pass

@@ -172,7 +172,7 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> v
 		var instance := EventInstance.new()
 		instance.atlas = atlas
 		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
-				_ground_in(world, vertical))
+				_ground_in(vertical), null, null, world)
 		world.add_entity(instance)
 		await t.get_tree().process_frame
 		var slices := _slices_of(instance)
@@ -219,7 +219,7 @@ func _test_the_slices_go_with_their_event(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.atlas = atlas
 	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
-			PackedVector2Array(), Vector2.RIGHT, _open_ground_in(world))
+			PackedVector2Array(), Vector2.RIGHT, WorldMap.open_ground(), null, null, world)
 	world.add_entity(instance)
 	await t.get_tree().process_frame
 	var layer := world.layers().node(DrawLayer.Layer.ENTITIES)
@@ -231,21 +231,12 @@ func _test_the_slices_go_with_their_event(t: TestRunner) -> void:
 	world.free()
 	atlas.release(&"events")
 
-## Open ground drawn in `world`: the map an instance stood in that world is handed, so what it adds
-## beside itself goes into the world (`WorldMap.add_entity()`).
-static func _open_ground_in(world: WorldContext) -> WorldMap:
-	var ground := WorldMap.open_ground()
-	ground.world = world
-	return ground
-
-## The ground an instance stands on in `world`: an east-west street where it is to run down the
+## The ground an instance stands on: an east-west street where it is to run down the
 ## screen (`vertical`), which it reads its axis off as it does in a city, and open ground otherwise.
-static func _ground_in(world: WorldContext, vertical: bool) -> WorldMap:
+static func _ground_in(vertical: bool) -> WorldMap:
 	if not vertical:
-		return _open_ground_in(world)
-	var ground: WorldMap = EastWestStreet.new()
-	ground.world = world
-	return ground
+		return WorldMap.open_ground()
+	return EastWestStreet.new()
 
 ## The slices `instance`'s picture is drawn in, found where the look stood them, beside it in the
 ## world's entity layer, in their own order (`SpreadLook.slices()`, far end first).
@@ -288,7 +279,7 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 			var drawer := RecordingEventDrawer.new(atlas)
 			instance.drawer = drawer
 			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
-					Vector2.RIGHT, _ground_in(world, vertical))
+					Vector2.RIGHT, _ground_in(vertical), null, null, world)
 			world.add_entity(instance)
 			await t.get_tree().process_frame
 			var slices := _slices_of(instance)

@@ -124,7 +124,7 @@ const TILE := float(Tuning.TILE_SIZE)
 const FADE_SECONDS := 0.35
 
 ## The building's map (`InteriorMapPlan`), the one everything standing in the building is handed:
-## built by `build()` and drawn by this scene (`WorldMap.world`), and asked through `map()`.
+## built by `build()` and drawn by this scene, and asked through `map()`.
 var _map: InteriorMapPlan
 ## The baked atlas pages the building draws from (`AtlasLibrary`), handed by `main` before the
 ## scene is added (`use_atlas()`); a scene nobody handed one (a suite's) makes its own when it first
@@ -212,7 +212,6 @@ func build() -> void:
 	_fade_layer.add_child(_fade_rect)
 
 	_map = InteriorMap.build()
-	_map.world = self
 	_tile_set = InteriorTileSet.build(_atlas)
 	_ground.tile_set = _tile_set
 	for tile: Vector2i in _map.floor_tiles():
@@ -607,7 +606,7 @@ func decay_multiplier(world_position: Vector2) -> float:
 
 # ------------------------------------------------------------------ transitions ---
 
-## What the building's ground does to her each frame she walks it (`WorldMap.process_player()`,
+## What the building's ground does to her each frame she walks it (`WorldContext.process_player()`,
 ## asked by the run flow through the map): the light of the part she is in, and a door or the service
 ## exit under her (`InteriorMapPlan.transition_at()`). Reads `player`'s own tile rather than being
 ## told about it — the question is "what is on this ground", not "what did somebody just do".

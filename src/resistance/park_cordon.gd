@@ -298,7 +298,7 @@ func use_bus(bus: _BUS) -> void:
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
 ## the day's obstruction the last gap is checked under (`DayReach.shut()`, as the director hands it).
-## `navigator` is the map's (`WorldMap.navigator()`), which the officers walk through; `events` the
+## `navigator` is the city's (`City.navigator`), which the officers walk through; `events` the
 ## day's, or null for none; `world` where its pieces are drawn, from `atlas`, or null to draw
 ## nothing; `siting` is the one the officers are placed by: the ground they may stand on and the
 ## camera's whole view.

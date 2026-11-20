@@ -4,10 +4,11 @@ extends RefCounted
 ## the city's map (`CityMap`) and the building's (`InteriorMapPlan`). An event manager, each event, the
 ## crowd, the stroller and the run log are given the map of the world they are in by whoever builds
 ## them, and ask it every question about the ground: which tile a point is on, whether a mover may
-## stand there, whether a line is clear, whether a wall keeps a field from her, how to get somewhere
-## (through its `navigator()`), how to add something to the world on a draw layer, and what the ground
-## under her does to her walk (`slope_dir_at()`, `process_player()`). None of them asks which world it
-## is in, so an event indoors walks round the building's walls and sees along its flights by the same
+## stand there, whether a line is clear, whether a wall keeps a field from her, and what the ground
+## under her does to her walk (`slope_dir_at()`). The map names nothing of the world: getting
+## somewhere is the navigator's (`Navigator`, over a map) and drawing something is the world's
+## (`WorldContext`), and whoever builds a world hands both on. None of them asks which world it is
+## in, so an event indoors walks round the building's walls and sees along its flights by the same
 ## code that walks it round a café outdoors.
 ##
 ## **The questions are answered here, over two answers each map gives about its own ground**: whether
@@ -49,16 +50,6 @@ var separation := SeparationPass.new(moves)
 ## Bumped by every write to a per-day record that is not a body (the city's holds, soft seals and
 ## closures): a version a reader only compares with the one its own answer was built from.
 var day_record_version := 0
-## The world this map is drawn in, which `add_entity()` and `process_player()` go through: handed
-## over by the world node when it takes the map (`City.build()`, `InteriorScene.build()`). Null for a
-## map no world draws — a data rig's; `has_world()` asks.
-var world: WorldContext = null
-
-## The map's one navigator while anything holds it (`navigator()`), kept by a weak reference: a map
-## holding its navigator strongly while the navigator holds the map would be a reference cycle that
-## is never freed.
-var _navigator: WeakRef = null
-
 ## Open ground: a map with no ground of its own (see the class doc).
 static func open_ground() -> WorldMap:
 	return WorldMap.new()
@@ -421,24 +412,6 @@ static func _inside_disc(from: Vector2, delta: Vector2, centre: Vector2, radius:
 	var root := sqrt(discriminant)
 	return Vector2((-b - root) / (2.0 * a), (-b + root) / (2.0 * a))
 
-# ---------------------------------------------------------------------- moving ---
-
-## How anything that walks or drives over this map moves (`Navigator`): **one per map**, the same
-## one to every caller for as long as anything holds it — the city (`City.navigator`), the event
-## manager, the director, the crowd, the resistance, every figure on the map — and a fresh one only
-## once nothing does. The one other navigator over a map is one a caller builds itself
-## (`Navigator.new(map)`), which only a test does, to step a figure by hand.
-func navigator() -> Navigator:
-	var held: Navigator = _navigator.get_ref() if _navigator else null
-	if held == null:
-		held = Navigator.new(self)
-		_navigator = weakref(held)
-	return held
-
-## The part of the step `delta` from `from` that `mover` takes (`Navigator.step()`).
-func step(from: Vector2, delta: Vector2, mover: Mover) -> Vector2:
-	return navigator().step(from, delta, mover)
-
 # ----------------------------------------------------------- the street questions ---
 # Each answers "no street here" on a map with no streets (see the class doc); `CityMap` answers them
 # from its lattice.
@@ -489,24 +462,7 @@ func alley_at(_tile: Vector2i) -> Rect2i:
 func lot_at(_tile: Vector2i) -> Rect2i:
 	return Rect2i()
 
-# ------------------------------------------------------------ the world it is in ---
-
-## Adds `node` to the world this map is drawn in, on `layer` (`DrawLayer.Layer`, an `int` for the
-## reason `DrawLayer._z_of()` gives), the y-sorted `ENTITIES` unless the caller asks for another
-## (`WorldContext.add_entity()`). Only on a map a world draws (`has_world()`).
-func add_entity(node: Node, layer: int = DrawLayer.Layer.ENTITIES) -> void:
-	world.add_entity(node, layer)
-
-## Whether a world draws this map, so `add_entity()` has somewhere to add to.
-func has_world() -> bool:
-	return world != null and is_instance_valid(world)
-
-## What the ground under her does each frame she walks it — the building's doors take her through,
-## its light follows her part — asked by the run flow every walking frame (`WorldContext.
-## process_player()`). Nothing on a map no world draws.
-func process_player(player: Node2D, delta: float) -> void:
-	if has_world():
-		world.process_player(player, delta)
+# ------------------------------------------------------------------- the ground ---
 
 ## `+1` where `world_position` is on a flight of stairs descending east, `-1` descending west, `0`
 ## off a flight: what the stroller turns a sideways press along (`Stroller._physics_process()`).

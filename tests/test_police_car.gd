@@ -582,7 +582,7 @@ func _test_a_sent_patrol_refused_its_turn_stands_in_the_box_and_goes_on(t: TestR
 		closed[Vector2i(period + Tuning.STREET_WIDTH + 2, period + lane)] = true
 		closed[Vector2i(period + lane, Tuning.STREET_WIDTH + 2)] = true
 	map.closed_tiles = closed
-	var way_on := WayOn.new(map, map.navigator(), ThroughRoads.over(map, Mover.vehicle()))
+	var way_on := WayOn.new(map, Navigator.new(map), ThroughRoads.over(map, Mover.vehicle()))
 	var east := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(false, 1.0))
 	var south := CrowdLanes.lane_centre(1, CrowdLanes.road_lane(true, 1.0))
 	var route := PackedVector2Array([Vector2(7.0 * tile, east), Vector2(10.0 * tile, east)])
