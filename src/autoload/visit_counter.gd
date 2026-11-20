@@ -307,7 +307,7 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 	_send_event(_run_begun_name(day, actually_resumed))
 
 ## The day of the walk last begun (`RunFlow.day_started`, off its spec) — one of the fourteen, or one
-## of the escape's two sections under their own numbers (`DaySpec.number`) — which everything counted
+## of the escape's two sections under their own numbers (`DaySpec.day_number()`) — which everything counted
 ## while it is walked is named by: a charge, an encounter, a poster, a hold. `0` until one is heard on
 ## this page.
 var _day := 0

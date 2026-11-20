@@ -225,7 +225,7 @@ func events() -> DayEvents:
 
 ## **The walk's ground for a row** (`RowGround`): which tiles each row may stand on, worked out
 ## at most once a day. Made on the first ask over the walk's corridor and the spec's home-street
-## rule (`DaySpec.holds_the_home_streets`), asked by every pass, and handed on by the day's
+## rule (`DaySpec.keeps_the_home_streets_clear()`), asked by every pass, and handed on by the day's
 ## planner to what is sited while she walks (`DayPlanner.Plan.ground()`), so nothing scans the
 ## city for it again.
 func ground() -> RowGround:
@@ -246,7 +246,7 @@ func locations() -> DayLocations:
 
 ## **Where she is put down, on a walk that keeps that ground clear**: the walk's start
 ## (`RouteSource.start()`) where the spec does not hold the home's streets
-## (`DaySpec.holds_the_home_streets`), the rule a walk that sets off elsewhere keeps in their
+## (`DaySpec.keeps_the_home_streets_clear()`), the rule a walk that sets off elsewhere keeps in their
 ## place; `Vector2.INF` on a walk that holds them, where the street her door opens onto is refused
 ## to every row instead (`RowGround`). What the fit is handed, so no body and no lethal field is
 ## offered the ground she is put down on (`LocationFit`).
