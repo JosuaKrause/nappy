@@ -184,7 +184,7 @@ func _rng(stream: String, city_seed: int, day: int) -> RandomNumberGenerator:
 ## microseconds in `EVENT_PARTS` order; a call the step skips this tick reads 0.
 func _split_events(events: EventManager, delta: float) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	events.streaming.broadcast_clock += delta
+	events.streaming.advance_the_broadcast(delta)
 	events.streaming.retire_finished()
 	stamps.append(Time.get_ticks_usec())
 	var found := events.world.has_player()
@@ -240,7 +240,7 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 ## microseconds in `SWEEP_PARTS` order.
 func _split_sweep(city: City, baby: Baby, her: Vector2) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	RunCity.events(city).sources.sources_at(her)
+	RunCity.events(city).excitement_sources().sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	RunCity.events(city).door_holding_her_at(her)
 	stamps.append(Time.get_ticks_usec())

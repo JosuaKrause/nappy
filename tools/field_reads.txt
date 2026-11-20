@@ -365,16 +365,6 @@ src/events/views/fire_look.gd age
 src/events/views/rank_look.gd age
 src/run/day_director.gd excitement
 
-# [EventManager] src/events/event_manager.gd
-src/day/world_simulation.gd sources
-src/resistance/resistance_director.gd points_at
-src/simulation_builder.gd atlas
-src/simulation_builder.gd pelican_rig
-src/simulation_builder.gd skip_drawing
-src/simulation_builder.gd stream_radius
-src/simulation_builder.gd timing
-src/simulation_builder.gd trace
-
 # [EventPlan] src/events/event_plan.gd
 src/events/dawn_phases/dawn_masts.gd mast_id
 src/events/dawn_phases/dawn_masts.gd silenced
@@ -431,14 +421,6 @@ src/routes/region_planner.gd def
 src/routes/region_planner.gd facing
 src/routes/region_planner.gd gate_state
 src/telemetry/telemetry_map.gd role
-
-# [EventSpawner] src/events/event_spawner.gd
-src/events/event_manager.gd pelican_rig
-
-# [EventStreaming] src/events/event_streaming.gd
-src/events/event_manager.gd broadcast_clock
-src/events/event_manager.gd consumed
-src/events/event_manager.gd stream_radius
 
 # [EventWorld] src/events/event_world.gd
 src/events/event_manager.gd atlas

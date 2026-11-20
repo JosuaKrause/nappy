@@ -167,7 +167,7 @@ func _build_city(t: TestRunner) -> void:
 	# skips streaming while no player is handed in (`EventWorld.has_player()`), the same reason
 	# `test_event_manager.gd` gives.
 	# Streaming below is driven by hand, at whatever real moment each check wants a mast live.
-	RunCity.events(_city).stream_radius = 10.0
+	RunCity.events(_city).stream_within(10.0)
 
 func _sites() -> Array[MastSites.Site]:
 	return MastSites.compute(_map)
@@ -192,9 +192,9 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
 	return null
 
 ## Two masts, met minutes apart, still read the same broadcast clock — the mechanism behind "all
-## masts speak at once". `age` is set from `EventStreaming.broadcast_clock` at the moment each one
-## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
-## mast that is "younger" — it is telling the same time as every other one.
+## masts speak at once". `age` is set from the city's broadcast clock (`EventStreaming`) at the moment each
+## one streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is
+## not a mast that is "younger" — it is telling the same time as every other one.
 func _test_they_all_speak_together(t: TestRunner) -> void:
 	_start(Tuning.MAST_FIRST_DAY)
 	var sites := _sites()
@@ -205,28 +205,31 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	var b := sites[1]
 
 	await _advance(9.0)
-	var clock_a: float = RunCity.events(_city).streaming.broadcast_clock
 	RunCity.events(_city).stream_around(a.foot)
 	var plan_a := _plan_for(a.id)
 	t.check(plan_a != null and plan_a.live != null, "the first mast is live")
-	if plan_a and plan_a.live:
-		t.close_to(plan_a.live.age, clock_a,
-				"a mast's age is the broadcast clock at the moment it streams in", 0.05)
+	if plan_a == null or plan_a.live == null:
+		return
+	var age_a := plan_a.live.age
 
 	await _advance(6.0)
-	var clock_b: float = RunCity.events(_city).streaming.broadcast_clock
+	# Walking to the second mast takes the first out of the world.
 	RunCity.events(_city).stream_around(b.foot)
 	var plan_b := _plan_for(b.id)
 	t.check(plan_b != null and plan_b.live != null, "the second mast is live")
-	if plan_b and plan_b.live:
-		t.close_to(plan_b.live.age, clock_b,
-				"so is the second mast, met minutes later — the same clock", 0.05)
+	if plan_b == null or plan_b.live == null:
+		return
+	var age_b := plan_b.live.age
+	t.check(age_b > age_a + 5.0,
+			"time genuinely passed between the two (%.1fs)" % (age_b - age_a))
 
-	t.check(clock_b > clock_a + 5.0,
-			"and time genuinely passed between the two (%.1fs)" % (clock_b - clock_a))
-	if plan_a and plan_a.live and plan_b and plan_b.live:
-		t.check(not is_equal_approx(plan_a.live.age, plan_b.live.age),
-				"they were not both stamped the instant they happened to stream in")
+	# The first mast streams back in on the very frame the second one is in the world: both read
+	# the one clock, so their ages match although the first was first met minutes before.
+	RunCity.events(_city).stream_around(a.foot)
+	t.check(plan_a.live != null, "the first mast is back in the world")
+	if plan_a.live:
+		t.close_to(plan_a.live.age, age_b,
+				"a mast streamed back in tells the same time as the one met minutes later", 0.05)
 
 func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:
 	_start(Tuning.MAST_FIRST_DAY)

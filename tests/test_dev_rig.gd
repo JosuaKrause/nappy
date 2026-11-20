@@ -57,7 +57,7 @@ func _build_day(t: TestRunner) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
 	RunCity.build(_city, MapCache.of(SEED))
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
 
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, DAY)
@@ -86,7 +86,7 @@ func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 				"--spawn %s lands on a walkable tile (%s)" % [target, at])
 
-## `event` takes the first non-ambient placed plan — `RunCity.events(_city).stream_radius = INF` in
+## `event` takes the first non-ambient placed plan — `RunCity.events(_city).stream_within(INF)` in
 ## `_build_day()` places every plan without a player to stream one in, so day 4's set is
 ## guaranteed to have at least one.
 func _test_event_target_lands_near_a_placed_event(t: TestRunner) -> void:
@@ -221,7 +221,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	RunCity.build(city, map)
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	city.start_day(state, day, _rng("checkpoint-closures"))

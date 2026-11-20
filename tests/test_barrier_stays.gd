@@ -262,7 +262,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	var city: City = RunCity.with_own_run(CITY_SCENE, 4242)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
-	RunCity.events(city).stream_radius = INF
+	RunCity.events(city).stream_within(INF)
 	# A post on open street with a clear line to where she stands: the notice needs one.
 	var post := Vector2.INF
 	var reach := _hot_roadblock().notice_within() - 10.0

@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 		closures_rng.seed = 1
 		city.start_day(state, day, closures_rng)
 		if "--all-events" in OS.get_cmdline_user_args():
-			RunCity.events(city).stream_radius = INF
+			RunCity.events(city).stream_within(INF)
 		var consumed: Array[String] = []
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = 2

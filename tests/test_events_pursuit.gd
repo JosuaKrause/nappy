@@ -95,7 +95,7 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> v
 	var manager := EventManager.new()
 	manager.setup(map)
 	var told: Array[String] = []
-	manager.trace = RecordingTrace.new(told)
+	manager.use_trace(RecordingTrace.new(told))
 	var board := _CountingBoard.new(manager.world)
 	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board,
 			manager.walk_events())
@@ -570,7 +570,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	# The page every event made here is drawn from, as `main` hands the manager its library.
-	manager.atlas = atlas
+	manager.use_atlas(atlas)
 	var edge := DangerEdge.new()
 	edge.use_atlas(atlas)
 	edge.size = Vector2(1280.0, 720.0)

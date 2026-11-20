@@ -154,7 +154,7 @@ func _walk(t: TestRunner, rig: Stroller, route: PackedVector2Array, until := Cal
 ## stops at, up the road from that kerb rather than past it, level with her or further up rather than
 ## between her and the fire, and wholly out of sight — and is given the route down to the kerb.
 func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
-	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
@@ -170,7 +170,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 	t.check(plan != null and warning != null, "she walks out, finds the fire, and the engine is warned")
 	if not warning:
 		rig.free()
-		RunCity.events(_city).stream_radius = INF
+		RunCity.events(_city).stream_within(INF)
 		return
 	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
 			"its badge is up alone for at most a second")
@@ -220,7 +220,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 		t.close_to(engine.path[engine.path.size() - 1].distance_to(stop), 0.0,
 				"and it drives to the kerb across from the fire", 1.0)
 	rig.free()
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
 
 	# The same place on a straight road, walked a long way up it toward where the engine comes from:
 	# the stretch between her and the fire goes out of view behind her long before she stops, and
@@ -327,7 +327,7 @@ func _fire_plan() -> EventPlan:
 ## she was standing. And it is **off screen**: outside the streaming band, so nothing about it is
 ## visible and nothing about it is real yet.
 func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
-	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var day := Tuning.RUN_TAUGHT_DAY
 	for leg: String in ["out", "home again"]:
 		_start(day)
@@ -386,7 +386,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 				engine = engine or warning.def.id == "fire_truck"
 			t.check(engine, "walking %s: and seeing it calls the engine in" % leg)
 		rig.free()
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
 
 ## **The scar the run keeps is where it actually burned.** The whole point of siting the fire from
 ## her walk is that where it stands is not known at dawn, and a scar is the city's memory of a day —
@@ -398,12 +398,12 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 ## is checked in `tests/test_events.gd`, against a director with the geometry written rather than
 ## walked; what is checked here is the wiring, against a real streaming manager and a real walk.
 func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
-	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
 	t.check(plan != null, "day 3 has a fire to walk into")
 	if not plan:
-		RunCity.events(_city).stream_radius = INF
+		RunCity.events(_city).stream_within(INF)
 		return
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
 	var rig := Rig.walker(t, _city, route[0])
@@ -412,7 +412,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 	t.check(plan.is_placed(), "walking the day's route sites it")
 	if not plan.is_placed():
 		rig.free()
-		RunCity.events(_city).stream_radius = INF
+		RunCity.events(_city).stream_within(INF)
 		return
 
 	await _walk(t, rig, route, func() -> bool: return plan.was_live)
@@ -430,7 +430,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 		t.check(plan.position == burning_at,
 				"and turning round after it is real leaves it exactly where it burned")
 	rig.free()
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
 
 ## **The fire she meets on her way is seen coming, and so is the engine it calls.** She walks up
 ## to this fire because the day put it in front of her rather than because she picked the street:
@@ -439,12 +439,12 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 ## sooner than its own minimum after its badge. Nothing about the site is a reachability question
 ## (inbox #1173): the fire has no body and the engine parks on the carriageway.
 func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
-	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
 	if not plan:
 		t.check(false, "day 3 has a fire to walk up to")
-		RunCity.events(_city).stream_radius = INF
+		RunCity.events(_city).stream_within(INF)
 		return
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
 	var rig := Rig.walker(t, _city, route[0])
@@ -455,7 +455,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 			"she walks out and finds the fire")
 	if not plan.is_placed():
 		rig.free()
-		RunCity.events(_city).stream_radius = INF
+		RunCity.events(_city).stream_within(INF)
 		return
 
 	var fire: EventInstance = plan.live
@@ -554,7 +554,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 	t.check(engines == 1, "seeing the fire calls in exactly one engine (%d)" % engines)
 
 	rig.free()
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
 
 ## **A fire that was never lit was not spent.** *"What the run has spent stays spent ... a fire that
 ## burnt a block down did happen"* (`RunCalendar.finish_day`) — so a set piece the day owed her walk is
@@ -563,7 +563,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 ## the shell is standing in it.
 func _test_a_fire_that_was_never_lit_was_not_spent(t: TestRunner) -> void:
 	var consumed: Array[String] = []
-	RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var day := Tuning.RUN_TAUGHT_DAY
 	Rig.start(_city, day, consumed)
 	t.check(not "burning_building" in consumed and _fire_plan() != null,
@@ -585,4 +585,4 @@ func _test_a_fire_that_was_never_lit_was_not_spent(t: TestRunner) -> void:
 	Rig.start(_city, day, consumed)
 	t.check(_fire_plan() == null, "and no later day plans a second one")
 	rig.free()
-	RunCity.events(_city).stream_radius = INF
+	RunCity.events(_city).stream_within(INF)
