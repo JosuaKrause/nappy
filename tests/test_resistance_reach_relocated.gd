@@ -15,7 +15,7 @@ func run(t: TestRunner) -> void:
 ## — a `loudspeaker` plan under `DawnMasts.added_mast_id()`, on the edge of the circle and out
 ## of her view — or, where the scheduler's acceptance refused all of it, the nearest live mast.
 ## Reaching it silences it and records its scar; day 14's sabotage (`silence_all_masts()`) puts
-## that very plan out when it is lit again; and the next day's and the last night's masts, planned
+## out a mast queued afresh and lit; and the next day's and the last night's masts, planned
 ## from the scars, stand it again at its own foot, silenced. Before, the task went to the nearest of
 ## the city's six masts, 1,377px and 3,948px away on two of these cities.
 func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunner) -> void:
@@ -73,12 +73,11 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 					scarred = true
 			t.check(scarred and added_plan.is_silenced(),
 					"seed %d: reaching it silences it and records its scar" % seed_value)
-			# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
-			# with the others — it is that one mast's plan this asks about.
 			t.check(RunCity.events(_city).plans().has(added_plan),
 					"seed %d: the task went to the mast put up for it, one of the day's plans"
 					% seed_value)
-			# A mast queued afresh, lit (the call the task makes), is put out by the sabotage.
+			# Day 14's sabotage: a mast queued afresh and lit (the call the task makes) is put out
+			# by `silence_all_masts()`.
 			var offered: Array[Vector2i] = []
 			for tile: Vector2i in edge:
 				offered.append(tile)
