@@ -1342,19 +1342,19 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	t.check(warning != null, "and its badge has somewhere to point")
 	var lead := SpawnSiting.least_distance()
 	if warning:
-		t.check(CrowdLanes.corridor_at(warning.place.x) == _city.map.main_road,
+		t.check(CrowdLanes.corridor_at(warning.points_at().x) == _city.map.main_road,
 				"pointing up the main road")
-		t.check(warning.left <= Tuning.WARNING_ALONE_MAX,
-				"for at most a second alone (%.2fs)" % warning.left)
+		t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
+				"for at most a second alone (%.2fs)" % warning.seconds_left())
 		# She walks along the road while it is coming: the badge keeps its offset from her.
-		var was := warning.place - her
+		var was := warning.points_at() - her
 		her.y += Tuning.WALK_SPEED * 0.5
 		RunCity.events(_city).warnings.run(STEP, her)
-		t.check((warning.place - her).is_equal_approx(was),
+		t.check((warning.points_at() - her).is_equal_approx(was),
 				"and it holds still against her rather than coming sooner or jumping")
 	# The rest of the warning, frame by frame, the way `EventManager._physics_process` runs it.
 	while warning and RunCity.events(_city).pending_warnings().has(warning) \
-			and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
+			and warning.shown_for() < Tuning.WARNING_ALONE_MAX + 5.0:
 		RunCity.events(_city).warnings.run(STEP, her)
 	var trucks := happenings.column
 	t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
@@ -1384,17 +1384,17 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 		var front := trucks[0]
 		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her, null),
 				EventFootprints.footprint_of(front.def), her, front.global_position)
-				and absf(front.global_position.x - warning.place.x) < 1.0
-				and signf(front.global_position.y - her.y) == signf(warning.place.y - her.y),
+				and absf(front.global_position.x - warning.points_at().x) < 1.0
+				and signf(front.global_position.y - her.y) == signf(warning.points_at().y - her.y),
 				"its front truck is created just out of sight, up the lane the badge pointed")
 		var to_reach := 0.0
 		while front.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
 			RunCity.events(_city).world.where_she_is().tell(her)
 			front.step(STEP)
 			to_reach += STEP
-		t.check(warning.shown + to_reach + 0.001 >= warning.def.minimum_telegraph(),
+		t.check(warning.shown_for() + to_reach + 0.001 >= warning.def.minimum_telegraph(),
 				("and from the badge to the earliest its field reaches her is %.2fs, at least "
-				% (warning.shown + to_reach))
+				% (warning.shown_for() + to_reach))
 				+ "the %.2fs it is owed" % warning.def.minimum_telegraph())
 	happenings.tick(STEP, her, Vector2.ZERO)
 	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
