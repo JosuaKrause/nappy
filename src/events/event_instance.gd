@@ -2196,7 +2196,8 @@ func was_warned_of() -> bool:
 func pursues() -> bool:
 	return def.pursuit != null
 
-## Whether it hunts for her (`EventDef.hunts_for_her()`): a vehicle that lets out men who pursue her.
+## Whether it hunts for her (`EventDef.hunts_for_her()`): at the heat that hunts it stops being a place
+## and starts being a hunter, the roadblock's guard or a van that lets out men who pursue her.
 func hunts_for_her() -> bool:
 	return def.hunts_for_her()
 
