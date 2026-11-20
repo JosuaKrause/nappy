@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name WalkGround
 extends RefCounted
 ## **The walk stays open past everything that stands on it**: every street of the walk keeps one
@@ -45,7 +44,7 @@ extends RefCounted
 
 ## One solid piece of something that stands for the whole walk, where it actually stands:
 ## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` for a body that
-## does not exist yet, off the same statics the instance reads when it is built.
+## does not exist yet, off the same `BodyStance` the instance reads when it is built.
 class Solid extends RefCounted:
 	## How far apart a capsule's covering discs may be — see `discs()`. At 8px a 24px-round band's
 	## discs are a third of a pixel wider than the band.
@@ -179,7 +178,8 @@ func stand(plan: EventPlan) -> void:
 				var key := Vector2i(cx, cy)
 				if not _chunks.has(key):
 					_chunks[key] = []
-				_chunks[key].append(solid)
+				var bucket: Array = _chunks[key]
+				bucket.append(solid)
 
 ## **The ground a placement holds her off for the whole walk**: its body (`solids_of()`), and the
 ## lethal reach of a row that stands — not mobile, `hard_fail` and no pursuer — as a disc round where
@@ -188,8 +188,8 @@ func stand(plan: EventPlan) -> void:
 ## holds nothing her body does not already.
 func held_by(plan: EventPlan) -> Array[Solid]:
 	var found := solids_of(plan)
-	var def := plan.def
-	if def.mobile or not def.hard_fail or def.pursuit != null:
+	var def := plan.row()
+	if def.moves() or not def.ends_the_day() or def.pursues():
 		return found
 	var reach := def.lethal_reach() - Tuning.PLAYER_BODY_RADIUS
 	if reach <= 0.0:
@@ -200,33 +200,35 @@ func held_by(plan: EventPlan) -> Array[Solid]:
 ## Where a placement stands once it is built: the first point of its path when it has one,
 ## recentred on the pavement band when it has a body `pavement_side` does not pin, or on the kerb
 ## beside its lane for a row that stands at its kerb (the roadblock) — the reading
-## `EventInstance.setup()` makes (`EventFootprints.stands_at()`).
+## `EventInstance.setup()` makes (`BodyStance.stands_at()`).
 func _stands_at(plan: EventPlan) -> Vector2:
-	return EventFootprints.stands_at(_map, plan.def,
-			plan.path[0] if plan.path.size() > 0 else plan.position)
+	var route := plan.walks()
+	return BodyStance.stands_at(_map, plan.row(),
+			route[0] if route.size() > 0 else plan.placed_at())
 
 ## A placement's pieces as they stand for the whole walk — its own body, and its successor's
 ## where it leaves a solid one — with nothing for a mobile row or one with no body. The same
 ## reading `EventInstance.setup()` makes of a stationary body: the first point of its path when
 ## it has one, recentred on the pavement band unless `pavement_side` pins it or on the kerb beside
-## its lane for a row that stands at its kerb (`EventFootprints.stands_at()`), its pieces laid
-## by `EventInstance._spread_is_vertical()` and its spine along `EventFootprints.body_axis()`.
+## its lane for a row that stands at its kerb (`BodyStance.stands_at()`), its pieces laid
+## by `BodyStance.lies_vertically_at()` and its spine along `BodyStance.body_axis()`.
 func solids_of(plan: EventPlan) -> Array[Solid]:
 	var found: Array[Solid] = []
-	var defs: Array[EventDef] = [plan.def]
-	if plan.def.aftermath.on_finish != "":
-		var successor := EventCatalogue.by_id(plan.def.aftermath.on_finish)
+	var row := plan.row()
+	var route := plan.walks()
+	var defs: Array[EventDef] = [row]
+	if row.leaves_behind() != "":
+		var successor := EventCatalogue.by_id(row.leaves_behind())
 		if successor:
 			defs.append(successor)
 	for def in defs:
-		if def.mobile or def.obstructs_radius <= 0.0 or def.shape == null:
+		if def.moves() or not def.has_a_body() or def.ground_shape() == null:
 			continue
-		var at: Vector2 = plan.path[0] if def == plan.def and plan.path.size() > 0 \
-				else plan.position
-		at = EventFootprints.stands_at(_map, def, at)
-		var axis := EventFootprints.body_axis(_map, def, at, plan.facing)
-		var vertical := EventInstance._spread_is_vertical(_map, at)
-		for piece in def.parts():
+		var at: Vector2 = route[0] if def == row and route.size() > 0 else plan.placed_at()
+		at = BodyStance.stands_at(_map, def, at)
+		var axis := BodyStance.body_axis(_map, def, at, plan.faces())
+		var vertical := BodyStance.lies_vertically_at(_map, at)
+		for piece in def.body_pieces():
 			var offset := piece.offset_for(vertical)
 			found.append(Solid.new(
 					at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)),

@@ -46,8 +46,8 @@ detail, which the player approved.
   scene recipes' own ground scans).
 - **The standing layer breaks** (`standing-layer-breaks.md`): one pull request per group, each in
   its module's turn of minty-quail's order (within a module, its dead code, then its standing
-  breaks, then its interface and field reads, then its suites). Dawn planning's reads stand in the
-  walk's ground, and row 3a of minty-quail's `event-interface.md` settles them.
+  breaks, then its interface and field reads, then its suites). Dawn planning's one read left, the plan
+  holding its live event, goes with row 3b of minty-quail's `event-interface.md`.
 - **The baseline** (`baseline-measurements.md`): a reading with placement closed and one after the
   events' field-read conversion (row 4b of minty-quail's `event-interface.md`), for the remeasure
   that closes minty-quail.

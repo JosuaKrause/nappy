@@ -289,7 +289,7 @@ static func row_ground(map: CityMap, corridor: Corridor = null,
 ##
 ## **A body is her body plus its body.** The half tile on top of it is not a margin of taste: a
 ## stationary, unpinned body is moved from the lane tile the scheduler chose to the middle of the
-## pavement band by `EventFootprints._centred_on_the_pavement_band()` when the instance is built, and
+## pavement band by `BodyStance._centred_on_the_pavement_band()` when the instance is built, and
 ## the two lane centres sit `TILE_SIZE * 0.5` either side of that middle — so the ground a
 ## placement finally stands on is up to half a tile from the tile this loop is looking at, and the
 ## exclusion has to cover where it *ends up* rather than where it is rolled.
@@ -499,7 +499,7 @@ static func _closes_the_band_by_its_own_placement(def: EventDef) -> bool:
 	return maxf(near_gap, far_gap) < RouteSidewalkRule.HER_LANE_CLEARANCE
 
 ## Where `pavement_side` stands a body across a sidewalk band, as an offset from the kerb edge —
-## the same geometry `EventFootprints._centred_on_the_pavement_band()` and its kerb/frontage
+## the same geometry `BodyStance._centred_on_the_pavement_band()` and its kerb/frontage
 ## exemptions produce, read here off the def alone because a role is decided before any tile exists
 ## to ask the map about. `pavement_side` is typed `int` rather than `EventDef.Pavement`: a
 ## cross-script enum parameter does not always match the type Godot infers for a value read off

@@ -1,11 +1,10 @@
 class_name EventFootprints
 extends RefCounted
 ## **Where a row's pictures and body stand, measured off the pictures themselves**: the box its
-## picture fills, everything it can put on the screen, its solid footprint and the axis that footprint
-## lies along, the posted roadblock guard's feet and his warning picture, and whether a row's own
+## picture fills, everything it can put on the screen, its solid footprint, the posted roadblock guard's feet and his warning picture, and whether a row's own
 ## hold hides it. Static and stateless (two caches aside), so the spawner and the scheduler ask it of
 ## a row before any instance exists, and an instance asks it of its own row with the street it stands
-## on (`EventInstance.drawn_box()`, `EventInstance.solid_axis()`).
+## on (`EventInstance.drawn_box()`). Where a body stands and which way it lies is `BodyStance`'s.
 ##
 ## Everything here reads the row's data and `EventPictures`' measurements; nothing reads a look or an
 ## instance's drawing, so siting and drawing agree because both read this one class.
@@ -113,7 +112,7 @@ static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
 ## entry — one at the origin carrying `shape` for every row that declares none, a car per piece
 ## for the crash — each offset along the spread axis (`spread_vertical`,
 ## `EventInstance.spread_at()`) by the piece's own reading of whichever picture is in use, its spine
-## along `axis` (`solid_axis_of()`). The physics body (`EventBody.go_down()`) and the
+## along `axis` (`BodyStance.solid_axis_of()`). The physics body (`EventBody.go_down()`) and the
 ## blocked record (`EventSpawner.obstructed_footprint()`) both come from here.
 static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bool) -> Footprint:
 	var footprint := Footprint.new()
@@ -122,84 +121,6 @@ static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bo
 		footprint.add(piece.shape,
 				Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0), axis)
 	return footprint
-
-## The ground-plane direction a row's solid body's spine lies along, for whichever of the three
-## families ever has a segment shape: a car that drives (`EventDef.vehicle`), along its own
-## `heading`; a spread-drawn row, down the screen on a street laid that way (`spread_vertical`) and
-## across it otherwise; or the one stationary-vehicle row wide enough to be a segment (`moving_van` —
-## see `GroundShape.band()` on that row), which lies along whichever of the street's axes it is drawn
-## on (`side_on`, `stands_side_on()`). Never asked of a point shape, where an axis means nothing.
-static func solid_axis_of(row: EventDef, heading: Vector2, spread_vertical: bool,
-		side_on: bool) -> Vector2:
-	# A car's body lies along the way it is driving, and turns with it (`EventCarDriving.turn_the_body()`).
-	if row.drives():
-		return heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
-	if row.lies() == EventDef.Lie.SPREAD or row.lies() == EventDef.Lie.ALONG:
-		return Vector2.DOWN if spread_vertical else Vector2.RIGHT
-	return Vector2.RIGHT if side_on else Vector2.DOWN
-
-## The ground-plane direction a sited body's spine lies along — `solid_axis_of()` for a body that does
-## not exist yet, off the same two statics its instance would read about the street at `placed`.
-static func body_axis(map: WorldMap, row: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
-	return solid_axis_of(row, facing, EventInstance._spread_is_vertical(map, placed),
-			stands_side_on(row, map, placed, facing))
-
-## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
-## street and the burnt car lies across it (`EventDef.lies_across_its_street`). A junction or ground outside the lattice has
-## no single street axis, so the vehicle's own facing supplies the coherent default.
-static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vector2) -> bool:
-	var offsets := map.corridor_offsets(map.world_to_tile(at))
-	var on_a_north_south_street := offsets.x >= 0
-	var on_an_east_west_street := offsets.y >= 0
-	if on_a_north_south_street != on_an_east_west_street:
-		var parallel_side := on_an_east_west_street
-		return not parallel_side if row.lies() == EventDef.Lie.ACROSS else parallel_side
-	return absf(face.x) >= absf(face.y)
-
-## **Where a body stands once it is built at `at`**, the one reading every place that needs it asks:
-## `at` moved to the middle of its pavement band when the row is a stationary solid body that
-## `pavement_side` does not pin to an edge and that does not span the street
-## (`EventDef.stands_on_its_band_middle()`, `_centred_on_the_pavement_band()`); otherwise where the
-## lattice puts it (`EventPlan.stands_without_a_map()`): on the kerb beside its carriageway lane for
-## a row that stands at its kerb, the roadblock, and `at` itself for any other.
-## `EventInstance.setup()` and `move_to()` stand the body there, the scheduler's and the walk's
-## siting of its band and the body's recorded footprint (`EventSpawner.obstructed_footprint()`) read
-## it for a body not yet built, so a body moved after dawn stands where the record says it does.
-static func stands_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
-	if row.stands_on_its_band_middle():
-		return _centred_on_the_pavement_band(map, at)
-	return EventPlan.stands_without_a_map(row, at)
-
-## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
-## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
-## of the pavement's two lanes the scheduler happened to choose, 16px from that lane's own edge and
-## 48px from the far one — so a body sized against the *pavement* rather than the *lane* overhangs
-## by exactly the asymmetry between those two numbers (PLAYTEST-19).
-##
-## The remedy is the position, not a smaller radius: this shifts a stationary, unpinned body from
-## the lane tile the scheduler chose to the middle of the two-lane band it belongs to, so a body may
-## be up to the full `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide and exactly fill the pavement.
-##
-## **Exempt: anything `pavement_side` pins to an edge on purpose.** `delivery_van` belongs at the
-## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
-## thing `pavement_side` exists to do. Both stay exactly where `PlanBuilder.build()`
-## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
-## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
-## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is
-## *also* "no line to walk," on purpose.
-static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2:
-	var tile := map.world_to_tile(at)
-	if map.pavement_inward(tile) == Vector2i.ZERO:
-		# Not a pavement tile at all, or a junction belonging to both corridors at once — nothing
-		# here has one band to be centred on.
-		return at
-	var offsets := map.corridor_offsets(tile)
-	var x_offset := offsets.x
-	var offset := x_offset if x_offset >= 0 else offsets.y
-	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
-			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
-	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
-	return at + (Vector2.RIGHT if x_offset >= 0 else Vector2.DOWN) * shift
 
 # ------------------------------------------------------------ the guard post ---
 

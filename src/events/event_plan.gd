@@ -152,7 +152,7 @@ func body_at() -> Vector2:
 ## **Where a body of `row` built at `at` stands, as far as the lattice says without a map**: on the
 ## kerb beside its carriageway lane when the row stands at its kerb (`EventDef.stands_at_its_kerb()`,
 ## the roadblock, `CityMap.kerb_beside()`), otherwise `at`. The one place that decides the kerb:
-## `EventFootprints.stands_at()` asks it for the built body, which with a map also moves a sidewalk
+## `BodyStance.stands_at()` asks it for the built body, which with a map also moves a sidewalk
 ## body onto its band's middle. **A plan's own reading stays without that move**: the move needs the
 ## pavement, which a plan holds no map to read, keeps a body on its own sidewalk, at most half a tile
 ## across it, and the day's rules have always read a sidewalk body where it was placed; the kerb

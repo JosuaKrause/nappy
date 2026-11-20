@@ -190,7 +190,7 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 	_set_up = true
 	world.use_map(map, map)
 	world.work_out_mast_sites(map)
-	world.use_plan_builder(PlanBuilder.new(map, EventInstance.mover_for, EventFootprints.stands_at,
+	world.use_plan_builder(PlanBuilder.new(map, EventInstance.mover_for,
 			StreetInvalidation.room_around))
 	world.use_streets(streets)
 	world.use_poster_walls(poster_walls)

@@ -152,6 +152,7 @@ FILES: dict[str, str] = {
     "src/events/pursuit_spec.gd": "data",
     "src/events/sent_ahead.gd": "data",
     "src/events/vehicle_spec.gd": "data",
+    "src/events/body_stance.gd": "model",
     "src/events/calm_areas.gd": "model",
     "src/events/dawn_context.gd": "model",
     "src/events/day_events.gd": "model",
@@ -297,23 +298,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "EventFootprints",
-        "the day's planning reads the live events' picture geometry",
-        ("src/events/walk_ground.gd",),
-        more=(("src/events/walk_ground.gd", 3),),
-    ),
-    Exception_(
-        "names",
         "EventInstance",
-        "the day's planning reaches into the live event for its placement rules",
-        (
-            "src/events/event_plan.gd",
-            "src/events/walk_ground.gd",
-        ),
-        more=(
-            ("src/events/event_plan.gd", 1),
-            ("src/events/walk_ground.gd", 1),
-        ),
+        "the plan holds its live event while it is in the world (`live`), which row 3b's streaming takes over",
+        ("src/events/event_plan.gd",),
+        more=(("src/events/event_plan.gd", 1),),
     ),
     Exception_(
         "names",

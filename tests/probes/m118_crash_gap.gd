@@ -76,7 +76,7 @@ func _a_street_of(map: CityMap, vertical: bool) -> Vector2:
 		if segment.horizontal != vertical:
 			continue
 		var centre := map.tile_rect_to_world(segment.tile_rect()).get_center()
-		if EventInstance._spread_is_vertical(map, centre) == vertical:
+		if BodyStance.lies_vertically_at(map, centre) == vertical:
 			return centre
 	return Vector2.INF
 

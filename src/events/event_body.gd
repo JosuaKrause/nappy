@@ -28,11 +28,11 @@ var _where: WhereSheIs
 ## disappears with it: the live event itself.
 var _holder: Node2D
 ## Whether it lies down the screen rather than across it, decided once from the street it landed on
-## (`EventInstance._spread_is_vertical()`): never a per-row field, since two rows on the same street
+## (`BodyStance.lies_vertically_at()`): never a per-row field, since two rows on the same street
 ## face the same way for the same reason, and a row that had to say so itself could disagree with
 ## the street it was actually placed on.
 var _spread_vertical := false
-## Whether a vehicle standing still shows its side (`EventFootprints.stands_side_on()`): the moving
+## Whether a vehicle standing still shows its side (`BodyStance.stands_side_on()`): the moving
 ## van stands along its street while the burnt car lies across it; a junction, off-street ground or
 ## open ground follows its facing.
 var _stationary_vehicle_side := true
@@ -89,10 +89,10 @@ func spread_at(offset: float) -> Vector2:
 	return Vector2(0.0, offset) if _spread_vertical else Vector2(offset, 0.0)
 
 ## The ground-plane direction its body's spine lies along when it heads along `heading`
-## (`EventFootprints.solid_axis_of()`): its heading for a car that drives, its street's axis for a
+## (`BodyStance.solid_axis_of()`): its heading for a car that drives, its street's axis for a
 ## spread, the side it shows for a vehicle standing still.
 func solid_axis(heading: Vector2) -> Vector2:
-	return EventFootprints.solid_axis_of(_row, heading, _spread_vertical, _stationary_vehicle_side)
+	return BodyStance.solid_axis_of(_row, heading, _spread_vertical, _stationary_vehicle_side)
 
 ## Whether its collision body is in place: put down and not dropped since, whatever a boom's arm
 ## is doing.
@@ -148,7 +148,7 @@ func tiles_at(at: Vector2, heading: Vector2) -> Dictionary:
 ## shows) is decided from that ground, as it is set up and again when it is moved to other ground.
 func land_at(at: Vector2, face: Vector2, vertical: bool) -> void:
 	_spread_vertical = vertical
-	_stationary_vehicle_side = EventFootprints.stands_side_on(_row, _map, at, face)
+	_stationary_vehicle_side = BodyStance.stands_side_on(_row, _map, at, face)
 
 ## It came into the world heading along `heading`: a body solid from its first frame goes down.
 ## A row solid once it starts (`EventDef.SolidWhen.ONCE_IT_STARTS`) waits for that

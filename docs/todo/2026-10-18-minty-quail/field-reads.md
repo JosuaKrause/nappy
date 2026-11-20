@@ -63,7 +63,6 @@ minty-quail rather than polite-tapir.
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
 is the files open work rewrites, typed by that work or after it:
 
-- The walk's ground (`src/events/walk_ground.gd`), which row 3a of `event-interface.md` rewrites.
 - The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.

@@ -183,7 +183,7 @@ enum SpawnMode {
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
 ## **Whether this row draws itself as a spread**: segments or a whole scene fitted across
-## `obstructs_radius`, laid along whichever axis `EventInstance._spread_is_vertical()` picks for the
+## `obstructs_radius`, laid along whichever axis `BodyStance.lies_vertically_at()` picks for the
 ## street it stands on (`SpreadLook._draw_spread`, `RankLook._draw_cafe`, and
 ## `SpreadLook._draw_wide_scene` for the three seal pictures wide enough to span the street, each
 ## with an authored east-west asset, `EventPictures.wide_scene_texture`). A protest and a firefight
@@ -191,7 +191,7 @@ enum SpawnMode {
 ## a corner costs them nothing.
 ##
 ## **`RowGround.tiles_for()` asks this before it offers a corner as a site**: a junction
-## has no single street for the spread's axis or `EventFootprints._centred_on_the_pavement_band` to
+## has no single street for the spread's axis or `BodyStance._centred_on_the_pavement_band` to
 ## answer about, so only a row that asks either question has anything to lose by standing on one.
 ## Kept by every copy (`duplicate()`, `at_heat()`).
 @export var has_a_spread := false
@@ -203,13 +203,13 @@ enum SpawnMode {
 
 ## **Whether this row stands along its street like a spread without being drawn as one**: a
 ## protest's rank of placards and a firefight's cover. Their drawn box and their solid body's spine
-## follow the street's axis (`EventFootprints.drawn_box_of()`, `EventFootprints.solid_axis_of()`);
+## follow the street's axis (`EventFootprints.drawn_box_of()`, `BodyStance.solid_axis_of()`);
 ## they never ask `has_a_spread`'s corner question.
 @export var stands_along_its_street := false
 
 ## **Whether a stationary vehicle lies across its street rather than along it**: the burnt-out car,
 ## left broadside across the carriageway, where the moving van stands along the kerb. Decides which
-## view it shows on a street (`EventFootprints.stands_side_on()`) and so which way its body lies.
+## view it shows on a street (`BodyStance.stands_side_on()`) and so which way its body lies.
 @export var lies_across_its_street := false
 
 ## The pictures a row standing in its warning is drawn in, whose largest decides whether its warning
@@ -2000,7 +2000,7 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 
 ## Whether the row is a stationary solid body the pavement does not pin to an edge
 ## (`pavement_side` `ANY`) and that does not span the street: the body a pavement band's middle is
-## where it stands (`EventFootprints.stands_at()`). A row that spans the street stands at its kerb
+## where it stands (`BodyStance.stands_at()`). A row that spans the street stands at its kerb
 ## instead (`stands_at_its_kerb()`); the two never both hold.
 func stands_on_its_band_middle() -> bool:
 	return _is_an_unpinned_standing_body() and not _spans_the_street
