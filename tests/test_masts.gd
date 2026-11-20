@@ -253,8 +253,8 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 	var nearby := target.foot() + Vector2(50.0, 0.0)
 	# Asked once before silencing, on purpose: `contribution_at()` caches per `(age, position)`,
 	# and silencing does not move `age` — without its own cache invalidation this would go on
-	# answering the pre-silence figure for the rest of the tick, exactly the defect
-	# `ExcitementSource.invalidate_contribution()`'s own doc warns `end_now()` about.
+	# answering the pre-silence figure for the rest of the tick; `EventInstance.silence()` drops that
+	# cache (`ExcitementSource.invalidate_contribution()`) as it silences.
 	var _primed := plan.live.source().contribution_at(nearby)
 
 	t.check(RunCity.events(_city).silence_mast(target.id()), "silencing a mast by id finds it")

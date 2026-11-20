@@ -14,7 +14,7 @@ also drops the source's cached contribution, as streaming did by hand), `be_draw
 `drawn`, the excitement source's `on_first_landing` and the city map's `block_plans` are private behind
 `draws_made()`, `when_it_first_lands()` and `plans_by_block()`. A script rewrote 148 test, rig and probe files.
 `tools/field_reads.txt` loses thirty lines and gains none; the suites ask the row's `obstructs_within()` where they read
-`obstructs_radius`, and the dawn-parity suite checks a silenced event before it leaves, so it writes no private member.
+`obstructs_radius`, and the projection-reuse suite checks a silenced event before it leaves, so it writes no private member.
 Nothing a player sees or the run log records changes.
 
 **Open to overturn (the builder's, where the design was silent or counted short):** the city map's `block_plans`
