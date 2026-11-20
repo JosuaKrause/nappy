@@ -70,7 +70,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 		_placed: Array[EventPlan], around: Array[EventPlan]) -> bool:
 	if not _corridor or not candidate.counts_against_the_line():
 		return true
-	var reach := candidate.row().line_reach()
+	var reach := candidate.line_reach()
 	for piece in _route_pieces():
 		if not candidate.reach_touches(piece.world, reach):
 			continue
@@ -103,7 +103,7 @@ func _her_line_survives(piece: _Piece, candidate: EventPlan, around: Array[Event
 	for plan in around:
 		if plan == candidate or not plan.counts_against_the_line():
 			continue
-		if plan.reach_touches(piece.world, plan.row().line_reach()):
+		if plan.reach_touches(piece.world, plan.line_reach()):
 			standing.append(plan)
 
 	var ground: Array[Vector2i] = piece.box.duplicate()
@@ -126,7 +126,7 @@ func _her_line_survives(piece: _Piece, candidate: EventPlan, around: Array[Event
 		var at := _map.tile_to_world(tile)
 		var taken := false
 		for plan in standing:
-			if plan.denies(at, plan.row().line_reach()):
+			if plan.denies(at, plan.line_reach()):
 				taken = true
 				break
 		if not taken:

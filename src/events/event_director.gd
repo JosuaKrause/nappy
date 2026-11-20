@@ -240,7 +240,7 @@ func start_day(day: int, plans: Array[EventPlan],
 		if plan.is_door() and plan.is_placed():
 			_doors.append(plan.placed_at())
 		# A place the day planned and left unsited, read off the same list for the same reason.
-		if plan.row().is_sited_from_her_walk() and not plan.is_placed():
+		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_on_her_way.append(plan)
 		var mode := plan.spawn_mode_on(day)
 		# A row the director sends ahead of her is owed as a moment where the dawn left it unplaced
@@ -1275,7 +1275,7 @@ func _clear_of_the_plans(path: PackedVector2Array, def: EventDef) -> bool:
 			continue
 		if plan.distance_from(path[0]) < EventScheduler.EVENT_SPACING_ANY:
 			return false
-		if plan.keeps_its_field_clear() and sent.gap_to(plan) < plan.row().field_reach():
+		if plan.keeps_its_field_clear() and sent.gap_to(plan) < plan.field_reach():
 			return false
 	return true
 
@@ -1302,7 +1302,7 @@ func clear_to_go_on(path: PackedVector2Array, def: EventDef) -> bool:
 	for plan in _plans:
 		if plan.is_spent() or not plan.is_placed():
 			continue
-		if plan.keeps_its_field_clear() and going_on.gap_to(plan) < plan.row().field_reach():
+		if plan.keeps_its_field_clear() and going_on.gap_to(plan) < plan.field_reach():
 			return false
 	return true
 

@@ -82,7 +82,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 	_siting = null
 	_day_tree = tree
 	for plan in _walk.plans():
-		if plan.row().is_sited_from_her_walk() and not plan.is_placed():
+		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
 	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"), _siting,
 			world.run().resistance().progress())
@@ -416,7 +416,7 @@ func _take_what_was_drawn(placed: Array[EventPlan]) -> void:
 			_streaming.add(plan)
 			continue
 		_walk.add(plan)
-		if _director and plan.row().is_handed_to_her_walk():
+		if _director and plan.is_handed_to_her_walk():
 			_director.owe_on_her_way(plan, _siting_for(world.day(), plan))
 	var reach := _walk.reach()
 	if reach:
@@ -510,7 +510,7 @@ func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
 	# silenced by `EventStreaming.silence_mast()` and counts for
 	# `EventStreaming.silence_all_masts()`.
-	if plan.row().is_a_mast():
+	if plan.is_a_mast():
 		plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
 	_streaming.add(plan)
 	# Where, because nothing else records it: the siting depends on the walk she took.
@@ -767,7 +767,7 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		return false
 	for plan in _walk.plans():
 		# The fire is the set piece a run owes; a crew she never met simply was not met.
-		if not plan.row().is_a_set_piece_on_her_way() or plan.was_live or plan.is_spent():
+		if not plan.is_a_set_piece_on_her_way() or plan.was_live or plan.is_spent():
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
 		var rng := world.run().calendar().day_rng(world.day(), "dusk-fire")

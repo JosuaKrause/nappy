@@ -193,7 +193,7 @@ func stream_in(plan: EventPlan) -> void:
 	# becomes something that happened — see `DawnOneShots`. The list is the one
 	# `start_day` was handed, which in a played game is `world.run().attempt_spend().consumed_one_shots()`
 	# and in a rig is the rig's own.
-	if first_time and plan.row().is_a_set_piece_on_her_way() and not plan.row_id() in _consumed:
+	if first_time and plan.is_a_set_piece_on_her_way() and not plan.row_id() in _consumed:
 		_consumed.append(plan.row_id())
 	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
 	# is a harmless no-op assignment rather than a special case here.

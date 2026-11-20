@@ -437,7 +437,7 @@ func _tiles_of(grouped: Dictionary, location: Location) -> Array[Vector2i]:
 func _stand(plan: EventPlan, sited: EventPlan, location: Location) -> void:
 	_give_back(plan)
 	plan.stand_where(sited)
-	if plan.row().stands_at_a_front():
+	if plan.stands_at_a_front():
 		plan.face(Vector2.UP)
 	_locations.take_for_her_walk(location, plan)
 	var unit := _units.unit_of(location) if _units else null
