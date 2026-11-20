@@ -396,7 +396,7 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 		sources.append(source)
 		rims.append(HaloRig.told(source))
 		var halo := ExcitementHalo.new()
-		var sets: Array[ExcitementSources] = [manager.sources]
+		var sets: Array[ExcitementSources] = [manager.excitement_sources()]
 		halo.setup(sets, player, baby)
 		halos.append(halo)
 	for halo: ExcitementHalo in halos:

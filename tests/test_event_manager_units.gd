@@ -39,7 +39,7 @@ func run(t: TestRunner) -> void:
 		_walker = Rig.Walker.new()
 		t.add_child(_walker)
 		_city = Rig.build_city(t)
-		RunCity.events(_city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+		RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 		await test.call(t)
 		_city.free()
 		_walker.free()

@@ -221,7 +221,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 	EventBus.poster_pursuit_sent.connect(on_sent)
 	var before := RunCity.events(city).instances().size()
 	var account: Array[String] = []
-	RunCity.events(city).trace = RecordingTrace.new(account)
+	RunCity.events(city).use_trace(RecordingTrace.new(account))
 	RunCity.events(city).send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	var warnings := RunCity.events(city).pending_warnings()
@@ -729,7 +729,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 	while elapsed < 40.0:
 		_tick(events)
 		elapsed += STEP
-		landed += events.sources.total_at(her.global_position) * STEP
+		landed += events.excitement_sources().total_at(her.global_position) * STEP
 		if officer == null and MenLetOut.first_of(events, car) != null:
 			officer = MenLetOut.first_of(events, car)
 		var out_of_reach := car.global_position.distance_to(her.global_position) \

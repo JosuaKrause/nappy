@@ -176,7 +176,7 @@ class Stage extends RefCounted:
 		manager.draw_in(world)
 		manager.setup_world(map, run)
 		if atlas != null:
-			manager.atlas = atlas
+			manager.use_atlas(atlas)
 		world.add_child(manager)
 		manager.set_physics_process(false)
 

@@ -245,8 +245,8 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		# The parts the builder stood are handed what the flags chose for each
 		# (`main._simulation_builder()`).
 		var city := Boot.city(booted.main)
-		t.check(city != null and not RunCity.events(city).skip_drawing
-				and RunCity.events(city).pelican_rig == EventSpawner.PelicanRig.ALWAYS
+		t.check(city != null and not RunCity.events(city).world.skip_drawing
+				and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist"))
 				and RunCity.crowd(city).skip_motion and not RunCity.crowd(city).skip_agent_drawing,
 				"and the events and the crowd it stands are handed theirs")
 		# `--blackout` and `--force` have no reader but the parts' own behavior, read on the run
@@ -319,8 +319,8 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 	t.check(city.scenery_ground.mode() == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
 			and chunks > 0 and shade.draws.is_empty(), "the ground, the scenery and the shadows")
-	t.check(RunCity.events(city).skip_drawing
-			and RunCity.events(city).pelican_rig == EventSpawner.PelicanRig.ALWAYS,
+	t.check(RunCity.events(city).world.skip_drawing
+			and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"the events")
 	t.check(RunCity.crowd(city).skip_motion and RunCity.crowd(city).skip_agent_drawing, "the crowd")
 	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
@@ -383,7 +383,7 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	var builder := RunCity.new_builder()
 	builder.force_a_row("cyclist", FORCED_INTERVAL)
 	RunCity.build(city, MapCache.of(SEED), builder)
-	RunCity.events(city).stream_radius = Tuning.EVENT_STREAM_RADIUS
+	RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var her := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

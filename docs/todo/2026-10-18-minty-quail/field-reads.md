@@ -61,18 +61,13 @@ errors. What remains is this item's own conversion, which predates the review, s
 minty-quail rather than polite-tapir.
 
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
-is the files open work rewrites, typed by that work or after it, and one kept for a reason of its
-own:
+is the files open work rewrites, typed by that work or after it:
 
 - The walk's ground (`src/events/walk_ground.gd`), which row 3a of `event-interface.md` rewrites; and
   the event manager (`event_manager.gd`), row 3b's.
 - The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
-- **The run log's observer** (`src/telemetry/telemetry_observer.gd`, the record
-  2026-10-18-minty-quail-woolly-marten) keeps `unsafe_property_access` for one read, the event
-  manager's `sources` in its breakdown of where the excitement comes from (`_meters()`), which waits
-  for the event manager's parts (row 3b of `event-interface.md`).
 
 **What is left: the conversion**, one pull request per area, each deleting the lines it converts
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and

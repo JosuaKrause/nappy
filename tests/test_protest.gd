@@ -127,16 +127,16 @@ func _rank_drawn(t: TestRunner, protest: EventInstance) -> Array[String]:
 	return pictures
 
 ## *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for
-## that.")* A pickup gives the protests' pointing hand-in (`EventManager.points_at`) nothing to hand back.
+## that.")* A pickup gives the protests' pointing hand-in (`EventManager.use_protest_target()`) nothing to hand back.
 func _test_plain_pose_on_a_mark_step(t: TestRunner) -> void:
 	_build_city(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6), 300.0)
 	var step := director.current_step()
 	t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
-	t.check(RunCity.events(_city).points_at.call() == Vector2.INF,
+	t.check(RunCity.events(_city).world.where_protests_point() == Vector2.INF,
 			"a mark step gives a protester nothing to point at")
-	t.check(EventPictures.protester_texture(Vector2.ZERO, RunCity.events(_city).points_at.call())
+	t.check(EventPictures.protester_texture(Vector2.ZERO, RunCity.events(_city).world.where_protests_point())
 			== EventPictures.PROTESTER,
 			"...so a protester anywhere in the city draws the plain rank")
 
@@ -152,7 +152,7 @@ func _test_pointing_pose_on_a_perform_step(t: TestRunner) -> void:
 	var step := director.current_step()
 	t.check(step != null and not step.is_pickup, "the yeller perform is active")
 
-	var objective: Vector2 = RunCity.events(_city).points_at.call()
+	var objective: Vector2 = RunCity.events(_city).world.where_protests_point()
 	t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
 	t.check(objective == director.contact_position(),
 			"before its first arrow choice, it is the step's own contact")
@@ -164,14 +164,14 @@ func _test_pointing_pose_on_a_perform_step(t: TestRunner) -> void:
 # ---------------------------------------------------------------- the wiring ---
 
 ## A protest the city's events make asks the director it was handed (`ResistanceDirector.setup()`
-## hands `EventManager.points_at` its objective), not a node it looks up: its rank
+## hands `EventManager.use_protest_target()` its objective), not a node it looks up: its rank
 ## points where the director's objective is, every protester drawn in the pose that points there.
 func _test_a_protest_the_city_makes_points_where_its_director_does(t: TestRunner) -> void:
 	_build_city(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6), 300.0)
 	director.contact().complete_now()
-	var objective: Vector2 = RunCity.events(_city).points_at.call()
+	var objective: Vector2 = RunCity.events(_city).world.where_protests_point()
 	t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
 	_record_the_drawing()
 	var protest := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("protest"),
