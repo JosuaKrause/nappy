@@ -1,7 +1,7 @@
 extends SceneTree
 ## COPY of tests/probes/entity_frame_profile.gd (4da1e5285), with one flag added to the game's arguments: `--invincible`.
 ## What changed and why: at 4da1e5285 the day's placement puts rows on the straight line the rig walks north
-## along (a leaf blower, then a street preacher, within 190 px of the doorstep on seed 4242, day 1), so the
+## along (a leaf blower, then a homeless yeller, within 190 px of the doorstep on seed 4242, day 1), so the
 ## rig's mother walks into them and the baby is lost (crying) after 7.5 s, which ends the day; the observer
 ## then reads an ended day and the analyzer rejects the run. `--invincible` stands the meter and the day
 ## clock still and lets nothing but a win end the day (`DayController.set_invincible()`), so the same walk

@@ -9,7 +9,9 @@ extends RefCounted
 ##    context with `GameDawn` (`tests/game_dawn.gd`, the one place under tests/ that hands a dawn its inputs).
 ##  - The timer wraps `EventScheduler.build_day(dawn)`, the call that is the game's dawn (printed as
 ##    `build_day_sec`, as before). The context is made before the timer starts (`GameDawn.context()`:
-##    the walk, the calm areas, the plan builder, the mast sites), as the old copy made them outside it.
+##    the walk, the calm areas, the plan builder, the mast sites). The old copy built the mast sites and the
+##    route tree outside its timer but ran `CalmAreas.of(map)` inside it, so this timer leaves out the building
+##    of the calm areas, which the earlier columns' timer included.
 ##  - The dawn no longer draws the day's units: each unit draws as she comes near it. The tree's probe counts
 ##    every unit, so `GameDawn.draw_every_unit(dawn)` runs after `build_day` and is timed apart
 ##    (printed as `draw_every_unit_sec`): a walk that comes near every unit pays it, the dawn itself does not.
