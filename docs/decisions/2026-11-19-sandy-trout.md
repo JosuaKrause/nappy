@@ -13,12 +13,15 @@ alone did not hold.
 (a sub-agent's is `<session transcript without .jsonl>/subagents/agent-<agent_id>.jsonl`, derived from the
 payload's `transcript_path` as the agent-stats hook and the resume guard derive it) and looks, for each skill
 the refusal named, for a tool call that reads it: a `Read` of its `SKILL.md`, a `Skill` call naming it, or
-any tool call whose input contains `.claude/skills/<name>/SKILL.md`. A read before the refusal counts; the
+any other tool call whose input names `.claude/skills/<name>/SKILL.md` (a shell or script command); a `Read` counts only
+with neither offset nor limit, and the inputs of the writing and brief-sending tools (Write, Edit, MultiEdit,
+NotebookEdit, Agent, Task, SendMessage) never count. A read before the refusal counts; the
 refusal's own index, a tool result, does not. Every skill read: the edit passes. One not: refused again, naming
 only the unread skills. The third attempt at an area passes whatever the transcript shows, with a context line
 saying no read was seen, so a skill that reached the session another way costs at most two refusals. A missing
-or unreadable transcript lets the edit pass with a context line. The check is a `grep` and a `jq` over the
-matching lines (about a tenth of a second on an 87 MB transcript).
+or unreadable transcript lets the edit pass with a context line. The check prefilters the transcript with perl's `index()` (the plain `grep` where perl is missing) and reads
+the matching lines with `jq`: about 0.2 s end to end on an 87 MB transcript, measured the way the harness runs the
+hook (1.5 s with `grep` alone).
 
 **Rejected.** Leaving the plain retry and relying on the contract's sentence (it did not hold); a check with no
 cap (it could refuse for good, the header's old concern); a Python reader (slower to start on every edit).
