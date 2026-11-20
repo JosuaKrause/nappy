@@ -195,9 +195,9 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 
 		var blocked := map.closed_tiles.duplicate()
 		for item in seals:
-			_add_circle(map, blocked, item.position, item.def.obstructs_radius)
+			_add_circle(map, blocked, item.position, item.def.obstructs_within())
 		for item in region_plan.wall_bodies:
-			_add_circle(map, blocked, item.position, item.def.obstructs_radius)
+			_add_circle(map, blocked, item.position, item.def.obstructs_within())
 		var grid := ReachabilityGrid.build(map)
 		var door := map.rect_tiles(map.power_station_door_tiles())
 		var reached := grid.flood([map.home_rect.position], blocked)

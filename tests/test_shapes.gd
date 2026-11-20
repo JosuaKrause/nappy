@@ -97,20 +97,20 @@ func _test_band_reduces_to_a_point_under_its_own_radius(t: TestRunner) -> void:
 # and which copy rather than only that validation failed somewhere.
 
 func _shape_agrees(def: EventDef) -> bool:
-	if def.obstructs_radius <= 0.0:
+	if def.obstructs_within() <= 0.0:
 		return true
-	return def.shape != null and is_equal_approx(def.shape.reach(), def.obstructs_radius)
+	return def.shape != null and is_equal_approx(def.shape.reach(), def.obstructs_within())
 
 func _test_every_catalogue_row_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.look != EventDef.Look.NONE:
 			t.check(def.shape != null, "'%s' has a look and carries a shape" % def.id)
-		if def.obstructs_radius > 0.0:
+		if def.obstructs_within() > 0.0:
 			checked += 1
 			t.check(_shape_agrees(def),
 					"'%s' obstructs %.1fpx and its shape reaches %.1fpx: they agree"
-					% [def.id, def.obstructs_radius,
+					% [def.id, def.obstructs_within(),
 							def.shape.reach() if def.shape else -1.0])
 	t.check(checked >= 20, "and most of the catalogue actually obstructs (%d rows)" % checked)
 
@@ -125,7 +125,7 @@ func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 						"'%s' at heat %d has a look and carries a shape" % [def.id, level])
 			t.check(_shape_agrees(hot),
 					"'%s' at heat %d: obstructs %.1fpx, shape reaches %.1fpx"
-					% [def.id, level, hot.obstructs_radius,
+					% [def.id, level, hot.obstructs_within(),
 							hot.shape.reach() if hot.shape else -1.0])
 	t.check(checked > EventCatalogue.all().size(), "every row was checked at every heat level")
 
@@ -140,7 +140,7 @@ func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 			t.check(sealed.shape != null, "'%s' sealed for '%s' carries a shape" % [id, candidate.id])
 			t.check(_shape_agrees(sealed),
 					"'%s' sealed for '%s': obstructs %.1fpx, shape reaches %.1fpx"
-					% [id, candidate.id, sealed.obstructs_radius,
+					% [id, candidate.id, sealed.obstructs_within(),
 							sealed.shape.reach() if sealed.shape else -1.0])
 	t.check(checked >= 6, "and the seal candidate list was actually walked (%d checks)" % checked)
 
@@ -164,13 +164,13 @@ func _test_every_spread_row_still_fills_the_pavement_it_blocked(t: TestRunner) -
 	for def in EventCatalogue.all():
 		if not _SPREAD_LOOKS.has(def.look):
 			continue
-		var blocked_before := def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > half_band
+		var blocked_before := def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS > half_band
 		if not blocked_before:
 			continue
 		checked += 1
 		t.check(def.shape.rounding_radius() + Tuning.PLAYER_BODY_RADIUS > half_band,
 				("'%s' blocked the whole %.0fpx pavement band as a disc (%.0fpx + her %.0fpx); "
-						% [def.id, half_band * 2.0, def.obstructs_radius, Tuning.PLAYER_BODY_RADIUS])
+						% [def.id, half_band * 2.0, def.obstructs_within(), Tuning.PLAYER_BODY_RADIUS])
 				+ ("its capsule (%.0fpx across + her %.0fpx) still does" % [def.shape.rounding_radius(),
 						Tuning.PLAYER_BODY_RADIUS]))
 	t.check(checked >= 6, "and some spread row actually blocked a pavement to check (%d)" % checked)
@@ -228,7 +228,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 		if not segment:
 			continue
 		var positions := SealPlanner.positions_across(map.tile_rect_to_world(segment.tile_rect()),
-				segment.horizontal, def.obstructs_radius)
+				segment.horizontal, def.obstructs_within())
 		t.check(positions.size() > 0, "the seal places at least one body on this street")
 		if positions.is_empty():
 			continue

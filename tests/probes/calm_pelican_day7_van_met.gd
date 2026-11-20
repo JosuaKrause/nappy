@@ -185,7 +185,7 @@ class Walk extends RefCounted:
 	func detail() -> String:
 		var where := "-"
 		if van and van.is_placed():
-			var on_her_line := nearest_after <= van.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+			var on_her_line := nearest_after <= van.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 			where = "she at %s heading %s, van at %s; " % [her_at_siting, heading_at_siting,
 					van.position] + "laid %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when laid %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,

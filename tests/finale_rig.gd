@@ -208,7 +208,7 @@ func _test_every_street_off_the_chains_is_sealed(t: TestRunner) -> void:
 		var placements: Array[EventPlan] = built["placements"]
 		var sealed_at := {}
 		for placement: EventPlan in placements:
-			if placement.def.obstructs_radius > 0.0:
+			if placement.def.obstructs_within() > 0.0:
 				sealed_at[map.world_to_tile(placement.position)] = true
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
@@ -430,7 +430,7 @@ static func _block_every_body(t: TestRunner, map: CityMap, placements: Array[Eve
 	for placement: EventPlan in placements:
 		var standing := stage.stand(placement)
 		for instance: EventInstance in [standing, stage.successor_of(standing)]:
-			if instance == null or instance.def.mobile or instance.def.obstructs_radius <= 0.0:
+			if instance == null or instance.def.mobile or instance.def.obstructs_within() <= 0.0:
 				continue
 			count += 1
 			var centres := instance.solid_part_centres()
@@ -1299,7 +1299,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 						!= GameEnums.TileType.ALLEY:
 					continue
 				day_walls += 1
-				t.check(seal.def.obstructs_radius * 2.0 <= mouth,
+				t.check(seal.def.obstructs_within() * 2.0 <= mouth,
 						"day %d's alley-mouth row %s fits the mouth" % [day, seal.def.id])
 	t.check(day_walls > 0, "there were days' alley-mouth walls to ask about (%d)" % day_walls)
 	var walls := 0
@@ -1574,16 +1574,16 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -
 		for placement: EventPlan in placements:
 			checked += 1
 			for def: EventDef in [placement.def, EventCatalogue.by_id(placement.def.aftermath.on_finish)]:
-				if def == null or def.obstructs_radius <= 0.0:
+				if def == null or def.obstructs_within() <= 0.0:
 					continue
 				if placement.position.distance_to(spawn) \
-						<= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
+						<= def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS:
 					on_her += 1
 					t.check(false,
 							"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the "
 							% [seed_value, def.id, placement.position.distance_to(spawn)]
 							+ "%.0fpx its body and her own take up"
-							% (def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS))
+							% (def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS))
 	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
 	t.check(on_her == 0, "and none of them is standing on her (%d of %d)" % [on_her, checked])
 
@@ -1750,9 +1750,9 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	# source picture's own size with nothing acquired.
 	var picture := EventPictures.icon_for(crater.look)
 	var drawn_width := EventPictures.native_size(picture).x
-	t.check(is_equal_approx(crater.obstructs_radius, drawn_width * 0.5),
+	t.check(is_equal_approx(crater.obstructs_within(), drawn_width * 0.5),
 			"the crater obstructs %.0fpx against a %.0fpx picture"
-			% [crater.obstructs_radius, drawn_width])
+			% [crater.obstructs_within(), drawn_width])
 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
 	# was, through the row's `aftermath.on_finish`.

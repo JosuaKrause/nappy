@@ -88,7 +88,7 @@ func run(t: TestRunner) -> void:
 		var def := EventCatalogue.by_id(id)
 		var plan := EventPlan.new(def, Vector2.ZERO)
 		print("SC_BEAT %s | blocking radius %.1f | obstructs %.1f | hard fail %s"
-				% [id, plan.blocking_radius(), def.obstructs_radius, def.hard_fail])
+				% [id, plan.blocking_radius(), def.obstructs_within(), def.hard_fail])
 	t.check(asked > 0, "there were places to ask from (%d)" % asked)
 
 func _where(map: CityMap, corridor: Corridor, plan: EventPlan) -> String:

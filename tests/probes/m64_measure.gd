@@ -101,7 +101,7 @@ func _role_and_depth_sweep() -> void:
 					var idr := "%s:%s" % [plan.def.id, role_name]
 					by_id_role[idr] = int(by_id_role.get(idr, 0)) + 1
 				if depth == 0 and plan.role() == GameEnums.BlockerRole.FRICTION \
-						and not plan.def.mobile and plan.def.obstructs_radius > 0.0:
+						and not plan.def.mobile and plan.def.obstructs_within() > 0.0:
 					sum_solid_friction_on_corridor += 1
 					var segment := map.network.segment_containing(tile)
 					if segment:

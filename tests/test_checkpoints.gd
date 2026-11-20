@@ -199,10 +199,10 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 				var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 				var mouth_centre := map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center()
 				var distance := wall_body.position.distance_to(mouth_centre)
-				t.check(distance > wall_body.def.obstructs_radius,
+				t.check(distance > wall_body.def.obstructs_within(),
 						("seed %d day %d: a wall body at %s (radius %.0f) does not reach the door " +
 						"at %s (%.0fpx away)") % [map.city_seed(), day, wall_body.position,
-						wall_body.def.obstructs_radius, segment.key(), distance])
+						wall_body.def.obstructs_within(), segment.key(), distance])
 	t.check(checked > 0, "at least one door body was checked against its own segment (%d)" % checked)
 
 ## *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down".)* The boom
@@ -280,12 +280,12 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 			# And the picture stays over ground the door is actually solid on: the three bodies
 			# tile the street edge to edge at `Tuning.TILE_SIZE` spacing, so an arm that reaches
 			# past the gate's own body is still over a hut's.
-			var solid_low := gate_across - gate.def.obstructs_radius
-			var solid_high := gate_across + gate.def.obstructs_radius
+			var solid_low := gate_across - gate.def.obstructs_within()
+			var solid_high := gate_across + gate.def.obstructs_within()
 			for hut in huts:
 				var hut_across: float = hut.position.y if segment.horizontal else hut.position.x
-				solid_low = minf(solid_low, hut_across - hut.def.obstructs_radius)
-				solid_high = maxf(solid_high, hut_across + hut.def.obstructs_radius)
+				solid_low = minf(solid_low, hut_across - hut.def.obstructs_within())
+				solid_high = maxf(solid_high, hut_across + hut.def.obstructs_within())
 			t.check(arm_near >= solid_low and arm_far <= solid_high,
 					("seed %d day %d: the arm never reaches past the door's own solid line " +
 					"(%.1f..%.1f over %.1f..%.1f)")
@@ -638,7 +638,7 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t: TestRunner) -> void:
 	t.check(released_along < 0.0,
 			"released on the opposite side of the crossing from where she went in (%.1f)"
 			% released_along)
-	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	t.check(absf(released_along) >= clearance - 0.5,
 			"and just clear of its body, as close to the door as she can stand (%.1f against %.1f)"
@@ -1247,7 +1247,7 @@ func _peak_walking_out(plans: Array[EventPlan], from: Vector2,
 func _release_points(body: EventPlan) -> Array[Vector2]:
 	var axis: Vector2 = body.facing
 	var across := Vector2(-axis.y, axis.x)
-	var clearance := body.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := body.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var points: Array[Vector2] = []
 	for side: float in [-1.0, 1.0]:
@@ -1332,7 +1332,7 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 	var hut_at := Vector2(8000.0, 8000.0)
 	var hut := EventPlan.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
 	hut.facing = axis
-	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	# Let out on the north side, the way the run was.
 	var released := hut_at + Vector2(0.0, -clearance)
@@ -1413,7 +1413,7 @@ func _test_a_stroller_stopped_against_the_hut_is_detained(t: TestRunner) -> void
 				"walking %s she pushes something further ahead of her than her own body "
 				% approach + "(%.1f against %.1f) — otherwise this rig checks nothing"
 				% [reach, Tuning.PLAYER_BODY_RADIUS])
-		var stopped_at := hut.def.obstructs_radius + reach
+		var stopped_at := hut.def.obstructs_within() + reach
 		t.check(stopped_at < hut.def.detain_distance(),
 				("walking %s, where the hut's body stops her (%.1fpx from its centre) is inside " +
 				"the trigger (%.1fpx)") % [approach, stopped_at, hut.def.detain_distance()])
@@ -1507,7 +1507,7 @@ func _test_the_whole_hold_reads_as_one_move(t: TestRunner) -> void:
 	var heading := Vector2.RIGHT
 	var reach := await _reach_ahead(t, stroller, heading)
 	# Put down as a day puts her down (`Stroller.reset_at()`, which also drops her interpolation).
-	stroller.reset_at(hut.global_position - heading * (hut.def.obstructs_radius + reach), heading)
+	stroller.reset_at(hut.global_position - heading * (hut.def.obstructs_within() + reach), heading)
 	# A camera that has been following her all morning: she was just put here, so its smoothed
 	# position would otherwise still be sitting at the world origin it was born at.
 	# `reset_smoothing()` is what "it has already caught up with her" looks like, and
@@ -2098,7 +2098,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	if guard:
 		t.check(RunCity.events(city).instances().has(guard), "a live event, like anything else in the day")
 		t.check(guard.global_position.distance_to(far_hut.global_position)
-				<= far_hut.def.obstructs_radius + 0.5,
+				<= far_hut.def.obstructs_within() + 0.5,
 				"stepping out of the wall of the hut across the road (%.1fpx from it)"
 				% guard.global_position.distance_to(far_hut.global_position))
 		t.check((guard.global_position - far_hut.global_position).dot(axis) > 0.0,
@@ -2149,7 +2149,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 	_stand_for(rig, CheckpointController.CROSSING_WARNING)
 	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
-			<= far_hut.def.obstructs_radius + 0.5,
+			<= far_hut.def.obstructs_within() + 0.5,
 			"once the warning has run, the guard steps out of the hut that warned her (%s)"
 			% ("%.1fpx from it, %.1fpx from the other" % [
 					guard.global_position.distance_to(far_hut.global_position),

@@ -213,10 +213,10 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 		t.check(hot.lethal_reach() == EventCatalogue.by_id("masked_pursuer").inner_radius,
 				"heat %d: it catches at a masked man's own reach (%.0fpx)"
 				% [level, hot.lethal_reach()])
-		t.check(hot.lethal_reach() < hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS,
+		t.check(hot.lethal_reach() < hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS,
 				("heat %d: and well inside the %.0fpx the band's own body would have forced, "
 						+ "which is only possible because the man leaves it behind")
-				% [level, hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS])
+				% [level, hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS])
 		t.check(hot.pursuit.leaves_its_body,
 				"heat %d: and the barrier he leaves stays where it was built" % level)
 		t.check(hot.lethal_reach() <= hot.inner_radius,
@@ -473,7 +473,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	band.drawer = RecordingEventDrawer.new()
 	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT, null, null, band_where)
 	t.add_child(band)
-	band_where.tell(post + Vector2(cold.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0))
+	band_where.tell(post + Vector2(cold.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0))
 	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
@@ -527,9 +527,9 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	t.check(not guard.is_lethal_at(just_clear),
 			"and not a pixel past it (%.0fpx is clear)" % (reach + 2.0))
 	t.check(not guard.is_lethal_at(guard.global_position
-			+ Vector2(hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0)),
+			+ Vector2(hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, 0.0)),
 			"never at the %.0fpx the band's own body would have forced"
-			% (hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS))
+			% (hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS))
 
 	# And the barrier he left behind is not a second killer: she can stand against it. She holds
 	# still while he closes, so what this measures is him leaving rather than her drawing him off.
@@ -544,7 +544,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 			"he has actually walked away from the post (%.0fpx)"
 			% guard.global_position.distance_to(post))
 	t.check(not guard.is_lethal_at(post)
-			and not guard.is_lethal_at(post + Vector2(0.0, hot.obstructs_radius)),
+			and not guard.is_lethal_at(post + Vector2(0.0, hot.obstructs_within())),
 			"and the barrier standing there takes nobody")
 	guard.free()
 

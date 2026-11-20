@@ -415,7 +415,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 
 			var blocked: Dictionary[Vector2i, bool] = {}
 			for plan_body in plan.wall_bodies:
-				_add_circle(map, blocked, plan_body.position, plan_body.def.obstructs_radius)
+				_add_circle(map, blocked, plan_body.position, plan_body.def.obstructs_within())
 			var grid := ReachabilityGrid.build(map)
 			var doorstep := map.world_to_tile(map.doorstep_world_position())
 			var reached := grid.flood([doorstep], blocked)
@@ -505,10 +505,10 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 				checked += 1
 				for tile: Vector2i in alley_mouth_tiles:
 					var distance := map.tile_to_world(tile).distance_to(body.position)
-					t.check(distance > body.def.obstructs_radius,
+					t.check(distance > body.def.obstructs_within(),
 							("seed %d day %d: a wall body at %s (radius %.0f) does not reach " +
 							"alley mouth tile %s (%.0fpx away)")
-							% [map.city_seed(), day, body.position, body.def.obstructs_radius,
+							% [map.city_seed(), day, body.position, body.def.obstructs_within(),
 							tile, distance])
 	t.check(checked > 0, "at least one wall body was checked against every alley mouth (%d)" % checked)
 
@@ -635,7 +635,7 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
 					checked += 1
 					var body: EventPlan = mouths[rect][0 if at_start else 1]
 					var centre: float = body.position.x if vertical else body.position.y
-					var half := body.def.obstructs_radius
+					var half := body.def.obstructs_within()
 					t.check(centre - half >= low - 0.01 and centre + half <= high + 0.01,
 							("seed %d day %d: alley wall body at %s (half-width %.0f) draws within " +
 							"the alley's own mouth %.0f..%.0f, not over the lots either side")
@@ -686,9 +686,9 @@ func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 
 			var blocked := map.closed_tiles.duplicate()
 			for plan_item in seals:
-				_add_circle(map, blocked, plan_item.position, plan_item.def.obstructs_radius)
+				_add_circle(map, blocked, plan_item.position, plan_item.def.obstructs_within())
 			for plan_item in region_plan.wall_bodies:
-				_add_circle(map, blocked, plan_item.position, plan_item.def.obstructs_radius)
+				_add_circle(map, blocked, plan_item.position, plan_item.def.obstructs_within())
 
 			var grid := ReachabilityGrid.build(map)
 			var reached := grid.flood([map.home_rect.position], blocked)

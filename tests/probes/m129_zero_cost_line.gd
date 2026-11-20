@@ -476,7 +476,7 @@ func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 		row.position = plan.position
 		row.paces = def.paces
 		row.emits = emits
-		row.obstructs = def.obstructs_radius > 0.0
+		row.obstructs = def.obstructs_within() > 0.0
 		row.source = int(_sources.get(plan.get_instance_id(), Source.CATALOGUE))
 		row.beat = _samples_along(plan)
 		rows.append(row)
@@ -1191,7 +1191,7 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 		var reach := "" if not def else \
 				" (intensity %.1f over %.0fpx, denies %.0fpx, body %.0fpx%s)" \
 				% [def.intensity, def.outer_radius, def.line_reach(),
-				def.obstructs_radius, ", paces" if def.paces else ""]
+				def.obstructs_within(), ", paces" if def.paces else ""]
 		print("      %-4d %s%s" % [blame[id], id, reach])
 
 	print("\n-- the grower's own mid-block crossings --")

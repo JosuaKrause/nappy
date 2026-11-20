@@ -2263,7 +2263,7 @@ func leaves_behind() -> String:
 ## The id of the scar it leaves on the run where it happens (`Aftermath.scar`), or "" for a row that
 ## leaves none: the burning building's burnt shell, the roadblock's barricade.
 func scar_id() -> String:
-	return aftermath.scar
+	return aftermath.scar_id()
 
 ## Whether a rider of it may be the run's one pelican (`may_be_a_pelican`): the cyclist, which is the
 ## only row that draws from the run's pelican bag.

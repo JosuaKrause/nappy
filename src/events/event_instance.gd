@@ -2378,8 +2378,8 @@ func is_its_guard_warning() -> bool:
 func is_silenced() -> bool:
 	return _silenced
 
-## Whether this cyclist is the pelican rather than the kid (`is_pelican`): the one picture it
-## changes, for a look to choose its two pedal frames by.
+## Whether this cyclist is the pelican rather than the kid (`be_drawn_as_the_pelican()`): the one
+## picture it changes, for a look to choose its two pedal frames by.
 func is_drawn_as_a_pelican() -> bool:
 	return _is_pelican
 

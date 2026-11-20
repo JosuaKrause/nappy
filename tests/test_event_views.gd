@@ -377,10 +377,10 @@ func _test_a_spread_covers_the_ground_its_body_closes(t: TestRunner) -> void:
 			instance.free()
 			var from := span.position.y if vertical else span.position.x
 			var to := span.end.y if vertical else span.end.x
-			t.check(not first and is_equal_approx(from, -def.obstructs_radius)
-					and is_equal_approx(to, def.obstructs_radius),
+			t.check(not first and is_equal_approx(from, -def.obstructs_within())
+					and is_equal_approx(to, def.obstructs_within()),
 					"%s: the segments run %.1f..%.1f along the run, the body's own %.0f..%.0f"
-					% [what, from, to, -def.obstructs_radius, def.obstructs_radius])
+					% [what, from, to, -def.obstructs_within(), def.obstructs_within()])
 
 ## The union of every picture a drawn roadblock's band was drawn in, segments and end posts, about
 ## the event's origin.

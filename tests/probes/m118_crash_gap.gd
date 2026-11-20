@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 			if at == Vector2.INF:
 				continue
 			var instance := _accident_at(map, at)
-			var half: float = instance.def.obstructs_radius
+			var half: float = instance.def.obstructs_within()
 			var open := _open_lanes(instance, half)
 			lanes_found += open.size()
 			var costs := PackedFloat32Array()

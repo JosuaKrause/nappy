@@ -171,9 +171,6 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id + " player velocity")
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id + " sensitivity")
-		source.silence()
-		_event_parity(t, source, at, definition.id + " silence")
-		source._silenced = false
 		if source.def.detain_seconds > 0.0:
 			source.hold.start()
 			_event_parity(t, source, at, definition.id + " chatting")
@@ -215,6 +212,10 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			source.birds()[0].speed += 10.0
 			_event_parity(t, source, at, definition.id + " bird geometry")
 			t.check(source.sampling_runs > runs, "flock always samples its mutable birds")
+		# Silenced last: nothing un-silences a live event, and a leaving or a retired one answers 0
+		# silenced or not, so the two checks after it still hold their own phases.
+		source.silence()
+		_event_parity(t, source, at, definition.id + " silence")
 		source.transition(EventInstance.Phase.LEAVING)
 		_event_parity(t, source, at, definition.id + " leaving")
 		source.transition(EventInstance.Phase.ACTIVE)

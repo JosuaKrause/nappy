@@ -353,9 +353,9 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 			if plan.spent or not plan.is_placed() or area.has_point(plan.position):
 				continue
 			var def := plan.def
-			if def.obstructs_radius <= 0.0 and not def.hard_fail:
+			if def.obstructs_within() <= 0.0 and not def.hard_fail:
 				continue
-			var reach := def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			var reach := def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 					+ Stroller.PRAM_BODY_RADIUS
 			if def.intensity > 0.0:
 				reach = maxf(reach, def.field_reach())

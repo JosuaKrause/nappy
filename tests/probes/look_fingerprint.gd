@@ -47,7 +47,7 @@ extends RefCounted
 ## **It asks only what every tree of the looks' step has.** Of `EventInstance`: `setup()`, `step()`,
 ## `look`, `hold`, `atlas`, `drawer`, `is_chasing()`, `leave_for_a_completed_task()`,
 ## `give_up_the_chase()`, `raise_its_guards_hand()`, `start_chat()`, and the members the spawner,
-## streaming and the checkpoint controller write today (`is_pelican`, `silenced`, `gate_state`,
+## streaming and the checkpoint controller write today (`be_drawn_as_the_pelican()`, `silence()`, `gate_state`,
 ## `points_at`). By string, so a rename shows as a difference in the labels rather than hiding one: a
 ## slice's place in `SpreadLook.slices()` and the far guard's node found by its name `FarGuard`.
 ## Of the look: `drawn_rect_now()`, `mark_rect()`, `drawn_heading()`, `current_bob()`,

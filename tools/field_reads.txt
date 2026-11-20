@@ -17,7 +17,6 @@ src/events/event_catalogue.gd on_finish
 src/events/event_catalogue.gd on_sight
 src/events/event_catalogue.gd scar
 src/events/event_def.gd on_finish
-src/events/event_def.gd scar
 src/events/event_spawner.gd on_sight
 
 # [Building] src/city/building.gd

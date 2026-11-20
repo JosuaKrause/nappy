@@ -84,7 +84,7 @@ func run_door_day(t: TestRunner) -> void:
 ## segment's whole cross-section, at the seal's own body radius, as the planner places a seal.
 func _across(segment: StreetNetwork.Segment, def: EventDef) -> Array[Vector2]:
 	return SealPlanner.positions_across(_city.map.tile_rect_to_world(segment.tile_rect()),
-			segment.horizontal, def.obstructs_radius)
+			segment.horizontal, def.obstructs_within())
 
 ## One stride of `agent` in seconds at the fastest its kind goes: its strategy's stride length
 ## over the top of its kind's speed range.

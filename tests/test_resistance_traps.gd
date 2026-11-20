@@ -367,7 +367,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: Resis
 		if hut == null:
 			director.free()
 			return
-		var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+		var out := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 				+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 		var her := hut.position + hut.facing * side * out
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(her)),
@@ -505,7 +505,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 	var through_a_door := false
 	var plan := _city.streets().region_plan()
 	for body: EventPlan in plan.door_bodies if plan else []:
-		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
+		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_within(),
 				start, her):
 			through_a_door = true
 	t.check(not through_a_door,

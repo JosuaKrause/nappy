@@ -64,7 +64,7 @@ func run(t: TestRunner) -> void:
 			for plan in RunCity.events(city).plans():
 				if not plan.is_placed() or plan in door_bodies:
 					continue
-				if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+				if plan.def.obstructs_within() > 0.0 or plan.def.hard_fail:
 					blockers.append(plan)
 			var grid := ReachabilityGrid.build(city.map)
 			var blocked := EventScheduler.blocked_by(city.map, blockers)

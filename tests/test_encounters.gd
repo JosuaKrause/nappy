@@ -458,7 +458,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 	var centre := Vector2(4000.0, 4000.0)
 	var hut := manager.spawn_extra(EventCatalogue.by_id("checkpoint_hut"), centre)
 	var entry := centre + axis * 40.0 + Vector2(0.0, 16.0)
-	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var released := centre - axis * maxf(40.0, clearance) + Vector2(0.0, 16.0)
 	var cyclist := manager.spawn_extra(EventCatalogue.by_id("cyclist"), released)
