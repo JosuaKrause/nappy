@@ -17,7 +17,6 @@ src/events/event_catalogue.gd on_finish
 src/events/event_catalogue.gd on_sight
 src/events/event_catalogue.gd scar
 src/events/event_def.gd on_finish
-src/events/event_spawner.gd on_sight
 
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
@@ -229,7 +228,6 @@ src/events/event_instance.gd stops_where_it_arrives
 src/events/event_instance.gd vehicle
 src/events/event_plan.gd id
 src/events/event_scheduler.gd id
-src/events/event_spawner.gd aftermath
 src/events/event_spawner.gd id
 src/events/event_spawner.gd speed
 src/events/events_ahead.gd id
