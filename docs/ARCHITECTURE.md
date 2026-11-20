@@ -1131,8 +1131,8 @@ written once in `WorldMap`, over each map's own answer about its ground. A rig w
 an event on open ground (`WorldMap.open_ground()`), where nothing is walled and every way is
 straight; nothing asks whether it has a map. **The map names nothing of the world**: the way round
 is the navigator's (`Navigator`, over a map, which whoever builds a world builds and hands on: the
-city holds its own, `City.navigator`, and `SimulationBuilder` hands it to the events, the crowd and
-the resistance; the building's events build theirs), and what is drawn in the world is the world's
+city holds its own, `City.navigator()`, `SimulationBuilder` hands it to the events and the crowd and
+`main` to the resistance; the building's events build theirs), and what is drawn in the world is the world's
 (`WorldContext`, handed to the event manager by `EventManager.draw_in()`, which hands it to each
 event it makes). Which world a day spec is walked in is the run flow's
 choice (`main`), which hands that world's map down.

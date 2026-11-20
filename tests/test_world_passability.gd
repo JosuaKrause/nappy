@@ -38,16 +38,16 @@ func run(t: TestRunner) -> void:
 			_test_the_cat_crossing_never_ends_in_a_lot,
 			_test_a_departure_leaves_round_a_building,
 			_test_every_row_that_moves_stays_off_blocked_ground,
-			_test_every_mover_on_a_map_shares_its_one_navigator]:
+			_test_the_citys_events_move_by_the_navigator_the_city_built]:
 		_in_a_day(t, check)
 
-## **The city's events move by the navigator the city built** (`City.navigator`): the one the builder
-## hands its event manager. The crowd and the director build one over the map when handed none; a
+## **The city's events move by the navigator the city built** (`City.navigator()`): the one the
+## builder hands its event manager. The crowd and the director build one over the map when handed none; a
 ## crowd's is checked in `test_navigator_fallbacks.gd`. A director handed only the map is checked
 ## here by what it does (it sites a crossing round a body standing across it), which does not pin
 ## that it shares the city's navigator: a director that builds its own `Navigator.new(map)` passes.
-func _test_every_mover_on_a_map_shares_its_one_navigator(t: TestRunner, city: City) -> void:
-	t.check(RunCity.events(city).world.navigator() == city.navigator,
+func _test_the_citys_events_move_by_the_navigator_the_city_built(t: TestRunner, city: City) -> void:
+	t.check(RunCity.events(city).world.navigator() == city.navigator(),
 			"the city's events move by the navigator the city built")
 
 # ---------------------------------------------------------------------- ground ---

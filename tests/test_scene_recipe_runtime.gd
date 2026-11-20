@@ -222,8 +222,8 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	var her := Vector2.INF
 	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
 		var stand := city.map.tile_to_world(tile)
-		if city.navigator.passable_at(stand + Vector2.DOWN * lead, EventInstance.mover_for(row)) \
-				and city.navigator.passable_at(stand, EventInstance.mover_for(row)):
+		if city.navigator().passable_at(stand + Vector2.DOWN * lead, EventInstance.mover_for(row)) \
+				and city.navigator().passable_at(stand, EventInstance.mover_for(row)):
 			her = stand
 			break
 	t.check(her != Vector2.INF, "the city has a sidewalk the dog can be sent down at")

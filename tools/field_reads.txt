@@ -57,7 +57,6 @@ src/main.gd frame_timing
 src/main.gd ground_mode
 src/main.gd ground_recipe
 src/main.gd map
-src/main.gd navigator
 src/main.gd run
 src/main.gd scenery_frame_locked
 src/main.gd skip_shadows

@@ -607,7 +607,7 @@ func decay_multiplier(world_position: Vector2) -> float:
 # ------------------------------------------------------------------ transitions ---
 
 ## What the building's ground does to her each frame she walks it (`WorldContext.process_player()`,
-## asked by the run flow through the map): the light of the part she is in, and a door or the service
+## asked by the run flow of the world she walks, `main`'s walking frame): the light of the part she is in, and a door or the service
 ## exit under her (`InteriorMapPlan.transition_at()`). Reads `player`'s own tile rather than being
 ## told about it — the question is "what is on this ground", not "what did somebody just do".
 ## Nothing here is a rate the fade `Tween` does not already own, so `_delta` is not read.

@@ -94,7 +94,7 @@ func force_the_blackout() -> void:
 ## `dark_from_the_start` is the escape's city, dark from its first frame
 ## (`DaySpec.is_dark_from_the_start()`).
 ##
-## `navigator` is the city's own (`City.navigator`), the one the events, the crowd and the resistance all
+## `navigator` is the city's own (`City.navigator()`), the one the events, the crowd and the resistance all
 ## move by.
 ##
 ## `world` is told what charges her on its streets, and its day's dressing is what the walls paste

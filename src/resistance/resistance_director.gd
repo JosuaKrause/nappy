@@ -304,7 +304,7 @@ func use_atlas(atlas: AtlasLibrary) -> void:
 ## Hands the director the map it places on, the run it belongs to, the day's events, today's
 ## streets, the fronts its tasks and happenings change and the world its marks are drawn in — the
 ## city's own, from `main`, or null for each but the map and the run for a rig that places on a map
-## alone — the navigator its happenings move by — the city's own (`City.navigator`), or one over the
+## alone — the navigator its happenings move by — the city's own (`City.navigator()`), or one over the
 ## map (`Navigator.new(map)`) for a rig that hands none — and where a pursuer it sends may start:
 ## `spawn_siting`, the city's own, or, for a rig that hands none, one over `map` that sees the
 ## events' view and the streets' region where there are events and streets and neither where not.

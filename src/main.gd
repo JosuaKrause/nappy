@@ -478,7 +478,7 @@ func _ready() -> void:
 		_resistance.use_bus(EventBus)
 		var events := _city_simulation.events()
 		_resistance.setup(_city.map, _run, events, _city.streets(), _city.fronts(), _city,
-				_city.navigator, events.spawn_siting())
+				_city.navigator(), events.spawn_siting())
 		_resistance.use_player(_player)
 		# The director's own question about her view — no camera of its own, so it asks the day's
 		# one view (`VisibleView`) rather than growing a second one: "has she seen this" for a
@@ -842,7 +842,7 @@ func _make_player() -> Stroller:
 func _build_the_city(dark_from_the_start := false) -> void:
 	_city = _new_city()
 	_city.build(_city_map())
-	_city_simulation = _simulation_builder().in_the_city(_city, _city.map, _city.navigator,
+	_city_simulation = _simulation_builder().in_the_city(_city, _city.map, _city.navigator(),
 			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
 ## **The boot's simulation builder**, made the first time a world needs one: equipped with this
@@ -1015,10 +1015,15 @@ func _hand_the_controls_cover_to_the_events() -> void:
 	if _building_simulation:
 		_building_simulation.events().use_controls(_touch_controls.covering())
 
+## Whether the current spec is walked in the escape's building (its first section) rather than the
+## city: the one answer `_world_map()` and `_world_drawn()` both read.
+func _walks_the_building() -> bool:
+	return _flow.spec().world_kind() == DaySpec.World.BUILDING and _interior != null
+
 ## The map of the world the current spec is walked in — the building's in the escape's first
 ## section, the city's otherwise — the one the run flow hands down to her.
 func _world_map() -> WorldMap:
-	if _flow.spec().world_kind() == DaySpec.World.BUILDING and _interior:
+	if _walks_the_building():
 		return _interior.map()
 	return _city.map if _city else null
 
@@ -1026,7 +1031,7 @@ func _world_map() -> WorldMap:
 ## building's in the escape's first section, the city's otherwise. The run flow asks it what its
 ## ground does to her each walking frame.
 func _world_drawn() -> WorldContext:
-	if _flow.spec().world_kind() == DaySpec.World.BUILDING and _interior:
+	if _walks_the_building():
 		return _interior
 	return _city
 

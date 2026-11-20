@@ -11,7 +11,8 @@ extends RefCounted
 ## edge and the halo hold it across frames — so it is changed in place, never reassigned.
 var instances: Array[EventInstance] = []
 ## The map of the world these events stand in (`WorldMap`): every instance is made on it and stopped
-## by its walls, and its blocked record holds their bodies. Open ground until a world is handed over, for a rig that never hands one.
+## by its walls, and its blocked record holds their bodies. Open ground until a world is handed
+## over, for a rig that never hands one.
 var map: WorldMap = WorldMap.open_ground()
 ## The city's own map, for planning a day over it — its holds, its route tree, its blocks — or null
 ## where the world is not the city (`EventManager.setup_world()`).
