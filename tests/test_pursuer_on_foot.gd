@@ -78,7 +78,7 @@ func _a_sidewalk(map: CityMap) -> Vector2:
 func _the_map_of_day_8(seed_value: int) -> CityMap:
 	var map := MapCache.of(seed_value)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 8)
+	state.begin_day(map.plans_by_block(), 8)
 	map.repaint(state)
 	return map
 
@@ -244,7 +244,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 				her.global_position, sent.global_position),
 				"created wholly out of her sight (%.0fpx off)"
 				% sent.global_position.distance_to(her.global_position))
-		t.check(sent.came_under_a_warning and not sent.is_telegraphing() and not sent.is_waiting(),
+		t.check(sent.was_warned_of() and not sent.is_telegraphing() and not sent.is_waiting(),
 				"already chasing from his first frame, with no closing in")
 		t.check(not RunCity.events(city).plans().any(func(plan: EventPlan) -> bool:
 				return plan.live == sent), "and outside the day's plan")
@@ -378,7 +378,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: T
 			var pursuer := EventInstance.new()
 			pursuer.setup(def, Vector2(0.0, -SpawnSiting.least_distance() - 40.0),
 					PackedVector2Array(), Vector2.RIGHT, null, null, pursuer_where)
-			pursuer.came_under_a_warning = true
+			pursuer.arrive_from_its_warning()
 			pursuer.resume(EventSpawner.age_when_warned(def), 0.0)
 			var at := Vector2.ZERO
 			var elapsed := 0.0
@@ -490,11 +490,11 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner)
 			man.step(STEP)
 			elapsed += STEP
 			if man.has_stopped_her() and not man.is_leaving:
-				landed += man.excitement.contribution_at(her) * STEP
+				landed += man.source().contribution_at(her) * STEP
 				if walks_away:
 					her += Vector2.LEFT * Tuning.WALK_SPEED * STEP
 			elif man.is_leaving:
-				after += man.excitement.contribution_at(her) * STEP
+				after += man.source().contribution_at(her) * STEP
 		if walks_away:
 			t.check(landed >= stop * 0.9,
 					"walking away as he reaches her, she still takes %.1f of its %.0f" % [landed, stop])

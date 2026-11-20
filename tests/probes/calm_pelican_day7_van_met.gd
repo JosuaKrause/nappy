@@ -46,7 +46,7 @@ func _walk_a_day(t: TestRunner, seed_value: int, day: int, row: String) -> Strin
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
@@ -185,7 +185,7 @@ class Walk extends RefCounted:
 	func detail() -> String:
 		var where := "-"
 		if van and van.is_placed():
-			var on_her_line := nearest_after <= van.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+			var on_her_line := nearest_after <= van.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 			where = "she at %s heading %s, van at %s; " % [her_at_siting, heading_at_siting,
 					van.position] + "laid %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when laid %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,

@@ -156,7 +156,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	run.header().set_day(day)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
@@ -353,9 +353,9 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 			if plan.spent or not plan.is_placed() or area.has_point(plan.position):
 				continue
 			var def := plan.def
-			if def.obstructs_radius <= 0.0 and not def.hard_fail:
+			if def.obstructs_within() <= 0.0 and not def.hard_fail:
 				continue
-			var reach := def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			var reach := def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 					+ Stroller.PRAM_BODY_RADIUS
 			if def.intensity > 0.0:
 				reach = maxf(reach, def.field_reach())

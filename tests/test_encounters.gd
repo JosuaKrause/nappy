@@ -251,23 +251,23 @@ func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t: TestRunner) ->
 	var instances: Array[EventInstance] = [yeller]
 	var share := EncounterWatch.ENCOUNTER_INFLUENCE_POINTS
 	_run(watch, instances, Vector2.ZERO, 1.0)
-	yeller.excitement.accumulate_landed(share * 0.6)
+	yeller.source().accumulate_landed(share * 0.6)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.is_empty(), "six tenths of the threshold is no influence")
-	yeller.excitement.accumulate_landed(share * 0.5)
+	yeller.source().accumulate_landed(share * 0.5)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced == ["%d:homeless_yeller:seen" % DAY],
 			"crossing it within the encounter is one influence, a seen one (%s)" % [_influenced])
-	yeller.excitement.accumulate_landed(share * 3.0)
+	yeller.source().accumulate_landed(share * 3.0)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.size() == 1, "and landing more in the same encounter sends nothing more")
 	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP + 1.0)
 	_run(watch, instances, Vector2.ZERO, 0.5)
-	yeller.excitement.accumulate_landed(share * 0.6)
+	yeller.source().accumulate_landed(share * 0.6)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.size() == 1,
 			"a new encounter counts its own landing from nothing, not the last one's")
-	yeller.excitement.accumulate_landed(share * 0.5)
+	yeller.source().accumulate_landed(share * 0.5)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.size() == 2, "and crosses the threshold on its own (%d)" % _influenced.size())
 	yeller.free()
@@ -281,7 +281,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t: TestRunner) -> void:
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
 	_run(watch, instances, AWAY, 0.5)
-	yeller.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.source().accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 1.0)
 	t.check(_influenced.is_empty(), "an influence from off screen is not sent at once")
 	_run(watch, instances, Vector2.ZERO, 0.5)
@@ -291,7 +291,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t: TestRunner) -> void:
 	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP + 1.0)
 
 	_clear()
-	yeller.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.source().accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 1.0)
 	t.check(_influenced.is_empty(), "nothing while the encounter might still be seen")
 	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP)
@@ -299,7 +299,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t: TestRunner) -> void:
 			"over without being seen, it goes out as an unseen influence (%s)" % [_influenced])
 
 	_clear()
-	yeller.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.source().accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 0.5)
 	yeller.free()
 	_run(watch, [] as Array[EventInstance], AWAY, 0.1)
@@ -308,7 +308,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t: TestRunner) -> void:
 
 	_clear()
 	var other := _instance(t, "homeless_yeller", Vector2.ZERO)
-	other.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	other.source().accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, [other] as Array[EventInstance], AWAY, 0.5)
 	watch.end_day()
 	watch.count_under(DAY + 1)
@@ -326,8 +326,8 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	var watch := _watch()
 	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
 	_run(watch, [dog] as Array[EventInstance], Vector2.ZERO, 0.5)
-	t.check(dog.is_chasing() and dog.excitement.landed_ever < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
-			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.excitement.landed_ever)
+	t.check(dog.is_chasing() and dog.source().landed_ever < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
+			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.source().landed_ever)
 	t.check(_influenced == ["%d:charging_dog:seen" % DAY],
 			"the chase is an influence all the same (%s)" % [_influenced])
 	dog.free()
@@ -350,7 +350,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	t.check(not lorry.is_telegraphing() and lorry.is_lethal_at(inside),
 			"the lorry is now past its telegraph and the game's own test catches her")
 	_stand(watch, [lorry] as Array[EventInstance], inside)
-	t.check(_influenced.size() == 1 and lorry.excitement.landed_ever == 0.0,
+	t.check(_influenced.size() == 1 and lorry.source().landed_ever == 0.0,
 			"reversing_lorry: her inside its reach is, with nothing landed (%d)" % _influenced.size())
 	lorry.free()
 
@@ -367,7 +367,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 			"checkpoint_post: seen outside its hold is no influence (%s)" % [_influenced])
 	var held := Vector2(0.0, hold_reach - 2.0)
 	_stand(watch, [post] as Array[EventInstance], held, manager.checkpoints.hold_that_would_begin)
-	t.check(_influenced.size() == 1 and post.excitement.landed_ever == 0.0,
+	t.check(_influenced.size() == 1 and post.source().landed_ever == 0.0,
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
 	manager.clear()
 	_free_manager(manager)
@@ -393,7 +393,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	guard.set_process(false)
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
 	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
-	guard.came_under_a_warning = true
+	guard.arrive_from_its_warning()
 	guard.resume(guard.def.pursuit.warns_for + 0.1, 0.0, 0.0)
 	var her := Vector2(134.0, 122.0)
 	t.check(guard.def.hard_fail and not guard.is_telegraphing() and not guard.is_waiting()
@@ -458,14 +458,14 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 	var centre := Vector2(4000.0, 4000.0)
 	var hut := manager.spawn_extra(EventCatalogue.by_id("checkpoint_hut"), centre)
 	var entry := centre + axis * 40.0 + Vector2(0.0, 16.0)
-	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var released := centre - axis * maxf(40.0, clearance) + Vector2(0.0, 16.0)
 	var cyclist := manager.spawn_extra(EventCatalogue.by_id("cyclist"), released)
 	cyclist.set_process(false)
 	cyclist.resume(cyclist.def.telegraph_time + 0.1, 0.0, 0.0)
 	# Where the test puts it: the manager's tick does not step it off the place the door sets her.
-	cyclist.held_by_hand = true
+	cyclist.hold_by_hand()
 	var reach := cyclist.def.lethal_reach()
 	t.check(entry.distance_to(cyclist.global_position) > reach
 			and not cyclist.is_telegraphing(),
@@ -534,7 +534,7 @@ func _chasing_dog(t: TestRunner, def: EventDef) -> EventInstance:
 			dog_where)
 	t.add_child(dog)
 	dog.set_process(false)
-	dog.came_under_a_warning = true
+	dog.arrive_from_its_warning()
 	dog.resume(def.telegraph_time, 0.0)
 	for _i in 3:
 		dog_where.tell(Vector2.ZERO)
@@ -608,7 +608,7 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	var pelican := events.spawn_warned(cyclist,
 			PackedVector2Array([right_corner, right_corner + Vector2(0.0, -300.0)]), true)
 	# Held where the test puts it: the manager's tick does not step it off the corner.
-	pelican.held_by_hand = true
+	pelican.hold_by_hand()
 	pelican.global_position = right_corner - pelican.drawn_box().get_center()
 	var pelican_seen: Array[int] = [0]
 	var on_pelican := func(_instance: Variant) -> void: pelican_seen[0] += 1

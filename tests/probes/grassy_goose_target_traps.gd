@@ -82,7 +82,7 @@ func run(t: TestRunner) -> void:
 			city.run.header().set_day(day)
 			var state := city.run.attempt_spend().block_arcs()
 			state.reset()
-			state.begin_day(city.map.block_plans, day)
+			state.begin_day(city.map.plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
@@ -163,7 +163,7 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 			hut = body
 	if hut == null:
 		return [her]
-	var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+	var out := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	return [hut.position + hut.facing * out, hut.position - hut.facing * out]
 
@@ -182,7 +182,7 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 	if not plan:
 		return false
 	for body in plan.door_bodies:
-		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
+		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_within(),
 				start, her):
 			return true
 	return false

@@ -190,7 +190,7 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 			# rate does reach `contribution_at()` inside her field and land on the mother's own
 			# `landed()`, past `Tuning.EXPECTED_IMPACT_POINTS`'s own midpoint, so a dull colour on
 			# screen would have been the ramp and not the meter.
-			t.close_to(mother.excitement.landed(), Tuning.CHAT_EXCITEMENT,
+			t.close_to(mother.source().landed(), Tuning.CHAT_EXCITEMENT,
 					"and the mother's own landed() carries the same points, which is what " +
 					"the halo's colour reads", 2.0)
 		else:

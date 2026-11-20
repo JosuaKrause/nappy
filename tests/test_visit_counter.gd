@@ -612,7 +612,7 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 ## ran, and a resume otherwise stands for an instance streamed back in, whose chase — for a row
 ## like `charging_dog` that never waits (`EventDef.notice` 0.0) — began before it streamed out and
 ## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
-## warned the way `spawn_warned()` does it (`came_under_a_warning` set, then `resume()`), and
+## warned the way `spawn_warned()` does it (`arrive_from_its_warning()` told, then `resume()`), and
 ## streamed back in mid-chase, which reports nothing a second time.
 func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
@@ -659,7 +659,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 			warned_where)
 	t.add_child(warned)
 	warned.set_process(false)
-	warned.came_under_a_warning = true
+	warned.arrive_from_its_warning()
 	warned.resume(def.telegraph_time, 0.0)
 	for i in 10:
 		warned_where.tell(her)

@@ -165,7 +165,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var arrive := func(place: Vector2, _at: Vector2) -> bool:
 		var created := EventInstance.new()
 		created.setup(def, place, PackedVector2Array(), Vector2.RIGHT, null, null, created_where)
-		created.came_under_a_warning = true
+		created.arrive_from_its_warning()
 		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
 		# resistance's sent robber and guard) with its telegraph spent.
 		if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
@@ -430,7 +430,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 		subject.position = at
 		subject.shown = in_view
 		subject.charging = instance.has_charged()
-		subject.warned = instance.came_under_a_warning
+		subject.warned = instance.was_warned_of()
 		model.step(STEP, her, [subject], sees)
 		var badge := model.has_badges()
 		if result["warned_at"] == INF and not instance.is_waiting() and (in_view or badge):
@@ -460,7 +460,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		var path: PackedVector2Array = route.call(place, at)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path, Vector2.RIGHT, null, null, instance_where)
-		instance.came_under_a_warning = true
+		instance.arrive_from_its_warning()
 		if def.pursuit == null:
 			instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		created.append(instance)
@@ -520,4 +520,4 @@ static func _reaches(instance: EventInstance, her: Vector2) -> bool:
 		return instance.is_lethal_at(her)
 	if instance.is_telegraphing() or instance.is_waiting():
 		return false
-	return instance.excitement.contribution_at(her) > 0.0
+	return instance.source().contribution_at(her) > 0.0

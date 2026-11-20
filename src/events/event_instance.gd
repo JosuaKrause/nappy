@@ -5,7 +5,7 @@ extends Node2D
 ## (`src/events/views/`), which is handed its row and its drawer, asks it and reads some of its
 ## public state, and draws it.
 ##
-## The excitement model is entirely a *query*, asked of the source it composes (`excitement`, an
+## The excitement model is entirely a *query*, asked of the source it composes (`source()`, an
 ## `EventExcitement`) over the field it states here (`field_at()`). Nothing pushes a value at the
 ## baby, so there is no ordering to get wrong, events compose by simple addition, and the whole
 ## thing is testable without a scene.
@@ -28,10 +28,16 @@ var age: float:
 		_settle_the_notice()
 var _age := 0.0
 ## Whether this was created where a warning pointed, once that warning was over
-## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` reads it to carry
-## the warning's badge on to the thing itself until it comes into view, and `resume()` reads it to
-## tell a fresh instance from one streamed back in.
-var came_under_a_warning := false
+## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` asks it
+## (`was_warned_of()`) to carry the warning's badge on to the thing itself until it comes into
+## view, and `resume()` reads it to tell a fresh instance from one streamed back in.
+var _came_under_a_warning := false
+
+## **Tells it that it was created where a warning pointed**, once that warning was over
+## (`EventManager.spawn_warned()`), before `resume()` reads it: a resume otherwise restores an
+## instance streamed back in.
+func arrive_from_its_warning() -> void:
+	_came_under_a_warning = true
 
 ## **Makes its route one worked out as it goes** (`WayOn`): at the end of its route it is given a
 ## further leg while she could be watching it (`EventRouteWalk`), and once it is over it leaves by legs
@@ -131,7 +137,7 @@ func transition(to: Phase) -> void:
 	if phase == Phase.WARNING and to == Phase.ACTIVE:
 		_telegraph_ended = true
 	phase = to
-	excitement.invalidate_contribution()
+	_excitement.invalidate_contribution()
 	# **Parked while it stands for good, and only then** (`MoveProposal.parked`): a row that parks
 	# has once it stops where it arrives, and nothing leaving or gone stands anywhere for good.
 	if to == Phase.PARKED:
@@ -151,7 +157,13 @@ func _settle_the_notice() -> void:
 ## field, the lethal radius, the speed and the cost are the row's own either way, and nothing reads
 ## it but the drawing and the telemetry (`logged_name()` and the pelican's own `EventBus` signals).
 ## Meaningless on any look but `CYCLIST`. See `FigureLook._rider_pictures()`.
-var is_pelican := false
+var _is_pelican := false
+
+## **Tells it that it is the pelican**, as its spawner makes it (`EventSpawner.rolls_a_pelican()`
+## rolls it after the rider is made): the picture it is drawn as (`is_drawn_as_a_pelican()`) and the
+## name the run log calls it by (`logged_name()`).
+func be_drawn_as_the_pelican() -> void:
+	_is_pelican = true
 
 ## What every run log line and every GoatCounter event calls a pelican, in place of its row's own
 ## `cyclist` (inbox #527 in azure-tapir).
@@ -159,7 +171,7 @@ const PELICAN_NAME := "pelican"
 
 ## This event as a thing that charges the baby (`EventExcitement`): its present rate at a point,
 ## its ledger of what it has landed, its projection and its caret's strength.
-var excitement := EventExcitement.new(self)
+var _excitement := EventExcitement.new(self)
 
 ## The box, in this node's own space, that what this instance draws roughly fills
 ## (`EventFootprints.drawn_box_of()`), with the run its own street gives a spread. Worked out once,
@@ -193,18 +205,26 @@ func has_charged() -> bool:
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
 ## otherwise the row's own `def.id`. Telemetry only — nothing that decides anything reads it.
 func logged_name() -> String:
-	return named_for_the_log(def.id, is_pelican)
+	return named_for_the_log(def.id, _is_pelican)
 
 ## `logged_name()` for a row id and a pelican choice that may not have an instance yet — a warning
 ## still up (`PendingWarning.logged_name()`).
 static func named_for_the_log(id: String, pelican: bool) -> String:
 	return PELICAN_NAME if pelican else id
 
-## A mast that has been reached and silenced — `EventManager.silence_mast()`/`silence_all_masts()`
-## set this rather than calling `_finish()`, since a silenced mast still stands, with no arcs and
+## A mast that has been reached and silenced — `EventStreaming.silence_mast()`/`silence_all_masts()`
+## `silence()` it rather than `end_now()`, since a silenced mast still stands, with no arcs and
 ## no field, and `is_finished` means *this has left*. Harmless on every row but a mast: nothing
-## else ever sets it. See `current_intensity()` and `FigureLook._draw_mast()`.
-var silenced := false
+## else ever silences one. See `current_intensity()` and `FigureLook._draw_mast()`.
+var _silenced := false
+
+## **Silences it**: a mast reached for the rest of the day (`EventStreaming.silence_mast()`). Its field
+## is gone at once, so the contribution its source keeps is let go with it, as every phase change
+## lets it go (`transition()`): the present rate would otherwise go on answering the pre-silence
+## contribution for the rest of the tick.
+func silence() -> void:
+	_silenced = true
+	_excitement.invalidate_contribution()
 
 ## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
 var skip_draw := false
@@ -283,7 +303,7 @@ var _rim := Rim.new(self)
 func _init(reports: EventReports = null) -> void:
 	_reports = reports if reports else EventReports.new()
 	_charge = ChargeRecord.new(Callable(self, &"_charger_name"), _reports)
-	excitement.use_rim(_rim)
+	_excitement.use_rim(_rim)
 
 ## Where it says what happened to it: its world's, or a silent one of its own (`_init()`).
 var _reports: EventReports
@@ -313,7 +333,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_where = WhereSheIs.nowhere()
 	if where:
 		_where = where.handle_for_an_event()
-	excitement.use_row_and_where_she_is(definition, _where)
+	_excitement.use_row_and_where_she_is(definition, _where)
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else Navigator.new(_map)
 	_mover = mover_for(definition)
@@ -584,14 +604,18 @@ func _process(_delta: float) -> void:
 
 ## Whether a hand holds it still, so its manager does not step it: a scene recipe that walks it
 ## itself (`SceneRecipeRuntime`). Its drawing goes on.
-var held_by_hand := false
+var _held_by_hand := false
 
-## Takes it into the hand that walks it (`held_by_hand`): its manager stops stepping it, and the
+## Whether a hand holds it still (`hold_by_hand()`): its manager does not step it.
+func is_held_by_hand() -> bool:
+	return _held_by_hand
+
+## Takes it into the hand that walks it (`is_held_by_hand()`): its manager stops stepping it, and the
 ## hand walks it on (`walk_on_by_hand()`). A scene recipe's held event, once it is leaving.
 func hold_by_hand() -> void:
-	held_by_hand = true
+	_held_by_hand = true
 
-## **Walks it on by hand by `delta` seconds**, for the hand that holds it (`held_by_hand`, a scene
+## **Walks it on by hand by `delta` seconds**, for the hand that holds it (`is_held_by_hand()`, a scene
 ## recipe's held event, `SceneRecipeRuntime`): the straight walk away along its heading at its
 ## departure's own pace (`EventDeparture.speed()`), its stride advancing by the ground covered, as
 ## the departure's plain branch walks it (`EventDeparture.leave()`), with no removal and no
@@ -1056,8 +1080,8 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	# A pursuer streamed back in still waiting is the one case that has not begun chasing yet; every
 	# other, a row with no wait included, was chasing before it streamed out. **A row created where
 	# its warning pointed is not streamed back in**: `EventManager.spawn_warned()` sets
-	# `came_under_a_warning` before calling this only to spend a telegraph the warning already ran.
-	_charge.began = not came_under_a_warning and not is_waiting()
+	# `arrive_from_its_warning()` before calling this only to spend a telegraph the warning already ran.
+	_charge.began = not _came_under_a_warning and not is_waiting()
 	# A warning it had already given before it streamed out is not reported again.
 	_charge.warned = from_noticed_at != INF
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
@@ -1080,7 +1104,7 @@ func move_to(at: Vector2) -> void:
 	_move.place(position)
 	_body.land_at(stands, _heading, BodyStance.lies_vertically_at(_map, stands))
 	_idle_phase_offset = _position_roll(101)
-	excitement.invalidate_contribution()
+	_excitement.invalidate_contribution()
 	reset_physics_interpolation()
 	queue_redraw()
 
@@ -1149,7 +1173,7 @@ func birds() -> Array[EventFlock.Bird]:
 static var _NO_BIRDS: Array[EventFlock.Bird] = []
 
 # --------------------------------------------------------------- going away ---
-# **Nothing vanishes while you are looking at it.** An event that ends by `_finish()` wherever it
+# **Nothing vanishes while you are looking at it.** An event that ends by `end_now()` wherever it
 # happens to be standing ends, for the two shortest-lived rows in the game, directly in front of
 # her: the cat's route is one street wide and ends in the open, and the pigeons hang in the air for
 # a fifth of a second. The end of an event is a **departure**, not a deletion.
@@ -1209,7 +1233,7 @@ func _be_done(may_park := true) -> void:
 		queue_redraw()
 		return
 	if (departure.speed() <= 0.0 or def.leaves_behind() != ""):
-		_finish()
+		end_now()
 		return
 	transition(Phase.LEAVING)
 	departure.begin()
@@ -1273,7 +1297,11 @@ func _has_expired() -> bool:
 		return false
 	return def.duration > 0.0 and chase_age() >= notice_time() + def.duration
 
-func _finish() -> void:
+## **Ends it now**, from outside as well as from its own step: it leaves as an event that is over does
+## (`transition()` into `Phase.DONE`), and its manager frees it in its ordinary sweep
+## (`EventStreaming.retire_finished()`). The resistance's guard over a chalk mark that has moved is
+## ended so (`EventSpawner.retire()`).
+func end_now() -> void:
 	transition(Phase.DONE)
 
 # ------------------------------------------------------------------ emission ---
@@ -1403,7 +1431,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
 		# event trailing after her for as long as it took the thing to get off screen.
 		return 0.0
-	if silenced:
+	if _silenced:
 		# A silenced mast still stands, but its field is gone — unlike `is_finished`, which means
 		# the thing itself has left. See the field's own doc.
 		return 0.0
@@ -2150,6 +2178,11 @@ func row() -> EventDef:
 func row_id() -> String:
 	return def.id
 
+## The id of the row it leaves where it ends (`EventDef.leaves_behind()`), or "" for a row that
+## leaves nothing.
+func leaves_behind() -> String:
+	return def.leaves_behind()
+
 ## Whether it is over and gone (`Phase.DONE`).
 func is_gone() -> bool:
 	return phase == Phase.DONE
@@ -2164,9 +2197,9 @@ func has_parked() -> bool:
 	return phase == Phase.PARKED
 
 ## Whether it was created where a warning pointed, once that warning was over
-## (`came_under_a_warning`): the badge it had carries on until it comes into view.
+## (`arrive_from_its_warning()`): the badge it had carries on until it comes into view.
 func was_warned_of() -> bool:
-	return came_under_a_warning
+	return _came_under_a_warning
 
 ## Whether it comes after her (its row's `pursuit`).
 func pursues() -> bool:
@@ -2327,9 +2360,9 @@ func core_reaches(point: Vector2) -> bool:
 func counts_as_one_barrier() -> bool:
 	return def.counts_as_one_barrier()
 
-## This event as a thing that charges the baby (`excitement`).
+## This event as a thing that charges the baby (`EventExcitement`).
 func source() -> EventExcitement:
-	return excitement
+	return _excitement
 
 ## Tells it that the hand of its guard goes up (`on`) or comes down: a hut's guard raising his hand
 ## at her while a crossing of its door is warning her (`is_its_guard_warning()`).
@@ -2340,15 +2373,15 @@ func raise_its_guards_hand(on: bool) -> void:
 func is_its_guard_warning() -> bool:
 	return _guard_warns_her
 
-## Whether it is a mast that has been reached and silenced (`silenced`): it still stands, with no
+## Whether it is a mast that has been reached and silenced (`silence()`): it still stands, with no
 ## arcs and no field.
 func is_silenced() -> bool:
-	return silenced
+	return _silenced
 
-## Whether this cyclist is the pelican rather than the kid (`is_pelican`): the one picture it
-## changes, for a look to choose its two pedal frames by.
+## Whether this cyclist is the pelican rather than the kid (`be_drawn_as_the_pelican()`): the one
+## picture it changes, for a look to choose its two pedal frames by.
 func is_drawn_as_a_pelican() -> bool:
-	return is_pelican
+	return _is_pelican
 
 ## Where a protest points its placards: what it was handed to ask (`points_at`), or `Vector2.INF`,
 ## nothing to point at, when it was handed nothing.

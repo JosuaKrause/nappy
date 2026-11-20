@@ -149,7 +149,7 @@ func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 func _plan_the_day(day: int, seed_value: int) -> void:
 	var state := _city.run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
@@ -179,7 +179,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 		var city := _city
 		for day: int in REACHABILITY_SWEEP_DAYS:
 			var closure_state := CityState.new()
-			closure_state.begin_day(city.map.block_plans, day)
+			closure_state.begin_day(city.map.plans_by_block(), day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())

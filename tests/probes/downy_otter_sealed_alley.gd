@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 			GivenRun.completed_steps(city.run, done)
 			var state := city.run.attempt_spend().block_arcs()
 			state.reset()
-			state.begin_day(city.map.block_plans, day)
+			state.begin_day(city.map.plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
@@ -84,7 +84,7 @@ func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2,
 func _doors_shut(city: City) -> Array:
 	var blockers: Array[EventPlan] = []
 	for plan in RunCity.events(city).plans():
-		if plan.is_placed() and (plan.def.obstructs_radius > 0.0 or plan.def.hard_fail):
+		if plan.is_placed() and (plan.def.obstructs_within() > 0.0 or plan.def.hard_fail):
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)

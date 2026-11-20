@@ -26,7 +26,7 @@ func run(t: TestRunner) -> void:
 		RunCity.build(city, CityGenerator.generate(city_seed))
 		var day := 1
 		var state := CityState.new()
-		state.begin_day(city.map.block_plans, day)
+		state.begin_day(city.map.plans_by_block(), day)
 		var closures_rng := RandomNumberGenerator.new()
 		closures_rng.seed = 1
 		city.start_day(state, day, closures_rng)

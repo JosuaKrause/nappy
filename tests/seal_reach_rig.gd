@@ -43,7 +43,7 @@ static func drawing_overhang(map: CityMap, plan: EventPlan) -> float:
 	stage.close()
 	var ground := Rect2(at.x - box.size.x * 0.5, at.y, box.size.x, 0.0)
 	if def.has_a_spread:
-		var half := maxf(11.0, def.obstructs_radius)
+		var half := maxf(11.0, def.obstructs_within())
 		if vertical:
 			ground = Rect2(at.x - box.size.x * 0.5, at.y - half, box.size.x, half * 2.0)
 		else:

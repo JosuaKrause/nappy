@@ -65,7 +65,7 @@ func _test_the_first_landing_is_told_once(t: TestRunner) -> void:
 	var body := Node2D.new()
 	var source := ExcitementSource.new(body)
 	var told := [0]
-	source.on_first_landing = func() -> void: told[0] += 1
+	source.when_it_first_lands(func() -> void: told[0] += 1)
 	source.accumulate_landed(0.0)
 	t.check(told[0] == 0, "a share of nothing is not a landing")
 	source.accumulate_landed(2.0)

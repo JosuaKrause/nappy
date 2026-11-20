@@ -113,7 +113,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 	var gaps_walled := {}
 	for day: int in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
@@ -283,7 +283,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces or def.mobile:
 			continue
-		if def.obstructs_radius <= 0.0:
+		if def.obstructs_within() <= 0.0:
 			continue
 		# A `ONE_SHOT` is a set piece, not asked the friction-or-wall question at all
 		# (the scheduler answers it before the cost or physical clause ever runs), so a
@@ -307,7 +307,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 			placed_on += 1
 			t.check(role == GameEnums.BlockerRole.WALL,
 					"day %d: '%s' leaves %.1fpx where she needs %.0f (obstructs %.1fpx, %s), so it has to"
-					% [day, def.id, gap, her_clearance, def.obstructs_radius,
+					% [day, def.id, gap, her_clearance, def.obstructs_within(),
 					EventDef.Pavement.keys()[def.pavement_side]]
 					+ " be placed as a wall rather than friction")
 		narrow_and_placed += 1 if placed_on > 0 else 0
@@ -323,7 +323,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 func _repainted_city(day: int) -> CityMap:
 	var map := MapCache.of(4242)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	return map
 
@@ -358,7 +358,7 @@ func _gap_past_the_body(def: EventDef) -> float:
 			pos = band - Tuning.TILE_SIZE * 0.5
 		_:
 			pos = band * 0.5
-	return maxf(pos - def.obstructs_radius, band - (pos + def.obstructs_radius))
+	return maxf(pos - def.obstructs_within(), band - (pos + def.obstructs_within()))
 
 ## Whether a row's own numbers leave no line along a sidewalk it may stand on, stated from the
 ## def's public readings: its reach spans the far lane, or its body leaves a gap under what she
@@ -370,7 +370,7 @@ func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 	if not def.placement.has(GameEnums.TileType.SIDEWALK) or not def.has_a_line_to_avoid():
 		return false
 	return def.reaches_the_far_lane() \
-			or (def.obstructs_radius > 0.0 and _gap_past_the_body(def) < 2.0 * Tuning.PLAYER_BODY_RADIUS)
+			or (def.obstructs_within() > 0.0 and _gap_past_the_body(def) < 2.0 * Tuning.PLAYER_BODY_RADIUS)
 
 ## Whether a pacing placement leaves no line along a sidewalk and its beat passes neither a
 ## junction nor a side route: the beat's geometry is written out below.
@@ -441,7 +441,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 		var map := MapCache.of(4242 + i * 97)
 		for day: int in [4, 9, 14]:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
@@ -506,7 +506,7 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 		for i in 3:
 			var map := MapCache.of(4242 + i * 97)
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var corridor := Corridor.of(RouteTree.for_day(map, day))
 			var locations := DayLocations.lay_out(map, corridor)
@@ -589,7 +589,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 		var map := MapCache.of(map_seed)
 		for day: int in [1, 3, 5, 8, 11, 14]:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
@@ -701,7 +701,7 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 	var first := ""
 	for day: int in [1, 5, 9, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
@@ -840,7 +840,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 	var first := ""
 	for day: int in [1, 5, 9, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
@@ -925,7 +925,7 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 	# is for is only that the check ran against real ground at all.
 	for day: int in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
@@ -1063,10 +1063,10 @@ func _test_a_lethal_rows_line_reach_is_its_whole_field(t: TestRunner) -> void:
 		if not def.hard_fail:
 			continue
 		lethal += 1
-		t.check(is_equal_approx(def.line_reach(), maxf(def.outer_radius, def.obstructs_radius)),
+		t.check(is_equal_approx(def.line_reach(), maxf(def.outer_radius, def.obstructs_within())),
 				"%s: a lethal row's line reach is its whole field (%.0fpx)"
 				% [def.id, def.line_reach()])
 	t.check(lethal > 0, "the catalogue has lethal rows to ask (%d)" % lethal)
 	for def in EventCatalogue.all():
-		t.check(def.line_reach() >= def.obstructs_radius,
+		t.check(def.line_reach() >= def.obstructs_within(),
 				"%s: no row reaches less than its own body" % def.id)

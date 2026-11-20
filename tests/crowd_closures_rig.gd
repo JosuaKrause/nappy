@@ -84,7 +84,7 @@ func run_door_day(t: TestRunner) -> void:
 ## segment's whole cross-section, at the seal's own body radius, as the planner places a seal.
 func _across(segment: StreetNetwork.Segment, def: EventDef) -> Array[Vector2]:
 	return SealPlanner.positions_across(_city.map.tile_rect_to_world(segment.tile_rect()),
-			segment.horizontal, def.obstructs_radius)
+			segment.horizontal, def.obstructs_within())
 
 ## One stride of `agent` in seconds at the fastest its kind goes: its strategy's stride length
 ## over the top of its kind's speed range.
@@ -682,7 +682,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 	var used_day := -1
 	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		var closures_rng := RandomNumberGenerator.new()
 		closures_rng.seed = hash("crowd-wall-closures:%d:%d" % [SEED, day])
 		city.start_day(state, day, closures_rng)
@@ -783,7 +783,7 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var used_day := -1
 	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		var closures_rng := RandomNumberGenerator.new()
 		closures_rng.seed = hash("crowd-door-closures:%d:%d" % [SEED, day])
 		city.start_day(state, day, closures_rng)
@@ -1242,7 +1242,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 
 	var day := 1
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	var closures_rng := RandomNumberGenerator.new()
 	closures_rng.seed = hash("crowd-home-closures:%d:%d" % [SEED, day])
 	city.start_day(state, day, closures_rng)

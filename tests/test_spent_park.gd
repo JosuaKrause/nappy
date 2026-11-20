@@ -46,7 +46,7 @@ func run(t: TestRunner) -> void:
 func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 		fenced: Vector2i = Vector2i(-1, -1), fenced_act: int = 0) -> Array:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.set_spent_calm(used)
 	map.set_fenced_park_state(fenced, fenced_act, Tuning.act_for_day(day))
 	map.repaint(state)
@@ -520,7 +520,7 @@ func _test_a_used_courtyard_keeps_what_was_put_in_it(t: TestRunner) -> void:
 	var used: Array[Vector2i] = [block]
 	# Repainted with the area handed over and nothing fenced before, the run as it stood that day.
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.set_spent_calm(used)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day)
@@ -619,7 +619,7 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRu
 			t.check(first_fenced == cmap.fenced_park_block(), "seed %d day %d fences the same park twice"
 					% [cmap.city_seed(), day])
 			var state := CityState.new()
-			state.begin_day(cmap.block_plans, day)
+			state.begin_day(cmap.plans_by_block(), day)
 			cmap.repaint(state)
 			t.check(cmap.shut_calm().is_empty() and cmap.closed_tiles.is_empty() \
 					and cmap.fenced_park_block() == Vector2i(-1, -1),
@@ -656,7 +656,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -
 	RunCity.build(city, CityGenerator.generate(BASE_SEED))
 	var day := 9
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	city.map.repaint(state)
 	var calm: Array[Vector2i] = city.map.calm_blocks.duplicate()
 	t.check(calm.size() >= 1, "seed %d day %d has a calm area to use (%d)"
@@ -721,7 +721,7 @@ func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[Roa
 	RunCity.build(city, map)
 	var day := 9
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	city.start_recipe_day(state, day, run.calendar().day_rng(day, "closures"))
 	var shared_panel_posts := 0
 	var short_end := short_run.posts(city.map).back() as Vector2

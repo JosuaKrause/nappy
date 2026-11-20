@@ -530,7 +530,7 @@ func _test_an_expired_fence_survives_a_round_trip(t: TestRunner) -> void:
 			"reloading after expiry remembers the original fence")
 	var map := MapCache.of(run.header().run_seed())
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 13)
+	state.begin_day(map.plans_by_block(), 13)
 	map.repaint(state)
 	var used: Array[Vector2i] = [map.calm_blocks[0]]
 	map.set_spent_calm(used)

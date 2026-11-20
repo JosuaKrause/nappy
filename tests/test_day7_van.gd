@@ -46,7 +46,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, DAY)
+	state.begin_day(city.map.plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)

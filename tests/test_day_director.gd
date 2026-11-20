@@ -132,11 +132,11 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 		# pelican of the roll its warning made).
 		var pelican := events.spawn_warned(def,
 				PackedVector2Array([Vector2.ZERO, Vector2(500.0, 0.0)]), true)
-		t.check(pelican.is_pelican, "the rider warned of as the pelican is the pelican")
+		t.check(pelican.is_drawn_as_a_pelican(), "the rider warned of as the pelican is the pelican")
 		var kid_landed: float = case[0]
 		var pelican_landed: float = case[1]
-		kid.excitement.accumulate_landed(kid_landed)
-		pelican.excitement.accumulate_landed(pelican_landed)
+		kid.source().accumulate_landed(kid_landed)
+		pelican.source().accumulate_landed(pelican_landed)
 		director.finish_day(GameEnums.DayResult.LOST_CRYING)
 		t.check(_cause_sent() == case[2], ("with the cyclist landing %.0f and the pelican %.0f, "
 				+ "the crying day is lost to the %s (got %s)") % [kid_landed, pelican_landed,

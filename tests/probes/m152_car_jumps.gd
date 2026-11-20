@@ -172,7 +172,7 @@ static func _class_order() -> Array[String]:
 ## camera was looking at, and the breakdown of why each reversal on the spot happened.
 func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("m152-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)

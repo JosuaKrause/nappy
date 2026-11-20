@@ -144,7 +144,7 @@ func _test_in_front_of_it_the_warning_comes_first(t: TestRunner) -> void:
 				"facing %s, warned %.2fs before the strike, at least the %.2fs to walk off the road"
 				% [facing, warning, Tuning.required_horn_time()])
 		t.check(not held, "and it did not stop against her first")
-		t.check(engine.excitement.will_be_lethal(player.global_position), "the doubled caret was up over it")
+		t.check(engine.source().will_be_lethal(player.global_position), "the doubled caret was up over it")
 		player.free()
 		engine.free()
 
@@ -228,7 +228,7 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 	for i in int(5.0 / STEP):
 		_step(engine, engine_where, player)
 		warned = warned or engine.car.closes_on(player.global_position)
-		lethal = lethal or engine.excitement.will_be_lethal(player.global_position) \
+		lethal = lethal or engine.source().will_be_lethal(player.global_position) \
 				or engine.is_lethal_at(player.global_position)
 		if engine.is_parked:
 			break
@@ -333,7 +333,7 @@ func _test_parked_it_is_solid_and_harmless(t: TestRunner) -> void:
 		if engine.is_parked:
 			break
 	t.check(engine.is_parked, "the truck parks where its route ends")
-	t.check(not engine.excitement.will_be_lethal(Vector2(40.0, 0.0)),
+	t.check(not engine.source().will_be_lethal(Vector2(40.0, 0.0)),
 			"and a parked truck is not lethal ahead of it")
 	for place: Vector2 in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
 		t.check(not engine.is_lethal_at(place), "a parked truck strikes nobody at %s" % place)

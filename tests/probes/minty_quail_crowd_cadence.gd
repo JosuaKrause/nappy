@@ -92,7 +92,7 @@ func run(t: TestRunner) -> void:
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String,
 		per_tick: int) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-tick-cost-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)

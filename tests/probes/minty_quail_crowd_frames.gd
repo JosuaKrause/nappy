@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 	builder.use_the_crowds_screen(ScreenCrowdView.new(t), CrowdTiming.new())
 	RunCity.build(city, CityGenerator.generate(CITY_SEED), builder)
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 1)
+	state.begin_day(city.map.plans_by_block(), 1)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("crowd-frames-closures")
 	city.start_day(state, 1, closures)

@@ -578,7 +578,7 @@ const CYCLIST_BY_VIEW_B := {
 ## The pelican that about one cyclist in four hundred is instead (inbox #437 in minty-hedgehog),
 ## drawn from SVG only: the same bike, path for path, on the same canvases, so it shares the
 ## cyclist's registration, wheel contact and pedal frames and only the rider differs. Drawn when
-## `is_pelican` is set; see `EventSpawner.rolls_a_pelican()` for who decides that and when.
+## `be_drawn_as_the_pelican()` is told; see `EventSpawner.rolls_a_pelican()` for who decides that and when.
 const PELICAN_BY_VIEW := {
 	"front": "events/pelican_cyclist_front",
 	"back": "events/pelican_cyclist_back",

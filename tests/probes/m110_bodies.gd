@@ -34,7 +34,7 @@ func run(t: TestRunner) -> void:
 
 func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	var closures := RandomNumberGenerator.new()
 	closures.seed = hash("m110-closures:%d:%d" % [city_seed, day])
 	city.start_day(state, day, closures)

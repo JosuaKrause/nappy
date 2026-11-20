@@ -26,7 +26,7 @@ func run(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, built.map)
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 13)
+	state.begin_day(city.map.plans_by_block(), 13)
 	city.start_recipe_day(state, 13, own_run.calendar().day_rng())
 	var player_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = player_scene.instantiate()

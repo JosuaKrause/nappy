@@ -45,7 +45,7 @@ func run(t: TestRunner) -> void:
 		RunCity.build(city, CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:
 			var state := CityState.new()
-			state.begin_day(city.map.block_plans, day)
+			state.begin_day(city.map.plans_by_block(), day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
@@ -64,7 +64,7 @@ func run(t: TestRunner) -> void:
 			for plan in RunCity.events(city).plans():
 				if not plan.is_placed() or plan in door_bodies:
 					continue
-				if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+				if plan.def.obstructs_within() > 0.0 or plan.def.hard_fail:
 					blockers.append(plan)
 			var grid := ReachabilityGrid.build(city.map)
 			var blocked := EventScheduler.blocked_by(city.map, blockers)

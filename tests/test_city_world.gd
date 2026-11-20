@@ -38,7 +38,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City)
 	var charged := 0.0
 	for pair: Array in city.excitement_sources_at(spot):
 		charged += pair[1]
-	t.check(instance.excitement.contribution_at(spot) > 0.0,
+	t.check(instance.source().contribution_at(spot) > 0.0,
 			"the event's own field reaches the spot it stands on")
 	t.check(charged > 0.0,
 			"and the city lists it among what charges her there (%.2f/s)" % charged)

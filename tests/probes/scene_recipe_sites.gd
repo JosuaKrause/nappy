@@ -14,7 +14,7 @@ func run(_t: TestRunner) -> void:
 		own_run.start_run(11)
 		own_run.header().set_day(day)
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var regions := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -47,7 +47,7 @@ func run(_t: TestRunner) -> void:
 				break
 	own_run.header().set_day(14)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 14)
+	state.begin_day(map.plans_by_block(), 14)
 	map.repaint(state)
 	var finale := FinalePlanner.route(map)
 	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar().day_rng(14, "finale"), _city_spec(),

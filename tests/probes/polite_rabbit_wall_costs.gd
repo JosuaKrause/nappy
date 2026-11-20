@@ -151,7 +151,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 			var field := instance.field_at(here, live, Vector2.INF)
 			if field <= 0.0:
 				continue
-			var grid := instance.excitement.wall_grid()
+			var grid := instance.source().wall_grid()
 			var actual := 0.0 if grid != null and grid.wall_between(instance.global_position, here) \
 					else field
 			if instance.def.barrier_structure:

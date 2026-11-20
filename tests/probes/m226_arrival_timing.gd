@@ -89,8 +89,9 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		var route: PackedVector2Array = route_of.call(place, at)
 		var instance := EventInstance.new()
 		instance.setup(def, place, route, Vector2.RIGHT, null, null, where)
-		instance.came_under_a_warning = true
-		instance.is_pelican = pelican
+		instance.arrive_from_its_warning()
+		if pelican:
+			instance.be_drawn_as_the_pelican()
 		# Created at the age the game creates a warned row at: its telegraph spent, and a pulsing
 		# row's beat kept.
 		instance.resume(EventSpawner.age_when_warned(def), 0.0)
@@ -165,7 +166,7 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	match def.look:
 		EventDef.Look.CYCLIST:
 			var rider := [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B] \
-					if instance.is_pelican \
+					if instance.is_drawn_as_a_pelican() \
 					else [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B]
 			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:

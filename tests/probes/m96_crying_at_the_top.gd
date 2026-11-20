@@ -251,7 +251,7 @@ func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
 	for _i in steps:
 		_stroller.global_position.x += Tuning.WALK_SPEED * STEP
 		instance.step(STEP)
-		_world.noise = instance.excitement.contribution_at(_stroller.global_position)
+		_world.noise = instance.source().contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		elapsed += STEP
@@ -283,7 +283,7 @@ func _stand_in_row(t: TestRunner, id: String, seconds: float) -> Dictionary:
 	var elapsed := 0.0
 	for _i in steps:
 		instance.step(STEP)
-		_world.noise = instance.excitement.contribution_at(_stroller.global_position)
+		_world.noise = instance.source().contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		elapsed += STEP

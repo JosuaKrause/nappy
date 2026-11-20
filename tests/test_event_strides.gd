@@ -165,7 +165,7 @@ func _test_chatting_mother_freezes_gait_when_talking(t: TestRunner) -> void:
 func _test_crouched_cat_never_reads_the_running_b_frame(t: TestRunner) -> void:
 	var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cat_dash"), false)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
-	instance.held_by_hand = true
+	instance.hold_by_hand()
 	var walked := 0
 	while not instance.look.gait_is_stepping() and walked < 600:
 		instance.walk_on_by_hand(STEP)

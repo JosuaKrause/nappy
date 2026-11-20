@@ -230,14 +230,14 @@ func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void
 func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 	var blockers: Array[EventDef] = []
 	for def in EventCatalogue.available_on(1):
-		if def.obstructs_radius > 0.0 and def.placement.has(GameEnums.TileType.SIDEWALK):
+		if def.obstructs_within() > 0.0 and def.placement.has(GameEnums.TileType.SIDEWALK):
 			blockers.append(def)
 	t.check(not blockers.is_empty(),
 			"something can be in the way of a pavement on day 1")
 	# Sidewalk is two tiles; an obstruction wider than that would seal the pavement outright
 	# rather than making it the wrong side of the street.
 	for def in blockers:
-		t.check(def.obstructs_radius * 2.0 < Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 2.0,
+		t.check(def.obstructs_within() * 2.0 < Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 2.0,
 				"'%s' takes the pavement without sealing the street" % def.id)
 		t.check(not def.mobile,
 				"'%s' does not walk toward her: a moving wall on a two-tile pavement pins"
@@ -463,7 +463,7 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 		for plan in planned:
 			if not plan.is_placed() or not lot.has_point(plan.position):
 				continue
-			t.check(not plan.def.hard_fail and plan.def.obstructs_radius <= allowed,
+			t.check(not plan.def.hard_fail and plan.def.obstructs_within() <= allowed,
 					"day %d puts '%s' in her park, which is loud rather than lethal"
 					% [day, plan.def.id])
 

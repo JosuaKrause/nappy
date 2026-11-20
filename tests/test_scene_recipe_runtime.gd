@@ -111,7 +111,7 @@ func _probe_the_camera() -> void:
 	add_child(city)
 	RunCity.build(city, loaded.map)
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 1)
+	state.begin_day(city.map.plans_by_block(), 1)
 	city.start_recipe_day(state, 1, _run.calendar().day_rng())
 	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = stroller_scene.instantiate()
@@ -210,7 +210,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, 3)
+	state.begin_day(city.map.plans_by_block(), 3)
 	city.start_day(state, 3, own_run.calendar().day_rng(3, "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
@@ -247,15 +247,15 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 		# The runtime takes the dog into its hand on the first drawn frame after it starts leaving;
 		# what it has walked since is the runtime's and not the dog's own step before that.
 		for _frame in 8:
-			if dog.held_by_hand:
+			if dog.is_held_by_hand():
 				break
 			await t.get_tree().process_frame
-		t.check(dog.held_by_hand, "the runtime has the dog in its hand")
+		t.check(dog.is_held_by_hand(), "the runtime has the dog in its hand")
 		var from := dog.position
 		for _frame in 8:
 			await t.get_tree().process_frame
 		var walked := dog.position - from
-		t.check(dog.held_by_hand and walked.length() > 0.0 and dog.position.distance_to(
+		t.check(dog.is_held_by_hand() and walked.length() > 0.0 and dog.position.distance_to(
 				player.global_position) > from.distance_to(player.global_position),
 				"the runtime walks the held dog on, farther from her: %s" % walked)
 		var placed := city.map.moves.all().any(func(move: MoveProposal) -> bool:
@@ -374,7 +374,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, own_run.header().day())
+	state.begin_day(city.map.plans_by_block(), own_run.header().day())
 	city.start_day(state, own_run.header().day(), own_run.calendar().day_rng(own_run.header().day(), "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
@@ -423,7 +423,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, own_run.header().day())
+	state.begin_day(city.map.plans_by_block(), own_run.header().day())
 	city.start_day(state, own_run.header().day(), own_run.calendar().day_rng(own_run.header().day(), "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
@@ -566,7 +566,7 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	own_run.header().set_day(day)
 	var state := own_run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
 	var city: City = city_scene.instantiate()
 	city.run = own_run

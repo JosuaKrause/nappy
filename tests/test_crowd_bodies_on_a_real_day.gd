@@ -46,7 +46,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 		RunCity.build(city, map)
 		for day: int in [1, 6]:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			var closures := RandomNumberGenerator.new()
 			closures.seed = hash("bodies-closures:%d:%d" % [city_seed, day])
 			city.start_day(state, day, closures)

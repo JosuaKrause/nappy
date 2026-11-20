@@ -365,7 +365,7 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 	var differ := 0
 	for plan in RunCity.events(city).plans():
 		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
-				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_radius <= 0.0:
+				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_within() <= 0.0:
 			continue
 		var recorded := EventSpawner.obstructed_footprint(map, plan.def, plan.position,
 				plan.facing)

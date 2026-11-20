@@ -506,7 +506,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 	var checked := 0
 	for id: String in ["cafe_tables", "construction", "delivery_van"]:
 		var def := EventCatalogue.by_id(id)
-		if def == null or def.shape == null or def.obstructs_radius <= 0.0:
+		if def == null or def.shape == null or def.obstructs_within() <= 0.0:
 			continue
 		t.check(def.parts().size() == 1, "'%s' is one piece, so it is this test's business" % id)
 		# Where the row's body stands once sited at `at`: the instance the spawner makes puts a

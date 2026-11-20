@@ -4,24 +4,24 @@ extends RefCounted
 ## `sensitivity` is the baby's, as the halo last told the source (`ExcitementSource.set_her_motion()`).
 
 static func event_gross(source: EventInstance, player_position: Vector2, sensitivity: float) -> float:
-	if source.is_finished or source.is_leaving or source.excitement.is_outranked():
+	if source.is_finished or source.is_leaving or source.source().is_outranked():
 		return 0.0
 	var velocity := source.caret_velocity()
-	var closing := source.excitement.player_velocity - velocity
+	var closing := source.source().player_velocity - velocity
 	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + source.def.field_reach()
 	if source.global_position.distance_to(player_position) > reach:
 		return 0.0
-	if velocity.is_zero_approx() and source.excitement.player_velocity.is_zero_approx():
+	if velocity.is_zero_approx() and source.source().player_velocity.is_zero_approx():
 		return 0.0
-	var current_rate := source.excitement.contribution_at(player_position)
+	var current_rate := source.source().contribution_at(player_position)
 	var live_intensity := source.caret_intensity_over_horizon()
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
-	var grid := source.excitement.wall_grid()
+	var grid := source.source().wall_grid()
 	for i in steps:
 		var time := float(i + 1) * dt
-		var sample := player_position + source.excitement.player_velocity * time - velocity * time
+		var sample := player_position + source.source().player_velocity * time - velocity * time
 		var rate := source.field_at(sample, live_intensity, velocity)
 		if rate > 0.0 and grid != null and grid.wall_between(source.global_position, sample):
 			rate = 0.0

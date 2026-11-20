@@ -46,7 +46,7 @@ var _corridor: Corridor
 func run(t: TestRunner) -> void:
 	_map = MapCache.of(SEED)
 	var state := CityState.new()
-	state.begin_day(_map.block_plans, DAY)
+	state.begin_day(_map.plans_by_block(), DAY)
 	_map.repaint(state)
 	_tree = RouteTree.for_day(_map, DAY)
 	_corridor = Corridor.of(_tree)

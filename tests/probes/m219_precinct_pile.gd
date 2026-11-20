@@ -21,7 +21,7 @@ func run(t: TestRunner) -> void:
 		city.run.header().set_day(day)
 		t.add_child(city)
 		RunCity.build(city, map)
-		city.run.attempt_spend().block_arcs().begin_day(map.block_plans, day)
+		city.run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), day)
 		city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"))
 		var doorstep := map.doorstep_world_position()
 		RunCity.events(city).start_day(DaySpec.for_day(day), city.run.calendar().day_rng(), city.run.attempt_spend().consumed_one_shots(), doorstep)

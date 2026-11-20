@@ -53,11 +53,11 @@ func run(t: TestRunner) -> void:
 ## all call), over the street's whole tile rect.
 func _hard_positions(map: CityMap, segment: StreetNetwork.Segment, def: EventDef) -> Array[Vector2]:
 	return SealPlanner.positions_across(map.tile_rect_to_world(segment.tile_rect()),
-			segment.horizontal, def.obstructs_radius)
+			segment.horizontal, def.obstructs_within())
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 
 func _seal_rng(map: CityMap, day: int) -> RandomNumberGenerator:
@@ -289,7 +289,7 @@ func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 	var blocked := map.closed_tiles.duplicate()
 	for plan in seals:
-		_add_circle(map, blocked, plan.position, plan.def.obstructs_radius)
+		_add_circle(map, blocked, plan.position, plan.def.obstructs_within())
 	return blocked
 
 ## Every tile of `map.main_road`'s own band, the width of the corridor and the height of the map —
@@ -395,7 +395,7 @@ func _test_candidate_shapes(t: TestRunner) -> void:
 			var def := EventCatalogue.by_id(id)
 			t.check(def != null, "seal candidate %s names an unknown row %s" % [candidate.id, id])
 			if def:
-				t.check(def.obstructs_radius > 0.0,
+				t.check(def.obstructs_within() > 0.0,
 						"seal candidate %s's row %s obstructs nothing, so it cannot seal anything"
 						% [candidate.id, id])
 
@@ -446,10 +446,10 @@ func _test_thinning_leaves_a_walkable_line(t: TestRunner) -> void:
 			if not def:
 				continue
 			checked += 1
-			t.check(def.obstructs_radius * 2.0 <= own_pavement,
+			t.check(def.obstructs_within() * 2.0 <= own_pavement,
 					("seal candidate %s's row %s obstructs %.0fpx across, more than its own " +
 					"%dpx pavement — it could reach the side thinning opens")
-					% [candidate.id, id, def.obstructs_radius * 2.0, own_pavement])
+					% [candidate.id, id, def.obstructs_within() * 2.0, own_pavement])
 	t.check(checked > 0, "at least one soft candidate's geometry was checked (%d)" % checked)
 
 ## Item 1's guarantee — the doorstep reaches the corridor — restated after the thinning pass
@@ -514,7 +514,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t: TestRunner) -> void:
 		for pos in positions:
 			along.append(pos.y - world.position.y if segment.horizontal else pos.x - world.position.x)
 		along.sort()
-		var radius := def.obstructs_radius
+		var radius := def.obstructs_within()
 		t.check(along[0] - radius <= 0.0,
 				"hard seal %s's first body reaches the near kerb (%.1f - %.1f <= 0)"
 				% [candidate.id, along[0], radius])
@@ -597,8 +597,8 @@ func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) 
 				"the rig stands on a %s street" % ["east-west" if vertical else "north-south"])
 		var cheapest := INF
 		var lanes := 0
-		var offset := -crash.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
-		while offset <= crash.obstructs_radius - Tuning.PLAYER_BODY_RADIUS:
+		var offset := -crash.obstructs_within() + Tuning.PLAYER_BODY_RADIUS
+		while offset <= crash.obstructs_within() - Tuning.PLAYER_BODY_RADIUS:
 			if not _blocked_at(instance, offset):
 				lanes += 1
 				cheapest = minf(cheapest, _crash_pass_cost(instance, offset))
@@ -640,7 +640,7 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * step
 		travelled += Tuning.WALK_SPEED * step
-		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
+		paid += (instance.source().contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
 	return paid
 
 # ------------------------------------------------------------------ street trees ---
@@ -711,7 +711,7 @@ func _test_no_seal_reaches_over_a_building(t: TestRunner) -> void:
 ## planning (and repainting) has since moved on from.
 func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> void:
 	var found := 0
-	var reach := EventCatalogue.by_id("fallen_tree").obstructs_radius
+	var reach := EventCatalogue.by_id("fallen_tree").obstructs_within()
 	for map in _maps:
 		var lined := StreetTrees.segment_keys_with_trees(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):

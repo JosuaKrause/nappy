@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 		RunCity.build(city, map)
 		var state := CityState.new()
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			city.run.posters().photograph()
 			city.start_day(state, day, city.run.calendar().day_rng(day, "closures"))
 			if day < PosterWalls.FIRST_DAY:

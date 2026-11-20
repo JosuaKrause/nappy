@@ -88,7 +88,7 @@ func run(t: TestRunner) -> void:
 		var def := EventCatalogue.by_id(id)
 		var plan := EventPlan.new(def, Vector2.ZERO)
 		print("SC_BEAT %s | blocking radius %.1f | obstructs %.1f | hard fail %s"
-				% [id, plan.blocking_radius(), def.obstructs_radius, def.hard_fail])
+				% [id, plan.blocking_radius(), def.obstructs_within(), def.hard_fail])
 	t.check(asked > 0, "there were places to ask from (%d)" % asked)
 
 func _where(map: CityMap, corridor: Corridor, plan: EventPlan) -> String:
@@ -123,7 +123,7 @@ func _start(t: TestRunner, seed_value: int) -> City:
 	city.run.header().set_day(DAY)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, DAY)
+	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), DAY)
 	city.start_day(city.run.attempt_spend().block_arcs(), DAY, city.run.calendar().day_rng(DAY, "closures"),
 			spec)
 	var consumed: Array[String] = []

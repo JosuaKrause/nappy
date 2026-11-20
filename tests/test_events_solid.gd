@@ -55,7 +55,7 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 		if def.id in ["burning_building", "burnt_shell"]:
 			continue
 		checked += 1
-		t.check(def.obstructs_radius > 0.0,
+		t.check(def.obstructs_within() > 0.0,
 				"'%s' stands still, so it is solid" % def.id)
 	t.check(checked >= 15,
 			"and the rule covers most of the catalogue (%d rows)" % checked)
@@ -69,12 +69,12 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 func _test_a_lethal_thing_can_still_be_reached(t: TestRunner) -> void:
 	var lethal := 0
 	for def in EventCatalogue.all():
-		if not def.hard_fail or def.obstructs_radius <= 0.0:
+		if not def.hard_fail or def.obstructs_within() <= 0.0:
 			continue
 		lethal += 1
-		t.check(def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS < def.inner_radius,
+		t.check(def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS < def.inner_radius,
 				"'%s' is solid to %.0f and lethal inside %.0f, so touching it still ends the day"
-				% [def.id, def.obstructs_radius, def.inner_radius])
+				% [def.id, def.obstructs_within(), def.inner_radius])
 	t.check(lethal > 0, "and there are lethal solid things to check")
 
 ## `Tuning.PLAYER_BODY_RADIUS` is a copy of a number authored in the player's scene, and the rule
@@ -183,11 +183,11 @@ func _test_nothing_stands_on_the_doorstep_street(t: TestRunner) -> void:
 ## same two exemptions the rule and its own probe make: a region door's body (`EventPlan.is_door()`)
 ## costs by design, and a `Role.SCENERY` row has no ground to keep clear of.
 func _add_a_physical_body(bodies: Array, plan: EventPlan) -> void:
-	if not plan.is_placed() or plan.def.obstructs_radius <= 0.0:
+	if not plan.is_placed() or plan.def.obstructs_within() <= 0.0:
 		return
 	if plan.def.role == EventDef.Role.SCENERY or plan.is_door():
 		return
-	bodies.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_radius))
+	bodies.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_within()))
 
 ## `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the home block":
 ## a catalogue placement is refused a candidate tile whose street segment is held today — a
@@ -236,7 +236,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 		var map := CityGenerator.generate(BASE_SEED + i * 137)
 		for day: int in DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -350,7 +350,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 		var map := CityGenerator.generate(BASE_SEED + i * 173)
 		for day: int in DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)

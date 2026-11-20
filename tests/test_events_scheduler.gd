@@ -485,7 +485,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 				EventFootprints.footprint_of(truck), her, place):
 			wrong.append("created in sight at %v with her at %v" % [place, her])
 		var to_reach := 0.0
-		while engine.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
+		while engine.source().contribution_at(her) <= 0.0 and to_reach < 10.0:
 			her_where.tell(her)
 			engine.step(STEP)
 			to_reach += STEP

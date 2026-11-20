@@ -101,11 +101,11 @@ func restore_edges(was: Array[bool]) -> void:
 ## Keyed by the block that **anchors a lot**, which is not always one block: a four-block calm zone
 ## is a single entry whose ground covers all four of its blocks and the streets that used to run
 ## between them. The other three appear in `_zone_anchor` and nowhere else, so everything stated over
-## `block_plans` — how many calm areas there are, which one is least spoiled, which one she settled
+## `_block_plans` — how many calm areas there are, which one is least spoiled, which one she settled
 ## in yesterday — counts a zone once, which is what it is.
-var block_plans := {}
+var _block_plans := {}
 ## Block coordinate -> BlockLayout. The carves, also fixed at generation. Anchors only, for the
-## same reason as `block_plans`: an absorbed block has no ground of its own.
+## same reason as `_block_plans`: an absorbed block has no ground of its own.
 var _block_layouts := {}
 ## Anchor block -> the rect of *blocks* its lot spans. Only multi-block lots appear here; a
 ## plain block's lot is itself and is not worth a dictionary entry. See `lot_blocks()`.
@@ -582,9 +582,9 @@ func power_station_blocks() -> Rect2i:
 func power_station_door_tiles() -> Rect2i:
 	return _power_station_door
 
-## Every block's arc by block, anchors only (`block_plans`): what `CityState` is asked through.
+## Every block's arc by block, anchors only (`_block_plans`): what `CityState` is asked through.
 func plans_by_block() -> Dictionary:
-	return block_plans
+	return _block_plans
 
 ## What calm ground today has, by kind, as the run log and the console print it: `arcs` (the run's
 ## block arcs) says what each calm block is for. Cheap, and the thing most worth knowing about a day
@@ -601,13 +601,13 @@ func calm_summary(arcs: CityState) -> String:
 	parts.sort()
 	return ", ".join(parts) if not parts.is_empty() else "none"
 
-## Whether `block` anchors a lot and so has an arc (`block_plans`).
+## Whether `block` anchors a lot and so has an arc (`_block_plans`).
 func has_plan_for(block: Vector2i) -> bool:
-	return block_plans.has(block)
+	return _block_plans.has(block)
 
-## The blocks that anchor a lot, each with an arc (`block_plans`).
+## The blocks that anchor a lot, each with an arc (`_block_plans`).
 func blocks_with_plans() -> Array:
-	return block_plans.keys()
+	return _block_plans.keys()
 
 ## The carves of `block`, or null for a block that is not an anchor (`_block_layouts`).
 func layout_of(block: Vector2i) -> BlockLayout:
@@ -819,13 +819,13 @@ func record_built_over(key: Vector3i, rect: Rect2i) -> void:
 func forget_built_over(key: Vector3i) -> void:
 	_built_over.erase(key)
 
-## Plans `block`'s arc (`block_plans`).
+## Plans `block`'s arc (`_block_plans`).
 func plan_block(block: Vector2i, plan: BlockPlan) -> void:
-	block_plans[block] = plan
+	_block_plans[block] = plan
 
-## The arc planned for `block` (`block_plans`).
+## The arc planned for `block` (`_block_plans`).
 func plan_of(block: Vector2i) -> BlockPlan:
-	return block_plans[block]
+	return _block_plans[block]
 
 ## Gives `block` its carves (`_block_layouts`).
 func carve_block(block: Vector2i, layout: BlockLayout) -> void:
@@ -1006,8 +1006,8 @@ func copy() -> CityMap:
 	twin._stretch_buildings = _stretch_buildings.duplicate(true)
 	twin._stretch_props = _stretch_props.duplicate(true)
 	twin._stretch_litter = _stretch_litter.duplicate(true)
-	for block: Vector2i in block_plans:
-		twin.block_plans[block] = (block_plans[block] as BlockPlan).copy()
+	for block: Vector2i in _block_plans:
+		twin._block_plans[block] = (_block_plans[block] as BlockPlan).copy()
 	for block: Vector2i in _block_layouts:
 		twin._block_layouts[block] = (_block_layouts[block] as BlockLayout).copy()
 	twin._zone_rects = _zone_rects.duplicate()
@@ -1058,7 +1058,7 @@ func copy() -> CityMap:
 ## - the lots, `building_rects`, `big_buildings`, `alley_rects`, `square_rects` and
 ##   `courtyard_rects`, and the multi-block lots, `zones`, each the rect of blocks it spans (each
 ##   an `Array[Rect2i]`);
-## - each anchor block's arc, `block_plans` (block -> `BlockPlan`), and its carves,
+## - each anchor block's arc, `_block_plans` (block -> `BlockPlan`), and its carves,
 ##   `block_layouts` (block -> `BlockLayout.capture()`);
 ## - the precincts, `precincts` (`Array[Vector4i]`);
 ## - the streets the lattice lacks, `absent_segments` (`Array[Vector3i]`), and `built_over`
@@ -1073,8 +1073,8 @@ func copy() -> CityMap:
 ## whatever plays it.
 func capture() -> Dictionary:
 	var plans := {}
-	for block: Vector2i in block_plans:
-		plans[block] = (block_plans[block] as BlockPlan).copy()
+	for block: Vector2i in _block_plans:
+		plans[block] = (_block_plans[block] as BlockPlan).copy()
 	var layouts := {}
 	for block: Vector2i in _block_layouts:
 		layouts[block] = (_block_layouts[block] as BlockLayout).capture()
@@ -1121,7 +1121,7 @@ static func restored(facts: Dictionary) -> CityMap:
 	map.courtyard_rects.assign(facts["courtyard_rects"])
 	var plans: Dictionary = facts["block_plans"]
 	for block: Vector2i in plans:
-		map.block_plans[block] = (plans[block] as BlockPlan).copy()
+		map._block_plans[block] = (plans[block] as BlockPlan).copy()
 	var layouts: Dictionary = facts["block_layouts"]
 	for block: Vector2i in layouts:
 		map._block_layouts[block] = BlockLayout.restored(layouts[block])
@@ -1554,7 +1554,7 @@ func doorstep_world_position() -> Vector2:
 ## What a block was generated as. Fixed for the run — building heights, alley chances and
 ## the resistance's placements all key off this rather than off today's purpose.
 func starting_purpose(block: Vector2i) -> GameEnums.BlockPurpose:
-	var plan: BlockPlan = block_plans.get(block)
+	var plan: BlockPlan = _block_plans.get(block)
 	return plan.starting_purpose() if plan else GameEnums.BlockPurpose.RESIDENTIAL
 
 ## The lot nearest a world position, named by its anchor block. Events happen on streets,
@@ -1564,7 +1564,7 @@ func starting_purpose(block: Vector2i) -> GameEnums.BlockPurpose:
 func block_at(world_position: Vector2) -> Vector2i:
 	var best := Vector2i.ZERO
 	var closest := INF
-	for block: Vector2i in block_plans:
+	for block: Vector2i in _block_plans:
 		var centre := tile_rect_to_world(lot_rect(block)).get_center()
 		var distance := centre.distance_squared_to(world_position)
 		if distance < closest:
@@ -1605,8 +1605,8 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			fill_rect(block_rect(Vector2i(x, y)), GameEnums.TileType.BUILDING)
-	for block: Vector2i in block_plans:
-		_repaint_block(block, state.purpose_of(block_plans, block))
+	for block: Vector2i in _block_plans:
+		_repaint_block(block, state.purpose_of(_block_plans, block))
 	# The home notch is carved out of a block interior, so it has to go back on top.
 	if home_rect.size != Vector2i.ZERO:
 		fill_rect(home_rect, GameEnums.TileType.HOME)
@@ -1710,12 +1710,12 @@ func recompute_calm(state: CityState) -> void:
 ## Only `_fenced_park` is left out of the calm, and so is its playground — a merely-`_shut_calm` area
 ## stays calm ground, spoiled rather than gone (see `_shut_calm`'s own doc).
 func _recompute_calm(state: CityState) -> void:
-	calm_blocks = state.calm_blocks(block_plans)
+	calm_blocks = state.calm_blocks(_block_plans)
 	if _fenced_park.x >= 0:
 		calm_blocks.erase(_fenced_park)
 	playgrounds.clear()
 	for block in calm_blocks:
-		if state.purpose_of(block_plans, block) != GameEnums.BlockPurpose.PARK:
+		if state.purpose_of(_block_plans, block) != GameEnums.BlockPurpose.PARK:
 			continue
 		var layout: BlockLayout = _block_layouts.get(block)
 		if layout and layout.has_playground():

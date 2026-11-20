@@ -59,15 +59,15 @@ func _test_the_market_goes_where_the_route_tree_says_she_is_heading(t: TestRunne
 	run_state.header().set_day(ResistanceHappenings.MARKET_DAY)
 	var state := run_state.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(map.block_plans, ResistanceHappenings.MARKET_DAY)
+	state.begin_day(map.plans_by_block(), ResistanceHappenings.MARKET_DAY)
 	var door := map.doorstep_world_position()
 	var out_of_sight: Array[Vector2i] = []
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			var block := Vector2i(x, y)
-			if map.block_plans.has(block) \
-					and state.purpose_of(map.block_plans, block) == GameEnums.BlockPurpose.COMMERCIAL \
-					and state.next_purpose(map.block_plans, block) == GameEnums.BlockPurpose.BOARDED_UP \
+			if map.plans_by_block().has(block) \
+					and state.purpose_of(map.plans_by_block(), block) == GameEnums.BlockPurpose.COMMERCIAL \
+					and state.next_purpose(map.plans_by_block(), block) == GameEnums.BlockPurpose.BOARDED_UP \
 					and _distance_to_rect(door, _frontage_of(map, block)) >= Tuning.OUT_OF_SIGHT:
 				out_of_sight.append(block)
 	t.check(out_of_sight.size() >= 2,
@@ -92,9 +92,9 @@ func _test_the_market_goes_where_the_route_tree_says_she_is_heading(t: TestRunne
 	happenings.setup(map, run_state, events, streets, FakeCityFronts.new(), null, null)
 	happenings.start_day(ResistanceHappenings.MARKET_DAY)
 	happenings.tick(EventDirector.ON_HER_WAY_AFTER, door, Vector2.RIGHT * Tuning.WALK_SPEED)
-	t.check(state.purpose_of(map.block_plans, further) == GameEnums.BlockPurpose.BOARDED_UP,
+	t.check(state.purpose_of(map.plans_by_block(), further) == GameEnums.BlockPurpose.BOARDED_UP,
 			"the block the tree's cells reach is boarded up")
-	t.check(state.purpose_of(map.block_plans, nearer) == GameEnums.BlockPurpose.COMMERCIAL,
+	t.check(state.purpose_of(map.plans_by_block(), nearer) == GameEnums.BlockPurpose.COMMERCIAL,
 			"and the nearer block, which the happenings fall back to, is not")
 	events.free()
 

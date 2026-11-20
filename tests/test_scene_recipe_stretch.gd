@@ -84,7 +84,7 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	RunCity.build(city, CityGenerator.generate(4242))
 	var state := own_run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.block_plans, 3)
+	state.begin_day(city.map.plans_by_block(), 3)
 	city.start_recipe_day(state, 3, own_run.calendar().day_rng(3, "closures"))
 	var from := Vector2i.ZERO
 	var found := false
@@ -285,7 +285,7 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 		var map: CityMap = edited.map
 		var tile := Vector2i(int(moved[1]), int(moved[0]))
 		var state := CityState.new()
-		state.begin_day(map.block_plans, 7)
+		state.begin_day(map.plans_by_block(), 7)
 		map.repaint(state)
 		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
 				"authored ground survives dawn repaint")
