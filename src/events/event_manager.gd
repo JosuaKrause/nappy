@@ -610,10 +610,10 @@ func _step_them(delta: float) -> void:
 ## Everything hears it, not only the pursuers: *"am I out of sight yet"* is the same question asked
 ## by anything that is **leaving** — see `EventInstance._be_done`.
 ##
-## Whether she is running is one of the facts, and **`world.player()` is deliberately a
-## `Node2D`**: the cast is here rather than on the field so that "an instance is handed a point"
-## stays true of everything except the one row that has to know. A `Node2D` has no
-## `run_excess_ratio`, so reading it off the untyped field is a per-frame runtime error that aborts
+## Whether she is running is one of the facts, and **`world.player()` answers a `Node2D`
+## deliberately**: the cast is here rather than in the world so that "an instance is handed a
+## point" stays true of everything except the one row that has to know. A `Node2D` has no
+## `run_excess_ratio`, so asking it of the untyped answer is a per-frame runtime error that aborts
 ## this whole callback and stops the day dead — and `check.sh` cannot see it, because nothing is
 ## wrong until it runs.
 ## **Then each instance is told which barrier structure is the one charging her**, here because

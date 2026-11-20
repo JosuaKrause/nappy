@@ -5,7 +5,8 @@ extends RefCounted
 ## object, shared by `EventManager` and the parts it hands its work to (`EventStreaming`,
 ## `EventSpawner`, `WarningBoard`, `EventsAhead`, `CheckpointController`), so a world handed over
 ## once — a city's day, the escape's building, a rig's open ground — is the world every part sees.
-## Nothing here is fetched: the manager writes each field as it is handed it.
+## Nothing here is fetched: the manager hands each part in (`use_map()`, `use_run()`,
+## `use_player()`, `take_in()` and the rest), and every other part asks through the methods.
 
 ## The live instances, in the order they came into the world (`instances()`). Shared by reference —
 ## the danger edge and the halo hold it across frames — so it is changed in place, never
