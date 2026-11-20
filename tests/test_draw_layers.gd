@@ -187,7 +187,7 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> v
 		t.check(ahead and on_its_layer,
 				"%s: every slice stands in the entity layer ahead of its instance" % what)
 		var last := slices[slices.size() - 1].global_position
-		var reach := def.obstructs_radius
+		var reach := def.obstructs_within()
 		var end := instance.global_position + (Vector2(0.0, reach) if vertical
 				else Vector2(reach - reach / slices.size(), 0.0))
 		t.check(last.is_equal_approx(end),
@@ -198,7 +198,7 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> v
 			for i in range(1, slices.size()):
 				rising = rising and slices[i].global_position.y > slices[i - 1].global_position.y
 			t.check(rising, "end-on, each slice stands nearer the camera than the one before")
-		var rim_of := instance.excitement.rim()
+		var rim_of := instance.source().rim()
 		rim_of.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		var rim := instance.rim()
 		t.check(rim != null and rim.get_parent() == slices[0]
@@ -307,9 +307,9 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 						covered += entry.band.size.y if vertical else entry.band.size.x
 						bands += 1
 				t.check(bands == slices.size()
-						and is_equal_approx(covered, instance.def.obstructs_radius * 2.0),
+						and is_equal_approx(covered, instance.def.obstructs_within() * 2.0),
 						"%s: its %d bands, one a slice, cover its run, %.1f of %.1f"
-						% [what, bands, covered, instance.def.obstructs_radius * 2.0])
+						% [what, bands, covered, instance.def.obstructs_within() * 2.0])
 				if vertical:
 					var rising := true
 					for i in range(1, slices.size()):

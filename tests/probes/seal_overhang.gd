@@ -27,13 +27,13 @@ func run(t: TestRunner) -> void:
 		var ground := WalkGround.new(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			for plan in SealPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day), rng):
 				_count(day_rows, map, ground, plan)
-		own_run.attempt_spend().block_arcs().begin_day(map.block_plans, 1)
+		own_run.attempt_spend().block_arcs().begin_day(map.plans_by_block(), 1)
 		map.repaint(own_run.attempt_spend().block_arcs())
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value

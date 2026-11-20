@@ -17,9 +17,7 @@ src/events/event_catalogue.gd on_finish
 src/events/event_catalogue.gd on_sight
 src/events/event_catalogue.gd scar
 src/events/event_def.gd on_finish
-src/events/event_spawner.gd on_finish
 src/events/event_spawner.gd on_sight
-src/events/event_spawner.gd scar
 
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
@@ -67,7 +65,6 @@ src/dev/scene_recipe_draft.gd stretch
 src/dev/scene_recipe_draft.gd stretch_active
 src/dev/scene_recipe_draft.gd tiles
 src/dev/scene_recipe_runtime.gd recipe_bounds
-src/events/event_spawner.gd block_plans
 
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
@@ -230,23 +227,11 @@ src/events/event_instance.gd shape
 src/events/event_instance.gd speed
 src/events/event_instance.gd stops_where_it_arrives
 src/events/event_instance.gd vehicle
-src/events/event_manager.gd barrier_structure
-src/events/event_manager.gd id
 src/events/event_plan.gd id
 src/events/event_scheduler.gd id
 src/events/event_spawner.gd aftermath
-src/events/event_spawner.gd detain_seconds
-src/events/event_spawner.gd from_outside
 src/events/event_spawner.gd id
-src/events/event_spawner.gd may_be_a_pelican
-src/events/event_spawner.gd mobile
-src/events/event_spawner.gd obstructs_radius
-src/events/event_spawner.gd pulse_period
-src/events/event_spawner.gd pursuit
-src/events/event_spawner.gd shape
-src/events/event_spawner.gd solid_when
 src/events/event_spawner.gd speed
-src/events/event_spawner.gd telegraph_time
 src/events/events_ahead.gd id
 src/events/pending_warning.gd id
 src/events/plan_builder.gd path_length_tiles
@@ -283,17 +268,9 @@ src/events/behaviours/event_behaviours.gd pursuit
 src/events/behaviours/event_behaviours.gd route
 src/events/behaviours/event_behaviours.gd unreachable
 src/events/event_excitement.gd age
-src/events/event_manager.gd def
-src/events/event_manager.gd excitement
-src/events/event_manager.gd held_by_hand
-src/events/event_manager.gd is_pelican
 src/events/event_spawner.gd atlas
-src/events/event_spawner.gd came_under_a_warning
 src/events/event_spawner.gd def
 src/events/event_spawner.gd drawer
-src/events/event_spawner.gd excitement
-src/events/event_spawner.gd is_finished
-src/events/event_spawner.gd is_pelican
 src/events/event_spawner.gd points_at
 src/events/event_spawner.gd signals
 src/events/event_spawner.gd skip_draw
@@ -301,15 +278,12 @@ src/events/event_spawner.gd timing
 src/events/event_spawner.gd trace
 src/events/event_streaming.gd age
 src/events/event_streaming.gd barrier_post
-src/events/event_streaming.gd excitement
 src/events/event_streaming.gd gate_state
 src/events/event_streaming.gd is_finished
 src/events/event_streaming.gd is_leaving
-src/events/event_streaming.gd silenced
 src/events/views/event_look.gd age
 src/events/views/fire_look.gd age
 src/events/views/rank_look.gd age
-src/run/day_director.gd excitement
 
 # [EventPlan] src/events/event_plan.gd
 src/events/event_director.gd was_live
@@ -344,7 +318,6 @@ src/events/event_spawner.gd timing
 
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
-src/events/event_spawner.gd on_first_landing
 
 # [GroundShape] src/ground_shape.gd
 src/events/behaviours/event_car_driving.gd half_length
@@ -363,9 +336,6 @@ src/events/walk_ground.gd radius
 src/events/event_def.gd ends_the_day
 src/events/event_def.gd lets_out
 src/events/event_def.gd pursuit
-
-# [MarbleBag] src/city/marble_bag.gd
-src/events/event_spawner.gd drawn
 
 # [MoveProposal] src/world/move_proposal.gd
 src/events/event_instance.gd open

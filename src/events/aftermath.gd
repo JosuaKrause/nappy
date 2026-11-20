@@ -24,6 +24,10 @@ extends Resource
 func calls_in() -> String:
 	return on_sight
 
+## The id of the scar it leaves on the run (`scar`), or "" for none.
+func scar_id() -> String:
+	return scar
+
 ## Whether the scar it leaves is the one `scar_id` names (`scar`).
 func leaves_the_scar(scar_id: String) -> bool:
 	return scar == scar_id

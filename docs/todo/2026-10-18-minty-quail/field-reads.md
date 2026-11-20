@@ -75,9 +75,9 @@ fields are the most read, so the events go first, as the ask says.
 Left, each its own design question:
 
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
-  by class: the city map's (`CityMap`) `block_plans` in the event spawner (row 3b
-  of `event-interface.md`), and in the scene recipes' draft and runtime (`stretch`, `stretch_active`,
-  `tiles`, `recipe_bounds`), whose tests set what no game method sets. The dawn asks the map's
+  by class: the city map's (`CityMap`) in the scene recipes' draft and runtime (`stretch`,
+  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets; its
+  `block_plans` is private, asked through `plans_by_block()`. The dawn asks the map's
   methods; `network`, `main_road`, `calm_blocks`, `closed_tiles`, `power_station`,
   `boundary_wall_at_a` and `playgrounds` stay public for the city suites only, as `[kept]` lines
   until those suites test one module each (`tests-one-module.md`). `RoadClosure.segment` is

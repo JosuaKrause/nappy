@@ -359,7 +359,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 			if trap:
 				for body in _city.streets().region_plan().door_bodies:
 					t.check(not DoorLine.crossed_by(body.position, body.facing,
-							body.def.obstructs_radius, trap.global_position,
+							body.def.obstructs_within(), trap.global_position,
 							player.global_position),
 							"his run at her from %s never crosses a district door's line"
 							% _city.map.world_to_tile(trap.global_position))

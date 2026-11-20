@@ -55,7 +55,7 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, day)
+	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
 	var start := city.map.doorstep_world_position()
@@ -80,7 +80,7 @@ func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	city.run.header().set_day(day)
 	t.add_child(city)
 	RunCity.build(city, CityGenerator.generate(seed_value), _builder(t))
-	city.run.attempt_spend().block_arcs().begin_day(city.map.block_plans, day)
+	city.run.attempt_spend().block_arcs().begin_day(city.map.plans_by_block(), day)
 	city.start_day(city.run.attempt_spend().block_arcs(), day, city.run.calendar().day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
@@ -189,7 +189,7 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 	var instances := events.instances()
 	for i in instances.size():
 		var instance := instances[i]
-		var source := instance.excitement
+		var source := instance.source()
 		var caret := source.caret_strength() if instance.look else -1
 		printed += _print_one(walk, tick, "E%d:%s" % [i, instance.logged_name()], [
 				source.contribution_at(her), source.expected_gross_at(her),

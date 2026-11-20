@@ -60,7 +60,7 @@ func _build_day(t: TestRunner) -> void:
 	RunCity.events(_city).stream_within(INF)
 
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, DAY)
+	state.begin_day(_city.map.plans_by_block(), DAY)
 	_city.start_day(state, DAY, _rng("closures"))
 	var consumed: Array[String] = []
 	RunCity.events(_city).start_day(DaySpec.for_day(DAY), _rng("events"), consumed)
@@ -223,7 +223,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 	RunCity.build(city, map)
 	RunCity.events(city).stream_within(INF)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	city.start_day(state, day, _rng("checkpoint-closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng("checkpoint-events"), consumed)

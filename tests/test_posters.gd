@@ -504,7 +504,7 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 		var before := 0
 		var covered_on: Dictionary = {}
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			run.posters().photograph()
 			city.start_day(state, day, run.calendar().day_rng(day, "closures"))
 			var cells := run.posters().cells()

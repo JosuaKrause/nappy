@@ -583,7 +583,7 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 		var city := _city
 		var closure_state := run.attempt_spend().block_arcs()
 		closure_state.reset()
-		closure_state.begin_day(city.map.block_plans, day)
+		closure_state.begin_day(city.map.plans_by_block(), day)
 		var closure_rng := RandomNumberGenerator.new()
 		closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
 		city.start_day(closure_state, day, closure_rng)
@@ -627,7 +627,7 @@ func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, 12)
+	state.begin_day(_city.map.plans_by_block(), 12)
 	_city.map.repaint(state)
 	t.check(not _city.map.playgrounds.is_empty(),
 			"the test city has at least one open playground, or this test checks nothing")
@@ -671,18 +671,18 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 		t.check(park.x >= 0, "seed %d: the city chose a park for the swing" % seed_value)
 		if park.x < 0:
 			continue
-		var plan: BlockPlan = map.block_plans[park]
+		var plan: BlockPlan = map.plans_by_block()[park]
 		t.check(plan.starting_purpose() == GameEnums.BlockPurpose.PARK
 				and plan.step_at(plan.step_count() - 1).purpose == GameEnums.BlockPurpose.REQUISITIONED,
 				"seed %d: a park whose arc ends requisitioned" % seed_value)
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day - 1)
-		var before := state.purpose_of(map.block_plans, park)
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day - 1)
+		var before := state.purpose_of(map.plans_by_block(), park)
+		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
 		if before != GameEnums.BlockPurpose.PARK:
 			forced += 1
-		t.check(state.purpose_of(map.block_plans, park) == GameEnums.BlockPurpose.PARK
+		t.check(state.purpose_of(map.plans_by_block(), park) == GameEnums.BlockPurpose.PARK
 				and park in map.calm_blocks,
 				"seed %d: on day 12 it is an open park (it was %s the day before)"
 				% [seed_value, GameEnums.BlockPurpose.keys()[before]])
@@ -692,14 +692,14 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 		t.check(pool.size() == 1 and pool[0] == map.world_to_tile(map.swing_position(
 				layout.playground_rect())), "seed %d: its swing is the task's only place" %
 				seed_value)
-		t.check(state.take(map.block_plans, park, day)
-				and state.purpose_of(map.block_plans, park) == GameEnums.BlockPurpose.REQUISITIONED,
+		t.check(state.take(map.plans_by_block(), park, day)
+				and state.purpose_of(map.plans_by_block(), park) == GameEnums.BlockPurpose.REQUISITIONED,
 				"seed %d: reaching the swing takes it" % seed_value)
-		state.begin_day(map.block_plans, day + 1)
-		t.check(state.purpose_of(map.block_plans, park) == GameEnums.BlockPurpose.REQUISITIONED,
+		state.begin_day(map.plans_by_block(), day + 1)
+		t.check(state.purpose_of(map.plans_by_block(), park) == GameEnums.BlockPurpose.REQUISITIONED,
 				"seed %d: and it stays taken" % seed_value)
 		var untaken := CityState.new()
-		untaken.begin_day(map.block_plans, day + 1)
+		untaken.begin_day(map.plans_by_block(), day + 1)
 		t.check(not untaken.is_forced_open(park), "seed %d: open only on its own day" % seed_value)
 	t.check(forced > 0, "some city's park was requisitioned before day 12 and forced open (%d)"
 			% forced)
@@ -713,7 +713,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	run.header().set_day(day)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := _director(t)
@@ -749,7 +749,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner
 	# The next morning, planned from the run's own scars.
 	var next_state := run.attempt_spend().block_arcs()
 	next_state.reset()
-	next_state.begin_day(_city.map.block_plans, day + 1)
+	next_state.begin_day(_city.map.plans_by_block(), day + 1)
 	_city.start_day(next_state, day + 1, _rng(day + 1, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day + 1), _rng(day + 1, "events"), [],
 			_city.map.doorstep_world_position())
@@ -901,7 +901,7 @@ func _test_the_morning_neighbors_way_is_over_drawn_ground(t: TestRunner) -> void
 	var day := 5
 	var door := _city.map.doorstep_world_position()
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], door)
 	var director := _director(t)
@@ -1004,7 +1004,7 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 		var day := ResistanceSteps.NEIGHBOR_DAY
 		run.header().set_day(day)
 		var state := CityState.new()
-		state.begin_day(_city.map.block_plans, day)
+		state.begin_day(_city.map.plans_by_block(), day)
 		_city.start_day(state, day, _rng(day, "closures", seed_value))
 		RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 				_city.map.doorstep_world_position())
@@ -1157,7 +1157,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
 	# the run's `run_parts.give_back()` restores every scar a lost day left.
 	GivenRun.scars(run, [])
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, ResistanceSteps.NEIGHBOR_DAY)
+	state.begin_day(_city.map.plans_by_block(), ResistanceSteps.NEIGHBOR_DAY)
 	_city.start_day(state, ResistanceSteps.NEIGHBOR_DAY,
 			_rng(ResistanceSteps.NEIGHBOR_DAY, "closures"))
 	t.check(not HomeDoorReads.is_sealed(_city), "a lost day 10 restores the ordinary door")
@@ -1207,7 +1207,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t: TestRunner) -> void
 func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
 	var run: RunState = _city.run
 	run.header().set_day(day)
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
@@ -1237,9 +1237,9 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			var candidate := Vector2i(x, y)
-			if _city.map.block_plans.has(candidate) \
-					and state.purpose_of(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.COMMERCIAL \
-					and state.next_purpose(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.BOARDED_UP:
+			if _city.map.plans_by_block().has(candidate) \
+					and state.purpose_of(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.COMMERCIAL \
+					and state.next_purpose(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.BOARDED_UP:
 				candidates.append(candidate)
 	t.check(not candidates.is_empty(),
 			"the test city has a block waiting to board up, or this test checks nothing")
@@ -1254,7 +1254,7 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 		var frontage := _city.map.tile_rect_to_world(_city.map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH))
 		t.check(_distance_to_rect(door, frontage) >= Tuning.OUT_OF_SIGHT,
 				"out of her sight")
-		t.check(state.purpose_of(_city.map.block_plans, block)
+		t.check(state.purpose_of(_city.map.plans_by_block(), block)
 				== GameEnums.BlockPurpose.BOARDED_UP, "boarded up now")
 		var shuttered := 0
 		for building in _city.buildings():
@@ -1267,8 +1267,8 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 			if plan.def.id == "market_stall" and frontage.has_point(plan.position):
 				t.check(plan.spent or (plan.live and plan.live.is_finished),
 						"no market stall of it is left in the day")
-		state.begin_day(_city.map.block_plans, ResistanceHappenings.MARKET_DAY + 1)
-		t.check(state.purpose_of(_city.map.block_plans, block)
+		state.begin_day(_city.map.plans_by_block(), ResistanceHappenings.MARKET_DAY + 1)
+		t.check(state.purpose_of(_city.map.plans_by_block(), block)
 				== GameEnums.BlockPurpose.BOARDED_UP, "and it stays boarded")
 	happenings.tick(STEP, door, Vector2.ZERO)
 	t.check(_boarded_among(state, candidates) == gone, "and the market is gone once")
@@ -1277,7 +1277,7 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vector2i]:
 	var boarded: Array[Vector2i] = []
 	for block in candidates:
-		if state.purpose_of(_city.map.block_plans, block) == GameEnums.BlockPurpose.BOARDED_UP:
+		if state.purpose_of(_city.map.plans_by_block(), block) == GameEnums.BlockPurpose.BOARDED_UP:
 			boarded.append(block)
 	return boarded
 
@@ -1296,9 +1296,9 @@ func _test_the_market_waits_while_she_can_see_it(t: TestRunner) -> void:
 		for y in Tuning.CITY_BLOCKS.y:
 			for x in Tuning.CITY_BLOCKS.x:
 				var candidate := Vector2i(x, y)
-				if _city.map.block_plans.has(candidate) \
-						and state.purpose_of(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.COMMERCIAL \
-						and state.next_purpose(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.BOARDED_UP:
+				if _city.map.plans_by_block().has(candidate) \
+						and state.purpose_of(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.COMMERCIAL \
+						and state.next_purpose(_city.map.plans_by_block(), candidate) == GameEnums.BlockPurpose.BOARDED_UP:
 					candidates.append(candidate)
 		if candidates.size() <= which:
 			break
@@ -1307,7 +1307,7 @@ func _test_the_market_waits_while_she_can_see_it(t: TestRunner) -> void:
 		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
 		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
 		seen += 1
-		t.check(state.purpose_of(_city.map.block_plans, block) == GameEnums.BlockPurpose.COMMERCIAL,
+		t.check(state.purpose_of(_city.map.plans_by_block(), block) == GameEnums.BlockPurpose.COMMERCIAL,
 				"the market in block %s is not boarded up with her standing in front of it" % block)
 	t.check(seen > 0, "the test city has a block to stand in front of, or this test checks nothing")
 
@@ -1388,7 +1388,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 				and signf(front.global_position.y - her.y) == signf(warning.points_at().y - her.y),
 				"its front truck is created just out of sight, up the lane the badge pointed")
 		var to_reach := 0.0
-		while front.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
+		while front.source().contribution_at(her) <= 0.0 and to_reach < 10.0:
 			RunCity.events(_city).world.where_she_is().tell(her)
 			front.step(STEP)
 			to_reach += STEP

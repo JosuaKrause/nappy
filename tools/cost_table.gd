@@ -206,7 +206,7 @@ func _pass_row(def: EventDef, sensitivity: float) -> Dictionary:
 	for i in offsets.size():
 		var offset: float = offsets[i]
 		var key: String = PASS_COLS[i]
-		if is_zero_approx(offset) and def.obstructs_radius > 0.0:
+		if is_zero_approx(offset) and def.obstructs_within() > 0.0:
 			row[key] = "—"
 			continue
 		var net := M174Pass.pass_net_averaged(def, offset, Tuning.EXCITEMENT_DECAY_WALKING, sensitivity)

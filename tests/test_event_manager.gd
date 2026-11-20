@@ -428,7 +428,7 @@ func _test_excitement_sums_over_instances(t: TestRunner) -> void:
 	var at: Vector2 = instances[0].global_position
 	var expected := 0.0
 	for instance in instances:
-		expected += instance.excitement.contribution_at(at)
+		expected += instance.source().contribution_at(at)
 	t.close_to(RunCity.events(_city).excitement_sources().total_at(at), expected,
 			"the manager's total is the sum of the instances' contributions")
 
@@ -609,7 +609,7 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall is in play, not only seals.
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	var closures_rng := RandomNumberGenerator.new()
 	closures_rng.seed = hash("m100-seals:closures:%d" % day)
 	_city.start_day(state, day, closures_rng)

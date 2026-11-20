@@ -315,7 +315,7 @@ class LongFrontage extends WorldMap:
 ## frames, not the box the gate asks with.
 func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("burning_building")
-	t.check(def != null and def.obstructs_radius <= 0.0, "burning_building is the street fire")
+	t.check(def != null and def.obstructs_within() <= 0.0, "burning_building is the street fire")
 	if not def:
 		return
 	var screen := _screen(t, Vector2(2000.0, 0.0))

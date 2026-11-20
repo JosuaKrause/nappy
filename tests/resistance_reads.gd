@@ -78,7 +78,7 @@ static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Ar
 			excepted = excepted or plan.position.distance_to(point) < Tuning.TILE_SIZE * 1.5
 		if excepted:
 			continue
-		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+		if plan.def.obstructs_within() > 0.0 or plan.def.hard_fail:
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)

@@ -35,7 +35,7 @@ func _events_per_street_by_band() -> void:
 		var map := CityGenerator.generate(90210 + i * 31)
 		for day: int in SAMPLE_DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)

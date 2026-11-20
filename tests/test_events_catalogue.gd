@@ -177,7 +177,7 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) ->
 	var day := def.first_day
 	var map := CityGenerator.generate(4242)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var role := _role_it_places_as(def, day, map, Corridor.of(RouteTree.for_day(map, day)))
 	t.check(role == GameEnums.BlockerRole.FRICTION,
@@ -435,7 +435,7 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if not _SPREAD_LOOKS.has(def.look) or def.placement.is_empty():
 			continue
-		var half := maxf(11.0, def.obstructs_radius)
+		var half := maxf(11.0, def.obstructs_within())
 		for tile_type in def.placement:
 			var clearance := INF
 			if tile_type == GameEnums.TileType.SIDEWALK:
@@ -498,9 +498,9 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 	# `obstructs_radius + PLAYER_BODY_RADIUS` — the pram cannot pass on either lane, which is what
 	# "the only Act I event that is physically in the way" means.
 	var half_band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
-	t.check(barrier.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > half_band,
+	t.check(barrier.obstructs_within() + Tuning.PLAYER_BODY_RADIUS > half_band,
 			"a centred 'construction' (%.0fpx + %.0fpx pram) reaches past either edge of the %.0fpx "
-			% [barrier.obstructs_radius, Tuning.PLAYER_BODY_RADIUS, half_band * 2.0]
+			% [barrier.obstructs_within(), Tuning.PLAYER_BODY_RADIUS, half_band * 2.0]
 			+ "band, so it seals the whole pavement rather than one lane of it")
 
 ## **A roadblock covers its own sidewalk and the road, and leaves the far sidewalk whole** ("okay
@@ -642,11 +642,11 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 		var side := EventPictures.stationary_vehicle_texture(look, true)
 		var end := EventPictures.stationary_vehicle_texture(look, false)
 		var side_extent := EventPictures.stationary_vehicle_extent(
-				side, true, def.obstructs_radius * 2.0)
+				side, true, def.obstructs_within() * 2.0)
 		var end_extent := EventPictures.stationary_vehicle_extent(
-				end, false, def.obstructs_radius * 2.0)
+				end, false, def.obstructs_within() * 2.0)
 		t.check(side != end, "'%s' has distinct side and end artwork" % def.id)
-		t.check(is_equal_approx(side_extent.x, def.obstructs_radius * 2.0),
+		t.check(is_equal_approx(side_extent.x, def.obstructs_within() * 2.0),
 				"'%s' side view fits the diameter of its solid body" % def.id)
 		t.check(end_extent.is_equal_approx(EventPictures.native_size(end))
 				and end_extent.x < side_extent.x,
@@ -693,7 +693,7 @@ func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 ## its segment.
 func _test_a_spread_cap_matches_what_it_obstructs(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("construction")
-	var half := maxf(11.0, def.obstructs_radius)
+	var half := maxf(11.0, def.obstructs_within())
 	var cap_size := EventPictures.native_size(EventPictures.BARRIER_END)
 	t.check(cap_size.y > cap_size.x * 2.0,
 			"the post is an upright picture (%s), so its height and width are different questions"
@@ -794,7 +794,7 @@ func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 	t.check(horizontal != vertical, "and the two are not the same asset")
 
 	var tree := EventCatalogue.by_id("fallen_tree")
-	var half := maxf(11.0, tree.obstructs_radius)
+	var half := maxf(11.0, tree.obstructs_within())
 	for is_vertical: bool in [false, true]:
 		var texture := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
 		var instance: EventInstance = await DrawnEvent.stand(t, tree, is_vertical)
@@ -852,9 +852,9 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	t.check(crash.solid_parts.size() == 2, "a crash is two cars, so it puts down two bodies")
-	t.check(crash.solid_reach() < crash.obstructs_radius,
+	t.check(crash.solid_reach() < crash.obstructs_within(),
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
-			% [crash.solid_reach(), crash.obstructs_radius])
+			% [crash.solid_reach(), crash.obstructs_within()])
 
 	var carriageway := (float(Tuning.STREET_WIDTH) * 0.5 - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
 	for vertical: bool in [false, true]:
@@ -872,7 +872,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 				"on a %s street the crash registers one collision shape per car (%d)"
 				% [street, bodies.size()])
 
-		var half: float = crash.obstructs_radius
+		var half: float = crash.obstructs_within()
 		var offsets := _lateral_offsets(instance)
 		for offset in offsets:
 			t.check(absf(offset) < carriageway,
@@ -925,11 +925,11 @@ func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 		if def.solid_parts.size() > 1:
 			continue
 		t.check(def.parts().size() == 1, "'%s' is one body" % def.id)
-		if def.obstructs_radius > 0.0:
-			t.check(is_equal_approx(def.solid_reach(), def.obstructs_radius),
+		if def.obstructs_within() > 0.0:
+			t.check(is_equal_approx(def.solid_reach(), def.obstructs_within()),
 					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "
 					+ "readings of a body only come apart for a row that is several")
-					% [def.id, def.solid_reach(), def.obstructs_radius])
+					% [def.id, def.solid_reach(), def.obstructs_within()])
 
 ## No two rows draw the same picture, and the rows that draw nothing are named.
 ##
@@ -990,8 +990,8 @@ func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t: TestRunne
 		t.check(def != null, "the catalogue carries '%s'" % id)
 		if not def:
 			continue
-		t.check(def.obstructs_radius <= 0.0 and def.solid_reach() <= 0.0,
-				"'%s' has no body on the sidewalk (obstructs %.0f)" % [id, def.obstructs_radius])
+		t.check(def.obstructs_within() <= 0.0 and def.solid_reach() <= 0.0,
+				"'%s' has no body on the sidewalk (obstructs %.0f)" % [id, def.obstructs_within()])
 		t.check(not def.draws_body_shadow, "and casts no shadow there")
 
 ## **A one-shot is sited on her way, or it is refused** (`EventDef.is_a_one_shot_off_her_way()`,

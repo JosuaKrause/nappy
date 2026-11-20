@@ -258,7 +258,7 @@ func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 			DrawnEvent.AT, Vector2.RIGHT, her)
 	var unmarked: EventInstance = await DrawnEvent.stand(t, def, false)
 	her.tell(marked.global_position)
-	t.check(marked.excitement.caret_strength() == 2 and unmarked.excitement.caret_strength() == 0,
+	t.check(marked.source().caret_strength() == 2 and unmarked.source().caret_strength() == 0,
 			"the cyclist she stands on is marked, the one nobody is near carries nothing")
 	var drawn := {marked: [0], unmarked: [0]}
 	for instance: EventInstance in drawn:
@@ -312,10 +312,10 @@ func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 	for state: Array in states:
 		var before: int = drawn[0]
 		her.tell(here + state[0])
-		instance.excitement.set_her_motion(state[1])
+		instance.source().set_her_motion(state[1])
 		await DrawnEvent.frames(t)
 		moved.append(drawn[0] > before)
-		strengths.append(instance.excitement.caret_strength())
+		strengths.append(instance.source().caret_strength())
 	t.check(strengths == [0, 1, 2, 0], "she is far off, closing, on it and far off again (%s)" % [strengths])
 	t.check(moved == [false, true, true, true],
 			"no caret, a caret, a doubled caret and no caret again each draw it again (%s)" % [moved])
@@ -344,9 +344,9 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t: TestRunner) -> void:
 	# before whoever tells where she is (`WhereSheIs.tell()`).
 	for i in int(ceil(def.telegraph_time / STEP)) + 1:
 		instance.step(STEP)
-	t.check(instance.excitement.caret_strength() == 0, "with nobody to aim at there is no caret")
+	t.check(instance.source().caret_strength() == 0, "with nobody to aim at there is no caret")
 	her.tell(instance.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(instance.excitement.caret_strength() == 2,
+	t.check(instance.source().caret_strength() == 2,
 			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
 	instance.free()
 
@@ -603,7 +603,7 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t: TestRunner) -> void:
 			"the next cycle's telegraph moves the mast's key")
 	instance.age = 2.0 * def.pulse_period + def.telegraph_time + 1.0
 	_asks(instance)
-	instance.silenced = true
+	instance.silence()
 	t.check(_asks(instance), "silencing the mast moves its key")
 	instance.free()
 

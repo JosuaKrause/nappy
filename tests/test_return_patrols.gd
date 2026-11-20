@@ -55,7 +55,7 @@ func _director(map: CityMap, forced := "") -> EventDirector:
 func _the_return_days_director(map: CityMap, seed_value: int) -> EventDirector:
 	if _plans.is_empty():
 		var state := CityState.new()
-		state.begin_day(map.block_plans, RETURN_DAY)
+		state.begin_day(map.plans_by_block(), RETURN_DAY)
 		map.repaint(state)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = 23

@@ -43,14 +43,14 @@ func _test_telegraph_damps_emission(t: TestRunner) -> void:
 	t.check(instance.is_telegraphing(), "an event starts in its telegraph phase")
 	t.close_to(instance.current_intensity(), def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
 			"a telegraphing event emits only a fraction of its intensity")
-	t.close_to(instance.excitement.contribution_at(Vector2(1000.0, 0.0)), 0.0,
+	t.close_to(instance.source().contribution_at(Vector2(1000.0, 0.0)), 0.0,
 			"an event contributes nothing beyond its outer radius")
 
 	_advance(instance, def.telegraph_time + 0.05)
 	t.check(not instance.is_telegraphing(), "the telegraph phase ends after telegraph_time")
 	t.close_to(instance.current_intensity(), def.intensity,
 			"an active event emits its full intensity", 0.05)
-	t.close_to(instance.excitement.contribution_at(Vector2(def.inner_radius * 0.5, 0.0)), def.intensity,
+	t.close_to(instance.source().contribution_at(Vector2(def.inner_radius * 0.5, 0.0)), def.intensity,
 			"inside the inner radius the full intensity applies", 0.05)
 	instance.free()
 
@@ -116,7 +116,7 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	t.check(blower.is_telegraphing(), "an instance starts in its telegraph")
 	var fraction := blower.current_intensity() / leaf.intensity
 	t.check(fraction < 1.0, "and is emitting less than its catalogued peak while it does")
-	t.close_to(blower.excitement.contribution_at(near), leaf.core_intensity * fraction,
+	t.close_to(blower.source().contribution_at(near), leaf.core_intensity * fraction,
 			"the phase damps the core by exactly the fraction it damps the field by")
 	blower.free()
 	player.free()
@@ -177,7 +177,7 @@ func _test_duration_and_finish(t: TestRunner) -> void:
 	var instance := _instance(t, def)
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
 	t.check(instance.is_finished, "an event with a duration finishes")
-	t.close_to(instance.excitement.contribution_at(Vector2.ZERO), 0.0,
+	t.close_to(instance.source().contribution_at(Vector2.ZERO), 0.0,
 			"a finished event contributes nothing")
 	instance.free()
 
@@ -199,7 +199,7 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
 	t.check(not instance.is_finished, "a flock that is done is not deleted where it stands")
 	t.check(instance.is_leaving, "it is leaving")
-	t.close_to(instance.excitement.contribution_at(instance_where.at()), 0.0,
+	t.close_to(instance.source().contribution_at(instance_where.at()), 0.0,
 			"and it stops emitting the moment it does")
 
 	# Away from her, since a flock has no route to carry on along.
@@ -315,6 +315,6 @@ func _test_flocks_are_not_skipped(t: TestRunner) -> void:
 	flock.flock.build()
 	var far_bird := Vector2(flock.def.silent_beyond() * 3.0, 0.0)
 	flock.flock.birds[0].place(far_bird)
-	t.check(flock.excitement.contribution_at(far_bird) > 0.0,
+	t.check(flock.source().contribution_at(far_bird) > 0.0,
 			"a bird far past its flock's silent_beyond() is still heard where it is")
 	flock.free()

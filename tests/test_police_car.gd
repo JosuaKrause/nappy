@@ -263,7 +263,7 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t: TestRunner) 
 				"and the warning is the car's own horn time (%.2fs)" % warning)
 		t.check(not held, "facing %s, the strike fires before the car would stop against her"
 				% facing)
-		t.check(car.excitement.will_be_lethal(player.global_position),
+		t.check(car.source().will_be_lethal(player.global_position),
 				"and the doubled caret was up over the car")
 		player.free()
 		car.free()

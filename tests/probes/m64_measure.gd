@@ -74,7 +74,7 @@ func _role_and_depth_sweep() -> void:
 		var grid := ReachabilityGrid.build(map)
 		for day: int in SAMPLE_DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
@@ -101,7 +101,7 @@ func _role_and_depth_sweep() -> void:
 					var idr := "%s:%s" % [plan.def.id, role_name]
 					by_id_role[idr] = int(by_id_role.get(idr, 0)) + 1
 				if depth == 0 and plan.role() == GameEnums.BlockerRole.FRICTION \
-						and not plan.def.mobile and plan.def.obstructs_radius > 0.0:
+						and not plan.def.mobile and plan.def.obstructs_within() > 0.0:
 					sum_solid_friction_on_corridor += 1
 					var segment := map.network.segment_containing(tile)
 					if segment:
@@ -177,7 +177,7 @@ func _closure_access_vs_rim_sweep() -> void:
 		var map := CityGenerator.generate(BASE_SEED + 1000 + i * 31)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var home := ClosurePlanner.home_street(map)
 			var areas := ClosurePlanner.calm_areas(map)

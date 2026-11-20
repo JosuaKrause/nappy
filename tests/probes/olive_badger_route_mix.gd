@@ -51,7 +51,7 @@ func _measure() -> void:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		for day in DAYS:
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
@@ -124,7 +124,7 @@ func _measure_the_return() -> void:
 			if not RETURN_LEG.has(act):
 				continue
 			var state := CityState.new()
-			state.begin_day(map.block_plans, day)
+			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()

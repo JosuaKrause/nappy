@@ -88,7 +88,7 @@ func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_di
 	_run.header().set_day(day)
 	var state := _run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	# What the day closes is closed before its walk starts, which is when where she can get to from
 	# home is worked out (`DayReach`).
@@ -282,7 +282,7 @@ func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t: Tes
 	var state: CityState = fixture.state
 	var park: Vector2i = fixture.park
 	var director: ResistanceDirector = fixture.director
-	t.check(state.purpose_of(_city.map.block_plans, park) == GameEnums.BlockPurpose.REQUISITIONED,
+	t.check(state.purpose_of(_city.map.plans_by_block(), park) == GameEnums.BlockPurpose.REQUISITIONED,
 			"reaching the swing takes the park")
 	t.check(not (park in _city.map.calm_blocks), "and the city stops counting it as calm")
 	var rect := ClosurePlanner.calm_area_rect(_city.map, park)
@@ -1018,8 +1018,8 @@ func _test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t: TestRunner) 
 	t.check(not tapes.is_empty(), "the cordon stands in the city")
 	var day: int = fixture.day
 	var state: CityState = fixture.state
-	state.begin_day(_city.map.block_plans, day + 1)
-	t.check(state.purpose_of(_city.map.block_plans, fixture.park)
+	state.begin_day(_city.map.plans_by_block(), day + 1)
+	t.check(state.purpose_of(_city.map.plans_by_block(), fixture.park)
 			== GameEnums.BlockPurpose.REQUISITIONED, "the park stays taken")
 	happenings.start_day(day + 1)
 	var standing := 0

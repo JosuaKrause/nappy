@@ -125,7 +125,7 @@ func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 	RunCity.events(city).stream_within(INF)
 
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
+	state.begin_day(city.map.plans_by_block(), day)
 	city.start_day(state, day, _rng(day, "closures"))
 	var consumed: Array[String] = []
 	RunCity.events(city).start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
@@ -989,7 +989,7 @@ func _test_calm_leaves_the_park_being_taken(t: TestRunner) -> void:
 			"on an ordinary morning no calm tile is left out: the park she stands in answers (%s)"
 			% [map.world_to_tile(morning) if morning != Vector2.INF else Vector2i(-1, -1)])
 	var state: CityState = fixture["state"]
-	t.check(state.take(map.block_plans, park, 12), "the swing's park is taken")
+	t.check(state.take(map.plans_by_block(), park, 12), "the swing's park is taken")
 	map.recompute_calm(state)
 	var still_calm := 0
 	for tile in map.calm_tiles():

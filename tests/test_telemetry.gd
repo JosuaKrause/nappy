@@ -1155,12 +1155,12 @@ func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 		state.use_trace(trace)
 	var parts: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		state.begin_day(map.block_plans, day)
-	var blocks: Array = map.block_plans.keys()
+		state.begin_day(map.plans_by_block(), day)
+	var blocks: Array = map.plans_by_block().keys()
 	blocks.sort()
 	for block: Vector2i in blocks:
 		parts.append("%s=%d:%d" % [RunTrace.tile(block),
-				state.purpose_of(map.block_plans, block), CityStateReads.changed_on(state, block)])
+				state.purpose_of(map.plans_by_block(), block), CityStateReads.changed_on(state, block)])
 	return "|".join(parts)
 
 # --------------------------------------------------------- moved in: the log's own ---

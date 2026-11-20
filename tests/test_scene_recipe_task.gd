@@ -109,7 +109,7 @@ func _day(t: TestRunner, day: int) -> Array:
 	own_run.header().set_day(day)
 	var state := own_run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	var city: City = CITY_SCENE.instantiate()
 	city.run = own_run
 	t.add_child(city)

@@ -57,7 +57,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 func _count_day(map: CityMap, day: int) -> Dictionary:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day)
 	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)

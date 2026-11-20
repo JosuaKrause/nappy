@@ -157,7 +157,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t: TestRunne
 func _test_the_siting_reads_the_days_region_off_the_streets(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
-	state.begin_day(_city.map.block_plans, 10)
+	state.begin_day(_city.map.plans_by_block(), 10)
 	_city.start_day(state, 10, RandomNumberGenerator.new())
 	var region := _city.streets().siting_region()
 	t.check(region != null and region.centres.size() > 0, "day 10 has a region wall and doors")
@@ -494,7 +494,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		var covered: Variant = TouchCover.joystick() if joystick else null
 		var day := ResistanceSteps.NEIGHBOR_DAY
 		var state := CityState.new()
-		state.begin_day(_city.map.block_plans, day)
+		state.begin_day(_city.map.plans_by_block(), day)
 		_city.start_day(state, day, _rng(day, "closures"))
 		events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 		var door := _city.map.doorstep_world_position()

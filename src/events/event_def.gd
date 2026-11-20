@@ -2265,6 +2265,16 @@ func paces_a_beat() -> bool:
 func leaves_behind() -> String:
 	return aftermath.on_finish
 
+## The id of the scar it leaves on the run where it happens (`Aftermath.scar`), or "" for a row that
+## leaves none: the burning building's burnt shell, the roadblock's barricade.
+func scar_id() -> String:
+	return aftermath.scar_id()
+
+## Whether a rider of it may be the run's one pelican (`may_be_a_pelican`): the cyclist, which is the
+## only row that draws from the run's pelican bag.
+func may_be_drawn_as_a_pelican() -> bool:
+	return may_be_a_pelican
+
 ## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`).
 func picture() -> Look:
 	return look
@@ -2317,10 +2327,13 @@ func is_a_boom() -> bool:
 
 ## **Whether its body is recorded on the ground for the whole day**: a standing body that stops her
 ## (a `ground_shape()` and `has_a_body()`), that does not move (`moves()`), since a mover is
-## somewhere else by the time a route gets there, and is no door's: a hut or a post that holds her
-## (`detains_her()`) or the boom (`is_a_boom()`), a crossing the day keeps open. The rows whose
-## ground the map's record of blocked tiles holds (`EventSpawner.obstructed_footprint()` makes the
-## same five tests), and the bodies the route rig keeps clear of before they are streamed in.
+## somewhere else by the time a route gets there (a moving wall pins her, so the catalogue exempts
+## anything mobile from being solid at all), and is no door's: a hut or a post that holds her
+## (`detains_her()`) or the boom (`is_a_boom()`), a crossing the day keeps open, answered for a
+## walker by `WalkerDoorHold` at a hut or a post and for a car by `Crowd._stop_for_gates()` at the
+## boom, which detains nobody, so it is named by its own flag rather than by `detain_seconds`. The rows whose
+## ground the map's record of blocked tiles holds (`EventSpawner.obstructed_footprint()` asks it),
+## and the bodies the route rig keeps clear of before they are streamed in.
 func stands_as_a_fixed_body() -> bool:
 	return ground_shape() != null and has_a_body() and not moves() and not detains_her() \
 			and not is_a_boom()

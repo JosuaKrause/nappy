@@ -78,17 +78,17 @@ func _test_a_shared_marble_is_spent_like_a_plain_one(t: TestRunner) -> void:
 	var regular := MarbleBag.new([], [shared, shared, "x"], 6)
 	for _i in 3:
 		regular.draw()
-	t.check(shared.drawn == 2,
+	t.check(shared.draws_made() == 2,
 			"a fill of a bag holding two shared marbles and a plain one draws the shared bag twice "
-			+ "(%d)" % shared.drawn)
+			+ "(%d)" % shared.draws_made())
 	t.check(regular.left() == 0, "and the fill is spent")
 	for _i in 3:
 		regular.draw()
-	t.check(shared.drawn == 4, "the next fill draws it twice more (%d)" % shared.drawn)
+	t.check(shared.draws_made() == 4, "the next fill draws it twice more (%d)" % shared.draws_made())
 	var peeked := MarbleBag.shared(["a", "b", "c"], 8)
 	var through := MarbleBag.new([], [peeked, peeked], 1)
 	var looked: Variant = through.peek()
-	t.check(through.draw() == looked and peeked.drawn == 1,
+	t.check(through.draw() == looked and peeked.draws_made() == 1,
 			"a peek at it is the marble the draw takes, and the draw is one of the shared bag's")
 
 ## A rig takes from the bag being drawn from: a shared marble in it gives a draw of the shared bag
@@ -104,9 +104,9 @@ func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_i
 	for marble: Variant in front:
 		if str(marble).begins_with("s"):
 			from_shared += 1
-	t.check(shared.drawn == from_shared and not front.any(func(m: Variant) -> bool: return m is MarbleBag),
+	t.check(shared.draws_made() == from_shared and not front.any(func(m: Variant) -> bool: return m is MarbleBag),
 			"the shared marbles it took were draws of the shared bag, none left as a bag marble "
-			+ "(%d drawn, %d in the rig)" % [shared.drawn, from_shared])
+			+ "(%d drawn, %d in the rig)" % [shared.draws_made(), from_shared])
 	var in_front := regular.left()
 	for _i in in_front:
 		regular.draw()

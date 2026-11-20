@@ -81,8 +81,8 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t: TestRunner) -> voi
 		return
 	var instance := _instance(def)
 	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
-	instance.excitement.set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
-	t.check(instance.excitement.expected_impact_at(approach) > 0.0,
+	instance.source().set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+	t.check(instance.source().expected_impact_at(approach) > 0.0,
 			"walking straight at a stationary café five seconds out nets something, unlike " +
 			"standing in front of it")
 	instance.free()
@@ -109,18 +109,18 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t: TestRunner) -> void:
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON * 0.5
 	var player_pos := Vector2(-lead, 20.0)
-	instance.excitement.set_her_motion(player_velocity, decay, 1.0)
-	var caret_now := instance.excitement.expected_impact_at(player_pos)
+	instance.source().set_her_motion(player_velocity, decay, 1.0)
+	var caret_now := instance.source().expected_impact_at(player_pos)
 	t.check(caret_now > 0.0, "a pass through the field projects a positive net gain")
 
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / STEP))
 	for i in steps:
 		instance.step(STEP)
 		player_pos += player_velocity * STEP
-		var contribution := instance.excitement.contribution_at(player_pos)
+		var contribution := instance.source().contribution_at(player_pos)
 		if contribution > 0.0:
-			instance.excitement.accumulate_landed(contribution * STEP)
-	var landed := instance.excitement.landed()
+			instance.source().accumulate_landed(contribution * STEP)
+	var landed := instance.source().landed()
 	var halo_net := ExcitementSource.net_landed(landed, landed, decay * Tuning.EXPECTED_IMPACT_HORIZON)
 	t.close_to(halo_net, caret_now,
 			"the halo's net after the horizon matches what the caret projected at the start of " +
@@ -174,8 +174,8 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 			var decay := Tuning.EXCITEMENT_DECAY_WALKING
 			var lead := player_velocity.length() * horizon * 0.5
 			var player_pos := Vector2(-lead, 20.0)
-			instance.excitement.set_her_motion(player_velocity, decay, 1.0)
-			var caret_now := instance.excitement.expected_impact_at(player_pos)
+			instance.source().set_her_motion(player_velocity, decay, 1.0)
+			var caret_now := instance.source().expected_impact_at(player_pos)
 			t.check(caret_now > 0.0,
 					"%s at phase %.2fs still projects a positive net gain" % [id, start_age])
 			carets.append(caret_now)
@@ -184,10 +184,10 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 			for i in steps:
 				instance.step(STEP)
 				player_pos += player_velocity * STEP
-				var contribution := instance.excitement.contribution_at(player_pos)
+				var contribution := instance.source().contribution_at(player_pos)
 				if contribution > 0.0:
-					instance.excitement.accumulate_landed(contribution * STEP)
-			var landed := instance.excitement.landed()
+					instance.source().accumulate_landed(contribution * STEP)
+			var landed := instance.source().landed()
 			reals.append(ExcitementSource.net_landed(landed, landed, decay * horizon))
 			instance.free()
 
@@ -256,17 +256,17 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> v
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * horizon * 0.5
 	var player_pos := Vector2(-lead, 0.0)
-	a.excitement.set_her_motion(player_velocity, decay, 1.0)
-	b.excitement.set_her_motion(player_velocity, decay, 1.0)
+	a.source().set_her_motion(player_velocity, decay, 1.0)
+	b.source().set_her_motion(player_velocity, decay, 1.0)
 
-	var solo_sum := a.excitement.expected_impact_at(player_pos) + b.excitement.expected_impact_at(player_pos)
+	var solo_sum := a.source().expected_impact_at(player_pos) + b.source().expected_impact_at(player_pos)
 
-	var gross_a := a.excitement.expected_gross_at(player_pos)
-	var gross_b := b.excitement.expected_gross_at(player_pos)
+	var gross_a := a.source().expected_gross_at(player_pos)
+	var gross_b := b.source().expected_gross_at(player_pos)
 	var total_gross := gross_a + gross_b
-	a.excitement.set_expected_total_gross(total_gross)
-	b.excitement.set_expected_total_gross(total_gross)
-	var shared_sum := a.excitement.expected_impact_at(player_pos) + b.excitement.expected_impact_at(player_pos)
+	a.source().set_expected_total_gross(total_gross)
+	b.source().set_expected_total_gross(total_gross)
+	var shared_sum := a.source().expected_impact_at(player_pos) + b.source().expected_impact_at(player_pos)
 	t.check(shared_sum > solo_sum,
 			("sharing the decay reads higher in total than each netting the whole of it (%.1f " +
 					"solo vs %.1f shared)") % [solo_sum, shared_sum])
@@ -276,13 +276,13 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> v
 		a.step(STEP)
 		b.step(STEP)
 		player_pos += player_velocity * STEP
-		var contribution_a := a.excitement.contribution_at(player_pos)
+		var contribution_a := a.source().contribution_at(player_pos)
 		if contribution_a > 0.0:
-			a.excitement.accumulate_landed(contribution_a * STEP)
-		var contribution_b := b.excitement.contribution_at(player_pos)
+			a.source().accumulate_landed(contribution_a * STEP)
+		var contribution_b := b.source().contribution_at(player_pos)
 		if contribution_b > 0.0:
-			b.excitement.accumulate_landed(contribution_b * STEP)
-	var total_landed := a.excitement.landed() + b.excitement.landed()
+			b.source().accumulate_landed(contribution_b * STEP)
+	var total_landed := a.source().landed() + b.source().landed()
 	var actual_net := maxf(total_landed - decay * horizon, 0.0)
 	t.close_to(actual_net, shared_sum,
 			"the two shared carets sum to roughly what the bar actually nets from both sources " +
@@ -337,7 +337,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> 
 	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
 	# but past the inner radius (33) it would have to cross to end the day.
 	var her := wide.global_position + Vector2(0.0, 60.0)
-	t.check(not wide.excitement.will_be_lethal(her),
+	t.check(not wide.source().will_be_lethal(her),
 			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
 	wide.free()
 
@@ -497,7 +497,7 @@ func _test_the_mark_still_breathes(t: TestRunner) -> void:
 	for i in int(round(def.pulse_period / STEP)):
 		instance.step(STEP)
 		where.tell(approach)
-		instance.excitement.set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+		instance.source().set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
 		var carets := await _carets(t, instance)
 		var width: float = carets[0]["size"].x if not carets.is_empty() else 0.0
 		lowest = minf(lowest, width)

@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 			if at == Vector2.INF:
 				continue
 			var instance := _accident_at(map, at)
-			var half: float = instance.def.obstructs_radius
+			var half: float = instance.def.obstructs_within()
 			var open := _open_lanes(instance, half)
 			lanes_found += open.size()
 			var costs := PackedFloat32Array()
@@ -123,7 +123,7 @@ func _pass_cost(instance: EventInstance, offset: float) -> float:
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * STEP
 		travelled += Tuning.WALK_SPEED * STEP
-		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+		paid += (instance.source().contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 	return paid
 
 ## The open lanes as readable spans, so a run says where the gaps are rather than how many samples

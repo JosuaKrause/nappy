@@ -264,10 +264,10 @@ func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
 	var events := _events
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
-	t.check(pelican.is_pelican and _is_drawn_from(await _drawn_from(t, pelican),
+	t.check(pelican.is_drawn_as_a_pelican() and _is_drawn_from(await _drawn_from(t, pelican),
 			EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B),
 			"a rider rolled as the pelican is drawn as the pelican from its first frame")
-	t.check(not kid.is_pelican and _is_drawn_from(await _drawn_from(t, kid),
+	t.check(not kid.is_drawn_as_a_pelican() and _is_drawn_from(await _drawn_from(t, kid),
 			EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B),
 			"and one rolled as the kid is drawn as the kid")
 	var travelled := 0.0
@@ -278,12 +278,12 @@ func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
 		kid.step(STEP)
 		travelled = pelican.path_travelled()
 	t.check(travelled > 200.0, "the pelican rode %.0fpx of its 300px line" % travelled)
-	t.check(pelican.is_pelican and _is_drawn_from(await _drawn_from(t, pelican),
+	t.check(pelican.is_drawn_as_a_pelican() and _is_drawn_from(await _drawn_from(t, pelican),
 			EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B),
 			"and is still drawn as the pelican late in its ride")
-	t.check(not kid.is_pelican, "and the kid is still the kid")
+	t.check(not kid.is_drawn_as_a_pelican(), "and the kid is still the kid")
 	var dog := events.spawn_warned(EventCatalogue.by_id("loose_dog"), _ride(), true)
-	t.check(not dog.is_pelican, "a loose dog sent the same way is never the pelican, whatever its roll")
+	t.check(not dog.is_drawn_as_a_pelican(), "a loose dog sent the same way is never the pelican, whatever its roll")
 	for instance: EventInstance in [pelican, kid, dog]:
 		events.retire(instance)
 
@@ -307,7 +307,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t: TestRunner)
 	for ring: float in [0.0, 20.0, 40.0, 60.0, 85.0, 120.0]:
 		for step in 8:
 			var at: Vector2 = kid.global_position + Vector2.from_angle(TAU * step / 8.0) * ring
-			if pelican.excitement.contribution_at(at) != kid.excitement.contribution_at(at):
+			if pelican.source().contribution_at(at) != kid.source().contribution_at(at):
 				same_field = false
 			if pelican.is_lethal_at(at) != kid.is_lethal_at(at):
 				same_reach = false
@@ -453,7 +453,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 		ticks += 1
 		if events.instances().size() > before:
 			pelican = events.instances().back()
-	t.check(pelican != null and pelican.is_pelican,
+	t.check(pelican != null and pelican.is_drawn_as_a_pelican(),
 			"the warning ends in a pelican, %.2fs after it went up" % (ticks * STEP))
 	if pelican == null:
 		_untangle(events, stroller, [on_spawned, on_sighted, on_excited, on_struck], observer, clock,
@@ -471,12 +471,12 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	t.check(told["sighted"] == 1,
 			"on screen for three physics frames, its first is told once (%d)" % told["sighted"])
 
-	pelican.excitement.accumulate_landed(0.0)
+	pelican.source().accumulate_landed(0.0)
 	t.check(told["excited"] == 0, "nothing landed is nothing told")
-	pelican.excitement.accumulate_landed(1.5)
-	pelican.excitement.accumulate_landed(2.0)
+	pelican.source().accumulate_landed(1.5)
+	pelican.source().accumulate_landed(2.0)
 	var kid := events.spawn_warned(def, _ride(), false)
-	kid.excitement.accumulate_landed(4.0)
+	kid.source().accumulate_landed(4.0)
 	t.check(told["excited"] == 1,
 			"its first share of the meter is told once, and a kid's never (%d)" % told["excited"])
 

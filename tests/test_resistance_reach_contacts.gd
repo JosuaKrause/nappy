@@ -153,7 +153,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: Test
 			GivenRun.alley_tiles(run, [])
 			GivenRun.scars(run, [])
 			var closure_state := CityState.new()
-			closure_state.begin_day(city.map.block_plans, day)
+			closure_state.begin_day(city.map.plans_by_block(), day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
 			RunCity.events(city).start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
@@ -255,7 +255,7 @@ func _dawn_mark_tile(t: TestRunner, day: int, bodies: Array[Vector2i]) -> Vector
 	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures", SEED))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events", SEED), [],
 			_city.map.doorstep_world_position())

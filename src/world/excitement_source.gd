@@ -137,7 +137,11 @@ var landed_ever := 0.0
 ## Called once, on the first point this source lands on her, or not at all while unset: how a
 ## creator hears that a source reached her without this source knowing who asked
 ## (`EventSpawner`'s pelican).
-var on_first_landing := Callable()
+var _on_first_landing := Callable()
+
+## Hands it what it calls, once, when the first point lands on her (`accumulate_landed()`).
+func when_it_first_lands(tell: Callable) -> void:
+	_on_first_landing = tell
 
 var _first_landing_told := false
 
@@ -151,9 +155,9 @@ func accumulate_landed(points: float) -> void:
 	if points > 0.0:
 		_landed_history.append([clock(), points])
 		landed_ever += points
-		if on_first_landing.is_valid() and not _first_landing_told:
+		if _on_first_landing.is_valid() and not _first_landing_told:
 			_first_landing_told = true
-			on_first_landing.call()
+			_on_first_landing.call()
 
 ## The sum of every entry still inside `WINDOW`. Pruned here too, not only on write, so a source
 ## nobody has visited in a while reports honestly the moment it is asked.

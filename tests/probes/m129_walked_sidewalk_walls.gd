@@ -261,7 +261,7 @@ func _measure() -> void:
 ## The corridor, exactly as `tests/probes/m129_zero_cost_line.gd` plans it.
 func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	return RouteTree.for_day(map, day)
 
@@ -355,13 +355,13 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		if not plan.is_placed():
 			continue
 		var def := plan.def
-		if def.obstructs_radius <= 0.0 or def.role == EventDef.Role.SCENERY:
+		if def.obstructs_within() <= 0.0 or def.role == EventDef.Role.SCENERY:
 			continue
 		if def.id.begins_with(_DOOR_ID_PREFIX):
 			continue
 		var body := Body.new()
 		body.id = def.id
-		body.radius = def.obstructs_radius
+		body.radius = def.obstructs_within()
 		body.position = plan.position
 		body.source = int(provenance.get(plan.get_instance_id(), Source.OTHER))
 		body.paces = def.paces

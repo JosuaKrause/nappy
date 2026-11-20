@@ -332,7 +332,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	GivenRun.completed_steps(run, done)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(city.map.block_plans, DAY)
+	state.begin_day(city.map.plans_by_block(), DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
 	t.add_child(director)

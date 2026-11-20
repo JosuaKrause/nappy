@@ -223,7 +223,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	run.header().set_day(13)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, 13)
+	state.begin_day(_city.map.plans_by_block(), 13)
 	_city.start_day(state, 13, _rng(13, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(13), _rng(13, "events"), [],
 			_city.map.doorstep_world_position())
@@ -333,7 +333,7 @@ func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	run.resistance().set_progress(Tuning.RESISTANCE_GOAL if finale else 0)
 	var state := run.attempt_spend().block_arcs()
 	state.reset()
-	state.begin_day(_city.map.block_plans, day)
+	state.begin_day(_city.map.plans_by_block(), day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var before := _robbers_on_the_street()
@@ -367,7 +367,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: Resis
 		if hut == null:
 			director.free()
 			return
-		var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+		var out := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 				+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 		var her := hut.position + hut.facing * side * out
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(her)),
@@ -505,7 +505,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 	var through_a_door := false
 	var plan := _city.streets().region_plan()
 	for body: EventPlan in plan.door_bodies if plan else []:
-		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
+		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_within(),
 				start, her):
 			through_a_door = true
 	t.check(not through_a_door,
@@ -767,7 +767,7 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
 	robber.setup(def, start, PackedVector2Array(), Vector2.RIGHT, null, null, robber_where)
-	robber.came_under_a_warning = true
+	robber.arrive_from_its_warning()
 	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		robber.resume(EventSpawner.age_when_warned(def), 0.0)
 	var stroller := _rig_player(t, Vector2.ZERO)

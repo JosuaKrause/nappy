@@ -316,7 +316,7 @@ func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 	t.close_to(instance.travel_velocity().length(), 0.0,
 			"and it answers zero for how fast it is travelling, so nothing reads it as closing",
 			0.001)
-	t.check(instance.excitement.contribution_at(kerb + Vector2(def.inner_radius * 0.5, 0.0)) > 0.0,
+	t.check(instance.source().contribution_at(kerb + Vector2(def.inner_radius * 0.5, 0.0)) > 0.0,
 			"it is still emitting where it stands, which is the cost the pair is made of")
 	var travelled := instance.path_travelled()
 	_advance(instance, 6.0)
