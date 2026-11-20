@@ -1,7 +1,7 @@
 class_name CityEdge
 extends ScenerySprite
-## Where the main road leaves the map: a tunnel at the north end of the spine, a bridge at its
-## south end, and the east-west spine simply carrying on.
+## Where the main road leaves the map: a tunnel at the north end of the spine, with the dark ramp
+## inside its opening, and a bridge at the south end.
 ##
 ## **She can walk into one, and a car will kill her there.** That is the point: it makes the end of
 ## the map an emergent end rather than an artificial one. A wall says *the game stops here*; a
@@ -40,15 +40,12 @@ enum Piece {
 	TUNNEL,   ## North: the portal's face, and the mountain over the road beyond it.
 	TUNNEL_DARK,  ## North: the dark inside the portal's opening, over whatever drives into it.
 	BRIDGE,   ## South: the deck runs out between two parapets.
-	ROAD_EAST,
-	ROAD_WEST,
 }
 
 ## Region names on the `street_kit` atlas group — `_enter_tree()`/`_exit_tree()` acquire and
 ## release it alongside `ground`, below.
 const TUNNEL := &"props/tunnel_mouth"
 const BRIDGE := &"props/bridge_deck"
-const ROAD_ON := &"props/road_on"
 ## The same tile the border paints north of the city, so the roof this piece puts over the tunnel
 ## is pixel for pixel the mountainside around it. On the `ground` atlas group rather than
 ## `street_kit`, because the ground compositor already holds every tile picture there — nothing
@@ -114,10 +111,6 @@ func _draw() -> void:
 			_swallow_the_road()
 		Piece.BRIDGE:
 			_lay_the_deck()
-		Piece.ROAD_EAST:
-			_blit(ROAD_ON, Vector2(0.0, -0.5))
-		_:
-			_blit(ROAD_ON, Vector2(-1.0, -0.5))
 
 ## The deck, laid end to end for `BRIDGE_DECK_PX`: one picture is a block long, and a view past the
 ## border shows the road carrying on over the water, so the deck never stops short of the frame.
