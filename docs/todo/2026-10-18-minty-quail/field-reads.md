@@ -61,7 +61,7 @@ errors. What remains is this item's own conversion, which predates the review, s
 minty-quail rather than polite-tapir.
 
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
-is the files open work rewrites, typed by that work or after it, and two kept for a reason of their
+is the files open work rewrites, typed by that work or after it, and one kept for a reason of its
 own:
 
 - The walk's ground (`src/events/walk_ground.gd`), which row 3a of `event-interface.md` rewrites; and

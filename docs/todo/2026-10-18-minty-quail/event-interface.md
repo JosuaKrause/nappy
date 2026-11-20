@@ -620,7 +620,7 @@ counted where it only writes.
 | `placement` | 4 in (the scheduler nine times, the director, the pending warning) | row `stands_on(tile_type)` ok, `ground_kinds()` ok, `stands_only_in_alleys()` ok |
 | `pavement_side` | 2 in, 1 out (`SealPlanner`) | row `sidewalk_lane()` ok; a draft for the seal's copy |
 | `_spans_the_street` | private already | row `spans_the_street()` ok; the draft's `spanning_the_street()` replaces `span_the_street()` |
-| `spawn_mode`, `from_day_after` (`DaySwitch`: `after_day`, `spawn_mode`, `notice`) | 2 in; 7 lines of `DaySwitch`, all in | row `spawn_mode_on(day)` ok, `for_day(day)` ok, `comes_down_her_line()` ok, `crosses_ahead_of_her()`; `DaySwitch` becomes private to the row |
+| `spawn_mode`, `from_day_after` (`DaySwitch`: `after_day`, `spawn_mode`, `notice`) | 2 in; 7 lines of `DaySwitch`, all in | row `spawn_mode_on(day)` ok, `for_day(day)` ok, `comes_down_her_line()` ok, `comes_toward_her()` ok, `is_placed_on_the_map()` ok, `is_past_its_switch_on(day)` ok, `crosses_ahead_of_her()`; `DaySwitch` becomes private to the row |
 | `on_her_way` (`OnHerWay.at_a_front`) | 2 in | row `is_sited_from_her_walk()` ok, `stands_at_a_front()` ok, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` ok |
 | `role` | 2 in | row `is_scenery()` ok, `is_a_mast()` ok; plan `is_a_mast()` |
 | `ambient_source` | 1 in (the scheduler) | row `ambient_source()` |
@@ -649,7 +649,7 @@ counted where it only writes.
 | `pursuit` | 12 in | `pursues()` on all three ok; row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()` ok; the pursuit behaviour is handed the spec |
 | `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()` ok, `leaves_its_body_standing()`, `is_drawn_over_the_street()` ok); built by `PursuitSpec.at(speed).walking_at(...)` |
 | `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()` ok, row and plan `notice_within()` ok; the spec's `within()`, `is_quiet()` ok, `runs_within()`; meanwhile the row's `runs_its_own_line()` (a notice that runs its own line) and `warns_quietly()` (no notice, or a quiet one) ok, which the live event asks; `runs_its_own_line()`'s expression is still written out in `EventInstance.counts_a_charge()`, which asks it when the live event's notice section is converted, and in `EventDef.validate()`, with the row written as its parts (4b) |
-| `hunts`, `hunting`, `heat_response` (`HuntSpec`: `lets_out`, `pursuit`, `ends_the_day`) | the row itself, `EventsAhead`; 3 lines of the spec | row `answers_to_heat()`, `investigates()` ok, `lets_out()` ok, `at_heat(level)` ok |
+| `hunts`, `hunting`, `heat_response` (`HuntSpec`: `lets_out`, `pursuit`, `ends_the_day`) | the row itself, `EventsAhead`; 3 lines of the spec | row and live `hunts_for_her()` ok, `investigates()` ok, `lets_out()` ok, `at_heat(level)` ok |
 | `telegraph_time` | 4 in | row, live and plan `telegraphs_for()` ok; row `warning_time()` ok, `warned_for()` ok |
 | `still_while_telegraphing` | 3 in | the warning part's `holds_still()` (the row's, asked by the live event ok); row `ahead_of_player_lead()` ok |
 | `telegraphs` | 2 in | row `telegraphs_its_coming()`, `announces_its_coming(walk_speed)` ok |

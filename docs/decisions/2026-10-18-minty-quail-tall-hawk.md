@@ -6,8 +6,8 @@ event through methods (inbox #1173 in gray-dolphin; **designing-classes**). This
 folder), built by a Sonnet agent.
 
 **What was built.** The row (`EventDef`) answers `is_past_its_switch_on(day)`, `comes_toward_her()`,
-`is_placed_on_the_map()`, `noun_for(count)` and `hunts_for_her()`, and `comes_down_her_line()` asks the first with
-`keeps_to_the_carriageway()`; the live event forwards `hunts_for_her()`. The event director and `EventsAhead` ask these
+`is_placed_on_the_map()`, `noun_for(count)` and `hunts_for_her()`, and `comes_down_her_line()` asks `comes_toward_her()`
+with `keeps_to_the_carriageway()`; the live event forwards `hunts_for_her()`. The event director and `EventsAhead` ask these
 instead of reading fields; the director's stale opt-out line goes, so it is typed; `EventDirector.crossing_ahead_of()`
 is public, which the scene recipes call. `tools/field_reads.txt` loses fifteen lines. The director's placement
 fingerprint prints the same lines on main and on the branch; nothing a player sees or the run log records changes.
