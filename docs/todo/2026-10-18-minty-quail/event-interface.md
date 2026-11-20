@@ -338,7 +338,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does it take a whole section of a street | row `spans_the_street()` ok | the row |
 | How often is it drawn, here, and how many may stand | row `drawn_as_often()` ok, `weight_on(ground)` ok (`UnitFills`), `most_in_a_day()` ok | the row |
 | Does it close ground, and how far | row `closes_ground()`, `obstructs_within()` ok | body |
-| Does it stop her, how far, and where are its pieces | row `has_a_body()`, `solid_reach()` ok, `body_pieces()` ok, `ground_shape()` | body |
+| Does it stop her, how far, and where are its pieces | row `has_a_body()` ok, `solid_reach()` ok, `body_pieces()` ok, `ground_shape()` ok | body |
 | Is its body recorded on the ground for the whole day (a standing body that is no door and no boom) | row `stands_as_a_fixed_body()` ok | body, hold |
 | Does entering it end the day, and within what | row `ends_the_day()` ok, `lethal_reach()` ok, `effect()` ok | lethal |
 | How far does its field reach, and how far does it charge more than a walk takes off | row `field_reach()` ok, `line_reach()` ok, `reach_above(rate)` ok, `has_a_field()` ok, `reaches_the_far_lane()` ok | field (with body and route) |
@@ -540,8 +540,8 @@ The placement track owns `src/events/street_rules/`, `marble_draw.gd`,
 `day_locations.gd`, `view_bag.gd` and the scheduler's blocks, and it is being built now. Its files
 ask a row and a plan almost only through methods already (`row()`, `line_reach()`,
 `obstructs_within()`, `notice_within()`, `counts_against_the_line()`, `reach_touches()`,
-`denies()`, `obstructs()`, `blocking_radius()`). What is left in them is `row().paces` in five
-places, `row().id` in one, and the cache keys the scheduler builds out of a row's settings. **The
+`denies()`, `obstructs()`, `blocking_radius()`). What is left in them is the dawn's `plan.row().x()`
+calls, which row 3a's last pull request turns into the plan's questions. **The
 rule for the track: a new line there asks a method, and where the method is missing the placement
 pull request adds it to `event_def.gd` or to the plan under the name below**, so the events'
 conversion finds nothing to redo in those files.
@@ -558,7 +558,7 @@ conversion finds nothing to redo in those files.
 | 3, one declared density table | a row's weight, and its weight on one kind of ground | row `drawn_as_often()` ok, `weight_on(ground)` ok (`UnitFills`: its weight times its own factor for that ground, 1 where the row names none) |
 | 3 | which ground takes a row | row `stands_on(tile_type)` ok, `ground_kinds()` ok, `stands_only_in_alleys()` ok, `sidewalk_lane()` ok, `lies_as_a_spread()` ok |
 | 3 | rows that take the same ground share one cached answer (today a key built from `placement`, `pavement_side`, `hard_fail` and `has_a_spread` in five places) | `RowGround` keys its caches by the row's own answers (`ground_kinds()`, `sidewalk_lane()`, `lies_as_a_spread()`, `burns_its_front()`, `ends_the_day()`) |
-| 3 | a row's role by view (wall, friction, set piece), which `EventScheduler.role_for()` works out | row `ends_the_day()` (new), `walk_through_cost()` ok, `is_scenery()` ok, `is_a_one_shot()` ok, `spawn_mode_on(day)` ok, `line_reach()` ok |
+| 3 | a row's role by view (wall, friction, set piece), which `EventScheduler.role_for()` works out | row `ends_the_day()` ok, `walk_through_cost()` ok, `is_scenery()` ok, `is_a_one_shot()` ok, `spawn_mode_on(day)` ok, `line_reach()` ok |
 | 3 | a row's act, for the table's act column | row `act()` (new) |
 | 3 | the most of a row a day stands | row `most_in_a_day()` ok; once step 2 drops the caps for drawn rows its callers are the director's moments and the scene recipes, and the step says whether any is left |
 | 4, the beats as rigged marbles | is a row sited from her walk, at a building's front; is it the set piece | row `is_sited_from_her_walk()` ok, `stands_at_a_front()` ok, `is_a_set_piece_on_her_way()` ok, `is_handed_to_her_walk()` ok |
@@ -607,7 +607,7 @@ counted where it only writes.
 
 | Field | Reader files | Replaced by |
 |---|---|---|
-| `id` | 9 in, 2 out (the scene recipes, the resistance) | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` |
+| `id` | 9 in, 2 out (the scene recipes, the resistance) | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` ok |
 | `display_name` | written by the catalogue; no reader in `src/`, `tests/` or `tools/` | deleted, nobody would miss it (section 7) |
 | `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun(count)` |
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
