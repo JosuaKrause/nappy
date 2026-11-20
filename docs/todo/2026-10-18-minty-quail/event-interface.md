@@ -332,22 +332,22 @@ sites, and the seal and region planners under `src/routes/`.
 |---|---|---|
 | Is the row available on this day | row `available_on(day)` ok | the row |
 | Is it placed at dawn, sited from her walk, or sited by the director, on this day | row `spawn_mode_on(day)` ok, `is_sited_from_her_walk()` ok, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` ok | the row |
-| Which kind of row is it | row `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()`; `ambient_source()` | the row |
-| Which ground takes it | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `sidewalk_lane()`, `stands_at_a_front()` ok | the row |
-| Does it need one street to lie across (so a corner is no site) | row `lies_as_a_spread()` | body |
+| Which kind of row is it | row `is_ambient()` ok, `is_a_one_shot()` ok, `is_scripted()`; `ambient_source()` | the row |
+| Which ground takes it | row `stands_on(tile_type)` ok, `ground_kinds()` ok, `stands_only_in_alleys()` ok, `sidewalk_lane()` ok, `stands_at_a_front()` ok | the row |
+| Does it need one street to lie across (so a corner is no site) | row `lies_as_a_spread()` ok | body |
 | Does it take a whole section of a street | row `spans_the_street()` ok | the row |
-| How often is it drawn, here, and how many may stand | row `drawn_as_often()` ok, `drawn_as_often_on(ground)`, `most_in_a_day()` ok | the row |
+| How often is it drawn, here, and how many may stand | row `drawn_as_often()` ok, `weight_on(ground)` ok (`UnitFills`), `most_in_a_day()` ok | the row |
 | Does it close ground, and how far | row `closes_ground()`, `obstructs_within()` ok | body |
-| Does it stop her, how far, and where are its pieces | row `has_a_body()`, `solid_reach()` ok, `body_pieces()` (today `parts()`), `ground_shape()` | body |
+| Does it stop her, how far, and where are its pieces | row `has_a_body()` ok, `solid_reach()` ok, `body_pieces()` ok, `ground_shape()` ok | body |
 | Is its body recorded on the ground for the whole day (a standing body that is no door and no boom) | row `stands_as_a_fixed_body()` ok | body, hold |
 | Does entering it end the day, and within what | row `ends_the_day()` ok, `lethal_reach()` ok, `effect()` ok | lethal |
 | How far does its field reach, and how far does it charge more than a walk takes off | row `field_reach()` ok, `line_reach()` ok, `reach_above(rate)` ok, `has_a_field()` ok, `reaches_the_far_lane()` ok | field (with body and route) |
 | What does walking through it cost | row `walk_through_cost()` ok | field |
 | Does a zero-cost line have to get past it | row `has_a_line_to_avoid()` ok; plan `counts_against_the_line()` ok | the row; the plan |
 | Does it wait for her, and within what | row `notice_within()` ok | notice |
-| Does it move, pace a beat, pursue | row `moves()`, `paces_a_beat()`, `pursues()` | route, pursuit |
+| Does it move, pace a beat, pursue | row `moves()` ok, `paces_a_beat()` ok, `pursues()` ok | route, pursuit |
 | How is its route built (asked by the plan builder, which is handed the part) | the route part's `kind()`, `tiles()` | route |
-| Is it scenery, is it the mast | row `is_scenery()`, `is_a_mast()` ok | the row |
+| Is it scenery, is it the mast | row `is_scenery()` ok, `is_a_mast()` ok | the row |
 | What does it leave or call in | row `scar_id()`, `leaves_behind()` ok, `calls_in()` | aftermath |
 | Where does a plan stand, walk, face | plan `is_placed()` ok, `placed_at()` ok, `walks()` ok, `stands_still()` ok, `ends()` ok, `faces()` | the plan |
 | How far is a plan from a point or another plan | plan `distance_from(at)` ok, `gap_to(other)` ok | the plan |
@@ -355,7 +355,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does a plan deny a point, touch a rect, reach a rect, spoil a calm area | plan `denies()` ok, `reach_touches()` ok, `reaches()` ok, `spoils()` ok | the plan, asking field and route |
 | Does a plan keep its lethal field clear of other events | plan `keeps_its_field_clear()` ok | the plan, asking lethal and pursuit |
 | Is a plan a fixed part, a door, in the wall, a mast | plan `is_a_fixed_part()` ok, `is_door()` ok, `is_in_the_wall()` ok, `is_a_mast()`, `mast_id()` | the plan |
-| Are two plans the same row (one of a row per street) | plan `is_the_same_row_as(other)`, `row_id()` ok | the plan |
+| Are two plans the same row (one of a row per street) | plan `is_the_same_row_as(other)` ok, `row_id()` ok | the plan |
 | The role the day gave it | plan `role()`, `give_role()` ok | the plan |
 
 ### 2.3 The crowd and the traffic
@@ -369,7 +369,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 | Which door bodies hold a walker (asked once as a day starts, `Crowd`) | plan `detains_her()` ok, `placed_at()` ok | hold |
 | The discs of the wall's and the doors' bodies, for siting (`DayStreets.siting_region()`) | plan `obstructs_within()` ok, `placed_at()` ok | body |
 | Is a figure standing still walked round or walked through; has it parked for good | asked by the live body as it fills its event's move: the body part's `is_walked_round()`, `parks()` (the row's until the body part exists, asked by `EventBody`; the event writes the move from its answers ok) | body |
-| Which tiles a standing body takes (the map's blocked record, written by `EventSpawner`) | row `stands_as_a_fixed_body()` ok, `body_pieces()` | body |
+| Which tiles a standing body takes (the map's blocked record, written by `EventSpawner`) | row `stands_as_a_fixed_body()` ok, `body_pieces()` ok | body |
 | Is the boom up | live `is_raised()` ok | body |
 
 ### 2.4 Her and the baby
@@ -411,12 +411,13 @@ shared state. What it asks, and what the event is asked on its behalf:
 | What an encounter was (`EncounterWatch`, inside the events) | live `detains_her()` ok, `source()` ok; its own record kept in its own table, not on the live event | hold, field |
 
 **What the bus carries about an event.** Six signals of the bus (`src/autoload/event_bus.gd`:
-`event_telegraphed`, `event_activated` and the four `pelican_*`) carry the live event in an untyped
-parameter, the whole of what that file's opt-out line is for. The layer map has the bus on the
-model layer, so typing them `EventInstance` would make the model name the simulation. *Proposed,
-not asked for:* row 3b types them `Node2D`, what a live event is and what the model may name, and
-the listeners read `as EventInstance` as the run log's already does. The plainer alternative is to
-keep the opt-out line on the bus as the one file that cannot be typed, with its reason.
+`event_telegraphed`, `event_activated` and the four `pelican_*`) carry the live event typed `Node2D`, what a
+live event is and what the model may name, since the layer map has the bus on the model layer and
+typing them `EventInstance` would make the model name the simulation; the run log's observer reads
+its `as EventInstance`, the HUD and the auto screenshot take an `EventInstance`, which is all a signal carries, and
+GoatCounter's visit counter reads nothing of it (row 3b's first pull request, the record
+minty-quail-curly-penguin). *Proposed, not asked for:* the type; the plainer alternative is to keep the
+opt-out line on the bus as the one file that cannot be typed, with its reason.
 
 ### 2.7 The resistance
 
@@ -506,11 +507,11 @@ minty-quail-olive-finch).
 | `kind != AMBIENT and pursuit == null and vehicle == null and not warned_first and not starts_by(ARRIVES_CHASING)` | the park cordon | live `is_ambient()` ok, `was_sent_at_her()` ok, `drives()` ok |
 | `solid_when == WHILE_LOWERED`, five places; `redetains` read as "this is a door's hut or post", six places | the live event and its hold, the spawner, the resistance, the route rig (the checkpoint controller asks already) | row and live `is_a_boom()` ok, `detains_again()` ok; the plan's `is_a_boom()` ok and `detains_again()` ok |
 | `on_her_way != null and on_her_way.at_a_front`, three times; `on_her_way != null and kind == ONE_SHOT`, twice | the scheduler, streaming | row `stands_at_a_front()` ok, `is_a_set_piece_on_her_way()` ok |
-| `placement.size() == 1 and placement[0] == ALLEY` | the scheduler | row `stands_only_in_alleys()` |
+| `placement.size() == 1 and placement[0] == ALLEY` | the scheduler | row `stands_only_in_alleys()` ok |
 | `vehicle and vehicle.field_from_its_centre`, three times | `EventDef`, `EventInstance` | the field part's `datum()` (the row's `datum()` until the field part exists ok) |
 | the ramp over its duration and the pulse, five fields | `EventInstance.current_intensity()` | the field part's `peak_through(age, into_its_burst)` (the row's `peak_through(age, into_its_burst, beat)` until the field part exists ok; the caret passes its closed-form mean as `beat`) |
 | `mast_id == "" or def.role != MAST or silenced`, once | the resistance | plan `is_a_live_mast()` ok |
-| `plan.row().id == candidate.row().id` | the street rules | plan `is_the_same_row_as(other)` |
+| `plan.row().id == candidate.row().id` | the street rules | plan `is_the_same_row_as(other)` ok |
 | `age`, `travelled`, `noticed_at`, `behaviours` copied out and back one by one | streaming | live `save()`, `restore(save)`; plan `keep(save)`, `saved()` |
 | `departure.walks_a_way()`, `on_foot.walks_back()`, `barrier_post.has_left_its_body()` | the scene recipes' held event | live `walks_straight_away()` ok |
 
@@ -540,8 +541,8 @@ The placement track owns `src/events/street_rules/`, `marble_draw.gd`,
 `day_locations.gd`, `view_bag.gd` and the scheduler's blocks, and it is being built now. Its files
 ask a row and a plan almost only through methods already (`row()`, `line_reach()`,
 `obstructs_within()`, `notice_within()`, `counts_against_the_line()`, `reach_touches()`,
-`denies()`, `obstructs()`, `blocking_radius()`). What is left in them is `row().paces` in five
-places, `row().id` in one, and the cache keys the scheduler builds out of a row's settings. **The
+`denies()`, `obstructs()`, `blocking_radius()`). What is left in them is the dawn's `plan.row().x()`
+calls, which row 3a's last pull request turns into the plan's questions. **The
 rule for the track: a new line there asks a method, and where the method is missing the placement
 pull request adds it to `event_def.gd` or to the plan under the name below**, so the events'
 conversion finds nothing to redo in those files.
@@ -550,21 +551,21 @@ conversion finds nothing to redo in those files.
 |---|---|---|
 | 1, the route's ground rule (no body's disc and no lethal row's inner disc on a route's tile off the sidewalks) | does a plan block; the disc it shuts; where it stands | plan `obstructs()` ok, `blocking_radius()` ok, `placed_at()` ok |
 | 1 | is a row asked the route rules at all (not scenery, not a pursuer, not a mast, not a door) | plan `counts_against_the_line()` ok |
-| 1 | does a row pace, and where is its beat | row `paces_a_beat()` (new; replaces the five `row().paces`), plan `walks()` ok |
-| 2, a street drawn as one unit | at most one of a row per street | plan `is_the_same_row_as(other)` (new; replaces `row().id == row().id`) |
-| 2 | is a drawn row one with a body, so the crowd recycles a car standing where it lands | row `closes_ground()` (new), `stands_as_a_fixed_body()` ok, `body_pieces()` (today `parts()`) |
+| 1 | does a row pace, and where is its beat | plan `paces_a_beat()` ok (replaces the five `row().paces`), plan `walks()` ok |
+| 2, a street drawn as one unit | at most one of a row per street | plan `is_the_same_row_as(other)` ok (replaces `row().id == row().id`) |
+| 2 | is a drawn row one with a body, so the crowd recycles a car standing where it lands | row `closes_ground()` (new), `stands_as_a_fixed_body()` ok, `body_pieces()` ok |
 | 2 | does a row take a whole section | row `spans_the_street()` ok |
 | 2 | the same rows on the same tiles along two walks (the step's test) | plan `row_id()` ok, `placed_at()` ok |
-| 3, one declared density table | a row's weight, and its weight on one kind of ground | row `drawn_as_often()` ok, `drawn_as_often_on(ground)` (new: its weight times its own factor for that ground, 1 where the row names none) |
-| 3 | which ground takes a row | row `stands_on(tile_type)` (new), `ground_kinds()` (new), `stands_only_in_alleys()` (new), `sidewalk_lane()` (new), `lies_as_a_spread()` (new) |
-| 3 | rows that take the same ground share one cached answer (today a key built from `placement`, `pavement_side`, `hard_fail` and `has_a_spread` in five places) | row `ground_key()` (new: one string the row gives) |
-| 3 | a row's role by view (wall, friction, set piece), which `EventScheduler.role_for()` works out | row `ends_the_day()` (new), `walk_through_cost()` ok, `is_scenery()` (new), `is_a_one_shot()` (new), `spawn_mode_on(day)` ok, `line_reach()` ok |
+| 3, one declared density table | a row's weight, and its weight on one kind of ground | row `drawn_as_often()` ok, `weight_on(ground)` ok (`UnitFills`: its weight times its own factor for that ground, 1 where the row names none) |
+| 3 | which ground takes a row | row `stands_on(tile_type)` ok, `ground_kinds()` ok, `stands_only_in_alleys()` ok, `sidewalk_lane()` ok, `lies_as_a_spread()` ok |
+| 3 | rows that take the same ground share one cached answer (today a key built from `placement`, `pavement_side`, `hard_fail` and `has_a_spread` in five places) | `RowGround` keys its caches by the row's own answers (`ground_kinds()`, `sidewalk_lane()`, `lies_as_a_spread()`, `burns_its_front()`, `ends_the_day()`) |
+| 3 | a row's role by view (wall, friction, set piece), which `EventScheduler.role_for()` works out | row `ends_the_day()` ok, `walk_through_cost()` ok, `is_scenery()` ok, `is_a_one_shot()` ok, `spawn_mode_on(day)` ok, `line_reach()` ok |
 | 3 | a row's act, for the table's act column | row `act()` (new) |
 | 3 | the most of a row a day stands | row `most_in_a_day()` ok; once step 2 drops the caps for drawn rows its callers are the director's moments and the scene recipes, and the step says whether any is left |
 | 4, the beats as rigged marbles | is a row sited from her walk, at a building's front; is it the set piece | row `is_sited_from_her_walk()` ok, `stands_at_a_front()` ok, `is_a_set_piece_on_her_way()` ok, `is_handed_to_her_walk()` ok |
 | 4 | a rigged marble takes its location | plan `stand_where(sited)` ok, `face(direction)` ok (the design's pick in place of `place_at(at)`, open to the player) |
-| the breakup's `PlanBuilder` | how a row's route is built; the lane it stands in; its body's pieces | the route part's `kind()` and `tiles()`, handed to the builder by `row.route()`; row `sidewalk_lane()`, `ground_shape()`, `body_pieces()` (all new) |
-| the breakup's `RowGround` | which tiles a row may stand on | the step-3 ground questions and `ground_key()` |
+| the breakup's `PlanBuilder` | how a row's route is built; the lane it stands in; its body's pieces | the route part's `kind()` and `tiles()`, handed to the builder by `row.route()`; row `sidewalk_lane()` ok, `ground_shape()` ok, `body_pieces()` ok |
+| the breakup's `RowGround` | which tiles a row may stand on | the step-3 ground questions, its caches keyed by the row's own answers |
 | every step | how far a row's field, body, lethal reach and notice reach | row `field_reach()`, `line_reach()`, `obstructs_within()`, `solid_reach()`, `lethal_reach()`, `notice_within()`, all ok |
 
 Two notes for the track. **`blocking_radius()` reads a lethal row's field core
@@ -607,31 +608,31 @@ counted where it only writes.
 
 | Field | Reader files | Replaced by |
 |---|---|---|
-| `id` | 9 in, 2 out (the scene recipes, the resistance) | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` |
+| `id` | 9 in, 2 out (the scene recipes, the resistance) | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` ok |
 | `display_name` | written by the catalogue; no reader in `src/`, `tests/` or `tools/` | deleted, nobody would miss it (section 7) |
 | `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun(count)` |
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
-| `act_tag` | 1 in, 1 out (`SealPlanner`) | row `act()`; set by `EventDraft.from_day(first_day, act)` |
-| `kind` | 3 in, 1 out (`SealPlanner`) | row and plan `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()` |
-| `first_day`, `last_day`, `scripted_day` | the catalogue; `SealPlanner` copies `first_day` | row `available_on(day)` ok; a draft for the copy |
-| `weight` | the catalogue; `at_heat()` | row `drawn_as_often()` ok, `drawn_as_often_on(ground)` |
+| `act_tag` | 1 in (the row's `own_first_day()`), and `tests/test_acts.gd` | row `act()` for the test's read (4a); set by `EventDraft.from_day(first_day, act)` |
+| `kind` | 3 in | row and plan `is_ambient()` ok, `is_a_one_shot()` ok, `is_scripted()` |
+| `first_day`, `last_day`, `scripted_day` | the catalogue; `SealPlanner` asks the row's `own_first_day()` (3a) | row `available_on(day)` ok, `own_first_day()` ok |
+| `weight` | the catalogue; `at_heat()` | row `drawn_as_often()` ok, `weight_on(ground)` ok (`UnitFills`) |
 | `max_per_day` | 3 in, 1 out (the scene recipes) | row `most_in_a_day()` ok |
-| `placement` | 4 in (the scheduler nine times, the director, the pending warning) | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `ground_key()` |
-| `pavement_side` | 2 in, 1 out (`SealPlanner`) | row `sidewalk_lane()`; a draft for the seal's copy |
+| `placement` | 4 in (the scheduler nine times, the director, the pending warning) | row `stands_on(tile_type)` ok, `ground_kinds()` ok, `stands_only_in_alleys()` ok |
+| `pavement_side` | 2 in, 1 out (`SealPlanner`) | row `sidewalk_lane()` ok; a draft for the seal's copy |
 | `_spans_the_street` | private already | row `spans_the_street()` ok; the draft's `spanning_the_street()` replaces `span_the_street()` |
 | `spawn_mode`, `from_day_after` (`DaySwitch`: `after_day`, `spawn_mode`, `notice`) | 2 in; 7 lines of `DaySwitch`, all in | row `spawn_mode_on(day)` ok, `for_day(day)` ok, `comes_down_her_line()` ok, `crosses_ahead_of_her()`; `DaySwitch` becomes private to the row |
 | `on_her_way` (`OnHerWay.at_a_front`) | 2 in | row `is_sited_from_her_walk()` ok, `stands_at_a_front()` ok, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` ok |
-| `role` | 2 in | row `is_scenery()`, `is_a_mast()` ok; plan `is_a_mast()` |
+| `role` | 2 in | row `is_scenery()` ok, `is_a_mast()` ok; plan `is_a_mast()` |
 | `ambient_source` | 1 in (the scheduler) | row `ambient_source()` |
 | `duration` | 3 in | row `lasts_for()`; the field asks it for its swell |
 | `departs_at` | the catalogue | row `departure_speed()` ok |
-| `repeat_every`, `repeat_after` | 2 in | row `comes_again_every()` ok, `comes_again_after()`, asked once as a plan is made; plan `repeats()` ok |
+| `repeat_every`, `repeat_after` | 2 in | row `comes_again_every()` ok, `comes_again_after()` ok, asked once as a plan is made; plan `repeats()` ok |
 | `shape` | 11 in, 2 out (the happenings, `SealPlanner`) | row and live `ground_shape()` ok; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
 | `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()` ok; a draft copies parts, so the hand copy goes |
 | `obstructs_radius` | 10 in, 1 out (`SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()` ok, `solid_reach()` ok; the looks and the footprints ask the row's `drawn_width()` ok, twice the radius, for the run of a spread, a rank or a wide scene (floored at 11px) and for a stationary vehicle's side, its `has_a_body()` ok for whether it has a body and `obstructs_within()` ok for its shadow's disc |
 | `solid_when` | 4 in | row `is_a_boom()` ok, plan `is_a_boom()` ok, `stands_as_a_fixed_body()` ok; the body part's `solid_from()` for the live body (the row's until the body part exists ok); live `is_solid()` ok |
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body (the row's until the body part exists ok) |
-| `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints (the row's `lies()`, an `EventDef.Lie`, until the body part exists, ok) |
+| `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()` ok; the body part's `lies()` (one choice of four) for the footprints (the row's `lies()`, an `EventDef.Lie`, until the body part exists, ok) |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in; 3 lines of the spec | row `drives()` ok; the field part's `datum()` |
 | `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks (the row's `peak()` and `peak_through()` until the field part exists ok) |
 | `inner_radius` | 6 in | row `core_within()` ok (the canvas looks ask it); live `core_reaches(point)` ok, `field_rings()` ok; the flock and the looks are handed the field's spec |
@@ -645,7 +646,7 @@ counted where it only writes.
 | `detain_seconds` | 6 in | row and plan `detains_her()` ok, live `detains_her()` ok; `detains_for()` ok |
 | `detain_radius` | the catalogue | row `detain_distance()` ok |
 | `redetains` | the live event and its hold | row and live `detains_again()` ok, plan `detains_again()` ok |
-| `pursuit` | 12 in | `pursues()` on all three (the row's and the live event's exist); row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()` ok; the pursuit behaviour is handed the spec |
+| `pursuit` | 12 in | `pursues()` on all three ok; row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()` ok; the pursuit behaviour is handed the spec |
 | `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()` ok, `leaves_its_body_standing()`, `is_drawn_over_the_street()` ok); built by `PursuitSpec.at(speed).walking_at(...)` |
 | `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()` ok, row and plan `notice_within()` ok; the spec's `within()`, `is_quiet()` ok, `runs_within()`; meanwhile the row's `runs_its_own_line()` (a notice that runs its own line) and `warns_quietly()` (no notice, or a quiet one) ok, which the live event asks; `runs_its_own_line()`'s expression is still written out in `EventInstance.counts_a_charge()`, which asks it when the live event's notice section is converted, and in `EventDef.validate()`, with the row written as its parts (4b) |
 | `hunts`, `hunting`, `heat_response` (`HuntSpec`: `lets_out`, `pursuit`, `ends_the_day`) | the row itself, `EventsAhead`; 3 lines of the spec | row `answers_to_heat()`, `investigates()` ok, `lets_out()` ok, `at_heat(level)` ok |
@@ -653,7 +654,7 @@ counted where it only writes.
 | `still_while_telegraphing` | 3 in | the warning part's `holds_still()` (the row's, asked by the live event ok); row `ahead_of_player_lead()` ok |
 | `telegraphs` | 2 in | row `telegraphs_its_coming()`, `announces_its_coming(walk_speed)` ok |
 | `warned_first`, `offscreen_notice` | 1 in; 2 in | row `warns_before_it_exists()` ok, `warned_for()` ok, `was_sent_at_her()`, `as_warned_first()` ok |
-| `mobile` | 10 in | row `moves()`, `approach_speed()` ok |
+| `mobile` | 10 in | row `moves()` ok, `approach_speed()` ok |
 | `speed` | 7 in, 1 out (the resistance) | row `speed()` |
 | `paces` | 4 in, 1 out (the happenings) | row `paces_a_beat()` ok; live `beat()` ok |
 | `path_mode`, `path_length_tiles` | 3 and 2 in | the route part's `kind()`, `tiles()`, asked by the plan builder |
@@ -663,7 +664,7 @@ counted where it only writes.
 | `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only (meanwhile the row's `casts_a_shadow()`, `drags_a_lead()` and `vanishes_into_its_hold()` ok, asked by the footprints; `warning_picture` still a listed read) |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
 | `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods; meanwhile, until the look is handed the spec, the van's look reads it off the row it is handed (`_row.abduction`), its two fields under their own names |
-| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 1 out (`SealPlanner`); 10 lines of the spec | row `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
+| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 1 out (`SealPlanner`); 10 lines of the spec | row `burns_its_front()` ok (asked by `RowGround`, through `Aftermath.leaves_the_scar()`), `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
 | `_cost_cache` | private | stays inside `FieldSpec`, worked out when the spec is built |
 
 ### 4.2 The live event (`EventInstance`)
@@ -698,7 +699,7 @@ field under `[EventPlan]`.
 
 | Field | Reads | Replaced by |
 |---|---|---|
-| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`pursues()`, `ends_the_day()` ok, `detains_her()` ok, `detains_again()` ok, `detain_distance()` ok, `is_a_boom()` ok, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `telegraphs_for()` ok) |
+| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`pursues()` ok, `ends_the_day()` ok, `detains_her()` ok, `detains_again()` ok, `detain_distance()` ok, `is_a_boom()` ok, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `telegraphs_for()` ok) |
 | `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `stand_where(sited)` ok for the one writer, her walk's siting (the design's pick in place of `place_at(at)`, open to the player) |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
 | `facing` | 18 | `faces()` ok; set as the plan is built, or turned by `face(direction)` ok for a crew facing the wall it pastes |
@@ -742,7 +743,7 @@ also shows a search for the field's old name read without parentheses, every rem
 | **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `EventBody` taken out of `EventInstance` ok; the composer hands each behaviour its settings, the map, the navigator and its siblings ok; the eight existing specs get their methods as far as a converted reader asks them ok. Built (the records minty-quail-velvet-owl, -olive-finch, -tiny-alpaca, -tawny-swan, -striped-hawk, -striped-magpie and -silver-marmot). Left to later rows: the traffic lights, the gate's state and `_spread_is_vertical()`, handed in by the one setup call (3b); the specs' remaining methods, with the steps that convert their readers | `src/events/event_instance.gd`, `behaviours/*` (all ask through `Figure` ok), `event_excitement.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added) | **Now, beside placement**, after 1 (both add to `event_instance.gd`). `WhereSheIs` stays out of the manager's setup: the events' world holds it (`EventWorld.where_she_is()`), the manager tells it each tick, and `EventSpawner.create()` hands it to each live event |
 | **2b** | **The looks ask the live event and are handed their settings.** Built but for `LookSpec`, which waits for 4b (the records minty-quail-polite-newt, -mossy-hedgehog, -tall-toad, -busy-badger, -merry-magpie and -calm-egret). Left listed, each because the natural name is a standing field's or the file is another track's: the live event's `age`, the row's `guard_sides`, `warning_picture`, `flock_spread` and `abduction`, `AbductionSpec.taken_over` and `standing_offset`. The flock's look's reads of a bird are in `field-reads.md`; the two statements of the 11px floor (`EventFootprints.drawn_box_of()`, `SpreadLook.NARROWEST_HALF_RUN`) wait for 4b's body part; and of the times section 6 asks for, four of 2a's seven pull requests hold theirs in their records, each its own base against its head (-velvet-owl, -olive-finch, -tiny-alpaca and -tawny-swan, every probe of section 6 that is timed); 2a's last three (-striped-hawk, -striped-magpie and -silver-marmot) and 2b's six took none, so what is owed is one reading of those probes from the merge of -tawny-swan to the merge of -calm-egret, and of `look_fingerprint.gd`'s `LK_COST` from the merge of -polite-newt, the probe's own, to -calm-egret. It holds other tracks' merges too, so it is listed for the end remeasure and holds no step (section 7, point 5) | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` (handed its atlas and its drawer ok) | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd`, and `src/resistance/resistance_director.gd`'s five `plan.mast_id` reads (in 3a) | After placement closes |
-| **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 52 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd`, the six event parameters of `src/autoload/event_bus.gd`, and `src/resistance/resistance_director.gd`'s `points_at` write (in 3b) | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting). Beside 3a and 3c. `EventManager.setup_world()` opens with seven resets (`world.city_map`, `_spawn_siting`, the plan builder, the streets, the poster walls, the director by `ahead.drop_director()`, `world.signals`) that matter only for a manager set up for one world and then another, which the builder never does. *Proposed, not asked for* (#1486's delta review): this pass decides whether all seven go together, since taking one alone leaves the function half-reset |
+| **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 52 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd`, the six event parameters of `src/autoload/event_bus.gd` (typed `Node2D`, the record minty-quail-curly-penguin), and `src/resistance/resistance_director.gd`'s `points_at` write (in 3b) | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting). Beside 3a and 3c. `EventManager.setup_world()` opens with seven resets (`world.city_map`, `_spawn_siting`, the plan builder, the streets, the poster walls, the director by `ahead.drop_director()`, `world.signals`) that matter only for a manager set up for one world and then another, which the builder never does. *Proposed, not asked for* (#1486's delta review): this pass decides whether all seven go together, since taking one alone leaves the function half-reset |
 | **3c** | **The resistance, the scene recipes and the rigs.** The resistance's part is built (the record minty-quail-curly-heron). Left in `src/resistance/`: the row's `id` and `speed` (4b), the plan's `mast_id` (3a), `EventManager.points_at` (3b), the happenings' pacing copy of the patrol car (4b's draft) and the world map's reads. The route rig's part is built (the record minty-quail-woolly-magpie); left in `route_rig.gd` and `route_rig_planner.gd`: the world map's `obstructed_tiles` and `size`, and the call to the live event's private `_spread_is_vertical()` (3b). The debug views' part is built (the record minty-quail-mossy-marten): the debug layers, the readout, the dev rig, the still watch and the auto screenshot; left in them: the live event's `age`, read by the readout (a public property; `age()` once streaming's resume (3b) and the tests (4a) stop writing it), the world map's `size` in `dev_rig.gd`, the dev rig's call to the private `_spread_is_vertical()` (3b), and the region plan's `door_bodies` (3a). The scene recipes' part is built (the record minty-quail-plush-toad): the scene recipe runtime; left in `scene_recipe_runtime.gd`: the row's `id` (4b), the city's and the city map's fields and the world map's `size` (the scene recipes' own pass with `AuthoredScene`, `city-hand-ins.md`), the region plan's `wall_bodies` and `door_bodies` (3a; an inner class the field-read check cannot see), the calls to the private `EventDirector._crossing_ahead_of()` (3b) and `ResistanceHappenings._bring_the_column()`, and its opt-out line, which goes with that pass. `src/city/city.gd` reads no event field. The row's reads of the events are all built; what is left waits for the rows and the pass named | `src/dev/*`, `src/city/city.gd` | Waits for no other row. Beside 3a and 3b |
 | **4a** | **The tests, the probes and the cost table read through the methods.** One scripted rewrite, each replacement a line of section 4's tables, the script in the description so a branch merging main reruns it. No line under `src/` changes | `tests/**`, `tools/cost_table.gd` | After 3a to 3c |
 | **4b** | **A row is written as its parts.** `EventDraft`, the eight new specs, the row with no public field and no `Resource` base, the catalogue rewritten row by row, every variant made from a draft, `validate()` without the pairings a part makes unwritable; the tests that build or change a row use a draft. `docs/EVENTS.md`'s "Adding a new event" and the events skill's "Adding a row" say the new form | `event_def.gd`, `event_catalogue.gd`, `event_draft.gd` and the spec files, the variant sites in `seal_planner.gd`, `region_planner.gd`, `happenings.gd`, `event_director.gd`, `event_spawner.gd`, and `src/resistance/resistance_director.gd`'s `def.speed` and `EventCatalogue.mast().id` reads (in 4b); the tests that write a row | After 4a |

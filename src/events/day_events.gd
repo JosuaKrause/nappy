@@ -61,7 +61,7 @@ func _learn(row: EventPlan) -> void:
 	for block: Vector2i in _spoilers:
 		if row.spoils(_calm.ground_of(block)):
 			(_spoilers[block] as Array[EventPlan]).append(row)
-	if row.def.pursuit != null:
+	if row.pursues():
 		_pursuits += 1
 
 # ---------------------------------------------------------------- questions ---

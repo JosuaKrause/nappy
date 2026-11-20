@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name EventScheduler
 extends RefCounted
 ## Plans one day's event set: `build_day()` runs the dawn's phases over the dawn's context.
@@ -313,10 +312,10 @@ static func row_ground(map: CityMap, corridor: Corridor = null,
 ## inside, and nothing about it raises the mark.
 static func clearance_around_her(def: EventDef) -> float:
 	var reach := 0.0
-	if def.obstructs_radius > 0.0:
-		reach = def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
-	if def.hard_fail:
-		reach = maxf(reach, def.outer_radius)
+	if def.obstructs_within() > 0.0:
+		reach = def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS
+	if def.ends_the_day():
+		reach = maxf(reach, def.heard_within())
 	if reach <= 0.0:
 		return 0.0
 	return reach + Tuning.TILE_SIZE * 0.5
@@ -365,13 +364,13 @@ static func clearance_around_her(def: EventDef) -> float:
 ## "placed for a reason that is not about the corridor at all," which is the flock's own case: it
 ## is still sited on a tile like everything else, just never weighted toward or away from one.
 static func role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
-	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP or def.kind == GameEnums.EventKind.AMBIENT:
+	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP or def.is_ambient():
 		return GameEnums.BlockerRole.NONE
-	if def.role == EventDef.Role.SCENERY:
+	if def.is_scenery():
 		return GameEnums.BlockerRole.NONE
-	if def.kind == GameEnums.EventKind.ONE_SHOT:
+	if def.is_a_one_shot():
 		return GameEnums.BlockerRole.SET_PIECE
-	if def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
+	if def.ends_the_day() or def.walk_through_cost() >= WALL_WORTH_OF_COST \
 			or _takes_a_whole_sidewalk(def):
 		return GameEnums.BlockerRole.WALL
 	return GameEnums.BlockerRole.FRICTION
@@ -388,7 +387,7 @@ static func role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 ## (`row_ground()`) and asks it before deciding which
 ## weight a `WALL` gets.
 static func _is_a_wall_by_cost(def: EventDef) -> bool:
-	return def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
+	return def.ends_the_day() or def.walk_through_cost() >= WALL_WORTH_OF_COST \
 			or def.reaches_the_far_lane()
 
 # ------------------------------------------------ an authored scene's row at its place ---
@@ -467,7 +466,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 ## mobile row that does not pace — are outside this too, by asking `EventDef.has_a_line_to_avoid()` rather
 ## than repeating the list.
 static func leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
-	if not def.placement.has(GameEnums.TileType.SIDEWALK):
+	if not def.stands_on(GameEnums.TileType.SIDEWALK):
 		return false
 	if not def.has_a_line_to_avoid():
 		return false
@@ -490,11 +489,11 @@ static func leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 ## list — and a row whose reach already clears the far-lane distance (`EventDef.reaches_the_far_lane()`) never reaches this, so nothing already a wall
 ## is asked twice.
 static func _closes_the_band_by_its_own_placement(def: EventDef) -> bool:
-	var reach := def.obstructs_radius
+	var reach := def.obstructs_within()
 	if reach <= 0.0:
 		return false
 	var band := float(Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
-	var pos := _band_offset_of(def.pavement_side, band)
+	var pos := _band_offset_of(def.sidewalk_lane(), band)
 	var near_gap := pos - reach
 	var far_gap := band - (pos + reach)
 	return maxf(near_gap, far_gap) < RouteSidewalkRule.HER_LANE_CLEARANCE
@@ -525,7 +524,7 @@ static func _band_offset_of(pavement_side: int, band: float) -> float:
 ## the middle of a segment and a thing to time at a junction. `StreetInvalidation._a_pacing_beat_walls_a_sidewalk`
 ## asks it of the candidate, as a placement judges it, where the beat actually exists.
 static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
-	return not def.paces and leaves_no_line_along_a_sidewalk(def)
+	return not def.paces_a_beat() and leaves_no_line_along_a_sidewalk(def)
 
 # ---------------------------------------------------------------- park rules ---
 

@@ -210,7 +210,7 @@ static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 ## `loudspeaker` row's own `outer_radius` rather than a second copy of the number, so a balance
 ## pass that moves the field moves this refusal with it.
 static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
-	var reach := EventCatalogue.mast().outer_radius
+	var reach := EventCatalogue.mast().heard_within()
 	var seen := {}
 	for block in map.calm_blocks:
 		var anchor := map.anchor_of(block)

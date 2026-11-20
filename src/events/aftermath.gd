@@ -18,3 +18,7 @@ extends Resource
 ## fire engine — `EventManager` owns the trigger, since it already owns the successor mechanism and
 ## her position; see `EventSpawner.summon_what_has_been_sighted()`.
 @export var on_sight := ""
+
+## Whether the scar it leaves is the one `scar_id` names (`scar`).
+func leaves_the_scar(scar_id: String) -> bool:
+	return scar == scar_id

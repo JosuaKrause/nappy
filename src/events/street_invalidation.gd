@@ -94,7 +94,7 @@ func refusals() -> Dictionary:
 ## A beat with neither leaves her the choice of walking through him or turning round, and that
 ## placement is the wall.
 static func _a_pacing_beat_walls_a_sidewalk(plan: EventPlan, map: CityMap) -> bool:
-	if not plan.row().paces or not EventScheduler.leaves_no_line_along_a_sidewalk(plan.row()):
+	if not plan.paces_a_beat() or not EventScheduler.leaves_no_line_along_a_sidewalk(plan.row()):
 		return false
 	return not _a_beat_reaches_a_way_out(plan, map)
 
@@ -171,7 +171,7 @@ static func room_around(candidate: EventPlan, already: Array[EventPlan]) -> floa
 			return -INF
 		if plan.keeps_its_field_clear() and gap < plan.row().field_reach():
 			return -INF
-		if plan.row().id == candidate.row().id:
+		if plan.is_the_same_row_as(candidate):
 			room_same = minf(room_same, gap)
 		if candidate.keeps_its_field_clear() and gap < candidate.row().field_reach():
 			return -INF

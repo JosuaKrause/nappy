@@ -68,7 +68,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## gap, over the same `standing` list.
 static func _leaves_the_routes_sidewalk_open(candidate: EventPlan, map: CityMap, corridor: Corridor,
 		already: Array[EventPlan]) -> bool:
-	if not corridor or candidate.row().paces or not candidate.counts_against_the_line():
+	if not corridor or candidate.paces_a_beat() or not candidate.counts_against_the_line():
 		return true
 	var reach := _cumulative_lane_reach_of(candidate.row())
 	for entry: Array in corridor.walked_sidewalks(map):
@@ -77,7 +77,7 @@ static func _leaves_the_routes_sidewalk_open(candidate: EventPlan, map: CityMap,
 			continue
 		var standing: Array[EventPlan] = [candidate]
 		for plan in already:
-			if plan == candidate or plan.row().paces or not plan.counts_against_the_line():
+			if plan == candidate or plan.paces_a_beat() or not plan.counts_against_the_line():
 				continue
 			if plan.reach_touches(world, _cumulative_lane_reach_of(plan.row())):
 				standing.append(plan)

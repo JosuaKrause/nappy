@@ -154,20 +154,20 @@ func is_a_wall_by_cost(def: EventDef) -> bool:
 ## its tiles is offered `Weights.precinct()` times over. Weighting the ground rather than adding a
 ## rule keeps everything that reads the answer working unchanged.
 ##
-## **Anything `EventDef.has_a_spread` is refused a corner**, kept under a question of its own so the
+## **Anything `EventDef.lies_as_a_spread()` is refused a corner**, kept under a question of its own so the
 ## scan stays shared with every row that has no orientation to get wrong on one: a tile whose two
 ## coordinates are both inside a street belongs to two streets at once, and there is no single
 ## street left for a spread to lie across or be centered on.
 ##
-## **A row that burns its front is refused the power station's** (`_burns_its_front()`): the
+## **A row that burns its front is refused the power station's** (`EventDef.burns_its_front()`): the
 ## station's facade is drawn whole whatever its building's condition says, its transformer yard
 ## has no wall at all for the burnt building's red arrow to end on, and it is the last night's
 ## building. Kept under its own question, so a poster crew asking for the same lane keeps the
 ## station's front.
 func tiles_for(def: EventDef, side: int = -1) -> Array[Vector2i]:
-	var wanted := def.pavement_side if side < 0 else side
+	var wanted: int = def.sidewalk_lane() if side < 0 else side
 	var scanned := _scanned(def, wanted)
-	if not def.has_a_spread:
+	if not def.lies_as_a_spread():
 		return scanned
 	var question := _question(def, wanted)
 	if not _tiles.has(question):
@@ -183,7 +183,7 @@ func tiles_for(def: EventDef, side: int = -1) -> Array[Vector2i]:
 ## tile is the row's ground, or how strongly a stretch of ground draws the row, without walking the
 ## whole city's list.
 func offers_for(def: EventDef, side: int = -1) -> Dictionary:
-	var wanted := def.pavement_side if side < 0 else side
+	var wanted: int = def.sidewalk_lane() if side < 0 else side
 	var question := _question(def, wanted)
 	if not _offers.has(question):
 		var offers := {}
@@ -214,7 +214,7 @@ func offers_for_role(def: EventDef, role: GameEnums.BlockerRole) -> Dictionary:
 	if _corridor == null or role == GameEnums.BlockerRole.NONE:
 		return offers_for(def)
 	var by_cost := is_a_wall_by_cost(def)
-	var question := "%s|%d|%s|%s" % [_question(def, def.pavement_side), role, def.hard_fail,
+	var question := "%s|%d|%s|%s" % [_question(def, def.sidewalk_lane()), role, def.ends_the_day(),
 			by_cost]
 	if not _role_offers.has(question):
 		var offers := {}
@@ -223,7 +223,7 @@ func offers_for_role(def: EventDef, role: GameEnums.BlockerRole) -> Dictionary:
 		for tile: Vector2i in open:
 			if only_in_alleys and _corridor.depth(tile) == 0:
 				continue
-			var times := _times_for_role(tile, role, def.hard_fail, by_cost)
+			var times := _times_for_role(tile, role, def.ends_the_day(), by_cost)
 			if times > 0:
 				offers[tile] = int(open[tile]) * times
 		_role_offers[question] = offers
@@ -235,12 +235,12 @@ func offers_for_role(def: EventDef, role: GameEnums.BlockerRole) -> Dictionary:
 ## What `def` asks of the ground when it wants `side`: rows that ask the same thing share one
 ## answer. A spread asks for no corner on top of what its scan asks (`_scan_question()`).
 func _question(def: EventDef, side: int) -> String:
-	return _scan_question(def, side) + ("|no-corner" if def.has_a_spread else "")
+	return _scan_question(def, side) + ("|no-corner" if def.lies_as_a_spread() else "")
 
 ## What `def` asks of the scan when it wants `side`: the kinds of tile it stands on, the lane of
 ## the sidewalk, and whether it burns the front it stands at.
 func _scan_question(def: EventDef, side: int) -> String:
-	return "%s|%d%s" % [def.placement, side, "|burns" if _burns_its_front(def) else ""]
+	return "%s|%d%s" % [def.ground_kinds(), side, "|burns" if def.burns_its_front() else ""]
 
 ## The scan's answer for `def` wanting `side`, corners included, kept under the scan's own question.
 func _scanned(def: EventDef, side: int) -> Array[Vector2i]:
@@ -261,10 +261,10 @@ func _scan(def: EventDef, side: int) -> Array[Vector2i]:
 	var trees := _tree_tiles()
 	# In tiles: `CityMap.power_station` names the station's two blocks.
 	var station := CityMap.blocks_tile_rect(_map.power_station) \
-			if _burns_its_front(def) and _map.has_power_station() else Rect2i()
+			if def.burns_its_front() and _map.has_power_station() else Rect2i()
 	var precinct := _weights.precinct()
 	var open: Array[Vector2i] = []
-	for type in def.placement:
+	for type in def.ground_kinds():
 		for candidate in _map.tiles_of_type(type as GameEnums.TileType):
 			if _map.is_closed(candidate) or doorstep.has_point(candidate) \
 					or _map.is_held_at(candidate) or _map.is_on_home_block(candidate) \
@@ -290,11 +290,6 @@ func _tree_tiles() -> Dictionary:
 ## single street left for it to lie across or be centered on.
 static func _is_a_corner(tile: Vector2i) -> bool:
 	return CityMap.corridor_offset(tile.x) >= 0 and CityMap.corridor_offset(tile.y) >= 0
-
-## Whether `def` leaves the building it stands against burnt (its scar is the one `City` draws as
-## a burnt frontage), so the front it catches on has to be one that can be drawn burnt.
-static func _burns_its_front(def: EventDef) -> bool:
-	return def.aftermath.scar == City.BURNT_FRONTAGE_SCAR
 
 ## Whether `tile` is the lane of the sidewalk `side` names (`EventDef.Pavement`).
 ##

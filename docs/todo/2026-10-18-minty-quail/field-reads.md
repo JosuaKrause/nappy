@@ -64,10 +64,8 @@ minty-quail rather than polite-tapir.
 is the files open work rewrites, typed by that work or after it, and two kept for a reason of their
 own:
 
-- The event scheduler, the walk's ground and the event director (`src/events/event_scheduler.gd`,
-  `walk_ground.gd`, `event_director.gd`), which the placement rewrite
-  rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
-  row 3b's.
+- The walk's ground and the event director (`src/events/walk_ground.gd`, `event_director.gd`), which
+  rows 3a and 3b of `event-interface.md` rewrite; and the event manager (`event_manager.gd`), row 3b's.
 - The city scene (`src/city/city.gd`), row 3c's.
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's.
@@ -75,9 +73,6 @@ own:
   2026-10-18-minty-quail-woolly-marten) keeps `unsafe_property_access` for one read, the event
   manager's `sources` in its breakdown of where the excitement comes from (`_meters()`), which waits
   for the event manager's parts (row 3b of `event-interface.md`).
-- **The event bus** (`src/autoload/event_bus.gd`) keeps `untyped_declaration` for its six signals
-  that carry a live event untyped, row 3b's choice (`event-interface.md`, "What the bus carries
-  about an event"): typed `Node2D`, or the line kept with its reason.
 
 **What is left: the conversion**, one pull request per area, each deleting the lines it converts
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and

@@ -46,9 +46,9 @@ func without_todays_bodies() -> PlanBuilder:
 func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 		within := Rect2i()) -> EventPlan:
 	var at := _map.tile_to_world(tile)
-	if not def.mobile:
+	if not def.moves():
 		var placed := EventPlan.new(def, at)
-		if def.pavement_side == EventDef.Pavement.AGAINST_THE_BUILDING:
+		if def.sidewalk_lane() == EventDef.Pavement.AGAINST_THE_BUILDING:
 			# Backing in, so it faces *out* of the wall it is against: the box is the end that is
 			# coming towards you and it has to be the end that is in the yard.
 			placed.facing = -Vector2(_map.pavement_inward(tile))

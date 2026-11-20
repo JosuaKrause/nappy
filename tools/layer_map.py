@@ -285,12 +285,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "City",
-        "a row's ground reads the burnt frontage's scar name off the city scene",
-        ("src/events/row_ground.gd",),
-    ),
-    Exception_(
-        "names",
         "CityGenerator",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
