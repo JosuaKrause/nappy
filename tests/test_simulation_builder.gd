@@ -268,6 +268,15 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	t.check(not events.world.skip_drawing
 			and not crowd.skip_agent_drawing and not crowd.skip_motion and crowd.view == null,
 			"a builder handed nothing stands an ordinary run's events and crowd")
+	# Not every cyclist is the pelican without `--pelican`: a full bag of 399 cyclists and one
+	# pelican (`EventSpawner.CYCLISTS_IN_THE_BAG`) rolls the pelican once, whatever the run's seed.
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var pelicans := 0
+	for _roll in EventSpawner.CYCLISTS_IN_THE_BAG + EventSpawner.PELICANS_IN_THE_BAG:
+		if events.spawner.rolls_a_pelican(cyclist):
+			pelicans += 1
+	t.check(pelicans == EventSpawner.PELICANS_IN_THE_BAG,
+			"a builder handed no --pelican leaves the pelican to the run's bag (%d of a full bag)" % pelicans)
 	_free(ordinary)
 	var builder := SimulationBuilder.new()
 	builder.leave_out(true, true, true)

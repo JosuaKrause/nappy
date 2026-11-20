@@ -110,14 +110,9 @@ var _repeating: Array[EventPlan] = []
 ## same time. Reset with the rest of the day in `clear()`.
 var _broadcast_clock := 0.0
 
-## Lets `delta` seconds pass on the city's broadcast clock (`broadcast_clock()`).
+## Lets `delta` seconds pass on the city's broadcast clock.
 func advance_the_broadcast(delta: float) -> void:
 	_broadcast_clock += delta
-
-## The seconds the city's broadcast clock has run since the day started: what every mast reads when it
-## streams in, whenever that is.
-func broadcast_clock() -> float:
-	return _broadcast_clock
 
 ## The run's spent one-shots — `start_day`'s own argument, kept because one kind of one-shot is
 ## spent while the day is running rather than while it is being planned. See `stream_in()`. Empty

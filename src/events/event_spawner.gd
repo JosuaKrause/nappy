@@ -131,7 +131,7 @@ const PELICANS_IN_THE_BAG := 1
 const PELICAN_STREAM := "pelican-bag"
 
 ## What a rig makes `rolls_a_pelican()` answer: the bag's own marble, or every rider one or the
-## other, the way `stream_radius` lets one turn the streaming off.
+## other, the way `EventManager.stream_within()` lets one turn the streaming off.
 enum PelicanRig { BAG, ALWAYS, NEVER }
 var _pelican_rig := PelicanRig.BAG
 
