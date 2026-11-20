@@ -596,7 +596,7 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var warning := _warnings.warn_first(def, her, where, arrive)
 	if warning:
 		if pelican:
-			warning.be_drawn_as_the_pelican()
+			warning.be_logged_as_the_pelican()
 
 ## A row the director sends ahead of her warned of first in the lane of the road beside her (the
 ## convoy, `EventDef.is_warned_in_its_lane()`), sited on `sited` (`EventDirector.due()`: its first

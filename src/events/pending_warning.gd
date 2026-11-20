@@ -283,7 +283,7 @@ func ask_again() -> void:
 	if _retry.is_valid():
 		_retry.call()
 
-## Tells it that the cyclist it warns of is the pelican, so the run log names it so
-## (`logged_name()`); the badge draws the row's own silhouette either way.
-func be_drawn_as_the_pelican() -> void:
+## Tells it that the cyclist it warns of is the pelican, which only changes the name the run log
+## gives it (`logged_name()`): the badge draws the row's own silhouette either way.
+func be_logged_as_the_pelican() -> void:
 	_is_pelican = true
