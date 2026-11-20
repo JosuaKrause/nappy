@@ -19,5 +19,6 @@ and 2b left theirs); the builder's choices, that a resistance suite no longer un
 game verb un-silences one, so that check now holds by construction, left for row 4a's or row 5's ruling on the suites),
 and that the spoilage probe asks `plan.spoils()` instead of re-deriving it.
 
-**The item.** Row 3a stays open until its last pull request; its text in section 5 says which of the plan's fields are
+**The item.** Row 1 of section 5 (the run log's map asking the plan's `role()`) is done and leaves the table;
+row 3a stays open until its last pull request; its text in section 5 says which of the plan's fields are
 private and which wait for 4a, and section 4.3's rows mark the new methods.
