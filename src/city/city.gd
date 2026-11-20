@@ -964,7 +964,7 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## only way a requisitioned park can stop having swings in it.
 ##
 ## **The escape's city is the same call with its section's spec** (`DaySpec`), since what
-## differs is settings rather than steps: `spec.closes_streets` says whether the day grows its
+## differs is settings rather than steps: `spec.closes_the_streets()` says whether the day grows its
 ## route tree and closes streets off it (`_close_streets()`) or has its walk handed in once it
 ## is planned (`tint_the_route()` — the escape's chains, planned after the city is dressed, are
 ## not a tree for `ClosurePlanner` or `RegionPlanner` to be stated against, so

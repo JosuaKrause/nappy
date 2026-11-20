@@ -622,8 +622,8 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 	t.check(not streets.closures().is_empty(),
 			"the dawn closed streets to hold (%d)" % streets.closures().size())
 	for closure in streets.closures():
-		t.check(held.has(closure.segment.key()), "the street the dawn closed (%s) is held"
-				% closure.segment.key())
+		t.check(held.has(closure.street_key()), "the street the dawn closed (%s) is held"
+				% closure.street_key())
 	t.check(not streets.region_plan().walls.is_empty(),
 			"the dawn grew a region wall to hold (%d segments)" % streets.region_plan().walls.size())
 	for segment in streets.region_plan().walls:

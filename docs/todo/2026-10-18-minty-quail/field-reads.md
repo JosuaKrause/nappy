@@ -77,14 +77,14 @@ fields are the most read, so the events go first, as the ask says.
 Left, each its own design question:
 
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
-  by class: the city map's (`CityMap`) in the events, whose fields (`network`, `main_road`, `block_plans`,
-  `calm_blocks`, `closed_tiles`, `power_station`, `boundary_wall_at_a`, `square_rects`, `playgrounds`)
-  stay public until the events' pass, and in the scene recipes' draft and runtime (`stretch`,
-  `stretch_active`, `tiles`, `recipe_bounds`), whose tests set what no game method sets. `RoadClosure.segment` stays public for one reader,
-  the day planner's holds (`src/events/day_planner.gd`), which go with the events' interface
-  (`event-interface.md`); every other reader asks `street_key()`, `street_words()`, `mouth_rects()`
-  or `covers_tile()`, and the suites' and the probes' reads of `closure.segment` go with
-  that read. Two groups have a home of their own:
+  by class: the city map's (`CityMap`) `block_plans` in the event spawner (row 3b
+  of `event-interface.md`), and in the scene recipes' draft and runtime (`stretch`, `stretch_active`,
+  `tiles`, `recipe_bounds`), whose tests set what no game method sets. The dawn asks the map's
+  methods; `network`, `main_road`, `calm_blocks`, `closed_tiles`, `power_station`,
+  `boundary_wall_at_a` and `playgrounds` stay public for the city suites only, as `[kept]` lines
+  until those suites test one module each (`tests-one-module.md`). `RoadClosure.segment` is
+  private: every reader asks `street_key()`, `street_words()`, `mouth_rects()`, `cause_centre()`
+  or `covers_tile()`. Two groups have a home of their own:
   - The authored-scene builder reads the map through methods, and its recipe-side reads of a step and
     a closure's segment go through `BlockPlan.Step`'s and `RoadClosure`'s methods. It is no longer a
     `CityMap` reader, and `block_layouts`, `building_rects` and ten more of the map's fields are
@@ -102,16 +102,16 @@ Left, each its own design question:
     outside the crowd only through `is_car()`, and sets it only in an agent's own setup, while
     suites set it on the agents they build by hand (its setter installs the car or walker rules),
     so a public writer would be called by tests alone.
-- **The day spec's event readers.** The day spec (`DaySpec`) keeps `number`, `closes_streets`,
-  `world`, `holds_the_home_streets`, `keeps_the_walk_open`, `keeps_unused_calm_clear`,
-  `one_notice_at_a_time`, `owes_a_return` and `poster_pursuits` public for the events' reads (the
-  day planner, the event manager, the dawn's context, the calm kept clean), which go with the
-  events' interface (`event-interface.md`); every reader under `src/` outside the events asks its
-  methods, and the first four already have one (`day_number()`, `closes_the_streets()`,
-  `world_kind()`, `keeps_the_home_streets_clear()`). The suites' reads of `number`,
-  `holds_the_home_streets`, `keeps_the_walk_open` and `poster_pursuits`, and their two writes
-  (`tests/test_dawn_context.gd` sets `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd`
-  sets `owes_a_return`), go with that pass, which gives them another way to build their spec.
+- **The day spec's event readers.** The day spec (`DaySpec`) keeps `number`,
+  `holds_the_home_streets`, `owes_a_return` and `poster_pursuits` public for the event manager's
+  reads (row 3b of `event-interface.md`) and the suites'; every other reader asks its methods
+  (`day_number()`, `keeps_the_home_streets_clear()`). The day's world, whether it closes streets,
+  whether the walk is kept open, whether one notice is given at a time and whether the unused calm is
+  kept clean are private, asked through `world_kind()`, `closes_the_streets()`,
+  `keeps_her_walk_open()`, `notices_one_at_a_time()` and `keeps_the_unused_calm_clean()`. The suites' reads of `number`, `holds_the_home_streets` and
+  `poster_pursuits`, and their two writes (`tests/test_dawn_context.gd` sets
+  `holds_the_home_streets` on a bare spec, `tests/finale_rig.gd` sets `owes_a_return`), go with that
+  pass, which gives them another way to build their spec.
 - **The world map's residue.** The world map (`WorldMap`, `src/world/world_map.gd`) still has fields
   read from outside its file: `separation`, `moves`, `obstructed_tiles`, `day_record_version`,
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance

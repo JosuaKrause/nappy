@@ -68,16 +68,7 @@ src/dev/scene_recipe_draft.gd stretch
 src/dev/scene_recipe_draft.gd stretch_active
 src/dev/scene_recipe_draft.gd tiles
 src/dev/scene_recipe_runtime.gd recipe_bounds
-src/events/calm_areas.gd calm_blocks
-src/events/dawn_phases/dawn_ambient.gd playgrounds
-src/events/day_planner.gd network
-src/events/event_scheduler.gd closed_tiles
 src/events/event_spawner.gd block_plans
-src/events/mast_sites.gd boundary_wall_at_a
-src/events/mast_sites.gd calm_blocks
-src/events/mast_sites.gd main_road
-src/events/mast_sites.gd square_rects
-src/events/row_ground.gd power_station
 
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
@@ -92,15 +83,6 @@ src/simulation_builder.gd timing
 src/simulation_builder.gd view
 
 # [DaySpec] src/day/day_spec.gd
-src/events/dawn_context.gd holds_the_home_streets
-src/events/dawn_context.gd keeps_the_walk_open
-src/events/dawn_context.gd keeps_unused_calm_clear
-src/events/dawn_context.gd one_notice_at_a_time
-src/events/dawn_phases/dawn_calm_kept_clean.gd keeps_unused_calm_clear
-src/events/day_planner.gd closes_streets
-src/events/day_planner.gd holds_the_home_streets
-src/events/day_planner.gd number
-src/events/day_planner.gd world
 src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd number
 src/events/event_manager.gd owes_a_return
@@ -543,9 +525,6 @@ src/events/event_def.gd walk_speed
 src/events/event_def.gd warns_for
 src/events/event_instance.gd stop_excitement
 src/events/event_instance.gd warns_for
-
-# [RoadClosure] src/routes/road_closure.gd
-src/events/day_planner.gd segment
 
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd frame_locked

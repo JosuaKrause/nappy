@@ -66,13 +66,13 @@ func _test_a_fallen_tree_only_falls_where_a_tree_stood(t: TestRunner) -> void:
 				if closure.kind() != RoadClosure.Kind.FALLEN_TREE:
 					continue
 				felled += 1
-				var key := closure.segment.key()
+				var key := closure.street_key()
 				t.check(lined.has(key),
 						"seed %d day %d: a tree fell across %s, which never had one on it"
 						% [map.city_seed(), day, key])
 				# Exactly one pit of that street is empty, and it is the one nearest the middle of
 				# the street — the tree that fell is the one that is missing, and only that one.
-				var centre := map.tile_rect_to_world(closure.segment.tile_rect()).get_center()
+				var centre := closure.cause_centre(map)
 				var wanted := StreetTrees.pit_nearest(map, key, centre)
 				var empty := 0
 				for pit in StreetTrees.planted(map):
@@ -103,7 +103,7 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t: TestRunner)
 			var closures := _plan(map, day)
 			var any_lined := false
 			for closure in closures:
-				if lined.has(closure.segment.key()):
+				if lined.has(closure.street_key()):
 					any_lined = true
 					continue
 				bare_closures += 1

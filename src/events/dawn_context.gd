@@ -230,7 +230,7 @@ func events() -> DayEvents:
 ## city for it again.
 func ground() -> RowGround:
 	if _ground == null:
-		var made: RowGround = _ground_of.call(_map, corridor(), _spec.holds_the_home_streets)
+		var made: RowGround = _ground_of.call(_map, corridor(), _spec.keeps_the_home_streets_clear())
 		_ground = made
 	return _ground
 
@@ -251,7 +251,7 @@ func locations() -> DayLocations:
 ## to every row instead (`RowGround`). What the fit is handed, so no body and no lethal field is
 ## offered the ground she is put down on (`LocationFit`).
 func ground_she_starts_on() -> Vector2:
-	return Vector2.INF if _spec.holds_the_home_streets else _walk.start()
+	return Vector2.INF if _spec.keeps_the_home_streets_clear() else _walk.start()
 
 ## **Tells the dawn which calm area it keeps clean** besides the ones she has not used
 ## (`DawnCalmKeptClean`), `CalmAreas.NONE` for none: its ground joins what nothing may reach.
@@ -269,18 +269,18 @@ func kept_clean() -> Vector2i:
 ## **The day's placement rules** (`StreetInvalidation`), built once on the first ask and asked by
 ## every judge of the dawn: the calm ground to leave alone, the doors' clear ground and the route
 ## rules of the walk's corridor; one waiting guard's notice at a time where the spec keeps it
-## (`DaySpec.one_notice_at_a_time`), and the walk kept open past what stands on it where the spec
-## keeps that (`DaySpec.keeps_the_walk_open`, `WalkGround`).
+## (`DaySpec.notices_one_at_a_time()`), and the walk kept open past what stands on it where the spec
+## keeps that (`DaySpec.keeps_her_walk_open()`, `WalkGround`).
 func rules() -> StreetInvalidation:
 	if _rules == null:
 		var walk_ground: WalkGround = null
-		if _spec.keeps_the_walk_open:
+		if _spec.keeps_her_walk_open():
 			# The walk's ground keeps every plan it is shown (`WalkGround.catch_up()`), so it may be
 			# shown final plans only, and with one marble a unit a trial layout shows it none.
 			assert(_spec.stands_one_event_a_street(), "a walk kept open stands one event a street")
 			walk_ground = WalkGround.new(_map, events().standing(), _walk)
 		_rules = StreetInvalidation.new(_map, corridor(), _leave_alone(), _doors,
-				_builder if _spec.one_notice_at_a_time else null, walk_ground)
+				_builder if _spec.notices_one_at_a_time() else null, walk_ground)
 	return _rules
 
 ## **Holds the day's unit draw** (`UnitDraw`), which the dawn draw's phase prepares
@@ -341,7 +341,7 @@ func _route_ground_rule() -> RouteGroundRule:
 ## keeps the calm rule (`CalmAreas.unused_ground()`), and the one the dawn keeps clean.
 func _leave_alone() -> Array[Rect2]:
 	var left: Array[Rect2] = []
-	if _spec.keeps_unused_calm_clear:
+	if _spec.keeps_the_unused_calm_clean():
 		left = _calm.unused_ground()
 	if _kept_clean != CalmAreas.NONE:
 		left.append(_calm.ground_of(_kept_clean))
