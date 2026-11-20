@@ -450,7 +450,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 # ------------------------------------------------------------------------- the rows ---
 
 ## A row is skipped rather than read where PLAYTEST-71 says it is never a block: a mast
-## (`plan.mast_id != ""`) is planted once, off the corridor-aware placement this guarantee is
+## (`plan.mast_id() != ""`) is planted once, off the corridor-aware placement this guarantee is
 ## stated over — see `EventDef.has_a_line_to_avoid()`'s own doc; `Role.SCENERY` rows
 ## (`pigeon_flock`) are exempt the way `EventScheduler.role_for` exempts them from the
 ## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
@@ -460,7 +460,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 	var rows: Array[Row] = []
 	for plan: EventPlan in plans:
-		if not plan.is_placed() or plan.mast_id != "":
+		if not plan.is_placed() or plan.mast_id() != "":
 			continue
 		var def := plan.def
 		if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with("checkpoint") \

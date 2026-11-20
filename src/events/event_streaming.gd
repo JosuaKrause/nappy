@@ -200,12 +200,12 @@ func stream_in(plan: EventPlan) -> void:
 	# at every stream-in, first time or the fifth, so two masts met minutes apart still read the
 	# same pulse phase — "all masts speak at once" is true because they are all telling the same
 	# time, not because anything coordinates them frame to frame. See `broadcast_clock` below.
-	var resume_age := broadcast_clock if plan.mast_id != "" else plan.age
+	var resume_age := broadcast_clock if plan.mast_id() != "" else plan.age
 	plan.live.resume(resume_age, plan.travelled, plan.noticed_at)
 	# A guard spent before the stream-out comes back as only his barrier, never as a guard again
 	# (`EventBarrierPost.restore()`).
 	plan.live.restore_behaviours(plan.behaviours)
-	plan.live.silenced = plan.silenced
+	plan.live.silenced = plan.is_silenced()
 	plan.was_live = true
 	world.instances.append(plan.live)
 
@@ -283,28 +283,28 @@ func take_away_the_unseen_within(rect: Rect2) -> int:
 ## plan, which always exists for a live mast's id; the curfew announcement shares the same foot.
 func mast_foot(mast_id: String) -> Vector2:
 	for plan in _walk.plans():
-		if plan.mast_id == mast_id and plan.def.role == EventDef.Role.MAST:
+		if plan.mast_id() == mast_id and plan.is_a_mast():
 			return plan.position
 	return Vector2.INF
 
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
-## arcs and no field, so this sets `EventPlan.silenced` and its live instance's own mirror rather
+## arcs and no field, so this silences the plan (`EventPlan.silence()`) and its live instance's own mirror rather
 ## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never
-## does. Returns whether a mast with that id was found. Matches every plan whose `mast_id` is this
+## does. Returns whether a mast with that id was found. Matches every plan whose `mast_id()` is this
 ## one — a mast's ordinary broadcast and, on `DawnMasts.CURFEW_ANNOUNCE_DAY`, its curfew announcement
 ## too, so silencing a mast mid-announcement silences both at once.
 ##
 ## **Run-long, it is a scar.** Day 11's task silences one mast for the rest of the run: the
 ## director calls this for today and records `DawnMasts.SILENCED_MAST` at the foot, which
-## `DawnMasts` reads on every later day. The id is `MastSites.Site.id`, stable
+## `DawnMasts` reads on every later day. The id is `MastSites.Site.id()`, stable
 ## across days, and the foot is its own.
 func silence_mast(mast_id: String) -> bool:
 	var found := false
 	for plan in _walk.plans():
-		if plan.mast_id != mast_id:
+		if plan.mast_id() != mast_id:
 			continue
 		found = true
-		plan.silenced = true
+		plan.silence()
 		if plan.live:
 			plan.live.silenced = true
 			# The same invalidation `_finish()` does for `is_finished` — `age` does not move the
@@ -320,10 +320,10 @@ func silence_mast(mast_id: String) -> bool:
 func silence_all_masts() -> int:
 	var silenced := {}
 	for plan in _walk.plans():
-		if plan.mast_id == "":
+		if plan.mast_id() == "":
 			continue
-		silenced[plan.mast_id] = true
-		plan.silenced = true
+		silenced[plan.mast_id()] = true
+		plan.silence()
 		if plan.live:
 			plan.live.silenced = true
 			plan.live.excitement.invalidate_contribution()

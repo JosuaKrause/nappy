@@ -199,7 +199,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, nothing_down,
 				locations)
 		if plan:
-			return plan.role
+			return plan.role()
 	return -1
 
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a

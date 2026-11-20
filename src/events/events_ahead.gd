@@ -341,7 +341,7 @@ func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 	var plan := EventPlan.new(def, Vector2.INF)
 	if not siting.lay_among(plan, offered):
 		return null
-	plan.mast_id = DawnMasts.added_mast_id(plan.position)
+	plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.position))
 	_streaming.add(plan)
 	return plan
 
@@ -512,7 +512,7 @@ func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 	# silenced by `EventStreaming.silence_mast()` and counts for
 	# `EventStreaming.silence_all_masts()`.
 	if plan.row().is_a_mast():
-		plan.mast_id = DawnMasts.added_mast_id(plan.position)
+		plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.position))
 	_streaming.add(plan)
 	# Where, because nothing else records it: the siting depends on the walk she took.
 	world.trace.note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
@@ -730,8 +730,8 @@ func site_what_is_on_her_way(delta: float) -> void:
 		_streaming.move_the_body(plan)
 		# A mast's id is its foot (`DawnMasts.added_mast_id()`), so a mast moved before it was
 		# ever in the world is named by where it now stands.
-		if plan.mast_id != "":
-			plan.mast_id = DawnMasts.added_mast_id(plan.position)
+		if plan.mast_id() != "":
+			plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.position))
 		# Where and why, because nothing else records it: the siting depends on the walk she took
 		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
 		# write, for the same reason.

@@ -26,7 +26,7 @@ func run(context: DawnContext) -> void:
 		if def.id in consumed:
 			continue
 		var owed := EventPlan.new(def, Vector2.INF)
-		owed.role = EventScheduler.role_for(def, day)
+		owed.give_role(EventScheduler.role_for(def, day))
 		events.add(owed)
 		context.note("roll", "one-shot %s: owed to her walk, sited when her heading is clear"
 				% def.id)

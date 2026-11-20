@@ -24,11 +24,11 @@ var gate_state: RegionPlanner.GateState = null
 ## `DawnMasts.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
 ## question `EventManager.silence_mast()` and the broadcast clock's own sync ask before
 ## touching a plan.
-var mast_id := ""
+var _mast_id := ""
 ## Set by `EventManager.silence_mast()`/`silence_all_masts()` for the rest of the day. Carried
 ## on the plan, not only the live instance, so a mast silenced while out of reach is still
 ## silenced the next time she comes near it — see `EventStreaming.stream_in()`.
-var silenced := false
+var _silenced := false
 
 ## **A plan that comes again** (`repeats()`): seconds from one of its instances coming to the
 ## next, kept on its own clock, and seconds from one being done to the next coming
@@ -71,7 +71,7 @@ var live: EventInstance = null
 var spent := false
 ## True for something the *run* left here rather than something today rolled — a burnt-out
 ## shell, a barricade. It is world history and the day may not tidy it away.
-var permanent := false
+var _permanent := false
 ## True once something that rides this plan's instance asked for it to stay in the world for
 ## the rest of the day wherever she walks (`EventManager.keep_live()`), so streaming never takes
 ## it away from under what rides it.
@@ -81,9 +81,10 @@ var kept_live := false
 ##
 ## It is recorded rather than re-derived because it is not a function of the def: the same
 ## `cyclist` row is a wall on a day it is rolled and nothing at all when the director sites one
-## in front of her, and the telemetry map has to be able to say which. Nothing in the game reads
-## it — it decides where the plan went, it does not decide anything afterwards.
-var role := GameEnums.BlockerRole.NONE
+## in front of her, and the telemetry map has to be able to say which. Only that map and
+## `keeps_its_field_clear()` read it: it decides where the plan went, it does not decide anything
+## afterwards.
+var _role := GameEnums.BlockerRole.NONE
 ## True once it has been in the world at least once. What it is *for* is the bookkeeping
 ## that must happen exactly once however many times an event is streamed in and out: a
 ## burnt-out shell records the fire that made it the first time it is seen and never again.
@@ -201,13 +202,13 @@ func keep_in_the_world() -> void:
 
 ## **Whether this plan is one of the city's fixed parts rather than one of the day's events**: the
 ## region wall's body (`is_in_the_wall()`), a door's (`is_door()`), a seal (`stand_as_a_seal()`), a
-## loudspeaker mast (`mast_id`) or an ambient row (a playground). The player's fixed parts: "the
+## loudspeaker mast (`mast_id()`) or an ambient row (a playground). The player's fixed parts: "the
 ## wall, doors, closures, seals, scars, masts and ambient rows" each "get phases during either dawn
 ## or beginning of the game" (inbox #1185 in gentle-owl); a closure is no plan, and the code's scar, the burnt
 ## shell a fire leaves, is a regular event ("your scars are just regular events", inbox #1185 in gentle-owl).
 ## Day 13's swap never takes the section of one (`ResistanceDirector._section_to_swap()`).
 func is_a_fixed_part() -> bool:
-	return _is_door or _in_the_wall or _is_a_seal or mast_id != "" \
+	return _is_door or _in_the_wall or _is_a_seal or _mast_id != "" \
 			or def.is_ambient()
 
 ## Makes this body one of the day's seals. Called by `DayPlanner` for each seal it plans, and by
@@ -235,7 +236,7 @@ func stand_where(sited: EventPlan) -> void:
 	position = sited.position
 	path = sited.path
 	facing = sited.facing
-	role = sited.role
+	_role = sited._role
 
 ## Turns the plan to face `direction`: a crew faces the wall it pastes.
 func face(direction: Vector2) -> void:
@@ -243,7 +244,12 @@ func face(direction: Vector2) -> void:
 
 ## Gives it the role a judge decided (`StreetInvalidation.room()`), which is where it went.
 func give_role(given: GameEnums.BlockerRole) -> void:
-	role = given
+	_role = given
+
+## The role the day placed this for (`give_role()`; `GameEnums.BlockerRole.NONE` until one is
+## given): the telemetry map colours a plan by it, and `keeps_its_field_clear()` asks it.
+func role() -> GameEnums.BlockerRole:
+	return _role
 
 
 ## **How far from this event a point has to be to stand clear of it**, for a figure `her_reach`
@@ -291,7 +297,7 @@ func reaches(rect: Rect2) -> bool:
 ## would make a burnt-out building that has stood on that corner since day 3 vanish for one
 ## day and come back the next.
 func spoils(ground: Rect2) -> bool:
-	if def.is_ambient() or not is_placed() or permanent:
+	if def.is_ambient() or not is_placed() or _permanent:
 		return false
 	return reaches(ground)
 
@@ -387,7 +393,7 @@ func gap_to(other: EventPlan) -> float:
 ## untouched — `EventPlan.keeps_its_field_clear()` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 func counts_against_the_line() -> bool:
-	return is_placed() and not _is_door and mast_id == "" and not def.is_a_mast() \
+	return is_placed() and not _is_door and _mast_id == "" and not def.is_a_mast() \
 			and def.has_a_line_to_avoid()
 
 ## Whether a row denies a point, under the beat-opening reading.
@@ -470,7 +476,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
 ## say, which `EventScheduler.role_for` would classify ahead of the `hard_fail` check.
 func keeps_its_field_clear() -> bool:
-	return def.ends_the_day() and role != GameEnums.BlockerRole.WALL and not def.pursues()
+	return def.ends_the_day() and _role != GameEnums.BlockerRole.WALL and not def.pursues()
 
 # ----------------------------------------------------- what a caller asks ---
 # The questions a caller outside the events asks a plan, answered for its row where the
@@ -576,15 +582,36 @@ func gate() -> RegionPlanner.GateState:
 func telegraphs_for() -> float:
 	return def.telegraphs_for()
 
-## Makes it a loudspeaker mast's own plan, known by `id` (`mast_id`): what the day's task, its red
+## Makes it a loudspeaker mast's own plan, known by `id` (`mast_id()`): what the day's task, its red
 ## arrow and the blackout find a mast by. A scene recipe's runtime calls it for each mast it stands.
 func stand_as_a_mast(id: String) -> void:
-	mast_id = id
+	_mast_id = id
 
-## Whether it is a loudspeaker mast still speaking today: a mast's own plan (`mast_id`, of a row
-## that is a mast) that nothing has silenced (`silenced`).
+## The id of the mast this is the plan of (`stand_as_a_mast()`), `""` for every other plan.
+func mast_id() -> String:
+	return _mast_id
+
+## Whether its row is a loudspeaker mast (`EventDef.is_a_mast()`).
+func is_a_mast() -> bool:
+	return def.is_a_mast()
+
+## Whether it is a loudspeaker mast still speaking today: a mast's own plan (`mast_id()`, of a row
+## that is a mast) that nothing has silenced (`silence()`).
 func is_a_live_mast() -> bool:
-	return mast_id != "" and def.is_a_mast() and not silenced
+	return _mast_id != "" and def.is_a_mast() and not _silenced
+
+## Silences it for the rest of the day, so a mast silenced while out of reach is still silent the
+## next time she comes near it.
+func silence() -> void:
+	_silenced = true
+
+## Whether something has silenced it today (`silence()`).
+func is_silenced() -> bool:
+	return _silenced
+
+## Makes it a feature the run left here, which the day may not tidy away: a scar.
+func make_permanent() -> void:
+	_permanent = true
 
 ## Makes it come again `seconds` after each of its instances came, on its own clock
 ## (`repeat_every`), in place of its row's: each of the building's vents has its own period.

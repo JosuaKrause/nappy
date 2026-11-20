@@ -592,7 +592,7 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> 
 static func _walls_of(plans: Array[EventPlan]) -> int:
 	var count := 0
 	for plan in plans:
-		if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed() \
+		if plan.role() == GameEnums.BlockerRole.WALL and plan.is_placed() \
 				and plan.def.kind == GameEnums.EventKind.RECURRING:
 			count += 1
 	return count

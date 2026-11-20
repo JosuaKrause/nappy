@@ -255,7 +255,7 @@ static func _mark_the_events(image: Image, map: CityMap,
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		var colour := _role_mark(plan.role)
+		var colour := _role_mark(plan.role())
 		if not plan.stands_still():
 			_blend_tiles(image, _route_stroke(map, plan.walks()), colour, ROUTE_ALPHA)
 		_mark_one_event(image, map.world_to_tile(plan.placed_at()), colour, plan.ends_the_day(),

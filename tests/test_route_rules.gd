@@ -62,7 +62,7 @@ func _at(id: String, tile: Vector2i) -> EventPlan:
 	var plan := GamePlanBuilder.over(_map).build(EventCatalogue.by_id(id), tile,
 			RandomNumberGenerator.new())
 	if plan:
-		plan.role = GameEnums.BlockerRole.WALL
+		plan.give_role(GameEnums.BlockerRole.WALL)
 	return plan
 
 ## A tile on a street no route runs along and two blocks or more from every route tile.
@@ -101,7 +101,7 @@ func _test_a_body_closing_a_beats_opening_is_refused(t: TestRunner) -> void:
 				band.get_center(), RandomNumberGenerator.new())
 		if man == null or man.path.size() < 2:
 			continue
-		man.role = GameEnums.BlockerRole.FRICTION
+		man.give_role(GameEnums.BlockerRole.FRICTION)
 		var around: Array[EventPlan] = [man]
 		var segment: StreetNetwork.Segment = entry[0]
 		var street := segment.tile_rect()

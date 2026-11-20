@@ -20,6 +20,6 @@ func run(context: DawnContext) -> void:
 		var def := EventCatalogue.by_id(String(scar["id"]))
 		if def:
 			var plan := EventPlan.new(EventCatalogue.heated(def, heat), scar["position"])
-			plan.permanent = true
+			plan.make_permanent()
 			if context.keeps_the_routes(plan):
 				events.add(plan)

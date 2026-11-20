@@ -2300,7 +2300,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 		offered = near_plans
 		beside = near_beside
 	var index := _weighted_mast_index(beside, rng)
-	_mast_id = offered[index].mast_id
+	_mast_id = offered[index].mast_id()
 	_ground = beside[index]
 	return offered[index].placed_at()
 
@@ -3672,7 +3672,7 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 		var ground := _spawn_siting.ask_of_ground()
 		for plan in _events.plans():
 			if _mast_answers(plan, ground):
-				found.append({"key": plan.mast_id, "at": plan.placed_at(), "reach": _mast_reach(),
+				found.append({"key": plan.mast_id(), "at": plan.placed_at(), "reach": _mast_reach(),
 						"beat": PackedVector2Array()})
 		return found
 	for instance in _events.instances():
@@ -3856,7 +3856,7 @@ func _she_can_be_sent_to_the_mast(mast_id: String) -> bool:
 		return _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
 				_map.tile_to_world(tile))
 	for plan in _events.plans():
-		if plan.mast_id != mast_id:
+		if plan.mast_id() != mast_id:
 			continue
 		for side in _ground_beside_a_mast(plan, ground):
 			if _she_can_be_sent_to(side, _player_position(), standing):
@@ -3874,8 +3874,8 @@ func _follow_her_between_masts() -> void:
 		return
 	var ground := _spawn_siting.ask_of_ground()
 	for plan in _events.plans():
-		if plan.mast_id == _mast_id or plan.placed_at().distance_to(here) > reach:
+		if plan.mast_id() == _mast_id or plan.placed_at().distance_to(here) > reach:
 			continue
 		if _mast_answers(plan, ground):
-			_point_the_arrow_at(plan.mast_id, plan.placed_at(), _step)
+			_point_the_arrow_at(plan.mast_id(), plan.placed_at(), _step)
 			return
