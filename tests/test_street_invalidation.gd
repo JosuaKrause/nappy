@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 			"a candidate a rule refuses has no room")
 	t.check(rules.room(clear, GameEnums.BlockerRole.FRICTION, Vector2i.ZERO, NONE, NONE) == INF,
 			"one no rule refuses, with nothing near, has all the room there is")
-	t.check(clear.role == GameEnums.BlockerRole.FRICTION, "and keeps the role it was asked with")
+	t.check(clear.role() == GameEnums.BlockerRole.FRICTION, "and keeps the role it was asked with")
 	var flock := EventCatalogue.by_id("pigeon_flock")
 	var placed: Array[EventPlan] = [EventPlan.new(flock, Vector2(5000, 5000))]
 	var beside := EventPlan.new(flock, Vector2(5000 + flock.notice_within(), 5000))

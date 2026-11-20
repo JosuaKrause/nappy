@@ -286,7 +286,6 @@ src/events/event_spawner.gd speed
 src/events/event_spawner.gd telegraph_time
 src/events/event_streaming.gd id
 src/events/event_streaming.gd kind
-src/events/event_streaming.gd role
 src/events/events_ahead.gd heat_response
 src/events/events_ahead.gd id
 src/events/events_ahead.gd noun
@@ -366,10 +365,6 @@ src/events/views/rank_look.gd age
 src/run/day_director.gd excitement
 
 # [EventPlan] src/events/event_plan.gd
-src/events/dawn_phases/dawn_masts.gd mast_id
-src/events/dawn_phases/dawn_masts.gd silenced
-src/events/dawn_phases/dawn_one_shots.gd role
-src/events/dawn_phases/dawn_scars.gd permanent
 src/events/day_planner.gd position
 src/events/event_director.gd def
 src/events/event_director.gd position
@@ -379,7 +374,6 @@ src/events/event_manager.gd def
 src/events/event_manager.gd facing
 src/events/event_manager.gd position
 src/events/event_scheduler.gd def
-src/events/event_scheduler.gd role
 src/events/event_spawner.gd def
 src/events/event_spawner.gd live
 src/events/event_streaming.gd age
@@ -392,19 +386,16 @@ src/events/event_streaming.gd facing
 src/events/event_streaming.gd gate_state
 src/events/event_streaming.gd kept_live
 src/events/event_streaming.gd live
-src/events/event_streaming.gd mast_id
 src/events/event_streaming.gd noticed_at
 src/events/event_streaming.gd path
 src/events/event_streaming.gd position
 src/events/event_streaming.gd repeat_after
 src/events/event_streaming.gd repeat_every
-src/events/event_streaming.gd silenced
 src/events/event_streaming.gd spent
 src/events/event_streaming.gd travelled
 src/events/event_streaming.gd wait_began
 src/events/event_streaming.gd was_live
 src/events/events_ahead.gd def
-src/events/events_ahead.gd mast_id
 src/events/events_ahead.gd position
 src/events/events_ahead.gd spent
 src/events/events_ahead.gd was_live
@@ -416,11 +407,9 @@ src/events/walk_ground.gd def
 src/events/walk_ground.gd facing
 src/events/walk_ground.gd path
 src/events/walk_ground.gd position
-src/resistance/resistance_director.gd mast_id
 src/routes/region_planner.gd def
 src/routes/region_planner.gd facing
 src/routes/region_planner.gd gate_state
-src/telemetry/telemetry_map.gd role
 
 # [EventWorld] src/events/event_world.gd
 src/events/event_manager.gd atlas

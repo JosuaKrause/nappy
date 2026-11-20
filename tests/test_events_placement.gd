@@ -127,11 +127,11 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 				continue
 			var tile := map.world_to_tile(plan.position)
 			var away := corridor.depth(tile)
-			if plan.role == GameEnums.BlockerRole.WALL and corridor.is_in_a_gap(tile):
+			if plan.role() == GameEnums.BlockerRole.WALL and corridor.is_in_a_gap(tile):
 				var segment := map.network.segment_containing(tile)
 				if segment:
 					gaps_walled["%d:%s" % [day, segment.key()]] = true
-			if plan.role == GameEnums.BlockerRole.WALL:
+			if plan.role() == GameEnums.BlockerRole.WALL:
 				walls += 1
 				t.check(plan.def.hard_fail
 						or plan.def.walk_through_cost() >= EventScheduler.WALL_WORTH_OF_COST
@@ -148,7 +148,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 				placed[plan.def.hard_fail] += 1
 				if away >= 2:
 					deep[plan.def.hard_fail] += 1
-			elif plan.role == GameEnums.BlockerRole.FRICTION:
+			elif plan.role() == GameEnums.BlockerRole.FRICTION:
 				friction += 1
 				if away == 0:
 					friction_on_the_route += 1
@@ -342,7 +342,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, standing,
 				locations)
 		if plan:
-			return plan.role
+			return plan.role()
 	return -1
 
 ## The edge-to-edge gap left across a sidewalk band past the row's body stood where its
@@ -1043,7 +1043,7 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
 			if plan.def.id != "pigeon_flock" or not plan.is_placed():
 				continue
-			t.check(plan.role == GameEnums.BlockerRole.NONE,
+			t.check(plan.role() == GameEnums.BlockerRole.NONE,
 					"day %d: a placed flock carries no role, not a wall's" % day)
 			var tile := map.world_to_tile(plan.position)
 			if corridor.depth(tile) == 0:

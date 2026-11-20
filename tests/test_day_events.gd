@@ -52,7 +52,7 @@ func _test_a_playground_a_scar_and_a_row_not_yet_placed_spoil_nothing(t: TestRun
 	var events := DayEvents.over(_calm())
 	var playground := _row("playground", COURT_GROUND.get_center())
 	var scar := _row("burnt_shell", COURT_GROUND.get_center())
-	scar.permanent = true
+	scar.make_permanent()
 	var unplaced := _row("dog_walker", Vector2.INF)
 	events.add_all([playground, scar, unplaced] as Array[EventPlan])
 	t.check(not events.is_spoiled(COURT),

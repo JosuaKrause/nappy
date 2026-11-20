@@ -97,8 +97,8 @@ func _print(walk: String, map: WorldMap, plans: Array[EventPlan]) -> int:
 		var plan := plans[i]
 		var tile := map.world_to_tile(plan.position) if plan.is_placed() else Vector2i(-1, -1)
 		print("FP %s | %d | %s | tile %s | at %s | facing %s | role %d | comes_in %.3f | every %.3f"
-				% [walk, i, plan.def.id, tile, plan.position, plan.facing, plan.role,
+				% [walk, i, plan.def.id, tile, plan.position, plan.facing, plan.role(),
 				plan.comes_in, plan.repeat_every]
 				+ " | after %.3f | aged %.3f | at_her %s | mast %s | path %s"
-				% [plan.repeat_after, plan.arrives_aged, plan.at_her, plan.mast_id, plan.path])
+				% [plan.repeat_after, plan.arrives_aged, plan.at_her, plan.mast_id(), plan.path])
 	return plans.size()

@@ -290,10 +290,10 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 	var step := 0.1
 	while walked < 600.0:
 		for plan in RunCity.events(_city).plans():
-			if plan.def.role == EventDef.Role.MAST and plan.mast_id != "" \
-					and not at_the_mark.has(plan.mast_id):
+			if plan.def.role == EventDef.Role.MAST and plan.mast_id() != "" \
+					and not at_the_mark.has(plan.mast_id()):
 				_seconds_walked_to_the_route_mast = walked
-				return plan.mast_id
+				return plan.mast_id()
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
 		if next == Vector2.INF:
@@ -397,8 +397,8 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 			"asking for the arrow chooses nothing and moves no contact")
 	var at_the_mark := {}
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id != "":
-			at_the_mark[plan.mast_id] = true
+		if plan.mast_id() != "":
+			at_the_mark[plan.mast_id()] = true
 	var routed := _walk_until_the_route_mast(at_the_mark, player)
 	if routed == "" or step == null:
 		player.free()
@@ -411,17 +411,17 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 	var answering: Array[String] = [near]
 	var third := ""
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id == "" or plan.mast_id == near or plan.silenced:
+		if plan.mast_id() == "" or plan.mast_id() == near or plan.is_silenced():
 			continue
-		var beside := _beside_the_mast(director, RunCity.events(_city).mast_foot(plan.mast_id))
+		var beside := _beside_the_mast(director, RunCity.events(_city).mast_foot(plan.mast_id()))
 		if beside == Vector2.INF:
 			continue
 		player.global_position = beside
 		director.tick(STEP)
-		if ResistanceReads.mast_at(director, RunCity.events(_city)) == plan.mast_id:
-			answering.append(plan.mast_id)
-			if plan.mast_id != routed:
-				third = plan.mast_id
+		if ResistanceReads.mast_at(director, RunCity.events(_city)) == plan.mast_id():
+			answering.append(plan.mast_id())
+			if plan.mast_id() != routed:
+				third = plan.mast_id()
 	t.check(near in answering and routed in answering and third != "",
 			"the near mast, the routed one and a third all answer (%s)" % [answering])
 	if third == "":
@@ -446,8 +446,8 @@ func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_
 			"touching the third mast completes the task")
 	var silenced := {}
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id in [near, routed, third]:
-			silenced[plan.mast_id] = plan.silenced
+		if plan.mast_id() in [near, routed, third]:
+			silenced[plan.mast_id()] = plan.is_silenced()
 	t.check(silenced.get(third, false) and not silenced.get(near, true)
 			and not silenced.get(routed, true),
 			"and silences the mast she touched, not the near or the routed one (%s)" % silenced)

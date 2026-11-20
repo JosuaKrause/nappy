@@ -269,7 +269,7 @@ func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked
 	var swing := CityGenerator.swing_park(city.map)
 	var catalogue: Array[EventPlan] = []
 	for plan in RunCity.events(city).plans():
-		if plan.role != GameEnums.BlockerRole.NONE or plan.mast_id != "":
+		if plan.role() != GameEnums.BlockerRole.NONE or plan.mast_id() != "":
 			catalogue.append(plan)
 	for block in city.map.calm_blocks:
 		if block == swing:

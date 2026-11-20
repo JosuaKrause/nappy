@@ -52,8 +52,8 @@ static func pointed_at(director: ResistanceDirector,
 static func mast_at(director: ResistanceDirector, events: EventManager) -> String:
 	var tip := director.red_arrow_target()
 	for plan in events.plans():
-		if plan.mast_id != "" and events.mast_foot(plan.mast_id).distance_to(tip) < 1.0:
-			return plan.mast_id
+		if plan.mast_id() != "" and events.mast_foot(plan.mast_id()).distance_to(tip) < 1.0:
+			return plan.mast_id()
 	return ""
 
 ## The day's reachability answer as `ResistanceDirector._reachable_from_home()` builds it

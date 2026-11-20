@@ -32,7 +32,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 			lorry_tile = tile
 			break
 	var lorry := EventPlan.new(lorry_def, map.tile_to_world(lorry_tile))
-	lorry.role = GameEnums.BlockerRole.FRICTION
+	lorry.give_role(GameEnums.BlockerRole.FRICTION)
 	# Planned after dawn, the way the day adds a plan it places late: it streams in like any
 	# planned row and its body is recorded where it stands.
 	RunCity.events(_city).streaming.add(lorry)
@@ -52,7 +52,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 	var refused := RunCity.events(_city).queue_a_mast(inside)
 	t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
 	var placed := RunCity.events(_city).queue_a_mast(clear)
-	t.check(placed != null and placed.mast_id.begins_with("added-")
+	t.check(placed != null and placed.mast_id().begins_with("added-")
 			and placed in RunCity.events(_city).plans(),
 			"offered ground clear of it, a mast is generated into the day's plan")
 	player.free()

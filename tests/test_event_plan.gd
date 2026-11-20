@@ -91,7 +91,7 @@ func _test_which_plans_are_fixed_parts(t: TestRunner) -> void:
 	t.check(not _sealed("barricade").is_a_fixed_part(),
 			"and so is a barricade the seal planner did not stand")
 	var shell := EventPlan.new(EventCatalogue.by_id("burnt_shell"), Vector2(320, 320))
-	shell.permanent = true
+	shell.make_permanent()
 	t.check(not shell.is_a_fixed_part(), "and so is the burnt shell a fire left: a regular event")
 	var seal := _sealed("barricade")
 	seal.stand_as_a_seal()
@@ -101,7 +101,7 @@ func _test_which_plans_are_fixed_parts(t: TestRunner) -> void:
 	t.check(wall.is_a_fixed_part(), "and so is the region wall's body")
 	t.check(_door("checkpoint_hut").is_a_fixed_part(), "and a door's")
 	var mast := EventPlan.new(EventCatalogue.mast(), Vector2(320, 320))
-	mast.mast_id = "a mast's site"
+	mast.stand_as_a_mast("a mast's site")
 	t.check(mast.is_a_fixed_part(), "and a loudspeaker mast")
 	var playground := EventPlan.new(EventCatalogue.by_id("playground"), Vector2(320, 320))
 	t.check(playground.is_a_fixed_part(), "and an ambient row")
@@ -175,8 +175,8 @@ func _test_a_plan_stands_where_a_candidate_was_judged(t: TestRunner) -> void:
 	t.check(owed.walks() == judged.walks() and not owed.stands_still(),
 			"and the route, so a beat that paces walks the stretch it was judged on")
 	t.check(owed.facing == Vector2.UP, "and its facing")
-	t.check(owed.role == GameEnums.BlockerRole.WALL, "and the role the judge gave it")
-	t.check(judged.position == Vector2(640, 96) and judged.role == GameEnums.BlockerRole.WALL,
+	t.check(owed.role() == GameEnums.BlockerRole.WALL, "and the role the judge gave it")
+	t.check(judged.position == Vector2(640, 96) and judged.role() == GameEnums.BlockerRole.WALL,
 			"while the candidate is left as it was")
 
 func _test_a_plan_turns_to_face(t: TestRunner) -> void:

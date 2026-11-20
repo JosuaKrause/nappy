@@ -26,12 +26,20 @@ const MAST_HOME_STREET_MARGIN := 1.0
 ## mast is measured from: `EventPlan.position`, the field's own centre, and the point
 ## that later task's touch radius would read.
 class Site extends RefCounted:
-	var id := ""
-	var foot := Vector2.ZERO
+	var _id := ""
+	var _foot := Vector2.ZERO
 
 	func _init(site_id: String, at: Vector2) -> void:
-		id = site_id
-		foot = at
+		_id = site_id
+		_foot = at
+
+	## The site's stable id (`mast_0`, `mast_1`, …).
+	func id() -> String:
+		return _id
+
+	## The ground point everything about the mast is measured from.
+	func foot() -> Vector2:
+		return _foot
 
 ## The chosen sites, in a stable order (`mast_0`, `mast_1`, …) so the id a plan or a save carries
 ## today is the same id tomorrow. Never on the home street, and never with a field that would reach

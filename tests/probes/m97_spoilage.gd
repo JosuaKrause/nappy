@@ -123,10 +123,7 @@ func _reproduce_zero_density_visits() -> void:
 						.calm(CalmAreas.of(map, [block] as Array[Vector2i])).on(tree).plan().placements()
 				var full_in_lot: Array[EventPlan] = []
 				for plan: EventPlan in full_planned:
-					if plan.def.kind == GameEnums.EventKind.AMBIENT or plan.permanent \
-							or not plan.is_placed():
-						continue
-					if plan.reaches(lot_world):
+					if plan.spoils(lot_world):
 						full_in_lot.append(plan)
 				var fc := full_in_lot.size()
 				full_counts.append(fc)
