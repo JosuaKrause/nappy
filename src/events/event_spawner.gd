@@ -396,7 +396,7 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 ## it will come down, and once its second is up the engine is created on that road, on its way to
 ## the fire, just out of sight from her (`PendingWarning.on_its_route()`), and drives to the kerb
 ## (`_where_the_summoned_row_stops()`), where it parks. A warning withdrawn for want of road out of
-## sight is summoned again (`PendingWarning.on_withdrawn`).
+## sight is summoned again (`PendingWarning.when_withdrawn()`).
 func _summon_the_sighted_row(source: EventDef, at: Vector2,
 		sighted_by: EventPlan = null) -> bool:
 	var summoned := EventCatalogue.by_id(source.aftermath.on_sight)
@@ -422,7 +422,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 			return true
 		var warning := _warnings.warn_first(summoned, her, where, arrive)
 		if warning:
-			warning.on_withdrawn = func() -> void: _sighted.erase(sighted_by)
+			warning.when_withdrawn(func() -> void: _sighted.erase(sighted_by))
 			return true
 	return false
 

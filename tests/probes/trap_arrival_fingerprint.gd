@@ -140,9 +140,9 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 		_print("%s nothing sent | %s | rng %d" % [label, " / ".join(_lines), director._rng.state])
 		return 1
 	var warning: PendingWarning = warnings[0]
-	var pointed := warning.place
+	var pointed := warning.points_at()
 	var her := player.global_position
-	var half := warning.left * 0.5
+	var half := warning.seconds_left() * 0.5
 	var shown := 0.0
 	var drifted := false
 	while not RunCity.events(city).pending_warnings().is_empty() and shown < 5.0:
@@ -158,7 +158,7 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 	for instance in RunCity.events(city).instances():
 		if instance.def.id == warning.def.id and not instance.is_finished:
 			sent = instance
-	var made := "nobody (withdrawn)" if warning.withdrawn else "nobody"
+	var made := "nobody (withdrawn)" if warning.was_withdrawn() else "nobody"
 	if sent != null and is_instance_valid(sent):
 		made = "%s at %s %s" % [sent.def.id, _point(sent.global_position),
 				RunTrace.tile(city.map.world_to_tile(sent.global_position))]

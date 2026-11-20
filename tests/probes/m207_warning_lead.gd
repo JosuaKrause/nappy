@@ -480,7 +480,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 			if warning.tick(STEP, her):
 				result["created_at"] = elapsed
 				result["created"] = created[0].global_position
-				result["pointed"] = warning.place
+				result["pointed"] = warning.points_at()
 			continue
 		var instance := created[0]
 		instance_where.tell(her)

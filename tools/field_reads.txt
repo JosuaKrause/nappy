@@ -294,7 +294,6 @@ src/events/events_ahead.gd noun_plural
 src/events/events_ahead.gd pursuit
 src/events/events_ahead.gd vehicle
 src/events/pending_warning.gd id
-src/events/pending_warning.gd placement
 src/events/plan_builder.gd path_length_tiles
 src/events/plan_builder.gd path_mode
 src/events/ruled_location_ground.gd id
@@ -305,10 +304,6 @@ src/events/walk_ground.gd mobile
 src/events/walk_ground.gd obstructs_radius
 src/events/walk_ground.gd pursuit
 src/events/walk_ground.gd shape
-src/events/warning_board.gd hard_fail
-src/events/warning_board.gd inner_radius
-src/events/warning_board.gd outer_radius
-src/events/warning_board.gd vehicle
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
 src/resistance/happenings.gd solid_parts
@@ -368,10 +363,6 @@ src/events/events_ahead.gd is_leaving
 src/events/views/event_look.gd age
 src/events/views/fire_look.gd age
 src/events/views/rank_look.gd age
-src/events/warning_board.gd barrier_post
-src/events/warning_board.gd car
-src/events/warning_board.gd def
-src/events/warning_board.gd is_finished
 src/run/day_director.gd excitement
 
 # [EventPlan] src/events/event_plan.gd
@@ -537,14 +528,6 @@ src/events/event_catalogue.gd at_a_front
 
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd sign_offset
-
-# [PendingWarning] src/events/pending_warning.gd
-src/events/event_spawner.gd on_withdrawn
-src/events/events_ahead.gd is_pelican
-src/events/events_ahead.gd on_withdrawn
-src/events/warning_board.gd on_withdrawn
-src/events/warning_board.gd shown
-src/events/warning_board.gd withdrawn
 
 # [PursuitSpec] src/events/pursuit_spec.gd
 src/events/behaviours/event_officer.gd stop_excitement

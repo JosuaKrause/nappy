@@ -172,9 +172,10 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 		rig.free()
 		RunCity.events(_city).stream_within(INF)
 		return
-	t.check(warning.left <= Tuning.WARNING_ALONE_MAX, "its badge is up alone for at most a second")
+	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
+			"its badge is up alone for at most a second")
 	var stop := EventSpawner._where_the_summoned_row_stops(_city.map, plan.position)
-	var offset := warning.offset
+	var offset := warning.points_at() - rig.global_position
 	var looked := [0]
 	var jumped := [0]
 	var her_at := [rig.global_position]
@@ -183,7 +184,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 		if not RunCity.events(_city).pending_warnings().has(warning):
 			return true
 		looked[0] += 1
-		if not (warning.place - rig.global_position).is_equal_approx(offset):
+		if not (warning.points_at() - rig.global_position).is_equal_approx(offset):
 			jumped[0] += 1
 		return false
 	_walk_clock = 0.0
@@ -191,7 +192,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 	t.check(looked[0] > 0 and jumped[0] == 0,
 			"its badge keeps its offset from her for all %d frames it is up (%d not)"
 			% [looked[0], jumped[0]])
-	t.check(not warning.withdrawn, "and it is not withdrawn")
+	t.check(not warning.was_withdrawn(), "and it is not withdrawn")
 	var engine: EventInstance = null
 	for instance in RunCity.events(_city).instances():
 		if instance.def.id == "fire_truck":
@@ -487,7 +488,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 			continue
 		engines += 1
 		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(rig.global_position, null),
-				EventFootprints.footprint_of(warning.def), rig.global_position, warning.place),
+				EventFootprints.footprint_of(warning.def), rig.global_position, warning.points_at()),
 				"and its badge points just out of sight, where it will come from")
 		# **It is aimed at where the fire actually is**, which is the half a runtime siting could
 		# break: the route is built from the live instance's position when it is first seen, and a
@@ -500,12 +501,12 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		# She stands where she first saw the fire while the warning runs on the manager's own ticks.
 		var her_at := rig.global_position
 		while RunCity.events(_city).pending_warnings().has(warning) \
-				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
+				and warning.shown_for() < Tuning.WARNING_ALONE_MAX + 5.0:
 			await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), Rig.WALK_SCALE)
 		# To the tick: `put_up()` adds nothing to `shown`, only `tick()` does, so the badge is over on
 		# the first tick that takes it to a second, at most one tick past it.
-		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + Rig.WALK_STEP + 0.001,
-				"its badge is up alone for %.2fs, at most a second (to the tick)" % warning.shown)
+		t.check(warning.shown_for() <= Tuning.WARNING_ALONE_MAX + Rig.WALK_STEP + 0.001,
+				"its badge is up alone for %.2fs, at most a second (to the tick)" % warning.shown_for())
 		# Counted by row, not by how many things are in the world: the day goes on round her while
 		# she stands, and a dog walker sent ahead of her can finish its leg and go in that second.
 		var arrived: EventInstance = null
@@ -537,14 +538,14 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 				arrived.step(Rig.WALK_STEP)
 				to_reach += Rig.WALK_STEP
 			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"
-					% [arrived.path[0].distance_to(her_at), warning.shown,
+					% [arrived.path[0].distance_to(her_at), warning.shown_for(),
 					"already on her" if on_her_at_once else "reaching her %.2fs later" % to_reach])
-			t.check(warning.shown + to_reach + 0.001 >= arrived.def.minimum_telegraph(),
+			t.check(warning.shown_for() + to_reach + 0.001 >= arrived.def.minimum_telegraph(),
 					("and from its badge to the earliest it reaches her is %.2fs, at least the "
-					% (warning.shown + to_reach))
+					% (warning.shown_for() + to_reach))
 					+ "%.2fs it is owed" % arrived.def.minimum_telegraph())
 			t.check(arrived.path.size() == 2, "and it is given a route down the fire's own street")
-			t.close_to(arrived.path[0].distance_to(warning.place), 0.0,
+			t.close_to(arrived.path[0].distance_to(warning.points_at()), 0.0,
 					"starting where its badge pointed", 1.0)
 			if arrived.path.size() == 2:
 				t.close_to(arrived.path[1].distance_to(kerb), 0.0,
