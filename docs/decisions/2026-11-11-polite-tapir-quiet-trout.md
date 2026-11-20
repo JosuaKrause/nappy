@@ -8,7 +8,7 @@ map interface the city's map and the building's map implement, in the model laye
 navigator and a draw layer. Fable's quota is out: Opus designed it in Fable's place (grassy-bison #1560) and a
 Sonnet agent built it from the design; the pull request (#1570) carries the `fable-only` label and merged on its
 Opus review, the player having lifted the hold for Fable ("we can lift the fable need there for now", "we can
-just completely work without it for now. if it later finds any issues we can do follow ups", inbox #1571).
+just completely work without it for now. if it later finds any issues we can do follow ups", inbox #1571 in teal-quail).
 
 **What was built.** The world half is split off `WorldMap` and no class is added. `City.build()` builds one
 `Navigator` over its map and keeps it; `SimulationBuilder.in_the_city()` is handed it; the building's events build

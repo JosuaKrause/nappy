@@ -8,7 +8,7 @@ Fable's quota is out and the player answered "yes, continue with one fable task 
 for it" (grassy-bison #1560), so an Opus agent designed and built it in Fable's place; the pull request
 (#1568) carries the `fable-only` label. It was
 held unmerged for Fable's review of the design (entry grassy-ibis) until the player lifted that
-hold while Fable's quota is out (inbox #1571), and merged on its Opus review.
+hold while Fable's quota is out (inbox #1571 in teal-quail), and merged on its Opus review.
 
 **What was built.** One fact was derived in two places: `Prop` sized a tree's ground shape (where its
 shadow is drawn from) as 0.28 of its picture's width, and `StreetTrees` kept its own 0.28 for
