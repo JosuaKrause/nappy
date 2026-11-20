@@ -11,7 +11,7 @@ extends RefCounted
 ## city's `FinalePlanner.Plan` — two chains from the service exit through three calm areas each to
 ## the tunnel and the bridge, so a street is on the walk when a chain walks its middle
 ## (`SealPlanner.runs_through()`). Which one a walk is the run flow decides, as a `DaySpec` setting
-## (`DaySpec.closes_streets`: a day grows its tree and closes streets off it; the escape is handed
+## (`DaySpec.closes_the_streets()`: a day grows its tree and closes streets off it; the escape is handed
 ## its chains).
 ##
 ## **A `RouteSource` of this class itself is no walk at all**: no street on it, nothing carried,

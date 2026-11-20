@@ -220,7 +220,7 @@ func send_a_pursuer() -> void:
 		return _where_the_sent_pursuer_starts(def, standing, prefer, first_up)
 	var arrive := func(place: Vector2, standing: Vector2, start: SpawnSiting.Start) -> void:
 		_sent_after_her = _spawner.spawn_warned(def, PackedVector2Array([place]))
-		var who := "a %s" % def.noun
+		var who := "a %s" % def.noun_for(1)
 		world.trace().note("roll", "poster tear: %s sent after her from %s, %.0fpx off (%s)"
 				% [who, RunTrace.tile(world.map().world_to_tile(place)),
 				standing.distance_to(place), "a clear run at her" if start.clear
@@ -253,7 +253,7 @@ func let_the_officers_out() -> void:
 		if owed <= 0:
 			continue
 		var def := EventCatalogue.out_of_the_car(_spec,
-				vehicle.def.heat_response != EventDef.HeatResponse.HUNTS)
+				not vehicle.hunts_for_her())
 		var stands := siting.ask_of_ground(Rect2(), EventInstance.mover_for(def))
 		for i in owed:
 			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
@@ -266,11 +266,11 @@ func let_the_officers_out() -> void:
 			vehicle.let_out(officer)
 		# Under `ahead`: men put down from her walk, where she stood — no seed says where a vehicle
 		# noticed her. See docs/TELEMETRY.md, "The entry kinds".
-		var who := "a %s gets out" % def.noun if owed == 1 \
-				else "%d %s get out" % [owed, def.noun_plural]
+		var who := "a %s gets out" % def.noun_for(1) if owed == 1 \
+				else "%d %s get out" % [owed, def.noun_for(owed)]
 		world.trace().note("ahead", "%s at %s, %.0fpx from her, and %s"
-				% ["an investigating patrol stops" if vehicle.def.vehicle != null
-						else "%s, standing," % vehicle.def.id,
+				% ["an investigating patrol stops" if vehicle.drives()
+						else "%s, standing," % vehicle.row_id(),
 				RunTrace.tile(world.map().world_to_tile(vehicle.global_position)),
 				vehicle.global_position.distance_to(world.player().global_position), who])
 
@@ -283,8 +283,8 @@ const OFFICER_SPACING := 28.0
 func _a_pursuer_is_after_her() -> bool:
 	if _sent_warning != null and _warnings.pending_warnings().has(_sent_warning):
 		return true
-	return is_instance_valid(_sent_after_her) and not _sent_after_her.is_finished \
-			and not _sent_after_her.is_leaving
+	return is_instance_valid(_sent_after_her) and not _sent_after_her.is_gone() \
+			and not _sent_after_her.is_on_its_way_out()
 
 ## How far either side of straight up or straight down a start is tried, in radians — the robber's
 ## own cone (`ResistanceDirector.ARRIVAL_CONE`), stepped rather than rolled.
@@ -477,7 +477,7 @@ func place_what_is_owed_ahead(delta: float) -> void:
 	if def.comes_down_her_line():
 		_send_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
-	if def.pursuit != null:
+	if def.pursues():
 		_warn_down_her_heading(def, body.global_position, path[0])
 		return
 	var crossing := _spawner.spawn(def, path[0], path)

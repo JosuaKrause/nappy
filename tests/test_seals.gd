@@ -808,7 +808,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			map.close_streets(closures)
 			map.clear_day_holds()
 			for closure in closures:
-				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
 			for segment in region_plan.walls:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:

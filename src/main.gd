@@ -1074,7 +1074,7 @@ func _build_the_escape_building() -> void:
 ## parks and the two exits are the ones she has walked for fourteen days. What is different is
 ## everything laid *on* it, and every difference is the section's `DaySpec`, which the day director
 ## dresses and plans it by: `City.start_day()` dresses the blocks and grows no route tree, closures
-## or region wall, since the walk is handed in once it is planned (`DaySpec.closes_streets`), and the
+## or region wall, since the walk is handed in once it is planned (`DaySpec.closes_the_streets()`), and the
 ## posters only show (`pastes_posters`); the crowd is nobody (`crowd_density`, *"no regular cars or
 ## regular people on the street"*); the plan is the escape's own (`DaySpec.walk_bag()`).
 ## It is dark from its first frame (`is_dark_from_the_start()`, which the city is built with) and

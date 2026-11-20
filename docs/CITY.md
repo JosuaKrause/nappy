@@ -1186,7 +1186,7 @@ second wall is refused, and so is a body in the box at its end reaching its last
 asks a body, never a cost: a row whose field alone covers the street is the line rules' question. A
 street a closure, a seal or the region wall already closes keeps no sidewalk to refuse anything for.
 The streets beside the routes and off them keep their blocking events all over (PLAYTEST-17), and
-the escape keeps its own, stricter rule (`DaySpec.keeps_the_walk_open`).
+the escape keeps its own, stricter rule (`DaySpec.keeps_her_walk_open()`).
 
 **The line rules do not already hold it on a route's street.** They ask only a row that counts
 against her line, and a pursuer (the alley robbery, the charging dog) does not, since it follows her

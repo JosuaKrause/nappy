@@ -249,7 +249,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 			# The same population `EventManager.start_day` performs, before `build_day` runs.
 			map.clear_day_holds()
 			for closure in closures:
-				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
 			for segment in region_plan.walls:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:
@@ -362,7 +362,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 
 			map.clear_day_holds()
 			for closure in closures:
-				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+				map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
 			for segment in region_plan.walls:
 				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:

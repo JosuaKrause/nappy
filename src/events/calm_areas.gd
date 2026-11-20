@@ -44,7 +44,7 @@ var _besides := NONE
 static func of(map: CityMap, used: Array[Vector2i] = [], day := 0,
 		target: Array[Vector2i] = []) -> CalmAreas:
 	var areas := CalmAreas.new()
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		var rect := ClosurePlanner.calm_area_rect(map, block)
 		areas._blocks.append(block)
 		areas._rects[block] = rect
@@ -65,7 +65,7 @@ static func _set_aside(map: CityMap, day: int, target: Array[Vector2i]) -> Vecto
 			or target.is_empty():
 		return NONE
 	var park := CityGenerator.swing_park(map)
-	return park if park in map.calm_blocks else NONE
+	return park if park in map.calm_blocks_now() else NONE
 
 ## Today's calm blocks, in the map's order.
 func blocks() -> Array[Vector2i]:

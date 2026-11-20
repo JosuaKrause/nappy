@@ -63,7 +63,7 @@ func case_the_home_street_is_never_closed(t: TestRunner) -> void:
 		var home := ClosurePlanner.home_street(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for closure in _plan(map, day):
-				t.check(closure.segment.key() != home.key(),
+				t.check(closure.street_key() != home.key(),
 						"seed %d day %d does not shut the street outside the front door"
 						% [map.city_seed(), day])
 
@@ -85,7 +85,7 @@ func case_closures_are_deterministic(t: TestRunner) -> void:
 					"seed %d day %d shuts the same number of streets twice"
 					% [map.city_seed(), day])
 			for i in mini(first.size(), second.size()):
-				t.check(first[i].segment.key() == second[i].segment.key()
+				t.check(first[i].street_key() == second[i].street_key()
 						and first[i].kind() == second[i].kind(),
 						"seed %d day %d shuts the same streets in the same way"
 						% [map.city_seed(), day])
@@ -132,8 +132,8 @@ func case_a_closed_street_is_out_of_the_network(t: TestRunner) -> void:
 	map.close_streets(closures)
 	t.check(not closures.is_empty(), "act IV shuts something")
 	for closure in closures:
-		for at_a: bool in [true, false]:
-			for tile in map.rect_tiles(closure.segment.mouth_rect(at_a)):
+		for mouth: Rect2i in closure.mouth_rects():
+			for tile in map.rect_tiles(mouth):
 				t.check(map.is_closed(tile), "the mouth tile %s of a closed street is closed" % tile)
 		for tile in closure.tiles(map):
 			if map.is_closed(tile):
@@ -295,11 +295,11 @@ func case_closures_land_where_a_wall_belongs(t: TestRunner) -> void:
 				gap_unbiased += float(closures.size() * off_gap) / off
 			for closure in closures:
 				total += 1
-				on_the_rim += 1 if rim.has(closure.segment.key()) else 0
-				in_a_gap += 1 if gap.has(closure.segment.key()) else 0
-				t.check(not tree.is_on_the_tree(closure.segment.key()),
+				on_the_rim += 1 if rim.has(closure.street_key()) else 0
+				in_a_gap += 1 if gap.has(closure.street_key()) else 0
+				t.check(not tree.is_on_the_tree(closure.street_key()),
 						"seed %d day %d: the closure at %s is off the corridor"
-						% [map.city_seed(), day, closure.segment.key()])
+						% [map.city_seed(), day, closure.street_key()])
 	t.check(total > 0, "the planner shuts streets at all (%d over %d seeds)" % [total, SEEDS])
 	t.check(on_the_rim > rim_unbiased * 1.5,
 			"closures land on a turning off the corridor more than chance would (%d against %.0f)"
@@ -321,9 +321,9 @@ func case_a_closure_never_lands_on_a_calm_areas_own_access(t: TestRunner) -> voi
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for closure in _plan(map, day):
 				checked += 1
-				t.check(not access.has(closure.segment.key()),
+				t.check(not access.has(closure.street_key()),
 						"seed %d day %d: closure at %s is not a calm area's own access street"
-						% [map.city_seed(), day, closure.segment.key()])
+						% [map.city_seed(), day, closure.street_key()])
 	t.check(checked > 0, "some closures were planned to check (%d)" % checked)
 
 ## `ClosurePlanner._invariant_holds`, restated here rather than exposed from it: a test that asks
@@ -437,5 +437,5 @@ func _todays_tree(map: CityMap, day: int) -> RouteTree:
 func _closed_set(closures: Array[RoadClosure]) -> Dictionary:
 	var closed := {}
 	for closure in closures:
-		closed[closure.segment.key()] = true
+		closed[closure.street_key()] = true
 	return closed

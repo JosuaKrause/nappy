@@ -1,7 +1,7 @@
 class_name OneNoticeRule
 extends StreetRule
 ## **No two waiting guards notice her from the same ground**, so she deals with one at a time
-## (`_keeps_its_notice_to_itself()`): the escape's rule (`DaySpec.one_notice_at_a_time`),
+## (`_keeps_its_notice_to_itself()`): the escape's rule (`DaySpec.notices_one_at_a_time()`),
 ## asked of what the walk has placed.
 
 var _builder: PlanBuilder
@@ -15,7 +15,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 		placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
 	return _keeps_its_notice_to_itself(_builder, candidate, placed)
 
-## **One waiting guard at a time** (`DaySpec.one_notice_at_a_time`). A candidate that waits to
+## **One waiting guard at a time** (`DaySpec.notices_one_at_a_time()`). A candidate that waits to
 ## notice her (`EventDef.notice`: the escape's roadblock, whose guard notices her within
 ## 180px of his band) is refused when the ground it notices her from meets the ground another placed
 ## one notices her from: the two notice discs, each centred where its band stands, may not overlap,
