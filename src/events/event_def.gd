@@ -423,10 +423,10 @@ func weight_on(ground: PlacementGround.Kind) -> float:
 	if _ground_weights.has(ground):
 		var times: float = _ground_weights[ground]
 		return times
-	return 1.0 if _stands_on(ground) else 0.0
+	return 1.0 if _stands_on_ground(ground) else 0.0
 
 ## Whether the row's `placement` holds a tile of `ground` (`PlacementGround.holds()`).
-func _stands_on(ground: PlacementGround.Kind) -> bool:
+func _stands_on_ground(ground: PlacementGround.Kind) -> bool:
 	for type in placement:
 		if PlacementGround.holds(ground, type as GameEnums.TileType):
 			return true
@@ -438,7 +438,7 @@ func _stands_on(ground: PlacementGround.Kind) -> bool:
 ## `validate()`'s refusal is a `push_error`, which fails the whole run.
 func is_weighed_on_ground_it_cannot_stand_on() -> bool:
 	for ground: int in _ground_weights:
-		if not _stands_on(ground as PlacementGround.Kind):
+		if not _stands_on_ground(ground as PlacementGround.Kind):
 			return true
 	return false
 
@@ -794,6 +794,59 @@ func is_a_set_piece_on_her_way() -> bool:
 ## Whether it is a loudspeaker mast (`Role.MAST`).
 func is_a_mast() -> bool:
 	return role == Role.MAST
+
+## Whether it is scenery (`Role.SCENERY`): a row that is part of the street's furniture, never a
+## wall or a piece of friction the day places for its cost.
+func is_scenery() -> bool:
+	return role == Role.SCENERY
+
+## Whether it is a one-shot (`GameEnums.EventKind.ONE_SHOT`): a set piece a day owes once.
+func is_a_one_shot() -> bool:
+	return kind == GameEnums.EventKind.ONE_SHOT
+
+## Whether the row stands on a tile of `type` (`placement`).
+func stands_on(type: GameEnums.TileType) -> bool:
+	return placement.has(type)
+
+## The kinds of tile the row stands on (`placement`), as a copy, so nothing writes the row through
+## it.
+func ground_kinds() -> Array[int]:
+	var kinds: Array[int] = []
+	kinds.assign(placement)
+	return kinds
+
+## The lane of the sidewalk the row wants (`pavement_side`).
+func sidewalk_lane() -> Pavement:
+	return pavement_side
+
+## Whether the row draws itself as a spread laid along its street's axis (`has_a_spread`), so a
+## corner, which belongs to two streets at once, is no ground for it.
+func lies_as_a_spread() -> bool:
+	return has_a_spread
+
+## Whether it leaves the building it stands against burnt: its scar is the burnt shell's
+## (`EventCatalogue.BURNT_SHELL_ID`), so the front it catches on has to be one that can be drawn
+## burnt.
+func burns_its_front() -> bool:
+	return aftermath.leaves_the_scar(EventCatalogue.BURNT_SHELL_ID)
+
+## Seconds after one of its instances ends that the next comes, or 0 for a row that does not come
+## again on a clock (`repeat_after`). A plan made of it starts from this.
+func comes_again_after() -> float:
+	return repeat_after
+
+## **The first day the row may be used as a seal**, which ordinary availability (`available_on()`)
+## cannot say for a `SCRIPTED` row: its `scripted_day` is a day nobody plays, `barricade`'s own is
+## 0, so the ordinary scheduler never rolls it, on purpose. A `SCRIPTED` row's own day is the
+## first day of its act (`act_tag`), `act_tag` being the act the row belongs to narratively and
+## the rule for every other row ("`act_tag` against the act its `first_day` falls in"), so reading
+## it the other way round for a `SCRIPTED` one is the smallest way to give it a day at all. Every
+## other row's is its `first_day`.
+func own_first_day() -> int:
+	if kind == GameEnums.EventKind.SCRIPTED:
+		var index := clampi(act_tag - 1, 0, Tuning.ACT_START_DAYS.size() - 1)
+		return Tuning.ACT_START_DAYS[index]
+	return first_day
 
 ## Its notice radius, or 0 for a row with no wait: the number every "how close before it notices"
 ## rule reads.

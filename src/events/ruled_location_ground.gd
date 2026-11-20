@@ -140,7 +140,7 @@ func scale(def: EventDef, location: Location) -> float:
 	if segment and (_map.street_kind_at(true, middle) == GameEnums.StreetKind.PEDESTRIAN
 			or _map.street_kind_at(false, middle) == GameEnums.StreetKind.PEDESTRIAN):
 		times *= float(_ground.weights().precinct())
-	if segment and _ground.is_a_wall_by_cost(def) and not def.hard_fail \
+	if segment and _ground.is_a_wall_by_cost(def) and not def.ends_the_day() \
 			and EventScheduler.role_for(def, _day) == GameEnums.BlockerRole.WALL \
 			and _corridor != null and _corridor.is_in_a_gap(middle):
 		times *= float(_ground.weights().gap())

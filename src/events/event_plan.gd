@@ -56,8 +56,8 @@ func _init(definition: EventDef, at: Vector2,
 	position = at
 	path = route
 	if definition:
-		repeat_every = definition.repeat_every
-		repeat_after = definition.repeat_after
+		repeat_every = definition.comes_again_every()
+		repeat_after = definition.comes_again_after()
 
 ## Whether this plan's instance comes again once it is done (`repeat_every`, `repeat_after`).
 func repeats() -> bool:
@@ -129,6 +129,10 @@ func spend() -> void:
 ## The id of the row this plan places (`EventDef.id`).
 func row_id() -> String:
 	return def.id
+
+## Whether `other` places the same row as this plan.
+func is_the_same_row_as(other: EventPlan) -> bool:
+	return def.id == other.def.id
 
 ## Where the day placed this plan, `Vector2.INF` while it is unsited (`is_placed()`). Its instance
 ## may have moved since: `where_it_stands_now()` answers where it is.
@@ -204,7 +208,7 @@ func keep_in_the_world() -> void:
 ## Day 13's swap never takes the section of one (`ResistanceDirector._section_to_swap()`).
 func is_a_fixed_part() -> bool:
 	return _is_door or _in_the_wall or _is_a_seal or mast_id != "" \
-			or def.kind == GameEnums.EventKind.AMBIENT
+			or def.is_ambient()
 
 ## Makes this body one of the day's seals. Called by `DayPlanner` for each seal it plans, and by
 ## nothing else.
@@ -248,12 +252,12 @@ func give_role(given: GameEnums.BlockerRole) -> void:
 ## 0 for an event that neither stands in the way nor ends the day. What the park cordon's last
 ## gap is kept clear of (`ParkCordon._clear_of_the_day()`).
 func clearance(her_reach: float) -> float:
-	if def.obstructs_radius <= 0.0 and not def.hard_fail:
+	if def.obstructs_within() <= 0.0 and not def.ends_the_day():
 		return 0.0
-	var reach := def.obstructs_radius + her_reach
+	var reach := def.obstructs_within() + her_reach
 	if def.has_a_field():
 		reach = maxf(reach, def.field_reach())
-	if def.hard_fail:
+	if def.ends_the_day():
 		reach = maxf(reach, def.lethal_reach() + her_reach)
 	return reach
 
@@ -287,7 +291,7 @@ func reaches(rect: Rect2) -> bool:
 ## would make a burnt-out building that has stood on that corner since day 3 vanish for one
 ## day and come back the next.
 func spoils(ground: Rect2) -> bool:
-	if def.kind == GameEnums.EventKind.AMBIENT or not is_placed() or permanent:
+	if def.is_ambient() or not is_placed() or permanent:
 		return false
 	return reaches(ground)
 
@@ -296,12 +300,12 @@ func spoils(ground: Rect2) -> bool:
 ## not something she walks through to reach the park behind it; a door is a crossing she walks
 ## through. What the day's reach (`DayReach`) stands as discs (`blocking_radius()`).
 func obstructs() -> bool:
-	return is_placed() and not _is_door and (def.obstructs_radius > 0.0 or def.hard_fail)
+	return is_placed() and not _is_door and (def.obstructs_within() > 0.0 or def.ends_the_day())
 
 ## The disc this event blocks the way with: its body's radius, or a hard fail's inner radius
 ## when that is wider.
 func blocking_radius() -> float:
-	return maxf(def.obstructs_radius, def.inner_radius if def.hard_fail else 0.0)
+	return maxf(def.obstructs_within(), def.core_within() if def.ends_the_day() else 0.0)
 
 ## The points that bound this event — the corners of its route, or the one place it stands.
 func ends() -> PackedVector2Array:
@@ -383,7 +387,7 @@ func gap_to(other: EventPlan) -> float:
 ## untouched — `EventPlan.keeps_its_field_clear()` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 func counts_against_the_line() -> bool:
-	return is_placed() and not _is_door and mast_id == "" and def.role != EventDef.Role.MAST \
+	return is_placed() and not _is_door and mast_id == "" and not def.is_a_mast() \
 			and def.has_a_line_to_avoid()
 
 ## Whether a row denies a point, under the beat-opening reading.
@@ -401,11 +405,11 @@ func denies(at: Vector2, reach: float) -> bool:
 		return true
 	return at.distance_to(body_at()) <= reach
 
-## **Whether this plan walks a beat**: its row paces (`EventDef.paces`) and a beat is laid, so what
+## **Whether this plan walks a beat**: its row paces (`EventDef.paces_a_beat()`) and a beat is laid, so what
 ## it denies is the ground the beat never leaves free (`denies()`), and the street it paces is one
 ## the line rule lets her pass him on by its far sidewalk (`RouteLineRule`).
 func walks_a_beat() -> bool:
-	return def.paces and path.size() >= 2
+	return def.paces_a_beat() and path.size() >= 2
 
 ## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
 ## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
@@ -466,7 +470,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
 ## say, which `EventScheduler.role_for` would classify ahead of the `hard_fail` check.
 func keeps_its_field_clear() -> bool:
-	return def.hard_fail and role != GameEnums.BlockerRole.WALL and def.pursuit == null
+	return def.ends_the_day() and role != GameEnums.BlockerRole.WALL and not def.pursues()
 
 # ----------------------------------------------------- what a caller asks ---
 # The questions a caller outside the events asks a plan, answered for its row where the
@@ -538,6 +542,15 @@ func solid_reach() -> float:
 ## appears: the dev rig's `--spawn event` passes over it.
 func is_ambient() -> bool:
 	return def.is_ambient()
+
+## Whether its row paces a beat (`EventDef.paces_a_beat()`), whether or not a beat is laid
+## (`walks_a_beat()`).
+func paces_a_beat() -> bool:
+	return def.paces_a_beat()
+
+## Whether its row comes after her (`EventDef.pursues()`), however its chase starts.
+func pursues() -> bool:
+	return def.pursues()
 
 ## How close she comes before it notices her (`EventDef.notice_within()`), or 0 for a row that does
 ## not wait for her.

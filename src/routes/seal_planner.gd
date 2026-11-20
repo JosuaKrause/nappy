@@ -335,7 +335,7 @@ static func runs_through(segment: StreetNetwork.Segment, open_cells: Dictionary,
 ## them would be the loudest thing on the map and none of it is ground she is meant to reach.
 ## Its guards appear in the finale anyway, on foot and hunting, which is what that row is here for.
 ##
-## **The day gate passes every one of them**: `_eligible`/`_effective_first_day` answer which act a
+## **The day gate passes every one of them**: `_eligible`/`EventDef.own_first_day()` answer which act a
 ## picture belongs to, and the escape is the night after the last of the fourteen days.
 static func _build_escape_candidates() -> Array[Candidate]:
 	return [
@@ -414,7 +414,7 @@ static func _pick_candidate(pictures: Array[Candidate], day: int, rng: RandomNum
 	return eligible[rng.randi_range(0, eligible.size() - 1)]
 
 ## Whether `candidate` may seal a street on `day`: every row it names is available by then
-## (`_effective_first_day()`), and a fallen tree only on a street with trees of its own
+## (`EventDef.own_first_day()`), and a fallen tree only on a street with trees of its own
 ## (`street_has_trees`, `FALLEN_TREE_SEAL_ID`). What `plan_day()` draws a street's picture from, and
 ## what a scene recipe's authored seal is held to (`SceneRecipeRuntime`).
 static func offers(candidate: Candidate, day: int, street_has_trees: bool) -> bool:
@@ -425,22 +425,9 @@ static func offers(candidate: Candidate, day: int, street_has_trees: bool) -> bo
 static func _eligible(candidate: Candidate, day: int) -> bool:
 	for id in candidate.def_ids:
 		var def := EventCatalogue.by_id(id)
-		if not def or day < _effective_first_day(def):
+		if not def or day < def.own_first_day():
 			return false
 	return true
-
-## When a row may be used as a seal. Ordinary availability (`EventDef.available_on`) is stated
-## over `scripted_day` for a `SCRIPTED` row, which is a day nobody plays — `barricade`'s own is 0,
-## so it is never rolled by the ordinary scheduler at all, on purpose (see the class doc). A seal
-## bypasses that gate and asks a question `available_on` cannot answer for a `SCRIPTED` row: which
-## day is this row's own, narratively. `act_tag` is that answer — "act_tag against the act its
-## first_day falls in" (`EventDef`'s own docstring) is the rule for every other row, so reading it
-## the other way round for a `SCRIPTED` one is the smallest way to give it a day at all.
-static func _effective_first_day(def: EventDef) -> int:
-	if def.kind == GameEnums.EventKind.SCRIPTED:
-		var index := clampi(def.act_tag - 1, 0, Tuning.ACT_START_DAYS.size() - 1)
-		return Tuning.ACT_START_DAYS[index]
-	return def.first_day
 
 ## One seal sited on one street (`seal_street()`): the street, the picture, the tile on the
 ## street's own along axis its bodies stand at (`-1` for the midpoint), and the bodies.
@@ -579,7 +566,7 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 	# actually is here, whatever shape the row carries as a catalogue candidate.
 	def.solid(GroundShape.point(Tuning.TILE_SIZE))
 	var positions := positions_across(map.tile_rect_to_world(segment.mouth_rect(at_a)),
-			segment.horizontal, def.obstructs_radius)
+			segment.horizontal, def.obstructs_within())
 	var road_def := _no_wall_guards(def) if positions.size() == 3 else null
 	var road_index := positions.size() / 2
 	var planned: Array[EventPlan] = []
@@ -745,7 +732,7 @@ static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 				if segment.horizontal \
 				else Rect2i(Vector2i(rect.position.x, along), Vector2i(rect.size.x, 1))
 	return positions_across(map.tile_rect_to_world(rect), segment.horizontal,
-			def.obstructs_radius)
+			def.obstructs_within())
 
 ## The same spacing arithmetic as `_hard_positions`, generalised to any world rect rather than a
 ## segment's own whole `tile_rect()`, and to a radius alone rather than one def's own
@@ -887,7 +874,7 @@ static func _alley_mouth_def(pictures: Array[Candidate], day: int) -> String:
 			continue
 		for id in candidate.def_ids:
 			var def := EventCatalogue.by_id(id)
-			if def and day >= _effective_first_day(def):
+			if def and day >= def.own_first_day():
 				ids.append(id)
 	return _widest_that_fits_a_mouth(ids)
 
@@ -900,9 +887,9 @@ static func _widest_that_fits_a_mouth(ids: Array[String]) -> String:
 	var best_radius := 0.0
 	for id in ids:
 		var def := EventCatalogue.by_id(id)
-		if not def or def.obstructs_radius * 2.0 > mouth:
+		if not def or def.obstructs_within() * 2.0 > mouth:
 			continue
-		if def.obstructs_radius > best_radius:
-			best_radius = def.obstructs_radius
+		if def.obstructs_within() > best_radius:
+			best_radius = def.obstructs_within()
 			best_id = id
 	return best_id
