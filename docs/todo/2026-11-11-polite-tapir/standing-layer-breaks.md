@@ -18,8 +18,8 @@ reason.
 **The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
 review; a builder runs it again):
 
-- **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
-  `walk_ground.gd`): the live event, its picture footprints and her class's constants.
+- **Dawn planning reading live-event geometry**: one use is left, the plan holding its live event
+  while it is in the world (`event_plan.gd`'s `live`).
 - **The rest**, small misplacements: the task calendar
   computing on the map; the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's type tests where she is not handed in
@@ -29,9 +29,9 @@ review; a builder runs it again):
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
-- Dawn planning's reads of live-event geometry stand in `src/events/walk_ground.gd`
-  (`EventFootprints` three times, `EventInstance` once); row 3a of minty-quail's `event-interface.md`
-  settles them.
+- The plan's hold on its live event goes with row 3b of minty-quail's `event-interface.md`, whose
+  streaming keeps that state per plan; the geometry dawn planning read is `BodyStance`'s, a model
+  class (the record minty-quail-azure-ferret).
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
   that finishes this item lists what is left:* **the rest** ends as follows. `interior_scene.gd`'s `Stroller` goes with the
   building's pass; `GameSave` and
