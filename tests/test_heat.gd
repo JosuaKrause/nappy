@@ -12,7 +12,7 @@ extends RefCounted
 ## are in a heat suite**: what heat promises about a patrol, a guard or a raid is how the instance
 ## made from the heated row behaves (it notices, stops, lets a man out, resumes from a stream), a
 ## guarantee between the catalogue's row and the instance that plays it, so a fake instance would
-## answer nothing. The instance's own members a case reads (`age`, `is_leaving`, `is_finished`,
+## answer nothing. The instance's own members a case reads (`age`, `is_on_its_way_out()`, `is_gone()`,
 ## `barrier_post`) have no method to read them through, and `src/events/` is not this change's to add
 ## one to.
 ##

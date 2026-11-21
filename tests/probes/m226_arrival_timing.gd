@@ -161,7 +161,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var parts: Array[Rect2] = []
 	var def := instance.row()
-	var view: String = instance.look.select_view(instance._heading)
+	var view: String = instance.look.select_view(instance.facing_now())
 	var bob: float = instance.look.current_bob()
 	var picture := ""
 	match def.look:

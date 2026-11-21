@@ -634,7 +634,7 @@ func _test_event_instance_contribution_is_cached_per_frame_per_position(t: TestR
 ## The CI failure this guards against, reproduced directly: `EventManager.retire()` finishes an
 ## instance straight from outside, with no tick of the instance's own in between -- so `age` never
 ## moves, and a cache keyed only on `(age, world_position)` went on answering the pre-finish
-## contribution for the rest of that tick. `_be_done()`'s `is_leaving = true` branch is the other
+## contribution for the rest of that tick. `_be_done()`'s `is_on_its_way_out()` branch is the other
 ## half of the same guard `contribution_at()`'s early return reads, and gets the same check.
 func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestRunner) -> void:
 	var def := _def("finishable", 40.0)

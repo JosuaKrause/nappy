@@ -295,7 +295,7 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 		return
 	world.map().release_obstruction(instance.get_instance_id())
 	instance.move_to(at)
-	record_the_body(instance.get_instance_id(), instance.def, instance.global_position,
+	record_the_body(instance.get_instance_id(), instance.row(), instance.global_position,
 			instance.facing_now())
 
 ## Creates `def` on `path`, for a row whose warning ran before it existed, placed where the warning

@@ -171,7 +171,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 
 	# "Different directions" made exact: she starts on the side the instance is currently heading
 	# toward and walks straight at it, offset in Y by the lane she is giving it.
-	var heading_x := signf(instance._heading.x)
+	var heading_x := signf(instance.facing_now().x)
 	if is_zero_approx(heading_x):
 		heading_x = 1.0
 	# Where a row that comes at her is created, closest; otherwise the fixed window that clears

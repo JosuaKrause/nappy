@@ -505,7 +505,7 @@ func _test_a_raised_boom_moves_the_gates_key(t: TestRunner) -> void:
 	instance.free()
 
 ## An event that is over leaves rather than vanishing, and it bobs on the way out
-## (`current_bob()`'s own `is_leaving` branch) — so the departure is drawn rather than held on the
+## (`current_bob()`'s own `is_on_its_way_out()` branch) — so the departure is drawn rather than held on the
 ## last frame the event was still an event.
 func _test_a_leaving_event_moves_its_key(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()

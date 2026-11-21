@@ -1732,7 +1732,7 @@ func _test_the_release_latch(t: TestRunner) -> void:
 ## The one row that keeps its old, once-only behaviour: `redetains` defaults to `false`, and
 ## `chatting_mother` never sets it, so a second approach to the same instance never starts a
 ## second conversation — restated here beside the redetaining rows so the new gate in
-## `CheckpointController.check_detentions()` (`not instance.def.redetains and
+## `CheckpointController.check_detentions()` (`not instance.row().redetains and
 ## instance.has_chatted()`) is checked against both branches in the same suite.
 func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 	var manager := _manager(t)

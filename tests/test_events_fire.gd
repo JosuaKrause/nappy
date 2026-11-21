@@ -295,7 +295,7 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 ##
 ## Four things are checked and every one of them was wrong before the flag existed. It **stops**
 ## where the route ended rather than driving on out of sight. It is **not over**: it still emits,
-## which is the entire cost the player asked for, where `is_leaving` would have silenced it. It
+## which is the entire cost the player asked for, where `is_on_its_way_out()` would have silenced it. It
 ## **answers zero for its travel**, which is what the screen-edge badge reads as a closing speed.
 ## And the distance it has covered **stops growing**, because the gait is driven by distance and a
 ## parked engine would otherwise bob at the kerb for ever.

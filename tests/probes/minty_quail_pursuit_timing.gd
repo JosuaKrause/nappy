@@ -348,15 +348,15 @@ class Run extends RefCounted:
 				continue
 			if moments.lethal < 0 and instance.is_lethal_at(her):
 				moments.lethal = tick
-			if moments.has_given_up() < 0 and instance.has_given_up():
+			if moments.gave_up < 0 and instance.has_given_up():
 				moments.gave_up = tick
 			if moments.leaving < 0 and instance.is_on_its_way_out():
 				moments.leaving = tick
 			if moments.finished < 0 and instance.is_gone():
 				moments.finished = tick
 			line += "|%d:%s,%s,%s,%s,%s,%d,%d" % [i, var_to_str(instance.position.x),
-					var_to_str(instance.position.y), var_to_str(instance._heading.x),
-					var_to_str(instance._heading.y), var_to_str(instance._path_travelled),
+					var_to_str(instance.position.y), var_to_str(instance.facing_now().x),
+					var_to_str(instance.facing_now().y), var_to_str(instance.path_travelled()),
 					instance.phase, 1 if instance.has_parked() else 0]
 		_chain.update(line.to_utf8_buffer())
 

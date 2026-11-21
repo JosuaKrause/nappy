@@ -36,7 +36,7 @@ extends RefCounted
 ## and its clock is the one every warning runs on (`Warning`), read against the time it has been up.
 
 ## The row the badge draws: its silhouette, its colour, and how fast it will close.
-var def: EventDef
+var _def: EventDef
 ## Where the badge points, in world px: her, plus `_offset`. Moves only with her.
 var _place := Vector2.INF
 ## Where the badge points from her, fixed when the warning goes up (`put_up()`).
@@ -65,10 +65,10 @@ var _is_pelican := false
 ## What the run log calls the thing this warns of — `EventInstance.logged_name()` before there is
 ## an instance to ask.
 func logged_name() -> String:
-	return EventInstance.named_for_the_log(def.id, _is_pelican)
+	return EventInstance.named_for_the_log(_def.id, _is_pelican)
 
 func _init(row: EventDef, where: Callable, arrive: Callable) -> void:
-	def = row
+	_def = row
 	_clock.start(0.0, row.warned_for())
 	_where = where
 	_arrive = arrive
@@ -253,7 +253,7 @@ static func lane_ends(map: CityMap, going: Vector2) -> Vector2:
 
 ## The row it warns of: what the badge draws and what it asks how fast it will close.
 func row() -> EventDef:
-	return def
+	return _def
 
 ## Where the badge points, in world px (`_place`), or `Vector2.INF` before it is put up.
 func points_at() -> Vector2:

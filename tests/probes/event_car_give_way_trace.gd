@@ -225,8 +225,8 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 		held += 1 if standing else 0
 		flips += 1 if standing != was_standing else 0
 		was_standing = standing
-		var state := PackedFloat32Array([car.position.x, car.position.y, car._heading.x,
-				car._heading.y, car._path_travelled, 1.0 if standing else 0.0,
+		var state := PackedFloat32Array([car.position.x, car.position.y, car.facing_now().x,
+				car.facing_now().y, car.path_travelled(), 1.0 if standing else 0.0,
 				1.0 if car.has_parked() else 0.0, 1.0 if car.is_on_its_way_out() else 0.0,
 				1.0 if car.is_gone() else 0.0])
 		var context := HashingContext.new()

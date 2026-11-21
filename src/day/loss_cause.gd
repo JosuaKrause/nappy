@@ -24,7 +24,7 @@ static func of(result: GameEnums.DayResult, hard_fail_reason := "", struck_by :=
 
 ## What ended a hard-fail day: `car` for the one hard fail that is not a catalogue row
 ## (`EventBus.hard_fail_triggered("car_strike")`, `Crowd._strike()`), otherwise the id off whatever
-## row actually struck her (`EventBus.hard_fail_triggered(instance.def.id)`,
+## row actually struck her (`EventBus.hard_fail_triggered(instance.row_id())`,
 ## `EventManager.check_hard_fails()`) — hyphenated the same way every other cause name is, so a new
 ## hard-fail row is covered without a second list naming it here.
 ##
