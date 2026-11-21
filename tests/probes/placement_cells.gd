@@ -81,7 +81,7 @@ func run(t: TestRunner) -> void:
 				seal.stand_as_a_seal()
 			var doors := PackedVector2Array()
 			for body in region_plan.door_bodies:
-				doors.append(body.position)
+				doors.append(body.placed_at())
 			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
 			standing.append_array(region_plan.wall_bodies)
@@ -116,7 +116,7 @@ func run(t: TestRunner) -> void:
 					events_by[ek] = int(events_by.get(ek, 0)) + 1
 					if plan.row().paces_a_beat() and plan.is_placed():
 						var bk := "%s %s %d" % [GROUNDS[unit.kind()], plan.row_id(),
-								_beat_in_tiles(plan.path)]
+								_beat_in_tiles(plan.walks())]
 						beats_by[bk] = int(beats_by.get(bk, 0)) + 1
 		for key: String in room_by:
 			print("CL %d %s %d %d" % [day, key, units_by[key], room_by[key]])

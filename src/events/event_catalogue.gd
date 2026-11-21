@@ -2976,7 +2976,7 @@ static func _checkpoint_hut() -> EventDef:
 ## `intensity` 0 on radii that exist only because `validate()` wants a falloff band, `inner_radius`
 ## 84 and `outer_radius` 120, clear of `Tuning.required_telegraph_time()` at that core. Drawn raised
 ## or lowered from the shared `GateState` `Crowd` keeps current for the day's cars.
-## Placed with `EventPlan.facing` set along the street's own axis, which tells the drawing a
+## Placed with the plan's facing set (`EventPlan.face()`) along the street's own axis, which tells the drawing a
 ## north-south road from an east-west one and is the door's own line for the walk-under check.
 static func _checkpoint_gate() -> EventDef:
 	var def := EventDef.new()

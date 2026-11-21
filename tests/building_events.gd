@@ -44,7 +44,7 @@ static func spec() -> DaySpec:
 static func vents(events: EventManager) -> Array[EventPlan]:
 	var found: Array[EventPlan] = []
 	for plan in events.plans():
-		if plan.def.id == "basement_steam":
+		if plan.row_id() == "basement_steam":
 			found.append(plan)
 	return found
 

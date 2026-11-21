@@ -474,9 +474,9 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> v
 				for plan in planned:
 					if not plan.is_placed():
 						continue
-					t.check(not fenced_tiles.has(map.world_to_tile(plan.position)),
+					t.check(not fenced_tiles.has(map.world_to_tile(plan.placed_at())),
 							"seed %d day %d: '%s' is not placed inside the fenced park"
-							% [map.city_seed(), day, plan.def.id])
+							% [map.city_seed(), day, plan.row_id()])
 			for block in used:
 				if block == map.fenced_park_block() or not block in calm.blocks():
 					continue

@@ -60,10 +60,10 @@ func _measure() -> void:
 					.on(tree).plan().placements()
 			var bought := 0
 			for plan in planned:
-				var mode := plan.def.spawn_mode_on(day)
+				var mode := plan.spawn_mode_on(day)
 				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
 						or mode == EventDef.SpawnMode.TOWARD_PLAYER \
-						or (plan.def.is_sent_ahead() and not plan.is_placed()):
+						or (plan.is_sent_ahead() and not plan.is_placed()):
 					bought += 1
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()

@@ -392,7 +392,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 				DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		for plan in RunCity.events(city).plans():
 			if plan.get_meta("recipe_name", "") == "car":
-				installed[heat] = plan.def
+				installed[heat] = plan.row()
 		t.check(errors.is_empty(), "the patrol car is installed at heat %s: %s" % [heat, errors])
 		runtime.free()
 	var cold: EventDef = installed.get(null)

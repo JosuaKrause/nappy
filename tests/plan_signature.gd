@@ -14,5 +14,5 @@ static func of(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	var consumed: Array[String] = []
 	var parts: Array[String] = []
 	for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).traced(trace).plan().placements():
-		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
+		parts.append("%s@%.2f,%.2f" % [plan.row_id(), plan.placed_at().x, plan.placed_at().y])
 	return "|".join(parts)

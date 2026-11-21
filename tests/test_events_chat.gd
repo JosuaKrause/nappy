@@ -316,9 +316,9 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t: TestRunner
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	stroller.global_position = far
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(not plan.is_in_the_world() and plan.spent,
+	t.check(not plan.is_in_the_world() and plan.is_spent(),
 			"walking off past the stream radius takes her away for good (live %s, spent %s)"
-			% [plan.is_in_the_world(), plan.spent])
+			% [plan.is_in_the_world(), plan.is_spent()])
 	stroller.global_position = at
 	await PhysicsTicks.pass_ticks(t, 2)
 	t.check(not plan.is_in_the_world() and not stroller.is_detained(),

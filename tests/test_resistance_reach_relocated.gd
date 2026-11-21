@@ -36,14 +36,14 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 		# The task's mast, by the public link: the contact stands on its foot.
 		var added_plan: EventPlan = null
 		for plan in RunCity.events(_city).plans():
-			if plan.def.id == "loudspeaker" and plan.mast_id().begins_with("added-") \
+			if plan.row_id() == "loudspeaker" and plan.mast_id().begins_with("added-") \
 					and RunCity.events(_city).mast_foot(plan.mast_id()).distance_to(
 					director.contact_position()) < 0.5:
 				added_plan = plan
 		for plan in RunCity.events(_city).plans():
-			if plan.def.id != "loudspeaker" or plan.mast_id().begins_with("added-") or plan.is_silenced():
+			if plan.row_id() != "loudspeaker" or plan.mast_id().begins_with("added-") or plan.is_silenced():
 				continue
-			var foot_tile := _city.map.world_to_tile(plan.position)
+			var foot_tile := _city.map.world_to_tile(plan.placed_at())
 			# The tile she touches it from: the first beside the foot she can stand on, the
 			# order `_place_at_a_mast()` asks them in.
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
@@ -106,7 +106,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			var stands_again := false
 			for plan in RunCity.events(_city).plans():
 				if plan.mast_id() == mast_id and plan.is_silenced() \
-						and plan.position.distance_to(foot) < 1.0:
+						and plan.placed_at().distance_to(foot) < 1.0:
 					stands_again = true
 			t.check(stands_again, "seed %d: and the next day stands it again, silenced"
 					% seed_value)
@@ -115,7 +115,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			# director's — and then the nearest live mast is the task's, which the director says.
 			var generated := 0
 			for plan in RunCity.events(_city).plans():
-				if plan.def.id == "loudspeaker" and plan.mast_id().begins_with("added-"):
+				if plan.row_id() == "loudspeaker" and plan.mast_id().begins_with("added-"):
 					generated += 1
 			var stands_on := ResistanceReads.mast_at(director, RunCity.events(_city))
 			t.check(generated == 0 and stands_on != "" and not stands_on.begins_with("added-"),
@@ -140,7 +140,7 @@ func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 	var region_plan: RegionPlan = _city.streets().region_plan()
 	if region_plan:
 		for body in region_plan.door_bodies:
-			doors.append(body.position)
+			doors.append(body.placed_at())
 	return not DoorClearanceRule.clear_of_the_doors(foot, PackedVector2Array(), doors,
 			EventCatalogue.mast().field_reach())
 

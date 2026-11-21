@@ -154,9 +154,9 @@ func _street_counts(map: CityMap, plan: FinalePlanner.Plan,
 		var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
 		var here := 0
 		for placement in placements:
-			if ROWS.has(placement.def.id) and rect.has_point(placement.position):
+			if ROWS.has(placement.row_id()) and rect.has_point(placement.placed_at()):
 				here += 1
-				rows[placement.def.id] = int(rows[placement.def.id]) + 1
+				rows[placement.row_id()] = int(rows[placement.row_id()]) + 1
 		dangers += here
 		if here == 0:
 			empty += 1

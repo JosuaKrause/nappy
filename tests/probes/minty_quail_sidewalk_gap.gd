@@ -49,14 +49,14 @@ func run(t: TestRunner) -> void:
 		for plan in RunCity.events(city).plans():
 			if not plan.is_placed():
 				continue
-			var key := plan.def.id
+			var key := plan.row_id()
 			if plan.is_door():
 				key = "door body " + key
 			elif not plan.obstructs():
 				continue
 			if not rows.has(key):
 				rows[key] = {}
-			_count(rows[key], _gap(map, plan.def, plan.position, plan.facing))
+			_count(rows[key], _gap(map, plan.row(), plan.placed_at(), plan.faces()))
 		city.free()
 	for id: String in beats:
 		print("SG_BEAT %s | %s" % [id, _line(beats[id])])

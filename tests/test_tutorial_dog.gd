@@ -106,7 +106,7 @@ func _test_day_4_is_a_map_placement(t: TestRunner) -> void:
 			rng.seed = hash("%d:%d" % [run_seed, day])
 			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(masts).spent(consumed) \
 					.on(tree).plan().placements():
-				if plan.def.id != "charging_dog":
+				if plan.row_id() != "charging_dog":
 					continue
 				checked += 1
 				t.check(plan.is_placed(),

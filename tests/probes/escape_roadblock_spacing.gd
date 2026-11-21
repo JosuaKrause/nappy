@@ -32,7 +32,7 @@ func run(t: TestRunner) -> void:
 				_city_spec(), GamePlanBuilder.over(map))
 		var bands: Array[EventPlan] = []
 		for placement in placements:
-			if placement.def.id == "roadblock":
+			if placement.row_id() == "roadblock":
 				bands.append(placement)
 		var builder := GamePlanBuilder.over(map)
 		var nearest := INF
@@ -42,12 +42,12 @@ func run(t: TestRunner) -> void:
 				var gap := builder.body_stands_at(bands[i]).distance_to(
 						builder.body_stands_at(bands[j]))
 				pairs += 1
-				if gap < bands[i].def.notice_within() + bands[j].def.notice_within():
+				if gap < bands[i].notice_within() + bands[j].notice_within():
 					under += 1
 				if gap < nearest:
 					nearest = gap
-					nearest_pair = "%s %s" % [map.world_to_tile(bands[i].position),
-							map.world_to_tile(bands[j].position)]
+					nearest_pair = "%s %s" % [map.world_to_tile(bands[i].placed_at()),
+							map.world_to_tile(bands[j].placed_at())]
 		total += bands.size()
 		nearest_of_all = minf(nearest_of_all, nearest)
 		print("ESCAPE_SPACING seed %2d | %2d roadblocks | nearest two %.0fpx apart, %s"

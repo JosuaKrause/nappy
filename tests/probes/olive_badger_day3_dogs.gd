@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 				.on(RouteTree.for_day(map, day)).plan().placements()
 		var bought_a_dog := false
 		for plan in planned:
-			if plan.def.id == DOG:
+			if plan.row_id() == DOG:
 				bought_a_dog = true
 		if not bought_a_dog:
 			no_dog_bought += 1

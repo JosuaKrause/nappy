@@ -51,7 +51,7 @@ func run(t: TestRunner) -> void:
 func _signature(planned: Array[EventPlan]) -> String:
 	var parts: Array[String] = []
 	for plan: EventPlan in planned:
-		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
+		parts.append("%s@%.1f,%.1f" % [plan.row_id(), plan.placed_at().x, plan.placed_at().y])
 	return "|".join(parts)
 
 func _advance(instance: EventInstance, seconds: float) -> void:
@@ -98,11 +98,11 @@ func _test_scheduler_respects_placement_and_one_of_a_row_per_unit(t: TestRunner)
 		for plan: EventPlan in planned:
 			# An `AHEAD_OF_PLAYER` event has no tile: the director sites it in front of the player
 			# later.
-			if plan.def.placement.is_empty() or not plan.is_placed():
+			if plan.row().placement.is_empty() or not plan.is_placed():
 				continue
-			var tile := map.world_to_tile(plan.position)
-			t.check(map.tile_at(tile) in plan.def.placement,
-					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
+			var tile := map.world_to_tile(plan.placed_at())
+			t.check(map.tile_at(tile) in plan.row().placement,
+					"day %d: '%s' was placed on an allowed tile type" % [day, plan.row_id()])
 		var dawn := _dawn(day)
 		var units := dawn.unit_draw().units()
 		var fresh := DayUnits.of(dawn.locations().all(), dawn.day_seed())
@@ -160,11 +160,11 @@ func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 		for day in range(1, 15):
 			for plan in GameDawn.of(DaySpec.for_day(day), rng_for.call(day), map).masts(sites) \
 					.spent(consumed).plan().placements():
-				if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
+				if plan.row().kind != GameEnums.EventKind.ONE_SHOT:
 					continue
-				t.check(int(seen.get(plan.def.id, day)) == day,
-						"one-shot '%s' is planned on one day of a run" % plan.def.id)
-				seen[plan.def.id] = day
+				t.check(int(seen.get(plan.row_id(), day)) == day,
+						"one-shot '%s' is planned on one day of a run" % plan.row_id())
+				seen[plan.row_id()] = day
 				one_shots_seen += 1
 	t.check(one_shots_seen > 0, "some run had a one-shot to check (%d)" % one_shots_seen)
 
@@ -194,10 +194,10 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
 			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
-				if plan.def.id != "alley_robbery" or not plan.is_placed():
+				if plan.row_id() != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				t.check(corridor.depth(tile) != 0,
 						"seed %d day %d: 'alley_robbery' at tile %s is not on the day's corridor"
 						% [run_seed, day, tile])
@@ -393,7 +393,7 @@ func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 			for block in calm.unused():
 				var near: Array[String] = []
 				for plan in events.spoilers_of(block):
-					near.append(plan.def.id)
+					near.append(plan.row_id())
 				t.check(near.is_empty(),
 						"seed %d day %d: nothing is near the unused calm at %s (%s)"
 						% [run_seed, day, block, ", ".join(near)])
@@ -508,29 +508,29 @@ func _test_along_street_paths_stay_in_bounds(t: TestRunner) -> void:
 	for day in range(1, 15):
 		for plan in _planned(day):
 			# A moment the director is owed has no route yet (`DawnMoments`).
-			if plan.def.path_mode != EventDef.PathMode.ALONG_STREET or not plan.is_placed():
+			if plan.row().path_mode != EventDef.PathMode.ALONG_STREET or not plan.is_placed():
 				continue
-			t.check(plan.path.size() == 2, "an along-street route has two waypoints")
+			t.check(plan.walks().size() == 2, "an along-street route has two waypoints")
 			# The route must not finish jammed against the boundary along the axis it
 			# travels: a fire engine that always stops at the wall leaves its fire there
 			# too. The perpendicular axis is wherever it was placed and is not our business.
 			var margin := float(CityMap.period() * Tuning.TILE_SIZE) * 0.5
-			var finish: Vector2 = plan.path[1]
-			var travel: Vector2 = plan.path[1] - plan.path[0]
+			var finish: Vector2 = plan.walks()[1]
+			var travel: Vector2 = plan.walks()[1] - plan.walks()[0]
 			var along_x := absf(travel.x) > absf(travel.y)
 			var at_end := finish.x if along_x else finish.y
 			var limit := extent.x if along_x else extent.y
 			t.check(at_end > margin and at_end < limit - margin,
 					"day %d: '%s' route ends inside the city along its travel axis"
-					% [day, plan.def.id])
-			for point in plan.path:
+					% [day, plan.row_id()])
+			for point in plan.walks():
 				t.check(point.x >= 0.0 and point.y >= 0.0
 						and point.x <= extent.x and point.y <= extent.y,
-						"day %d: '%s' route stays inside the map" % [day, plan.def.id])
+						"day %d: '%s' route stays inside the map" % [day, plan.row_id()])
 			# The route runs along one axis, never diagonally across blocks.
-			var delta: Vector2 = plan.path[1] - plan.path[0]
+			var delta: Vector2 = plan.walks()[1] - plan.walks()[0]
 			t.check(is_zero_approx(delta.x) or is_zero_approx(delta.y),
-					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])
+					"day %d: '%s' route follows a single corridor" % [day, plan.row_id()])
 
 ## **The dawn owes her the moments of the day's act** (`DawnMoments`, `PlacementDensity.moments_on()`):
 ## on a day of each act of the suite's city, planned undrawn, the rows left with no place for the
@@ -595,7 +595,7 @@ static func _walls_of(plans: Array[EventPlan]) -> int:
 	var count := 0
 	for plan in plans:
 		if plan.role() == GameEnums.BlockerRole.WALL and plan.is_placed() \
-				and plan.def.kind == GameEnums.EventKind.RECURRING:
+				and plan.row().kind == GameEnums.EventKind.RECURRING:
 			count += 1
 	return count
 
@@ -829,7 +829,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	t.check(not grid.reaches(calm_tile.call(clean_block), alone, reached_alone)
 			and grid.reaches(calm_tile.call(spoiled_block), alone, reached_alone),
 			"the case is live: that body alone cuts the clean area off and leaves the spoiled one reached")
-	var scars: Array[Dictionary] = [{"id": _CUTTING_BODY, "position": cutting.position,
+	var scars: Array[Dictionary] = [{"id": _CUTTING_BODY, "position": cutting.placed_at(),
 			"since_day": day - 1}]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _CHOICE_DRAW_SEED
@@ -846,7 +846,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	for body in everything:
 		if body.obstructs():
 			blockers.append(body)
-		stood_the_cut = stood_the_cut or (body.def.id == _CUTTING_BODY and body.position == cutting.position)
+		stood_the_cut = stood_the_cut or (body.row_id() == _CUTTING_BODY and body.placed_at() == cutting.placed_at())
 	t.check(not stood_the_cut, "the scar across the clean area's one way in is not stood")
 	var blocked := EventScheduler.blocked_by(map, blockers)
 	var reached := grid.flood([map.home_rect.position], blocked)

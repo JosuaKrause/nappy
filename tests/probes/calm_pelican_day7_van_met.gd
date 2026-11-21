@@ -158,18 +158,18 @@ class Walk extends RefCounted:
 				sited_at = walked
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
-				ahead_at_siting = van.position.distance_to(player.global_position)
-				var box := EventFootprints.footprint_of(van.def)
+				ahead_at_siting = van.placed_at().distance_to(player.global_position)
+				var box := EventFootprints.footprint_of(van.row())
 				var lead := Vector2(heading_at_siting.x, heading_at_siting.y * Stroller.OBLIQUE_Y) \
 						* Stroller.CAMERA_LOOK_AHEAD
 				var view := Rect2(player.global_position + lead - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0)
-				drawn_in_view_at_siting = view.intersects(Rect2(van.position + box.position,
+				drawn_in_view_at_siting = view.intersects(Rect2(van.placed_at() + box.position,
 						box.size), true)
 				on_a_route = Corridor.of(city.streets().route_tree()).carries_a_route(
-						city.map.world_to_tile(van.position))
-			var off := (van.position - player.global_position).abs()
-			nearest_after = minf(nearest_after, van.position.distance_to(player.global_position))
+						city.map.world_to_tile(van.placed_at()))
+			var off := (van.placed_at() - player.global_position).abs()
+			nearest_after = minf(nearest_after, van.placed_at().distance_to(player.global_position))
 			if seen_at < 0.0 and off.x <= Tuning.VIEW_HALF_EXTENT.x \
 					and off.y <= Tuning.VIEW_HALF_EXTENT.y:
 				seen_at = walked
@@ -185,9 +185,9 @@ class Walk extends RefCounted:
 	func detail() -> String:
 		var where := "-"
 		if van and van.is_placed():
-			var on_her_line := nearest_after <= van.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS
+			var on_her_line := nearest_after <= van.obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 			where = "she at %s heading %s, van at %s; " % [her_at_siting, heading_at_siting,
-					van.position] + "laid %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when laid %s; on a route %s; on her line %s" \
+					van.placed_at()] + "laid %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when laid %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
 		return "walked %.0fs, laid at %.0fs (%s) | %s | seen at %s" % [walked, drawn_at,

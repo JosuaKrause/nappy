@@ -66,7 +66,7 @@ func _alley_wall_mouths(plan: RegionPlan) -> Dictionary[Rect2i, Array]:
 func _stands_in_the_mouth(map: CityMap, body: EventPlan, rect: Rect2i,
 		at_start: bool) -> bool:
 	var mouth := SealPlanner.alley_mouth_rect(rect, rect.size.x < rect.size.y, at_start)
-	return map.tile_rect_to_world(mouth).grow(1.0).has_point(body.position)
+	return map.tile_rect_to_world(mouth).grow(1.0).has_point(body.placed_at())
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
@@ -415,7 +415,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 
 			var blocked: Dictionary[Vector2i, bool] = {}
 			for plan_body in plan.wall_bodies:
-				_add_circle(map, blocked, plan_body.position, plan_body.def.obstructs_within())
+				_add_circle(map, blocked, plan_body.placed_at(), plan_body.obstructs_within())
 			var grid := ReachabilityGrid.build(map)
 			var doorstep := map.world_to_tile(map.doorstep_world_position())
 			var reached := grid.flood([doorstep], blocked)
@@ -504,11 +504,11 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 			for body: EventPlan in street_walls:
 				checked += 1
 				for tile: Vector2i in alley_mouth_tiles:
-					var distance := map.tile_to_world(tile).distance_to(body.position)
-					t.check(distance > body.def.obstructs_within(),
+					var distance := map.tile_to_world(tile).distance_to(body.placed_at())
+					t.check(distance > body.obstructs_within(),
 							("seed %d day %d: a wall body at %s (radius %.0f) does not reach " +
 							"alley mouth tile %s (%.0fpx away)")
-							% [map.city_seed(), day, body.position, body.def.obstructs_within(),
+							% [map.city_seed(), day, body.placed_at(), body.obstructs_within(),
 							tile, distance])
 	t.check(checked > 0, "at least one wall body was checked against every alley mouth (%d)" % checked)
 
@@ -543,7 +543,7 @@ func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 				var road_index := bodies.size() / 2
 				var total_guards := 0
 				for i in bodies.size():
-					var sides := bodies[i].def.guard_sides
+					var sides := bodies[i].row().guard_sides
 					total_guards += sides.size()
 					if i == road_index:
 						t.check(sides.is_empty(),
@@ -590,24 +590,24 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 					t.check(_stands_in_the_mouth(map, body, rect, at_start),
 							"seed %d day %d: the plan's mouth body for alley %s stands in its mouth"
 							% [map.city_seed(), day, rect])
-					var sides := body.def.guard_sides
+					var sides := body.row().guard_sides
 					t.check(sides.size() == 1,
 							"seed %d day %d: an alley wall body posts one guard (%d)"
 							% [map.city_seed(), day, sides.size()])
 					if sides.is_empty():
 						continue
 					var standing := EventInstance.new()
-					standing.setup(body.def, body.position, PackedVector2Array(), Vector2.RIGHT,
+					standing.setup(body.row(), body.placed_at(), PackedVector2Array(), Vector2.RIGHT,
 							EventSurroundings.new().on(map))
 					var spread_vertical := standing.runs_vertically()
 					standing.free()
 					var offset := EventFootprints.guard_post_offset(spread_vertical, sides[0])
-					var guard_pos := body.position + offset
+					var guard_pos := body.placed_at() + offset
 					var guard_along: float = guard_pos.y if vertical else guard_pos.x
 					t.check(guard_along < low or guard_along > high,
 							("seed %d day %d: alley wall guard at mouth %s (at_start %s, side %d) " +
 							"stands outside the alley's own %.0f..%.0f, not inside it")
-							% [map.city_seed(), day, body.position, at_start, sides[0], low, high])
+							% [map.city_seed(), day, body.placed_at(), at_start, sides[0], low, high])
 	t.check(checked > 0, "at least one alley wall body's guard was checked (%d)" % checked)
 
 ## A crossing alley's own wall bodies draw and collide no wider than the alley's own paving — the
@@ -635,12 +635,12 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
 				for at_start: bool in [true, false]:
 					checked += 1
 					var body: EventPlan = mouths[rect][0 if at_start else 1]
-					var centre: float = body.position.x if vertical else body.position.y
-					var half := body.def.obstructs_within()
+					var centre: float = body.placed_at().x if vertical else body.placed_at().y
+					var half := body.obstructs_within()
 					t.check(centre - half >= low - 0.01 and centre + half <= high + 0.01,
 							("seed %d day %d: alley wall body at %s (half-width %.0f) draws within " +
 							"the alley's own mouth %.0f..%.0f, not over the lots either side")
-							% [map.city_seed(), day, body.position, half, low, high])
+							% [map.city_seed(), day, body.placed_at(), half, low, high])
 	t.check(checked > 0, "at least one alley wall body was checked against its own mouth (%d)" % checked)
 
 ## The core guarantee, unconditionally: with the region wall standing alongside the day's closures
@@ -687,9 +687,9 @@ func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 
 			var blocked := map.closed_tiles.duplicate()
 			for plan_item in seals:
-				_add_circle(map, blocked, plan_item.position, plan_item.def.obstructs_within())
+				_add_circle(map, blocked, plan_item.placed_at(), plan_item.obstructs_within())
 			for plan_item in region_plan.wall_bodies:
-				_add_circle(map, blocked, plan_item.position, plan_item.def.obstructs_within())
+				_add_circle(map, blocked, plan_item.placed_at(), plan_item.obstructs_within())
 
 			var grid := ReachabilityGrid.build(map)
 			var reached := grid.flood([map.home_rect.position], blocked)
@@ -746,7 +746,7 @@ func _test_closures_and_seals_never_land_on_a_boundary(t: TestRunner) -> void:
 			seal_rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 			for plan_item in seals:
-				var segment := map.network.segment_containing(map.world_to_tile(plan_item.position))
+				var segment := map.network.segment_containing(map.world_to_tile(plan_item.placed_at()))
 				if segment:
 					t.check(not boundary.has(segment.key()),
 							"seed %d day %d: seal at %s does not land on a region boundary"

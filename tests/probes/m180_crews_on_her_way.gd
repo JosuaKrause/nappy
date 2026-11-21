@@ -45,7 +45,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	RunCity.events(city).start_day(spec, rng, consumed)
 	var crews: Array[EventPlan] = []
 	for plan in RunCity.events(city).plans():
-		if plan.def.id == "poster_crew":
+		if plan.row_id() == "poster_crew":
 			crews.append(plan)
 	var route := _the_walk(city, day, walk_name)
 	if route.size() < 2 or crews.is_empty():
