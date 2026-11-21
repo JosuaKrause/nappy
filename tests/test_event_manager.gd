@@ -91,15 +91,15 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t: TestRunner) -> voi
 	var guard := events.spawn_extra(EventCatalogue.task_guard(), at)
 	guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
 	guard.age = guard.age + 0.4
-	var noticed := guard.noticed_at()
+	var noticed := guard.save().noticed_at()
 	t.check(guard.is_telegraphing() and noticed != INF, "set on her, the guard warns her")
 	events.move_extra(guard, at + Vector2(64.0, 0.0))
 	t.check(is_instance_valid(guard) and not guard.is_finished
 			and guard.global_position.is_equal_approx(at + Vector2(64.0, 0.0))
-			and guard.is_telegraphing() and guard.noticed_at() == noticed
+			and guard.is_telegraphing() and guard.save().noticed_at() == noticed
 			and guard.is_standing_for_its_notice(),
 			"moved, he is the same man, still warning her on the same clock (noticed at %.2f, %.2f)"
-			% [noticed, guard.noticed_at()])
+			% [noticed, guard.save().noticed_at()])
 	var walking := events.spawn_extra(EventCatalogue.task_guard(), at)
 	walking.leave_for_a_completed_task()
 	t.check(walking.is_leaving and walking.is_waiting(),
@@ -643,10 +643,10 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 
 
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
-## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
-## and pins that its `from_noticed_at` argument restores the notice; the gap that shipped anyway
+## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.restore()` directly
+## and pins that its save restores the notice; the gap that shipped anyway
 ## was one level up — `EventPlan` had no field to hold the notice, so
-## `EventStreaming.stream_in()` always called `resume()` with the default `INF` and a
+## `EventStreaming.stream_in()` always restored a save with the default `INF` notice and a
 ## `EventDef.notice` row streamed out mid-chase came back `is_waiting()`, standing where the day
 ## planted it. This drives the same encounter through
 ## `EventStreaming.stream_in()`/`stream_out()` themselves, the only place that bug could
@@ -677,7 +677,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 
 	RunCity.events(_city).streaming.stream_out(plan)
 	t.check(plan.live == null, "streaming out through the manager clears the live instance")
-	t.check(plan.noticed_at != INF,
+	t.check(plan.saved().noticed_at() != INF,
 			"and the plan itself remembers when it noticed her, not just the freed instance")
 
 	RunCity.events(_city).streaming.stream_in(plan)

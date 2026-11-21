@@ -441,7 +441,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path, Vector2.RIGHT, null, null, instance_where)
 		if def.comes_down_her_line():
-			instance.resume(EventSpawner.age_when_warned(def), 0.0)
+			instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		t.add_child(instance)
 		instance.set_process(false)
 

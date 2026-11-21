@@ -160,6 +160,7 @@ FILES: dict[str, str] = {
     "src/events/day_reach.gd": "model",
     "src/events/day_units.gd": "model",
     "src/events/event_plan.gd": "model",
+    "src/events/event_save.gd": "model",
     "src/events/event_scheduler.gd": "model",
     "src/events/location.gd": "model",
     "src/events/location_fit.gd": "model",

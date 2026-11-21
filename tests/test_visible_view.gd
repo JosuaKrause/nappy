@@ -85,7 +85,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 static func _badge_sees(t: TestRunner, edge: DangerEdge, source: _Source, row: EventDef, at: Vector2) -> bool:
 	var bike := EventInstance.new()
 	bike.setup(row, at)
-	bike.resume(row.telegraph_time, 0.0)
+	bike.restore(EventSave.new(row.telegraph_time, 0.0))
 	bike.arrive_from_its_warning()
 	source.live.append(bike)
 	await t.get_tree().process_frame
@@ -297,7 +297,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 		var bike := EventInstance.new()
 		bike.setup(EventCatalogue.by_id("cyclist"), start, PackedVector2Array([start, her]),
 				Vector2.RIGHT, null, null, bike_where)
-		bike.resume(EventCatalogue.by_id("cyclist").telegraph_time, 0.0)
+		bike.restore(EventSave.new(EventCatalogue.by_id("cyclist").telegraph_time, 0.0))
 		bike.arrive_from_its_warning()
 		source.live.append(bike)
 		source.visible_view().look(VisibleView.around(her, null).view, TouchCover.joystick() if joystick else null)

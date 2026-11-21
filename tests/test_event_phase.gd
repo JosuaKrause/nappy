@@ -89,12 +89,12 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WARNING and not instance.is_waiting(),
 			"inside its one radius it notices her and warns")
-	t.check(instance.noticed_at() != INF, "and its notice has a start")
+	t.check(instance.save().noticed_at() != INF, "and its notice has a start")
 	instance_where.tell(Vector2(def.notice.within + 40.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"back outside its radius, it waits again")
-	t.check(instance.noticed_at() == INF, "with no notice left")
+	t.check(instance.save().noticed_at() == INF, "with no notice left")
 	instance_where.tell(Vector2(def.notice.within - 10.0, 0.0))
 	var frames := 0
 	while instance.phase == EventInstance.Phase.WARNING or frames == 0:
@@ -190,13 +190,13 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 		first.step(STEP)
 	t.check(first.phase == EventInstance.Phase.WARNING, "set on her, he is warning")
 	t.close_to(first.chase_age(), 0.0, "and his notice, held every tick, has not run", 0.0001)
-	t.close_to(first.noticed_at(), held_steps * STEP,
+	t.close_to(first.save().noticed_at(), held_steps * STEP,
 			"the second he waited is counted into the start a stream-out carries", 0.0001)
 	var second := EventInstance.new()
 	second.setup(def, Vector2.ZERO)
 	# Put back two seconds later: the notice has run those two seconds, and the second he waited held
 	# is not counted as run. Started at the age it was put back at instead, it would have run none.
-	second.resume(first.age + 2.0, 0.0, first.noticed_at())
+	second.restore(EventSave.new(first.age + 2.0, 0.0, first.save().noticed_at()))
 	t.close_to(second.chase_age(), 2.0, "streamed back in, it has run the two seconds since and not the held one", 0.0001)
 	first.free()
 	second.free()

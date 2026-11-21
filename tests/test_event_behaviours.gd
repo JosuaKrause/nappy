@@ -1,7 +1,7 @@
 extends RefCounted
 ## The behaviours an event is composed of (`EventBehaviours.compose()`): that each one's own state
-## survives a stream-out — saved off one instance (`save_behaviours()`), put
-## back on a fresh one of the same row after `resume()` (`restore_behaviours()`), and then the same
+## survives a stream-out — saved off one instance (`save()`), put
+## back on a fresh one of the same row (`restore()`), and then the same
 ## state and the same next tick. One test per behaviour that keeps state, one for the route walk,
 ## which keeps none of its own, and one through the manager's own streaming.
 
@@ -40,13 +40,12 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## its class name) and comes back whole. It hears where she is from `where`, as `first` may.
 func _round_trip(t: TestRunner, first: EventInstance, what: String, behaviour: StringName,
 		where: WhereSheIs = null) -> EventInstance:
-	var state := first.save_behaviours()
-	t.check(state.has(behaviour), "%s: there is state to carry" % what)
+	var state := first.save()
+	t.check(not state.state_of(behaviour).is_empty(), "%s: there is state to carry" % what)
 	var second := _instance(t, first.def, first.global_position, first.path, where)
-	second.resume(first.age, first.path_travelled(), first.noticed_at())
-	second.restore_behaviours(state)
-	t.check(second.save_behaviours() == state,
-			"%s: streamed back in, every behaviour's state is what was saved" % what)
+	second.restore(state)
+	t.check(second.save().state_of(behaviour) == state.state_of(behaviour),
+			"%s: streamed back in, the behaviour's state is what was saved" % what)
 	return second
 
 # -------------------------------------------------------------------- pursuit ---
@@ -146,13 +145,13 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 	first_where.tell(Vector2(def.notice.within - 10.0, 0.0))
 	_advance(first, def.telegraph_time + 1.0)
 	t.check(first.flock.offsets() != scattered, "and they have moved from where they were built")
-	var state := first.save_behaviours()
+	var state := first.save()
 	var second := _instance(t, def, first.global_position, first.path)
 	second.flock.build()
 	t.check(second.flock.offsets() == scattered, "a fresh flock stands where the first was built")
-	second.resume(first.age, first.path_travelled(), first.noticed_at())
-	second.restore_behaviours(state)
-	t.check(second.save_behaviours() == state, "flock: streamed back in, its state is what was saved")
+	second.restore(state)
+	t.check(second.save().state_of("EventFlock") == state.state_of("EventFlock"),
+			"flock: streamed back in, its state is what was saved")
 	t.check(second.flock.offsets() == first.flock.offsets(), "every bird comes back where it was")
 	t.check(second.flock.velocities() == first.flock.velocities(), "and going the way it was")
 	first.free()
@@ -235,7 +234,7 @@ func _test_the_take_round_trips(t: TestRunner) -> void:
 
 # ----------------------------------------------------------------- route walk ---
 
-## The route and how far along it are the event's own body, which `resume()` carries; the walk
+## The route and how far along it are the event's own body, which `restore()` carries; the walk
 ## itself keeps nothing.
 func _test_the_route_walk_has_no_state_of_its_own(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("dog_walker")
@@ -244,18 +243,18 @@ func _test_the_route_walk_has_no_state_of_its_own(t: TestRunner) -> void:
 	_advance(first, def.telegraph_time + 2.0)
 	t.check(first.route.save().is_empty(), "the route walk saves nothing of its own")
 	var second := _instance(t, def, Vector2.ZERO, path)
-	second.resume(first.age, first.path_travelled(), first.noticed_at())
+	second.restore(first.save())
 	t.check(second.global_position.is_equal_approx(first.global_position),
-			"resumed, it stands where it had walked to")
+			"restored, it stands where it had walked to")
 	first.free()
 	second.free()
 
 ## **A departure that never began carries nothing**, so a stream-in's restore cannot write over one
-## its own `resume()` began: a route cut since by something solid ends there (`EventRouteWalk.
+## its own `restore()` began: a route cut since by something solid ends there (`EventRouteWalk.
 ## _keep_to()`), and a car that leaves is held to her sight (`EventDeparture.begin()`). The car
 ## streamed out was not leaving, so what it saved must not put that back to the fresh default. The
 ## cut is a body put down on its road behind where it had got to, on the map both cars drive, as
-## `tests/test_world_passability.gd` puts one down, so `resume()` itself is what begins the departure.
+## `tests/test_world_passability.gd` puts one down, so `restore()` itself is what begins the departure.
 func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("police_patrol")
 	var tile := float(Tuning.TILE_SIZE)
@@ -269,18 +268,18 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 	_advance(first, 1.5)
 	t.check(not first.is_leaving and first.path_travelled() > 2.0 * tile,
 			"the car is driving its route, not leaving (%.0fpx along it)" % first.path_travelled())
-	var state := first.save_behaviours()
-	t.check(not state.has(&"EventDeparture"), "a departure that never began saves nothing")
+	var state := first.save()
+	t.check(state.state_of("EventDeparture").is_empty(), "a departure that never began saves nothing")
 	var behind: Array[Vector2i] = [Vector2i(1, 1)]
 	map.obstruct_tiles(1, behind)
 	var second_where := WhereSheIs.nowhere()
 	var second := EventInstance.new()
 	second.setup(def, path[0], path, Vector2.RIGHT, map, null, second_where)
 	second_where.tell(first_where.at())
-	second.resume(first.age, first.path_travelled(), first.noticed_at())
+	second.restore(EventSave.new(state.age(), state.travelled(), state.noticed_at()))
 	t.check(second.is_leaving and second.departure.save().get("must_clear_sight", false),
-			"resumed with its road cut behind where it had got to, the car is leaving, held to her sight")
-	second.restore_behaviours(state)
+			"restored with its road cut behind where it had got to, the car is leaving, held to her sight")
+	second.restore(state)
 	t.check(second.departure.save().get("must_clear_sight", false),
 			"and the stream-in's restore leaves its departure as it began")
 	first.free()
@@ -318,7 +317,7 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	manager.stream_around(far)
-	t.check(plan.live == null and plan.behaviours.has(&"EventPursuit"),
+	t.check(plan.live == null and not plan.saved().state_of("EventPursuit").is_empty(),
 			"streamed out, his plan carries his pursuit's state")
 	manager.stream_around(at)
 	t.check(plan.live != null and bool(plan.live.pursuit.save()["lunge_held"]),
@@ -334,7 +333,7 @@ func _test_the_barrier_post_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
-	var carried: Dictionary = first.save_behaviours().get(&"EventBarrierPost", {})
+	var carried := first.save().state_of("EventBarrierPost")
 	t.check(carried.is_empty(),
 			"both guards at their posts, there is nothing to carry")
 	first_where.tell(Vector2(0.0, 120.0))

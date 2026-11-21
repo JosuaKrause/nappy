@@ -65,7 +65,7 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 	instance.setup(row, at, path, Vector2.RIGHT, null, null, instance_where)
 	instance.arrive_from_its_warning()
 	if row.pursuit == null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
-		instance.resume(EventSpawner.age_when_warned(row), 0.0)
+		instance.restore(EventSave.new(EventSpawner.age_when_warned(row), 0.0))
 	instance_where.tell(her)
 	return instance
 

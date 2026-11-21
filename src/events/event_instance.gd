@@ -17,7 +17,7 @@ var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
 var path: PackedVector2Array = PackedVector2Array()
 
-## How long it has existed, in seconds: its own clock. A set from outside (a resume, a rig) settles
+## How long it has existed, in seconds: its own clock. A set from outside (a restore, a rig) settles
 ## the phase against the new age; its own tick advances `_age` and settles once its notice clock has
 ## been held.
 var age: float:
@@ -30,11 +30,11 @@ var _age := 0.0
 ## Whether this was created where a warning pointed, once that warning was over
 ## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` asks it
 ## (`was_warned_of()`) to carry the warning's badge on to the thing itself until it comes into
-## view, and `resume()` reads it to tell a fresh instance from one streamed back in.
+## view, and `restore()` reads it to tell a fresh instance from one streamed back in.
 var _came_under_a_warning := false
 
 ## **Tells it that it was created where a warning pointed**, once that warning was over
-## (`EventManager.spawn_warned()`), before `resume()` reads it: a resume otherwise restores an
+## (`EventManager.spawn_warned()`), before `restore()` reads it: a restore otherwise restores an
 ## instance streamed back in.
 func arrive_from_its_warning() -> void:
 	_came_under_a_warning = true
@@ -251,7 +251,7 @@ var _activation_announced := false
 ## One gait phase per instance, advanced by the distance actually covered this frame — the
 ## mother's and the walker's own 0.09-per-px rate (`GAIT_RATE`), pinned again here rather than
 ## shared because neither exposes it as a constant reachable from this file. Reset in `setup()`
-## and `resume()` so a stride never starts mid-cycle — see `_advance_gait()`.
+## and `restore()` so a stride never starts mid-cycle — see `_advance_gait()`.
 var _gait_phase := 0.0
 ## Whether this instance actually covered ground on its most recent step (`step()`) — the gate that
 ## makes a stopped figure (a queue, a give-way, a waiting robber, a chatting mother, a stationary
@@ -800,7 +800,7 @@ func start_chat() -> void:
 var gave_up := false
 ## **Its notice's clock** (`Warning`, read against `age`): started when it exists for a row with no
 ## wait, and when it notices her for one that waits (`EventDef.notice`); stopped while it waits.
-## `chase_age()` is its elapsed time, and a stream-out carries its start (`noticed_at()`).
+## `chase_age()` is its elapsed time, and a stream-out carries its start (`save()`).
 var _notice := Warning.new()
 ## Its charge as it is counted — its warning, its start and the one way it ended — and the one
 ## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
@@ -992,7 +992,7 @@ var _notice_time := -1.0
 ## (`is_standing_for_its_notice()`), as day 13's task guard does in her view.
 var _stands_for_this_notice := false
 
-## How far along its route this instance has got, so streaming it out and back in can resume it
+## How far along its route this instance has got, so streaming it out and back in can restore it
 ## instead of rewinding it. See `EventStreaming.stream_in`.
 func path_travelled() -> float:
 	return _path_travelled
@@ -1051,9 +1051,8 @@ func facing_now() -> Vector2:
 	return _heading
 
 ## Where on its own clock it noticed her, held time counted back in, or `INF` for a row that waits
-## and has not noticed her (and for a row with no wait) — what a stream-out carries
-## (`EventStreaming.stream_out()`) and `resume()` gives back.
-func noticed_at() -> float:
+## and has not noticed her (and for a row with no wait) — what `save()` carries.
+func _noticed_at() -> float:
 	return _notice.started_at() if def.notice != null else INF
 
 ## Noticing her: its notice's clock starts now and it is warning (`Phase.WARNING`), or already past
@@ -1063,30 +1062,52 @@ func _notice_her() -> void:
 	transition(Phase.WARNING)
 	_settle_the_notice()
 
+## **What it is in the middle of**, as one value a plan carries while this event is out of the world
+## (`EventStreaming.stream_out()`): its age, the distance it has walked, where on its clock it noticed
+## her, and every behaviour's own state keyed by its class.
+func save() -> EventSave:
+	var states := {}
+	for behaviour in _behaviours:
+		var state := behaviour.save()
+		if not state.is_empty():
+			var script: Script = behaviour.get_script()
+			states[script.get_global_name()] = state
+	return EventSave.new(age, _path_travelled, _noticed_at(), states)
+
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
 ## rather than starting again — an event that streams in and out must not become immortal by
-## being visited twice. `from_noticed_at` restores a notice it had made (`noticed_at()`), so a row
-## streamed out after it had noticed her does not come back standing where the day planted it.
-func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> void:
-	if from_age <= 0.0:
+## being visited twice. The save's notice restores one it had made, so a row streamed out after it
+## had noticed her does not come back standing where the day planted it; its behaviours' state
+## comes back after the age, the distance and the notice, and a row composed of a behaviour the
+## save does not name keeps it fresh. A save of age 0 puts back no moment, only the behaviours.
+func restore(saved: EventSave) -> void:
+	_restore_the_moment(saved)
+	for behaviour in _behaviours:
+		var script: Script = behaviour.get_script()
+		var state := saved.state_of(script.get_global_name())
+		if not state.is_empty():
+			behaviour.restore(state)
+
+func _restore_the_moment(saved: EventSave) -> void:
+	if saved.age() <= 0.0:
 		return
-	age = from_age
-	_path_travelled = from_travelled
-	if def.notice != null and from_noticed_at != INF:
-		_notice.start(from_noticed_at)
+	age = saved.age()
+	_path_travelled = saved.travelled()
+	if def.notice != null and saved.noticed_at() != INF:
+		_notice.start(saved.noticed_at())
 		transition(Phase.WARNING)
 		_settle_the_notice()
 	# A pursuer streamed back in still waiting is the one case that has not begun chasing yet; every
 	# other, a row with no wait included, was chasing before it streamed out. **A row created where
-	# its warning pointed is not streamed back in**: `EventManager.spawn_warned()` sets
-	# `arrive_from_its_warning()` before calling this only to spend a telegraph the warning already ran.
+	# its warning pointed is not streamed back in**: `EventSpawner.spawn_warned()` sets
+	# `arrive_from_its_warning()` before restoring only to spend a telegraph the warning already ran.
 	_charge.began = not _came_under_a_warning and not is_waiting()
 	# A warning it had already given before it streamed out is not reported again.
-	_charge.warned = from_noticed_at != INF
-	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
-	# a fresh object (see this function's own doc), so this is normally already true, but the rule
-	# is stated at both entry points rather than left to rely on that.
+	_charge.warned = saved.noticed_at() != INF
+	# A stride never starts mid-cycle, the same reason `setup()` resets it — a restored instance is
+	# a fresh object, so this is normally already true, but the rule is stated at both entry points
+	# rather than left to rely on that.
 	_gait_phase = 0.0
 	_gait_moving = false
 	if def.mobile and path.size() > 1:
@@ -1107,26 +1128,6 @@ func move_to(at: Vector2) -> void:
 	_excitement.invalidate_contribution()
 	reset_physics_interpolation()
 	queue_redraw()
-
-## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
-## event is out of the world (`EventStreaming.stream_out()`, `EventPlan.behaviours`).
-func save_behaviours() -> Dictionary:
-	var out := {}
-	for behaviour in _behaviours:
-		var state := behaviour.save()
-		if not state.is_empty():
-			var script: Script = behaviour.get_script()
-			out[script.get_global_name()] = state
-	return out
-
-## Puts back what `save_behaviours()` gave, after `resume()` has put back the age, the distance and
-## the notice. A row composed of a behaviour the state does not name keeps it fresh.
-func restore_behaviours(state: Dictionary) -> void:
-	for behaviour in _behaviours:
-		var script: Script = behaviour.get_script()
-		var key := script.get_global_name()
-		if state.has(key):
-			behaviour.restore(state[key])
 
 # ------------------------------------------------------------------- the take ---
 
@@ -1228,7 +1229,7 @@ func _be_done(may_park := true) -> void:
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
 		# where the last step put it, so `path_travelled()` still answers "the whole route" for a
-		# streaming resume.
+		# streaming restore.
 		_path_travelled = route.length()
 		queue_redraw()
 		return
@@ -1402,7 +1403,7 @@ func charge_radius() -> float:
 ## between them, since **his charge needs a clear line** (inbox #650 in mossy-beaver), so he goes
 ## on warning until the line clears or she leaves his radius; and for every tick of a row that runs
 ## its own line (`EventNoticeRun`, the masked man), whose run comes only from her coming
-## within `NoticeSpec.runs_within`. A held clock is what a stream-out carries (`noticed_at()`),
+## within `NoticeSpec.runs_within`. A held clock is what a stream-out carries (`save()`),
 ## so it comes back exactly as far run.
 func _hold_the_notice_clock(delta: float) -> void:
 	if _telegraph_ended or is_waiting():

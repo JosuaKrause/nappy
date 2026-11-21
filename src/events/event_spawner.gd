@@ -315,7 +315,7 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 ## (the resistance's sent robber and guard), which is created with its telegraph spent, chasing from
 ## its first frame.
 ##
-## **`arrive_from_its_warning()` is told before `resume()`**, which reads it: a resume otherwise restores
+## **`arrive_from_its_warning()` is told before `restore()`**, which reads it: a restore otherwise restores
 ## an instance streamed back in, and takes a pursuer that never waits to have begun its chase
 ## before it streamed out, so a pursuer created here would never report the chase it starts.
 ##
@@ -325,7 +325,7 @@ func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> 
 	var instance := spawn(as_warned(def), path[0], path)
 	instance.arrive_from_its_warning()
 	if not def.pursues() or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
-		instance.resume(age_when_warned(def), 0.0)
+		instance.restore(EventSave.aged(age_when_warned(def)))
 	if pelican and def.may_be_drawn_as_a_pelican():
 		_ride_as_a_pelican(instance)
 	return instance

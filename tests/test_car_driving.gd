@@ -17,7 +17,7 @@ func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs) -> Eve
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := EventInstance.new()
 	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), null, null, where)
-	engine.resume(def.telegraph_time, 0.0)
+	engine.restore(EventSave.new(def.telegraph_time, 0.0))
 	t.add_child(engine)
 	engine.set_process(false)
 	return engine
@@ -76,11 +76,10 @@ func _test_a_car_comes_back_standing(t: TestRunner) -> void:
 		_step(engine, engine_where, Vector2(600.0, 600.0), Vector2.RIGHT)
 	t.check(engine.global_position.x > -300.0 + 1.0, "the engine is driving its route (%.1fpx along)"
 			% (engine.global_position.x + 300.0))
-	var state := engine.save_behaviours()
-	t.check(not state.has(&"EventCarDriving"), "and its driving saves nothing")
+	var state := engine.save()
+	t.check(state.state_of("EventCarDriving").is_empty(), "and its driving saves nothing")
 	var back := _engine(t, route, WhereSheIs.nowhere())
-	back.resume(engine.age, engine.path_travelled(), engine.noticed_at())
-	back.restore_behaviours(state)
+	back.restore(state)
 	t.check(back.global_position.is_equal_approx(engine.global_position),
 			"streamed back in, it stands where it had got to")
 	engine.free()

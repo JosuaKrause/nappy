@@ -462,7 +462,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT, null,
 					null,
 					her_where)
-			instance.resume(truck.telegraph_time, 0.0)
+			instance.restore(EventSave.new(truck.telegraph_time, 0.0))
 			created.append(instance)
 			return true
 		var warning := PendingWarning.new(truck, where, arrive)

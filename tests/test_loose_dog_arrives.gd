@@ -102,7 +102,7 @@ func _send_from_behind_far() -> EventInstance:
 	var place := her + Vector2.DOWN * 700.0
 	var path := PendingWarning.route_down_her_line(null, place, her, Vector2.DOWN)
 	var made := _events.spawner.spawn(def, path[0], path)
-	made.resume(EventSpawner.age_when_warned(def), 0.0)
+	made.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 	return made
 
 ## The nearest point up the street from `start` with walkable ground under the dog's whole line and

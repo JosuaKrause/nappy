@@ -90,20 +90,13 @@ var _role := GameEnums.BlockerRole.NONE
 ## that must happen exactly once however many times an event is streamed in and out: a
 ## burnt-out shell records the fire that made it the first time it is seen and never again.
 var was_live := false
-## How far the instance had got when it was last streamed out, so streaming it back in
-## **resumes** it rather than rewinding it. See `EventStreaming.stream_in`.
-var age := 0.0
-var travelled := 0.0
-## Where on its clock an instance with an `EventDef.notice` had noticed her when it was last
-## streamed out (`EventInstance.noticed_at()`), or `INF` if it had not yet noticed her — the
-## third thing a stream-out has to carry beside `age` and `travelled`, or a row streamed out
-## mid-chase comes back `is_waiting()`, having forgotten it. See
-## `EventStreaming.stream_out()` and `stream_in()`, and `EventInstance.resume()`.
-var noticed_at := INF
-## Each behaviour's own state when it was last streamed out (`EventInstance.save_behaviours()`),
-## empty before then and once a repeating plan starts over: a roadblock's spent guard and the post
+## What its instance was in the middle of when it was last streamed out, so streaming it back in
+## **restores** it rather than rewinding it (`EventStreaming.stream_in()`): its age, its distance,
+## where it had noticed her (without it a row streamed out mid-chase comes back `is_waiting()`,
+## having forgotten it) and each behaviour's state, such as a roadblock's spent guard and the post
 ## he left among it (`EventBarrierPost.save()`), so a re-streamed barrier is only the barrier.
-var behaviours := {}
+## Empty before then and once a repeating plan starts over.
+var _saved := EventSave.new()
 
 ## Whether this body is a region door's (`is_door()`). Private: set once, by
 ## `stand_as_a_door()`.
@@ -690,7 +683,16 @@ func come_where_she_stands() -> void:
 	at_her = true
 
 ## Makes each of its instances arrive `seconds` into its life (`arrives_aged`), its first
-## included (`age`): the explosion outside, whose notice is already over when it comes.
+## included: the explosion outside, whose notice is already over when it comes.
 func arrive_aged(seconds: float) -> void:
 	arrives_aged = seconds
-	age = seconds
+	_saved = EventSave.aged(seconds)
+
+## What its instance was in the middle of when it was last streamed out (`leave_the_world()`).
+func saved() -> EventSave:
+	return _saved
+
+## Keeps what its instance was in the middle of as it leaves the world: the one place the save
+## is written, by streaming.
+func leave_the_world(save: EventSave) -> void:
+	_saved = save
