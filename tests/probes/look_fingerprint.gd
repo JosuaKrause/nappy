@@ -376,10 +376,12 @@ func _canvas_name(rig: Rig, canvas: Node, fallback := "other") -> String:
 		return "scenery%d" % rig.scenery_ids.find(id)
 	if canvas.name == &"FarGuard":
 		return "far_guard"
-	var slice_at := (rig.instance.look as SpreadLook).slices().find(canvas) \
-			if rig.instance.look is SpreadLook else -1
-	if slice_at >= 0:
-		return "slice%d" % slice_at
+	var spread := rig.instance.look as SpreadLook
+	if spread != null:
+		var slices := spread.slices()
+		for slice_at in slices.size():
+			if slices[slice_at] == canvas:
+				return "slice%d" % slice_at
 	return fallback
 
 static func _h(value: float) -> String:
