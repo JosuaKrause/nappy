@@ -269,7 +269,8 @@ can be met after an event behind it, or never. **Where a place is laid is a sett
 (`EventManager.rig_her_route()`, `just_ahead`): past the streaming band on her branch
 (`WalkSiting.lay_ahead()`), or, for the man shouting and the van, on her path just ahead of her and
 out of her view (`WalkSiting.lay_just_ahead()`). Either way the place takes one of the events the
-bag owes her route, so a mark makes the day no denser. Under `--force` nothing is rigged. These rigs
+bag owes her route, so while the day still owes her at least two events a mark makes the day no
+denser (with fewer left, the owed list is topped up to the rig's size). Under `--force` nothing is rigged. These rigs
 stand:
 
 - **On day one, two of the first three marbles drawn are dog walkers**
