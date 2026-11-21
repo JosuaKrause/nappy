@@ -560,9 +560,6 @@ func its_event_is_gone() -> bool:
 func stands_as_a_fixed_body() -> bool:
 	return def.stands_as_a_fixed_body()
 
-## The pieces its body is made of, in the scene's own frame (`EventDef.body_pieces()`).
-func body_pieces() -> Array[EventDef.SolidPart]:
-	return def.body_pieces()
 
 ## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture.
 func ground_shape() -> GroundShape:

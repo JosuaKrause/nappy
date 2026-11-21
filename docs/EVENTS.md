@@ -833,13 +833,16 @@ at the full rate and the shoulder outside it is short. **It is the one seal that
 it is the one place `docs/CITY.md`'s *a closure is silent* does not hold; squeezing past costs more
 than half the meter, which `tests/test_seals.gd` walks rather than asserts.
 
-**A body is solid to everything that moves as well as to her, and both come from one footprint.**
-A row's solid footprint (`EventFootprints.solid_footprint_of()`, a `Footprint`: one piece per
-`EventDef.parts()` entry, which is one piece carrying `shape` for every row but the crash, at the
-offset and along the axis the instance itself draws them) builds the instance's physics body
-(`Footprint.body()`), and `EventManager` rasterises the same footprint at the placement into
-`CityMap.obstructed_tiles` (`Footprint.tiles()`), so the body that stops her and the record that
-stops everything else cannot disagree. The walkers and the cars read that record — a walker steps
+**A body is solid to everything that moves as well as to her, and both come from one layout.**
+`BodyStance` lays a body's pieces out (`pieces_laid_out()` for a body whose stance is decided,
+`pieces_at()` for a body built at a point: one `StandingPiece` per `EventDef.body_pieces()` entry, which
+is one piece carrying `shape` for every row but the crash, at the offset and along the axis the
+instance itself draws them). The row's solid footprint (`EventFootprints.solid_footprint_of()`, a
+`Footprint`) is built from `pieces_laid_out()` and builds the instance's physics body
+(`Footprint.body()`), and `EventSpawner.obstructed_footprint()` rasterises `pieces_at()` at the
+placement into `CityMap.obstructed_tiles` (`StandingPiece.tiles()`), so the body that stops her and
+the record that stops everything else cannot disagree. The walk's ground (`WalkGround.solids_of()`)
+and the developer's route rig ask the same `pieces_at()`. The walkers and the cars read that record — a walker steps
 into the other lane of its footway to get past a café and a car turns at the last junction rather
 than driving through a stall — and so does every event figure that moves, through the navigator
 it moves by (see "Every mover is stopped by what stops her" below). It is taken from the day's **plan** rather than from the live
