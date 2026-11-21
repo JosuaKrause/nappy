@@ -294,7 +294,7 @@ static func row_ground(map: CityMap, corridor: Corridor = null,
 ## placement finally stands on is up to half a tile from the tile this loop is looking at, and the
 ## exclusion has to cover where it *ends up* rather than where it is rolled.
 ##
-## **A lethal field is its whole `outer_radius`**, which is a different and much wider question.
+## **A lethal field is its whole `outer radius`**, which is a different and much wider question.
 ## *(2026-09-19: "I still spawn with flashing !!! in the city.")* The doubled exclamation mark over
 ## her head means *this will end your day*, and `WarningBoard.warn_about_the_ground_she_is_on()`
 ## raises it for any `hard_fail` row still telegraphing — or still waiting to notice her — whose

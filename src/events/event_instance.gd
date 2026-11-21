@@ -1407,8 +1407,8 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		var into := clampf(on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
 		return 2.0 * _def.pursuit.stop_excitement() / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
-		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
-		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
+		# A flat rate for the whole conversation rather than a falloff: she is inside `inner radius`
+		# by construction (`detain_distance() < inner radius`), so there is no distance to shape.
 		# Gated on whether the baby is awake (`WhereSheIs.baby_is_awake()`), read and never
 		# written: `chatting_mother`'s conversation is the one row whose contribution differs by the
 		# baby's own state, and the read happening here keeps excitement a pure query. It is what

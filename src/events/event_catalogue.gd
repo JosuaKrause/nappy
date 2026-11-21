@@ -243,7 +243,7 @@ static func building_fire() -> EventDef:
 
 ## **The explosion outside, as it reaches her inside the building**: `finale_explosion` without its
 ## crater, coming every `FINALE_EXPLOSION_INTERVAL` (`repeat_every`). Indoors there is nothing of
-## it to see, so it is a beat: every window lights (through-walls flag, `WorldContext.bang_outside()`)
+## it to see, so it is a beat: every window lights (the field passes through walls, `FieldSpec.through_walls()`, `WorldContext.bang_outside()`)
 ## and the row's own field (peak for its `duration`) charges her wherever she stands. No
 ## wall stops it: the bang has already come through them. The building places it where she is each
 ## time it comes, with its notice over, since what the windows say is that it has already happened
@@ -544,7 +544,7 @@ static func _cat_dash() -> EventDef:
 	# STREET_WIDTH tiles either side at 240px/s is 1.6s, and it must not expire mid-road.
 	def.duration = 1.8
 	# Faster than a walk, so the escape distance is the forward reach, not the plain radius:
-	# `outer_radius · Field.scale(e)` at the cat's own speed (240px/s, e = 0.48, just under the
+	# `outer radius · Field.scale(e)` at the cat's own speed (240px/s, e = 0.48, just under the
 	# eccentricity cap): 120 * 1.92 / 92 = 2.51s, plus the row's margin.
 	def.telegraph_time = 2.81
 	def.mobile = true
@@ -633,7 +633,7 @@ static func _alley_mouse() -> EventDef:
 	# The cost table in `docs/EVENTS.md` nets every row against the *same* walking decay, so this
 	# row reads cheaper there than the cat does; the note under that table says why.
 	def.use_field(FieldSpec.of(21.0, 15.0, 60.0))
-	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer_radius · Field.scale(e)
+	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer radius · Field.scale(e)
 	# at e = min(0.5, 200/500) = 0.4, scale 1.667, over WALK_SPEED); this carries a margin of the
 	# cat's shape.
 	def.telegraph_time = 1.4
@@ -644,7 +644,7 @@ static func _alley_mouse() -> EventDef:
 	def.still_while_telegraphing = true
 	def.speed = 200.0
 	# Waits unclocked until she is this close (`EventDef.notice`): inside VIEW_HALF_EXTENT.y (180px)
-	# with room to spare, past outer_radius (60px).
+	# with room to spare, past outer radius (60px).
 	def.notice = NoticeSpec.at(150.0)
 	# Shared with `alley_robbery`'s own weight: the two rows draw from the same `ALLEY`-only pool
 	# and neither should be favoured over the other when both are offered the same tile.
@@ -1007,7 +1007,7 @@ static func _fire_truck() -> EventDef:
 ## against rather than leaving a body on the sidewalk, and `draws_body_shadow` is off so nothing
 ## casts a shadow at the ground point. inner radius/outer radius (60/260) and the 2.2s telegraph
 ## keep the row's geometry inside the fairness contract (`Tuning.validate_event()`), which checks
-## every row the same way whether or not the field emits (`(outer_radius - inner_radius) /
+## every row the same way whether or not the field emits (`(outer radius - inner radius) /
 ## WALK_SPEED` = 2.17s). The `burnt_shell` scar it leaves is the
 ## building it burned, drawn burnt from the next morning on. **The finale's own fire, inside the
 ## building on the last night, is a duplicate of this row with a field and a body**
@@ -1318,7 +1318,7 @@ static func _leaf_blower() -> EventDef:
 ##   one: walking round the edge meets one bird, through the middle five. It is the third loudest
 ##   thing on an act I sidewalk at the centre and nearly free at the rim.
 ## - **`flock_spread` comes out of outer radius, not on top of it.** A bird emits over
-##   `outer_radius - flock_spread`, so the union of eleven moving fields is inside the one disc the
+##   `outer radius - flock_spread`, so the union of eleven moving fields is inside the one disc the
 ##   fairness contract was checked against. The telegraph is still measured against 168px.
 ## - **It fades as they climb.** swell is the burst being loudest at the instant they go
 ##   up, which also earns it a caret for the whole burst rather than only the telegraph: a flock is
@@ -1734,7 +1734,7 @@ static func _police_patrol() -> EventDef:
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.use_field(FieldSpec.of(10.0, 44.0, 185.0))
 	# Slower than a walk, so the escape distance is the falloff band stretched forward by the
-	# patrol's own eccentricity: `(outer_radius - inner_radius) · Field.scale(e)` at 74px/s
+	# patrol's own eccentricity: `(outer radius - inner radius) · Field.scale(e)` at 74px/s
 	# (e = 0.148) is 165px, 1.80s, plus the row's margin.
 	def.telegraph_time = 1.97
 	def.mobile = true
@@ -1954,13 +1954,13 @@ static func _curfew_announce() -> EventDef:
 ## `SOON` mark over her is drawn out to. The resistance's checkpoint task ("Don't go around it this
 ## time. Go through") is priced by the body and by the guard.
 ##
-## **one-barrier flag, because one street being held is one source however many bodies hold it.**
+## **It counts as one barrier (`FieldSpec.as_one_barrier()`), because one street being held is one source however many bodies hold it.**
 ## A region wall stands three of these a tile apart across a single street beside a region door's
 ## structures. The band adds nothing to that sum and keeps the flag so the boundary kit stays one
-## source by one rule; see one-barrier flag.
+## source by one rule; see `FieldSpec.as_one_barrier()`.
 ##
 ## **The 179px cold field sits under the shared 180px trigger.** `EventDef.at_heat()` widens only
-## the hunting copy's outer radius to `maxf(outer_radius, EventDef.HEAT_HUNTS_WITHIN)`, the
+## the hunting copy's outer radius to `maxf(heard_within(), EventDef.HEAT_HUNTS_WITHIN)`, the
 ## smallest fix that holds for every `HUNTS` row, so the cold field is what it was and only the
 ## moment the guard starts hunting reaches 180px. `tests/test_heat.gd`'s generic loop
 ## (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) catches a row whose field sits under the
@@ -2426,7 +2426,7 @@ static func _military_convoy() -> EventDef:
 	def.placement = [GameEnums.TileType.ROAD]
 	def.use_field(FieldSpec.of(22.0, 76.0, 300.0))
 	# As a place the day planned, faster than a walk, so the escape distance is the forward reach:
-	# `outer_radius · Field.scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the row's margin.
+	# `outer radius · Field.scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the row's margin.
 	# Day 13's column is this row warned first (`EventSpawner.as_warned()`): that copy's badge alone
 	# is cut to `Tuning.WARNING_ALONE_MAX`, and it is held to the flat
 	# `Tuning.OFFSCREEN_WARNING_MIN`.
@@ -2783,9 +2783,9 @@ static func _collapsed_frontage() -> EventDef:
 # `RegionPlanner.plan_day` places each fresh every morning at the door geometry decides. See
 # docs/CITY.md, "Regions and the wall", and docs/EVENTS.md, "Checkpoints".
 #
-# All three carry one-barrier flag, as does the `roadblock` the wall stands as: a door is one
+# All three count as one barrier (`FieldSpec.as_one_barrier()`), as does the `roadblock` the wall stands as: a door is one
 # thing to walk through however many bodies it is built from, and where a door and a wall meet at a
-# corner their fields are one barrier rather than five. See one-barrier flag.
+# corner their fields are one barrier rather than five. See `FieldSpec.as_one_barrier()`.
 
 ## The hut at a region door. Detains rather than blocking outright: the player walks to the hut,
 ## gets detained inside, and spawns on the other side.
@@ -2809,7 +2809,7 @@ static func _collapsed_frontage() -> EventDef:
 ##
 ## **4.0 rather than 6.0, for the reason the `roadblock` is silent.** A door is a hut on each
 ## sidewalk, a gate over the road and often a wall's roadblocks at the corner, and a hold is spent
-## standing still where no decay is earned. one-barrier flag already collapses all of them to
+## standing still where no decay is earned. Being one barrier already collapses all of them to
 ## the strongest at her position; this is that source's own rate when the hut is the strongest thing
 ## there. It changes nothing about what a detention costs, which is `Tuning.CHAT_EXCITEMENT` flat.
 static func _checkpoint_hut() -> EventDef:

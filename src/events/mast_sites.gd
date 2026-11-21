@@ -215,7 +215,7 @@ static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 ## Whether a mast's own field, planted here, would reach inside a calm block's interior — the lot
 ## rect shrunk in by `MAST_CALM_INTERIOR_MARGIN` on every side, so a field may still brush
 ## the block's own pavement edge without counting as reaching its interior. Read off the
-## `loudspeaker` row's own `outer_radius` rather than a second copy of the number, so a balance
+## `loudspeaker` row's own `outer radius` rather than a second copy of the number, so a balance
 ## pass that moves the field moves this refusal with it.
 static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 	var reach := EventCatalogue.mast().heard_within()
