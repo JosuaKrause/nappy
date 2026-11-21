@@ -491,7 +491,7 @@ func most_in_a_day() -> int:
 
 ## **A planned row that comes again**, on its plan's own clock (`EventManager`): seconds from one
 ## of its instances coming to the next coming, kept on the clock whatever the last one did. 0 for a
-## row that comes once. A plan may carry its own (`EventPlan.repeat_every`), as each of
+## row that comes once. A plan may carry its own (`EventPlan.comes_again_every()`), as each of
 ## the basement's vents keeps its own period.
 @export var repeat_every := 0.0
 ## Seconds from one of a planned row's instances being done — finished, or leaving the end of its

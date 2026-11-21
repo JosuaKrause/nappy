@@ -89,7 +89,7 @@ const CORRIDOR_ALPHA := 0.55
 ## place, and it is the placement no trace can report — so the picture would have whispered exactly
 ## the thing it exists to shout. Drawn instead, every mark stays at full strength and the ones she
 ## met carry a white pip. `TelemetryObserver._watch_met_events` decides "met" against the field
-## rather than against `EventPlan.was_live`, which only says the plan was once
+## rather than against `EventPlan.has_been_in_the_world()`, which only says the plan was once
 ## loaded into the world at `Tuning.EVENT_STREAM_RADIUS` — more than twice the reach of a typical
 ## row, so it would mark a great deal of decoration as if it had cost her something.
 const MET_MARK := Color("ffffff")
