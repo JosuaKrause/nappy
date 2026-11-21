@@ -15,7 +15,7 @@ the old order (the age half returns early for an age of 0, the behaviours half a
 one private `_saved`, with `saved()` and `leave_the_world(save)`; `arrive_aged()` sets it. Streaming's stream-out,
 stream-in and `_done_for_now()` carry the save, a mast restored at the broadcast clock; the spawner's warned row and
 `EventsAhead`'s two sends restore `EventSave.aged(...)`. A script rewrote thirty `.resume(` lines in twenty-one suite,
-probe and rig files, the rest by hand; `tools/field_reads.txt` loses six lines. Nothing a player sees changes.
+probe and rig files, the rest by hand; `tools/field_reads.txt` loses five lines. Nothing a player sees changes.
 
 **Open to overturn, the builder's where the design was silent:** the suites that compared two whole behaviour-state
 dictionaries round a stream-out compare one named behaviour's state through `state_of()`, since the save gives no
