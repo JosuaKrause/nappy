@@ -185,7 +185,7 @@ const WALK_SECONDS := 170.0
 ## the touching units'** (`WalkSiting.lay_ahead()`, `Location.take_for_her_walk()`, `UnitDraw`).
 ## She walks the day's longest route out and back at a played day's stream radius, through the manager's own tick,
 ## until her walk has laid `SITINGS` poster crews, each a row a unit drew as she walked and handed to
-## her walk (`EventsAhead._take_what_was_drawn()`, `EventDirector.owe_on_her_way()`). Each crew is
+## her walk (`EventsAhead._take_what_was_drawn()`, `EventDirector.owe_on_her_way()`). Each crew
 ## stands on a location of a unit; at least one in a unit that had not drawn when it was laid, every
 ## other on a location a drawn unit left empty. With the rest of the day drawn after the walk, nothing a unit
 ## drew stands within `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row

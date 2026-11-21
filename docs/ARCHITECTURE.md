@@ -1337,8 +1337,8 @@ field with its value before and after (`tests/shared_state.gd`).
   the units round it first. Its header gives the reason it builds a city: each rule is the order of
   two parts the manager owns.
 - `test_walk_siting.gd` — the siting that lays the rows her walk places, over stand-ins for the
-  route tree, the locations, the units and the judge: the nearest free location on her branch, a
-  unit's that has not drawn first, takes a beat and its unit is told, a placed beat gives its
+  route tree, the locations and the judge: the nearest free location on her branch, a
+  unit's that has not drawn first (a location still open), takes a beat which the location then holds, a placed beat gives its
   location back only once it has another, a row a mark rigs takes the nearest free location
   straight ahead of her and out of her view, a mast near the mark and the fire lit at dusk take the
   first location offered; and
