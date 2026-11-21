@@ -1105,6 +1105,9 @@ func validate() -> bool:
 	if look != Look.NONE and ground_shape() == null:
 		push_error("event '%s' has a look but no shape to draw its shadow and body from" % id)
 		return false
+	if _body.is_solid_with_no_shape():
+		push_error("event '%s' says its body is solid but has no shape to be solid as" % id)
+		return false
 	# **A row solid in pieces is solid inside its own shape and nowhere else.** Every planner reads
 	# `obstructs_within()`, the disc bound, and none knows a piece list exists, so a piece reaching
 	# past it would be ground nothing ever cleared. Pieces inside the shape can only remove

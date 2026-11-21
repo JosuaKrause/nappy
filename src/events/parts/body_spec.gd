@@ -289,6 +289,12 @@ func solid_reach() -> float:
 		furthest = maxf(furthest, piece.reach())
 	return furthest
 
+## Whether it says it is solid and has no shape to be solid as, a body that would stop nobody while
+## claiming to (`solid()` is handed a shape, which GDScript cannot refuse to be null);
+## `EventDef.validate()` refuses it.
+func is_solid_with_no_shape() -> bool:
+	return _solid and _shape == null
+
 ## The pieces its body is made of, in the scene's own frame: the declared ones, or one piece at the
 ## origin carrying its shape. The one form a live event's body (`EventBody`), its shadow and
 ## `BodyStance`'s layout of a body (`pieces_laid_out()`) are built from.

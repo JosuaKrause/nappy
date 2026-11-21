@@ -96,6 +96,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	instance.free()
 
 	_test_a_copy_of_a_row_lies_as_the_row_does(t)
+	_test_a_solid_body_with_no_shape_is_refused(t)
 
 ## **A copy of a row lies as the row does, for every copy the game makes**: a copy shares the row's
 ## body value (`BodySpec`), so what it is on the ground is the row's own. **A deep copy loses the
@@ -133,6 +134,17 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 		_find_deep_copies(folder, deep_copies)
 	t.check(deep_copies.is_empty(),
 			"no game code deep-copies a resource (a row's body would be lost): %s" % [deep_copies])
+
+## **A body that says it is solid with no shape is refused**: the old "obstructs but its shape does
+## not reach as far" check is unwritable now (a solid body's reach is its shape's), and this is the
+## one fault of that kind a body can still be written with, because `BodySpec.solid()` takes a
+## shape a caller may hand as null.
+func _test_a_solid_body_with_no_shape_is_refused(t: TestRunner) -> void:
+	var bare := EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
+	bare.look = EventDef.Look.NONE
+	t.check(bare.validate(), "the row the faulty one is made from is valid")
+	bare.use_body(BodySpec.solid(null).walked_round().parked())
+	t.check(not bare.validate(), "a row whose body says it is solid with no shape is refused")
 
 ## Appends the files under `folder` that call `duplicate(true)` or `duplicate_deep(`.
 func _find_deep_copies(folder: String, into: Array[String]) -> void:
