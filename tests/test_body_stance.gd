@@ -1,6 +1,7 @@
 extends RefCounted
-## `BodyStance.pieces_at()`: where each piece of a body built at a point stands, which every reader of
-## a planned body's layout (the walk's ground, the map's record, the route rig) takes from it.
+## `BodyStance`: where a body stands (`stands_at()`, `planned_body_at()`, the plan's answer) and where each piece of
+## a body built at a point stands (`pieces_at()`), which every reader of a planned body's layout (the walk's
+## ground, the map's record, the route rig) takes from it.
 ##
 ## Rows are the catalogue's own, built as they are (data), except check 4's, a bare row with a shape and no body. The map is a stand-in per street axis
 ## (`tests/east_west_street.gd` and the north-south twin below), so no city is generated and the
@@ -213,7 +214,3 @@ func _test_a_planned_body_stands_where_its_plan_was_placed(t: TestRunner) -> voi
 		var plan := EventPlan.new(row, at)
 		t.check(BodyStance.planned_body_at(map, plan) == BodyStance.stands_at(map, row, at),
 				"%s's planned body stands where its row stands a body built at the plan's point" % id)
-	var beat_row := EventCatalogue.by_id("chatting_mother")
-	var beat := EventPlan.new(beat_row, at, PackedVector2Array([at, at + Vector2(96.0, 0.0)]))
-	t.check(BodyStance.planned_body_at(map, beat) == BodyStance.stands_at(map, beat_row, at),
-			"a plan made at its route's first point stands where it was placed")

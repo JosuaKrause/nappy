@@ -33,11 +33,11 @@ static func stands_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
 
 ## **Where a planned body stands once it is built**: `stands_at()` of where its plan was placed
 ## (`EventPlan.placed_at()`), the one choice of point the walk's ground, the plan builder
-## (`PlanBuilder.body_stands_at()`) and the route rig ask. A plan's route does not enter into it:
-## every plan that carries one is made at the route's first point (`EventPlan.new(def, path[0],
-## path)`), and the rows asked about, the ones that stand, guard or notice, are never given a street
-## route from the tile's centre by `PlanBuilder.build()`, so the plan's placed point and its route's
-## first point are the same.
+## (`PlanBuilder.body_stands_at()`) and the route rig ask. `EventInstance.setup()` stands the built
+## body at the same point (its `at`, the plan's placed point). A plan's route does not enter into it:
+## every plan that carries one starts its route where it was placed (the director's and the
+## finale's are made at `path[0]`, the plan builder's along-street route starts at the placed tile),
+## and no row is planned cross-street, the one route that starts elsewhere.
 static func planned_body_at(map: WorldMap, plan: EventPlan) -> Vector2:
 	return stands_at(map, plan.row(), plan.placed_at())
 
