@@ -311,7 +311,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "RegionPlanner",
+        "RegionPlan",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
     ),

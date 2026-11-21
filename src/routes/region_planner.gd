@@ -63,54 +63,6 @@ extends RefCounted
 ## commit**, or the wall silently starts sealing nothing.
 const _WALL_DEF_ID := "roadblock"
 
-## The shared state of one checkpoint gate: its own ground point and whether the boom is up right
-## now. Built once per street door in `_add_door_bodies`, held by the `checkpoint_gate` instance
-## through `EventPlan.gate()` (which is what it draws raised or lowered from) and
-## by `Crowd` through `RegionPlan.gates` (which is what actually raises and lowers it — see
-## `Crowd._stop_for_gates()`). A `RefCounted` rather than two separate copies, so the two systems
-## can never disagree about whether a boom is up.
-class GateState extends RefCounted:
-	## The gate's own ground point, in world space — the same position its `checkpoint_gate`
-	## instance stands at, and what `Crowd` measures a car's distance from.
-	var position := Vector2.ZERO
-	## Whether the boom is up. `Crowd._stop_for_gates()` is the only writer; the instance only
-	## reads it, once a frame, to choose which of the four boom textures to draw.
-	var raised := false
-	## Seconds the car at the front of this gate's queue has been held at the stop line —
-	## `Crowd`'s own clock for `Crowd.GATE_STOP_SECONDS`, reset the moment nobody is held here.
-	var stopped_for := 0.0
-
-## One region growth's result: which crossings are wall today and which are doors, plus the
-## bodies the wall and the doors stand as.
-class RegionPlan extends RefCounted:
-	## Boundary segments that are wall today — the whole day if before `Tuning.REGION_WALL_
-	## FIRST_DAY`, since nothing is drawn before then.
-	var walls: Array[StreetNetwork.Segment] = []
-	## Boundary segments the day's tree crosses — a hut on each pavement and a gate over the road,
-	## from `Tuning.REGION_WALL_FIRST_DAY`. See `door_bodies`.
-	var doors: Array[StreetNetwork.Segment] = []
-	## Through-alley rects that are **crossings** (`ground_region_of` differs at their two mouths)
-	## and wall today — both mouths walled, the alley equivalent of `walls`.
-	var alley_walls: Array[Rect2i] = []
-	## Crossing alley rects the day's tree uses — a single guard at each of its two mouths, from
-	## `Tuning.REGION_WALL_FIRST_DAY`. See `door_bodies`.
-	var alley_doors: Array[Rect2i] = []
-	## The wall's own bodies, as `EventPlan` — hard seals of the roadblock row, one
-	## tile deep at a boundary segment's mouth or an alley's two mouths. Kept as its own list,
-	## appended to the day's plan (`EventManager.plans()`) by the caller, rather than merged
-	## anywhere: a caller that only wants to know where the wall runs never has to filter it back
-	## out of the day's whole plan.
-	var wall_bodies: Array[EventPlan] = []
-	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
-	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart
-	## from `wall_bodies` for the same reason that list is kept apart from everything else — a
-	## caller that wants the wall alone never has to filter the doors back out, and vice versa.
-	var door_bodies: Array[EventPlan] = []
-	## One `GateState` per street door, in the same order as `doors` — `Crowd` reads this to know
-	## where today's gates are and to raise and lower them; the `checkpoint_gate` `EventPlan` at the
-	## same crossing carries the identical object. Empty for an alley door, which has no gate.
-	var gates: Array[GateState] = []
-
 # ------------------------------------------------------------------- generation ---
 
 ## Assigns every junction to a region and stores the result on `map`
@@ -611,7 +563,7 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 		if tree.is_on_the_tree(segment.key()):
 			stand_door(map, segment, plan)
 		else:
-			plan.walls.append(segment)
+			plan.add_wall(segment)
 	for rect in map.alley_lots():
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
@@ -626,21 +578,21 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 				on_tree = true
 				break
 		if on_tree:
-			plan.alley_doors.append(rect)
+			plan.add_door_alley(rect)
 		else:
-			plan.alley_walls.append(rect)
-	for segment in plan.walls:
+			plan.add_walled_alley(rect)
+	for segment in plan.wall_segments():
 		var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
 		var at_a: bool = map.wall_stands_at_a(segment.key(), default_at_a)
-		plan.wall_bodies.append_array(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
-	for rect in plan.alley_walls:
+		plan.add_wall_plans(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
+	for rect in plan.walled_alleys():
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
 		var vertical: bool = info[2]
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true))
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false))
-	for rect in plan.alley_doors:
+		plan.add_wall_plans([_alley_mouth_wall_body(map, rect, vertical, true)] as Array[EventPlan])
+		plan.add_wall_plans([_alley_mouth_wall_body(map, rect, vertical, false)] as Array[EventPlan])
+	for rect in plan.door_alleys():
 		_add_alley_door_bodies(map, rect, plan)
 	return plan
 
@@ -701,7 +653,7 @@ static func _along_axis(horizontal: bool) -> Vector2:
 ## each of the day's street doors through, and a scene recipe's authored checkpoint
 ## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
 static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
-	plan.doors.append(segment)
+	plan.add_door(segment)
 	_add_door_bodies(map, segment, plan)
 
 ## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
@@ -721,9 +673,8 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 		return
 	var axis := _along_axis(segment.horizontal)
 	var road_index := positions.size() / 2
-	var gate := GateState.new()
-	gate.position = positions[road_index]
-	plan.gates.append(gate)
+	var gate := GateState.new(positions[road_index])
+	plan.add_gate(gate)
 	for i in positions.size():
 		var def_id := "checkpoint_gate" if i == road_index else "checkpoint_hut"
 		var def := SealPlanner.sealed_variant(EventCatalogue.by_id(def_id), true)
@@ -732,7 +683,7 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 		if i == road_index:
 			body.stand_as_the_boom_of(gate)
 		body.stand_as_a_door()
-		plan.door_bodies.append(body)
+		plan.add_door_plan(body)
 
 ## The two bodies an alley door stands, one `checkpoint_post` at each of its two mouths — the same
 ## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_rect` a
@@ -746,7 +697,7 @@ static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan)
 		var body := EventPlan.new(def, map.tile_rect_to_world(mouth).get_center())
 		body.face(axis)
 		body.stand_as_a_door()
-		plan.door_bodies.append(body)
+		plan.add_door_plan(body)
 
 # --------------------------------------------------------------------------------- dsu ---
 

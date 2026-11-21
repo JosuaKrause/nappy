@@ -44,15 +44,15 @@ var _own_tiles_at := Vector2.INF
 ## What `follow_the_arm()` last set a boom's shapes to, so a boom standing still in either position
 ## costs a comparison rather than a deferred call a frame.
 var _arm_was_open := false
-## The boom state a boom's arm is, shared with `Crowd` (`RegionPlanner.GateState`), which only the
+## The boom state a boom's arm is, shared with `Crowd` (`GateState`), which only the
 ## crowd writes; null for every row but a street door's boom, and read as lowered then.
-var _gate: RegionPlanner.GateState
+var _gate: GateState
 
 ## Handed, as its event is set up, its row, the map, where she is, the node its collision body
 ## stands under, where it landed (`at`), the way it was sited facing (`face`), and whether the
 ## street it landed on runs it down the screen (`vertical`), and the boom state its arm is (`gate`).
 func _init(row: EventDef, map: WorldMap, where: WhereSheIs, holder: Node2D, at: Vector2,
-		face: Vector2, vertical: bool, gate: RegionPlanner.GateState = null) -> void:
+		face: Vector2, vertical: bool, gate: GateState = null) -> void:
 	_gate = gate
 	_row = row
 	_map = map
@@ -109,7 +109,7 @@ func is_solid() -> bool:
 
 ## Whether its boom's arm is up: its gate's state, lowered with none.
 func _arm_is_up() -> bool:
-	return _gate != null and _gate.raised
+	return _gate != null and _gate.is_boom_up()
 
 ## Whether its body is still to come down once it starts (`EventDef.SolidWhen.ONCE_IT_STARTS`).
 func waits_to_come_down() -> bool:

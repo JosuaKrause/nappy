@@ -369,7 +369,7 @@ func is_on_home_block(tile: Vector2i) -> bool:
 	return lot_rect(_home_block).has_point(tile)
 
 ## Whether `tile` lies inside one of `walled_alleys` — today's crossing alleys where the region
-## wall stands rather than a door (`RegionPlanner.RegionPlan.alley_walls`). **A fourth refusal
+## wall stands rather than a door (`RegionPlan.walled_alleys()`). **A fourth refusal
 ## beside `is_closed()`, `is_held_at()` and `is_on_home_block()`, and the one none of those three
 ## can ever stand in for**: an alley is carved into a block interior, never a `StreetNetwork`
 ## segment, so `is_held_at()`'s `StreetNetwork.segment_containing()` answers null for every tile of

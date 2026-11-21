@@ -118,7 +118,7 @@ func _day(t: TestRunner, day: int) -> Array:
 	# A recipe that selects no gate or barrier stands no region wall either, the way
 	# `SceneRecipeRuntime._select_structures()` leaves the day's plan.
 	if city.streets().region_plan():
-		city.streets().replace_region_plan(RegionPlanner.RegionPlan.new())
+		city.streets().replace_region_plan(RegionPlan.new())
 	var empty: Array[EventPlan] = []
 	RunCity.events(city).start_recipe(empty, DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), day,
 			map.tile_to_world(MOUTH))
