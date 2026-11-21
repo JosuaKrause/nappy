@@ -193,15 +193,13 @@ func _test_the_same_seed_plans_the_same_arcs(t: TestRunner) -> void:
 				same = false
 	t.check(same, "the same seed plans the same arcs")
 
-## Rejection sampling with no spacing test let two trees land close enough to read as one canopy.
-## `_dress_block` now rejects a candidate within `City.min_tree_spacing()` of one it already planted
-## in the same lot, so this drives the real placement pipeline — a built `City`, a real `start_day`
-## — across a few seeds and checks every pair of trees `CityMap.anchor_of` puts in the same lot,
-## which is what the clump would actually have been caught by rather than a unit test of the
-## rejection alone.
+## Two trees planted closer than the wider of their canopies read as one clump. A lot's trees are
+## placed by `_dress_block` with a spacing between them, so this drives the real placement
+## pipeline (a built `City`, a real `start_day`) across a few seeds and holds every pair of trees
+## `CityMap.anchor_of` puts in the same lot at least as far apart as the wider of the two is drawn,
+## each at its own picture and scale.
 func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 	var checked_any_pair := false
-	var spacing := City.min_tree_spacing()
 	for seed_value: int in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
@@ -214,7 +212,7 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 		city.start_day(state, 1, rng)
 
 		# Grouped by the lot's own anchor (`CityMap.anchor_of`), not by which of a zone's four
-		# blocks a tree happens to sit on — a four-block calm zone is one lot, and `_dress_block`'s
+		# blocks a tree happens to sit on: a four-block calm zone is one lot, and `_dress_block`'s
 		# own spacing check only ever compares trees it placed in the same call.
 		var by_lot := {}
 		for node in city.props():
@@ -223,7 +221,7 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 				continue
 			var anchor: Vector2i = map.anchor_of(map.block_at(prop.position))
 			var lot: Array = by_lot.get(anchor, [])
-			lot.append(prop.position)
+			lot.append(prop)
 			by_lot[anchor] = lot
 
 		for anchor: Vector2i in by_lot:
@@ -231,10 +229,14 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 			for i in trees.size():
 				for j in range(i + 1, trees.size()):
 					checked_any_pair = true
-					var apart := (trees[i] as Vector2).distance_to(trees[j] as Vector2)
-					t.check(apart >= spacing,
-							"seed %d lot %s: two trees %.1fpx apart, under the %.1fpx floor"
-							% [seed_value, anchor, apart, spacing])
+					var a: Prop = trees[i]
+					var b: Prop = trees[j]
+					var apart := a.position.distance_to(b.position)
+					var wider := maxf(TreePictures.drawn_size(a.variant(), a.scale_factor()).x,
+							TreePictures.drawn_size(b.variant(), b.scale_factor()).x)
+					t.check(apart >= wider,
+							"seed %d lot %s: two trees %.1fpx apart, under the %.1fpx the wider is drawn"
+							% [seed_value, anchor, apart, wider])
 		city.free()
 	t.check(checked_any_pair, "at least one lot across these seeds had more than one tree to check")
 

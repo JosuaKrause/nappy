@@ -149,7 +149,7 @@ func _draw_tree() -> void:
 ## dressed with (`TreePictures.street_tree_shape()`). The street tree's pit is a ground decal owned
 ## by `CityDecals`, so it stays under the player and other entities.
 func _draw_street_tree() -> void:
-	_draw_tree_at(TreePictures.drawn_size(_variant, 1.0))
+	_draw_tree_at(TreePictures.street_tree_size(_variant))
 
 ## A tree picture drawn `size` large, with its shadow. The size is read off the region table rather
 ## than off the drawn texture: a region reports its source's own size.

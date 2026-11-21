@@ -1346,7 +1346,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	# the same way one landing off calm ground already is — checked before it is ever added rather
 	# than thinned out afterwards, the same rule closures and events are already held to.
 	var planted: Array[Vector2] = []
-	var spacing := min_tree_spacing()
+	var spacing := _min_tree_spacing()
 	# **The one exception to "the same every morning" is the one park this run ever fences.**
 	# `ParkClosure`'s line stands on the lot's own edge row, and a tree seeded there before the
 	# fence existed would stand on the fence line — cleared for the barrier the same way the
@@ -1368,7 +1368,8 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 		if _too_close_to_a_planted_tree(at, planted, spacing):
 			continue
 		var tree := Prop.new()
-		tree.dress(atlas, Prop.Kind.TREE, rng.randi(), rng.randf_range(PARK_TREE_SCALES.x, PARK_TREE_SCALES.y))
+		tree.dress(atlas, Prop.Kind.TREE, rng.randi(),
+				rng.randf_range(PARK_TREE_SCALES.x, PARK_TREE_SCALES.y))
 		tree.position = at
 		_add_prop(tree)
 		planted.append(at)
@@ -1379,12 +1380,13 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 ## the largest scale `_dress_block()` rolls (`PARK_TREE_SCALES`), the widest either canopy is ever
 ## drawn. Two canopies planted any closer than their own width overlap and read as one shape rather
 ## than as two trees, which is the clump this spacing exists to stop.
-static func min_tree_spacing() -> float:
+static func _min_tree_spacing() -> float:
 	return TreePictures.widest_canopy() * PARK_TREE_SCALES.y
 
-## Whether `at` lands within `spacing` (`min_tree_spacing()`) of a tree this lot has already planted —
-## pulled out from the loop above so the spacing rule is one line to read and one line to test.
-static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2], spacing: float) -> bool:
+## Whether `at` lands within `spacing` (`_min_tree_spacing()`) of a tree this lot has already
+## planted — pulled out from the loop above so the spacing rule is one line to read.
+static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2],
+		spacing: float) -> bool:
 	for other in planted:
 		if at.distance_to(other) < spacing:
 			return true

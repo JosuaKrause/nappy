@@ -31,14 +31,18 @@ static func shape(variant: int, scaled: float) -> GroundShape:
 static func drawn_size(variant: int, scaled: float) -> Vector2:
 	return Vector2(AtlasTable.baked().native_size(region(variant))) * scaled
 
-## A street tree's ground shape: the one place that says a street tree stands at its picture's own
-## size (`shape()` at scale 1.0), which `Prop` takes for `Kind.STREET_TREE` and `widest_reach()`
-## keeps clear.
+## The size a street tree of `variant` is drawn at: its picture's own, the one place that says so,
+## which `Prop` draws `Kind.STREET_TREE` at and `street_tree_shape()` grounds it by.
+static func street_tree_size(variant: int) -> Vector2:
+	return drawn_size(variant, 1.0)
+
+## A street tree's ground shape, at `street_tree_size()`, which `Prop` takes for
+## `Kind.STREET_TREE` and `widest_reach()` keeps clear.
 static func street_tree_shape(variant: int) -> GroundShape:
-	return shape(variant, 1.0)
+	return GroundShape.point(street_tree_size(variant).x * _REACH_FRACTION)
 
 ## The widest tree picture's width at its own size, in px: what a park tree's spacing is worked out
-## from (`City.min_tree_spacing()`), at the largest scale a park tree is rolled.
+## from (`City._min_tree_spacing()`), at the largest scale a park tree is rolled.
 static func widest_canopy() -> float:
 	var widest := 0.0
 	for variant in REGIONS.size():
