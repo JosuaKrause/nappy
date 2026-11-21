@@ -1762,7 +1762,7 @@ door gets a `checkpoint_hut` on each pavement lane and a `checkpoint_gate` over 
 them, at the wall's own three positions (`SealPlanner.positions_across` at `Tuning.TILE_SIZE`,
 which comes out at three across `STREET_WIDTH`); an alley door gets a single `checkpoint_post` at
 each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
-alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a gatehouse or a post —
+alongside the wall's own bodies, among the region plan's door plans (`RegionPlan.door_plans()`). The toll is paid at a gatehouse or a post —
 see docs/EVENTS.md, "Checkpoints" — and the gate never inspects her: lowered it is a wall across the
 carriageway, and raised for a car it is ground she may walk under.
 
