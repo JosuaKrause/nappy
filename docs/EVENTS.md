@@ -1468,7 +1468,7 @@ Each item quotes the code on this branch.
    draws first, so a unit's draw is the same whatever order the units are drawn in. **A beat her
    walk lays on her branch takes a location in the nearest unit on her way that has not drawn**
    (`WalkSiting`): that unit draws round it, its room starting without the location, and it and the
-   units touching it are judged among the beat (`UnitDraw`, `PlacementUnit.rigged()`); a row a mark
+   units touching it are judged among the beat (`UnitDraw`, `PlacementUnit.beats()`, which its locations answer: the location says the beat stands on it); a row a mark
    rigs (day 6's man shouting, day 7's van) is laid, when its marble is handed out, the same way just
    ahead of her, on a location a drawn unit left empty (`WalkSiting.lay_just_ahead()`). So a unit a beat stands in or beside draws
    by her path, on purpose, as can a unit touching one whose draw that changed (a unit is judged among

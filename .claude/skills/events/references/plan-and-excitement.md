@@ -11,12 +11,12 @@ of the *plan*. `EventScheduler.build_day()` plans the dawn's part and prepares t
 day's locations; each unit of them (a street, a junction box, an alley, a park or a square) draws
 as she comes near it (`UnitDraw`, `EventsAhead.draw_what_comes_near()`), after every touching unit
 of lower rank, so every unit's draw is the same whatever her path, what drawing every unit at dawn
-would give, but for a unit a beat of her walk stands in or beside (below). A unit within the stream
+would give, but for a unit a beat of her walk stands in or beside, or one touching a unit whose draw that changed (below). A unit within the stream
 radius of her is drawn before the streaming looks there (`EventManager.stream_around()` and the
 manager's tick). What streams is the *instantiation*.
 
 **A beat her walk lays takes a location, in a unit that has not drawn where her way has one, and
-that unit draws round it** (`WalkSiting`, `PlacementUnit.rig()`). The unit's room starts without
+that unit draws round it** (`WalkSiting`; the location says the beat stands on it, `Location.beat()`, and the unit reads its locations, `PlacementUnit.beats()`). The unit's room starts without
 the location and its draw, and the draws of the units touching it, are judged among the beat
 (`UnitDraw`); nothing is drawn round a beat first. **A row a mark rigs** (day 6's man shouting,
 day 7's van) is a marble of her route's bag (`EventManager.rig_her_route()`, with `just_ahead`); when

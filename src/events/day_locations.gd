@@ -127,11 +127,12 @@ func _index_every_tile() -> void:
 					_index[tile] = [] as Array[Location]
 				(_index[tile] as Array[Location]).append(location)
 
-## **Stands `plan`, a beat her walk lays, on `location` for the day**, so no draw fills it. Its
-## section is left as it is: a unit's draw lays no row that spans the street over a taken
-## sidewalk (`UnitRoom`, `MarbleDraw`), and day 13's swap replaces a section's whole content.
+## **Stands `plan`, a beat her walk lays, on `location` for the day**, so no draw fills it
+## (`Location.take_for_her_walk()`). Its section is left as it is: a unit's draw lays no row that
+## spans the street over a taken sidewalk (`UnitRoom`, `MarbleDraw`), and day 13's swap replaces a
+## section's whole content.
 func take_for_her_walk(location: Location, plan: EventPlan) -> void:
-	location.take(plan)
+	location.take_for_her_walk(plan)
 
 ## Gives `location` back where `plan` stands on it (`Location.give_back()`): a beat her walk has
 ## laid somewhere else.

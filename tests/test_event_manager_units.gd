@@ -181,19 +181,20 @@ const SITINGS := 4
 ## The longest the walking test walks, in seconds of walking.
 const WALK_SECONDS := 170.0
 
-## **A beat her walk lays stands in a unit before it draws, and changes no draw but its unit's and
-## the touching units'** (`WalkSiting.lay_ahead()`, `PlacementUnit.rig()`, `UnitDraw`). She walks the
-## day's longest route out and back at a played day's stream radius, through the manager's own tick,
-## until her walk has laid `SITINGS` poster crews, each a row a unit drew as she walked and handed to
-## her walk (`EventsAhead._take_what_was_drawn()`, `EventDirector.owe_on_her_way()`). Each crew is
-## rigged in a unit; at least one in a unit that had not drawn when it was laid, every other on a
-## location a drawn unit left empty. With the rest of the day drawn after the walk, nothing a unit
-## drew stands within `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row
-## on the crew's location, and every unit that drew otherwise than on the day drawn whole holds a
-## crew, touches a unit that does, or is reached from such a unit along touching units that drew
-## otherwise (a unit is judged among the draws of the touching units drawn before it, so a difference
-## can carry, and two touching units that both differ do not excuse each other): no unit differs out
-## of nowhere, and some unit far from every crew is compared.
+## **A beat her walk lays stands in a unit before it draws, and changes no draw but its unit's
+## and the touching units'** (`WalkSiting.lay_ahead()`, `Location.take_for_her_walk()`,
+## `UnitDraw`). She walks the day's longest route out and back at a played day's stream radius,
+## through the manager's own tick, until her walk has laid `SITINGS` poster crews, each a row a
+## unit drew as she walked and handed to her walk (`EventsAhead._take_what_was_drawn()`,
+## `EventDirector.owe_on_her_way()`). Each crew stands on a location of a unit; at least one in
+## a unit that had not drawn when it was laid, every other on a location a drawn unit left
+## empty. With the rest of the day drawn after the walk, nothing a unit drew stands within
+## `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row on the crew's
+## location, and every unit that drew otherwise than on the day drawn whole holds a crew,
+## touches a unit that does, or is reached from such a unit along touching units that drew
+## otherwise (a unit is judged among the draws of the touching units drawn before it, so a
+## difference can carry, and two touching units that both differ do not excuse each other): no
+## unit differs out of nowhere, and some unit far from every crew is compared.
 func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
 	var map := _city.map
@@ -254,7 +255,7 @@ func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) 
 			% [bodies_sited - sited_and_not_told, bodies_sited])
 	events.use_body_listener(Callable())
 	t.check(in_no_unit == 0 and before_its_unit_drew > 0,
-			"every crew is rigged in a unit, and at least one in a unit that had not drawn when it "
+			"every crew stands in a unit, and at least one in a unit that had not drawn when it "
 			+ "was laid (%d before its unit drew, %d on drawn ground, %d in no unit)"
 			% [before_its_unit_drew, on_drawn_ground, in_no_unit])
 	events.draw_the_ground_round(Vector2.ZERO, INF)
@@ -319,10 +320,10 @@ func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) 
 	events.use_player(null)
 	rig.free()
 
-## The unit `plan`, a beat her walk laid, is rigged in, or null.
+## The unit `plan`, a beat her walk laid, stands in, or null.
 func _holding(plan: EventPlan) -> PlacementUnit:
 	for unit in _units().all():
-		if unit.rigged().has(plan):
+		if unit.beats().has(plan):
 			return unit
 	return null
 
