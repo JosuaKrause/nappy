@@ -87,7 +87,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 ## field — safely, because both headings are always exactly east or west by construction while they
 ## can ever be drawn together. `is_taking_a_victim()` is only ever true while the van `is_waiting()`
 ## (`EventAbduction` abandons it the instant a `HUNTS`-heated copy starts hunting), and idling the
-## van's own `EventInstance.facing_now()` is `EventPlan.facing`'s untouched default, always due east —
+## van's own `EventInstance.facing_now()` is the plan's untouched facing (what `EventPlan.faces()` answers until `face()` sets it), always due east —
 ## so the van's own `select_view(event.facing_now())` call below, after the victim's, only ever
 ## asks for exactly the sector the victim's own call left it on (both facing the same way) or its
 ## exact opposite (180° apart, always past `EightDirection`'s hold), never anything a stale hold
