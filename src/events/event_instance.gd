@@ -236,8 +236,7 @@ var _surroundings := EventSurroundings.new()
 ## nobody names one for (a rig that steps it directly).
 var _where := WhereSheIs.nowhere()
 
-## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
-## GateState`, handed to `setup()` by `EventStreaming.stream_in()` from `EventPlan.gate()`. `null` for
+## The shared boom state a `checkpoint_gate` draws raised or lowered from — `GateState`, handed to `setup()` by `EventStreaming.stream_in()` from `EventPlan.gate()`. `null` for
 ## every look but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired
 ## to `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
 var _gate_state: GateState = null

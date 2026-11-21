@@ -86,6 +86,10 @@ func add_walled_alley(rect: Rect2i) -> void:
 func add_door_alley(rect: Rect2i) -> void:
 	alley_doors.append(rect)
 
+## Adds the plan one wall body stands as.
+func add_wall_plan(body: EventPlan) -> void:
+	wall_bodies.append(body)
+
 ## Adds the plans a wall stands as.
 func add_wall_plans(bodies: Array[EventPlan]) -> void:
 	wall_bodies.append_array(bodies)

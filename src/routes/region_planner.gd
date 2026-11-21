@@ -590,8 +590,8 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 		if info.is_empty():
 			continue
 		var vertical: bool = info[2]
-		plan.add_wall_plans([_alley_mouth_wall_body(map, rect, vertical, true)] as Array[EventPlan])
-		plan.add_wall_plans([_alley_mouth_wall_body(map, rect, vertical, false)] as Array[EventPlan])
+		plan.add_wall_plan(_alley_mouth_wall_body(map, rect, vertical, true))
+		plan.add_wall_plan(_alley_mouth_wall_body(map, rect, vertical, false))
 	for rect in plan.door_alleys():
 		_add_alley_door_bodies(map, rect, plan)
 	return plan

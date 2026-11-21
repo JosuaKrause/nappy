@@ -238,7 +238,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# filtering it back out of the whole day's plan.
 	placements.append_array(region_plan.wall_plans())
 	# The door structure — a hut on each pavement and a gate over the road at a street door, a
-	# guard at each mouth of an alley door. Same reasoning as `wall_bodies` just above: kept as
+	# guard at each mouth of an alley door. Same reasoning as `wall_plans()` just above: kept as
 	# its own list on `region_plan` and appended here rather than merged into `SealPlanner`'s, so
 	# `region_plan.door_plans()` stays the one place that answers "where do today's doors stand"
 	# without filtering.

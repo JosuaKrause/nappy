@@ -125,6 +125,8 @@ src/
 	                      and the view a whole street is in: on the route, route-adjacent, off it
 	seal_planner.gd       seals every street off the day's route tree (a share of them from the
 	                      gatehouse day), and every street off the escape's two chains
+	region_plan.gd        one day's wall and doors, and the bodies and gates they stand as; read and built through methods
+	gate_state.gd         one checkpoint gate's ground point and boom, shared by the crowd and the gate's instance
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
