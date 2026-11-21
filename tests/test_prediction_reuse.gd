@@ -121,7 +121,7 @@ func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 	var field := definition.field()
 	var fields := {
 		"peak": field.at_peak(field.peak() + 3.0),
-		"inner radius": field.holding_to(field.core_within() + 3.0),
+		"inner radius": field.holding_to(lerpf(field.core_within(), field.heard_within(), 0.5)),
 		"outer radius": field.reaching(field.heard_within() + 3.0),
 		"core rate": field.with_a_core(field.core_rate() + 3.0, field.core_reach()),
 		"core reach": field.with_a_core(field.core_rate(), field.core_reach() + 3.0),
@@ -225,6 +225,10 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		var own_row := source.row()
 		var others := _rows_differing_in_one_setting(definition)
 		for label: String in others:
+			# The cache holds the last answer, so the row's own is asked first: a cache that does
+			# not notice the other row hands that one back.
+			_under_a_different_row(source, own_row)
+			_event_parity(t, source, at, definition.id + " its own row before a different " + label)
 			_under_a_different_row(source, others[label] as EventDef)
 			_event_parity(t, source, at, definition.id + " a different " + label)
 		_under_a_different_row(source, own_row)
