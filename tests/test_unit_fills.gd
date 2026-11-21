@@ -56,13 +56,9 @@ static func _row(id: String, placement: Array[int], role := "scenery") -> EventD
 		"scenery":
 			def.role = EventDef.Role.SCENERY
 		"friction":
-			def.intensity = 1.0
-			def.inner_radius = 10.0
-			def.outer_radius = 40.0
+			def.use_field(FieldSpec.of(1.0, 10.0, 40.0))
 		"wall":
-			def.intensity = 60.0
-			def.inner_radius = 80.0
-			def.outer_radius = 200.0
+			def.use_field(FieldSpec.of(60.0, 80.0, 200.0))
 		"lethal":
 			def.hard_fail = true
 	return def

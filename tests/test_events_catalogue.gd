@@ -78,8 +78,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 
 	def = EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
 	def.solid(GroundShape.band(22.0))
-	def.inner_radius = 15.0
-	def.outer_radius = 90.0
+	def.use_field(FieldSpec.of(def.peak(), 15.0, 90.0).pulsing_every(def.pulses_every()))
 	t.check(def.lies_as_a_spread(),
 			"changing body and field geometry leaves a café's spread answer true")
 
@@ -282,7 +281,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 			continue
 		var wider: EventDef = def.duplicate()
 		wider.shape = def.ground_shape()
-		wider.outer_radius *= 1.5
+		wider.use_field(wider.field().reaching(wider.heard_within() * 1.5))
 		wider.speed *= 1.5
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),

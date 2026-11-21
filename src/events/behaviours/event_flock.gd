@@ -203,7 +203,7 @@ const TURN_IN := 4.6
 ## The radius one bird emits over. The rest of the field is the room the flock takes up: a bird at
 ## the far edge of the wheel reaches exactly as far as the event says it does and no further.
 func bird_outer() -> float:
-	return maxf(_row.inner_radius + 1.0, _row.outer_radius - _row.flock_spread)
+	return maxf(_row.core_within() + 1.0, _row.heard_within() - _row.flock_spread)
 
 ## A tick of the flock while its event is neither leaving nor held: pecking on the ground through
 ## the wait and the telegraph, up and wheeling once it has gone up.

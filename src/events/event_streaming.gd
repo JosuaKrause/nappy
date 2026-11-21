@@ -451,7 +451,7 @@ func _mark_plan_spent(instance: EventInstance) -> void:
 ## period after its last blow began (`comes_again_every()`), the masked man his wait after the last one
 ## started leaving (`comes_again_after()`), and one sited at her (`comes_where_she_stands()`) where
 ## she stands now. A row
-## from outside the walls (`EventDef.from_outside`) is shown by the world as it comes
+## from outside the walls (`FieldSpec.through_walls()`) is shown by the world as it comes
 ## (`WorldContext.bang_outside()`), whether or not there is anybody for its charge to stand on.
 func bring_back_what_repeats(delta: float) -> void:
 	for plan in _repeating:

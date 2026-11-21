@@ -102,7 +102,9 @@ func _same_bits(a: float, b: float) -> bool:
 	return var_to_bytes(a) == var_to_bytes(b)
 
 func _copy_definition(original: EventDef) -> EventDef:
-	var copy := original.duplicate(true) as EventDef
+	# Shallow, as every copy of a row is: the row's parts are values, shared by reference between a row
+	# and its copies.
+	var copy := original.duplicate() as EventDef
 	# RefCounted geometry is not a stored Resource property, so duplicate() omits it.
 	if original.ground_shape():
 		copy.shape = GroundShape.new(original.ground_shape().half_length, original.ground_shape().radius)
@@ -110,6 +112,43 @@ func _copy_definition(original: EventDef) -> EventDef:
 		copy.ground_shape().half_extents = original.ground_shape().half_extents
 	copy.solid_parts = original.solid_parts
 	return copy
+
+## The rows that differ from `definition` in one setting of its field, its speed or its chase speed,
+## by the setting's name, each made as the game makes a row: a refinement of the row's field part or
+## a copy with its pursuit at another speed. A setting the row does not carry is made to carry one
+## (a core on a row with none), so every row is held against every setting.
+func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
+	var field := definition.field()
+	var fields := {
+		"peak": field.at_peak(field.peak() + 3.0),
+		"inner radius": FieldSpec.of(field.peak(), field.core_within() + 3.0, field.heard_within())
+				.with_a_core(field.core_rate(), field.core_reach())
+				.falling_off(field.falloff()).pulsing_every(field.pulses_every()),
+		"outer radius": field.reaching(field.heard_within() + 3.0),
+		"core rate": field.with_a_core(field.core_rate() + 3.0, field.core_reach()),
+		"core reach": field.with_a_core(field.core_rate(), field.core_reach() + 3.0),
+		"falloff": field.falling_off(field.falloff() + 3.0),
+		"pulse": field.pulsing_every(field.pulses_every() + 3.0),
+	}
+	var rows := {}
+	for label: String in fields:
+		var row := _copy_definition(definition)
+		row.use_field(fields[label] as FieldSpec)
+		rows[label] = row
+	var faster := _copy_definition(definition)
+	faster.speed = definition.speed + 3.0
+	rows["speed"] = faster
+	if definition.pursuit:
+		var chasing := _copy_definition(definition)
+		chasing.pursuit = definition.pursuit.at_speed(definition.pursuit.speed() + 3.0)
+		rows["chase speed"] = chasing
+	return rows
+
+## Hands a live event another row, as its own and its source's: what a row replaced under an event
+## would be, which the game never does and a cache over the row has to survive.
+func _under_a_different_row(event: CountedEvent, row: EventDef) -> void:
+	event._def = row
+	event.source().use_row_and_where_she_is(row, event._where)
 
 func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: String) -> void:
 	var expected := Reference.event_gross(source, at,
@@ -181,13 +220,17 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source.source().set_outranked(true)
 		_event_parity(t, source, at, definition.id + " outranked")
 		source.source().set_outranked(false)
-		for field: String in ["intensity", "inner_radius", "outer_radius", "core_intensity",
-				"core_radius", "falloff_power", "pulse_period", "speed"]:
-			source.row().set(field, float(source.row().get(field)) + 3.0)
-			_event_parity(t, source, at, definition.id + " mutable " + field)
-		if source.row().pursuit:
-			source.row().pursuit = source.row().pursuit.at_speed(source.row().pursuit.speed() + 3.0)
-			_event_parity(t, source, at, definition.id + " mutable chase speed")
+		# A row can no longer be told apart from another by being changed, so each setting the
+		# projection reads is held by a second row that differs in that one setting, handed to the
+		# same source as its own: a cache that did not notice the other row answers the first row's
+		# number, which the reference does not.
+		var own_row := source.row()
+		var others := _rows_differing_in_one_setting(definition)
+		for label: String in others:
+			_under_a_different_row(source, others[label] as EventDef)
+			_event_parity(t, source, at, definition.id + " a different " + label)
+		_under_a_different_row(source, own_row)
+		_event_parity(t, source, at, definition.id + " its own row again")
 		source.row().shape = GroundShape.segment(17.0, 12.0)
 		_event_parity(t, source, at, definition.id + " shape replacement")
 		source.ground_shape().half_length = 63.0

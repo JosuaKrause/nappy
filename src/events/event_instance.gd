@@ -1512,7 +1512,7 @@ func field_at(world_position: Vector2, intensity_override: float,
 	var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
 	# `EventDef.emission_at_distance()` rather than `Field.falloff` direct, so the one row with a
 	# two-part field is charged for both parts here and not only in the cost table — and so that a
-	# row shaping its own drop-off (`EventDef.falloff_power`) is felt as the shape it is priced at.
+	# row shaping its own drop-off (`FieldSpec.falling_off()`) is felt as the shape it is priced at.
 	# The peak handed over is this phase's, so the telegraph and the pulse damp the core and the
 	# field together; an uncored row is charged its plain falloff.
 	return _def.emission_at_distance(_field_distance(world_position, velocity), intensity)

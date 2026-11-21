@@ -55,7 +55,8 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 
 func _test_a_protest_grows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
-	t.check(def.intensity_ramp > 1.0, "a protest swells rather than holding")
+	t.check(def.peak_through(0.0, def.duration, 1.0) > def.peak(),
+			"a protest swells rather than holding")
 	var instance := _instance(t, def)
 	_advance(instance, def.telegraphs_for() + 0.05)
 
@@ -64,7 +65,7 @@ func _test_a_protest_grows(t: TestRunner) -> void:
 	_advance(instance, def.duration * 0.75)
 	var late := _peak_over(instance, def.pulses_every())
 	t.check(late > early * 1.3, "a protest is markedly worse later than when you saw it")
-	t.check(late <= def.peak() * def.intensity_ramp + 0.01,
+	t.check(late <= def.peak_through(0.0, def.duration, 1.0) + 0.01,
 			"and never exceeds its stated ceiling")
 	instance.free()
 

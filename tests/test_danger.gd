@@ -101,9 +101,7 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t: TestRunner) -> voi
 func _test_the_caret_matches_the_halo_after_the_horizon(t: TestRunner) -> void:
 	var def := EventDef.new()
 	def.id = "caret_matches_halo"
-	def.intensity = 30.0
-	def.inner_radius = 40.0
-	def.outer_radius = 200.0
+	def.use_field(FieldSpec.of(30.0, 40.0, 200.0))
 	def.telegraph_time = 0.0
 	var instance := _instance(def)
 	var player_velocity := Vector2(Tuning.WALK_SPEED, 0.0)
@@ -237,15 +235,11 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> v
 
 	var def_a := EventDef.new()
 	def_a.id = "share_decay_a"
-	def_a.intensity = 30.0
-	def_a.inner_radius = 40.0
-	def_a.outer_radius = 200.0
+	def_a.use_field(FieldSpec.of(30.0, 40.0, 200.0))
 	def_a.telegraph_time = 0.0
 	var def_b := EventDef.new()
 	def_b.id = "share_decay_b"
-	def_b.intensity = 30.0
-	def_b.inner_radius = 40.0
-	def_b.outer_radius = 200.0
+	def_b.use_field(FieldSpec.of(30.0, 40.0, 200.0))
 	def_b.telegraph_time = 0.0
 
 	var a := _instance(def_a)

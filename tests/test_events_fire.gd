@@ -465,9 +465,7 @@ func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 	def.id = "test_hard_fail"
 	def.stands_as = EventDef.StandsAs.SOMETHING
 	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.intensity = 20.0
-	def.inner_radius = 40.0
-	def.outer_radius = 120.0
+	def.use_field(FieldSpec.of(20.0, 40.0, 120.0))
 	def.hard_fail = true
 	def.telegraph_time = def.minimum_telegraph()
 	t.check(def.validate(), "a hard-fail event with the doubled margin is fair")

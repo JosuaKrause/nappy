@@ -26,29 +26,10 @@ extends Resource
 ## it drives — a route wall, a field kept clear, the doubled telegraph margin — is about a place
 ## that ends the day, and this is a car on a road.
 
-## **Its field is priced from its centre, a point, rather than from its body** — `shape` is the body
-## and the shadow, and by default the field's datum too (`GroundShape.field_distance()`: a standing
-## capsule's field is a stadium about its spine). Set on `fire_truck` alone, whose field
-## `docs/COSTS.md` prices as a point's: the body it is given to be solid is not a reason for the
-## street beside a parked engine to cost more, and the 340px the fire's siting check closes about
-## its kerb (`WalkSiting`) is then the whole of its field.
-var _field_from_its_centre := false
+## **It holds no setting of its own**: its presence on a row is the car that drives. Whether its field is
+## priced from its centre rather than from its body is the field's (`FieldSpec.from_its_centre()`,
+## `fire_truck` alone).
 
-## A car that drives, its field priced from its body (`GroundShape.field_distance()`).
+## A car that drives.
 static func driving() -> VehicleSpec:
 	return VehicleSpec.new()
-
-## The same car with its field priced from its centre, a point, rather than from its body.
-func priced_from_its_centre() -> VehicleSpec:
-	var spec := _copy()
-	spec._field_from_its_centre = true
-	return spec
-
-## Whether its field is priced from its centre rather than from its body (`priced_from_its_centre()`).
-func prices_its_field_from_its_centre() -> bool:
-	return _field_from_its_centre
-
-func _copy() -> VehicleSpec:
-	var spec := VehicleSpec.new()
-	spec._field_from_its_centre = _field_from_its_centre
-	return spec

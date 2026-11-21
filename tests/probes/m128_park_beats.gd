@@ -130,10 +130,8 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	# never quietly drift apart.
 	var def := EventDef.new()
 	def.id = "busker"
-	def.intensity = intensity
-	def.inner_radius = real.core_within()
-	def.outer_radius = real.heard_within()
-	def.pulse_period = real.pulses_every()
+	def.use_field(FieldSpec.of(intensity, real.core_within(), real.heard_within())
+			.pulsing_every(real.pulses_every()))
 	def.telegraph_time = real.telegraphs_for()
 
 	var instance := EventInstance.new()
@@ -260,9 +258,7 @@ func _busker_street_side(t: TestRunner) -> void:
 	# `inner_radius`, `outer_radius` and `flock_size` (0 by default), so this is the M117 busker
 	# in every field the comparison cares about.
 	var before_def := EventDef.new()
-	before_def.intensity = OLD_BUSKER_INTENSITY
-	before_def.inner_radius = OLD_BUSKER_INNER
-	before_def.outer_radius = OLD_BUSKER_OUTER
+	before_def.use_field(FieldSpec.of(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER))
 	var after_def := EventCatalogue.by_id("busker")
 	var samples := 0
 	var before_total := 0.0
