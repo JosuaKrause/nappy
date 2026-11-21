@@ -23,15 +23,10 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `weigh_on()` | A row's weight on one kind of ground (`PlacementGround.Kind`), as a multiple of its `weight`: set by the catalogue where the row is rare there or never stands there though its tiles lie there; one elsewhere on ground its `placement` lists, nothing on ground it does not (`weight_on()`). Exported, so every copy of the row keeps it |
 | `max_per_day` | Cap on simultaneous instances |
 | `placement` | Which tile types it may spawn on |
-| `intensity` | Peak excitement per second at the centre |
-| `inner_radius` / `outer_radius` | Falloff geometry (px) |
-| `core_intensity` / `core_radius` | A louder inner part of the same field, both `0` for every row but `leaf_blower`. The same curve over the shorter band `inner_radius`..`core_radius`, and the row's price is **the larger** of the core and the field — see "The emission model" |
-| `falloff_power` | The exponent on the drop between the two radii: `intensity * (1 - t ** falloff_power)`. `2.0` is the curve every number in this document was measured at; under 1 drops fast and tails long, over 2 holds near full and then falls off a cliff. Nothing sets it |
+| `field()` | A `FieldSpec` (`src/events/parts/field_spec.gd`), set once by `use_field()` and never changed (a refinement returns a new value; the row's copies share it): **the noise the row adds**, as one value with ten settings, each named below in the catalogue's own words. **`intensity`**, the peak excitement per second at the centre; **`inner_radius`** / **`outer_radius`**, the falloff geometry in px; **`core_intensity`** / **`core_radius`**, a louder inner part of the same field, both `0` for every row but `leaf_blower`, the same curve over the shorter band `inner_radius`..`core_radius`, the row's price being **the larger** of the core and the field (see "The emission model"); **`falloff_power`**, the exponent on the drop between the two radii, `intensity * (1 - t ** falloff_power)`, where `2.0` is the curve every number in this document was measured at, under 1 drops fast and tails long, over 2 holds near full and then falls off a cliff, and nothing sets it; **`pulse_period`**, seconds per intensity cycle (`0` = constant); **`intensity_ramp`**, the multiplier the peak reaches at the end of the row's duration; **`from_outside`**, whether the row is something outside the walls of the world she is in: no wall stops its field, and the world shows it as it comes (`WorldContext.bang_outside()`; the building lights every window), the explosion outside the building alone (`EventCatalogue.explosion_outside()`); **`barrier_structure`**, whether the row is a piece of the region boundary, a street being held: the four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum, and everything else in the catalogue still sums (see "Checkpoints"); and whether the field is priced from the row's centre rather than its body (`fire_truck`). The row answers `peak()`, `core_within()`, `heard_within()`, `core_rate()`, `core_reach()` and `falloff()` for them |
 | `duration` | Seconds active (`0` = whole day) |
 | `telegraph_time` | Seconds of visible warning before full intensity |
-| `pulse_period` | Seconds per intensity cycle (`0` = constant) |
 | `repeat_every` / `repeat_after` | Whether a planned row comes again, a fresh instance each time, on its plan's own clock (`EventManager`): `repeat_every` is seconds from one coming to the next, `repeat_after` seconds from one being done (finished, or leaving the end of its route) to the next. Both `0` for every row that comes once. A plan may carry its own period (`EventPlan.comes_again_every()`), as each of the building's vents does; `masked_pursuer` waits `EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS` after his last run, and the explosion outside comes every `EventCatalogue.FINALE_EXPLOSION_INTERVAL`. Only a `MAP` row has a plan to repeat on |
-| `from_outside` | Whether the row is something outside the walls of the world she is in: no wall stops its field, and the world shows it as it comes (`WorldContext.bang_outside()`; the building lights every window). The explosion outside the building alone (`EventCatalogue.explosion_outside()`) |
 | `mobile` / `speed` | Whether it moves along a path, and how fast |
 | `path_mode` | How a mobile row's route is built at its tile (`PlanBuilder.build()`): `CROSS_STREET`, `ALONG_STREET`, or `ACROSS_ITS_ALLEY`, the dash the instance builds itself from the alley it landed in (`alley_mouse`) |
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
@@ -57,7 +52,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `solid_when` | When the body is solid to her (`EventDef.SolidWhen`). `ALWAYS`, every row but two. `ONCE_IT_STARTS`: the body arrives at the end of the row's own notice rather than with the instance, and is withheld while she stands in the footprint, for a row that turns on where she may already be — `basement_steam` is the only one — see "Solid things are solid". `WHILE_LOWERED`: a **boom**, a bar across a door's carriageway that the cars raise and lower, solid to her only while it is down, and never an inspection — `checkpoint_gate` is the one row, see "Checkpoints" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
-| `vehicle` | A `VehicleSpec`, or null: a **car that drives**, solid at its own `shape` in every state and lethal only in front of it while it drives its route — `police_patrol` and every copy of it, and `fire_truck`. `vehicle.prices_its_field_from_its_centre()` prices its field from its centre rather than its body (`fire_truck`) — see "Solid things are solid" |
+| `vehicle` | A `VehicleSpec`, or null: a **car that drives**, solid at its own `shape` in every state and lethal only in front of it while it drives its route — `police_patrol` and every copy of it, and `fire_truck`. `field().is_priced_from_its_centre()` prices its field from its centre rather than its body (`fire_truck`), a setting of the field and not of the vehicle — see "Solid things are solid" |
 | `stands_as` | What its figure is to a crowd walker that meets it **standing still** (`EventDef.StandsAs`), declared by every row (`validate()` refuses `UNDECLARED`): `SOMEBODY`, a person or an animal, which a walker may walk through while it stands; `SOMETHING`, an object or a vehicle, which a walker walks round (inbox #905 in freckled-moose); `NOTHING`, no picture on the ground — `Look.NONE`, the fire on a facade, a crater, a steam vent — walked through like a person. A figure under way is given way to whatever it is — see `docs/MECHANICS.md`, "The crowd gives way to event figures" |
 | `when_it_stops` | Whether its figure, once it stands, **stands there for good** (`EventDef.WhenItStops`), declared by every row (`validate()` refuses `UNDECLARED`): `PARKS`, a crowd car standing behind it in its lane turns round as at a blocked street (inbox #909 in freckled-moose) — a row that never moves, or one that stops where it arrives (`stops_where_it_arrives`, which requires it); `GOES_ON`, a car behind it waits for it to move — anything that drives on, leaves, chases her or wheels as a flock (`validate()` refuses `PARKS` for a row that moves any other way). The instance says when it has parked (`MoveProposal.parked`): from the start for a row that never moves, and only once it has stopped where it arrives for one that drives. See `docs/MECHANICS.md`, "The crowd gives way to event figures" |
 | `aftermath` | An `Aftermath`, empty on most rows, never null: the rows this one brings after it — `scar_id()`, left at its position for the rest of the run (a fire's `burnt_shell`); `leaves_behind()`, spawned where it ends (the escape's explosion's `impact_crater`); `calls_in()`, called in the moment she first sees it (the burning building's `fire_truck`). `EventCatalogue.without_its_aftermath()` takes all three off for the escape |
@@ -65,7 +60,6 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `counts_charges_as` | The name its charges are counted under when that is not its own id: `task_guard` on day 13's task guard sent from out of her view (`EventCatalogue.task_guard_sent()`). `""` for every other row |
 | `role` | The part the row plays in a system beside the catalogue, which that system finds it by rather than by its id (`EventDef.Role`): `SCENERY` (`pigeon_flock`, exempt from the cost rule's wall and friction placement) and `MAST` (`loudspeaker`, which the masts' sites, the day's masts and the resistance's mast task ask for, `EventCatalogue.mast()`). `NONE` for every other row |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
-| `barrier_structure` | Whether this row is a piece of the region boundary — a street being held. The four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum; everything else in the catalogue still sums — see "Checkpoints" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `has_a_spread` | Whether the row draws itself as a **spread**, laid along its street's axis: segments or one scene fitted across `obstructs_radius` (`construction`, `burnt_shell`, `market_stall`, `roadblock`, `barricade`, `scaffolding`, `collapsed_frontage`, `cafe_tables`, and the wide seal scenes `fallen_tree`, `car_accident`, `burst_water_main`). Row data, kept by every copy; a spread is never offered a corner (`RowGround.tiles_for()`) |
 | `stands_along_its_street` | Whether the row stands along its street like a spread without being drawn as one: `protest` and `firefight`. Its drawn box and its body's spine follow the street's axis (`EventFootprints.drawn_box_of()`, `BodyStance.solid_axis_of()`); it never asks a spread's corner question |
@@ -1012,7 +1006,7 @@ across from the fire (`stops_where_it_arrives`) it is not driving, so it ends no
 and stays a solid body she walks round: it stands in the carriageway's near lane along the street, a
 capsule 26px across in a six-tile street, so the route-redundancy guarantee (a closure
 leaves distinct routes to a calm area) is untouched. **Its field is still priced from its centre**,
-a point's (`VehicleSpec.prices_its_field_from_its_centre()`), not from the body as a standing patrol car's is: the
+a point's (`FieldSpec.is_priced_from_its_centre()`), not from the body as a standing patrol car's is: the
 body it is given to be solid is not a reason for the street beside it to cost more, so a pass costs
 what this page and `docs/COSTS.md` say, and the day's own check for the fire's site, which closes
 340px about the kerb as ground she will not walk through, covers the whole of it. A loss to it reads "The fire
@@ -1162,8 +1156,8 @@ hard enough. Well earned if the player pulls it off.")*
 
 **The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
 "since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise
-going into a hut at a corner with two huts double counts the influence".)* `EventDef.
-barrier_structure` is the flag, and four rows carry it: `checkpoint_hut`, `checkpoint_gate`,
+going into a hut at a corner with two huts double counts the influence".)* The field's
+`barrier_structure` is the flag (`FieldSpec.counts_as_one_barrier()`), and four rows carry it: `checkpoint_hut`, `checkpoint_gate`,
 `checkpoint_post` and `roadblock` — a door, and the body the region wall stands as. One street
 being held is one source however many bodies hold it, so a wall's three barriers across a street
 read one barrier's rate rather than three, and a corner where a wall meets a door reads one barrier
@@ -2052,7 +2046,7 @@ through starts paying attention to you.
 four completed tasks that qualify for the good ending — and `EventDef.hunts` (`answers_to_heat()`) is the whole of
 how a row says whether it cares. `EventCatalogue.heated()` turns a row and a level into a **derived
 copy** with its numbers moved, so nothing downstream of the day's plan has to know heat exists: an
-`EventInstance` holds whichever copy the day handed it and reads `intensity`, `EventDef.pursuit` and the rest
+`EventInstance` holds whichever copy the day handed it and reads the field's `intensity`, `EventDef.pursuit` and the rest
 exactly as it always has.
 
 Three things about that shape are the design rather than the implementation:
@@ -2665,13 +2659,13 @@ out from behind a building expects what it will land once it is out. **Indoors t
 walls answer it**: every source there stands on the building's map (`InteriorMapPlan`, a
 `WorldMap`), open where she may stand, and `WorldMap.wall_between()` answers it at the same depths,
 so the solid between two flights of a stairwell stops the masked man's field as a building stops a
-busker's. The one source indoors no wall stops is the explosion outside (`EventDef.from_outside`),
+busker's. The one source indoors no wall stops is the explosion outside (`FieldSpec.passes_walls()`, the field's `from_outside`),
 whose instance stands where she is for a bang that has already come through the walls to reach
 her. A rig's row on open ground (`WorldMap.open_ground()`) is blocked by nothing. `docs/COSTS.md`
 prices a row with nothing between, so a route past buildings pays less than the sum of its rows'
 table prices.
 
-**A row may carry a second, louder part close in, and one does.** `EventDef.core_intensity` and
+**A row may carry a second, louder part close in, and one does.** The field's `core_intensity` and
 `core_radius` are a core: the same curve over a shorter band, and the row emits **the larger** of
 the core and the field at every distance, so a core only ever adds and only ever inside itself.
 `leaf_blower` is the row it exists for — past `core_radius` it is a busker, number for number, and
@@ -3024,7 +3018,7 @@ it is lit within one `EntityHalo.FADE_OUT_SECONDS`, and a frame or two. `Excitem
 has the argument. `EntityHalo`'s class doc has the engine's numbers.
 
 **A field-sized halo, then a circle sized off `obstructs_radius`, were each built and rejected on
-screenshots before this one.** The field spanned `EventDef.outer_radius` (up to 200px against a
+screenshots before this one.** The field spanned the row's `outer_radius` (up to 200px against a
 640x360 view) and painted most of the frame whatever brightness curve sat on top of it; the circle
 fixed the footprint but was still a number's shape rather than the thing's, and a barricade's own
 circle read smaller than the barricade the moment a ceiling was tried to stop a busker's from

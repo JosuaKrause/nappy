@@ -1017,7 +1017,7 @@ contribution(d) = intensity                              , d <= inner_radius
    where t = (d − inner_radius) / (outer_radius − inner_radius)
 ```
 
-`power` is `EventDef.falloff_power` and **every row in the catalogue is at its 2.0 default**, which
+`power` is the field's `falloff_power` (`FieldSpec.falloff()`) and **every row in the catalogue is at its 2.0 default**, which
 is the curve the rest of this section is about. It exists so that a row needing a shape its two
 radii cannot give — a fast drop with a long tail, or a plateau with a cliff at the end of it — is a
 decision that row takes rather than a change to the one function thirty other rows share.
@@ -1025,7 +1025,7 @@ decision that row takes rather than a change to the one function thirty other ro
 **The shape has a shoulder on it, and that is a design decision rather than an implementation
 detail.** The meter has to go substantially up from some way off rather than waiting for contact.
 
-**One row has a second, louder part close in.** `EventDef.core_intensity` and `core_radius` put the
+**One row has a second, louder part close in.** The field's `core_intensity` and `core_radius` put the
 same curve over a shorter band and the row emits the larger of the two at every distance, so the
 leaf blower is a wall inside the pavement it stands on and a busker beyond it. Both numbers are
 zero everywhere else. It is one field rather than two: the same

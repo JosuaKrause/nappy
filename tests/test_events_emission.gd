@@ -73,7 +73,7 @@ func _test_pulse_envelope(t: TestRunner) -> void:
 	instance.free()
 
 ## **A two-part field is two parts in the meter, not only in the cost table.** The leaf blower is a
-## wall close in and a busker further out (`EventDef.core_intensity` / `core_radius`), and the thing
+## wall close in and a busker further out (the field's `core_intensity` / `core_radius`), and the thing
 ## that makes that a *field* rather than a price is that an instance charges for it — walked past,
 ## against the row the outer half was copied from.
 ##
