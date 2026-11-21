@@ -18,7 +18,7 @@ on, and verifying escape with the actual Baby meter.
   the gap and dies on the first lethal frame. It closes to its stand-off
   (`PursuitSpec.standoff()`) and lunges the moment she reaches it, so the chase starts at the
   stand-off however she came. **A pursuer that stands still for its notice
-  (`PursuitSpec.stands`) closes nothing and keeps every lunge**, which
+  (`PursuitSpec.stands_for_its_notice()`) closes nothing and keeps every lunge**, which
   is what keeps standing from being this trap for one that comes for her (woolly-penguin #748);
   one that waited for her charges on its warning's clock instead (next trap); one that sets off
   beside her charges from where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
@@ -32,7 +32,7 @@ on, and verifying escape with the actual Baby meter.
 - **A waiting charger has one radius and charges on a clock, never on a distance.** Charged at a
   stand-off while she walks into it, `PursuitSpec.PURSUIT_REACTION` of its approach is worth about a fifth of a
   second, too short to turn and run. So every charger that waits for her (the waiting dog, the
-  alley robber, the hunting roadblock's guard) warns for its row's `PursuitSpec.warns_for` from
+  alley robber, the hunting roadblock's guard) warns for its row's `PursuitSpec.warns_for()` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
   `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `EventPursuit` adds to
@@ -46,7 +46,7 @@ on, and verifying escape with the actual Baby meter.
   `view_round()`). **The masked man is the one
   exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
   clear line, his notice asks no view, and he runs the moment she comes within his
-  `NoticeSpec.runs_within` from outside it, with no warning clock; one who noticed her already
+  `NoticeSpec.runs_within()` from outside it, with no warning clock; one who noticed her already
   inside it warns for `Tuning.WARNING_ALONE_MAX` first (`EventNoticeRun`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
   accepted (inbox #782 in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
