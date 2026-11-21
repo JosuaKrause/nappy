@@ -27,7 +27,7 @@ func run(t: TestRunner) -> void:
 func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
+	instance.setup(def, at, path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

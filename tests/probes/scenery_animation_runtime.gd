@@ -89,9 +89,9 @@ func _rotors() -> Array[SceneryLayer]:
 
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
-	event.atlas = _atlas
 	event.setup(EventCatalogue.by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
-			EastWestStreet.new() if vertical else WorldMap.open_ground())
+			EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+				.drawn_from(_atlas))
 	event.scale = Vector2.ONE * factor
 	_fixtures.add_child(event)
 	_events.append(event)

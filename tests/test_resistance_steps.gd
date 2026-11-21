@@ -179,8 +179,9 @@ func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 	_player.set_physics_process(false)
 
 	var instance := EventInstance.new()
-	instance.atlas = _events_atlas
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2(300.0, 0.0))
+	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2(300.0, 0.0),
+			PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().drawn_from(_events_atlas))
 	t.add_child(instance)
 	instance.set_process(false)
 
@@ -224,8 +225,9 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	player.set_physics_process(false)
 
 	var instance := EventInstance.new()
-	instance.atlas = _events_atlas
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
+	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO, PackedVector2Array(),
+			Vector2.RIGHT,
+			EventSurroundings.new().drawn_from(_events_atlas))
 	t.add_child(instance)
 	instance.set_process(false)
 
@@ -278,8 +280,9 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 
 func _test_a_perform_contact_sees_its_rider_finish(t: TestRunner) -> void:
 	var instance := EventInstance.new()
-	instance.atlas = _events_atlas
-	instance.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO)
+	instance.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO, PackedVector2Array(),
+			Vector2.RIGHT,
+			EventSurroundings.new().drawn_from(_events_atlas))
 	t.add_child(instance)
 	instance.set_process(false)
 
@@ -310,8 +313,8 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> vo
 	for id: String in ["delivery_van", "roadblock"]:
 		var step := _perform_on(7 if id == "delivery_van" else 13)
 		var instance := EventInstance.new()
-		instance.atlas = _events_atlas
-		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
+		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().drawn_from(_events_atlas))
 		t.add_child(instance)
 		instance.set_process(false)
 		var player := _rig_player(t, Vector2.ZERO)
@@ -668,8 +671,8 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: Te
 		var where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
-				PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT, null, null,
-				where)
+				PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT,
+				EventSurroundings.new().hearing(where))
 		t.add_child(instance)
 		instance.set_process(false)
 
@@ -703,7 +706,8 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 	var where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT, null, null, where)
+			PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	# She stands still for the whole test — the case that used to pop him out of existence
@@ -741,7 +745,8 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t: TestRunner) ->
 	var where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT, null, null, where)
+			Vector2.RIGHT,
+			EventSurroundings.new().hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	where.tell(Vector2(20.0, 0.0))

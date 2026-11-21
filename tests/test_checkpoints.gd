@@ -303,9 +303,10 @@ func _drawn_boom_span(t: TestRunner, gate: EventPlan) -> Vector2:
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	var drawer := RecordingEventDrawer.new(atlas)
 	var instance := EventInstance.new()
-	instance.atlas = atlas
-	instance.drawer = drawer
-	instance.setup(gate.def, Vector2.ZERO, PackedVector2Array(), gate.facing, WorldMap.open_ground())
+	instance.setup(gate.def, Vector2.ZERO, PackedVector2Array(), gate.facing,
+			EventSurroundings.new().on(WorldMap.open_ground()) \
+				.drawn_from(atlas) \
+				.drawing_through(drawer))
 	t.add_child(instance)
 	await t.get_tree().process_frame
 	var boom: Array[String] = [EventPictures.BOOM_GATE_NS_LOWERED, EventPictures.BOOM_GATE_EW_LOWERED]
@@ -420,8 +421,12 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	t.check(live_hut != null, "with streaming off, a checkpoint_hut actually goes live")
 	t.check(live_gate != null, "and a checkpoint_gate actually goes live")
 	if live_gate:
-		t.check(live_gate.gate_state != null,
-				"the live gate instance carries the shared GateState, not a null default")
+		var shared: Array[RegionPlanner.GateState] = []
+		shared.assign(region_plan.gates)
+		for door_state in shared:
+			door_state.raised = true
+		t.check(live_gate.is_raised(),
+				"the live gate instance is handed the shared GateState (raising it raises the boom), not a null default")
 
 	city.free()
 
@@ -575,8 +580,9 @@ func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: 
 
 ## A whole street door across an east-west street at (5200, 5200) — the northern hut, the gate and
 ## the southern hut, a tile apart across the street, the geometry `RegionPlanner._add_door_bodies`
-## builds — in a manager with a real stroller. `_free_door_rig()` frees all of it.
-func _door_rig(t: TestRunner) -> Dictionary:
+## builds — in a manager with a real stroller, the gate's shared boom state `gate_state` where one is
+## handed. `_free_door_rig()` frees all of it.
+func _door_rig(t: TestRunner, gate_state: RegionPlanner.GateState = null) -> Dictionary:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -584,7 +590,7 @@ func _door_rig(t: TestRunner) -> Dictionary:
 	var road := Vector2(5200.0, 5200.0)
 	var doors: Array[EventInstance] = [
 		_door_instance(manager, "checkpoint_hut", road - Vector2(0.0, 64.0), axis),
-		_door_instance(manager, "checkpoint_gate", road, axis),
+		_door_instance(manager, "checkpoint_gate", road, axis, gate_state),
 		_door_instance(manager, "checkpoint_hut", road + Vector2(0.0, 64.0), axis)]
 	return {"manager": manager, "stroller": stroller, "doors": doors}
 
@@ -1830,15 +1836,14 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 ## the arm is down and not while it is up — and a hut still takes her in from its own sidewalk, so
 ## the toll is where the guard is.
 func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
-	var rig := _door_rig(t)
+	var state := RegionPlanner.GateState.new()
+	state.position = Vector2(5200.0, 5200.0)
+	var rig := _door_rig(t, state)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
 	var doors: Array[EventInstance] = []
 	doors.assign(rig["doors"])
 	var gate := doors[1]
-	var state := RegionPlanner.GateState.new()
-	state.position = gate.global_position
-	gate.gate_state = state
 
 	for raised: bool in [false, true]:
 		state.raised = raised
@@ -1942,9 +1947,10 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
 	t.check(not plan.gates.is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
 	var gate: EventInstance = null
+	var state: RegionPlanner.GateState = null
 	var huts: Array[EventInstance] = []
 	if not plan.gates.is_empty():
-		var state: RegionPlanner.GateState = plan.gates[0]
+		state = plan.gates[0]
 		for body in plan.door_bodies:
 			if body.gate_state == state:
 				# The planner's own plan, put in by the city's streaming with its facing and the
@@ -1963,7 +1969,7 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	RunCity.show_her_to_the_walls_and_the_blackout(city, stroller)
 	t.check(gate != null and huts.size() == 2,
 			"the rig stood a gate and the two huts on its line (%d huts)" % huts.size())
-	return {"city": city, "gate": gate, "huts": huts, "stroller": stroller}
+	return {"city": city, "gate": gate, "huts": huts, "stroller": stroller, "state": state}
 
 func _free_street_door_rig(rig: Dictionary) -> void:
 	(rig["stroller"] as Stroller).free()
@@ -2002,7 +2008,7 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	gate.gate_state.raised = true
+	(rig["state"] as RegionPlanner.GateState).raised = true
 	var lane := gate.global_position + across * 16.0
 	_step_her_to(rig, lane - axis * 20.0)
 	_step_her_to(rig, lane - axis * 2.0)
@@ -2062,7 +2068,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	gate.gate_state.raised = true
+	(rig["state"] as RegionPlanner.GateState).raised = true
 	var lane := gate.global_position + across * 16.0
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]
@@ -2131,7 +2137,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	gate.gate_state.raised = true
+	(rig["state"] as RegionPlanner.GateState).raised = true
 	var lane := gate.global_position + across * 16.0
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]
@@ -2209,7 +2215,8 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 		elapsed += STEP
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(def, guard_at, PackedVector2Array(), Vector2.RIGHT, null, null, guard_where)
+	guard.setup(def, guard_at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(guard_where))
 	var result := {"caught": false, "gave_up": false, "lethal_in_notice": false, "ended_at": INF}
 	while elapsed < 12.0 + head_start and not guard.is_finished and not guard.is_leaving:
 		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)

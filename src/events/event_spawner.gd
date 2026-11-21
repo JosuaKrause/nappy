@@ -26,7 +26,7 @@ func clear() -> void:
 	_sight_reported.clear()
 	_unseen_pelicans.clear()
 
-## Which planned events have already summoned the row their own `aftermath.on_sight` names, so a
+## Which planned events have already summoned the row their own `calls_in()` names, so a
 ## `burning_building` streamed out and back in — a fresh `EventInstance` every time, unlike the
 ## `EventPlan` it comes from, see `EventStreaming.stream_in()` — does not hand out a second fire engine. Keyed by
 ## `EventPlan` rather than by instance for exactly that reason, and cleared with the rest of the
@@ -232,22 +232,15 @@ func report_the_pelicans_in_view() -> void:
 
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be
-## missed by whichever path created the event.
+## missed by whichever path created the event. `gate` is the shared boom state of a street door's
+## boom (`EventPlan.gate()`), handed to the event's one setup call; null for any other.
 func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
-		facing := Vector2.RIGHT) -> EventInstance:
+		facing := Vector2.RIGHT, gate: RegionPlanner.GateState = null) -> EventInstance:
 	show_the_bang(def)
 	var instance := EventInstance.new(world.reports())
-	instance.skip_draw = world.skip_drawing
-	instance.timing = world.timing
-	instance.atlas = world.atlas
-	instance.drawer = world.drawer
-	instance.trace = world.trace()
-	var drawn_in := world.drawn_in()
-	instance.setup(def, at, path, facing, world.map(), world.navigator(), world.where_she_is(),
-			drawn_in)
-	instance.signals = world.signals
-	instance.points_at = world.where_protests_point
-	drawn_in.add_entity(instance)
+	var surroundings := world.surroundings()
+	instance.setup(def, at, path, facing, surroundings, gate)
+	surroundings.world_drawn_in().add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.
@@ -358,9 +351,9 @@ static func as_warned(def: EventDef) -> EventDef:
 # ------------------------------------------------------- called in on sight ---
 # The opposite of a successor: `successor_of()` hands the day something the moment a row is
 # *done*; this hands it something the moment a row is first *seen*. `burning_building` is what
-# it exists for — see `EventDef.aftermath.on_sight`.
+# it exists for — see `EventDef.calls_in()`.
 
-## Whether a live instance whose def names an `aftermath.on_sight` has been seen yet, and if it just
+## Whether a live instance whose def calls a row in has been seen yet, and if it just
 ## has, creates the row it names entering along its own street. Run every frame there is a
 ## player, as `EventsAhead.place_what_is_owed_ahead()` is.
 func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
@@ -379,7 +372,7 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 		if _summon_the_sighted_row(plan.row(), plan.live.global_position, plan):
 			_sighted[plan] = true
 
-## Warns of the row `source.aftermath.on_sight` names, coming along `at`'s own street to `at` — `at`
+## Warns of the row `source.calls_in()` names, coming along `at`'s own street to `at` — `at`
 ## is a sidewalk point (`burning_building` is placed `AT_THE_FRONT`), so the along-street
 ## axis is `CityMap.pavement_inward()` turned a quarter turn, the construction
 ## `EventDirector._onto_her_side()` uses for the same reason: it is the corridor's own axis, not
@@ -395,9 +388,9 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 ## sight is summoned again (`PendingWarning.when_withdrawn()`).
 func _summon_the_sighted_row(source: EventDef, at: Vector2,
 		sighted_by: EventPlan = null) -> bool:
-	var summoned := EventCatalogue.by_id(source.aftermath.on_sight)
+	var summoned := EventCatalogue.by_id(source.calls_in())
 	if not summoned:
-		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.aftermath.on_sight])
+		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.calls_in()])
 		return false
 	var inward := world.map().pavement_inward(world.map().world_to_tile(at))
 	if inward == Vector2i.ZERO:

@@ -9,8 +9,8 @@ extends RefCounted
 ## Nothing here calls a `_draw_*` function directly — `Sprites.draw_standing()` and the raw
 ## `canvas.draw_*` calls inside them are only valid from an actual draw pass. A check about where a
 ## picture stands or which way it faces hands the instance a recording drawer
-## (`tests/recording_event_drawer.gd`) through `EventInstance.drawer`, the member its manager's
-## spawner assigns, lets real frames draw it, and reads what the look told the drawer to draw; one
+## (`tests/recording_event_drawer.gd`) through `EventSurroundings.drawing_through()`, as its manager's
+## spawner hands one in, lets real frames draw it, and reads what the look told the drawer to draw; one
 ## about a selector asks the selector the look asks (`select_view()`, the `_BY_VIEW` tables). The
 ## rendered evidence sheets under
 ## `docs/evidence/m108-event-people-2026-09-11/` and `docs/evidence/m108-event-vehicles-2026-09-11/`
@@ -215,7 +215,7 @@ func _test_cafe_sitters_face_their_own_tables(t: TestRunner) -> void:
 	for spread_vertical: bool in [false, true]:
 		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cafe_tables"),
 				spread_vertical)
-		var drawer: RecordingEventDrawer = instance.drawer
+		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
 		var axis := Vector2.DOWN if spread_vertical else Vector2.RIGHT
 		# Each table's slice draws its own sitter and table; the first two tables are a pair, the
 		# second the mirrored chair.
@@ -310,7 +310,7 @@ func _test_roadblock_guard_stands_clear_of_the_band(t: TestRunner) -> void:
 		t.check(band.size.x > 0.0 and band.size.y > 0.0,
 				"%s, the barrier has a picture to stand clear of (%s)" % [axis, band])
 		var guards: Array[Dictionary] = []
-		for entry in (instance.drawer as RecordingEventDrawer).shown():
+		for entry in DrawnEvent.drawer_of(instance).shown():
 			if EventPictures.GUARD_STANDING_BY_VIEW.values().has(entry.picture):
 				guards.append(entry)
 		for side: int in [-1, 1]:
@@ -368,7 +368,7 @@ func _test_a_spread_covers_the_ground_its_body_closes(t: TestRunner) -> void:
 			var instance: EventInstance = await DrawnEvent.stand(t, def, vertical)
 			var span := Rect2()
 			var first := true
-			for entry in (instance.drawer as RecordingEventDrawer).shown():
+			for entry in DrawnEvent.drawer_of(instance).shown():
 				if entry.picture != picture:
 					continue
 				var rect := RecordingEventDrawer.rect_about(entry, instance)
@@ -390,7 +390,7 @@ static func _drawn_band(instance: EventInstance) -> Rect2:
 			EventPictures.ROADBLOCK_END]
 	var union := Rect2()
 	var first := true
-	for entry in (instance.drawer as RecordingEventDrawer).shown():
+	for entry in DrawnEvent.drawer_of(instance).shown():
 		if not band_pictures.has(entry.picture):
 			continue
 		var rect := RecordingEventDrawer.rect_about(entry, instance)
@@ -420,14 +420,17 @@ func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 		return
 	var barrier := EventCatalogue.by_id("construction")
 	var across_a_horizontal := EventInstance.new()
-	across_a_horizontal.setup(barrier, map.tile_to_world(horizontal.position + horizontal.size / 2),
-			PackedVector2Array(), Vector2.RIGHT, map)
+	across_a_horizontal.setup(barrier,
+			map.tile_to_world(horizontal.position + horizontal.size / 2), PackedVector2Array(),
+			Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	t.check(across_a_horizontal.runs_vertically(),
 			"a horizontal alley gets a vertical barrier spread across its mouth")
 	across_a_horizontal.free()
 	var across_a_vertical := EventInstance.new()
 	across_a_vertical.setup(barrier, map.tile_to_world(vertical.position + vertical.size / 2),
-			PackedVector2Array(), Vector2.RIGHT, map)
+			PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	t.check(not across_a_vertical.runs_vertically(),
 			"a vertical alley keeps a horizontal barrier spread across its mouth")
 	across_a_vertical.free()
@@ -520,8 +523,8 @@ func _test_robber_waiting_faces_her(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.check(instance.is_waiting(), "nobody has come near him yet")
 	for sector in range(8):
 		# Well outside `EventDef.notice` (180px), so he never actually notices her — this is the
@@ -550,8 +553,8 @@ func _test_robber_lunging_faces_her_through_the_chase(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	# Southeast of him and inside `EventDef.notice`, so one `EventPursuit` step notices her and turns to
 	# face her.
 	var her := _heading_for_sector(1) * (def.notice_within() - 10.0)
@@ -594,9 +597,9 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.drawer = RecordingEventDrawer.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where) \
+				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
 	t.check(instance.is_waiting()
 			and await _drawn_from(t, instance, [EventPictures.GUARD_STANDING_BY_VIEW]),
 			"waiting at the foot of the shaft he is drawn standing")
@@ -737,9 +740,9 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.drawer = RecordingEventDrawer.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where) \
+				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
 	_hold(instance, instance_where, Vector2(def.notice_within() + 40.0, 0.0), 0.5)
 	t.check(instance.is_waiting() and await _drawn_from(t, instance, [EventPictures.ROBBER_WAITING_BY_VIEW]),
 			"waiting, hood up and hands in his coat")
@@ -778,9 +781,9 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	# waiting, and warns again when she comes back in.
 	var walker_where := WhereSheIs.nowhere()
 	var walker := EventInstance.new()
-	walker.drawer = RecordingEventDrawer.new()
-	walker.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			walker_where)
+	walker.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(walker_where) \
+				.drawing_through(DrawnEvent.recording(walker, RecordingEventDrawer.new())))
 	_hold(walker, walker_where, her, 0.5)
 	var stopped_at := walker.global_position
 	t.check(walker.is_telegraphing() and stopped_at.x > 10.0,
@@ -798,9 +801,10 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	# The sent robber arrives chasing, with no notice to be alert through.
 	var sent_where := WhereSheIs.nowhere()
 	var sent := EventInstance.new()
-	sent.drawer = RecordingEventDrawer.new()
 	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT, null, null, sent_where)
+			Vector2.RIGHT,
+			EventSurroundings.new().hearing(sent_where) \
+				.drawing_through(DrawnEvent.recording(sent, RecordingEventDrawer.new())))
 	_hold(sent, sent_where, Vector2(300.0, 0.0), STEP)
 	t.check(not await _drawn_from(t, sent, [EventPictures.ROBBER_ALERT_BY_VIEW]),
 			"the robber a task sends is drawn coming from his first frame")
@@ -845,9 +849,9 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t: Test
 			"the door guard owes no notice of his own")
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.drawer = RecordingEventDrawer.new()
-	guard.setup(def, Vector2(32.0, 80.0), PackedVector2Array(), Vector2.RIGHT, null, null,
-			guard_where)
+	guard.setup(def, Vector2(32.0, 80.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(guard_where) \
+				.drawing_through(DrawnEvent.recording(guard, RecordingEventDrawer.new())))
 	_hold(guard, guard_where, Vector2(1.0, 0.0), STEP)
 	t.check(not guard.is_telegraphing() and not guard.is_standing_for_its_notice()
 			and await _drawn_from(t, guard, [EventPictures.GUARD_LUNGING_BY_VIEW]),
@@ -886,9 +890,9 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) 
 					if def.look == EventDef.Look.POLICEMAN_GIVING_CHASE else EventPictures.GUARD_ALERT_BY_VIEW
 			var man_where := WhereSheIs.nowhere()
 			var man := EventInstance.new()
-			man.drawer = RecordingEventDrawer.new()
-			man.setup(def, Vector2(32.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
-					man_where)
+			man.setup(def, Vector2(32.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
+					EventSurroundings.new().hearing(man_where) \
+						.drawing_through(DrawnEvent.recording(man, RecordingEventDrawer.new())))
 			var her := Vector2(0.0, 0.0)
 			var still := true
 			var alert := true
@@ -910,7 +914,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) 
 ## redraw, and what its look asked the drawer for in that draw is read off the drawer, as
 ## `tests/drawn_event.gd` does, without reading the choice out of the look.
 func _drawn_from(t: TestRunner, instance: EventInstance, families: Array) -> bool:
-	var drawer := instance.drawer as RecordingEventDrawer
+	var drawer := DrawnEvent.drawer_of(instance)
 	if not instance.is_inside_tree():
 		t.add_child(instance)
 	instance.queue_redraw()
@@ -933,9 +937,9 @@ func _test_no_guard_who_arrives_charging_takes_the_alert(t: TestRunner) -> void:
 				"'%s' arrives charging and does not stand for a notice" % id)
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
-		instance.drawer = RecordingEventDrawer.new()
-		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-				instance_where)
+		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().hearing(instance_where) \
+					.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
 		var alert := false
 		for i in int(round(3.0 / STEP)):
 			_hold(instance, instance_where, Vector2(0.0, 100.0), STEP)
@@ -1134,7 +1138,7 @@ func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t: T
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("police_patrol"), Vector2.ZERO, route, Vector2.RIGHT,
-			null, null, instance_where)
+			EventSurroundings.new().hearing(instance_where))
 	var lowest := 0.0
 	var moved_ticks := 0
 	var keys := {}

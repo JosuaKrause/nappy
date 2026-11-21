@@ -233,8 +233,8 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	var her := WhereSheIs.nowhere()
 	var cyclist := EventInstance.new()
 	cyclist.setup(def, Vector2(320.0, 180.0),
-			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]),
-			Vector2.RIGHT, null, null, her)
+			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
 	cyclist.set_process(false)
 	# Hidden, so the frames the view pans through never draw it (it was handed no atlas): the gate
 	# asks for a redraw whatever the event's visibility, and that answer is what is checked.
@@ -245,8 +245,8 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	# cached (below), and reading it works the caret out.
 	var twin := EventInstance.new()
 	twin.setup(def, Vector2(320.0, 180.0),
-			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]),
-			Vector2.RIGHT, null, null, her)
+			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(her))
 	twin.set_process(false)
 	screen.add_child(twin)
 	t.check(not twin.look.redraw_if_the_picture_changed(), "off screen its twin asks for no redraw")
@@ -323,8 +323,9 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 	var map := LongFrontage.new()
 	# The window's tree draws it while the reference below is awaited, so it paints through a drawer
 	# that records rather than one over an atlas it was not given.
-	fire.drawer = RecordingEventDrawer.new()
-	fire.setup(def, Vector2(0.0, 180.0), PackedVector2Array(), Vector2.RIGHT, map)
+	fire.setup(def, Vector2(0.0, 180.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map) \
+				.drawing_through(DrawnEvent.recording(fire, RecordingEventDrawer.new())))
 	fire.set_process(false)
 	screen.add_child(fire)
 	# What the front draws, from a fire of the same siting drawn on real frames in the window's own

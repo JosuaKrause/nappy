@@ -1059,7 +1059,7 @@ static func largest_mark_rect() -> Rect2:
 const ATLAS_GROUP := &"events"
 
 ## The picture to draw: a region of the `events` page on `atlas`, the library the event was handed
-## (`EventInstance.atlas`), whose own `get_size()` is the source picture's size, so every offset,
+## (`EventSurroundings.drawn_from()`), whose own `get_size()` is the source picture's size, so every offset,
 ## extent, anchor and mirror below reads exactly the number it read from a preloaded texture.
 ##
 ## **Null, with an engine error naming the region, if nothing holds the page** — `AtlasLibrary`'s

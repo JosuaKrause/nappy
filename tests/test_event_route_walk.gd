@@ -42,7 +42,7 @@ static func _convoy(where: WhereSheIs, way_on: WayOn) -> EventInstance:
 	var def := EventCatalogue.by_id("military_convoy").as_sent_ahead()
 	var instance := EventInstance.new()
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(2.0 * TILE, 0.0)])
-	instance.setup(def, path[0], path, Vector2.RIGHT, null, null, where)
+	instance.setup(def, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
 	instance.resume(maxf(def.telegraph_time, 0.01) + 0.05, 0.0)
 	if way_on:
 		instance.go_on_by(way_on)
@@ -110,7 +110,7 @@ func _test_a_pacing_row_never_asks(t: TestRunner) -> void:
 	var way_on := FakeWayOn.new()
 	var instance := EventInstance.new()
 	var beat := PackedVector2Array([Vector2.ZERO, Vector2(2.0 * TILE, 0.0)])
-	instance.setup(pacing, beat[0], beat, Vector2.RIGHT, null, null, where)
+	instance.setup(pacing, beat[0], beat, Vector2.RIGHT, EventSurroundings.new().hearing(where))
 	instance.resume(maxf(pacing.telegraph_time, 0.01) + 0.05, 0.0)
 	instance.go_on_by(way_on)
 	_step(instance, where, Vector2(TILE, 4.0 * TILE), 4.0)

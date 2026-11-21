@@ -536,8 +536,8 @@ func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near
 		mark: Vector2) -> bool:
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT, null, null,
-			robber_where)
+	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(robber_where))
 	var woke := false
 	var froms: Array[Vector2] = [near, mark]
 	var tos: Array[Vector2] = [mark, near]

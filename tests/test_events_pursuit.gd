@@ -55,8 +55,10 @@ func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), map: CityMap = null,
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	instance.setup(def, at, path, Vector2.RIGHT, map, Navigator.new(map) if map else null,
-			where)
+	instance.setup(def, at, path, Vector2.RIGHT,
+			EventSurroundings.new().on(map) \
+				.moving_by(Navigator.new(map) if map else null) \
+				.hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -125,8 +127,8 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 			"guardsman_giving_chase"]:
 		var pursuer_where := WhereSheIs.nowhere()
 		var pursuer := EventInstance.new()
-		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(),
-				Vector2.RIGHT, null, null, pursuer_where)
+		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().hearing(pursuer_where))
 		pursuer_where.tell(pursuer_where.at(), Vector2.INF, Rect2(), true)
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
 			pursuer_where.tell(Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0),
@@ -167,8 +169,8 @@ func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
 func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	var her := Vector2(_sited_at(def), 0.0)
 	# Positive is away from it, matching `_chase_rig`. She starts walking in.
 	var speed := -Tuning.WALK_SPEED
@@ -216,8 +218,8 @@ func _sited_at(def: EventDef) -> float:
 func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	var from := _sited_at(def)
 	var her := Vector2(from, 0.0)
 	var elapsed := 0.0
@@ -1286,7 +1288,10 @@ func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0), PackedVector2Array(),
-			Vector2.RIGHT, map, Navigator.new(map), instance_where)
+			Vector2.RIGHT,
+			EventSurroundings.new().on(map) \
+				.moving_by(Navigator.new(map)) \
+				.hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 

@@ -8,7 +8,7 @@ extends EventBehaviour
 var _row: EventDef
 ## The take's own settings: how long the walk to the van takes.
 var _spec: AbductionSpec
-## Where its event writes its own account for the run log (`EventInstance.trace`).
+## Where its event writes its own account for the run log (`EventSurroundings.trace()`).
 var _trace: RunTrace
 
 ## The event's age the take began at, or `INF` before it has and after a hunting van abandons one

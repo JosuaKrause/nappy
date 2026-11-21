@@ -63,13 +63,16 @@ var checkpoints: CheckpointController
 ## it enters the tree (`use_atlas()`); a manager nobody handed one (a suite's) makes its own when it
 ## first enters the tree.
 var _atlas: AtlasLibrary = null
+## Where the manager charges its own step to the frame record (`use_timing()`): the null sink until
+## it is handed one. The same sink it hands the world, for every instance made here.
+var _timing := FrameTiming.new()
 
 ## **Hands in what a protest points at**, answering a world point or `Vector2.INF` for nothing: the
 ## resistance's (`ResistanceDirector.setup()`, its `_pointable_objective()`), asked on behalf of
 ## every instance made here. Never handed where there is no resistance, and a protest then points at
 ## nothing.
 func use_protest_target(where: Callable) -> void:
-	world.points_at = where
+	world.use_protest_target(where)
 
 ## **Hands in where the manager, the day's planning and every instance it creates write their own
 ## account for the run log**: the run's, handed in before `setup()` by whoever stands the manager
@@ -80,22 +83,22 @@ func use_trace(trace: RunTrace) -> void:
 ## **Makes every instance this manager makes skip its own drawing** (`--skip events`), handed in
 ## before `setup()` by whoever stands it (`SimulationBuilder`).
 func draw_nothing() -> void:
-	world.skip_drawing = true
+	world.draw_nothing()
 
 ## **Hands in where the manager and every instance it creates charge their time to the frame
 ## record**, before `setup()` by whoever stands the manager (`SimulationBuilder`); the null sink
 ## until then.
 func use_timing(timing: FrameTiming) -> void:
-	world.timing = timing
+	_timing = timing
+	world.use_timing(timing)
 
 ## **Hands in the baked atlas pages** this manager holds the events' group on and every instance it
 ## creates draws from (`AtlasLibrary`), before it enters the tree, by whoever stands it
 ## (`SimulationBuilder`). Each atlas comes with the one drawer every instance made here paints
-## through (`EventDrawer`, `EventWorld.drawer`).
+## through (`EventDrawer`, `EventSurroundings.drawer()`).
 func use_atlas(atlas: AtlasLibrary) -> void:
 	_atlas = atlas
-	world.atlas = atlas
-	world.drawer = EventDrawer.new(atlas)
+	world.use_atlas(atlas)
 
 ## **Sets how close the player has to be for a planned event to exist**
 ## (`EventStreaming.stream_within()`). `INF` turns streaming off and puts the whole day in the world
@@ -194,7 +197,7 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 			StreetInvalidation.room_around))
 	world.use_streets(streets)
 	world.use_poster_walls(poster_walls)
-	world.signals = signals
+	world.use_lights(signals)
 	world.use_run(run)
 	world.use_navigator(navigator if navigator else Navigator.new(map))
 	var director := EventDirector.new(map, world.navigator())
@@ -538,10 +541,10 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 # ------------------------------------------------------------------ ticking ---
 
 func _physics_process(delta: float) -> void:
-	if world.timing.is_on():
-		var outer := world.timing.enter(FrameTiming.EVENTS)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.EVENTS)
 		_tick_the_events(delta)
-		world.timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_tick_the_events(delta)
 

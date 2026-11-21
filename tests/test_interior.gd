@@ -1663,7 +1663,8 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: TestRunner) -> void:
 	var blow := EventInstance.new()
 	# Set up before it joins the tree, the order `EventSpawner.create()` uses: `_ready()` reads the
 	# def.
-	blow.setup(steam, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, blow_where)
+	blow.setup(steam, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(blow_where))
 	t.add_child(blow)
 	var cost := 0.0
 	var elapsed := 0.0
@@ -1754,8 +1755,9 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	var run := _rig.fresh_run()
-	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map()), scene, events.world.atlas)
+	var atlas := AtlasLibrary.new()
+	var events := BuildingEvents.events_in(t, scene, rng, run, atlas)
+	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map()), scene, atlas)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
 	t.check(ground != null, "the building has its floor tiles to lie on")
 	# She joins the same layer every blow does (`InteriorScene.add_entity()`), so a stand-in there
@@ -2127,7 +2129,8 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
+	var atlas := AtlasLibrary.new()
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run(), atlas)
 	# Standing still: the instances stay where the checks put them, and the frames below are the
 	# views' own.
 	events.set_physics_process(false)
@@ -2172,7 +2175,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	t.add_child(edge)
 	edge.size = ScreenOrientation.DESIGN_SIZE
 	# The pictures a badge is drawn with, from the atlas `main` hands it.
-	edge.use_atlas(events.world.atlas)
+	edge.use_atlas(atlas)
 	edge.setup(events, player)
 	var far := Vector2(-40000.0, -40000.0)
 	player.global_position = far

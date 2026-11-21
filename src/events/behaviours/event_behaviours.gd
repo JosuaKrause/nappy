@@ -7,7 +7,8 @@ extends RefCounted
 ## handed what never changes under it as it is made: the figure it moves (`figure`, the event's
 ## `EventInstance.Figure`), its settings (the row, or its part's settings class), where she is as
 ## `event` hears it (`where`), the map, the navigator, what the event walks as (`mover`), where the
-## event writes its account for the run log (`trace`), the event's move (`move`, which a car's
+## event writes its account for the run log (`trace`), the lights a car of it stops at (`lights`,
+## null where there are none), the event's move (`move`, which a car's
 ## driving checks) and the behaviours beside it it works with, where it needs them. `event`'s typed
 ## fields (`hold`, `flock`, ...) are set to the same objects, so the event can answer for each; no
 ## behaviour is handed `event` itself.
@@ -17,7 +18,7 @@ extends RefCounted
 ## its route. A vehicle that investigates is never also a pursuer (`EventDef.validate()`).
 static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		figure: EventInstance.Figure, map: WorldMap, navigator: Navigator,
-		mover: Mover, trace: RunTrace, move: MoveProposal) -> Array[EventBehaviour]:
+		mover: Mover, trace: RunTrace, lights: TrafficSignals, move: MoveProposal) -> Array[EventBehaviour]:
 	# The siblings another behaviour is handed are made first; each ticks in its own place below.
 	var on_foot: EventOfficer = null
 	if row.pursuit != null:
@@ -34,7 +35,8 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		investigation = EventInvestigation.new(figure, where, row, map, route)
 	var car: EventCarDriving = null
 	if row.vehicle:
-		car = EventCarDriving.new(figure, where, row, map, route, investigation, move)
+		car = EventCarDriving.new(figure, where, row, map, route, investigation, move,
+				lights)
 	# The investigation stands its car for her once its men are back: made after it, since the car
 	# is handed the investigation, the car is handed to it once it is made.
 	if investigation != null and car != null:

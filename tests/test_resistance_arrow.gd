@@ -164,7 +164,7 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t: TestRunner
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 				"behind a wall the arrow points at the one she can walk to sooner")
-		t.check(RunCity.events(_city).world.where_protests_point() == director.red_arrow_target(),
+		t.check(RunCity.events(_city).world.surroundings().where_protests_point() == director.red_arrow_target(),
 				"and the protest cue points at the same chosen objective as the arrow")
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 				"and not at the nearer as the crow flies")

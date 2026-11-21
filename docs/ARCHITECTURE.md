@@ -194,8 +194,13 @@ src/
 	event_body.gd         what a live event is on the ground (`EventBody`): its collision body,
 	                       the tiles it is recorded on, the axis it lies along on its street, the
 	                       side a vehicle standing still shows, a boom's body following its arm;
-	                       handed its row, the map and where she is, asked by its event and told
-	                       what happens to it
+	                       handed its row, the map, where she is and its gate's boom state, asked
+	                       by its event and told what happens to it
+	event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
+	                       map and navigator, where she is, the world it is drawn in, its drawer,
+	                       its timing sink, its trace, the car's lights and where a protest points;
+	                       built by the events' world for each live event, handed to the one
+	                       `EventInstance.setup()` call, which takes the shared boom state last
 	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
 	                       present rate cached on its age, the walls it does not pass, its live
 	                       course and rate for the projection, whether that course is lethal
@@ -216,8 +221,8 @@ src/
 	                       redraw gate, the caret and the slices a long picture is drawn in;
 	                       every picture a look draws goes through one `EventDrawer`
 	                       (`views/event_drawer.gd`), which the manager builds over its atlas
-	                       and its spawner hands every instance (`EventInstance.drawer`) before
-	                       `setup()` hands it to the look
+	                       and its world hands every instance in its surroundings
+	                       (`EventSurroundings.drawer()`) as `setup()` hands it to the look
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's

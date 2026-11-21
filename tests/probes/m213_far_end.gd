@@ -61,7 +61,8 @@ func _task_guards(t: TestRunner) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+			director.setup(city.map, city.run, RunCity.events(city), city.streets(),
+					city.fronts(), city, null,
 					RunCity.spawn_siting(city))
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var mark := director.current_step()
@@ -215,8 +216,8 @@ func _in_a_through_alley(map: CityMap, tile: Vector2i) -> bool:
 func _stays_asleep(robbery: EventDef, guard_at: Vector2, legs: Array[Vector2]) -> bool:
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT, null, null,
-			robber_where)
+	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(robber_where))
 	var woke := false
 	for leg in legs.size() - 1:
 		var from: Vector2 = legs[leg]
