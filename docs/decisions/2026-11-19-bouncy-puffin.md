@@ -14,12 +14,13 @@ sees their readers; GDScript has no type alias, so the spelling `RegionPlanner.R
 answers `ground_point()`, `is_boom_up()` (in place of the yes-or-no `raised`), `held_for()`, and is told
 `set_boom_up()`, `hold_for()` and `release_hold()`; `stopped_for` is private. Every reader under `src/` asks a method.
 The suites and probes read and build plans and gates by hand in about 270 lines, so those fields stay public, each a
-`[kept]` line in `tools/test_only_members.txt` naming minty-quail's row 4a, as row 3a's plan fields did. Nothing a
+`[kept]` line in `tools/test_only_members.txt`, the rest of the entry. Nothing a
 player sees changes.
 
 **Open to overturn, the builder's where the item left it open:** lifting the two classes into files (the item named it
 the builder's design question; the orchestrator's brief picked it); `RegionPlan`'s `add_*` builders.
 
-**The queue.** The entry closes: its one item is built but for the suites' reads, which row 4a's scripted rewrite
-takes, as the item allowed. Row 3c of minty-quail's `event-interface.md` no longer lists the region plan's fields as
-left in the dev rig and the scene recipe runtime.
+**The queue.** The entry stays open on what is left: the suites' and probes' reads go through the methods and the
+fields go private, with a table of each field's replacement, since minty-quail's row 4a rewrites only what its own
+tables list. Row 3c of minty-quail's `event-interface.md` no longer lists the region plan's fields as left in the dev
+rig and the scene recipe runtime.
