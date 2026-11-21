@@ -83,7 +83,7 @@ func step(_delta: float) -> void:
 
 func _stop_her_if_he_has_reached_her() -> void:
 	var her: Vector2 = _where.at()
-	if _pursuit.stop_excitement <= 0.0 or has_stopped_her() or her == Vector2.INF \
+	if _pursuit.stop_excitement() <= 0.0 or has_stopped_her() or her == Vector2.INF \
 			or _where.is_held_at_a_door():
 		return
 	if _figure.is_gone() or _figure.is_on_its_way_out() or _figure.is_waiting() \

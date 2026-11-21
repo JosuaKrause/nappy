@@ -10,8 +10,28 @@ extends Resource
 ## (`EventDef.for_day()`), as a heated row is a copy.
 
 ## The last day the row's own `spawn_mode` and `notice` answer for.
-@export var after_day := 0
+var _after_day := 0
 ## How the row is sited past `after_day`.
-@export var spawn_mode := EventDef.SpawnMode.MAP
+var _spawn_mode := EventDef.SpawnMode.MAP
 ## How the row notices her past `after_day`, or null for no wait.
-@export var notice: NoticeSpec = null
+var _notice: NoticeSpec = null
+
+## The switch past `day`: the row is sited as `mode` says and notices her as `how` says (null for no wait).
+static func after(day: int, mode: EventDef.SpawnMode, how: NoticeSpec) -> DaySwitch:
+	var switch := DaySwitch.new()
+	switch._after_day = day
+	switch._spawn_mode = mode
+	switch._notice = how
+	return switch
+
+## The last day the row's own `spawn_mode` and `notice` answer for.
+func after_day() -> int:
+	return _after_day
+
+## How the row is sited past `after_day()`.
+func spawn_mode() -> EventDef.SpawnMode:
+	return _spawn_mode
+
+## How the row notices her past `after_day()`, or null for no wait.
+func notice() -> NoticeSpec:
+	return _notice

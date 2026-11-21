@@ -16,7 +16,7 @@ extends Resource
 ## Whether it is warned of first: its screen-edge badge alone for its own second, then created
 ## just out of sight in its lane (the convoy, as day 13's column is). False for a row created at once
 ## (the dog walker, slower than a walk; the patrol, warned the way a car warns).
-@export var warned := false
+var _warned := false
 
 ## **Created at once just ahead of her, coming toward her** (the dog walker down her sidewalk, the
 ## patrol down the carriageway lane that drives toward her): no warning first, and never from
@@ -28,9 +28,9 @@ static func at_once() -> SentAhead:
 ## created just out of sight up the lane ahead of her, as day 13's column is, driving toward her.
 static func warned_first() -> SentAhead:
 	var sent := SentAhead.new()
-	sent.warned = true
+	sent._warned = true
 	return sent
 
-## Whether it is warned of first (`warned`).
+## Whether it is warned of first.
 func is_warned_first() -> bool:
-	return warned
+	return _warned

@@ -799,7 +799,7 @@ var _guard_warns_her := false
 ## and runs its own line at her once she is near (`NoticeSpec.runs_within`, the masked man in the
 ## escape's stairwell). Telemetry only.
 func counts_a_charge() -> bool:
-	return _def.pursuit != null or (_def.notice != null and _def.notice.runs_within > 0.0)
+	return _def.pursuit != null or (_def.notice != null and _def.notice.runs_within() > 0.0)
 
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
 ## `pursuit_ended`): the row's `EventDef.counts_charges_as` where it sets one (the task guard sent
@@ -1306,8 +1306,8 @@ func hold_still_longer(seconds: float) -> void:
 func notice_time() -> float:
 	if _notice_time >= 0.0:
 		return _notice_time
-	if warns_by_radius() and _def.pursuit and _def.pursuit.warns_for > 0.0:
-		return _def.pursuit.warns_for
+	if warns_by_radius() and _def.pursuit and _def.pursuit.warns_for() > 0.0:
+		return _def.pursuit.warns_for()
 	return _def.telegraphs_for()
 
 ## True for a row that waits (`EventDef.waits_for_her()`) and has not noticed her: its notice's
@@ -1405,7 +1405,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# spike rather than a field she strolls out of, and his field, so walking away takes some
 		# of it off. Nothing after it: he is walking back by then (`_tick()`).
 		var into := clampf(on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
-		return 2.0 * _def.pursuit.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
+		return 2.0 * _def.pursuit.stop_excitement() / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
 		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.

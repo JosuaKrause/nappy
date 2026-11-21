@@ -6,7 +6,10 @@ extends Resource
 ##
 ## A row has a `PursuitSpec` only when it pursues; one that only pursues once it hunts (the
 ## roadblock, `EventDef.hunts`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
-## gives that copy its speed and its notice.
+## gives that copy its speed (`at_speed()`) and its notice.
+##
+## A value: built by `at()`, refined by methods that each return a new pursuit, never changed, so a row and
+## its heated copy share one.
 
 ## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
 ##
@@ -54,33 +57,33 @@ enum Start {
 }
 
 ## How fast it comes, in px/s: strictly between `Tuning.WALK_SPEED` and `Tuning.RUN_SPEED`.
-@export var speed := 0.0
+var _speed := 0.0
 
-@export var start := Start.NOTICES
+var _start := Start.NOTICES
 
 ## **How long a pursuer that waited for her warns before it charges**, in seconds, from the frame it
 ## notices her inside its one radius (inbox #788 in minty-lemur). `validate()` holds a pursuer that
 ## waits to at least `Tuning.OFFSCREEN_WARNING_MIN`.
-@export var warns_for := 0.0
+var _warns_for := 0.0
 
 ## Whether it **stands still in its alert pose for its notice** rather than closing on her
 ## (woolly-penguin #748): the waiting dog, the roadblock's guard, the men a vehicle lets out. Only
 ## the closing stops; every lunge and charge is decided as for one that closes. The alley robber
 ## does not stand: he walks at her through his notice.
-@export var stands := false
+var _stands := false
 
 ## How fast it **walks at her through its notice**, in px/s, when that is slower than its chase,
 ## or 0 to close at `speed` (the alley robber's slow alert walk, so it can be seen).
-@export var walk_speed := 0.0
+var _walk_speed := 0.0
 
 ## Where its lunge is measured from when that is not its catch, in px, or 0 for its catch: the
 ## alley robber catches at 26px and lunges from 38px. `EventDef.standoff_reach()` reads it.
-@export var lunge_reach := 0.0
+var _lunge_reach := 0.0
 
 ## How close the man has to get to catch her when that is not the field's own core, in px, or 0
 ## for the row's `inner_radius`: the roadblock's guard catches at a man's reach, not at his band's
 ## core. `EventDef.lethal_reach()` reads it.
-@export var catch_reach := 0.0
+var _catch_reach := 0.0
 
 ## **A catch that is a stop rather than the end of the day**, in points of the excitement meter, or
 ## 0 for a catch that is what the row's `hard_fail` says. When he reaches her he stops, his own field
@@ -88,19 +91,19 @@ enum Start {
 ## the vehicle that let him out (inbox #669 in coral-lark). Only the man an investigating patrol car
 ## lets out sets it (`EventCatalogue.out_of_the_car()`); `EventDef.validate()` holds it under the
 ## whole meter and refuses it on a `hard_fail` row.
-@export var stop_excitement := 0.0
+var _stop_excitement := 0.0
 
 ## Whether the row's body is **a fixture of the street the man leaves standing** when he sets off,
 ## rather than his own bulk: the roadblock, whose barrier stays shut behind its guard. The body is
 ## pinned where it was left (`EventBarrierPost`) and drawn there, so the picture and the street agree.
 ## A moving pursuer otherwise drops its body the frame it stops waiting, since a moving wall pins her.
-@export var leaves_its_body := false
+var _leaves_its_body := false
 
 ## Whether the man is **drawn over the street's other figures while he stands for his notice**
 ## (`DrawLayer.Layer.WARNING`), and sorts with them again once he charges: the roadblock's guard at
 ## his post, whom a van parked in front of the post would otherwise hide while his raised hand is the
 ## warning (inbox #771 in minty-lemur).
-@export var warns_over_the_street := false
+var _warns_over_the_street := false
 
 ## Whether the man **walks round buildings toward her once he is after her**: where no clear line
 ## runs to her he follows the walk to her over the ground she can walk (`ChaseWay`, made by
@@ -111,31 +114,138 @@ enum Start {
 ## that he follows her)*. Only the way he heads changes: his notice, his warning, his speed and when
 ## he gives up are the row's. Day 13's task guard has a way too, given when she is set on him from
 ## wherever he stands (`EventInstance.notice_her_at()`), not by his row.
-@export var paths_round_buildings := false
+var _paths_round_buildings := false
 
-## Whether it stands still in its alert pose for its notice rather than closing on her (`stands`).
-func stands_for_its_notice() -> bool:
-	return stands
-
-## Whether the man is drawn over the street's other figures while he stands for his notice
-## (`warns_over_the_street`).
-func is_drawn_over_the_street() -> bool:
-	return warns_over_the_street
-
-## Whether the man walks round buildings toward her once he is after her (`paths_round_buildings`).
-func walks_round_buildings() -> bool:
-	return paths_round_buildings
-
-## Has the man walk round buildings toward her once he is after her (`walks_round_buildings()`).
-## Called by the catalogue as it builds the row. Exported, so the hunting copy
-## `EventDef.at_heat()` duplicates carries it.
-func follow_her_round_buildings() -> void:
-	paths_round_buildings = true
-
-## A pursuer at `speed` that notices her first, the shape most rows start from.
+## A pursuer at `chase_speed` that notices her first, the shape most rows start from.
 static func at(chase_speed: float) -> PursuitSpec:
 	var spec := PursuitSpec.new()
-	spec.speed = chase_speed
+	spec._speed = chase_speed
+	return spec
+
+## The same pursuer at another speed: the heated copy's, at the ladder's own.
+func at_speed(chase_speed: float) -> PursuitSpec:
+	var spec := _copy()
+	spec._speed = chase_speed
+	return spec
+
+## The same pursuer whose chase begins as `how` says.
+func starting_by(how: Start) -> PursuitSpec:
+	var spec := _copy()
+	spec._start = how
+	return spec
+
+## The same pursuer warning for `seconds` before it charges.
+func warning_for(seconds: float) -> PursuitSpec:
+	var spec := _copy()
+	spec._warns_for = seconds
+	return spec
+
+## The same pursuer standing still in its alert pose for its notice rather than closing on her.
+func standing() -> PursuitSpec:
+	var spec := _copy()
+	spec._stands = true
+	return spec
+
+## The same pursuer walking at her through its notice at `pace`, in px/s.
+func walking_at(pace: float) -> PursuitSpec:
+	var spec := _copy()
+	spec._walk_speed = pace
+	return spec
+
+## The same pursuer lunging from `reach`, in px, where that is not its catch.
+func lunging_from(reach: float) -> PursuitSpec:
+	var spec := _copy()
+	spec._lunge_reach = reach
+	return spec
+
+## The same pursuer catching her within `reach`, in px, where that is not the field's own core.
+func catching_within(reach: float) -> PursuitSpec:
+	var spec := _copy()
+	spec._catch_reach = reach
+	return spec
+
+## The same pursuer whose catch is a stop costing her `points` of the excitement meter.
+func stopping_her_for(points: float) -> PursuitSpec:
+	var spec := _copy()
+	spec._stop_excitement = points
+	return spec
+
+## The same pursuer leaving its body standing as a fixture of the street when it sets off.
+func leaving_its_body() -> PursuitSpec:
+	var spec := _copy()
+	spec._leaves_its_body = true
+	return spec
+
+## The same pursuer drawn over the street's other figures while it stands for its notice.
+func over_the_street() -> PursuitSpec:
+	var spec := _copy()
+	spec._warns_over_the_street = true
+	return spec
+
+## The same pursuer walking round buildings toward her once it is after her.
+func round_buildings() -> PursuitSpec:
+	var spec := _copy()
+	spec._paths_round_buildings = true
+	return spec
+
+## How fast it comes, in px/s: strictly between `Tuning.WALK_SPEED` and `Tuning.RUN_SPEED`.
+func speed() -> float:
+	return _speed
+
+## How its chase begins.
+func start() -> Start:
+	return _start
+
+## How long a pursuer that waited for her warns before it charges, in seconds.
+func warns_for() -> float:
+	return _warns_for
+
+## Whether it stands still in its alert pose for its notice rather than closing on her.
+func stands_for_its_notice() -> bool:
+	return _stands
+
+## How fast it walks at her through its notice, in px/s, or 0 to close at `speed()`.
+func walk_speed() -> float:
+	return _walk_speed
+
+## Where its lunge is measured from when that is not its catch, in px, or 0 for its catch.
+func lunge_reach() -> float:
+	return _lunge_reach
+
+## How close the man has to get to catch her when that is not the field's own core, in px, or 0.
+func catch_reach() -> float:
+	return _catch_reach
+
+## What its catch costs her when it is a stop rather than the end of the day, in points of the
+## excitement meter, or 0 for a catch that is what the row's `hard_fail` says.
+func stop_excitement() -> float:
+	return _stop_excitement
+
+## Whether the row's body is a fixture of the street the man leaves standing when he sets off.
+func leaves_its_body_standing() -> bool:
+	return _leaves_its_body
+
+## Whether the man is drawn over the street's other figures while he stands for his notice.
+func is_drawn_over_the_street() -> bool:
+	return _warns_over_the_street
+
+## Whether the man walks round buildings toward her once he is after her.
+func walks_round_buildings() -> bool:
+	return _paths_round_buildings
+
+func _copy() -> PursuitSpec:
+	var spec := PursuitSpec.new()
+	spec._speed = _speed
+	spec._start = _start
+	spec._warns_for = _warns_for
+	spec._stands = _stands
+	spec._walk_speed = _walk_speed
+	spec._lunge_reach = _lunge_reach
+	spec._catch_reach = _catch_reach
+	spec._stop_excitement = _stop_excitement
+	spec._leaves_its_body = _leaves_its_body
+	spec._warns_over_the_street = _warns_over_the_street
+	spec._paths_round_buildings = _paths_round_buildings
 	return spec
 
 ## How close a pursuer comes while it is still only telegraphing.

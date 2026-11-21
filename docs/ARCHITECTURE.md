@@ -169,18 +169,9 @@ src/
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
-	notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
-	pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
-	hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
-	day_switch.gd         how a row is sited and noticed from the day after its first appearance
-	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
-	sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
 	way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
 	                      junction box to junction box by the walk's through roads, a walker
 	                      straight on; made once a walk and handed to the director
-	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
-	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
-	abduction_spec.gd     the unmarked van's take of a bystander
 	event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
 	                      box it draws, all it can put on the screen, its solid footprint and its
 	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
@@ -225,6 +216,17 @@ src/
 	                       (`views/event_drawer.gd`), which the manager builds over its atlas
 	                       and its world hands every instance in its surroundings
 	                       (`EventSurroundings.drawer()`) as `setup()` hands it to the look
+	parts/                the settings a row holds as values (private fields, a factory, refinements
+	                      that each return a new value):
+	  notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
+	  pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
+	  hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
+	  day_switch.gd         how a row is sited and noticed from the day after its first appearance
+	  on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
+	  sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
+	  aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
+	  vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
+	  abduction_spec.gd     the unmarked van's take of a bystander
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's

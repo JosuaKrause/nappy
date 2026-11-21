@@ -69,19 +69,19 @@ func _check_for_notice() -> void:
 ## (`EventInstance._hold_the_notice_clock()`).
 func _warn_on_its_line(delta: float) -> void:
 	var her: Vector2 = _where.at()
-	if _spec.runs_within <= 0.0 or _figure.notice_has_run() or _figure.is_waiting() \
+	if _spec.runs_within() <= 0.0 or _figure.notice_has_run() or _figure.is_waiting() \
 			or her == Vector2.INF:
 		return
 	var range_to_her: float = _figure.place().distance_to(her)
 	if not _line_warning.is_running():
-		_noticed_inside = range_to_her <= _spec.runs_within
+		_noticed_inside = range_to_her <= _spec.runs_within()
 		_figure.warning_went_up()
 		# From the start of this tick, since this tick's `delta` is already its first.
 		_line_warning.start(_figure.age() - delta, Tuning.WARNING_ALONE_MAX)
 	if _line_warning.tick(_figure.age()) == Warning.Outcome.CALLED_OFF:
 		_figure.wait_for_her_again()
 		return
-	if range_to_her > _spec.runs_within:
+	if range_to_her > _spec.runs_within():
 		_noticed_inside = false
 		return
 	if not _noticed_inside:

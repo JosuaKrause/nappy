@@ -190,7 +190,7 @@ static func all() -> Array[EventDef]:
 ## This row at a resistance level, derived once per run and kept: the cache in front of
 ## `EventDef.at_heat()`, because a day asks for the same heated row once per candidate placement.
 static func heated(def: EventDef, level: int) -> EventDef:
-	if def.heat_response == EventDef.HeatResponse.NONE or level <= 0:
+	if not def.answers_to_heat() or level <= 0:
 		return def
 	var key := "%s|%d" % [def.id, level]
 	if not _hot.has(key):
@@ -215,7 +215,7 @@ static func escape_roadblock() -> EventDef:
 static func without_its_aftermath(def: EventDef) -> EventDef:
 	var variant: EventDef = def.duplicate()
 	variant.shape = def.shape
-	variant.aftermath = Aftermath.new()
+	variant.aftermath = Aftermath.none()
 	return variant
 
 ## **The fire in the building's stairwell**: `burning_building` without its aftermath, and the whole
@@ -995,10 +995,9 @@ static func _fire_truck() -> EventDef:
 	# lethal only in front of it while it drives its route, and solid and harmless once it has
 	# parked at the kerb (`has_parked()` is not driving).
 	def.shape = GroundShape.segment(16.0, 13.0)
-	def.vehicle = VehicleSpec.new()
 	# Its field stays a point's, priced from its centre: the body is not a reason for the street
-	# beside the parked engine to cost more (`VehicleSpec.field_from_its_centre`).
-	def.vehicle.field_from_its_centre = true
+	# beside the parked engine to cost more (`VehicleSpec.priced_from_its_centre()`).
+	def.vehicle = VehicleSpec.driving().priced_from_its_centre()
 	def.intensity = 26.0
 	def.inner_radius = 70.0
 	def.outer_radius = 340.0
@@ -1063,7 +1062,7 @@ static func _burning_building() -> EventDef:
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_FRONT
-	def.on_her_way = OnHerWay.new()
+	def.on_her_way = OnHerWay.on_its_ground()
 	def.intensity = 0.0
 	def.inner_radius = 60.0
 	def.outer_radius = 260.0
@@ -1072,8 +1071,7 @@ static func _burning_building() -> EventDef:
 	# look to draw, but nothing stands here to be solid, and no shadow is drawn (`draws_body_shadow`).
 	def.shape = GroundShape.point(30.0)
 	def.draws_body_shadow = false
-	def.aftermath.scar = BURNT_SHELL_ID
-	def.aftermath.on_sight = "fire_truck"
+	def.aftermath = Aftermath.none().scarring(BURNT_SHELL_ID).calling_in("fire_truck")
 	return def
 
 ## What is left the next morning, and every morning after, never repaired: the building the fire
@@ -1389,8 +1387,7 @@ static func _pigeon_flock() -> EventDef:
 	# near the birds. Its quiet notice (`NoticeSpec.quiet`) damps the wait and the telegraph by the
 	# same fraction: birds on a sidewalk are nearly nothing, and a flock nobody has walked up to
 	# must not be a place she cannot walk past.
-	def.notice = NoticeSpec.at(150.0)
-	def.notice.quiet = true
+	def.notice = NoticeSpec.at(150.0).quietly()
 	def.intensity = 42.0
 	def.inner_radius = 26.0
 	def.outer_radius = 168.0
@@ -1705,10 +1702,7 @@ static func _charging_dog() -> EventDef:
 	# From the day after the lesson it is a place on the map that waits for her inside its one
 	# radius, 130px, inside its 150px field (inbox #788 in minty-lemur). `EventDef.for_day()` hands
 	# a placement past the switch a copy carrying it.
-	def.from_day_after = DaySwitch.new()
-	def.from_day_after.after_day = Tuning.RUN_TAUGHT_DAY
-	def.from_day_after.spawn_mode = EventDef.SpawnMode.MAP
-	def.from_day_after.notice = NoticeSpec.at(130.0)
+	def.from_day_after = DaySwitch.after(Tuning.RUN_TAUGHT_DAY, EventDef.SpawnMode.MAP, NoticeSpec.at(130.0))
 	def.intensity = 12.0
 	def.inner_radius = 26.0
 	# Wider than the stand-off, a constraint rather than a taste: a pursuer holds its stand-off
@@ -1727,12 +1721,10 @@ static func _charging_dog() -> EventDef:
 	# `duration` are what catch a walker. The dog that waits for her past the teaching day does not
 	# read it: it warns by radius (`EventInstance.warns_by_radius()`).
 	def.telegraph_time = 4.5
-	def.pursuit = PursuitSpec.at(130.0)
 	# From day 4, once it notices her, it warns on the clock every charger that waits for her keeps
 	# and stands in its alert pose rather than closing (woolly-penguin #748); the day-3 dog has no
 	# wait, so its approach is still its telegraph (`EventInstance.is_standing_for_its_notice()`).
-	def.pursuit.warns_for = CHARGER_WARNING
-	def.pursuit.stands = true
+	def.pursuit = PursuitSpec.at(130.0).warning_for(CHARGER_WARNING).standing()
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
 	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part (see
 	# `EventDef.offscreen_notice`).
@@ -1767,7 +1759,7 @@ static func _charging_dog() -> EventDef:
 ## she walks round its body whether it drives or stands, and it ends the day only in front of it,
 ## while it drives its route, with her on the carriageway.
 ##
-## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: with
+## **The patrol rung of the resistance's ladder.** Its hunt is `HuntSpec.pressing()`: with
 ## `RunState.resistance().progress()`, more of them and louder, and past
 ## `EventDef.HEAT_INVESTIGATES_LEVEL` it stops merely patrolling and starts investigating: it stops
 ## on its road once she is close and a policeman gets out and pursues her
@@ -1812,9 +1804,9 @@ static func _police_patrol() -> EventDef:
 	def.send_ahead(SentAhead.at_once())
 	def.weight = 3.0
 	def.max_per_day = 12
-	def.heat_response = EventDef.HeatResponse.PRESSES
-	# Past the threshold it stops for her and lets one man out (`HuntSpec.letting_out()`).
-	def.hunts = HuntSpec.letting_out(1)
+	# Past the threshold it stops for her and lets one man out (`HuntSpec.pressing()`, the patrol
+	# rung, which investigates and never hunts).
+	def.hunts = HuntSpec.pressing()
 	return def
 
 ## Cosmetic dread. Barely moves the meter; it is here so the walls change.
@@ -1850,8 +1842,7 @@ static func _poster_crew() -> EventDef:
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
-	def.on_her_way = OnHerWay.new()
-	def.on_her_way.at_a_front = true
+	def.on_her_way = OnHerWay.at_a_front()
 	def.intensity = 5.0
 	def.inner_radius = 30.0
 	def.outer_radius = 110.0
@@ -1991,7 +1982,7 @@ static func _curfew_announce() -> EventDef:
 ## it. `inner_radius` is 86 and is bounded by nothing: it is where full strength ends and the
 ## falloff begins, and what the cost table is stated against.
 ##
-## **`heat_response = HUNTS`, the rung `abduction` and `night_raid` climb**, and **two guards stand
+## **The `HUNTS` rung `abduction` and `night_raid` climb** (a `HuntSpec` that is not `pressing()`), and **two guards stand
 ## at the barrier from the moment it is placed**, one on each side of the band and clear of its
 ## picture. Cold they are drawings and nothing else: no field, no body and no cost of their own,
 ## all of which belong to the band. Once a heated copy notices her, **the guard on her side** sets
@@ -2063,19 +2054,13 @@ static func _roadblock() -> EventDef:
 	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
 	# (woolly-penguin #748) on the clock every charger that waits for her keeps.
-	var chase := PursuitSpec.new()
-	chase.catch_reach = MASKED_MAN_REACH
-	chase.stands = true
-	chase.warns_for = CHARGER_WARNING
-	chase.leaves_its_body = true
-	chase.warns_over_the_street = true
-	chase.follow_her_round_buildings()
+	var chase := PursuitSpec.new().catching_within(MASKED_MAN_REACH).standing() \
+			.warning_for(CHARGER_WARNING).leaving_its_body().over_the_street().round_buildings()
 	def.hunts = HuntSpec.pursuing(chase)
 	def.barrier_structure = true
 	def.span_the_street()
 	def.weight = 2.0
 	def.max_per_day = 6
-	def.heat_response = EventDef.HeatResponse.HUNTS
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
@@ -2094,7 +2079,7 @@ static func _roadblock() -> EventDef:
 ## pedestrian could never be a lasting fact about the world. Drawing and telemetry only; nothing
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 ##
-## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder, hunted on foot**
+## **The `HUNTS` rung, the lethal rung of the resistance's ladder, hunted on foot**
 ## (`EventDef.hunts`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched
 ## (population and intensity are `PRESSES`'s axes). At and above it, the derived copy stops idling
 ## for a stranger and hunts her with its men: it stays parked and solid, and once she is within
@@ -2109,7 +2094,7 @@ static func _abduction() -> EventDef:
 	def.look = EventDef.Look.UNMARKED_VAN
 	def.stands_as = EventDef.StandsAs.SOMETHING
 	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.abduction = AbductionSpec.new()
+	def.abduction = AbductionSpec.standard()
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.CROSSING]
@@ -2131,7 +2116,6 @@ static func _abduction() -> EventDef:
 	# city should feel *occupied*, not landmined. Four unmarked vans across forty-nine blocks is one
 	# every twelve; twelve would be a difficulty setting nobody asked for.
 	def.max_per_day = 4
-	def.heat_response = EventDef.HeatResponse.HUNTS
 	def.hunts = HuntSpec.letting_out(2)
 	return def
 
@@ -2196,8 +2180,7 @@ static func _alley_robbery() -> EventDef:
 	def.duration = Tuning.PURSUIT_TIME
 	# The same speed as the charging dog, deliberately: a player who learned on day 3 what a thing
 	# that comes after you moves like should not have to learn it again in act III.
-	def.pursuit = PursuitSpec.at(130.0)
-	def.pursuit.lunge_reach = 38.0
+	def.pursuit = PursuitSpec.at(130.0).lunging_from(38.0)
 	# Outside his stand-off (116px) and inside his field, which leaves room for both halves of the
 	# row: far enough out that his notice walk is seen, near enough that she has felt him before he
 	# decides anything about her (inbox #761 in minty-lemur). 64px past his stand-off at the slow
@@ -2217,11 +2200,11 @@ static func _alley_robbery() -> EventDef:
 	# tenth of a second. At 40px/s, a little over the dog walker's 32px/s stroll, a stride beat
 	# (`EventLook.gait_is_stepping()`, 17.5px of ground) lasts about 0.44s, near the 450ms the
 	# walkers' two-frame pictures were reviewed at.
-	def.pursuit.walk_speed = 40.0
+	def.pursuit = def.pursuit.walking_at(40.0)
 	# **He charges once his warning has run with her still inside his radius**, on the clock every
 	# charger that waits for her keeps (inbox #788 in minty-lemur), walking at her and holding at
 	# his stand-off while he warns.
-	def.pursuit.warns_for = CHARGER_WARNING
+	def.pursuit = def.pursuit.warning_for(CHARGER_WARNING)
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0
 	def.hard_fail = true
@@ -2286,9 +2269,8 @@ static func _robber_giving_chase() -> EventDef:
 	def.telegraph_time = 0.0
 	def.duration = dog.duration
 	def.warned_first = true
-	def.pursuit = PursuitSpec.at(alley.pursuit.speed)
-	def.pursuit.start = PursuitSpec.Start.ARRIVES_CHASING
-	def.pursuit.lunge_reach = alley.pursuit.lunge_reach
+	def.pursuit = PursuitSpec.at(alley.pursuit.speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING) \
+			.lunging_from(alley.pursuit.lunge_reach())
 	def.departs_at = alley.departs_at
 	def.hard_fail = alley.hard_fail
 	return def
@@ -2338,8 +2320,7 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.telegraph_time = 0.0
 	def.duration = dog.duration
 	def.warned_first = true
-	def.pursuit = PursuitSpec.at(guard.pursuit.speed)
-	def.pursuit.start = PursuitSpec.Start.ARRIVES_CHASING
+	def.pursuit = PursuitSpec.at(guard.pursuit.speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING)
 	def.departs_at = alley.departs_at
 	def.hard_fail = guard.hard_fail
 	return def
@@ -2436,12 +2417,10 @@ static func _out_of(on_foot: EventDef, stops: bool) -> EventDef:
 		def.warned_first = false
 		def.offscreen_notice = Tuning.OFFSCREEN_NOTICE
 		def.telegraph_time = Tuning.WARNING_ALONE_MAX
-		def.pursuit = on_foot.pursuit.duplicate() as PursuitSpec
-		def.pursuit.start = PursuitSpec.Start.SETS_OFF_BESIDE_HER
-		def.pursuit.stands = true
+		def.pursuit = on_foot.pursuit.starting_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER).standing()
 		if stops:
 			def.hard_fail = false
-			def.pursuit.stop_excitement = OFFICER_STOP_EXCITEMENT
+			def.pursuit = def.pursuit.stopping_her_for(OFFICER_STOP_EXCITEMENT)
 		_out_of_the_car[key] = def
 	return _out_of_the_car[key]
 
@@ -2466,7 +2445,7 @@ static var _task_guard_sent: EventDef = null
 
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
-## **`heat_response = HUNTS`, the same rung `abduction` climbs, but it hunts on foot**
+## **The `HUNTS` rung `abduction` climbs, but it hunts on foot**
 ## (`EventDef.hunts`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed
 ## block and nothing more. At and above it, the derived copy `investigates`: the van stays where it
 ## stands, and the moment she is within `EventDef.HEAT_HUNTS_WITHIN` (180px) of it along a clear
@@ -2505,7 +2484,6 @@ static func _night_raid() -> EventDef:
 	def.telegraph_time = 3.0
 	def.pulse_period = 6.0
 	def.solid(GroundShape.point(44.0))
-	def.heat_response = EventDef.HeatResponse.HUNTS
 	def.hunts = HuntSpec.letting_out(2)
 	return def
 
@@ -2570,7 +2548,7 @@ static func _barricade() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(62.0))
-	def.aftermath.scar = "barricade"
+	def.aftermath = Aftermath.none().scarring("barricade")
 	return def
 
 ## Grows while it is there: `intensity_ramp` takes it to 1.9x over its duration. A protest you could
@@ -3035,7 +3013,7 @@ static func _checkpoint_post() -> EventDef:
 ## `guard_standing_*`/`guard_lunging_*` pictures, `Tuning.HEAT_HUNTS_SPEED` (130px/s, between her
 ## walk and her run by the pursuit contract's own margin), no notice of his own, a chase of
 ## `Tuning.PURSUIT_TIME`, and `MASKED_MAN_REACH` (28px) as the catch, the core of his own field here
-## since the field is the man. **`hard_fail` in its own right, not through `heat_response`**: a
+## since the field is the man. **`hard_fail` in its own right, not through its hunt**: a
 ## catch is a detention on every day a door stands and at every heat level, never a rung of the
 ## resistance's ladder. The field is `masked_pursuer`'s, 18 over a 28–120px band, the same figure
 ## coming at her.
@@ -3065,8 +3043,7 @@ static func _door_guard() -> EventDef:
 	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
 	def.telegraph_time = 0.0
 	def.duration = Tuning.PURSUIT_TIME
-	def.pursuit = PursuitSpec.at(Tuning.HEAT_HUNTS_SPEED)
-	def.pursuit.start = PursuitSpec.Start.CHARGES_AT_ONCE
+	def.pursuit = PursuitSpec.at(Tuning.HEAT_HUNTS_SPEED).starting_by(PursuitSpec.Start.CHARGES_AT_ONCE)
 	def.hard_fail = true
 	return def
 
@@ -3118,7 +3095,7 @@ static func _finale_explosion() -> EventDef:
 	# Short and over: a sharp spike is a short `duration` at high `intensity`, since there is no
 	# `impulse` field (`CLAUDE.md`, "Things deliberately not done").
 	def.duration = 1.2
-	def.aftermath.on_finish = "impact_crater"
+	def.aftermath = Aftermath.none().then("impact_crater")
 	return def
 
 ## What is left in the road afterwards, and it stays there for the rest of the sequence: `duration`
@@ -3223,7 +3200,7 @@ static func _masked_pursuer() -> EventDef:
 	# 400px below; only the edge badge shows his charge, from the frame he runs (`DangerEdge`). The
 	# player accepted both (inbox #782 in minty-lemur).
 	# #782 in minty-lemur).
-	def.notice.runs_within = 426.0
+	def.notice = def.notice.running_within(426.0)
 	def.hard_fail = true
 	def.catch_reach = MASKED_PURSUER_CATCH
 	# **One of him at a time, and there is always another**: a fresh one comes up the shaft this long

@@ -95,7 +95,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 func _draw_abduction(canvas: CanvasItem) -> void:
 	if event.is_taking_a_victim():
 		var through := _victim_walk_share()
-		var offset := _row.abduction.standing_offset
+		var offset := _row.abduction.standing_offset()
 		var standing := Vector2(-offset if _heading_is_west() else offset, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)
@@ -115,7 +115,7 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 ## the time it has walked (`EventInstance.how_long_its_victim_has_walked()`) over the walk's length
 ## (`AbductionSpec.taken_over`). The one place the two are divided.
 func _victim_walk_share() -> float:
-	return event.how_long_its_victim_has_walked() / _row.abduction.taken_over
+	return event.how_long_its_victim_has_walked() / _row.abduction.taken_over()
 
 ## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
 ## `age` rather than anything that touches the ground travelled, so it gets its own derived stride
@@ -130,5 +130,5 @@ func _victim_walk_share() -> float:
 func victim_gait_is_stepping() -> bool:
 	if not event.is_taking_a_victim():
 		return false
-	var covered := _victim_walk_share() * _row.abduction.standing_offset
+	var covered := _victim_walk_share() * _row.abduction.standing_offset()
 	return sin(covered * EventInstance.GAIT_RATE * 2.0) > 0.0

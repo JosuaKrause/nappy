@@ -116,7 +116,7 @@ func _chase(delta: float) -> void:
 		_figure.give_up()
 		return
 	# Straight at her, and no faster than its own speed: the contract is the speed.
-	var step := minf(_pursuit.speed * delta, range_to_her)
+	var step := minf(_pursuit.speed() * delta, range_to_her)
 	if _figure.is_telegraphing():
 		step = _close_through_the_telegraph(delta, step, range_to_her, standoff)
 	# **A guard with a way round walks round buildings toward her** (`Figure.way_round_to_her()`:
@@ -231,8 +231,8 @@ func _shaken_off(delta: float, range_to_her: float) -> bool:
 func _close_through_the_telegraph(delta: float, step: float, range_to_her: float,
 		standoff: float) -> float:
 	var beside_her := _row.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
-	if _pursuit.walk_speed > 0.0 and not (beside_her or _lunge_held):
-		step = minf(_pursuit.walk_speed * delta, range_to_her)
+	if _pursuit.walk_speed() > 0.0 and not (beside_her or _lunge_held):
+		step = minf(_pursuit.walk_speed() * delta, range_to_her)
 	var clear: bool = _figure.clear_line_to(_where.at())
 	if beside_her or _lunge_held:
 		step = clampf(range_to_her - standoff, 0.0, step)
