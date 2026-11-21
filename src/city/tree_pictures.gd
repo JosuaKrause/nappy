@@ -24,8 +24,35 @@ static func region(variant: int) -> StringName:
 ## A tree's ground shape: a point reaching `_REACH_FRACTION` of its picture's width, drawn
 ## `scaled` times its picture's own size.
 static func shape(variant: int, scaled: float) -> GroundShape:
-	var size := Vector2(AtlasTable.baked().native_size(region(variant))) * scaled
+	return _ground_of(drawn_size(variant, scaled))
+
+## The size a tree of `variant` is drawn at when it is `scaled` times its picture's own size, in px:
+## the one place that multiplies the two, which the prop's drawing and `shape()` both ask.
+static func drawn_size(variant: int, scaled: float) -> Vector2:
+	return Vector2(AtlasTable.baked().native_size(region(variant))) * scaled
+
+## The size a street tree of `variant` is drawn at: its picture's own, the one place that says so,
+## which `Prop` draws `Kind.STREET_TREE` at and `street_tree_shape()` grounds it by.
+static func street_tree_size(variant: int) -> Vector2:
+	return drawn_size(variant, 1.0)
+
+## A street tree's ground shape, at `street_tree_size()`, which `Prop` takes for
+## `Kind.STREET_TREE` and `widest_reach()` keeps clear.
+static func street_tree_shape(variant: int) -> GroundShape:
+	return _ground_of(street_tree_size(variant))
+
+## The ground shape of a tree drawn `size` large: the one place that says how much of its width it
+## reaches.
+static func _ground_of(size: Vector2) -> GroundShape:
 	return GroundShape.point(size.x * _REACH_FRACTION)
+
+## The widest tree picture's width at its own size, in px: what a park tree's spacing is worked out
+## from (`City._min_tree_spacing()`), at the largest scale a park tree is rolled.
+static func widest_canopy() -> float:
+	var widest := 0.0
+	for variant in REGIONS.size():
+		widest = maxf(widest, drawn_size(variant, 1.0).x)
+	return widest
 
 ## How far the widest tree's ground shape reaches at its picture's own size, the size a street tree
 ## is drawn at, in px: which picture a pit gets is decided where its prop is built, so a planner
@@ -36,5 +63,5 @@ static func shape(variant: int, scaled: float) -> GroundShape:
 static func widest_reach() -> float:
 	var widest := 0.0
 	for variant in REGIONS.size():
-		widest = maxf(widest, shape(variant, 1.0).reach())
+		widest = maxf(widest, street_tree_shape(variant).reach())
 	return widest
