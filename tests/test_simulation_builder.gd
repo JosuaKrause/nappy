@@ -149,13 +149,16 @@ func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 	var map := StreetMap.full()
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
-	var simulation := SimulationBuilder.new().in_the_building(world, map, run)
+	var navigator := Navigator.new(map)
+	var simulation := SimulationBuilder.new().in_the_building(world, map, navigator, run)
 	var events_alone: Array[String] = ["Events"]
 	t.check(simulation.get_parent() == world and _children_of(simulation) == events_alone
 			and simulation.events() == simulation.get_child(0),
 			"the building's simulation stands its events alone (%s)" % [_children_of(simulation)])
 	t.check(simulation.crowd() == null and simulation.poster_walls() == null,
 			"with no crowd and no walls")
+	t.check(simulation.events().world.navigator() == navigator,
+			"and its events move by the navigator the builder was handed")
 	t.check(simulation.events().streaming.stream_radius() == INF,
 			"its events stream the whole plan, since the building is walked through doors")
 	var stretch: Vector2i = CrowdStreetRig.new().a_straight_run(map, Tuning.BLOCK_SIZE)
@@ -240,7 +243,7 @@ func _test_both_worlds_events_report_on_the_bus_it_was_handed(t: TestRunner) -> 
 	var building_map := StreetMap.full()
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
-	var building := builder.in_the_building(world, building_map, run)
+	var building := builder.in_the_building(world, building_map, Navigator.new(building_map), run)
 	before = bus.times("event_telegraphed")
 	building.events().spawn_extra(EventCatalogue.by_id("homeless_yeller"), at)
 	t.check(bus.times("event_telegraphed") == before + 1,

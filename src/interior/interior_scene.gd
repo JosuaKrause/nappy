@@ -126,6 +126,10 @@ const FADE_SECONDS := 0.35
 ## The building's map (`InteriorMapPlan`), the one everything standing in the building is handed:
 ## built by `build()` and drawn by this scene, and asked through `map()`.
 var _map: InteriorMapPlan
+## How everything that moves over `_map` moves (`Navigator`): built with the map by `build()` and
+## held here for as long as the building stands, so the events and whatever else moves over the map
+## share the one (`navigator()`), which `main` hands on.
+var _navigator: Navigator
 ## The baked atlas pages the building draws from (`AtlasLibrary`), handed by `main` before the
 ## scene is added (`use_atlas()`); a scene nobody handed one (a suite's) makes its own when it first
 ## enters the tree.
@@ -164,6 +168,11 @@ const _DOOR_RELEASE_RADIUS := TILE * 1.5
 ## built.
 func map() -> InteriorMapPlan:
 	return _map
+
+## How everything that moves over the building's map moves: the navigator `build()` made, which
+## `main` hands to the builder and the builder to the events; null before the scene is first built.
+func navigator() -> Navigator:
+	return _navigator
 
 ## Hands the scene the baked atlas pages it draws from: `main` hands the sitting's library, before
 ## the scene is added.
@@ -212,6 +221,7 @@ func build() -> void:
 	_fade_layer.add_child(_fade_rect)
 
 	_map = InteriorMap.build()
+	_navigator = Navigator.new(_map)
 	_tile_set = InteriorTileSet.build(_atlas)
 	_ground.tile_set = _tile_set
 	for tile: Vector2i in _map.floor_tiles():
