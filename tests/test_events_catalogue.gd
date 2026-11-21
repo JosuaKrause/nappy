@@ -898,8 +898,8 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 func _lateral_offsets(instance: EventInstance) -> PackedFloat32Array:
 	var vertical := instance.solid_axis() == Vector2.DOWN
 	var found := PackedFloat32Array()
-	for centre in instance.solid_part_centres():
-		var offset := centre - instance.global_position
+	for piece in instance.standing_pieces():
+		var offset := piece.center() - instance.global_position
 		found.append(offset.y if vertical else offset.x)
 	return found
 
@@ -907,9 +907,9 @@ func _lateral_offsets(instance: EventInstance) -> PackedFloat32Array:
 ## body radius.
 func _is_blocked_at(instance: EventInstance, offset: float) -> bool:
 	var offsets := _lateral_offsets(instance)
-	var shapes := instance.solid_part_shapes()
+	var pieces := instance.standing_pieces()
 	for i in offsets.size():
-		if absf(offset - offsets[i]) < shapes[i].reach() + Tuning.PLAYER_BODY_RADIUS:
+		if absf(offset - offsets[i]) < pieces[i].ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
 			return true
 	return false
 

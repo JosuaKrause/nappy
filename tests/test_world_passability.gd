@@ -375,10 +375,8 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 				EventSurroundings.new().on(map) \
 					.drawing_nothing())
 		var built := Footprint.new()
-		var centres := instance.solid_part_centres()
-		var shapes := instance.solid_part_shapes()
-		for i in shapes.size():
-			built.add(shapes[i], centres[i] - instance.position, instance.solid_axis())
+		for piece in instance.standing_pieces():
+			built.add(piece.ground_shape(), piece.center() - instance.position, piece.axis())
 		var tiles := built.tiles(instance.position)
 		tiles.sort()
 		recorded.sort()

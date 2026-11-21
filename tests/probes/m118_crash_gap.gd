@@ -94,16 +94,15 @@ func _accident_at(map: CityMap, at: Vector2) -> EventInstance:
 ## clear of every car body by her own `PLAYER_BODY_RADIUS`, and her body inside the street.
 func _open_lanes(instance: EventInstance, half: float) -> PackedFloat32Array:
 	var open := PackedFloat32Array()
-	var centres := instance.solid_part_centres()
-	var shapes := instance.solid_part_shapes()
+	var pieces := instance.standing_pieces()
 	var vertical := instance.solid_axis() == Vector2.DOWN
 	var offset := -half + Tuning.PLAYER_BODY_RADIUS
 	while offset <= half - Tuning.PLAYER_BODY_RADIUS:
 		var blocked := false
-		for i in centres.size():
-			var along: float = (centres[i] - instance.global_position).y if vertical \
-					else (centres[i] - instance.global_position).x
-			if absf(offset - along) < shapes[i].reach() + Tuning.PLAYER_BODY_RADIUS:
+		for piece in pieces:
+			var delta := piece.center() - instance.global_position
+			var along: float = delta.y if vertical else delta.x
+			if absf(offset - along) < piece.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
 				blocked = true
 		if not blocked:
 			open.append(offset)

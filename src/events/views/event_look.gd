@@ -374,9 +374,8 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if not _row.casts_a_shadow():
 		return
-	for piece in _row.body_pieces():
-		_draw_shape_shadow(canvas, piece.ground_shape(),
-				origin + event.spread_at(piece.offset_for(event.runs_vertically())))
+	for piece in BodyStance.pieces_laid_out(_row, origin, event.solid_axis(), event.runs_vertically()):
+		_draw_shape_shadow(canvas, piece.ground_shape(), piece.center())
 
 ## Whether this event is worth a mark at all.
 ##

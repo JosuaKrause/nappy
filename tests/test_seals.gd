@@ -617,12 +617,10 @@ func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) 
 ## her own body radius.
 func _blocked_at(instance: EventInstance, offset: float) -> bool:
 	var vertical := instance.solid_axis() == Vector2.DOWN
-	var shapes := instance.solid_part_shapes()
-	var centres := instance.solid_part_centres()
-	for i in centres.size():
-		var delta := centres[i] - instance.global_position
+	for piece in instance.standing_pieces():
+		var delta := piece.center() - instance.global_position
 		var along: float = delta.y if vertical else delta.x
-		if absf(offset - along) < shapes[i].reach() + Tuning.PLAYER_BODY_RADIUS:
+		if absf(offset - along) < piece.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
 			return true
 	return false
 

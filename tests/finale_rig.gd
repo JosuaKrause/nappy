@@ -433,12 +433,10 @@ static func _block_every_body(t: TestRunner, map: CityMap, placements: Array[Eve
 			if instance == null or instance.row().moves() or instance.row().obstructs_within() <= 0.0:
 				continue
 			count += 1
-			var centres := instance.solid_part_centres()
-			var shapes := instance.solid_part_shapes()
-			var axis := instance.solid_axis()
-			for i in centres.size():
-				var shape: GroundShape = shapes[i]
-				var centre: Vector2 = centres[i]
+			for piece in instance.standing_pieces():
+				var shape := piece.ground_shape()
+				var centre := piece.center()
+				var axis := piece.axis()
 				var rounding := shape.radius if shape.kind != GroundShape.Kind.RECT else 0.0
 				var reach := shape.reach() + Tuning.PLAYER_BODY_RADIUS
 				for gy in range(floori((centre.y - reach) / BODY_FLOOD_STEP),

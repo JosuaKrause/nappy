@@ -479,16 +479,10 @@ static func mover_for(row: EventDef) -> Mover:
 		radius = shape.reach()
 	return Mover.vehicle(radius) if row.drives() else Mover.on_foot(radius)
 
-## Where each of this instance's solid pieces stands, in world space (`EventBody.solid_part_centres()`)
-## — paired index for index with `solid_part_shapes()` below, the same two-parallel-arrays shape
-## `flock_offsets()` and `flock_velocities()` already hand `DebugLayers`.
-func solid_part_centres() -> PackedVector2Array:
-	return _body.solid_part_centres(global_position)
-
-## The `GroundShape` of each solid piece, index for index with `solid_part_centres()`
-## (`EventBody.solid_part_shapes()`).
-func solid_part_shapes() -> Array[GroundShape]:
-	return _body.solid_part_shapes()
+## Where each of this instance's solid pieces stands, in world space, with its ground shape and the
+## axis its spine lies along as it heads now (`EventBody.standing_pieces()`).
+func standing_pieces() -> Array[StandingPiece]:
+	return _body.standing_pieces(global_position, _heading)
 
 ## Built by its rim the first time `ExcitementHalo` picks this instance, never in
 ## `_ready()`: a day has dozens of events live at once, and a rim each would take every block the
