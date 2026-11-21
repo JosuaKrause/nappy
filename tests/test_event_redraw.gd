@@ -295,7 +295,7 @@ func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 ## of her state is drawn on the next frame.
 func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 	var def := _copy_of(EventCatalogue.by_id("loose_dog"))
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	var her := WhereSheIs.nowhere()
 	var instance: EventInstance = await DrawnEvent.stand(t, def, false, null, null,
 			DrawnEvent.AT, Vector2.RIGHT, her)

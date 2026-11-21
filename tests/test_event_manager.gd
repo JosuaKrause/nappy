@@ -771,7 +771,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 		while seen["arrived"] == null and ticks < limit:
 			await PhysicsTicks.pass_ticks(t, 1, each, Rig.WALK_SCALE)
 			ticks += 1
-		if not def.telegraphs:
+		if not def.telegraphs_its_coming():
 			t.check(seen["warned_at"] < 0 and seen["arrived"] != null
 					and seen["warnings_at_arrival"] == warnings_before,
 					"'%s' does not telegraph: no warning goes up for it, it is created at once" % def.id)

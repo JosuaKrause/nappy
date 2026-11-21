@@ -726,7 +726,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t: TestRunner) -> void:
 	t.check(Tuning.PURSUIT_TIME >= 30.0, "which is a long cap, not an end a walk outlasts (%.0fs)"
 			% Tuning.PURSUIT_TIME)
 	var sent := EventSpawner.as_warned(dog)
-	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.offscreen_notice)
+	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.warned_for())
 			and sent.warned_for() <= Tuning.WARNING_ALONE_MAX,
 			"sent at her, it is warned first for its own half second, within the one-second ceiling")
 	var chases := {M207Lead.Answer.TOWARD: 0.35, M207Lead.Answer.STAND: 0.60,
@@ -744,7 +744,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t: TestRunner) -> void:
 				t.check(not met["caught"] and str(met["ends"]).begins_with("gave up"),
 						"%s: running away the moment she is warned escapes it (%s)" % [how, met["ends"]])
 				continue
-			t.close_to(met["seen_at"], dog.offscreen_notice,
+			t.close_to(met["seen_at"], dog.warned_for(),
 					"%s: the warning, badge to visible, is its half second (%.2fs)" % [how, met["seen_at"]],
 					0.1)
 			t.check(met["caught"], "%s: and it catches her (%s)" % [how, met["ends"]])
@@ -771,17 +771,17 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void
 		var def := EventCatalogue.by_id(id)
 		t.check(def.warns_before_it_exists() and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"'%s' is warned of before it exists and arrives chasing" % id)
-		t.check(is_equal_approx(def.offscreen_notice, dog.offscreen_notice)
+		t.check(is_equal_approx(def.warned_for(), dog.warned_for())
 				and is_equal_approx(def.duration, dog.duration),
 				"'%s' reads the dog's own %.1fs badge and %.1fs chase (%.1f, %.1f)"
-				% [id, dog.offscreen_notice, dog.duration, def.offscreen_notice, def.duration])
+				% [id, dog.warned_for(), dog.duration, def.warned_for(), def.duration])
 		for encounter in M207Lead.gold_encounters():
 			var encountered: EventDef = encounter["def"]
 			if encountered.id != id or encounter["heading"] != Vector2.UP:
 				continue
 			for answer: M207Lead.Answer in M207Lead.ANSWERS:
 				var met := M207Lead.gold(encounter, answer, edge)
-				t.close_to(met["created_at"], def.offscreen_notice,
+				t.close_to(met["created_at"], def.warned_for(),
 						"'%s': its badge is alone for the dog's half second" % id, 2.0 * STEP)
 				t.check(met["chase_at"] <= met["created_at"] + 2.0 * STEP,
 						"'%s', answer %d: chasing from the frame he exists" % [id, answer])

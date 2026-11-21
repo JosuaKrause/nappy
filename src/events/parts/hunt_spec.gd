@@ -21,7 +21,7 @@ extends Resource
 ## Which rung of the resistance's ladder it answers on.
 enum Rung {
 	## **More of them, and more expensive to stand near, and past a threshold it investigates**: it
-	## never gains `hard_fail`, and the man it lets out costs her when he reaches her rather than
+	## never ends the day, and the man it lets out costs her when he reaches her rather than
 	## ending the day (`PursuitSpec.stop_excitement()`).
 	PRESSES,
 	## **It stops being a place and starts being a hunter**: the lethal rung, whose catch ends the day.
@@ -39,10 +39,10 @@ var _lets_out := 0
 var _pursuit: PursuitSpec = null
 
 ## **Whether the hunting copy's own catch ends the day**, which the copy takes as its
-## `EventDef.hard_fail`: the roadblock's guard, a man whose catch is a pursuer's. A vehicle that lets
-## men out keeps its cold row's lethality; its men's catch is their own row's
-## (`EventCatalogue.out_of_the_car()`).
-var _ends_the_day := false
+## `EventDef.lethal()`: the roadblock's guard, a man whose catch is a pursuer's, at a man's reach rather
+## than at his band's core. A vehicle that lets men out keeps its cold row's lethality; its men's
+## catch is their own row's (`EventCatalogue.out_of_the_car()`).
+var _catch := LethalSpec.none()
 
 ## **The patrol rung's hunt**: the vehicle stops for her and lets one man out, whose catch is a stop
 ## and not the end of the day.
@@ -59,12 +59,14 @@ static func letting_out(men: int) -> HuntSpec:
 	spec._lets_out = men
 	return spec
 
-## A man's hunt on the lethal rung: he pursues her as `chase` says, and his catch ends the day.
-static func pursuing(chase: PursuitSpec) -> HuntSpec:
+## A man's hunt on the lethal rung: he pursues her as `chase` says, and his catch, `catches`, ends
+## the day.
+static func pursuing(chase: PursuitSpec, catches: LethalSpec) -> HuntSpec:
 	assert(chase != null, "a man's hunt pursues her as a pursuit says")
+	assert(catches.ends_the_day(), "a man's hunt on the lethal rung ends the day")
 	var spec := HuntSpec.new()
 	spec._pursuit = chase
-	spec._ends_the_day = true
+	spec._catch = catches
 	return spec
 
 ## Whether it is the patrol rung's hunt, which investigates and never hunts.
@@ -81,4 +83,9 @@ func pursuit() -> PursuitSpec:
 
 ## Whether the hunting copy's own catch ends the day.
 func ends_the_day() -> bool:
-	return _ends_the_day
+	return _catch.ends_the_day()
+
+## The hunting copy's own catch: what its row holds in place of its cold row's, for a hunt that
+## ends the day by it (`ends_the_day()`).
+func catch() -> LethalSpec:
+	return _catch

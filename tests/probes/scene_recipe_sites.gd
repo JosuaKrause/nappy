@@ -67,7 +67,7 @@ func run(_t: TestRunner) -> void:
 			break
 	var dog := EventCatalogue.by_id("charging_dog")
 	print("DOG_LEAD ", Offscreen.lead(Vector2.RIGHT,
-			dog.chase_speed() + Tuning.WALK_SPEED, dog.offscreen_notice))
+			dog.chase_speed() + Tuning.WALK_SPEED, dog.warned_for()))
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:

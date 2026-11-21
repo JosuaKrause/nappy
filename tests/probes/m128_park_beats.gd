@@ -132,7 +132,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	def.id = "busker"
 	def.use_field(FieldSpec.of(intensity, real.core_within(), real.heard_within())
 			.pulsing_every(real.pulses_every()))
-	def.telegraph_time = real.telegraphs_for()
+	def.use_warning(WarningSpec.lasting(real.telegraphs_for()))
 
 	var instance := EventInstance.new()
 	instance.setup(def, busker_at)

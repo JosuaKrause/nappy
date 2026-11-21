@@ -83,7 +83,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 			"changing body and field geometry leaves a café's spread answer true")
 
 	var instance := EventInstance.new()
-	def.telegraph_time = STEP
+	def.use_warning(WarningSpec.lasting(STEP))
 	instance.setup(def, Vector2.ZERO)
 	instance.step(STEP * 2.0)
 	t.check(not instance.is_telegraphing() and def.lies_as_a_spread(),
@@ -297,7 +297,7 @@ func _test_catalogue_is_fair(t: TestRunner) -> void:
 	for def in defs:
 		t.check(def.id != "", "every event has an id")
 		t.check(def.validate(), "event '%s' gives the player time to walk clear" % def.id)
-		if def.kind != GameEnums.EventKind.AMBIENT and (def.telegraphs or not def.comes_down_her_line()):
+		if def.kind != GameEnums.EventKind.AMBIENT and (def.telegraphs_its_coming() or not def.comes_down_her_line()):
 			t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
 					"event '%s' warns %.2fs before it can reach her >= minimum %.2fs"
 					% [def.id, def.warning_time(), def.minimum_telegraph()])
@@ -363,19 +363,19 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 func _test_the_loose_dog_and_the_cat_do_not_telegraph(t: TestRunner) -> void:
 	for id: String in ["loose_dog", "cat_dash"]:
 		var def := EventCatalogue.by_id(id)
-		t.check(not def.telegraphs and not def.warns_before_it_exists(),
+		t.check(not def.telegraphs_its_coming() and not def.warns_before_it_exists(),
 				"'%s' does not telegraph: no warning first, and so no screen-edge badge" % id)
 		t.check(def.validate(), "and '%s' gives what the contract still asks of it" % id)
 	# The rows that stand until she walks in keep the contract for their in-world telegraph.
 	for id: String in ["cat_dash", "alley_mouse", "pigeon_flock", "police_patrol"]:
 		var row := EventCatalogue.by_id(id)
-		t.check(not row.telegraphs and row.warning_time() + 0.001 >= row.minimum_telegraph(),
+		t.check(not row.telegraphs_its_coming() and row.warning_time() + 0.001 >= row.minimum_telegraph(),
 				"'%s' does not telegraph its coming, and its in-world telegraph (%.2fs) still clears "
 				% [id, row.warning_time()] + "the contract's %.2fs" % row.minimum_telegraph())
 	t.check(EventCatalogue.by_id("loose_dog").comes_down_her_line(),
 			"the loose dog still comes down her own sidewalk, created at once just out of sight")
 	var truck := EventCatalogue.by_id("fire_truck")
-	t.check(truck.telegraphs and truck.warns_before_it_exists(),
+	t.check(truck.telegraphs_its_coming() and truck.warns_before_it_exists(),
 			"the fire engine, a heavy penalty, keeps its badge and its warning first")
 
 ## **What a row says of its coming** (`EventDef.announces_its_coming()`), the screen-edge badge's
@@ -417,7 +417,7 @@ func _test_as_warned_first_keeps_the_pieces_too(t: TestRunner) -> void:
 			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
 			% crash.body().declared_pieces().size())
 	var widened := crash.duplicate() as EventDef
-	widened.telegraph_time = 5.0
+	widened.use_warning(WarningSpec.lasting(5.0))
 	var warned := widened.as_warned_first()
 	t.check(warned.validate(), "the widened telegraph clears the flat warned-first floor")
 	t.check(warned.body().declared_pieces().size() == crash.body().declared_pieces().size(),

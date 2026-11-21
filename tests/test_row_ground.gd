@@ -159,7 +159,7 @@ func _test_a_wall_never_stands_on_a_route(t: TestRunner) -> void:
 	var ground := _ground(routes)
 	var costly := _row(GameEnums.TileType.SIDEWALK)
 	var lethal := _row(GameEnums.TileType.SIDEWALK)
-	lethal.hard_fail = true
+	lethal.use_lethal(LethalSpec.at_its_core())
 	var by_fit := _row(GameEnums.TileType.SIDEWALK)
 	_by_fit = [by_fit]
 	var wall := GameEnums.BlockerRole.WALL

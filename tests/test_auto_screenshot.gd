@@ -437,7 +437,7 @@ func _telegraph_a_pursuer() -> void:
 	var def := EventDef.new()
 	def.id = "test_pursuer"
 	def.pursuit = PursuitSpec.at(0.0)
-	def.telegraph_time = 2.0
+	def.use_warning(WarningSpec.lasting(2.0))
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	EventBus.event_telegraphed.emit(instance)

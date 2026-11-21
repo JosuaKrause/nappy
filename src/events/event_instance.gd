@@ -52,7 +52,7 @@ var _behaviours: Array[EventBehaviour] = []
 ## covered, clocks and phase — as its behaviours may ask it and tell it, handed to each as it is
 ## composed.
 var _figure := Figure.new(self)
-## A conversation or a door's hold (`EventDef.detain_seconds`).
+## A conversation or a door's hold (`HoldSpec`).
 var hold: EventHold
 ## The unmarked van's take of a bystander.
 var abduction: EventAbduction
@@ -756,12 +756,12 @@ func is_chatting() -> bool:
 
 ## Whether the guard this instance draws is inside with her for its own hold right now — he is the
 ## one taking her in, so he is not also standing in the street, see
-## `Stroller.hide_for_inspection()`. `_def.redetains` is the flag only `checkpoint_hut` and
+## `Stroller.hide_for_inspection()`. `HoldSpec.detains_again()` is the flag only `checkpoint_hut` and
 ## `checkpoint_post` carry (the boom, `checkpoint_gate`, blocks rather than inspects), so
-## `chatting_mother`, which holds her by the same mechanism without `redetains`, keeps her ordinary
+## `chatting_mother`, which holds her by the same mechanism without it, keeps her ordinary
 ## talking posture for the whole of her own conversation instead.
 func is_its_guard_inside() -> bool:
-	return _def.redetains and is_chatting()
+	return _def.detains_again() and is_chatting()
 
 ## Whether this instance has ever held her (`EventHold.has_held()`). `CheckpointController` does
 ## not start a second hold on a row that has held her and does not `redetains`.

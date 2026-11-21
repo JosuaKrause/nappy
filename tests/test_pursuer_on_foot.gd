@@ -155,11 +155,11 @@ func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t: TestRunner) -
 		t.check(def != null, "the catalogue carries '%s'" % id)
 		if not def:
 			continue
-		t.check(def.warned_first and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and def.telegraphs_for() == 0.0,
+		t.check(def.warns_before_it_exists() and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and def.telegraphs_for() == 0.0,
 				"'%s' is warned of before it exists and arrives chasing, with no closing in" % id)
-		t.check(is_equal_approx(def.offscreen_notice, robber.offscreen_notice)
-				and def.offscreen_notice <= Tuning.WARNING_ALONE_MAX,
-				"'%s' has the robber's %.1fs badge" % [id, robber.offscreen_notice])
+		t.check(is_equal_approx(def.warned_for(), robber.warned_for())
+				and def.warned_for() <= Tuning.WARNING_ALONE_MAX,
+				"'%s' has the robber's %.1fs badge" % [id, robber.warned_for()])
 		t.check(is_equal_approx(def.duration, Tuning.PURSUIT_TIME),
 				"'%s' chases for the %.0fs cap" % [id, Tuning.PURSUIT_TIME])
 		t.check(def.pursues() and is_equal_approx(def.chase_speed(), robber.chase_speed())

@@ -87,8 +87,8 @@ func run(t: TestRunner) -> void:
 			overs.append("never" if result["lead"] == INF else "%+.2f" % (result["lead"] - floor_s))
 			if answer == Answer.TOWARD and result["created_at"] != INF:
 				exists = "%.2f" % result["created_at"]
-		# A row that does not telegraph (`EventDef.telegraphs`) is outside the contract: no floor.
-		var telegraphs := def.telegraphs
+		# A row that does not telegraph (`EventDef.telegraphs_its_coming()`) is outside the contract: no floor.
+		var telegraphs := def.telegraphs_its_coming()
 		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [def.id,
 				encounter["how"], cells[0], cells[1], cells[2], exists,
 				"%.2f" % floor_s if telegraphs else "outside",

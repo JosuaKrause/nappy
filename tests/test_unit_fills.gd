@@ -60,7 +60,7 @@ static func _row(id: String, placement: Array[int], role := "scenery") -> EventD
 		"wall":
 			def.use_field(FieldSpec.of(60.0, 80.0, 200.0))
 		"lethal":
-			def.hard_fail = true
+			def.use_lethal(LethalSpec.at_its_core())
 	return def
 
 ## The rows a unit draws on `day`, as the dawn draw gathers them (`DawnDraw`), cold.
