@@ -168,6 +168,13 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 					moved += 1
 				if map.pavement_inward(tile) != Vector2i.ZERO and once.is_equal_approx(built):
 					unstood += 1
+	# The one row that stands at its kerb is stood where it is as well.
+	var lane := _carriageway_point()
+	var roadblock := EventCatalogue.by_id("roadblock")
+	var kerb := BodyStance.stands_at(WorldMap.open_ground(), roadblock, lane)
+	t.check(lane != Vector2.INF and kerb != lane
+			and BodyStance.stands_at(WorldMap.open_ground(), roadblock, kerb).is_equal_approx(kerb),
+			"the roadblock stood at its kerb is stood where it is")
 	t.check(asked == 2 * Tuning.STREET_WIDTH * rows.size() and moved == 0,
 			"a stood point is stood where it is: %d of %d moved" % [moved, asked])
 	# The four sidewalk lanes of a street each move to their band's middle, half a tile from where
