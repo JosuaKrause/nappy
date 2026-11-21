@@ -413,7 +413,7 @@ func _walk_every_day(reach: float) -> void:
 						"dawn")
 			var walk := WalkEvents.new()
 			# The walk carries the draw its units draw with, as a day's walk does, so a beat the
-			# siting lays is rigged in a unit this walk draws.
+			# siting lays stands in a unit this walk draws.
 			walk.take(plans, CalmAreas.of(map), doors, null, dawn.locations(), null,
 					drawing.draw)
 			# The walk's sitings are judged against the walk itself, as the game's are, and lay a
@@ -582,10 +582,10 @@ func _walk_every_day(reach: float) -> void:
 			print("WB all %d %d %d" % [view, all_both_closed[view * 2],
 					all_both_closed[view * 2 + 1]])
 
-## The unit of `units` `plan`, a beat her walk laid, is rigged in (`PlacementUnit.rigged()`), or null.
+## The unit of `units` `plan`, a beat her walk laid, stands in (`PlacementUnit.beats()`), or null.
 static func _holding(units: DayUnits, plan: EventPlan) -> PlacementUnit:
 	for unit in units.all():
-		if unit.rigged().has(plan):
+		if unit.beats().has(plan):
 			return unit
 	return null
 
@@ -606,7 +606,7 @@ static func _drew_by_her_path(units: DayUnits, map: CityMap, day: int, i: int,
 		drawn_whole[unit.name()] = _what_it_drew(whole.map, unit)
 	var beside := {}
 	for unit in units.all():
-		if unit.rigged().is_empty() and not held_a_beat.has(unit.name()):
+		if unit.beats().is_empty() and not held_a_beat.has(unit.name()):
 			continue
 		beside[unit.name()] = true
 		for other in units.touching(unit):

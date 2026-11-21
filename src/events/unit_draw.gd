@@ -17,14 +17,16 @@ extends RefCounted
 ## **A draw reads a beat her walk laid in its unit or a touching one, and no other plan her walk
 ## sites.** A beat (day 3's fire, a poster crew, day 11's mast on her route, and day 6's man
 ## shouting and day 7's van a mark rigs just ahead of her; `WalkSiting`) takes a location on her
-## way, of the nearest unit that has not drawn where the beat's siting offers one, and the unit is
-## told
-## (`PlacementUnit.rig()`): its room starts without the location, and it and the units touching it
-## are judged among the beat, drawn or not (`PlacementUnit.rigged()`). *(The player: "repeating
+## way, of the nearest unit that has not drawn where the beat's siting offers one, and the location
+## holds it (`Location.take_for_her_walk()`): the unit's room starts without the location, and it
+## and the units touching it are judged among the beat, drawn or not (`PlacementUnit.beats()`).
+## *(The player: "repeating
 ## the day has the exact same preconditions. if the player does something differently different
 ## things might happen. if the player were to do exactly the same everything would behave exactly
 ## the same. beats are marbles, yes"; inbox #1521 in breezy-magpie.)* So a unit a beat stands in or
-## beside draws by her path, on purpose, and every other unit by the dawn and the seed alone. A row
+## beside draws by her path, on purpose; a unit touching one whose draw that changed can differ with
+## it, since a unit is judged among the draws of the touching units drawn before it; and every
+## other unit draws by the dawn and the seed alone. A row
 ## of one unit reaches another's ground only where the two touch, so no other draw needs the beat.
 ## A plan the dawn or a unit left with no place is otherwise kept out of what a draw is judged
 ## among: the dawn's plans are copied without the ones that had no place, and a touching unit's row
@@ -126,9 +128,9 @@ func draw_in_their_order() -> Array[EventPlan]:
 ## as a beat of the unit it landed in.
 func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 	var among: Array[EventPlan] = _dawn.duplicate()
-	among.append_array(unit.rigged())
+	among.append_array(unit.beats())
 	for other in _units.touching(unit):
-		among.append_array(other.rigged())
+		among.append_array(other.beats())
 		if not other.is_drawn():
 			continue
 		for plan in other.drawn():

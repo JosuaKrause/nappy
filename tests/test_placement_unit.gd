@@ -2,16 +2,16 @@ extends RefCounted
 ## `PlacementUnit`, one unit of the day's locations: the same name, rank and stream for the same
 ## day's seed and tiles, so a unit draws alike on every start of the day, and another rank and
 ## stream for another seed; the draw order between two units total (`draws_before()`); what it
-## drew written once; its view the most permissive of its locations'; and the beats her walk rigs in
-## it answered until taken back, in the order laid. Built of plain values: a unit, its locations and
-## a plan are state, so nothing is mocked.
+## drew written once; its view the most permissive of its locations'; and the beats her walk
+## stood on its locations answered, in the locations' order. Built of plain values: a unit, its
+## locations and a plan are state, so nothing is mocked.
 
 func run(t: TestRunner) -> void:
 	_test_the_same_seed_and_tiles_give_the_same_unit(t)
 	_test_two_units_are_always_ordered(t)
 	_test_what_it_drew_is_written_once(t)
 	_test_its_view_is_the_most_permissive_of_its_locations(t)
-	_test_what_her_walk_rigs_in_it_is_answered_until_taken_back(t)
+	_test_its_beats_are_what_her_walk_stood_on_its_locations(t)
 
 const STREET := Rect2i(Vector2i(6, 0), Vector2i(8, 6))
 
@@ -108,22 +108,40 @@ func _test_its_view_is_the_most_permissive_of_its_locations(t: TestRunner) -> vo
 	t.check(_lot([off, off] as Array[int]).view() == off, "one all off the route is off it")
 	t.check(_unit(3).view() == off, "and a unit with no location is off the route")
 
-## **What her walk rigs in it is answered until it is taken back**, in the order laid, once however
-## often it is laid, and drawing changes none of it.
-func _test_what_her_walk_rigs_in_it_is_answered_until_taken_back(t: TestRunner) -> void:
-	var unit := _unit(5)
-	t.check(unit.rigged().is_empty(), "a unit holds no beat until one is rigged in it")
+## **What her walk stood on its locations is answered**, in the locations' order, each once, and not
+## what a draw or a dawn phase put there, nor a beat given back.
+func _test_its_beats_are_what_her_walk_stood_on_its_locations(t: TestRunner) -> void:
+	var tiles := Rect2i(Vector2i(6, 0), Vector2i(8, 2))
+	var near := _location(Rect2i(tiles.position, Vector2i(4, 2)))
+	var far := _location(Rect2i(tiles.position + Vector2i(4, 0), Vector2i(4, 2)))
+	var middle := _location(Rect2i(tiles.position + Vector2i(2, 0), Vector2i(4, 2)))
+	var locations: Array[Location] = [near, far, middle]
+	var unit := PlacementUnit.new(PlacementGround.Kind.STREET, tiles,
+			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE,
+					Vector2(tiles.size) * Tuning.TILE_SIZE), locations, 5)
+	t.check(unit.beats().is_empty(), "a unit holds no beat until her walk stands one on a location")
 	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2(200, 100))
 	var crew := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2(260, 100))
-	unit.rig(fire)
-	unit.rig(crew)
-	unit.rig(fire)
-	t.check(unit.rigged() == ([fire, crew] as Array[EventPlan]),
-			"the beats rigged are answered in the order laid, each once")
+	var drawn := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(300, 100))
+	middle.take_for_her_walk(crew)
+	near.take_for_her_walk(fire)
+	far.record(drawn)
+	t.check(unit.beats() == ([fire, crew] as Array[EventPlan]),
+			"the beats are answered in the locations' order, and a row a draw put there is none")
 	unit.record_draw([] as Array[EventPlan])
-	t.check(unit.rigged() == ([fire, crew] as Array[EventPlan]), "and drawing changes none of it")
-	unit.unrig(fire)
-	t.check(unit.rigged() == ([crew] as Array[EventPlan]), "a beat taken back is answered no more")
-	var answered := unit.rigged()
-	answered.clear()
-	t.check(unit.rigged().size() == 1, "and what it answers is a copy")
+	t.check(unit.beats() == ([fire, crew] as Array[EventPlan]), "and drawing changes none of it")
+	near.take(drawn)
+	t.check(unit.beats() == ([crew] as Array[EventPlan]),
+			"a plan put over a beat (day 13's task roadblock) ends it")
+	near.give_back(fire)
+	t.check(unit.beats() == ([crew] as Array[EventPlan]) and near.is_taken(),
+			"and giving the ended beat back changes nothing")
+	middle.give_back(crew)
+	t.check(unit.beats().is_empty(), "a beat given back is answered no more")
+	var answered := unit.beats()
+	answered.append(fire)
+	t.check(unit.beats().is_empty(), "and what it answers is a copy")
+
+static func _location(tiles: Rect2i) -> Location:
+	return Location.new(null, 0, tiles, Vector2(tiles.get_center()) * Tuning.TILE_SIZE,
+			PlacementView.View.ON_THE_ROUTE, true, Location.Kind.SIDEWALK, tiles)

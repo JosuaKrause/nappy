@@ -294,12 +294,13 @@ src/
 	                      corridor, the streets the walk names and nothing beyond them
 	street_locations.gd   one street's locations: three sections along it, two sidewalk locations
 	                      in each, a section taken whole by an event that spans the street
-	location.gd           one location: its street, section, tiles, view, what stands on it, the whole
-	                      it is part of and the run a route starting in it may lie on
+	location.gd           one location: its street, section, tiles, view, what stands on it and the
+	                      beat her walk stood there, the whole it is part of and the run a route
+	                      starting in it may lie on
 	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
 	                      an alley, a park or a square (its kind of ground); its name, its rank and
 	                      its stream for the day, its view, the most permissive of its locations',
-	                      and the beats her walk laid in it
+	                      and the beats her walk stands on its locations
 	unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
 	                      sections and half-filled ones, what share of a street (a section, a
 	                      location) a marble may still take
@@ -1336,8 +1337,8 @@ field with its value before and after (`tests/shared_state.gd`).
   the units round it first. Its header gives the reason it builds a city: each rule is the order of
   two parts the manager owns.
 - `test_walk_siting.gd` — the siting that lays the rows her walk places, over stand-ins for the
-  route tree, the locations, the units and the judge: the nearest free location on her branch, a
-  unit's that has not drawn first, takes a beat and its unit is told, a placed beat gives its
+  route tree, the locations and the judge: the nearest free location on her branch, a
+  unit's that has not drawn first (a location still open), takes a beat which the location then holds, a placed beat gives its
   location back only once it has another, a row a mark rigs takes the nearest free location
   straight ahead of her and out of her view, a mast near the mark and the fire lit at dusk take the
   first location offered; and
