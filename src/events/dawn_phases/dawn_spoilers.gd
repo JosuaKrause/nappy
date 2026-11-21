@@ -267,7 +267,7 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## **The zero case is not the line rules' zero case.** `EventDef.reach_above()` answers nothing at all for a
 ## row quieter than the rate it is asked about, which is right there — ground a walk nets the meter
 ## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
-## whatever its rate does further out, so the floor is its own `inner_radius`.
+## whatever its rate does further out, so the floor is its own core radius (`core_within()`, the field's inner radius).
 static func _denial_radius(def: EventDef) -> float:
 	return maxf(def.core_within(), def.reach_above(CALM_ZONE_DENIAL_RATE))
 
