@@ -9,7 +9,7 @@ extends RefCounted
 ## roadblocks on a street are `EventInstance`s built on the real map from its placements, stepped by hand at 60Hz the way `EventManager` steps them: told where
 ## she is and whether she runs (`_tell_them_where_she_is()`), asked whether one catches her
 ## (`is_lethal_at()`), and the meter fed from the strongest of them — they are
-## `barrier_structure`, so only the strongest counts (`excitement_sources_at()`) — the way
+## one-barrier flag, so only the strongest counts (`excitement_sources_at()`) — the way
 ## `Baby._update_excitement()` feeds it, with `Baby.SLEEPING_SENSITIVITY` while asleep and the
 ## wake at `Tuning.EXCITEMENT_WAKE_THRESHOLD`. Her body is a point moved along her line; the decay
 ## is the street's (`Tuning.EXCITEMENT_DECAY_WALKING`, `_RUNNING` and `_IDLE` at a multiplier of

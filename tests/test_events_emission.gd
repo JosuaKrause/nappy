@@ -73,7 +73,7 @@ func _test_pulse_envelope(t: TestRunner) -> void:
 	instance.free()
 
 ## **A two-part field is two parts in the meter, not only in the cost table.** The leaf blower is a
-## wall close in and a busker further out (the field's `core_intensity` / `core_radius`), and the thing
+## wall close in and a busker further out (the field's core rate / core reach), and the thing
 ## that makes that a *field* rather than a price is that an instance charges for it — walked past,
 ## against the row the outer half was copied from.
 ##
@@ -122,7 +122,7 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	player.free()
 
 ## M174 item 3: PLAYTEST-115 overturned the walk-beside target above (standing still at
-## `inner_radius`) for **the pass** — she and the row moving different directions, at the fixed
+## inner radius) for **the pass** — she and the row moving different directions, at the fixed
 ## lateral offsets an ordinary sidewalk actually allows. *(PLAYTEST-115: "what matters for the
 ## dogs is walking past them. and it shouldn't be free"; "walking past ... is what matters. in my
 ## playthrough I walked next to him without effect".)* `M174Pass.pass_net_averaged()` —

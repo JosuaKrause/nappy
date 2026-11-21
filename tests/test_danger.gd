@@ -389,7 +389,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 		robber.free()
 
 ## A car's own equivalent, over the strike box `Crowd._strike()` actually collides against rather
-## than a def's `inner_radius`. The car is one the crowd's own entry places on a straight stretch of
+## than a def's inner radius. The car is one the crowd's own entry places on a straight stretch of
 ## a real city (`Crowd.add_recipe_actor()`), driving down its lane at the slowest speed a car is
 ## generated at.
 func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t: TestRunner) -> void:

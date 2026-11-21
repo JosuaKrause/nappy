@@ -208,7 +208,7 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 ## two lanes of a pavement the row used to be tucked under — see
 ## `EventCatalogue._chatting_mother`, "the far-lane rule is overturned". So the far lane catches
 ## her, and this checks both halves of that geometry: the far lane triggers, and a point just
-## outside `EventDef.detain_distance()` but still inside `inner_radius` does not — the ambient
+## outside `EventDef.detain_distance()` but still inside inner radius does not — the ambient
 ## field reaches her there and only the conversation must not. She paces, so she carries no body
 ## and her reach is measured from her own centre.
 func _test_a_conversation_only_starts_inside_detain_radius(t: TestRunner) -> void:
@@ -234,7 +234,7 @@ func _test_a_conversation_only_starts_inside_detain_radius(t: TestRunner) -> voi
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 
-	# Just outside the capture and well inside inner_radius: the ambient field still reaches her
+	# Just outside the capture and well inside inner radius: the ambient field still reaches her
 	# and only the conversation must not.
 	t.check(def.detain_distance() < def.core_within(),
 			"there is ground outside her capture and inside her field to stand on (%.1f < %.1f)"

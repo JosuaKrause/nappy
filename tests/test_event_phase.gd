@@ -291,9 +291,9 @@ func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRun
 	t.check(tried > 0, "the catalogue has a stationary row with a long body to try")
 
 ## **A mover reaches as far ahead of itself as its field runs and as far behind**: the field is an
-## ellipse with the mover at one focus, `outer_radius / (1 - e)` dead ahead and
-## `outer_radius / (1 + e)` behind, and exactly `outer_radius` abeam, where a disc says
-## `outer_radius` every way. The cyclist is given a route so that it moves.
+## ellipse with the mover at one focus, `outer radius / (1 - e)` dead ahead and
+## `outer radius / (1 + e)` behind, and exactly outer radius abeam, where a disc says
+## outer radius every way. The cyclist is given a route so that it moves.
 func _test_a_mover_reaches_as_the_ellipse_its_field_is(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var instance := EventInstance.new()
@@ -317,7 +317,7 @@ func _test_a_mover_reaches_as_the_ellipse_its_field_is(t: TestRunner) -> void:
 
 ## **A flock reaches where one of its birds' own fields does**, not within a disc about its centre:
 ## the birds' kernels (`bird_outer()` each, about where each bird is) cover less than the row's
-## `outer_radius` about the centre, so a point just inside that radius which no bird reaches is not
+## outer radius about the centre, so a point just inside that radius which no bird reaches is not
 ## reached, and the place a bird stands is.
 func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")

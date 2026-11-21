@@ -1148,7 +1148,7 @@ func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 ##
 ## And the counterplay the brief gives him — *"going into a corridor and letting them pass"* — is
 ## measured rather than assumed: every door in his shaft has to sit further from every point of his
-## line than `inner_radius`, the radius that takes the baby, or stepping onto a door is not an
+## line than inner radius, the radius that takes the baby, or stepping onto a door is not an
 ## answer to him at all.
 func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunner) -> void:
 	var f := InteriorMap.build()

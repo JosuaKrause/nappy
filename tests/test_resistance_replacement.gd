@@ -223,7 +223,7 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t: TestRunne
 ## brisk-wombat's other half: *"a robber also appeared out of nowhere and instakilled me."* A
 ## guard's own spot is worked out from the mark alone, with no idea where she is standing, so a mark
 ## relocating right up to where she stands could put him inside his own `EventDef.notice`, or worse
-## `inner_radius` (a `hard_fail` with no warning), of wherever she actually is unless his placement
+## inner radius (a `hard_fail` with no warning), of wherever she actually is unless his placement
 ## also refuses that. Read off the street over every mark tile of `SWEEP_SEEDS`' cities, each
 ## relocated onto with her standing on it (`_relocations_over_the_marks()`) — the closest a real
 ## guard's own spot ever gets to her.

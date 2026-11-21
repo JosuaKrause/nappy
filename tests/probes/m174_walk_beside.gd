@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for M174, "the man shouting costs nothing to walk beside": the net rate the
-## bar rises while walking beside a row, inside its own `inner_radius`, averaged over its own
+## bar rises while walking beside a row, inside its own inner radius, averaged over its own
 ## rhythm. Not a suite — prints numbers rather than asserting relationships — so it lives under
 ## `tests/probes/`, where the runner never discovers it, and runs only by name:
 ##
@@ -12,12 +12,12 @@ extends RefCounted
 ## `dog_walker`) can be checked against the target and every other row can be surveyed for the
 ## same defect without anybody hand-computing forty of them.
 ##
-## **The field.** `EventDef.emission_at()` at exactly `inner_radius` from the centre — the same
+## **The field.** `EventDef.emission_at()` at exactly inner radius from the centre — the same
 ## function `walk_through_cost()` integrates, so a flock's spread and a core are already accounted
 ## for and nothing here recomputes a falloff of its own.
 ##
 ## **The rhythm.** `current_intensity()`'s pulse envelope is `0.25 + 0.75·(0.5 − 0.5·cos(phase))`,
-## whose mean over one full period is exactly `0.625` regardless of `pulse_period` — the cosine
+## whose mean over one full period is exactly `0.625` regardless of pulse period — the cosine
 ## term integrates to zero — so no row's own period needs walking through frame by frame. A row
 ## with no pulse emits at its full peak throughout, mean `1.0`.
 ##

@@ -203,7 +203,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a
 ## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
-## "since there can be other obstacles around".)* Every row whose field counts as one barrier (`barrier_structure`) collapses
+## "since there can be other obstacles around".)* Every row whose field counts as one barrier (one-barrier flag) collapses
 ## to the strongest of them at her position (`EventSources.sources_at()`), so a hut, a
 ## gate and a wall's roadblocks at one corner charge one rate between them. What that rate has to
 ## stay under is the **toll the hold itself charges**: a detention is spent standing still, where

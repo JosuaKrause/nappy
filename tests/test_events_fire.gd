@@ -395,7 +395,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 ## without ever crossing paths with one — `cyclist` and `loose_dog` on a street the day chose at
 ## dawn, `cat_dash` aimed at where she was rather than where she would be. This is the point of
 ## fixing all three: not that the siting geometry is fair on paper, but that a rig walking a real
-## street actually **meets** each of them — comes within its own `outer_radius`, the same measure
+## street actually **meets** each of them — comes within its own outer radius, the same measure
 ## the fairness contract and the cost table are both stated over.
 ##
 ## Driven through `EventDirector` exactly as `EventManager` drives it in play, on a real generated
