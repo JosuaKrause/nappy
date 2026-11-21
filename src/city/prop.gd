@@ -23,7 +23,8 @@ const SACK_PILE := &"props/garbage_sacks_pile"
 var atlas: AtlasLibrary
 
 ## Dresses the prop before it is added: drawn from `library` as `as_kind`, with `with_variant` and
-## `scaled` varying its look. See `atlas`, `kind()`, `variant()` and `scale_factor()`.
+## `scaled` varying its look (a park tree's scale: a street tree is drawn at its picture's own size
+## whatever it is dressed with). See `atlas`, `kind()`, `variant()` and `scale_factor()`.
 func dress(library: AtlasLibrary, as_kind: Kind, with_variant := 0, scaled := 1.0) -> void:
 	atlas = library
 	_kind = as_kind
@@ -95,8 +96,10 @@ static func bollard_shape() -> GroundShape:
 
 func _compute_shape() -> GroundShape:
 	match _kind:
-		Kind.TREE, Kind.STREET_TREE:
+		Kind.TREE:
 			return TreePictures.shape(_variant, _scale_factor)
+		Kind.STREET_TREE:
+			return TreePictures.street_tree_shape(_variant)
 		Kind.PLAYGROUND_FRAME:
 			return _playground_frame_shape()
 		Kind.BOLLARD:
@@ -140,15 +143,17 @@ static func _playground_frame_shape() -> GroundShape:
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:
-	var name := TreePictures.region(_variant)
-	# The size is read off the region table rather than off the drawn texture, since `scale_factor()`
-	# is applied here and the two answer the same number either way — a region reports its
-	# source's own size.
-	var size := Vector2(AtlasTable.baked().native_size(name)) * _scale_factor
-	_shape.draw_shadow(self, Vector2.ZERO)
-	Sprites.draw_standing(self, atlas.region(name), Vector2.ZERO, size, absi(_variant) % 4 < 2)
+	_draw_tree_at(TreePictures.drawn_size(_variant, _scale_factor))
 
-## The same standing tree every park tree draws, unscaled by `scale_factor()`. The street tree's pit
-## is a ground decal owned by `CityDecals`, so it stays under the player and other entities.
+## The same standing tree every park tree draws, at its picture's own size whatever the prop was
+## dressed with (`TreePictures.street_tree_shape()`). The street tree's pit is a ground decal owned
+## by `CityDecals`, so it stays under the player and other entities.
 func _draw_street_tree() -> void:
-	_draw_tree()
+	_draw_tree_at(TreePictures.drawn_size(_variant, 1.0))
+
+## A tree picture drawn `size` large, with its shadow. The size is read off the region table rather
+## than off the drawn texture: a region reports its source's own size.
+func _draw_tree_at(size: Vector2) -> void:
+	_shape.draw_shadow(self, Vector2.ZERO)
+	Sprites.draw_standing(self, atlas.region(TreePictures.region(_variant)), Vector2.ZERO, size,
+			absi(_variant) % 4 < 2)

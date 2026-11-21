@@ -81,12 +81,8 @@ const _TREES := {
 }
 
 
-## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
-## than asked for. `TreePictures.REGIONS` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
-## `_dress_block` below rolls the prop's `scale_factor()` as large as 1.25x, so the widest either canopy is ever
-## drawn is 50px; two canopies planted any closer than their own width overlap and read as one
-## shape rather than as two trees, which is the clump this spacing exists to stop.
-const MIN_TREE_SPACING := 40.0 * 1.25
+## The smallest and largest scale a park tree's `scale_factor()` is rolled at in `_dress_block()`.
+const PARK_TREE_SCALES := Vector2(0.75, 1.25)
 
 const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
 
@@ -1350,6 +1346,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	# the same way one landing off calm ground already is — checked before it is ever added rather
 	# than thinned out afterwards, the same rule closures and events are already held to.
 	var planted: Array[Vector2] = []
+	var spacing := min_tree_spacing()
 	# **The one exception to "the same every morning" is the one park this run ever fences.**
 	# `ParkClosure`'s line stands on the lot's own edge row, and a tree seeded there before the
 	# fence existed would stand on the fence line — cleared for the barrier the same way the
@@ -1368,20 +1365,28 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 			continue
 		if map.tile_type_at_world(at) == GameEnums.TileType.PLAYGROUND:
 			continue
-		if _too_close_to_a_planted_tree(at, planted):
+		if _too_close_to_a_planted_tree(at, planted, spacing):
 			continue
 		var tree := Prop.new()
-		tree.dress(atlas, Prop.Kind.TREE, rng.randi(), rng.randf_range(0.75, 1.25))
+		tree.dress(atlas, Prop.Kind.TREE, rng.randi(), rng.randf_range(PARK_TREE_SCALES.x, PARK_TREE_SCALES.y))
 		tree.position = at
 		_add_prop(tree)
 		planted.append(at)
 		placed += 1
 
-## Whether `at` lands within `MIN_TREE_SPACING` of a tree this lot has already planted — pulled out
-## from the loop above so the spacing rule is one line to read and one line to test.
-static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2]) -> bool:
+## The least two trees in one lot may stand apart, centre to centre — read off the pictures rather
+## than asked for: the widest tree picture at its own size (`TreePictures.widest_canopy()`) times
+## the largest scale `_dress_block()` rolls (`PARK_TREE_SCALES`), the widest either canopy is ever
+## drawn. Two canopies planted any closer than their own width overlap and read as one shape rather
+## than as two trees, which is the clump this spacing exists to stop.
+static func min_tree_spacing() -> float:
+	return TreePictures.widest_canopy() * PARK_TREE_SCALES.y
+
+## Whether `at` lands within `spacing` (`min_tree_spacing()`) of a tree this lot has already planted —
+## pulled out from the loop above so the spacing rule is one line to read and one line to test.
+static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2], spacing: float) -> bool:
 	for other in planted:
-		if at.distance_to(other) < MIN_TREE_SPACING:
+		if at.distance_to(other) < spacing:
 			return true
 	return false
 

@@ -78,6 +78,16 @@ func _test_the_street_tree_footprint_covers_every_picture(t: TestRunner) -> void
 				% [TreePictures.region(variant), reach, TreePictures.widest_reach()])
 		widest = maxf(widest, reach)
 		tree.free()
+		# Dressed with a park tree's scale, a street tree is still grounded at its picture's own
+		# size: what a real city's street trees were once built to show.
+		var scaled := Prop.new()
+		scaled.dress(null, Prop.Kind.STREET_TREE, variant, 1.25)
+		t.add_child(scaled)
+		var scaled_reach := scaled.shape().reach() if scaled.shape() else INF
+		t.check(is_equal_approx(scaled_reach, reach),
+				"a street tree of %s dressed with a scale reaches the same (%.2f against %.2f)"
+				% [TreePictures.region(variant), scaled_reach, reach])
+		scaled.free()
 	t.check(is_equal_approx(widest, TreePictures.widest_reach()),
 			"and the widest street tree reaches exactly the planners' clearance (%.2f against %.2f)"
 			% [widest, TreePictures.widest_reach()])

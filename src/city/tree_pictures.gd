@@ -24,8 +24,26 @@ static func region(variant: int) -> StringName:
 ## A tree's ground shape: a point reaching `_REACH_FRACTION` of its picture's width, drawn
 ## `scaled` times its picture's own size.
 static func shape(variant: int, scaled: float) -> GroundShape:
-	var size := Vector2(AtlasTable.baked().native_size(region(variant))) * scaled
-	return GroundShape.point(size.x * _REACH_FRACTION)
+	return GroundShape.point(drawn_size(variant, scaled).x * _REACH_FRACTION)
+
+## The size a tree of `variant` is drawn at when it is `scaled` times its picture's own size, in px:
+## the one place that multiplies the two, which the prop's drawing and `shape()` both ask.
+static func drawn_size(variant: int, scaled: float) -> Vector2:
+	return Vector2(AtlasTable.baked().native_size(region(variant))) * scaled
+
+## A street tree's ground shape: the one place that says a street tree stands at its picture's own
+## size (`shape()` at scale 1.0), which `Prop` takes for `Kind.STREET_TREE` and `widest_reach()`
+## keeps clear.
+static func street_tree_shape(variant: int) -> GroundShape:
+	return shape(variant, 1.0)
+
+## The widest tree picture's width at its own size, in px: what a park tree's spacing is worked out
+## from (`City.min_tree_spacing()`), at the largest scale a park tree is rolled.
+static func widest_canopy() -> float:
+	var widest := 0.0
+	for variant in REGIONS.size():
+		widest = maxf(widest, drawn_size(variant, 1.0).x)
+	return widest
 
 ## How far the widest tree's ground shape reaches at its picture's own size, the size a street tree
 ## is drawn at, in px: which picture a pit gets is decided where its prop is built, so a planner
@@ -36,5 +54,5 @@ static func shape(variant: int, scaled: float) -> GroundShape:
 static func widest_reach() -> float:
 	var widest := 0.0
 	for variant in REGIONS.size():
-		widest = maxf(widest, shape(variant, 1.0).reach())
+		widest = maxf(widest, street_tree_shape(variant).reach())
 	return widest

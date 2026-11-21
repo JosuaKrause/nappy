@@ -37,7 +37,6 @@ func run(t: TestRunner) -> void:
 	_test_tree_lined_streets_stay_rare(t)
 	_test_pits_keep_their_spacing_across_a_whole_run(t)
 	_test_a_pit_is_never_on_a_junction_or_a_mouth(t)
-	_test_the_planner_and_the_prop_agree_on_a_tree_footprint(t)
 	await _test_street_tree_beds_are_ground_decals(t)
 	await _test_unstreamed_decals_draw_every_bed(t)
 
@@ -195,13 +194,14 @@ func _test_the_same_seed_plans_the_same_arcs(t: TestRunner) -> void:
 	t.check(same, "the same seed plans the same arcs")
 
 ## Rejection sampling with no spacing test let two trees land close enough to read as one canopy.
-## `_dress_block` now rejects a candidate within `City.MIN_TREE_SPACING` of one it already planted
+## `_dress_block` now rejects a candidate within `City.min_tree_spacing()` of one it already planted
 ## in the same lot, so this drives the real placement pipeline — a built `City`, a real `start_day`
 ## — across a few seeds and checks every pair of trees `CityMap.anchor_of` puts in the same lot,
 ## which is what the clump would actually have been caught by rather than a unit test of the
 ## rejection alone.
 func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 	var checked_any_pair := false
+	var spacing := City.min_tree_spacing()
 	for seed_value: int in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
@@ -232,9 +232,9 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 				for j in range(i + 1, trees.size()):
 					checked_any_pair = true
 					var apart := (trees[i] as Vector2).distance_to(trees[j] as Vector2)
-					t.check(apart >= City.MIN_TREE_SPACING,
+					t.check(apart >= spacing,
 							"seed %d lot %s: two trees %.1fpx apart, under the %.1fpx floor"
-							% [seed_value, anchor, apart, City.MIN_TREE_SPACING])
+							% [seed_value, anchor, apart, spacing])
 		city.free()
 	t.check(checked_any_pair, "at least one lot across these seeds had more than one tree to check")
 
@@ -371,27 +371,6 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t: TestRunner) -> void:
 			t.check(into_block >= 1 and into_block <= Tuning.BLOCK_SIZE - 2,
 					"seed %d: a pit at %s stands in a street mouth" % [map.city_seed(), tree.tile])
 	t.check(checked > 0, "there were pits to check (%d)" % checked)
-
-## `TreePictures.widest_reach()` is what the scheduler and the seals keep clear round a pit, read at a
-## tree picture's own size because every caller is a headless planner with no scene. A real street
-## tree, built by a real `City`, has to reach no further, which holds the city to dressing its street
-## trees at the size the planners assumed.
-func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> void:
-	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
-	t.add_child(city)
-	RunCity.build(city, map)
-	var checked := 0
-	for node in city.props():
-		var prop := node as Prop
-		if prop.kind() != Prop.Kind.STREET_TREE:
-			continue
-		checked += 1
-		t.check(prop.shape() != null and prop.shape().reach() <= TreePictures.widest_reach() + 0.001,
-				"a street tree reaches %.2fpx, over the %.2fpx the planners keep clear"
-				% [prop.shape().reach() if prop.shape() else -1.0, TreePictures.widest_reach()])
-	t.check(checked > 0, "the city built street trees to check (%d)" % checked)
-	city.free()
 
 ## A street tree keeps its upright art in the y-sorted entity layer, while the bed it stands in is
 ## owned by the flat decal layer. This is the rendering boundary that keeps a one-tile bed from
