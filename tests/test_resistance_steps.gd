@@ -677,9 +677,9 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: Te
 		instance.set_process(false)
 
 		# 50px is the beat's first half (walking east); 350px is past the 200px turn, the second
-		# half (walking west) — `resume()` puts him that far along his beat, reading it back into a
+		# half (walking west) — `restore()` puts him that far along his beat, reading it back into a
 		# heading and a position without covering any further ground.
-		instance.resume(STEP, 350.0 if on_the_second_half else 50.0)
+		instance.restore(EventSave.new(STEP, 350.0 if on_the_second_half else 50.0))
 		var walking := instance.facing_now()
 		t.check((walking.x < 0.0) == on_the_second_half,
 				"set up walking %s" % ("west, the second half" if on_the_second_half

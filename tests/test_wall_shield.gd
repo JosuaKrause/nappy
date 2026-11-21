@@ -420,7 +420,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
 			man = instance
 	t.check(man != null, "the masked man is on the stairs")
 	if man:
-		man.resume(man.def.telegraph_time, 0.0, INF)
+		man.restore(EventSave.new(man.def.telegraph_time, 0.0, INF))
 		var shaft: Array[Vector2] = []
 		for tile in scene.map().stairwell_tiles("stairwell_right"):
 			if not scene.map().is_walkable(tile):

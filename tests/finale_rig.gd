@@ -1910,7 +1910,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 ## out of the city is closed for the page's counter as cut short, before the section's own end is
 ## counted — through the day's own finish path, as a day's are. The played time is read across one
 ## real physics frame; the charge is a masked pursuer put on the city's street as a streamed-in row
-## comes back (`EventInstance.resume()`, which the streaming calls: a row brought back after it had
+## comes back (`EventInstance.restore()`, which the streaming calls: a row brought back after it had
 ## noticed her is still chasing), and she is put at the tunnel, where the day's own clock finds her
 ## on its next tick (`DayController.tick()`, which `main`'s physics tick calls). The charge is
 ## spawned by the city's manager (`EventManager.spawn_extra()`), which gives it the atlas the city's
@@ -1938,7 +1938,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t: TestRunner) -> v
 	var guard := RunCity.events(city).spawn_extra(EventCatalogue.by_id("masked_pursuer"), her.global_position,
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
 	guard.set_process(false)
-	guard.resume(0.01, 0.0, 0.0)
+	guard.restore(EventSave.new(0.01, 0.0, 0.0))
 	her.global_position = Boot.day(main).spec().exit_points()[CityExit.Kind.TUNNEL]
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame

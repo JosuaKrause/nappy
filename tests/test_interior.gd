@@ -2158,7 +2158,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	player.global_position = fire.global_position + Vector2(fire.row().core_within() * 0.5, 0.0)
 	# Past its notice, the way the explosion outside comes: a fire still telegraphing
 	# emits nothing, and a rim on it would be the cue marking a thing that costs her nothing.
-	fire.resume(fire.telegraphs_for(), 0.0, INF)
+	fire.restore(EventSave.new(fire.telegraphs_for(), 0.0, INF))
 	t.check(fire.source().contribution_at(player.global_position) > ExcitementHalo.CONTRIBUTION_FLOOR,
 			"standing beside the fire, it reaches her")
 	fire.source().accumulate_landed(20.0)

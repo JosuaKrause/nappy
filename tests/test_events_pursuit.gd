@@ -513,7 +513,7 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 		var path := PendingWarning.route_down_her_line(null, place, at, direction)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
-		instance.resume(EventSpawner.age_when_warned(def), 0.0)
+		instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		arrived.append(instance)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)

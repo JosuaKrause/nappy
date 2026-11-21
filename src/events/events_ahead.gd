@@ -657,10 +657,10 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 		return
 	var instance := _spawner.spawn(def, path[0], path)
 	if def.is_sent_ahead():
-		instance.resume(_director.age_it_is_sent_at(def), 0.0)
+		instance.restore(EventSave.aged(_director.age_it_is_sent_at(def)))
 		instance.go_on_by(_director.way_on())
 	else:
-		instance.resume(EventSpawner.age_when_warned(def), 0.0)
+		instance.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
 			% [def.id, place.distance_to(her), RunTrace.tile(world.map().world_to_tile(her))])
 

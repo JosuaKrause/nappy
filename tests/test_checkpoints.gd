@@ -573,7 +573,7 @@ func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: 
 	var plan := EventPlan.new(def, at, route)
 	plan.facing = face
 	plan.gate_state = gate_state
-	plan.age = age
+	plan.arrive_aged(age)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
 	return plan.live

@@ -267,7 +267,6 @@ src/events/behaviours/event_behaviours.gd route
 src/events/behaviours/event_behaviours.gd unreachable
 src/events/event_excitement.gd age
 src/events/event_spawner.gd def
-src/events/event_streaming.gd age
 src/events/event_streaming.gd barrier_post
 src/events/event_streaming.gd is_finished
 src/events/event_streaming.gd is_leaving
@@ -278,17 +277,13 @@ src/events/views/rank_look.gd age
 # [EventPlan] src/events/event_plan.gd
 src/events/event_director.gd was_live
 src/events/event_spawner.gd live
-src/events/event_streaming.gd age
 src/events/event_streaming.gd arrives_aged
 src/events/event_streaming.gd at_her
-src/events/event_streaming.gd behaviours
 src/events/event_streaming.gd comes_in
 src/events/event_streaming.gd kept_live
 src/events/event_streaming.gd live
-src/events/event_streaming.gd noticed_at
 src/events/event_streaming.gd repeat_after
 src/events/event_streaming.gd repeat_every
-src/events/event_streaming.gd travelled
 src/events/event_streaming.gd wait_began
 src/events/event_streaming.gd was_live
 src/events/events_ahead.gd was_live

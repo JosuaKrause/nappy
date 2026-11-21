@@ -248,6 +248,8 @@ src/
 	                      part's location, a body off the routes
 	event_plan.gd         one placed event's row, position, role and path: what the manager needs to
 	                      spawn one instance
+	event_save.gd         what a live event was in the middle of when it left the world: its age,
+	                      distance, notice and each behaviour's state, one value its plan carries
 	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
 	                      the street, room among placed plans, where its body stands; handed the map
 	                      and what it asks (what stops a row, where a body stands, the room)

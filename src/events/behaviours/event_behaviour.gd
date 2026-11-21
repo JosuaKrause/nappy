@@ -17,7 +17,7 @@ extends RefCounted
 ## answers for it.
 ##
 ## **Each saves and restores its own state** (`save()`, `restore()`), so a plan streamed out and
-## back in comes back as it was (`EventInstance.save_behaviours()`). What cannot round-trip — another
+## back in comes back as it was (`EventInstance.save()`). What cannot round-trip — another
 ## instance it holds, a node it built — is left out, and the behaviour says so where it keeps it.
 
 ## The figure it moves (`EventInstance.Figure`), handed in its constructor as the event is set up.

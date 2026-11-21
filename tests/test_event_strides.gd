@@ -382,7 +382,7 @@ func _test_idle_phase_offset_differs_by_siting(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------- resets ---
 
-## "A stride never starts mid-cycle": both `setup()` and `resume()` reset the gait phase to zero.
+## "A stride never starts mid-cycle": both `setup()` and `restore()` reset the gait phase to zero.
 func _test_gait_and_idle_phase_reset_on_setup(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
@@ -393,9 +393,9 @@ func _test_gait_and_idle_phase_reset_on_setup(t: TestRunner) -> void:
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	t.check(instance.gait_phase() == 0.0 and not instance.gait_is_moving(),
 			"a fresh setup() resets the phase rather than carrying it over")
-	instance.resume(5.0, 30.0)
+	instance.restore(EventSave.new(5.0, 30.0))
 	t.check(instance.gait_phase() == 0.0 and not instance.gait_is_moving(),
-			"resume() resets the phase too, so a resumed instance never starts mid-cycle")
+			"restore() resets the phase too, so a restored instance never starts mid-cycle")
 	instance.free()
 
 # ------------------------------------------------------------------- the halo ---

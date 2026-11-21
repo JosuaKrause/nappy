@@ -1170,6 +1170,22 @@ func detain_distance() -> float:
 ## middle of the street)"). `roadblock` alone today. Read through `spans_the_street()`.
 @export var _spans_the_street := false
 
+## Whether the row stands by a garbage-sack pile when the ground lets it (`is_drawn_to_sack_piles()`):
+## the alley mouse alone. Read through that method.
+@export var _drawn_to_sack_piles := false
+
+## **Whether this row would rather stand beside a garbage-sack pile** (`GarbageSacks.alley_pile_tiles()`):
+## where the location it is drawn at reaches a pile, the location weighs more (`LocationGround.scale()`)
+## and the row is offered the tiles beside the pile first. Whether it is *drawn at all* is its weight's
+## question, never this one's.
+func is_drawn_to_sack_piles() -> bool:
+	return _drawn_to_sack_piles
+
+## Marks the row as one that stands by sack piles (`is_drawn_to_sack_piles()`). Called by the
+## catalogue as it builds the row.
+func draw_to_sack_piles() -> void:
+	_drawn_to_sack_piles = true
+
 ## **Whether this row takes a whole section of a street** when it is placed, its two sidewalk
 ## locations with it (`DayLocations.assign()`), rather than one sidewalk location.
 func spans_the_street() -> bool:

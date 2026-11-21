@@ -604,9 +604,9 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> v
 			t.check(guard.is_chasing(), "%s: and he charges, she still inside his radius" % what)
 			guard.free()
 
-## `EventInstance.resume()` restores age and distance travelled so a streamed-out event picks up
+## `EventInstance.restore()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first
-## `mobile` row that is also a `EventDef.pursuit` one, and `resume()`'s own "if def.mobile and
+## `mobile` row that is also a `EventDef.pursuit` one, and `restore()`'s own "if def.mobile and
 ## path.size() > 1: route.advance(0.0)" line does not know or care whether the def pursues.
 func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
@@ -631,14 +631,14 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 	var second := EventInstance.new()
 	second.setup(hot, path[0], path)
 	t.add_child(second)
-	second.resume(age, travelled)
+	second.restore(EventSave.new(age, travelled))
 	t.check(second.is_waiting(), "streamed back in, it is still only patrolling")
 	t.close_to(second.position.x, position_before.x,
 			"and it resumes where it left off rather than restarting its beat", 1.0)
 	second.free()
 
-## The other half of the same question, mid-chase rather than mid-patrol. `resume()` restores
-## `age`, the travelled distance and the notice (`noticed_at()`), so a patrol streamed out after
+## The other half of the same question, mid-chase rather than mid-patrol. `restore()` restores
+## `age`, the travelled distance and the notice (`save()`), so a patrol streamed out after
 ## it has noticed her comes back still chasing rather than `is_waiting()` again, having
 ## forgotten why it was coming. Checked against `chase_age()` as well as `is_waiting()`, so the
 ## fix is that the chase's own clock picks up where it left off, not only that the flag agrees —
@@ -667,7 +667,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	t.check(not first.is_waiting(), "and a second later it has still stopped, not patrolling")
 	var age := first.age
 	var travelled := first.path_travelled()
-	var noticed_at := first.noticed_at()
+	var noticed_at := first.save().noticed_at()
 	first.free()
 
 	var second_where := WhereSheIs.nowhere()
@@ -675,7 +675,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	second.setup(hot, path[0], path, Vector2.RIGHT,
 			EventSurroundings.new().hearing(second_where))
 	t.add_child(second)
-	second.resume(age, travelled, noticed_at)
+	second.restore(EventSave.new(age, travelled, noticed_at))
 	t.check(not second.is_waiting(),
 			"streamed back in after it stopped, it has still noticed her — its notice is carried over")
 	t.close_to(second.chase_age(), age - noticed_at,
@@ -726,7 +726,7 @@ func _count_patrols(planned: Array[EventPlan]) -> int:
 			count += 1
 	return count
 
-## `resume()`'s restored notice is not particular to the heated patrol that surfaced the gap —
+## `restore()`'s restored notice is not particular to the heated patrol that surfaced the gap —
 ## `alley_robbery` carries the identical `EventDef.notice` shape cold, with no heat level needed to
 ## reach it, and this is the same restore checked against that row instead.
 func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
@@ -745,13 +745,13 @@ func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 	t.check(not first.is_waiting(), "she is inside the trigger, so he notices her")
 	var age := first.age
 	var travelled := first.path_travelled()
-	var noticed_at := first.noticed_at()
+	var noticed_at := first.save().noticed_at()
 	first.free()
 
 	var second := EventInstance.new()
 	second.setup(def, Vector2.ZERO)
 	t.add_child(second)
-	second.resume(age, travelled, noticed_at)
+	second.restore(EventSave.new(age, travelled, noticed_at))
 	t.check(not second.is_waiting(),
 			"'alley_robbery' streamed back in mid-chase is still chasing, not waiting in the hood")
 	second.free()
