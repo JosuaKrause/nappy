@@ -85,7 +85,8 @@ func _a_street_of(map: CityMap, vertical: bool) -> Vector2:
 ## collision body, and `contribution_at()` is a pure query.
 func _accident_at(map: CityMap, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("car_accident"), at, PackedVector2Array(), Vector2.RIGHT, map)
+	instance.setup(EventCatalogue.by_id("car_accident"), at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	instance.age = 10.0
 	return instance
 

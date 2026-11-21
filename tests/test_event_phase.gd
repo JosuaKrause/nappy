@@ -81,8 +81,8 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"a row that waits starts waiting")
 	instance_where.tell(Vector2(def.notice.within - 10.0, 0.0))
@@ -112,7 +112,8 @@ func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(40.0, 0.0)]),
-			Vector2.RIGHT, null, null, instance_where)
+			Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	instance_where.tell(Vector2(0.0, 2000.0))
 	var frames := 0
 	while not instance.is_leaving and frames < 400:
@@ -140,7 +141,8 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	var def := EventCatalogue.by_id("charging_dog")
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, dog_where)
+	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(dog_where))
 	var her := Vector2(400.0, 0.0)
 	var clock := 0.0
 	while not dog.is_leaving and clock < def.telegraph_time:
@@ -180,7 +182,8 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, first_where)
+	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(first_where))
 	var her := Vector2(60.0, 0.0)
 	t.check(her.length() < first.charge_radius(), "she stands inside the robber's stand-off")
 	first.notice_her_at(her, 5.0)

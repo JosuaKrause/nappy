@@ -102,8 +102,8 @@ func _robber_waiting_row() -> Array:
 	for sector in range(8):
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
-		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-				instance_where)
+		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().hearing(instance_where))
 		instance_where.tell(_sector_heading(sector) * (def.notice_within() + 40.0))
 		var view := instance.look.select_view(instance.look.robber_waiting_heading())
 		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view],

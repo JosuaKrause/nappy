@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 func _instance(_t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
+	instance.setup(def, at, path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
 	return instance
 
 func _advance(instance: EventInstance, seconds: float) -> void:
@@ -263,7 +263,9 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 	var path := PackedVector2Array([Vector2(0.5, 1.5) * tile, Vector2(20.5, 1.5) * tile])
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(def, path[0], path, Vector2.RIGHT, map, null, first_where)
+	first.setup(def, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().on(map) \
+				.hearing(first_where))
 	first_where.tell(Vector2(0.0, 400.0))
 	_advance(first, 1.5)
 	t.check(not first.is_leaving and first.path_travelled() > 2.0 * tile,
@@ -274,7 +276,9 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 	map.obstruct_tiles(1, behind)
 	var second_where := WhereSheIs.nowhere()
 	var second := EventInstance.new()
-	second.setup(def, path[0], path, Vector2.RIGHT, map, null, second_where)
+	second.setup(def, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().on(map) \
+				.hearing(second_where))
 	second_where.tell(first_where.at())
 	second.restore(EventSave.new(state.age(), state.travelled(), state.noticed_at()))
 	t.check(second.is_leaving and second.departure.save().get("must_clear_sight", false),

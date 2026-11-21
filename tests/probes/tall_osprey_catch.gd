@@ -69,8 +69,8 @@ func _report(catch_radius: float, lunge: float) -> void:
 func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	var her := Vector2(def.notice_within() + (60.0 if walking else -1.0), 0.0)
 	var noticed := -1.0
 	var elapsed := 0.0
@@ -93,8 +93,8 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
 	var her := Vector2(def.notice_within() + rng.randf_range(30.0, 90.0), 0.0)
 	var reaction := rng.randf_range(0.15, 0.75)
 	var speed := -Tuning.WALK_SPEED

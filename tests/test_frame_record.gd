@@ -448,8 +448,7 @@ func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 	var untimed := _row_so_far(scratch)
 	t.check(untimed[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0 and untimed_look.redraws == 1,
 			"an event handed no record is not timed while another is on")
-	var event := _event(t, def)
-	event.timing = record
+	var event := _event(t, def, record)
 	var look := _BucketLook.watching(event)
 	await _one_drawn_frame(t, event)
 	# Time spent after the frame, measured, lands in what was running before the event: had the
@@ -504,7 +503,7 @@ class _BucketLook extends EventLook:
 
 	static func watching(instance: EventInstance) -> _BucketLook:
 		instance.look.release_nodes()
-		var look := _BucketLook.new(instance, instance.row(), instance.drawer, false)
+		var look := _BucketLook.new(instance, instance.row(), EventDrawer.new(null), false)
 		instance.look = look
 		return look
 
@@ -516,9 +515,12 @@ class _BucketLook extends EventLook:
 
 ## A live event standing alone, its process callback off until the test lets it draw, as
 ## `tests/test_acts.gd` builds one.
-func _event(t: TestRunner, def: EventDef) -> EventInstance:
+func _event(t: TestRunner, def: EventDef, timing: FrameTiming = null) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	instance.setup(def, Vector2.ZERO)
+	var surroundings := EventSurroundings.new()
+	if timing != null:
+		surroundings.timed_by(timing)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, surroundings)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

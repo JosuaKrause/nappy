@@ -256,7 +256,8 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 ## event's own stepping walks): built from the alley it stands in and cut to the ground it fits on.
 func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("alley_mouse"), at, PackedVector2Array(), Vector2.RIGHT, map)
+	instance.setup(EventCatalogue.by_id("alley_mouse"), at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map))
 	var path := instance.path
 	instance.free()
 	return path
@@ -289,7 +290,9 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var at := map.tile_to_world(rect.position + Vector2i(rect.size.x / 2, rect.size.y / 2))
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map, null, instance_where)
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map) \
+				.hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 
@@ -459,9 +462,8 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			return PendingWarning.on_its_route(truck, at, kerb, travel, 4000.0)
 		var arrive := func(place: Vector2, _at: Vector2) -> bool:
 			var instance := EventInstance.new()
-			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT, null,
-					null,
-					her_where)
+			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT,
+					EventSurroundings.new().hearing(her_where))
 			instance.restore(EventSave.new(truck.telegraph_time, 0.0))
 			created.append(instance)
 			return true

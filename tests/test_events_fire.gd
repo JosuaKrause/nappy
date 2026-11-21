@@ -439,7 +439,8 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 					PendingWarning.down_her_line(map, def, at, direction), at, direction)
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
-		instance.setup(def, path[0], path, Vector2.RIGHT, null, null, instance_where)
+		instance.setup(def, path[0], path, Vector2.RIGHT,
+				EventSurroundings.new().hearing(instance_where))
 		if def.comes_down_her_line():
 			instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		t.add_child(instance)

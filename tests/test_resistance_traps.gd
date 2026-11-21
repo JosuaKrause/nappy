@@ -766,7 +766,8 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 	var bearing := start.normalized()
 	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(def, start, PackedVector2Array(), Vector2.RIGHT, null, null, robber_where)
+	robber.setup(def, start, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(robber_where))
 	robber.arrive_from_its_warning()
 	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		robber.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))

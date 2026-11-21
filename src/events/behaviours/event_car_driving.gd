@@ -20,8 +20,8 @@ extends EventBehaviour
 ## **It is handed what never changes under it** as its event is set up: the figure it moves
 ## (`EventInstance.Figure`), where she is, its row (its body's shape, its speed, whether it parks
 ## where it arrives, paces or pursues), the map it drives on, its route walk, the vehicle's
-## investigation and the event's move. What changes it asks its figure, the lights it stops at
-## included (`Figure.lights()`), which its manager tells its event after it is set up.
+## investigation and the event's move. What changes it asks its figure; the lights it stops at are
+## handed it too, the ones its event is set up with (`EventSurroundings.lights()`).
 ##
 ## **Positional, never a force**, the crowd's own rule for bodies (the **crowd-traffic** skill): the
 ## pose the step would end on is checked, rather than a brake asked to want something, because a
@@ -109,11 +109,16 @@ var _investigation: EventInvestigation
 ## Its event's move this tick (`MoveProposal`): the pose the step began at, and the one the tick
 ## proposes, which `check()` takes back where it refuses it.
 var _move: MoveProposal
+## The lights it stops at (`TrafficSignals`), the crowd's own; null where there are none, in a rig
+## with no city, which then has no red light to stop at.
+var _lights: TrafficSignals
 
 ## Handed, as its event is set up, the figure it moves, where she is, its row, the map, its route
-## walk (or none), the vehicle's investigation (or none) and its event's move.
+## walk (or none), the vehicle's investigation (or none), its event's move and the lights it stops
+## at (or none).
 func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
-		route: EventRouteWalk, investigation: EventInvestigation, move: MoveProposal) -> void:
+		route: EventRouteWalk, investigation: EventInvestigation, move: MoveProposal,
+		lights: TrafficSignals) -> void:
 	steps_each_tick = false
 	_figure = figure
 	_where = where
@@ -122,6 +127,7 @@ func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: 
 	_route = route
 	_investigation = investigation
 	_move = move
+	_lights = lights
 
 ## Stands it for her: a car that stood for its men, say (`EventInvestigation`), pulls away only
 ## once she is out of its way.
@@ -256,7 +262,7 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	# The red light.
 	if within_sight_of_the_box:
 		var corridor := CityMap.junction_index(floori(cross / float(Tuning.TILE_SIZE)))
-		if GiveWay.is_red(_figure.lights(), GiveWay.junction_at(index, corridor, vertical), vertical):
+		if GiveWay.is_red(_lights, GiveWay.junction_at(index, corridor, vertical), vertical):
 			room = minf(room, box_line)
 	var gives_way := GiveWay.owes_her_way(_map, vertical, at, _where.at())
 	# **The zebra on the far side of the box ahead is decided at the box's entry line**, wherever

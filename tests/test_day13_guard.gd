@@ -495,8 +495,8 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(robbery, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			guard_where)
+	guard.setup(robbery, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(guard_where))
 	t.add_child(guard)
 	guard.set_process(false)
 	var standoff := PursuitSpec.standoff(robbery.chase_speed(), robbery.standoff_reach())
@@ -1234,7 +1234,8 @@ func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDir
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(), city, null,
+	director.setup(city.map, city.run, RunCity.events(city), city.streets(), city.fronts(),
+			city, null,
 			RunCity.spawn_siting(city))
 	_seen_through = RunCity.events(city).visible_view()
 	_seen_through.look(_view, null)

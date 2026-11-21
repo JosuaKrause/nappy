@@ -226,8 +226,9 @@ func silence() -> void:
 	_silenced = true
 	_excitement.invalidate_contribution()
 
-## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
-var skip_draw := false
+## What it is set up in (`EventSurroundings`), handed to `setup()`: asked for the pieces below once,
+## there. Open ground and nothing else until it is set up.
+var _surroundings := EventSurroundings.new()
 
 ## **Where she is** (`WhereSheIs`): this event's own handle on the word `EventManager` tells once a
 ## physics tick, made in `setup()` from the one it is handed and handed on to its behaviours and its
@@ -236,10 +237,10 @@ var skip_draw := false
 var _where := WhereSheIs.nowhere()
 
 ## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
-## GateState`, set by `EventStreaming.stream_in` from `EventPlan.gate_state`. `null` for every look
-## but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired to
-## `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
-var gate_state: RegionPlanner.GateState = null
+## GateState`, handed to `setup()` by `EventStreaming.stream_in()` from `EventPlan.gate()`. `null` for
+## every look but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired
+## to `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
+var _gate_state: RegionPlanner.GateState = null
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
@@ -316,29 +317,40 @@ var _reports: EventReports
 ## to drain toward zero after nothing more can land on it.
 var _clock := 0.0
 
+## **The one setup call**, with everything else the event is handed.
+##
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 ##
-## `where` is where she is (`WhereSheIs`), the one its manager tells once a tick
-## (`EventWorld.where_she_is()`, which `EventSpawner.create()` hands in); the event hears it
-## through a handle of its own (`WhereSheIs.handle_for_an_event()`) that hears the word told so
-## far, whatever made it, and hands that to its behaviours and its excitement source. None, and it
-## is nowhere.
+## `surroundings` is what it is set up in (`EventSurroundings`): its map and navigator, where she is
+## (the event hears it through a handle of its own, `WhereSheIs.handle_for_an_event()`, that hears
+## the word told so far, whatever made it, and hands that to its behaviours and its excitement
+## source; nowhere where none was handed), the world it is drawn in, its drawer, its timing sink, its
+## trace, the car's lights and where a protest points. None, and it is set up on open ground with
+## nothing handed.
+##
+## `gate` is the boom state a street door's boom shares with the crowd (`RegionPlanner.GateState`),
+## the one hand-in that belongs to the plan and not to the world, so it comes last, and only
+## streaming passes one.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
-		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null,
-		where: WhereSheIs = null, drawn_in: WorldContext = null) -> void:
-	_drawn_in = drawn_in
+		face := Vector2.RIGHT, surroundings: EventSurroundings = null,
+		gate: RegionPlanner.GateState = null) -> void:
+	_surroundings = surroundings if surroundings else EventSurroundings.new()
+	_timing = _surroundings.timing()
+	_gate_state = gate
+	_drawn_in = _surroundings.world_drawn_in()
 	def = definition
 	path = route
 	_where = WhereSheIs.nowhere()
-	if where:
-		_where = where.handle_for_an_event()
+	var hears := _surroundings.where_she_is()
+	if hears:
+		_where = hears.handle_for_an_event()
 	_excitement.use_row_and_where_she_is(definition, _where)
-	_map = map if map else WorldMap.open_ground()
-	_navigator = navigator if navigator else Navigator.new(_map)
+	_map = _surroundings.map()
+	_navigator = _surroundings.navigator()
 	_mover = mover_for(definition)
 	_behaviours = EventBehaviours.compose(self, definition, _where, _figure, _map, _navigator,
-			_mover, trace, _move)
+			_mover, _surroundings.trace(), _surroundings.lights(), _move)
 	_move.radius = _mover.radius
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	# A pursuer whose row walks round buildings to her (the roadblock's posted guard) holds his way
@@ -348,12 +360,13 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var start := BodyStance.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
-	look = EventLooks.for_row(self, definition, drawer, skip_draw, barrier_post)
+	look = EventLooks.for_row(self, definition, _surroundings.drawer(), not _surroundings.draws(),
+			barrier_post)
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
 	_body = EventBody.new(definition, _map, _where, self, position, face,
-			BodyStance.lies_vertically_at(_map, position))
+			BodyStance.lies_vertically_at(_map, position), _gate_state)
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventBody.is_walked_round()`).
 	_move.stood_round = _body.is_walked_round()
@@ -514,13 +527,13 @@ func _rim_holder() -> Node2D:
 ## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for,
 ## and false while a boom (`EventDef.SolidWhen.WHILE_LOWERED`) stands raised (`is_raised()`).
 func is_solid() -> bool:
-	return _body.is_solid(is_raised())
+	return _body.is_solid()
 
 ## Whether this boom's arm is up right now — `RegionPlanner.GateState.raised`, which only `Crowd`
-## writes. `false` with no `gate_state`, the same safe default the drawing reads: a gate that has
-## not been wired to the cars is a lowered one.
+## writes. `false` with no gate handed to `setup()`, the same safe default the drawing reads: a gate
+## that has not been wired to the cars is a lowered one.
 func is_raised() -> bool:
-	return gate_state != null and gate_state.raised
+	return _gate_state != null and _gate_state.raised
 
 ## The body of a `SolidWhen.ONCE_IT_STARTS` row, put down the frame its notice ends — **unless she is
 ## standing in it** (`EventBody.come_down_clear_of_her()`), in which case the vent goes on emitting
@@ -540,12 +553,6 @@ func _become_solid_once_it_starts() -> void:
 # `EventDef.vehicle`: a body that moves and never into her, and a strike ahead of its nose while it
 # drives — `EventCarDriving`, which answers for the car below.
 
-## The lights the crowd's cars stop at, told by `EventManager` when the instance is made, after it
-## is set up, so a car that drives stops where they stop (`EventCarDriving._room_to_its_line()`,
-## which asks them through its figure, `Figure.lights()`). Null in a rig with no city, which then
-## has no red light to stop at.
-var signals: TrafficSignals = null
-
 ## **The end of its route, reached or cut short** (`EventRouteWalk`), acted on only for a committed
 ## pose. A figure's step is checked as each part of it is taken (the navigator's swept step), so the
 ## pose it reached the end on is already the one it keeps, and it is done there at once. A car's step
@@ -564,26 +571,12 @@ func _end_its_route(may_park := true) -> void:
 var _ends_its_route_on_commit := false
 var _may_park_on_commit := true
 
-## Where this event charges its time to the frame record, handed in by whoever makes it
-## (`EventSpawner.create()`, from its manager's own). With the record off, `_process()` pays a
-## member read and one `is_on()` call, and its body stays in `_process()` itself: a static read
-## and a call into a second function for it would cost every player more, once per live event a
+## Where this event charges its time to the frame record, from its surroundings
+## (`EventSurroundings.timing()`), kept as a member of its own. With the record off, `_process()`
+## pays a member read and one `is_on()` call, and its body stays in `_process()` itself: a static
+## read and a call into a second function for it would cost every player more, once per live event a
 ## frame (docs/evidence/m159-frame-record-2026-10-04/).
-var timing := FrameTiming.new()
-## The baked atlas pages this event's pictures come from (`AtlasLibrary`), handed in by whoever
-## makes it (`EventSpawner.create()`, from its manager's own), which holds the events' group on it.
-## The drawer it is handed is built over the same pages; one it makes for itself is built over these.
-var atlas: AtlasLibrary
-## What its look paints its pictures through (`EventDrawer`), handed in by whoever makes it
-## (`EventSpawner.create()`, its manager's own, built over the same atlas), before `setup()` hands
-## it to the look, which holds it from then on. An instance nobody handed one (a suite's, a
-## developer's rig) draws through one of its own over `atlas`, made as `setup()` hands it on, so a
-## rig hands the atlas before `setup()`.
-var drawer: EventDrawer:
-	get:
-		if drawer == null:
-			drawer = EventDrawer.new(atlas)
-		return drawer
+var _timing := FrameTiming.new()
 
 ## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
 ## (`step()`); here it takes the draw layer its warning puts it on (`_take_the_layer_it_warns_on()`),
@@ -595,10 +588,10 @@ func _process(_delta: float) -> void:
 	if look == null:
 		return
 	_take_the_layer_it_warns_on()
-	if timing.is_on():
-		var outer := timing.enter(FrameTiming.EVENTS)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.EVENTS)
 		look.redraw_if_the_picture_changed()
-		timing.leave(outer)
+		_timing.leave(outer)
 		return
 	look.redraw_if_the_picture_changed()
 
@@ -743,7 +736,7 @@ func _tick(delta: float) -> void:
 
 	_become_solid_once_it_starts()
 	# A boom's body follows its arm (`EventBody.follow_the_arm()`), once a step.
-	_body.follow_the_arm(is_raised())
+	_body.follow_the_arm()
 
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
@@ -1130,10 +1123,6 @@ func move_to(at: Vector2) -> void:
 	queue_redraw()
 
 # ------------------------------------------------------------------- the take ---
-
-## Where the instance writes its own account for the run log, handed in by the manager that
-## creates it before `setup()`, which hands it on to the take (`EventAbduction`); silent otherwise.
-var trace := RunTrace.new()
 
 ## Whether the van's take of a bystander is running right now (`EventAbduction`), for
 ## `EventVehicleLook._draw_abduction` and for a test to drive by hand.
@@ -1823,11 +1812,6 @@ func rim() -> EntityHalo:
 ## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
 var look: EventLook
 
-## What a protest points its placards at, handed in by whoever knows (`EventManager.use_protest_target()`,
-## from the resistance's `_pointable_objective()`) after `setup()`; unset, it points at nothing.
-## Asked as `where_its_placards_point()`.
-var points_at := Callable()
-
 func _draw() -> void:
 	look.draw()
 
@@ -2048,11 +2032,6 @@ class Figure:
 	## Where its stride is (`EventInstance.gait_phase()`), which a step taken back puts back.
 	func gait_phase() -> float:
 		return _of._gait_phase
-
-	## The lights it stops at (`TrafficSignals`), which its manager tells its event once it is set
-	## up (`EventInstance.signals`); null where there are none.
-	func lights() -> TrafficSignals:
-		return _of.signals
 
 	# ------------------------------------------------------------- what happened ---
 
@@ -2384,12 +2363,11 @@ func is_silenced() -> bool:
 func is_drawn_as_a_pelican() -> bool:
 	return _is_pelican
 
-## Where a protest points its placards: what it was handed to ask (`points_at`), or `Vector2.INF`,
-## nothing to point at, when it was handed nothing.
+## Where a protest points its placards: what its surroundings ask
+## (`EventSurroundings.where_protests_point()`), or `Vector2.INF`, nothing to point at, when it was
+## handed nothing.
 func where_its_placards_point() -> Vector2:
-	if not points_at.is_valid():
-		return Vector2.INF
-	return points_at.call()
+	return _surroundings.where_protests_point()
 
 ## The route it walks, in world space; empty, or one point, for one that stands (`path`), as a
 ## plan's `walks()` answers.

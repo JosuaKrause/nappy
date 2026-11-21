@@ -16,7 +16,7 @@ extends FrameTiming
 ## page without `?framerecord=1` never reaches the clock. It is on only while a `FrameRecorder` is
 ## in the tree (`start()` and `stop()`): the escape builds none. The live events, timed a couple
 ## of hundred times a frame, ask the sink's `is_on()` through a member of their own
-## (`EventInstance.timing`); the systems timed once a frame ask it directly.
+## (the timing sink an event is handed through `EventSurroundings.timing()`); the systems timed once a frame ask it directly.
 
 ## The record itself: kept by the sitting along with this object, so a recording spans a restart.
 ## Null until `start()`.

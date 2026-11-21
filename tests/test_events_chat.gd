@@ -42,9 +42,10 @@ func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null,
 		trace: RunTrace = null) -> EventInstance:
 	var instance := EventInstance.new()
+	var surroundings := EventSurroundings.new().hearing(where)
 	if trace:
-		instance.trace = trace
-	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
+		surroundings.tracing_to(trace)
+	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

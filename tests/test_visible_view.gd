@@ -296,7 +296,8 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 		var bike_where := WhereSheIs.nowhere()
 		var bike := EventInstance.new()
 		bike.setup(EventCatalogue.by_id("cyclist"), start, PackedVector2Array([start, her]),
-				Vector2.RIGHT, null, null, bike_where)
+				Vector2.RIGHT,
+				EventSurroundings.new().hearing(bike_where))
 		bike.restore(EventSave.new(EventCatalogue.by_id("cyclist").telegraph_time, 0.0))
 		bike.arrive_from_its_warning()
 		source.live.append(bike)

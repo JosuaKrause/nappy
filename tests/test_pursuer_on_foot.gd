@@ -377,7 +377,8 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: T
 			var pursuer_where := WhereSheIs.nowhere()
 			var pursuer := EventInstance.new()
 			pursuer.setup(def, Vector2(0.0, -SpawnSiting.least_distance() - 40.0),
-					PackedVector2Array(), Vector2.RIGHT, null, null, pursuer_where)
+					PackedVector2Array(), Vector2.RIGHT,
+					EventSurroundings.new().hearing(pursuer_where))
 			pursuer.arrive_from_its_warning()
 			pursuer.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 			var at := Vector2.ZERO
@@ -439,8 +440,8 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> vo
 		var her := Vector2.ZERO
 		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
-		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
-				man_where)
+		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().hearing(man_where))
 		var stopped := INF
 		var struck := false
 		var elapsed := 0.0
@@ -479,8 +480,8 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner)
 	for walks_away: bool in [false, true]:
 		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
-		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
-				man_where)
+		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
+				EventSurroundings.new().hearing(man_where))
 		var her := Vector2.ZERO
 		var landed := 0.0
 		var after := 0.0
@@ -512,8 +513,8 @@ func _test_he_waits_outside_a_hold_to_stop_her(t: TestRunner) -> void:
 	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
 	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new()
-	man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
-			man_where)
+	man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(man_where))
 	var her := Vector2.ZERO
 	var elapsed := 0.0
 	man_where.tell(man_where.at(), Vector2.INF, Rect2(), false, true, true)
@@ -720,8 +721,8 @@ const ENCOUNTER_MARGIN := 10.0
 func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 		route: PackedVector2Array) -> float:
 	var events := RunCity.events(city)
+	events.world.use_lights(null)
 	var car := events.spawn_extra(hot, route[0], route)
-	car.signals = null
 	events.use_player(her)
 	var landed := 0.0
 	var officer: EventInstance = null
@@ -798,7 +799,9 @@ func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Arr
 		her: Vector2) -> Array:
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
-	car.setup(hot, route[0], route, (route[1] - route[0]).normalized(), map, null, car_where)
+	car.setup(hot, route[0], route, (route[1] - route[0]).normalized(),
+			EventSurroundings.new().on(map) \
+				.hearing(car_where))
 	t.add_child(car)
 	car.set_process(false)
 	var saw_in_a_box := false
@@ -882,7 +885,8 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	t.check(hot.duration > 0.0, "the hunting van has a duration of its own (%.0fs)" % hot.duration)
 	var van_where := WhereSheIs.nowhere()
 	var van := EventInstance.new()
-	van.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, van_where)
+	van.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(van_where))
 	t.add_child(van)
 	van.set_process(false)
 	var far := Vector2(hot.notice_within() - 10.0, 0.0)
@@ -984,7 +988,8 @@ func _test_the_car_does_not_notice_her_through_a_building(t: TestRunner) -> void
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(hot, lane, PackedVector2Array([lane, lane + Vector2(4000.0, 0.0)]), Vector2.RIGHT,
-			map, null, car_where)
+			EventSurroundings.new().on(map) \
+				.hearing(car_where))
 	t.add_child(car)
 	car.set_process(false)
 	car_where.tell(hidden)

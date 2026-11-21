@@ -626,8 +626,8 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 
 	var placed_where := WhereSheIs.nowhere()
 	var placed := EventInstance.new(ToldEvents.on(EventBus))
-	placed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			placed_where)
+	placed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(placed_where))
 	t.add_child(placed)
 	placed.set_process(false)
 	for i in int(ceil((def.telegraph_time + 0.5) / step)):
@@ -642,8 +642,8 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	began.clear()
 	var streamed_where := WhereSheIs.nowhere()
 	var streamed := EventInstance.new(ToldEvents.on(EventBus))
-	streamed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			streamed_where)
+	streamed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(streamed_where))
 	t.add_child(streamed)
 	streamed.set_process(false)
 	streamed.restore(EventSave.new(age, travelled))
@@ -655,8 +655,8 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 
 	var warned_where := WhereSheIs.nowhere()
 	var warned := EventInstance.new(ToldEvents.on(EventBus))
-	warned.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
-			warned_where)
+	warned.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(warned_where))
 	t.add_child(warned)
 	warned.set_process(false)
 	warned.arrive_from_its_warning()
@@ -861,7 +861,8 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -400.0)])
 	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new(ToldEvents.on(EventBus))
-	man.setup(def, Vector2.ZERO, path, Vector2.RIGHT, null, null, man_where)
+	man.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
+			EventSurroundings.new().hearing(man_where))
 	t.add_child(man)
 	man.set_process(false)
 	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within + 100.0)), 0.5)
@@ -880,7 +881,8 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	counter.sent.clear()
 	var caught_where := WhereSheIs.nowhere()
 	var caught := EventInstance.new(ToldEvents.on(EventBus))
-	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT, null, null, caught_where)
+	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
+			EventSurroundings.new().hearing(caught_where))
 	t.add_child(caught)
 	caught.set_process(false)
 	_walk(caught, caught_where, Vector2(0.0, -(def.notice.runs_within - 10.0)),
@@ -922,7 +924,8 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t: TestRunner) -> void
 ## A charger at the origin, in the tree, stepped by hand.
 func _charger(t: Node, def: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

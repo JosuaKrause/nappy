@@ -388,7 +388,9 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	map.set_tile(Vector2i(4, 4), GameEnums.TileType.BUILDING)
 	var guard := EventInstance.new()
 	guard.setup(EventCatalogue.by_id("alley_robbery"), Vector2(122.0, 134.0),
-			PackedVector2Array(), Vector2.RIGHT, map, Navigator.new(map))
+			PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().on(map) \
+				.moving_by(Navigator.new(map)))
 	t.add_child(guard)
 	guard.set_process(false)
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
@@ -530,8 +532,8 @@ func _test_a_static_row_is_seen_and_never_influenced(t: TestRunner) -> void:
 func _chasing_dog(t: TestRunner, def: EventDef) -> EventInstance:
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(def, Vector2(200.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
-			dog_where)
+	dog.setup(def, Vector2(200.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(dog_where))
 	t.add_child(dog)
 	dog.set_process(false)
 	dog.arrive_from_its_warning()

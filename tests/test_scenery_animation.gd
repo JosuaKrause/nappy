@@ -170,7 +170,7 @@ func _test_both_rotor_phases_share_one_registration(t: TestRunner) -> void:
 ## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's. The
 ## axis it spreads on is the street it stands on (`EastWestStreet` is one running east-west), the
 ## way the game hands `setup()` a map. What each layer of the scenery stands is read off a recording
-## scenery drawer, handed to the scenery by the event's drawer (`EventInstance.drawer`, as its
+## scenery drawer, handed to the scenery by the event's drawer (`EventSurroundings.drawer()`, as its
 ## manager's spawner hands the real one) the way the real one hands its own.
 func _test_event_parts(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
@@ -178,13 +178,14 @@ func _test_event_parts(t: TestRunner) -> void:
 	for id: String in ["car_accident", "burst_water_main"]:
 		for vertical: bool in [false, true]:
 			var instance := EventInstance.new()
-			instance.atlas = atlas
 			var laid := RecordingSceneryDrawer.new()
 			var pictures := RecordingEventDrawer.new(atlas)
 			pictures.scenery_drawer = laid
-			instance.drawer = pictures
 			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(),
-					Vector2.RIGHT, EastWestStreet.new() if vertical else WorldMap.open_ground())
+					Vector2.RIGHT,
+					EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+						.drawn_from(atlas) \
+						.drawing_through(pictures))
 			t.add_child(instance)
 			t.check(instance.runs_vertically() == vertical, "%s stands on the axis asked for" % id)
 			# The slices go into the world on the idle frame after the instance is made.

@@ -38,6 +38,8 @@ const SHARE_SEEDS := 400
 const CYCLISTS_PER_RUN := 30
 
 var _events: EventManager
+## The drawer the city's events were handed to paint through (`_record_the_drawing()`).
+var _recorded: RecordingEventDrawer
 var _map: CityMap
 
 ## The run every test of this suite draws from: made here and freed at the end, so the suite plays
@@ -72,7 +74,8 @@ func run(t: TestRunner) -> void:
 ## The city's events paint through a recording drawer from here on, handed to the world the way
 ## the manager hands the real one, so a check reads the pictures an event was drawn with.
 func _record_the_drawing() -> void:
-	_events.world.drawer = RecordingEventDrawer.new(_events.world.atlas)
+	_recorded = RecordingEventDrawer.new()
+	_events.world.use_drawer(_recorded)
 
 func _day_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -330,7 +333,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t: TestRunner)
 func _drawn_from(t: TestRunner, instance: EventInstance) -> Array[String]:
 	await DrawnEvent.frames(t)
 	var found: Array[String] = []
-	for entry in DrawnEvent.shown(instance):
+	for entry in _recorded.shown():
 		if entry.canvas == instance and entry.kind == &"stand":
 			found.append(entry.picture)
 	return found

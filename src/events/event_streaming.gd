@@ -188,16 +188,16 @@ func stream_in(plan: EventPlan) -> void:
 	var first_time := not plan.was_live
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
-	plan.live = _spawner.create(plan.row(), plan.placed_at(), plan.walks(), first_time, plan.faces())
+	# The shared boom state, for a `checkpoint_gate` plan only (`null` on every other plan), is handed
+	# to the event's one setup call.
+	plan.live = _spawner.create(plan.row(), plan.placed_at(), plan.walks(), first_time, plan.faces(),
+			plan.gate())
 	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where it
 	# becomes something that happened — see `DawnOneShots`. The list is the one
 	# `start_day` was handed, which in a played game is `world.run().attempt_spend().consumed_one_shots()`
 	# and in a rig is the rig's own.
 	if first_time and plan.is_a_set_piece_on_her_way() and not plan.row_id() in _consumed:
 		_consumed.append(plan.row_id())
-	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
-	# is a harmless no-op assignment rather than a special case here.
-	plan.live.gate_state = plan.gate()
 	# **An event that has already run picks up where it left off.** Without this a streamed-out
 	# event is rebuilt from `plan.placed_at()`, which is the tile the *day* chose at dawn — so a dog
 	# walker that has covered three hundred pixels teleports back to the top of its street every

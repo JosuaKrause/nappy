@@ -265,7 +265,7 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	var ordinary := _city(t)
 	var events := _simulation(ordinary).events()
 	var crowd := _simulation(ordinary).crowd()
-	t.check(not events.world.skip_drawing
+	t.check(events.world.surroundings().draws()
 			and not crowd.skip_agent_drawing and not crowd.skip_motion and crowd.view == null,
 			"a builder handed nothing stands an ordinary run's events and crowd")
 	# Not every cyclist is the pelican without `--pelican`: a full bag of 399 cyclists and one
@@ -291,13 +291,15 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	var made := _city(t, builder)
 	events = _simulation(made).events()
 	crowd = _simulation(made).crowd()
-	t.check(events.world.skip_drawing and crowd.skip_agent_drawing and crowd.skip_motion,
+	t.check(not events.world.surroundings().draws() and crowd.skip_agent_drawing and crowd.skip_motion,
 			"--skip events, crowd and motion reach the events and the crowd")
 	t.check(events.spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"--pelican reaches the events")
 	t.check(crowd.view == view and crowd.timing == timing, "the screen reaches the crowd")
-	t.check(events.world.trace() == trace and events.world.atlas == atlas and events.world.timing == frames
-			and crowd.atlas == atlas,
+	# The events' pages are the ones handed in when the manager has acquired their group on them
+	# (it does on entering the tree), so a picture of the group is there to be had.
+	t.check(events.world.trace() == trace and events.world.surroundings().timing() == frames
+			and atlas.region(StringName(EventPictures.STEAM_GRATE)) != null and crowd.atlas == atlas,
 			"and what the events and the crowd are equipped with reaches each")
 	_free(made)
 

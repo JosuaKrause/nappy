@@ -245,7 +245,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		# The parts the builder stood are handed what the flags chose for each
 		# (`main._simulation_builder()`).
 		var city := Boot.city(booted.main)
-		t.check(city != null and not RunCity.events(city).world.skip_drawing
+		t.check(city != null and RunCity.events(city).world.surroundings().draws()
 				and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist"))
 				and RunCity.crowd(city).skip_motion and not RunCity.crowd(city).skip_agent_drawing,
 				"and the events and the crowd it stands are handed theirs")
@@ -319,7 +319,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	await t.get_tree().process_frame
 	t.check(city.scenery_ground.mode() == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
 			and chunks > 0 and shade.draws.is_empty(), "the ground, the scenery and the shadows")
-	t.check(RunCity.events(city).world.skip_drawing
+	t.check(not RunCity.events(city).world.surroundings().draws()
 			and RunCity.events(city).spawner.rolls_a_pelican(EventCatalogue.by_id("cyclist")),
 			"the events")
 	t.check(RunCity.crowd(city).skip_motion and RunCity.crowd(city).skip_agent_drawing, "the crowd")

@@ -597,7 +597,8 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 					if sides.is_empty():
 						continue
 					var standing := EventInstance.new()
-					standing.setup(body.def, body.position, PackedVector2Array(), Vector2.RIGHT, map)
+					standing.setup(body.def, body.position, PackedVector2Array(), Vector2.RIGHT,
+							EventSurroundings.new().on(map))
 					var spread_vertical := standing.runs_vertically()
 					standing.free()
 					var offset := EventFootprints.guard_post_offset(spread_vertical, sides[0])

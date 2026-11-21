@@ -43,7 +43,7 @@ static func _convoy(where: WhereSheIs, way_on: WayOn) -> EventInstance:
 	var def := EventCatalogue.by_id("military_convoy").as_sent_ahead()
 	var instance := EventInstance.new()
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(2.0 * TILE, 0.0)])
-	instance.setup(def, path[0], path, Vector2.RIGHT, null, null, where)
+	instance.setup(def, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
 	instance.restore(EventSave.new(maxf(def.telegraph_time, 0.01) + 0.05, 0.0))
 	if way_on:
 		instance.go_on_by(way_on)

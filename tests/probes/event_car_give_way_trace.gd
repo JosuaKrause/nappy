@@ -184,11 +184,6 @@ func _zebras_either_side_v(map: CityMap, column: int, c: int) -> bool:
 
 func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 	var route: PackedVector2Array = rig["route"]
-	var car_where := WhereSheIs.nowhere()
-	var car := EventInstance.new()
-	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), map, null, car_where)
-	t.add_child(car)
-	car.set_process(false)
 	var signals := TrafficSignals.new(map)
 	if rig.has("junction"):
 		signals.restart_cycle()
@@ -202,7 +197,13 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 		else:
 			while not signals.green_for(junction, rig.get("vertical", false)):
 				signals.advance(0.25)
-		car.signals = signals
+	var car_where := WhereSheIs.nowhere()
+	var car := EventInstance.new()
+	car.setup(def, route[0], route, (route[1] - route[0]).normalized(),
+			EventSurroundings.new().on(map).hearing(car_where) \
+				.stopping_at(signals if rig.has("junction") else null))
+	t.add_child(car)
+	car.set_process(false)
 	var her: Vector2 = rig["her"]
 	var chain := PackedByteArray()
 	chain.resize(32)
