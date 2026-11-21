@@ -999,7 +999,7 @@ enum SolidWhen {
 	## the whole time.
 	ONCE_IT_STARTS,
 	## **A boom**: a bar across a door's carriageway that the cars raise and lower
-	## (`Crowd._stop_for_gates()`, through the `RegionPlanner.GateState` its instance carries), and
+	## (`Crowd._stop_for_gates()`, through the `GateState` its instance carries), and
 	## that is solid to her **only while it is down**. `checkpoint_gate` is the one row that sets it.
 	##
 	## It never detains: a lowered boom is a wall across the road and a raised one is ground she

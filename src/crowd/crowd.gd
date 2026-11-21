@@ -226,10 +226,10 @@ var _struck := false
 var skip_motion := false
 ## `--skip crowd`, handed in the same way: every agent this makes skips its own drawing.
 var skip_agent_drawing := false
-## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `DayDirector.start()` from
-## `DayStreets.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no
+## Today's checkpoint gates — `GateState`, set once a day by `DayDirector.start()` from
+## `DayStreets.region_plan().gate_states()`. Empty on any day before the wall stands, or in a rig with no
 ## city behind it. See `_stop_for_gates()`.
-var _gates: Array[RegionPlanner.GateState] = []
+var _gates: Array[GateState] = []
 
 ## Where today's seals have left carriageway a car can drive into and not out of — a junction with
 ## all four arms held, and whatever stub of lane is shut in with it. Kept as one object for the day
@@ -237,7 +237,7 @@ var _gates: Array[RegionPlanner.GateState] = []
 ## whole of. See `CrowdPockets`.
 var _pockets := CrowdPockets.new()
 ## Today's checkpoint huts, as the crowd sees them — one `WalkerDoorHold` per door body that
-## detains, rebuilt every `start_day` from `DayStreets.region_plan().door_bodies`. Empty before
+## detains, rebuilt every `start_day` from `DayStreets.region_plan().door_plans()`. Empty before
 ## the wall stands or for a rig with no streets, which then holds nobody at anything. See
 ## `_hold_walkers_at_doors()`, and `WalkerDoorHold` for what a hut's own state actually is.
 var _door_holds: Array[WalkerDoorHold] = []
@@ -245,7 +245,7 @@ var _door_holds: Array[WalkerDoorHold] = []
 ## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
 ## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to the
 ## gates' state other than the region plan it already has through `setup()`.
-func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
+func set_gates(gates: Array[GateState]) -> void:
 	_gates = gates
 
 ## How near a boom's own ground point her centre may come and still have some of her rig under it:
@@ -260,9 +260,9 @@ static func _under_the_boom_within() -> float:
 
 ## Whether she is standing under this gate's arm, so it must not come down on her. `false` before
 ## the first frame has found her, or in a rig with no player — nobody to lower it onto.
-func _is_she_under(gate: RegionPlanner.GateState) -> bool:
+func _is_she_under(gate: GateState) -> bool:
 	return _player != null \
-			and _player.global_position.distance_to(gate.position) <= _under_the_boom_within()
+			and _player.global_position.distance_to(gate.ground_point()) <= _under_the_boom_within()
 
 ## Hands the crowd the world it is drawn in, the map it walks and drives, the lights its traffic
 ## obeys (`TrafficSignals`), today's streets (`DayStreets`, or null for none) and the navigator a
@@ -347,7 +347,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 			# is the cars' in any case: `_stop_for_gates()` is its answer. Which hut a given walker
 			# can be held at is a question about that walker's own line of travel rather than about
 			# the row, and `_hold_walkers_at_doors()` answers it.
-			for body in plan.door_bodies:
+			for body in plan.door_plans():
 				if not body.detains_her():
 					continue
 				var hold := WalkerDoorHold.new()
@@ -919,7 +919,7 @@ func _stop_for_gates(delta: float) -> void:
 	# car. The accumulators below are per gate and every gate sees the cars in the crowd's own
 	# order, so what each gate ends up knowing is what the gate-by-gate scan found, tie for tie.
 	var lines := _bucket_by_line(_gates.map(
-			func(gate: RegionPlanner.GateState) -> Vector2: return gate.position))
+			func(gate: GateState) -> Vector2: return gate.ground_point()))
 	var nearest: Array[CrowdAgent] = []
 	nearest.resize(count)
 	var nearest_along := PackedFloat64Array()
@@ -931,7 +931,7 @@ func _stop_for_gates(delta: float) -> void:
 		var forward := agent.heading()
 		var here := agent.global_position
 		for index in _near_a_line(lines, count, forward, here, GATE_LANE_TOLERANCE):
-			var offset: Vector2 = _gates[index].position - here
+			var offset: Vector2 = _gates[index].ground_point() - here
 			var along := offset.dot(forward)
 			var across := (offset - forward * along).length()
 			if across > GATE_LANE_TOLERANCE:
@@ -946,23 +946,23 @@ func _stop_for_gates(delta: float) -> void:
 	for index in count:
 		var gate := _gates[index]
 		var closest := nearest[index]
-		if gate.raised:
+		if gate.is_boom_up():
 			# Stays up for a platoon rather than slamming shut between cars, and over her while she
 			# is under it; lowers the moment the road either side of it is actually clear.
-			gate.raised = anybody_within_a_length[index] == 1 or _is_she_under(gate)
-			if not gate.raised:
-				gate.stopped_for = 0.0
+			gate.set_boom_up(anybody_within_a_length[index] == 1 or _is_she_under(gate))
+			if not gate.is_boom_up():
+				gate.release_hold()
 			continue
 		if not closest or nearest_along[index] >= CarStrategy.braking_distance(closest.speed()) \
 				+ Tuning.CAR_STOP_LINE_SETBACK:
-			gate.stopped_for = 0.0
+			gate.release_hold()
 			continue
 		closest.lane().find_a_gate_to_hold_at(
 				maxf(0.0, nearest_along[index] - Tuning.CAR_STOP_LINE_SETBACK))
 		if closest.speed() < Tuning.CAR_STOPPED_SPEED:
-			gate.stopped_for += delta
-			if gate.stopped_for >= GATE_STOP_SECONDS:
-				gate.raised = true
+			gate.hold_for(delta)
+			if gate.held_for() >= GATE_STOP_SECONDS:
+				gate.set_boom_up(true)
 
 ## How wide a bucket of `_bucket_by_line()` is. Wider than a lane tolerance's whole span (64px for a
 ## hut, 80px for a gate), so a body's reach covers two buckets at most.

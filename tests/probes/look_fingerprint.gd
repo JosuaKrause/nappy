@@ -100,7 +100,7 @@ class Rig extends RefCounted:
 	## What a protest is handed to point at (`points`).
 	var point := Vector2.ZERO
 	## The boom state a gate is handed (`boom`), which the drive raises and lowers.
-	var gate: RegionPlanner.GateState
+	var gate: GateState
 
 	func point_now() -> Vector2:
 		return point
@@ -246,7 +246,7 @@ func _stand(t: TestRunner, atlas: AtlasLibrary, where: WhereSheIs, row: EventDef
 	var surroundings := EventSurroundings.new().on(map).hearing(where).drawn_from(atlas) \
 			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(atlas)))
 	if drive == "boom":
-		rig.gate = RegionPlanner.GateState.new()
+		rig.gate = GateState.new()
 	if drive == "points":
 		rig.point = AT + Vector2(0.0, -400.0)
 		surroundings.pointing_protests_with(Callable(rig, "point_now"))

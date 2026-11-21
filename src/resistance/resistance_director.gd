@@ -2098,7 +2098,7 @@ func _paths_reach_between(her: Vector2, near: float, far: float) -> Dictionary:
 	return found
 
 ## Where day 9's task points: one of today's region-wall doors — a `StreetNetwork.Segment` from
-## `DayStreets.region_plan().doors` — at its own crossing tile, chosen the same reachable-among-
+## `DayStreets.region_plan().door_segments()` — at its own crossing tile, chosen the same reachable-among-
 ## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city
 ## opened none, which does not happen on this task's own day: `Tuning.REGION_WALL_FIRST_DAY`
 ## equals the day this task is offered on. The pool is `ResistanceSteps.target_candidates()`,
@@ -2139,12 +2139,12 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 	var region_plan := _region_plan()
 	if not region_plan:
 		return _map.tile_to_world(tile)
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		if not segment.tile_rect().has_point(tile):
 			continue
 		var area := _map.tile_rect_to_world(segment.tile_rect())
 		var houses: Array[EventPlan] = []
-		for body in region_plan.door_bodies:
+		for body in region_plan.door_plans():
 			if not area.has_point(body.placed_at()):
 				continue
 			if body.is_a_boom():
@@ -2630,7 +2630,7 @@ func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
 
 ## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance_*.gd`
 ## build with no streets.
-func _region_plan() -> RegionPlanner.RegionPlan:
+func _region_plan() -> RegionPlan:
 	return _streets.region_plan() if _streets else null
 
 ## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
@@ -2644,12 +2644,12 @@ func _region_plan() -> RegionPlanner.RegionPlan:
 ## are all on the map and before any body is, which is why `is_obstructed()` is not part of it:
 ## the scheduler's own discs stand in for the bodies, the same discs `_reachable_from_home()` asks.
 static func target_ground(map: CityMap, day: int,
-		region_plan: RegionPlanner.RegionPlan) -> Array[Vector2i]:
+		region_plan: RegionPlan) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	var step := ResistanceSteps.narrow_target_on(day)
 	if not step:
 		return found
-	var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+	var walled: Array[Rect2i] = region_plan.walled_alleys() if region_plan else []
 	var allow_held := ResistanceSteps.stands_on_held_ground(step)
 	for tile in ResistanceSteps.target_candidates(step, map, region_plan):
 		if SpawnSiting.is_legal_ground(map, tile, walled, allow_held):

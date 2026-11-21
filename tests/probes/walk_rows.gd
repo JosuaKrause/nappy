@@ -254,7 +254,7 @@ class _Drawing extends RefCounted:
 class _Day extends RefCounted:
 	var map: CityMap
 	var tree: RouteTree
-	var region_plan: RegionPlanner.RegionPlan
+	var region_plan: RegionPlan
 	var seals: Array[EventPlan] = []
 	var doors := PackedVector2Array()
 	var corridor: Corridor
