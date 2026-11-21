@@ -1783,7 +1783,7 @@ static func _police_patrol() -> EventDef:
 	# (`police_car_front.svg`, x 3 to 27), as a capsule laid along its heading, the datum its
 	# shadow is drawn from. `vehicle` makes it the body as well.
 	def.shape = GroundShape.segment(9.0, 12.0)
-	def.vehicle = VehicleSpec.new()
+	def.vehicle = VehicleSpec.driving()
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -2054,7 +2054,7 @@ static func _roadblock() -> EventDef:
 	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
 	# (woolly-penguin #748) on the clock every charger that waits for her keeps.
-	var chase := PursuitSpec.new().catching_within(MASKED_MAN_REACH).standing() \
+	var chase := PursuitSpec.at(0.0).catching_within(MASKED_MAN_REACH).standing() \
 			.warning_for(CHARGER_WARNING).leaving_its_body().over_the_street().round_buildings()
 	def.hunts = HuntSpec.pursuing(chase)
 	def.barrier_structure = true

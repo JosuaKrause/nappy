@@ -865,7 +865,7 @@ func notice_within() -> float:
 
 ## Its chase speed, or 0 for a row that does not pursue.
 func chase_speed() -> float:
-	return pursuit.speed if pursuit else 0.0
+	return pursuit.speed() if pursuit else 0.0
 
 ## Whether its pursuer, cold or hunting, leaves its body standing when he sets off
 ## (`PursuitSpec.leaves_its_body`): the roadblock's, whose cold row carries it on its hunt.
@@ -1284,7 +1284,7 @@ enum Role {
 @export var intensity_ramp := 1.0
 
 ## **The rows this one brings after it** — see `Aftermath`; empty for a row that brings none.
-@export var aftermath := Aftermath.new()
+@export var aftermath := Aftermath.none()
 
 ## Which act the row belongs to, narratively. Only `own_first_day()` reads it, for a `SCRIPTED` row,
 ## whose own day is the first day of its act (`first_day` decides when any other row can appear);
@@ -1543,10 +1543,10 @@ func validate() -> bool:
 					+ "its notice and its chase would run out wherever the stream put it — only a "
 					+ "row nothing but a director sets on her (SCRIPTED, day 0) may have no notice")
 			return false
-	for each_notice: NoticeSpec in [notice, from_day_after.notice if from_day_after else null]:
+	for each_notice: NoticeSpec in [notice, from_day_after.notice() if from_day_after else null]:
 		if each_notice and each_notice.within() <= 0.0:
 			push_error("event '%s' notices her at %.0fpx: a notice needs a distance" % [id,
-					each_notice.within])
+					each_notice.within()])
 			return false
 	# **A row that answers to the resistance says how it hunts** (`hunts`), and a `HuntSpec` is built
 	# either letting men out or pursuing, never both and never neither, with its rung and its catch
