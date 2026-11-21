@@ -926,7 +926,7 @@ func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if def.body().declared_pieces().size() > 1:
 			continue
-		var expected := 1 if def.body().has_a_body() else 0
+		var expected := 1 if def.body().ground_shape() != null else 0
 		t.check(def.body().pieces().size() == expected,
 				"'%s' is one body, or none where it has no shape (%d)" % [def.id, expected])
 		if def.obstructs_within() > 0.0:
