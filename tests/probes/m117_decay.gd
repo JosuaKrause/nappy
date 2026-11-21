@@ -246,9 +246,9 @@ func _cost_table() -> void:
 	for def in EventCatalogue.all():
 		rows.append({"id": def.id, "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
-				"hard_fail": def.hard_fail, "flock": def.flock_size > 1,
-				"pursues": def.pursuit != null, "emission": _mean_emission(def),
-				"intensity": def.intensity, "outer": def.outer_radius})
+				"hard_fail": def.ends_the_day(), "flock": def.flock_size > 1,
+				"pursues": def.pursues(), "emission": _mean_emission(def),
+				"intensity": def.peak(), "outer": def.heard_within()})
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["walk"] < b["walk"])
 	print("| Event | walk through | run through |")
 	print("| --- | ---: | ---: |")
@@ -275,11 +275,11 @@ func _cost_table() -> void:
 ## The same integral at running pace, with the running penalty in place of the walking decay —
 ## `tests/test_events.gd._cost_to_run_through`, which is where the assertion lives.
 func _run_through_cost(def: EventDef) -> float:
-	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
+	var seconds := def.heard_within() * 2.0 / Tuning.RUN_SPEED
 	return (_mean_emission(def) - Baby.EXCITEMENT_DECAY_RUNNING
 			+ Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
 ## The mean emission along the line through the centre, read back from what walking through costs.
 func _mean_emission(def: EventDef) -> float:
-	return def.walk_through_cost() / (def.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+	return def.walk_through_cost() / (def.heard_within() * 2.0 / Tuning.WALK_SPEED) \
 			+ Tuning.EXCITEMENT_DECAY_WALKING

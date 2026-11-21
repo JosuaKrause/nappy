@@ -155,20 +155,20 @@ func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t: TestRunner) -
 		t.check(def != null, "the catalogue carries '%s'" % id)
 		if not def:
 			continue
-		t.check(def.warned_first and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and def.telegraph_time == 0.0,
+		t.check(def.warned_first and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and def.telegraphs_for() == 0.0,
 				"'%s' is warned of before it exists and arrives chasing, with no closing in" % id)
 		t.check(is_equal_approx(def.offscreen_notice, robber.offscreen_notice)
 				and def.offscreen_notice <= Tuning.WARNING_ALONE_MAX,
 				"'%s' has the robber's %.1fs badge" % [id, robber.offscreen_notice])
 		t.check(is_equal_approx(def.duration, Tuning.PURSUIT_TIME),
 				"'%s' chases for the %.0fs cap" % [id, Tuning.PURSUIT_TIME])
-		t.check(def.pursuit != null and is_equal_approx(def.chase_speed(), robber.chase_speed())
+		t.check(def.pursues() and is_equal_approx(def.chase_speed(), robber.chase_speed())
 				and is_equal_approx(def.lethal_reach(), robber.lethal_reach())
 				and is_equal_approx(def.standoff_reach(), robber.standoff_reach())
-				and is_equal_approx(def.intensity, robber.intensity)
-				and is_equal_approx(def.outer_radius, robber.outer_radius),
+				and is_equal_approx(def.peak(), robber.peak())
+				and is_equal_approx(def.heard_within(), robber.heard_within()),
 				"'%s' chases, catches and costs exactly as the task's robber" % id)
-		t.check(def.shape != null and is_equal_approx(def.shape.reach(), robber.shape.reach()),
+		t.check(def.ground_shape() != null and is_equal_approx(def.ground_shape().reach(), robber.ground_shape().reach()),
 				"'%s' stands on the robber's own shape" % id)
 		t.check(def.validate(), "'%s' passes the catalogue's own contracts" % id)
 
@@ -423,19 +423,19 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> vo
 	for day: int in [8, 9]:
 		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
 		var own := EventCatalogue.on_foot_on(DaySpec.for_day(day))
-		t.check(out.id == own.id and out.look == own.look,
+		t.check(out.id == own.id and out.picture() == own.picture(),
 				"day %d: the man out of a patrol car is %s" % [day, own.id])
-		t.check(not out.hard_fail and is_equal_approx(out.pursuit.stop_excitement,
+		t.check(not out.ends_the_day() and is_equal_approx(out.pursuit.stop_excitement,
 				EventCatalogue.OFFICER_STOP_EXCITEMENT),
 				"day %d: and his catch is a stop of %.0f points, never the end of the day"
 				% [day, out.pursuit.stop_excitement])
 		t.check(not out.warns_before_it_exists() and not out.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"day %d: he gets out in her view, with no off-screen badge" % day)
 		t.check(out.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and out.pursuit.stands
-				and is_equal_approx(out.telegraph_time, Tuning.WARNING_ALONE_MAX)
-				and out.telegraph_time >= Tuning.OFFSCREEN_WARNING_MIN,
+				and is_equal_approx(out.telegraphs_for(), Tuning.WARNING_ALONE_MAX)
+				and out.telegraphs_for() >= Tuning.OFFSCREEN_WARNING_MIN,
 				"day %d: he stands with his hand raised for a %.1fs heads-up before he chases"
-				% [day, out.telegraph_time])
+				% [day, out.telegraphs_for()])
 		t.check(out.validate(), "day %d: and the pursuit contract holds him" % day)
 		var her := Vector2.ZERO
 		var man_where := WhereSheIs.nowhere()
@@ -445,7 +445,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> vo
 		var stopped := INF
 		var struck := false
 		var elapsed := 0.0
-		while elapsed < out.telegraph_time + 4.0:
+		while elapsed < out.telegraphs_for() + 4.0:
 			man_where.tell(her)
 			man.step(STEP)
 			elapsed += STEP
@@ -453,7 +453,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> vo
 			if man.has_stopped_her():
 				stopped = elapsed
 				break
-		t.check(stopped >= out.telegraph_time and stopped < INF,
+		t.check(stopped >= out.telegraphs_for() and stopped < INF,
 				"day %d: standing beside him, he reaches her only after his notice (%.2fs)"
 				% [day, stopped])
 		t.check(not struck, "day %d: and his catch never strikes her" % day)
@@ -486,7 +486,7 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner)
 		var landed := 0.0
 		var after := 0.0
 		var elapsed := 0.0
-		while elapsed < out.telegraph_time + 8.0 and not man.is_finished:
+		while elapsed < out.telegraphs_for() + 8.0 and not man.is_finished:
 			man_where.tell(her)
 			man.step(STEP)
 			elapsed += STEP
@@ -518,7 +518,7 @@ func _test_he_waits_outside_a_hold_to_stop_her(t: TestRunner) -> void:
 	var her := Vector2.ZERO
 	var elapsed := 0.0
 	man_where.tell(man_where.at(), Vector2.INF, Rect2(), false, true, true)
-	while elapsed < out.telegraph_time + 4.0:
+	while elapsed < out.telegraphs_for() + 4.0:
 		man_where.tell(her, Vector2.INF, Rect2(), false, true, man_where.is_held_at_a_door())
 		man.step(STEP)
 		elapsed += STEP
@@ -634,7 +634,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 				"day %d: and %s got out" % [day, expected])
 		t.check(car_moved < 0.01, "day %d: the car stood while he was out" % day)
 		t.check(stopped_her_at < INF and stopped_her_at - out_at >= EventCatalogue.out_of_the_car(
-				DaySpec.for_day(day)).telegraph_time, "day %d: standing still, she is reached after his notice "
+				DaySpec.for_day(day)).telegraphs_for(), "day %d: standing still, she is reached after his notice "
 				% day + "(%.2fs) and stopped" % (stopped_her_at - out_at))
 		t.check(struck[0] == "", "day %d: and the day does not end (%s)" % [day, struck[0]])
 		t.check(back_at.distance_to(door) <= 1.0 and officer != null
@@ -734,7 +734,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 		if officer == null and MenLetOut.first_of(events, car) != null:
 			officer = MenLetOut.first_of(events, car)
 		var out_of_reach := car.global_position.distance_to(her.global_position) \
-				> hot.outer_radius + hot.shape.reach()
+				> hot.heard_within() + hot.ground_shape().reach()
 		var his_man_is_back := officer != null and (not is_instance_valid(officer) or officer.is_finished)
 		if car.is_finished or car.is_leaving or (his_man_is_back and out_of_reach):
 			break
@@ -851,7 +851,7 @@ func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(cold, level)
 			var hunts := level >= EventDef.HEAT_HUNTS_LEVEL
-			t.check(hot.pursuit == null and hot.hard_fail == cold.hard_fail,
+			t.check(not hot.pursues() and hot.ends_the_day() == cold.ends_the_day(),
 					"'%s' heat %d: the van itself never chases her, and is as lethal as cold"
 					% [id, level])
 			t.check(hot.investigates() == hunts, "'%s' heat %d: it lets men out iff it hunts"
@@ -859,7 +859,7 @@ func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 			t.check(hot.validate(), "'%s' heat %d: and it is fair" % [id, level])
 	for day: int in [8, 10]:
 		var man := EventCatalogue.out_of_the_car(DaySpec.for_day(day), false)
-		t.check(man.hard_fail and man.pursuit.stop_excitement == 0.0 and man.validate(),
+		t.check(man.ends_the_day() and man.pursuit.stop_excitement == 0.0 and man.validate(),
 				"day %d: a hunting van's man ends the day when he catches her" % day)
 
 ## **No vehicle chases her like a running man, at any heat** *(azure-koala, finding 7: "police cars
@@ -869,11 +869,11 @@ func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 func _test_no_vehicle_pursues_her(t: TestRunner) -> void:
 	var vehicles := 0
 	for def in EventCatalogue.all():
-		if not (def.vehicle != null or EventPictures.WHEELS_BY_LOOK.has(def.look)):
+		if not (def.drives() or EventPictures.WHEELS_BY_LOOK.has(def.picture())):
 			continue
 		vehicles += 1
 		for level in EventCatalogue.heat_levels():
-			t.check(not EventCatalogue.heated(def, level).pursuit != null,
+			t.check(not EventCatalogue.heated(def, level).pursues(),
 					"'%s' at heat %d never pursues her" % [def.id, level])
 	t.check(vehicles >= 3, "checked %d vehicle rows" % vehicles)
 
@@ -900,14 +900,14 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 		van.let_out(man)
 		men.append(man)
 	var elapsed := 0.0
-	var past := hot.telegraph_time + hot.duration + 2.0
+	var past := hot.telegraphs_for() + hot.duration + 2.0
 	while elapsed < past:
 		van_where.tell(Vector2(2000.0, 0.0))
 		van.step(STEP)
 		elapsed += STEP
 	t.check(not van.is_finished and not van.is_leaving,
 			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
-			% [elapsed, hot.telegraph_time + hot.duration])
+			% [elapsed, hot.telegraphs_for() + hot.duration])
 	var events := EventManager.new()
 	events.retire(men[0])
 	van.step(STEP)

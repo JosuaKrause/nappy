@@ -317,7 +317,7 @@ func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(map))
-	instance.restore(EventSave.aged(def.telegraph_time + 1.0))
+	instance.restore(EventSave.aged(def.telegraphs_for() + 1.0))
 	return instance
 
 ## A car on the far side of a building, and a walker startled there: silent through the wall,
@@ -510,7 +510,7 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t: TestRunner) -
 	var at := Vector2(304.0, 384.0)
 	var behind := _musician(def, at, _map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
 	var beside := _musician(def, at, _map_with([], 24, 24))
-	var outline := GroundShape.field_outline_at(at, Vector2.ZERO, def.outer_radius)
+	var outline := GroundShape.field_outline_at(at, Vector2.ZERO, def.heard_within())
 	var whole := DebugLayers.open_runs(outline, at, beside.source().wall_grid())
 	t.check(whole.size() == 1 and whole[0].size() == outline.size() + 1
 			and whole[0][0] == whole[0][whole[0].size() - 1],
@@ -735,9 +735,9 @@ func _test_the_fields_layer_cuts_a_moved_source_again(t: TestRunner) -> void:
 	musician.position = Vector2(320.0, 384.0)
 	var moved: Array = layers.field_runs(everywhere)
 	var expected: Array = []
-	for level: float in [def.inner_radius, def.outer_radius]:
-		expected.append(DebugLayers.open_runs(def.shape.field_outline(musician.position,
-				musician.solid_axis(), Vector2.ZERO, level) if def.shape != null
+	for level: float in [def.core_within(), def.heard_within()]:
+		expected.append(DebugLayers.open_runs(def.ground_shape().field_outline(musician.position,
+				musician.solid_axis(), Vector2.ZERO, level) if def.ground_shape() != null
 				else GroundShape.field_outline_at(musician.position, Vector2.ZERO, level),
 				musician.position, map))
 	t.check(moved.size() == 2 and str(moved[1][0]) != str(first[1][0]),
@@ -797,9 +797,9 @@ func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> v
 				else Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 600.0)
 		emitter.position = Vector2(rng.randf_range(-1500.0, 1500.0), rng.randf_range(-1500.0, 1500.0))
 		def.inner_radius = rng.randf_range(10.0, 200.0)
-		def.outer_radius = def.inner_radius + rng.randf_range(0.0, 320.0)
+		def.outer_radius = def.core_within() + rng.randf_range(0.0, 320.0)
 		var on_screen := 0
-		for level: float in [def.inner_radius, def.outer_radius]:
+		for level: float in [def.core_within(), def.heard_within()]:
 			var outline := emitter.chosen_shape.field_outline(emitter.position,
 					emitter.chosen_axis, emitter.chosen_velocity, level)
 			var bounds := Rect2(outline[0], Vector2.ZERO)

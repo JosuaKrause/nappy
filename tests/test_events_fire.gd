@@ -187,9 +187,9 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	# than the field it will emit — so she is outside it the whole time it is telegraphing, and
 	# the reaction window is real rather than nominal.
 	for end: Vector2 in [path[0], path[1]]:
-		t.check(at.distance_to(end) > def.outer_radius,
+		t.check(at.distance_to(end) > def.heard_within(),
 				"she is outside its reach (%.0fpx) when it appears (%.0fpx away)"
-				% [def.outer_radius, at.distance_to(end)])
+				% [def.heard_within(), at.distance_to(end)])
 	t.check(lead / Tuning.WALK_SPEED >= 1.5,
 			"and the lead is %.1fs of walking, which is time to do something about it"
 			% (lead / Tuning.WALK_SPEED))
@@ -301,7 +301,7 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 ## parked engine would otherwise bob at the kerb for ever.
 func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("fire_truck")
-	t.check(def != null and def.stops_where_it_arrives,
+	t.check(def != null and def.parks_where_it_arrives(),
 			"the fire engine is the row that stops where it arrives")
 	if not def:
 		return
@@ -317,7 +317,7 @@ func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 	t.close_to(instance.travel_velocity().length(), 0.0,
 			"and it answers zero for how fast it is travelling, so nothing reads it as closing",
 			0.001)
-	t.check(instance.source().contribution_at(kerb + Vector2(def.inner_radius * 0.5, 0.0)) > 0.0,
+	t.check(instance.source().contribution_at(kerb + Vector2(def.core_within() * 0.5, 0.0)) > 0.0,
 			"it is still emitting where it stands, which is the cost the pair is made of")
 	var travelled := instance.path_travelled()
 	_advance(instance, 6.0)
@@ -455,9 +455,9 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 			closest = minf(closest, instance.global_position.distance_to(at))
 			if instance.is_finished:
 				break
-		t.check(closest <= def.outer_radius,
+		t.check(closest <= def.heard_within(),
 				"'%s' actually meets the rig (closest %.0fpx of a %.0fpx reach)"
-				% [id, closest, def.outer_radius])
+				% [id, closest, def.heard_within()])
 		instance.free()
 
 func _test_hard_fail_only_when_active(t: TestRunner) -> void:
@@ -475,7 +475,7 @@ func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 	var instance := _instance(t, def)
 	t.check(not instance.is_lethal_at(Vector2.ZERO),
 			"a telegraphing hard-fail event is not yet lethal - that is the warning")
-	_advance(instance, def.telegraph_time + 0.05)
+	_advance(instance, def.telegraphs_for() + 0.05)
 	t.check(instance.is_lethal_at(Vector2(10.0, 0.0)),
 			"an active hard-fail event is lethal inside its inner radius")
 	t.check(not instance.is_lethal_at(Vector2(100.0, 0.0)),
@@ -484,6 +484,6 @@ func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 
 	var safe := EventCatalogue.by_id("cat_dash")
 	var harmless := _instance(t, safe)
-	_advance(harmless, safe.telegraph_time + 0.05)
+	_advance(harmless, safe.telegraphs_for() + 0.05)
 	t.check(not harmless.is_lethal_at(Vector2.ZERO), "an ordinary event is never lethal")
 	harmless.free()

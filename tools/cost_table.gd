@@ -108,7 +108,7 @@ func _included_rows() -> Array[EventDef]:
 ## exactly like a measured one. Dashed instead, the way `docs/EVENTS.md`'s own run-through column
 ## is already empty for every pursuer: "they follow, so there is no crossing to price."
 func _pass_excluded(def: EventDef) -> bool:
-	return def.pursuit != null or def.notice != null
+	return def.pursues() or def.waits_for_her()
 
 # ------------------------------------------------------------------------ asserts ---
 
@@ -116,9 +116,9 @@ func _assert_distances_clear_every_outer_radius(rows: Array[EventDef]) -> bool:
 	var last: float = DISTANCES[DISTANCES.size() - 1]
 	var ok := true
 	for def in rows:
-		if def.outer_radius >= last:
+		if def.heard_within() >= last:
 			push_error(("tools/cost_table.gd: %s has outer_radius %.1fpx, at or past the table's "
-					% [def.id, def.outer_radius])
+					% [def.id, def.heard_within()])
 					+ "own last distance %.1fpx — widen DISTANCES so the last column still reads "
 					% last + "the bare decay for it")
 			ok = false
@@ -148,28 +148,28 @@ func _role_str(def: EventDef) -> String:
 func _geometry_row(def: EventDef) -> Dictionary:
 	var row := {}
 	row["role"] = _role_str(def)
-	row["intensity"] = "%.1f" % def.intensity
+	row["intensity"] = "%.1f" % def.peak()
 	if def.core_intensity > 0.0:
 		row["core_intensity"] = "%.1f" % def.core_intensity
 		row["core_radius"] = "%.1f" % def.core_radius
 	else:
 		row["core_intensity"] = "—"
 		row["core_radius"] = "—"
-	row["inner_radius"] = "%.1f" % def.inner_radius
-	row["outer_radius"] = "%.1f" % def.outer_radius
+	row["inner_radius"] = "%.1f" % def.core_within()
+	row["outer_radius"] = "%.1f" % def.heard_within()
 	row["falloff_power"] = "%.1f" % def.falloff_power
-	if def.pulse_period > 0.0:
-		row["pulse_period"] = "%.1f" % def.pulse_period
-		row["pulse_trough"] = "%.1f" % (def.intensity * 0.25)
+	if def.pulses_every() > 0.0:
+		row["pulse_period"] = "%.1f" % def.pulses_every()
+		row["pulse_trough"] = "%.1f" % (def.peak() * 0.25)
 	else:
 		row["pulse_period"] = "—"
 		row["pulse_trough"] = "—"
 	# A pursuer's relevant speed is how fast it closes once it notices, not its cold `speed`
 	# (almost always 0 for one, since most pursuers wait rather than patrol); everything else
 	# that moves reads its own `speed`.
-	if def.pursuit != null:
+	if def.pursues():
 		row["speed"] = "%.1f" % def.chase_speed()
-	elif def.mobile and def.speed > 0.0:
+	elif def.moves() and def.speed > 0.0:
 		row["speed"] = "%.1f" % def.speed
 	else:
 		row["speed"] = "—"
@@ -185,7 +185,7 @@ func _distance_row(def: EventDef, sensitivity: float) -> Dictionary:
 	for i in DISTANCES.size():
 		var d: float = DISTANCES[i]
 		var base := def.emission_at(Vector2(d, 0.0))
-		if def.pulse_period > 0.0:
+		if def.pulses_every() > 0.0:
 			base *= PULSE_MEAN
 		var net := base * sensitivity - Tuning.EXCITEMENT_DECAY_WALKING
 		row[DISTANCE_COLS[i]] = "%.1f" % net

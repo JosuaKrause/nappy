@@ -106,10 +106,10 @@ func _cost_to_walk_through(def: EventDef) -> float:
 
 ## The same integral at running pace, with the running penalty in place of the walking decay.
 func _cost_to_run_through(def: EventDef) -> float:
-	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
+	var seconds := def.heard_within() * 2.0 / Tuning.RUN_SPEED
 	# The mean emission along the line is what `walk_through_cost()` charges over the walking time,
 	# the walking decay added back.
-	var mean := def.walk_through_cost() / (def.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+	var mean := def.walk_through_cost() / (def.heard_within() * 2.0 / Tuning.WALK_SPEED) \
 			+ Tuning.EXCITEMENT_DECAY_WALKING
 	return (mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
@@ -142,7 +142,7 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t: TestRunner) -> 
 					+ "if that has stopped being true, take it off the list rather than keeping it")
 					% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
 			continue
-		if def.pursuit != null:
+		if def.pursues():
 			pursuers += 1
 			# Walking loses ground and running gains it. Everything else about a pursuit follows
 			# from this one line, including why it is the only place running can be correct.
@@ -150,9 +150,9 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t: TestRunner) -> 
 					"'%s' catches somebody who walks away from it" % def.id)
 			t.check(def.chase_speed() < Tuning.RUN_SPEED,
 					"'%s' does not catch somebody who runs" % def.id)
-			t.check(def.hard_fail,
+			t.check(def.ends_the_day(),
 					"'%s' has to be lethal, or running from it is just an expensive walk" % def.id)
-			t.check((Tuning.RUN_SPEED - def.chase_speed()) * def.duration >= def.inner_radius,
+			t.check((Tuning.RUN_SPEED - def.chase_speed()) * def.duration >= def.core_within(),
 					"'%s' can be outrun by more than the radius that ends the day" % def.id)
 			t.check(def.duration <= Tuning.PURSUIT_TIME,
 					"'%s' gives up before the run costs more than the day it saves" % def.id)
@@ -194,26 +194,26 @@ func _test_the_cyclist_costs_what_he_did(t: TestRunner) -> void:
 func _test_nothing_chases_her_before_the_run_is_taught(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_TAUGHT_DAY):
 		for def in EventCatalogue.available_on(day):
-			t.check(def.pursuit == null,
+			t.check(not def.pursues(),
 					"day %d has nothing that has to be outrun ('%s')" % [day, def.id])
 	var chasers := 0
 	for def in EventCatalogue.available_on(Tuning.RUN_TAUGHT_DAY):
-		chasers += 1 if def.pursuit != null else 0
+		chasers += 1 if def.pursues() else 0
 	t.check(chasers > 0, "and the day the run is taught has something to teach it with")
 
 ## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
 ## −0.1 points to walk straight through, so the correct play was to plough into it.
 func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
-		if def.intensity <= 0.0 or def.id in _SCENERY:
+		if def.peak() <= 0.0 or def.id in _SCENERY:
 			continue
 		if def.id in _PRICED_BY_THEIR_CAPTURE:
 			# The exemption owes its own check, or it is a way of not being tested: a row excused
 			# from costing something to walk past has to cost something to walk into.
-			t.check(def.detain_seconds > 0.0 and Tuning.CHAT_EXCITEMENT > 0.0,
+			t.check(def.detains_her() and Tuning.CHAT_EXCITEMENT > 0.0,
 					"'%s' is excused the field because the detention is what it charges (%.1f "
 					% [def.id, Tuning.CHAT_EXCITEMENT]
-					+ "over %.1fs)" % def.detain_seconds)
+					+ "over %.1fs)" % def.detains_for())
 			continue
 		t.check(_cost_to_walk_through(def) > 0.0,
 				"walking through '%s' costs more than walking around it (%.1f)"
@@ -239,7 +239,7 @@ func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 	for def in blockers:
 		t.check(def.obstructs_within() * 2.0 < Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 2.0,
 				"'%s' takes the pavement without sealing the street" % def.id)
-		t.check(not def.mobile,
+		t.check(not def.moves(),
 				"'%s' does not walk toward her: a moving wall on a two-tile pavement pins"
 				% def.id)
 
@@ -309,7 +309,7 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 	# plan: something lethal has to be *available* in act I at all, which is what was wrong.
 	var early: Array[String] = []
 	for def in EventCatalogue.available_on(2):
-		if def.hard_fail:
+		if def.ends_the_day():
 			early.append(def.id)
 	t.check(not early.is_empty(),
 			"act I has lethal events in its pool by day 2 (%s)" % ", ".join(early))
@@ -384,7 +384,7 @@ func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
 ## instead — inherits the exemption without anybody adding a case for it.
 func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
-	t.check(pursuer.hard_fail and pursuer.pursuit != null, "alley_robbery is lethal and pursues")
+	t.check(pursuer.ends_the_day() and pursuer.pursues(), "alley_robbery is lethal and pursues")
 	var off_wall := EventPlan.new(pursuer, Vector2.ZERO)
 	off_wall.give_role(GameEnums.BlockerRole.FRICTION)
 	t.check(not off_wall.keeps_its_field_clear(),
@@ -393,7 +393,7 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
 	# the `WALL` role — the exemption is `EventDef.pursuit`, not "the role happens not to be WALL".
 	var stationary := EventCatalogue.by_id("reversing_lorry")
-	t.check(stationary.hard_fail and stationary.pursuit == null,
+	t.check(stationary.ends_the_day() and not stationary.pursues(),
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")
 	var off_wall_stationary := EventPlan.new(stationary, Vector2.ZERO)
 	off_wall_stationary.give_role(GameEnums.BlockerRole.FRICTION)

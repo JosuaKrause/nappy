@@ -39,7 +39,7 @@ func _measure_caps() -> void:
 			% [SEEDS, ACT_SAMPLE_DAYS])
 	for id: String in TRACKED_IDS:
 		var def := EventCatalogue.by_id(id)
-		print("  %-10s max_per_day=%d weight=%.1f" % [id, def.max_per_day, def.weight])
+		print("  %-10s max_per_day=%d weight=%.1f" % [id, def.most_in_a_day(), def.drawn_as_often()])
 
 	# act -> id -> Array[int] per-day counts
 	var by_act_id := {}
@@ -118,7 +118,7 @@ func _measure_caps() -> void:
 		for id: String in TRACKED_IDS:
 			var def := EventCatalogue.by_id(id)
 			print("    %-10s budgeted/day (mean)=%.2f  actually met/day (mean)=%.2f  of max_per_day=%d"
-					% [id, _mean(by_act_budgeted[act][id]), _mean(by_act_id[act][id]), def.max_per_day])
+					% [id, _mean(by_act_budgeted[act][id]), _mean(by_act_id[act][id]), def.most_in_a_day()])
 
 	print("\n-- across every sampled act/seed --")
 	for id: String in TRACKED_IDS:
@@ -132,7 +132,7 @@ func _measure_caps() -> void:
 		for v: int in all_met:
 			max_met = maxi(max_met, int(v))
 		print("  %-10s mean budgeted/day=%.2f mean met/day=%.2f max met on any sampled day=%d (cap %d)"
-				% [id, _mean(all_budgeted), _mean(all_met), max_met, def.max_per_day])
+				% [id, _mean(all_budgeted), _mean(all_met), max_met, def.most_in_a_day()])
 
 func _mean(values: Array) -> float:
 	if values.is_empty():
