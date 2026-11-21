@@ -2623,7 +2623,7 @@ static func _car_accident() -> EventDef:
 		# clear the cars' own bodies with her 14px to spare or the kill can never fire
 		# (`EventDef.validate()`), and the telegraph has to buy the walk out of the doubled margin.
 		def.hard_fail = true
-		def.use_field(FieldSpec.of(def.peak(), CAR_ACCIDENT_LETHAL_INNER_RADIUS, def.heard_within()))
+		def.use_field(def.field().holding_to(CAR_ACCIDENT_LETHAL_INNER_RADIUS))
 		def.telegraph_time = 1.2
 	return def
 

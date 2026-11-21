@@ -797,7 +797,7 @@ func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> v
 				else Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 600.0)
 		emitter.position = Vector2(rng.randf_range(-1500.0, 1500.0), rng.randf_range(-1500.0, 1500.0))
 		var inner := rng.randf_range(10.0, 200.0)
-		def.use_field(FieldSpec.of(def.peak(), inner, inner + rng.randf_range(0.0, 320.0)))
+		def.use_field(def.field().holding_to(inner).reaching(inner + rng.randf_range(0.0, 320.0)))
 		var on_screen := 0
 		for level: float in [def.core_within(), def.heard_within()]:
 			var outline := emitter.chosen_shape.field_outline(emitter.position,

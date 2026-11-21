@@ -78,7 +78,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 
 	def = EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
 	def.solid(GroundShape.band(22.0))
-	def.use_field(FieldSpec.of(def.peak(), 15.0, 90.0).pulsing_every(def.pulses_every()))
+	def.use_field(def.field().holding_to(15.0).reaching(90.0))
 	t.check(def.lies_as_a_spread(),
 			"changing body and field geometry leaves a café's spread answer true")
 
