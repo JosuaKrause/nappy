@@ -29,9 +29,9 @@ extends Node
 ##
 ## **Handed what it depends on, never fetching it**: the city's map, today's streets, the lights,
 ## the run, the navigator and the poster walls (`setup()`), or a world that is not the city, its
-## map, its run and its navigator (`setup_world()`), one or the other and once, since a manager is set up for one world and
-## asserts so; the run alone for a rig that sets up neither (`use_run()`); the player
-## (`use_player()`); the walk's spec (`use_the_spec()`).
+## map, its run and its navigator (`setup_world()`), one or the other and once, since a manager is
+## set up for one world and asserts so; the run alone for a rig that sets up neither
+## (`use_run()`); the player (`use_player()`); the walk's spec (`use_the_spec()`).
 ##
 ## Lookup is a linear scan. Only what is inside `EVENT_STREAM_RADIUS` is live, a few dozen at most
 ## — that many distance checks per physics tick is nothing, and a spatial hash would be more code with more

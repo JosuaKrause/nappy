@@ -126,9 +126,9 @@ const FADE_SECONDS := 0.35
 ## The building's map (`InteriorMapPlan`), the one everything standing in the building is handed:
 ## built by `build()` and drawn by this scene, and asked through `map()`.
 var _map: InteriorMapPlan
-## How everything that moves over `_map` moves (`Navigator`): built with the map by `build()` and held
-## here for as long as the building stands, so the events and whatever else moves over the map share
-## the one (`navigator()`), which `main` hands on.
+## How everything that moves over `_map` moves (`Navigator`): built with the map by `build()` and
+## held here for as long as the building stands, so the events and whatever else moves over the map
+## share the one (`navigator()`), which `main` hands on.
 var _navigator: Navigator
 ## The baked atlas pages the building draws from (`AtlasLibrary`), handed by `main` before the
 ## scene is added (`use_atlas()`); a scene nobody handed one (a suite's) makes its own when it first
