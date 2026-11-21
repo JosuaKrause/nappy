@@ -2,7 +2,7 @@ extends RefCounted
 ## `BodyStance.pieces_at()`: where each piece of a body built at a point stands, which every reader of
 ## a planned body's layout (the walk's ground, the map's record, the route rig) takes from it.
 ##
-## Rows are the catalogue's own, built as they are (data). The map is a stand-in per street axis
+## Rows are the catalogue's own, built as they are (data), except check 4's, a bare row with a shape and no body. The map is a stand-in per street axis
 ## (`tests/east_west_street.gd` and the north-south twin below), so no city is generated and the
 ## street a body lies along is the one the test says. The expected values are read off the rows'
 ## declared parts, so a redrawn crash picture does not break the suite.
@@ -29,7 +29,7 @@ func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
 	var row := EventCatalogue.by_id("car_accident")
 	var stood := BodyStance.stands_at(map, row, _AT)
-	var pieces := BodyStance.pieces_at(map, row, stood, Vector2.RIGHT)
+	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
 	var parts := row.body_pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on a north-south street (%d)" % pieces.size())
@@ -45,7 +45,7 @@ func _test_the_crash_lies_down_an_east_west_street(t: TestRunner) -> void:
 	var map: WorldMap = EastWestStreet.new()
 	var row := EventCatalogue.by_id("car_accident")
 	var stood := BodyStance.stands_at(map, row, _AT)
-	var pieces := BodyStance.pieces_at(map, row, stood, Vector2.RIGHT)
+	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
 	var parts := row.body_pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on an east-west street (%d)" % pieces.size())

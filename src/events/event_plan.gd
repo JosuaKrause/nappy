@@ -560,7 +560,6 @@ func its_event_is_gone() -> bool:
 func stands_as_a_fixed_body() -> bool:
 	return def.stands_as_a_fixed_body()
 
-
 ## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture.
 func ground_shape() -> GroundShape:
 	return def.ground_shape()
