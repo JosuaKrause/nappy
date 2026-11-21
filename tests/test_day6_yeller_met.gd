@@ -1,11 +1,13 @@
 extends RefCounted
 ## Day 6's second man shouting is one she meets *(olive-koala, statement 2: "the yeller is
-## guaranteed to encounter a yeller in the next three events")*: reading the mark rigs the next draw
-## on her path with him *(inbox #1520 in breezy-magpie: "the bag gets the biased bag in front (via
-## the chained bags mechanism) and the next draw (whenever that happens) will guarantee the shouting
-## man")*, and that draw is taken only on her path and just ahead of her *(inbox #1549: "you would
-## draw only for the path and only just ahead")* (`EventManager.rig_the_next_draw()`,
-## `WalkSiting.lay_just_ahead()`).
+## guaranteed to encounter a yeller in the next three events")*: reading the mark rigs her route's
+## bag with him, so his marble is one of the next `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT`
+## events handed out on her route *(inbox #1520 in breezy-magpie: "the bag gets the biased bag in
+## front (via the chained bags mechanism) and the next draw (whenever that happens) will guarantee
+## the shouting man")*, and when it comes up he is laid only on her path and just ahead of her
+## *(inbox #1549: "you would draw only for the path and only just ahead")*
+## (`EventManager.rig_her_route()`, `WalkSiting.lay_just_ahead()`). The walk after the mark lasts
+## until his marble is handed out, at most that many handouts.
 ##
 ## **What is checked is the meeting, on every walk**: reading the mark, then walking the day's
 ## longest route out and back until he is laid and on the way she was heading after that (keeping on

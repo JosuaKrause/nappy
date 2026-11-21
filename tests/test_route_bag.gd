@@ -434,7 +434,7 @@ func _test_day_3s_charging_dogs_keep_their_share(t: TestRunner) -> void:
 ## task's size holding the mast once; walking the day's route, its marble is one of that many events
 ## handed out on it, and the mast is put ahead of her past the streaming band on ground the route
 ## runs along, reachable from where she is, and in the world when she walks to it. Day 6's man
-## shouting and day 7's van are rigged for the next draw on her path instead, laid just ahead of her
+## shouting and day 7's van are rigged the same way and laid just ahead of her instead
 ## (`tests/test_day6_yeller_met.gd`, `tests/test_day7_van.gd`).
 func _test_after_the_mark_the_task_row_is_put_on_her_route(t: TestRunner) -> void:
 	_a_mark_puts_a_place_on_her_route(t, 11, "loudspeaker", ResistanceSteps.MAST_WITHIN_THE_NEXT)

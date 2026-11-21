@@ -459,7 +459,8 @@ static func _copy_of_step(step: ResistanceSteps.Step) -> ResistanceSteps.Step:
 	copy.at_a_front_door = step.at_a_front_door
 	copy.lingers_after_handover = step.lingers_after_handover
 	copy.rigs_within = step.rigs_within
-	copy.rigs_the_next_draw = step.rigs_the_next_draw
+	if step.lays_its_rigged_row_just_ahead():
+		copy.lay_the_rigged_row_just_ahead()
 	return copy
 
 ## M221, "a failed day leaves no chalk mark behind", on a mark whose next step is placed by

@@ -9,6 +9,7 @@ var _events_atlas := AtlasLibrary.new()
 func run(t: TestRunner) -> void:
 	_test_step_table(t)
 	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)
+	_test_a_rigged_bag_is_two_or_three_and_the_mast_is_never_laid_just_ahead(t)
 	_test_step_selection(t)
 	_test_the_finale_needs_the_legwork(t)
 	await _test_touching_completes_a_pickup(t)
@@ -76,6 +77,22 @@ func _test_step_table(t: TestRunner) -> void:
 			"there are more built perform steps than the goal needs, so one task can be missed")
 	t.check(steps[steps.size() - 1].needs_goal, "the finale is the last step")
 	t.check(steps[steps.size() - 1].day == Tuning.RUN_LENGTH_DAYS, "and it is on the last day")
+
+## **Every rigged bag is 2 or 3 marbles** (inbox #586 in olive-hedgehog: "each olive badger rigged
+## bag should be 2 or 3"), and **day 11's mast is never laid just ahead of her**: it is laid past the
+## streaming band, since laying it just ahead moves where a mast stands with no word asking for it.
+func _test_a_rigged_bag_is_two_or_three_and_the_mast_is_never_laid_just_ahead(t: TestRunner) -> void:
+	var rigging := 0
+	for step in ResistanceSteps.all():
+		if step.is_pickup or step.rigs_within <= 0:
+			continue
+		rigging += 1
+		t.check(step.rigs_within >= 2 and step.rigs_within <= 3,
+				"day %d's rigged bag holds 2 or 3 marbles (%d)" % [step.day, step.rigs_within])
+		if step.target_kind == ResistanceSteps.TargetKind.MAST:
+			t.check(not step.lays_its_rigged_row_just_ahead(),
+					"day %d's mast is not laid just ahead of her" % step.day)
+	t.check(rigging > 0, "there are rigging steps to check")
 
 ## rosy-raven, "day 8's task text is short" — *"yeah, day 8th hint needs to be fixed. it's too
 ## long"* (olive-koala, statement 3; the same 79-character line

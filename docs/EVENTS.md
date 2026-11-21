@@ -264,9 +264,13 @@ list, so the ensured marble is one of the next `x` events handed out on her rout
 is met as it is handed out; a place's is handed to her walk, and the place is met once her walk
 finds it a site, which can be after an event behind it, or never; and a row sent ahead of her
 that has no room when its marble is drawn waits for a later turn that has some (below), so it too
-can be met after an event behind it, or never. **A mark can rig the next draw on her path too**
-(`EventManager.rig_the_next_draw()`): the row it rigs is the next thing her walk lays, on her path
-just ahead of her, the next look after the mark (`WalkSiting.lay_just_ahead()`). These rigs stand:
+can be met after an event behind it, or never. **Where a place is laid is a setting of the rig**
+(`EventManager.rig_her_route()`, `just_ahead`): past the streaming band on her branch
+(`WalkSiting.lay_ahead()`), or, for the man shouting and the van, on her path just ahead of her and
+out of her view (`WalkSiting.lay_just_ahead()`). Either way the place takes one of the events the
+bag owes her route, so while the day still owes her at least two events a mark makes the day no
+denser (with fewer left, the owed list is topped up to the rig's size). Under `--force` nothing is rigged. These rigs
+stand:
 
 - **On day one, two of the first three marbles drawn are dog walkers**
   (`EventDirector.DAY_ONE_DOG_WALKERS` within `DAY_ONE_DOG_WALKERS_WITHIN`): the dog-walker decision
@@ -281,14 +285,17 @@ just ahead of her, the next look after the mark (`WalkSiting.lay_just_ahead()`).
   three come in place of some of what the director sends, at its unchanged clock: pace kept over
   the rig's order.
 
-- **After day 6's mark, the next draw on her path stands a second man shouting**
-  (`ResistanceSteps.Step.rigs_the_next_draw`, `EventManager.rig_the_next_draw()`; [olive-koala](playtests/2026-09-27-olive-koala.md) 2: "the
+- **After day 6's mark, a second man shouting's marble is one of the next two**
+  (`ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT`, laid just ahead of her,
+  `ResistanceSteps.Step.lays_its_rigged_row_just_ahead()`; [olive-koala](playtests/2026-09-27-olive-koala.md) 2: "the
   yeller is guaranteed to encounter a yeller in the next three events"; inbox #1520 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md):
   "the draw doesn't have to happen at the point where she touches the mark. the bag gets the biased
   bag in front (via the chained bags mechanism) and the next draw (whenever that happens) will
   guarantee the shouting man"; and, of where that draw is taken, inbox #1549: "you would draw only
-  for the path and only just ahead"). Reading the mark puts him on the list of what her walk lays,
-  and the next look lays him on the first free location of his own ground on her branch within
+  for the path and only just ahead"). Reading the mark rigs her route's bag with him; when his
+  marble is handed out, 11 to 26 walking seconds after the one before (`EventDirector.AHEAD_INTERVAL`,
+  9 to 16 on the way home, `EventDirector.RETURN_PATROL_INTERVAL`), he goes on the list of what her walk lays, and the next look lays him
+  on the first free location of his own ground on her branch within
   `WalkSiting.JUST_AHEAD` (the stream radius, 900px) down it and straight from her, straight ahead
   of her (ahead along her heading, within `WalkSiting.PATH_HALF_WIDTH`, five tiles, of her line of
   travel) and with none of what he draws in the camera's view, under every rule a unit's own man
@@ -306,7 +313,8 @@ just ahead of her, the next look after the mark (`WalkSiting.lay_just_ahead()`).
   It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot. Like every mast it
   is put down wherever a site's own rules, door clearance, the unused calm, spacing and a way out
   allow on her branch; it waits only when none does.
-- **After day 7's mark, the next draw on her path stands a second `delivery_van`**, laid just ahead
+- **After day 7's mark, a second `delivery_van`'s marble is one of the next two**
+  (`ResistanceSteps.VAN_WITHIN_THE_NEXT`), laid just ahead
   of her as day 6's man shouting is (inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md): "each olive badger rigged bag should be 2 or 3";
   inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md): "I guess that leaves only the van?"; inbox #1520 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md) and inbox
   #1549, whose questions asked of the man shouting and the van together), besides the van near the
@@ -1475,8 +1483,8 @@ Each item quotes the code on this branch.
    walk lays on her branch takes a location in the nearest unit on her way that has not drawn**
    (`WalkSiting`): that unit draws round it, its room starting without the location, and it and the
    units touching it are judged among the beat (`UnitDraw`, `PlacementUnit.rigged()`); a row a mark
-   rigs (day 6's man shouting, day 7's van) is laid the same way just ahead of her, on a location a
-   drawn unit left empty (`WalkSiting.lay_just_ahead()`). So a unit a beat stands in or beside draws
+   rigs (day 6's man shouting, day 7's van) is laid, when its marble is handed out, the same way just
+   ahead of her, on a location a drawn unit left empty (`WalkSiting.lay_just_ahead()`). So a unit a beat stands in or beside draws
    by her path, on purpose, as can a unit touching one whose draw that changed (a unit is judged among
    the draws of the touching units drawn before it), and every other unit draws the same whatever
    her path (inbox #1521 in [breezy-magpie](playtests/2026-11-17-breezy-magpie.md): "beats are marbles, yes"). A place the resistance sends her to lies inside the ground
