@@ -46,7 +46,7 @@ const FULL := false
 ## dump that printed them would depend on what was asked before it.
 const SKIP_VARS: Array[String] = ["_cost_cache", "_default_parts"]
 ## Methods that are not asked by name. Every method that returns nothing is skipped for that
-## reason (a writer such as `solid()` or `PursuitSpec.standing()` changes what
+## reason (a writer such as `solid()` changes what
 ## is being measured, and one a later step adds is skipped too); these return something and are
 ## left out for their own reason: the copies the probe makes itself, the check, and the
 ## engine's.
