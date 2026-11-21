@@ -353,7 +353,7 @@ func _test_roadblock_guard_stands_clear_of_the_band(t: TestRunner) -> void:
 ## **The barrier's picture covers the ground its body closes, on both axes, and no more.**
 ## *(2026-09-25: "only the barrier doesn't actually reach the full width/height is that
 ## intentional?")* Along the run, the repeated segments reach from one end of the body to the
-## other — the body's own reach along its spine, `obstructs_radius` — broadside across the picture
+## other — the body's own reach along its spine, `obstructs_within()` — broadside across the picture
 ## and end-on up it, where a segment standing on its middle would put the whole column half a
 ## segment up the screen from its own ground. Asked of the roadblock and of the roadworks barrier,
 ## the two rows that draw a capped band through `_draw_spread()`, each drawn with a recording

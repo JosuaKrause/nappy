@@ -347,7 +347,7 @@ func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	return [director, before, mark_guard]
 
 ## Day 9 let through the named door: she stands where the inspection sets her down — the gatehouse
-## the arrow names, `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) along
+## the arrow names, `obstructs_within() + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) along
 ## the street past the door's line — on one side on `director`'s day, and on the other on a second
 ## attempt at the same day, since a task is done once — and the door announces that inspected
 ## crossing (`EventManager.door_crossed`, as `CheckpointController` announces a release: the

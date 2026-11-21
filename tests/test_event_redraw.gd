@@ -627,6 +627,4 @@ static func _never_settles(instance: EventInstance) -> bool:
 ## `RefCounted` variable is not saved out and so not duplicated.
 static func _copy_of(def: EventDef) -> EventDef:
 	var copy := def.duplicate() as EventDef
-	copy.shape = def.ground_shape()
-	copy.solid_parts = def.solid_parts
 	return copy

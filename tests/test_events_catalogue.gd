@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 	_test_a_warning_first_is_owed_a_flat_minimum(t)
 	_test_the_loose_dog_and_the_cat_do_not_telegraph(t)
 	_test_a_row_says_whether_its_coming_is_announced_and_how_fast(t)
-	_test_as_warned_first_carries_solid_parts_too(t)
+	_test_as_warned_first_keeps_the_pieces_too(t)
 	_test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t)
 	_test_spread_classification_follows_every_look_and_copy(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
@@ -59,10 +59,10 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE,
 ]
 
-## **Whether a row is a spread is its own data** (`EventDef.has_a_spread`), set on exactly the rows
+## **Whether a row is a spread is its own data** (`BodySpec.as_a_spread()`), set on exactly the rows
 ## whose picture is a spread and kept by every copy. `_SPREAD_LOOKS` is the catalogue geometry
 ## contract's independent expected set; PROTEST and FIREFIGHT are removed here because they stand
-## along their street without being drawn as a spread (`EventDef.stands_along_its_street`). The
+## along their street without being drawn as a spread (`BodySpec.along_its_street()`). The
 ## geometry, phase and finish checks only guard against a future unrelated writer.
 func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> void:
 	var def := EventDef.new()
@@ -77,7 +77,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 				"catalogue row '%s' says it is a spread exactly when its picture is one" % source.id)
 
 	def = EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
-	def.solid(GroundShape.band(22.0))
+	def.use_body(def.body().reshaped(GroundShape.band(22.0)))
 	def.use_field(def.field().holding_to(15.0).reaching(90.0))
 	t.check(def.lies_as_a_spread(),
 			"changing body and field geometry leaves a café's spread answer true")
@@ -280,7 +280,6 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 		if def.pursues():
 			continue
 		var wider: EventDef = def.duplicate()
-		wider.shape = def.ground_shape()
 		wider.use_field(wider.field().reaching(wider.heard_within() * 1.5))
 		wider.speed *= 1.5
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
@@ -348,27 +347,24 @@ func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t: TestRunner
 		if row.ends_the_day():
 			t.check(row.lethal_reach() > 0.0, "'%s' ends the day within a reach" % row.id)
 
-## **`as_warned_first()` carries `solid_parts` across by hand, the way every other copy of a row
-## does** (`at_heat()`, `EventDef.for_day()`, `EventCatalogue.neighbor_heading_home()`,
-## `SealPlanner`'s variants) — a copy that lost its parts would quietly go back to one body spanning
-## its whole shape. `car_accident` is the row with more than one piece, so it stands in for a
-## multi-part row sent through a warning first; its own telegraph is too short to clear the flat
-## floor a warned-first row is held to, so the duplicate's telegraph is widened first, which
-## changes nothing `as_warned_first()` copies by hand.
-func _test_as_warned_first_carries_solid_parts_too(t: TestRunner) -> void:
+## **`as_warned_first()` keeps the row's body pieces, as every other copy of a row does** (`at_heat()`,
+## `EventDef.for_day()`, `EventCatalogue.neighbor_heading_home()`, `SealPlanner`'s variants: each
+## shares the row's body part) — a copy that lost its pieces would quietly go back to one body
+## spanning its whole shape. `car_accident` is the row with more than one piece, so it stands in for
+## a multi-part row sent through a warning first; its own telegraph is too short to clear the flat
+## floor a warned-first row is held to, so the duplicate's telegraph is widened first.
+func _test_as_warned_first_keeps_the_pieces_too(t: TestRunner) -> void:
 	var crash := EventCatalogue.by_id("car_accident")
-	t.check(crash.solid_parts.size() >= 2,
+	t.check(crash.body().declared_pieces().size() >= 2,
 			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
-			% crash.solid_parts.size())
+			% crash.body().declared_pieces().size())
 	var widened := crash.duplicate() as EventDef
-	widened.shape = crash.ground_shape()
-	widened.solid_parts = crash.solid_parts
 	widened.telegraph_time = 5.0
 	var warned := widened.as_warned_first()
 	t.check(warned.validate(), "the widened telegraph clears the flat warned-first floor")
-	t.check(warned.solid_parts.size() == crash.solid_parts.size(),
-			("as_warned_first() copies %d solid part(s), the row's own %d"
-			% [warned.solid_parts.size(), crash.solid_parts.size()]))
+	t.check(warned.body().declared_pieces().size() == crash.body().declared_pieces().size(),
+			("as_warned_first() keeps %d solid part(s), the row's own %d"
+			% [warned.body().declared_pieces().size(), crash.body().declared_pieces().size()]))
 
 ## **The dog walker, the patrol and the convoy are sent ahead of her** (inbox #1460 in silky-lemur), and drawn by no
 ## unit on any day. The copy the director sends (`EventDef.as_sent_ahead()`) validates: the dog
@@ -408,7 +404,7 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 			"a row the director does not send is its own copy, and a unit draws it")
 
 ## **A body on a pavement has to fit on the pavement — the whole of it, not the lane it happened to
-## be planned on.** `_draw_spread` and its cousins draw a body at exactly the width `obstructs_radius`
+## be planned on.** `_draw_spread` and its cousins draw a body at exactly the width `obstructs_within()`
 ## says, and `EventInstance.setup()` centres a stationary, unpinned body on the pavement band before
 ## either the drawing or `EventBody.go_down()`'s collision shape ever reads its position — so the
 ## width is a promise about where she can walk and the promise is kept against the band a `SIDEWALK`
@@ -419,7 +415,7 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 ## **Blind spot, not a hole this test can close:** `barricade` carries no `def.placement` of its
 ## own — it is a spawn sited wherever `military_convoy` stopped rather than placed by
 ## `def.placement` — so the loop below never sees it and a future regression on its
-## `obstructs_radius` would pass silently. Checked by hand instead: it lands on `ROAD` (its
+## `obstructs_within()` would pass silently. Checked by hand instead: it lands on `ROAD` (its
 ## spawning row's own placement), and 62px sits inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
 ## (`burnt_shell`, the other row with no placement, has no body to fit.)
 ##
@@ -496,7 +492,7 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 
 	# And the payoff, stated as the arithmetic that decides it rather than as a distance: with
 	# `construction` centred on the band, no point on the pavement is far enough from it to clear
-	# `obstructs_radius + PLAYER_BODY_RADIUS` — the pram cannot pass on either lane, which is what
+	# `obstructs_within() + PLAYER_BODY_RADIUS` — the pram cannot pass on either lane, which is what
 	# "the only Act I event that is physically in the way" means.
 	var half_band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 	t.check(barrier.obstructs_within() + Tuning.PLAYER_BODY_RADIUS > half_band,
@@ -618,20 +614,20 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
-	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("moving_van"),
+	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("moving_van").body(),
 			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
 			"a moving van on a north-south street uses its end view")
-	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("moving_van"),
+	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("moving_van").body(),
 			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
 			"a moving van on an east-west street uses its side view")
-	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
+	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car").body(),
 			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
 			"a burnt car across a north-south street uses its side view")
-	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
+	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car").body(),
 			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
 			"a burnt car across an east-west street uses its end view")
 	t.check(BodyStance.stands_side_on(
-			EventCatalogue.by_id("moving_van"), WorldMap.open_ground(), Vector2.ZERO, Vector2.RIGHT),
+			EventCatalogue.by_id("moving_van").body(), WorldMap.open_ground(), Vector2.ZERO, Vector2.RIGHT),
 			"off-street or data-level placement follows the vehicle's own default facing")
 
 	var vehicle_looks: Array[EventDef.Look] = [
@@ -691,7 +687,7 @@ func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 ## wide) hung 3px past each end of a `construction` barrier's 64px obstruction. A `construction`
 ## barrier is drawn broadside and end-on with a recording drawer handed in, and the end posts it
 ## stands are read off what it was told to draw: where each post's feet are, against the real
-## asset size and the real `obstructs_radius`, and in which order each slice draws its post and
+## asset size and the real `obstructs_within()`, and in which order each slice draws its post and
 ## its segment.
 func _test_a_spread_cap_matches_what_it_obstructs(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("construction")
@@ -853,7 +849,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 	# on a library of the fixture's own that every instance is handed.
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(EventPictures.ATLAS_GROUP)
-	t.check(crash.solid_parts.size() == 2, "a crash is two cars, so it puts down two bodies")
+	t.check(crash.body().declared_pieces().size() == 2, "a crash is two cars, so it puts down two bodies")
 	t.check(crash.solid_reach() < crash.obstructs_within(),
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
 			% [crash.solid_reach(), crash.obstructs_within()])
@@ -926,9 +922,9 @@ func _walkable_lane_beside(instance: EventInstance, half: float, side: float) ->
 ## Every other row is exactly one piece at its own origin, so nothing but the crash changed shape.
 func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
-		if def.solid_parts.size() > 1:
+		if def.body().declared_pieces().size() > 1:
 			continue
-		t.check(def.body_pieces().size() == 1, "'%s' is one body" % def.id)
+		t.check(def.body().pieces().size() == 1, "'%s' is one body" % def.id)
 		if def.obstructs_within() > 0.0:
 			t.check(is_equal_approx(def.solid_reach(), def.obstructs_within()),
 					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "

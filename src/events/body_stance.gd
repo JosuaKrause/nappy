@@ -102,15 +102,15 @@ static func lies_vertically_at(map: WorldMap, at: Vector2) -> bool:
 	return on_an_east_west_street and not on_a_north_south_street
 
 ## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
-## street and the burnt car lies across it (`EventDef.lies_across_its_street`). A junction or ground outside the lattice has
+## street and the burnt car lies across it (`BodySpec.across_its_street()`). A junction or ground outside the lattice has
 ## no single street axis, so the vehicle's own facing supplies the coherent default.
-static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vector2) -> bool:
+static func stands_side_on(body: BodySpec, map: WorldMap, at: Vector2, face: Vector2) -> bool:
 	var offsets := map.corridor_offsets(map.world_to_tile(at))
 	var on_a_north_south_street := offsets.x >= 0
 	var on_an_east_west_street := offsets.y >= 0
 	if on_a_north_south_street != on_an_east_west_street:
 		var parallel_side := on_an_east_west_street
-		return not parallel_side if row.lies() == EventDef.Lie.ACROSS else parallel_side
+		return not parallel_side if body.lies() == BodySpec.Lie.ACROSS else parallel_side
 	return absf(face.x) >= absf(face.y)
 
 ## The ground-plane direction a row's solid body's spine lies along, for whichever of the three
@@ -124,7 +124,8 @@ static func solid_axis_of(row: EventDef, heading: Vector2, spread_vertical: bool
 	# A car's body lies along the way it is driving, and turns with it (`EventCarDriving.turn_the_body()`).
 	if row.drives():
 		return heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
-	if row.lies() == EventDef.Lie.SPREAD or row.lies() == EventDef.Lie.ALONG:
+	var lies := row.body().lies()
+	if lies == BodySpec.Lie.SPREAD or lies == BodySpec.Lie.ALONG:
 		return Vector2.DOWN if spread_vertical else Vector2.RIGHT
 	return Vector2.RIGHT if side_on else Vector2.DOWN
 
@@ -132,11 +133,11 @@ static func solid_axis_of(row: EventDef, heading: Vector2, spread_vertical: bool
 ## not exist yet, off the same two statics its instance would read about the street at `placed`.
 static func _body_axis(map: WorldMap, row: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
 	return solid_axis_of(row, facing, lies_vertically_at(map, placed),
-			stands_side_on(row, map, placed, facing))
+			stands_side_on(row.body(), map, placed, facing))
 
 ## **The pieces of a body of `row` built at `at` and sited facing `facing`, each where it stands**: the
 ## body stood where `stands_at()` puts it, laid along its street (`lies_vertically_at()`), its spine
-## along `_body_axis()`, and each of its pieces (`EventDef.body_pieces()`) offset along the street's
+## along `_body_axis()`, and each of its pieces (`BodySpec.pieces()`) offset along the street's
 ## axis by the piece's own reading of the picture in use. Nothing for a row with no body or no ground
 ## shape. It does not filter a row that moves or a door's body: each caller asks for the rows it
 ## counts. The one layout of a body not yet built, or built and recorded: the walk's ground, the
@@ -147,17 +148,17 @@ static func pieces_at(map: WorldMap, row: EventDef, at: Vector2,
 	if row.ground_shape() == null or not row.has_a_body():
 		return none
 	var stands := stands_at(map, row, at)
-	return pieces_laid_out(row, stands, _body_axis(map, row, stands, facing),
+	return pieces_laid_out(row.body(), stands, _body_axis(map, row, stands, facing),
 			lies_vertically_at(map, stands))
 
-## **The pieces of `row`'s body standing at `center`**, its spine along `axis` and laid down the
+## **The pieces of `body` standing at `center`**, its spine along `axis` and laid down the
 ## screen when `vertical`: each piece offset along that axis by its own reading of the picture in use
-## (`EventDef.SolidPart.offset_for()`). For a body whose stance is already decided, a live one's own
+## (`BodyPiece.offset_for()`). For a body whose stance is already decided, a live one's own
 ## (`EventFootprints.solid_footprint_of()`, laid round its origin); `pieces_at()` decides it first.
-static func pieces_laid_out(row: EventDef, center: Vector2, axis: Vector2,
+static func pieces_laid_out(body: BodySpec, center: Vector2, axis: Vector2,
 		vertical: bool) -> Array[StandingPiece]:
 	var laid: Array[StandingPiece] = []
-	for piece in row.body_pieces():
+	for piece in body.pieces():
 		var offset := piece.offset_for(vertical)
 		laid.append(StandingPiece.new(
 				center + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)),

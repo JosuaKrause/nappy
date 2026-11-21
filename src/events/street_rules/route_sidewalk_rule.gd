@@ -91,7 +91,7 @@ static func _leaves_the_routes_sidewalk_open(candidate: EventPlan, map: CityMap,
 
 ## The reach `_leaves_the_routes_sidewalk_open` filters candidates by: the greater of
 ## `EventDef.line_reach()`'s cost-based reach and the physical standoff a solid body needs
-## (`obstructs_radius + PLAYER_BODY_RADIUS`). A silent, cheap body — `delivery_van`'s own numbers —
+## (`obstructs_within() + PLAYER_BODY_RADIUS`). A silent, cheap body — `delivery_van`'s own numbers —
 ## can close a lane by presence alone while charging nothing to walk past, so the filter that
 ## decides which rows are even worth asking `closes_a_walked_sidewalk_band` about has to see the
 ## wider of the two rather than only the one `EventDef.line_reach()` already answers.
@@ -100,7 +100,7 @@ static func _cumulative_lane_reach_of(def: EventDef) -> float:
 		return def.line_reach()
 	return maxf(def.line_reach(), def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS)
 
-## `rows` reduced to `[position.x, position.y, obstructs_radius]` triples, the shape
+## `rows` reduced to `[position.x, position.y, obstructs_within()]` triples, the shape
 ## `closes_a_walked_sidewalk_band` asks for, each where its body stands (`EventPlan.body_at()`: a
 ## roadblock's band on the kerb beside its lane) — a row with no body contributes nothing to a
 ## physical reading, however loud it is.

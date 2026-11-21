@@ -2,7 +2,7 @@ class_name DoorLine
 extends RefCounted
 ## **A copy of the door-line geometry of `CheckpointController._where_she_crossed()`, kept in the tests
 ## on purpose**: the line through a district door body's centre across its facing, within the body's
-## own reach along it. It is stated from the body's public position, facing and `obstructs_radius`
+## own reach along it. It is stated from the body's public position, facing and `obstructs_within()`
 ## so the suites that hold a siting to "his run at her never crosses a door" judge it against a
 ## geometry that is not the controller's own, and it must be kept in step with the controller by
 ## hand. A helper, not a suite: the runner loads only `test_*.gd`.

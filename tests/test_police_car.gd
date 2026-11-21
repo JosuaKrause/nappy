@@ -504,7 +504,6 @@ func _a_wall(map: CityMap) -> Array:
 ## behind, it turns and comes back at her with its whole warning.
 func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 	var raid: EventDef = _patrol().duplicate()
-	raid.shape = _patrol().ground_shape()
 	raid.paces = true
 	var beat := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	for behind: float in [41.0, 49.0, 61.0, 101.0, 141.0]:

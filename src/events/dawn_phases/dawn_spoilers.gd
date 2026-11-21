@@ -289,7 +289,7 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## would be a punishment for having settled there, and a barricade would be the ground taken
 ## away rather than made noisy, which is the thing this rule promises not to do.
 ##
-## **The body test is a width, not `obstructs_radius > 0`.** Once everything that stands still has a
+## **The body test is a width, not `obstructs_within() > 0`.** Once everything that stands still has a
 ## body the two stop meaning the same thing: a busker is 18px across in a lot 704px wide, so he is
 ## loud and he is walked around, which is the whole job. `OBSTRUCTION_A_PARK_CAN_HOLD` is where that
 ## stops being true.

@@ -60,7 +60,7 @@ func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var row := EventCatalogue.by_id("car_accident")
 	var stood := BodyStance.stands_at(map, row, _AT)
 	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
-	var parts := row.body_pieces()
+	var parts := row.body().pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on a north-south street (%d)" % pieces.size())
 	for k in mini(pieces.size(), parts.size()):
@@ -76,7 +76,7 @@ func _test_the_crash_lies_down_an_east_west_street(t: TestRunner) -> void:
 	var row := EventCatalogue.by_id("car_accident")
 	var stood := BodyStance.stands_at(map, row, _AT)
 	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
-	var parts := row.body_pieces()
+	var parts := row.body().pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on an east-west street (%d)" % pieces.size())
 	for k in mini(pieces.size(), parts.size()):
@@ -109,7 +109,7 @@ func _carriageway_point() -> Vector2:
 
 func _test_a_shape_with_no_body_has_no_pieces(t: TestRunner) -> void:
 	var row := EventDef.new()
-	row.shape = GroundShape.point(10.0)
+	row.use_body(BodySpec.footprint(GroundShape.point(10.0)))
 	t.check(not row.has_a_body(), "the row has a shape and no body")
 	t.check(BodyStance.pieces_at(WorldMap.open_ground(), row, _AT, Vector2.RIGHT).is_empty(),
 			"a row with no body answers no pieces")

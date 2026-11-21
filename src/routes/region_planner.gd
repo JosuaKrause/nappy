@@ -615,13 +615,14 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## player, on a walled alley's own two guards per mouth: "one guard in alleys on each end.")* The
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
 ## reach — so `EventDef.guard_sides` is set here to the one side that does, the same way
-## `body.row().solid()` already mutates the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
+## `body.row().use_body()` already replaces the body of the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
 ## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventPlan:
 	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
-	body.row().solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
+	body.row().use_body(body.row().body().reshaped(
+			GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0)))
 	body.row().guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
 	return body
 

@@ -20,7 +20,7 @@ extends RefCounted
 ## laid, too: whether any of what it draws (`EventFootprints.footprint_of()`) was in the camera's
 ## view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, on the tick it was laid; whether its
 ## tile carries one of the day's routes (`Corridor.carries_a_route()`); and
-## whether her later walk passed within its body and hers (`obstructs_radius` plus
+## whether her later walk passed within its body and hers (`obstructs_within()` plus
 ## `Tuning.PLAYER_BODY_RADIUS`) of its feet — stood on the line she walked.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")

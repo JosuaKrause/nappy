@@ -106,12 +106,13 @@ func _copy_definition(original: EventDef) -> EventDef:
 	# Shallow, as every copy of a row is: the row's parts are values, shared by reference between a row
 	# and its copies.
 	var copy := original.duplicate() as EventDef
-	# RefCounted geometry is not a stored Resource property, so duplicate() omits it.
+	# The body is shared like every part, but a check changes its shape in place, so the copy stands
+	# as a shape of its own (every other thing the body says is kept).
 	if original.ground_shape():
-		copy.shape = GroundShape.new(original.ground_shape().half_length, original.ground_shape().radius)
-		copy.ground_shape().kind = original.ground_shape().kind
-		copy.ground_shape().half_extents = original.ground_shape().half_extents
-	copy.solid_parts = original.solid_parts
+		var shape := GroundShape.new(original.ground_shape().half_length, original.ground_shape().radius)
+		shape.kind = original.ground_shape().kind
+		shape.half_extents = original.ground_shape().half_extents
+		copy.use_body(original.body().reshaped(shape))
 	return copy
 
 ## The rows that differ from `definition` in one setting of its field (but its core, which only a
@@ -269,7 +270,11 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			_event_parity(t, source, at, definition.id + " a different " + label)
 		_under_a_different_row(source, own_row)
 		_event_parity(t, source, at, definition.id + " its own row again")
-		source.row().shape = GroundShape.segment(17.0, 12.0)
+		# A row of another shape is a second row, as the field's settings are: the shape is not
+		# replaced under the live event.
+		var reshaped_row := _copy_definition(definition)
+		reshaped_row.use_body(own_row.body().reshaped(GroundShape.segment(17.0, 12.0)))
+		_under_a_different_row(source, reshaped_row)
 		_event_parity(t, source, at, definition.id + " shape replacement")
 		source.ground_shape().half_length = 63.0
 		_event_parity(t, source, at, definition.id + " shape length mutation")
@@ -279,7 +284,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source._body._spread_vertical = not source._body._spread_vertical
 		source._body._stationary_vehicle_side = not source._body._stationary_vehicle_side
 		_event_parity(t, source, at, definition.id + " body axis")
-		source.row().shape = null
+		var shapeless_row := _copy_definition(definition)
+		shapeless_row.use_body(BodySpec.none())
+		_under_a_different_row(source, shapeless_row)
 		_event_parity(t, source, at, definition.id + " no shape")
 		# No row is replaced under a live event: its behaviours (`EventBehaviours.compose()`) and its
 		# excitement source (`EventExcitement.use_row_and_where_she_is()`) answer from the row they

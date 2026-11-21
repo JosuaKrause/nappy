@@ -18,7 +18,7 @@ extends RefCounted
 ## route in that day's `RouteTree` from the doorstep to its calm area, is there a line of tiles that
 ##
 ## - stays **out of the disc every placed row charges for** (and out of any body's
-##   `obstructs_radius`),
+##   `obstructs_within()`),
 ## - moves between the two pavements of a street **only at a junction**, never mid-block,
 ## - and treats the corridor's own park-and-alley cuts as ground like any other.
 ##
@@ -55,7 +55,7 @@ extends RefCounted
 ##   past that crossing a walk through the field nets the meter down, which is ground taken without
 ##   planning around it — *"the influence at a junction is low enough that it can be taken without
 ##   having to worry or plan around it"*, PLAYTEST-76. A lethal row keeps its whole radius, a body
-##   its `obstructs_radius`, and the larger applies where both do. A row that neither charges nor
+##   its `obstructs_within()`, and the larger applies where both do. A row that neither charges nor
 ##   obstructs — the `playground` ambient, at intensity 0 — is not something a line has to avoid and
 ##   is skipped. `EventDef.line_reach()` is the one place that arithmetic lives, and this
 ##   probe asks it rather than keeping a second copy: the placement rules refuse what this measures,

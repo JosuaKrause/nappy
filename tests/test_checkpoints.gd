@@ -163,7 +163,7 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 ## bodies land on tiles belonging to that segment and no other, and an alley door's two posts land
 ## in that alley's own rect. The check a segment-level assertion alone cannot make — see
 ## `tests/test_regions.gd`, "The check a segment-level rule cannot do" — is that a body's own
-## `obstructs_radius` circle never reaches a *different* boundary crossing's ground either.
+## `obstructs_within()` circle never reaches a *different* boundary crossing's ground either.
 func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 	var checked := 0
 	for pair: Array in _sampled_days():

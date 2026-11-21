@@ -55,16 +55,16 @@ extends RefCounted
 ## `tests/test_events.gd`'s `_walkable_lane_beside(...) >= 2.0 * Tuning.PLAYER_BODY_RADIUS` is the
 ## same figure checked directly against a placed body. 46px is a different, narrower fact:
 ## `CHECKPOINT_DETAIN_REACH`'s doc (`src/autoload/tuning.gd`) derives it as
-## `obstructs_radius + PLAYER_BODY_RADIUS` for one specific door's 32px body (`32 + 14 = 46`), which
-## does not generalise — a body's own `obstructs_radius` varies per row. The general form of that
-## same formula, *"her centre is stopped `obstructs_radius + PLAYER_BODY_RADIUS` from a body's
+## `obstructs_within() + PLAYER_BODY_RADIUS` for one specific door's 32px body (`32 + 14 = 46`), which
+## does not generalise — a body's own `obstructs_within()` varies per row. The general form of that
+## same formula, *"her centre is stopped `obstructs_within() + PLAYER_BODY_RADIUS` from a body's
 ## centre"* (`EventDef.detain_distance()`'s doc; the **events** skill, "A lethal radius and a solid
 ## body are the same mechanism"), is what `closes_a_walked_sidewalk_band()` uses per tile: a tile's
 ## own centre point is free of a body when it is further than that sum away.
 ##
 ## # What counts as a solid body
 ##
-## Every placed row with `obstructs_radius > 0.0`, minus the two exemptions the production rule
+## Every placed row with `obstructs_within() > 0.0`, minus the two exemptions the production rule
 ## and its own probe already make and for the same reasons: `Role.SCENERY` (`pigeon_flock` —
 ## *"basically free already"*), and a `checkpoint_hut`/
 ## `checkpoint_gate` door body (*"a region door is never a block... it costs by design"*,

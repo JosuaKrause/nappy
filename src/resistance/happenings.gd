@@ -253,10 +253,6 @@ func _maybe_raid(her: Vector2) -> void:
 		_raid.append(_events.spawn_extra(van, at))
 	if _raid_beat.size() == 2:
 		var patrol: EventDef = row.duplicate()
-		# `shape` is a plain `RefCounted` field `Resource.duplicate()` does not copy (the note on
-		# `EventCatalogue.without_its_aftermath()`); dropped, the car draws and charges nothing.
-		patrol.shape = row.shape
-		patrol.solid_parts = row.solid_parts
 		patrol.paces = true
 		_raid.append(_events.spawn_extra(patrol, _raid_beat[0], _raid_beat))
 	# What she comes home to besides the raid itself: her own street door, sealed, out of her

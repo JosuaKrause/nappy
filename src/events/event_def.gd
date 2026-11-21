@@ -182,35 +182,10 @@ enum SpawnMode {
 @export var id := ""
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
-## **Whether this row draws itself as a spread**: segments or a whole scene fitted across
-## `obstructs_radius`, laid along whichever axis `BodyStance.lies_vertically_at()` picks for the
-## street it stands on (`SpreadLook._draw_spread`, `RankLook._draw_cafe`, and
-## `SpreadLook._draw_wide_scene` for the three seal pictures wide enough to span the street, each
-## with an authored east-west asset, `EventPictures.wide_scene_texture`). A protest and a firefight
-## also fill `obstructs_radius`-worth of ground but are not spreads (`stands_along_its_street`), so
-## a corner costs them nothing.
-##
-## **`RowGround.tiles_for()` asks this before it offers a corner as a site**: a junction
-## has no single street for the spread's axis or `BodyStance._centred_on_the_pavement_band` to
-## answer about, so only a row that asks either question has anything to lose by standing on one.
-## Kept by every copy (`duplicate()`, `at_heat()`).
-@export var has_a_spread := false
-
 ## Every visible row states its own picture; `tests/test_events.gd` names the three that are
 ## legitimately invisible.
 @export var look := Look.NONE
 @export var ambient_source := AmbientSource.NONE
-
-## **Whether this row stands along its street like a spread without being drawn as one**: a
-## protest's rank of placards and a firefight's cover. Their drawn box and their solid body's spine
-## follow the street's axis (`EventFootprints.drawn_box_of()`, `BodyStance.solid_axis_of()`);
-## they never ask `has_a_spread`'s corner question.
-@export var stands_along_its_street := false
-
-## **Whether a stationary vehicle lies across its street rather than along it**: the burnt-out car,
-## left broadside across the carriageway, where the moving van stands along the kerb. Decides which
-## view it shows on a street (`BodyStance.stands_side_on()`) and so which way its body lies.
-@export var lies_across_its_street := false
 
 ## The pictures a row standing in its warning is drawn in, whose largest decides whether its warning
 ## would stand in her view (`EventFootprints.warning_picture_size()`).
@@ -249,132 +224,44 @@ enum WarningPicture {
 func noun_for(count: int) -> String:
 	return noun if count == 1 else noun_plural
 
-## This row's own ground shape, the datum its shadow and its solid body (when it has one) are both
-## derived from. A plain `var` since `GroundShape` is a `RefCounted` and cannot export. `null` for
-## every row whose `look` is `NONE`, set by every other. See `solid()` and `docs/EVENTS.md`, "Solid
-## things are solid".
-var shape: GroundShape = null
+## **What it is on the ground**: its shape, whether it is solid and in which pieces, when it is solid,
+## what a crowd walker takes it for, whether it parks and how it lies on its street, as one value
+## (`BodySpec`). Written through `use_body()` until the draft writes it; asked through `body()` and
+## the questions below that forward to it. A row that says nothing has none: no shape, nothing solid,
+## and not yet saying what it stands as or whether it parks, which `validate()` refuses.
+@export var _body := BodySpec.none()
 
-## Sets `shape` and derives `obstructs_radius` from it in the one call that keeps them from
-## disagreeing: **the body is the shape**, so `obstructs_radius` becomes `shape.reach()`. Every
-## obstructing row calls this instead of setting `obstructs_radius` by hand; a row with a look that
-## does not obstruct sets `shape` alone.
-func solid(new_shape: GroundShape) -> void:
-	shape = new_shape
-	obstructs_radius = new_shape.reach()
-	# `body_pieces()` caches a one-piece default built from `shape`; replacing the shape drops it.
-	_default_parts = []
+## **Hands the row its body** (`BodySpec`): the one line that replaces a row's writes of its shape,
+## its solid pieces, when it is solid, what it stands as, whether it parks and how it lies. Called
+## only by the catalogue, by a copy being made and by a test's row; the draft that writes a row
+## deletes it.
+func use_body(spec: BodySpec) -> void:
+	_body = spec
+	_cost_cache = INF
 
-## One solid piece of a row's body: where it sits along the scene's own spread axis, and the
-## `GroundShape` it collides and casts its shadow as there.
-##
-## **Almost every row is one piece at the origin**, which is what `body_pieces()` answers for a row that
-## declares none. The list exists for the one scene whose picture leaves real ground open inside its
-## own span: a crash is two cars with debris between them and an onlooker on each sidewalk, and a body
-## spanning the whole street would be a wall where the picture shows a way through.
-##
-## **The pieces are a subset of `shape`.** `validate()` refuses a part reaching past the row's own
-## `shape.reach()`, so `obstructs_radius` stays an upper bound on every body the row puts down, and
-## every planner can read that one disc without knowing parts exist.
-##
-## **Two offsets, because a wide scene has two authored pictures.**
-## `EventPictures.wide_scene_texture` picks a composition per street axis rather than rotating one,
-## so where the cars sit is a fact about the picture in use. `along` is read off the north-south
-## asset and `along_vertical` off its `_vertical` sibling, both at the scale
-## `SpreadLook._draw_wide_scene` fits the picture to the street.
-class SolidPart extends RefCounted:
-	## Offset along the spread axis, in px from the scene's own centre, on a north-south street.
-	var along := 0.0
-	## The same, off the `_vertical` picture, on an east-west street.
-	var along_vertical := 0.0
-	var shape: GroundShape = null
+## Its body (`BodySpec`), for the code in the events folder that runs one ability: a copy that
+## changes it asks it for a new value (`copy.use_body(copy.body().reshaped(shape))`).
+func body() -> BodySpec:
+	return _body
 
-	## The offset the instance places this piece at, given whether its body lies down the screen
-	## (`EventBody.runs_vertically()`).
-	func offset_for(vertical: bool) -> float:
-		return along_vertical if vertical else along
-
-	## The furthest this piece reaches from the scene's own centre, on the worse of the two axes —
-	## what `EventDef.solid_reach()` maximises and what `validate()` holds inside `shape.reach()`.
-	func reach() -> float:
-		return maxf(absf(along), absf(along_vertical)) + shape.reach()
-
-	## The `GroundShape` this piece collides and casts its shadow as (`shape`).
-	func ground_shape() -> GroundShape:
-		return shape
-
-static func part(along: float, along_vertical: float, part_shape: GroundShape) -> SolidPart:
-	var made := SolidPart.new()
-	made.along = along
-	made.along_vertical = along_vertical
-	made.shape = part_shape
-	return made
-
-## The pieces this row's body is made of, in the scene's own frame. Empty means **one piece at the
-## origin** (see `SolidPart`). A plain `var` for the reason `shape` is one; `at_heat()`'s
-## `duplicate()` shares the list as it shares `shape`, and neither is ever mutated in place.
-var solid_parts: Array[SolidPart] = []
-
-## `solid_parts` with the default filled in: the pieces its body is made of, in the scene's own frame —
-## the declared ones, or one piece at the origin carrying `shape`. The one form a live event's body
-## (`EventBody`), its shadow and `BodyStance`'s layout of a body (`pieces_at()`) are built from. The
-## default is built once per def, since `EventLook._draw_body_shadow()` asks on every draw
-## of every visible event; `solid()` drops the cache when it replaces `shape`.
-func body_pieces() -> Array[SolidPart]:
-	if not solid_parts.is_empty():
-		return solid_parts
-	if _default_parts.is_empty():
-		_default_parts = [part(0.0, 0.0, shape)] as Array[SolidPart]
-	return _default_parts
-
-var _default_parts: Array[SolidPart] = []
-
-## The furthest any actual body of this row reaches from its own centre: `obstructs_radius` for
-## every one-piece row, less for a row of several.
-##
-## **This is the "where is she stopped" reading of a body, and `obstructs_radius` is the "how much
-## ground does this close" one.** They are the same number for all but the crash, which closes a
-## whole street and is solid only where its two cars are. Anything asking where her centre comes to
-## rest (`validate()`'s lethal-radius check) asks this; anything clearing or spacing ground asks
-## `obstructs_radius`.
-func solid_reach() -> float:
-	# A row with a `shape` and no `obstructs_radius` draws a shadow and stops nothing, so the reach
-	# of what she is stopped by is zero.
-	if shape == null or obstructs_radius <= 0.0:
-		return 0.0
-	var furthest := 0.0
-	for piece in body_pieces():
-		furthest = maxf(furthest, piece.reach())
-	return furthest
-
-## Its ground shape (`shape`): the datum its shadow and its solid body are both derived from, or
-## null for a row with no picture.
+## Its ground shape: the datum its shadow and its solid body are both derived from, or null for a
+## row with no picture.
 func ground_shape() -> GroundShape:
-	return shape
+	return _body.ground_shape()
 
 ## Whether a shadow is put down under its body (`draws_body_shadow`).
 func casts_a_shadow() -> bool:
 	return draws_body_shadow
 
-## Whether it has a body at all (`obstructs_radius`): something she is stopped by, rather than a
-## figure she walks up to or a picture flat on the ground.
+## Whether it has a body at all (`BodySpec.has_a_body()`): something she is stopped by, rather than
+## a figure she walks up to or a picture flat on the ground.
 func has_a_body() -> bool:
-	return obstructs_radius > 0.0
+	return _body.has_a_body()
 
-## When its body is solid to her (`solid_when`): from its first frame, once it starts, or while a
-## boom's arm is down.
-func solid_from() -> SolidWhen:
-	return solid_when
-
-## Whether a crowd walker goes round its figure while it stands still, as round an object or a
-## vehicle, rather than through it, as through a person or an animal (`stands_as`).
-func is_walked_round() -> bool:
-	return stands_as == StandsAs.SOMETHING
-
-## Whether its figure, once it stands, stands there for good (`when_it_stops`): a crowd car behind
-## it turns round rather than waits.
-func parks() -> bool:
-	return when_it_stops == WhenItStops.PARKS
+## The furthest any actual body of this row reaches from its own centre (`BodySpec.solid_reach()`):
+## where her centre comes to rest, which is less than `obstructs_within()` for a row solid in pieces.
+func solid_reach() -> float:
+	return _body.solid_reach()
 
 ## Whether it moves along a route of its own (`mobile`).
 func moves() -> bool:
@@ -521,8 +408,6 @@ func for_day(day: int) -> EventDef:
 	if that_day == notice:
 		return self
 	var variant: EventDef = duplicate()
-	variant.shape = shape
-	variant.solid_parts = solid_parts
 	variant.notice = that_day
 	return variant
 
@@ -570,10 +455,6 @@ func as_sent_ahead() -> EventDef:
 	if _sent_ahead.is_warned_first():
 		return as_warned_first()
 	var variant: EventDef = duplicate()
-	# `shape` and `solid_parts` are carried across by hand, as every copy of a row does (see
-	# `at_heat()`).
-	variant.shape = shape
-	variant.solid_parts = solid_parts
 	variant.spawn_mode = SpawnMode.TOWARD_PLAYER
 	variant.telegraphs = false
 	variant.validate()
@@ -737,10 +618,10 @@ func investigates() -> bool:
 func lets_out() -> int:
 	return hunting.lets_out() if hunting else 0
 
-## How far round its position its body stops her (`obstructs_radius`), or 0 for a row that stops
+## How far round its position its body stops her (`BodySpec.obstructs_within()`), or 0 for a row that stops
 ## nothing: what the walked-sidewalk rule reads of a body (`RouteSidewalkRule`).
 func obstructs_within() -> float:
-	return obstructs_radius
+	return _body.obstructs_within()
 
 ## **Whether this row is a one-shot not sited from her walk**, which `validate()` refuses: a one-shot
 ## is a set piece, which has to be met wherever she goes, so one without `on_her_way` would stand in
@@ -806,10 +687,10 @@ func ground_kinds() -> Array[int]:
 func sidewalk_lane() -> Pavement:
 	return pavement_side
 
-## Whether the row draws itself as a spread laid along its street's axis (`has_a_spread`), so a
+## Whether the row draws itself as a spread laid along its street's axis (`BodySpec.Lie.SPREAD`), so a
 ## corner, which belongs to two streets at once, is no ground for it.
 func lies_as_a_spread() -> bool:
-	return has_a_spread
+	return _body.lies() == BodySpec.Lie.SPREAD
 
 ## Whether it leaves the building it stands against burnt: its scar is the burnt shell's
 ## (`EventCatalogue.BURNT_SHELL_ID`), so the front it catches on has to be one that can be drawn
@@ -897,152 +778,9 @@ func answers_to_heat() -> bool:
 func hunts_for_her() -> bool:
 	return hunts != null and not hunts.presses()
 
-## Radius of solid obstruction, in px. 0 for events you can walk through. Being *forced* to reroute
-## is a different pressure from choosing to.
-##
-## **This is `shape.reach()`, not a second number chosen to match it.** The body is `shape`, the
-## `GroundShape` the shadow is drawn from, and this field is what every planner reads: the disc
-## bound the reachability and sealing guarantees are stated over, which holds for a capsule too.
-## `solid(shape)` sets both together; `validate()` refuses the two disagreeing.
-##
-## **It is the ground this row closes, which is not always the ground it is solid on.** A row
-## carrying `solid_parts` puts its bodies down inside this disc and leaves the rest open (the
-## crash), so *has a body* and *closes ground* differ for exactly one row and `solid_reach()` is
-## the first of the two. Every planner reads this one: they clear, space and refuse ground, and an
-## upper bound is the conservative answer.
-##
-## **Anything that stands still is solid at the width it is drawn.** A rule rather than a list, or
-## a delivery van becomes scenery. The number is not a balance value: it is half of the
-## silhouette, because `SpreadLook._draw_spread` draws a blocking object at exactly the width it
-## obstructs.
-##
-## Four things are exempt, each for its own reason:
-##
-## - **Anything mobile.** A moving wall on a two-tile sidewalk pins her against a building, which
-##   is a different game from being priced out of a street. See `dog_walker`.
-## - **`AHEAD_OF_PLAYER`**, which `validate()` refuses: nothing checks that a thing sited out of
-##   where she happens to be walking leaves a route to a park.
-## - **Anything with no silhouette**: a city-wide source, a playground the park already draws.
-## - **A flock**, which `validate()` also refuses. `flock_size` bodies wheeling inside
-##   `flock_spread` have no one silhouette to be half of, and walking into them is the whole event:
-##   a body would stop her at the rim.
-##
-## And one constraint rather than an exemption, in `validate()`: a `hard_fail` event's body has to
-## fit *inside* its lethal radius with her own body to spare.
-@export var obstructs_radius := 0.0
-
-## **How a row's body and its picture lie on the street it stands on**, the one choice the three
-## flags `has_a_spread`, `stands_along_its_street` and `lies_across_its_street` make between them
-## (`lies()`); no row sets two.
-enum Lie {
-	## As it faces: no flag.
-	AS_IT_FACES,
-	## Drawn as a spread across its street (`has_a_spread`).
-	SPREAD,
-	## Along its street without being drawn as a spread (`stands_along_its_street`).
-	ALONG,
-	## Across its street (`lies_across_its_street`).
-	ACROSS,
-}
-
-## **When the row's body is solid to her.** Almost every body is a place, solid from its first frame
-## for the whole of its life; two rows are solid only part of the time, and a row is one or the
-## other, never both.
-enum SolidWhen {
-	## From the instance's first frame: every body but the two below.
-	ALWAYS,
-	## **The body arrives when the notice ends rather than with the instance**, for a row that turns
-	## on where she is already standing. Every other solid row is a *place*, on its tile before she
-	## gets near it. A vent on a timer closes ground she may be walking down at the moment it fires,
-	## and a body that appears around her is not something a telegraph can answer.
-	##
-	## So the notice runs with no body and the body goes down at the end of it, and the live event's
-	## body (`EventBody.come_down_clear_of_her()`) withholds it for as long as she is still inside
-	## the footprint: **a vent never turns on with her in it.** Nothing is placed and then moved,
-	## and withholding obstruction can only leave more ground reachable. Standing in a vent to keep
-	## it open costs the full field, so it is the most expensive way through rather than a way past.
-	##
-	## **A planner's own record does not know about this**: `EventManager` rasterises a row's body
-	## into `CityMap.obstructed_tiles` from the *plan*, before any instance exists, so a row solid
-	## this way reads as solid to the crowd and to route-clearing for the whole of its life. Set it
-	## on something placed where there is no lattice to clear, or accept that the ground is reserved
-	## the whole time.
-	ONCE_IT_STARTS,
-	## **A boom**: a bar across a door's carriageway that the cars raise and lower
-	## (`Crowd._stop_for_gates()`, through the `GateState` its instance carries), and
-	## that is solid to her **only while it is down**. `checkpoint_gate` is the one row that sets it.
-	##
-	## It never detains: a lowered boom is a wall across the road and a raised one is ground she
-	## may walk under, at the price of the car that raised it and of the guard a walked crossing
-	## sets on her (`CheckpointController._set_a_guard_on_her()`). The inspection is the huts'
-	## alone, and a hut never takes her in from the carriageway its own door's boom spans.
-	##
-	## Read in three more places, each because a boom is a door body that does not detain:
-	## `EventSpawner.obstructed_footprint()` keeps it out of the crowd's per-tile record as it keeps
-	## the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's clear
-	## ground around it, and the live event's body lets its collision body follow the arm
-	## (`EventBody.follow_the_arm()`).
-	WHILE_LOWERED,
-}
-
-@export var solid_when := SolidWhen.ALWAYS
-
 ## **A car that drives**, or null for anything else — see `VehicleSpec`: `police_patrol` and every
 ## copy of it, and `fire_truck`.
 @export var vehicle: VehicleSpec = null
-
-## **What the row's figure is to a crowd walker that meets it standing still** (inbox #905 in
-## freckled-moose): a walker may walk through a person or an animal standing still, and walks round
-## an object or a vehicle. A figure under way is given way to whatever it is, and a crowd car stands
-## for any figure in its lane once it has moved; this is only the walker's question about a figure
-## that stands (`MoveProposal.stood_round`, which `EventInstance.setup()` sets from it).
-##
-## Every row declares it, and `validate()` refuses one that does not: a default would have walkers
-## walk through a parked van, or round an invisible point, without anybody deciding either.
-enum StandsAs {
-	## Not declared: refused by `validate()` (`setup()` alone reads an undeclared row as
-	## `SOMEBODY`).
-	UNDECLARED,
-	## A person or an animal (a street musician, a policeman, a dog, a flock of pigeons): walked
-	## through while it stands, and given way to only while it moves.
-	SOMEBODY,
-	## An object or a vehicle (a cafe's tables, a stall, a van, a mast, the patrol car, the fire
-	## engine): walked round while it stands, as it is while it moves. One with a solid body is
-	## walked round by its tiles already (`CityMap.obstructed_tiles`); this also keeps a walker out
-	## of one that has none, a vehicle that drives.
-	SOMETHING,
-	## Nothing a walker meets on the ground: no picture of its own (`Look.NONE`), or a picture on a
-	## wall or flat on the ground (the fire on a facade, a burnt frontage, a crater, a steam vent).
-	## Walked through like a person while it stands; none of these moves.
-	NOTHING,
-}
-
-@export var stands_as := StandsAs.UNDECLARED
-
-## **Whether the row's figure, once it stands, stands there for good** (inbox #909 in
-## freckled-moose): what tells a crowd car behind it in its lane to turn round, as it does at a
-## blocked street, rather than wait. Behind a figure that has parked a car turns round; behind one
-## that is only stopping (the patrol car at a red light or while its man is out, a dog standing for
-## its notice) it waits.
-##
-## The row says whether its figure parks; the instance says when it has (`EventInstance` sets
-## `MoveProposal.parked` from this and its phase): a figure that never moves has parked from the
-## start, and one that drives to where it stops (`stops_where_it_arrives`) has parked once it is
-## there. Every row declares it, and `validate()` refuses one that does not, and one whose
-## declaration its motion contradicts: a row that stops where it arrives parks, and a row that
-## moves any other way, chases her or wheels as a flock does not.
-enum WhenItStops {
-	## Not declared: refused by `validate()` (`setup()` alone reads an undeclared row as `GOES_ON`).
-	UNDECLARED,
-	## It goes on: a stand is a pause, and a car behind it waits for it to move (the patrol car, a
-	## dog, a cyclist, a pursuer, the column's trucks, anything that leaves or chases her).
-	GOES_ON,
-	## It parks: once it stands it stays for the rest of its time in the world, and a car behind it
-	## turns round (the fire engine at its fire, a van set up for the day, a stall, a barricade).
-	PARKS,
-}
-
-@export var when_it_stops := WhenItStops.UNDECLARED
 
 ## Which lane of a two-tile sidewalk an event wants. Almost nothing cares, and `ANY` is the default.
 ## Two things do, because the lane makes sense of the thing: a parked van belongs at the kerb rather
@@ -1092,7 +830,7 @@ enum Pavement {
 ##
 ## **Stated over the body rather than over her**: a radius from the middle has to be bigger than
 ## whatever she pushes in front of her, so it silently switches the mechanic off the day that
-## changes (PLAYTEST-57). Her centre stops `obstructs_radius + PLAYER_BODY_RADIUS` from a body, or
+## changes (PLAYTEST-57). Her centre stops `obstructs_within() + PLAYER_BODY_RADIUS` from a body, or
 ## further with the pram between, and a reach measured from the edge is the same whichever it is.
 ##
 ## Checked by `validate()` against `core_within()`, over `detain_distance()`: the capture has to sit
@@ -1107,7 +845,7 @@ enum Pavement {
 ## `CheckpointController.check_detentions()` and `CheckpointController._release_finished_holds()`
 ## both measure.
 func detain_distance() -> float:
-	return obstructs_radius + detain_radius
+	return obstructs_within() + detain_radius
 
 ## Whether an instance is armed again once she has been released and has moved outside
 ## `detain_distance()`, rather than spent for good after its first conversation like
@@ -1256,7 +994,7 @@ enum Role {
 ##
 ## **No row in the catalogue is `IMPASSABLE`**: impassable means *stops passage without killing*,
 ## which in this game is a closure taking a whole street. An event with a body takes part of a
-## sidewalk, so it is walked round at a price (`costly`). A rule that tests `obstructs_radius > 0`
+## sidewalk, so it is walked round at a price (`costly`). A rule that tests `obstructs_within() > 0`
 ## should ask whether it means *has a body* or *closes ground* (the **events** skill).
 func effect() -> GameEnums.BlockerEffect:
 	return GameEnums.BlockerEffect.LETHAL if hard_fail else GameEnums.BlockerEffect.COSTLY
@@ -1275,13 +1013,6 @@ func at_heat(level: int) -> EventDef:
 		return self
 	var through := clampf(float(level) / float(Tuning.RESISTANCE_GOAL), 0.0, 1.0)
 	var hot := duplicate() as EventDef
-	# `Resource.duplicate()` only copies properties with storage usage, and a plain `var` typed as a
-	# `RefCounted` does not get that usage. `shape` is never mutated in place, so sharing the
-	# reference is as safe as `duplicate()`'s own shallow copy of anything else. `solid_parts` is the
-	# same kind of field: a heated row that lost its
-	# parts would quietly go back to one body spanning its whole shape.
-	hot.shape = shape
-	hot.solid_parts = solid_parts
 	var hunts_from := HEAT_HUNTS_LEVEL
 	var notices_within := HEAT_HUNTS_WITHIN
 	if hunts.presses():
@@ -1345,20 +1076,22 @@ func validate() -> bool:
 	if (repeat_every > 0.0 or repeat_after > 0.0) and spawn_mode != SpawnMode.MAP:
 		push_error("event '%s' repeats but is not MAP-sited: only a plan can bring it again" % id)
 		return false
-	if stands_as == StandsAs.UNDECLARED:
-		push_error(("event '%s' does not say what it stands as (`stands_as`): a person or an animal, "
-				% id) + "an object or a vehicle, or nothing on the ground")
+	if not _body.says_what_it_stands_as():
+		push_error(("event '%s' does not say what it stands as (`walked_through()`, `walked_round()` "
+				% id) + "or `unmet()` on its body): a person or an animal, an object or a vehicle, "
+				+ "or nothing on the ground")
 		return false
-	if when_it_stops == WhenItStops.UNDECLARED:
-		push_error("event '%s' does not say whether it parks once it stands (`when_it_stops`)" % id)
+	if not _body.says_whether_it_parks():
+		push_error(("event '%s' does not say whether it parks once it stands (`parked()` or "
+				% id) + "`going_on()` on its body)")
 		return false
 	# **The declaration has to agree with how the row moves**: a car turns round behind a parked
 	# figure, so a figure that will move again must never read as parked, and one that will not must
 	# never be waited for.
-	if stops_where_it_arrives and when_it_stops != WhenItStops.PARKS:
+	if stops_where_it_arrives and not _body.parks():
 		push_error("event '%s' stops where it arrives and says it goes on: it parks there" % id)
 		return false
-	if when_it_stops == WhenItStops.PARKS:
+	if _body.parks():
 		if mobile and not stops_where_it_arrives:
 			push_error("event '%s' parks and moves without stopping where it arrives: it has no " % id
 					+ "stand to park at")
@@ -1366,27 +1099,21 @@ func validate() -> bool:
 		if pursuit != null or flock_size > 0:
 			push_error("event '%s' parks and chases her or wheels as a flock: it moves again" % id)
 			return false
-	# **The body is the shape.** A row that draws something has a shape to draw it from, and a row
-	# whose shape claims a reach has to claim the same one `obstructs_radius` does.
-	if look != Look.NONE and shape == null:
+	# **The body is the shape.** A row that draws something has a shape to draw it from. A solid
+	# body's reach is its shape's (`BodySpec.obstructs_within()`), so the two cannot disagree and
+	# the body and the picture cannot disagree about where she can walk.
+	if look != Look.NONE and ground_shape() == null:
 		push_error("event '%s' has a look but no shape to draw its shadow and body from" % id)
 		return false
-	if obstructs_radius > 0.0 and (shape == null or not is_equal_approx(shape.reach(), obstructs_radius)):
-		push_error(("event '%s' obstructs %.1fpx but its shape reaches %.1fpx: the body and the "
-				% [id, obstructs_radius, shape.reach() if shape else -1.0])
-				+ "picture would disagree about where she can walk")
-		return false
-	# **A row solid in parts is solid inside its own shape and nowhere else.** Every planner reads
-	# `obstructs_radius`, the disc bound, and none knows a part list exists, so a piece reaching past
-	# it would be ground nothing ever cleared. Pieces inside the shape can only remove obstruction,
-	# which can only add reachable ground.
-	for piece in solid_parts:
-		if piece.shape == null:
-			push_error("event '%s' has a solid part with no shape" % id)
-			return false
-		if piece.reach() > obstructs_radius + 0.001:
+	# **A row solid in pieces is solid inside its own shape and nowhere else.** Every planner reads
+	# `obstructs_within()`, the disc bound, and none knows a piece list exists, so a piece reaching
+	# past it would be ground nothing ever cleared. Pieces inside the shape can only remove
+	# obstruction, which can only add reachable ground. (A piece has a shape by construction:
+	# `BodyPiece.at()` takes it.)
+	for piece in _body.declared_pieces():
+		if piece.reach() > obstructs_within() + 0.001:
 			push_error(("event '%s' has a solid part reaching %.1fpx, past the %.1fpx its own shape "
-					% [id, piece.reach(), obstructs_radius])
+					% [id, piece.reach(), obstructs_within()])
 					+ "claims: nothing cleared the ground it would stand on")
 			return false
 	# **A core has to be louder than its field and fall to nothing inside it**: a core no louder than
@@ -1419,14 +1146,14 @@ func validate() -> bool:
 	# (`StreetInvalidation`) cannot check that what it blocks leaves a route to a park. Anything that stands in
 	# the way is sited on the map; a transient one that merely *emits* is fine, and so is a lethal
 	# one, which appears in front of her and is gone shortly after.
-	if spawn_mode != SpawnMode.MAP and obstructs_radius > 0.0:
+	if spawn_mode != SpawnMode.MAP and obstructs_within() > 0.0:
 		push_error("event '%s' is director-sited and obstructs %.0fpx: nothing checks "
-				% [id, obstructs_radius] + "that it leaves a route to a park")
+				% [id, obstructs_within()] + "that it leaves a route to a park")
 		return false
 	# The same, over the day the row switches to: `spawn_mode_on()` is what every placement asks.
-	if from_day_after and from_day_after.spawn_mode() != SpawnMode.MAP and obstructs_radius > 0.0:
+	if from_day_after and from_day_after.spawn_mode() != SpawnMode.MAP and obstructs_within() > 0.0:
 		push_error(("event '%s' is director-sited from day %d onward and obstructs %.0fpx: "
-				% [id, from_day_after.after_day() + 1, obstructs_radius])
+				% [id, from_day_after.after_day() + 1, obstructs_within()])
 				+ "nothing checks that it leaves a route to a park")
 		return false
 	# **A one-shot she has to meet is sited on her way.** A one-shot is a set piece, which has to be
@@ -1465,10 +1192,10 @@ func validate() -> bool:
 					+ "until it is real needs one place to stop being re-sited at")
 			return false
 	# A flock is several bodies wheeling inside one disc, with no silhouette for a body to be half
-	# of, and being walked into is the event. See `obstructs_radius`.
-	if flock_size > 0 and obstructs_radius > 0.0:
+	# of, and being walked into is the event. See `BodySpec`.
+	if flock_size > 0 and obstructs_within() > 0.0:
 		push_error("event '%s' is %d bodies wheeling and obstructs %.0fpx: a flock has no one "
-				% [id, flock_size, obstructs_radius]
+				% [id, flock_size, obstructs_within()]
 				+ "silhouette to be solid at, and being walked into is what it is for")
 		return false
 	# A row that stops where it arrives has to have somewhere to arrive, and `_be_done()` cannot
@@ -1532,10 +1259,10 @@ func validate() -> bool:
 			return false
 	# Holding a body back through the notice means nothing on a row with no body, and a row with no
 	# notice has nothing to hold it back through.
-	if solid_when == SolidWhen.ONCE_IT_STARTS and obstructs_radius <= 0.0:
+	if _body.solid_from() == BodySpec.SolidWhen.ONCE_IT_STARTS and obstructs_within() <= 0.0:
 		push_error("event '%s' waits for its own notice to become solid and has no body" % id)
 		return false
-	if solid_when == SolidWhen.ONCE_IT_STARTS and telegraph_time <= 0.0:
+	if _body.solid_from() == BodySpec.SolidWhen.ONCE_IT_STARTS and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
 	# A `TOWARD_PLAYER` row is created no nearer her than `nearest_it_is_created()`. So a row whose
@@ -1549,12 +1276,12 @@ func validate() -> bool:
 					% floor_lead + "already inside its own reach there")
 			return false
 	# **A lethal radius and a solid body are the same mechanism**, and putting both on one event is a
-	# way of turning the first one off. She is stopped with her centre `obstructs_radius +
+	# way of turning the first one off. She is stopped with her centre `obstructs_within() +
 	# PLAYER_BODY_RADIUS` from his, so if that reaches the inner radius the kill can never fire,
 	# a silent difficulty setting. Under it, the body is only ever felt during the telegraph, the
 	# phase where the event is not lethal yet.
 	#
-	# **Stated over `solid_reach()` rather than `obstructs_radius`**, because this is about where her
+	# **Stated over `solid_reach()` rather than `obstructs_within()`**, because this is about where her
 	# centre actually comes to rest: a row solid only in parts leaves ground inside its own disc that
 	# she can walk onto. The two numbers are the same for every row that is one piece.
 	#
@@ -1585,7 +1312,7 @@ func validate() -> bool:
 			return false
 		if not (detain_distance() < core_within() and core_within() <= heard_within()):
 			push_error(("event '%s' detains at %.0fpx (%.0fpx past a %.0fpx body), which does not "
-					% [id, detain_distance(), detain_radius, obstructs_radius])
+					% [id, detain_distance(), detain_radius, obstructs_within()])
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
 					% [core_within(), heard_within()]))
 			return false
@@ -1597,7 +1324,7 @@ func validate() -> bool:
 		# A vehicle that investigates notices her (`notice`) and lets men out: one that also pursued
 		# would be the vehicle chasing her like a running man, one with no reach never notices, and
 		# one with no body has no door to let them out of.
-	if investigates() and (pursuit or notice == null or shape == null):
+	if investigates() and (pursuit or notice == null or ground_shape() == null):
 		push_error("event '%s' investigates but is not a vehicle with a reach to notice her in, a "
 				% id + "body to let men out of and men to let out, that stays where it is")
 		return false
@@ -1609,13 +1336,13 @@ func validate() -> bool:
 				% [id, pursuit.stop_excitement()] + "a cost under the whole meter")
 		return false
 	if vehicle:
-		if not mobile or speed < Tuning.CAR_STRIKE_MIN_SPEED or shape == null:
+		if not mobile or speed < Tuning.CAR_STRIKE_MIN_SPEED or ground_shape() == null:
 			push_error("event '%s' drives but has no route, speed (%.0f) or shape to drive with"
 					% [id, speed])
 			return false
-		if obstructs_radius > 0.0 or hard_fail:
+		if obstructs_within() > 0.0 or hard_fail:
 			push_error("event '%s' drives and is also %s: a car closes no ground and kills only "
-					% [id, "an obstruction" if obstructs_radius > 0.0 else "hard_fail"]
+					% [id, "an obstruction" if obstructs_within() > 0.0 else "hard_fail"]
 					+ "in front of it")
 			return false
 			# Its warning is the crowd car's contract, `CAR_HORN_TIME` of its own travel ahead of the
@@ -1848,10 +1575,6 @@ func age_at_a_point_of_its_beat(point: float) -> float:
 ## held to the flat minimum a warning first owes.
 func as_warned_first() -> EventDef:
 	var variant: EventDef = duplicate()
-	# `shape` and `solid_parts` are carried across by hand, as every copy of a row does (see
-	# `at_heat()`).
-	variant.shape = shape
-	variant.solid_parts = solid_parts
 	variant.warned_first = true
 	if not pursuit:
 		variant.telegraph_time = minf(telegraph_time, Tuning.WARNING_ALONE_MAX)
@@ -1960,7 +1683,7 @@ func stands_at_its_kerb() -> bool:
 ## A stationary solid body that `pavement_side` does not pin to an edge: the bodies that are moved
 ## from where they are placed to where they stand, onto a band's middle or onto a kerb.
 func _is_an_unpinned_standing_body() -> bool:
-	return not mobile and obstructs_radius > 0.0 and pavement_side == Pavement.ANY
+	return not mobile and obstructs_within() > 0.0 and pavement_side == Pavement.ANY
 
 ## Whether the row stands in alleys and on no other ground: the robber and the mouse. Such a row is
 ## refused an alley the day's routes run down (`RowGround.offers_for_role()`) and has no marble on
@@ -2006,11 +1729,11 @@ func falloff() -> float:
 	return _field.falloff()
 
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
-## body gives it (`field_reach()`): its `shape`, or none — a point at its centre — for a row whose
+## body gives it (`field_reach()`): its body's shape, or none — a point at its centre — for a row whose
 ## field is priced from its centre (`FieldSpec.from_its_centre()`, the fire engine) or that has no
 ## shape.
 func datum() -> GroundShape:
-	return null if _field.is_priced_from_its_centre() else shape
+	return null if _field.is_priced_from_its_centre() else ground_shape()
 
 ## Whether what its field lands on her ignores every wall between, where every other field stops at
 ## one: the explosion outside the building.
@@ -2035,7 +1758,7 @@ func bird_emission_at(at_distance: float, share: float, outer: float) -> float:
 ## figure nothing can be past and still charge her. The body's reach is asked on every call, since
 ## its shape is a class with public fields a rig may change after an instance has read them.
 func silent_beyond() -> float:
-	var body := shape.reach() if shape != null else 0.0
+	var body := ground_shape().reach() if ground_shape() != null else 0.0
 	return body + _field.silent_beyond()
 
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to ask
@@ -2076,7 +1799,7 @@ const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 func reaches_the_far_lane() -> bool:
 	return line_reach() >= _THE_FAR_LANE
 
-## How far a row denies ground: **the disc it charges for**, `obstructs_radius` wherever it has a
+## How far a row denies ground: **the disc it charges for**, `obstructs_within()` wherever it has a
 ## body, the larger of the two where both apply. A row that neither charges nor obstructs (the
 ## `playground` ambient, at intensity 0) is not something a line has to avoid.
 ##
@@ -2098,8 +1821,8 @@ func reaches_the_far_lane() -> bool:
 ## and `EventPlan.counts_against_the_line()` is done with it before this is asked.
 func line_reach() -> float:
 	if hard_fail:
-		return maxf(heard_within(), obstructs_radius)
-	return maxf(reach_above(Tuning.EXCITEMENT_DECAY_WALKING), obstructs_radius)
+		return maxf(heard_within(), obstructs_within())
+	return maxf(reach_above(Tuning.EXCITEMENT_DECAY_WALKING), obstructs_within())
 
 ## How far from the centre a row still emits more than `rate`, over both parts of its field
 ## (`FieldSpec.reach_above()`): the field itself, and the core where it has one.
@@ -2188,22 +1911,6 @@ func may_be_drawn_as_a_pelican() -> bool:
 func picture() -> Look:
 	return look
 
-## How wide its body's picture is drawn along its run, in px: twice the radius of its body
-## (`obstructs_radius`).
-func drawn_width() -> float:
-	return obstructs_radius * 2.0
-
-## How it lies on its street (`has_a_spread`, then `stands_along_its_street`, then
-## `lies_across_its_street`): as a spread across it, along it, across it, or as it faces.
-func lies() -> Lie:
-	if has_a_spread:
-		return Lie.SPREAD
-	if stands_along_its_street:
-		return Lie.ALONG
-	if lies_across_its_street:
-		return Lie.ACROSS
-	return Lie.AS_IT_FACES
-
 ## Whether it is a flock of bodies wheeling over one place (`flock_size`).
 func is_a_flock() -> bool:
 	return flock_size > 0
@@ -2230,9 +1937,9 @@ func detains_for() -> float:
 func detains_again() -> bool:
 	return redetains
 
-## Whether it is a door's boom, solid only while lowered (`SolidWhen.WHILE_LOWERED`).
+## Whether it is a door's boom, solid only while lowered (`BodySpec.is_a_boom()`).
 func is_a_boom() -> bool:
-	return solid_when == SolidWhen.WHILE_LOWERED
+	return _body.is_a_boom()
 
 ## **Whether its body is recorded on the ground for the whole day**: a standing body that stops her
 ## (a `ground_shape()` and `has_a_body()`), that does not move (`moves()`), since a mover is

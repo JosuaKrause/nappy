@@ -172,7 +172,7 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 ## **A `redetains` row is armed again once released, and what re-arms it is her leaving** — in
 ## either direction. `checkpoint_hut` and `checkpoint_post` are the two, and this is the whole of
 ## what makes a door a toll rather than a one-time gate. The boom between a street door's huts is
-## not a third: it never inspects her (`EventDef.SolidWhen.WHILE_LOWERED`).
+## not a third: it never inspects her (`BodySpec.SolidWhen.WHILE_LOWERED`).
 ##
 ## **And a hut never takes her in from the carriageway its own door's boom spans.** A hut's trigger
 ## reaches a reach past its wall, which is further than the kerb, so without this a hut would reach
@@ -263,7 +263,7 @@ func hold_that_would_begin(at: Vector2) -> EventInstance:
 	return nearest
 
 ## Whether `at` is on the carriageway spanned by the boom of the door `door_body` stands in — a
-## live boom instance (`EventDef.SolidWhen.WHILE_LOWERED`) on the same cross-street line (its own `facing_now()` axis),
+## live boom instance (`BodySpec.SolidWhen.WHILE_LOWERED`) on the same cross-street line (its own `facing_now()` axis),
 ## with `at` no further across that line from the boom's centre than the boom's own body reaches.
 ## The boom is laid over exactly the carriageway, so its reach is the carriageway's half-width and
 ## this is "she is in the road at this door" stated over the door's own geometry rather than over

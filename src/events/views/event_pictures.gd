@@ -93,7 +93,7 @@ const ROADBLOCK_SEGMENT := "events/roadblock_segment"
 const ROADBLOCK_SEGMENT_VERTICAL := "events/roadblock_segment_vertical"
 const ROADBLOCK_END := "events/roadblock_end"
 ## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
-## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 64px
+## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.ground_shape()` — the band's 64px
 ## capsule, which is still what the collision body and the cold picture are built from.
 const GUARD_SHADOW_RADIUS := 9.0
 
@@ -1273,9 +1273,9 @@ static func _collect_views(sources: Dictionary, tables: Array) -> void:
 ## `WHEELS_BEHIND_THE_BODY`, under it.
 ##
 ## **`draw_shadow` is false only for `RoadblockLook._draw_roadblock()`'s guard.** Every other
-## caller's own body shadow — `def.body_pieces()`'s default single piece, `def.shape` at local origin — is
+## caller's own body shadow — `BodySpec.pieces()`'s default single piece, the body's shape at local origin — is
 ## exactly the shadow this row wants under the picture this function draws. A heated roadblock's
-## guard is the one exception: `def.shape` there is the barrier band's own shape, not his, and the
+## guard is the one exception: `def.ground_shape()` there is the barrier band's own shape, not his, and the
 ## band's real shadow is already drawn separately, back at the post he left
 ## (`SpreadLook._draw_spread()`); the automatic call here would draw a second, band-shaped shadow
 ## under his current position instead of his own small one, so `RoadblockLook._draw_roadblock()`

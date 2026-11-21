@@ -91,7 +91,7 @@ func _stands_still_now() -> bool:
 ## travel heading through `_draw_eight_view()`, the same helper every other moving family uses, so
 ## he turns to face where he is going on every step of the shaft rather than only mirroring
 ## east/west. No `side_faces_west` override: `guard_lunging_side.svg`'s own comment says the family
-## is east-authored, the same as every person/animal family. Its own body shadow — `def.shape`, a
+## is east-authored, the same as every person/animal family. Its own body shadow — `def.ground_shape()`, a
 ## 9px point, at local origin — is exactly what `_draw_eight_view()` draws by default.
 func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 	_draw_eight_view(_masked_pursuer_pictures(), event.facing_now(), canvas)

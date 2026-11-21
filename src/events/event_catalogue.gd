@@ -49,7 +49,7 @@ const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
 const CHARGER_WARNING := 2.0
 ## How far past a door body's own solid edge the inspection starts (PLAYTEST-57).
 ##
-## **Stated over the hut, never over her.** Her centre is stopped `obstructs_radius +
+## **Stated over the hut, never over her.** Her centre is stopped `obstructs_within() +
 ## Tuning.PLAYER_BODY_RADIUS` (32 + 14 = 46px) from a door body's centre, and further when the
 ## pram's own body is between, so a trigger stated as a radius from the hut's *centre* has to be
 ## larger than whatever she happens to be pushing. Measured from the hut's wall, one number covers
@@ -103,7 +103,7 @@ const OFFICER_STOP_EXCITEMENT := 40.0
 
 # ------------------------------------------------------------------- bodies ---
 # A body is **half the silhouette**, never a number chosen for how it plays: the rule in
-# `EventDef.obstructs_radius` is that a thing that stands still is solid at the width it is drawn,
+# `BodySpec` is that a thing that stands still is solid at the width it is drawn,
 # and a body that disagrees with the art is a lie about where she can walk. Two repeat often
 # enough to be worth a name; the rest are written at the row that uses them, with the sprite they
 # came from.
@@ -209,12 +209,10 @@ static func escape_roadblock() -> EventDef:
 ## of where those marks mean nothing: the building's fire whose fire engine has no street to come down, the explosion whose
 ## crater has no road to stand in indoors.
 ##
-## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives. `shape` is
-## carried across by hand because it is a plain `RefCounted` field, so `Resource.duplicate()` does
-## not copy it; sharing the reference is safe, since a shape is never mutated in place.
+## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives. Its body is the
+## row's own value, shared: a body is never changed in place.
 static func without_its_aftermath(def: EventDef) -> EventDef:
 	var variant: EventDef = def.duplicate()
-	variant.shape = def.shape
 	variant.aftermath = Aftermath.none()
 	return variant
 
@@ -229,7 +227,7 @@ static func without_its_aftermath(def: EventDef) -> EventDef:
 static func building_fire() -> EventDef:
 	if _building_fire == null:
 		var variant := without_its_aftermath(by_id("burning_building"))
-		variant.solid(GroundShape.point(30.0))
+		variant.use_body(BodySpec.solid(GroundShape.point(30.0)).unmet().parked())
 		variant.use_field(variant.field().at_peak(18.0).pulsing_every(3.0))
 		variant.draws_body_shadow = true
 		variant.on_her_way = null
@@ -439,10 +437,8 @@ static func _neighbor() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.NEIGHBOR
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.act_tag = 1
-	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(0.0, 20.0, 40.0))
 	def.telegraph_time = 0.5
@@ -462,17 +458,11 @@ const NEIGHBOR_RUN_SPEED := 150.0
 ## is the task lost, and who, warned first, runs (`departs_at`), which
 ## `EventInstance.leave_for_a_completed_task()` turns away from her. A copy rather than a second
 ## row, since it is the same person in the same picture.
-##
-## `shape` and `solid_parts` are carried across by hand, as every copy of a row does
-## (`EventCatalogue.without_its_aftermath()`): `Resource.duplicate()` does not copy a plain
-## `RefCounted` field.
 static func neighbor_heading_home() -> EventDef:
 	var row := by_id("neighbor")
 	var def: EventDef = row.duplicate()
-	def.shape = row.shape
-	def.solid_parts = row.solid_parts
+	def.use_body(def.body().parked())
 	def.stops_where_it_arrives = true
-	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.departs_at = NEIGHBOR_RUN_SPEED
 	return def
 
@@ -495,8 +485,7 @@ static func _playground() -> EventDef:
 	def.kind = GameEnums.EventKind.AMBIENT
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
 	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
-	def.stands_as = EventDef.StandsAs.NOTHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.none().unmet().parked())
 	# Kept at their size for the debug field overlay, which still draws a disc here, although
 	# `Field.falloff` answers zero at every distance and nothing else reads them.
 	# Free. See the note above.
@@ -530,9 +519,7 @@ static func _cat_dash() -> EventDef:
 	def.id = "cat_dash"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CAT
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = GroundShape.point(7.0)
+	def.use_body(BodySpec.footprint(GroundShape.point(7.0)).walked_through().going_on())
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	# It does not telegraph its coming (PLAYTEST-145 20): no screen-edge badge, no warning first,
@@ -579,7 +566,7 @@ static func _cat_dash() -> EventDef:
 ## alley she is standing in is already worth `Baby.EXCITEMENT_FROM_ALLEY` (+3.0/s) of ambient dread,
 ## so the mouse only adds a spike on top of ground that is already tense.
 ##
-## **No body, nothing lethal.** `shape` is set for the shadow alone (`solid()` is never called) and
+## **No body, nothing lethal.** its body is a footprint, for the shadow alone (`BodySpec.footprint()`) and
 ## `hard_fail` stays `false`.
 ##
 ## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
@@ -616,10 +603,8 @@ static func _alley_mouse() -> EventDef:
 	def.telegraphs = false
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.MOUSE
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(4.0)).walked_through().going_on())
 	def.path_mode = EventDef.PathMode.ACROSS_ITS_ALLEY
-	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
 	# **Priced against the cat on each row's own ground, which is not the same ground.** A cat is
 	# met on an ordinary street, where 6.0/s is given back; a mouse is only met in an alley, where
@@ -706,9 +691,7 @@ static func _homeless_yeller() -> EventDef:
 	def.id = "homeless_yeller"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.YELLER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = GroundShape.point(9.0)
+	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(5.0))
 	def.telegraph_time = 2.6
@@ -743,7 +726,7 @@ static func _homeless_yeller() -> EventDef:
 ## a dog walker beats walking around it. An obstacle cheaper to walk into than to avoid is not an
 ## obstacle; this row is for being worth turning round and crossing at the crosswalk for.
 ##
-## **Not given an `obstructs_radius`**: a mobile static body wide enough to matter on a two-tile
+## **Not given a solid body**: a mobile static body wide enough to matter on a two-tile
 ## sidewalk can pin the player against a building, a different game from being priced out of a
 ## street. The lead is drawn (`FigureLook._draw_dog_walker`) so the span it owns is visible; what
 ## stops you walking through it is the meter, and it is slower than walking, so it can always be
@@ -766,12 +749,10 @@ static func _dog_walker() -> EventDef:
 	def.id = "dog_walker"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.DOG_WALKER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(8.0)).walked_through().going_on())
 	# The walker's own point, not the dog's: the dog on its lead is a per-part shadow drawn at its
 	# own literal radius, as the abduction's victim or the checkpoint hut's guard, since a two-body
 	# composite has no single shape to be either of its bodies.
-	def.shape = GroundShape.point(8.0)
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(33.0, 26.0, 105.0).pulsing_every(3.5))
 	def.telegraph_time = 1.4
@@ -807,7 +788,7 @@ static func _dog_walker() -> EventDef:
 ##
 ## **Keeps a field, derived from the body.** A cafe is a real source of chatter, but it should
 ## raise excitement only when she is actually close. The field is the Minkowski sum of the body and
-## a kernel, so the radii are read off the body and the street: inner radius is `shape.radius +
+## a kernel, so the radii are read off the body and the street: inner radius is the body shape's radius +
 ## PLAYER_BODY_RADIUS` (24 + 14 = 38), she is touching the tables; outer radius is the sidewalk
 ## band's centre to the carriageway's centre line (`SIDEWALK_WIDTH·TILE_SIZE/2 +
 ## ROAD_WIDTH·TILE_SIZE/2` = 32 + 32 = 64), so it bills somebody at the tables and not somebody
@@ -817,15 +798,12 @@ static func _cafe_tables() -> EventDef:
 	def.id = "cafe_tables"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CAFE
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(24.0)).walked_round().parked().as_a_spread())
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(12.0, 38.0, 64.0).pulsing_every(6.0))
 	def.telegraph_time = 1.6
 	# 24 does not clear `GroundShape.BAND_RADIUS`, so the body it derives stays a point: a cafe
 	# frontage this narrow has no spine to be a capsule about.
-	def.solid(GroundShape.band(24.0))
 	# Raised with `dog_walker` and for the same reason — see the note there.
 	def.weight = 4.0
 	# Only what is inside `EVENT_STREAM_RADIUS` ever exists, a fraction of the map, so a cap in
@@ -847,7 +825,7 @@ static func _cafe_tables() -> EventDef:
 ## a 64px footway, and the answer is the other side of the street.
 ##
 ## **Silent**: static blockages should not raise excitement. Its whole job is standing in the way,
-## and `obstructs_radius` already prices that as a route cost. It is one of `SealPlanner`'s
+## and the body's reach (`obstructs_within()`) already prices that as a route cost. It is one of `SealPlanner`'s
 ## soft-seal candidates, placed on every real street off the day's route tree, so an ambient field
 ## would bill several hundred bodies a day for nothing she could see or avoid.
 static func _delivery_van() -> EventDef:
@@ -855,15 +833,13 @@ static func _delivery_van() -> EventDef:
 	def.id = "delivery_van"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.DELIVERY_VAN
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.band(VEHICLE_BODY)).walked_round().parked())
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.use_field(FieldSpec.of(0.0, 40.0, 150.0))
 	def.telegraph_time = 1.3
 	# Under `GroundShape.BAND_RADIUS`, so the stationary-vehicle segment rule still reduces it to a
 	# point (see `GroundShape.band()`).
-	def.solid(GroundShape.band(VEHICLE_BODY))
 	def.weight = 2.0
 	def.max_per_day = 18
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -899,15 +875,13 @@ static func _busker() -> EventDef:
 	def.id = "busker"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BUSKER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
 	# The lowest tenth, with a small margin above the sweep's own crossing, whose day never fills
 	# a sleep meter standing at his own core (see the note above).
 	def.use_field(FieldSpec.of(19.3, 45.0, 190.0).pulsing_every(7.0))
 	def.telegraph_time = 1.7
-	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.0
 	# Kept the lowest of the act I caps on purpose: a busker is placed on PARK or SQUARE, the
 	# only calm ground there is, and the calm ground the day keeps clear refuses every one that
@@ -920,7 +894,7 @@ static func _busker() -> EventDef:
 ## whatever the meter says. A street is sidewalk|road|sidewalk, so the road is always still there
 ## and it costs time and exposure, never the day.
 ##
-## **Silent**: a hoarding is not a source but a thing to walk around, and `obstructs_radius`
+## **Silent**: a hoarding is not a source but a thing to walk around, and `obstructs_within()`
 ## already prices the detour. It is one of `SealPlanner`'s soft-seal candidates, so it stands on
 ## every real street off the day's route tree; an ambient field would bill the meter for a wall of
 ## boards a street away with nothing to point at.
@@ -929,16 +903,16 @@ static func _construction() -> EventDef:
 	def.id = "construction"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADWORKS
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
+			.walked_round()
+			.parked()
+			.as_a_spread())
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(0.0, 46.0, 200.0))
 	def.telegraph_time = 1.8
 	# `SIDEWALK_SPREAD_MAX`: the widest silhouette that reads as roadworks is 2px over the full
 	# sidewalk band `EventInstance.setup()` centres it on.
-	def.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 	def.weight = 1.5
 	def.max_per_day = 15
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -962,14 +936,12 @@ static func _fire_truck() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.FIRE_ENGINE
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.footprint(GroundShape.segment(16.0, 13.0)).walked_round().parked())
 	# **The body is the drawing's ground contact**: 58px long (`fire_engine.svg`, x 2 to 60, bumper
 	# to bumper) and 26px wide (`fire_engine_front.svg`, x 4 to 30, flank to flank), a capsule laid
 	# along its heading, the patrol car's own construction, which `vehicle` makes the body. It is
 	# lethal only in front of it while it drives its route, and solid and harmless once it has
 	# parked at the kerb (`has_parked()` is not driving).
-	def.shape = GroundShape.segment(16.0, 13.0)
 	def.vehicle = VehicleSpec.driving()
 	# Its field stays a point's, priced from its centre: the body is not a reason for the street
 	# beside the parked engine to cost more (`FieldSpec.from_its_centre()`).
@@ -1002,7 +974,7 @@ static func _fire_truck() -> EventDef:
 ##
 ## **The fire itself has no field and costs nothing to stand beside or walk through** (PLAYTEST-144
 ## 12): the challenge is the fire truck, not the fire. peak is 0.0 and it carries no
-## `obstructs_radius` (`EventDef.solid()`: a look that does not obstruct sets `shape` alone), so
+## solid body (`BodySpec.footprint()`: a look that does not obstruct is a shape alone), so
 ## `FireLook._draw_fire()` paints the flames and smoke on the facade of the building it stands
 ## against rather than leaving a body on the sidewalk, and `draws_body_shadow` is off so nothing
 ## casts a shadow at the ground point. inner radius/outer radius (60/260) and the 2.2s telegraph
@@ -1029,8 +1001,7 @@ static func _burning_building() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.ONE_SHOT
 	def.look = EventDef.Look.BURNING_BUILDING
-	def.stands_as = EventDef.StandsAs.NOTHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.footprint(GroundShape.point(30.0)).unmet().parked())
 	def.first_day = 3
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1038,9 +1009,8 @@ static func _burning_building() -> EventDef:
 	def.on_her_way = OnHerWay.on_its_ground()
 	def.use_field(FieldSpec.of(0.0, 60.0, 260.0))
 	def.telegraph_time = 2.2
-	# A shape with no `obstructs_radius`: `EventDef.validate()` requires a shape wherever there is a
+	# A footprint, no solid body: `EventDef.validate()` requires a shape wherever there is a
 	# look to draw, but nothing stands here to be solid, and no shadow is drawn (`draws_body_shadow`).
-	def.shape = GroundShape.point(30.0)
 	def.draws_body_shadow = false
 	def.aftermath = Aftermath.none().scarring(BURNT_SHELL_ID).calling_in("fire_truck")
 	return def
@@ -1053,7 +1023,7 @@ static func _burning_building() -> EventDef:
 ##
 ## **It has no body.** A body is half a silhouette (`docs/EVENTS.md`, "Solid things are solid"), and
 ## there is no silhouette on the sidewalk to be half of: the burnt shell is the lot, which the
-## building's own collision already closes. The shape stays, with no `obstructs_radius`, because it
+## building's own collision already closes. The shape stays, as a footprint with no solid body, because it
 ## is what the 2.5/s field is measured from: a band along the frontage rather than a point, so the
 ## smell of smoke runs the length of the burnt front.
 ##
@@ -1067,12 +1037,9 @@ static func _burnt_shell() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_SHELL
-	def.stands_as = EventDef.StandsAs.NOTHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.footprint(GroundShape.band(36.0)).unmet().parked().as_a_spread())
 	def.use_field(FieldSpec.of(2.5, 24.0, 78.0))
 	def.telegraph_time = 0.7
-	def.shape = GroundShape.band(36.0)
 	def.draws_body_shadow = false
 	return def
 
@@ -1129,10 +1096,8 @@ static func _loose_dog() -> EventDef:
 	def.id = "loose_dog"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LOOSE_DOG
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.trails_a_lead = true
-	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.use_field(FieldSpec.of(39.0, 30.0, 140.0).pulsing_every(2.2))
@@ -1167,13 +1132,10 @@ static func _market_stall() -> EventDef:
 	def.id = "market_stall"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.STALL
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(28.0)).walked_round().parked().as_a_spread())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(14.0, 38.0, 64.0).pulsing_every(8.0))
 	def.telegraph_time = 1.7
-	def.solid(GroundShape.band(28.0))
 	def.weight = 1.6
 	def.max_per_day = 13
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -1215,8 +1177,7 @@ static func _leaf_blower() -> EventDef:
 	def.id = "leaf_blower"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LEAF_BLOWER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.PARK,
 			GameEnums.TileType.SQUARE]
 	# The busker's field exactly (see `_busker()` for how 19.3 over 45/190 was measured).
@@ -1226,7 +1187,6 @@ static func _leaf_blower() -> EventDef:
 			.with_a_core(35.0, float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE))
 			.pulsing_every(4.0))
 	def.telegraph_time = 1.8
-	def.solid(GroundShape.point(PERSON_BODY))
 	# **A wall row, and on day 1 it is half of the entire wall pool**, so its weight and its cap are
 	# most of what "leaving the path should be lethal or very expensive" is built out of on the one
 	# day with nothing lethal in it.
@@ -1332,13 +1292,11 @@ static func _pigeon_flock() -> EventDef:
 	def.telegraphs = false
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BIRDS
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(5.0)).walked_through().going_on())
 	# A flock has no single body (each bird casts its own shadow at its own faded radius, see
 	# `FlockLook._draw_birds`), so this is a nominal point at one bird's base radius (5.0, before the
 	# height fade), carried only to satisfy "a row with a look has a shape". A flock never obstructs;
 	# `EventDef.validate()` refuses one that tries.
-	def.shape = GroundShape.point(5.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK]
 	def.spawn_mode = EventDef.SpawnMode.MAP
@@ -1417,10 +1375,8 @@ static func _cyclist() -> EventDef:
 	def.id = "cyclist"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CYCLIST
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(12.0)).walked_through().going_on())
 	def.may_be_a_pelican = true
-	def.shape = GroundShape.point(12.0)
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
@@ -1464,8 +1420,7 @@ static func _ice_cream_van() -> EventDef:
 	def.id = "ice_cream_van"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ICE_CREAM_VAN
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(24.0)).walked_round().parked())
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
@@ -1473,7 +1428,6 @@ static func _ice_cream_van() -> EventDef:
 	def.use_field(FieldSpec.of(13.0, 48.0, 240.0).pulsing_every(11.0))
 	def.telegraph_time = 2.2
 	# `ice_cream_van.svg` is 50px across.
-	def.solid(GroundShape.point(24.0))
 	def.weight = 1.5
 	def.max_per_day = 5
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -1503,8 +1457,7 @@ static func _reversing_lorry() -> EventDef:
 	def.id = "reversing_lorry"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LORRY
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(28.0)).walked_round().parked())
 	def.first_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
@@ -1515,7 +1468,6 @@ static func _reversing_lorry() -> EventDef:
 	# `lorry.svg` is 62px across, and 28 + her own 14 is inside the 46 that ends the day, so the
 	# metal is solid and touching it is still fatal (`EventDef.validate()` makes that arithmetic a
 	# rule).
-	def.solid(GroundShape.point(28.0))
 	def.hard_fail = true
 	def.weight = 1.2
 	# A lethal wall row, capped like `cyclist` for the same reason: the deep band off the corridor is
@@ -1559,9 +1511,7 @@ static func _chatting_mother() -> EventDef:
 	def.id = "chatting_mother"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CHATTING_MOTHER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = GroundShape.point(14.0)
+	def.use_body(BodySpec.footprint(GroundShape.point(14.0)).walked_through().going_on())
 	def.first_day = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(4.5, 56.0, 70.0))
@@ -1632,10 +1582,8 @@ static func _charging_dog() -> EventDef:
 	def.id = "charging_dog"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CHARGING_DOG
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(13.0)).walked_through().going_on())
 	def.warning_picture = EventDef.WarningPicture.DOG_ALERT
-	def.shape = GroundShape.point(13.0)
 	def.first_day = Tuning.RUN_TAUGHT_DAY
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	# No `last_day`: the dog recurs after the teaching day rather than being spent by it. On
@@ -1721,13 +1669,11 @@ static func _police_patrol() -> EventDef:
 	def.telegraphs = false
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICE_CAR
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.segment(9.0, 12.0)).walked_round().going_on())
 	# **The body is its drawn ground contact**: 42px long, the side view's body from bumper to
 	# bumper (`police_car.svg`, x 2 to 44), and 24px wide, the end views' body from flank to flank
 	# (`police_car_front.svg`, x 3 to 27), as a capsule laid along its heading, the datum its
 	# shadow is drawn from. `vehicle` makes it the body as well.
-	def.shape = GroundShape.segment(9.0, 12.0)
 	def.vehicle = VehicleSpec.driving()
 	def.first_day = 4
 	def.act_tag = 2
@@ -1779,8 +1725,7 @@ static func _poster_crew() -> EventDef:
 	def.id = "poster_crew"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POSTER_CREW
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1788,7 +1733,6 @@ static func _poster_crew() -> EventDef:
 	def.on_her_way = OnHerWay.at_a_front()
 	def.use_field(FieldSpec.of(5.0, 30.0, 110.0))
 	def.telegraph_time = 1.0
-	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.5
 	def.max_per_day = 12
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -1817,14 +1761,12 @@ static func _poster_crew_square() -> EventDef:
 	def.id = "poster_crew_square"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POSTER_CREW_SQUARE
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(5.0, 30.0, 110.0))
 	def.telegraph_time = 1.0
-	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 0.03
 	def.max_per_day = 1
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -1850,10 +1792,8 @@ static func _loudspeaker() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.LOUDSPEAKER_MAST
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(MAST_BODY)).walked_round().parked())
 	def.act_tag = 2
-	def.solid(GroundShape.point(MAST_BODY))
 	def.use_field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(22.0))
 	def.telegraph_time = 3.0
 	# `DawnMasts` places one at every site `MastSites.compute()` names, which is
@@ -1877,8 +1817,7 @@ static func _curfew_announce() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.NONE
-	def.stands_as = EventDef.StandsAs.NOTHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.none().unmet().parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(30.0, 45.0, 210.0).swelling_by(0.2))
 	def.duration = 26.0
@@ -1970,17 +1909,17 @@ static func _roadblock() -> EventDef:
 	def.id = "roadblock"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADBLOCK
-	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.use_body(BodySpec.solid(GroundShape.band(ROADBLOCK_REACH))
+			.walked_round()
+			.going_on()
+			.as_a_spread())
 	# `GOES_ON` and not `PARKS`: his guard leaves his post and gives chase, and `validate()` refuses
 	# `PARKS` for a row that chases. The concrete band turns cars by its tiles.
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.has_a_spread = true
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD]
 	def.use_field(FieldSpec.of(0.0, 86.0, 179.0).as_one_barrier())
 	def.telegraph_time = 1.8
-	def.solid(GroundShape.band(ROADBLOCK_REACH))
 	# **How his hunting copy pursues** (`EventDef.hunts`, `HuntSpec.pursuing()`, a catch that ends
 	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
@@ -2022,8 +1961,7 @@ static func _abduction() -> EventDef:
 	def.id = "abduction"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.UNMARKED_VAN
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(VEHICLE_BODY)).walked_round().parked())
 	def.abduction = AbductionSpec.standard()
 	def.first_day = 8
 	def.act_tag = 3
@@ -2037,7 +1975,6 @@ static func _abduction() -> EventDef:
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
 	# body never shields her from the van's own reach. It keeps the body at every heat: hunting, it
 	# stays parked and lets its men out (`EventDef.hunts`), so nothing about a moving wall applies.
-	def.solid(GroundShape.point(VEHICLE_BODY))
 	def.hard_fail = true
 	def.weight = 2.0
 	# The `hard_fail` caps rise with the rest, but by half as much: at one event per block the late
@@ -2077,10 +2014,8 @@ static func _alley_robbery() -> EventDef:
 	def.id = "alley_robbery"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROBBER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.warning_picture = EventDef.WarningPicture.ROBBER_ALERT
-	def.shape = GroundShape.point(9.0)
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.ALLEY]
@@ -2181,9 +2116,7 @@ static func _robber_giving_chase() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.ROBBER_GIVING_CHASE
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = alley.shape
+	def.use_body(BodySpec.footprint(alley.ground_shape()).walked_through().going_on())
 	def.act_tag = 2
 	def.use_field(alley.field())
 	# The day-3 dog's own timing, read off its row: its badge alone, its approach and its chase.
@@ -2230,9 +2163,7 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.VAN_GUARD_GIVING_CHASE
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = guard.shape
+	def.use_body(BodySpec.footprint(guard.ground_shape()).walked_through().going_on())
 	def.act_tag = 2
 	def.use_field(guard.field())
 	# The day-3 dog's own timing, read off its row, as the robber's is.
@@ -2266,14 +2197,10 @@ static func _van_guard_giving_chase() -> EventDef:
 static func _policeman_giving_chase() -> EventDef:
 	var robber := _robber_giving_chase()
 	var def := robber.duplicate() as EventDef
-	# `duplicate()` copies only the exported fields; the shape is a plain one (`EventDef.at_heat()`
-	# says why), shared since nothing mutates a shape in place.
-	def.shape = robber.shape
+	def.use_body(def.body().walked_through().going_on())
 	def.id = "policeman_giving_chase"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICEMAN_GIVING_CHASE
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.noun = "policeman"
 	def.noun_plural = "policemen"
 	return def
@@ -2288,8 +2215,7 @@ static func _guardsman_giving_chase() -> EventDef:
 	def.id = "guardsman_giving_chase"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.GUARDSMAN_GIVING_CHASE
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
+	def.use_body(def.body().walked_through().going_on())
 	def.noun = "guardsman"
 	def.noun_plural = "guardsmen"
 	return def
@@ -2334,8 +2260,6 @@ static func _out_of(on_foot: EventDef, stops: bool) -> EventDef:
 	var key := on_foot.id + (":stops" if stops else ":hunts")
 	if not _out_of_the_car.has(key):
 		var def := on_foot.duplicate() as EventDef
-		# The shape is a plain field `duplicate()` leaves behind; see `_policeman_giving_chase()`.
-		def.shape = on_foot.shape
 		def.warned_first = false
 		def.offscreen_notice = Tuning.OFFSCREEN_NOTICE
 		def.telegraph_time = Tuning.WARNING_ALONE_MAX
@@ -2386,7 +2310,7 @@ static var _task_guard_sent: EventDef = null
 ## **The raid at her own building is this row as well**, spawned by `ResistanceHappenings` on the
 ## far sidewalk of her street and always cold (`ResistanceHappenings._maybe_raid()`).
 ##
-## **Solid at every heat**: `obstructs_radius` 44, half its drawn width. The van never moves, so the
+## **Solid at every heat**: `obstructs_within()` 44, half its drawn width. The van never moves, so the
 ## rule that takes a pursuer's body away (a moving wall pins her) never reaches it, and its men get
 ## out beside that body (`EventInstance.door_for_its_officer()`).
 static func _night_raid() -> EventDef:
@@ -2396,13 +2320,11 @@ static func _night_raid() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 10
 	def.look = EventDef.Look.RIOT_VAN
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(44.0)).walked_round().parked())
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(24.0, 70.0, 330.0).pulsing_every(6.0))
 	def.telegraph_time = 3.0
-	def.solid(GroundShape.point(44.0))
 	def.hunts = HuntSpec.letting_out(2)
 	return def
 
@@ -2418,9 +2340,7 @@ static func _military_convoy() -> EventDef:
 	def.id = "military_convoy"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ARMY_TRUCK
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = GroundShape.point(26.0)
+	def.use_body(BodySpec.footprint(GroundShape.point(26.0)).walked_round().going_on())
 	def.first_day = 13
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
@@ -2446,7 +2366,7 @@ static func _military_convoy() -> EventDef:
 ## The widest hard seal: placed every morning from act IV on across a street off the day's route
 ## tree (`SealPlanner`'s `barricade_seal`, and the escape's `finale_barricade`).
 ##
-## **Silent**: this is the widest hard seal in the game (`obstructs_radius` 62, the whole street),
+## **Silent**: this is the widest hard seal in the game (`obstructs_within()` 62, the whole street),
 ## so its route cost is already the largest in the catalogue; an ambient field on top would bill
 ## nothing she could see past the wall itself.
 static func _barricade() -> EventDef:
@@ -2456,13 +2376,10 @@ static func _barricade() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BARRICADE
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(62.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.band(62.0))
 	def.aftermath = Aftermath.none().scarring("barricade")
 	return def
 
@@ -2489,9 +2406,10 @@ static func _protest() -> EventDef:
 	def.id = "protest"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.PROTEST
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.stands_along_its_street = true
+	def.use_body(BodySpec.solid(GroundShape.band(55.0))
+			.walked_through()
+			.parked()
+			.along_its_street())
 	def.first_day = 12
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]
@@ -2506,7 +2424,6 @@ static func _protest() -> EventDef:
 	# Under the 39px inner radius on purpose: the loudest part of a protest is something you stand
 	# in rather than bump into, and being stopped at the edge of it would take the choice of how
 	# close to cut past away from the player.
-	def.solid(GroundShape.band(55.0))
 	def.weight = 2.5
 	# A wall row, capped with the rest of them. Act IV only, so this is the late city's share of the
 	# blocking events that make the ground off the paths expensive. A protester obstructs nothing
@@ -2538,9 +2455,10 @@ static func _firefight() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 13
 	def.look = EventDef.Look.FIREFIGHT
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.stands_along_its_street = true
+	def.use_body(BodySpec.solid(GroundShape.band(30.0))
+			.walked_through()
+			.parked()
+			.along_its_street())
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.CROSSING, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(30.0, 84.0, 374.0).pulsing_every(2.5))
@@ -2548,7 +2466,6 @@ static func _firefight() -> EventDef:
 	def.telegraph_time = 6.5
 	# The 30px band the two gunmen are drawn across (`RankLook._draw_firefight()` stands
 	# them at 0.62 of it either side), and far inside the 84 that ends the day.
-	def.solid(GroundShape.band(30.0))
 	def.hard_fail = true
 	return def
 
@@ -2565,7 +2482,7 @@ static func _firefight() -> EventDef:
 # geometry (inner 40, outer 120, telegraph 0.9) rather than inventing one nothing reads.
 
 ## A hard seal: a tree down kerb to kerb, root plate at one end and crown at the other.
-## `obstructs_radius` 96 is exactly half the 192px street, so `SealPlanner._hard_positions` places a
+## `obstructs_within()` 96 is exactly half the 192px street, so `SealPlanner._hard_positions` places a
 ## single copy spanning it edge to edge, and `fallen_tree.svg` is authored wider than that so
 ## `SpreadLook._draw_spread` draws that one copy rather than repeating a tree across the street.
 static func _fallen_tree() -> EventDef:
@@ -2575,13 +2492,10 @@ static func _fallen_tree() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.FALLEN_TREE
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.band(96.0))
 	return def
 
 ## A hard seal: two cars locked together across the carriageway, debris between them and an
@@ -2590,9 +2504,9 @@ static func _fallen_tree() -> EventDef:
 ## (`EventPictures.CAR_ACCIDENT_B` and its vertical sibling) that stand on the same contacts, so the
 ## parts below hold for both.
 ##
-## **The one seal that is solid only in parts, and the one that emits** (PLAYTEST-63). `shape` is
+## **The one seal that is solid only in parts, and the one that emits** (PLAYTEST-63). Its shape is
 ## the whole-street band: what the picture is fitted to, what the field is stated over, and the disc
-## every planner clears the street by. `solid_parts` puts a body under each car and leaves the debris
+## every planner clears the street by. `BodySpec.in_pieces()` puts a body under each car and leaves the debris
 ## and the two sidewalks open. The price of walking through one of those gaps is the field, not a
 ## wall: see `CAR_ACCIDENT_INTENSITY`, which overturns *a closure is silent* for this row alone
 ## (`docs/CITY.md`, "A closure is silent").
@@ -2610,14 +2524,14 @@ static func _car_accident() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CAR_ACCIDENT
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(96.0))
+			.in_pieces(_car_accident_parts())
+			.walked_round()
+			.parked()
+			.as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(CAR_ACCIDENT_INTENSITY, GroundShape.BAND_RADIUS, 96.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.band(96.0))
-	def.solid_parts = _car_accident_parts()
 	if CAR_ACCIDENT_GAPS_ARE_LETHAL:
 		# The other answer to *prevents*, off by default (see the constant). The lethal radius has to
 		# clear the cars' own bodies with her 14px to spare or the kill can never fire
@@ -2642,11 +2556,11 @@ static func _car_accident() -> EventDef:
 ## 14px of radius apiece: a car is drawn 28px wide, 26.9px of ground at this scale, and the round
 ## number makes the two bodies meet rather than leaving a one-pixel slot between them on the
 ## north-south picture. Debris and onlookers carry no body: they are what the gaps are.
-static func _car_accident_parts() -> Array[EventDef.SolidPart]:
+static func _car_accident_parts() -> Array[BodyPiece]:
 	return [
-		EventDef.part(-22.1, -11.5, GroundShape.point(14.0)),
-		EventDef.part(5.8, 9.6, GroundShape.point(14.0)),
-	] as Array[EventDef.SolidPart]
+		BodyPiece.at(-22.1, -11.5, GroundShape.point(14.0)),
+		BodyPiece.at(5.8, 9.6, GroundShape.point(14.0)),
+	] as Array[BodyPiece]
 
 ## Half of a soft seal: a skip at the kerb, facing `scaffolding` on the other sidewalk. Kerb-pinned
 ## like `delivery_van`, so `BodyStance._centred_on_the_pavement_band` leaves it exactly where
@@ -2658,13 +2572,11 @@ static func _skip() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.SKIP
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(VEHICLE_BODY)).walked_round().parked())
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.point(VEHICLE_BODY))
 	return def
 
 ## The other half of the same soft seal: boards over the far footway. `pavement_side` stays `ANY`
@@ -2676,13 +2588,13 @@ static func _scaffolding() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.SCAFFOLDING
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
+			.walked_round()
+			.parked()
+			.as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 	return def
 
 ## A hard seal: a crater with water across the asphalt and a municipal barrier at each kerb, "the
@@ -2696,13 +2608,10 @@ static func _burst_water_main() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURST_MAIN
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.band(96.0))
 	# The crater is sunk into the road, not standing above it, so the body and the barriers keep
 	# their ordinary geometry and only the shadow patch
 	# is refused.
@@ -2723,19 +2632,17 @@ static func _moving_van() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.MOVING_VAN
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.band(28.0)).walked_round().parked())
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
 	# Over `GroundShape.BAND_RADIUS`, so it is the one stationary-vehicle row whose shape is a
 	# segment rather than a point — see `EventInstance.solid_axis()`.
-	def.solid(GroundShape.band(28.0))
 	return def
 
 ## A hard seal, acts II-IV: a car burnt to the shell, `BURNT_SHELL`'s charred palette moved onto a
-## vehicle body. Vehicle-scale `obstructs_radius`, so `SealPlanner._hard_positions` spaces four
+## vehicle body. Vehicle-scale `obstructs_within()`, so `SealPlanner._hard_positions` spaces four
 ## across a street's 192px as it spaces two `barricade` copies: a pile-up rather than one wide
 ## scene.
 static func _burnt_out_car() -> EventDef:
@@ -2745,13 +2652,13 @@ static func _burnt_out_car() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_OUT_CAR
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.lies_across_its_street = true
+	def.use_body(BodySpec.solid(GroundShape.band(24.0))
+			.walked_round()
+			.parked()
+			.across_its_street())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.band(24.0))
 	return def
 
 ## A hard seal, acts II-IV: rubble spilled frontage to frontage. Single-copy geometry like
@@ -2766,13 +2673,10 @@ static func _collapsed_frontage() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.COLLAPSED_FRONTAGE
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
+	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.band(96.0))
 	return def
 
 # ------------------------------------------------------ the region door's own structure ---
@@ -2819,12 +2723,10 @@ static func _checkpoint_hut() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_HUT
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(32.0)).walked_round().parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
 	def.telegraph_time = 1.0
-	def.solid(GroundShape.point(32.0))
 	def.detain_seconds = CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = CHECKPOINT_DETAIN_REACH
 	def.redetains = true
@@ -2832,7 +2734,7 @@ static func _checkpoint_hut() -> EventDef:
 
 ## The boom over the roadway between a door's two huts. **It never inspects her**: a lowered boom is
 ## a wall across the carriageway, and a raised one is ground she may walk under
-## (`EventDef.SolidWhen.WHILE_LOWERED`), so its collision body follows the arm and the cars decide
+## (`BodySpec.SolidWhen.WHILE_LOWERED`), so its collision body follows the arm and the cars decide
 ## the arm (`Crowd._stop_for_gates()`: up once a car has waited at it `Crowd.GATE_STOP_SECONDS`,
 ## down the moment no car is within a length of it and she is not under it). The inspection is the
 ## two huts' alone, and a hut does not take her in from the carriageway this boom spans, so walking
@@ -2852,13 +2754,13 @@ static func _checkpoint_gate() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_GATE
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(32.0))
+			.while_lowered()
+			.walked_round()
+			.parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(0.0, 84.0, 120.0).as_one_barrier())
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.point(32.0))
-	def.solid_when = EventDef.SolidWhen.WHILE_LOWERED
 	return def
 
 ## The alley half of a door: a single guard where a through-alley crosses a region boundary,
@@ -2873,13 +2775,11 @@ static func _checkpoint_post() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_POST
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(32.0)).walked_through().parked())
 	def.hides_in_its_hold = true
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
 	def.telegraph_time = 1.0
-	def.solid(GroundShape.point(32.0))
 	def.detain_seconds = CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = CHECKPOINT_DETAIN_REACH
 	def.redetains = true
@@ -2914,9 +2814,7 @@ static func _door_guard() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.DOOR_GUARD
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = GroundShape.point(9.0)
+	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.act_tag = 3
 	def.use_field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
 	# No notice of his own: his warning was the hut guard's raised hand from her crossing
@@ -2965,8 +2863,7 @@ static func _finale_explosion() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.NONE
-	def.stands_as = EventDef.StandsAs.NOTHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.none().unmet().parked())
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
 	def.use_field(FieldSpec.of(24.0, 300.0, 520.0))
@@ -3000,12 +2897,10 @@ static func _impact_crater() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.IMPACT_CRATER
-	def.stands_as = EventDef.StandsAs.NOTHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
+	def.use_body(BodySpec.solid(GroundShape.point(32.0)).unmet().parked())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
 	def.telegraph_time = 0.9
-	def.solid(GroundShape.point(32.0))
 	return def
 
 ## A masked man running up the stairwell: masked pursuers run up the stairs and can be avoided by
@@ -3034,9 +2929,7 @@ static func _masked_pursuer() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.MASKED_PURSUER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.shape = GroundShape.point(9.0)
+	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
 	def.telegraph_time = 3.6
@@ -3094,7 +2987,7 @@ static func _masked_pursuer() -> EventDef:
 ## half of `steam.svg`, and standing in the middle of a two-tile corridor it is already a gate with
 ## no lane beside it.
 ##
-## **What makes that fair is the notice, and `EventDef.SolidWhen.ONCE_IT_STARTS` is what makes the
+## **What makes that fair is the notice, and `BodySpec.SolidWhen.ONCE_IT_STARTS` is what makes the
 ## notice worth anything.** A body from the instance's first frame would close ground she might be
 ## standing on, so the body goes down at the end of the telegraph and never around her (see that
 ## field, and `EventInstance._become_solid_once_it_starts()`).
@@ -3112,10 +3005,10 @@ static func _basement_steam() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.STEAM
-	def.stands_as = EventDef.StandsAs.NOTHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.solid(GroundShape.point(STEAM_VENT_BODY))
-	def.solid_when = EventDef.SolidWhen.ONCE_IT_STARTS
+	def.use_body(BodySpec.solid(GroundShape.point(STEAM_VENT_BODY))
+			.once_it_starts()
+			.unmet()
+			.parked())
 	def.act_tag = 4
 	# **25, so one blow costs 40 to 50 points awake** at the 30px a vent holds her out (inbox #747 in woolly-penguin):
 	# 44 awake, 24 asleep. The pulse is kept, since it is what makes the blow swell and fall back

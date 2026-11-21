@@ -765,8 +765,6 @@ func _busker_in_the_park(pace := 0.0) -> EventInstance:
 	var row := EventCatalogue.by_id("busker")
 	if pace > 0.0:
 		var walking: EventDef = row.duplicate()
-		walking.shape = row.ground_shape()
-		walking.solid_parts = row.solid_parts
 		walking.departs_at = pace
 		row = walking
 	return RunCity.events(_city).spawn_extra(row, area.position + area.size * Vector2(0.25, 0.3))

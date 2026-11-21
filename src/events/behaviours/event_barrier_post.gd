@@ -122,9 +122,9 @@ func back_at_the_band() -> void:
 ## The tiles under the barrier's solid body where it was left, as the smallest rect holding them:
 ## the ground a guard walking off from it, and the far guard, never walk through.
 func tiles_under_the_band() -> Rect2i:
-	if _row.shape == null:
+	if _row.ground_shape() == null:
 		return Rect2i()
-	var tiles := _row.shape.tiles_under(body_position(), _figure.solid_axis())
+	var tiles := _row.ground_shape().tiles_under(body_position(), _figure.solid_axis())
 	var low := tiles[0]
 	var high := tiles[0]
 	for tile in tiles:

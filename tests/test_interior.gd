@@ -992,7 +992,7 @@ func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: TestRunner)
 ## have two egresses)."* Both halves of that sentence: the fire really does close the shaft it is
 ## in, and it reaches nothing at all in the other one.
 ##
-## Stated over the fire's own blocking reach — `obstructs_radius` plus her own body, which is where
+## Stated over the fire's own blocking reach — `obstructs_within()` plus her own body, which is where
 ## her centre is stopped — rather than over a number of tiles, so it survives the fire's body being
 ## retuned.
 func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> void:
@@ -1366,7 +1366,7 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 ## than things she may happen not to find.
 ##
 ## A vent stands on a cell where the corridor is **one tile wide**, and that is what makes it a
-## gate: her centre is held `obstructs_radius + PLAYER_BODY_RADIUS` from the middle of the
+## gate: her centre is held `obstructs_within() + PLAYER_BODY_RADIUS` from the middle of the
 ## passage, and a one-tile passage leaves it only half a tile of play either side of that middle,
 ## so there is no line past a vent that is blowing. Stated as those two reaches rather than as the
 ## numbers they come out at today — and asked of each vent's own four neighbours, so a layout that

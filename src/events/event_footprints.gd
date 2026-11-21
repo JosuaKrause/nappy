@@ -29,7 +29,7 @@ static func box_of(row: EventDef) -> Rect2:
 
 ## The box, in an instance's own space, that what a row draws roughly fills: its own picture
 ## (`EventPictures.icon_for()`) standing on its feet at the origin, stretched along the run a
-## spread or a rank standing along its street (`EventDef.stands_along_its_street`) covers on a
+## spread or a rank standing along its street (`BodySpec.along_its_street()`) covers on a
 ## street laid down the screen (`spread_vertical`) or
 ## across it, and grown by the wheel of a flock. An empty box for a row that draws nothing of its own
 ## (`Look.NONE`). Not pixel-exact — no halo, no badge, no bob, the view a mover is drawn in this frame
@@ -40,11 +40,11 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 		return Rect2()
 	var size := box.size
 	box = _with_the_drop(row, box)
-	var half := maxf(11.0, row.drawn_width() * 0.5)
-	var lies := row.lies()
-	if lies == EventDef.Lie.SPREAD and spread_vertical:
+	var half := row.body().drawn_width() * 0.5
+	var lies := row.body().lies()
+	if lies == BodySpec.Lie.SPREAD and spread_vertical:
 		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
-	elif lies == EventDef.Lie.SPREAD or lies == EventDef.Lie.ALONG:
+	elif lies == BodySpec.Lie.SPREAD or lies == BodySpec.Lie.ALONG:
 		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
 	if row.is_a_flock():
 		box = box.grow(row.flock_spread)
@@ -108,17 +108,17 @@ static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
 
 # ------------------------------------------------------------------- the body ---
 
-## **A row's solid footprint**, its origin at the row's own: one piece per `EventDef.body_pieces()`
-## entry — one at the origin carrying `shape` for every row that declares none, a car per piece
+## **A row's solid footprint**, its origin at the row's own: one piece per `BodySpec.pieces()`
+## entry — one at the origin carrying its shape for every row that declares none, a car per piece
 ## for the crash — each offset along the spread axis (`spread_vertical`,
 ## `EventInstance.spread_at()`) by the piece's own reading of whichever picture is in use, its spine
 ## along `axis` (`BodyStance.solid_axis_of()`). Laid out by `BodyStance.pieces_laid_out()` round the
 ## origin, the layout the blocked record (`EventSpawner.obstructed_footprint()`) takes through
 ## `BodyStance.pieces_at()`, so the body and the record are one solid. The physics body
 ## (`EventBody.go_down()`) comes from here.
-static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bool) -> Footprint:
+static func solid_footprint_of(body: BodySpec, axis: Vector2, spread_vertical: bool) -> Footprint:
 	var footprint := Footprint.new()
-	for piece in BodyStance.pieces_laid_out(row, Vector2.ZERO, axis, spread_vertical):
+	for piece in BodyStance.pieces_laid_out(body, Vector2.ZERO, axis, spread_vertical):
 		footprint.add(piece.ground_shape(), piece.center(), piece.axis())
 	return footprint
 

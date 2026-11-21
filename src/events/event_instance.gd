@@ -357,7 +357,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
-	_body = EventBody.new(definition, _map, _where, self, position, face,
+	_body = EventBody.new(definition, definition.body(), _map, _where, self, position, face,
 			BodyStance.lies_vertically_at(_map, position), _gate_state)
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventBody.is_walked_round()`).
@@ -423,7 +423,7 @@ func _ready() -> void:
 	reset_physics_interpolation()
 	_reports.tell_event_telegraphed(self)
 	_telegraph_announced = true
-	# `EventDef.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
+	# `BodySpec.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
 	# — see its own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
 	_body.come_into_the_world(_heading)
 	# A car's body is its `shape` (`EventDef.vehicle`), put down here like any other unless she is
@@ -511,7 +511,7 @@ func _rim_holder() -> Node2D:
 ## Whether this instance is solid right now (`EventBody.is_solid()`). True from `_ready()` for
 ## anything with a body, false once a pursuer that had a body stops waiting — see `_tick()` —
 ## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for,
-## and false while a boom (`EventDef.SolidWhen.WHILE_LOWERED`) stands raised (`is_raised()`).
+## and false while a boom (`BodySpec.SolidWhen.WHILE_LOWERED`) stands raised (`is_raised()`).
 func is_solid() -> bool:
 	return _body.is_solid()
 
@@ -883,7 +883,7 @@ func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
 	var her := _where.at()
 	if her != Vector2.INF and (her - global_position).dot(across) < 0.0:
 		across = -across
-	var reach := _def.shape.radius + (row.shape.reach() if row.shape else 0.0) + 1.0
+	var reach := _def.ground_shape().radius + (row.ground_shape().reach() if row.ground_shape() else 0.0) + 1.0
 	return global_position + across * side * reach + _heading * along
 
 # ------------------------------------------------------------------- the stop ---

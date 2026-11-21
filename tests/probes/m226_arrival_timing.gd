@@ -3,7 +3,7 @@ extends RefCounted
 ## It measures the current game: M207Lead's encounters, the game's PendingWarning and
 ## EventInstance, and a real DangerEdge reading them. No placement bound participates in entry
 ## detection: drawing_parts() reads each part separately: the selected sprite frame and the
-## wheels from EventPictures, the shadow polygon from the row's own parts (def.body_pieces(), then
+## wheels from EventPictures, the shadow polygon from the row's own parts (def.body().pieces(), then
 ## shape.shadow_outline()), the loose leash as this probe's own 26px rectangle, and the live
 ## caret from instance.look.mark_rect(), flashing at EventPictures.MARK_FLASHES_PER_SECOND.
 ## See the retained evidence README.
@@ -190,8 +190,8 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	if not wheels.is_empty():
 		parts.append(_picture_rect(wheels[view], 0.0))
 	if def.casts_a_shadow():
-		for piece in def.body_pieces():
-			var points: PackedVector2Array = piece.shape.shadow_outline(Vector2.ZERO)
+		for piece in def.body().pieces():
+			var points: PackedVector2Array = piece.ground_shape().shadow_outline(Vector2.ZERO)
 			var shadow := Rect2(points[0], Vector2.ZERO)
 			for point in points:
 				shadow = shadow.expand(point)

@@ -250,7 +250,7 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	var direction := signf(heading.y if vertical else heading.x)
 	var along := at.y if vertical else at.x
 	var cross := at.x if vertical else at.y
-	var nose := _row.shape.reach()
+	var nose := _row.ground_shape().reach()
 	var room := INF
 	# The junction box this car is coming to: the crossing street's whole corridor, its zebras
 	# included. `to_the_box` is from the nose to its near edge.
@@ -323,7 +323,7 @@ func short_of_its_stop(seconds: float, left: float) -> float:
 ## (`Figure.turn_its_body_to()`, which turns nothing before the body is down). A capsule turns; a
 ## point would not need to.
 func turn_the_body() -> void:
-	if _row.shape == null or _row.shape.half_length <= 0.0:
+	if _row.ground_shape() == null or _row.ground_shape().half_length <= 0.0:
 		return
 	_figure.turn_its_body_to(_figure.solid_axis().angle() - PI * 0.5)
 
@@ -331,7 +331,7 @@ func turn_the_body() -> void:
 ## `heading`: the smaller gap, negative where they would overlap, `INF` for anything that does not
 ## drive or with nobody told where she is.
 func gap_to_her(at: Vector2, heading: Vector2) -> float:
-	if _row.shape == null or _where.at() == Vector2.INF:
+	if _row.ground_shape() == null or _where.at() == Vector2.INF:
 		return INF
 	var gap := _gap_to(at, heading, _where.at(), Tuning.PLAYER_BODY_RADIUS)
 	if _where.pram_at() != Vector2.INF:
@@ -340,7 +340,7 @@ func gap_to_her(at: Vector2, heading: Vector2) -> float:
 
 func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> float:
 	var local := (centre - at).rotated(-heading.angle())
-	return _row.shape.distance_to_spine(local) - _row.shape.radius - radius
+	return _row.ground_shape().distance_to_spine(local) - _row.ground_shape().radius - radius
 
 ## Whether this car is driving right now: the one state its warning and its strike are live in. On
 ## its route (`drives_its_route()`) and not standing (`_standing`).
@@ -372,10 +372,10 @@ func drives_its_route() -> bool:
 func _in_front(at: Vector2, heading: Vector2, centre: Vector2, radius: float,
 		seconds: float) -> bool:
 	var local := (centre - at).rotated(-heading.angle())
-	var nose := _row.shape.half_length
-	if local.x <= nose or absf(local.y) > _row.shape.radius + radius:
+	var nose := _row.ground_shape().half_length
+	if local.x <= nose or absf(local.y) > _row.ground_shape().radius + radius:
 		return false
-	return local.x <= nose + _row.shape.radius + radius + _row.speed * seconds
+	return local.x <= nose + _row.ground_shape().radius + radius + _row.speed * seconds
 
 ## Whether her body or her pram, with her at `her`, is in front of a car at `at` facing `heading`
 ## within `seconds` of its travel past the touch, **with her on the carriageway** — the crowd car's

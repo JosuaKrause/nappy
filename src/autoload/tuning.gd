@@ -397,7 +397,7 @@ const REGION_WALL_FIRST_DAY := 9
 ## covers both without either having to be computed at placement.
 ##
 ## **The number is the door's own field plus the clearance the release sets her down at.** She comes
-## out `obstructs_radius + PLAYER_BODY_RADIUS + CheckpointController.CHECKPOINT_RELEASE_MARGIN` (54px) from the body that
+## out `obstructs_within() + PLAYER_BODY_RADIUS + CheckpointController.CHECKPOINT_RELEASE_MARGIN` (54px) from the body that
 ## let her out, and the widest field a door's own structure carries is the gate's 120px
 ## `outer_radius` — so from either release point she walks the full width of the door's own field,
 ## and then some, before anything else can start charging her. At `WALK_SPEED` that is about a
@@ -782,7 +782,7 @@ const AHEAD_MIN_SPEED := 40.0
 
 
 # ----------------------------------------------------- solid things are solid ---
-# The rule is in `EventDef.obstructs_radius`: **anything that stands still is solid at the width it
+# The rule is in `EventDef.obstructs_within()`: **anything that stands still is solid at the width it
 # is drawn**, derived rather than set per row — a field only ever *reached for* leaves large,
 # visibly solid objects with no body at all. What lives here is the one number that rule needs from
 # outside itself.

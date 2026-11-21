@@ -261,7 +261,7 @@ func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
 	_teardown()
 	return result
 
-## Standing at the row's own centre for `seconds`, starting already at the cap. `obstructs_radius`
+## Standing at the row's own centre for `seconds`, starting already at the cap. `obstructs_within()`
 ## is ignored on purpose: this rig places her by hand rather than colliding her, and what a solid
 ## body costs is a route decision the fairness contract already prices elsewhere — the question
 ## here is only what standing inside the field itself does to the mass.

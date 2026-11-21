@@ -126,24 +126,21 @@ func _spread_slice_count(segment_picture: String) -> int:
 
 ## The run a spread covers from its own origin, far end first: its solid footprint end to end
 ## (`solid_footprint_of()`, `DrawLayer.run_of()`), the ground its body closes. A spread with no body
-## covers `NARROWEST_HALF_RUN` either side of its origin, as `drawn_box()` reserves.
+## covers `BodySpec.drawn_width()`'s narrowest either side of its origin, as `drawn_box()` reserves.
 func _spread_run() -> PackedVector2Array:
 	if _row.has_a_body() and _row.ground_shape() != null:
-		return DrawLayer.run_of(EventFootprints.solid_footprint_of(_row, event.spread_axis(),
+		return DrawLayer.run_of(EventFootprints.solid_footprint_of(_row.body(), event.spread_axis(),
 				event.runs_vertically()),
 				Vector2.ZERO)
-	return PackedVector2Array([event.spread_at(-NARROWEST_HALF_RUN),
-			event.spread_at(NARROWEST_HALF_RUN)])
-
-## The least half of a run a picture drawn along its street is drawn over, in px: what a row with no
-## body, or a narrower one, is still drawn across, as `drawn_box()` reserves.
-const NARROWEST_HALF_RUN := 11.0
+	var half := _half_run()
+	return PackedVector2Array([event.spread_at(-half), event.spread_at(half)])
 
 ## Half the run the picture is drawn along, in px: half the width its row's body is drawn at
-## (`EventDef.drawn_width()`), and never less than `NARROWEST_HALF_RUN`. The café's tables, the
-## protest's ranks, the firefight's two halves and a wide scene are each laid over it.
+## (`BodySpec.drawn_width()`, which holds the one statement of the narrowest, as `drawn_box()`
+## reserves). The café's tables, the protest's ranks, the firefight's two halves and a wide scene are
+## each laid over it.
 func _half_run() -> float:
-	return maxf(NARROWEST_HALF_RUN, _row.drawn_width() * 0.5)
+	return _row.body().drawn_width() * 0.5
 
 ## The segment and the end cap (`""` for none) a spread-drawn look repeats along its run, or an
 ## empty list for a look that is not drawn as a spread.

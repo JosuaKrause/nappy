@@ -616,7 +616,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 ## `roadblock` row's own reach (`GroundShape.band(EventCatalogue.ROADBLOCK_REACH)`, 128px across)
 ## rather than the alley's own 64px width (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE`).
 ## `RegionPlanner._alley_mouth_wall_body()` trims it to a point that draws and collides at exactly
-## the alley's own width, so this checks the drawn extent (`2 * obstructs_radius`, what
+## the alley's own width, so this checks the drawn extent (`2 * obstructs_within()`, what
 ## `SpreadLook._draw_spread` actually paints) stays within the alley's own tile rect on the
 ## across-alley axis — no tolerance needed, since the fit is exact rather than merely close.
 func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
