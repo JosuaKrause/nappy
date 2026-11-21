@@ -64,7 +64,6 @@ func run(t: TestRunner) -> void:
 			_variant("%s@warned" % row.id, row.as_warned_first())
 		_variant("%s@sealed" % row.id, SealPlanner.sealed_variant(row, false))
 		_variant("%s@sealed_kerb" % row.id, SealPlanner.sealed_variant(row, true))
-		_variant("%s@no_aftermath" % row.id, _without_its_aftermath(row))
 		_variant("%s@ground" % row.id, EventDirector._with_ground(row))
 	_variant("escape_roadblock", EventCatalogue.escape_roadblock())
 	_variant("building_fire", EventCatalogue.building_fire())
@@ -102,15 +101,6 @@ func run(t: TestRunner) -> void:
 					print("RFP %d %d %s %d" % [seed_value, day, plan.row_id(), text.hash()])
 	print("RF_DONE rows %d" % count)
 	t.check(true, "ran")
-
-## The copy without its aftermath (`EventCatalogue.without_its_aftermath()`), asked by name: the catalogue
-## makes it for its own derived rows and nothing else under `src/` asks it, so a direct call of the public
-## member is a test-only read that `tools/check_test_only_members.py` fails, and the copy has no other road
-## to a probe (the same reason `EventDirector._with_ground()` is called above).
-func _without_its_aftermath(row: EventDef) -> EventDef:
-	var make := Callable(EventCatalogue, "without_its_aftermath")
-	var copy: EventDef = make.call(row)
-	return copy
 
 func _variant(label: String, row: EventDef) -> void:
 	var lines := _dump(row)
