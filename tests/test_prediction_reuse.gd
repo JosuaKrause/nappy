@@ -121,9 +121,7 @@ func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 	var field := definition.field()
 	var fields := {
 		"peak": field.at_peak(field.peak() + 3.0),
-		"inner radius": FieldSpec.of(field.peak(), field.core_within() + 3.0, field.heard_within())
-				.with_a_core(field.core_rate(), field.core_reach())
-				.falling_off(field.falloff()).pulsing_every(field.pulses_every()),
+		"inner radius": field.holding_to(field.core_within() + 3.0),
 		"outer radius": field.reaching(field.heard_within() + 3.0),
 		"core rate": field.with_a_core(field.core_rate() + 3.0, field.core_reach()),
 		"core reach": field.with_a_core(field.core_rate(), field.core_reach() + 3.0),

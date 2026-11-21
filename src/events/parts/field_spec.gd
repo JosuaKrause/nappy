@@ -130,6 +130,12 @@ func at_peak(rate: float) -> FieldSpec:
 	spec._peak = rate
 	return spec._made()
 
+## The same field holding at full out to `inner` before it starts to fall.
+func holding_to(inner: float) -> FieldSpec:
+	var spec := _copy()
+	spec._inner = inner
+	return spec._made()
+
 ## The same field reaching out to `outer`: the copy the resistance's heat makes of a hunting row,
 ## widened to where it notices her.
 func reaching(outer: float) -> FieldSpec:
