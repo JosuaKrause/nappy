@@ -147,7 +147,7 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t: TestRunner) -> void:
 ##
 ## **`homeless_yeller`'s own pulse period equals the horizon exactly**, so a cosine integrated over
 ## any whole number of its own periods is zero however it is entered — every one of the four phases
-## projects the identical flat mean (`0.625` of `def.intensity`), checked directly rather than only
+## projects the identical flat mean (`0.625` of the field's peak, `def.peak()`), checked directly rather than only
 ## through its own later average. `busker`'s 7s pulse against the same 5s horizon does not share
 ## that coincidence, so its four phases are expected to differ from each other.
 func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
