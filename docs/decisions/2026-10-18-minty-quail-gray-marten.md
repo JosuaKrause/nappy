@@ -14,11 +14,11 @@ field by reference rather than copying six of its values; the flock and the cost
 
 **F7, overridden by the orchestrator.** The design dropped `test_prediction_reuse.gd`'s nine checks that changed a built
 row in place, since a row can no longer change; a check is never dropped, so each is held by a second row differing in
-that one setting (`FieldSpec.holding_to()` lets the inner radius alone differ), asked right after the row's own. Its
-check count went from 6,608 on main to 8,105. With the key made to leave the field out, the falloff, inner- and
-outer-radius variants fail; the core rate and reach (the test point lies outside any core), the peak and pulse (they ride
-on the live intensity, in the key anyway) and the two speeds (they do not enter the number there) cannot fail under that
-cache, as on main.
+that one setting, refined from the row's own field (`FieldSpec.holding_to()` lets the inner radius alone differ) and
+asked right after the row's own; the core rate and reach are varied on a row that has a core, the leaf blower, and asked
+inside it. The suite's check count rose from 6,608 on main to 8,105. With the cache key made to leave the field out, the
+falloff, inner- and outer-radius, core rate and core reach variants fail; the peak and pulse fail once the key also loses
+the live intensity, and the two speeds once it loses the velocity (the review's measurement).
 
 **Measured.** The row fingerprint (`tests/probes/row_fingerprint.gd`): every old field setting line (550, ten settings
 on 55 rows) reappears under the part with the base's value, the vehicle flag on the field with the same values, and no
