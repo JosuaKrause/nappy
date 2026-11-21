@@ -71,8 +71,8 @@ var _poster_walls: PosterWalls
 var _plan_builder: PlanBuilder
 
 ## How every figure made here moves over `map` (`Navigator`): the one handed in by
-## `EventManager.setup()`, or one over the map (`Navigator.new(map)`) where none was handed for it —
-## a rig that sets the map itself.
+## `EventManager.setup()` or `setup_world()`, or, where none was handed (a rig), one over the map
+## that `navigator()` makes on the first ask.
 var _navigator: Navigator
 
 ## Where she is this tick (`WhereSheIs`), told once a physics tick by
@@ -215,11 +215,13 @@ func day_stream(for_day: int, stream: String) -> RandomNumberGenerator:
 func use_plan_builder(builder: PlanBuilder) -> void:
 	_plan_builder = builder
 
+## Hands the world the navigator its figures move by; null is "none handed", and `navigator()` then
+## makes one over the map.
 func use_navigator(navigator: Navigator) -> void:
 	_navigator = navigator
 
 func navigator() -> Navigator:
-	if _navigator == null or _navigator.map() != _map:
+	if _navigator == null:
 		_navigator = Navigator.new(_map)
 	return _navigator
 
