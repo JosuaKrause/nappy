@@ -428,7 +428,7 @@ func _first_cyclist_on_a_walk(t: TestRunner, events: EventManager, her: Stroller
 		her.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 		her.global_position += her.velocity * step
 		for instance in events.instances():
-			if instance.def.id == "cyclist" and not before.has(instance) \
+			if instance.row_id() == "cyclist" and not before.has(instance) \
 					and seen["first"] == INF:
 				seen["first"] = n * step
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(FORCED_WITHIN, FORCED_SCALE), each,

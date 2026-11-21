@@ -104,7 +104,7 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 ## The blow standing at a vent right now, or null between blows.
 func _blow_at(vent: EventPlan) -> EventInstance:
 	for instance in _events.instances():
-		if instance.def.id == "basement_steam" and not instance.is_finished \
+		if instance.row_id() == "basement_steam" and not instance.is_gone() \
 				and instance.global_position.distance_to(vent.position) < 1.0:
 			return instance
 	return null
@@ -119,7 +119,7 @@ func _tick(at: Vector2, awake: bool) -> float:
 	var incoming := 0.0
 	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
 	for instance in _events.instances():
-		if instance.def.id != "basement_steam":
+		if instance.row_id() != "basement_steam":
 			continue
 		instance.step(STEP)
 		incoming += instance.source().contribution_at(at)

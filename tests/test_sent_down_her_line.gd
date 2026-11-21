@@ -105,7 +105,7 @@ func _sent(row: String, t: TestRunner) -> Array[float]:
 		_rig.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 		_rig.global_position += _rig.velocity * step
 		for instance in _events.instances():
-			if instance.def.id == row and not before.has(instance):
+			if instance.row_id() == row and not before.has(instance):
 				before.append(instance)
 				ages.append(instance.age())
 		return ages.size() >= SENT

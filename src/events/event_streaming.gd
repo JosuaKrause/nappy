@@ -404,7 +404,7 @@ func retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
 	var successors: Array[EventInstance] = []
 	for instance in world.instances():
-		if instance.is_finished:
+		if instance.is_gone():
 			var successor := _spawner.successor_of(instance)
 			if successor:
 				successors.append(successor)
@@ -461,7 +461,7 @@ func bring_back_what_repeats(delta: float) -> void:
 		# Its run is over when it is off the end of it, not when the instance is finally freed: a
 		# mobile row that has run out of route spends a leaving phase walking out of sight, so a wait
 		# counted from its deletion would be the stated one plus however long that took.
-		if entry.live != null and (entry.live.is_leaving or entry.live.is_finished):
+		if entry.live != null and (entry.live.is_on_its_way_out() or entry.live.is_gone()):
 			_done_for_now(plan)
 		if entry.waits_from_now:
 			entry.waits_from_now = false

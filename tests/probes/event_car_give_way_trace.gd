@@ -225,17 +225,17 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 		held += 1 if standing else 0
 		flips += 1 if standing != was_standing else 0
 		was_standing = standing
-		var state := PackedFloat32Array([car.position.x, car.position.y, car._heading.x,
-				car._heading.y, car._path_travelled, 1.0 if standing else 0.0,
-				1.0 if car.is_parked else 0.0, 1.0 if car.is_leaving else 0.0,
-				1.0 if car.is_finished else 0.0])
+		var state := PackedFloat32Array([car.position.x, car.position.y, car.facing_now().x,
+				car.facing_now().y, car.path_travelled(), 1.0 if standing else 0.0,
+				1.0 if car.has_parked() else 0.0, 1.0 if car.is_on_its_way_out() else 0.0,
+				1.0 if car.is_gone() else 0.0])
 		var context := HashingContext.new()
 		context.start(HashingContext.HASH_SHA256)
 		context.update(chain)
 		context.update(state.to_byte_array())
 		chain = context.finish()
 	var report := {"chain": chain.hex_encode(), "held": held, "flips": flips,
-			"finished": car.is_finished, "parked": car.is_parked,
+			"finished": car.is_gone(), "parked": car.has_parked(),
 			"x": snappedf(car.position.x, 0.001), "y": snappedf(car.position.y, 0.001)}
 	car.free()
 	return report

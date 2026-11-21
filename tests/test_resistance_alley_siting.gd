@@ -127,7 +127,7 @@ func _test_the_guard_moves_with_the_mark_into_its_new_alley(t: TestRunner) -> vo
 	director.tick(STEP)
 	var new_at := director.contact_position()
 	t.check(new_at.distance_to(old_at) > 0.5, "the mark actually moved")
-	t.check(old_guard != null and old_guard.is_finished,
+	t.check(old_guard != null and old_guard.is_gone(),
 			"the old guard is retired, not left standing over the spot the mark left")
 
 	var guards := _live("alley_robbery")
@@ -172,7 +172,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(old_at) < 0.5,
 			"with him on her screen, the mark stays where it is")
-	t.check(not guard.is_finished, "and he is not retired in front of her")
+	t.check(not guard.is_gone(), "and he is not retired in front of her")
 
 	_look_at(Rect2())
 	RunCity.events(_city).world.where_she_is().tell(feet + (old_at - feet).normalized() * 60.0)
@@ -181,7 +181,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(old_at) < 0.5,
 			"off her screen but awake, the mark still stays where it is")
-	t.check(not guard.is_finished, "and he is not retired out of his chase")
+	t.check(not guard.is_gone(), "and he is not retired out of his chase")
 
 	RunCity.events(_city).world.where_she_is().tell(far_alley)
 	guard.step(STEP)
@@ -189,7 +189,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(old_at) > 0.5,
 			"asleep and out of her sight, the mark moves")
-	t.check(guard.is_finished, "and he is retired with it")
+	t.check(guard.is_gone(), "and he is retired with it")
 	player.free()
 	director.free()
 
@@ -686,7 +686,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 
 	var robbers_checked := 0
 	for instance in RunCity.events(city).instances():
-		if instance.def.id != "alley_robbery":
+		if instance.row_id() != "alley_robbery":
 			continue
 		robbers_checked += 1
 		t.check(instance.global_position.distance_to(doorstep) > reach,

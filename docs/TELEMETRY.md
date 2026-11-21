@@ -147,7 +147,7 @@ The events:
     its charge reached her, a catch that ends the day — which also sends that day's own
     `lost-hard-fail-<row>` — or a patrol car's man stopping her, which does not; `-shaken`, she ran
     it off; `-outlasted`, its own clock ran out, or the masked man's run ended without a catch
-    (`EventInstance._be_done()`, `EventInstance.gave_up`); or `-ended`, the day or the escape's
+    (`EventInstance._be_done()`, `EventInstance.has_given_up()`); or `-ended`, the day or the escape's
     section ended some other way while it was still charging — the meter at its cap, another
     thing's catch, home (`EventBus.pursuit_cut_short`, `EventManager.end_the_charges_still_running()`,
     which `DayDirector.finish_day()` asks of the city's or the building's events before the day's or

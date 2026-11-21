@@ -116,19 +116,19 @@ func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(instance_where))
 	instance_where.tell(Vector2(0.0, 2000.0))
 	var frames := 0
-	while not instance.is_leaving and frames < 400:
+	while not instance.is_on_its_way_out() and frames < 400:
 		instance.step(STEP)
 		frames += 1
-	t.check(instance.phase == EventInstance.Phase.LEAVING and instance.is_leaving
+	t.check(instance.phase == EventInstance.Phase.LEAVING and instance.is_on_its_way_out()
 			and instance.is_on_its_way_out() and not instance.is_gone(),
 			"off the end of its route it is leaving (%d frames)" % frames)
 	t.check(instance.current_intensity() == 0.0, "and emits nothing while it goes")
 	var leaving_ticks := 0
-	while not instance.is_finished and leaving_ticks < 400:
+	while not instance.is_gone() and leaving_ticks < 400:
 		instance.step(STEP)
 		leaving_ticks += 1
-	t.check(instance.phase == EventInstance.Phase.DONE and instance.is_finished
-			and instance.is_gone() and not instance.is_leaving and not instance.is_on_its_way_out(),
+	t.check(instance.phase == EventInstance.Phase.DONE and instance.is_gone()
+			and instance.is_gone() and not instance.is_on_its_way_out() and not instance.is_on_its_way_out(),
 			"finished, it is done, and only done")
 	instance.free()
 
@@ -145,29 +145,29 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 			EventSurroundings.new().hearing(dog_where))
 	var her := Vector2(400.0, 0.0)
 	var clock := 0.0
-	while not dog.is_leaving and clock < def.telegraphs_for():
+	while not dog.is_on_its_way_out() and clock < def.telegraphs_for():
 		if clock >= 1.2:
 			dog_where.tell(dog_where.at(), Vector2.INF, Rect2(), true)
 			her += Vector2(Tuning.RUN_SPEED * STEP, 0.0)
 		dog_where.tell(her, Vector2.INF, Rect2(), dog_where.is_running())
 		dog.step(STEP)
 		clock += STEP
-	t.check(dog.is_leaving and dog.chase_age() < def.telegraphs_for(),
+	t.check(dog.is_on_its_way_out() and dog.chase_age() < def.telegraphs_for(),
 			"run from 1.2s, the lesson dog gives up %.1fs into its %.1fs telegraph"
 			% [dog.chase_age(), def.telegraphs_for()])
 	t.check(dog.is_telegraphing(), "and is still telegraphing as it leaves")
 	t.check(dog.has_given_up(), "having given up: she shook it off, its clock did not run out")
 	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
-	while dog.chase_age() < def.telegraphs_for() - 2.0 * STEP and not dog.is_finished:
+	while dog.chase_age() < def.telegraphs_for() - 2.0 * STEP and not dog.is_gone():
 		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
 				dog_where.is_running())
 		dog.step(STEP)
 		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.chase_age())
-	while dog.chase_age() < def.telegraphs_for() + STEP and not dog.is_finished:
+	while dog.chase_age() < def.telegraphs_for() + STEP and not dog.is_gone():
 		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
 				dog_where.is_running())
 		dog.step(STEP)
-	t.check(not dog.is_finished and dog.is_leaving, "still in the world, leaving")
+	t.check(not dog.is_gone() and dog.is_on_its_way_out(), "still in the world, leaving")
 	t.check(not dog.is_telegraphing(), "and not once its %.1fs have run" % def.telegraphs_for())
 	dog.free()
 

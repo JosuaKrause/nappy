@@ -127,7 +127,7 @@ func _yeller_arrow_case(t: TestRunner, before: int, after: int, offsets: Array) 
 	player.global_position = men[0].global_position
 	director.tick(STEP)
 	for instance in RunCity.events(_city).instances():
-		if instance.def.id == "homeless_yeller" and instance not in men:
+		if instance.row_id() == "homeless_yeller" and instance not in men:
 			RunCity.events(_city).retire(instance)
 	player.global_position = _city.map.tile_to_world(tile)
 	return [director, player, tile, men]

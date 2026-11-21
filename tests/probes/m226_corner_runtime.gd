@@ -32,7 +32,7 @@ func _process(delta: float) -> void:
 	# The scheme the view was last looked through in: the controls it is handed, while in force.
 	var joystick := view.screen_cover() != null and view.screen_cover().is_in_force()
 	for instance in RunCity.events(city).instances():
-		if instance.def.id != "charging_dog":
+		if instance.row_id() != "charging_dog":
 			continue
 		var on_camera := false
 		var in_visible_area := false

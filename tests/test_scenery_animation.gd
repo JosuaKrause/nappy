@@ -190,7 +190,7 @@ func _test_event_parts(t: TestRunner) -> void:
 			t.check(instance.runs_vertically() == vertical, "%s stands on the axis asked for" % id)
 			# The slices go into the world on the idle frame after the instance is made.
 			await t.get_tree().process_frame
-			instance.step(instance.def.telegraph_time + 0.01)
+			instance.step(instance.telegraphs_for() + 0.01)
 			var sceneries := _sceneries_of(instance)
 			var first_ask := instance.look.redraw_if_the_picture_changed()
 			# The layers are drawn on the frame after they are made.

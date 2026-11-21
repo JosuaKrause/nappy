@@ -202,7 +202,7 @@ func _test_the_cap_keeps_the_strongest(t: TestRunner) -> void:
 
 	var picked_ids: Array[String] = []
 	for source: ExcitementSource in picked:
-		picked_ids.append((source.body() as EventInstance).def.id)
+		picked_ids.append((source.body() as EventInstance).row_id())
 	picked_ids.sort()
 	expected_ids.sort()
 	t.check(picked_ids == expected_ids,
@@ -634,7 +634,7 @@ func _test_event_instance_contribution_is_cached_per_frame_per_position(t: TestR
 ## The CI failure this guards against, reproduced directly: `EventManager.retire()` finishes an
 ## instance straight from outside, with no tick of the instance's own in between -- so `age` never
 ## moves, and a cache keyed only on `(age, world_position)` went on answering the pre-finish
-## contribution for the rest of that tick. `_be_done()`'s `is_leaving = true` branch is the other
+## contribution for the rest of that tick. `_be_done()`'s `is_on_its_way_out()` branch is the other
 ## half of the same guard `contribution_at()`'s early return reads, and gets the same check.
 func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestRunner) -> void:
 	var def := _def("finishable", 40.0)
@@ -645,7 +645,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 
 	var manager := EventManager.new()
 	manager.retire(instance)
-	t.check(instance.is_finished, "retired by its manager, the way the director retires one")
+	t.check(instance.is_gone(), "retired by its manager, the way the director retires one")
 	t.close_to(instance.source().contribution_at(nearby), 0.0,
 			"finishing outside _process() invalidates the cache rather than leaving the pre-" +
 			"finish answer standing for the rest of the tick")
@@ -661,7 +661,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 	t.check(leaving.source().contribution_at(Vector2(10.0, 0.0)) > 0.0,
 			"a live row reaches a point inside its own field, which the cache now holds")
 	leaving.leave_for_a_completed_task()
-	t.check(leaving.is_leaving, "departure_speed > 0 takes the leaving branch, not straight to finished")
+	t.check(leaving.is_on_its_way_out(), "departure_speed > 0 takes the leaving branch, not straight to finished")
 	t.close_to(leaving.source().contribution_at(Vector2(10.0, 0.0)), 0.0,
 			"is_leaving flipping outside _process() invalidates the cache the same way finishing does")
 	leaving.free()

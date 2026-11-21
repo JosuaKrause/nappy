@@ -211,7 +211,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 		cost += RunCity.events(city).excitement_sources().total_at(at) * STEP
 	var parked := 0
 	for instance in RunCity.events(city).instances():
-		parked += 1 if instance.def.id == "fire_truck" and instance.is_parked else 0
+		parked += 1 if instance.row_id() == "fire_truck" and instance.has_parked() else 0
 	var straight := from.distance_to(to)
 	var round_about := _the_way_round(city, from, to, plan, engine, engine_at)
 	print("      %d engine parked; passing costs %.0f excitement-seconds over %.0fpx; round is %s"

@@ -64,14 +64,14 @@ func _test_by_legs_it_is_held_to_her_sight(t: TestRunner) -> void:
 		where.tell(her)
 		instance.step(STEP)
 		clock += STEP
-		if instance.is_leaving and left < 0.0:
+		if instance.is_on_its_way_out() and left < 0.0:
 			left = clock
-		if instance.is_finished:
+		if instance.is_gone():
 			gone_near_her = instance.position.distance_to(her) <= Tuning.OUT_OF_SIGHT
 			break
 		her = her.move_toward(instance.position, Tuning.WALK_SPEED * 1.5 * STEP)
 	t.check(left >= 0.0, "it leaves at the end of its route")
-	t.check(not gone_near_her and not instance.is_finished,
+	t.check(not gone_near_her and not instance.is_gone(),
 			"and %.0fs after, with her in sight of it all the while, it is still there"
 			% (clock - left))
 	instance.free()
@@ -115,9 +115,9 @@ func _test_told_none_the_backstop_ends_it_beside_her(t: TestRunner) -> void:
 		where.tell(her)
 		instance.step(STEP)
 		clock += STEP
-		if instance.is_leaving and left < 0.0:
+		if instance.is_on_its_way_out() and left < 0.0:
 			left = clock
-		if instance.is_finished:
+		if instance.is_gone():
 			gone = clock
 			break
 		her = her.move_toward(instance.position, Tuning.WALK_SPEED * 1.5 * STEP)

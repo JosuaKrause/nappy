@@ -430,12 +430,12 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 		late.set_sight(events.sees)
 		late.tick(STEP)
 		t.check(not _said(lines, "taken with the raid") and is_instance_valid(walker)
-				and not walker.is_finished,
+				and not walker.is_gone(),
 				"under the covered corner, the neighbor is not taken where they are drawn")
 		events.visible_view().look(Rect2(at + Vector2(Tuning.VIEW_HALF_EXTENT.x * 4.0, 0.0),
 				Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 		late.tick(STEP)
-		t.check(_said(lines, "the neighbor is taken with the raid") and walker.is_finished,
+		t.check(_said(lines, "the neighbor is taken with the raid") and walker.is_gone(),
 				"once the camera is off them, they are taken")
 	late.free()
 
@@ -466,17 +466,17 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) ->
 			var view_at := feet - Vector2(Tuning.VIEW_HALF_EXTENT.x,
 					Tuning.VIEW_HALF_EXTENT.y * 2.0 + 2.0)
 			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), covered)
-			var box := EventFootprints.box_of(walker.def)
+			var box := EventFootprints.box_of(walker.row())
 			t.check(not Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0).has_point(feet)
 					and events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
 					"%s scheme: their feet are just below the view, their figure in it" % scheme)
 			late.tick(STEP)
-			t.check(not _said(lines, "taken with the raid") and not walker.is_finished,
+			t.check(not _said(lines, "taken with the raid") and not walker.is_gone(),
 					"%s scheme: with their figure on screen, the neighbor is not taken" % scheme)
 			events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
 					Tuning.VIEW_HALF_EXTENT * 2.0), covered)
 			late.tick(STEP)
-			t.check(_said(lines, "the neighbor is taken with the raid") and walker.is_finished,
+			t.check(_said(lines, "the neighbor is taken with the raid") and walker.is_gone(),
 					"%s scheme: once the camera is off them, they are taken" % scheme)
 		late.free()
 
@@ -500,7 +500,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		var door := _city.map.doorstep_world_position()
 		var her := door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0)
 		# Where the raid stands is read off a first arrival with the camera nowhere near: the
-		# vans' feet and the patrol car's beat (`EventInstance.path`), which are put in the
+		# vans' feet and the patrol car's beat (`EventInstance.walks()`), which are put in the
 		# street and then taken out again before the raid this test waits for.
 		var scout := ResistanceHappenings.new()
 		scout.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,
@@ -513,8 +513,8 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		var vans := PackedVector2Array()
 		var beat := PackedVector2Array()
 		for arrived in _raid_since(before):
-			if arrived.def.paces:
-				beat = arrived.path
+			if arrived.row().paces_a_beat():
+				beat = arrived.walks()
 			else:
 				vans.append(arrived.global_position)
 			events.retire(arrived)

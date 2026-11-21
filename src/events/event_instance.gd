@@ -13,9 +13,9 @@ extends Node2D
 ## Fraction of full intensity an event emits while still telegraphing.
 const TELEGRAPH_INTENSITY_FRACTION := 0.15
 
-var def: EventDef
+var _def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
-var path: PackedVector2Array = PackedVector2Array()
+var _path: PackedVector2Array = PackedVector2Array()
 
 ## How long it has existed, in seconds: its own clock, asked through `age()`. Its own tick advances
 ## it and settles once its notice clock has been held; `restore()` sets it and settles the phase
@@ -117,11 +117,6 @@ var phase := Phase.WARNING
 ## its telegraph's clock (`is_telegraphing()`).
 var _telegraph_ended := false
 
-## Whether it is over and gone (`Phase.DONE`).
-var is_finished: bool:
-	get:
-		return phase == Phase.DONE
-
 ## **The one place its phase changes**, and with it what every phase change owes: the field it
 ## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
 ## showing its scenery on the next drawn frame, when its look asks `is_gone()`.
@@ -177,7 +172,7 @@ var _excitement := EventExcitement.new(self)
 func drawn_box() -> Rect2:
 	if not _drawn_box_known:
 		_drawn_box_known = true
-		_drawn_box = EventFootprints.drawn_box_of(def, _body.runs_vertically())
+		_drawn_box = EventFootprints.drawn_box_of(_def, _body.runs_vertically())
 	return _drawn_box
 
 var _drawn_box := Rect2()
@@ -187,7 +182,7 @@ var _drawn_box_known := false
 ## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
 ## chase as an influence.
 func is_chasing() -> bool:
-	return def.pursuit != null and _charge.began and not is_finished and not is_leaving \
+	return _def.pursuit != null and _charge.began and not is_gone() and not is_on_its_way_out() \
 			and not is_waiting()
 
 ## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
@@ -197,13 +192,13 @@ func is_chasing() -> bool:
 ## approach rather than its smoothed one and raises its badge from outside the view proper, so it is
 ## up from the frame he runs.
 func has_charged() -> bool:
-	return _charge.began and not _charge.ended and not is_finished and not is_leaving \
+	return _charge.began and not _charge.ended and not is_gone() and not is_on_its_way_out() \
 			and not is_waiting()
 
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
-## otherwise the row's own `def.id`. Telemetry only — nothing that decides anything reads it.
+## otherwise the row's own `_def.id`. Telemetry only — nothing that decides anything reads it.
 func logged_name() -> String:
-	return named_for_the_log(def.id, _is_pelican)
+	return named_for_the_log(_def.id, _is_pelican)
 
 ## `logged_name()` for a row id and a pelican choice that may not have an instance yet — a warning
 ## still up (`PendingWarning.logged_name()`).
@@ -212,7 +207,7 @@ static func named_for_the_log(id: String, pelican: bool) -> String:
 
 ## A mast that has been reached and silenced — `EventStreaming.silence_mast()`/`silence_all_masts()`
 ## `silence()` it rather than `end_now()`, since a silenced mast still stands, with no arcs and
-## no field, and `is_finished` means *this has left*. Harmless on every row but a mast: nothing
+## no field, and `is_gone()` means *this has left*. Harmless on every row but a mast: nothing
 ## else ever silences one. See `current_intensity()` and `FigureLook._draw_mast()`.
 var _silenced := false
 
@@ -309,7 +304,7 @@ var _reports: EventReports
 ## This event's own simulation clock, in seconds, advanced by `delta` in `step()` while the
 ## event is still live. `excitement.landed()` is measured against this rather than the wall clock so
 ## that a paused game does not empty the halo, and so a rig can measure the window on simulated
-## time by advancing this directly instead of waiting on the wall clock. Frozen once `is_finished`
+## time by advancing this directly instead of waiting on the wall clock. Frozen once `is_gone()`
 ## — see `step()` — so a spent instance's history simply stops moving rather than continuing
 ## to drain toward zero after nothing more can land on it.
 var _clock := 0.0
@@ -336,8 +331,8 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_timing = _surroundings.timing()
 	_gate_state = gate
 	_drawn_in = _surroundings.world_drawn_in()
-	def = definition
-	path = route
+	_def = definition
+	_path = route
 	_where = WhereSheIs.nowhere()
 	var hears := _surroundings.where_she_is()
 	if hears:
@@ -387,7 +382,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	if definition.path_mode == EventDef.PathMode.ACROSS_ITS_ALLEY:
 		# Placed on the map with no route at all, so its own dash is built here, from the alley it
 		# actually landed in rather than a flat offset, and cut to the ground it fits on.
-		path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
+		_path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
 
 ## The alley (`WorldMap.alley_at()`) that `at` falls inside, in **world** space, or an empty
 ## `Rect2` when it is not inside any — open ground, the building, or a placement that has fallen
@@ -455,7 +450,7 @@ func body_position() -> Vector2:
 ## directly), where the notice is the radius alone.
 func _would_stand_in_her_view() -> bool:
 	var view := _where.view()
-	if def.pursuit == null or not warns_by_radius() or not view.has_area():
+	if _def.pursuit == null or not warns_by_radius() or not view.has_area():
 		return true
 	return view.encloses(warning_rect())
 
@@ -466,7 +461,7 @@ func warning_rect() -> Rect2:
 	if barrier_post:
 		return EventFootprints.warning_guard_rect(_body.runs_vertically(), body_position(),
 				_where.at())
-	var size := EventFootprints.warning_picture_size(def)
+	var size := EventFootprints.warning_picture_size(_def)
 	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
 
 ## How far a figure's body reaches round its feet when the row's own shape is the solid it stands
@@ -542,7 +537,7 @@ func _become_solid_once_it_starts() -> void:
 		return
 	if not _body.waits_to_come_down():
 		return
-	if is_finished or is_leaving or is_waiting() or is_telegraphing():
+	if is_gone() or is_on_its_way_out() or is_waiting() or is_telegraphing():
 		return
 	_body.come_down_clear_of_her(global_position, _heading)
 
@@ -628,7 +623,7 @@ func walk_on_by_hand(delta: float) -> void:
 ## checks (`EventCarDriving.check()`), which take the step back where it would bring the body into
 ## her. Nothing once it is finished.
 func step(delta: float) -> void:
-	if is_finished:
+	if is_gone():
 		return
 	_propose_the_step()
 	_tick(delta)
@@ -662,7 +657,7 @@ func _commit_the_step() -> void:
 	var at := _move.commit()
 	if position != at:
 		position = at
-	if car == null or is_finished:
+	if car == null or is_gone():
 		return
 	if ends:
 		_be_done(_may_park_on_commit)
@@ -685,12 +680,12 @@ func _tick(delta: float) -> void:
 		_activation_announced = true
 		_reports.tell_event_activated(self)
 
-	if is_leaving:
+	if is_on_its_way_out():
 		departure.leave(delta)
 		for behaviour in _behaviours:
 			behaviour.step_leaving(delta)
 		_advance_gait(_path_travelled - _travelled_before)
-		if barrier_post and barrier_post.has_left_its_body() and not is_finished:
+		if barrier_post and barrier_post.has_left_its_body() and not is_gone():
 			# He walks off and the barrier does not go with him: its body stays where it was built
 			# through the departure as through the chase (its picture is its own node).
 			barrier_post.keep_the_body()
@@ -752,7 +747,7 @@ func _tick(delta: float) -> void:
 ## on the entity layer at his own feet. Taken on the drawn frame (`_process()`), from the phase the
 ## last tick left: a look never writes the event, and the tick writes no drawing property.
 func _take_the_layer_it_warns_on() -> void:
-	if def.pursuit == null or not def.pursuit.is_drawn_over_the_street():
+	if _def.pursuit == null or not _def.pursuit.is_drawn_over_the_street():
 		return
 	DrawLayer.draw_on(self, DrawLayer.Layer.WARNING if is_standing_for_its_notice()
 			else DrawLayer.Layer.ENTITIES)
@@ -767,12 +762,12 @@ func is_chatting() -> bool:
 
 ## Whether the guard this instance draws is inside with her for its own hold right now — he is the
 ## one taking her in, so he is not also standing in the street, see
-## `Stroller.hide_for_inspection()`. `def.redetains` is the flag only `checkpoint_hut` and
+## `Stroller.hide_for_inspection()`. `_def.redetains` is the flag only `checkpoint_hut` and
 ## `checkpoint_post` carry (the boom, `checkpoint_gate`, blocks rather than inspects), so
 ## `chatting_mother`, which holds her by the same mechanism without `redetains`, keeps her ordinary
 ## talking posture for the whole of her own conversation instead.
 func is_its_guard_inside() -> bool:
-	return def.redetains and is_chatting()
+	return _def.redetains and is_chatting()
 
 ## Whether this instance has ever held her (`EventHold.has_held()`). `CheckpointController` does
 ## not start a second hold on a row that has held her and does not `redetains`.
@@ -780,14 +775,14 @@ func has_chatted() -> bool:
 	return hold != null and hold.has_held()
 
 ## Starts a hold, the frame `CheckpointController.check_detentions()` decides she has come within
-## `def.detain_distance()` of an instance that may take her (`EventHold.start()`).
+## `_def.detain_distance()` of an instance that may take her (`EventHold.start()`).
 func start_chat() -> void:
 	if hold:
 		hold.start()
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.
-var gave_up := false
+var _gave_up := false
 ## **Its notice's clock** (`Warning`, read against `age`): started when it exists for a row with no
 ## wait, and when it notices her for one that waits (`EventDef.notice`); stopped while it waits.
 ## `chase_age()` is its elapsed time, and a stream-out carries its start (`save()`).
@@ -810,14 +805,14 @@ var _guard_warns_her := false
 ## and runs its own line at her once she is near (`NoticeSpec.runs_within`, the masked man in the
 ## escape's stairwell). Telemetry only.
 func counts_a_charge() -> bool:
-	return def.pursuit != null or (def.notice != null and def.notice.runs_within > 0.0)
+	return _def.pursuit != null or (_def.notice != null and _def.notice.runs_within > 0.0)
 
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
 ## `pursuit_ended`): the row's `EventDef.counts_charges_as` where it sets one (the task guard sent
-## from out of her view counts as `task_guard`), otherwise the row's own `def.id` — the day-3
+## from out of her view counts as `task_guard`), otherwise the row's own `_def.id` — the day-3
 ## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
 func _charger_name() -> String:
-	return def.counts_charges_as if def.counts_charges_as != "" else def.id
+	return _def.counts_charges_as if _def.counts_charges_as != "" else _def.id
 
 ## **Its charge caught her**, said once: by `EventManager.check_hard_fails()` when its catch ends
 ## the day, ahead of `hard_fail_triggered`, and by a patrol car's man the frame he stops her
@@ -836,7 +831,7 @@ func report_the_catch() -> void:
 ## Asked by `EventManager.end_the_charges_still_running()` as a walk ends.
 ## Telemetry only.
 func report_the_charge_cut_short() -> void:
-	if counts_a_charge() and not is_finished:
+	if counts_a_charge() and not is_gone():
 		_charge.cut_short()
 
 ## Sends `EventBus.pursuit_warned` once for this instance: its warning has gone up. Never for one
@@ -844,7 +839,7 @@ func report_the_charge_cut_short() -> void:
 ## raised hand, counted where it went up (`CheckpointController`), so a crossing counts one warning
 ## at an alley's door as at a boom.
 func _report_the_warning() -> void:
-	if counts_a_charge() and not def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
+	if counts_a_charge() and not _def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 		_charge.warn()
 
 ## **Whether its notice is a warning she is shown, standing**, rather than its approach: one that
@@ -853,7 +848,7 @@ func _report_the_warning() -> void:
 ## ends; a pursuer whose telegraph is its approach (the day-3 dog) has come for her from its first
 ## frame.
 func _its_notice_is_a_warning() -> bool:
-	return warns_by_radius() or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
+	return warns_by_radius() or _def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 			or _stands_for_this_notice
 
 # ------------------------------------------------------------ the investigation ---
@@ -894,7 +889,7 @@ func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
 	var her := _where.at()
 	if her != Vector2.INF and (her - global_position).dot(across) < 0.0:
 		across = -across
-	var reach := def.shape.radius + (row.shape.reach() if row.shape else 0.0) + 1.0
+	var reach := _def.shape.radius + (row.shape.reach() if row.shape else 0.0) + 1.0
 	return global_position + across * side * reach + _heading * along
 
 # ------------------------------------------------------------------- the stop ---
@@ -904,15 +899,15 @@ func has_stopped_her() -> bool:
 	return on_foot != null and on_foot.has_stopped_her()
 
 ## **Ends this chase from outside it**, in the state `EventPursuit` leaves a pursuer she has outrun:
-## `gave_up` set and `_be_done()` called, so the same departure, drawing and "gave up" line as an
+## `_gave_up` set and `_be_done()` called, so the same departure, drawing and "gave up" line as an
 ## ordinary shake-off. A checkpoint hut's hold has done what the chase was for, whatever the chase
 ## was doing, a telegraph still running included
 ## (`CheckpointController._end_the_guard_for_a_hold()`). A second call, or one on anything finished
 ## or leaving, is a no-op.
 func give_up_the_chase() -> void:
-	if is_finished or is_leaving:
+	if is_gone() or is_on_its_way_out():
 		return
-	gave_up = true
+	_gave_up = true
 	_be_done()
 
 ## **Notices her now, wherever she is**: a waiting pursuer set on her by what she did rather than
@@ -941,7 +936,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	if pursuit == null:
 		return
 	if not (is_waiting() or (is_telegraphing() and warns_by_radius())) or her == Vector2.INF \
-			or is_finished or is_leaving:
+			or is_gone() or is_on_its_way_out():
 		return
 	# A warning of his own already under way gives way to the one the task sets: the lunge it held
 	# back (`EventPursuit.was_set_on_her()`) and the notice it held still start again from here.
@@ -997,18 +992,18 @@ func path_travelled() -> float:
 ## it is holding its stand-off, so it is not closing, and a mark that said otherwise would be
 ## warning her about a thing that is deliberately waiting.
 func travel_velocity() -> Vector2:
-	if is_finished or is_leaving:
+	if is_gone() or is_on_its_way_out():
 		return Vector2.ZERO
 	# **A parked row is not travelling, whatever its speed says.** The screen-edge badge reads this
 	# as a closing speed, and an engine standing at a kerb is not closing on anybody.
-	if is_parked:
+	if has_parked():
 		return Vector2.ZERO
-	if def.pursuit != null:
+	if _def.pursuit != null:
 		if is_waiting() or is_telegraphing():
 			return Vector2.ZERO
-		return _heading * def.chase_speed()
-	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
-		return _heading * def.speed
+		return _heading * _def.chase_speed()
+	if _def.mobile and _def.speed > 0.0 and _path.size() > 1 and not is_telegraphing_still():
+		return _heading * _def.speed
 	return Vector2.ZERO
 
 ## `travel_velocity()`'s own answer, except for a pursuer that has been noticed and is holding
@@ -1023,12 +1018,12 @@ func travel_velocity() -> Vector2:
 ## there is nothing here to project toward; only the moment it decides changes the answer, exactly
 ## as `travel_velocity()` already has it.
 func caret_velocity() -> Vector2:
-	if is_finished or is_leaving:
+	if is_gone() or is_on_its_way_out():
 		return Vector2.ZERO
-	if def.pursuit != null:
+	if _def.pursuit != null:
 		if is_waiting():
 			return Vector2.ZERO
-		return _heading * def.chase_speed()
+		return _heading * _def.chase_speed()
 	return travel_velocity()
 
 ## Which way this instance was sited facing (`setup()`'s own `face`), unmoved for anything
@@ -1043,7 +1038,7 @@ func facing_now() -> Vector2:
 ## Where on its own clock it noticed her, held time counted back in, or `INF` for a row that waits
 ## and has not noticed her (and for a row with no wait) — what `save()` carries.
 func _noticed_at() -> float:
-	return _notice.started_at() if def.notice != null else INF
+	return _notice.started_at() if _def.notice != null else INF
 
 ## Noticing her: its notice's clock starts now and it is warning (`Phase.WARNING`), or already past
 ## a notice of no length.
@@ -1085,7 +1080,7 @@ func _restore_the_moment(saved: EventSave) -> void:
 	_age = saved.age()
 	_settle_the_notice()
 	_path_travelled = saved.travelled()
-	if def.notice != null and saved.noticed_at() != INF:
+	if _def.notice != null and saved.noticed_at() != INF:
 		_notice.start(saved.noticed_at())
 		transition(Phase.WARNING)
 		_settle_the_notice()
@@ -1101,7 +1096,7 @@ func _restore_the_moment(saved: EventSave) -> void:
 	# rather than left to rely on that.
 	_gait_phase = 0.0
 	_gait_moving = false
-	if def.mobile and path.size() > 1:
+	if _def.mobile and _path.size() > 1:
 		route.advance(0.0)
 	# Put back where it was, not slid there from wherever it was made.
 	reset_physics_interpolation()
@@ -1111,7 +1106,7 @@ func _restore_the_moment(saved: EventSave) -> void:
 ## (the axis of a spread, which side a parked vehicle shows, its idle phase), and its field is asked
 ## afresh. `EventManager.move_extra()` is the caller, which records its body again.
 func move_to(at: Vector2) -> void:
-	var stands := BodyStance.stands_at(_map, def, at)
+	var stands := BodyStance.stands_at(_map, _def, at)
 	global_position = stands
 	_move.place(position)
 	_body.land_at(stands, _heading, BodyStance.lies_vertically_at(_map, stands))
@@ -1170,22 +1165,6 @@ static var _NO_BIRDS: Array[EventFlock.Bird] = []
 # and it disappears in a way nothing in the world could explain. The cat runs on, the flock climbs
 # away, the dog that lost interest trots off — and each of them is gone because it left.
 
-## True once it has stopped being an event and is only getting out of shot (`Phase.LEAVING`). It
-## emits nothing, it cannot end the day, and it carries no cue: whatever it was, it is over. **The
-## one exception is a guard walking away from his barrier** (`PursuitSpec.leaves_its_body`): the walk
-## ends with the instance still there as the barrier (`EventBarrierPost.stand_as_the_barrier()`, `Phase.SPENT`). The
-## barrier costs nothing while he goes, as a roadblock's band never costs anything
-## (`EventCatalogue._roadblock()`'s `intensity` 0).
-var is_leaving: bool:
-	get:
-		return phase == Phase.LEAVING
-
-## True once a row that `EventDef.stops_where_it_arrives` has reached the end of its route and
-## stopped there (`Phase.PARKED`). Unlike `is_leaving` this is not an ending: it is still the same
-## event, standing still, for the rest of the day. See `_be_done()`.
-var is_parked: bool:
-	get:
-		return phase == Phase.PARKED
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
 ## Three things never leave, and each would break something that reads the finishing position. An
@@ -1198,7 +1177,7 @@ var is_parked: bool:
 ## street to turn round on rather than one to hurry past.
 ##
 ## **Parking is not being over.** It still emits, it still carries its cue, and it can still end a
-## day that has a way to be ended by it — `is_leaving` would take all three away, which is why this
+## day that has a way to be ended by it — `is_on_its_way_out()` would take all three away, which is why this
 ## is a third branch rather than a flag on the departure.
 ##
 ## Everything else that runs out of route drives on and is gone.
@@ -1208,10 +1187,10 @@ func _be_done(may_park := true) -> void:
 		return
 	if counts_a_charge():
 		# `VisitCounter`'s own "-shaken"/"-outlasted" — a charge that had begun is over without
-		# catching her, `gave_up` telling which of the two ways. A charge that caught or was cut
+		# catching her, `_gave_up` telling which of the two ways. A charge that caught or was cut
 		# short already ended, so the record says nothing (`ChargeRecord`).
-		_charge.end(gave_up)
-	if def.stops_where_it_arrives and may_park:
+		_charge.end(_gave_up)
+	if _def.stops_where_it_arrives and may_park:
 		transition(Phase.PARKED)
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
@@ -1220,7 +1199,7 @@ func _be_done(may_park := true) -> void:
 		_path_travelled = route.length()
 		queue_redraw()
 		return
-	if (departure.speed() <= 0.0 or def.leaves_behind() != ""):
+	if (departure.speed() <= 0.0 or _def.leaves_behind() != ""):
 		end_now()
 		return
 	transition(Phase.LEAVING)
@@ -1247,10 +1226,10 @@ func _be_done(may_park := true) -> void:
 ## whose ordinary end is standing at the door (`EventDef.stops_where_it_arrives`) and who runs
 ## instead: this departure is the task's answer, not the route's.
 func leave_for_a_completed_task() -> void:
-	if is_finished or is_leaving or is_parked:
+	if is_gone() or is_on_its_way_out() or has_parked():
 		return
 	_be_done(false)
-	if not is_leaving:
+	if not is_on_its_way_out():
 		return
 	departure.for_a_completed_task()
 
@@ -1283,7 +1262,7 @@ func _has_expired() -> bool:
 	# man it let out is back in.
 	if investigation and not investigation.all_back():
 		return false
-	return def.duration > 0.0 and chase_age() >= notice_time() + def.duration
+	return _def.duration > 0.0 and chase_age() >= notice_time() + _def.duration
 
 ## **Ends it now**, from outside as well as from its own step: it leaves as an event that is over does
 ## (`transition()` into `Phase.DONE`), and its manager frees it in its ordinary sweep
@@ -1315,15 +1294,15 @@ func is_telegraphing() -> bool:
 ## trigger to have waited behind — is false here and spends its telegraph coming, which is the
 ## lesson; and false for anything that has not noticed her yet or has lunged.
 func is_standing_for_its_notice() -> bool:
-	var stands := def.pursuit != null and def.pursuit.stands_for_its_notice()
+	var stands := _def.pursuit != null and _def.pursuit.stands_for_its_notice()
 	return (stands or _stands_for_this_notice) and is_telegraphing() \
-			and (def.waits_for_her() or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER))
+			and (_def.waits_for_her() or _def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER))
 
 ## **Holds a row that crouches before its run `seconds` longer** — a crossing whose run a solid cut
 ## short (`EventDef.crouch_for_a_run()`), so it still reaches the middle when she does. Its telegraph
 ## only grows, so the fairness contract it was validated under still holds.
 func hold_still_longer(seconds: float) -> void:
-	if seconds > 0.0 and def.holds_still():
+	if seconds > 0.0 and _def.holds_still():
 		_notice_time = notice_time() + seconds
 
 ## How long this instance's notice runs once it has noticed her: a charger that warns by radius
@@ -1333,9 +1312,9 @@ func hold_still_longer(seconds: float) -> void:
 func notice_time() -> float:
 	if _notice_time >= 0.0:
 		return _notice_time
-	if warns_by_radius() and def.pursuit and def.pursuit.warns_for > 0.0:
-		return def.pursuit.warns_for
-	return def.telegraphs_for()
+	if warns_by_radius() and _def.pursuit and _def.pursuit.warns_for > 0.0:
+		return _def.pursuit.warns_for
+	return _def.telegraphs_for()
 
 ## True for a row that waits (`EventDef.waits_for_her()`) and has not noticed her: its notice's
 ## clock is not running. That is `Phase.WAITING`, and it stays true of such a row that leaves or is
@@ -1343,7 +1322,7 @@ func notice_time() -> float:
 ## (`Phase.SPENT`), which waits for nothing. Waiting, it emits at full strength unless its notice is
 ## quiet, it is not lethal, and it does not move.
 func is_waiting() -> bool:
-	return def.waits_for_her() and not _notice.is_running()
+	return _def.waits_for_her() and not _notice.is_running()
 
 ## How long this has been *happening*, which is not always how long it has existed.
 ##
@@ -1371,8 +1350,8 @@ func chase_age() -> float:
 ## and everything sent at her from off screen, whose approach or badge is the warning — nor one that
 ## sets off beside her, whose notice is a clock by construction.
 func warns_by_radius() -> bool:
-	return def.waits_for_her() and (def.pursuit != null or def.runs_its_own_line()) \
-			and not def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and not _set_on_her
+	return _def.waits_for_her() and (_def.pursuit != null or _def.runs_its_own_line()) \
+			and not _def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and not _set_on_her
 
 ## **The stand-off a pursuer closes to and holds**, `PursuitSpec.standoff()` over
 ## `EventDef.standoff_reach()`: the distance a pursuer that comes for her through its telegraph
@@ -1380,7 +1359,7 @@ func warns_by_radius() -> bool:
 ## its warning (the robber) stops. A charger that waits for her charges on its warning's clock, not
 ## on this distance (`warns_by_radius()`).
 func charge_radius() -> float:
-	return PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
+	return PursuitSpec.standoff(_def.chase_speed(), _def.standoff_reach())
 
 ## **Holds the notice clock for this tick** (`_notice.hold()`), run straight after `age`
 ## advances and before the phase is settled, so a frame whose notice is held is never seen as
@@ -1395,11 +1374,11 @@ func charge_radius() -> float:
 func _hold_the_notice_clock(delta: float) -> void:
 	if _telegraph_ended or is_waiting():
 		return
-	if def.runs_its_own_line() and chase_age() - delta < def.telegraphs_for():
+	if _def.runs_its_own_line() and chase_age() - delta < _def.telegraphs_for():
 		_notice.hold(delta)
 		return
 	var her := _where.at()
-	if warns_by_radius() and def.pursuit and her != Vector2.INF \
+	if warns_by_radius() and _def.pursuit and her != Vector2.INF \
 			and chase_age() >= notice_time() and chase_age() - delta < notice_time() \
 			and not clear_line_to(her):
 		_notice.hold(delta)
@@ -1415,12 +1394,12 @@ func _hold_the_notice_clock(delta: float) -> void:
 ## `caret_intensity_over_horizon()`, asking for the pulse's own mean over
 ## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
 func current_intensity(pulse_multiplier_override := -1.0) -> float:
-	if is_finished or is_leaving:
+	if is_gone() or is_on_its_way_out():
 		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
 		# event trailing after her for as long as it took the thing to get off screen.
 		return 0.0
 	if _silenced:
-		# A silenced mast still stands, but its field is gone — unlike `is_finished`, which means
+		# A silenced mast still stands, but its field is gone — unlike `is_gone()`, which means
 		# the thing itself has left. See the field's own doc.
 		return 0.0
 	if is_quiet_for_its_man():
@@ -1432,7 +1411,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# spike rather than a field she strolls out of, and his field, so walking away takes some
 		# of it off. Nothing after it: he is walking back by then (`_tick()`).
 		var into := clampf(on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
-		return 2.0 * def.pursuit.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
+		return 2.0 * _def.pursuit.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
 		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
@@ -1441,14 +1420,14 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# baby's own state, and the read happening here keeps excitement a pure query. It is what
 		# makes "asleep, it is a pure time loss" true of the meter and not only of the words:
 		# nothing here scales through `Baby.SLEEPING_SENSITIVITY`, it emits exactly zero.
-		return (Tuning.CHAT_EXCITEMENT / def.detains_for()) if _where.baby_is_awake() else 0.0
+		return (Tuning.CHAT_EXCITEMENT / _def.detains_for()) if _where.baby_is_awake() else 0.0
 	# The swell is measured on `chase_age()` rather than `age`, so a ramp measures the burst rather
 	# than the wait in front of it: for everything without a trigger the two are the same number,
 	# and for a row that stood on a pavement half the morning before she came near, `age` would
 	# hand the first instant of the burst the multiplier the *end* of it is meant to have. The
 	# pulse beats on `age` rather than `chase_age()` on purpose: a pulse is the thing's own rhythm,
 	# which is running whether or not anybody has walked up to it.
-	return def.peak_through(_age, chase_age() - notice_time(), pulse_multiplier_override) \
+	return _def.peak_through(_age, chase_age() - notice_time(), pulse_multiplier_override) \
 			* _notice_damping()
 
 ## The pulse envelope's own mean over `[age, age + Tuning.EXPECTED_IMPACT_HORIZON]`, closed-form
@@ -1486,8 +1465,8 @@ static func _pulse_mean_multiplier(age: float, horizon: float, period: float) ->
 ## telegraph. Its row says which (`EventDef.warns_quietly()`).
 func _notice_damping() -> float:
 	if is_waiting():
-		return TELEGRAPH_INTENSITY_FRACTION if def.warns_quietly() else 1.0
-	if is_telegraphing() and def.warns_quietly():
+		return TELEGRAPH_INTENSITY_FRACTION if _def.warns_quietly() else 1.0
+	if is_telegraphing() and _def.warns_quietly():
 		return TELEGRAPH_INTENSITY_FRACTION
 	return 1.0
 
@@ -1510,7 +1489,7 @@ func _notice_damping() -> float:
 ## to the full peak of a row whose pulse turns over inside `Tuning.EXPECTED_IMPACT_HORIZON`.
 func caret_intensity_over_horizon() -> float:
 	var pulse_override := -1.0
-	var period := def.pulses_every()
+	var period := _def.pulses_every()
 	if period > 0.0:
 		pulse_override = _pulse_mean_multiplier(_age, Tuning.EXPECTED_IMPACT_HORIZON, period)
 	return current_intensity(pulse_override) / _notice_damping()
@@ -1527,9 +1506,9 @@ func caret_intensity_over_horizon() -> float:
 ## stand-off is still, and about to lunge.
 func field_at(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
-	if is_finished:
+	if is_gone():
 		return 0.0
-	if is_leaving:
+	if is_on_its_way_out():
 		# A leaving event emits nothing, a guard walking away from his barrier included: a
 		# roadblock's band has no field strength of its own (`EventCatalogue._roadblock()`).
 		return 0.0
@@ -1542,7 +1521,7 @@ func field_at(world_position: Vector2, intensity_override: float,
 	# row shaping its own drop-off (`EventDef.falloff_power`) is felt as the shape it is priced at.
 	# The peak handed over is this phase's, so the telegraph and the pulse damp the core and the
 	# field together; an uncored row is charged its plain falloff.
-	return def.emission_at_distance(_field_distance(world_position, velocity), intensity)
+	return _def.emission_at_distance(_field_distance(world_position, velocity), intensity)
 
 ## The distance `field_at()` prices this row's field at — `GroundShape.field_distance()`
 ## over this row's own shape (D1's `body ⊕ disc` stationary, D2's `point ⊕ ellipse` moving), or the
@@ -1565,12 +1544,12 @@ func field_distance_from(centre: Vector2, shape: GroundShape, axis: Vector2,
 ## The datum this row's field is priced from (`field_distance_from()`) and drawn from (`DebugLayers`):
 ## its row's (`EventDef.datum()`), its shape or none — a point at its centre.
 func field_shape() -> GroundShape:
-	return def.datum()
+	return _def.datum()
 
 ## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture: the
 ## outline its shadow is drawn over (`DebugLayers`).
 func ground_shape() -> GroundShape:
-	return def.ground_shape()
+	return _def.ground_shape()
 
 ## A flock is its birds, summed.
 ##
@@ -1594,7 +1573,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 	var outer := flock.bird_outer()
 	var total := 0.0
 	for bird in birds():
-		total += def.bird_emission_at(_bird_distance(bird, world_position), share, outer)
+		total += _def.bird_emission_at(_bird_distance(bird, world_position), share, outer)
 	return total
 
 ## The distance a bird's own kernel prices `world_position` at: eccentric about where the bird is by
@@ -1607,7 +1586,7 @@ func _bird_distance(bird: EventFlock.Bird, world_position: Vector2) -> float:
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
 ## no longer merely telegraphing.
 ##
-## **Measured from this node, at `def.lethal_reach()`** — which is the field's own core for almost
+## **Measured from this node, at `_def.lethal_reach()`** — which is the field's own core for almost
 ## every row and a separate, smaller number for one whose killer is not what the field is drawn
 ## around. A roadblock is that row: the node is the man once he leaves the post, and what he
 ## reaches with is a pair of arms rather than the width of the barrier he left standing.
@@ -1628,11 +1607,11 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if car:
 		return car.strikes(world_position)
 	# The row's own flag first: it is the one most rows fail, and the two calls after it are pure.
-	if not def.ends_the_day() or is_finished or is_leaving or is_waiting() or is_telegraphing():
+	if not _def.ends_the_day() or is_gone() or is_on_its_way_out() or is_waiting() or is_telegraphing():
 		return false
-	if global_position.distance_to(world_position) > def.lethal_reach():
+	if global_position.distance_to(world_position) > _def.lethal_reach():
 		return false
-	return def.pursuit == null or _navigator.clear_line(global_position, world_position, _sight)
+	return _def.pursuit == null or _navigator.clear_line(global_position, world_position, _sight)
 
 ## **Whether this car's own course strikes `point` before the horizon is out**, her position held
 ## fixed (`EventCarDriving.will_strike()`): the doubled caret's question for a car that drives,
@@ -1676,7 +1655,7 @@ func clear_line_to(world_position: Vector2) -> bool:
 
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
 func is_telegraphing_still() -> bool:
-	return def.holds_still() and is_telegraphing()
+	return _def.holds_still() and is_telegraphing()
 
 # ------------------------------------------------------------------- the gait ---
 # The event half of "every living thing that moves has a stride" — the walker's own two-frame
@@ -1752,11 +1731,11 @@ class Rim extends SourceRim:
 			_let_go()
 			band.set_strength(strength, colour)
 			return
-		if band.is_held() and strength > 0.0 and not _event.is_finished:
+		if band.is_held() and strength > 0.0 and not _event.is_gone():
 			band.release()
 		else:
 			band.set_strength(0.0, colour)
-		super.set_strength(0.0 if _event.is_finished else strength, colour)
+		super.set_strength(0.0 if _event.is_gone() else strength, colour)
 
 	## Overrides SourceRim.is_held.
 	func is_held() -> bool:
@@ -1779,8 +1758,8 @@ class Rim extends SourceRim:
 ## Whether the band carries this event's rim: a guard has left the barrier he stood at and the band
 ## still stands.
 func _the_band_carries_the_rim() -> bool:
-	return is_leaving and barrier_post != null and barrier_post.has_left_its_body() \
-			and look.band_node() != null and not is_finished
+	return is_on_its_way_out() and barrier_post != null and barrier_post.has_left_its_body() \
+			and look.band_node() != null and not is_gone()
 
 ## The band's rim, behind the band's first slice, drawn before every other part of the band, as a
 ## rim is behind the picture it outlines (`_rim_holder()`).
@@ -1940,7 +1919,7 @@ class Figure:
 
 	## The route it walks, in world space; empty, or one point, for one that stands.
 	func walks() -> PackedVector2Array:
-		return _of.path
+		return _of._path
 
 	## Whether it waits for her and has not noticed her (`EventInstance.is_waiting()`).
 	func is_waiting() -> bool:
@@ -1966,7 +1945,7 @@ class Figure:
 
 	## Whether it has stopped where its route ended, for the rest of the day (`Phase.PARKED`).
 	func has_parked() -> bool:
-		return _of.is_parked
+		return _of.has_parked()
 
 	## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`).
 	func is_only_its_barrier() -> bool:
@@ -2045,7 +2024,7 @@ class Figure:
 	## first are added to it, and the distance it has travelled carries on down them.
 	func walk_further(leg: PackedVector2Array) -> void:
 		for i in range(1, leg.size()):
-			_of.path.append(leg[i])
+			_of._path.append(leg[i])
 
 	## It stepped by `delta` in world space.
 	func step_by(delta: Vector2) -> void:
@@ -2089,7 +2068,7 @@ class Figure:
 	## She shook it off: its chase is over because she outran it (`has_given_up()`), and it is
 	## done (`EventInstance._be_done()`).
 	func give_up() -> void:
-		_of.gave_up = true
+		_of._gave_up = true
 		_of._be_done()
 
 	## Its notice's clock is held for `delta` seconds of its age: that much of it does not count.
@@ -2149,28 +2128,35 @@ class Figure:
 ## The row this is a live one of, for the caller that passes the row on (the badge's drawing);
 ## a caller asking something of it asks this event instead.
 func row() -> EventDef:
-	return def
+	return _def
 
 ## The id of the row this is a live one of (`EventDef.id`), which the run log's chase lines and the
 ## poster walls name it by. `logged_name()` is the name a log line calls the thing she met.
 func row_id() -> String:
-	return def.id
+	return _def.id
 
 ## The id of the row it leaves where it ends (`EventDef.leaves_behind()`), or "" for a row that
 ## leaves nothing.
 func leaves_behind() -> String:
-	return def.leaves_behind()
+	return _def.leaves_behind()
 
 ## Whether it is over and gone (`Phase.DONE`).
 func is_gone() -> bool:
 	return phase == Phase.DONE
 
-## Whether it has stopped being an event and is only getting out of shot (`Phase.LEAVING`).
+## Whether it has stopped being an event and is only getting out of shot (`Phase.LEAVING`). It
+## emits nothing, it cannot end the day, and it carries no cue: whatever it was, it is over. **The
+## one exception is a guard walking away from his barrier** (`PursuitSpec.leaves_its_body`): the walk
+## ends with the instance still there as the barrier (`EventBarrierPost.stand_as_the_barrier()`, `Phase.SPENT`). The
+## barrier costs nothing while he goes, as a roadblock's band never costs anything
+## (`EventCatalogue._roadblock()`'s `intensity` 0).
 func is_on_its_way_out() -> bool:
 	return phase == Phase.LEAVING
 
 ## Whether it has stopped where its route ended, for the rest of the day (`Phase.PARKED`): day 10's
-## neighbor home before she reached them.
+## neighbor home before she reached them. A row that `EventDef.stops_where_it_arrives` parks at the
+## end of its route; unlike `is_on_its_way_out()` this is not an ending: it is still the same event,
+## standing still. See `_be_done()`.
 func has_parked() -> bool:
 	return phase == Phase.PARKED
 
@@ -2181,12 +2167,12 @@ func was_warned_of() -> bool:
 
 ## Whether it comes after her (its row's `pursuit`).
 func pursues() -> bool:
-	return def.pursuit != null
+	return _def.pursuit != null
 
 ## Whether it hunts for her (`EventDef.hunts_for_her()`): at the heat that hunts it stops being a place
 ## and starts being a hunter, the roadblock's guard or a van that lets out men who pursue her.
 func hunts_for_her() -> bool:
-	return def.hunts_for_her()
+	return _def.hunts_for_her()
 
 ## **Forgets how long she has been running from it** (`EventPursuit.forget_her_run()`), so its
 ## chase does not give up because she ran; nothing for an event with no pursuit. A scene recipe's
@@ -2206,40 +2192,40 @@ func walks_straight_away() -> bool:
 
 ## Whether it is a car that drives (its row's `vehicle`), whose strike is its driving's.
 func drives() -> bool:
-	return def.vehicle != null
+	return _def.vehicle != null
 
 ## Whether it is a permanent feature of a fixed map that never appears (`EventDef.is_ambient()`).
 func is_ambient() -> bool:
-	return def.is_ambient()
+	return _def.is_ambient()
 
 ## Whether it was sent at her (`EventDef.was_sent_at_her()`): it comes after her, or the caller that
 ## sent it warned of it first.
 func was_sent_at_her() -> bool:
-	return def.was_sent_at_her()
+	return _def.was_sent_at_her()
 
 ## What it leaves at (`EventDef.departure_speed()`): its own speed if it had one, 0 for a thing that
 ## stands where it was placed and has no departure of its own.
 func departure_speed() -> float:
-	return def.departure_speed()
+	return _def.departure_speed()
 
 ## How long its row's telegraph lasts, in seconds.
 func telegraphs_for() -> float:
-	return def.telegraphs_for()
+	return _def.telegraphs_for()
 
 ## Whether walking into its reach ends her day (`EventDef.ends_the_day()`); a car's strike is not
 ## this, it is its driving's (`closes_on()`).
 func ends_the_day() -> bool:
-	return def.ends_the_day()
+	return _def.ends_the_day()
 
 ## How far from its centre its core reaches (`EventDef.core_within()`): the radius inside which
 ## she is in it, and where the gap to her is measured from.
 func core_within() -> float:
-	return def.core_within()
+	return _def.core_within()
 
 ## How far from its centre its row is heard (`EventDef.heard_within()`): the outer edge of its
 ## field as a disc, which the mark over her head keeps the whole of while it telegraphs.
 func heard_within() -> float:
-	return def.heard_within()
+	return _def.heard_within()
 
 ## **Whether its guard is gone for good**, leaving only a barrier that waits for nobody
 ## (`EventBarrierPost.is_spent()`): the guard has set off from it for good, or is on his way out
@@ -2266,7 +2252,7 @@ func field_reaches(point: Vector2) -> bool:
 			if _bird_distance(bird, point) <= flock.bird_outer():
 				return true
 		return false
-	return _field_distance(point, travel_velocity()) <= def.heard_within()
+	return _field_distance(point, travel_velocity()) <= _def.heard_within()
 
 ## **The two rings of its field**, as the debug view's fields layer draws them (`DebugLayers`): its
 ## core (`x`, `EventDef.core_within()`) and its outer edge (`y`), which is how far its row is
@@ -2274,69 +2260,69 @@ func field_reaches(point: Vector2) -> bool:
 ## (`_flock_outer_radius()`), the radius `field_reaches()` and the flock's own field sum over. A
 ## value, so the layer asks it once per event per redraw and allocates nothing.
 func field_rings() -> Vector2:
-	var outer := _flock_outer_radius() if not birds().is_empty() else def.heard_within()
-	return Vector2(def.core_within(), outer)
+	var outer := _flock_outer_radius() if not birds().is_empty() else _def.heard_within()
+	return Vector2(_def.core_within(), outer)
 
 ## Whether its chase ended because she shook it off rather than because the clock ran out
-## (`gave_up`).
+## (`_gave_up`).
 func has_given_up() -> bool:
-	return gave_up
+	return _gave_up
 
 ## Whether it holds her when she comes to it (`EventDef.detains_her()`): a chatting mother's
 ## conversation, a door's hut or post.
 func detains_her() -> bool:
-	return def.detains_her()
+	return _def.detains_her()
 
 ## How far from its centre her own centre has to come for a hold to begin
 ## (`EventDef.detain_distance()`).
 func detain_distance() -> float:
-	return def.detain_distance()
+	return _def.detain_distance()
 
 ## How long a hold of hers lasts, in seconds (`EventDef.detains_for()`).
 func detains_for() -> float:
-	return def.detains_for()
+	return _def.detains_for()
 
 ## Whether it is a door's hut or post, armed again once she has been let out and has walked away
 ## (`EventDef.detains_again()`).
 func detains_again() -> bool:
-	return def.detains_again()
+	return _def.detains_again()
 
 ## Whether it is a door's boom, solid only while lowered (`EventDef.is_a_boom()`).
 func is_a_boom() -> bool:
-	return def.is_a_boom()
+	return _def.is_a_boom()
 
 ## How far round its centre its body stops her (`EventDef.solid_reach()`): where her centre comes
 ## to rest against it, which is the reach a door's guard steps out at and she is set down past.
 func solid_reach() -> float:
-	return def.solid_reach()
+	return _def.solid_reach()
 
 ## **Whether it is a place that ends her day and stays where it stands**: not gone, its row ends the
 ## day (`EventDef.ends_the_day()`) and does not move (`EventDef.moves()`). A guard over a mark, an
 ## idling van, a reversing lorry: a hazard a route can go round once and stay clear of, where a
 ## mover is somewhere else by the time the route gets there.
 func is_a_standing_lethal_place() -> bool:
-	return not is_gone() and def.ends_the_day() and not def.moves()
+	return not is_gone() and _def.ends_the_day() and not _def.moves()
 
 ## How far from its centre entering it ends her day (`EventDef.lethal_reach()`), or 0 for one that
 ## does not.
 func lethal_reach() -> float:
-	return def.lethal_reach()
+	return _def.lethal_reach()
 
 ## Whether its body is one the map records for the whole day (`EventDef.stands_as_a_fixed_body()`):
 ## standing, solid, and no door's.
 func stands_as_a_fixed_body() -> bool:
-	return def.stands_as_a_fixed_body()
+	return _def.stands_as_a_fixed_body()
 
 ## **Whether `point` is inside its core**: within its row's core (`EventDef.core_within()`) of where
 ## it stands, a disc about its centre and not the shape its field is priced in (`field_reaches()`).
 ## Day 6's note is delivered the moment she is inside the man's core.
 func core_reaches(point: Vector2) -> bool:
-	return global_position.distance_to(point) <= def.core_within()
+	return global_position.distance_to(point) <= _def.core_within()
 
 ## Whether several of it count as the strongest one only (`EventDef.counts_as_one_barrier()`): the
 ## pieces of a street being held.
 func counts_as_one_barrier() -> bool:
-	return def.counts_as_one_barrier()
+	return _def.counts_as_one_barrier()
 
 ## This event as a thing that charges the baby (`EventExcitement`).
 func source() -> EventExcitement:
@@ -2367,15 +2353,15 @@ func is_drawn_as_a_pelican() -> bool:
 func where_its_placards_point() -> Vector2:
 	return _surroundings.where_protests_point()
 
-## The route it walks, in world space; empty, or one point, for one that stands (`path`), as a
+## The route it walks, in world space; empty, or one point, for one that stands (`_path`), as a
 ## plan's `walks()` answers.
 func walks() -> PackedVector2Array:
-	return path
+	return _path
 
 ## The beat it paces (`EventDef.paces_a_beat()`), in world space: its route for one that walks to
 ## and fro along it, empty for everything else, which has no beat to stand beside.
 func beat() -> PackedVector2Array:
-	return path if def.paces_a_beat() else PackedVector2Array()
+	return _path if _def.paces_a_beat() else PackedVector2Array()
 
 ## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`), solid and silent.
 func is_only_its_barrier() -> bool:

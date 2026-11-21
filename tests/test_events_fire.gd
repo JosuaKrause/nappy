@@ -295,7 +295,7 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 ##
 ## Four things are checked and every one of them was wrong before the flag existed. It **stops**
 ## where the route ended rather than driving on out of sight. It is **not over**: it still emits,
-## which is the entire cost the player asked for, where `is_leaving` would have silenced it. It
+## which is the entire cost the player asked for, where `is_on_its_way_out()` would have silenced it. It
 ## **answers zero for its travel**, which is what the screen-edge badge reads as a closing speed.
 ## And the distance it has covered **stops growing**, because the gait is driven by distance and a
 ## parked engine would otherwise bob at the kerb for ever.
@@ -309,8 +309,8 @@ func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, kerb]))
 	# Past the end of a two-second route by a good margin, and then a while longer.
 	_advance(instance, 4.0)
-	t.check(instance.is_parked, "it parks when its route runs out")
-	t.check(not instance.is_leaving and not instance.is_finished,
+	t.check(instance.has_parked(), "it parks when its route runs out")
+	t.check(not instance.is_on_its_way_out() and not instance.is_gone(),
 			"and parking is not an ending: it has neither left nor finished")
 	t.close_to(instance.global_position.distance_to(kerb), 0.0,
 			"it is standing at the end of its route, the near kerb across from the fire", 1.0)
@@ -324,7 +324,7 @@ func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 	t.close_to(instance.path_travelled(), travelled,
 			"and ten seconds later it has covered no more ground, so the gait it is drawn with "
 			+ "has stopped too", 0.001)
-	t.check(instance.is_parked and not instance.is_finished,
+	t.check(instance.has_parked() and not instance.is_gone(),
 			"and it is still standing there, for the rest of the day")
 	instance.free()
 
@@ -453,7 +453,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 			instance_where.tell(at)
 			instance.step(STEP)
 			closest = minf(closest, instance.global_position.distance_to(at))
-			if instance.is_finished:
+			if instance.is_gone():
 				break
 		t.check(closest <= def.heard_within(),
 				"'%s' actually meets the rig (closest %.0fpx of a %.0fpx reach)"

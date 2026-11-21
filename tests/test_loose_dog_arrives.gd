@@ -141,7 +141,7 @@ func _meet_and_turn(t: TestRunner, speed: float) -> Dictionary:
 			_rig.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 			_rig.global_position += _rig.velocity * step
 			for instance in _events.instances():
-				if instance.def.id == "loose_dog" and not before.has(instance):
+				if instance.row_id() == "loose_dog" and not before.has(instance):
 					seen["dog"] = instance
 					seen["sent"] = true
 			return
@@ -150,7 +150,7 @@ func _meet_and_turn(t: TestRunner, speed: float) -> Dictionary:
 		if seen["finished"]:
 			return
 		var dog: EventInstance = seen["dog"]
-		if not is_instance_valid(dog) or dog.is_finished:
+		if not is_instance_valid(dog) or dog.is_gone():
 			seen["finished"] = true
 			return
 		seen["closest"] = minf(seen["closest"], dog.global_position.distance_to(_rig.global_position))
@@ -168,7 +168,7 @@ func _meet_and_turn(t: TestRunner, speed: float) -> Dictionary:
 ## Lets real physics ticks pass with her running up at `speed`; when `dog` is over, when and how far
 ## from her. The manager steps the dog in its own ticks.
 func _run_away(t: TestRunner, dog: EventInstance, speed: float) -> Dictionary:
-	var route_end := dog.path[dog.path.size() - 1]
+	var route_end := dog.walks()[dog.walks().size() - 1]
 	var step := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
 	var seen := {"over_at": INF, "gap": INF, "from_end": INF, "dog": dog, "left": false}
 	var each := func(n: int) -> void:
@@ -177,9 +177,9 @@ func _run_away(t: TestRunner, dog: EventInstance, speed: float) -> Dictionary:
 		_rig.velocity = Vector2.UP * speed
 		_rig.global_position += _rig.velocity * step
 		var the_dog: EventInstance = seen["dog"]
-		if is_instance_valid(the_dog) and the_dog.is_leaving:
+		if is_instance_valid(the_dog) and the_dog.is_on_its_way_out():
 			seen["left"] = true
-		if not is_instance_valid(the_dog) or the_dog.is_finished:
+		if not is_instance_valid(the_dog) or the_dog.is_gone():
 			seen["over_at"] = (n - 1) * step
 			return
 		seen["gap"] = the_dog.global_position.distance_to(_rig.global_position)

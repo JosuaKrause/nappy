@@ -94,7 +94,7 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t: TestRunner) -> voi
 	var noticed := guard.save().noticed_at()
 	t.check(guard.is_telegraphing() and noticed != INF, "set on her, the guard warns her")
 	events.move_extra(guard, at + Vector2(64.0, 0.0))
-	t.check(is_instance_valid(guard) and not guard.is_finished
+	t.check(is_instance_valid(guard) and not guard.is_gone()
 			and guard.global_position.is_equal_approx(at + Vector2(64.0, 0.0))
 			and guard.is_telegraphing() and guard.save().noticed_at() == noticed
 			and guard.is_standing_for_its_notice(),
@@ -102,10 +102,10 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t: TestRunner) -> voi
 			% [noticed, guard.save().noticed_at()])
 	var walking := events.spawn_extra(EventCatalogue.task_guard(), at)
 	walking.leave_for_a_completed_task()
-	t.check(walking.is_leaving and walking.is_waiting(),
+	t.check(walking.is_on_its_way_out() and walking.is_waiting(),
 			"a guard who left before he noticed her still answers waiting")
 	walking.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
-	t.check(walking.is_leaving and not walking.is_telegraphing(),
+	t.check(walking.is_on_its_way_out() and not walking.is_telegraphing(),
 			"and set on her, he walks on rather than warning her")
 	for instance: EventInstance in [guard, walking]:
 		events.retire(instance)
@@ -129,7 +129,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 			"the lesson's dog is a row of its own, drawn and chasing as the dog does")
 	t.check(first.logged_name() == "charging_dog_tutorial" and second.logged_name() == "charging_dog",
 			"and seen apart (%s, %s)" % [first.logged_name(), second.logged_name()])
-	t.check(EventCatalogue.lesson_of(robber.def) == robber.def,
+	t.check(EventCatalogue.lesson_of(robber.row()) == robber.row(),
 			"no other row has a lesson's row of its own")
 	for instance: EventInstance in [robber, first, second]:
 		instance.queue_free()
@@ -326,7 +326,7 @@ func _test_day_populates_the_manager(t: TestRunner) -> void:
 	t.check(RunCity.events(_city).active_count() > 0, "starting a day puts events in the world")
 	for instance in RunCity.events(_city).instances():
 		t.check(is_instance_valid(instance), "every tracked instance is a live node")
-		t.check(instance.def != null, "every tracked instance has a def")
+		t.check(instance.row() != null, "every tracked instance has a def")
 
 ## Before a day there is no plan to count, so the run log's `events:` line says none; once a day is
 ## planned it names each row the plan holds.
@@ -372,7 +372,7 @@ func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 	# One that leaves nothing behind and runs out on its own, stepped the way the manager steps it.
 	var victim: EventInstance = null
 	for instance in RunCity.events(_city).instances():
-		if instance.def.aftermath.on_finish == "" and _run_to_its_end(instance):
+		if instance.leaves_behind() == "" and _run_to_its_end(instance):
 			victim = instance
 			break
 	t.check(victim != null, "there is an event that leaves nothing behind and runs out")
@@ -387,10 +387,10 @@ func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 ## whether it did within an hour of them.
 func _run_to_its_end(instance: EventInstance) -> bool:
 	for _second in 3600:
-		if instance.is_finished:
+		if instance.is_gone():
 			return true
 		instance.step(1.0)
-	return instance.is_finished
+	return instance.is_gone()
 
 ## The bug this exists for: one event finishing and spawning one successor leaves the list
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
@@ -413,7 +413,7 @@ func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	var crater: EventInstance = null
 	for instance in RunCity.events(_city).instances():
 		t.check(is_instance_valid(instance), "no freed node survives a successor swap")
-		if instance.def.id == "impact_crater":
+		if instance.row_id() == "impact_crater":
 			crater = instance
 	t.check(crater != null, "the burst leaves a crater behind it")
 	if crater:
@@ -743,7 +743,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 			if seen["warned_at"] < 0 and events.pending_warnings().size() > warnings_before:
 				seen["warned_at"] = seen["tick"]
 			for instance in events.instances():
-				if instance.def.id == def.id and not before.has(instance):
+				if instance.row_id() == def.id and not before.has(instance):
 					seen["arrived"] = instance
 					seen["arrived_at"] = seen["tick"]
 					seen["warnings_at_arrival"] = events.pending_warnings().size()

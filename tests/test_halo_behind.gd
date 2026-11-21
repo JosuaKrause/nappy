@@ -29,7 +29,7 @@ func _test_the_rim_is_painted_before_the_scene(t: TestRunner) -> void:
 					.drawn_from(atlas))
 		t.add_child(instance)
 		await t.get_tree().process_frame
-		instance.step(instance.def.telegraph_time + 0.01)
+		instance.step(instance.telegraphs_for() + 0.01)
 		t.check(instance.runs_vertically() == vertical,
 				"the crash runs %s the screen on its street" % ("down" if vertical else "across"))
 		var first := _first_slice(instance)
@@ -62,7 +62,7 @@ func _test_the_rim_is_given_back_when_the_slices_go(t: TestRunner) -> void:
 			EventSurroundings.new().drawn_from(atlas))
 	t.add_child(instance)
 	await t.get_tree().process_frame
-	instance.step(instance.def.telegraph_time + 0.01)
+	instance.step(instance.telegraphs_for() + 0.01)
 	instance.source().rim().set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var rim := instance.rim()
 	t.check(rim != null and rim.get_parent() is SpreadLook.Slice,

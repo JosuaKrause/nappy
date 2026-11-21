@@ -253,7 +253,7 @@ static func _controls_event_name(joystick: bool, by_key: bool) -> String:
 		return "nappy-controls-keys"
 	return "nappy-controls-joystick" if joystick else "nappy-controls-tap"
 
-## `EventBus.player_detained`'s own `id` (`nearest.def.id` in
+## `EventBus.player_detained`'s own `id` (`nearest.row_id()` in
 ## `CheckpointController.check_detentions()`), named the way the day brief already tells the two
 ## kinds of stop apart: `chatting_mother` is a `chat`, and every other id that can reach here
 ## (`checkpoint_hut`, `checkpoint_post` — `checkpoint_gate`'s own boom never detains, see

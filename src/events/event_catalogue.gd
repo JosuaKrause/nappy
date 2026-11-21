@@ -993,7 +993,7 @@ static func _fire_truck() -> EventDef:
 	# to bumper) and 26px wide (`fire_engine_front.svg`, x 4 to 30, flank to flank), a capsule laid
 	# along its heading, the patrol car's own construction, which `vehicle` makes the body. It is
 	# lethal only in front of it while it drives its route, and solid and harmless once it has
-	# parked at the kerb (`is_parked` is not driving).
+	# parked at the kerb (`has_parked()` is not driving).
 	def.shape = GroundShape.segment(16.0, 13.0)
 	def.vehicle = VehicleSpec.new()
 	# Its field stays a point's, priced from its centre: the body is not a reason for the street

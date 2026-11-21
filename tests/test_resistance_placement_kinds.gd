@@ -89,7 +89,7 @@ func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void
 	t.check(director.current_step() != null and director.current_step().index == 6,
 			"%s: touching day 8's mark activates the burnt-shell perform" % label)
 	var shell := director.rider()
-	t.check(shell != null and shell.def.id == "burnt_shell",
+	t.check(shell != null and shell.row_id() == "burnt_shell",
 			"%s: riding a burnt_shell instance" % label)
 	if shell == null:
 		director.free()
@@ -111,7 +111,7 @@ func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void
 	RunCity.events(_city).stream_around(scar_at)
 	var shells := 0
 	for instance in RunCity.events(_city).instances():
-		if instance.def.id == "burnt_shell" \
+		if instance.row_id() == "burnt_shell" \
 				and instance.global_position.distance_to(scar_at) < 1.0:
 			shells += 1
 	t.check(shells == 1, "%s: one shell at the scar, not two (%d)" % [label, shells])
@@ -267,7 +267,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) 
 	t.check(director.current_step() != null and director.current_step().index == 6,
 			"touching day 8's mark still activates the burnt-shell perform")
 	var rider := director.rider()
-	t.check(rider != null and rider.def.id == "burnt_shell",
+	t.check(rider != null and rider.row_id() == "burnt_shell",
 			"riding a burnt_shell instance placed for the task")
 	t.check(director.contact_position() != Vector2.INF, "somewhere reachable")
 	if rider == null:
@@ -498,7 +498,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 	t.check(director.contact() != mark_contact, "the perform's own contact is a fresh one")
 
 	for guard in guards:
-		t.check(not guard.is_finished and is_instance_valid(guard),
+		t.check(not guard.is_gone() and is_instance_valid(guard),
 				"the mark's own guard stays too, not retired for the door")
 	t.check(_live(EventCatalogue.task_guard().id).is_empty(),
 			"the door stands no guard of its own: its trap comes to her once she crosses")
@@ -875,7 +875,7 @@ func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 		if neighbor:
 			t.check(neighbor.global_position.distance_to(door) < 2.0 * Tuning.TILE_SIZE,
 					"day %d: out of her own door, beside her" % day)
-			t.check(neighbor.path.size() >= 2 and neighbor.path[neighbor.path.size() - 1]
+			t.check(neighbor.walks().size() >= 2 and neighbor.walks()[neighbor.walks().size() - 1]
 					.distance_to(door) > 4.0 * Tuning.TILE_SIZE,
 					"day %d: and walking off along her street" % day)
 			t.check(director.red_arrow_target() == Vector2.INF,
@@ -908,12 +908,12 @@ func _test_the_morning_neighbors_way_is_over_drawn_ground(t: TestRunner) -> void
 	var before := _live("neighbor")
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var neighbor := _new_one("neighbor", before)
-	t.check(neighbor != null and neighbor.path.size() == 2,
+	t.check(neighbor != null and neighbor.walks().size() == 2,
 			"day %d: the neighbor leaves for work along her street" % day)
 	if neighbor:
 		var units := RunCity.events(_city).walk_events().unit_draw().units()
-		var from := neighbor.path[0]
-		var to := neighbor.path[1]
+		var from := neighbor.walks()[0]
+		var to := neighbor.walks()[1]
 		var undrawn := 0
 		var along := 0.0
 		while along <= from.distance_to(to):
@@ -942,26 +942,26 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t: TestRunner) -> void
 	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.NEIGHBOR,
 			"touching it sends her to the neighbor")
 	var neighbor := director.rider()
-	t.check(neighbor != null and neighbor.def.id == "neighbor" and neighbor.def.mobile,
+	t.check(neighbor != null and neighbor.row_id() == "neighbor" and neighbor.row().moves(),
 			"who is out in the city, walking")
-	t.check(neighbor != null and neighbor.def.shape != null,
+	t.check(neighbor != null and neighbor.ground_shape() != null,
 			"with the row's own shape, which a copy has to carry by hand")
 	if neighbor:
 		var door := _city.map.doorstep_world_position()
-		t.check(neighbor.path[neighbor.path.size() - 1].distance_to(door) < 1.0,
+		t.check(neighbor.walks()[neighbor.walks().size() - 1].distance_to(door) < 1.0,
 				"home, to her own door")
 		var length := 0.0
-		for i in range(1, neighbor.path.size()):
-			length += neighbor.path[i - 1].distance_to(neighbor.path[i])
-		var seconds := length / neighbor.def.speed
+		for i in range(1, neighbor.walks().size()):
+			length += neighbor.walks()[i - 1].distance_to(neighbor.walks()[i])
+		var seconds := length / neighbor.row().speed
 		t.check(absf(seconds - ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS)
 				<= (ResistanceDirector.NEIGHBOR_WALK_BAND_TILES + 2) * Tuning.TILE_SIZE
-				/ neighbor.def.speed,
+				/ neighbor.row().speed,
 				"a walk of about %.0fs (%.0fs)" % [ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS, seconds])
 		t.check(director.red_arrow_target() == director.contact_position(),
 				"and the red arrow points at them")
 	director.contact().complete_now()
-	t.check(neighbor != null and neighbor.is_leaving, "warned, the neighbor runs")
+	t.check(neighbor != null and neighbor.is_on_its_way_out(), "warned, the neighbor runs")
 	t.check(task != null and task.index in run.resistance().completed_steps(),
 			"and the task counts")
 	run.header().set_day(ResistanceSteps.NEIGHBOR_DAY + 1)
@@ -1012,7 +1012,7 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 		director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
 		_read_the_mark(director)
 		var neighbor := director.rider()
-		t.check(neighbor != null and neighbor.def.id == "neighbor",
+		t.check(neighbor != null and neighbor.row_id() == "neighbor",
 				"seed %d: day 10's neighbor is walking home" % seed_value)
 		if neighbor == null:
 			director.free()
@@ -1022,13 +1022,13 @@ func _test_the_neighbors_walk_home_is_over_drawn_ground(t: TestRunner) -> void:
 		var stride := float(WayConfirmation.STEP * Tuning.TILE_SIZE)
 		var undrawn := 0
 		var shut := 0
-		for k in neighbor.path.size():
-			var length := 0.0 if k + 1 == neighbor.path.size() \
-					else neighbor.path[k].distance_to(neighbor.path[k + 1])
+		for k in neighbor.walks().size():
+			var length := 0.0 if k + 1 == neighbor.walks().size() \
+					else neighbor.walks()[k].distance_to(neighbor.walks()[k + 1])
 			var along := 0.0
 			while along <= length:
-				var at := neighbor.path[k] if along == 0.0 \
-						else neighbor.path[k].move_toward(neighbor.path[k + 1], along)
+				var at := neighbor.walks()[k] if along == 0.0 \
+						else neighbor.walks()[k].move_toward(neighbor.walks()[k + 1], along)
 				if is_zero_approx(fmod(along, stride)):
 					undrawn += units.undrawn_within(at, Tuning.EVENT_DRAW_AHEAD).size()
 				if reach.is_shut(_city.map.world_to_tile(at)):
@@ -1064,16 +1064,16 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) 
 	var door_tile := _city.map.world_to_tile(door)
 	var raid := _raid_since(before)
 	for instance in raid:
-		if instance.def.id == "night_raid":
+		if instance.row_id() == "night_raid":
 			vans += 1
-			t.check(instance.def.pursuit == null, "a van at her door does not hunt")
-			for tile in EventSpawner.obstructed_footprint(_city.map, instance.def,
+			t.check(not instance.pursues(), "a van at her door does not hunt")
+			for tile in EventSpawner.obstructed_footprint(_city.map, instance.row(),
 					instance.global_position, Vector2.RIGHT):
 				t.check(tile.y > door_tile.y + Tuning.SIDEWALK_WIDTH - 1,
 						"a van's body is off her own sidewalk (%s)" % tile)
-		elif instance.def.id == "police_patrol":
+		elif instance.row_id() == "police_patrol":
 			patrols += 1
-			t.check(instance.def.shape != null, "the patrol car keeps its shape")
+			t.check(instance.ground_shape() != null, "the patrol car keeps its shape")
 	t.check(vans == 2 and patrols == 1, "two vans and a patrol at her building (%d, %d)"
 			% [vans, patrols])
 	for instance in raid:
@@ -1266,7 +1266,7 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 		for plan in RunCity.events(_city).plans():
 			if plan.def.id == "market_stall" and frontage.has_point(plan.position):
 				var live := RunCity.events(_city).event_of(plan)
-				t.check(plan.spent or (live and live.is_finished),
+				t.check(plan.spent or (live and live.is_gone()),
 						"no market stall of it is left in the day")
 		state.begin_day(_city.map.plans_by_block(), ResistanceHappenings.MARKET_DAY + 1)
 		t.check(state.purpose_of(_city.map.plans_by_block(), block)
@@ -1366,16 +1366,16 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	var bottom := map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	for i in trucks.size():
 		var truck := trucks[i]
-		t.check(truck.def.id == "military_convoy" and truck.path.size() == 2,
+		t.check(truck.row_id() == "military_convoy" and truck.walks().size() == 2,
 				"each is the catalogue's own truck on a path")
-		t.check(CrowdLanes.corridor_at(truck.path[0].x) == map.main_road
-				and is_equal_approx(truck.path[0].x, truck.path[1].x),
+		t.check(CrowdLanes.corridor_at(truck.walks()[0].x) == map.main_road
+				and is_equal_approx(truck.walks()[0].x, truck.walks()[1].x),
 				"in one lane of the main road")
-		t.check(truck.path[0].distance_to(her) >= minf(lead, edge) - 1.0,
-				"far enough up the road (%.0fpx)" % truck.path[0].distance_to(her))
-		t.check(truck.def.aftermath.on_finish == "", "and leaves nothing behind it")
-		t.check(is_equal_approx(truck.path[1].y, top) or is_equal_approx(truck.path[1].y, bottom),
-				"driving on to the end of the road (%.0f)" % truck.path[1].y)
+		t.check(truck.walks()[0].distance_to(her) >= minf(lead, edge) - 1.0,
+				"far enough up the road (%.0fpx)" % truck.walks()[0].distance_to(her))
+		t.check(truck.leaves_behind() == "", "and leaves nothing behind it")
+		t.check(is_equal_approx(truck.walks()[1].y, top) or is_equal_approx(truck.walks()[1].y, bottom),
+				"driving on to the end of the road (%.0f)" % truck.walks()[1].y)
 	# **Where the front truck is created and how long after the badge it can reach her, on the
 	# real siting.** Its forward reach (395px) is deeper than the view is from her, so standing
 	# by its road she may be inside its field from its first frame: what she is owed is the
@@ -1384,7 +1384,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	if warning and not trucks.is_empty():
 		var front := trucks[0]
 		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her, null),
-				EventFootprints.footprint_of(front.def), her, front.global_position)
+				EventFootprints.footprint_of(front.row()), her, front.global_position)
 				and absf(front.global_position.x - warning.points_at().x) < 1.0
 				and signf(front.global_position.y - her.y) == signf(warning.points_at().y - her.y),
 				"its front truck is created just out of sight, up the lane the badge pointed")
@@ -1393,10 +1393,10 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 			RunCity.events(_city).world.where_she_is().tell(her)
 			front.step(STEP)
 			to_reach += STEP
-		t.check(warning.shown_for() + to_reach + 0.001 >= warning.def.minimum_telegraph(),
+		t.check(warning.shown_for() + to_reach + 0.001 >= warning.row().minimum_telegraph(),
 				("and from the badge to the earliest its field reaches her is %.2fs, at least "
 				% (warning.shown_for() + to_reach))
-				+ "the %.2fs it is owed" % warning.def.minimum_telegraph())
+				+ "the %.2fs it is owed" % warning.row().minimum_telegraph())
 	happenings.tick(STEP, her, Vector2.ZERO)
 	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
 	for truck in trucks:

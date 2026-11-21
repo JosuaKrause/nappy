@@ -142,7 +142,7 @@ class Watched:
 
 	func _init(of: EventInstance) -> void:
 		instance = of
-		row = of.def.id
+		row = of.row_id()
 		axis = of.facing_now()
 		last_axis = axis
 
@@ -344,7 +344,7 @@ func _watch(t: TestRunner, events: EventManager, map: CityMap, spec: DaySpec, ro
 		_rig.global_position = her[0]
 		var view := VisibleView.around(her[0], null)
 		for instance in events.instances():
-			if instance.def.id == row and not _has(watched, instance):
+			if instance.row_id() == row and not _has(watched, instance):
 				watched.append(Watched.new(instance))
 		var all_gone := true
 		for car in watched:
@@ -366,7 +366,7 @@ func _watch(t: TestRunner, events: EventManager, map: CityMap, spec: DaySpec, ro
 			var seen := view.sees_any(Rect2(place - CAR_BOX * 0.5, CAR_BOX))
 			if seen:
 				_look_at(car, map, place, step)
-			if not car.instance.is_leaving:
+			if not car.instance.is_on_its_way_out():
 				for plan in plans:
 					if plan.keeps_its_field_clear() \
 							and plan.distance_from(place) < plan.row().field_reach() - 1.0:
@@ -425,7 +425,7 @@ static func _after(map: CityMap, on_foot: Mover, at: Vector2, leader: Watched,
 ## What `car` does on a tick it is in her view, at `place`.
 static func _look_at(car: Watched, map: CityMap, place: Vector2, step: float) -> void:
 	car.seen_for += step
-	if car.instance.is_leaving:
+	if car.instance.is_on_its_way_out():
 		car.seen_leaving_for += step
 	var in_a_box := CrowdLanes.corridor_at(place.x) >= 0 and CrowdLanes.corridor_at(place.y) >= 0
 	if car.in_a_box and not in_a_box:
@@ -436,7 +436,7 @@ static func _look_at(car: Watched, map: CityMap, place: Vector2, step: float) ->
 	var axis := car.instance.facing_now()
 	if not car.last_axis.is_zero_approx() and axis.dot(car.last_axis) < 0.0:
 		car.fault("turned on the spot at %s" % map.world_to_tile(place))
-	if absf(axis.dot(car.axis)) < 0.5 and not car.instance.is_leaving:
+	if absf(axis.dot(car.axis)) < 0.5 and not car.instance.is_on_its_way_out():
 		car.turned_a_corner_live = true
 	for along: float in [-HALF_LENGTH, 0.0, HALF_LENGTH]:
 		var under := map.world_to_tile(place + axis * along)
@@ -447,7 +447,7 @@ static func _look_at(car: Watched, map: CityMap, place: Vector2, step: float) ->
 		car.fault("off the carriageway at %s" % tile)
 	if car.last != Vector2.INF and place.distance_to(car.last) < 0.01:
 		car.still += step
-		if car.still > STANDS_FOR and car.instance.is_leaving:
+		if car.still > STANDS_FOR and car.instance.is_on_its_way_out():
 			car.fault("stood leaving at %s" % tile)
 	else:
 		car.still = 0.0
@@ -460,7 +460,7 @@ static func _has(watched: Array[Watched], instance: EventInstance) -> bool:
 
 ## Whether `car` is still in the manager's world.
 static func _is_live(events: EventManager, car: EventInstance) -> bool:
-	return is_instance_valid(car) and not car.is_finished and events.instances().has(car)
+	return is_instance_valid(car) and not car.is_gone() and events.instances().has(car)
 
 # ------------------------------------------------------------------ the places ---
 

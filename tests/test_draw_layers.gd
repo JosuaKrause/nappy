@@ -312,9 +312,9 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 						covered += entry.band.size.y if vertical else entry.band.size.x
 						bands += 1
 				t.check(bands == slices.size()
-						and is_equal_approx(covered, instance.def.obstructs_within() * 2.0),
+						and is_equal_approx(covered, instance.row().obstructs_within() * 2.0),
 						"%s: its %d bands, one a slice, cover its run, %.1f of %.1f"
-						% [what, bands, covered, instance.def.obstructs_within() * 2.0])
+						% [what, bands, covered, instance.row().obstructs_within() * 2.0])
 				if vertical:
 					var rising := true
 					for i in range(1, slices.size()):

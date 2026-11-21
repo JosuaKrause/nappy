@@ -139,7 +139,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 	var centre := city.map.tile_rect_to_world(street.tile_rect()).get_center()
 	var stood: Array[Vector2] = []
 	for instance in RunCity.events(city).instances():
-		if instance.def.id == "cafe_tables":
+		if instance.row_id() == "cafe_tables":
 			stood.append(_along_and_side(street, centre, instance.position))
 	var where: Array[Vector2] = []
 	for body in expected.bodies:

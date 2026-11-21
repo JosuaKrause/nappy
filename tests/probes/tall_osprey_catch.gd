@@ -111,7 +111,7 @@ func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 	var since_notice := INF
 	var since_lunge := INF
 	var caught := false
-	while elapsed < 14.0 and not instance.is_leaving and not instance.is_finished and not caught:
+	while elapsed < 14.0 and not instance.is_on_its_way_out() and not instance.is_gone() and not caught:
 		if not instance.is_waiting() and since_notice == INF:
 			since_notice = 0.0
 		if not instance.is_waiting() and not instance.is_telegraphing() and since_lunge == INF:

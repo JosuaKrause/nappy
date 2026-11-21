@@ -430,7 +430,7 @@ static func _block_every_body(t: TestRunner, map: CityMap, placements: Array[Eve
 	for placement: EventPlan in placements:
 		var standing := stage.stand(placement)
 		for instance: EventInstance in [standing, stage.successor_of(standing)]:
-			if instance == null or instance.def.mobile or instance.def.obstructs_within() <= 0.0:
+			if instance == null or instance.row().moves() or instance.row().obstructs_within() <= 0.0:
 				continue
 			count += 1
 			var centres := instance.solid_part_centres()
@@ -552,7 +552,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 			waited += 1
 		var charged := false
 		var frames := 0
-		while not guard.gave_up and frames < int(10.0 / step):
+		while not guard.has_given_up() and frames < int(10.0 / step):
 			told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 			guard.step(step)
 			charged = charged or guard.is_chasing()
@@ -562,15 +562,15 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 			frames += 1
 		var her := told.at()
 		told.tell(her)
-		var leaving := guard.is_leaving and guard.barrier_post.is_spent()
+		var leaving := guard.is_on_its_way_out() and guard.barrier_post.is_spent()
 		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		frames = 0
-		while guard.is_leaving and frames < int(30.0 / step):
+		while guard.is_on_its_way_out() and frames < int(30.0 / step):
 			told.tell(her)
 			guard.step(step)
 			strongest = maxf(strongest, guard.source().contribution_at(beside))
 			frames += 1
-		var gone := guard.barrier_post.is_spent() and not guard.is_leaving and guard.is_solid()
+		var gone := guard.barrier_post.is_spent() and not guard.is_on_its_way_out() and guard.is_solid()
 		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		t.check(warned and charged and leaving and gone,
 				"%s guard warns, charges, is shaken off and leaves the band standing solid" % name)
@@ -617,10 +617,10 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 		waited += 1
 	var posted_through_the_chase := true
 	var frames := 0
-	while not guard.is_leaving and frames < int(10.0 / step):
+	while not guard.is_on_its_way_out() and frames < int(10.0 / step):
 		told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(step)
-		if not guard.is_leaving:
+		if not guard.is_on_its_way_out():
 			posted_through_the_chase = posted_through_the_chase \
 					and not guard.barrier_post.sides_still_posted().is_empty()
 		frames += 1
@@ -628,7 +628,7 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	told.tell(her)
 	t.check(posted_first and posted_through_the_chase,
 			"the far guard stands at his post until his partner leaves")
-	t.check(guard.is_leaving, "the guard on her side was shaken off and walks away")
+	t.check(guard.is_on_its_way_out(), "the guard on her side was shaken off and walks away")
 	var set_off := guard.barrier_post.where_the_far_guard_walks()
 	t.check(set_off != Vector2.INF and guard.barrier_post.sides_still_posted().is_empty(),
 			"the far guard sets off from his post the frame his partner starts to leave")
@@ -701,7 +701,7 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 			var guard: EventInstance = made[1][0]
 			var band := guard.body_position()
 			var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
-			var her := band + toward * (guard.def.notice_within() + 80.0)
+			var her := band + toward * (guard.row().notice_within() + 80.0)
 			var where := "band %s from %d°" % [map.world_to_tile(band_plan.position),
 					bearing * 360 / 16]
 			var caught := false
@@ -722,7 +722,7 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 				her += toward * Tuning.RUN_SPEED * step
 				caught = RoadblockRig.tick(told, made[1], her, true)
 				frames += 1
-			if caught or not guard.is_leaving:
+			if caught or not guard.is_on_its_way_out():
 				stage.close()
 				continue
 			walks += 1
@@ -755,7 +755,7 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 		frames += 1
 	t.check(not guard.is_waiting(), "the band at (73,50) notices her standing at (70,50)")
 	guard.give_up_the_chase()
-	t.check(guard.is_leaving, "and its guard gives up and walks away")
+	t.check(guard.is_on_its_way_out(), "and its guard gives up and walks away")
 	t.check(_watch_them_walk_off(t, map, told, made[1], her,
 			"the band at (73,50), with her at (70,50)"),
 			"and the band at (73,50), with her at (70,50), sent its far guard off")
@@ -770,12 +770,12 @@ func _watch_them_walk_off(t: TestRunner, map: CityMap, told: WhereSheIs,
 	var guard := instances[0]
 	var far_walked := false
 	var frames := 0
-	while (guard.is_leaving or guard.barrier_post.where_the_far_guard_walks() != Vector2.INF) \
+	while (guard.is_on_its_way_out() or guard.barrier_post.where_the_far_guard_walks() != Vector2.INF) \
 			and frames < int(30.0 / RoadblockRig.STEP):
 		RoadblockRig.tick(told, instances, her, false)
 		frames += 1
 		var at: Array[Vector2] = []
-		if guard.is_leaving:
+		if guard.is_on_its_way_out():
 			at.append(guard.global_position)
 		if guard.barrier_post.where_the_far_guard_walks() != Vector2.INF:
 			at.append(guard.barrier_post.where_the_far_guard_walks())
@@ -810,7 +810,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	manager.streaming.add(band_plan)
 	manager.streaming.stream_around(band_plan.position)
 	var band := manager.event_of(band_plan)
-	var at: Vector2 = band.global_position + Vector2(0.0, band.def.outer_radius - 20.0)
+	var at: Vector2 = band.global_position + Vector2(0.0, band.heard_within() - 20.0)
 	var first := _stand_her_at(t, manager, at)
 	manager.warnings.warn_about_the_ground_she_is_on()
 	t.check(first.alert_level() == Stroller.Alert.SOON,
@@ -819,18 +819,18 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	# comes back as only the barrier (`EventBarrierPost`), no guard to notice her again.
 	var step := RoadblockRig.STEP
 	var told := manager.world.where_she_is()
-	told.tell(band.global_position + Vector2(0.0, band.def.notice_within() - 10.0))
+	told.tell(band.global_position + Vector2(0.0, band.row().notice_within() - 10.0))
 	band.step(step)
 	var waited := 0
-	while band.is_telegraphing() and waited < int((band.def.pursuit.warns_for + 1.0) / step):
+	while band.is_telegraphing() and waited < int((band.row().pursuit.warns_for + 1.0) / step):
 		band.step(step)
 		waited += 1
 	var frames := 0
-	while not band.gave_up and frames < int(60.0 / step):
+	while not band.has_given_up() and frames < int(60.0 / step):
 		told.tell(band.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		band.step(step)
 		frames += 1
-	t.check(band.gave_up, "the band's guard charges and is shaken off")
+	t.check(band.has_given_up(), "the band's guard charges and is shaken off")
 	manager.streaming.stream_out(band_plan)
 	manager.streaming.stream_in(band_plan)
 	band = manager.event_of(band_plan)
@@ -1071,7 +1071,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t: TestRunner) -> void
 				guard.set_process(true)
 				var band := guard.body_position()
 				var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
-				var her := band + toward * (guard.def.notice_within() + 80.0)
+				var her := band + toward * (guard.row().notice_within() + 80.0)
 				var radius_alone_seen := false
 				var charged := false
 				var warned_here := false
@@ -1085,7 +1085,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t: TestRunner) -> void
 					if guard.is_waiting():
 						her -= toward * Tuning.WALK_SPEED * step
 					var tile := map.world_to_tile(her)
-					var inside := her.distance_to(band) <= guard.def.notice_within()
+					var inside := her.distance_to(band) <= guard.row().notice_within()
 					if not map.in_bounds(tile) or not map.is_walkable(tile):
 						open_walk = open_walk and not inside
 						continue
@@ -1770,17 +1770,17 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	t.check(RunCity.events(city).instances().size() == 1, "the burst is in the world")
 	var live := RunCity.events(city).instances()[0]
 	var steps := 0
-	while not live.is_finished and steps < 400:
+	while not live.is_gone() and steps < 400:
 		live.step(0.05)
 		steps += 1
-	t.check(live.is_finished, "the burst is over after %.1fs" % (steps * 0.05))
+	t.check(live.is_gone(), "the burst is over after %.1fs" % (steps * 0.05))
 	# `EventStreaming.retire_finished()` runs inside the manager's own physics frame, which the city
 	# in the tree is let have.
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
 	var craters := 0
 	for instance in RunCity.events(city).instances():
-		if instance.def.id == crater.id:
+		if instance.row_id() == crater.id:
 			craters += 1
 			t.check(instance.is_solid(), "and the crater it left is solid")
 	t.check(craters == 1, "exactly one crater is left where the burst was")

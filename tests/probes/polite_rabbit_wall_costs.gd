@@ -154,7 +154,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 			var grid := instance.source().wall_grid()
 			var actual := 0.0 if grid != null and grid.wall_between(instance.global_position, here) \
 					else field
-			if instance.def.barrier_structure:
+			if instance.counts_as_one_barrier():
 				charged_barrier = maxf(charged_barrier, actual)
 			else:
 				charged += actual
@@ -162,7 +162,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 				if i != NONE and map.wall_between(instance.global_position, here, _depths[i].x,
 						_depths[i].y):
 					continue
-				if instance.def.barrier_structure:
+				if instance.counts_as_one_barrier():
 					barrier[i] = maxf(barrier[i], field)
 				else:
 					rates[i] += field

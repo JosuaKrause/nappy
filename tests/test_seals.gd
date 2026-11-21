@@ -634,7 +634,7 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 	var vertical := instance.solid_axis() == Vector2.DOWN
 	var across := Vector2.RIGHT if vertical else Vector2.DOWN
 	var along := Vector2.DOWN if vertical else Vector2.RIGHT
-	var reach: float = instance.def.field_reach() + 8.0
+	var reach: float = instance.row().field_reach() + 8.0
 	var walker: Vector2 = instance.global_position + along * offset - across * reach
 	var paid := 0.0
 	var travelled := 0.0

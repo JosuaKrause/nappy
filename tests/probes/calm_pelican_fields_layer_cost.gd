@@ -55,7 +55,7 @@ func run(t: TestRunner) -> void:
 		var started := Time.get_ticks_usec()
 		var built := 0
 		for instance in RunCity.events(city).instances():
-			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
+			for level: float in [instance.core_within(), instance.heard_within()]:
 				var points := GroundShape.field_outline_at(instance.global_position,
 						instance.travel_velocity(), level)
 				var closed := points.duplicate()

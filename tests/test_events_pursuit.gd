@@ -134,7 +134,7 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 			pursuer_where.tell(Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0),
 					Vector2.INF, Rect2(), pursuer_where.is_running())
 			pursuer.step(STEP)
-		t.check(not pursuer.gave_up, "%s needs the full sustained run" % id)
+		t.check(not pursuer.has_given_up(), "%s needs the full sustained run" % id)
 		pursuer_where.tell(pursuer_where.at())
 		pursuer.step(STEP)
 		pursuer_where.tell(pursuer_where.at(), Vector2.INF, Rect2(), true)
@@ -142,12 +142,12 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 			pursuer_where.tell(pursuer_where.at() + Vector2.RIGHT * Tuning.RUN_SPEED * STEP,
 					Vector2.INF, Rect2(), pursuer_where.is_running())
 			pursuer.step(STEP)
-		t.check(not pursuer.gave_up, "%s restarts the shake-off timer after a walk" % id)
+		t.check(not pursuer.has_given_up(), "%s restarts the shake-off timer after a walk" % id)
 		for frame in 3:
 			pursuer_where.tell(pursuer_where.at() + Vector2.RIGHT * Tuning.RUN_SPEED * STEP,
 					Vector2.INF, Rect2(), pursuer_where.is_running())
 			pursuer.step(STEP)
-		t.check(pursuer.gave_up, "%s is shaken off by sustained running while offscreen" % id)
+		t.check(pursuer.has_given_up(), "%s is shaken off by sustained running while offscreen" % id)
 		pursuer.free()
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
@@ -177,7 +177,7 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 	var elapsed := 0.0
 	var since_the_lunge := INF
 	var result := {"caught": false, "closest": INF, "running": 0.0}
-	while elapsed < 14.0 and not instance.is_leaving and not result["caught"]:
+	while elapsed < 14.0 and not instance.is_on_its_way_out() and not result["caught"]:
 		if not instance.is_telegraphing() and not instance.is_waiting() and since_the_lunge == INF:
 			since_the_lunge = 0.0
 		var wanted := -Tuning.WALK_SPEED
@@ -226,7 +226,7 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	var result := {"caught": false, "gave_up": false, "lethal_while_telegraphing": false,
 			"at_the_lunge": INF, "ended_at": INF}
 	var was_telegraphing := true
-	while elapsed < 12.0 and not instance.is_finished and not result["caught"]:
+	while elapsed < 12.0 and not instance.is_gone() and not result["caught"]:
 		her.x += player_speed * STEP
 		instance_where.tell(her, Vector2.INF, Rect2(), instance_where.is_running())
 		# The break-off is a fact about *her* since playtest 14, so a rig that only moves her is
@@ -241,7 +241,7 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 		if instance.is_lethal_at(her):
 			result["caught"] = true
 			result["lethal_while_telegraphing"] = was_telegraphing
-		if instance.gave_up and result["ended_at"] == INF:
+		if instance.has_given_up() and result["ended_at"] == INF:
 			result["gave_up"] = true
 			result["ended_at"] = elapsed
 	if result["ended_at"] == INF:
@@ -663,7 +663,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
 		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
 				Vector2.UP)
-		var further := maxf(0.0, (bike.path[0] - just_out).dot(Vector2.UP))
+		var further := maxf(0.0, (bike.walks()[0] - just_out).dot(Vector2.UP))
 		t.check(into_sight <= further / def.speed + 3.0 * STEP,
 				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
 				% further + "just out of sight (%.2fs after he exists)" % into_sight)
@@ -919,12 +919,12 @@ func _test_a_paced_event_walks_a_beat(t: TestRunner) -> void:
 	_advance(instance, out)
 	t.close_to(instance.position.x, 0.0, "and back again", 8.0)
 	t.check(instance.facing_now().x < 0.0, "facing the other way on the way back")
-	t.check(not instance.is_finished and not instance.is_leaving,
+	t.check(not instance.is_gone() and not instance.is_on_its_way_out(),
 			"a fixture that moves neither finishes nor leaves at the end of its path")
 
 	# And it is still there four beats later, which is most of a day.
 	_advance(instance, out * 8.0)
-	t.check(not instance.is_finished, "and it is still there a day later")
+	t.check(not instance.is_gone(), "and it is still there a day later")
 	instance.free()
 
 ## **A pursuer can be a place before it is a moment.** *(M36, playtest 09: "a robber should increase
@@ -945,7 +945,7 @@ func _test_a_pursuer_can_wait(t: TestRunner) -> void:
 	instance_where.tell(Vector2(def.notice_within() + 40.0, 0.0))
 	_advance(instance, 30.0)
 	t.check(instance.is_waiting(), "he is still standing there half a minute later")
-	t.check(not instance.is_finished, "and his duration has not been running")
+	t.check(not instance.is_gone(), "and his duration has not been running")
 	t.close_to(instance.position.x, 0.0, "he has not moved", 0.5)
 	t.close_to(instance.current_intensity(), def.peak(),
 			"he is loud from the moment she can see him, not damped to a telegraph", 0.05)
@@ -1102,7 +1102,7 @@ func _back_inside_rig(t: TestRunner, def: EventDef) -> Dictionary:
 		instance_where.tell(instance.body_position() + Vector2(0.0, def.notice_within() + off))
 	stand_at.call(-10.0)
 	var elapsed := 0.0
-	while elapsed < def.pursuit.warns_for * 0.75 and not instance.is_finished:
+	while elapsed < def.pursuit.warns_for * 0.75 and not instance.is_gone():
 		instance.step(STEP)
 		if instance.is_telegraphing():
 			elapsed += STEP
@@ -1115,7 +1115,7 @@ func _back_inside_rig(t: TestRunner, def: EventDef) -> Dictionary:
 			break
 	stand_at.call(-10.0)
 	var back := 0.0
-	while back < def.pursuit.warns_for * 3.0 and not instance.is_finished:
+	while back < def.pursuit.warns_for * 3.0 and not instance.is_gone():
 		instance.step(STEP)
 		back += STEP
 		if not instance.is_waiting() and not instance.is_telegraphing():
@@ -1139,7 +1139,7 @@ func _run_inside_the_warning_rig(t: TestRunner, def: EventDef) -> Dictionary:
 	var result := {"stayed_inside": true, "gave_up_warning": false, "charged": false,
 			"caught": false, "ran_for": 0.0, "farthest": 0.0}
 	var elapsed := 0.0
-	while elapsed < 10.0 and not instance.is_finished and not result["caught"]:
+	while elapsed < 10.0 and not instance.is_gone() and not result["caught"]:
 		if noticed_for >= 0.0 and noticed_for < 0.5:
 			speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
 		else:
@@ -1157,7 +1157,7 @@ func _run_inside_the_warning_rig(t: TestRunner, def: EventDef) -> Dictionary:
 		result["farthest"] = maxf(float(result["farthest"]), off)
 		if noticed_for >= 0.0 and off > def.notice_within():
 			result["stayed_inside"] = false
-		if was_telegraphing and (instance.gave_up or instance.is_leaving):
+		if was_telegraphing and (instance.has_given_up() or instance.is_on_its_way_out()):
 			result["gave_up_warning"] = true
 		if was_telegraphing and instance.is_chasing():
 			result["charged"] = true
@@ -1221,7 +1221,7 @@ func _standing_rig(t: TestRunner, def: EventDef, player_speed: float, reaction :
 			"waited_again_at": INF, "moved_after_waiting": 0.0, "after_the_lunge": INF,
 			"from": start if stop_at < 0.0 else stop_at}
 	var noticed := false
-	while elapsed < seconds and not instance.is_finished and not instance.is_leaving \
+	while elapsed < seconds and not instance.is_gone() and not instance.is_on_its_way_out() \
 			and not result["caught"]:
 		if since_the_lunge != INF and since_the_lunge >= reaction:
 			speed = move_toward(speed, then_speed, Tuning.ACCELERATION * STEP)
@@ -1258,7 +1258,7 @@ func _standing_rig(t: TestRunner, def: EventDef, player_speed: float, reaction :
 			result["lethal_while_telegraphing"] = instance.is_telegraphing()
 			if since_the_lunge != INF:
 				result["after_the_lunge"] = since_the_lunge
-	result["gave_up"] = instance.gave_up
+	result["gave_up"] = instance.has_given_up()
 	result["ended_at"] = elapsed
 	result["noticed"] = noticed
 	result["stood"] = noticed and float(result["moved_in_notice"]) < 0.5
@@ -1382,7 +1382,7 @@ func _test_the_robber_does_not_catch_her_through_a_wall(t: TestRunner) -> void:
 	t.check(not instance.is_telegraphing() and not instance.is_waiting(), "he is chasing")
 	instance.position = corner + d1 * 1.0 - d2 * 7.0
 	var behind_the_wall := corner - d1 * 4.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-	var reach := instance.def.lethal_reach()
+	var reach := instance.lethal_reach()
 	t.check(instance.global_position.distance_to(behind_the_wall) < reach,
 			"she is inside his catch in a straight line (%.1fpx < %.1fpx)"
 			% [instance.global_position.distance_to(behind_the_wall), reach])
@@ -1431,7 +1431,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t: TestRunner) -> void:
 	var instance := _a_waiting_robber(t, map, mouth, 40.0, instance_where)
 	var looking := instance.look.drawn_heading().normalized()
 	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-	t.check(instance.global_position.distance_to(round_the_corner) < instance.def.notice_within(),
+	t.check(instance.global_position.distance_to(round_the_corner) < instance.row().notice_within(),
 			"round the corner she is inside his notice in a straight line (%.1fpx)"
 			% instance.global_position.distance_to(round_the_corner))
 	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
@@ -1467,7 +1467,7 @@ func _test_the_robber_does_not_lunge_through_a_wall(t: TestRunner) -> void:
 	var d2: Vector2 = mouth["d2"]
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _a_waiting_robber(t, map, mouth, 40.0, instance_where)
-	var def := instance.def
+	var def := instance.row()
 	var start := instance.global_position
 	var down_the_alley := start + d2 * (def.notice_within() - 20.0)
 	t.check(_sampled_line_is_walkable(map, start, down_the_alley),
@@ -1517,7 +1517,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t: TestRunner) -> void:
 			var elapsed := 0.0
 			var charged := false
 			var caught := false
-			while elapsed < 8.0 and not caught and not instance.is_finished:
+			while elapsed < 8.0 and not caught and not instance.is_gone():
 				if answer == "run" and elapsed >= 0.3:
 					speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
 				her += Navigator.new(map).step(her, d1 * speed * STEP, Mover.lattice())
@@ -1529,7 +1529,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t: TestRunner) -> void:
 				if answer == "run" and instance.is_waiting():
 					break
 			if answer == "run":
-				t.check(not charged and not caught and instance.is_waiting() and not instance.gave_up,
+				t.check(not charged and not caught and instance.is_waiting() and not instance.has_given_up(),
 						"%dpx in: running off as he warns, she is out of his radius first: never "
 						% int(back) + "charged, and he waits again rather than giving up")
 			else:
@@ -1567,7 +1567,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t: TestRunner) -> vo
 		var caught_at := INF
 		var through_a_wall := 0
 		var noticed_through_a_wall := false
-		while elapsed < 15.0 and caught_at == INF and not instance.is_finished:
+		while elapsed < 15.0 and caught_at == INF and not instance.is_gone():
 			her += d1 * Tuning.WALK_SPEED * STEP
 			instance_where.tell(her)
 			var was_waiting := instance.is_waiting()
@@ -1649,7 +1649,7 @@ func _test_the_robber_catches_her_by_coming_round_the_corner(t: TestRunner) -> v
 	var elapsed := 0.0
 	var caught := false
 	var through_a_wall := 0
-	while elapsed < 2.0 and not caught and not instance.is_finished:
+	while elapsed < 2.0 and not caught and not instance.is_gone():
 		if instance.is_lethal_at(her):
 			caught = true
 			if not _sampled_line_is_walkable(map, instance.global_position, her):

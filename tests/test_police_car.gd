@@ -107,7 +107,7 @@ func _test_her_walk_into_a_standing_car_stops_at_its_side(t: TestRunner) -> void
 	var car_where := WhereSheIs.nowhere()
 	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]), null,
 			car_where)
-	var shape := car.def.shape
+	var shape := car.ground_shape()
 	for approach: Vector2 in [Vector2.DOWN, Vector2.UP]:
 		var start: Vector2 = -approach * 80.0
 		var player := _her(t, start, approach)
@@ -278,10 +278,10 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t: TestRunner) -> void:
 	var leaving := _car(t, _patrol(), leaving_route, null, leaving_where)
 	var player := _her(t, Vector2(0.0, 0.0), Vector2.LEFT)
 	var frames := 0
-	while not leaving.is_leaving and frames < int(10.0 / STEP):
+	while not leaving.is_on_its_way_out() and frames < int(10.0 / STEP):
 		leaving.step(STEP)
 		frames += 1
-	t.check(leaving.is_leaving, "the car is leaving once its route has run out")
+	t.check(leaving.is_on_its_way_out(), "the car is leaving once its route has run out")
 	var struck := false
 	var deepest := INF
 	for i in int(5.0 / STEP):
@@ -341,7 +341,7 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t: TestRunner) -> void:
 	t.check(_stands(car, car_where, player) and deepest >= -0.01,
 			"it stops for her pram in its lane instead (closest %.2fpx)" % deepest)
 	# Standing for her, it stays harmless however she then steps into the road in front of it.
-	var nose := car.global_position + along * (car.def.shape.reach() + Tuning.PLAYER_BODY_RADIUS
+	var nose := car.global_position + along * (car.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS
 			+ 3.0)
 	player.global_position = Vector2(nose.x, lane.y)
 	player.facing = -along
@@ -599,7 +599,7 @@ func _test_a_sent_patrol_refused_its_turn_stands_in_the_box_and_goes_on(t: TestR
 		struck = struck or car.is_lethal_at(player.global_position)
 	t.check(not struck, "driving to the box with her round its corner, it never strikes her")
 	t.check(_stands(car, where, player) and box.has_point(car.global_position)
-			and not car.is_leaving,
+			and not car.is_on_its_way_out(),
 			"it stands in the junction box, still the event it was (%v, facing %v)"
 			% [car.global_position, car.facing_now()])
 	player.global_position = Vector2(26.0 * tile, 25.0 * tile)
@@ -650,7 +650,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner)
 			car.let_out(officer)
 			stopped_at = car.global_position
 			officer.give_up_the_chase()
-		if officer and not officer.is_finished:
+		if officer and not officer.is_gone():
 			officer_where.tell(player.global_position)
 			officer.step(STEP)
 		elif officer and not aside:
@@ -661,7 +661,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner)
 				aside = true
 			else:
 				crept = maxf(crept, car.global_position.distance_to(stopped_at))
-		if car.is_finished:
+		if car.is_gone():
 			vanished_near = car.global_position.distance_to(player.global_position) \
 					<= Tuning.OUT_OF_SIGHT
 			break
@@ -673,9 +673,9 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner)
 			+ "her (%.2fpx)" % crept)
 	t.check(not struck, "it never struck her, standing or driving on")
 	t.check(not turned, "it never turned round: it drove on the way it was going")
-	t.check(car.is_finished and not vanished_near,
+	t.check(car.is_gone() and not vanished_near,
 			"and it was gone only once out of her sight, never beside her (finished %s, at %.0fpx)"
-			% [car.is_finished, car.global_position.distance_to(player.global_position)])
+			% [car.is_gone(), car.global_position.distance_to(player.global_position)])
 	if officer:
 		officer.free()
 	player.free()
@@ -701,7 +701,7 @@ func _test_it_gives_way_at_a_zebra_she_waits_at(t: TestRunner) -> void:
 		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
 		warned = warned or car.car.closes_on(player.global_position)
-	var nose := car.global_position.x + car.def.shape.reach()
+	var nose := car.global_position.x + car.ground_shape().reach()
 	var paint := floorf(zebra.x / Tuning.TILE_SIZE) * Tuning.TILE_SIZE
 	t.check(not struck and not warned, "on the zebra she is never warned or struck")
 	t.check(_stands(car, car_where, player) and nose <= paint,
@@ -760,7 +760,7 @@ func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	for i in int(5.0 / STEP):
 		was_at = car.global_position
 		car.step(STEP)
-	var nose := car.global_position.x + car.def.shape.reach()
+	var nose := car.global_position.x + car.ground_shape().reach()
 	t.check(car.global_position.is_equal_approx(was_at) and nose <= box_x - Tuning.CAR_STOP_LINE_SETBACK + 0.5,
 			"on red it stands at the stop line (nose %.0f, box %.0f)" % [nose, box_x])
 	while not signals.green_for(junction, false):
@@ -836,7 +836,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 					for i in int(6.0 / STEP):
 						_drive(car, car_where, player)
 						var nose: float = (car.global_position.x - near) * direction \
-								+ car.def.shape.reach()
+								+ car.ground_shape().reach()
 						furthest = maxf(furthest, nose)
 					cases += 1
 					worst = maxf(worst, furthest)

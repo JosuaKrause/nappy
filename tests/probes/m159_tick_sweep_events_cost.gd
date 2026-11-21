@@ -266,7 +266,7 @@ func _heading_at_the_next_event(events: EventManager, here: Vector2, reached: Di
 	var best := INF
 	var target: EventInstance = null
 	for instance in events.instances():
-		if instance.is_finished or reached.has(instance):
+		if instance.is_gone() or reached.has(instance):
 			continue
 		var distance := instance.global_position.distance_squared_to(here)
 		if distance < best:
@@ -288,12 +288,12 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 	context.update(previous)
 	var state := PackedFloat64Array()
 	for instance in RunCity.events(city).instances():
-		context.update(instance.def.id.to_utf8_buffer())
+		context.update(instance.row_id().to_utf8_buffer())
 		state.append(instance.global_position.x)
 		state.append(instance.global_position.y)
 		state.append(instance.age())
-		state.append(float(instance.is_finished))
-		state.append(float(instance.is_leaving))
+		state.append(float(instance.is_gone()))
+		state.append(float(instance.is_on_its_way_out()))
 		state.append(float(instance.is_telegraphing()))
 		state.append(instance.source().landed())
 	state.append(float(RunCity.events(city).pending_warnings().size()))
