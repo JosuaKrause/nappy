@@ -4,7 +4,7 @@ extends RefCounted
 ## the axis it lies along on the street it landed on, the side a vehicle standing still shows, and
 ## whether a boom's body follows its arm. A part the live event holds (`EventInstance`) and answers
 ## its outward questions about its body through (`is_solid()`, `runs_vertically()`,
-## `stands_side_on()`, `solid_axis()`, `solid_part_centres()`, `solid_part_shapes()`).
+## `stands_side_on()`, `solid_axis()`, `standing_pieces()`).
 ##
 ## **It is handed what never changes under it** (its row, the map, where she is, the node its
 ## collision body stands under, how it lies where it landed, and the boom state its arm is) and **tells nothing upward**: the
@@ -116,27 +116,15 @@ func _arm_is_up() -> bool:
 func waits_to_come_down() -> bool:
 	return _obstruction == null and _row.solid_from() == EventDef.SolidWhen.ONCE_IT_STARTS
 
-## Where each of its solid pieces stands, in world space, for a body whose centre stands at `at`:
-## paired index for index with `solid_part_shapes()`.
-##
-## **A per-tile solid record reads the same pieces, index for index.**
-## `EventSpawner.obstructed_footprint()` lays the row's pieces out through `BodyStance.pieces_at()`
-## rather than calling this pair, but it is the same data: one piece for every row but the crash, which records tiles under
-## each car and leaves the ground between them open, the whole reason the crowd steps round the
-## cars and walks the debris.
-func solid_part_centres(at: Vector2) -> PackedVector2Array:
-	var centres := PackedVector2Array()
-	for piece in _row.body_pieces():
-		centres.append(at + spread_at(piece.offset_for(_spread_vertical)))
-	return centres
-
-## The `GroundShape` of each solid piece, index for index with `solid_part_centres()`. Each lies
-## along `solid_axis()`, the axis its collision shape and its shadow are turned by.
-func solid_part_shapes() -> Array[GroundShape]:
-	var shapes: Array[GroundShape] = []
-	for piece in _row.body_pieces():
-		shapes.append(piece.ground_shape())
-	return shapes
+## **Its solid pieces where they stand**, in world space, for a body whose centre stands at `at` and
+## which heads along `heading`: each piece's middle offset along its street's axis, its ground shape
+## and the axis its spine lies along (`solid_axis()`, the axis its collision shape and its shadow are
+## turned by). The one layout of a body's pieces, `BodyStance.pieces_laid_out()`, which the walk's
+## ground, the map's record of standing bodies and the route rig read as well: one piece for every
+## row but the crash, which stands a piece under each car and leaves the ground between them open, the
+## whole reason the crowd steps round the cars and walks the debris.
+func standing_pieces(at: Vector2, heading: Vector2) -> Array[StandingPiece]:
+	return BodyStance.pieces_laid_out(_row, at, solid_axis(heading), _spread_vertical)
 
 ## The tiles its body is recorded on (`EventSpawner.obstructed_footprint()`) for a body standing at
 ## `at` and heading along `heading`, as a set; empty for a row with no body. Worked out once for

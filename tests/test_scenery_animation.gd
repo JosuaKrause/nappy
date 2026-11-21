@@ -208,7 +208,7 @@ func _test_event_parts(t: TestRunner) -> void:
 			t.check(sceneries.size() > 1 and not moving.is_empty(),
 					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := _body_of(instance)
-			var centers := instance.solid_part_centres()
+			var centers := _centres_of(instance)
 			t.check(body != null and instance.is_solid(), "%s/%s stands a solid body" % [id, vertical])
 			t.check(first_ask,
 					"the event's first drawn frame asks for its draw, so the gate is live for the check below")
@@ -244,7 +244,7 @@ func _test_event_parts(t: TestRunner) -> void:
 						"stationary surroundings have no alternate picture")
 				layer.show_frame_b(false)
 			t.check(not asked, "animation leaves the static event key alone")
-			t.check(_body_of(instance) == body and instance.solid_part_centres() == centers,
+			t.check(_body_of(instance) == body and _centres_of(instance) == centers,
 					"animation preserves both collision resource and placement")
 			# The instance's own process frame hides what a finished event leaves.
 			instance.transition(EventInstance.Phase.DONE)
@@ -334,6 +334,13 @@ func _sceneries_of(instance: EventInstance) -> Array[EventScenery]:
 			if child is EventScenery:
 				found.append(child)
 	return found
+
+## Where each of an instance's solid pieces stands, in world space.
+func _centres_of(instance: EventInstance) -> PackedVector2Array:
+	var centres := PackedVector2Array()
+	for piece in instance.standing_pieces():
+		centres.append(piece.center())
+	return centres
 
 ## The one solid body the instance stands, or null.
 func _body_of(instance: EventInstance) -> StaticBody2D:

@@ -526,16 +526,6 @@ func _planned_body_tiles(plan: EventPlan) -> Dictionary:
 func _planned_pieces(plan: EventPlan) -> Array[StandingPiece]:
 	return BodyStance.pieces_at(_map, plan.row(), plan.placed_at(), plan.faces())
 
-## A live instance's solid pieces where they stand: its `EventInstance.solid_part_centres()` and
-## `solid_part_shapes()`, the same pieces its collision is built from, along `solid_axis()`.
-func _live_pieces(instance: EventInstance) -> Array[StandingPiece]:
-	var pieces: Array[StandingPiece] = []
-	var centres := instance.solid_part_centres()
-	var shapes := instance.solid_part_shapes()
-	for k in centres.size():
-		pieces.append(StandingPiece.new(centres[k], shapes[k], instance.solid_axis()))
-	return pieces
-
 ## The angle a piece's spine lies at: its axis for a shape with a spine, none for a disc.
 func _angle_of(piece: StandingPiece) -> float:
 	return piece.axis().angle() if piece.ground_shape().spine_half_length() > 0.0 else 0.0
@@ -724,10 +714,9 @@ func ground_round_point(point: Vector2) -> Dictionary:
 	return _tiles_near_point(point, _CAUGHT_CLEARANCE)
 
 ## The tiles whose centre lies within `margin` of `instance`'s own solid pieces — its
-## `EventInstance.solid_part_centres()` and `solid_part_shapes()`, the same pieces its collision is
-## built from, along `solid_axis()`.
+## `EventInstance.standing_pieces()`, the same pieces its collision is built from.
 func _tiles_near_body(instance: EventInstance, margin: float) -> Dictionary:
-	return _tiles_near_pieces(_live_pieces(instance), margin)
+	return _tiles_near_pieces(instance.standing_pieces(), margin)
 
 ## The tiles whose centre lies within `margin` of any of a body's `StandingPiece`s, each measured
 ## against its real shape: a segment turned along its axis the way `EventBody.go_down()` turns its
@@ -1191,7 +1180,7 @@ func _body_pieces_near(point: Vector2, radius: float) -> Array[StandingPiece]:
 	var pieces: Array[StandingPiece] = []
 	for instance: EventInstance in _events.instances():
 		if _is_standing_body(instance):
-			_add_pieces_near(pieces, _live_pieces(instance), point, radius)
+			_add_pieces_near(pieces, instance.standing_pieces(), point, radius)
 	for planned: EventPlan in _events.plans():
 		if planned.is_in_the_world() or not planned.is_placed() or planned.is_spent() \
 				or not planned.stands_as_a_fixed_body():
