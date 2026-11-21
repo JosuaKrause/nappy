@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends Node
 ## Generates and checks `docs/COSTS.md` — the checked-in survey of what every catalogue row
 ## costs, computed from the same `EventDef`/`EventInstance`/`Tuning` code the game charges with.
@@ -478,7 +477,7 @@ func _check(tables: Array[TableModel], fresh_content: String) -> int:
 			continue
 		var old_ids: Array = old_rows.keys()
 		var new_ids: Array = t.order
-		for id in new_ids:
+		for id: String in new_ids:
 			if id not in old_rows:
 				moved.append("'%s': new row '%s'" % [t.title, id])
 				continue
@@ -491,7 +490,7 @@ func _check(tables: Array[TableModel], fresh_content: String) -> int:
 				if old_value != new_value:
 					moved.append("'%s': %s · %s: %s → %s"
 							% [t.title, id, t.headers[i], old_value, new_value])
-		for id in old_ids:
+		for id: String in old_ids:
 			if id not in t.rows:
 				moved.append("'%s': row '%s' is gone" % [t.title, id])
 
