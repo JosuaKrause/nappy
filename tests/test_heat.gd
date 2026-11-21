@@ -12,7 +12,7 @@ extends RefCounted
 ## are in a heat suite**: what heat promises about a patrol, a guard or a raid is how the instance
 ## made from the heated row behaves (it notices, stops, lets a man out, resumes from a stream), a
 ## guarantee between the catalogue's row and the instance that plays it, so a fake instance would
-## answer nothing. The instance's own members a case reads (`age`, `is_leaving`, `is_finished`,
+## answer nothing. The instance's own members a case reads (`age`, `is_on_its_way_out()`, `is_gone()`,
 ## `barrier_post`) have no method to read them through, and `src/events/` is not this change's to add
 ## one to.
 ##
@@ -383,12 +383,12 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> vo
 	var far := Vector2(200000.0, 200000.0)
 	instance_where.tell(far)
 	var elapsed := 0.0
-	while elapsed < 10.0 and not instance.is_leaving and not instance.is_finished:
+	while elapsed < 10.0 and not instance.is_on_its_way_out() and not instance.is_gone():
 		instance_where.tell(far)
 		instance.step(STEP)
 		elapsed += STEP
 	t.check(instance.is_waiting(), "it never noticed her, the whole way down its route")
-	t.check(instance.is_leaving or instance.is_finished,
+	t.check(instance.is_on_its_way_out() or instance.is_gone(),
 			"and it still leaves once it drives off the end, exactly as a plain mobile row would")
 	instance.free()
 
@@ -420,28 +420,28 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	for i in int(round(3.0 / STEP)):
 		instance_where.tell(her)
 		instance.step(STEP)
-	t.check(instance.position == stopped_at and not instance.is_leaving,
+	t.check(instance.position == stopped_at and not instance.is_on_its_way_out(),
 			"it stands where it stopped while he is after her")
 	var ahead := instance.global_position + instance.facing_now() * 30.0
 	t.check(not instance.is_lethal_at(ahead), "and a standing car strikes nobody just ahead of it")
 	officer.give_up_the_chase()
-	t.check(officer.is_leaving and not officer.is_finished, "he gives up and walks back")
+	t.check(officer.is_on_its_way_out() and not officer.is_gone(), "he gives up and walks back")
 	instance_where.tell(her)
 	instance.step(STEP)
 	t.check(instance.position == stopped_at, "and the car waits for him")
 	var walked := 0
-	while not officer.is_finished and walked < 600:
+	while not officer.is_gone() and walked < 600:
 		officer_where.tell(her)
 		officer.step(STEP)
 		walked += 1
-	t.check(officer.is_finished, "he is back in at its door")
+	t.check(officer.is_gone(), "he is back in at its door")
 	var heading := instance.facing_now()
 	# She steps back from its lane, so nothing holds it.
 	her = Vector2(hot.notice_within() - 10.0, -120.0)
 	for i in int(round(1.0 / STEP)):
 		instance_where.tell(her)
 		instance.step(STEP)
-	t.check(not instance.is_leaving and instance.position.x > stopped_at.x + 30.0,
+	t.check(not instance.is_on_its_way_out() and instance.position.x > stopped_at.x + 30.0,
 			"once he is back in, it drives on along its route (%.0fpx)"
 			% (instance.position.x - stopped_at.x))
 	t.check(instance.facing_now().is_equal_approx(heading),
@@ -686,7 +686,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	for i in int(round(1.0 / STEP)):
 		second_where.tell(her)
 		second.step(STEP)
-	t.check(not second.is_leaving and second.position.x > resumed_at.x + 30.0,
+	t.check(not second.is_on_its_way_out() and second.position.x > resumed_at.x + 30.0,
 			"with nobody of its own out, it drives on along its route (%.0fpx)"
 			% (second.position.x - resumed_at.x))
 	second.free()

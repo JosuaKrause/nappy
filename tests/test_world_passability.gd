@@ -511,20 +511,20 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 	instance.set_process(false)
 	RunCity.events(city).world.where_she_is().tell(start - into * 80.0)
 	instance.give_up_the_chase()
-	t.check(instance.is_leaving and instance.facing_now().is_equal_approx(into),
+	t.check(instance.is_on_its_way_out() and instance.facing_now().is_equal_approx(into),
 			"it starts leaving facing the building, away from her (%s)" % instance.facing_now())
 	var mover := EventInstance.mover_for(dog)
 	var off := 0
 	var before := instance.global_position
 	for _frame in 120:
 		instance.departure.leave(0.05)
-		if instance.is_finished:
+		if instance.is_gone():
 			break
 		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.layers_blocked())):
 			off += 1
 		before = instance.global_position
 	t.check(off == 0, "its departure never enters a building (%d steps did)" % off)
-	t.check(instance.is_finished or instance.global_position.distance_to(start) > 2.0 * TILE,
+	t.check(instance.is_gone() or instance.global_position.distance_to(start) > 2.0 * TILE,
 			"and it gets away rather than standing against the wall (%.0fpx)"
 			% instance.global_position.distance_to(start))
 	RunCity.events(city).retire(instance)
@@ -561,15 +561,15 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 		walked += 1
 		for frame in 200:
 			RunCity.events(city).world.where_she_is().tell(her)
-			if frame == 120 and not instance.is_leaving:
+			if frame == 120 and not instance.is_on_its_way_out():
 				instance.give_up_the_chase()
-			if instance.is_leaving:
+			if instance.is_on_its_way_out():
 				if left_from == Vector2.INF:
 					left_from = instance.global_position
 				instance.departure.leave(0.05)
 			else:
 				instance.step(0.05)
-			if instance.is_finished:
+			if instance.is_gone():
 				break
 			var now := instance.global_position
 			if map.passable(map.world_to_tile(before), asked):
@@ -586,7 +586,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 					bad.append("%s's far guard %s -> %s" % [def.id, guard_before,
 							instance.barrier_post.where_the_far_guard_walks()])
 				guard_before = instance.barrier_post.where_the_far_guard_walks()
-		if left_from != Vector2.INF and not instance.is_finished \
+		if left_from != Vector2.INF and not instance.is_gone() \
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id)
 		RunCity.events(city).retire(instance)

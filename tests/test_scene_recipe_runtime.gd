@@ -243,7 +243,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	if dog != null:
 		await t.get_tree().physics_frame
 		dog.leave_for_a_completed_task()
-		t.check(dog.is_leaving, "the dog is leaving")
+		t.check(dog.is_on_its_way_out(), "the dog is leaving")
 		# The runtime takes the dog into its hand on the first drawn frame after it starts leaving;
 		# what it has walked since is the runtime's and not the dog's own step before that.
 		for _frame in 8:

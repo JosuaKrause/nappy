@@ -57,10 +57,10 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var man: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
+		if instance.row_id() == "masked_pursuer":
 			man = instance
 	if OS.get_environment("CHARGES_WITHIN") != "":
-		man.def.notice.runs_within = float(OS.get_environment("CHARGES_WITHIN"))
+		man.row().notice.runs_within = float(OS.get_environment("CHARGES_WITHIN"))
 	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door_tile: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
 	var second_door: Vector2i = (f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile
@@ -125,7 +125,7 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	var local := charged_at - scene.map().tile_to_world(origin) + Vector2.ONE * InteriorScene.TILE * 0.5
 	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.1fpx on a tick (the catch is %.1fpx)"
 			% [s, route, pace, (local / InteriorScene.TILE).snapped(Vector2(0.01, 0.01)),
-			charged_range, outcome, elapsed, charged_for, closest_on_tick, man.def.lethal_reach()])
+			charged_range, outcome, elapsed, charged_for, closest_on_tick, man.lethal_reach()])
 	player.free()
 	events.free()
 	scene.free()

@@ -275,7 +275,7 @@ func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
 			"and one rolled as the kid is drawn as the kid")
 	var travelled := 0.0
 	for _i in 600:
-		if pelican.is_finished or travelled > 250.0:
+		if pelican.is_gone() or travelled > 250.0:
 			break
 		pelican.step(STEP)
 		kid.step(STEP)
@@ -300,7 +300,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t: TestRunner)
 	for _i in 30:
 		pelican.step(STEP)
 		kid.step(STEP)
-	t.check(pelican.def == kid.def, "both are the catalogue's own cyclist row")
+	t.check(pelican.row() == kid.row(), "both are the catalogue's own cyclist row")
 	t.check(pelican.global_position == kid.global_position
 			and pelican.travel_velocity() == kid.travel_velocity(),
 			"they ride the same line at the same speed")

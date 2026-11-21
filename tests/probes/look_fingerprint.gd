@@ -42,7 +42,7 @@ extends RefCounted
 ## place out; his `D` lines are stable.
 ## The cost pass stands events of its own, after the fingerprint, so asking the gate changes no line.
 ## What no sample separates is a key term alone (`is_waiting()`, `is_chatting()`, `has_stopped_her()`,
-## `is_leaving`): each changes at the same sample as another term.
+## `is_on_its_way_out()`): each changes at the same sample as another term.
 ##
 ## **It asks only what every tree of the looks' step has.** Of `EventInstance`: `setup()`, `step()`,
 ## `look`, `hold`, `atlas`, `drawer`, `is_chasing()`, `leave_for_a_completed_task()`,

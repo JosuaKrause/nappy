@@ -130,7 +130,7 @@ signal pursuit_caught(id: String)
 ## reaching home. Once per instance, and never beside `pursuit_caught` or `pursuit_ended`.
 signal pursuit_cut_short(id: String)
 ## `EventInstance._be_done()`'s own moment a charge that had begun is over without catching her.
-## `shaken_off` is `EventInstance.gave_up` — `EventPursuit`'s own record of whether she outran it
+## `shaken_off` is `EventInstance.has_given_up()` — `EventPursuit`'s own record of whether she outran it
 ## (`Tuning.PURSUIT_SHAKEN_OFF`) rather than its `duration` simply running out. Never for a charge
 ## that caught her (`pursuit_caught`) or was cut short (`pursuit_cut_short`), so every charge ends in
 ## exactly one of the four.

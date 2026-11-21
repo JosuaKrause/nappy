@@ -83,7 +83,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		# after her passes on this first one. So he is finished first and the named crossing
 		# has to set a guard of its own.
 		var first_guard := _guard_after_her(events)
-		t.check(first_guard != null and first_guard.def.id == "door_guard",
+		t.check(first_guard != null and first_guard.row_id() == "door_guard",
 				"the other door's walk under set its own guard on her")
 		if first_guard:
 			first_guard.give_up_the_chase()
@@ -94,7 +94,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 				and _warning_for(events, "robber_giving_chase") == null,
 				"walking under the named door's boom sends no robber after her, nor warns of one")
 		var guard := _guard_after_her(events)
-		t.check(guard != null and guard != first_guard and guard.def.id == "door_guard"
+		t.check(guard != null and guard != first_guard and guard.row_id() == "door_guard"
 				and _a_guard_is_after_her(events),
 				"the named door's own, new guard is after her instead")
 		if guard:
@@ -249,8 +249,8 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 		_walk_through(_door_position(director), _door_axis(director), direction, player)
 		t.check(director.contact().is_done, "walking under the named boom does the task")
 		var guard := _guard_after_her(events)
-		t.check(guard != null and guard.def.id == "door_guard" and _a_guard_is_after_her(events)
-				and not guard.gave_up,
+		t.check(guard != null and guard.row_id() == "door_guard" and _a_guard_is_after_her(events)
+				and not guard.has_given_up(),
 				"and sets the door's guard after her")
 		t.check(_robber_after_her(events) == null and _warning_for(events, "robber_giving_chase") == null,
 				"and no robber")
@@ -260,14 +260,14 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 			player.teleport_to(hut.global_position)
 			events.checkpoints.check_detentions()
 			t.check(hut.is_chatting(), "stepping into the hut is a hold")
-			t.check(guard.gave_up and (guard.is_leaving or guard.is_finished),
+			t.check(guard.has_given_up() and (guard.is_on_its_way_out() or guard.is_gone()),
 					"the hold ends the walk under's guard: he gives up")
 			t.check(_robber_after_her(events) == null and _warning_for(events, "robber_giving_chase") == null,
 					"no robber is warned of or set on her for it")
 			var pursuers := 0
 			for instance in events.instances():
-				if instance.def.id == "door_guard" and not instance.is_finished \
-						and not instance.is_leaving:
+				if instance.row_id() == "door_guard" and not instance.is_gone() \
+						and not instance.is_on_its_way_out():
 					pursuers += 1
 			t.check(pursuers == 0 and _door_guards(events).all(func(each: EventInstance) -> bool: return each == guard),
 					"and nobody else is sent: no second guard is after her")
@@ -295,8 +295,8 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunn
 					"no robber is warned of or set on her by the inspected crossing")
 			pursuers = 0
 			for instance in events.instances():
-				if instance.def.id in ["door_guard", "robber_giving_chase"] \
-						and not instance.is_finished and not instance.is_leaving:
+				if instance.row_id() in ["door_guard", "robber_giving_chase"] \
+						and not instance.is_gone() and not instance.is_on_its_way_out():
 					pursuers += 1
 			t.check(pursuers == 0, "and no guard or robber is live after her")
 			t.check(director.contact().is_done, "the task stays done")
@@ -326,7 +326,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 		var named := _hut_of_the_named_door(director)
 		var other: EventInstance = null
 		for instance in events.instances():
-			if instance.def.redetains and instance.def.id == "checkpoint_hut" \
+			if instance.detains_again() and instance.row_id() == "checkpoint_hut" \
 					and instance != named and (named == null or not _on_the_named_door(
 							director, instance)):
 				other = instance
@@ -354,7 +354,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 					"the inspected crossing warns of the robber first, with nobody in the world")
 			_run_the_traps_warning("robber_giving_chase", player.global_position)
 			var trap := _robber_after_her(events)
-			t.check(trap != null and trap.def.id == "robber_giving_chase",
+			t.check(trap != null and trap.row_id() == "robber_giving_chase",
 					"the inspected crossing sends the robber after her")
 			if trap:
 				for body in _city.streets().region_plan().door_bodies:
@@ -449,7 +449,7 @@ func _door_axis(director: ResistanceDirector) -> Vector2:
 func _door_guards(events: EventManager) -> Array[EventInstance]:
 	var found: Array[EventInstance] = []
 	for instance in events.instances():
-		if instance.def.id == "door_guard":
+		if instance.row_id() == "door_guard":
 			found.append(instance)
 	return found
 
@@ -471,13 +471,13 @@ func _guard_after_her(events: EventManager) -> EventInstance:
 ## nor leaving.
 func _a_guard_is_after_her(events: EventManager) -> bool:
 	var guard := _guard_after_her(events)
-	return guard != null and not guard.is_finished and not guard.is_leaving
+	return guard != null and not guard.is_gone() and not guard.is_on_its_way_out()
 
 ## The robber the done task has set on her, in the world and not finished, or null: his warning is
 ## not him, so none is named until it has run.
 func _robber_after_her(events: EventManager) -> EventInstance:
 	for instance in events.instances():
-		if instance.def.id == "robber_giving_chase" and not instance.is_finished:
+		if instance.row_id() == "robber_giving_chase" and not instance.is_gone():
 			return instance
 	return null
 
@@ -488,14 +488,14 @@ func _robber_after_her(events: EventManager) -> EventInstance:
 func _a_guard_warns_her(events: EventManager) -> bool:
 	events.checkpoints.warn_at_the_doors()
 	for instance in events.instances():
-		if instance.def.redetains and instance.is_its_guard_warning():
+		if instance.detains_again() and instance.is_its_guard_warning():
 			return true
 	return false
 
 ## The named door's `checkpoint_hut` in the street, or null.
 func _hut_of_the_named_door(director: ResistanceDirector) -> EventInstance:
 	for instance in RunCity.events(_city).instances():
-		if instance.def.id == "checkpoint_hut" and _on_the_named_door(director, instance):
+		if instance.row_id() == "checkpoint_hut" and _on_the_named_door(director, instance):
 			return instance
 	return null
 

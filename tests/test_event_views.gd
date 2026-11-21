@@ -1180,7 +1180,7 @@ func _test_a_walking_event_keeps_its_stride_bob(t: TestRunner) -> void:
 	for i in 120:
 		instance.step(STEP)
 		lowest = minf(lowest, instance.look.current_bob())
-	t.check(not EventPictures.WHEELS_BY_LOOK.has(instance.def.look), "a dog walker has no wheels")
+	t.check(not EventPictures.WHEELS_BY_LOOK.has(instance.row().picture()), "a dog walker has no wheels")
 	t.check(lowest < -WheelBob.HEIGHT,
 			"its stride lifts it further than a vehicle's body rises (%.3f)" % lowest)
 	instance.free()

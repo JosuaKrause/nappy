@@ -281,7 +281,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	# One frame of every watcher a day runs, in a building with no map, no corridor, no crowd and
 	# no resistance: the ones with nothing to ask have to say nothing rather than fail.
 	await t.get_tree().process_frame
-	player.global_position = man.global_position + Vector2(man.def.outer_radius * 0.5, 0.0)
+	player.global_position = man.global_position + Vector2(man.heard_within() * 0.5, 0.0)
 	clock.tick(12.5)
 	await t.get_tree().process_frame
 	clock.says = "They were on the stairs."

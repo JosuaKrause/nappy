@@ -569,13 +569,13 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> voi
 			"an unmarked van telegraphing over her is the flashing mark")
 
 	# And once it is live, the second level: one step left.
-	_advance(lethal, lethal.def.telegraph_time + 0.2)
+	_advance(lethal, lethal.telegraphs_for() + 0.2)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NOW,
 			"and the same van live around her is the doubled one")
 
 	# Far enough away and it is somebody else's problem again.
-	rig.global_position = lethal.global_position + Vector2(lethal.def.outer_radius + 50.0, 0.0)
+	rig.global_position = lethal.global_position + Vector2(lethal.heard_within() + 50.0, 0.0)
 	await _physics_ticks(t, rig, 1.0)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
@@ -585,14 +585,14 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> voi
 	# orthogonally away from the biker the double !! shouldn't show anymore since there is no way it
 	# can affect me.")* Well inside the outer radius, well outside the lethal one, and not closing:
 	# the strongest cue in the game has nothing to say about that.
-	rig.global_position = lethal.global_position + Vector2(lethal.def.outer_radius - 20.0, 0.0)
+	rig.global_position = lethal.global_position + Vector2(lethal.heard_within() - 20.0, 0.0)
 	rig.velocity = Vector2.ZERO
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"standing still inside a live lethal field but nowhere near it is not an instruction")
 
 	# Walking into it is, once she is a step from the end of the day.
-	rig.global_position = lethal.global_position + Vector2(lethal.def.inner_radius + 20.0, 0.0)
+	rig.global_position = lethal.global_position + Vector2(lethal.core_within() + 20.0, 0.0)
 	rig.velocity = Vector2(-Tuning.WALK_SPEED, 0.0)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NOW,

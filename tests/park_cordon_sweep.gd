@@ -196,8 +196,8 @@ func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 	var people := maxi(0, CordonInTheWorld.officers(city).size() - 2)
 	var area := CordonInTheWorld.park_ground(city.map, CityGenerator.swing_park(city.map))
 	for live in RunCity.events(city).instances():
-		var def := live.def
-		if live.is_finished or not live.is_leaving or not area.has_point(live.global_position):
+		var def := live.row()
+		if live.is_gone() or not live.is_on_its_way_out() or not area.has_point(live.global_position):
 			continue
 		if def.kind != GameEnums.EventKind.AMBIENT and not def.pursues() and not def.drives() \
 				and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
@@ -426,7 +426,7 @@ func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: b
 
 ## Whether a walked-out person has gone from the world.
 static func _gone(person: EventInstance) -> bool:
-	return not is_instance_valid(person) or person.is_finished
+	return not is_instance_valid(person) or person.is_gone()
 
 ## Where each of the cordon's officers stands now, by his figure in the world.
 func _where_the_officers_stand(city: City) -> Dictionary:

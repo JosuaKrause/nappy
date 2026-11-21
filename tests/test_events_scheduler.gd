@@ -205,7 +205,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 
 ## Not the ordinary placement check — `_test_scheduler_respects_placement_and_one_of_a_row_per_unit` already holds
 ## `alley_mouse` to landing on an `ALLEY` tile, the same as every other `MAP` row. What nothing else
-## checks is the alley dash's own reason for existing (`EventInstance.path` of the mouse): that the
+## checks is the alley dash's own reason for existing (`EventInstance.walks()` of the mouse): that the
 ## two-point dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
 ## off `CityMap.alley_lots()` rather than off a scheduled placement, so it holds for every alley a
 ## seed generates rather than only the ones a roll happens to use that day.
@@ -252,13 +252,13 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 	t.check(checked > 10 * solid,
 			"and the alleys passed over as solid are a few (%d of %d)" % [solid, checked + solid])
 
-## The dash `alley_mouse` is given when it is set up at `at` (`EventInstance.path`, which the
+## The dash `alley_mouse` is given when it is set up at `at` (`EventInstance.walks()`, which the
 ## event's own stepping walks): built from the alley it stands in and cut to the ground it fits on.
 func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("alley_mouse"), at, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(map))
-	var path := instance.path
+	var path := instance.walks()
 	instance.free()
 	return path
 
@@ -303,7 +303,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	t.check(instance.is_waiting(), "far away, it is still only waiting several seconds later")
 	t.check(not instance.is_telegraphing(), "and has not started telegraphing")
 	t.close_to(instance.global_position.distance_to(at), 0.0, "and has not moved", 0.5)
-	t.check(not instance.is_finished, "and has not finished")
+	t.check(not instance.is_gone(), "and has not finished")
 
 	# She steps inside the trigger: the notice, and the clock, start now.
 	instance_where.tell(at + Vector2(def.notice_within() - 10.0, 0.0))
@@ -313,7 +313,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 
 	_advance(instance, def.telegraphs_for() + 0.05)
 	t.check(not instance.is_telegraphing(), "the telegraph ends")
-	t.check(not instance.is_finished, "and the dash runs rather than the event already being over")
+	t.check(not instance.is_gone(), "and the dash runs rather than the event already being over")
 
 	# Mid-crossing (half the narrower side's own travel time, not half of `duration`, which
 	# outlasts the physical crossing on purpose — see the row's own docstring): still inside the
@@ -336,7 +336,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 				"a horizontal alley's mouse has moved across Y, not X")
 
 	_advance(instance, crossing_time * 0.5 + 0.5)
-	t.check(instance.is_finished or instance.is_leaving,
+	t.check(instance.is_gone() or instance.is_on_its_way_out(),
 			"and the dash finishes once it has crossed")
 	instance.free()
 

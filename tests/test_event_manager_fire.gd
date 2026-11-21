@@ -88,7 +88,7 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 	t.check(scar_here, "and the shell the run keeps is standing where it burned")
 	var still_alight := false
 	for instance in RunCity.events(_city).instances():
-		still_alight = still_alight or instance.def.id == "burning_building"
+		still_alight = still_alight or instance.row_id() == "burning_building"
 	t.check(not still_alight,
 			"and nothing is left burning in a day that is over")
 
@@ -165,7 +165,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 				func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()))
 	var warning: PendingWarning = null
 	for pending in RunCity.events(_city).pending_warnings():
-		if pending.def.id == "fire_truck":
+		if pending.row().id == "fire_truck":
 			warning = pending
 	t.check(plan != null and warning != null, "she walks out, finds the fire, and the engine is warned")
 	if not warning:
@@ -195,11 +195,11 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 	t.check(not warning.was_withdrawn(), "and it is not withdrawn")
 	var engine: EventInstance = null
 	for instance in RunCity.events(_city).instances():
-		if instance.def.id == "fire_truck":
+		if instance.row_id() == "fire_truck":
 			engine = instance
 	t.check(engine != null, "and the engine is created once its second is over")
 	if engine:
-		var at := engine.path[0]
+		var at := engine.walks()[0]
 		var up_the_road := (at - stop).normalized()
 		var across := Vector2(-up_the_road.y, up_the_road.x)
 		var from_the_kerb := at - stop
@@ -213,11 +213,11 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 		if not Tile.is_road(_city.map.tile_type_at_world(at)):
 			wrong.append("off the carriageway")
 		if not SpawnSiting.is_out_of_sight(VisibleView.around(her_at[0], null),
-				EventFootprints.footprint_of(engine.def), her_at[0], at):
+				EventFootprints.footprint_of(engine.row()), her_at[0], at):
 			wrong.append("in sight")
 		t.check(wrong.is_empty(), "created at %v with her at %v: on its road, on its way to the fire, "
 				% [at, her_at[0]] + "just out of sight%s" % ("" if wrong.is_empty() else " — " + ", ".join(wrong)))
-		t.close_to(engine.path[engine.path.size() - 1].distance_to(stop), 0.0,
+		t.close_to(engine.walks()[engine.walks().size() - 1].distance_to(stop), 0.0,
 				"and it drives to the kerb across from the fire", 1.0)
 	rig.free()
 	RunCity.events(_city).stream_within(INF)
@@ -383,7 +383,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 			# The engine is what the sight of it summons, and its warning goes up on that same frame.
 			var engine := false
 			for warning in RunCity.events(_city).pending_warnings():
-				engine = engine or warning.def.id == "fire_truck"
+				engine = engine or warning.row().id == "fire_truck"
 			t.check(engine, "walking %s: and seeing it calls the engine in" % leg)
 		rig.free()
 	RunCity.events(_city).stream_within(INF)
@@ -480,15 +480,15 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 	var engines := 0
 	var engine_in_the_world := false
 	for instance in RunCity.events(_city).instances():
-		engine_in_the_world = engine_in_the_world or instance.def.id == "fire_truck"
+		engine_in_the_world = engine_in_the_world or instance.row_id() == "fire_truck"
 	t.check(not engine_in_the_world,
 			"and the engine it calls in is not in the world yet: its warning comes first")
 	for warning in RunCity.events(_city).pending_warnings():
-		if warning.def.id != "fire_truck":
+		if warning.row().id != "fire_truck":
 			continue
 		engines += 1
 		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(rig.global_position, null),
-				EventFootprints.footprint_of(warning.def), rig.global_position, warning.points_at()),
+				EventFootprints.footprint_of(warning.row()), rig.global_position, warning.points_at()),
 				"and its badge points just out of sight, where it will come from")
 		# **It is aimed at where the fire actually is**, which is the half a runtime siting could
 		# break: the route is built from the live instance's position when it is first seen, and a
@@ -512,7 +512,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		var arrived: EventInstance = null
 		var trucks := 0
 		for instance in RunCity.events(_city).instances():
-			if instance.def.id == "fire_truck":
+			if instance.row_id() == "fire_truck":
 				arrived = instance
 				trucks += 1
 		t.check(arrived != null and trucks == 1, "and it is created once its warning is over")
@@ -524,13 +524,13 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 			# (`EventDef.minimum_telegraph()`), from the badge to the first frame its field reaches
 			# her (or, for a lethal row, its lethal reach does).
 			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her_at, null),
-					EventFootprints.footprint_of(arrived.def), her_at, arrived.path[0]),
+					EventFootprints.footprint_of(arrived.row()), her_at, arrived.walks()[0]),
 					"and it is created just out of sight (%.0fpx from her)"
-					% arrived.path[0].distance_to(her_at))
+					% arrived.walks()[0].distance_to(her_at))
 			# Counted from its creation: the tick that made it took its first step too.
 			var to_reach := arrived.age()
 			var reaches := func() -> bool:
-				return arrived.is_lethal_at(her_at) if arrived.def.hard_fail \
+				return arrived.is_lethal_at(her_at) if arrived.ends_the_day() \
 						else arrived.source().contribution_at(her_at) > 0.0
 			var on_her_at_once: bool = reaches.call()
 			while not reaches.call() and to_reach < 10.0:
@@ -538,17 +538,17 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 				arrived.step(Rig.WALK_STEP)
 				to_reach += Rig.WALK_STEP
 			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"
-					% [arrived.path[0].distance_to(her_at), warning.shown_for(),
+					% [arrived.walks()[0].distance_to(her_at), warning.shown_for(),
 					"already on her" if on_her_at_once else "reaching her %.2fs later" % to_reach])
-			t.check(warning.shown_for() + to_reach + 0.001 >= arrived.def.minimum_telegraph(),
+			t.check(warning.shown_for() + to_reach + 0.001 >= arrived.row().minimum_telegraph(),
 					("and from its badge to the earliest it reaches her is %.2fs, at least the "
 					% (warning.shown_for() + to_reach))
-					+ "%.2fs it is owed" % arrived.def.minimum_telegraph())
-			t.check(arrived.path.size() == 2, "and it is given a route down the fire's own street")
-			t.close_to(arrived.path[0].distance_to(warning.points_at()), 0.0,
+					+ "%.2fs it is owed" % arrived.row().minimum_telegraph())
+			t.check(arrived.walks().size() == 2, "and it is given a route down the fire's own street")
+			t.close_to(arrived.walks()[0].distance_to(warning.points_at()), 0.0,
 					"starting where its badge pointed", 1.0)
-			if arrived.path.size() == 2:
-				t.close_to(arrived.path[1].distance_to(kerb), 0.0,
+			if arrived.walks().size() == 2:
+				t.close_to(arrived.walks()[1].distance_to(kerb), 0.0,
 						"ending at the near kerb across from where the fire is actually burning",
 						1.0)
 	t.check(engines == 1, "seeing the fire calls in exactly one engine (%d)" % engines)

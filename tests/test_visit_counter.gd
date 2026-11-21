@@ -766,7 +766,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t: TestRunner) -> void:
 		her.x += Tuning.RUN_SPEED * step
 		shaken_where.tell(her, Vector2.INF, Rect2(), true)
 		shaken.step(step)
-		if shaken.is_leaving:
+		if shaken.is_on_its_way_out():
 			break
 	t.check(counter.sent == [name + "chased", name + "shaken"],
 		"run off, it is counted shaken (%s)" % [counter.sent])
@@ -778,7 +778,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t: TestRunner) -> void:
 	for i in int(round((def.telegraphs_for() + def.duration + 1.0) / step)):
 		outlasted_where.tell(outlasted.global_position + Vector2(400.0, 0.0))
 		outlasted.step(step)
-		if outlasted.is_leaving:
+		if outlasted.is_on_its_way_out():
 			break
 	t.check(counter.sent == [name + "chased", name + "outlasted"],
 		"its clock run out, it is counted outlasted (%s)" % [counter.sent])
@@ -873,7 +873,7 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	for i in int(round(6.0 / (1.0 / 60.0))):
 		man_where.tell(Vector2(200.0, 0.0))
 		man.step(1.0 / 60.0)
-		if man.is_leaving:
+		if man.is_on_its_way_out():
 			break
 	t.check(counter.sent == [name + "warned", name + "chased", name + "outlasted"],
 		"and his run over without a catch is counted outlasted (%s)" % [counter.sent])
@@ -934,10 +934,10 @@ func _charger(t: Node, def: EventDef, where: WhereSheIs) -> EventInstance:
 ## finishes it, its own clock run out (or her shaken off), and says whether it did.
 func _finish_by_its_own_frames(instance: EventInstance, where: WhereSheIs) -> bool:
 	var step := 1.0 / 60.0
-	for i in int(round((instance.def.telegraph_time + instance.def.duration + 1.0) / step)):
+	for i in int(round((instance.telegraphs_for() + instance.row().duration + 1.0) / step)):
 		where.tell(instance.global_position + Vector2(400.0, 0.0))
 		instance.step(step)
-		if instance.is_leaving or instance.is_finished:
+		if instance.is_on_its_way_out() or instance.is_gone():
 			return true
 	return false
 

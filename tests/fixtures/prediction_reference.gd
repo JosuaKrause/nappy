@@ -4,11 +4,11 @@ extends RefCounted
 ## `sensitivity` is the baby's, as the halo last told the source (`ExcitementSource.set_her_motion()`).
 
 static func event_gross(source: EventInstance, player_position: Vector2, sensitivity: float) -> float:
-	if source.is_finished or source.is_leaving or source.source().is_outranked():
+	if source.is_gone() or source.is_on_its_way_out() or source.source().is_outranked():
 		return 0.0
 	var velocity := source.caret_velocity()
 	var closing := source.source().player_velocity - velocity
-	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + source.def.field_reach()
+	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + source.row().field_reach()
 	if source.global_position.distance_to(player_position) > reach:
 		return 0.0
 	if velocity.is_zero_approx() and source.source().player_velocity.is_zero_approx():

@@ -93,8 +93,8 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 	var vents := BuildingEvents.vents(_events)
 	for i in vents.size():
 		var vent: EventPlan = vents[i]
-		var there := candidate.distance_to(vent.placed_at())
-		if there >= HELD_OUT or there >= pos.distance_to(vent.placed_at()):
+		var there := candidate.distance_to(vent.position)
+		if there >= HELD_OUT or there >= pos.distance_to(vent.position):
 			continue
 		var blow := _blow_at(vent)
 		if blow != null and blow.is_solid():
@@ -104,8 +104,8 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 ## The blow standing at a vent right now, or null between blows.
 func _blow_at(vent: EventPlan) -> EventInstance:
 	for instance in _events.instances():
-		if instance.def.id == "basement_steam" and not instance.is_finished \
-				and instance.global_position.distance_to(vent.placed_at()) < 1.0:
+		if instance.row_id() == "basement_steam" and not instance.is_gone() \
+				and instance.global_position.distance_to(vent.position) < 1.0:
 			return instance
 	return null
 
@@ -119,7 +119,7 @@ func _tick(at: Vector2, awake: bool) -> float:
 	var incoming := 0.0
 	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
 	for instance in _events.instances():
-		if instance.def.id != "basement_steam":
+		if instance.row_id() != "basement_steam":
 			continue
 		instance.step(STEP)
 		incoming += instance.source().contribution_at(at)

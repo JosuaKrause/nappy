@@ -185,7 +185,7 @@ func _check_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, co
 		if not seen.has(id):
 			seen[id] = true
 			counts["came"] += 1
-		poses.append(["event %s" % instance.def.id, instance.position])
+		poses.append(["event %s" % instance.row_id(), instance.position])
 	for agent in RunCity.crowd(city).agents():
 		if not agent.is_inside_tree():
 			continue

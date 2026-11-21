@@ -350,7 +350,7 @@ func _playground_settles(t: TestRunner) -> void:
 			for i in int(round(duration / step)):
 				RunCity.crowd(city).step(step)
 				for instance in RunCity.events(city).instances():
-					if not instance.is_finished:
+					if not instance.is_gone():
 						instance.step(step)
 				baby._physics_process(step)
 				if baby.condition() == GameEnums.BabyState.ASLEEP:

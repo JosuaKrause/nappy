@@ -333,7 +333,7 @@ class Meeting extends RefCounted:
 		for instance in RunCity.events(_city).instances():
 			if before.has(instance) or not is_instance_valid(instance):
 				continue
-			line += "|%s:%s,%s,%d" % [instance.def.id, var_to_str(instance.position.x),
+			line += "|%s:%s,%s,%d" % [instance.row_id(), var_to_str(instance.position.x),
 					var_to_str(instance.position.y), instance.phase]
 		for officer: ParkCordon.Officer in officers:
 			line += "|o:%s,%s,%d" % [var_to_str(officer.at.x), var_to_str(officer.at.y),

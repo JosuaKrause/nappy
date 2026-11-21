@@ -474,7 +474,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 	while not caught and frames < int(30.0 / STEP):
 		var gone := true
 		for instance: EventInstance in lured:
-			gone = gone and instance.barrier_post.is_spent() and not instance.is_leaving
+			gone = gone and instance.barrier_post.is_spent() and not instance.is_on_its_way_out()
 		if gone:
 			break
 		if tick(where, instances, her, false, -heading):

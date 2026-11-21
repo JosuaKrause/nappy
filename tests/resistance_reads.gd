@@ -34,7 +34,7 @@ static func answering(events: EventManager, step: ResistanceSteps.Step) -> Array
 	if step == null:
 		return found
 	for instance in events.instances():
-		if instance.def.id == step.task_event_id and not instance.is_finished:
+		if instance.row_id() == step.task_event_id and not instance.is_gone():
 			found.append(instance)
 	return found
 

@@ -336,7 +336,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	# the lorry is past its telegraph and not before, with her inside the same reach.
 	_clear()
 	var lorry := _instance(t, "reversing_lorry", Vector2.ZERO)
-	var reach := lorry.def.lethal_reach()
+	var reach := lorry.lethal_reach()
 	var outside := Vector2(0.0, reach + 40.0)
 	_run(watch, [lorry] as Array[EventInstance], outside, 0.5)
 	t.check(_seen.size() == 1 and _influenced.is_empty(),
@@ -346,7 +346,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	t.check(lorry.is_telegraphing() and _influenced.is_empty(),
 			"reversing_lorry: inside its reach while still telegraphing is no catch (%s)"
 			% [_influenced])
-	lorry.restore(EventSave.new(lorry.def.telegraph_time + 0.1, 0.0, 0.0))
+	lorry.restore(EventSave.new(lorry.telegraphs_for() + 0.1, 0.0, 0.0))
 	t.check(not lorry.is_telegraphing() and lorry.is_lethal_at(inside),
 			"the lorry is now past its telegraph and the game's own test catches her")
 	_stand(watch, [lorry] as Array[EventInstance], inside)
@@ -361,7 +361,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	manager.set_physics_process(false)
 	var post := manager.spawn_extra(EventCatalogue.by_id("checkpoint_post"), Vector2.ZERO)
 	post.set_process(false)
-	var hold_reach := post.def.detain_distance()
+	var hold_reach := post.detain_distance()
 	_run(watch, [post] as Array[EventInstance], Vector2(0.0, hold_reach + 40.0), 0.5)
 	t.check(_seen.size() == 1 and _influenced.is_empty(),
 			"checkpoint_post: seen outside its hold is no influence (%s)" % [_influenced])
@@ -396,11 +396,11 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
 	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
 	guard.arrive_from_its_warning()
-	guard.restore(EventSave.new(guard.def.pursuit.warns_for + 0.1, 0.0, 0.0))
+	guard.restore(EventSave.new(guard.row().pursuit.warns_for + 0.1, 0.0, 0.0))
 	var her := Vector2(134.0, 122.0)
-	t.check(guard.def.hard_fail and not guard.is_telegraphing() and not guard.is_waiting()
+	t.check(guard.ends_the_day() and not guard.is_telegraphing() and not guard.is_waiting()
 			and not guard.is_chasing()
-			and guard.global_position.distance_to(her) < guard.def.lethal_reach(),
+			and guard.global_position.distance_to(her) < guard.lethal_reach(),
 			"the guard is past his telegraph, not yet reported chasing, and she is inside his reach")
 	t.check(not guard.is_lethal_at(her), "but the game does not call it a catch, a corner between")
 	var watch := _watch()
@@ -419,7 +419,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	_clear()
 	var cyclist := _instance(t, "cyclist", Vector2.ZERO)
 	var warned: Array[EventInstance] = [cyclist]
-	var near := Vector2(0.0, cyclist.def.lethal_reach() - 2.0)
+	var near := Vector2(0.0, cyclist.lethal_reach() - 2.0)
 	_stand(watch, warned, near)
 	t.check(cyclist.is_telegraphing() and not cyclist.is_lethal_at(near) and _influenced.is_empty(),
 			"a cyclist still only warned is not a catch, and not an influence (%s)" % [_influenced])
@@ -434,7 +434,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	var post := manager.spawn_extra(EventCatalogue.by_id("checkpoint_post"), Vector2(0.0, 500.0))
 	post.set_process(false)
 	mother.start_chat()
-	var at_post := Vector2(0.0, 500.0 + post.def.detain_distance() - 2.0)
+	var at_post := Vector2(0.0, 500.0 + post.detain_distance() - 2.0)
 	var both: Array[EventInstance] = [mother, post]
 	_stand(_watch(), both, at_post, manager.checkpoints.hold_that_would_begin)
 	t.check(_influenced.is_empty(),
@@ -460,15 +460,15 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 	var centre := Vector2(4000.0, 4000.0)
 	var hut := manager.spawn_extra(EventCatalogue.by_id("checkpoint_hut"), centre)
 	var entry := centre + axis * 40.0 + Vector2(0.0, 16.0)
-	var clearance := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := hut.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var released := centre - axis * maxf(40.0, clearance) + Vector2(0.0, 16.0)
 	var cyclist := manager.spawn_extra(EventCatalogue.by_id("cyclist"), released)
 	cyclist.set_process(false)
-	cyclist.restore(EventSave.new(cyclist.def.telegraph_time + 0.1, 0.0, 0.0))
+	cyclist.restore(EventSave.new(cyclist.telegraphs_for() + 0.1, 0.0, 0.0))
 	# Where the test puts it: the manager's tick does not step it off the place the door sets her.
 	cyclist.hold_by_hand()
-	var reach := cyclist.def.lethal_reach()
+	var reach := cyclist.lethal_reach()
 	t.check(entry.distance_to(cyclist.global_position) > reach
 			and not cyclist.is_telegraphing(),
 			"the cyclist is past its warning and out of reach of where she walks into the hut")
