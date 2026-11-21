@@ -6,19 +6,19 @@ extends RefCounted
 ## the director decides where, later, out of where the player turns out to walk. `is_placed()`
 ## is the question everything that reasons about geometry has to ask first.
 
-var def: EventDef
-var position: Vector2
-var path := PackedVector2Array()
+var _def: EventDef
+var _position: Vector2
+var _path := PackedVector2Array()
 ## Which way it is drawn facing, for a stationary event whose siting decided that. A mobile
 ## one gets its facing from the direction it is travelling and ignores this. A lorry backing
 ## into a yard has to have its back to the yard, and only the placement knows which side of the
 ## street the yard is on.
-var facing := Vector2.RIGHT
+var _facing := Vector2.RIGHT
 
 ## The shared boom state a `checkpoint_gate` plan's instance draws raised or lowered from —
 ## `GateState`, built once per street door and carried here by
 ## `RegionPlanner._add_door_bodies`. `null` for every plan but a gate's own.
-var gate_state: GateState = null
+var _gate_state: GateState = null
 
 ## `MastSites.Site.id` for a mast's own plan (its ordinary broadcast and, on
 ## `DawnMasts.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
@@ -41,8 +41,8 @@ var _repeat_after := 0.0
 ## world at once, which is every plan that does not repeat.
 var _first_comes_in := 0.0
 ## Whether this plan's instance is put where she stands each time it comes, rather than at
-## `position` — the explosion outside, whose charge stands where she is wherever in the building
-## she has got to. Its `position` is where it last came.
+## `placed_at()` — the explosion outside, whose charge stands where she is wherever in the building
+## she has got to. Its `placed_at()` is where it last came.
 var _at_her := false
 ## The age each of its instances arrives at: 0 for one that comes and gives its notice, the
 ## row's `telegraph_time` for one whose notice is already over when it comes (the explosion
@@ -51,9 +51,9 @@ var _arrives_aged := 0.0
 
 func _init(definition: EventDef, at: Vector2,
 		route := PackedVector2Array()) -> void:
-	def = definition
-	position = at
-	path = route
+	_def = definition
+	_position = at
+	_path = route
 	if definition:
 		_repeat_every = definition.comes_again_every()
 		_repeat_after = definition.comes_again_after()
@@ -69,7 +69,7 @@ func repeats() -> bool:
 ## event itself is streaming's (`EventStreaming.event_of()`).
 var _standing: WhereItStands = WhereItStands.nowhere()
 ## True once the event has run its course, so walking back past it does not start it again.
-var spent := false
+var _spent := false
 ## True for something the *run* left here rather than something today rolled — a burnt-out
 ## shell, a barricade. It is world history and the day may not tidy it away.
 var _permanent := false
@@ -111,29 +111,28 @@ var _is_a_seal := false
 
 ## False for an event the day has planned but not sited.
 func is_placed() -> bool:
-	return position != Vector2.INF
+	return _position != Vector2.INF
 
-## True once the event has run its course (`spent`), so walking back past it does not start it
-## again.
+## True once the event has run its course, so walking back past it does not start it again.
 func is_spent() -> bool:
-	return spent
+	return _spent
 
 ## Spends this plan for the rest of the day (`is_spent()`): it is not streamed in again.
 func spend() -> void:
-	spent = true
+	_spent = true
 
 ## The id of the row this plan places (`EventDef.id`).
 func row_id() -> String:
-	return def.id
+	return _def.id
 
 ## Whether `other` places the same row as this plan.
 func is_the_same_row_as(other: EventPlan) -> bool:
-	return def.id == other.def.id
+	return _def.id == other._def.id
 
 ## Where the day placed this plan, `Vector2.INF` while it is unsited (`is_placed()`). Its instance
 ## may have moved since: `where_it_stands_now()` answers where it is.
 func placed_at() -> Vector2:
-	return position
+	return _position
 
 ## **Where its body stands, as far as the lattice says**: `stands_without_a_map()` of where it was
 ## placed. Every reading of its geometry here asks it, and so do the day's disc readings of a body
@@ -141,7 +140,7 @@ func placed_at() -> Vector2:
 ## `EventScheduler.blocked_by()`, the roadblock phase, the day-13 swap), so a roadblock's band is
 ## read where it is drawn and solid, leaving the far sidewalk whole.
 func body_at() -> Vector2:
-	return stands_without_a_map(def, position)
+	return stands_without_a_map(_def, _position)
 
 ## **Where a body of `row` built at `at` stands, as far as the lattice says without a map**: on the
 ## kerb beside its carriageway lane when the row stands at its kerb (`EventDef.stands_at_its_kerb()`,
@@ -217,44 +216,44 @@ func is_kept_in_the_world() -> bool:
 ## Day 13's swap never takes the section of one (`ResistanceDirector._section_to_swap()`).
 func is_a_fixed_part() -> bool:
 	return _is_door or _in_the_wall or _is_a_seal or _mast_id != "" \
-			or def.is_ambient()
+			or _def.is_ambient()
 
 ## Makes this body one of the day's seals. Called by `DayPlanner` for each seal it plans, and by
 ## nothing else.
 func stand_as_a_seal() -> void:
 	_is_a_seal = true
 
-## Whether this plan stands at one point rather than moving along a route (`path`).
+## Whether this plan stands at one point rather than moving along a route (`walks()`).
 func stands_still() -> bool:
-	return path.size() < 2
+	return _path.size() < 2
 
 ## The row this plan places: what its pictures are, asked of her view before day 13's task takes
 ## its section (`ResistanceDirector._place_the_roadblock_near()`), and whether it spans the street
 ## (`DayLocations.assign()`).
 func row() -> EventDef:
-	return def
+	return _def
 
-## The route its body walks (`path`): a mover's beat or its run, empty for one that stands.
+## The route its body walks: a mover's beat or its run, empty for one that stands.
 func walks() -> PackedVector2Array:
-	return path
+	return _path
 
 ## **Stands the plan where `sited` was judged**: takes its place, its route, its facing and its
 ## role. What her walk's siting tells a beat once a location takes it.
 func stand_where(sited: EventPlan) -> void:
-	position = sited.position
-	path = sited.path
-	facing = sited.facing
+	_position = sited._position
+	_path = sited._path
+	_facing = sited._facing
 	_role = sited._role
 
 ## Records where a plan that comes where she stands last came (`come_where_she_stands()`): the
 ## explosion outside's charge, which `EventStreaming` brings back on her spot each time.
 func came_at(at: Vector2) -> void:
-	position = at
+	_position = at
 
 ## Turns the plan to face `direction`: a crew faces the wall it pastes, the plan builder backs a
 ## van in, the region planner sets a door body's axis.
 func face(direction: Vector2) -> void:
-	facing = direction
+	_facing = direction
 
 ## Gives it the role a judge decided (`StreetInvalidation.room()`), which is where it went.
 func give_role(given: GameEnums.BlockerRole) -> void:
@@ -273,13 +272,13 @@ func role() -> GameEnums.BlockerRole:
 ## 0 for an event that neither stands in the way nor ends the day. What the park cordon's last
 ## gap is kept clear of (`ParkCordon._clear_of_the_day()`).
 func clearance(her_reach: float) -> float:
-	if def.obstructs_within() <= 0.0 and not def.ends_the_day():
+	if _def.obstructs_within() <= 0.0 and not _def.ends_the_day():
 		return 0.0
-	var reach := def.obstructs_within() + her_reach
-	if def.has_a_field():
-		reach = maxf(reach, def.field_reach())
-	if def.ends_the_day():
-		reach = maxf(reach, def.lethal_reach() + her_reach)
+	var reach := _def.obstructs_within() + her_reach
+	if _def.has_a_field():
+		reach = maxf(reach, _def.field_reach())
+	if _def.ends_the_day():
+		reach = maxf(reach, _def.lethal_reach() + her_reach)
 	return reach
 
 ## Where this event stands now: its instance's position while it is in the world, where it stands
@@ -291,10 +290,10 @@ func where_it_stands_now() -> Vector2:
 ## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
 ## question the way it would be from a disc's.
 func reaches(rect: Rect2) -> bool:
-	var grown := rect.grow(def.field_reach())
+	var grown := rect.grow(_def.field_reach())
 	if grown.has_point(body_at()):
 		return true
-	for point in path:
+	for point in _path:
 		if grown.has_point(point):
 			return true
 	return false
@@ -312,7 +311,7 @@ func reaches(rect: Rect2) -> bool:
 ## would make a burnt-out building that has stood on that corner since day 3 vanish for one
 ## day and come back the next.
 func spoils(ground: Rect2) -> bool:
-	if def.is_ambient() or not is_placed() or _permanent:
+	if _def.is_ambient() or not is_placed() or _permanent:
 		return false
 	return reaches(ground)
 
@@ -321,16 +320,16 @@ func spoils(ground: Rect2) -> bool:
 ## not something she walks through to reach the park behind it; a door is a crossing she walks
 ## through. What the day's reach (`DayReach`) stands as discs (`blocking_radius()`).
 func obstructs() -> bool:
-	return is_placed() and not _is_door and (def.obstructs_within() > 0.0 or def.ends_the_day())
+	return is_placed() and not _is_door and (_def.obstructs_within() > 0.0 or _def.ends_the_day())
 
 ## The disc this event blocks the way with: its body's radius, or a hard fail's inner radius
 ## when that is wider.
 func blocking_radius() -> float:
-	return maxf(def.obstructs_within(), def.core_within() if def.ends_the_day() else 0.0)
+	return maxf(_def.obstructs_within(), _def.core_within() if _def.ends_the_day() else 0.0)
 
 ## The points that bound this event — the corners of its route, or the one place it stands.
 func ends() -> PackedVector2Array:
-	return path if path.size() >= 2 else PackedVector2Array([body_at()])
+	return _path if _path.size() >= 2 else PackedVector2Array([body_at()])
 
 ## Distance from a point to the nearest part of this event — the point it stands at, or the
 ## nearest point of the route it will travel. A fire engine two streets away that is going
@@ -339,16 +338,16 @@ func ends() -> PackedVector2Array:
 func distance_from(at: Vector2) -> float:
 	if not is_placed():
 		return INF
-	if path.size() < 2:
+	if _path.size() < 2:
 		return body_at().distance_to(at)
 	var best := INF
-	for i in range(1, path.size()):
+	for i in range(1, _path.size()):
 		best = minf(best, at.distance_to(
-				Geometry2D.get_closest_point_to_segment(at, path[i - 1], path[i])))
+				Geometry2D.get_closest_point_to_segment(at, _path[i - 1], _path[i])))
 	return best
 
 ## **How far she is from this plan for the streaming's sake**, `INF` for a plan streaming does not look
-## at: one that is spent or not placed. It measures from where the plan was placed (`position`) for a
+## at: one that is spent or not placed. It measures from where the plan was placed (`placed_at()`) for a
 ## plan that stands at one point, and to the nearest point of its route for one that walks, the number
 ## `distance_from()` answers for a route. **It is not `distance_from()` for a point plan**, which
 ## measures from where its body stands (`body_at()`, the kerb for a row that stands at its kerb): a
@@ -356,9 +355,9 @@ func distance_from(at: Vector2) -> float:
 ## because streaming puts the question to every plan of the walk on every physics tick: it is the one
 ## question the loop puts to a plan (`EventStreaming.stream_around()`).
 func streaming_distance_from(at: Vector2) -> float:
-	if spent or position == Vector2.INF:
+	if _spent or _position == Vector2.INF:
 		return INF
-	return position.distance_to(at) if path.size() < 2 else distance_from(at)
+	return _position.distance_to(at) if _path.size() < 2 else distance_from(at)
 
 ## The closest endpoint-to-route distance between two events.
 ##
@@ -367,9 +366,9 @@ func streaming_distance_from(at: Vector2) -> float:
 func gap_to(other: EventPlan) -> float:
 	# A point's distance to the whole other route already includes its endpoints, so the symmetric
 	# endpoint pass cannot make the answer smaller when either side is stationary.
-	if path.size() < 2:
+	if _path.size() < 2:
 		return other.distance_from(body_at())
-	if other.path.size() < 2:
+	if other._path.size() < 2:
 		return distance_from(other.body_at())
 	var gap := INF
 	for point in ends():
@@ -421,8 +420,8 @@ func gap_to(other: EventPlan) -> float:
 ## untouched — `EventPlan.keeps_its_field_clear()` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 func counts_against_the_line() -> bool:
-	return is_placed() and not _is_door and _mast_id == "" and not def.is_a_mast() \
-			and def.has_a_line_to_avoid()
+	return is_placed() and not _is_door and _mast_id == "" and not _def.is_a_mast() \
+			and _def.has_a_line_to_avoid()
 
 ## Whether a row denies a point, under the beat-opening reading.
 ##
@@ -433,7 +432,7 @@ func counts_against_the_line() -> bool:
 ## straight run is within `reach` of every point of it.
 func denies(at: Vector2, reach: float) -> bool:
 	if walks_a_beat():
-		for point in path:
+		for point in _path:
 			if at.distance_to(point) > reach:
 				return false
 		return true
@@ -443,7 +442,7 @@ func denies(at: Vector2, reach: float) -> bool:
 ## it denies is the ground the beat never leaves free (`denies()`), and the street it paces is one
 ## the line rule lets her pass him on by its far sidewalk (`RouteLineRule`).
 func walks_a_beat() -> bool:
-	return def.paces_a_beat() and path.size() >= 2
+	return _def.paces_a_beat() and _path.size() >= 2
 
 ## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
 ## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
@@ -453,7 +452,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 	var grown := rect.grow(reach)
 	if grown.has_point(body_at()):
 		return true
-	for point in path:
+	for point in _path:
 		if grown.has_point(point):
 			return true
 	return false
@@ -504,7 +503,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
 ## say, which `EventScheduler.role_for` would classify ahead of the `hard_fail` check.
 func keeps_its_field_clear() -> bool:
-	return def.ends_the_day() and _role != GameEnums.BlockerRole.WALL and not def.pursues()
+	return _def.ends_the_day() and _role != GameEnums.BlockerRole.WALL and not _def.pursues()
 
 # ----------------------------------------------------- what a caller asks ---
 # The questions a caller outside the events asks a plan, answered for its row where the
@@ -513,16 +512,16 @@ func keeps_its_field_clear() -> bool:
 ## Whether its body holds a walker at its door (`EventDef.detains_her()`): the door bodies the
 ## crowd's walkers are held at (`Crowd`).
 func detains_her() -> bool:
-	return def.detains_her()
+	return _def.detains_her()
 
 ## How far round where it stands its body stops her (`EventDef.obstructs_within()`), or 0: the
 ## discs a siting reads off the wall and the doors (`DayStreets.siting_region()`).
 func obstructs_within() -> float:
-	return def.obstructs_within()
+	return _def.obstructs_within()
 
 ## Whether walking into its reach ends her day (`EventDef.ends_the_day()`).
 func ends_the_day() -> bool:
-	return def.ends_the_day()
+	return _def.ends_the_day()
 
 ## Whether its field reaches `point`: its live event's own answer (`EventInstance.field_reaches()`,
 ## the field's real shape), and false while it is not in the world, where no field stands to reach
@@ -533,22 +532,22 @@ func field_reaches(point: Vector2) -> bool:
 ## Whether it is a door's boom, solid only while lowered (`EventDef.is_a_boom()`): the door's
 ## line runs through it.
 func is_a_boom() -> bool:
-	return def.is_a_boom()
+	return _def.is_a_boom()
 
 ## Whether it is a door's hut or post, armed again once she has walked away
 ## (`EventDef.detains_again()`): a gatehouse of its door.
 func detains_again() -> bool:
-	return def.detains_again()
+	return _def.detains_again()
 
-## Which way it is drawn facing (`facing`), as its siting decided: along its street for a door's
+## Which way it is drawn facing, as its siting decided: along its street for a door's
 ## bodies, so a door's line is read off them.
 func faces() -> Vector2:
-	return facing
+	return _facing
 
 ## Which way it faces now: its live event's facing while it is in the world
 ## (`EventInstance.facing_now()`), the way its siting decided (`faces()`) otherwise.
 func faces_now() -> Vector2:
-	return _standing.facing() if _standing.is_there() else facing
+	return _standing.facing() if _standing.is_there() else _facing
 
 ## Whether its live event is in the world and over (`EventInstance.is_gone()`), in the moment
 ## before streaming takes it off this plan; false while it is not in the world.
@@ -558,59 +557,59 @@ func its_event_is_gone() -> bool:
 ## Whether its body is one the map records for the whole day (`EventDef.stands_as_a_fixed_body()`):
 ## standing, solid, and no door's.
 func stands_as_a_fixed_body() -> bool:
-	return def.stands_as_a_fixed_body()
+	return _def.stands_as_a_fixed_body()
 
 ## Its row's ground shape (`EventDef.ground_shape()`), or null for a row with no picture.
 func ground_shape() -> GroundShape:
-	return def.ground_shape()
+	return _def.ground_shape()
 
 ## How far round its centre its body stops her (`EventDef.solid_reach()`).
 func solid_reach() -> float:
-	return def.solid_reach()
+	return _def.solid_reach()
 
 ## Whether its row is a permanent feature of a fixed map (`EventDef.is_ambient()`), which never
 ## appears: the dev rig's `--spawn event` passes over it.
 func is_ambient() -> bool:
-	return def.is_ambient()
+	return _def.is_ambient()
 
 ## Whether its row paces a beat (`EventDef.paces_a_beat()`), whether or not a beat is laid
 ## (`walks_a_beat()`).
 func paces_a_beat() -> bool:
-	return def.paces_a_beat()
+	return _def.paces_a_beat()
 
 ## Whether its row comes after her (`EventDef.pursues()`), however its chase starts.
 func pursues() -> bool:
-	return def.pursues()
+	return _def.pursues()
 
 ## How close she comes before it notices her (`EventDef.notice_within()`), or 0 for a row that does
 ## not wait for her.
 func notice_within() -> float:
-	return def.notice_within()
+	return _def.notice_within()
 
 ## How far from its centre its row is heard (`EventDef.heard_within()`): its field's outer edge as a
 ## disc, the distance the dev rig stands her off it by.
 func heard_within() -> float:
-	return def.heard_within()
+	return _def.heard_within()
 
 ## How far from its centre her own centre has to come for a hold of its to begin
 ## (`EventDef.detain_distance()`): a door's hut or post takes her in from there.
 func detain_distance() -> float:
-	return def.detain_distance()
+	return _def.detain_distance()
 
 ## Makes it the boom of a street door, drawn raised or lowered from `shared`, the state the region's
 ## doors are made with (`gate()`). Called by `RegionPlanner._add_door_bodies()` as it makes the
 ## door's boom, and by nothing else.
 func stand_as_the_boom_of(shared: GateState) -> void:
-	gate_state = shared
+	_gate_state = shared
 
-## The boom's shared state (`gate_state`) for a street door's boom, which the region's doors are
+## The boom's shared state for a street door's boom, which the region's doors are
 ## made with, or null for every other plan.
 func gate() -> GateState:
-	return gate_state
+	return _gate_state
 
 ## How long its row's telegraph lasts, in seconds (`EventDef.telegraphs_for()`).
 func telegraphs_for() -> float:
-	return def.telegraphs_for()
+	return _def.telegraphs_for()
 
 ## Makes it a loudspeaker mast's own plan, known by `id` (`mast_id()`): what the day's task, its red
 ## arrow and the blackout find a mast by. A scene recipe's runtime calls it for each mast it stands.
@@ -623,59 +622,59 @@ func mast_id() -> String:
 
 ## Which `EventDef.SpawnMode` its row is sited in on `day` (`EventDef.spawn_mode_on()`).
 func spawn_mode_on(day: int) -> EventDef.SpawnMode:
-	return def.spawn_mode_on(day)
+	return _def.spawn_mode_on(day)
 
 ## Whether the director sends its row ahead of her on an ordinary day (`EventDef.is_sent_ahead()`).
 func is_sent_ahead() -> bool:
-	return def.is_sent_ahead()
+	return _def.is_sent_ahead()
 
 ## Whether its row is a one-shot, a set piece a day owes once (`EventDef.is_a_one_shot()`).
 func is_a_one_shot() -> bool:
-	return def.is_a_one_shot()
+	return _def.is_a_one_shot()
 
 ## The id of the row its live event calls in once it is first seen (`EventDef.calls_in()`), or ""
 ## for a row that calls none: the burning building's entering fire engine.
 func calls_in() -> String:
-	return def.calls_in()
+	return _def.calls_in()
 
 ## How far round where it stands its field reaches, the stretch a siting keeps clear of the
 ## fields of others (`EventDef.field_reach()`).
 func field_reach() -> float:
-	return def.field_reach()
+	return _def.field_reach()
 
 ## How far round where it stands a route's line is kept clear of it (`EventDef.line_reach()`).
 func line_reach() -> float:
-	return def.line_reach()
+	return _def.line_reach()
 
 ## Whether it takes a whole section of its street when it is placed (`EventDef.spans_the_street()`).
 func spans_the_street() -> bool:
-	return def.spans_the_street()
+	return _def.spans_the_street()
 
 ## Whether the dawn hands it to her walk, to be sited on her way with no position
 ## (`EventDef.is_handed_to_her_walk()`).
 func is_handed_to_her_walk() -> bool:
-	return def.is_handed_to_her_walk()
+	return _def.is_handed_to_her_walk()
 
 ## Whether her walk places it rather than the dawn or a unit's draw (`EventDef.is_sited_from_her_walk()`).
 func is_sited_from_her_walk() -> bool:
-	return def.is_sited_from_her_walk()
+	return _def.is_sited_from_her_walk()
 
 ## Whether it is a set piece sited on her way (`EventDef.is_a_set_piece_on_her_way()`).
 func is_a_set_piece_on_her_way() -> bool:
-	return def.is_a_set_piece_on_her_way()
+	return _def.is_a_set_piece_on_her_way()
 
 ## Whether her walk stands it at a building's front (`EventDef.stands_at_a_front()`).
 func stands_at_a_front() -> bool:
-	return def.stands_at_a_front()
+	return _def.stands_at_a_front()
 
 ## Whether its row is a loudspeaker mast (`EventDef.is_a_mast()`).
 func is_a_mast() -> bool:
-	return def.is_a_mast()
+	return _def.is_a_mast()
 
 ## Whether it is a loudspeaker mast still speaking today: a mast's own plan (`mast_id()`, of a row
 ## that is a mast) that nothing has silenced (`silence()`).
 func is_a_live_mast() -> bool:
-	return _mast_id != "" and def.is_a_mast() and not _silenced
+	return _mast_id != "" and _def.is_a_mast() and not _silenced
 
 ## Silences it for the rest of the day, so a mast silenced while out of reach is still silent the
 ## next time she comes near it.

@@ -98,8 +98,8 @@ func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
 		t.check(_contains(planned, "burnt_shell"),
 				"the burnt-out shell is still there on day %d" % day)
 		for plan in planned:
-			if plan.def.id == "burnt_shell":
-				t.close_to(plan.position.distance_to(where), 0.0,
+			if plan.row_id() == "burnt_shell":
+				t.close_to(plan.placed_at().distance_to(where), 0.0,
 						"and it is on the same corner", 1.0)
 
 ## **The fire only catches where there is a building to burn, and burns on that building alone.**
@@ -271,7 +271,7 @@ func _burnt_count(city: City) -> int:
 
 func _contains(planned: Array[EventPlan], id: String) -> bool:
 	for plan in planned:
-		if plan.def.id == id:
+		if plan.row_id() == id:
 			return true
 	return false
 

@@ -72,8 +72,8 @@ func _measure_caps() -> void:
 			for id: String in TRACKED_IDS:
 				budgeted[id] = 0
 			for plan: EventPlan in planned:
-				if plan.def.id in budgeted:
-					budgeted[plan.def.id] += 1
+				if plan.row_id() in budgeted:
+					budgeted[plan.row_id()] += 1
 
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()

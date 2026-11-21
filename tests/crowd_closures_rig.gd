@@ -816,13 +816,13 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 	# walking at each and the hold read off it after one frame.
 	var huts: Array[WalkerDoorHold] = []
 	for body in city.streets().region_plan().door_bodies:
-		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
+		if body.row().detains_for() <= 0.0 or not mouth.has_point(body.placed_at()):
 			continue
-		var across: float = body.position.x if vertical else body.position.y
+		var across: float = body.placed_at().x if vertical else body.placed_at().y
 		if CityMap.is_road_offset(
 				CityMap.corridor_offset(floori(across / float(Tuning.TILE_SIZE)))):
 			continue    # the boom over the roadway, which is the cars' own
-		var probe := _walker_approaching(scene, body.position, 160.0,
+		var probe := _walker_approaching(scene, body.placed_at(), 160.0,
 				WalkerStrategy.DoorAnswer.PASSES)
 		RunCity.crowd(city).step(STEP)
 		if probe.lane().door_ahead() != null:

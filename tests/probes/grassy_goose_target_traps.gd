@@ -160,13 +160,13 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 		return [her]
 	var hut: EventPlan = null
 	for body in city.streets().region_plan().door_bodies:
-		if body.def.redetains and body.position.distance_to(her) < 0.5:
+		if body.detains_again() and body.placed_at().distance_to(her) < 0.5:
 			hut = body
 	if hut == null:
 		return [her]
-	var out := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
+	var out := hut.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
-	return [hut.position + hut.facing * out, hut.position - hut.facing * out]
+	return [hut.placed_at() + hut.faces() * out, hut.placed_at() - hut.faces() * out]
 
 ## `_draw_arrival_position()` asked with the day's view looked through about `her`, the
 ## unrotated 640x360 screen round her.
@@ -183,7 +183,7 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 	if not plan:
 		return false
 	for body in plan.door_bodies:
-		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_within(),
+		if DoorLine.crossed_by(body.placed_at(), body.faces(), body.obstructs_within(),
 				start, her):
 			return true
 	return false

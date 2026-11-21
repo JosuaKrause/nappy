@@ -93,8 +93,8 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 	var vents := BuildingEvents.vents(_events)
 	for i in vents.size():
 		var vent: EventPlan = vents[i]
-		var there := candidate.distance_to(vent.position)
-		if there >= HELD_OUT or there >= pos.distance_to(vent.position):
+		var there := candidate.distance_to(vent.placed_at())
+		if there >= HELD_OUT or there >= pos.distance_to(vent.placed_at()):
 			continue
 		var blow := _blow_at(vent)
 		if blow != null and blow.is_solid():
@@ -105,7 +105,7 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 func _blow_at(vent: EventPlan) -> EventInstance:
 	for instance in _events.instances():
 		if instance.row_id() == "basement_steam" and not instance.is_gone() \
-				and instance.global_position.distance_to(vent.position) < 1.0:
+				and instance.global_position.distance_to(vent.placed_at()) < 1.0:
 			return instance
 	return null
 

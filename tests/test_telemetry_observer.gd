@@ -135,7 +135,7 @@ class StandInEvents extends FakeEventManager:
 	func place(row: String, at: Vector2) -> EventPlan:
 		var plan := EventPlan.new(EventCatalogue.by_id(row), at)
 		var instance := EventInstance.new()
-		instance.setup(plan.def, at)
+		instance.setup(plan.row(), at)
 		plan.enter_the_world(instance.standing())
 		made.append(instance)
 		placed.append(plan)
@@ -549,12 +549,12 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t: T
 	_log.begin_run(0)
 	_log.begin_day(3, 1, 1, 1, 180.0)
 
-	rig.player.global_position = at + Vector2(plan.def.outer_radius + 200.0, 0.0)
+	rig.player.global_position = at + Vector2(plan.heard_within() + 200.0, 0.0)
 	await rig.frame()
 	t.check(not rig.observer.met_events().has(plan),
 			"being streamed in is not being met — she has not come within the outer radius yet")
 
-	rig.player.global_position = at + Vector2(plan.def.outer_radius - 10.0, 0.0)
+	rig.player.global_position = at + Vector2(plan.heard_within() - 10.0, 0.0)
 	await rig.frame()
 	t.check(rig.observer.met_events().has(plan),
 			"entering the outer radius — the field she can actually feel — is what counts as met")
@@ -587,7 +587,7 @@ func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t: TestRunner
 
 	_fresh_log()
 	var rig := Rig.new(t, _log, null, day)
-	rig.player.global_position = at + Vector2(plan.def.outer_radius + 200.0, 0.0)
+	rig.player.global_position = at + Vector2(plan.heard_within() + 200.0, 0.0)
 
 	_log.begin_run(0)
 	_log.begin_day(3, 1, 1, 1, 180.0)

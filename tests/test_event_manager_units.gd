@@ -230,8 +230,8 @@ func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) 
 				continue
 			sited_at[plan] = plan.placed_at()
 			sitings += 1
-			var footprint := EventSpawner.obstructed_footprint(map, plan.def,
-					plan.position, plan.facing)
+			var footprint := EventSpawner.obstructed_footprint(map, plan.row(),
+					plan.placed_at(), plan.faces())
 			if not footprint.is_empty():
 				bodies_sited += 1
 				if not told.has(str(footprint)):
@@ -404,8 +404,8 @@ func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
 	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
 		told.append(str(tiles)))
 	var swapped := events.swap_in_a_section(chosen, across)
-	var across_footprint := EventSpawner.obstructed_footprint(map, across.def, across.position,
-			across.facing)
+	var across_footprint := EventSpawner.obstructed_footprint(map, across.row(), across.placed_at(),
+			across.faces())
 	t.check(not across_footprint.is_empty() and str(across_footprint) in told,
 			"the swap tells the crowd's listener the roadblock's footprint, as a drawn body is told")
 	t.check(swapped != null and its_unit.is_drawn(),

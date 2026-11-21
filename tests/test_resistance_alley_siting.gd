@@ -600,10 +600,10 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
 			for plan in GameDawn.of(DaySpec.for_day(day), events_rng, map).spent(consumed).on(tree) \
 					.plan().placements():
-				if plan.def.id != "alley_robbery" or not plan.is_placed():
+				if plan.row_id() != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
-				t.check(plan.position.distance_to(doorstep) > reach,
+				t.check(plan.placed_at().distance_to(doorstep) > reach,
 						("seed %d day %d: no scheduled alley_robbery stands within lethal reach " +
 						"of the doorstep") % [seed_value, day])
 

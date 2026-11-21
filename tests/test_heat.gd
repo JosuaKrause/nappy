@@ -272,7 +272,7 @@ func _test_a_day_is_a_function_of_its_heat(t: TestRunner) -> void:
 	t.check(first.size() == second.size(),
 			"a hot day planned twice is the same day (%d vs %d)" % [first.size(), second.size()])
 	for i in mini(first.size(), second.size()):
-		t.check(first[i].def.id == second[i].def.id and first[i].position == second[i].position,
+		t.check(first[i].row_id() == second[i].row_id() and first[i].placed_at() == second[i].placed_at(),
 				"placement %d of a hot day is where it was" % i)
 	# And nothing in the heated catalogue can plan a day that has no park left to walk to — the
 	# calm area dawn keeps clean cold (`DawnCalmKeptClean`) has to survive the escalation.
@@ -722,7 +722,7 @@ func _test_a_hot_day_places_more_patrols(t: TestRunner) -> void:
 func _count_patrols(planned: Array[EventPlan]) -> int:
 	var count := 0
 	for plan in planned:
-		if plan.def.id == "police_patrol":
+		if plan.row_id() == "police_patrol":
 			count += 1
 	return count
 

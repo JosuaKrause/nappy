@@ -234,8 +234,8 @@ func _test_a_draw_is_judged_among_a_beat_rigged_in_its_unit_or_a_touching_one(t:
 			"the lowest unit hands a crew to her walk, with no place (the guard that there is one)")
 	if crew == null:
 		return
-	crew.position = far.bounds().get_center()
-	unsited.position = far.bounds().get_center() + Vector2(64.0, 0.0)
+	crew.stand_where(EventPlan.new(crew.row(), far.bounds().get_center()))
+	unsited.stand_where(EventPlan.new(unsited.row(), far.bounds().get_center() + Vector2(64.0, 0.0)))
 	draw.draw(mid)
 	draw.draw(far)
 	var low_rows: Array = drawing.calls[0][3]

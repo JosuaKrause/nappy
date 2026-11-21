@@ -125,7 +125,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 				.plan().placements():
 			if not plan.is_placed():
 				continue
-			var tile := map.world_to_tile(plan.position)
+			var tile := map.world_to_tile(plan.placed_at())
 			var away := corridor.depth(tile)
 			if plan.role() == GameEnums.BlockerRole.WALL and corridor.is_in_a_gap(tile):
 				var segment := map.network.segment_containing(tile)
@@ -133,33 +133,33 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 					gaps_walled["%d:%s" % [day, segment.key()]] = true
 			if plan.role() == GameEnums.BlockerRole.WALL:
 				walls += 1
-				t.check(plan.def.hard_fail
-						or plan.def.walk_through_cost() >= EventScheduler.WALL_WORTH_OF_COST
-						or _takes_a_whole_sidewalk(plan.def)
+				t.check(plan.ends_the_day()
+						or plan.row().walk_through_cost() >= EventScheduler.WALL_WORTH_OF_COST
+						or _takes_a_whole_sidewalk(plan.row())
 						or _paces_a_beat_with_no_way_out(plan, map),
 						"day %d: '%s' is a wall because it is lethal, very costly, leaves no line"
-						% [day, plan.def.id] + " past it on a sidewalk, or paces one with no"
+						% [day, plan.row_id()] + " past it on a sidewalk, or paces one with no"
 						+ " crossing in its beat")
 				t.check(not corridor.carries_a_route(tile),
 						"day %d: the wall '%s' at %s stands on no ground a route runs along"
-						% [day, plan.def.id, RunTrace.tile(tile)])
+						% [day, plan.row_id(), RunTrace.tile(tile)])
 				if away == 0:
 					walls_across_the_street += 1
-				placed[plan.def.hard_fail] += 1
+				placed[plan.ends_the_day()] += 1
 				if away >= 2:
-					deep[plan.def.hard_fail] += 1
+					deep[plan.ends_the_day()] += 1
 			elif plan.role() == GameEnums.BlockerRole.FRICTION:
 				friction += 1
 				if away == 0:
 					friction_on_the_route += 1
-				var offered := ground.tiles_for(plan.def)
+				var offered := ground.tiles_for(plan.row())
 				var on_it := 0
 				for offered_tile in offered:
 					if corridor.depth(offered_tile) == 0:
 						on_it += 1
 				friction_on_the_route_unweighted += float(on_it) / maxf(1.0, float(offered.size()))
 				# The rows small enough to stand beside a crossing without taking it.
-				if plan.def.line_reach() <= _A_JUNCTION_BOXES_HALF_WIDTH:
+				if plan.line_reach() <= _A_JUNCTION_BOXES_HALF_WIDTH:
 					narrow += 1
 	# A sample with no walls in it would pass every assertion above and mean nothing.
 	t.check(walls > 20, "the days sampled place walls at all (%d)" % walls)
@@ -375,7 +375,7 @@ func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 ## Whether a pacing placement leaves no line along a sidewalk and its beat passes neither a
 ## junction nor a side route: the beat's geometry is written out below.
 func _paces_a_beat_with_no_way_out(plan: EventPlan, map: CityMap) -> bool:
-	return plan.def.paces and _leaves_no_line_along_a_sidewalk(plan.def) \
+	return plan.paces_a_beat() and _leaves_no_line_along_a_sidewalk(plan.row()) \
 			and not _a_beat_touches_a_junction(map, plan) \
 			and not _a_beat_passes_a_side_route(map, plan)
 
@@ -470,7 +470,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 					continue
 				already.append(plan)
 				placed += 1
-				var type := map.tile_at(map.world_to_tile(plan.position))
+				var type := map.tile_at(map.world_to_tile(plan.placed_at()))
 				t.check(type == GameEnums.TileType.SQUARE,
 						"day %d: the square crew stands on %s"
 						% [day, GameEnums.TileType.keys()[type]])
@@ -526,7 +526,7 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 				var location := locations.holding(tile, map.tile_at(tile))
 				var run := location.run()
 				var outside := 0
-				for point in plan.path:
+				for point in plan.walks():
 					if not run.has_point(map.world_to_tile(point)):
 						outside += 1
 				t.check(outside == 0, "%s on day %d: %d of its route's points lie off the run %s"
@@ -537,7 +537,7 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 						EventScheduler.row_ground(map, corridor)).build(def, tile, uncut_rng,
 						Rect2i())
 				if uncut != null:
-					for point in uncut.path:
+					for point in uncut.walks():
 						if not run.has_point(map.world_to_tile(point)):
 							would_leave += 1
 							break
@@ -596,9 +596,9 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 			var consumed: Array[String] = []
 			for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
 					.plan().placements():
-				if not plan.def.paces or not plan.counts_against_the_line():
+				if not plan.paces_a_beat() or not plan.counts_against_the_line():
 					continue
-				if not plan.def.reaches_the_far_lane():
+				if not plan.row().reaches_the_far_lane():
 					continue
 				var crossed := _a_beat_touches_a_junction(map, plan)
 				var sideways := _a_beat_passes_a_side_route(map, plan)
@@ -608,7 +608,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 						by_a_side_route += 1
 				if not crossed and not sideways:
 					walled += 1
-				if not corridor.carries_a_route(map.world_to_tile(plan.position)):
+				if not corridor.carries_a_route(map.world_to_tile(plan.placed_at())):
 					continue
 				on_the_route += 1
 				if crossed or sideways:
@@ -616,7 +616,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 				unavoidable_on_the_route += 1
 				if first == "":
 					first = "day %d, '%s' at %s" \
-							% [day, plan.def.id, RunTrace.tile(map.world_to_tile(plan.position))]
+							% [day, plan.row_id(), RunTrace.tile(map.world_to_tile(plan.placed_at()))]
 	t.check(on_the_route > 5,
 			"the days sampled pace a row along the route's own sidewalk (%d)" % on_the_route)
 	t.check(walled >= 1,
@@ -657,10 +657,10 @@ func _a_beat_passes_a_side_route(map: CityMap, plan: EventPlan) -> bool:
 ## The tiles a beat's straight run covers, ends included.
 func _beat_tiles(map: CityMap, plan: EventPlan) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	if plan.path.size() < 2:
+	if plan.walks().size() < 2:
 		return found
-	var from := map.world_to_tile(plan.path[0])
-	var to := map.world_to_tile(plan.path[plan.path.size() - 1])
+	var from := map.world_to_tile(plan.walks()[0])
+	var to := map.world_to_tile(plan.walks()[plan.walks().size() - 1])
 	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
 	var at := from
 	while true:
@@ -717,7 +717,7 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 			var world := map.tile_rect_to_world(box)
 			var here: Array[EventPlan] = []
 			for plan in counted:
-				var reach := plan.def.line_reach()
+				var reach := plan.line_reach()
 				if plan.distance_from(world.get_center()) <= reach + world.size.length() * 0.5:
 					here.append(plan)
 			in_reach += here.size()
@@ -729,7 +729,7 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 			if first == "":
 				var ids := {}
 				for plan in here:
-					ids[plan.def.id] = true
+					ids[plan.row_id()] = true
 				first = "day %d, junction %s, covered by [%s]" \
 						% [day, junction, ", ".join(PackedStringArray(ids.keys()))]
 	t.check(junctions > 100, "the days sampled plan routes across junctions (%d)" % junctions)
@@ -755,7 +755,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 			var taken := false
 			for plan in rows:
 				if plan.denies(map.tile_to_world(tile),
-						plan.def.line_reach()):
+						plan.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -850,7 +850,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 				.plan().placements():
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
-			if plan.counts_against_the_line() and not plan.def.paces:
+			if plan.counts_against_the_line() and not plan.paces_a_beat():
 				counted.append(plan)
 		for segment in map.network.segments():
 			var rect := segment.tile_rect()
@@ -864,7 +864,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 				var standing: Array[EventPlan] = []
 				for plan in counted:
 					if plan.reach_touches(world,
-							plan.def.line_reach()):
+							plan.line_reach()):
 						standing.append(plan)
 				if standing.is_empty():
 					continue
@@ -875,7 +875,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 				if first == "":
 					var ids := {}
 					for plan in standing:
-						ids[plan.def.id] = true
+						ids[plan.row_id()] = true
 					first = "day %d, street %s, held by [%s]" \
 							% [day, segment.key(), ", ".join(PackedStringArray(ids.keys()))]
 	t.check(bands > 50, "the days sampled walk routes along sidewalks (%d)" % bands)
@@ -937,9 +937,9 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 				counted.append(plan)
 		var streets := {}
 		for plan in counted:
-			if not plan.def.paces:
+			if not plan.paces_a_beat():
 				continue
-			var segment := map.network.segment_containing(map.world_to_tile(plan.position))
+			var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
 			if segment and corridor.depth(segment.tile_rect().position) == 0:
 				streets[segment.key()] = segment
 		for key: Vector3i in streets:
@@ -949,7 +949,7 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 			var standing: Array[EventPlan] = []
 			for plan in counted:
 				if plan.reach_touches(rect,
-						plan.def.line_reach()):
+						plan.line_reach()):
 					standing.append(plan)
 			if _a_walk_along_the_street(map, segment, standing):
 				continue
@@ -957,7 +957,7 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 			if first == "":
 				var ids := {}
 				for plan in standing:
-					ids[plan.def.id] = true
+					ids[plan.row_id()] = true
 				first = "day %d, street %s, held by [%s]" \
 						% [day, key, ", ".join(PackedStringArray(ids.keys()))]
 	t.check(paced_streets >= 3,
@@ -990,7 +990,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 			var taken := false
 			for plan in rows:
 				if plan.denies(map.tile_to_world(tile),
-						plan.def.line_reach()):
+						plan.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -1041,11 +1041,11 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d" % [4242, day])
 		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
-			if plan.def.id != "pigeon_flock" or not plan.is_placed():
+			if plan.row_id() != "pigeon_flock" or not plan.is_placed():
 				continue
 			t.check(plan.role() == GameEnums.BlockerRole.NONE,
 					"day %d: a placed flock carries no role, not a wall's" % day)
-			var tile := map.world_to_tile(plan.position)
+			var tile := map.world_to_tile(plan.placed_at())
 			if corridor.depth(tile) == 0:
 				on_corridor += 1
 			else:

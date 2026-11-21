@@ -521,7 +521,7 @@ func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t: TestRunner
 			bodies += 1
 			var nearest := INF
 			for point in points:
-				nearest = minf(nearest, point.distance_to(body.position))
+				nearest = minf(nearest, point.distance_to(body.placed_at()))
 			off_a_point += int(nearest > 0.01)
 	t.check(bodies > 0 and off_a_point == 0,
 			"every one of the %d bodies of a day's street doors stands on a point a mast keeps clear of (%d do not)"
