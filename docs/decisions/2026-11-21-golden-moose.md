@@ -27,5 +27,6 @@ on main and the branch.
 
 **Rejected:** a bag of one, the other reading of "the next draw will guarantee" (inbox #1520 in breezy-magpie), which
 would lay the row at the next handout but makes the mark's row no marble of a chained bag of the size the player set
-("2 or 3", inbox #586 in olive-hedgehog); and laying day 11's second mast just ahead too, which the mast's own placement
-does not want (it stands where the region plan puts it, not in front of her).
+("2 or 3", inbox #586 in olive-hedgehog); and laying day 11's second mast just ahead too, which would delete the setting but
+moves where a mast stands with no word of the player's asking for it (it belongs to freckled-penguin, rethink the masts,
+if anywhere; Fable's design).
