@@ -9,7 +9,7 @@ for a row it centers on its sidewalk band's middle: standing an already-stood po
 middle line and moves the point half a tile toward the other lane. Two live callers hand the record of standing bodies
 (`EventSpawner.obstructed_footprint()`) an already-stood point: `EventBody.tiles_at(body_position(), heading)`, the
 body's own tiles a pursuer's or noticer's line of sight leaves out (`EventInstance.clear_line_to()`), and
-`EventSpawner.move_extra()` (`instance.global_position`). On the probe cities every such record comes out half a tile
+`EventSpawner.move_extra()` (`instance.global_position`). On the design's day cities (eighteen cities, days 1 to 14) every such record comes out half a tile
 off for the rows stood on the band's middle: the market stall, the café tables, construction, scaffolding, the leaf
 blower, the unmarked van, the loudspeaker and the night raid. The effect today is mostly hidden: a line that starts
 inside its own body sees out of it (`WorldMap._line_is_clear()`), and `move_extra()` moves only day 13's task guard,
@@ -23,4 +23,4 @@ solid").
 
 **Item:** `stand-once.md`.
 
-**Proposed, not asked for:** which of the two fixes the item names.
+**Proposed, not asked for:** the band `bug` (the reading of "bug" above), which of the two fixes the item names, the suite that holds it and the pictures it asks for if a sight line a player can see moves.
