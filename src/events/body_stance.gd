@@ -31,6 +31,16 @@ static func stands_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
 		return _centred_on_the_pavement_band(map, at)
 	return EventPlan.stands_without_a_map(row, at)
 
+## **Where a planned body stands once it is built**: `stands_at()` of where its plan was placed
+## (`EventPlan.placed_at()`), the one choice of point the walk's ground, the plan builder
+## (`PlanBuilder.body_stands_at()`) and the route rig ask. A plan's route does not enter into it:
+## every plan that carries one is made at the route's first point (`EventPlan.new(def, path[0],
+## path)`), and the rows asked about, the ones that stand, guard or notice, are never given a street
+## route from the tile's centre by `PlanBuilder.build()`, so the plan's placed point and its route's
+## first point are the same.
+static func planned_body_at(map: WorldMap, plan: EventPlan) -> Vector2:
+	return stands_at(map, plan.row(), plan.placed_at())
+
 ## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
 ## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
 ## of the pavement's two lanes the scheduler happened to choose, 16px from that lane's own edge and

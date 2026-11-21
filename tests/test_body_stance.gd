@@ -52,6 +52,7 @@ func run(t: TestRunner) -> void:
 	_test_the_crash_leaves_the_ground_between_its_cars_open(t)
 	_test_a_stood_point_is_stood_where_it_is(t)
 	_test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t)
+	_test_a_planned_body_stands_where_its_plan_was_placed(t)
 
 func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
@@ -203,3 +204,16 @@ func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRu
 					differ += 1
 	t.check(asked > 0 and differ == 0,
 			"a stood body's pieces are its build point's: %d of %d differ" % [differ, asked])
+
+func _test_a_planned_body_stands_where_its_plan_was_placed(t: TestRunner) -> void:
+	var map := SidewalkStreets.new(false)
+	var at := map.tile_to_world(Vector2i(20, 12))
+	for id: String in ["market_stall", "roadblock", "car_accident"]:
+		var row := EventCatalogue.by_id(id)
+		var plan := EventPlan.new(row, at)
+		t.check(BodyStance.planned_body_at(map, plan) == BodyStance.stands_at(map, row, at),
+				"%s's planned body stands where its row stands a body built at the plan's point" % id)
+	var beat_row := EventCatalogue.by_id("chatting_mother")
+	var beat := EventPlan.new(beat_row, at, PackedVector2Array([at, at + Vector2(96.0, 0.0)]))
+	t.check(BodyStance.planned_body_at(map, beat) == BodyStance.stands_at(map, beat_row, at),
+			"a plan made at its route's first point stands where it was placed")
