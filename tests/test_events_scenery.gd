@@ -104,7 +104,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 	# below would be made about eleven birds pecking — see `_test_a_flock_is_a_place_she_can_see`.
 	instance_where.tell(Vector2.ZERO)
 	_advance(instance, def.telegraph_time + 0.2)
-	t.check(not instance.is_waiting() and not instance.is_telegraphing() and not instance.is_leaving,
+	t.check(not instance.is_waiting() and not instance.is_telegraphing() and not instance.is_on_its_way_out(),
 			"the flock is up")
 
 	var spread_before := _widest_gap_between_birds(instance)
@@ -120,7 +120,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 	var furthest := 0.0
 	for i in int(2.0 / STEP):
 		instance.step(STEP)
-		if instance.is_leaving:
+		if instance.is_on_its_way_out():
 			break
 		for bird in instance.flock.birds:
 			furthest = maxf(furthest, bird.at().length())
@@ -253,7 +253,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance_where.tell(Vector2(Tuning.EVENT_STREAM_RADIUS, 0.0))
 	_advance(instance, 5.0)
-	t.check(instance.is_waiting() and not instance.is_finished,
+	t.check(instance.is_waiting() and not instance.is_gone(),
 			"five seconds out of reach and the flock is still standing there")
 	var still_grounded := true
 	for bird in instance.flock.birds:
@@ -302,7 +302,7 @@ func _test_mobile_follows_its_path(t: TestRunner) -> void:
 
 	# Off the end of the route is over, whatever the nominal duration says.
 	_advance(instance, 3.0)
-	t.check(instance.is_finished or instance.is_leaving,
+	t.check(instance.is_gone() or instance.is_on_its_way_out(),
 			"a mobile event is done with its path at its end")
 	instance.free()
 

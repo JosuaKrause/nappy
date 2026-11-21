@@ -254,7 +254,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	# one at all (`leave_for_a_completed_task()`, which no key term names) is answered afresh by a
 	# gate that left nothing cached, and with the doubled red it was owed by one that worked it out.
 	twin.leave_for_a_completed_task()
-	t.check(twin.is_leaving and twin.source().caret_strength() == 0,
+	t.check(twin.is_on_its_way_out() and twin.source().caret_strength() == 0,
 			"and works out neither its key nor its caret")
 	twin.free()
 	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")

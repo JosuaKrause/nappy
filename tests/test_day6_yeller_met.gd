@@ -156,7 +156,7 @@ func _the_rigged_man(city: City) -> EventPlan:
 func _in_the_world(events: EventManager, man: EventPlan) -> String:
 	var nearest := INF
 	for instance in events.instances():
-		if instance.def.id == ROW:
+		if instance.row_id() == ROW:
 			nearest = minf(nearest, instance.global_position.distance_to(man.placed_at()))
 	if nearest == INF:
 		return "laid but not in the world once she was near"

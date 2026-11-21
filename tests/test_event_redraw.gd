@@ -422,7 +422,7 @@ func _test_separated_details_keep_the_owner_key_stable(t: TestRunner) -> void:
 		var silent_swaps := 0
 		for i in int(ceil(period * 3.0 / STEP)):
 			instance.step(STEP)
-			if instance.is_finished:
+			if instance.is_gone():
 				break
 			var now := instance.look.idle_is_stepping(period)
 			var asked := _asks(instance)
@@ -518,7 +518,7 @@ func _test_a_leaving_event_moves_its_key(t: TestRunner) -> void:
 	_asks(instance)
 	instance.leave_for_a_completed_task()
 	instance.step(STEP)
-	t.check(instance.is_leaving, "it is on its way out")
+	t.check(instance.is_on_its_way_out(), "it is on its way out")
 	t.check(_asks(instance), "the departure moves the key")
 	instance.free()
 
@@ -564,7 +564,7 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "the take is running")
 	t.check(_never_settles(instance), "a van mid-take is never gated")
-	instance.restore(EventSave.aged(instance.age() + instance.def.abduction.taken_over))
+	instance.restore(EventSave.aged(instance.age() + instance.row().abduction.taken_over))
 	instance_where.tell(Vector2.INF)
 	instance.step(STEP)
 	t.check(not instance.is_taking_a_victim(), "the take is over")

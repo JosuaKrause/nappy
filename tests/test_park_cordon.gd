@@ -683,7 +683,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 				area.position + area.size * Vector2(0.25, 0.3)))
 	var happenings: ResistanceHappenings = fixture.happenings
 	var busker: EventInstance = person[0]
-	t.check(busker != null and not busker.is_leaving, "a busker stands in the park")
+	t.check(busker != null and not busker.is_on_its_way_out(), "a busker stands in the park")
 	# She stays at the swing, where the way out was planned from.
 	var her := [fixture.swing]
 	var shows := _camera_on(her)
@@ -704,14 +704,14 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 	var last := {"busker": busker.global_position, "escort": escort.global_position}
 	var waited := 0.0
 	while waited < PATIENCE and not escort.is_queued_for_deletion():
-		if is_instance_valid(busker) and not busker.is_finished:
+		if is_instance_valid(busker) and not busker.is_gone():
 			RunCity.events(_city).world.where_she_is().tell(her[0])
 			busker.step(STEP)
 		var was_closed := cordon.is_closed()
 		_tick(happenings, her[0], shows.is_valid())
 		waited += STEP
 		var walkers := {"escort": escort.global_position}
-		if is_instance_valid(busker) and not busker.is_finished:
+		if is_instance_valid(busker) and not busker.is_gone():
 			walkers.busker = busker.global_position
 		else:
 			seen.busker_left = true
@@ -727,7 +727,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 					and not _line().has_point(now):
 				seen.crossed_at = now
 			last[who] = now
-		if walkers.has("busker") and busker.is_leaving and _line().has_point(walkers.busker) \
+		if walkers.has("busker") and busker.is_on_its_way_out() and _line().has_point(walkers.busker) \
 				and not _line().has_point(escort.global_position):
 			seen.escort_ahead += 1
 		if not was_closed and cordon.is_closed():
@@ -819,8 +819,8 @@ func _test_a_person_walked_out_never_ends_in_her_view(t: TestRunner) -> void:
 		var slow_in_view := 0.0
 		var through_tape := 0
 		var was_leaving := false
-		while clock < PATIENCE * 2.0 and not busker.is_finished:
-			if sent_off_at < 0.0 and not busker.is_finished and busker.way_left().size() >= 2:
+		while clock < PATIENCE * 2.0 and not busker.is_gone():
+			if sent_off_at < 0.0 and not busker.is_gone() and busker.way_left().size() >= 2:
 				# A copy: the packed array it answers is the departure's own, shared, and her walk drops its points.
 				way = busker.way_left().duplicate()
 				sent_off_at = clock
@@ -834,17 +834,17 @@ func _test_a_person_walked_out_never_ends_in_her_view(t: TestRunner) -> void:
 			clock += STEP
 			if CordonInTheWorld.is_across_tape(_city, last, busker.global_position):
 				through_tape += 1
-			if busker.is_finished:
-				ended_in_view = shows.call(busker.def, last)
-			elif walked and shows.call(busker.def, busker.global_position):
+			if busker.is_gone():
+				ended_in_view = shows.call(busker.row(), last)
+			elif walked and shows.call(busker.row(), busker.global_position):
 				in_view_after += STEP
 				if last.distance_to(busker.global_position) \
 						< ParkCordon.PARK_CLOSING_LEAVE_SPEED * STEP * 0.5:
 					slow_in_view += STEP
-			walked = walked or (busker.is_leaving and busker.way_left().is_empty())
-			was_leaving = was_leaving or busker.is_leaving
+			walked = walked or (busker.is_on_its_way_out() and busker.way_left().is_empty())
+			was_leaving = was_leaving or busker.is_on_its_way_out()
 			last = busker.global_position
-		t.check(was_leaving and busker.is_finished,
+		t.check(was_leaving and busker.is_gone(),
 				"setting off %.0fs after he is sent off down the way out: the busker walked out "
 				% set_off + "ahead of her is gone in the end (%.1fs)" % clock)
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
@@ -880,8 +880,8 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t: TestRunner) 
 		var through_tape := 0
 		var last := busker.global_position
 		var cordon: ParkCordon = null
-		while clock < PATIENCE and is_instance_valid(busker) and not busker.is_finished:
-			if after_the_touch >= 0.0 and clock >= after_the_touch and not busker.is_leaving:
+		while clock < PATIENCE and is_instance_valid(busker) and not busker.is_gone():
+			if after_the_touch >= 0.0 and clock >= after_the_touch and not busker.is_on_its_way_out():
 				_set_off_on_their_own(busker, her[0])
 			RunCity.events(_city).world.where_she_is().tell(her[0])
 			busker.step(STEP)
@@ -977,7 +977,7 @@ func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t: Tes
 	var last := busker.global_position
 	var cordon: ParkCordon = null
 	var gap_tiles: Array[Vector2i] = []
-	while clock < PATIENCE * 2.0 and is_instance_valid(busker) and not busker.is_finished:
+	while clock < PATIENCE * 2.0 and is_instance_valid(busker) and not busker.is_gone():
 		RunCity.events(_city).world.where_she_is().tell(her[0])
 		busker.step(STEP)
 		_tick(happenings, her[0], shows.is_valid())

@@ -97,7 +97,7 @@ func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var first := source.contribution_at(at)
 	t.check(first > 0.0 and first == instance.field_at(at, -1.0, Vector2.INF),
 			"an event's rate on open ground is its field (%.2f/s)" % first)
-	instance.def.intensity = 40.0
+	instance.row().intensity = 40.0
 	t.check(source.contribution_at(at) == first,
 			"asked again at the same age and point, the cached rate answers")
 	source.invalidate_contribution()

@@ -816,7 +816,7 @@ func _let_the_pursuer_go(t: TestRunner, expected := false) -> void:
 	var found: Array[EventInstance] = []
 	await _wait_until(t, func() -> bool:
 		found.assign(RunCity.events(_city).instances().filter(func(e: EventInstance) -> bool:
-				return e.def == def))
+				return e.row() == def))
 		return not found.is_empty(), 3.0)
 	if expected:
 		t.check(not found.is_empty(), "the pursuer a tear sent comes into the world")

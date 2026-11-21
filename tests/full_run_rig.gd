@@ -108,11 +108,11 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 		for instance in RunCity.events(city).instances():
 			t.check(is_instance_valid(instance),
 					"seed %d day %d: every event is a live node" % [seed_value, day])
-			if instance.def.kind == GameEnums.EventKind.ONE_SHOT:
-				t.check(not one_shots_seen.has(instance.def.id),
+			if instance.row().is_a_one_shot():
+				t.check(not one_shots_seen.has(instance.row_id()),
 						"seed %d: one-shot '%s' fires once in a run"
-						% [seed_value, instance.def.id])
-				one_shots_seen[instance.def.id] = day
+						% [seed_value, instance.row_id()])
+				one_shots_seen[instance.row_id()] = day
 
 		# The excitement field must be finite and sane wherever the player could stand.
 		var at_home := city.map.home_world_position()

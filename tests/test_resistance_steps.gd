@@ -233,13 +233,13 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 
 	var step := ResistanceSteps.by_index(2)
 	t.check(step.completes_at_inner_radius, "day 6's note is the one step this applies to")
-	t.check(ContactPoint.REACH < instance.def.inner_radius,
+	t.check(ContactPoint.REACH < instance.core_within(),
 			"the case this test distinguishes -- REACH sits inside inner_radius -- or the checks " +
 			"below prove nothing")
 
 	# Between REACH (36px) and inner_radius (45px): outside the ordinary REACH check, but inside
 	# the wider circle the note actually uses.
-	var between := (ContactPoint.REACH + instance.def.inner_radius) * 0.5
+	var between := (ContactPoint.REACH + instance.core_within()) * 0.5
 	player.global_position = Vector2.RIGHT * between
 
 	var note_contact := ContactPoint.new()
@@ -266,7 +266,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	ordinary_contact.free()
 
 	# Outside inner_radius altogether: too far for the note either.
-	player.global_position = Vector2.RIGHT * (instance.def.inner_radius + 5.0)
+	player.global_position = Vector2.RIGHT * (instance.core_within() + 5.0)
 	var outside_contact := ContactPoint.new()
 	outside_contact.ride(step, instance, Vector2.ZERO)
 	outside_contact.use_player(player)
@@ -318,9 +318,9 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> vo
 		t.add_child(instance)
 		instance.set_process(false)
 		var player := _rig_player(t, Vector2.ZERO)
-		var shape := instance.def.shape
+		var shape := instance.ground_shape()
 		var axis := instance.solid_axis()
-		var offset := Vector2.RIGHT * (instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
+		var offset := Vector2.RIGHT * (instance.solid_reach() + Tuning.PLAYER_BODY_RADIUS
 				+ ContactPoint.REACH * 0.5)
 		var pressed_done := 0
 		var far_done := 0
@@ -332,7 +332,7 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> vo
 			while shape.distance_to_spine((bearing * pressed).rotated(-axis.angle())) \
 					- shape.radius < Tuning.PLAYER_BODY_RADIUS + 1.0:
 				pressed += 0.5
-			var far := instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
+			var far := instance.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
 					+ ContactPoint.REACH + 2.0
 			for r: float in [pressed, far]:
 				var contact := ContactPoint.new()
@@ -629,7 +629,7 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 	t.check(director.current_step() != null and director.current_step().index == 2,
 			"the yeller perform is active")
 	var rider := director.rider()
-	t.check(rider != null and not rider.is_leaving, "the seeded rider is shouting, not leaving")
+	t.check(rider != null and not rider.is_on_its_way_out(), "the seeded rider is shouting, not leaving")
 
 	var decoy := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("homeless_yeller"),
 			_open_ground_near(rider.global_position + Vector2(600.0, 0.0)))
@@ -639,23 +639,23 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 
 	director.contact().complete_now()
 
-	t.check(not rider.is_leaving,
+	t.check(not rider.is_on_its_way_out(),
 			"the one she reached keeps shouting the instant the note is handed over")
 	t.check(rider.source().contribution_at(rider.global_position) > 0.0,
 			"and still charges her, since he has not started leaving yet")
-	t.check(not decoy.is_leaving and decoy.source().contribution_at(decoy.global_position) > 0.0,
+	t.check(not decoy.is_on_its_way_out() and decoy.source().contribution_at(decoy.global_position) > 0.0,
 			"a look-alike she never reached is left exactly alone, still shouting")
 
 	director.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS - STEP)
-	t.check(not rider.is_leaving,
+	t.check(not rider.is_on_its_way_out(),
 			"and still hasn't, a frame short of the full linger")
 
 	director.tick(2.0 * STEP)
-	t.check(rider.is_leaving,
+	t.check(rider.is_on_its_way_out(),
 			"and stops shouting and leaves once he has lingered that long")
 	t.close_to(rider.source().contribution_at(rider.global_position), 0.0,
 			"and contributes nothing to the meter the same frame", 0.001)
-	t.check(not decoy.is_leaving, "a look-alike she never reached is still left exactly alone")
+	t.check(not decoy.is_on_its_way_out(), "a look-alike she never reached is still left exactly alone")
 	t.check(decoy.source().contribution_at(decoy.global_position) > 0.0,
 			"still shouting, still emitting")
 
@@ -690,7 +690,7 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: Te
 
 		instance.leave_for_a_completed_task()
 
-		t.check(instance.is_leaving, "he leaves (%s half)"
+		t.check(instance.is_on_its_way_out(), "he leaves (%s half)"
 				% ("second" if on_the_second_half else "first"))
 		t.check(instance.facing_now().dot(walking) < -0.99,
 				"and turns to walk away from her rather than along the beat (%s half)"
@@ -717,14 +717,14 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 	t.check(instance.current_intensity() > 0.0, "shouting, before the task is done")
 
 	instance.leave_for_a_completed_task()
-	t.check(instance.is_leaving, "he stops the instant she hands him the note")
+	t.check(instance.is_on_its_way_out(), "he stops the instant she hands him the note")
 	t.close_to(instance.source().contribution_at(instance.global_position), 0.0,
 			"and contributes nothing the same frame", 0.001)
 
 	var before := instance.global_position
 	var before_distance := before.distance_to(her)
 	instance.departure.leave(EventDeparture.LEAVING_GIVES_UP)
-	t.check(not instance.is_finished,
+	t.check(not instance.is_gone(),
 			"still leaving past the backstop's own six seconds, since she is still watching")
 	t.close_to(instance.source().contribution_at(instance.global_position), 0.0,
 			"and still contributes nothing")
@@ -734,7 +734,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 	# She still has not moved. At `departs_at` (60px/s) from 20px away, he clears
 	# `Tuning.OUT_OF_SIGHT` (420px) in well under ten more seconds.
 	instance.departure.leave(10.0)
-	t.check(instance.is_finished, "gone once he is actually out of sight, not before")
+	t.check(instance.is_gone(), "gone once he is actually out of sight, not before")
 	instance.free()
 
 ## The departure's sight rule (`EventDeparture._must_clear_sight`) is set by `leave_for_a_completed_task()`. An ordinary
@@ -752,12 +752,12 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t: TestRunner) ->
 	where.tell(Vector2(20.0, 0.0))
 
 	instance.give_up_the_chase()
-	t.check(instance.is_leaving, "an ordinary departure starts leaving the same way")
+	t.check(instance.is_on_its_way_out(), "an ordinary departure starts leaving the same way")
 
 	instance.departure.leave(EventDeparture.LEAVING_GIVES_UP - 0.1)
-	t.check(not instance.is_finished, "not gone yet, just under six seconds in")
+	t.check(not instance.is_gone(), "not gone yet, just under six seconds in")
 	instance.departure.leave(0.2)
-	t.check(instance.is_finished, "gone at the six-second backstop, watched or not")
+	t.check(instance.is_gone(), "gone at the six-second backstop, watched or not")
 	instance.free()
 
 ## "A task is only complete if it is done on the day that won" — the run's `calendar.finish_day()` gives
@@ -780,10 +780,10 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: Test
 			"touching it activates the yeller perform the same day")
 	var rider := attempt.rider()
 	attempt.contact().complete_now()
-	t.check(rider != null and not rider.is_leaving,
+	t.check(rider != null and not rider.is_on_its_way_out(),
 			"completing it keeps him shouting first, not sent away yet")
 	attempt.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
-	t.check(rider != null and rider.is_leaving,
+	t.check(rider != null and rider.is_on_its_way_out(),
 			"and sends him away once he has lingered that long")
 	attempt.free()
 
@@ -801,7 +801,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: Test
 	_read_the_mark(retry)
 	t.check(retry.rider() != null and retry.rider() != rider,
 			"and once touched again it rides a fresh rider, not the one that already walked off")
-	t.check(not retry.rider().is_leaving, "and it is shouting, not leaving")
+	t.check(not retry.rider().is_on_its_way_out(), "and it is shouting, not leaving")
 	retry.free()
 
 ## The sabotage is what puts the city's power out, and the masts go with it. Not at the door she
@@ -836,7 +836,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	t.check(mast_plan != null and mast_plan.is_in_the_world(),
 			"the mast at her focus is live from the day it was started")
 	var mast := RunCity.events(_city).event_of(mast_plan)
-	for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
+	for i in int(round((mast.telegraphs_for() + 0.2) / STEP)):
 		mast.step(STEP)
 	var nearby := site.foot() + Vector2(50.0, 0.0)
 	t.check(mast.source().contribution_at(nearby) > 0.0,

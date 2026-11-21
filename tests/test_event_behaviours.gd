@@ -42,7 +42,7 @@ func _round_trip(t: TestRunner, first: EventInstance, what: String, behaviour: S
 		where: WhereSheIs = null) -> EventInstance:
 	var state := first.save()
 	t.check(not state.state_of(behaviour).is_empty(), "%s: there is state to carry" % what)
-	var second := _instance(t, first.def, first.global_position, first.path, where)
+	var second := _instance(t, first.row(), first.global_position, first.walks(), where)
 	second.restore(state)
 	_check_the_same_save(t, second.save(), state,
 			"%s: streamed back in" % what)
@@ -164,7 +164,7 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 	_advance(first, def.telegraph_time + 1.0)
 	t.check(first.flock.offsets() != scattered, "and they have moved from where they were built")
 	var state := first.save()
-	var second := _instance(t, def, first.global_position, first.path)
+	var second := _instance(t, def, first.global_position, first.walks())
 	second.flock.build()
 	t.check(second.flock.offsets() == scattered, "a fresh flock stands where the first was built")
 	second.restore(state)
@@ -213,7 +213,7 @@ func _test_the_departure_round_trips(t: TestRunner) -> void:
 	first_where.tell(Vector2(200.0, 0.0))
 	first.restore(EventSave.aged(1.0))
 	first.give_up_the_chase()
-	t.check(first.is_leaving, "given up, the dog leaves")
+	t.check(first.is_on_its_way_out(), "given up, the dog leaves")
 	_advance(first, 0.5)
 	var second := _round_trip(t, first, "departure", &"EventDeparture")
 	first.free()
@@ -285,7 +285,7 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 				.hearing(first_where))
 	first_where.tell(Vector2(0.0, 400.0))
 	_advance(first, 1.5)
-	t.check(not first.is_leaving and first.path_travelled() > 2.0 * tile,
+	t.check(not first.is_on_its_way_out() and first.path_travelled() > 2.0 * tile,
 			"the car is driving its route, not leaving (%.0fpx along it)" % first.path_travelled())
 	var state := first.save()
 	t.check(state.state_of("EventDeparture").is_empty(), "a departure that never began saves nothing")
@@ -298,7 +298,7 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 				.hearing(second_where))
 	second_where.tell(first_where.at())
 	second.restore(state)
-	t.check(second.is_leaving and second.departure.save().get("must_clear_sight", false),
+	t.check(second.is_on_its_way_out() and second.departure.save().get("must_clear_sight", false),
 			"restored once, as the stream-in does, with its road cut behind where it had got to, the car "
 			+ "is leaving, held to her sight, and the restore of its behaviours leaves the departure as it began")
 	first.free()

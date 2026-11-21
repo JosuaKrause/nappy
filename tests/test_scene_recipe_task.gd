@@ -211,7 +211,7 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t: TestRunn
 	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
 	var guards: Array[Vector2] = []
 	for instance in RunCity.events(city).instances():
-		if instance.def.id == EventCatalogue.mark_guard().id and not instance.is_finished:
+		if instance.row_id() == EventCatalogue.mark_guard().id and not instance.is_gone():
 			guards.append(instance.global_position)
 	var robbery := EventCatalogue.mark_guard()
 	var for_the_mouth := AlleyMarks.expected_guard_spot(map, MOUTH, at_mouth,

@@ -49,7 +49,7 @@ func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null) -> Array
 func _charge(guard: EventInstance, where: WhereSheIs) -> Vector2:
 	var her := where.at()
 	var frames := 0
-	while guard.is_telegraphing() and frames < int((guard.def.pursuit.warns_for + 1.0) / STEP):
+	while guard.is_telegraphing() and frames < int((guard.row().pursuit.warns_for + 1.0) / STEP):
 		where.tell(her)
 		guard.step(STEP)
 		frames += 1
@@ -100,7 +100,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestR
 		await t.get_tree().process_frame
 		lifted = lifted or absf(guard.look.current_bob()) > 0.1
 		worst = maxf(worst, band.global_position.distance_to(post))
-		if guard.is_finished:
+		if guard.is_gone():
 			break
 	t.check(lifted, "the chaser's stride does lift his own canvas (the bob is the thing undone)")
 	t.check(guard.global_position.distance_to(post) > 20.0, "and he has walked away from the post")
@@ -116,17 +116,17 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t: TestRunner) -> void
 	var where := stage.manager.world.where_she_is()
 	var frames := 0
 	# She runs: outrunning him for `PURSUIT_SHAKEN_OFF` seconds ends the chase.
-	while not guard.gave_up and frames < int(60.0 / STEP):
+	while not guard.has_given_up() and frames < int(60.0 / STEP):
 		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(STEP)
 		frames += 1
-	t.check(guard.gave_up, "she shakes him off (%d frames)" % frames)
-	t.check(guard.is_leaving, "and he walks away")
+	t.check(guard.has_given_up(), "she shakes him off (%d frames)" % frames)
+	t.check(guard.is_on_its_way_out(), "and he walks away")
 	var barrier_held := true
 	var body_held := true
 	var walked := 0
 	var stood := where.at()
-	while guard.is_leaving and walked < int(30.0 / STEP):
+	while guard.is_on_its_way_out() and walked < int(30.0 / STEP):
 		# She stands still; he walks out of her sight.
 		where.tell(stood, Vector2.INF, Rect2(), where.is_running())
 		guard.step(STEP)
@@ -136,7 +136,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t: TestRunner) -> void
 				and body.global_position.is_equal_approx(post)
 		barrier_held = barrier_held and guard.body_position().is_equal_approx(post)
 	t.check(body_held and barrier_held, "the barrier's body does not go with him as he leaves")
-	t.check(not guard.is_leaving and not guard.is_finished,
+	t.check(not guard.is_on_its_way_out() and not guard.is_gone(),
 			"his departure ends with the instance still there (%d frames)" % walked)
 	t.check(guard.is_solid() and guard.body_position().is_equal_approx(post),
 			"solid, where it was built")
@@ -145,7 +145,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t: TestRunner) -> void
 	for i in int(120.0 / STEP):
 		where.tell(post + Vector2(0.0, 90.0), Vector2.INF, Rect2(), where.is_running())
 		guard.step(STEP)
-	t.check(not guard.is_finished and guard.is_solid(), "it is still there two minutes on")
+	t.check(not guard.is_gone() and guard.is_solid(), "it is still there two minutes on")
 	stage.close()
 
 func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t: TestRunner) -> void:
@@ -157,18 +157,18 @@ func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t: TestRunner
 	var her: Vector2 = made[1]
 	var frames := 0
 	# She stands still out of his reach's way so the clock, not a catch, ends it.
-	while not guard.is_leaving and not guard.is_finished and frames < int(120.0 / STEP):
+	while not guard.is_on_its_way_out() and not guard.is_gone() and frames < int(120.0 / STEP):
 		where.tell(guard.global_position + Vector2(0.0, 400.0))
 		guard.step(STEP)
 		frames += 1
-	t.check(guard.is_leaving and not guard.gave_up,
+	t.check(guard.is_on_its_way_out() and not guard.has_given_up(),
 			"the clock, not her running, ends his chase (%d frames)" % frames)
 	var walked := 0
-	while guard.is_leaving and walked < int(30.0 / STEP):
+	while guard.is_on_its_way_out() and walked < int(30.0 / STEP):
 		where.tell(guard.global_position + Vector2(0.0, 400.0))
 		guard.step(STEP)
 		walked += 1
-	t.check(not guard.is_finished and guard.is_solid()
+	t.check(not guard.is_gone() and guard.is_solid()
 			and guard.body_position().is_equal_approx(post), "the barrier stands after he goes")
 	stage.close()
 
@@ -180,11 +180,11 @@ func _test_a_guard_who_is_gone_does_not_come_back(t: TestRunner) -> void:
 	var where := stage.manager.world.where_she_is()
 	guard.give_up_the_chase()
 	var walked := 0
-	while guard.is_leaving and walked < int(30.0 / STEP):
+	while guard.is_on_its_way_out() and walked < int(30.0 / STEP):
 		where.tell(post + Vector2(0.0, 500.0))
 		guard.step(STEP)
 		walked += 1
-	t.check(not guard.is_leaving and guard.is_waiting(), "he is gone and the barrier waits")
+	t.check(not guard.is_on_its_way_out() and guard.is_waiting(), "he is gone and the barrier waits")
 	# She walks right up to it: nobody notices, nobody chases, nothing is lethal.
 	where.tell(post + Vector2(0.0, 20.0))
 	for i in 120:
@@ -193,7 +193,7 @@ func _test_a_guard_who_is_gone_does_not_come_back(t: TestRunner) -> void:
 	t.check(not guard.is_lethal_at(where.at()), "and it takes nobody (%s)"
 			% guard.is_lethal_at(where.at()))
 	guard.give_up_the_chase()
-	t.check(not guard.is_leaving and not guard.is_finished,
+	t.check(not guard.is_on_its_way_out() and not guard.is_gone(),
 			"and a second give-up does not send the barrier away")
 	stage.close()
 
@@ -208,12 +208,12 @@ func _test_he_is_never_removed_in_view_while_she_stays_near(t: TestRunner) -> vo
 	guard.give_up_the_chase()
 	var frames := 0
 	var last_leaving_at := guard.global_position
-	while guard.is_leaving and frames < int(8.0 / STEP):
+	while guard.is_on_its_way_out() and frames < int(8.0 / STEP):
 		where.tell(guard.global_position + Vector2(0.0, 250.0))
 		last_leaving_at = guard.global_position
 		guard.step(STEP)
 		frames += 1
-	t.check(frames == int(8.0 / STEP) and guard.is_leaving,
+	t.check(frames == int(8.0 / STEP) and guard.is_on_its_way_out(),
 			"he is still leaving after eight seconds with her near him (%d frames)" % frames)
 	t.check(last_leaving_at.distance_to(post) > 300.0 and not guard.is_waiting(),
 			"still walking away in view, not put back on the barrier (%.0fpx from it)"
@@ -238,7 +238,7 @@ func _test_the_barrier_rim_survives_the_departure(t: TestRunner) -> void:
 	var lit := true
 	var man_free := true
 	var frames := 0
-	while guard.is_leaving and frames < int(30.0 / STEP):
+	while guard.is_on_its_way_out() and frames < int(30.0 / STEP):
 		where.tell(beside)
 		source.set_strength(0.8, Color.RED)
 		var banded := _band_halo(guard)
@@ -311,11 +311,11 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	var side := guard.barrier_post.chaser_side()
 	# Stream out in the middle of his walking away.
 	var frames := 0
-	while not guard.is_leaving and frames < int(60.0 / STEP):
+	while not guard.is_on_its_way_out() and frames < int(60.0 / STEP):
 		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(STEP)
 		frames += 1
-	t.check(guard.is_leaving, "she shook him off and he is walking away")
+	t.check(guard.is_on_its_way_out(), "she shook him off and he is walking away")
 	RunCity.events(city).streaming.stream_out(plan)
 	var carried := plan.saved().state_of("EventBarrierPost")
 	t.check(bool(carried.get("spent", false)) and int(carried.get("side", 0)) == side,
@@ -324,7 +324,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	var back: EventInstance = RunCity.events(city).event_of(plan)
 	t.check(back != null and back != guard, "a fresh instance comes back")
 	if back != null:
-		t.check(back.is_waiting() and not back.is_leaving and not back.is_finished,
+		t.check(back.is_waiting() and not back.is_on_its_way_out() and not back.is_gone(),
 				"streamed out mid-walk, it comes back as the barrier and not as a chase")
 		t.check(back.is_solid() and back.body_position().is_equal_approx(post),
 				"solid where it was built")
@@ -390,7 +390,7 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner
 			"a second band's body in the line still hides her")
 	# She walks round to the far side while he warns, and he charges anyway.
 	frames = 0
-	while not guard.is_chasing() and frames < int((guard.def.pursuit.warns_for + 2.0) / STEP):
+	while not guard.is_chasing() and frames < int((guard.row().pursuit.warns_for + 2.0) / STEP):
 		RoadblockRig.tick(where, made, far, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges her across his own band (%d frames)" % frames)

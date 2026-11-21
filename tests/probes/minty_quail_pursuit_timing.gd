@@ -194,7 +194,7 @@ func _the_trap(city: City, director: ResistanceDirector, player: Stroller,
 		if not is_instance_valid(item):
 			continue
 		var instance: EventInstance = item
-		if instance.def.pursuit == null:
+		if not instance.pursues():
 			known.append(instance)
 	var run := Run.new(known)
 	for tick in TICKS + 300:
@@ -238,7 +238,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 					officer.phase]
 		chain.update(line.to_utf8_buffer())
 		if cordon.is_closed() and (busker == null or not is_instance_valid(busker)
-				or busker.is_finished):
+				or busker.is_gone()):
 			break
 	_print("%s cordon busker %s closed %s officers %d chain %s %s" % [label,
 			"placed" if busker else "none", var_to_str(cordon._closed_at), cordon._officers.size(),
@@ -335,7 +335,7 @@ class Run extends RefCounted:
 			if _before.has(instance) or _seen.has(instance):
 				continue
 			_seen.append(instance)
-			_ids.append(instance.def.id)
+			_ids.append(instance.row_id())
 			_moments.append({"made": tick, "lethal": -1, "gave_up": -1, "leaving": -1,
 					"finished": -1})
 		var line := "%d" % tick
@@ -348,16 +348,16 @@ class Run extends RefCounted:
 				continue
 			if moments.lethal < 0 and instance.is_lethal_at(her):
 				moments.lethal = tick
-			if moments.gave_up < 0 and instance.gave_up:
+			if moments.has_given_up() < 0 and instance.has_given_up():
 				moments.gave_up = tick
-			if moments.leaving < 0 and instance.is_leaving:
+			if moments.leaving < 0 and instance.is_on_its_way_out():
 				moments.leaving = tick
-			if moments.finished < 0 and instance.is_finished:
+			if moments.finished < 0 and instance.is_gone():
 				moments.finished = tick
 			line += "|%d:%s,%s,%s,%s,%s,%d,%d" % [i, var_to_str(instance.position.x),
 					var_to_str(instance.position.y), var_to_str(instance._heading.x),
 					var_to_str(instance._heading.y), var_to_str(instance._path_travelled),
-					instance.phase, 1 if instance.is_parked else 0]
+					instance.phase, 1 if instance.has_parked() else 0]
 		_chain.update(line.to_utf8_buffer())
 
 	func report() -> String:

@@ -232,7 +232,7 @@ func _heading_at_the_next_event(events: EventManager, here: Vector2, reached: Di
 	var best := INF
 	var target: EventInstance = null
 	for instance in events.instances():
-		if instance.is_finished or reached.has(instance):
+		if instance.is_gone() or reached.has(instance):
 			continue
 		var distance := instance.global_position.distance_squared_to(here)
 		if distance < best:

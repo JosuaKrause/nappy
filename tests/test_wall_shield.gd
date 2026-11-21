@@ -416,11 +416,11 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
 
 	var man: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
+		if instance.row_id() == "masked_pursuer":
 			man = instance
 	t.check(man != null, "the masked man is on the stairs")
 	if man:
-		man.restore(EventSave.new(man.def.telegraph_time, 0.0, INF))
+		man.restore(EventSave.new(man.telegraphs_for(), 0.0, INF))
 		var shaft: Array[Vector2] = []
 		for tile in scene.map().stairwell_tiles("stairwell_right"):
 			if not scene.map().is_walkable(tile):
@@ -480,7 +480,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
 		await PhysicsTicks.pass_ticks(t, 1, Callable(), FAST_SCALE)
 		ticks_left -= 1
 		for instance in events.instances():
-			if instance.def.id == "finale_explosion":
+			if instance.row_id() == "finale_explosion":
 				burst = instance
 	t.check(burst != null and burst.global_position == stands,
 			"an explosion goes off where she stands")
@@ -491,7 +491,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
 		t.check(not burst.source().wall_grid().wall_between(burst.global_position, behind),
 				"and the debug view's fields layer cuts it at no wall either, as the meter does")
 		var outline := GroundShape.field_outline_at(burst.global_position, Vector2.ZERO,
-				burst.def.outer_radius)
+				burst.heard_within())
 		var runs := DebugLayers.open_runs(outline, burst.global_position, burst.source().wall_grid())
 		t.check(runs.size() == 1 and runs[0].size() == outline.size() + 1,
 				"so its outline is drawn whole, in one closed run (%d runs)" % runs.size())

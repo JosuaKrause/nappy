@@ -156,13 +156,13 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 		shown += STEP
 	var sent: EventInstance = null
 	for instance in RunCity.events(city).instances():
-		if instance.def.id == warning.def.id and not instance.is_finished:
+		if instance.row_id() == warning.row().id and not instance.is_gone():
 			sent = instance
 	var made := "nobody (withdrawn)" if warning.was_withdrawn() else "nobody"
 	if sent != null and is_instance_valid(sent):
-		made = "%s at %s %s" % [sent.def.id, _point(sent.global_position),
+		made = "%s at %s %s" % [sent.row_id(), _point(sent.global_position),
 				RunTrace.tile(city.map.world_to_tile(sent.global_position))]
-	_print("%s %s badge %s -> %s | %s | rng %d" % [label, warning.def.id, _point(pointed), made,
+	_print("%s %s badge %s -> %s | %s | rng %d" % [label, warning.row().id, _point(pointed), made,
 			" / ".join(_lines), director._rng.state])
 	if sent != null and is_instance_valid(sent):
 		RunCity.events(city).retire(sent)

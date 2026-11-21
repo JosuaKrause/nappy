@@ -213,8 +213,8 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 			result["caught"] = true
 			result["caught_at"] = since
 			break
-		if instance.is_finished or instance.is_leaving:
-			result["ends"] = "gave up at %.2f" % since if instance.gave_up else "left at %.2f" % since
+		if instance.is_gone() or instance.is_on_its_way_out():
+			result["ends"] = "gave up at %.2f" % since if instance.has_given_up() else "left at %.2f" % since
 			break
 	if result["chase_at"] != INF:
 		result["chase_for"] = clock - warned_at - float(result["chase_at"])
@@ -423,7 +423,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 		instance_where.tell(her)
 		instance.step(STEP)
 		elapsed += STEP
-		if instance.is_finished or instance.is_leaving:
+		if instance.is_gone() or instance.is_on_its_way_out():
 			result["why"] = "it left"
 			break
 		var at := instance.global_position
@@ -488,7 +488,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		var instance := created[0]
 		instance_where.tell(her)
 		instance.step(STEP)
-		if instance.is_finished or instance.is_leaving:
+		if instance.is_gone() or instance.is_on_its_way_out():
 			result["why"] = "it left"
 			break
 		if _reaches(instance, her):
@@ -519,7 +519,7 @@ static func _in_view(offset: Vector2, margin: float) -> bool:
 			and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y + margin
 
 static func _reaches(instance: EventInstance, her: Vector2) -> bool:
-	if instance.def.hard_fail:
+	if instance.ends_the_day():
 		return instance.is_lethal_at(her)
 	if instance.is_telegraphing() or instance.is_waiting():
 		return false

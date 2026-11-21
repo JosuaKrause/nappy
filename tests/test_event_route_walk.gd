@@ -72,7 +72,7 @@ func _test_told_a_way_on_and_watched_it_goes_on(t: TestRunner) -> void:
 			and (first[1] as Vector2).is_equal_approx(Vector2.RIGHT)
 			and (first[2] as Vector2).is_equal_approx(her),
 			"from where its route ended, the way it drives, with her place: %s" % [first])
-	t.check(not instance.is_leaving and not instance.is_finished
+	t.check(not instance.is_on_its_way_out() and not instance.is_gone()
 			and instance.position.x > 3.0 * TILE,
 			"and goes on down it, still the event it was (%.0fpx along)" % instance.position.x)
 	instance.free()
@@ -84,7 +84,7 @@ func _test_out_of_her_sight_it_ends_its_route(t: TestRunner) -> void:
 	var way_on := FakeWayOn.new()
 	var instance := _convoy(where, way_on)
 	_step(instance, where, Vector2(-Tuning.OUT_OF_SIGHT - 4.0 * TILE, 0.0), 1.0)
-	t.check(way_on.asked.is_empty() and (instance.is_leaving or instance.is_finished),
+	t.check(way_on.asked.is_empty() and (instance.is_on_its_way_out() or instance.is_gone()),
 			"out of her sight it asks nothing (%d) and ends its route" % way_on.asked.size())
 	instance.free()
 
@@ -94,9 +94,9 @@ func _test_out_of_her_sight_it_ends_its_route(t: TestRunner) -> void:
 func _test_told_none_it_ends_its_route_whatever_its_row(t: TestRunner) -> void:
 	var where := WhereSheIs.new()
 	var instance := _convoy(where, null)
-	t.check(instance.def.is_sent_ahead(), "its row is one the director sends")
+	t.check(instance.row().is_sent_ahead(), "its row is one the director sends")
 	_step(instance, where, Vector2(TILE, 2.0 * TILE), 1.0)
-	t.check(instance.is_leaving or instance.is_finished,
+	t.check(instance.is_on_its_way_out() or instance.is_gone(),
 			"and told no way on, it ends its route where it ends")
 	instance.free()
 
@@ -114,6 +114,6 @@ func _test_a_pacing_row_never_asks(t: TestRunner) -> void:
 	instance.restore(EventSave.new(maxf(pacing.telegraph_time, 0.01) + 0.05, 0.0))
 	instance.go_on_by(way_on)
 	_step(instance, where, Vector2(TILE, 4.0 * TILE), 4.0)
-	t.check(way_on.asked.is_empty() and not instance.is_leaving,
+	t.check(way_on.asked.is_empty() and not instance.is_on_its_way_out(),
 			"a pacing row told a way on never asks (%d) and paces on" % way_on.asked.size())
 	instance.free()

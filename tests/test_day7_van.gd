@@ -67,7 +67,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 	if mark:
 		resistance.contact().complete_now()
 	var task_van: EventInstance = resistance.rider()
-	t.check(task_van != null and task_van.def.id == ROW,
+	t.check(task_van != null and task_van.row_id() == ROW,
 			"seed %d: reading it puts the task's van near the mark" % seed_value)
 	var task_van_at := task_van.global_position if task_van else Vector2.INF
 	t.check(_the_rigged_van(city) == null,
@@ -156,7 +156,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 		var reached := grid.flood([map.world_to_tile(her)])
 		t.check(grid.reaches(tile, {}, reached),
 				"seed %d: she can walk to it from where she was" % seed_value)
-	t.check(task_van != null and is_instance_valid(task_van) and not task_van.is_finished
+	t.check(task_van != null and is_instance_valid(task_van) and not task_van.is_gone()
 			and task_van.global_position == task_van_at and resistance.rider() == task_van,
 			"seed %d: the task's own van stays where it was placed, and stays the task" % seed_value)
 	player.free()

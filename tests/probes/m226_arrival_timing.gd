@@ -160,7 +160,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 ## space between a tall caret and a body cannot count as an entry.
 static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var parts: Array[Rect2] = []
-	var def := instance.def
+	var def := instance.row()
 	var view: String = instance.look.select_view(instance._heading)
 	var bob: float = instance.look.current_bob()
 	var picture := ""

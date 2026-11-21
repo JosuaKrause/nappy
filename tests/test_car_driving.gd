@@ -46,16 +46,16 @@ func _test_a_last_step_taken_back_does_not_park_it_short(t: TestRunner) -> void:
 			var was_at := engine.global_position
 			_step(engine, engine_where, her, Vector2.RIGHT)
 			held = engine.global_position.is_equal_approx(was_at)
-			if engine.is_parked or (held and engine.path_travelled() > length - 4.0):
+			if engine.has_parked() or (held and engine.path_travelled() > length - 4.0):
 				break
-		if held or engine.is_parked and engine.path_travelled() < length - 0.001:
+		if held or engine.has_parked() and engine.path_travelled() < length - 0.001:
 			refused_at_the_end += 1
-		if engine.is_parked and engine.path_travelled() < length - 0.001:
+		if engine.has_parked() and engine.path_travelled() < length - 0.001:
 			parked_short += 1
 		# She walks away; it drives the rest of the way, if it has any left, and parks.
 		for i in int(2.0 / STEP):
 			_step(engine, engine_where, Vector2(600.0, 600.0), Vector2.RIGHT)
-		t.check(engine.is_parked and engine.global_position.distance_to(route[1]) < 0.01,
+		t.check(engine.has_parked() and engine.global_position.distance_to(route[1]) < 0.01,
 				"%.1fpx past its kerb, once she has gone it is parked at its kerb (%.2fpx off it, "
 				% [past, engine.global_position.distance_to(route[1])]
 				+ "%.1f of %.1fpx driven)" % [engine.path_travelled(), length])

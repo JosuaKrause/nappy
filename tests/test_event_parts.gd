@@ -187,7 +187,7 @@ func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> vo
 	manager.world.where_she_is().tell(standing)
 	doors.check_detentions()
 	t.check(said.size() == 2 and said[0][0] == "in" and said[0][1] == hut.global_position
-			and said[1][0] == "hold" and is_equal_approx(said[1][1], hut.def.detain_seconds),
+			and said[1][0] == "hold" and is_equal_approx(said[1][1], hut.detains_for()),
 			"a post that takes her in says so, then that she is held for its seconds: %s" % [said])
 	t.check(her.visible and not her.is_detained() and her.global_position == standing,
 			"and nothing is done to her by the controller itself")

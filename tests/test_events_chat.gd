@@ -271,7 +271,7 @@ func _test_a_conversation_happens_once_per_instance(t: TestRunner) -> void:
 	# standing inside its reach.
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
 			Callable(), WAIT_SCALE)
-	t.check(mother.has_chatted() and not mother.is_chatting() and mother.is_leaving,
+	t.check(mother.has_chatted() and not mother.is_chatting() and mother.is_on_its_way_out(),
 			"it ends, and she is spent as a detainer — see 'departs like dog_walker'")
 	t.check(not stroller.is_detained(), "and the lock from the first approach has run down")
 
@@ -311,7 +311,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t: TestRunner
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
 			Callable(), WAIT_SCALE)
-	t.check(mother.is_leaving, "it ends with her leaving")
+	t.check(mother.is_on_its_way_out(), "it ends with her leaving")
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	stroller.global_position = far
@@ -353,10 +353,10 @@ func _test_a_completed_take_is_logged_exactly_once(t: TestRunner) -> void:
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where,
 			RecordingTrace.new(lines))
 	instance_where.tell(Vector2(def.outer_radius - 20.0, 0.0))
-	_advance(instance, instance.def.abduction.taken_over * 0.5)
+	_advance(instance, instance.row().abduction.taken_over * 0.5)
 	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
 
-	_advance(instance, instance.def.abduction.taken_over)
+	_advance(instance, instance.row().abduction.taken_over)
 	t.check(_takes(lines) == 1, "exactly one entry once it completes (%d)" % _takes(lines))
 
 	# Long past the completion, the count must not grow — the flag latches rather than re-firing.

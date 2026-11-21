@@ -177,7 +177,7 @@ func _read_the_mark(director: ResistanceDirector) -> void:
 func _live(id: String) -> Array[EventInstance]:
 	var found: Array[EventInstance] = []
 	for instance in RunCity.events(_city).instances():
-		if instance.def.id == id and not instance.is_finished:
+		if instance.row_id() == id and not instance.is_gone():
 			found.append(instance)
 	return found
 
@@ -194,7 +194,7 @@ func _new_one(id: String, before: Array[EventInstance]) -> EventInstance:
 func _street() -> Array[EventInstance]:
 	var found: Array[EventInstance] = []
 	for instance in RunCity.events(_city).instances():
-		if not instance.is_finished:
+		if not instance.is_gone():
 			found.append(instance)
 	return found
 
@@ -206,7 +206,7 @@ func _raid_since(before: Array[EventInstance]) -> Array[EventInstance]:
 	for instance in _street():
 		if instance in before:
 			continue
-		if instance.def.id == "night_raid" or (instance.def.id == "police_patrol" and instance.def.paces):
+		if instance.row_id() == "night_raid" or (instance.row_id() == "police_patrol" and instance.row().paces_a_beat()):
 			found.append(instance)
 	return found
 
@@ -424,7 +424,7 @@ func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
 ## The warning `events` has up for the row `id`, or null.
 func _warning_for(events: EventManager, id: String) -> PendingWarning:
 	for warning in events.pending_warnings():
-		if warning.def.id == id:
+		if warning.row().id == id:
 			return warning
 	return null
 

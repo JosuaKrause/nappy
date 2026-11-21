@@ -66,11 +66,11 @@ func run(t: TestRunner) -> void:
 					shown += STEP
 				var sent: EventInstance = null
 				for instance in RunCity.events(city).instances():
-					if instance.def.id in ["policeman_giving_chase", "guardsman_giving_chase"]:
+					if instance.row_id() in ["policeman_giving_chase", "guardsman_giving_chase"]:
 						sent = instance
 				var made := "nobody"
 				if sent:
-					made = "%s at (%s, %s)" % [sent.def.id, var_to_str(sent.global_position.x),
+					made = "%s at (%s, %s)" % [sent.row_id(), var_to_str(sent.global_position.x),
 							var_to_str(sent.global_position.y)]
 					RunCity.events(city).retire(sent)
 				else:

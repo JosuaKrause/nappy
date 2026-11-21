@@ -135,7 +135,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) 
 	# He is in her view: he stays, choice after choice.
 	_choose_again(director)
 	t.check(_task_guard() == first and first.global_position == where
-			and not first.is_finished,
+			and not first.is_gone(),
 			"the guard does not move while he is in her view")
 
 	# Everywhere he may stand round the roadblock she approaches is in her view: he stays.
@@ -170,7 +170,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) 
 			% [ResistanceDirector.TASK_GUARD_RETRY_SECONDS, waited])
 	var ringed: EventInstance = _task_guard()
 	var ring_at := ringed.global_position if ringed else Vector2.INF
-	t.check(ringed != null and ringed == first and not first.is_finished
+	t.check(ringed != null and ringed == first and not first.is_gone()
 			and ring_at.distance_to(around) > band_edge
 			and ring_at.distance_to(around) <= ResistanceDirector.TASK_GUARD_FARTHEST
 			and not _guard_in_view(ring_at) and _a_clear_line(city.map, ring_at, around),
@@ -199,7 +199,7 @@ func _check_he_guards(t: TestRunner, director: ResistanceDirector, roadblock: Ev
 		before: EventInstance, what: String) -> void:
 	var guard: EventInstance = _task_guard()
 	if before != null:
-		t.check(guard != null and guard == before and not before.is_finished,
+		t.check(guard != null and guard == before and not before.is_gone(),
 				"the guard is moved to %s, the same man rather than a new one" % what)
 	if guard == null:
 		return
@@ -594,7 +594,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner,
 		t.check(not guard.is_waiting(), "(%s) he noticed her the ordinary way" % what)
 		_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	director.contact().complete_now()
-	t.check(not guard.is_finished and not guard.is_waiting(),
+	t.check(not guard.is_gone() and not guard.is_waiting(),
 			"(%s) the moment she has done the task, he is after her" % what)
 	if parked:
 		# In her view his warning is a second, standing with it up *(inbox #764 in minty-lemur, the player: "yes,
@@ -617,11 +617,11 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner,
 		_tear_down(player, director, city)
 		return
 	var start := guard.global_position.distance_to(at)
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var nearest := start
 	var walked := 0.0
 	var lethal := false
-	while walked < 30.0 and not lethal and not guard.is_finished:
+	while walked < 30.0 and not lethal and not guard.is_gone():
 		RunCity.events(city).world.where_she_is().tell(at)
 		guard.step(0.1)
 		walked += 0.1
@@ -658,16 +658,16 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t: TestRunner) 
 	var at := _beside(city.map, touched.body_position(), ContactPoint.body_reach(touched))
 	player.global_position = at
 	director.contact().complete_now()
-	t.check(_task_guard() == null and guard.is_finished,
+	t.check(_task_guard() == null and guard.is_gone(),
 			"out of her view the waiting guard is taken out of the world")
 	var warning: PendingWarning = null
 	for pending in RunCity.events(city).pending_warnings():
-		if pending.def == EventCatalogue.task_guard_sent():
+		if pending.row() == EventCatalogue.task_guard_sent():
 			warning = pending
-	t.check(warning != null and is_equal_approx(warning.def.warned_for(), Tuning.WARNING_ALONE_MAX)
-			and warning.def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
+	t.check(warning != null and is_equal_approx(warning.row().warned_for(), Tuning.WARNING_ALONE_MAX)
+			and warning.row().starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 			"and sent at her under a %.1fs badge, to arrive charging"
-			% (warning.def.warned_for() if warning else -1.0))
+			% (warning.row().warned_for() if warning else -1.0))
 	_tear_down(player, director, city)
 
 ## **A guard already warning her when she finishes the task is set on her too** — left to his own
@@ -689,7 +689,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t: TestRunner
 		_tear_down(player, director, city)
 		return
 	var map := city.map
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var away := Vector2.ZERO
 	var her := Vector2.INF
 	for i in 16:
@@ -715,7 +715,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t: TestRunner
 	director.contact().complete_now()
 	var charged := false
 	var walked := 0.0
-	while walked < 10.0 and not charged and not guard.is_finished:
+	while walked < 10.0 and not charged and not guard.is_gone():
 		her += away * Tuning.WALK_SPEED * 0.05
 		RunCity.events(city).world.where_she_is().tell(her)
 		guard.step(0.05)
@@ -748,7 +748,7 @@ func _test_the_guard_walks_round_a_building_to_her(t: TestRunner) -> void:
 	_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	_settle_the_arrow(director)
 	_view = Rect2()
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var from := guard.global_position
 	# His walk to her goes round what stops a figure on foot today, as his sweep does.
 	var walk := map.walk_field(map.world_to_tile(from), map.blocked.tiles_of(Mover.TODAY))
@@ -766,7 +766,7 @@ func _test_the_guard_walks_round_a_building_to_her(t: TestRunner) -> void:
 				var spot := map.tile_to_world(tile)
 				if map.clear_line(from, spot) \
 						or _a_straight_chase_reaches(map, from, spot, standoff,
-								guard.def.chase_speed()):
+								guard.row().chase_speed()):
 					continue
 				at = spot
 				tiles_to_her = map.distance_at(walk, tile)
@@ -777,13 +777,13 @@ func _test_the_guard_walks_round_a_building_to_her(t: TestRunner) -> void:
 		return
 	player.global_position = at
 	guard.notice_her_at(at)
-	var allowed := guard.def.telegraph_time + tiles_to_her * Tuning.TILE_SIZE \
-			/ guard.def.chase_speed() * 1.5 + 2.0
+	var allowed := guard.telegraphs_for() + tiles_to_her * Tuning.TILE_SIZE \
+			/ guard.row().chase_speed() * 1.5 + 2.0
 	var start := from.distance_to(at)
 	var nearest := start
 	var walked := 0.0
 	var lethal := false
-	while walked < allowed and not lethal and not guard.is_finished:
+	while walked < allowed and not lethal and not guard.is_gone():
 		RunCity.events(city).world.where_she_is().tell(at)
 		guard.step(0.1)
 		walked += 0.1
@@ -844,7 +844,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_
 	if mark:
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
-	t.check(roadblock != null and roadblock.def.id == "roadblock",
+	t.check(roadblock != null and roadblock.row_id() == "roadblock",
 			"seed %d: reading the mark offers a roadblock" % seed_value)
 	if roadblock == null:
 		_tear_down(player, director, city)
@@ -870,13 +870,13 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_
 	# A found one she touches from ground her paths reach within the widest ring, a tile and a half
 	# from its body at most; a section the swap takes is the nearest along her paths, however far.
 	var widest: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back()
-	var touch := EventPlan.new(roadblock.def, Vector2.ZERO).blocking_radius() \
+	var touch := EventPlan.new(roadblock.row(), Vector2.ZERO).blocking_radius() \
 			+ Tuning.TILE_SIZE * 2.0
 	t.check(swapped or away <= widest + touch,
 			"seed %d: a found one is close by, %.0fpx from where she read the mark (within %.0fpx)"
 			% [seed_value, away, widest + touch])
 	if swapped:
-		var box := EventFootprints.footprint_of(roadblock.def)
+		var box := EventFootprints.footprint_of(roadblock.row())
 		t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
 				"seed %d: no part of a swapped one is in her view when it is put there"
 				% seed_value)
@@ -927,7 +927,7 @@ func _test_with_none_close_by_a_section_is_taken(t: TestRunner) -> void:
 	if director.current_step():
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
-	t.check(roadblock != null and roadblock.def.id == "roadblock",
+	t.check(roadblock != null and roadblock.row_id() == "roadblock",
 			"(swap) with none close by, reading the mark still offers a roadblock")
 	if roadblock == null:
 		_tear_down(player, director, city)
@@ -937,7 +937,7 @@ func _test_with_none_close_by_a_section_is_taken(t: TestRunner) -> void:
 		if section.is_taken() and section.tiles().has_point(map.world_to_tile(roadblock.body_position())):
 			taken = section
 	t.check(taken != null, "(swap) it stands across a route-adjacent section, which is taken for the day")
-	var box := EventFootprints.footprint_of(roadblock.def)
+	var box := EventFootprints.footprint_of(roadblock.row())
 	t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
 			"(swap) no part of it is in her view when it is put there")
 	_tear_down(player, director, city)
@@ -1208,7 +1208,7 @@ static func _choose_again(director: ResistanceDirector) -> void:
 ## (`EventManager.instances()`), or null once he is gone.
 func _task_guard() -> EventInstance:
 	for instance in RunCity.events(_city).instances():
-		if instance.def.id == EventCatalogue.task_guard().id and not instance.is_finished:
+		if instance.row_id() == EventCatalogue.task_guard().id and not instance.is_gone():
 			return instance
 	return null
 

@@ -71,7 +71,7 @@ static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 	var charged_at := INF
 	var elapsed := 0.0
 	var result := {"charged": false, "caught": false, "closest": INF}
-	while elapsed < 20.0 and not instance.is_leaving and not instance.gave_up:
+	while elapsed < 20.0 and not instance.is_on_its_way_out() and not instance.has_given_up():
 		var wanted := -Tuning.WALK_SPEED
 		if warned_at != INF:
 			match walk:

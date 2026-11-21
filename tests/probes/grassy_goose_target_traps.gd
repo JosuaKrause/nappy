@@ -203,7 +203,7 @@ func _chase(t: TestRunner, city: City, def: EventDef, start: Vector2, her_at: Ve
 	var caught := false
 	var elapsed := 0.0
 	var limit := def.telegraph_time + def.duration + 1.0
-	while elapsed < limit and not chaser.is_finished and not chaser.is_leaving:
+	while elapsed < limit and not chaser.is_gone() and not chaser.is_on_its_way_out():
 		her += _her_step(city.map, her, heading * Tuning.WALK_SPEED * STEP)
 		chaser_where.tell(her)
 		chaser.step(STEP)

@@ -51,6 +51,6 @@ static func vents(events: EventManager) -> Array[EventPlan]:
 ## The live instance of the row `id`, or null.
 static func live(events: EventManager, id: String) -> EventInstance:
 	for instance in events.instances():
-		if instance.def.id == id:
+		if instance.row_id() == id:
 			return instance
 	return null

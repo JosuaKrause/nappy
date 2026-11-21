@@ -610,7 +610,7 @@ func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunne
 			_city.map.tile_to_world(kerb))
 	var lane := kerb - inward
 	var surface := func(point: Vector2) -> float:
-		return van.global_position.distance_to(point) - van.def.shape.reach()
+		return van.global_position.distance_to(point) - van.ground_shape().reach()
 	var centre := _city.map.tile_to_world(lane)
 	t.check(surface.call(centre) < Tuning.PLAYER_BODY_RADIUS,
 			"the lane's centre is nearer the van's side than her radius (%.1fpx)" % surface.call(centre))
@@ -1392,12 +1392,12 @@ func _build_day_with_doors(t: TestRunner) -> Dictionary:
 	var gate: EventInstance = null
 	var hut: EventInstance = null
 	for instance in RunCity.events(city).instances():
-		if instance.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and not gate:
+		if instance.is_a_boom() and not gate:
 			gate = instance
 	if gate:
 		var axis := gate.facing_now()
 		for instance in RunCity.events(city).instances():
-			if instance.def.id == "checkpoint_hut" and absf(
+			if instance.row_id() == "checkpoint_hut" and absf(
 					(instance.global_position - gate.global_position).dot(axis)) <= 1.0:
 				hut = instance
 				break
@@ -1483,7 +1483,7 @@ func _test_a_plan_never_goes_through_the_boom(t: TestRunner, doors: Dictionary) 
 	var planner := _fixture_planner(doors)
 	# Where her body would touch the boom's: the boom inspects nobody, so there is no trigger to
 	# measure from, and what a plan must never do is put her under it.
-	var reach := gate.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
+	var reach := gate.solid_reach() + Tuning.PLAYER_BODY_RADIUS
 	var planned := planner.plan(from, to)
 	t.check(not planned.is_empty() and not _passes_within(map, planned, gate.global_position, reach),
 			"a plan past a street door's boom goes round it rather than under it")
@@ -1510,7 +1510,7 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t: TestRun
 	var stroller: Stroller = doors["stroller"]
 	var axis := hut.facing_now().normalized()
 	var across := Vector2(-axis.y, axis.x) * 16.0
-	var body := hut.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
+	var body := hut.solid_reach() + Tuning.PLAYER_BODY_RADIUS
 	var to := map.world_to_tile(hut.global_position + axis * Tuning.TILE_SIZE * 3.0 + across)
 	stroller.global_position = hut.global_position - axis * Tuning.TILE_SIZE * 8.0
 	var crossing := _fixture_planner(doors).plan(
@@ -1518,14 +1518,14 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t: TestRun
 	t.check(_passes_within(map, crossing, hut.global_position, body),
 			"a plan through a door that can take her goes down its crossing line")
 	var planner := _fixture_planner(doors)
-	stroller.global_position = hut.global_position - axis * (hut.def.detain_distance() - 6.0) + across
+	stroller.global_position = hut.global_position - axis * (hut.detain_distance() - 6.0) + across
 	planner.latch_the_doors_round_her()
 	var planned := planner.plan(map.world_to_tile(stroller.global_position), to)
 	t.check(not planned.is_empty() and not _passes_within(map, planned, hut.global_position, body),
 			"a plan past a door that has just let her out goes round its body")
 	# And the maneuver that works her free of a stall beside the door tries the way into its
 	# circle last, even when that is the way away from what caught her.
-	stroller.global_position = hut.global_position - axis * (hut.def.detain_distance() + 20.0)
+	stroller.global_position = hut.global_position - axis * (hut.detain_distance() + 20.0)
 	var order := planner.unstick_order(axis, 48.0)
 	t.check(order[0] != axis and order[order.size() - 1].dot(axis) > 0.0,
 			"the unstick tries stepping into a door's circle last (%s first)" % order[0])

@@ -92,7 +92,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	# The way the game ends one early: a resistance step's contact completing, which runs the
 	# instance's own `_be_done()` and, for a café that has no departure speed, finishes it.
 	instance.leave_for_a_completed_task()
-	t.check(instance.is_finished and def.has_a_spread,
+	t.check(instance.is_gone() and def.has_a_spread,
 			"finishing the instance leaves the classification true")
 	instance.free()
 

@@ -414,9 +414,9 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	var live_gate: EventInstance = null
 	var live_hut: EventInstance = null
 	for instance in RunCity.events(city).instances():
-		if instance.def.id == "checkpoint_gate" and not live_gate:
+		if instance.row_id() == "checkpoint_gate" and not live_gate:
 			live_gate = instance
-		if instance.def.id == "checkpoint_hut" and not live_hut:
+		if instance.row_id() == "checkpoint_hut" and not live_hut:
 			live_hut = instance
 	t.check(live_hut != null, "with streaming off, a checkpoint_hut actually goes live")
 	t.check(live_gate != null, "and a checkpoint_gate actually goes live")
@@ -633,7 +633,7 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t: TestRunner) -> void:
 
 	await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting(), "the conversation has ended")
-	t.check(not hut.is_finished and not hut.is_leaving,
+	t.check(not hut.is_gone() and not hut.is_on_its_way_out(),
 			"and the hut stays put — redetains, it does not depart like chatting_mother")
 
 	t.check(set_down.size() == 1, "and she is let out once (%d)" % set_down.size())
@@ -644,15 +644,15 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t: TestRunner) -> void:
 	t.check(released_along < 0.0,
 			"released on the opposite side of the crossing from where she went in (%.1f)"
 			% released_along)
-	var clearance := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := hut.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	t.check(absf(released_along) >= clearance - 0.5,
 			"and just clear of its body, as close to the door as she can stand (%.1f against %.1f)"
 			% [absf(released_along), clearance])
-	t.check(absf(released_along) < hut.def.detain_distance(),
+	t.check(absf(released_along) < hut.detain_distance(),
 			("which is *inside* the hold's own trigger, because the far side of a door is — the " +
 			"latch is what keeps her from being taken straight back in (%.1f against %.1f)")
-			% [absf(released_along), hut.def.detain_distance()])
+			% [absf(released_along), hut.detain_distance()])
 	# Within her body settling against the hut's through the hold, as it does in play.
 	t.check(released_cross.distance_to(Vector2(0.0, 16.0)) < 2.0,
 			"on the same pavement lane she arrived on (%s)" % released_cross)
@@ -963,12 +963,12 @@ func _test_a_corner_of_two_doors_is_one_toll(t: TestRunner) -> void:
 	var released: Vector2 = set_down[0] if not set_down.is_empty() else Vector2.INF
 	var settled := stroller.global_position
 	var reached_by_the_other := cross_hut.global_position.distance_to(released) \
-			<= cross_hut.def.detain_distance() \
-			or cross_gate.global_position.distance_to(released) <= cross_gate.def.detain_distance()
+			<= cross_hut.detain_distance() \
+			or cross_gate.global_position.distance_to(released) <= cross_gate.detain_distance()
 	t.check(reached_by_the_other,
 			("the release lands inside the corner door's own reach (%.1fpx from its hut, trigger " +
 			"%.1fpx) — otherwise this test is not about a corner at all")
-			% [cross_hut.global_position.distance_to(released), cross_hut.def.detain_distance()])
+			% [cross_hut.global_position.distance_to(released), cross_hut.detain_distance()])
 
 	await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS * 3.0)
 	t.check(not cross_hut.is_chatting() and not cross_gate.is_chatting(),
@@ -1419,10 +1419,10 @@ func _test_a_stroller_stopped_against_the_hut_is_detained(t: TestRunner) -> void
 				"walking %s she pushes something further ahead of her than her own body "
 				% approach + "(%.1f against %.1f) — otherwise this rig checks nothing"
 				% [reach, Tuning.PLAYER_BODY_RADIUS])
-		var stopped_at := hut.def.obstructs_within() + reach
-		t.check(stopped_at < hut.def.detain_distance(),
+		var stopped_at := hut.row().obstructs_within() + reach
+		t.check(stopped_at < hut.detain_distance(),
 				("walking %s, where the hut's body stops her (%.1fpx from its centre) is inside " +
-				"the trigger (%.1fpx)") % [approach, stopped_at, hut.def.detain_distance()])
+				"the trigger (%.1fpx)") % [approach, stopped_at, hut.detain_distance()])
 
 		stroller.global_position = centre - approach * stopped_at
 		await PhysicsTicks.pass_ticks(t, 1)
@@ -1513,7 +1513,7 @@ func _test_the_whole_hold_reads_as_one_move(t: TestRunner) -> void:
 	var heading := Vector2.RIGHT
 	var reach := await _reach_ahead(t, stroller, heading)
 	# Put down as a day puts her down (`Stroller.reset_at()`, which also drops her interpolation).
-	stroller.reset_at(hut.global_position - heading * (hut.def.obstructs_within() + reach), heading)
+	stroller.reset_at(hut.global_position - heading * (hut.row().obstructs_within() + reach), heading)
 	# A camera that has been following her all morning: she was just put here, so its smoothed
 	# position would otherwise still be sitting at the world origin it was born at.
 	# `reset_smoothing()` is what "it has already caught up with her" looks like, and
@@ -1576,9 +1576,9 @@ func _test_the_whole_hold_reads_as_one_move(t: TestRunner) -> void:
 	# inside the trigger — the far side of a door is a body's width away and the trigger reaches
 	# further than that — so what keeps her out of it is the `ReleaseLatch` armed on the way out,
 	# not distance. Standing there for several times the length of the hold itself costs nothing.
-	t.check(released.distance_to(hut.global_position) < hut.def.detain_distance(),
+	t.check(released.distance_to(hut.global_position) < hut.detain_distance(),
 			"she is standing inside the trigger she was just let out of (%.1f against %.1f)"
-			% [released.distance_to(hut.global_position), hut.def.detain_distance()])
+			% [released.distance_to(hut.global_position), hut.detain_distance()])
 	await _advance_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS * 4.0, WAIT_SCALE)
 	t.check(not hut.is_chatting() and not gate.is_chatting() and not far_hut.is_chatting(),
 			"and standing there is not another inspection, however long she stands — and not by "
@@ -1589,7 +1589,7 @@ func _test_the_whole_hold_reads_as_one_move(t: TestRunner) -> void:
 	# And walking out of the door's reach and back in pays the toll again, which is the whole of
 	# what a door is.
 	var away := (released - hut.global_position).normalized()
-	stroller.global_position = hut.global_position + away * (hut.def.detain_distance() + 8.0)
+	stroller.global_position = hut.global_position + away * (hut.detain_distance() + 8.0)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(not hut.is_chatting(), "one step outside its reach is not a toll")
 	stroller.global_position = released
@@ -1623,7 +1623,7 @@ func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t: TestRunn
 	for door: EventInstance in at_the_boom["doors"]:
 		t.check(not door.is_chatting(),
 				"stopped against the lowered boom on the carriageway, %s does not take her in"
-				% door.def.id)
+				% door.row_id())
 	t.check(not boom_stroller.is_detained(), "and nothing locks her controls there")
 	_free_door_rig(at_the_boom)
 
@@ -1645,19 +1645,19 @@ func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t: TestRunn
 		stroller.global_position = entry
 		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(caught_by.is_chatting(),
-				"crossing the street at %s starts the hold" % caught_by.def.id)
+				"crossing the street at %s starts the hold" % caught_by.row_id())
 
 		await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS)
 		var released := stroller.global_position
 		var crossed := (released - caught_by.global_position).dot(axis)
 		t.check(absf(crossed) > 1.0,
 				("%s: the release carries her across the crossing (%.1f along it) rather than " +
-				"setting her down exactly where it found her") % [caught_by.def.id, crossed])
+				"setting her down exactly where it found her") % [caught_by.row_id(), crossed])
 
 		await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS * 3.0)
 		for door in doors:
 			t.check(not door.is_chatting(),
-					"%s: nothing at the door holds her again where it let her out" % door.def.id)
+					"%s: nothing at the door holds her again where it let her out" % door.row_id())
 
 		stroller.free()
 		_free_manager(manager)
@@ -1688,7 +1688,7 @@ func _test_walking_back_redetains_her(t: TestRunner) -> void:
 	t.check(not post.is_chatting(), "and standing there is not a second toll")
 
 	# Walking out of its reach re-arms it, and walking back in pays again.
-	stroller.global_position = centre + out_side * (post.def.detain_distance() + 4.0)
+	stroller.global_position = centre + out_side * (post.detain_distance() + 4.0)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(not post.is_chatting(), "one step outside its reach is not a toll either")
 	stroller.global_position = centre + out_side * 60.0
@@ -1859,7 +1859,7 @@ func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
 				for door in doors:
 					t.check(not door.is_chatting(),
 							"arm %s, on the carriageway at (%.0f, %.0f) from the boom: %s does not "
-							% ["up" if raised else "down", along, across, door.def.id]
+							% ["up" if raised else "down", along, across, door.row_id()]
 							+ "take her in")
 	t.check(not stroller.is_detained(), "and her controls are never locked there")
 
@@ -2099,19 +2099,19 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	t.check(warned == ["door_guard", "door_guard"],
 			"and the page counts each crossing's warning once (%s)" % [warned])
 	var guard := _door_guard_after_her(RunCity.events(city))
-	t.check(guard != null and guard.def.id == "door_guard",
+	t.check(guard != null and guard.row_id() == "door_guard",
 			"once it has run, a door_guard is set on her")
 	if guard:
 		t.check(RunCity.events(city).instances().has(guard), "a live event, like anything else in the day")
 		t.check(guard.global_position.distance_to(far_hut.global_position)
-				<= far_hut.def.obstructs_within() + 0.5,
+				<= far_hut.row().obstructs_within() + 0.5,
 				"stepping out of the wall of the hut across the road (%.1fpx from it)"
 				% guard.global_position.distance_to(far_hut.global_position))
 		t.check((guard.global_position - far_hut.global_position).dot(axis) > 0.0,
 				"on the side of the line she crossed to")
 		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(not guard.is_telegraphing() and not guard.is_waiting(), "and charging at once")
-		t.check(not far_hut.is_finished and not far_hut.is_its_guard_inside(),
+		t.check(not far_hut.is_gone() and not far_hut.is_its_guard_inside(),
 				"while the hut and its own guard stay where they are")
 	var walks := _walks_under(walks_told)
 	_step_her_to(rig, lane - axis * 20.0)
@@ -2155,7 +2155,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 	_stand_for(rig, CheckpointController.CROSSING_WARNING)
 	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
-			<= far_hut.def.obstructs_within() + 0.5,
+			<= far_hut.row().obstructs_within() + 0.5,
 			"once the warning has run, the guard steps out of the hut that warned her (%s)"
 			% ("%.1fpx from it, %.1fpx from the other" % [
 					guard.global_position.distance_to(far_hut.global_position),
@@ -2218,7 +2218,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 	guard.setup(def, guard_at, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().hearing(guard_where))
 	var result := {"caught": false, "gave_up": false, "lethal_in_notice": false, "ended_at": INF}
-	while elapsed < 12.0 + head_start and not guard.is_finished and not guard.is_leaving:
+	while elapsed < 12.0 + head_start and not guard.is_gone() and not guard.is_on_its_way_out():
 		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)
 		moving = move_toward(moving, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * moving * STEP
@@ -2229,7 +2229,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 			result["caught"] = true
 			result["lethal_in_notice"] = elapsed < def.telegraph_time
 			break
-	result["gave_up"] = guard.gave_up
+	result["gave_up"] = guard.has_given_up()
 	result["ended_at"] = elapsed
 	guard.free()
 	return result
@@ -2245,7 +2245,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 static func _door_guard_after_her(manager: EventManager) -> EventInstance:
 	var found: EventInstance = null
 	for instance in manager.instances():
-		if instance.def.id == "door_guard":
+		if instance.row_id() == "door_guard":
 			found = instance
 	return found
 
@@ -2292,13 +2292,13 @@ func _test_a_huts_hold_ends_the_door_guards_chase(t: TestRunner) -> void:
 
 	stroller.global_position = guard.global_position + Vector2(2000.0, 0.0)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(not guard.gave_up and not guard.is_leaving, "he is after her before she reaches a hut")
+	t.check(not guard.has_given_up() and not guard.is_on_its_way_out(), "he is after her before she reaches a hut")
 
 	var axis := far_hut.facing_now()
 	stroller.global_position = far_hut.global_position + axis * 40.0 + Vector2(0.0, 16.0)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(far_hut.is_chatting(), "walking up to the far hut starts its own inspection")
-	t.check(guard.gave_up and (guard.is_finished or guard.is_leaving),
+	t.check(guard.has_given_up() and (guard.is_gone() or guard.is_on_its_way_out()),
 			"and the door_guard gives up exactly as he does when she outruns him")
 	t.check(not guard.is_lethal_at(stroller.global_position),
 			"a give-up is the state a catch cannot land from, during the hold or after it")
@@ -2317,13 +2317,13 @@ func _test_a_hold_at_the_guards_own_hut_ends_it_too(t: TestRunner) -> void:
 
 	stroller.global_position = guard.global_position + Vector2(2000.0, 0.0)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(not guard.gave_up, "he is after her before the hold starts")
+	t.check(not guard.has_given_up(), "he is after her before the hold starts")
 
 	var axis := own_hut.facing_now()
 	stroller.global_position = own_hut.global_position - axis * 40.0 + Vector2(0.0, 16.0)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(own_hut.is_chatting(), "walking back into his own hut still starts a hold")
-	t.check(guard.gave_up and (guard.is_finished or guard.is_leaving),
+	t.check(guard.has_given_up() and (guard.is_gone() or guard.is_on_its_way_out()),
 			"and gives him up too, the same as any other hut")
 
 	_free_guard_after_her_rig(rig)
@@ -2346,12 +2346,12 @@ func _test_a_hold_does_not_end_the_roadblock_guard(t: TestRunner) -> void:
 
 	stroller.global_position = road_guard.global_position + Vector2(0.0, 2000.0)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(not road_guard.gave_up and not road_guard.is_leaving, "he is hunting her already")
+	t.check(not road_guard.has_given_up() and not road_guard.is_on_its_way_out(), "he is hunting her already")
 
 	stroller.global_position = far_hut.global_position + axis * 40.0 + Vector2(0.0, 16.0)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(far_hut.is_chatting(), "the hold starts as it does for the door_guard")
-	t.check(not road_guard.gave_up and not road_guard.is_leaving,
+	t.check(not road_guard.has_given_up() and not road_guard.is_on_its_way_out(),
 			"but the roadblock's own hunting guard is untouched — he is not _guard_after_her")
 
 	_free_guard_after_her_rig(rig)
@@ -2376,7 +2376,7 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t: TestRunner) -> void:
 	stroller.global_position = her
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(hut.is_chatting(), "stepping back into the hut starts its hold")
-	t.check(not robber.gave_up and not robber.is_finished and not robber.is_leaving,
+	t.check(not robber.has_given_up() and not robber.is_gone() and not robber.is_on_its_way_out(),
 			"and the robber after her does not give up for it")
 	var caught_while_held := false
 	var ticks := 0
@@ -2387,7 +2387,7 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t: TestRunner) -> void:
 		if robber.is_lethal_at(stroller.global_position):
 			caught_while_held = true
 			break
-	t.check(caught_while_held and not robber.gave_up,
+	t.check(caught_while_held and not robber.has_given_up(),
 			"he reaches her inside the hut and catches her while she is held (%d ticks into the hold)"
 			% ticks)
 
@@ -2413,7 +2413,7 @@ func _test_a_chase_with_no_hold_still_catches(t: TestRunner) -> void:
 		if guard.is_lethal_at(stroller.global_position):
 			caught = true
 			break
-	t.check(caught and not guard.gave_up,
+	t.check(caught and not guard.has_given_up(),
 			"standing near him with no hold anywhere near catches her exactly as before")
 
 	_free_guard_after_her_rig(rig)

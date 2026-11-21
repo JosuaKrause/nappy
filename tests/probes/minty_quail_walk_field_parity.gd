@@ -61,12 +61,12 @@ func _the_guard(t: TestRunner, seed_value: int, walks: bool) -> void:
 	player.global_position = at
 	director.contact().complete_now()
 	var route := PROBE.walk_away_from(map, at) if walks else PackedVector2Array()
-	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.row().chase_speed(), guard.row().standoff_reach())
 	var her := at
 	var next := 0
 	var clock := 0.0
 	var tick := 0
-	while clock < CHASE_SECONDS and not guard.is_finished:
+	while clock < CHASE_SECONDS and not guard.is_gone():
 		if next < route.size():
 			her = her.move_toward(route[next], Tuning.WALK_SPEED * FRAME)
 			if her.distance_to(route[next]) < 0.01:

@@ -162,10 +162,10 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t: TestRunner) -
 	t.check(director.rider() == second, "whose contact it is")
 	# He does not leave the instant she hands it over (M205): he keeps shouting, and charging
 	# her, for `NOTE_HANDOVER_LINGER_SECONDS` first.
-	t.check(not second.is_leaving and not first.is_leaving and not seeded.is_leaving,
+	t.check(not second.is_on_its_way_out() and not first.is_on_its_way_out() and not seeded.is_on_its_way_out(),
 			"nobody leaves the instant she hands it over — he keeps shouting first")
 	director.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
-	t.check(second.is_leaving and not first.is_leaving and not seeded.is_leaving,
+	t.check(second.is_on_its_way_out() and not first.is_on_its_way_out() and not seeded.is_on_its_way_out(),
 			"and once he has lingered that long, he is the one who leaves; the one she walked " +
 			"past keeps shouting")
 
@@ -205,7 +205,7 @@ func _check_a_task_stands_unguarded_until_it_is_handed_over(t: TestRunner, day: 
 	t.check(_robbers_on_the_street() == robbers_before,
 			"activating it stands no %s at %s (%d before, %d after)"
 			% [who, at, robbers_before, _robbers_on_the_street()])
-	t.check(mark_guard != null and not mark_guard.is_finished
+	t.check(mark_guard != null and not mark_guard.is_gone()
 			and _new_one(EventCatalogue.task_guard().id, task_guards) == null,
 			"the only guard is still the mark's own")
 	var trap_row := task.trap_row if task else "robber_giving_chase"
@@ -244,7 +244,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var rider := director.rider()
 	if rider and task_guard:
-		var touched_within := rider.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
+		var touched_within := rider.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
 				+ ContactPoint.REACH
 		var from_body := task_guard.global_position.distance_to(rider.body_position())
 		t.check(from_body >= robbery.inner_radius + touched_within - 0.5,
@@ -254,7 +254,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	t.check(task_guard != null and is_instance_valid(task_guard),
 			"it is guarded where it waits, like a mark, with its own fresh guard")
 	if mark_guard:
-		t.check(mark_guard in _live(mark_row) and not mark_guard.is_finished,
+		t.check(mark_guard in _live(mark_row) and not mark_guard.is_gone(),
 				"and the mark's own guard stays untouched, not retired for it")
 		t.check(task_guard != mark_guard,
 				"the perform's own guard is a distinct instance from the mark's")
@@ -481,14 +481,14 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 	var shown := _run_the_traps_warning(row_id, her)
 	var sent := _live(row_id)
 	var chaser: EventInstance = sent[0] if sent.size() == 1 else null
-	t.check(chaser != null and chaser.def.id == row_id,
+	t.check(chaser != null and chaser.row_id() == row_id,
 			"%s: %s is sent after her once it is over (%.2fs)" % [label, row_id, shown])
 	if chaser == null:
 		return Vector2.INF
 	var start := chaser.global_position
 	var view := VisibleView.around(her, null)
 	var siting := RunCity.spawn_siting(_city)
-	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), Mover.on_foot(EventInstance.FIGURE_RADIUS),
+	var asked := siting.ask(EventFootprints.footprint_of(chaser.row()), Mover.on_foot(EventInstance.FIGURE_RADIUS),
 			her)
 	var beside := asked.beside
 	var dist := start.distance_to(her)
@@ -500,7 +500,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 			"%s: above or below her within the cone, beside her, or across the street (%.1fpx, at %v)"
 			% [label, dist, start - her])
 	t.check(not chaser.is_telegraphing(), "%s: already chasing, with no closing-in first" % label)
-	t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(chaser.def), her, start),
+	t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(chaser.row()), her, start),
 			"%s: wholly out of sight the frame he exists" % label)
 	var through_a_door := false
 	var plan := _city.streets().region_plan()
@@ -515,7 +515,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 			"%s: on walkable ground nothing refuses" % label)
 	var clear := siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, start)
 	if not clear and not across:
-		for candidate in _fixed_starts(chaser.def, her):
+		for candidate in _fixed_starts(chaser.row(), her):
 			t.check(not (siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, candidate)
 					and siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, candidate)
 					and siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked, candidate)),
@@ -525,15 +525,15 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 	RunCity.events(_city).world.where_she_is().tell(her)
 	chaser.step(STEP)
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
-	t.check(closed > chaser.def.chase_speed() * STEP * 0.9 or (across and closed > 0.0),
+	t.check(closed > chaser.row().chase_speed() * STEP * 0.9 or (across and closed > 0.0),
 			"%s: and coming at her%s from his first frame" % [label,
 			"" if across else " at his own speed"])
 	if not clear and not across:
 		return start
 	var caught := false
 	var elapsed := 0.0
-	while elapsed < chaser.def.telegraph_time + chaser.def.duration \
-			and not chaser.is_finished and not caught:
+	while elapsed < chaser.telegraphs_for() + chaser.row().duration \
+			and not chaser.is_gone() and not caught:
 		RunCity.events(_city).world.where_she_is().tell(her)
 		chaser.step(STEP)
 		elapsed += STEP
@@ -549,7 +549,7 @@ func _robbers_on_the_street() -> int:
 	var count := 0
 	var ids := ["alley_robbery", "robber_giving_chase", "van_guard_giving_chase"]
 	for instance in RunCity.events(_city).instances():
-		if instance.def.id in ids and not instance.is_finished:
+		if instance.row_id() in ids and not instance.is_gone():
 			count += 1
 	return count
 
@@ -590,7 +590,7 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t: TestRunner) -> v
 			# He does not leave the instant she hands it over (M205): he keeps shouting, and
 			# charging her, for `NOTE_HANDOVER_LINGER_SECONDS` first — unaffected by the
 			# robber's own clock, which is all this loop has advanced.
-			t.check(not rider.is_leaving,
+			t.check(not rider.is_on_its_way_out(),
 					"seed %d: the man she handed it to keeps shouting, not leaving instantly"
 					% seed_value)
 			player.free()
@@ -813,8 +813,8 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 		if baby.condition() == GameEnums.BabyState.CRYING:
 			result["cried"] = true
 			break
-		if robber.gave_up or robber.is_finished or robber.is_leaving:
-			result["gave_up"] = robber.gave_up
+		if robber.has_given_up() or robber.is_gone() or robber.is_on_its_way_out():
+			result["gave_up"] = robber.has_given_up()
 			result["ended"] = true
 			break
 	result["excitement"] = baby.excitement_level()

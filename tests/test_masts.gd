@@ -261,7 +261,7 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 	t.check(is_zero_approx(_live(plan).current_intensity()), "a silenced mast's field is gone")
 	t.check(is_zero_approx(_live(plan).source().contribution_at(nearby)),
 			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
-	t.check(not _live(plan).is_finished, "but the mast still stands — it has not left")
+	t.check(not _live(plan).is_gone(), "but the mast still stands — it has not left")
 
 	# Streamed out and back in, the silence holds.
 	RunCity.events(_city).stream_around(Vector2(-99999.0, -99999.0))

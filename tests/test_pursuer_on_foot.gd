@@ -132,7 +132,7 @@ func _done(city: City, her: Node2D) -> void:
 ## scheduler places, so it is the one a pursuit marble sent.
 func _the_pursuer_sent(city: City) -> EventInstance:
 	for instance in RunCity.events(city).instances():
-		if instance.def.id in ["policeman_giving_chase", "guardsman_giving_chase"]:
+		if instance.row_id() in ["policeman_giving_chase", "guardsman_giving_chase"]:
 			return instance
 	return null
 
@@ -201,7 +201,7 @@ func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t: TestRunner) -> void:
 		var sent := _the_pursuer_sent(city)
 		var expected: EventDef.Look = EventDef.Look.GUARDSMAN_GIVING_CHASE if day == 9 \
 				else EventDef.Look.POLICEMAN_GIVING_CHASE
-		t.check(sent != null and sent.def.look == expected,
+		t.check(sent != null and sent.row().picture() == expected,
 				"on day %d a pursuit marble sends %s" % [day,
 				"a guardsman" if day == 9 else "a policeman"])
 		_done(city, her)
@@ -225,7 +225,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 	RunCity.events(city).send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	var warnings := RunCity.events(city).pending_warnings()
-	t.check(warnings.size() == 1 and warnings[0].def.id == "policeman_giving_chase",
+	t.check(warnings.size() == 1 and warnings[0].row().id == "policeman_giving_chase",
 			"the badge is up the moment the marble is drawn, with her standing still")
 	t.check(RunCity.events(city).instances().size() == before and _the_pursuer_sent(city) == null,
 			"and nothing is in the world yet")
@@ -240,7 +240,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 			"and, from a sidewalk in the city, his start has a clear run at her (%s)" % [account])
 	if sent:
 		var view := SpawnSiting.seen_from(RunCity.events(city).visible_view(), her.global_position)
-		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(sent.def),
+		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(sent.row()),
 				her.global_position, sent.global_position),
 				"created wholly out of her sight (%.0fpx off)"
 				% sent.global_position.distance_to(her.global_position))
@@ -360,7 +360,7 @@ func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) 
 			if seen.has(instance):
 				continue
 			seen[instance] = true
-			handed.append("%s at %.0f,%.0f" % [instance.def.id, instance.global_position.x,
+			handed.append("%s at %.0f,%.0f" % [instance.row_id(), instance.global_position.x,
 					instance.global_position.y])
 	her.velocity = Vector2.ZERO
 	return handed
@@ -393,13 +393,13 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: T
 				if pursuer.is_lethal_at(at):
 					caught = elapsed
 					break
-				if pursuer.is_leaving or pursuer.is_finished:
+				if pursuer.is_on_its_way_out() or pursuer.is_gone():
 					break
 			if running:
-				t.check(pursuer.gave_up and caught == INF and elapsed < 1.0,
+				t.check(pursuer.has_given_up() and caught == INF and elapsed < 1.0,
 						"'%s': running away, he gives up within a second (%.2fs)" % [id, elapsed])
 			else:
-				t.check(caught < def.duration and not pursuer.gave_up,
+				t.check(caught < def.duration and not pursuer.has_given_up(),
 						"'%s': walking away, he catches her at %.1fs, before the %.0fs cap"
 						% [id, caught, def.duration])
 			pursuer.free()
@@ -486,15 +486,15 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner)
 		var landed := 0.0
 		var after := 0.0
 		var elapsed := 0.0
-		while elapsed < out.telegraph_time + 8.0 and not man.is_finished:
+		while elapsed < out.telegraph_time + 8.0 and not man.is_gone():
 			man_where.tell(her)
 			man.step(STEP)
 			elapsed += STEP
-			if man.has_stopped_her() and not man.is_leaving:
+			if man.has_stopped_her() and not man.is_on_its_way_out():
 				landed += man.source().contribution_at(her) * STEP
 				if walks_away:
 					her += Vector2.LEFT * Tuning.WALK_SPEED * STEP
-			elif man.is_leaving:
+			elif man.is_on_its_way_out():
 				after += man.source().contribution_at(her) * STEP
 		if walks_away:
 			t.check(landed >= stop * 0.9,
@@ -610,14 +610,14 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 				t.check(events.pending_warnings().is_empty(),
 						"day %d: he gets out with no off-screen badge" % day)
 				var reach := door.distance_to(car.global_position)
-				t.check(reach <= car.def.shape.radius + officer.def.shape.reach() + 2.0,
+				t.check(reach <= car.ground_shape().radius + officer.ground_shape().reach() + 2.0,
 						"day %d: at the car's door (%.0fpx from its middle)" % [day, reach])
 			if officer and is_instance_valid(officer):
 				if stopped_her_at == INF and officer.has_stopped_her():
 					stopped_her_at = elapsed
 				back_at = officer.global_position
 			if stopped_at != Vector2.INF:
-				var out := officer != null and is_instance_valid(officer) and not officer.is_finished
+				var out := officer != null and is_instance_valid(officer) and not officer.is_gone()
 				if out:
 					car_moved = maxf(car_moved, car.global_position.distance_to(stopped_at))
 				else:
@@ -630,7 +630,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 				and stopped_at.distance_to(her.global_position) <= hot.notice_within() + 0.5,
 				"day %d: it stopped once close to her (%.0fpx)"
 				% [day, stopped_at.distance_to(her.global_position)])
-		t.check(officer != null and is_instance_valid(officer) and officer.def.id == expected,
+		t.check(officer != null and is_instance_valid(officer) and officer.row_id() == expected,
 				"day %d: and %s got out" % [day, expected])
 		t.check(car_moved < 0.01, "day %d: the car stood while he was out" % day)
 		t.check(stopped_her_at < INF and stopped_her_at - out_at >= EventCatalogue.out_of_the_car(
@@ -638,7 +638,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 				% day + "(%.2fs) and stopped" % (stopped_her_at - out_at))
 		t.check(struck[0] == "", "day %d: and the day does not end (%s)" % [day, struck[0]])
 		t.check(back_at.distance_to(door) <= 1.0 and officer != null
-				and (not is_instance_valid(officer) or officer.is_finished),
+				and (not is_instance_valid(officer) or officer.is_gone()),
 				"day %d: he walked back and got in at the door he got out of (%.1fpx from it)"
 				% [day, back_at.distance_to(door)])
 		t.check(drove_on >= 40.0, "day %d: and then the car drove on along its route (%.0fpx)"
@@ -735,10 +735,10 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 			officer = MenLetOut.first_of(events, car)
 		var out_of_reach := car.global_position.distance_to(her.global_position) \
 				> hot.outer_radius + hot.shape.reach()
-		var his_man_is_back := officer != null and (not is_instance_valid(officer) or officer.is_finished)
-		if car.is_finished or car.is_leaving or (his_man_is_back and out_of_reach):
+		var his_man_is_back := officer != null and (not is_instance_valid(officer) or officer.is_gone())
+		if car.is_gone() or car.is_on_its_way_out() or (his_man_is_back and out_of_reach):
 			break
-	var finished := officer != null and (not is_instance_valid(officer) or officer.is_finished)
+	var finished := officer != null and (not is_instance_valid(officer) or officer.is_gone())
 	for instance: EventInstance in events.instances().duplicate():
 		events.retire(instance)
 	events.streaming.retire_finished()
@@ -807,7 +807,7 @@ func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Arr
 	var saw_in_a_box := false
 	var seen_her := false
 	var elapsed := 0.0
-	while elapsed < 60.0 and car.is_waiting() and not car.is_leaving and not car.is_finished:
+	while elapsed < 60.0 and car.is_waiting() and not car.is_on_its_way_out() and not car.is_gone():
 		car_where.tell(her)
 		# What the car notices her by, asked as it is about to step: inside its notice distance on
 		# a clear line, the same condition `EventInvestigation` latches its `_seen_her` on while the
@@ -820,7 +820,7 @@ func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Arr
 		elapsed += STEP
 		if seen_her and car.is_waiting():
 			saw_in_a_box = true
-	if car.is_waiting() or car.is_leaving or car.is_finished:
+	if car.is_waiting() or car.is_on_its_way_out() or car.is_gone():
 		car.free()
 		return []
 	return [car, saw_in_a_box]
@@ -829,11 +829,11 @@ func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Arr
 ## — is on a junction: inside the crossing corridor as well as its own (`CityMap.junction_at()`).
 func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 	var axis := car.facing_now().normalized()
-	var reach := car.def.shape.reach()
+	var reach := car.ground_shape().reach()
 	for i in 17:
 		for j in 3:
 			var point := car.global_position + axis * lerpf(-reach, reach, float(i) / 16.0) \
-					+ axis.orthogonal() * lerpf(-car.def.shape.radius, car.def.shape.radius,
+					+ axis.orthogonal() * lerpf(-car.ground_shape().radius, car.ground_shape().radius,
 					float(j) / 2.0)
 			if CityMap.junction_at(map.world_to_tile(point)) != Vector2i(-1, -1):
 				return true
@@ -905,17 +905,17 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 		van_where.tell(Vector2(2000.0, 0.0))
 		van.step(STEP)
 		elapsed += STEP
-	t.check(not van.is_finished and not van.is_leaving,
+	t.check(not van.is_gone() and not van.is_on_its_way_out(),
 			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
 			% [elapsed, hot.telegraph_time + hot.duration])
 	var events := EventManager.new()
 	events.retire(men[0])
 	van.step(STEP)
-	t.check(not van.is_finished and not van.is_leaving, "with one man still out it still stands")
+	t.check(not van.is_gone() and not van.is_on_its_way_out(), "with one man still out it still stands")
 	events.retire(men[1])
 	van.step(STEP)
 	van.step(STEP)
-	t.check(van.is_finished or van.is_leaving, "once both are back in, it leaves")
+	t.check(van.is_gone() or van.is_on_its_way_out(), "once both are back in, it leaves")
 	events.free()
 	for man in men:
 		man.free()
@@ -966,7 +966,7 @@ func _test_a_hunting_van_stops_and_lets_men_out(t: TestRunner) -> void:
 						"'%s': they get out with no off-screen badge" % id)
 		EventBus.hard_fail_triggered.disconnect(on_struck)
 		t.check(men.size() == 2 and men.all(func(man: EventInstance) -> bool:
-				return is_instance_valid(man) and man.def.id == "guardsman_giving_chase"),
+				return is_instance_valid(man) and man.row_id() == "guardsman_giving_chase"),
 				"'%s': two guardsmen got out of the van (%d)" % [id, men.size()])
 		t.check(moved < 0.01, "'%s': the van never moved (%.2fpx)" % [id, moved])
 		t.check(struck[0] == "guardsman_giving_chase",

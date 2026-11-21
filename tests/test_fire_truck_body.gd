@@ -231,9 +231,9 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 		warned = warned or engine.car.closes_on(player.global_position)
 		lethal = lethal or engine.source().will_be_lethal(player.global_position) \
 				or engine.is_lethal_at(player.global_position)
-		if engine.is_parked:
+		if engine.has_parked():
 			break
-	t.check(engine.is_parked and not warned and not lethal,
+	t.check(engine.has_parked() and not warned and not lethal,
 			"120px past its kerb, no mark and no doubled caret over a truck that parks short of her")
 	player.free()
 	engine.free()
@@ -246,10 +246,10 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 		for i in int(5.0 / STEP):
 			_step(engine, engine_where, player)
 			lethal = lethal or engine.is_lethal_at(player.global_position)
-			if engine.is_parked:
+			if engine.has_parked():
 				break
 		var gap := engine.car.gap_to_her(engine.global_position, engine.facing_now())
-		t.check(engine.is_parked and gap > 0.0 and not lethal,
+		t.check(engine.has_parked() and gap > 0.0 and not lethal,
 				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
 				% [past, gap])
 		player.free()
@@ -263,9 +263,9 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 		player = _her(t, Vector2(past, 0.0), Vector2.RIGHT)
 		for i in int(3.0 / STEP):
 			_step(engine, engine_where, player)
-			if engine.is_parked:
+			if engine.has_parked():
 				break
-		t.check(engine.is_parked, "%.0fpx past its kerb when it is created, it drives on and parks"
+		t.check(engine.has_parked(), "%.0fpx past its kerb when it is created, it drives on and parks"
 				% past)
 		player.free()
 		engine.free()
@@ -331,9 +331,9 @@ func _test_parked_it_is_solid_and_harmless(t: TestRunner) -> void:
 	var player := _her(t, Vector2(300.0, 300.0), Vector2.UP)
 	for i in int(4.0 / STEP):
 		_step(engine, engine_where, player)
-		if engine.is_parked:
+		if engine.has_parked():
 			break
-	t.check(engine.is_parked, "the truck parks where its route ends")
+	t.check(engine.has_parked(), "the truck parks where its route ends")
 	t.check(not engine.source().will_be_lethal(Vector2(40.0, 0.0)),
 			"and a parked truck is not lethal ahead of it")
 	for place: Vector2 in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
@@ -373,9 +373,9 @@ func _test_parked_its_field_is_a_points(t: TestRunner) -> void:
 	var player := _her(t, Vector2(300.0, 300.0), Vector2.UP)
 	for i in int(4.0 / STEP):
 		_step(engine, engine_where, player)
-		if engine.is_parked:
+		if engine.has_parked():
 			break
-	t.check(engine.is_parked and engine.travel_velocity().is_zero_approx(),
+	t.check(engine.has_parked() and engine.travel_velocity().is_zero_approx(),
 			"the truck has parked and stands still")
 	var same := true
 	for d: float in [40.0, 100.0, 250.0, def.outer_radius - 5.0]:

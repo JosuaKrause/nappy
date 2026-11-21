@@ -140,7 +140,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source.setup(_copy_definition(definition), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(source_where))
-		if source.def.flock_size > 0:
+		if source.row().is_a_flock():
 			source.flock.build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
@@ -157,7 +157,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id + " source movement")
 		source._heading = Vector2.DOWN
 		_event_parity(t, source, at, definition.id + " source heading")
-		if source.def.notice:
+		if source.row().notice:
 			source._notice_her()
 		else:
 			source.transition(EventInstance.Phase.WARNING)
@@ -171,7 +171,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id + " player velocity")
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id + " sensitivity")
-		if source.def.detain_seconds > 0.0:
+		if source.detains_her():
 			source.hold.start()
 			_event_parity(t, source, at, definition.id + " chatting")
 		source_where.tell(at, Vector2.INF, Rect2(), false, false)
@@ -183,22 +183,22 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source.source().set_outranked(false)
 		for field: String in ["intensity", "inner_radius", "outer_radius", "core_intensity",
 				"core_radius", "falloff_power", "pulse_period", "speed"]:
-			source.def.set(field, float(source.def.get(field)) + 3.0)
+			source.row().set(field, float(source.row().get(field)) + 3.0)
 			_event_parity(t, source, at, definition.id + " mutable " + field)
-		if source.def.pursuit:
-			source.def.pursuit.speed += 3.0
+		if source.row().pursuit:
+			source.row().pursuit.speed += 3.0
 			_event_parity(t, source, at, definition.id + " mutable chase speed")
-		source.def.shape = GroundShape.segment(17.0, 12.0)
+		source.row().shape = GroundShape.segment(17.0, 12.0)
 		_event_parity(t, source, at, definition.id + " shape replacement")
-		source.def.shape.half_length = 63.0
+		source.ground_shape().half_length = 63.0
 		_event_parity(t, source, at, definition.id + " shape length mutation")
-		source.def.shape.kind = GroundShape.Kind.RECT
-		source.def.shape.half_extents = Vector2(52.0, 8.0)
+		source.ground_shape().kind = GroundShape.Kind.RECT
+		source.ground_shape().half_extents = Vector2(52.0, 8.0)
 		_event_parity(t, source, at, definition.id + " shape kind/extents mutation")
 		source._body._spread_vertical = not source._body._spread_vertical
 		source._body._stationary_vehicle_side = not source._body._stationary_vehicle_side
 		_event_parity(t, source, at, definition.id + " body axis")
-		source.def.shape = null
+		source.row().shape = null
 		_event_parity(t, source, at, definition.id + " no shape")
 		# No row is replaced under a live event: its behaviours (`EventBehaviours.compose()`) and its
 		# excitement source (`EventExcitement.use_row_and_where_she_is()`) answer from the row they

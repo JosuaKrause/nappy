@@ -176,7 +176,7 @@ func _test_duration_and_finish(t: TestRunner) -> void:
 	t.check(def.departure_speed() <= 0.0, "the van that was parked there does not drive off")
 	var instance := _instance(t, def)
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
-	t.check(instance.is_finished, "an event with a duration finishes")
+	t.check(instance.is_gone(), "an event with a duration finishes")
 	t.close_to(instance.source().contribution_at(Vector2.ZERO), 0.0,
 			"a finished event contributes nothing")
 	instance.free()
@@ -197,8 +197,8 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance_where.tell(Vector2(60.0, 0.0))
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
-	t.check(not instance.is_finished, "a flock that is done is not deleted where it stands")
-	t.check(instance.is_leaving, "it is leaving")
+	t.check(not instance.is_gone(), "a flock that is done is not deleted where it stands")
+	t.check(instance.is_on_its_way_out(), "it is leaving")
 	t.close_to(instance.source().contribution_at(instance_where.at()), 0.0,
 			"and it stops emitting the moment it does")
 
@@ -207,7 +207,7 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	t.check(instance.global_position.distance_to(instance_where.at()) > 60.0,
 			"it goes away from her rather than in any direction it likes")
 	_advance(instance, Tuning.OUT_OF_SIGHT / def.departure_speed())
-	t.check(instance.is_finished, "and it is gone once it is out of sight")
+	t.check(instance.is_gone(), "and it is gone once it is out of sight")
 	instance.free()
 
 	# The backstop, for a rig or a streamed-out day where there is nobody to be out of sight of. One
@@ -219,7 +219,7 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	alone.step(STEP)
 	alone_where.tell(Vector2.INF)
 	_advance(alone, def.telegraph_time + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
-	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
+	t.check(alone.is_gone(), "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
 
 ## `EventExcitement`'s present rate answers zero for a point past `EventDef.silent_beyond()`
@@ -313,7 +313,7 @@ func _test_flocks_are_not_skipped(t: TestRunner) -> void:
 	var flock := EventInstance.new()
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
 	flock.flock.build()
-	var far_bird := Vector2(flock.def.silent_beyond() * 3.0, 0.0)
+	var far_bird := Vector2(flock.row().silent_beyond() * 3.0, 0.0)
 	flock.flock.birds[0].place(far_bird)
 	t.check(flock.source().contribution_at(far_bird) > 0.0,
 			"a bird far past its flock's silent_beyond() is still heard where it is")
