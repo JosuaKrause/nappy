@@ -29,7 +29,7 @@ func _hot_roadblock() -> EventDef:
 
 ## A guard that has set off after her, her standing still beside the post: she comes inside his
 ## radius and he warns, and she stays inside it until his warning has run and he charges
-## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`). The roadblock is a plan handed to a
+## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for()`). The roadblock is a plan handed to a
 ## manager's streaming on open ground (`RoadblockRig.Stage`), as a day's is, and its band stands
 ## beside it once the idle frame has passed. Answers `[guard, her, stage]`; `stage.close()` frees it.
 func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null) -> Array:

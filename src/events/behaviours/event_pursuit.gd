@@ -10,7 +10,7 @@ extends EventBehaviour
 ## walk. **But it closes to a stand-off and holds it** rather than arriving, since a pursuer that
 ## arrives early stands inside its own lethal radius for the rest of a telegraph and kills her from
 ## a standing start the moment it may. **A pursuer that waited for her and stands for its notice**
-## (`PursuitSpec.stands`) closes nothing while it warns (woolly-penguin #748); what keeps it a
+## (`PursuitSpec.stands_for_its_notice()`) closes nothing while it warns (woolly-penguin #748); what keeps it a
 ## chase is the charge once its warning has run with her still inside its radius.
 ##
 ## **A pursuer that waited for her warns inside its one radius, on a clock** (`warns_by_radius()`,
@@ -91,7 +91,7 @@ func _chase(delta: float) -> void:
 	if range_to_her < 1.0:
 		return
 	# From what ends her day (`EventDef.standoff_reach()`, its catch unless the row keeps its lunge
-	# further out, the alley robber's `PursuitSpec.lunge_reach`), not from its field's core.
+	# further out, the alley robber's `PursuitSpec.lunge_reach()`), not from its field's core.
 	var standoff: float = _figure.charge_radius()
 	if _figure.is_waiting():
 		_notice(toward, standoff)
@@ -222,11 +222,11 @@ func _shaken_off(delta: float, range_to_her: float) -> bool:
 ## - a held one (`_lunge_held`) holds the same ground and lunges once she is back at the full
 ##   stand-off with the line clear, at its chase speed rather than any notice walk, since a robber
 ##   left trailing out of an alley mouth at a walk starts his chase from deep in the alley;
-## - one with a notice walk (`PursuitSpec.walk_speed`, the alley robber's, inbox #761 in
+## - one with a notice walk (`PursuitSpec.walk_speed()`, the alley robber's, inbox #761 in
 ##   minty-lemur) closes at it, so his alert walk is seen;
 ## - a charger that warns by radius charges on its warning's clock, not on a distance, and holds at
 ##   the stand-off;
-## - one that stands for its notice (`PursuitSpec.stands`) closes nothing, and every lunge above
+## - one that stands for its notice (`PursuitSpec.stands_for_its_notice()`) closes nothing, and every lunge above
 ##   still fires, so she is never the one who walks the last of the gap into a catch.
 func _close_through_the_telegraph(delta: float, step: float, range_to_her: float,
 		standoff: float) -> float:

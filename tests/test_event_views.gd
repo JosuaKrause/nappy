@@ -603,7 +603,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
 	t.check(instance.is_waiting()
 			and await _drawn_from(t, instance, [EventPictures.GUARD_STANDING_BY_VIEW]),
 			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `EventDef.notice` (900px), outside `NoticeSpec.runs_within`: one step notices her,
+	# Inside `EventDef.notice` (900px), outside `NoticeSpec.runs_within()`: one step notices her,
 	# and he warns for as long as she stays there, longer than his `telegraph_time`.
 	instance_where.tell(Vector2(0.0, def.notice.runs_within + 100.0))
 	instance.step(STEP)

@@ -2,7 +2,7 @@ class_name EventOfficer
 extends EventBehaviour
 ## **A man on foot who may stop her and walk back**: every pursuer is composed of one. The man an
 ## investigating vehicle lets out lays a trail from its door while he chases and walks back along
-## it to get in (`let_out_of()`); a man whose catch is a stop (`PursuitSpec.stop_excitement`) stands with
+## it to get in (`let_out_of()`); a man whose catch is a stop (`PursuitSpec.stop_excitement()`) stands with
 ## her through it instead of ending the day. Neither applies to a pursuer nothing let out and whose
 ## catch ends the day; for him this does nothing.
 

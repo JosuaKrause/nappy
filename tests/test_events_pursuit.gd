@@ -263,7 +263,7 @@ func _a_building_corner(map: CityMap) -> Dictionary:
 	return {}
 
 ## The alley robber's catch is smaller than his lunge's reach (tall-osprey, 2026-10-04): he catches
-## at 26px and lunges from 116px (`PursuitSpec.lunge_reach` 38), so the room between lunge and
+## at 26px and lunges from 116px (`PursuitSpec.lunge_reach()` 38), so the room between lunge and
 ## catch is 90px, and no pursuer but the robber and the ones read off him moves its lunge off
 ## its own catch.
 func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> void:
@@ -276,7 +276,7 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> voi
 		if def.pursues() and not robbers.has(def.id):
 			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
 					"'%s' lunges from its own catch" % def.id)
-	# A `PursuitSpec.lunge_reach` inside the catch would stand the pursuer off closer than
+	# A `PursuitSpec.lunge_reach()` inside the catch would stand the pursuer off closer than
 	# `PURSUIT_REACTION` of its own approach from taking her: 10px on a 26px catch is an 88px
 	# stand-off, 62px of room, 0.48s at 130px/s. `validate()` refuses it on load (asked here
 	# through the predicate, since the refusal is a `push_error`, which fails the whole run); a
@@ -962,7 +962,7 @@ func _test_a_pursuer_can_wait(t: TestRunner) -> void:
 			"still not lethal during the notice")
 
 	# Standing there, inside his radius, he walks up to her stand-off and charges once his warning
-	# has run (`PursuitSpec.warns_for`).
+	# has run (`PursuitSpec.warns_for()`).
 	_advance(instance, def.pursuit.warns_for + 0.1)
 	t.check(not instance.is_telegraphing() and not instance.is_waiting(),
 			"then, his warning having run with her still inside his radius, he charges")
@@ -974,11 +974,11 @@ func _test_a_pursuer_can_wait(t: TestRunner) -> void:
 ## warn inside it for 2s. If the player leaves the radius nothing happens and the warning stops. If
 ## they stay within the charge starts.")* The dog that waited (any day past `RUN_TAUGHT_DAY`), the
 ## hunting roadblock's guard and the alley robber notice her inside `EventDef.notice` and warn for
-## their row's `PursuitSpec.warns_for` (`EventInstance.warns_by_radius()`, `notice_time()`).
+## their row's `PursuitSpec.warns_for()` (`EventInstance.warns_by_radius()`, `notice_time()`).
 ## Each is walked here from the catalogue (`_waiting_pursuers()`), so a row that starts waiting
 ## for her is walked without anybody listing it:
 ##
-## - **Walking in** is warned for the whole of `PursuitSpec.warns_for`, nothing lethal in it,
+## - **Walking in** is warned for the whole of `PursuitSpec.warns_for()`, nothing lethal in it,
 ##   and then charged and caught. The rows that stand do not move while they warn; the robber
 ##   walks at her no faster than his notice walk and holds at his stand-off.
 ## - **Standing just inside the radius** is charged once the warning has run, and caught.
@@ -1541,7 +1541,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t: TestRunner) -> void:
 ## The robber waits in the alley 20, 40, 60 and 90px back from the mouth; she walks along the
 ## sidewalk toward it at `WALK_SPEED`, 14px off the building's face, and on past. The building hides
 ## her until she is nearly at the mouth, so he notices her only once the line between them is clear;
-## where he charges, it is no sooner than his whole warning (`PursuitSpec.warns_for`) after he
+## where he charges, it is no sooner than his whole warning (`PursuitSpec.warns_for()`) after he
 ## noticed her, she still inside his radius; where she walks out of his radius first, he never
 ## charges and waits again; the print says how many depths charge. And he never catches her
 ## through the corner: every frame that catches has a clear sampled line.

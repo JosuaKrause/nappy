@@ -511,7 +511,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
 
-	# He warns, standing where she can see him, for his `PursuitSpec.warns_for` while she stays
+	# He warns, standing where she can see him, for his `PursuitSpec.warns_for()` while she stays
 	# in his radius, and nothing is lethal during it (`EventInstance.warns_by_radius()`); then
 	# he charges.
 	var frames := 0
@@ -558,7 +558,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 ## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
 ## centre. That post is nearer her than the centre where his notice is measured: she comes straight
 ## across the band, the approach that puts his post nearest her, and stands still once he has
-## noticed her. He warns for his row's `PursuitSpec.warns_for` with nothing lethal in it and
+## noticed her. He warns for his row's `PursuitSpec.warns_for()` with nothing lethal in it and
 ## charges when it has run, she still inside his radius *(inbox #788 in minty-lemur: one radius,
 ## a warning inside it)*, not on the frame he notices her. Both street axes, both sides.
 func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> void:

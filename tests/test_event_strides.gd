@@ -314,7 +314,7 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 			pictures.append(picture)
 	return pictures
 
-## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over` seconds
+## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over()` seconds
 ## rather than anything that touches `_path_travelled`, so it gets its own derived query
 ## (`victim_gait_is_stepping()`) instead of sharing `_gait_phase` — see that function's own doc. It
 ## must start on frame a (`sin(0) == 0`) and later step, the same shape the distance-driven gait

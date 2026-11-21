@@ -11,7 +11,7 @@ extends Resource
 ## its clock starts when it exists.
 ##
 ## For a pursuer `within` is its **one radius** (inbox #788 in minty-lemur): inside it the pursuer
-## warns for its `PursuitSpec.warns_for`, and charges if she is still inside once that has run.
+## warns for its `PursuitSpec.warns_for()`, and charges if she is still inside once that has run.
 
 ## How close she has to come, in px, before it notices her.
 var _within := 0.0

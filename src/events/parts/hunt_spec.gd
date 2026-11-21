@@ -22,7 +22,7 @@ extends Resource
 enum Rung {
 	## **More of them, and more expensive to stand near, and past a threshold it investigates**: it
 	## never gains `hard_fail`, and the man it lets out costs her when he reaches her rather than
-	## ending the day (`PursuitSpec.stop_excitement`).
+	## ending the day (`PursuitSpec.stop_excitement()`).
 	PRESSES,
 	## **It stops being a place and starts being a hunter**: the lethal rung, whose catch ends the day.
 	HUNTS,

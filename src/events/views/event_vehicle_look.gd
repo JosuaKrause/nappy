@@ -113,7 +113,7 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 
 ## How far through its walk to the van the victim is, from 0 where the walk starts to 1 at the van:
 ## the time it has walked (`EventInstance.how_long_its_victim_has_walked()`) over the walk's length
-## (`AbductionSpec.taken_over`). The one place the two are divided.
+## (`AbductionSpec.taken_over()`). The one place the two are divided.
 func _victim_walk_share() -> float:
 	return event.how_long_its_victim_has_walked() / _row.abduction.taken_over()
 
@@ -123,7 +123,7 @@ func _victim_walk_share() -> float:
 ## that the walk's own time restarting at zero does not already give it. The walk is at a constant
 ## speed by construction (linear interpolation over a fixed time), so the distance covered by
 ## moment `t` is exactly its share of the way (`_victim_walk_share()`) times
-## `AbductionSpec.standing_offset`, fed through the same `GAIT_RATE` and doubled-phase test
+## `AbductionSpec.standing_offset()`, fed through the same `GAIT_RATE` and doubled-phase test
 ## `gait_is_stepping()` uses. `sin(0) == 0`, so the walk always starts on frame a rather than
 ## mid-stride.
 ## Overrides EventLook.victim_gait_is_stepping.

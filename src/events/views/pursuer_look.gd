@@ -98,7 +98,7 @@ func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 
 ## The guard-drawn pursuer's picture for this frame. **The alert, hand raised, is every notice one
 ## of them gives**: the guardsman a vehicle lets out, standing for his notice
-## (`is_standing_for_its_notice()`, read off `PursuitSpec.stands`), and the masked man standing at
+## (`is_standing_for_its_notice()`, read off `PursuitSpec.stands_for_its_notice()`), and the masked man standing at
 ## the foot of the shaft through his notice (`is_telegraphing()` after his wait, which his row's
 ## `EventDef.notice` gives him and no other guard-drawn row has). *(Inbox #764 in minty-lemur, the
 ## player: an event that does not spawn already charging always needs a warning.)* The van's guard a

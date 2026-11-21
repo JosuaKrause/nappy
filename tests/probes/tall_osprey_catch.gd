@@ -6,13 +6,13 @@ extends RefCounted
 ##     tools/test.sh probes/tall_osprey_catch.gd
 ##
 ## **Two arrangements, measured side by side.** `follows`: the stand-off follows the catch
-## (`PursuitSpec.lunge_reach` 0), `PursuitSpec.standoff(130, catch)` is `catch + 78`, so the room
+## (`PursuitSpec.lunge_reach()` 0), `PursuitSpec.standoff(130, catch)` is `catch + 78`, so the room
 ## between lunge and catch stays 78px whatever the catch. `held`: the lunge held at 108px
-## (`PursuitSpec.lunge_reach` 30) whatever the catch, so the room is 108 minus the catch.
+## (`PursuitSpec.lunge_reach()` 30) whatever the catch, so the room is 108 minus the catch.
 ##
 ## **Then the lunge moved out**, for the alley robber alone, at catches of 30, 26 and 24px: stand-offs
-## of 108, 112, 116, 120 and 130px (`PursuitSpec.lunge_reach` = stand-off less 78). The game
-## ships the 26px catch with the 116px lunge (`PursuitSpec.lunge_reach` 38); the probe sets both
+## of 108, 112, 116, 120 and 130px (`PursuitSpec.lunge_reach()` = stand-off less 78). The game
+## ships the 26px catch with the 116px lunge (`PursuitSpec.lunge_reach()` 38); the probe sets both
 ## per row, whatever the catalogue says.
 ##
 ## The rig walks her along a line at the robber from outside his notice (`EventDef.notice`, read off
@@ -29,7 +29,7 @@ func run(t: TestRunner) -> void:
 		print("== %s ==" % ("held: lunge_reach 30 (108px)" if lunge > 0.0 else "follows the catch"))
 		for catch_radius: float in CATCHES:
 			_report(float(catch_radius), lunge)
-	# The robber-only stand-off override: `PursuitSpec.lunge_reach` is the stand-off less 78
+	# The robber-only stand-off override: `PursuitSpec.lunge_reach()` is the stand-off less 78
 	# (130 x 0.6).
 	for catch_radius: float in [30.0, 26.0, 24.0]:
 		print("== catch %.0f, lunge moved out ==" % catch_radius)
@@ -62,7 +62,7 @@ func _report(catch_radius: float, lunge: float) -> void:
 ## **The notice she really gets**: seconds from the frame (counted frame to frame, so a lunge on the
 ## frame after the notice reads one step, 0.017s) the real `EventInstance` leaves waiting (he
 ## turns to face her) to the frame its telegraph ends (he lunges). He is not still during it: he
-## closes on her at his notice walk (`PursuitSpec.walk_speed`, or `PursuitSpec.speed` on a row with
+## closes on her at his notice walk (`PursuitSpec.walk_speed()`, or `PursuitSpec.speed()` on a row with
 ## none) until she is at the stand-off, so the gap closes at that plus 92px/s when she walks in
 ## (from 60px outside his notice, at `WALK_SPEED`) and at his walk alone when she stands 1px inside
 ## it. Not the `(notice - stand-off) / WALK_SPEED` of her walk alone.
