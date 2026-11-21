@@ -19,7 +19,7 @@ static func events_in(parent: Node, scene: InteriorScene,
 	events.stream_within(INF)
 	parent.add_child(events)
 	events.draw_in(scene)
-	events.setup_world(scene.map(), run)
+	events.setup_world(scene.map(), run, scene.navigator())
 	var sets: Array[ExcitementSources] = [events.excitement_sources()]
 	scene.use_excitement_sources(sets)
 	events.set_meta(&"building_seed", rng.randi())

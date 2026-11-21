@@ -28,8 +28,8 @@ extends Node
 ## again (`EventPlan.repeats()`) is brought back on its own clock.
 ##
 ## **Handed what it depends on, never fetching it**: the city's map, today's streets, the lights,
-## the run, the navigator and the poster walls (`setup()`), or a world that is not the city
-## (`setup_world()`), one or the other and once, since a manager is set up for one world and
+## the run, the navigator and the poster walls (`setup()`), or a world that is not the city, its
+## map, its run and its navigator (`setup_world()`), one or the other and once, since a manager is set up for one world and
 ## asserts so; the run alone for a rig that sets up neither (`use_run()`); the player
 ## (`use_player()`); the walk's spec (`use_the_spec()`).
 ##
@@ -177,8 +177,8 @@ func _notification(what: int) -> void:
 ## **Hands the manager the city's parts its events read**: the map it places on; today's streets
 ## (`DayStreets`), the city's own, which a day is planned against and a siting reads its region off;
 ## the lights a car that drives stops at (`TrafficSignals`); the run its events belong to; the
-## navigator its figures move by, or one over the map (`Navigator.new(map)`) for a rig that hands
-## none; and the poster walls a crew pastes on. The city's plan builder is made here, once a city,
+## navigator its figures move by, or none for a rig, whose events' world then moves by one over the
+## map; and the poster walls a crew pastes on. The city's plan builder is made here, once a city,
 ## over `map` (`EventWorld.plan_builder()`), and so is where something sent at her may start
 ## (`spawn_siting()`).
 ## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
@@ -199,7 +199,7 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 	world.use_poster_walls(poster_walls)
 	world.use_lights(signals)
 	world.use_run(run)
-	world.use_navigator(navigator if navigator else Navigator.new(map))
+	world.use_navigator(navigator)
 	var director := EventDirector.new(map, world.navigator())
 	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
 			streets.siting_region if streets else Callable())
@@ -222,11 +222,13 @@ var _set_up := false
 ## siting anything ahead of her, no lights. What runs there is the building's own plan
 ## (`start_day()` with the building's spec). Set up once, like `setup()`, which it is the
 ## alternative to: the city's parts `setup()` makes are never made, so there is nothing to undo.
-func setup_world(map: WorldMap, run: RunState) -> void:
+## `navigator` is the one its figures move by, or none for a rig, whose events' world then moves by
+## one over the map.
+func setup_world(map: WorldMap, run: RunState, navigator: Navigator = null) -> void:
 	assert(not _set_up, "a manager is set up for one world")
 	_set_up = true
 	world.use_map(map, null)
-	world.use_navigator(Navigator.new(map))
+	world.use_navigator(navigator)
 	world.use_run(run)
 
 ## The event bus script, so the bus handed in has a class.

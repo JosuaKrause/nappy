@@ -258,6 +258,8 @@ func _test_the_scene_paints_the_whole_map(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
+	t.check(scene.navigator().map() == scene.map(),
+			"the scene's navigator walks the map the scene built")
 	var f := InteriorMap.build()
 	var ground: TileMapLayer = scene.get_node("Ground")
 	var painted := 0

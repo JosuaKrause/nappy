@@ -499,7 +499,7 @@ src/
 	                      body clear, a walk down points, a way round, a way out, a route cut to
 	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a
 	                      city away; holds nothing but its map, so whoever builds a world builds
-	                      one over it (`City.build()`, `EventManager.setup_world()`) and hands it
+	                      one over it (`City.build()`, `InteriorScene.build()`) and hands it
 	                      to every mover
 	walk_field.gd         the walking-distance sweep over a map's ground, out from the places it is
 	                      begun from, a slice a frame: the red arrow's "closest by walking" and
@@ -1147,7 +1147,8 @@ an event on open ground (`WorldMap.open_ground()`), where nothing is walled and 
 straight; nothing asks whether it has a map. **The map names nothing of the world**: the way round
 is the navigator's (`Navigator`, over a map, which whoever builds a world builds and hands on: the
 city holds its own, `City.navigator()`, `SimulationBuilder` hands it to the events and the crowd and
-`main` to the resistance; the building's events build theirs), and what is drawn in the world is the world's
+`main` to the resistance; the building holds its own, `InteriorScene.navigator()`, which `main` hands
+to the builder as it hands the city's), and what is drawn in the world is the world's
 (`WorldContext`, handed to the event manager by `EventManager.draw_in()`, which hands it to each
 event it makes). Which world a day spec is walked in is the run flow's
 choice (`main`), which hands that world's map down.

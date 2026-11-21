@@ -38,11 +38,25 @@ func run(t: TestRunner) -> void:
 		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
 		_test_a_drawn_body_is_told_to_whoever_listens,
 		_test_a_recipes_bodies_are_in_its_way_on,
+		_test_a_world_keeps_the_navigator_it_was_handed,
 	]
 	for test in tests:
 		_build_city(t)
 		await test.call(t)
 		_teardown()
+
+## **A world keeps the navigator it was handed** (`EventManager.setup_world()`), whichever map that
+## navigator walks: a manager set up on a street map and handed a navigator over open ground answers
+## that same object, never one built over its own map in its place.
+func _test_a_world_keeps_the_navigator_it_was_handed(t: TestRunner) -> void:
+	var run := RunState.new()
+	run.start_run(1)
+	var handed := Navigator.new()
+	var events := EventManager.new()
+	events.setup_world(_city.map, run, handed)
+	t.check(events.world.navigator() == handed,
+			"the events' world answers the navigator it was handed, not one over its map")
+	events.free()
 
 ## **A walk begins with nobody told where she is**: the world's word is forgotten as the walk
 ## starts (`EventManager.clear()`), so an event streamed in before the walk's first word does not hear

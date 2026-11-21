@@ -1056,7 +1056,8 @@ func _build_the_escape_building() -> void:
 
 	# The building's events are the day's own manager, handed the building's map: no city, and the
 	# whole plan in the world at once, since the building is walked part by part through doors.
-	_building_simulation = _simulation_builder().in_the_building(_interior, _interior.map(), _run)
+	_building_simulation = _simulation_builder().in_the_building(_interior, _interior.map(), _interior.navigator(),
+			_run)
 	_building_simulation.events().use_player(_player)
 	_hand_the_controls_cover_to_the_events()
 	_building_seed = _run.calendar().day_rng(_run.header().day(), "finale-interior").randi()

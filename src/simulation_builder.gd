@@ -147,14 +147,16 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 ## **The simulation of a world that is not the city**, standing under `world`: the escape's
 ## building, whose events stand on `map` and belong to `run`. The whole plan is in the world at
 ## once (`EventManager.stream_within()`), since the building is walked part by part through doors;
-## no crowd, no walls to paste, no power to cut.
-func in_the_building(world: WorldContext, map: WorldMap, run: RunState) -> WorldSimulation:
+## no crowd, no walls to paste, no power to cut. `navigator` is the building's own
+## (`InteriorScene.navigator()`), the one its events move by.
+func in_the_building(world: WorldContext, map: WorldMap, navigator: Navigator,
+		run: RunState) -> WorldSimulation:
 	var simulation := _stand_under(world)
 	var events := _new_events()
 	events.stream_within(INF)
 	simulation.add_child(events)
 	events.draw_in(world)
-	events.setup_world(map, run)
+	events.setup_world(map, run, navigator)
 	simulation.hold_the_events(events)
 	world.use_excitement_sources(simulation.excitement_sources())
 	return simulation

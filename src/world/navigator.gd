@@ -1,7 +1,7 @@
 class_name Navigator
 extends RefCounted
 ## **The one way anything that walks or drives across a world moves, bar the crowd's lane step**:
-## whoever builds a world builds one over its map (`City.build()`, `EventManager.setup_world()`) and
+## whoever builds a world builds one over its map (`City.build()`, `InteriorScene.build()`) and
 ## hands it to every mover — the city to its event manager, its crowd and the resistance, the event
 ## manager to every figure it makes — rather than fetched. **A navigator holds nothing but its map**,
 ## so two over one map answer every question alike. A step, a walk down a list of points, a way
