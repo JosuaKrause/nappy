@@ -247,7 +247,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 		t.check(sent.was_warned_of() and not sent.is_telegraphing() and not sent.is_waiting(),
 				"already chasing from his first frame, with no closing in")
 		t.check(not RunCity.events(city).plans().any(func(plan: EventPlan) -> bool:
-				return plan.live == sent), "and outside the day's plan")
+				return RunCity.events(city).event_of(plan) == sent), "and outside the day's plan")
 	_done(city, her)
 
 ## One at a time: a second pursuit marble while his badge is up, or while he is after her, sends

@@ -125,7 +125,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 
 	# E's case: the day is won with the fire never in the world, so it is lit at dusk off her path.
 	# Asked before the lighting, which is itself what puts it in the world.
-	var never_real := not plan.was_live
+	var never_real := not plan.has_been_in_the_world()
 	var lit := false
 	if never_real:
 		lit = RunCity.events(city).light_what_she_never_met(rig.global_position)

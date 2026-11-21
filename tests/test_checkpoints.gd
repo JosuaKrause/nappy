@@ -576,7 +576,7 @@ func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: 
 	plan.arrive_aged(age)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
-	return plan.live
+	return manager.event_of(plan)
 
 ## A whole street door across an east-west street at (5200, 5200) — the northern hut, the gate and
 ## the southern hut, a tile apart across the street, the geometry `RegionPlanner._add_door_bodies`
@@ -1957,13 +1957,13 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 				# door's shared boom state, as a door day puts it in.
 				RunCity.events(city).streaming.add(body)
 				RunCity.events(city).stream_around(body.position)
-				gate = body.live
+				gate = RunCity.events(city).event_of(body)
 		for body in plan.door_bodies:
 			if gate and body.def.id == "checkpoint_hut" \
 					and absf((body.position - gate.global_position).dot(body.facing)) <= 1.0:
 				RunCity.events(city).streaming.add(body)
 				RunCity.events(city).stream_around(body.position)
-				huts.append(body.live)
+				huts.append(RunCity.events(city).event_of(body))
 	var stroller := _real_stroller(t)
 	RunCity.events(city).use_player(stroller)
 	RunCity.show_her_to_the_walls_and_the_blackout(city, stroller)

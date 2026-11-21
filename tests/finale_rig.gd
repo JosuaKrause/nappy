@@ -580,7 +580,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 		# Streamed out and back in, the plan carries the spent guard and it comes back as only the barrier.
 		stage.manager.streaming.stream_out(plan)
 		stage.manager.streaming.stream_in(plan)
-		var streamed := plan.live
+		var streamed := stage.manager.event_of(plan)
 		t.check(streamed.barrier_post.is_spent() and streamed.is_solid()
 				and streamed.source().contribution_at(beside) == 0.0,
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
@@ -669,7 +669,7 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	t.check(guard.get_parent().get_node_or_null("FarGuard") == null, "his node goes with him")
 	stage.manager.streaming.stream_out(plan)
 	stage.manager.streaming.stream_in(plan)
-	t.check(plan.live.barrier_post.sides_still_posted().is_empty(),
+	t.check(stage.manager.event_of(plan).barrier_post.sides_still_posted().is_empty(),
 			"a band streamed back in after its guard was spent stands unmanned")
 	stage.close()
 	atlas.release(EventPictures.ATLAS_GROUP)
@@ -809,7 +809,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 			Vector2(1000.0, 1000.0))
 	manager.streaming.add(band_plan)
 	manager.streaming.stream_around(band_plan.position)
-	var band := band_plan.live
+	var band := manager.event_of(band_plan)
 	var at: Vector2 = band.global_position + Vector2(0.0, band.def.outer_radius - 20.0)
 	var first := _stand_her_at(t, manager, at)
 	manager.warnings.warn_about_the_ground_she_is_on()
@@ -833,7 +833,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	t.check(band.gave_up, "the band's guard charges and is shaken off")
 	manager.streaming.stream_out(band_plan)
 	manager.streaming.stream_in(band_plan)
-	band = band_plan.live
+	band = manager.event_of(band_plan)
 	# A stroller of her own for the spent band, so no mark of the posted one's is still up on her
 	# (a raised mark stays its hold, `WarningBoard.WARNING_HOLD`, a fresh one has none).
 	var second := _stand_her_at(t, manager, at)

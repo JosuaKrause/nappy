@@ -201,8 +201,9 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 ## The third of those is the one with teeth. `EventStreaming.stream_in` records the scar and moves the
 ## block along its arc the first time a plan enters the world, so the city already remembers this
 ## fire burning *there* — and a rule that moved it afterwards would be repairing a fact rather than
-## checking one before accepting it. `EventPlan.was_live` is where the line is drawn, and it is drawn
-## at the streaming radius rather than at the screen edge, which is six seconds of walking earlier.
+## checking one before accepting it. `EventPlan.has_been_in_the_world()` is where the line is drawn, and
+## it is drawn at the streaming radius rather than at the screen edge, which is six seconds of walking
+## earlier.
 func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	var plans := _fire_day_plans()
@@ -240,7 +241,7 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 
 	# Real. From here it is where the city remembers it burning, and nothing moves it.
 	var burning_at := fire.position
-	fire.was_live = true
+	fire.enter_the_world(WhereItStands.nowhere())
 	siting.set_place(fire.row_id(), first)
 	_walk_the_director(director, plans, at, _fire_route(day), 30.0)
 	t.check(fire.position == burning_at,

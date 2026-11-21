@@ -75,7 +75,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	var met := 0
 	for plan in crews:
 		sited += 1 if plan.is_placed() else 0
-		met += 1 if plan.was_live else 0
+		met += 1 if plan.has_been_in_the_world() else 0
 	var siting := siting_maker.latest()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
 			sited, met, first_sited, _pasted_cells(city) - before,

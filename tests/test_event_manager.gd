@@ -462,20 +462,20 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 	var at := plan.position
 	var away := at + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0)
 	RunCity.events(_city).stream_around(away)
-	t.check(plan.live == null, "an event across the city is not in the world")
+	t.check(not plan.is_in_the_world(), "an event across the city is not in the world")
 
 	RunCity.events(_city).stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS - 40.0, 0.0))
-	t.check(plan.live != null, "walking into reach of it puts it there")
-	var arrived := plan.live
+	t.check(plan.is_in_the_world(), "walking into reach of it puts it there")
+	var arrived := _live(plan)
 	t.check(arrived.age() <= 0.0 or arrived.is_telegraphing(),
 			"and it starts its telegraph on arrival, so the warning is not spent off-screen")
 
 	# The hysteresis: a player pacing on the boundary must not rebuild it every other frame,
 	# because a rebuilt instance telegraphs again and would crouch at her forever.
 	RunCity.events(_city).stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS + 40.0, 0.0))
-	t.check(plan.live == arrived, "stepping just past the edge does not take it away again")
+	t.check(_live(plan) == arrived, "stepping just past the edge does not take it away again")
 	RunCity.events(_city).stream_around(away)
-	t.check(plan.live == null, "walking properly away does")
+	t.check(not plan.is_in_the_world(), "walking properly away does")
 
 	t.check(Tuning.EVENT_STREAM_RADIUS > _widest_field(),
 			"an event streams in from further out (%.0f) than its own reach (%.0f), so it is "
@@ -505,7 +505,7 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 		if candidate.is_placed() and candidate.def.aftermath.on_finish == "" \
 				and candidate.path.size() > 1:
 			RunCity.events(_city).stream_around(candidate.position)
-			if candidate.live != null and _run_to_its_end(candidate.live):
+			if candidate.is_in_the_world() and _run_to_its_end(_live(candidate)):
 				plan = candidate
 				break
 	if not plan:
@@ -514,13 +514,13 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 		return
 
 	RunCity.events(_city).stream_around(plan.position)
-	t.check(plan.live != null, "she walks up to it and it is there")
+	t.check(plan.is_in_the_world(), "she walks up to it and it is there")
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(plan.spent and plan.live == null, "it runs its course and the plan is spent")
+	t.check(plan.spent and not plan.is_in_the_world(), "it runs its course and the plan is spent")
 
 	RunCity.events(_city).stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
 	RunCity.events(_city).stream_around(plan.position)
-	t.check(plan.live == null, "and coming back does not start it over")
+	t.check(not plan.is_in_the_world(), "and coming back does not start it over")
 	RunCity.events(_city).stream_within(INF)
 
 ## The third case, and the one that was actually wrong. *(M31.)* An event that is still
@@ -549,27 +549,27 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 		return
 
 	RunCity.events(_city).stream_around(plan.position)
-	t.check(plan.live != null, "she comes near it and it is there")
-	var started := plan.live.global_position
+	t.check(plan.is_in_the_world(), "she comes near it and it is there")
+	var started := _live(plan).global_position
 	for i in 120:
-		plan.live.step(1.0 / 60.0)
-	var walked := plan.live.global_position
+		_live(plan).step(1.0 / 60.0)
+	var walked := _live(plan).global_position
 	t.check(started.distance_to(walked) > 1.0,
 			"it covers ground while she is watching (%.0fpx in 2s)"
 			% started.distance_to(walked))
-	var aged := plan.live.age()
+	var aged := _live(plan).age()
 
 	RunCity.events(_city).stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
-	t.check(plan.live == null, "she walks away and it leaves the world")
+	t.check(not plan.is_in_the_world(), "she walks away and it leaves the world")
 	RunCity.events(_city).stream_around(walked)
-	t.check(plan.live != null, "she comes back and it is there again")
-	if plan.live:
-		t.check(plan.live.global_position.distance_to(walked) < 1.0,
+	t.check(plan.is_in_the_world(), "she comes back and it is there again")
+	if _live(plan):
+		t.check(_live(plan).global_position.distance_to(walked) < 1.0,
 				"and it is where it had got to, not back at the top of its street (%.0fpx off)"
-				% plan.live.global_position.distance_to(walked))
+				% _live(plan).global_position.distance_to(walked))
 		# The age comes back with it, so an event cannot be made immortal by being visited
 		# twice — its telegraph, its pulse and its duration all carry on rather than restart.
-		t.check(absf(plan.live.age() - aged) < 0.01,
+		t.check(absf(_live(plan).age() - aged) < 0.01,
 				"and it is as old as it was, so revisiting cannot restart its clock")
 	RunCity.events(_city).stream_within(INF)
 
@@ -588,7 +588,7 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 				continue
 			by_row[plan.def.id] = int(by_row.get(plan.def.id, 0)) + 1
 			owed_to_her_walk += 1
-			t.check(not plan.is_placed() and not plan.was_live and not plan.spent,
+			t.check(not plan.is_placed() and not plan.has_been_in_the_world() and not plan.spent,
 					"day %d: '%s' is an unsited plan waiting for a walk that never happens here"
 					% [day, plan.def.id])
 		for id: String in by_row:
@@ -661,31 +661,31 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	var plan := EventPlan.new(def, Vector2(500.0, 500.0))
 
 	RunCity.events(_city).streaming.stream_in(plan)
-	t.check(plan.live != null, "the hand-built plan streams in like any other")
-	if not plan.live:
+	t.check(plan.is_in_the_world(), "the hand-built plan streams in like any other")
+	if not _live(plan):
 		return
 
 	var her := plan.position + Vector2(def.notice_within() - 10.0, 0.0)
 	RunCity.events(_city).world.where_she_is().tell(her)
-	plan.live.step(1.0 / 60.0)
-	t.check(not plan.live.is_waiting(), "she is inside the trigger, so it notices her")
+	_live(plan).step(1.0 / 60.0)
+	t.check(not _live(plan).is_waiting(), "she is inside the trigger, so it notices her")
 	for i in 60:
 		RunCity.events(_city).world.where_she_is().tell(her)
-		plan.live.step(1.0 / 60.0)
-	t.check(not plan.live.is_waiting(), "and a second later it is still chasing, not patrolling")
-	var chase_age_before := plan.live.chase_age()
+		_live(plan).step(1.0 / 60.0)
+	t.check(not _live(plan).is_waiting(), "and a second later it is still chasing, not patrolling")
+	var chase_age_before := _live(plan).chase_age()
 
 	RunCity.events(_city).streaming.stream_out(plan)
-	t.check(plan.live == null, "streaming out through the manager clears the live instance")
+	t.check(not plan.is_in_the_world(), "streaming out through the manager clears the live instance")
 	t.check(plan.saved().noticed_at() != INF,
 			"and the plan itself remembers when it noticed her, not just the freed instance")
 
 	RunCity.events(_city).streaming.stream_in(plan)
-	t.check(plan.live != null, "streaming back in rebuilds it")
-	if plan.live:
-		t.check(not plan.live.is_waiting(),
+	t.check(plan.is_in_the_world(), "streaming back in rebuilds it")
+	if _live(plan):
+		t.check(not _live(plan).is_waiting(),
 				"streamed back in through EventManager it is still chasing, not waiting")
-		t.close_to(plan.live.chase_age(), chase_age_before,
+		t.close_to(_live(plan).chase_age(), chase_age_before,
 				"and the chase clock continued from the notice rather than restarting at it", 0.05)
 
 ## **A row warned of down her line is created with its telegraph spent, at its own intensity from
@@ -817,3 +817,7 @@ func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRun
 		break
 	t.check(asked >= 0, "a day leaves a plan for her walk to site")
 	t.check(asked > 0, "and the siting made for it asks the ground the walk carries (%d asks)" % asked)
+
+## The live event of `plan`, asked of the city's event manager.
+func _live(plan: EventPlan) -> EventInstance:
+	return RunCity.events(_city).event_of(plan)

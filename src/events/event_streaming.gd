@@ -10,6 +10,9 @@ extends RefCounted
 ## task rides, which `keep_live()` puts in the world at once and keeps there. A plan that comes
 ## again (`EventPlan.repeats()`) is brought back on its own clock
 ## (`bring_back_what_repeats()`), and a finished one is spent for the day (`retire_finished()`).
+## The live event of each plan and the clock of one that comes again are kept here, in a table of
+## this class's own (`_state`), and the plan is told when its event enters the world and leaves it
+## (`EventPlan.enter_the_world()`, `leave_the_world()`).
 ##
 ## The gameplay half of that is bigger than the frames it saves. Loading the day upfront gives days
 ## in which **zero** events ever come within reach: a twenty-second event planted across the city
@@ -25,6 +28,39 @@ var world: EventWorld
 var _spawner: EventSpawner
 ## The walk's plans, sited and unsited, spent and unspent. See `EventPlan`.
 var _walk: WalkEvents
+
+## **What streaming keeps of one plan**, made when the plan is first streamed in or when the walk's
+## repeating plans are found (`find_what_repeats()`) and read by this class alone: the live event
+## it made of the plan while the plan is in the world, and the clock of a plan that comes again.
+class StreamedPlan:
+	extends RefCounted
+	## The plan's live event while it is in the world, null otherwise.
+	var live: EventInstance = null
+	## Seconds until the plan's instance next comes; nothing streams it in before then. 0 for a
+	## plan whose instance may be in the world now, which is every plan that does not come again.
+	var comes_in := 0.0
+	## Set the frame a wait on the plan's last instance begins, so that frame is not counted off
+	## the wait.
+	var waits_from_now := false
+
+## What streaming keeps of each plan it has streamed in or that comes again. A plan without an entry
+## is not in the world and waits for nothing.
+var _state: Dictionary[EventPlan, StreamedPlan] = {}
+
+## The entry of `plan`, made if it has none.
+func _entry_of(plan: EventPlan) -> StreamedPlan:
+	var entry: StreamedPlan = _state.get(plan)
+	if entry == null:
+		entry = StreamedPlan.new()
+		_state[plan] = entry
+	return entry
+
+## **The live event of `plan`** while it is in the world, null otherwise: for a caller that names or
+## commands it (`EventManager.event_of()`). A caller that only asks something of a plan asks the plan
+## (`EventPlan.is_in_the_world()`).
+func event_of(plan: EventPlan) -> EventInstance:
+	var entry: StreamedPlan = _state.get(plan)
+	return entry.live if entry != null else null
 
 func _init(the_world: EventWorld, spawner: EventSpawner, walk: WalkEvents) -> void:
 	world = the_world
@@ -88,13 +124,14 @@ func swap_section(olds: Array[EventPlan], new: EventPlan) -> EventInstance:
 	add(new)
 	stream_in(new)
 	new.keep_in_the_world()
-	return new.instance() as EventInstance
+	return event_of(new)
 
 ## Forgets the walk: every plan's live instance let go (the manager frees the instances), the walk's
 ## plans, the repeats and the broadcast clock.
 func clear() -> void:
 	for plan in _walk.plans():
-		plan.live = null
+		plan.leave_the_world(plan.saved())
+	_state.clear()
 	_walk.clear()
 	_repeating.clear()
 	_broadcast_clock = 0.0
@@ -146,25 +183,31 @@ func stream_radius() -> float:
 ## that is an event permanently crouching at her and never arriving.
 ##
 ## **Asked of every plan on every physics tick**, several hundred of them, most of which stand at
-## one point: so a point plan's distance is worked out here rather than through
-## `EventPlan.is_placed()` and `EventPlan.distance_from()`, which answer the same number by the same
-## expression, and only a route goes to `distance_from()`.
+## one point: so each plan is asked one question (`EventPlan.streaming_distance_from()`, which answers
+## a point plan's distance by one expression and only a route through `distance_from()`) and one
+## table lookup answers the rest; `EventPlan.is_kept_in_the_world()` is asked only of a plan in the
+## world that she has walked beyond the hysteresis from.
 func stream_around(at: Vector2) -> void:
 	var stream_out_beyond := _stream_radius + Tuning.EVENT_STREAM_HYSTERESIS
 	for plan in _walk.plans():
-		# A plan waiting to come again is brought back on its own clock, not by her distance.
-		if plan.is_spent() or plan.comes_in > 0.0:
+		# One question to the plan: its distance, infinite for a spent or an unplaced one.
+		var distance := plan.streaming_distance_from(at)
+		if distance == INF:
 			continue
-		var position := plan.placed_at()
-		if position == Vector2.INF:
-			continue
-		var distance := position.distance_to(at) if plan.stands_still() \
-				else plan.distance_from(at)
-		if plan.live == null:
+		var entry: StreamedPlan = _state.get(plan)
+		if entry == null:
+			# Never streamed in and waiting for nothing.
 			if distance <= _stream_radius:
 				stream_in(plan)
-		elif not plan.kept_live and distance > stream_out_beyond \
-				and not _could_be_watched(plan.live, at):
+			continue
+		# A plan waiting to come again is brought back on its own clock, not by her distance.
+		if entry.comes_in > 0.0:
+			continue
+		if entry.live == null:
+			if distance <= _stream_radius:
+				stream_in(plan)
+		elif distance > stream_out_beyond and not plan.is_kept_in_the_world() \
+				and not _could_be_watched(entry.live, at):
 			stream_out(plan)
 
 ## The planned instance of the row `id` standing within a tile of `at`, put in the world now
@@ -178,20 +221,22 @@ func keep_live(id: String, at: Vector2) -> EventInstance:
 		if plan.row_id() != id or plan.is_spent() or not plan.is_placed() \
 				or plan.placed_at().distance_to(at) >= Tuning.TILE_SIZE:
 			continue
-		if plan.live == null:
+		if event_of(plan) == null:
 			stream_in(plan)
-		plan.kept_live = true
-		return plan.live
+		plan.keep_in_the_world()
+		return event_of(plan)
 	return null
 
 func stream_in(plan: EventPlan) -> void:
-	var first_time := not plan.was_live
+	var first_time := not plan.has_been_in_the_world()
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
 	# The shared boom state, for a `checkpoint_gate` plan only (`null` on every other plan), is handed
 	# to the event's one setup call.
-	plan.live = _spawner.create(plan.row(), plan.placed_at(), plan.walks(), first_time, plan.faces(),
+	var live := _spawner.create(plan.row(), plan.placed_at(), plan.walks(), first_time, plan.faces(),
 			plan.gate())
+	_entry_of(plan).live = live
+	plan.enter_the_world(live.standing())
 	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where it
 	# becomes something that happened — see `DawnOneShots`. The list is the one
 	# `start_day` was handed, which in a played game is `world.run().attempt_spend().consumed_one_shots()`
@@ -222,11 +267,10 @@ func stream_in(plan: EventPlan) -> void:
 		save = save.at_age(_broadcast_clock)
 	# A guard spent before the stream-out comes back as only his barrier, never as a guard again
 	# (`EventBarrierPost.restore()`).
-	plan.live.restore(save)
+	live.restore(save)
 	if plan.is_silenced():
-		plan.live.silence()
-	plan.was_live = true
-	world.take_in(plan.live)
+		live.silence()
+	world.take_in(live)
 
 ## **Whether `instance` is near enough to `at` for her to be watching it** — within
 ## `Tuning.OUT_OF_SIGHT`, the distance beyond which nothing can be seen. A plan is streamed out by
@@ -241,19 +285,21 @@ func _could_be_watched(instance: EventInstance, at: Vector2) -> bool:
 			and instance.global_position.distance_to(at) <= Tuning.OUT_OF_SIGHT
 
 func stream_out(plan: EventPlan) -> void:
-	plan.leave_the_world(plan.live.save())
+	var entry: StreamedPlan = _state[plan]
+	var live := entry.live
+	plan.leave_the_world(live.save())
 	# **A departure streamed out is over**, as one that finished is (`_mark_plan_spent()`): it is not
 	# rebuilt to run an ended event again. Walking back, it would be rebuilt 900px or more from her
 	# and finish out of view, so no car is seen coming back; what the spend keeps out is a person
 	# streamed out mid-`leave_along` standing in day 12's closed park again. A guard walking away from
 	# his barrier is the one that comes back, as only the barrier.
-	if plan.live.is_leaving and not (plan.live.barrier_post and plan.live.barrier_post.is_spent()):
+	if live.is_on_its_way_out() and not live.has_lost_its_guard():
 		plan.spend()
 		world.map().release_obstruction(plan.get_instance_id())
-	world.map().release_obstruction(plan.live.get_instance_id())
-	world.let_go(plan.live)
-	plan.live.take_out()
-	plan.live = null
+	world.map().release_obstruction(live.get_instance_id())
+	world.let_go(live)
+	live.take_out()
+	entry.live = null
 
 ## **Takes today's plans of the rows `ids` standing inside `rect` out of the day**, placed or live —
 ## what a once-only happening that empties a place owes the day's own plan: day 11's market stalls
@@ -269,8 +315,9 @@ func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 				or not rect.has_point(plan.placed_at()):
 			continue
 		taken += 1
-		if plan.live:
-			_spawner.retire(plan.live)
+		var live := event_of(plan)
+		if live:
+			_spawner.retire(live)
 			continue
 		plan.spend()
 		world.map().release_obstruction(plan.get_instance_id())
@@ -285,7 +332,8 @@ func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 func take_away_the_unseen_within(rect: Rect2) -> int:
 	var taken := 0
 	for plan in _walk.plans():
-		if plan.is_spent() or plan.live or not plan.is_placed() or not rect.has_point(plan.placed_at()) \
+		if plan.is_spent() or plan.is_in_the_world() or not plan.is_placed() \
+				or not rect.has_point(plan.placed_at()) \
 				or plan.is_ambient():
 			continue
 		taken += 1
@@ -321,8 +369,9 @@ func silence_mast(mast_id: String) -> bool:
 			continue
 		found = true
 		plan.silence()
-		if plan.live:
-			plan.live.silence()
+		var live := event_of(plan)
+		if live:
+			live.silence()
 	return found
 
 ## Silences every mast, for the rest of the day. The masts stop because the power does: this is what
@@ -336,8 +385,9 @@ func silence_all_masts() -> int:
 			continue
 		silenced[plan.mast_id()] = true
 		plan.silence()
-		if plan.live:
-			plan.live.silence()
+		var live := event_of(plan)
+		if live:
+			live.silence()
 	return silenced.size()
 
 ## How many sited events the day is carrying, live or waiting to be walked past. This is the
@@ -377,12 +427,14 @@ func retire_finished() -> void:
 ## instance would otherwise get wrong — an event is allowed to come and go while it is running,
 ## and is not allowed to come back once it is over.
 func _mark_plan_spent(instance: EventInstance) -> void:
-	for plan in _walk.plans():
-		if plan.live == instance:
+	for plan: EventPlan in _state:
+		var entry: StreamedPlan = _state[plan]
+		if entry.live == instance:
 			if plan.repeats():
 				_done_for_now(plan)
 				return
-			plan.live = null
+			entry.live = null
+			plan.leave_the_world(plan.saved())
 			plan.spend()
 			# A spent plan is a body that has left, so its ground opens again — the plan's own half
 			# of the release. See "the bodies in the street".
@@ -396,27 +448,29 @@ func _mark_plan_spent(instance: EventInstance) -> void:
 # again once the last has run out of the top, and the explosions outside come on theirs.
 
 ## Counts every repeating plan's clock down and brings back each whose time has come: a vent its
-## period after its last blow began (`repeat_every`), the masked man his wait after the last one
-## started leaving (`repeat_after`), and one sited at her (`at_her`) where she stands now. A row
+## period after its last blow began (`comes_again_every()`), the masked man his wait after the last one
+## started leaving (`comes_again_after()`), and one sited at her (`comes_where_she_stands()`) where
+## she stands now. A row
 ## from outside the walls (`EventDef.from_outside`) is shown by the world as it comes
 ## (`WorldContext.bang_outside()`), whether or not there is anybody for its charge to stand on.
 func bring_back_what_repeats(delta: float) -> void:
 	for plan in _repeating:
 		if plan.is_spent():
 			continue
+		var entry := _entry_of(plan)
 		# Its run is over when it is off the end of it, not when the instance is finally freed: a
 		# mobile row that has run out of route spends a leaving phase walking out of sight, so a wait
 		# counted from its deletion would be the stated one plus however long that took.
-		if plan.live != null and (plan.live.is_leaving or plan.live.is_finished):
+		if entry.live != null and (entry.live.is_leaving or entry.live.is_finished):
 			_done_for_now(plan)
-		if plan.wait_began:
-			plan.wait_began = false
+		if entry.waits_from_now:
+			entry.waits_from_now = false
 			continue
-		plan.comes_in -= delta
-		if plan.live != null or plan.comes_in > 0.0:
+		entry.comes_in -= delta
+		if entry.live != null or entry.comes_in > 0.0:
 			continue
-		plan.comes_in += plan.repeat_every
-		if plan.at_her:
+		entry.comes_in += plan.comes_again_every()
+		if plan.comes_where_she_stands():
 			if not world.has_player():
 				# Nobody for its charge to stand on, and the bang still goes off.
 				_spawner.show_the_bang(plan.row())
@@ -424,22 +478,25 @@ func bring_back_what_repeats(delta: float) -> void:
 			plan.came_at(world.player().global_position)
 		stream_in(plan)
 
-## Finds the plans of the walk just started that come again (`_repeating`). A day's own plan has
+## Finds the plans of the walk just started that come again (`_repeating`) and starts each one's clock
+## from the seconds its first instance comes in (`EventPlan.first_comes_in()`). A day's own plan has
 ## none; the building's vents, its masked man and its explosions outside are.
 func find_what_repeats() -> void:
 	_repeating.clear()
 	for plan in _walk.plans():
 		if plan.repeats():
 			_repeating.append(plan)
+			_entry_of(plan).comes_in = plan.first_comes_in()
 
 ## A repeating plan whose instance is done, made ready to come again: the instance is let go — a
 ## leaving one walks on out of sight on its own, retired when it is finished — the plan's own body
 ## is given back, it will start over from where every instance of it starts, and a wait on its last
-## one (`repeat_after`) begins now.
+## one (`comes_again_after()`) begins now.
 func _done_for_now(plan: EventPlan) -> void:
-	plan.live = null
+	var entry := _entry_of(plan)
+	entry.live = null
 	world.map().release_obstruction(plan.get_instance_id())
-	plan.leave_the_world(EventSave.aged(plan.arrives_aged))
-	if plan.repeat_after > 0.0:
-		plan.comes_in = maxf(plan.comes_in, plan.repeat_after)
-		plan.wait_began = true
+	plan.leave_the_world(EventSave.aged(plan.arrives_aged()))
+	if plan.comes_again_after() > 0.0:
+		entry.comes_in = maxf(entry.comes_in, plan.comes_again_after())
+		entry.waits_from_now = true

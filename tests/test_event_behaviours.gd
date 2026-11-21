@@ -322,7 +322,7 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	var plan := EventPlan.new(def, at)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
-	var robber := plan.live
+	var robber := manager.event_of(plan)
 	t.check(robber != null, "he is streamed in where the day planned him")
 	if robber == null:
 		manager.free()
@@ -336,10 +336,10 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	manager.stream_around(far)
-	t.check(plan.live == null and not plan.saved().state_of("EventPursuit").is_empty(),
+	t.check(not plan.is_in_the_world() and not plan.saved().state_of("EventPursuit").is_empty(),
 			"streamed out, his plan carries his pursuit's state")
 	manager.stream_around(at)
-	t.check(plan.live != null and bool(plan.live.pursuit.save()["lunge_held"]),
+	t.check(plan.is_in_the_world() and bool(manager.event_of(plan).pursuit.save()["lunge_held"]),
 			"and streamed back in, his lunge is still held")
 	manager.free()
 	world.free()

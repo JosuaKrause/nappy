@@ -517,7 +517,7 @@ func instances() -> Array[EventInstance]:
 ## or commands it (a scene recipe's runtime sets it on her, keeps it coming or holds it). A caller
 ## that only asks something of a plan asks the plan (`EventPlan.is_in_the_world()`).
 func event_of(plan: EventPlan) -> EventInstance:
-	return plan.instance() as EventInstance
+	return streaming.event_of(plan)
 
 # ------------------------------------------------------------ WorldContext ---
 

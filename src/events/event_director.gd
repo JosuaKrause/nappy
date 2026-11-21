@@ -737,8 +737,8 @@ const ON_HER_WAY_LOOK := 1.0
 ## **It may move until it is real, and never after.** A plan that has been streamed in once has
 ## recorded its scar and moved its block along its arc (`EventSpawner.create`), so the city already
 ## remembers it burning there; moving it then would mean repairing a fact, which is the one thing
-## this repository does not do to a guarantee. `EventPlan.was_live` is that line, and it is drawn at
-## the streaming radius rather than at the screen edge — which is 900px out against a view half
+## this repository does not do to a guarantee. `EventPlan.has_been_in_the_world()` is that line, and it
+## is drawn at the streaming radius rather than at the screen edge — which is 900px out against a view half
 ## diagonal of about 367, so in practice it stops moving a good six seconds of walking before she
 ## could ever have seen it.
 ##
@@ -810,7 +810,7 @@ func _waits_its_turn(plan: EventPlan) -> bool:
 func _forget_what_is_real() -> void:
 	var still_ours: Array[EventPlan] = []
 	for plan in _on_her_way:
-		if plan.was_live or plan.is_spent():
+		if plan.has_been_in_the_world() or plan.is_spent():
 			_behind_her.erase(plan)
 			continue
 		still_ours.append(plan)

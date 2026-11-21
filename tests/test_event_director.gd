@@ -495,7 +495,7 @@ func _test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t
 	var again := _walk_for(director, 3.0)
 	t.check(siting.asked.size() > asks and again.has(fire),
 			"and after that it is asked again and moved (%d asks)" % siting.asked.size())
-	fire.was_live = true
+	fire.enter_the_world(WhereItStands.nowhere())
 	asks = siting.asked.size()
 	siting.set_place(fire.row_id(), _her() + Vector2.UP * 2100.0)
 	_walk_for(director, 10.0)
@@ -511,7 +511,7 @@ func _test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t: TestRunner)
 	_walk_for(director, EventDirector.ON_HER_WAY_AFTER + 3.0)
 	t.check(first.is_placed() and not second.is_placed() and not siting.asked.has(second),
 			"the first crew is laid and the second is not even asked while it stands unreal")
-	first.was_live = true
+	first.enter_the_world(WhereItStands.nowhere())
 	_walk_for(director, 3.0)
 	t.check(siting.asked.has(second) and second.is_placed(),
 			"once the first is in the world the next is asked and laid")

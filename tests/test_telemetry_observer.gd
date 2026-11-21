@@ -118,9 +118,9 @@ class WatchedDayParts extends RefCounted:
 
 	## Frees the stand-in events and every instance a case set up on them.
 	func free_all() -> void:
-		for plan in events.placed:
-			if is_instance_valid(plan.live):
-				plan.live.free()
+		for instance in events.made:
+			if is_instance_valid(instance):
+				instance.free()
 		events.free()
 
 ## A day's events as the observer asks them (`plans()`): the plans a case sets, each placed with its
@@ -128,12 +128,16 @@ class WatchedDayParts extends RefCounted:
 ## streaming, which makes a plan live, is `tests/test_event_manager.gd`'s.
 class StandInEvents extends FakeEventManager:
 	var placed: Array[EventPlan] = []
+	## The instance of each plan placed, which `free_all()` frees.
+	var made: Array[EventInstance] = []
 
 	## A plan of `row` placed at `at`, its instance live there.
 	func place(row: String, at: Vector2) -> EventPlan:
 		var plan := EventPlan.new(EventCatalogue.by_id(row), at)
-		plan.live = EventInstance.new()
-		plan.live.setup(plan.def, at)
+		var instance := EventInstance.new()
+		instance.setup(plan.def, at)
+		plan.enter_the_world(instance.standing())
+		made.append(instance)
 		placed.append(plan)
 		return plan
 
@@ -528,7 +532,7 @@ func _test_a_lost_day_restarts_the_trail(t: TestRunner) -> void:
 	rig.free_all()
 	day.free_all()
 
-## The dusk map's whole reason to exist: `was_live` marks a plan the moment
+## The dusk map's whole reason to exist: `has_been_in_the_world()` is true of a plan the moment
 ## `EventManager.stream_around` loads it at `Tuning.EVENT_STREAM_RADIUS` (900px), which is more
 ## than twice the reach (`def.outer_radius`, typically 150px) of a row that has not telegraphed
 ## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs

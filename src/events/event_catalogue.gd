@@ -3250,7 +3250,7 @@ static func _masked_pursuer() -> EventDef:
 ## **One vent is a gate; the corridor is several of them on their own clocks.** The count, the
 ## periods and how long a blow lasts are `BuildingPlan.FINALE_STEAM_PERIODS` and
 ## `FINALE_STEAM_BLOWS_FOR`; the building sites them on the basement's narrows (`BuildingPlan`),
-## each plan coming again on its own period (`EventPlan.repeat_every`). What this row
+## each plan coming again on its own period (`EventPlan.comes_again_every()`). What this row
 ## owns is one blow: notice, body, field, over. Its plume billows over two frames
 ## (`EventPictures.STEAM_B`) for the whole blow.
 static func _basement_steam() -> EventDef:
