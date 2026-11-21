@@ -114,7 +114,7 @@ held to, what is created with its telegraph spent, and the two things that are n
 ## The contract is per event and the player experiences the sum
 
 **Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
-`outer_radius` clear of every other event at placement (`StreetInvalidation.room_around()`), and it
+outer radius clear of every other event at placement (`StreetInvalidation.room_around()`), and it
 is the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
 inherits this, not just the telegraph. **One case of it is held and the whole is not.**
 `tests/test_resistance_reach_contacts.gd` holds a queued mast: offered only sidewalk inside a
@@ -216,7 +216,7 @@ caret's projection and the wall) are `references/plan-and-excitement.md`.
 
 ## Things deliberately not done
 
-**No `impulse` field.** A sharp spike is a short `duration` at high `intensity`.
+**No `impulse` field.** A sharp spike is a short `duration` at a high peak.
 
 **Events are defined in code, not `.tres`** — reviewable in a diff, validated on load, assertable as
 a whole catalogue in a test.

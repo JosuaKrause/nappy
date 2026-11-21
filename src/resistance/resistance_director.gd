@@ -100,7 +100,7 @@ const NO_TILE := Vector2i(-1, -1)
 ## walking away from him afterward costs rather than being free the instant the note changes hands.
 ##
 ## **Chosen so the total plateaus near an ordinary pass, not so it is timed to hit one.** Walking
-## away from his core (`EventDef.core_within()`) at `Tuning.WALK_SPEED` clears his `outer_radius`
+## away from his core (`EventDef.core_within()`) at `Tuning.WALK_SPEED` clears his `outer radius`
 ## (210px, past which his source's `ExcitementSource.contribution_at()` answers zero) in a little
 ## over two seconds; this sits past that clearing point with a margin, so the total lands wherever
 ## the field's own falloff already plateaus rather than depending on catching an exact frame.

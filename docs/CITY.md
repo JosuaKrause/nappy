@@ -1032,7 +1032,7 @@ street.
 
 ### What a row denies is what it charges for
 
-**Every rule below is stated over one disc, and it is not the row's `outer_radius`.** A row denies
+**Every rule below is stated over one disc, and it is not the row's outer radius.** A row denies
 the ground inside which it out-emits `Tuning.EXCITEMENT_DECAY_WALKING` — the rate an ordinary street
 gives back while she walks — plus its `obstructs_radius` wherever it has a body, whichever is
 larger. Past that crossing a walk through the field nets the meter *down*, so the ground is taken
@@ -1782,7 +1782,7 @@ one percent of what a day places.
 **The wall's own `roadblock` bodies get no gap**, and that is deliberate: a wall is structure, it
 stands where the boundary is, and dropping one would open a street the partition means to hold. A
 corner where a wall meets a door therefore still has barriers a step from the release point — what
-stops them adding up is `EventDef.barrier_structure` (docs/EVENTS.md, "Checkpoints"), which makes
+stops them adding up is the field's one-barrier flag (`FieldSpec.as_one_barrier()`, asked as `counts_as_one_barrier()`) (docs/EVENTS.md, "Checkpoints"), which makes
 the whole boundary kit charge as one source.
 
 **The ground a door lets her out onto is survivable by construction, and a door is never refused

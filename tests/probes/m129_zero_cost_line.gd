@@ -51,7 +51,7 @@ extends RefCounted
 ##   street, which is never closed and never sealed, as ground) and arrives the moment it reaches
 ##   any calm tile of the area's own rect.
 ## - **A row blocks where it costs or where it stands**, and *where it costs* is the disc inside
-##   which it out-emits `Tuning.EXCITEMENT_DECAY_WALKING` rather than its whole `outer_radius`:
+##   which it out-emits `Tuning.EXCITEMENT_DECAY_WALKING` rather than its whole outer radius:
 ##   past that crossing a walk through the field nets the meter down, which is ground taken without
 ##   planning around it — *"the influence at a junction is low enough that it can be taken without
 ##   having to worry or plan around it"*, PLAYTEST-76. A lethal row keeps its whole radius, a body

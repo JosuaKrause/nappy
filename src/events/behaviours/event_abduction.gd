@@ -36,7 +36,7 @@ func walked_for() -> float:
 	return _figure.age() - _taken_at
 
 ## **Begins the first time she can see it happen**, where the van's field reaches her
-## (`EventInstance.Figure.field_reaches()`, within its `outer_radius`): a van she never came near
+## (`EventInstance.Figure.field_reaches()`, within its `outer radius`): a van she never came near
 ## never runs it. **Never starts without enough of the van's life left to finish in**: a take cut
 ## short by the van disappearing mid-walk would read as a bug. **A hunting van has other
 ## business**: the instant it stops waiting it is letting its men out after her, so a take in

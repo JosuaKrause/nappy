@@ -23,7 +23,7 @@ extends RefCounted
 ## its `_arrow_key` names.
 ##
 ## **On arrival** the guard is counted as:
-## - **guarding** the roadblock the arrow points at: in its band (`inner_radius` plus its touch reach
+## - **guarding** the roadblock the arrow points at: in its band (inner radius plus its touch reach
 ##   to `EventDef.notice` plus it), with a clear line to its body;
 ## - **near it**: with a clear line to it, outside the band but within
 ##   `ResistanceDirector.TASK_GUARD_FARTHEST`, the farther out-of-view spot a move takes when every

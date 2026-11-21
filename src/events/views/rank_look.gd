@@ -101,7 +101,7 @@ static func _cafe_seat_heading(spread_vertical: bool, alternate: bool) -> Vector
 ## the whole content of the event.
 ##
 ## Two ranks rather than one, offset, so it reads as a crowd with depth instead of a queue; the
-## back rank is drawn first and higher up the screen. Nothing here grows with `intensity_ramp` —
+## back rank is drawn first and higher up the screen. Nothing here grows with the field's swell —
 ## the caret over it already breathes with what it is emitting, and a crowd that visibly recruits
 ## would be a second cue saying the same thing.
 ##

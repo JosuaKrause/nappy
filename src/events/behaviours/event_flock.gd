@@ -17,8 +17,8 @@ extends EventBehaviour
 ##   overlapping fields and the edge of it stacks one, so walking round it is cheap and walking
 ##   through it is the most expensive thing on an act I pavement.
 ## - **The birds stay inside `flock_spread` of the middle**, which is what keeps the telegraph
-##   fairness contract true. The contract is stated over `outer_radius` from the instance's own
-##   position; `flock_spread + bird_outer()` is `outer_radius`, so the union of eleven moving fields
+##   fairness contract true. The contract is stated over `outer radius` from the instance's own
+##   position; `flock_spread + bird_outer()` is `outer radius`, so the union of eleven moving fields
 ##   is a subset of the one disc `Tuning.validate_event` checked. Widening the wheel without shrinking
 ##   the per-bird radius would quietly move the field the contract was written about.
 ## - **They wheel rather than fly straight.** A bird that flies straight leaves, and a flock that
@@ -179,7 +179,7 @@ func _fly(delta: float) -> void:
 		if not _figure.is_on_its_way_out() and bird.at().length() > _row.flock_spread:
 			# The steering above is what a bird turning back *looks* like; this is the line that
 			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
-			# `bird_outer()` is `outer_radius - flock_spread` precisely so that a bird at the rim
+			# `bird_outer()` is `outer radius - flock_spread` precisely so that a bird at the rim
 			# reaches exactly as far as the event was validated to. Steering from half way out means
 			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
 			bird.place(bird.at().normalized() * _row.flock_spread)
@@ -203,7 +203,7 @@ const TURN_IN := 4.6
 ## The radius one bird emits over. The rest of the field is the room the flock takes up: a bird at
 ## the far edge of the wheel reaches exactly as far as the event says it does and no further.
 func bird_outer() -> float:
-	return maxf(_row.inner_radius + 1.0, _row.outer_radius - _row.flock_spread)
+	return maxf(_row.core_within() + 1.0, _row.heard_within() - _row.flock_spread)
 
 ## A tick of the flock while its event is neither leaving nor held: pecking on the ground through
 ## the wait and the telegraph, up and wheeling once it has gone up.

@@ -1148,7 +1148,7 @@ func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 ##
 ## And the counterplay the brief gives him — *"going into a corridor and letting them pass"* — is
 ## measured rather than assumed: every door in his shaft has to sit further from every point of his
-## line than `inner_radius`, the radius that takes the baby, or stepping onto a door is not an
+## line than inner radius, the radius that takes the baby, or stepping onto a door is not an
 ## answer to him at all.
 func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunner) -> void:
 	var f := InteriorMap.build()
@@ -1639,7 +1639,7 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void
 		var shut := _longest_both_shut(a, b, steam)
 		var half := a.placed_at().distance_to(b.placed_at()) * 0.5
 		var rate := 2.0 * Field.falloff(half, steam.peak(), steam.core_within(),
-				steam.heard_within(), steam.falloff_power)
+				steam.heard_within(), steam.field().falloff())
 		t.check(shut * rate < Tuning.METER_MAX,
 				("a pocket %.0fpx wide is shut at both ends for at most %.2fs at %.1f/s, "
 				% [half * 2.0, shut, rate])

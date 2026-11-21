@@ -1594,8 +1594,8 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -
 ## radius covers her — because that radius is exactly what the telegraph fairness contract promises
 ## her time to walk out of. On the first frame of section two every placement the finale made is in
 ## one of those two states, so that one inequality is the whole of the mark, and it is asked here
-## as `distance > outer_radius` for every lethal row on the plan. `NOW` needs a live instance and
-## cannot fire on the frame the section begins; `distance > inner_radius` falls out of the same
+## as `distance > outer radius` for every lethal row on the plan. `NOW` needs a live instance and
+## cannot fire on the frame the section begins; `distance > inner radius` falls out of the same
 ## check, since a row's outer radius is never under its inner one.
 ##
 ## **This is the confirmation, not the mechanism**, exactly as for the bodies above:

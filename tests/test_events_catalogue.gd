@@ -78,8 +78,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 
 	def = EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
 	def.solid(GroundShape.band(22.0))
-	def.inner_radius = 15.0
-	def.outer_radius = 90.0
+	def.use_field(def.field().holding_to(15.0).reaching(90.0))
 	t.check(def.lies_as_a_spread(),
 			"changing body and field geometry leaves a café's spread answer true")
 
@@ -204,7 +203,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a
 ## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
-## "since there can be other obstacles around".)* Every `EventDef.barrier_structure` row collapses
+## "since there can be other obstacles around".)* Every row whose field counts as one barrier (one-barrier flag) collapses
 ## to the strongest of them at her position (`EventSources.sources_at()`), so a hut, a
 ## gate and a wall's roadblocks at one corner charge one rate between them. What that rate has to
 ## stay under is the **toll the hold itself charges**: a detention is spent standing still, where
@@ -282,7 +281,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 			continue
 		var wider: EventDef = def.duplicate()
 		wider.shape = def.ground_shape()
-		wider.outer_radius *= 1.5
+		wider.use_field(wider.field().reaching(wider.heard_within() * 1.5))
 		wider.speed *= 1.5
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),

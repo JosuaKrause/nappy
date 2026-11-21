@@ -453,37 +453,22 @@ func most_in_a_day() -> int:
 ## Tile types an instance may be placed on.
 @export var placement: Array[int] = []
 
-## Peak excitement per second at the centre.
-@export var intensity := 6.0
-@export var inner_radius := 40.0
-@export var outer_radius := 150.0
+## **The noise it adds**: the field of excitement the baby is charged for, as one value (`FieldSpec`).
+## Written through `use_field()` until the draft writes it; asked through `field()` and the questions
+## below that forward to it. A row that says nothing has the catalogue's plain field.
+@export var _field := FieldSpec.of(6.0, 40.0, 150.0)
 
-## **A louder inner part of the same field**, for a row that has to be one thing to walk past and
-## another to stand a street away from. Both zero means no core, which is every row but the leaf
-## blower.
-##
-## `core_intensity` is the rate out to `inner_radius` and `core_radius` is where it has fallen to
-## nothing, on the same curve the field uses; `emission_at()` answers **the larger of the two**, so
-## a core adds rather than replaces: past `core_radius` the row is its plain field.
-##
-## **A flock has no core**, and `validate()` refuses one: a flock's field is already a sum over
-## bodies rather than one disc.
-@export var core_intensity := 0.0
-@export var core_radius := 0.0
+## **Hands the row its field** (`FieldSpec`): the one line that replaces a row's writes of its peak,
+## radii, core, falloff, pulse, swell, reach through walls, barrier flag and datum. Called only by the
+## catalogue, by a copy being made and by a test's row; the draft that writes a row deletes it.
+func use_field(spec: FieldSpec) -> void:
+	_field = spec
+	_cost_cache = INF
 
-## **The exponent on the drop between the two radii**: `intensity * (1 - t ** falloff_power)`. 2.0
-## is the curve the whole catalogue is measured at (three quarters of the intensity still there at
-## the midpoint of the band); a power under 1 drops fast and tails long, over 2 holds near full and
-## then falls off a cliff. **Nothing sets it**; a row that does owes the same fairness contract,
-## which is stated over distance and does not care.
-@export var falloff_power := 2.0
-## **Something outside the walls of the world she is in**, which reaches her through them: what
-## lands on her from it ignores every wall between, where every other field stops at the middle of
-## one (`WorldMap.wall_between()`), and every time it comes the world shows it the one way a thing
-## outside can be seen from in there (`WorldContext.bang_outside()`: the building lights every
-## window). The explosion outside the building, whose charge stands where she is
-## (`EventCatalogue.explosion_outside()`).
-@export var from_outside := false
+## Its field (`FieldSpec`), for the code in the events folder that runs one ability: a copy that
+## changes it asks it for a new value (`hot.use_field(field().at_peak(rate))`).
+func field() -> FieldSpec:
+	return _field
 
 ## **A planned row that comes again**, on its plan's own clock (`EventManager`): seconds from one
 ## of its instances coming to the next coming, kept on the clock whatever the last one did. 0 for a
@@ -498,11 +483,8 @@ func most_in_a_day() -> int:
 ## Seconds at full strength. 0 means it lasts the whole day.
 @export var duration := 0.0
 ## Seconds of visible warning before full intensity, during which it emits only
-## TELEGRAPH_INTENSITY_FRACTION of `intensity`.
+## TELEGRAPH_INTENSITY_FRACTION of its peak.
 @export var telegraph_time := 2.5
-## Seconds per intensity cycle, for events that pulse rather than hold. 0 is constant.
-@export var pulse_period := 0.0
-
 @export var spawn_mode := SpawnMode.MAP
 
 ## **How the row is sited and noticed from the day after its first appearance**, or null for a row
@@ -687,7 +669,7 @@ func as_sent_ahead() -> EventDef:
 ## could only move together. With this set, `EventInstance` gives every bird its own position,
 ## heading, speed, height and wingbeat, and steps them one at a time.
 @export var flock_size := 0
-## How far from the middle a flock spreads, in px. Its `outer_radius` is the field it emits over;
+## How far from the middle a flock spreads, in px. Its `heard_within()` is the field it emits over;
 ## this is the ground it stands on and the air it wheels in, much smaller, so a flock she can see
 ## the shape of is a flock she can walk round.
 @export var flock_spread := 0.0
@@ -891,7 +873,7 @@ func starts_by(start: PursuitSpec.Start) -> bool:
 ## says so. `RunState.resistance().progress()` is an integer 0..`Tuning.RESISTANCE_GOAL`, and
 ## `at_heat()` below turns a level into a **derived copy** of the row with its numbers moved, so
 ## nothing downstream of the day's plan has to know that heat exists: an `EventInstance` reads
-## `intensity`, `pursuit` and the rest off whichever copy the day handed it.
+## its peak, `pursuit` and the rest off whichever copy the day handed it.
 ##
 ## **It is a field rather than a switch set per placement**, as the blocking role is:
 ## `EventScheduler.role_for` derives a role from the def, so no two placements of one row can
@@ -1113,7 +1095,7 @@ enum Pavement {
 ## changes (PLAYTEST-57). Her centre stops `obstructs_radius + PLAYER_BODY_RADIUS` from a body, or
 ## further with the pram between, and a reach measured from the edge is the same whichever it is.
 ##
-## Checked by `validate()` against `inner_radius`, over `detain_distance()`: the capture has to sit
+## Checked by `validate()` against `core_within()`, over `detain_distance()`: the capture has to sit
 ## strictly inside the field she is already fully charged for. `chatting_mother` carries no body
 ## (nothing mobile may), so her 48px is a radius from her centre, chosen against the **32px**
 ## spacing between the two lanes of a sidewalk (`Tuning.TILE_SIZE`): under that, the far lane of a
@@ -1134,24 +1116,6 @@ func detain_distance() -> float:
 ## `checkpoint_post` are the only two rows that set it. `CheckpointController.check_detentions()`
 ## reads it.
 @export var redetains := false
-
-## Whether this row is one of the region boundary's own structures: a street being held, however
-## many bodies it takes to hold it. **Several of them charge the meter as one source, the strongest
-## at her position, never their sum.**
-##
-## Four rows carry it and they are the whole boundary kit: `checkpoint_hut`, `checkpoint_gate` and
-## `checkpoint_post` (a door), and `roadblock`, which is both the body the region *wall* stands as
-## and the catalogue's own street closure. At a corner where a wall and a door meet, ground inside
-## five of them at once exists, and summed that is one barrier read five times.
-##
-## **It is a flag rather than a list of ids**, so the rule is a property of the row and a renamed or
-## added row cannot silently fall out of a table elsewhere.
-##
-## **The maximum is taken over every flagged instance at once, not per cluster**: two barriers far
-## enough apart not to overlap already contribute nothing to each other's ground.
-## `EventSources.sources_at()` is the one place that does it, and the halo, the caret and the meter
-## all read that same answer (see `ExcitementSource.is_outranked()`).
-@export var barrier_structure := false
 
 ## Whether a placement of this row takes a whole section of its street rather than one sidewalk
 ## location (inbox #1185 in gentle-owl: "events that span the street get placed in a section (eg roadblock in the
@@ -1205,7 +1169,7 @@ func takes_of_a_street() -> StreetShare:
 @export var hard_fail := false
 
 ## How close a row with no pursuit has to come to end the day when that is not its field's own
-## core, in px, or 0 for its `inner_radius`: the masked man on the escape's stairs catches inside
+## core, in px, or 0 for its `core_within()`: the masked man on the escape's stairs catches inside
 ## the core his field shares with the roadblock's guard. `lethal_reach()` reads it.
 @export var catch_reach := 0.0
 
@@ -1218,7 +1182,7 @@ func lethal_reach() -> float:
 		return pursuit.catch_reach()
 	if catch_reach > 0.0:
 		return catch_reach
-	return inner_radius
+	return core_within()
 
 ## What `PursuitSpec.standoff()` is stated over for this row: its `PursuitSpec.lunge_reach()`
 ## where it sets one, the catch (`lethal_reach()`) otherwise.
@@ -1279,10 +1243,6 @@ enum Role {
 ## whose charges are the task guard's. `""` for every other row.
 @export var counts_charges_as := ""
 
-## Intensity multiplier reached at the end of `duration`. 1.0 holds steady; above 1.0
-## swells (a protest gathering), below 1.0 fades.
-@export var intensity_ramp := 1.0
-
 ## **The rows this one brings after it** — see `Aftermath`; empty for a row that brings none.
 @export var aftermath := Aftermath.none()
 
@@ -1335,7 +1295,7 @@ func at_heat(level: int) -> EventDef:
 		# And as many more marbles in the day's bags: a cap a draw rarely reaches would raise no
 		# population, so the row's weight, which sets how often a unit draws it, rises with it.
 		hot.weight = weight * lerpf(1.0, HEAT_PRESSES_POPULATION, through)
-		hot.intensity = intensity * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)
+		hot.use_field(_field.at_peak(peak() * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)))
 		hunts_from = HEAT_INVESTIGATES_LEVEL
 		notices_within = HEAT_INVESTIGATE_WITHIN
 	if level < hunts_from:
@@ -1349,11 +1309,11 @@ func at_heat(level: int) -> EventDef:
 		# He hunts as the row says, at the ladder's own speed.
 		hot.pursuit = hunts.pursuit().at_speed(Tuning.HEAT_HUNTS_SPEED)
 		# The shared trigger is authored once, against the widest cold field in the catalogue
-		# (`abduction`'s 250px); a row whose own `outer_radius` sits under it would notice her from
+		# (`abduction`'s 250px); a row whose own field reaches less far would notice her from
 		# outside its own field, which `Tuning.validate_pursuit()` refuses. Widening only the hunting
 		# copy keeps the cold shape, and everything measured from it (`required_telegraph_time()`,
 		# the cost table), untouched.
-		hot.outer_radius = maxf(outer_radius, notices_within)
+		hot.use_field(hot.field().reaching(maxf(heard_within(), notices_within)))
 		# For a pursuer `duration` is the length of the chase, not the length of the idle (see
 		# `notice`). Cold, this row simply sits for `duration` seconds and is done.
 		hot.duration = Tuning.PURSUIT_TIME
@@ -1429,29 +1389,24 @@ func validate() -> bool:
 					% [id, piece.reach(), obstructs_radius])
 					+ "claims: nothing cleared the ground it would stand on")
 			return false
-	# **A core is two numbers that only mean anything together**: a rate with nowhere to fall to, a
-	# band with nothing in it, a core no louder than the field, or one reaching past the field's
-	# own edge (outside the radius every fairness rule is stated over) is a row that reads as having
-	# a core and has not got one. Checked before the ambient and city-wide returns, since those rows
-	# have a field too.
-	if falloff_power <= 0.0:
+	# **A core has to be louder than its field and fall to nothing inside it**: a core no louder than
+	# the field, a band with nothing in it, or one reaching past the field's own edge (outside the
+	# radius every fairness rule is stated over) is a row that reads as having a core and has not
+	# got one. Checked before the ambient and city-wide returns, since those rows have a field too.
+	if falloff() <= 0.0:
 		push_error("event '%s' has a falloff power of %.2f: a field has to fall away from its own "
-				% [id, falloff_power] + "centre")
+				% [id, falloff()] + "centre")
 		return false
-	if (core_intensity > 0.0) != (core_radius > 0.0):
-		push_error(("event '%s' sets half a core (%.1f/s over %.0fpx): a core is a rate and a band "
-				% [id, core_intensity, core_radius]) + "and neither means anything alone")
-		return false
-	if core_intensity > 0.0:
-		if core_intensity <= intensity:
+	if core_rate() > 0.0:
+		if core_rate() <= peak():
 			push_error(("event '%s' has a %.1f/s core inside a %.1f/s field: a core quieter than "
-					% [id, core_intensity, intensity])
+					% [id, core_rate(), peak()])
 					+ "what it sits in is never the larger of the two and changes nothing")
 			return false
-		if core_radius <= inner_radius or core_radius > outer_radius:
+		if core_reach() <= core_within() or core_reach() > heard_within():
 			push_error(("event '%s' has a core falling to nothing at %.0fpx, outside its own "
-					% [id, core_radius])
-					+ "field's %.0f–%.0fpx band" % [inner_radius, outer_radius])
+					% [id, core_reach()])
+					+ "field's %.0f–%.0fpx band" % [core_within(), heard_within()])
 			return false
 		if flock_size > 0:
 			push_error("event '%s' is %d bodies wheeling and has a core: a flock's field is a sum "
@@ -1588,9 +1543,9 @@ func validate() -> bool:
 	# director cannot avoid.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
 		var floor_lead := nearest_it_is_created()
-		if outer_radius >= floor_lead:
+		if heard_within() >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
-					% [id, outer_radius] + "%.0fpx it is created at on the worst axis: it would arrive "
+					% [id, heard_within()] + "%.0fpx it is created at on the worst axis: it would arrive "
 					% floor_lead + "already inside its own reach there")
 			return false
 	# **A lethal radius and a solid body are the same mechanism**, and putting both on one event is a
@@ -1617,9 +1572,9 @@ func validate() -> bool:
 		return false
 		# A catch out in the falloff band is a catch she can take while the thing is still quiet; the
 		# core is the shell at full strength.
-	if lethal_reach() > inner_radius:
+	if lethal_reach() > core_within():
 		push_error("event '%s' catches at %.0fpx, outside the %.0fpx core of its own field"
-				% [id, lethal_reach(), inner_radius])
+				% [id, lethal_reach(), core_within()])
 		return false
 		# A conversation is a cost, never a threat: it takes her controls rather than her body, and a
 		# row that could also kill or chase her would do both at once.
@@ -1628,11 +1583,11 @@ func validate() -> bool:
 			push_error("event '%s' detains and is also %s: a conversation may not also be a threat"
 					% [id, "hard_fail" if hard_fail else "a pursuer"])
 			return false
-		if not (detain_distance() < inner_radius and inner_radius <= outer_radius):
+		if not (detain_distance() < core_within() and core_within() <= heard_within()):
 			push_error(("event '%s' detains at %.0fpx (%.0fpx past a %.0fpx body), which does not "
 					% [id, detain_distance(), detain_radius, obstructs_radius])
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
-					% [inner_radius, outer_radius]))
+					% [core_within(), heard_within()]))
 			return false
 		# **A car that drives is a body that moves and a strike that is not the body** (see
 		# `vehicle`). Each half-set version is a row the rules cannot read: a car with no route stands
@@ -1691,7 +1646,7 @@ func validate() -> bool:
 		push_error("event '%s' arrives chasing but is not a pursuer warned of first" % id)
 		return false
 	if pursuit and not Tuning.validate_pursuit(id, pursuit.speed(), duration, lethal_reach(),
-			telegraph_time, notice_within(), outer_radius, standoff_reach(),
+			telegraph_time, notice_within(), heard_within(), standoff_reach(),
 			pursuit.start() == PursuitSpec.Start.ARRIVES_CHASING
 					or pursuit.start() == PursuitSpec.Start.CHARGES_AT_ONCE,
 			pursuit.start() == PursuitSpec.Start.SETS_OFF_BESIDE_HER):
@@ -1700,7 +1655,7 @@ func validate() -> bool:
 		# `EventCatalogue.all()` validates every heat shape, but the day axis is orthogonal.
 	if pursuit and from_day_after and from_day_after.notice() \
 			and not Tuning.validate_pursuit(id, pursuit.speed(), duration, lethal_reach(), telegraph_time,
-					from_day_after.notice().within(), outer_radius, standoff_reach()):
+					from_day_after.notice().within(), heard_within(), standoff_reach()):
 		return false
 	# **A pursuer that waits for her warns on a clock** (`PursuitSpec.warns_for()`) inside its one
 	# radius.
@@ -1723,7 +1678,7 @@ func validate() -> bool:
 		return true
 	if warns_before_it_exists():
 		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())
-	return Tuning.validate_event(id, warning_time(), inner_radius, outer_radius, hard_fail,
+	return Tuning.validate_event(id, warning_time(), core_within(), heard_within(), hard_fail,
 			speed if mobile else 0.0)
 
 ## Shortest warning this row may fairly give, held against `warning_time()`.
@@ -1748,7 +1703,7 @@ func minimum_telegraph() -> float:
 		return Tuning.OFFSCREEN_WARNING_MIN
 	if pursuit:
 		return Tuning.PURSUIT_MIN_NOTICE
-	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,
+	return Tuning.required_telegraph_time(core_within(), heard_within(), hard_fail,
 			speed if mobile else 0.0)
 
 ## How far ahead of her line `EventDirector` has to site a crossing `AHEAD_OF_PLAYER` row so it
@@ -1778,7 +1733,7 @@ func crouch_for_a_run(run: float) -> float:
 	return maxf(0.0, (float(Tuning.STREET_WIDTH) * Tuning.TILE_SIZE - run) / speed)
 
 ## **The nearest to her line a crossing that holds still may crouch**, in px, so she walking on is
-## outside its field (`outer_radius`) for the whole crouch. A run that starts `run` px off her line
+## outside its field (`heard_within()`) for the whole crouch. A run that starts `run` px off her line
 ## reaches the middle when she does (`crouch_for_a_run()`), so she is `WALK_SPEED * run / speed`
 ## short of the middle as it runs, and `run * sqrt(1 + (WALK_SPEED / speed)²)` from the crouch at
 ## her nearest; this is that distance held at the field's edge. Zero for a row that does not hold
@@ -1786,7 +1741,7 @@ func crouch_for_a_run(run: float) -> float:
 func nearest_crouch() -> float:
 	if not mobile or speed <= 0.0 or not still_while_telegraphing:
 		return 0.0
-	return outer_radius / sqrt(1.0 + pow(Tuning.WALK_SPEED / speed, 2.0))
+	return heard_within() / sqrt(1.0 + pow(Tuning.WALK_SPEED / speed, 2.0))
 
 ## Seconds from the moment this row becomes visible to the earliest it can reach her, on the worst
 ## heading the game can give it: what the fairness contract holds against `minimum_telegraph()`.
@@ -1883,7 +1838,7 @@ func is_placed_on_the_map() -> bool:
 ## created at, the point drawn (`EventDirector.age_it_is_sent_at()`). Its telegraph alone for a row
 ## that does not pulse.
 func age_at_a_point_of_its_beat(point: float) -> float:
-	return telegraph_time + point * maxf(pulse_period, 0.0)
+	return telegraph_time + point * maxf(pulses_every(), 0.0)
 
 ## A copy of this row that enters the world only under a warning that runs first (`warned_first`),
 ## for a row otherwise placed some other way: day 13's column of `military_convoy` (a `MAP` place
@@ -1904,14 +1859,14 @@ func as_warned_first() -> EventDef:
 	return variant
 
 ## The field's own furthest reach from this row's centre: what every "how far" rule needs instead
-## of `outer_radius` alone, since a segment's field is a capsule and a moving point's forward reach
+## of `heard_within()` alone, since a segment's field is a capsule and a moving point's forward reach
 ## outgrows its resting radius (`EventPlan.keeps_its_field_clear()`'s clearance, the streaming rect,
 ## `ExcitementSource.expected_gross_at()`'s early-out).
 ##
-## `half_length + outer_radius` for a segment its field is priced from (`datum()`); this does not
+## `half_length + heard_within()` for a segment its field is priced from (`datum()`); this does not
 ## grow with speed, so for the patrol car it is the reach of its field standing. A row whose field
-## is priced from its centre (`VehicleSpec.prices_its_field_from_its_centre()`, the fire engine) is a point,
-## whatever its body. Otherwise `outer_radius * Field.scale(e)`, `e` from whichever speed the row's
+## is priced from its centre (`FieldSpec.from_its_centre()`, the fire engine) is a point,
+## whatever its body. Otherwise `heard_within() * Field.scale(e)`, `e` from whichever speed the row's
 ## own motion uses: its chase speed for a pursuer, `speed` for an ordinary mobile row, zero (the
 ## plain disc) for anything standing still.
 ##
@@ -1922,9 +1877,9 @@ func as_warned_first() -> EventDef:
 func field_reach() -> float:
 	var priced_from := datum()
 	if priced_from != null and priced_from.kind == GroundShape.Kind.SEGMENT:
-		return priced_from.half_length + outer_radius
+		return priced_from.half_length + heard_within()
 	var moving_speed := pursuit.speed() if pursuit else (speed if mobile else 0.0)
-	return outer_radius * Field.scale(Field.eccentricity(moving_speed))
+	return heard_within() * Field.scale(Field.eccentricity(moving_speed))
 
 # ------------------------------------------------------------ what a row costs ---
 # The integral behind the cost table in `docs/EVENTS.md` and behind the assertion that nothing is
@@ -1938,7 +1893,7 @@ func field_reach() -> float:
 func walk_through_cost() -> float:
 	if _cost_cache == INF:
 		_cost_cache = (_mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_WALKING) \
-				* (outer_radius * 2.0 / Tuning.WALK_SPEED)
+				* (heard_within() * 2.0 / Tuning.WALK_SPEED)
 	return _cost_cache
 
 var _cost_cache := INF
@@ -1947,16 +1902,16 @@ var _cost_cache := INF
 ## the walking or the running comparison depends on: both integrate this line and differ only in how
 ## long the crossing takes.
 func _mean_emission_along_the_line() -> float:
-	var span := outer_radius * 2.0
+	var span := heard_within() * 2.0
 	var steps := 2000
 	var total := 0.0
 	for i in steps:
-		total += emission_at(Vector2(-outer_radius + span * (i + 0.5) / steps, 0.0))
+		total += emission_at(Vector2(-heard_within() + span * (i + 0.5) / steps, 0.0))
 	return total / steps
 
 ## What a row emits at a point, from its data alone.
 ##
-## One disc for almost everything: all of `intensity` is at the centre and falls away from there.
+## One disc for almost everything: all of its peak is at the centre and falls away from there.
 ##
 ## **That is false for a flock.** A flock is `flock_size` birds sharing the intensity between them
 ## and wheeling inside `flock_spread`, so the field is tighter and *quieter along a line through
@@ -1970,8 +1925,8 @@ func _mean_emission_along_the_line() -> float:
 func emission_at(at: Vector2) -> float:
 	if flock_size <= 0:
 		return emission_at_distance(at.length())
-	var share := intensity / float(flock_size)
-	var outer := maxf(inner_radius + 1.0, outer_radius - flock_spread)
+	var share := peak() / float(flock_size)
+	var outer := maxf(core_within() + 1.0, heard_within() - flock_spread)
 	var total := 0.0
 	for i in flock_size:
 		var angle := TAU * float(i) / float(flock_size)
@@ -1979,26 +1934,12 @@ func emission_at(at: Vector2) -> float:
 		total += bird_emission_at(bird.distance_to(at), share, outer)
 	return total
 
-## What a row emits at a distance from its centre: the field, and the core over the top of it where
-## there is one. **Every price in the game goes through here**: the cost table's integral, the
-## placement rules that read it, and an event's `ExcitementSource.contribution_at()`, which is what
-## the baby is actually charged.
-##
-## `at_intensity` is the peak the *caller* is carrying rather than the catalogued one (an
-## instance's `current_intensity()`, after the telegraph damping and the pulse envelope). **The core
-## is scaled by the same fraction**, so a two-part field damps as one thing. A row with no core is
-## `Field.falloff` on its own field, bit for bit: the fraction is applied to the peak handed in
-## rather than divided back out of it. `tests/test_events.gd` walks the whole catalogue at 16px
-## steps and holds that.
+## What a row emits at a distance from its centre (`FieldSpec.emission_at_distance()`): **every price in
+## the game goes through here**: the cost table's integral, the placement rules that read it, and an
+## event's `ExcitementSource.contribution_at()`, which is what the baby is actually charged.
+## `at_intensity` is the peak the *caller* is carrying rather than the catalogued one.
 func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> float:
-	var peak := intensity if at_intensity < 0.0 else at_intensity
-	var field := Field.falloff(at_distance, peak, inner_radius, outer_radius, falloff_power)
-	if core_intensity <= 0.0:
-		return field
-	var core := core_intensity
-	if at_intensity >= 0.0 and intensity > 0.0:
-		core *= at_intensity / intensity
-	return maxf(field, Field.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
+	return _field.emission_at_distance(at_distance, at_intensity)
 
 ## Whether the row is a stationary solid body the pavement does not pin to an edge
 ## (`pavement_side` `ANY`) and that does not span the street: the body a pavement band's middle is
@@ -2029,85 +1970,73 @@ func _is_an_unpinned_standing_body() -> bool:
 func stands_only_in_alleys() -> bool:
 	return placement.size() == 1 and placement[0] == GameEnums.TileType.ALLEY
 
-## Whether the row carries a field at all (`intensity` above zero): a silent body bills nothing
-## round it, so standing clear of it is standing clear of its body.
+## Whether the row carries a field at all (a peak above zero): a silent body bills nothing round it,
+## so standing clear of it is standing clear of its body.
 func has_a_field() -> bool:
-	return intensity > 0.0
+	return _field.has_a_field()
 
-## **The peak of its field at its centre**, before a phase damps it: `intensity`, swelled toward
-## `intensity_ramp` over its `duration` and beating with its pulse. `into_its_burst` is how long
-## its burst has been running (`EventInstance.current_intensity()` hands its notice's run less
-## its telegraph), which the swell is measured on; `age` is its own clock, which the pulse beats
-## on, since a pulse is the thing's own rhythm whether or not anybody has walked up to it.
-##
-## The pulse's reading is `0.25 + 0.75 × (0.5 − 0.5·cos(phase))`, so a pulsing row is never
-## entirely silent between beats; `beat` (`< 0.0` means "not given") replaces that reading with
-## a multiplier the caller worked out, the caret's mean over its horizon
-## (`EventInstance.caret_intensity_over_horizon()`). A row that neither swells nor pulses answers
-## its `intensity`.
+## **The peak of its field at its centre**, before a phase damps it (`FieldSpec.peak_through()`): its
+## peak, swelled toward the field's multiplier over its `duration` and beating with its pulse.
+## `into_its_burst` is how long its burst has been running (`EventInstance.current_intensity()` hands
+## its notice's run less its telegraph), which the swell is measured on; `age` is its own clock,
+## which the pulse beats on; `beat` (`< 0.0` means "not given") replaces the pulse's reading with a
+## multiplier the caller worked out (`EventInstance.caret_intensity_over_horizon()`).
 func peak_through(age: float, into_its_burst: float, beat := -1.0) -> float:
-	var value := intensity
-	if not is_equal_approx(intensity_ramp, 1.0) and duration > 0.0:
-		var through := clampf(into_its_burst / duration, 0.0, 1.0)
-		value *= lerpf(1.0, intensity_ramp, through)
-	if pulse_period > 0.0:
-		if beat >= 0.0:
-			value *= beat
-		else:
-			var phase := TAU * age / pulse_period
-			value *= 0.25 + 0.75 * (0.5 - 0.5 * cos(phase))
-	return value
+	return _field.peak_through(age, into_its_burst, duration, beat)
 
-## How many seconds one beat of its pulse lasts (`pulse_period`), or 0 for a row that does not
-## pulse.
+## How many seconds one beat of its pulse lasts, or 0 for a row that does not pulse.
 func pulses_every() -> float:
-	return pulse_period
+	return _field.pulses_every()
 
-## The peak rate of its field at its centre (`intensity`), before a swell, a pulse or a phase moves
-## it, or 0 for a row with no field: what the share it emits now is measured against.
+## The peak rate of its field at its centre, before a swell, a pulse or a phase moves it, or 0 for a
+## row with no field: what the share it emits now is measured against.
 func peak() -> float:
-	return intensity
+	return _field.peak()
+
+## The rate of its field's louder core, or 0 for a row with none.
+func core_rate() -> float:
+	return _field.core_rate()
+
+## Where its field's louder core has fallen to nothing, or 0 for a row with none.
+func core_reach() -> float:
+	return _field.core_reach()
+
+## The exponent on the drop of its field between its two radii.
+func falloff() -> float:
+	return _field.falloff()
 
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
 ## body gives it (`field_reach()`): its `shape`, or none — a point at its centre — for a row whose
-## field is priced from its centre (`VehicleSpec.prices_its_field_from_its_centre()`, the fire engine) or that
-## has no shape.
+## field is priced from its centre (`FieldSpec.from_its_centre()`, the fire engine) or that has no
+## shape.
 func datum() -> GroundShape:
-	return null if vehicle and vehicle.prices_its_field_from_its_centre() else shape
+	return null if _field.is_priced_from_its_centre() else shape
 
-## Whether what its field lands on her ignores every wall between (`from_outside`), where every
-## other field stops at one: the explosion outside the building.
+## Whether what its field lands on her ignores every wall between, where every other field stops at
+## one: the explosion outside the building.
 func passes_walls() -> bool:
-	return from_outside
+	return _field.passes_walls()
 
 ## What one of its flock's birds emits at `at_distance` from the bird, carrying `share` of the
-## peak over a field that ends at `outer`: its own core edge (`inner_radius`) and its own drop-off
-## (`falloff_power`). Each bird is its own point, so a flock is priced as the sum of these, by the
-## row (`emission_at()`) and by its live event alike.
+## peak over a field that ends at `outer` (`FieldSpec.bird_emission_at()`). Each bird is its own
+## point, so a flock is priced as the sum of these, by the row (`emission_at()`) and by its live
+## event alike.
 func bird_emission_at(at_distance: float, share: float, outer: float) -> float:
-	return Field.falloff(at_distance, share, inner_radius, outer, falloff_power)
+	return _field.bird_emission_at(at_distance, share, outer)
 
 ## A straight-line distance from a live instance's node beyond which its field is exactly zero,
 ## whatever its intensity, speed, heading or the way its shape lies, so an event's source
-## (`EventExcitement._field()`) can answer zero for a far source without working the field out.
-##
-## **Why it is safe.** `emission_at_distance()` is zero once the field distance it is handed is past
-## every radius it reads: `inner_radius`, `outer_radius` and, with a core, `core_radius`. The field
-## distance is never shorter than the straight distance less the body's own `shape.reach()`, shrunk
-## by at most `1 − Tuning.FIELD_ECCENTRICITY_MAX` for a moving source's forward stretch
-## (`GroundShape.eccentric_distance()`). The extra pixel swallows the last bit a rotation can round.
-## A flock and a guard walking away from his barrier centre their fields elsewhere, so the instance
-## does not ask this for them.
+## (`EventExcitement._field()`) can answer zero for a far source without working the field out: the
+## field's own (`FieldSpec.silent_beyond()`, worked out once) and the body's reach round it. A flock
+## and a guard walking away from his barrier centre their fields elsewhere, so the instance does not
+## ask this for them.
 ##
 ## **Not `field_reach()`**, which is the field's own extent for the planners; this is the looser
-## figure nothing can be past and still charge her. Worked out on every call, since a row's radii
-## and shape are plain fields a rig may change after an instance has read them.
+## figure nothing can be past and still charge her. The body's reach is asked on every call, since
+## its shape is a class with public fields a rig may change after an instance has read them.
 func silent_beyond() -> float:
-	var level := maxf(inner_radius, outer_radius)
-	if core_intensity > 0.0:
-		level = maxf(level, core_radius)
 	var body := shape.reach() if shape != null else 0.0
-	return body + (level + 1.0) / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
+	return body + _field.silent_beyond()
 
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to ask
 ## about: `EventScheduler.role_for()` decides a role before any tile is chosen. Everything a
@@ -2155,12 +2084,12 @@ func reaches_the_far_lane() -> bool:
 ## than `Tuning.EXCITEMENT_DECAY_WALKING` nets the meter *down*, so it is ground a route does not
 ## have to be planned around and the placement rules in `EventScheduler` have no business refusing a
 ## placement over it. The disc is therefore where the emission crosses
-## that rate, not `outer_radius`, where it stops reaching at all; the same distinction
+## that rate, not `heard_within()`, where it stops reaching at all; the same distinction
 ## `DawnSpoilers._denial_radius()` makes about calm ground, at a different rate and with a
 ## different zero. A row quieter than the rate everywhere denies **nothing** here, where it still
 ## denies its own inner disc to a pram trying to settle.
 ##
-## **A lethal row keeps its whole `outer_radius`**: nothing about being quiet at the rim makes
+## **A lethal row keeps its whole `heard_within()`**: nothing about being quiet at the rim makes
 ## walking into it survivable.
 ##
 ## The plain disc rather than `field_reach()`'s forward-stretched ellipse, which differs only for a
@@ -2169,29 +2098,13 @@ func reaches_the_far_lane() -> bool:
 ## and `EventPlan.counts_against_the_line()` is done with it before this is asked.
 func line_reach() -> float:
 	if hard_fail:
-		return maxf(outer_radius, obstructs_radius)
+		return maxf(heard_within(), obstructs_radius)
 	return maxf(reach_above(Tuning.EXCITEMENT_DECAY_WALKING), obstructs_radius)
 
-## How far from the centre a row still emits more than `rate`, over both parts of its field: the
-## field itself, and the core where it has one (a cored row's loud part can outlive its quiet one).
+## How far from the centre a row still emits more than `rate`, over both parts of its field
+## (`FieldSpec.reach_above()`): the field itself, and the core where it has one.
 func reach_above(rate: float) -> float:
-	return maxf(_band_crossing(intensity, inner_radius, outer_radius, rate,
-			falloff_power),
-			_band_crossing(core_intensity, inner_radius, core_radius, rate,
-			falloff_power))
-
-## Where one falloff band crosses `rate`, or zero if it is never above it: `Field.falloff`'s
-## `1 − t^power` inverted for the `t` at which it equals `rate`, with the row's own `falloff_power`.
-static func _band_crossing(intensity: float, inner: float, outer: float, rate: float,
-		power: float) -> float:
-	if intensity <= rate or outer <= inner:
-		return 0.0
-	var left := 1.0 - rate / intensity
-		# `sqrt` at the default rather than `pow(x, 0.5)`, as `Field.falloff` writes its own default
-		# out: the two may differ in the last bit, and every catalogued radius was measured here.
-	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
-	return inner + t * (outer - inner)
-
+	return _field.reach_above(rate)
 
 # --------------------------------------------------------- what a caller asks ---
 # The questions a caller outside the events asks a row, each answered from the row's own settings,
@@ -2213,15 +2126,14 @@ func announces_its_coming(walk_speed: float) -> bool:
 func approach_speed() -> float:
 	return chase_speed() if pursuit != null else speed
 
-## How far from its centre its field reaches her at all (`outer_radius`): where the badge measures
-## the gap to.
+## How far from its centre its field reaches her at all: where the badge measures the gap to.
 func heard_within() -> float:
-	return outer_radius
+	return _field.heard_within()
 
-## How far from its centre its core reaches (`inner_radius`): the span a dog walker's dog is led
-## ahead at is a share of it.
+## How far from its centre its core reaches: the span a dog walker's dog is led ahead at is a share
+## of it.
 func core_within() -> float:
-	return inner_radius
+	return _field.core_within()
 
 ## Whether walking into its reach ends her day (`hard_fail`): a place that ends the day. A car's
 ## strike is its driving's (`EventCarDriving`), not this.
@@ -2335,10 +2247,10 @@ func stands_as_a_fixed_body() -> bool:
 	return ground_shape() != null and has_a_body() and not moves() and not detains_her() \
 			and not is_a_boom()
 
-## Whether several of it count as the strongest one only (`barrier_structure`): the pieces of a
-## street being held, whose fields do not add up.
+## Whether several of it count as the strongest one only: the pieces of a street being held, whose
+## fields do not add up (`FieldSpec.as_one_barrier()`).
 func counts_as_one_barrier() -> bool:
-	return barrier_structure
+	return _field.counts_as_one_barrier()
 
 ## How long its telegraph lasts, in seconds (`telegraph_time`).
 func telegraphs_for() -> float:

@@ -107,9 +107,7 @@ static func _frames_for(t: TestRunner, clock: HaloRig.FrameClock, seconds: float
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
 	def.id = id
-	def.intensity = intensity
-	def.inner_radius = inner
-	def.outer_radius = outer
+	def.use_field(FieldSpec.of(intensity, inner, outer))
 	# No telegraph damping to reason about: `is_telegraphing()` is `age < telegraph_time`, and
 	# age starts at 0.0, so a zero telegraph is never true.
 	def.telegraph_time = 0.0

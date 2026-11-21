@@ -287,7 +287,7 @@ func where_it_stands_now() -> Vector2:
 	return _standing.at() if _standing.is_there() else body_at()
 
 ## Whether this event's field touches `rect` at all: grown by `field_reach()` rather than
-## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
+## `outer radius` alone, so a segment's own `half_length` is not dropped from the streaming
 ## question the way it would be from a disc's.
 func reaches(rect: Rect2) -> bool:
 	var grown := rect.grow(_def.field_reach())
@@ -458,7 +458,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 	return false
 
 ## Whether the clearance rule is about this placement: a lethal event with nothing else inside
-## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field
+## its whole field — `EventDef.field_reach()`, not `outer radius` alone, since a segment's field
 ## reaches `half_length` further along its own spine than a disc's would.
 ##
 ## **The rule is now stated over the ground she is being guided along, and off it there is an

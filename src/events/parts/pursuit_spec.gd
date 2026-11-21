@@ -81,7 +81,7 @@ var _walk_speed := 0.0
 var _lunge_reach := 0.0
 
 ## How close the man has to get to catch her when that is not the field's own core, in px, or 0
-## for the row's `inner_radius`: the roadblock's guard catches at a man's reach, not at his band's
+## for the row's `inner radius`: the roadblock's guard catches at a man's reach, not at his band's
 ## core. `EventDef.lethal_reach()` reads it.
 var _catch_reach := 0.0
 

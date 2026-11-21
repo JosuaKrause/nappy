@@ -131,9 +131,10 @@ func _begin_the_projection(velocity: Vector2) -> void:
 	_axis = _event.solid_axis()
 	_direct = not _flock and _live_intensity >= 0.0 and velocity != Vector2.INF
 
-## Every input the samples read, by value, mutable definition and shape fields included: age alone
-## cannot cover a retirement, silence, external movement or changed player state, and a rig may
-## change its row's settings in place, so they are copied from the row rather than asked of it.
+## Every input the samples read: age alone cannot cover a retirement, silence, external movement or
+## changed player state. The row's field is held by reference, since a field value never changes
+## once it is made (a different row holds a different value), and the shape's three values are
+## copied, since `GroundShape` is a class with public fields a rig may change in place.
 ## Empty for a flock, whose every bird has its own mutable geometry and is sampled afresh.
 ##
 ## Overrides ExcitementSource._projection_key.
@@ -142,8 +143,7 @@ func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 		return []
 	var row := _row
 	return [_from, player_position, player_velocity, velocity,
-		_live_intensity, row.intensity, row.inner_radius, row.outer_radius,
-		row.falloff_power, row.core_intensity, row.core_radius, _axis,
+		_live_intensity, row.field(), _axis,
 		row.shape.kind if row.shape else -1,
 		row.shape.half_length if row.shape else 0.0,
 		row.shape.half_extents if row.shape else Vector2.ZERO]

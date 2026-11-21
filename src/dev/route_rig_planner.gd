@@ -877,7 +877,7 @@ func crossed() -> Dictionary:
 ## `to_tile` is dropped from the hazards, `keep_off` and `costs` before they count — the fairness
 ## contract that guards a mark (`docs/DECISIONS.md`, "The guard robber is placed inside a
 ## building": the least a guarded mark's own contact point is ever placed from its guard is
-## `alley_robbery.inner_radius + ContactPoint.REACH`, 62px) already keeps the exact point she is
+## the field's inner radius (`alley_robbery`'s `core_within()`) `+ ContactPoint.REACH`, 62px) already keeps the exact point she is
 ## walking to outside the true kill radius; `_HAZARD_MARGIN`'s own slack can still read the
 ## target's own tile as blocked without this, which would report a guarded mark unreachable rather
 ## than merely guarded, and a mark beside a parked van is still a mark, since

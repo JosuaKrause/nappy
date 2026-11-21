@@ -89,7 +89,7 @@ Sources:
 
 | Source | Contribution |
 | --- | --- |
-| Proximity to an active event | `intensity × falloff(distance)` per second |
+| Proximity to an active event | `peak × falloff(distance)` per second |
 | Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `30` |
 | Proximity to a passing car | `5.4 × falloff(distance)`, inner `38`, outer `104` |
 | Running | `+ (speed − walk_speed) / (run_speed − walk_speed) × 14.0` per second |
@@ -1008,16 +1008,16 @@ is the route decision the whole game is about, and a sparse city cannot ask it.
 
 ## Excitement falloff
 
-Each active event has an `intensity`, an `inner_radius` and an `outer_radius`.
+Each active event's field has a peak, an inner radius (`inner` below) and an outer radius (`outer` below).
 
 ```
-contribution(d) = intensity                              , d <= inner_radius
-                = intensity × (1 − t^power)               , inner < d < outer
-                = 0                                      , d >= outer_radius
-   where t = (d − inner_radius) / (outer_radius − inner_radius)
+contribution(d) = peak                                   , d <= inner
+                = peak × (1 − t^power)               , inner < d < outer
+                = 0                                      , d >= outer
+   where t = (d − inner) / (outer − inner)
 ```
 
-`power` is `EventDef.falloff_power` and **every row in the catalogue is at its 2.0 default**, which
+`power` is the field's falloff power (`FieldSpec.falloff()`) and **every row in the catalogue is at its 2.0 default**, which
 is the curve the rest of this section is about. It exists so that a row needing a shape its two
 radii cannot give — a fast drop with a long tail, or a plateau with a cliff at the end of it — is a
 decision that row takes rather than a change to the one function thirty other rows share.
@@ -1025,7 +1025,7 @@ decision that row takes rather than a change to the one function thirty other ro
 **The shape has a shoulder on it, and that is a design decision rather than an implementation
 detail.** The meter has to go substantially up from some way off rather than waiting for contact.
 
-**One row has a second, louder part close in.** `EventDef.core_intensity` and `core_radius` put the
+**One row has a second, louder part close in.** The field's core (`FieldSpec.with_a_core(rate, reach)`) puts the
 same curve over a shorter band and the row emits the larger of the two at every distance, so the
 leaf blower is a wall inside the pavement it stands on and a busker beyond it. Both numbers are
 zero everywhere else. It is one field rather than two: the same
@@ -1034,16 +1034,16 @@ instance's telegraph and pulse damp the core by the fraction they damp the field
 
 **`d` is a distance to a field, not always to a point.** The field is the Minkowski sum of the
 object's own `GroundShape` and a kernel — a disc while it stands still, an ellipse while it
-moves — so `inner_radius`/`outer_radius` mean distance *from that shape*, not from a fixed centre.
+moves — so the inner and outer radii mean distance *from that shape*, not from a fixed centre.
 A point body's field is exactly the circle above; a segment's (a café frontage, a barricade) is a
 capsule about its own spine, `GroundShape.distance_to_spine()`. A moving emitter is a point either
 way — nobody builds the general capsule-and-ellipse sum, because the one emitting segment that
 moves, the patrol car, has its whole body inside its own field's core — and its field is
 `GroundShape.eccentric_distance()`: a conic with the emitter at one
 focus rather than at the centre, eccentricity from speed (`Field.eccentricity()`). **The
-resting disc's own width is what the ellipse keeps**: it holds exactly `outer_radius` abeam of a
-moving thing whatever its speed, reaches `outer_radius · Field.scale(e)` ahead of it — more
-than a disc's `outer_radius`, since motion only ever adds reach — and less far, `outer_radius /
+resting disc's own width is what the ellipse keeps**: it holds exactly the outer radius abeam of a
+moving thing whatever its speed, reaches `outer radius · Field.scale(e)` ahead of it — more
+than a disc's outer radius, since motion only ever adds reach — and less far, `outer radius /
 (1+e)`, behind. See docs/EVENTS.md, "The emission model", for the full derivation and the debug
 view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
 
@@ -1169,7 +1169,7 @@ after the first second.
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`PursuitSpec.standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach()`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
+  PURSUIT_REACTION` (the reach is the inner radius unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach()`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
@@ -1379,8 +1379,8 @@ telegraph_time × walk_speed >= escape_distance × margin
 where `margin` is 2 for `hard_fail` events, and
 
 ```
-escape_distance = outer_radius − inner_radius     for anything at or below walking pace
-                = outer_radius                    for anything FASTER than walking
+escape_distance = outer − inner     for anything at or below walking pace
+                = outer                    for anything FASTER than walking
 ```
 
 The split matters for a row that is in the world while it telegraphs, not a row without a badge of

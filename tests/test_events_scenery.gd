@@ -89,7 +89,7 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 ##   times, and it is checked during the burst rather than the departure — a flock that only comes
 ##   alive on its way out is the original bug with a longer fuse.
 ## - **They stay inside `flock_spread`.** The telegraph fairness contract is stated over
-##   `outer_radius` *from the instance*, so eleven moving emitters are only legal while their union
+##   outer radius *from the instance*, so eleven moving emitters are only legal while their union
 ##   is inside the disc `validate_event` checked. This is the assertion that says so.
 ## - **The middle costs and the rim does not**, which is the whole reason a flock is worth eleven
 ##   sources: the price of one depends on whether you went through it or round it.

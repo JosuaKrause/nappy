@@ -134,7 +134,7 @@ A task is one day: she touches the chalk mark, the task is announced there and t
 performed the same day. Every task day starts with a mark. Touching the mark is instant: there is
 no key to hold, and no standing still to pay for. So is every task's own contact — but day 6's
 note is the one exception to *where* the touch is measured from, not to *whether* it is instant:
-it completes the moment she reaches the man's own `inner_radius` (his full-strength field),
+it completes the moment she reaches the man's own inner radius (his full-strength field),
 rather than the ordinary, tighter reach every other contact uses. He does not leave the instant
 it changes hands: he stays and keeps shouting for a couple of seconds first, still charging her
 the whole time, so walking away from him afterward costs about what an ordinary pass past him

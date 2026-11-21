@@ -224,14 +224,14 @@ func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 
 ## M205, "the note costs, and the ordinary day" -- fails before the fix: the old code completed
 ## the instant `ContactPoint.REACH` (36px) was reached, which sits inside a rider's 45px
-## `inner_radius`, so a note handed over on the way past landed only the last few pixels of his
+## inner radius, so a note handed over on the way past landed only the last few pixels of his
 ## full-strength field before he left. A fork proposed fixing that with a dwell -- standing
-## inside `inner_radius` for a couple of seconds before it completes -- and the player rejected
+## inside inner radius for a couple of seconds before it completes -- and the player rejected
 ## it outright: "the player should stand for 2.5s? no way. the moment the player touches the
 ## inner circle it counts as delivered." So this pins the simpler fix instead: day 6's note
-## completes on the very first tick she is within his `inner_radius`, even short of `REACH`,
+## completes on the very first tick she is within his inner radius, even short of `REACH`,
 ## while an ordinary step at the identical distance does not complete at all, and stepping short
-## of `inner_radius` altogether does not complete either.
+## of inner radius altogether does not complete either.
 func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRunner) -> void:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -254,7 +254,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 			"the case this test distinguishes -- REACH sits inside inner_radius -- or the checks " +
 			"below prove nothing")
 
-	# Between REACH (36px) and inner_radius (45px): outside the ordinary REACH check, but inside
+	# Between REACH (36px) and inner radius (45px): outside the ordinary REACH check, but inside
 	# the wider circle the note actually uses.
 	var between := (ContactPoint.REACH + instance.core_within()) * 0.5
 	player.global_position = Vector2.RIGHT * between
@@ -282,7 +282,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 			"the same distance does not complete an ordinary step's REACH check")
 	ordinary_contact.free()
 
-	# Outside inner_radius altogether: too far for the note either.
+	# Outside inner radius altogether: too far for the note either.
 	player.global_position = Vector2.RIGHT * (instance.core_within() + 5.0)
 	var outside_contact := ContactPoint.new()
 	outside_contact.ride(step, instance, Vector2.ZERO)
