@@ -1000,7 +1000,7 @@ func _test_a_scripted_row_takes_a_location_of_its_own(t: TestRunner) -> void:
 		var events := dawn.events()
 		var map := _map()
 		for plan in events.placements():
-			if plan.row().kind != GameEnums.EventKind.SCRIPTED or plan.row().role == EventDef.Role.MAST \
+			if plan.row().kind != GameEnums.EventKind.SCRIPTED or plan.row().is_a_mast() \
 					or not plan.is_placed() or plan.is_a_fixed_part():
 				continue
 			asked += 1
