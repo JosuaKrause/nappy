@@ -23,11 +23,12 @@ owed follow-up of the record minty-quail-cozy-stork; not yet measured. Nothing a
 live event's public `is_finished` and `is_leaving` (the design has it ask `is_gone()` and `is_on_its_way_out()`),
 since converting streaming, their last reader outside `event_instance.gd`, would leave fields only the suites read,
 which `tools/check_test_only_members.py` fails; the suites' reads are row 4a's. The handle keeps a fifth answer,
-`field_reaches()`, which no caller under `src/` asks, so the telemetry comments naming it stay true. The escape
+`field_reaches()`, which the run log's watch of the events she meets asks every tick
+(`TelemetryObserver._watch_met_events()`). The escape
 roadblock rig's `close()` stands the plan out of the world and leaves "has been in the world" true, where it reset the
 field.
 
 **Row 3b is built.** With the records minty-quail-curly-penguin, -brisk-magpie, -lilac-trout, -pebbly-toad, -tall-yak,
--tall-hawk, -spry-trout, -spotted-chipmunk, -amber-squirrel and -tawny-lynx, the event manager's parts ask through
-methods; the live event's age (3b-9) is its own pull request. polite-tapir's `standing-layer-breaks.md` loses the
+-tall-hawk, -spry-trout, -spotted-chipmunk, -amber-squirrel, -tawny-lynx and -gentle-stork, the event manager's parts
+ask through methods. polite-tapir's `standing-layer-breaks.md` loses the
 dawn-planning group, its one use gone.

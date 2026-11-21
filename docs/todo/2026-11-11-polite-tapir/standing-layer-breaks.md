@@ -27,9 +27,6 @@ review; a builder runs it again):
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
-- The plan's hold on its live event goes with row 3b of minty-quail's `event-interface.md`, whose
-  streaming keeps that state per plan; the geometry dawn planning read is `BodyStance`'s, a model
-  class (the record minty-quail-azure-ferret).
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
   that finishes this item lists what is left:* **the rest** ends as follows. `interior_scene.gd`'s `Stroller` goes with the
   building's pass; `GameSave` and
