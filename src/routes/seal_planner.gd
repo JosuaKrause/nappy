@@ -555,8 +555,7 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## `road_index` from — and a crossing's two sidewalk bodies keep the row's own default two guards
 ## each (`EventDef.guard_sides`) while the road body between them draws none, so a crossing posts
 ## four rather than six. The choice is carried on the placement: `_no_wall_guards` duplicates the
-## shared def once more, the same manual carry `sealed_variant` already needs for `shape` and
-## the body's pieces, with `guard_sides` emptied — `_draw_roadblock()` never has to guess a body's
+## shared def once more (a copy shares the row's body), with `guard_sides` emptied — `_draw_roadblock()` never has to guess a body's
 ## position back out of where it happens to stand.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventPlan]:

@@ -135,16 +135,18 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 	t.check(deep_copies.is_empty(),
 			"no game code deep-copies a resource (a row's body would be lost): %s" % [deep_copies])
 
-## **A body that says it is solid with no shape is refused**: the old "obstructs but its shape does
-## not reach as far" check is unwritable now (a solid body's reach is its shape's), and this is the
-## one fault of that kind a body can still be written with, because `BodySpec.solid()` takes a
-## shape a caller may hand as null.
+## **A body that says it is solid with no shape is named by the body**: the old "obstructs but its
+## shape does not reach as far" check is unwritable now (a solid body's reach is its shape's), and
+## this is the one fault of that kind a body can still be written with, because `BodySpec.solid()`
+## takes a shape a caller may hand as null. `EventDef.validate()` refuses it on this answer, but
+## it reports a fault with an engine error, which fails the run, so the suite asks the body.
 func _test_a_solid_body_with_no_shape_is_refused(t: TestRunner) -> void:
 	var bare := EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
 	bare.look = EventDef.Look.NONE
 	t.check(bare.validate(), "the row the faulty one is made from is valid")
+	t.check(not bare.body().is_solid_with_no_shape(), "and its body does not say it is solid with no shape")
 	bare.use_body(BodySpec.solid(null).walked_round().parked())
-	t.check(not bare.validate(), "a row whose body says it is solid with no shape is refused")
+	t.check(bare.body().is_solid_with_no_shape(), "a body built solid with no shape says so, which validate() refuses")
 
 ## Appends the files under `folder` that call `duplicate(true)` or `duplicate_deep(`.
 func _find_deep_copies(folder: String, into: Array[String]) -> void:
