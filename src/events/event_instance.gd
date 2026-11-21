@@ -349,7 +349,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	# from the start; it sweeps nothing until he is after her (`EventPursuit`).
 	if definition.walks_round_buildings():
 		_chase_way = _navigator.way_to(_mover, _sight)
-	var start := BodyStance.stands_at(_map, definition, route[0] if route.size() > 0 else at)
+	var start := BodyStance.stands_at(_map, definition, at)
 	position = start
 	_heading = face
 	look = EventLooks.for_row(self, definition, _surroundings.drawer(), not _surroundings.draws(),

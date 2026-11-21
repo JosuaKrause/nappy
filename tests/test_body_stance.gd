@@ -1,6 +1,7 @@
 extends RefCounted
-## `BodyStance.pieces_at()`: where each piece of a body built at a point stands, which every reader of
-## a planned body's layout (the walk's ground, the map's record, the route rig) takes from it.
+## `BodyStance`: where a body stands (`stands_at()`, `planned_body_at()`, the plan's answer) and where each piece of
+## a body built at a point stands (`pieces_at()`), which every reader of a planned body's layout (the walk's
+## ground, the map's record, the route rig) takes from it.
 ##
 ## Rows are the catalogue's own, built as they are (data), except check 4's, a bare row with a shape and no body. The map is a stand-in per street axis
 ## (`tests/east_west_street.gd` and the north-south twin below), so no city is generated and the
@@ -52,6 +53,7 @@ func run(t: TestRunner) -> void:
 	_test_the_crash_leaves_the_ground_between_its_cars_open(t)
 	_test_a_stood_point_is_stood_where_it_is(t)
 	_test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t)
+	_test_a_planned_body_stands_where_its_plan_was_placed(t)
 
 func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
@@ -203,3 +205,12 @@ func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRu
 					differ += 1
 	t.check(asked > 0 and differ == 0,
 			"a stood body's pieces are its build point's: %d of %d differ" % [differ, asked])
+
+func _test_a_planned_body_stands_where_its_plan_was_placed(t: TestRunner) -> void:
+	var map := SidewalkStreets.new(false)
+	var at := map.tile_to_world(Vector2i(20, 12))
+	for id: String in ["market_stall", "roadblock", "car_accident"]:
+		var row := EventCatalogue.by_id(id)
+		var plan := EventPlan.new(row, at)
+		t.check(BodyStance.planned_body_at(map, plan) == BodyStance.stands_at(map, row, at),
+				"%s's planned body stands where its row stands a body built at the plan's point" % id)
