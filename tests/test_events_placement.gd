@@ -1055,7 +1055,7 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 			% [on_corridor, off_corridor])
 
 ## What a row denies along a line (`EventDef.line_reach()`): a lethal row keeps its whole
-## `outer_radius`, since nothing about being quiet at the rim makes walking into it survivable, and
+## outer radius, since nothing about being quiet at the rim makes walking into it survivable, and
 ## no row reaches less than its own body.
 func _test_a_lethal_rows_line_reach_is_its_whole_field(t: TestRunner) -> void:
 	var lethal := 0

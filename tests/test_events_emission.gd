@@ -73,7 +73,7 @@ func _test_pulse_envelope(t: TestRunner) -> void:
 	instance.free()
 
 ## **A two-part field is two parts in the meter, not only in the cost table.** The leaf blower is a
-## wall close in and a busker further out (`EventDef.core_intensity` / `core_radius`), and the thing
+## wall close in and a busker further out (the field's core rate / core reach), and the thing
 ## that makes that a *field* rather than a price is that an instance charges for it — walked past,
 ## against the row the outer half was copied from.
 ##
@@ -83,9 +83,9 @@ func _test_pulse_envelope(t: TestRunner) -> void:
 func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	var leaf := EventCatalogue.by_id("leaf_blower")
 	var busker := EventCatalogue.by_id("busker")
-	t.check(leaf.core_intensity > 0.0 and leaf.core_radius > 0.0,
+	t.check(leaf.field().core_rate() > 0.0 and leaf.field().core_reach() > 0.0,
 			"the leaf blower carries a core")
-	t.check(busker.core_intensity == 0.0,
+	t.check(busker.field().core_rate() == 0.0,
 			"the busker is one field, which is what makes it the row to compare against")
 	t.check(is_equal_approx(leaf.peak(), busker.peak())
 			and is_equal_approx(leaf.heard_within(), busker.heard_within()),
@@ -95,7 +95,7 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	var player := _instance(t, busker)
 	var near := Vector2(32.0, 0.0)
 	var far := Vector2(100.0, 0.0)
-	t.check(near.length() < leaf.core_radius and far.length() > leaf.core_radius,
+	t.check(near.length() < leaf.field().core_reach() and far.length() > leaf.field().core_reach(),
 			"32px is inside the core and 100px is outside it")
 
 	var blower_near := blower.field_at(near, leaf.peak(), Vector2.INF)
@@ -103,7 +103,7 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	t.check(blower_near > busker_near + 1.0,
 			"a leaf blower charges more than a busker inside its core (%.2f/s against %.2f/s)"
 			% [blower_near, busker_near])
-	t.close_to(blower_near, leaf.core_intensity,
+	t.close_to(blower_near, leaf.field().core_rate(),
 			"and what it charges there is the core's own rate")
 	t.close_to(blower.field_at(far, leaf.peak(), Vector2.INF),
 			player.field_at(far, busker.peak(), Vector2.INF),
@@ -116,13 +116,13 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	t.check(blower.is_telegraphing(), "an instance starts in its telegraph")
 	var fraction := blower.current_intensity() / leaf.peak()
 	t.check(fraction < 1.0, "and is emitting less than its catalogued peak while it does")
-	t.close_to(blower.source().contribution_at(near), leaf.core_intensity * fraction,
+	t.close_to(blower.source().contribution_at(near), leaf.field().core_rate() * fraction,
 			"the phase damps the core by exactly the fraction it damps the field by")
 	blower.free()
 	player.free()
 
 ## M174 item 3: PLAYTEST-115 overturned the walk-beside target above (standing still at
-## `inner_radius`) for **the pass** — she and the row moving different directions, at the fixed
+## inner radius) for **the pass** — she and the row moving different directions, at the fixed
 ## lateral offsets an ordinary sidewalk actually allows. *(PLAYTEST-115: "what matters for the
 ## dogs is walking past them. and it shouldn't be free"; "walking past ... is what matters. in my
 ## playthrough I walked next to him without effect".)* `M174Pass.pass_net_averaged()` —
@@ -236,7 +236,7 @@ func _test_no_field_reaches_past_silent_beyond(t: TestRunner) -> void:
 		if def.is_a_flock():
 			continue
 		rows += 1
-		var peak := maxf(maxf(def.peak(), def.core_intensity), 1.0) * 2.0
+		var peak := maxf(maxf(def.peak(), def.field().core_rate()), 1.0) * 2.0
 		var past := def.silent_beyond() + 0.01
 		for facing: Vector2 in [Vector2.RIGHT, Vector2(1.0, 1.0).normalized()]:
 			var instance := EventInstance.new()
@@ -269,10 +269,7 @@ func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 	for shape: GroundShape in [GroundShape.segment(500.0, 10.0),
 			GroundShape.rect(Vector2(400.0, 300.0))]:
 		var long_body: EventDef = EventCatalogue.by_id("scaffolding").duplicate()
-		long_body.intensity = 10.0
-		long_body.inner_radius = 20.0
-		long_body.outer_radius = 60.0
-		long_body.core_intensity = 0.0
+		long_body.use_field(FieldSpec.of(10.0, 20.0, 60.0))
 		long_body.solid(shape)
 		rows.append(long_body)
 	var node := Vector2(300.0, -200.0)

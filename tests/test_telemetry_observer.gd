@@ -534,7 +534,7 @@ func _test_a_lost_day_restarts_the_trail(t: TestRunner) -> void:
 
 ## The dusk map's whole reason to exist: `has_been_in_the_world()` is true of a plan the moment
 ## `EventManager.stream_around` loads it at `Tuning.EVENT_STREAM_RADIUS` (900px), which is more
-## than twice the reach (`def.outer_radius`, typically 150px) of a row that has not telegraphed
+## than twice the reach (`def.heard_within()`, typically 150px) of a row that has not telegraphed
 ## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs
 ## her something ever reach her — or a day that met eight of forty events would read as forty.
 func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t: TestRunner) -> void:

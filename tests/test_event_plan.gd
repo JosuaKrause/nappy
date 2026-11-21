@@ -67,14 +67,13 @@ func _test_what_stands_clear_of_it(t: TestRunner) -> void:
 	t.check(nothing.clearance(her) == 0.0, "an event with no body and no hard fail asks no clearance")
 	var body_def := EventDef.new()
 	body_def.obstructs_radius = 40.0
-	body_def.intensity = 0.0
+	body_def.use_field(body_def.field().at_peak(0.0))
 	var body := EventPlan.new(body_def, Vector2(320, 320))
 	t.check(is_equal_approx(body.clearance(her), 54.0),
 			"a silent body asks its own radius and her whole shape (%.0fpx)" % body.clearance(her))
 	var field_def := EventDef.new()
 	field_def.obstructs_radius = 40.0
-	field_def.intensity = 10.0
-	field_def.outer_radius = 200.0
+	field_def.use_field(field_def.field().at_peak(10.0).reaching(200.0))
 	var field := EventPlan.new(field_def, Vector2(320, 320))
 	t.check(field.clearance(her) >= field_def.field_reach() and field.clearance(her) > 54.0,
 			"a body with a field asks its field (%.0fpx)" % field.clearance(her))

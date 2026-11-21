@@ -40,9 +40,7 @@ class Fixed extends ExcitementSources:
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
 	def.id = id
-	def.intensity = intensity
-	def.inner_radius = inner
-	def.outer_radius = outer
+	def.use_field(FieldSpec.of(intensity, inner, outer))
 	def.telegraph_time = 0.0
 	return def
 
@@ -97,7 +95,7 @@ func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var first := source.contribution_at(at)
 	t.check(first > 0.0 and first == instance.field_at(at, -1.0, Vector2.INF),
 			"an event's rate on open ground is its field (%.2f/s)" % first)
-	instance.row().intensity = 40.0
+	instance.row().use_field(instance.row().field().at_peak(40.0))
 	t.check(source.contribution_at(at) == first,
 			"asked again at the same age and point, the cached rate answers")
 	source.invalidate_contribution()

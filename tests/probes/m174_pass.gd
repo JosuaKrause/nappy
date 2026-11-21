@@ -24,14 +24,14 @@ extends RefCounted
 ## whichever way a paced row happens to be walking when the sample starts.
 ##
 ## **The window.** She starts and ends `LEAD` px either side of the instance in the direction of
-## travel — comfortably past any `outer_radius` in the catalogue plus the ground either body
-## covers during the crossing — and every tick inside `outer_radius` of the instance's *live*
+## travel — comfortably past any outer radius in the catalogue plus the ground either body
+## covers during the crossing — and every tick inside outer radius of the instance's *live*
 ## position (not a fixed line: a paced or reversing row moves under her the whole time) adds its
 ## `contribution_at()` times `delta` times sleep sensitivity to the incoming side, and the given
 ## decay rate times `delta` to the other. Net is incoming minus decay, summed over the whole pass.
 ##
 ## **Averaged over the pulse.** `PHASE_SAMPLES` starting points, evenly spread over one
-## `pulse_period`, each pre-ticks the instance that far (moving it for real, nobody watching) before
+## pulse period, each pre-ticks the instance that far (moving it for real, nobody watching) before
 ## her line is drawn — the same "walked up on him at a different moment of his breath" idea
 ## `m174_walk_beside.gd`'s closed-form 0.625 mean stands in for there; here the pulse interacts
 ## with real movement (how far he has paced, which way he is facing) so it is walked rather than
@@ -63,7 +63,7 @@ const STEP := 1.0 / 60.0
 ## so 0 is always geometrically walkable for all three.
 const OFFSETS: Array[float] = [0.0, 20.0, 40.0, 80.0, 120.0]
 const PHASE_SAMPLES := 8
-## Well past the widest `outer_radius` in the catalogue (`car_accident`'s field aside, which is
+## Well past the widest outer radius in the catalogue (`car_accident`'s field aside, which is
 ## not one of these three) plus a margin for how far either body moves during the crossing.
 const LEAD := 500.0
 
@@ -96,12 +96,12 @@ func _row(id: String) -> void:
 				old_now_awake, old_now_asleep, proposed_awake, proposed_asleep])
 
 ## The three rows' fields as they stood before this milestone touched them — `homeless_yeller`
-## with no core and his old 210px `outer_radius`, all three read at the decay they were tuned
+## with no core and his old 210px outer radius, all three read at the decay they were tuned
 ## against (3.5) as well as today's (6.0), so "restore what the decay took" has a real baseline to
 ## restore to. **Every field this milestone might move is pinned here explicitly** rather than
 ## read off the live catalogue and selectively overridden — a duplicate that only overrides
-## `intensity` silently inherits whatever `outer_radius` the catalogue holds *today*, which drifted
-## the moment `homeless_yeller`'s own `outer_radius` changed and made this probe compare the old
+## `intensity` silently inherits whatever outer radius the catalogue holds *today*, which drifted
+## the moment `homeless_yeller`'s own outer radius changed and made this probe compare the old
 ## intensity against the new reach instead of the old one. `loose_dog` and `dog_walker` never
 ## changed, so their "historical" and "current" columns are the same def; kept as two lookups
 ## rather than one so a future change to either only has to touch the live catalogue. Static and
@@ -110,15 +110,11 @@ func _row(id: String) -> void:
 static func historical_def(id: String) -> EventDef:
 	var d: EventDef = EventCatalogue.by_id(id).duplicate()
 	if id == "homeless_yeller":
-		d.intensity = 14.0
-		d.inner_radius = 45.0
-		d.outer_radius = 210.0
-		d.core_intensity = 0.0
-		d.core_radius = 0.0
+		d.use_field(FieldSpec.of(14.0, 45.0, 210.0).pulsing_every(d.pulses_every()))
 	elif id == "dog_walker":
-		d.intensity = 26.0
+		d.use_field(d.field().at_peak(26.0))
 	elif id == "loose_dog":
-		d.intensity = 32.0
+		d.use_field(d.field().at_peak(32.0))
 	return d
 
 ## The pass, averaged over `PHASE_SAMPLES` points in the row's own pulse — see the class doc.
@@ -185,7 +181,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# Long enough for her to start outside the field, cross it and leave it again. For a row coming
 	# at her the gap closes at both speeds together and the window is its own siting plus its reach;
 	# for everything else it is the fixed window either side, as it always was. Overrunning costs
-	# nothing either way — the sums below only accrue while she is inside `outer_radius`.
+	# nothing either way — the sums below only accrue while she is inside outer radius.
 	var steps := int(ceil((LEAD * 2.0 / Tuning.WALK_SPEED) / STEP)) + 120
 	if toward_her:
 		var closing := def.speed + Tuning.WALK_SPEED

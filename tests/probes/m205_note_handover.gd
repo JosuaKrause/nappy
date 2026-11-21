@@ -16,9 +16,9 @@ extends RefCounted
 ## of his beat prices whichever phase the sample happened to land on rather than the row.
 ##
 ## **The handover is instant; what follows it is not.** *(2026-09-26, the player, given a fork that
-## proposed a dwell inside `inner_radius` before the note completes: "the player should stand for
+## proposed a dwell inside inner radius before the note completes: "the player should stand for
 ## 2.5s? no way. the moment the player touches the inner circle it counts as delivered.")* The note
-## still completes the instant she is within his `inner_radius` (45px, `ContactPoint.
+## still completes the instant she is within his inner radius (45px, `ContactPoint.
 ## _physics_process()`) -- `_handover_net_averaged()` measures that alone, holding the old approach
 ## for comparison. *(2026-09-27, the player, asked whether he should keep shouting a while after the
 ## handover before he leaves, a fixed charge, or neither: "he keeps shouting for a bit.")*
@@ -30,7 +30,7 @@ extends RefCounted
 ## ordinary pass does.
 ##
 ## **The delay is chosen so the total lands near an ordinary pass, not so it exceeds it.** Walking
-## away from `inner_radius` at `Tuning.WALK_SPEED` clears his `outer_radius` (210px) in a little
+## away from inner radius at `Tuning.WALK_SPEED` clears his outer radius (210px) in a little
 ## over two seconds; past that point nothing more accrues, because `contribution_at()` answers zero
 ## outside it. `NOTE_HANDOVER_LINGER_SECONDS` (2.5s) sits past that clearing point with a margin, so
 ## the total plateaus at what it plateaus at rather than depending on catching the exact frame she
@@ -74,7 +74,7 @@ func run(t: TestRunner) -> void:
 	t.check(reach_awake < pass_awake,
 			("an instant handover at REACH lands under an ordinary pass (%.1f < %.1f) -- the bug " +
 			"this row exists to pin") % [reach_awake, pass_awake])
-	# inner_radius (45px) sits outside REACH (36px), so stopping there ends the approach a few
+	# inner radius (45px) sits outside REACH (36px), so stopping there ends the approach a few
 	# pixels earlier, not later -- this is not a bigger number than REACH's on its own; the linger
 	# below is what actually closes the gap.
 	t.check(inner_awake > 0.0,
@@ -129,7 +129,7 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 	instance.free()
 	return incoming_sum - decay_sum
 
-## The approach exactly as `_handover_net()` walks it, continuing past `inner_radius` for
+## The approach exactly as `_handover_net()` walks it, continuing past inner radius for
 ## `linger_seconds` more instead of stopping the sum there -- she keeps walking the direction she
 ## was already closing at, past him rather than back the way she came, while his field keeps
 ## charging her because he has not started leaving yet (`ResistanceDirector` delays

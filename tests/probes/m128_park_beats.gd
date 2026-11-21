@@ -56,7 +56,7 @@ const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; ne
 ## (`Crowd.start_day()` is never called, so `_agents` stays empty) and no other event
 ## (the city's `EventManager` never plans a day; the one instance under test is the only body appended to
 ## `_instances`) — so the only two things she is standing between are this one field and the
-## ground's own 12.0/s. The rig stands exactly `inner_radius` from the busker's own centre,
+## ground's own 12.0/s. The rig stands exactly inner radius from the busker's own centre,
 ## starting at `EXCITEMENT_CALM_THRESHOLD` with an empty sleep meter, matching the question
 ## exactly as asked. The instance is stepped past its own `telegraph_time` before she "arrives",
 ## since a busker that has been playing all morning has no telegraph left by the time anyone
@@ -130,10 +130,8 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	# never quietly drift apart.
 	var def := EventDef.new()
 	def.id = "busker"
-	def.intensity = intensity
-	def.inner_radius = real.core_within()
-	def.outer_radius = real.heard_within()
-	def.pulse_period = real.pulses_every()
+	def.use_field(FieldSpec.of(intensity, real.core_within(), real.heard_within())
+			.pulsing_every(real.pulses_every()))
 	def.telegraph_time = real.telegraphs_for()
 
 	var instance := EventInstance.new()
@@ -217,7 +215,7 @@ func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 	print("after:  intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
 			% [def.peak(), def.core_within(), def.heard_within(), after_denial])
 
-	# The floor stated over a whole beat, not just its peak: standing at (or inside) inner_radius,
+	# The floor stated over a whole beat, not just its peak: standing at (or inside) inner radius,
 	# the meter must not trend down over a full pulse cycle. `mean_multiplier` (0.625 for this
 	# pulse shape) is what a peak-only floor missed — a row cleared only at the top of its beat
 	# still nets negative on average, because the beat spends more of its seven seconds below the
@@ -257,12 +255,10 @@ func _busker_street_side(t: TestRunner) -> void:
 	print("\n== busker contribution on the pavement beside its lot, top of the beat ==")
 	print("  %-8s %10s %10s %10s %10s" % ["seed", "to street", "before", "after", "ratio"])
 	# A plain `EventDef`, not the catalogue's own — `emission_at()` only reads `intensity`,
-	# `inner_radius`, `outer_radius` and `flock_size` (0 by default), so this is the M117 busker
+	# inner radius, outer radius and `flock_size` (0 by default), so this is the M117 busker
 	# in every field the comparison cares about.
 	var before_def := EventDef.new()
-	before_def.intensity = OLD_BUSKER_INTENSITY
-	before_def.inner_radius = OLD_BUSKER_INNER
-	before_def.outer_radius = OLD_BUSKER_OUTER
+	before_def.use_field(FieldSpec.of(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER))
 	var after_def := EventCatalogue.by_id("busker")
 	var samples := 0
 	var before_total := 0.0

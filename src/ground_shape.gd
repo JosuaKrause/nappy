@@ -172,7 +172,7 @@ func _spine_half_extents(along: Vector2) -> Vector2:
 ## it. Zero for a point shape, whose spine is the origin. Zero anywhere inside a rectangle, and the
 ## ordinary point-to-box distance outside it. What `field_distance()` below prices a stationary
 ## emitter's field over — a point body's field is exactly the circle this always gave, and a
-## segment's is the capsule it always gave, `inner_radius`/`outer_radius` now meaning distance from
+## segment's is the capsule it always gave, the field's core and outer radii meaning distance from
 ## the spine rather than from the centre.
 func distance_to_spine(local: Vector2) -> float:
 	match kind:

@@ -395,7 +395,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 ## without ever crossing paths with one — `cyclist` and `loose_dog` on a street the day chose at
 ## dawn, `cat_dash` aimed at where she was rather than where she would be. This is the point of
 ## fixing all three: not that the siting geometry is fair on paper, but that a rig walking a real
-## street actually **meets** each of them — comes within its own `outer_radius`, the same measure
+## street actually **meets** each of them — comes within its own outer radius, the same measure
 ## the fairness contract and the cost table are both stated over.
 ##
 ## Driven through `EventDirector` exactly as `EventManager` drives it in play, on a real generated
@@ -465,9 +465,7 @@ func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 	def.id = "test_hard_fail"
 	def.stands_as = EventDef.StandsAs.SOMETHING
 	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.intensity = 20.0
-	def.inner_radius = 40.0
-	def.outer_radius = 120.0
+	def.use_field(FieldSpec.of(20.0, 40.0, 120.0))
 	def.hard_fail = true
 	def.telegraph_time = def.minimum_telegraph()
 	t.check(def.validate(), "a hard-fail event with the doubled margin is fair")

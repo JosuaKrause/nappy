@@ -41,7 +41,7 @@ static func scale(e: float) -> float:
 ## shape rather than from its radii** — thirty rows of hand-widened radii would be thirty chances to
 ## break the fairness contract.
 ##
-## **`power` is the exponent on `t` and a row may carry its own** (`EventDef.falloff_power`), for
+## **`power` is the exponent on `t` and a row may carry its own** (`FieldSpec.falling_off()`), for
 ## the case a row's two radii cannot express: under 1 it drops fast and tails long, over 2 it holds
 ## near full and then falls off a cliff. **Every row in the catalogue is at the 2.0 default**, which
 ## is the curve above and the curve every number in `docs/EVENTS.md` was measured against — the knob

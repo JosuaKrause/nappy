@@ -570,7 +570,7 @@ const GUARD_DOORSTEP_DAYS: Array[int] = [6, 8, 10, 12]
 ## relocation stands a mark and its guard on is held off the doorstep too, in
 ## `_test_the_guard_never_lands_inside_a_building()`'s sweep.
 ##
-## `reach` is computed from the row's own `inner_radius` (26px, the always-lethal zone around
+## `reach` is computed from the row's own inner radius (26px, the always-lethal zone around
 ## whichever one of them it is) and the trap's own `min_distance` (62px, how close a guard is
 ## ever placed to its mark) rather than a literal — the two named constants this bug was always
 ## about, added together as a generous rather than exact bound.

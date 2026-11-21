@@ -146,7 +146,7 @@ func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 
 ## A row that waits (`EventDef.notice`: the pigeon flock, the charging dog) and has a copy placed
 ## on the suite's day: `event:<row>` stands her outside both its wait trigger and its field. A
-## fixed offset of a share of `outer_radius` stood her inside the flock's trigger (its 150px notice
+## fixed offset of a share of outer radius stood her inside the flock's trigger (its 150px notice
 ## under its 168px field, and the old 100.8px offset under both), so the offset has to clear the
 ## larger of the two plus a tile's margin. The first such row the day placed is asked, since which
 ## rows a day places moves with the declared table (`PlacementDensity`).

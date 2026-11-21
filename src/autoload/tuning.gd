@@ -409,7 +409,7 @@ const REGION_WALL_FIRST_DAY := 9
 ## scheduler already has. The wall's own `roadblock` bodies are **not** given a gap — a wall is
 ## structure, it stands where the boundary is, and dropping one would open a street the partition
 ## means to hold. What keeps a wall from summing with the door it stands beside is
-## `EventDef.barrier_structure` instead.
+## `FieldSpec.as_one_barrier()` instead.
 const CHECKPOINT_EVENT_GAP := 176.0
 
 

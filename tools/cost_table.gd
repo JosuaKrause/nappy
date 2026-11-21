@@ -22,12 +22,12 @@ extends Node
 const OUTPUT_PATH := "res://docs/COSTS.md"
 
 ## `current_intensity()`'s pulse envelope (`0.25 + 0.75·(0.5 − 0.5·cos(phase))`) averages to
-## exactly this over one full period, regardless of `pulse_period` — see
+## exactly this over one full period, regardless of pulse period — see
 ## `tests/probes/m174_walk_beside.gd`'s own derivation, reused here rather than re-argued.
 const PULSE_MEAN := 0.625
 
 ## Fixed distances in px, identical for every row — dense inside the first hundred where the
-## inner radii sit, and the last one past the widest `outer_radius` in the catalogue so it reads
+## inner radii sit, and the last one past the widest outer radius in the catalogue so it reads
 ## the bare decay for every row. `_assert_distances_clear_every_outer_radius()` checks that
 ## assumption rather than trusting the comment.
 const DISTANCES: Array[float] = [0.0, 25.0, 50.0, 75.0, 100.0, 150.0, 200.0, 300.0, 400.0, 550.0]
@@ -148,15 +148,15 @@ func _geometry_row(def: EventDef) -> Dictionary:
 	var row := {}
 	row["role"] = _role_str(def)
 	row["intensity"] = "%.1f" % def.peak()
-	if def.core_intensity > 0.0:
-		row["core_intensity"] = "%.1f" % def.core_intensity
-		row["core_radius"] = "%.1f" % def.core_radius
+	if def.core_rate() > 0.0:
+		row["core_intensity"] = "%.1f" % def.core_rate()
+		row["core_radius"] = "%.1f" % def.core_reach()
 	else:
 		row["core_intensity"] = "—"
 		row["core_radius"] = "—"
 	row["inner_radius"] = "%.1f" % def.core_within()
 	row["outer_radius"] = "%.1f" % def.heard_within()
-	row["falloff_power"] = "%.1f" % def.falloff_power
+	row["falloff_power"] = "%.1f" % def.falloff()
 	if def.pulses_every() > 0.0:
 		row["pulse_period"] = "%.1f" % def.pulses_every()
 		row["pulse_trough"] = "%.1f" % (def.peak() * 0.25)
