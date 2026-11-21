@@ -627,7 +627,7 @@ func _install(city: City, simulation: WorldSimulation, player: Stroller, baby: B
 			errors.append("setup.background: too few eligible sidewalk positions for the requested uniform population")
 			return errors
 	if city.streets().region_plan():
-		simulation.crowd().set_gates(city.streets().region_plan().gates)
+		simulation.crowd().set_gates(city.streets().region_plan().gate_states())
 	for entry: Dictionary in setup.get("actors", []):
 		var actor_at := position_of(entry.at, errors)
 		if not errors.is_empty():
@@ -835,7 +835,7 @@ func _select_structures(errors: Array[String]) -> void:
 	if not region:
 		return
 	var setup: Dictionary = _data.get("setup", {})
-	var selected := RegionPlanner.RegionPlan.new()
+	var selected := RegionPlan.new()
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := _city.map.street_network().by_key(key)
@@ -845,9 +845,9 @@ func _select_structures(errors: Array[String]) -> void:
 		if not _walk_spec.region_wall_stands():
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
-		if not region.doors.any(func(door): return door.key() == key):
+		if not region.door_segments().any(func(door): return door.key() == key):
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
-					[region.doors.map(func(door): return door.key())])
+					[region.door_segments().map(func(door): return door.key())])
 			continue
 		RegionPlanner.stand_door(_city.map, segment, selected)
 	for entry: Dictionary in setup.get("barriers", []):
@@ -860,12 +860,12 @@ func _select_structures(errors: Array[String]) -> void:
 				or not _walk_spec.region_wall_stands():
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
-		selected.walls.append(segment)
+		selected.add_wall(segment)
 		# The wall's bodies say so, as the day's do (`EventPlan.stand_in_the_wall()`).
 		var bodies := SealPlanner.place_hard_on(_city.map, segment, "roadblock", entry.end == "a")
 		for body in bodies:
 			body.stand_in_the_wall()
-		selected.wall_bodies.append_array(bodies)
+		selected.add_wall_plans(bodies)
 	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
 	# wall, and the siting's region is built from the plan it is handed.
 	_city.streets().replace_region_plan(selected)
@@ -935,10 +935,10 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		# The finale plan validates the real escape routes. Its randomly chosen scenery is
 		# not an authored scene's event list.
 	elif _city.streets().region_plan():
-		for body in _city.streets().region_plan().wall_bodies:
+		for body in _city.streets().region_plan().wall_plans():
 			if _inside_extent(body.placed_at()):
 				plans.append(body)
-		for body in _city.streets().region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_plans():
 			doors.append(body.placed_at())
 			if _inside_extent(body.placed_at()):
 				plans.append(body)

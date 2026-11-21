@@ -23,8 +23,8 @@ func _row(radius: float) -> EventDef:
 	return def
 
 ## A day's wall and doors as data: one wall body, two door bodies and one walled alley.
-func _a_walled_plan() -> RegionPlanner.RegionPlan:
-	var plan := RegionPlanner.RegionPlan.new()
+func _a_walled_plan() -> RegionPlan:
+	var plan := RegionPlan.new()
 	plan.wall_bodies.append(EventPlan.new(_row(40.0), Vector2(10.5, 3.5) * TILE))
 	plan.door_bodies.append(EventPlan.new(_row(18.0), Vector2(20.5, 9.5) * TILE))
 	plan.door_bodies.append(EventPlan.new(_row(24.0), Vector2(22.5, 9.5) * TILE))
@@ -55,7 +55,7 @@ func _test_each_write_replaces_what_it_says(t: TestRunner) -> void:
 	var first_closures := _closures_on(Vector2i(2, 3))
 	streets.begin_day(first_tree, first_plan, first_closures)
 
-	var authored := RegionPlanner.RegionPlan.new()
+	var authored := RegionPlan.new()
 	streets.replace_region_plan(authored)
 	t.check(streets.region_plan() == authored, "an authored plan replaces the day's plan")
 	t.check(streets.route_tree() == first_tree and streets.closures() == first_closures,
@@ -91,7 +91,7 @@ func _test_the_siting_region_is_built_once_for_a_plan(t: TestRunner) -> void:
 	var walled_alley: Array[Rect2i] = [Rect2i(30, 12, 1, 4)]
 	t.check(first.walled_alleys == walled_alley, "and it shuts the plan's walled alley")
 
-	var other := RegionPlanner.RegionPlan.new()
+	var other := RegionPlan.new()
 	other.alley_walls.append(Rect2i(8, 2, 1, 3))
 	streets.replace_region_plan(other)
 	var changed := streets.siting_region()

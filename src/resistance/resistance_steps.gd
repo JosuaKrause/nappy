@@ -262,7 +262,7 @@ static func narrow_target_on(day: int) -> Step:
 ##   corridor grows its spur to (`RouteTree.for_day`). Empty on a city with no station, which
 ##   `CityGenerator.validation_problems()` refuses.
 static func target_candidates(step: Step, map: CityMap,
-		region_plan: RegionPlanner.RegionPlan) -> Array[Vector2i]:
+		region_plan: RegionPlan) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	if not step or not map:
 		return found
@@ -274,7 +274,7 @@ static func target_candidates(step: Step, map: CityMap,
 		var home_border := {}
 		for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 			home_border[segment.key()] = true
-		for segment in region_plan.doors:
+		for segment in region_plan.door_segments():
 			if home_border.has(segment.key()):
 				continue
 			var rect := segment.tile_rect()

@@ -234,11 +234,10 @@ var _surroundings := EventSurroundings.new()
 ## nobody names one for (a rig that steps it directly).
 var _where := WhereSheIs.nowhere()
 
-## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
-## GateState`, handed to `setup()` by `EventStreaming.stream_in()` from `EventPlan.gate()`. `null` for
+## The shared boom state a `checkpoint_gate` draws raised or lowered from — `GateState`, handed to `setup()` by `EventStreaming.stream_in()` from `EventPlan.gate()`. `null` for
 ## every look but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired
 ## to `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
-var _gate_state: RegionPlanner.GateState = null
+var _gate_state: GateState = null
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
@@ -327,12 +326,12 @@ var _clock := 0.0
 ## trace, the car's lights and where a protest points. None, and it is set up on open ground with
 ## nothing handed.
 ##
-## `gate` is the boom state a street door's boom shares with the crowd (`RegionPlanner.GateState`),
+## `gate` is the boom state a street door's boom shares with the crowd (`GateState`),
 ## the one hand-in that belongs to the plan and not to the world, so it comes last, and only
 ## streaming passes one.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
 		face := Vector2.RIGHT, surroundings: EventSurroundings = null,
-		gate: RegionPlanner.GateState = null) -> void:
+		gate: GateState = null) -> void:
 	_surroundings = surroundings if surroundings else EventSurroundings.new()
 	_timing = _surroundings.timing()
 	_gate_state = gate
@@ -527,11 +526,11 @@ func _rim_holder() -> Node2D:
 func is_solid() -> bool:
 	return _body.is_solid()
 
-## Whether this boom's arm is up right now — `RegionPlanner.GateState.raised`, which only `Crowd`
+## Whether this boom's arm is up right now — `GateState.is_boom_up()`, which only `Crowd`
 ## writes. `false` with no gate handed to `setup()`, the same safe default the drawing reads: a gate
 ## that has not been wired to the cars is a lowered one.
 func is_raised() -> bool:
-	return _gate_state != null and _gate_state.raised
+	return _gate_state != null and _gate_state.is_boom_up()
 
 ## The body of a `SolidWhen.ONCE_IT_STARTS` row, put down the frame its notice ends — **unless she is
 ## standing in it** (`EventBody.come_down_clear_of_her()`), in which case the vent goes on emitting

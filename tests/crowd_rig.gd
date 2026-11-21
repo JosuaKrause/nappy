@@ -1618,7 +1618,7 @@ func _check_a_walker_finds_a_hut_across_a_bucket_edge(t: TestRunner, lane: Dicti
 				"says": "two huts the same distance ahead, in the other order: the first is its hut"},
 	]
 	for case in cases:
-		var plan := RegionPlanner.RegionPlan.new()
+		var plan := RegionPlan.new()
 		plan.door_bodies.assign(case["huts"])
 		_city.streets().replace_region_plan(plan)
 		RunCity.crowd(_city).use_focus(null)
@@ -1663,7 +1663,7 @@ func _check_a_gate_across_a_bucket_edge_holds_the_car(t: TestRunner, vertical: b
 	var edge := roundf(line / bucket) * bucket
 	var past_the_edge := edge + 8.0 * signf(edge - line)
 	var ahead := CarStrategy.braking_distance(car.speed()) + Tuning.CAR_STOP_LINE_SETBACK - 24.0
-	var gate := RegionPlanner.GateState.new()
+	var gate := GateState.new()
 	gate.position = car.global_position + car.heading() * ahead
 	if vertical:
 		gate.position.x = past_the_edge
@@ -1673,13 +1673,13 @@ func _check_a_gate_across_a_bucket_edge_holds_the_car(t: TestRunner, vertical: b
 			and absf(past_the_edge - line) < Crowd.GATE_LANE_TOLERANCE,
 			"%s: the gate stands in the next bucket over (%.0fpx from the car's line, tolerance %.0f)"
 			% [way, absf(past_the_edge - line), Crowd.GATE_LANE_TOLERANCE])
-	var gates: Array[RegionPlanner.GateState] = [gate]
+	var gates: Array[GateState] = [gate]
 	RunCity.crowd(_city).set_gates(gates)
 	RunCity.crowd(_city).use_focus(FakeCrowdFocus.new(car.global_position))
 	RunCity.crowd(_city).step(STEP)
 	t.check(car.lane().gate_hold() < INF,
 			"%s: a gate across a bucket edge from the car's line is found, and the car holds for it" % way)
-	var none: Array[RegionPlanner.GateState] = []
+	var none: Array[GateState] = []
 	RunCity.crowd(_city).set_gates(none)
 
 ## A straight stretch of ordinary street, `length` tiles of it street all the way across and all the way

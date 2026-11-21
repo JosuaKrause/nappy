@@ -110,7 +110,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## here draws anything for it. The fenced ground itself was decided at the repaint and is already
 ## closed on the map, so every candidate below is judged with it closed.
 static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
-		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null,
+		tree: RouteTree = null, region_plan: RegionPlan = null,
 		trace: RunTrace = null) -> Array[RoadClosure]:
 	var chosen := _close_streets(map, spec, rng, tree, region_plan, trace)
 	var fenced := map.fenced_park_block()
@@ -120,7 +120,7 @@ static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
 	return chosen
 
 static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
-		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
+		tree: RouteTree, region_plan: RegionPlan,
 		trace: RunTrace = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	var day := spec.day_number()
@@ -428,7 +428,7 @@ static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[
 ## every other day, and a pool with no tiles in it is left out rather than failing every closure:
 ## a day with nothing to send her to asks nothing of the closures about it.
 static func places_to_reach_today(map: CityMap, day: int,
-		region_plan: RegionPlanner.RegionPlan) -> Array[Array]:
+		region_plan: RegionPlan) -> Array[Array]:
 	var places: Array[Array] = []
 	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map,
 			region_plan)
@@ -525,7 +525,7 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 ## is two things in one place; a closure on a door would close a crossing the region plan is
 ## supposed to keep open (or hold shut, on its own terms) regardless of what `ClosurePlanner` rolls.
 static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, areas: Array[CalmArea],
-		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
+		tree: RouteTree, region_plan: RegionPlan,
 		rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var rim := {}
 	for key in tree.rim():
@@ -538,9 +538,9 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, area
 		for segment in area.access:
 			access[segment.key()] = true
 	var boundary := {}
-	for segment in region_plan.walls:
+	for segment in region_plan.wall_segments():
 		boundary[segment.key()] = true
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		boundary[segment.key()] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []

@@ -221,7 +221,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 		var huts: Array[EventPlan] = []
 		var plan := streets.region_plan()
 		if plan:
-			for body in plan.door_bodies:
+			for body in plan.door_plans():
 				if body.row_id() == "checkpoint_hut":
 					huts.append(body)
 		if huts.is_empty():

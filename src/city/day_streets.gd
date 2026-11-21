@@ -24,11 +24,11 @@ extends RefCounted
 var _tree: RouteTree = null
 ## Today's region wall and doors, grown from `_tree` — permanent partition, per-day split. See
 ## `RegionPlanner.plan_day` and `region_plan()`.
-var _region_plan: RegionPlanner.RegionPlan = null
+var _region_plan: RegionPlan = null
 ## The region a siting reads (`siting_region()`) and what it was built from, to hand it again while
 ## the plan is unchanged.
 var _sited_region: SpawnSiting.Region = null
-var _sited_from: RegionPlanner.RegionPlan = null
+var _sited_from: RegionPlan = null
 ## Today's closed streets. The barriers and wreckage that say so are the city's.
 var _closures: Array[RoadClosure] = []
 
@@ -36,7 +36,7 @@ var _closures: Array[RoadClosure] = []
 
 ## Today's streets, as dawn grew them: the tree, the region plan grown from it and the closures
 ## placed off both. The plan is not edited once handed over (`siting_region()`).
-func begin_day(tree: RouteTree, plan: RegionPlanner.RegionPlan,
+func begin_day(tree: RouteTree, plan: RegionPlan,
 		closures: Array[RoadClosure]) -> void:
 	_tree = tree
 	_region_plan = plan
@@ -45,7 +45,7 @@ func begin_day(tree: RouteTree, plan: RegionPlanner.RegionPlan,
 ## Replaces today's region plan with another one (a rig that authors the day's wall and doors). The
 ## plan handed over is today's from then on and is not edited: the siting's region is built from
 ## it once (`siting_region()`).
-func replace_region_plan(plan: RegionPlanner.RegionPlan) -> void:
+func replace_region_plan(plan: RegionPlan) -> void:
 	_region_plan = plan
 
 # ---------------------------------------------------------------- questions ---
@@ -56,7 +56,7 @@ func route_tree() -> RouteTree:
 
 ## Today's region wall and doors. Grown at dawn from `route_tree()`, so it is null until then —
 ## the same contract as `route_tree()`.
-func region_plan() -> RegionPlanner.RegionPlan:
+func region_plan() -> RegionPlan:
 	return _region_plan
 
 ## Today's closed streets; empty until a day closes some.
@@ -89,8 +89,8 @@ func siting_region() -> SpawnSiting.Region:
 	if _sited_region != null and _sited_from == _region_plan:
 		return _sited_region
 	var region := SpawnSiting.Region.new()
-	region.walled_alleys = _region_plan.alley_walls
-	for body: EventPlan in _region_plan.wall_bodies + _region_plan.door_bodies:
+	region.walled_alleys = _region_plan.walled_alleys()
+	for body: EventPlan in _region_plan.wall_plans() + _region_plan.door_plans():
 		region.centres.append(body.placed_at())
 		region.radii.append(body.obstructs_within())
 	_sited_region = region

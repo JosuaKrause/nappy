@@ -3,8 +3,8 @@ extends RefCounted
 ## One checkpoint hut, as the crowd sees it: where it stands, who is inside it, and who is queued
 ## for it.
 ##
-## A region door stands a hut on each sidewalk and a boom over the road (`RegionPlanner.RegionPlan.
-## door_bodies`), and an alley door a single guard at each mouth. The boom is the cars' —
+## A region door stands a hut on each sidewalk and a boom over the road (`RegionPlan.
+## door_plans()`), and an alley door a single guard at each mouth. The boom is the cars' —
 ## `Crowd._stop_for_gates()` raises and lowers it — and this is the sidewalk's own equivalent: the
 ## shared state a queue of walkers needs, which is exactly *one body may be inside at a time* and
 ## *these are the people waiting*.

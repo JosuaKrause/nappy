@@ -312,7 +312,7 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 		# where today's gates are — empty before `Tuning.REGION_WALL_FIRST_DAY`, which is a harmless
 		# no-op day for `Crowd`. A walk that grows no tree stands no wall and has no gates.
 		if _streets.region_plan():
-			_crowd.set_gates(_streets.region_plan().gates)
+			_crowd.set_gates(_streets.region_plan().gate_states())
 	_player.reset_at(start_at, world.start_facing())
 	_prepare_the_scenery_round_her()
 	baby.reset()

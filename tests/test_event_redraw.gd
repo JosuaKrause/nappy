@@ -489,11 +489,11 @@ func _test_a_chatting_mother_moves_her_key_while_frozen(t: TestRunner) -> void:
 			"the talking posture moves the key although she has stopped dead")
 	instance.free()
 
-## A boom gate's whole picture is one bit somebody else owns — `RegionPlanner.GateState.raised`,
+## A boom gate's whole picture is one bit somebody else owns — `GateState.raised`,
 ## advanced by `Crowd` — and the gate never moves, never strides and never telegraphs, so that bit
 ## is the only thing between a raised boom and a lowered one reaching the screen.
 func _test_a_raised_boom_moves_the_gates_key(t: TestRunner) -> void:
-	var state := RegionPlanner.GateState.new()
+	var state := GateState.new()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("checkpoint_gate"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.DOWN, null, state)

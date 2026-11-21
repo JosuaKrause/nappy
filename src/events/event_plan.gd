@@ -16,9 +16,9 @@ var path := PackedVector2Array()
 var facing := Vector2.RIGHT
 
 ## The shared boom state a `checkpoint_gate` plan's instance draws raised or lowered from —
-## `RegionPlanner.GateState`, built once per street door and carried here by
+## `GateState`, built once per street door and carried here by
 ## `RegionPlanner._add_door_bodies`. `null` for every plan but a gate's own.
-var gate_state: RegionPlanner.GateState = null
+var gate_state: GateState = null
 
 ## `MastSites.Site.id` for a mast's own plan (its ordinary broadcast and, on
 ## `DawnMasts.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
@@ -577,12 +577,12 @@ func detain_distance() -> float:
 ## Makes it the boom of a street door, drawn raised or lowered from `shared`, the state the region's
 ## doors are made with (`gate()`). Called by `RegionPlanner._add_door_bodies()` as it makes the
 ## door's boom, and by nothing else.
-func stand_as_the_boom_of(shared: RegionPlanner.GateState) -> void:
+func stand_as_the_boom_of(shared: GateState) -> void:
 	gate_state = shared
 
 ## The boom's shared state (`gate_state`) for a street door's boom, which the region's doors are
 ## made with, or null for every other plan.
-func gate() -> RegionPlanner.GateState:
+func gate() -> GateState:
 	return gate_state
 
 ## How long its row's telegraph lasts, in seconds (`EventDef.telegraphs_for()`).
