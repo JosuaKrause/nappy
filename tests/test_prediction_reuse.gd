@@ -104,10 +104,10 @@ func _same_bits(a: float, b: float) -> bool:
 func _copy_definition(original: EventDef) -> EventDef:
 	var copy := original.duplicate(true) as EventDef
 	# RefCounted geometry is not a stored Resource property, so duplicate() omits it.
-	if original.shape:
-		copy.shape = GroundShape.new(original.shape.half_length, original.shape.radius)
-		copy.shape.kind = original.shape.kind
-		copy.shape.half_extents = original.shape.half_extents
+	if original.ground_shape():
+		copy.shape = GroundShape.new(original.ground_shape().half_length, original.ground_shape().radius)
+		copy.ground_shape().kind = original.ground_shape().kind
+		copy.ground_shape().half_extents = original.ground_shape().half_extents
 	copy.solid_parts = original.solid_parts
 	return copy
 

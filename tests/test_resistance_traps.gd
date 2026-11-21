@@ -247,10 +247,10 @@ func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 		var touched_within := rider.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
 				+ ContactPoint.REACH
 		var from_body := task_guard.global_position.distance_to(rider.body_position())
-		t.check(from_body >= robbery.inner_radius + touched_within - 0.5,
+		t.check(from_body >= robbery.core_within() + touched_within - 0.5,
 				("the roadblock's guard stands %.0fpx from its band's centre, outside his catch " +
 				"of everywhere it is touched from (%.0fpx)")
-				% [from_body, robbery.inner_radius + touched_within])
+				% [from_body, robbery.core_within() + touched_within])
 	t.check(task_guard != null and is_instance_valid(task_guard),
 			"it is guarded where it waits, like a mark, with its own fresh guard")
 	if mark_guard:
@@ -785,7 +785,7 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 	var velocity := speed if absf(speed) <= Tuning.WALK_SPEED else 0.0
 	var elapsed := 0.0
 	var was_telegraphing := true
-	while elapsed < def.telegraph_time + def.duration + 1.0:
+	while elapsed < def.telegraphs_for() + def.duration + 1.0:
 		var wanted := speed
 		if elapsed >= turn_to_run_after:
 			wanted = -Tuning.RUN_SPEED

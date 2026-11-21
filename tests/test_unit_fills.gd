@@ -76,7 +76,7 @@ static func _catalogue(day: int) -> Dictionary:
 	return rows
 
 static func _fills(rows: Dictionary, day: int, share := 1.0,
-		by_cost: Callable = func(def: EventDef) -> bool: return def.hard_fail) -> UnitFills:
+		by_cost: Callable = func(def: EventDef) -> bool: return def.ends_the_day()) -> UnitFills:
 	return UnitFills.new(rows, day, share, _weights(), by_cost)
 
 ## A street unit of one sidewalk location on the route, `x` blocks along, on seed `day_seed`.

@@ -506,7 +506,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 	var checked := 0
 	for id: String in ["cafe_tables", "construction", "delivery_van"]:
 		var def := EventCatalogue.by_id(id)
-		if def == null or def.shape == null or def.obstructs_within() <= 0.0:
+		if def == null or def.ground_shape() == null or def.obstructs_within() <= 0.0:
 			continue
 		t.check(def.body_pieces().size() == 1, "'%s' is one piece, so it is this test's business" % id)
 		# Where the row's body stands once sited at `at`: the instance the spawner makes puts a
@@ -517,7 +517,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 		var placed := sited.position
 		sited.free()
 		var axis := BodyStance.pieces_at(map, def, at, Vector2.RIGHT)[0].axis()
-		var before := def.shape.tiles_under(placed, axis)
+		var before := def.ground_shape().tiles_under(placed, axis)
 		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 		before.sort()
 		after.sort()
@@ -550,7 +550,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t: TestRun
 	var at := Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
 			(float(along) + 0.5) * Tuning.TILE_SIZE)
 	var axis := BodyStance.pieces_at(map, def, at, Vector2.RIGHT)[0].axis()
-	var whole_band := def.shape.tiles_under(at, axis)
+	var whole_band := def.ground_shape().tiles_under(at, axis)
 	var cars := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 	t.check(not cars.is_empty(), "the cars stand on ground (%d tiles)" % cars.size())
 	t.check(cars.size() < whole_band.size(),
@@ -664,7 +664,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t: TestRunner, crowd: Cro
 	var base := corridor * CityMap.period()
 	var body_at := run.y + CityMap.period() + 2
 	var def := EventCatalogue.by_id("delivery_van")
-	t.check(def != null and def.pavement_side == EventDef.Pavement.AT_THE_KERB,
+	t.check(def != null and def.sidewalk_lane() == EventDef.Pavement.AT_THE_KERB,
 			"'delivery_van' is the kerb-pinned row this test is about")
 	var kerb_lane: int = CrowdLanes.SIDEWALK_OFFSETS[1]
 	var covered := _stand_a_row(map, def, Vector2(CrowdLanes.lane_centre(corridor, kerb_lane),

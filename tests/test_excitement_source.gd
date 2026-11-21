@@ -114,12 +114,12 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]),
 			Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
-	for _i in int(ceil(def.telegraph_time / 0.1)) + 1:
+	for _i in int(ceil(def.telegraphs_for() / 0.1)) + 1:
 		instance.step(0.1)
 	instance_where.tell(instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0))
 	t.check(instance.source().caret_strength() == 2,
 			"her place told to the instance by its manager is where the caret measures her from")
-	instance_where.tell(instance.global_position + Vector2(0.0, def.outer_radius * 4.0))
+	instance_where.tell(instance.global_position + Vector2(0.0, def.heard_within() * 4.0))
 	t.check(instance.source().caret_strength() == 0,
 			"and the answer moves with her inside one tick, keyed on where she is")
 	instance.free()

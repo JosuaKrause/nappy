@@ -19,7 +19,7 @@ const DOG := "charging_dog"
 
 func run(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var cap := EventCatalogue.by_id(DOG).max_per_day
+	var cap := EventCatalogue.by_id(DOG).most_in_a_day()
 	var dogs_sum := 0
 	var lessons := 0
 	var at_cap := 0

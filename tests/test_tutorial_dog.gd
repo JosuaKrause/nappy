@@ -149,15 +149,15 @@ func _test_the_notice_switches_after_the_teaching_day(t: TestRunner) -> void:
 	t.check(def != null, "charging_dog is in the catalogue")
 	if not def:
 		return
-	t.check(def.for_day(Tuning.RUN_TAUGHT_DAY).notice == null,
+	t.check(not def.for_day(Tuning.RUN_TAUGHT_DAY).waits_for_her(),
 			"on the teaching day itself it still charges the moment it streams in")
-	var waiting: float = def.for_day(Tuning.RUN_TAUGHT_DAY + 1).notice.within
+	var waiting: float = def.for_day(Tuning.RUN_TAUGHT_DAY + 1).notice_within()
 	t.check(waiting > 0.0, "the day after, it waits for her to come within its own field")
-	var standoff := PursuitSpec.standoff(def.chase_speed(), def.inner_radius)
-	t.check(waiting < def.outer_radius and waiting > standoff,
+	var standoff := PursuitSpec.standoff(def.chase_speed(), def.core_within())
+	t.check(waiting < def.heard_within() and waiting > standoff,
 			"inside its own outer radius, an 'on sight' band before the trigger — alley_robbery's " +
 					"shape — and past the stand-off, or the notice would be spent standing still")
-	t.check(is_equal_approx(def.for_day(Tuning.RUN_TAUGHT_DAY + 11).notice.within, waiting),
+	t.check(is_equal_approx(def.for_day(Tuning.RUN_TAUGHT_DAY + 11).notice_within(), waiting),
 			"and it stays the waiting shape for every day after that")
 
 ## The waiting itself, on the copy `EventDef.for_day()` hands a `MAP` placement past the
@@ -178,7 +178,7 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(her))
 	# Inside the field (`outer_radius`) but outside the trigger (`EventDef.notice`) — the "on sight"
 	# band alley_robbery's own shape leaves room for.
-	her.tell(Vector2((hot.outer_radius + hot.notice_within()) * 0.5, 0.0))
+	her.tell(Vector2((hot.heard_within() + hot.notice_within()) * 0.5, 0.0))
 	dog.step(STEP)
 	t.check(dog.is_waiting() and not dog.is_telegraphing(),
 			"inside its own field but outside the trigger, a day-4 dog has not noticed her yet")
@@ -309,7 +309,7 @@ func _test_no_other_day_hands_out_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var row := EventCatalogue.by_id("charging_dog")
 	var dog: EventDef = row.duplicate()
-	dog.shape = row.shape
+	dog.shape = row.ground_shape()
 	dog.from_day_after = null
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	t.check(dog.spawn_mode_on(day) == EventDef.SpawnMode.AHEAD_OF_PLAYER,

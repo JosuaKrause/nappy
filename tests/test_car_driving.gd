@@ -18,7 +18,7 @@ func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs) -> Eve
 	var engine := EventInstance.new()
 	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(),
 			EventSurroundings.new().hearing(where))
-	engine.restore(EventSave.new(def.telegraph_time, 0.0))
+	engine.restore(EventSave.new(def.telegraphs_for(), 0.0))
 	t.add_child(engine)
 	engine.set_process(false)
 	return engine

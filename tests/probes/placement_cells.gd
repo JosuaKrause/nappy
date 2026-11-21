@@ -114,7 +114,7 @@ func run(t: TestRunner) -> void:
 				for plan in unit.drawn():
 					var ek := "%s %s" % [key, plan.row_id()]
 					events_by[ek] = int(events_by.get(ek, 0)) + 1
-					if plan.row().paces and plan.is_placed():
+					if plan.row().paces_a_beat() and plan.is_placed():
 						var bk := "%s %s %d" % [GROUNDS[unit.kind()], plan.row_id(),
 								_beat_in_tiles(plan.path)]
 						beats_by[bk] = int(beats_by.get(bk, 0)) + 1

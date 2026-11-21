@@ -204,7 +204,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 ## `_test_no_alley_robbery_stands_near_the_doorstep()` asks of the dawn, here over every mark tile.
 func _test_the_guard_never_lands_inside_a_building(t: TestRunner) -> void:
 	var robbery := EventCatalogue.mark_guard()
-	var doorstep_reach := 2.0 * robbery.inner_radius + ContactPoint.REACH
+	var doorstep_reach := 2.0 * robbery.core_within() + ContactPoint.REACH
 	var checked := 0
 	for seed_value in SWEEP_SEEDS:
 		for entry in _relocations_over_the_marks(t, seed_value, _on_the_tile):
@@ -363,7 +363,7 @@ func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t: TestRunner
 ## 176px from the mark where the alley allowed.
 func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var checked := 0
 	var under_the_trigger := 0
@@ -583,8 +583,8 @@ const GUARD_DOORSTEP_DAYS: Array[int] = [6, 8, 10, 12]
 ## range (4..14, every day the catalogue's robbery can appear) while halving the seeds.
 func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var reach: float = robbery.inner_radius + min_distance
+	var min_distance: float = robbery.core_within() + ContactPoint.REACH
+	var reach: float = robbery.core_within() + min_distance
 	var checked := 0
 	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
 	for seed_value: int in seeds.slice(0, RULE_SEEDS):
@@ -675,8 +675,8 @@ func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 	director.tick(STEP)
 
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var reach: float = robbery.inner_radius + min_distance
+	var min_distance: float = robbery.core_within() + ContactPoint.REACH
+	var reach: float = robbery.core_within() + min_distance
 
 	var mark_at := director.contact_position()
 	if mark_at != Vector2.INF:

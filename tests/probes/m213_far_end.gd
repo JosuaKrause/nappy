@@ -106,7 +106,7 @@ func _reachability(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var names: Array[String] = ["far end"]
 	var asleep := {"through": [0], "passage": [0]}
