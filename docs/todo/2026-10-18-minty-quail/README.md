@@ -135,7 +135,10 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    about 4.5% slower once the walker and the car share a mover base the crowd member extends
    (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
    later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
-   worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
+   worth an entry of its own. It measures streaming's tick (`EventStreaming.stream_around()`, the events' loop with
+   the most turns) again too: row 3a's plan questions cost it about 60 µs a tick (record minty-quail-cozy-stork) and
+   streaming's own table of state per plan about 25 to 50 µs more (#1598's measurement, on its pull request), and the
+   step says whether a cheaper lookup is worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
    refactor's head and compares the two with `tools/compare-placement-rows.py`, which applies the
    rule the record grassy-magpie states (that record carries the output of the hand-run script it
    replaced, with that step's own list). Before it does, the tool is made to refuse a log line of
