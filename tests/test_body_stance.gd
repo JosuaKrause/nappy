@@ -14,6 +14,32 @@ class NorthSouthStreet extends WorldMap:
 	func corridor_offsets(_tile: Vector2i) -> Vector2i:
 		return Vector2i(0, -1)
 
+## A map of streets six tiles wide with a two-tile sidewalk each side, east-west when `across` is
+## false and north-south when it is true, the corridor and pavement answers a city's streets give
+## (`CityMap.corridor_offsets()`, `CityMap.pavement_inward()`) with no city generated.
+class SidewalkStreets extends WorldMap:
+	var _north_south := false
+
+	func _init(north_south: bool) -> void:
+		_north_south = north_south
+
+	## Overrides WorldMap.corridor_offsets.
+	func corridor_offsets(tile: Vector2i) -> Vector2i:
+		if _north_south:
+			return Vector2i(posmod(tile.x, Tuning.STREET_WIDTH), -1)
+		return Vector2i(-1, posmod(tile.y, Tuning.STREET_WIDTH))
+
+	## Overrides WorldMap.pavement_inward.
+	func pavement_inward(tile: Vector2i) -> Vector2i:
+		var offsets := corridor_offsets(tile)
+		var offset := maxi(offsets.x, offsets.y)
+		var step := Vector2i.RIGHT if _north_south else Vector2i.DOWN
+		if offset < Tuning.SIDEWALK_WIDTH:
+			return -step
+		if offset >= Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH:
+			return step
+		return Vector2i.ZERO
+
 const EastWestStreet = preload("res://tests/east_west_street.gd")
 
 const _AT := Vector2(336.0, 336.0)
@@ -24,6 +50,8 @@ func run(t: TestRunner) -> void:
 	_test_a_row_that_spans_the_street_stands_at_its_kerb(t)
 	_test_a_shape_with_no_body_has_no_pieces(t)
 	_test_the_crash_leaves_the_ground_between_its_cars_open(t)
+	_test_a_stood_point_is_stood_where_it_is(t)
+	_test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t)
 
 func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
@@ -102,3 +130,76 @@ func _test_the_crash_leaves_the_ground_between_its_cars_open(t: TestRunner) -> v
 	t.check(inside, "every tile a car covers is inside the crash's whole band")
 	t.check(covered.size() < whole.size(),
 			"the ground between the cars stays open (%d of %d tiles)" % [covered.size(), whole.size()])
+
+## The rows `EventDef.stands_on_its_band_middle()` holds for, whichever the catalogue has.
+func _rows_on_the_band_middle() -> Array[EventDef]:
+	var rows: Array[EventDef] = []
+	for row in EventCatalogue.all():
+		if row.stands_on_its_band_middle():
+			rows.append(row)
+	return rows
+
+## **Standing a stood point gives the same point**, for each row that stands on its band's middle, on
+## both street axes, each of the street's six lanes and a point at the lane's middle and two off it:
+## the middle lies on the line between the band's two lanes, and a second standing read the lane
+## past that line and moved the point half a tile toward the other lane. A point not yet stood still
+## moves to the middle.
+func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
+	var rows := _rows_on_the_band_middle()
+	t.check(not rows.is_empty(), "there were rows to ask (%d)" % rows.size())
+	var asked := 0
+	var moved := 0
+	var unstood := 0
+	for north_south: bool in [false, true]:
+		var map := SidewalkStreets.new(north_south)
+		var across := Vector2.RIGHT if north_south else Vector2.DOWN
+		for lane in Tuning.STREET_WIDTH:
+			var tile := Vector2i(lane + 12, 20) if north_south else Vector2i(20, lane + 12)
+			for from_the_middle: float in [0.0, 5.0, -9.0]:
+				var built := map.tile_to_world(tile) + across * from_the_middle
+				for row in rows:
+					var once := BodyStance.stands_at(map, row, built)
+					var twice := BodyStance.stands_at(map, row, once)
+					asked += 1
+					if not twice.is_equal_approx(once):
+						moved += 1
+					if from_the_middle == 0.0 and map.pavement_inward(tile) != Vector2i.ZERO \
+							and once.is_equal_approx(built):
+						unstood += 1
+	# The one row that stands at its kerb is stood where it is as well.
+	var lane := _carriageway_point()
+	var roadblock := EventCatalogue.by_id("roadblock")
+	var kerb := BodyStance.stands_at(WorldMap.open_ground(), roadblock, lane)
+	t.check(lane != Vector2.INF and kerb != lane
+			and BodyStance.stands_at(WorldMap.open_ground(), roadblock, kerb).is_equal_approx(kerb),
+			"the roadblock stood at its kerb is stood where it is")
+	t.check(asked == 2 * Tuning.STREET_WIDTH * 3 * rows.size() and moved == 0,
+			"a stood point is stood where it is: %d of %d moved" % [moved, asked])
+	# The four sidewalk lanes of a street each move to their band's middle, half a tile from where
+	# they were built: the guard that the sweep above is not asking points that never move.
+	t.check(unstood == 0, "a sidewalk point built at a lane's middle is moved (%d stayed)" % unstood)
+
+## **A body already stood lays its pieces out where its build point does**, so the record of a live
+## body's tiles (`EventBody.tiles_at()`) and the record of the move of a body
+## (`EventSpawner.move_extra()`), which hand the record the point the body stands at, are the
+## record of the body built at `at`.
+func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRunner) -> void:
+	var asked := 0
+	var differ := 0
+	for north_south: bool in [false, true]:
+		var map := SidewalkStreets.new(north_south)
+		for lane in Tuning.STREET_WIDTH:
+			var tile := Vector2i(lane + 12, 20) if north_south else Vector2i(20, lane + 12)
+			var built := map.tile_to_world(tile)
+			for row in _rows_on_the_band_middle():
+				var from_build := BodyStance.pieces_at(map, row, built, Vector2.RIGHT)
+				var from_stood := BodyStance.pieces_at(map, row,
+						BodyStance.stands_at(map, row, built), Vector2.RIGHT)
+				asked += 1
+				var same := from_build.size() == from_stood.size()
+				for k in mini(from_build.size(), from_stood.size()):
+					same = same and from_build[k].center().is_equal_approx(from_stood[k].center())
+				if not same:
+					differ += 1
+	t.check(asked > 0 and differ == 0,
+			"a stood body's pieces are its build point's: %d of %d differ" % [differ, asked])
