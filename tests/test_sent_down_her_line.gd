@@ -107,7 +107,7 @@ func _sent(row: String, t: TestRunner) -> Array[float]:
 		for instance in _events.instances():
 			if instance.def.id == row and not before.has(instance):
 				before.append(instance)
-				ages.append(instance.age)
+				ages.append(instance.age())
 		return ages.size() >= SENT
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(WALK_FOR, FAST_SCALE), each, FAST_SCALE)
 	_events.force("", 0.0)

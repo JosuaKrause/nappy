@@ -622,7 +622,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 		first_where.tell(far)
 		first.step(STEP)
 	t.check(first.is_waiting(), "streamed out mid-patrol, still unnoticed")
-	var age := first.age
+	var age := first.age()
 	var travelled := first.path_travelled()
 	var position_before := first.position
 	first.free()
@@ -665,7 +665,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 		first_where.tell(her)
 		first.step(STEP)
 	t.check(not first.is_waiting(), "and a second later it has still stopped, not patrolling")
-	var age := first.age
+	var age := first.age()
 	var travelled := first.path_travelled()
 	var noticed_at := first.save().noticed_at()
 	first.free()
@@ -743,7 +743,7 @@ func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 	first_where.tell(her)
 	first.step(STEP)
 	t.check(not first.is_waiting(), "she is inside the trigger, so he notices her")
-	var age := first.age
+	var age := first.age()
 	var travelled := first.path_travelled()
 	var noticed_at := first.save().noticed_at()
 	first.free()

@@ -90,7 +90,7 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t: TestRunner) -> voi
 	var her := at + Vector2(200.0, 0.0)
 	var guard := events.spawn_extra(EventCatalogue.task_guard(), at)
 	guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
-	guard.age = guard.age + 0.4
+	guard.restore(guard.save().at_age(guard.age() + 0.4))
 	var noticed := guard.save().noticed_at()
 	t.check(guard.is_telegraphing() and noticed != INF, "set on her, the guard warns her")
 	events.move_extra(guard, at + Vector2(64.0, 0.0))
@@ -467,7 +467,7 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 	RunCity.events(_city).stream_around(at + Vector2(Tuning.EVENT_STREAM_RADIUS - 40.0, 0.0))
 	t.check(plan.live != null, "walking into reach of it puts it there")
 	var arrived := plan.live
-	t.check(arrived.age <= 0.0 or arrived.is_telegraphing(),
+	t.check(arrived.age() <= 0.0 or arrived.is_telegraphing(),
 			"and it starts its telegraph on arrival, so the warning is not spent off-screen")
 
 	# The hysteresis: a player pacing on the boundary must not rebuild it every other frame,
@@ -557,7 +557,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 	t.check(started.distance_to(walked) > 1.0,
 			"it covers ground while she is watching (%.0fpx in 2s)"
 			% started.distance_to(walked))
-	var aged := plan.live.age
+	var aged := plan.live.age()
 
 	RunCity.events(_city).stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
 	t.check(plan.live == null, "she walks away and it leaves the world")
@@ -569,7 +569,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 				% plan.live.global_position.distance_to(walked))
 		# The age comes back with it, so an event cannot be made immortal by being visited
 		# twice — its telegraph, its pulse and its duration all carry on rather than restart.
-		t.check(absf(plan.live.age - aged) < 0.01,
+		t.check(absf(plan.live.age() - aged) < 0.01,
 				"and it is as old as it was, so revisiting cannot restart its clock")
 	RunCity.events(_city).stream_within(INF)
 

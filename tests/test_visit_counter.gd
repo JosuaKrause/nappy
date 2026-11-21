@@ -635,7 +635,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 		placed.step(step)
 	t.check(began.size() == 1, "placed at once, its chase is reported once after its telegraph "
 		+ "(%d reports)" % began.size())
-	var age := placed.age
+	var age := placed.age()
 	var travelled := placed.path_travelled()
 	placed.free()
 

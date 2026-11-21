@@ -317,7 +317,7 @@ func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(map))
-	instance.age = def.telegraph_time + 1.0
+	instance.restore(EventSave.aged(def.telegraph_time + 1.0))
 	return instance
 
 ## A car on the far side of a building, and a walker startled there: silent through the wall,

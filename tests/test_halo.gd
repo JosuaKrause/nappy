@@ -625,7 +625,7 @@ func _test_event_instance_contribution_is_cached_per_frame_per_position(t: TestR
 
 	# A new frame (`age` advances the way `_process()` advances it) with the source moved away: the
 	# old position must be recomputed, not answered from a stale cache built for last frame's spot.
-	instance.age += 1.0
+	instance.restore(EventSave.aged(instance.age() + 1.0))
 	instance.global_position = Vector2(5000.0, 5000.0)
 	t.check(is_zero_approx(instance.source().contribution_at(Vector2(10.0, 0.0))),
 			"a new frame recomputes rather than serving last frame's cached contribution")

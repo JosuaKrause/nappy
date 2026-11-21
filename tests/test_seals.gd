@@ -593,7 +593,7 @@ func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) 
 				EventSurroundings.new().on(map))
 		# Past its own telegraph, so the field is the rate the row states rather than the damped one
 		# a telegraph holds it to. Never added to the tree: `contribution_at()` is a pure query.
-		instance.age = 10.0
+		instance.restore(EventSave.aged(10.0))
 		t.check(instance.solid_axis() == (Vector2.DOWN if vertical else Vector2.RIGHT),
 				"the rig stands on a %s street" % ["east-west" if vertical else "north-south"])
 		var cheapest := INF

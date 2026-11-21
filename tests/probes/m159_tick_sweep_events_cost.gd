@@ -291,7 +291,7 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 		context.update(instance.def.id.to_utf8_buffer())
 		state.append(instance.global_position.x)
 		state.append(instance.global_position.y)
-		state.append(instance.age)
+		state.append(instance.age())
 		state.append(float(instance.is_finished))
 		state.append(float(instance.is_leaving))
 		state.append(float(instance.is_telegraphing()))

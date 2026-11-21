@@ -564,7 +564,7 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "the take is running")
 	t.check(_never_settles(instance), "a van mid-take is never gated")
-	instance.age += instance.def.abduction.taken_over
+	instance.restore(EventSave.aged(instance.age() + instance.def.abduction.taken_over))
 	instance_where.tell(Vector2.INF)
 	instance.step(STEP)
 	t.check(not instance.is_taking_a_victim(), "the take is over")
@@ -600,12 +600,12 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loudspeaker")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	instance.age = def.pulse_period + def.telegraph_time + 1.0
+	instance.restore(EventSave.aged(def.pulse_period + def.telegraph_time + 1.0))
 	_asks(instance)
-	instance.age = 2.0 * def.pulse_period + 0.5
+	instance.restore(EventSave.aged(2.0 * def.pulse_period + 0.5))
 	t.check(instance.look.mast_is_telegraphing_now() and _asks(instance),
 			"the next cycle's telegraph moves the mast's key")
-	instance.age = 2.0 * def.pulse_period + def.telegraph_time + 1.0
+	instance.restore(EventSave.aged(2.0 * def.pulse_period + def.telegraph_time + 1.0))
 	_asks(instance)
 	instance.silence()
 	t.check(_asks(instance), "silencing the mast moves its key")
