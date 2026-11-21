@@ -18,6 +18,8 @@ location answers. `SitingMaker` builds no units, and `DayUnits.unit_of()` is gon
 `tests/probes/walk_rows.gd` is identical (the whole probe outlasts its 900-second cap, so days 4 to 14 were not
 compared). No probe line moved when the beats came in their locations' order.
 
-**Open to overturn:** the builder's replacement for `test_day_units.gd`'s `unit_of()` check (every location is held by
-exactly one unit), and its reading that `give_back()` forgets the beat even where a section was swapped over it
-("forgets both", read literally), put to Fable's review.
+**Fable's review of the built pull request** found its design standing as built, and ruled both of the builder's
+open readings as the design: the replacement for `test_day_units.gd`'s `unit_of()` check (every location is held by
+exactly one unit), and `give_back()` forgetting the beat even where a section was swapped over it ("forgets both").
+It also ruled that `beats()` does not remove duplicates, since no game state puts one beat on two locations, and
+that the check standing in for that case holds instead that a plan put over a beat ends it.
