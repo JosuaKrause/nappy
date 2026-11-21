@@ -76,15 +76,15 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 	var told: Array[String] = ["burning_building"]
 	t.check(lit_unmet == told,
 			"and it is told on the builder's bus as lit unmet, once, by its row (%s)" % [lit_unmet])
-	t.check(plan.position.distance_to(doorstep)
+	t.check(plan.placed_at().distance_to(doorstep)
 			>= WalkSiting.DUSK_CLEAR_OF_HER,
 			("it is lit %.0fpx from where she finished, past the %.0fpx streaming band, so it is "
-			% [plan.position.distance_to(doorstep),
+			% [plan.placed_at().distance_to(doorstep),
 			WalkSiting.DUSK_CLEAR_OF_HER]) + "nowhere she could have seen it happen")
 	var scar_here := false
 	for scar in _city.run.attempt_spend().scars():
 		scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
-				and Vector2(scar["position"]).distance_to(plan.position) < 1.0)
+				and Vector2(scar["position"]).distance_to(plan.placed_at()) < 1.0)
 	t.check(scar_here, "and the shell the run keeps is standing where it burned")
 	var still_alight := false
 	for instance in RunCity.events(_city).instances():
@@ -162,7 +162,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 	_walk_clock = 0.0
 	if plan:
 		await _walk(t, rig, route,
-				func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.position))
+				func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()))
 	var warning: PendingWarning = null
 	for pending in RunCity.events(_city).pending_warnings():
 		if pending.def.id == "fire_truck":
@@ -174,7 +174,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 		return
 	t.check(warning.seconds_left() <= Tuning.WARNING_ALONE_MAX,
 			"its badge is up alone for at most a second")
-	var stop := EventSpawner._where_the_summoned_row_stops(_city.map, plan.position)
+	var stop := EventSpawner._where_the_summoned_row_stops(_city.map, plan.placed_at())
 	var offset := warning.points_at() - rig.global_position
 	var looked := [0]
 	var jumped := [0]
@@ -310,7 +310,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 
 func _fire_plan() -> EventPlan:
 	for plan in RunCity.events(_city).plans():
-		if plan.def.id == "burning_building":
+		if plan.row_id() == "burning_building":
 			return plan
 	return null
 
@@ -357,29 +357,29 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 			continue
 		var sited_from := rig.global_position
 		var sited_at := _walk_clock
-		t.check(not _branches_on(day, plan.position).is_empty(),
+		t.check(not _branches_on(day, plan.placed_at()).is_empty(),
 				"walking %s: and it stands on the day's own route tree, never off it" % leg)
-		var tile := _city.map.world_to_tile(plan.position)
+		var tile := _city.map.world_to_tile(plan.placed_at())
 		var location := RunCity.events(_city).walk_events().locations().holding(tile,
 				_city.map.tile_at(tile))
 		t.check(location != null and location.is_taken(),
 				"walking %s: and the location under it is taken for the day, so no draw fills it" % leg)
-		t.check(plan.position.distance_to(sited_from) > Tuning.EVENT_STREAM_RADIUS,
+		t.check(plan.placed_at().distance_to(sited_from) > Tuning.EVENT_STREAM_RADIUS,
 				("walking %s: %.0fpx out, past the %.0fpx streaming band, so it is neither visible "
-				% [leg, plan.position.distance_to(sited_from), Tuning.EVENT_STREAM_RADIUS])
+				% [leg, plan.placed_at().distance_to(sited_from), Tuning.EVENT_STREAM_RADIUS])
 				+ "nor real when it is placed")
-		t.check(_days_tree(day).is_ahead(sited_from, heading, plan.position),
+		t.check(_days_tree(day).is_ahead(sited_from, heading, plan.placed_at()),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
-		await _walk(t, rig, route, func() -> bool: return RunCity.events(_city).sees(plan.position))
-		if RunCity.events(_city).sees(plan.position):
+		await _walk(t, rig, route, func() -> bool: return RunCity.events(_city).sees(plan.placed_at()))
+		if RunCity.events(_city).sees(plan.placed_at()):
 			seen_at = _walk_clock
 		t.check(seen_at >= 0.0,
 				"walking %s: and continuing along the route brings it into view (%.1fs in)"
 				% [leg, seen_at])
 		if seen_at >= 0.0:
 			print("      fire %s: sited %.1fs in, %.0fpx ahead, first seen %.1fs later"
-					% [leg, sited_at, plan.position.distance_to(sited_from), seen_at - sited_at])
+					% [leg, sited_at, plan.placed_at().distance_to(sited_from), seen_at - sited_at])
 			# The engine is what the sight of it summons, and its warning goes up on that same frame.
 			var engine := false
 			for warning in RunCity.events(_city).pending_warnings():
@@ -418,7 +418,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 	await _walk(t, rig, route, func() -> bool: return plan.has_been_in_the_world())
 	t.check(plan.has_been_in_the_world(), "and walking on puts it in the world")
 	if plan.has_been_in_the_world():
-		var burning_at := plan.position
+		var burning_at := plan.placed_at()
 		var scar_here := false
 		for scar in _city.run.attempt_spend().scars():
 			scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
@@ -427,7 +427,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 		# Back down the route she came up, which is the walk home: it is real now, so nothing about
 		# turning round may move it.
 		await _walk(t, rig, _a_route_out(Tuning.RUN_TAUGHT_DAY, false))
-		t.check(plan.position == burning_at,
+		t.check(plan.placed_at() == burning_at,
 				"and turning round after it is real leaves it exactly where it burned")
 	rig.free()
 	RunCity.events(_city).stream_within(INF)
@@ -450,8 +450,8 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 	var rig := Rig.walker(t, _city, route[0])
 	_walk_clock = 0.0
 	await _walk(t, rig, route,
-			func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.position))
-	t.check(plan.is_placed() and RunCity.events(_city).sees(plan.position),
+			func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()))
+	t.check(plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()),
 			"she walks out and finds the fire")
 	if not plan.is_placed():
 		rig.free()
@@ -469,14 +469,14 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		# than a hole in it: what it promises is that a player who turns round the instant she sees
 		# a thing gets clear before it is at full strength, which is exactly this measurement.
 		var range_to_it := rig.global_position.distance_to(fire.global_position)
-		t.check(range_to_it > plan.def.inner_radius,
+		t.check(range_to_it > plan.row().core_within(),
 				("she first sees it %.0fpx off, outside the %.0fpx where its field is at full "
-				% [range_to_it, plan.def.inner_radius]) + "strength")
-		t.check((plan.def.outer_radius - range_to_it) / Tuning.WALK_SPEED
-				<= plan.def.telegraph_time,
+				% [range_to_it, plan.row().core_within()]) + "strength")
+		t.check((plan.heard_within() - range_to_it) / Tuning.WALK_SPEED
+				<= plan.telegraphs_for(),
 				("and walking away from it clears the field in %.2fs, inside the %.2fs its "
-				% [maxf(plan.def.outer_radius - range_to_it, 0.0) / Tuning.WALK_SPEED,
-				plan.def.telegraph_time]) + "telegraph buys her")
+				% [maxf(plan.heard_within() - range_to_it, 0.0) / Tuning.WALK_SPEED,
+				plan.telegraphs_for()]) + "telegraph buys her")
 	var engines := 0
 	var engine_in_the_world := false
 	for instance in RunCity.events(_city).instances():
@@ -495,8 +495,8 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		# plan stops being movable at its first stream-in, so the two can never be a fire that moved
 		# after the engine was sent to where it used to be. The end of the route is the near kerb
 		# across from the frontage it is burning against — `EventSpawner._summon_the_sighted_row()`.
-		var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.position))
-		var kerb: Vector2 = plan.position - Vector2(inward) \
+		var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.placed_at()))
+		var kerb: Vector2 = plan.placed_at() - Vector2(inward) \
 				* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 		# She stands where she first saw the fire while the warning runs on the manager's own ticks.
 		var her_at := rig.global_position

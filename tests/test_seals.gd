@@ -115,7 +115,7 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 func _sealed_segments(map: CityMap, planned: Array[EventPlan]) -> Dictionary:
 	var found := {}
 	for plan in planned:
-		var segment := map.network.segment_containing(map.world_to_tile(plan.position))
+		var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
 		if segment:
 			found[segment.key()] = true
 	return found
@@ -180,7 +180,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 			var home := ClosurePlanner.home_street(map)
 			var planned := _seals_for(map, day)
 			for plan in planned:
-				var segment := map.network.segment_containing(map.world_to_tile(plan.position))
+				var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
 				if not segment:
 					continue
 				t.check(not tree.is_on_the_tree(segment.key()),
@@ -289,7 +289,7 @@ func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 	var blocked := map.closed_tiles.duplicate()
 	for plan in seals:
-		_add_circle(map, blocked, plan.position, plan.def.obstructs_within())
+		_add_circle(map, blocked, plan.placed_at(), plan.obstructs_within())
 	return blocked
 
 ## Every tile of `map.main_road`'s own band, the width of the corridor and the height of the map —
@@ -356,7 +356,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 			var planned := _seals_for(map, day)
 			var off_street_tiles := {}
 			for plan in planned:
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				if not map.network.segment_containing(tile):
 					off_street_tiles[tile] = true
 
@@ -413,8 +413,8 @@ func _test_day_one_has_a_working_soft_pair(t: TestRunner) -> void:
 	for map in _maps:
 		for plan in _seals_for(map, 1):
 			# A pair stands on a street; an alley's mouth may be walled with a soft picture's row too.
-			var on_a_street := not map.alley_at(map.world_to_tile(plan.position)).has_area()
-			if plan.is_placed() and soft_ids.has(plan.def.id) and on_a_street:
+			var on_a_street := not map.alley_at(map.world_to_tile(plan.placed_at())).has_area()
+			if plan.is_placed() and soft_ids.has(plan.row_id()) and on_a_street:
 				has_soft = true
 	t.check(has_soft, "day 1 has at least one working soft seal pair")
 
@@ -558,13 +558,13 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for plan in _seals_for(map, day):
-				if plan.def.id != "car_accident":
+				if plan.row_id() != "car_accident":
 					continue
 				found += 1
-				t.check(plan.def.solid_parts.size() == expected,
+				t.check(plan.row().solid_parts.size() == expected,
 						"seed %d day %d: a placed crash still carries its %d car bodies (%d)"
-						% [map.city_seed(), day, expected, plan.def.solid_parts.size()])
-				t.check(plan.def.shape != null,
+						% [map.city_seed(), day, expected, plan.row().solid_parts.size()])
+				t.check(plan.ground_shape() != null,
 						"seed %d day %d: and the band its field and picture are stated over"
 						% [map.city_seed(), day])
 	t.check(found > 0, "some day across the sweep sealed a street with a crash (%d)" % found)
@@ -660,13 +660,13 @@ func _test_no_seal_body_stands_in_a_street_tree(t: TestRunner) -> void:
 		var trees := StreetTrees.footprint_tiles(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for plan in _seals_for(map, day):
-				if plan.def.id == "fallen_tree":
+				if plan.row_id() == "fallen_tree":
 					continue
 				checked += 1
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				t.check(not trees.has(tile),
 						"seed %d day %d: seal '%s' stands in a street tree at %s"
-						% [map.city_seed(), day, plan.def.id, tile])
+						% [map.city_seed(), day, plan.row_id(), tile])
 	t.check(checked > 0, "there were seal bodies to check (%d)" % checked)
 
 ## **No seal stands over a building**, with its body or with the ground its picture is drawn over
@@ -683,13 +683,13 @@ func _test_no_seal_reaches_over_a_building(t: TestRunner) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for plan in _seals_for(map, day):
 				checked += 1
-				if plan.def.id == "barricade":
+				if plan.row_id() == "barricade":
 					barricades += 1
 				var body := Reach.body_overhang(map, ground, plan)
 				var drawn := Reach.drawing_overhang(map, plan)
 				t.check(body <= 0.5 and drawn <= 0.5,
 						"seed %d day %d: seal '%s' at %s keeps off the buildings (body %.1fpx, drawing %.1fpx over)"
-						% [map.city_seed(), day, plan.def.id, map.world_to_tile(plan.position), body,
+						% [map.city_seed(), day, plan.row_id(), map.world_to_tile(plan.placed_at()), body,
 						drawn])
 	t.check(checked > 0 and barricades > 0,
 			"there were seals to ask about (%d, %d of them barricade pieces)" % [checked, barricades])
@@ -721,16 +721,16 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 			var planned := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 			var felled := {}
 			for plan in planned:
-				if plan.def.id != "fallen_tree":
+				if plan.row_id() != "fallen_tree":
 					continue
 				found += 1
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				var segment := map.network.segment_containing(tile)
 				t.check(segment != null and lined.has(segment.key()),
 						"seed %d day %d: a fallen tree seals %s, which has no trees on it"
 						% [map.city_seed(), day, tile])
 				if segment:
-					felled[segment.key()] = plan.position
+					felled[segment.key()] = plan.placed_at()
 			for key: Vector3i in felled:
 				var at: Vector2 = felled[key]
 				var empty := 0
@@ -858,7 +858,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 				var a_row_reaches := false
 				for plan in counted:
 					if plan.distance_from(world.get_center()) \
-							> plan.def.line_reach() + world.size.length() * 0.5:
+							> plan.line_reach() + world.size.length() * 0.5:
 						continue
 					here.append(plan)
 					a_row_reaches = a_row_reaches or plan in rows
@@ -878,7 +878,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 func _ids_of(rows: Array[EventPlan]) -> String:
 	var ids := {}
 	for plan in rows:
-		ids[plan.def.id] = true
+		ids[plan.row_id()] = true
 	return ", ".join(PackedStringArray(ids.keys()))
 
 ## Whether a line can still cross the junction box `box` of `junction`: take every row's reach off
@@ -900,7 +900,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 				continue
 			var taken := false
 			for plan in rows:
-				if plan.denies(map.tile_to_world(tile), plan.def.line_reach()):
+				if plan.denies(map.tile_to_world(tile), plan.line_reach()):
 					taken = true
 					break
 			if not taken:

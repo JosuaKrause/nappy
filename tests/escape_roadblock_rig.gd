@@ -49,7 +49,7 @@ static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan,
 		var rect := map.tile_rect_to_world(segment.tile_rect())
 		var group: Array[EventPlan] = []
 		for placement in placements:
-			if placement.def.id == "roadblock" and rect.grow(1.0).has_point(placement.position):
+			if placement.row_id() == "roadblock" and rect.grow(1.0).has_point(placement.placed_at()):
 				group.append(placement)
 		if not group.is_empty():
 			found.append([segment, group])

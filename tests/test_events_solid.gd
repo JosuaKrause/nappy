@@ -96,19 +96,19 @@ func _test_a_parked_van_is_at_the_kerb(t: TestRunner) -> void:
 	var parked := 0
 	for day in range(1, 15):
 		for plan in _planned(day):
-			if plan.def.pavement_side != EventDef.Pavement.AT_THE_KERB:
+			if plan.row().sidewalk_lane() != EventDef.Pavement.AT_THE_KERB:
 				continue
 			parked += 1
-			var tile := map.world_to_tile(plan.position)
+			var tile := map.world_to_tile(plan.placed_at())
 			var inward := map.pavement_inward(tile)
 			t.check(inward != Vector2i.ZERO,
-					"day %d: '%s' is on a pavement with a kerb on one side" % [day, plan.def.id])
+					"day %d: '%s' is on a pavement with a kerb on one side" % [day, plan.row_id()])
 			if inward == Vector2i.ZERO:
 				continue
 			var beside := map.tile_at(tile - inward)
 			t.check(beside == GameEnums.TileType.ROAD or beside == GameEnums.TileType.CROSSING,
 					"day %d: '%s' has the carriageway on the other side of it (%d)"
-					% [day, plan.def.id, beside])
+					% [day, plan.row_id(), beside])
 	t.check(parked > 0, "and a run parks something (%d over 14 days)" % parked)
 
 ## Playtest 07, finding 15: *"the backing out lorry does not connect to the building making it
@@ -119,7 +119,7 @@ func _test_a_lorry_has_a_wall_to_back_into(t: TestRunner) -> void:
 	var backing := 0
 	for day in range(3, 15):
 		for plan in _planned(day):
-			if plan.def.pavement_side != EventDef.Pavement.AGAINST_THE_BUILDING:
+			if plan.row().sidewalk_lane() != EventDef.Pavement.AGAINST_THE_BUILDING:
 				continue
 			# A place the day owes her walk has no tile yet to have a frontage behind it — day 3's
 			# fire is sited later, against the same `RowGround._wants_this_side()` rule this asks about, and
@@ -127,17 +127,17 @@ func _test_a_lorry_has_a_wall_to_back_into(t: TestRunner) -> void:
 			if not plan.is_placed():
 				continue
 			backing += 1
-			var tile := map.world_to_tile(plan.position)
+			var tile := map.world_to_tile(plan.placed_at())
 			var inward := map.pavement_inward(tile)
 			t.check(inward != Vector2i.ZERO and inward.y == 0,
-					"day %d: '%s' backs into a frontage it can be drawn facing" % [day, plan.def.id])
+					"day %d: '%s' backs into a frontage it can be drawn facing" % [day, plan.row_id()])
 			if inward == Vector2i.ZERO:
 				continue
 			t.check(map.tile_at(tile + inward) == GameEnums.TileType.BUILDING,
-					"day %d: '%s' has a real building behind it" % [day, plan.def.id])
+					"day %d: '%s' has a real building behind it" % [day, plan.row_id()])
 			# Facing *out* of the wall, so the box end is the end that is in the yard.
-			t.check(plan.facing == -Vector2(inward),
-					"day %d: '%s' is turned to reverse into it" % [day, plan.def.id])
+			t.check(plan.faces() == -Vector2(inward),
+					"day %d: '%s' is turned to reverse into it" % [day, plan.row_id()])
 	t.check(backing > 0, "and a run sites one (%d over days 3-14)" % backing)
 
 ## Playtest 11, finding 1: *"events/hazards should not spawn on the home block."* The home is a
@@ -163,12 +163,12 @@ func _test_nothing_stands_on_the_doorstep_street(t: TestRunner) -> void:
 	var placed := 0
 	for day in range(1, 15):
 		for plan in _planned(day):
-			if plan.position == Vector2.INF:
+			if plan.placed_at() == Vector2.INF:
 				continue   # an `AHEAD_OF_PLAYER` row, sited by the director while she walks
 			placed += 1
-			t.check(not rect.has_point(map.world_to_tile(plan.position)),
+			t.check(not rect.has_point(map.world_to_tile(plan.placed_at())),
 					"day %d: '%s' is not standing on the street she starts the day on"
-					% [day, plan.def.id])
+					% [day, plan.row_id()])
 
 	var pavement := 0
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -183,11 +183,11 @@ func _test_nothing_stands_on_the_doorstep_street(t: TestRunner) -> void:
 ## same two exemptions the rule and its own probe make: a region door's body (`EventPlan.is_door()`)
 ## costs by design, and a `Role.SCENERY` row has no ground to keep clear of.
 func _add_a_physical_body(bodies: Array, plan: EventPlan) -> void:
-	if not plan.is_placed() or plan.def.obstructs_within() <= 0.0:
+	if not plan.is_placed() or plan.obstructs_within() <= 0.0:
 		return
-	if plan.def.role == EventDef.Role.SCENERY or plan.is_door():
+	if plan.row().is_scenery() or plan.is_door():
 		return
-	bodies.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_within()))
+	bodies.append(Vector3(plan.placed_at().x, plan.placed_at().y, plan.obstructs_within()))
 
 ## `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the home block":
 ## a catalogue placement is refused a candidate tile whose street segment is held today — a
@@ -281,12 +281,12 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 			# the pit tiles, since the refusal is stated over the ground the shadow reaches.
 			var trees := StreetTrees.footprint_tiles(map)
 			for seal in seals:
-				if seal.def.id == "fallen_tree":
+				if seal.row_id() == "fallen_tree":
 					continue   # the one body that stands in a pit, and empties it; see below
-				var seal_tile := map.world_to_tile(seal.position)
+				var seal_tile := map.world_to_tile(seal.placed_at())
 				t.check(not trees.has(seal_tile),
 						"seed %d day %d: seal '%s' stands in a street tree at %s"
-						% [map.city_seed(), day, seal.def.id, seal_tile])
+						% [map.city_seed(), day, seal.row_id(), seal_tile])
 				checked_trees += 1
 
 			var consumed: Array[String] = []
@@ -295,19 +295,19 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 				if not plan.is_placed():
 					continue
 				checked += 1
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				t.check(not map.is_closed(tile),
 						"seed %d day %d: '%s' does not stand on a closed tile"
-						% [map.city_seed(), day, plan.def.id])
+						% [map.city_seed(), day, plan.row_id()])
 				t.check(not map.is_held_at(tile),
 						"seed %d day %d: '%s' does not stand on a held segment"
-						% [map.city_seed(), day, plan.def.id])
+						% [map.city_seed(), day, plan.row_id()])
 				t.check(not map.is_on_home_block(tile),
 						"seed %d day %d: '%s' does not stand inside the home block"
-						% [map.city_seed(), day, plan.def.id])
+						% [map.city_seed(), day, plan.row_id()])
 				t.check(not trees.has(tile),
 						"seed %d day %d: '%s' stands in a street tree at %s"
-						% [map.city_seed(), day, plan.def.id, tile])
+						% [map.city_seed(), day, plan.row_id(), tile])
 				checked_trees += 1
 
 			total_closures += closures.size()

@@ -581,7 +581,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		# Only the place her route's marble handed to her walk: a unit the siting drew round its
 		# pick may have drawn the same row, a place of its own.
 		for plan: EventPlan in RunCity.events(city).plans().slice(plans_before):
-			if plan.def.id == row and RunCity.events(city).ahead.director().is_from_her_route(plan):
+			if plan.row_id() == row and RunCity.events(city).ahead.director().is_from_her_route(plan):
 				placed.append(plan)
 				her_at_siting = player.global_position
 		player.global_position += player.velocity * STEP
@@ -591,26 +591,26 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	if placed.size() == 1:
 		var plan := placed[0]
 		var map := city.map
-		var tile := map.world_to_tile(plan.position)
+		var tile := map.world_to_tile(plan.placed_at())
 		# Day 6's man shouting is sited on the street she is walking, inside the streaming band and
 		# in the world at once (`WalkSiting.lay_ahead()`), not on the day's route band:
 		# `tests/test_day6_yeller_met.gd` holds where he stands. The route band's claims are the mast's.
 		if row != "homeless_yeller":
 			t.check(not city.streets().route_tree().branches_on(tile).is_empty(),
 					"day %d: it stands on ground the day's routes run along" % day)
-			t.check(plan.position.distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
+			t.check(plan.placed_at().distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
 					"day %d: it is put past the streaming band, so it is never seen to appear (%.0fpx)"
-					% [day, plan.position.distance_to(her_at_siting)])
+					% [day, plan.placed_at().distance_to(her_at_siting)])
 		var grid := ReachabilityGrid.build(map)
 		var reached := grid.flood([map.world_to_tile(her_at_siting)])
 		t.check(grid.reaches(tile, {}, reached), "day %d: she can walk to it from where she was" % day)
 		if row == "loudspeaker":
-			t.check(plan.mast_id() == DawnMasts.added_mast_id(plan.position),
+			t.check(plan.mast_id() == DawnMasts.added_mast_id(plan.placed_at()),
 					"a mast put on her route is a mast the day can silence, named by its foot")
-			t.check(MastSites.is_eligible(plan.position, map),
+			t.check(MastSites.is_eligible(plan.placed_at(), map),
 					"a mast put on her route stands where a mast site may (off the home street)")
 		t.check(not plan.is_in_the_world(), "day %d: it is not in the world while she is far from it" % day)
-		RunCity.events(city).stream_around(plan.position)
+		RunCity.events(city).stream_around(plan.placed_at())
 		t.check(plan.is_in_the_world() and is_instance_valid(RunCity.events(city).event_of(plan)),
 				"day %d: and it is in the world once she walks to it" % day)
 	player.free()

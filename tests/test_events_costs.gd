@@ -116,7 +116,7 @@ func _cost_to_run_through(def: EventDef) -> float:
 func _signature(planned: Array[EventPlan]) -> String:
 	var parts: Array[String] = []
 	for plan in planned:
-		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
+		parts.append("%s@%.1f,%.1f" % [plan.row_id(), plan.placed_at().x, plan.placed_at().y])
 	return "|".join(parts)
 
 ## The calm block she would find and settle in: the one the fewest of the day's rows spoil, as
@@ -254,7 +254,7 @@ func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
 		var planned := _planned(day)
 		var real := 0
 		for plan in planned:
-			if plan.def.kind != GameEnums.EventKind.AMBIENT:
+			if plan.row().kind != GameEnums.EventKind.AMBIENT:
 				real += 1
 		# Stated as a fraction of a block each way rather than as a count, so it survives the
 		# city changing size — which M21 is about to do.
@@ -264,10 +264,10 @@ func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
 	var early := 0
 	var late := 0
 	for plan in _planned(1):
-		if plan.def.kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
+		if plan.row().kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
 			early += 1
 	for plan in _planned(14):
-		if plan.def.kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
+		if plan.row().kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
 			late += 1
 	# A fifth more, not half again: what day 14 places is under half again what day 1 places, before
 	# the bags as after (`tests/probes/placement_view_mix.gd`), so a bar of half again on what is
@@ -294,7 +294,7 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 	for day in range(1, 15):
 		var count := 0
 		for plan in _planned(day):
-			if plan.def.hard_fail:
+			if plan.ends_the_day():
 				count += 1
 		lethal_on[day] = count
 
@@ -340,7 +340,7 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 		rng.seed = hash("%d:1" % city_seed)
 		var counts := {}
 		for plan in GameDawn.of(DaySpec.for_day(1), rng, seeded).spent(consumed).plan().placements():
-			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+			counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
 		# No day-1 map may be without one at all, which is the failure the player actually
 		# reported: *"a restaurant — I never saw one."*
 		t.check(int(counts.get("cafe_tables", 0)) >= 2,
@@ -361,15 +361,15 @@ func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
 				var b: EventPlan = planned[j]
 				if not a.is_placed() or not b.is_placed():
 					continue
-				if a.def.kind == GameEnums.EventKind.AMBIENT:
+				if a.is_ambient():
 					continue
-				if b.def.kind == GameEnums.EventKind.AMBIENT:
+				if b.is_ambient():
 					continue
-				var gap := a.position.distance_to(b.position)
+				var gap := a.placed_at().distance_to(b.placed_at())
 				pairs += 1
 				t.check(gap >= EventScheduler.EVENT_SPACING_ANY - 0.5,
 						"day %d: '%s' and '%s' are not drawn inside each other (%.0fpx)"
-						% [day, a.def.id, b.def.id, gap])
+						% [day, a.row_id(), b.row_id(), gap])
 	t.check(pairs > 0, "there were placed pairs to measure (%d)" % pairs)
 
 ## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
@@ -461,11 +461,11 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 		# zone to come first — which is the test restating a rule the scheduler owns rather than
 		# asking it.
 		for plan in planned:
-			if not plan.is_placed() or not lot.has_point(plan.position):
+			if not plan.is_placed() or not lot.has_point(plan.placed_at()):
 				continue
-			t.check(not plan.def.hard_fail and plan.def.obstructs_within() <= allowed,
+			t.check(not plan.ends_the_day() and plan.obstructs_within() <= allowed,
 					"day %d puts '%s' in her park, which is loud rather than lethal"
-					% [day, plan.def.id])
+					% [day, plan.row_id()])
 
 	t.check(spoiled_days >= 10,
 			"the park she used yesterday is reliably spoiled (%d of 13 days)" % spoiled_days)

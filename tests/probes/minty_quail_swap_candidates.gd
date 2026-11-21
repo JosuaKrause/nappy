@@ -41,9 +41,9 @@ func run(t: TestRunner) -> void:
 			counts[kind] += 1
 			if kind == "adjacent":
 				adjacent.append(plan)
-				var key := "%s r%.0f" % [plan.def.id, plan.blocking_radius()]
+				var key := "%s r%.0f" % [plan.row_id(), plan.blocking_radius()]
 				ids[key] = int(ids.get(key, 0)) + 1
-				var segment := map.network.segment_containing(map.world_to_tile(plan.position))
+				var segment := map.network.segment_containing(map.world_to_tile(plan.placed_at()))
 				if segment and not segment.horizontal and segment.a.x == map.main_road:
 					counts["spine"] += 1
 		print("SC seed %d | on the routes %d | route-adjacent %d (on the main road %d) | deep %d"
@@ -56,7 +56,7 @@ func run(t: TestRunner) -> void:
 			var fits: Array[EventPlan] = []
 			var spine := 0
 			for plan in adjacent:
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				if plan.blocking_radius() < width or not beat.placement.has(map.tile_at(tile)):
 					continue
 				fits.append(plan)
@@ -65,7 +65,7 @@ func run(t: TestRunner) -> void:
 					spine += 1
 			var kinds := {}
 			for plan in fits:
-				kinds[plan.def.id] = int(kinds.get(plan.def.id, 0)) + 1
+				kinds[plan.row_id()] = int(kinds.get(plan.row_id(), 0)) + 1
 			print("SC_FITS seed %d %s | %d route-adjacent bodies at least as wide on its ground "
 					% [seed_value, id, fits.size()] + "(%d on the main road) | %s" % [spine, kinds])
 			for spot in SPOTS:
@@ -74,7 +74,7 @@ func run(t: TestRunner) -> void:
 				for reach in REACHES:
 					var n := 0
 					for plan in fits:
-						var d := plan.position.distance_to(her)
+						var d := plan.placed_at().distance_to(her)
 						if d <= reach and d > Tuning.OUT_OF_SIGHT:
 							n += 1
 					within.append(n)
@@ -92,7 +92,7 @@ func run(t: TestRunner) -> void:
 	t.check(asked > 0, "there were places to ask from (%d)" % asked)
 
 func _where(map: CityMap, corridor: Corridor, plan: EventPlan) -> String:
-	var tile := map.world_to_tile(plan.position)
+	var tile := map.world_to_tile(plan.placed_at())
 	if corridor.carries_a_route(tile):
 		return "on"
 	var segment := map.network.segment_containing(tile)

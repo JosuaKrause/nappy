@@ -274,9 +274,9 @@ func _busker_street_side(t: TestRunner) -> void:
 		var no_one_shots: Array[String] = []
 		var planned := GameDawn.of(DaySpec.for_day(BUSKER_DAY), rng, map).spent(no_one_shots).plan().placements()
 		for plan in planned:
-			if plan.def.id != "busker":
+			if plan.row_id() != "busker":
 				continue
-			var to_street := _distance_to_sidewalk(map, plan.position)
+			var to_street := _distance_to_sidewalk(map, plan.placed_at())
 			if to_street == INF:
 				continue
 			var before := before_def.emission_at(Vector2(to_street, 0.0))

@@ -425,7 +425,7 @@ func _test_the_door_task_sits_at_a_region_door(t: TestRunner) -> void:
 			"`allow_held` exists for")
 	var on_a_door := false
 	for body in _city.streets().region_plan().door_bodies:
-		if body.def.redetains and body.position.distance_to(at) < 0.5:
+		if body.detains_again() and body.placed_at().distance_to(at) < 0.5:
 			on_a_door = true
 			break
 	t.check(on_a_door, "exactly on a gatehouse of one of today's own region doors")
@@ -1264,9 +1264,9 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 				shuttered += 1
 		t.check(shuttered > 0, "and it has buildings to shutter")
 		for plan in RunCity.events(_city).plans():
-			if plan.def.id == "market_stall" and frontage.has_point(plan.position):
+			if plan.row_id() == "market_stall" and frontage.has_point(plan.placed_at()):
 				var live := RunCity.events(_city).event_of(plan)
-				t.check(plan.spent or (live and live.is_finished),
+				t.check(plan.is_spent() or (live and live.is_finished),
 						"no market stall of it is left in the day")
 		state.begin_day(_city.map.plans_by_block(), ResistanceHappenings.MARKET_DAY + 1)
 		t.check(state.purpose_of(_city.map.plans_by_block(), block)

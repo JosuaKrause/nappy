@@ -46,7 +46,7 @@ func run(t: TestRunner) -> void:
 
 static func _count(rows: Dictionary, map: CityMap, ground: WalkGround,
 		plan: EventPlan) -> void:
-	var row: Array = rows.get(plan.def.id, [0, 0, 0.0, 0, 0.0])
+	var row: Array = rows.get(plan.row_id(), [0, 0, 0.0, 0, 0.0])
 	row[0] += 1
 	var body := Reach.body_overhang(map, ground, plan)
 	if body > 0.5:
@@ -56,7 +56,7 @@ static func _count(rows: Dictionary, map: CityMap, ground: WalkGround,
 	if drawn > 0.5:
 		row[3] += 1
 		row[4] = maxf(row[4], drawn)
-	rows[plan.def.id] = row
+	rows[plan.row_id()] = row
 
 static func _print(where: String, rows: Dictionary) -> void:
 	var ids := rows.keys()

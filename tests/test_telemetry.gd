@@ -594,13 +594,13 @@ func _check_a_glyph_says_what_it_is(t: TestRunner, map: CityMap,
 	for plan: EventPlan in [costly, lethal]:
 		var only: Array[EventPlan] = [plan]
 		var image := TelemetryMap.render(map, [], null, only)
-		var at := map.world_to_tile(plan.position)
+		var at := map.world_to_tile(plan.placed_at())
 		var colour := _mark_of(plan.role())
 		t.check(_tile_colour(image, at) == colour,
-				"%s is marked on the tile the day put it on" % plan.def.id)
+				"%s is marked on the tile the day put it on" % plan.row_id())
 		t.check(_tile_colour(image, at + Vector2i(1, 0)) == colour, "and reaches a tile across")
-		t.check((_tile_colour(image, at + corner) == colour) == plan.def.hard_fail,
-				"and %s fills its corners only if it ends the day" % plan.def.id)
+		t.check((_tile_colour(image, at + corner) == colour) == plan.ends_the_day(),
+				"and %s fills its corners only if it ends the day" % plan.row_id())
 
 		# The pip is the whole of "she got to this one", and it is added rather than taken away:
 		# every mark stays at full strength, because a wall in the wrong place in a corner of the
@@ -653,13 +653,13 @@ func _test_every_routed_event_is_a_straight_line(t: TestRunner) -> void:
 	var consumed: Array[String] = []
 	for day: int in [1, 3, 7, 14]:
 		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).plan().placements():
-			if plan.path.size() < 2:
+			if plan.walks().size() < 2:
 				continue
-			t.check(plan.path.size() == 2, "%s's route is two points, not %d"
-					% [plan.def.id, plan.path.size()])
-			var along := plan.path[plan.path.size() - 1] - plan.path[0]
+			t.check(plan.walks().size() == 2, "%s's route is two points, not %d"
+					% [plan.row_id(), plan.walks().size()])
+			var along := plan.walks()[plan.walks().size() - 1] - plan.walks()[0]
 			t.check(is_zero_approx(along.x) or is_zero_approx(along.y),
-					"and %s's route runs along one axis" % plan.def.id)
+					"and %s's route runs along one axis" % plan.row_id())
 
 ## Every colour anywhere in a picture. Presence rather than address, which is what the marks are
 ## asserted by: an outline moved one tile is still a correct picture, and a mark that never got

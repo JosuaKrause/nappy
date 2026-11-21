@@ -136,7 +136,7 @@ func _a_mark_puts_a_van_on_her_way(t: TestRunner, seed_value: int) -> bool:
 		var tile := map.world_to_tile(where_laid)
 		# What it draws, where it is drawn, against the camera's view as it leads her
 		# (`Stroller.CAMERA_LOOK_AHEAD` along her heading, `Stroller.OBLIQUE_Y` of it up or down).
-		var box := EventFootprints.footprint_of(plan.def)
+		var box := EventFootprints.footprint_of(plan.row())
 		var drawn := Rect2(where_laid + box.position, box.size)
 		var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 		var view := Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)

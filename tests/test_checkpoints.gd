@@ -134,7 +134,7 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 
 		var counts: Dictionary[String, int] = {}
 		for body in plan.door_bodies:
-			counts[body.def.id] = counts.get(body.def.id, 0) + 1
+			counts[body.row_id()] = counts.get(body.row_id(), 0) + 1
 		var huts: int = counts.get("checkpoint_hut", 0)
 		var gates: int = counts.get("checkpoint_gate", 0)
 		var posts: int = counts.get("checkpoint_post", 0)
@@ -178,16 +178,16 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
 			for body in plan.door_bodies:
-				if body.def.id != "checkpoint_hut" and body.def.id != "checkpoint_gate":
+				if body.row_id() != "checkpoint_hut" and body.row_id() != "checkpoint_gate":
 					continue
-				if not mouth.has_point(body.position):
+				if not mouth.has_point(body.placed_at()):
 					continue
 				checked += 1
-				var tile := map.world_to_tile(body.position)
+				var tile := map.world_to_tile(body.placed_at())
 				var containing := map.network.segment_containing(tile)
 				t.check(containing != null and containing.key() == segment.key(),
 						"seed %d day %d: door body %s at %s stands on its own segment %s (got %s)"
-						% [map.city_seed(), day, body.def.id, body.position, segment.key(),
+						% [map.city_seed(), day, body.row_id(), body.placed_at(), segment.key(),
 						containing.key() if containing else "none"])
 
 		# And every wall body never reaches inside a door's own mouth, the same direction
@@ -198,11 +198,11 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 						< RegionPlanner.region_of_junction(map, segment.b)
 				var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 				var mouth_centre := map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center()
-				var distance := wall_body.position.distance_to(mouth_centre)
-				t.check(distance > wall_body.def.obstructs_within(),
+				var distance := wall_body.placed_at().distance_to(mouth_centre)
+				t.check(distance > wall_body.obstructs_within(),
 						("seed %d day %d: a wall body at %s (radius %.0f) does not reach the door " +
-						"at %s (%.0fpx away)") % [map.city_seed(), day, wall_body.position,
-						wall_body.def.obstructs_within(), segment.key(), distance])
+						"at %s (%.0fpx away)") % [map.city_seed(), day, wall_body.placed_at(),
+						wall_body.obstructs_within(), segment.key(), distance])
 	t.check(checked > 0, "at least one door body was checked against its own segment (%d)" % checked)
 
 ## *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down".)* The boom
@@ -232,11 +232,11 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 			var gate: EventPlan = null
 			var huts: Array[EventPlan] = []
 			for body in plan.door_bodies:
-				if not mouth.has_point(body.position):
+				if not mouth.has_point(body.placed_at()):
 					continue
-				if body.def.id == "checkpoint_gate":
+				if body.row_id() == "checkpoint_gate":
 					gate = body
-				elif body.def.id == "checkpoint_hut":
+				elif body.row_id() == "checkpoint_hut":
 					huts.append(body)
 			if not gate or huts.size() != 2:
 				continue
@@ -249,11 +249,11 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 			var road_width: float = (Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH) \
 					* Tuning.TILE_SIZE
 			var across_high := across_low + road_width
-			var gate_across: float = gate.position.y if segment.horizontal else gate.position.x
-			var gate_along: float = gate.position.x if segment.horizontal else gate.position.y
+			var gate_across: float = gate.placed_at().y if segment.horizontal else gate.placed_at().x
+			var gate_along: float = gate.placed_at().x if segment.horizontal else gate.placed_at().y
 
 			for hut in huts:
-				var hut_along: float = hut.position.x if segment.horizontal else hut.position.y
+				var hut_along: float = hut.placed_at().x if segment.horizontal else hut.placed_at().y
 				t.check(is_equal_approx(hut_along, gate_along),
 						"seed %d day %d: the gate stands level with its huts along the street "
 						% [map.city_seed(), day] + "(gate %.1f, hut %.1f)" % [gate_along, hut_along])
@@ -262,9 +262,9 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 					% [map.city_seed(), day] + "(%.1f in %.1f..%.1f)"
 					% [gate_across, across_low, across_high])
 
-			if not spans.has(gate.facing):
-				spans[gate.facing] = await _drawn_boom_span(t, gate)
-			var span: Vector2 = spans[gate.facing]
+			if not spans.has(gate.faces()):
+				spans[gate.faces()] = await _drawn_boom_span(t, gate)
+			var span: Vector2 = spans[gate.faces()]
 			var arm_near := gate_across + span.x
 			var arm_far := gate_across + span.y
 			t.check(arm_near <= across_low and arm_far >= across_high,
@@ -280,12 +280,12 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 			# And the picture stays over ground the door is actually solid on: the three bodies
 			# tile the street edge to edge at `Tuning.TILE_SIZE` spacing, so an arm that reaches
 			# past the gate's own body is still over a hut's.
-			var solid_low := gate_across - gate.def.obstructs_within()
-			var solid_high := gate_across + gate.def.obstructs_within()
+			var solid_low := gate_across - gate.obstructs_within()
+			var solid_high := gate_across + gate.obstructs_within()
 			for hut in huts:
-				var hut_across: float = hut.position.y if segment.horizontal else hut.position.x
-				solid_low = minf(solid_low, hut_across - hut.def.obstructs_within())
-				solid_high = maxf(solid_high, hut_across + hut.def.obstructs_within())
+				var hut_across: float = hut.placed_at().y if segment.horizontal else hut.placed_at().x
+				solid_low = minf(solid_low, hut_across - hut.obstructs_within())
+				solid_high = maxf(solid_high, hut_across + hut.obstructs_within())
 			t.check(arm_near >= solid_low and arm_far <= solid_high,
 					("seed %d day %d: the arm never reaches past the door's own solid line " +
 					"(%.1f..%.1f over %.1f..%.1f)")
@@ -303,7 +303,7 @@ func _drawn_boom_span(t: TestRunner, gate: EventPlan) -> Vector2:
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	var drawer := RecordingEventDrawer.new(atlas)
 	var instance := EventInstance.new()
-	instance.setup(gate.def, Vector2.ZERO, PackedVector2Array(), gate.facing,
+	instance.setup(gate.row(), Vector2.ZERO, PackedVector2Array(), gate.faces(),
 			EventSurroundings.new().on(WorldMap.open_ground()) \
 				.drawn_from(atlas) \
 				.drawing_through(drawer))
@@ -360,7 +360,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 		var consumed: Array[String] = []
 		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements():
 			scheduled += 1
-			if plan.def.id.begins_with("checkpoint_"):
+			if plan.row_id().begins_with("checkpoint_"):
 				rolled += 1
 	t.check(scheduled > 0,
 			"the scheduler actually placed something to ask the question of (%d plans)" % scheduled)
@@ -404,8 +404,8 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 
 	var planned_ids: Dictionary[String, int] = {}
 	for plan in RunCity.events(city).plans():
-		if plan.def.id.begins_with("checkpoint_"):
-			planned_ids[plan.def.id] = planned_ids.get(plan.def.id, 0) + 1
+		if plan.row_id().begins_with("checkpoint_"):
+			planned_ids[plan.row_id()] = planned_ids.get(plan.row_id(), 0) + 1
 	t.check(int(planned_ids.get("checkpoint_hut", 0)) > 0,
 			"the day's own plan carries checkpoint_hut, not just RegionPlanner's own list")
 	t.check(int(planned_ids.get("checkpoint_gate", 0)) > 0,
@@ -454,7 +454,7 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 			var tree := RouteTree.for_day(map, day)
 			var doors := PackedVector2Array()
 			for body in RegionPlanner.plan_day(map, DaySpec.for_day(day), tree).door_bodies:
-				doors.append(body.position)
+				doors.append(body.placed_at())
 			if doors.is_empty():
 				continue
 			found_a_door = true
@@ -466,15 +466,15 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 			for plan in guarded:
 				if not plan.is_placed():
 					continue
-				if not DoorClearanceRule.clear_of_the_doors(plan.position, plan.path, doors,
-						plan.def.field_reach()):
+				if not DoorClearanceRule.clear_of_the_doors(plan.placed_at(), plan.walks(), doors,
+						plan.field_reach()):
 					inside += 1
 			var inside_before := 0
 			for plan in ungraded:
 				if not plan.is_placed():
 					continue
-				if not DoorClearanceRule.clear_of_the_doors(plan.position, plan.path, doors,
-						plan.def.field_reach()):
+				if not DoorClearanceRule.clear_of_the_doors(plan.placed_at(), plan.walks(), doors,
+						plan.field_reach()):
 					inside_before += 1
 			t.check(inside == 0,
 					"seed %d day %d: nothing the day placed reaches inside a door's %.0fpx gap "
@@ -571,8 +571,8 @@ func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: 
 		gate_state: GateState = null, age := 0.0,
 		route := PackedVector2Array()) -> EventInstance:
 	var plan := EventPlan.new(def, at, route)
-	plan.facing = face
-	plan.gate_state = gate_state
+	plan.face(face)
+	plan.stand_as_the_boom_of(gate_state)
 	plan.arrive_aged(age)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
@@ -1203,18 +1203,18 @@ func _planned_field_at(plans: Array[EventPlan], at: Vector2) -> float:
 	var total := 0.0
 	var strongest := 0.0
 	for plan in plans:
-		if not plan.is_placed() or plan.def.intensity <= 0.0:
+		if not plan.is_placed() or plan.row().peak() <= 0.0:
 			continue
 		var gap := plan.distance_from(at)
-		if plan.def.shape != null and plan.def.shape.kind == GroundShape.Kind.SEGMENT:
+		if plan.ground_shape() != null and plan.ground_shape().kind == GroundShape.Kind.SEGMENT:
 			# The field is a capsule about the body's own spine. Read as a disc grown by the spine's
 			# half length, which is the conservative direction: too loud off the axis, never too
 			# quiet along it.
-			gap = maxf(0.0, gap - plan.def.shape.half_length)
-		if gap > plan.def.outer_radius:
+			gap = maxf(0.0, gap - plan.ground_shape().half_length)
+		if gap > plan.heard_within():
 			continue
-		var rate := plan.def.emission_at_distance(gap)
-		if plan.def.barrier_structure:
+		var rate := plan.row().emission_at_distance(gap)
+		if plan.row().counts_as_one_barrier():
 			strongest = maxf(strongest, rate)
 		else:
 			total += rate
@@ -1233,9 +1233,9 @@ func _peak_walking_out(plans: Array[EventPlan], from: Vector2,
 	# row's own reach costs one distance check each and leaves a handful.
 	var near: Array[EventPlan] = []
 	for plan in plans:
-		if not plan.is_placed() or plan.def.intensity <= 0.0:
+		if not plan.is_placed() or plan.row().peak() <= 0.0:
 			continue
-		if plan.distance_from(from) <= Tuning.CHECKPOINT_EVENT_GAP + plan.def.field_reach():
+		if plan.distance_from(from) <= Tuning.CHECKPOINT_EVENT_GAP + plan.field_reach():
 			near.append(plan)
 	var meter := Tuning.CHAT_EXCITEMENT
 	var peak := meter
@@ -1251,14 +1251,14 @@ func _peak_walking_out(plans: Array[EventPlan], from: Vector2,
 ## on each side of the crossing, sampled across the pavement band because the release preserves
 ## whatever cross-street offset she walked in on.
 func _release_points(body: EventPlan) -> Array[Vector2]:
-	var axis: Vector2 = body.facing
+	var axis: Vector2 = body.faces()
 	var across := Vector2(-axis.y, axis.x)
-	var clearance := body.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
+	var clearance := body.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var points: Array[Vector2] = []
 	for side: float in [-1.0, 1.0]:
 		for lane: float in [-1.0, -0.5, 0.0, 0.5, 1.0]:
-			points.append(body.position + axis * side * clearance
+			points.append(body.placed_at() + axis * side * clearance
 					+ across * lane * float(Tuning.TILE_SIZE))
 	return points
 
@@ -1287,7 +1287,7 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 				continue
 			var doors := PackedVector2Array()
 			for body in region.door_bodies:
-				doors.append(body.position)
+				doors.append(body.placed_at())
 			var guarded := _planned_day(map, day, tree, doors)
 			var unguarded := _planned_day(map, day, tree, PackedVector2Array())
 			# The wall and the door structure stand whatever the catalogue was allowed to place, so
@@ -1299,7 +1299,7 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 			unguarded.append_array(region.door_bodies)
 			for body in region.door_bodies:
 				for point in _release_points(body):
-					var heading := (point - body.position).normalized()
+					var heading := (point - body.placed_at()).normalized()
 					releases += 1
 					worst_guarded = maxf(worst_guarded, _peak_walking_out(guarded, point, heading))
 					var loose := _peak_walking_out(unguarded, point, heading)
@@ -1337,8 +1337,8 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 	var hut_at := Vector2(8000.0, 8000.0)
 	var hut := EventPlan.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
-	hut.facing = axis
-	var clearance := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
+	hut.face(axis)
+	var clearance := hut.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	# Let out on the north side, the way the run was.
 	var released := hut_at + Vector2(0.0, -clearance)
@@ -1360,10 +1360,10 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 
 	var walls := 0.0
 	for plan in plans:
-		if plan.def == wall:
-			walls += plan.def.emission_at_distance(maxf(0.0,
-					plan.position.distance_to(released)
-					- (plan.def.shape.half_length if plan.def.shape.kind
+		if plan.row() == wall:
+			walls += plan.row().emission_at_distance(maxf(0.0,
+					plan.placed_at().distance_to(released)
+					- (plan.ground_shape().half_length if plan.ground_shape().kind
 					== GroundShape.Kind.SEGMENT else 0.0)))
 	t.check(walls == 0.0,
 			"the wall's three roadblocks beside the release cost nothing (%.1f/s)" % walls)
@@ -1952,17 +1952,17 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	if not plan.gates.is_empty():
 		state = plan.gates[0]
 		for body in plan.door_bodies:
-			if body.gate_state == state:
+			if body.gate() == state:
 				# The planner's own plan, put in by the city's streaming with its facing and the
 				# door's shared boom state, as a door day puts it in.
 				RunCity.events(city).streaming.add(body)
-				RunCity.events(city).stream_around(body.position)
+				RunCity.events(city).stream_around(body.placed_at())
 				gate = RunCity.events(city).event_of(body)
 		for body in plan.door_bodies:
-			if gate and body.def.id == "checkpoint_hut" \
-					and absf((body.position - gate.global_position).dot(body.facing)) <= 1.0:
+			if gate and body.row_id() == "checkpoint_hut" \
+					and absf((body.placed_at() - gate.global_position).dot(body.faces())) <= 1.0:
 				RunCity.events(city).streaming.add(body)
-				RunCity.events(city).stream_around(body.position)
+				RunCity.events(city).stream_around(body.placed_at())
 				huts.append(RunCity.events(city).event_of(body))
 	var stroller := _real_stroller(t)
 	RunCity.events(city).use_player(stroller)

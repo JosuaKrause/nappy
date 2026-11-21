@@ -365,13 +365,13 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 	var compared := 0
 	var differ := 0
 	for plan in RunCity.events(city).plans():
-		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
-				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_within() <= 0.0:
+		if not plan.is_placed() or plan.row().moves() or plan.detains_her() \
+				or plan.is_a_boom() or plan.obstructs_within() <= 0.0:
 			continue
-		var recorded := EventSpawner.obstructed_footprint(map, plan.def, plan.position,
-				plan.facing)
+		var recorded := EventSpawner.obstructed_footprint(map, plan.row(), plan.placed_at(),
+				plan.faces())
 		var instance := EventInstance.new()
-		instance.setup(plan.def, plan.position, PackedVector2Array(), plan.facing,
+		instance.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),
 				EventSurroundings.new().on(map) \
 					.drawing_nothing())
 		var built := Footprint.new()
@@ -482,7 +482,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 		var placed := builder.place_at(scheduled, tile, _rng("cross-street"), none)
 		if placed == null:
 			continue
-		for end in placed.path:
+		for end in placed.walks():
 			ends += 1
 			if not map.passable(map.world_to_tile(end), Mover.on_foot()):
 				in_a_lot += 1

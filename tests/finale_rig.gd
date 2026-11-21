@@ -208,8 +208,8 @@ func _test_every_street_off_the_chains_is_sealed(t: TestRunner) -> void:
 		var placements: Array[EventPlan] = built["placements"]
 		var sealed_at := {}
 		for placement: EventPlan in placements:
-			if placement.def.obstructs_within() > 0.0:
-				sealed_at[map.world_to_tile(placement.position)] = true
+			if placement.obstructs_within() > 0.0:
+				sealed_at[map.world_to_tile(placement.placed_at())] = true
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
 		var hers := map.network.segment_containing(
@@ -404,7 +404,7 @@ static func _block_every_standing_reach(t: TestRunner, map: CityMap,
 	var stage := RoadblockRig.Stage.new(t, map)
 	var count := 0
 	for placement: EventPlan in placements:
-		var def := placement.def
+		var def := placement.row()
 		if def.mobile or not def.hard_fail or def.pursuit != null:
 			continue
 		var instance := stage.stand(placement)
@@ -702,7 +702,7 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 			var band := guard.body_position()
 			var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
 			var her := band + toward * (guard.def.notice_within() + 80.0)
-			var where := "band %s from %d°" % [map.world_to_tile(band_plan.position),
+			var where := "band %s from %d°" % [map.world_to_tile(band_plan.placed_at()),
 					bearing * 360 / 16]
 			var caught := false
 			# In until his hand goes up, then standing until he charges.
@@ -738,7 +738,7 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 	var reviewed := Vector2i(73, 50)
 	var reviewed_plan: EventPlan = null
 	for band_plan in bands:
-		if map.world_to_tile(band_plan.position) == reviewed:
+		if map.world_to_tile(band_plan.placed_at()) == reviewed:
 			reviewed_plan = band_plan
 	if reviewed_plan == null:
 		reviewed_plan = EventPlan.new(EventCatalogue.escape_roadblock(),
@@ -808,7 +808,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	var band_plan := EventPlan.new(EventCatalogue.escape_roadblock(),
 			Vector2(1000.0, 1000.0))
 	manager.streaming.add(band_plan)
-	manager.streaming.stream_around(band_plan.position)
+	manager.streaming.stream_around(band_plan.placed_at())
 	var band := manager.event_of(band_plan)
 	var at: Vector2 = band.global_position + Vector2(0.0, band.def.outer_radius - 20.0)
 	var first := _stand_her_at(t, manager, at)
@@ -1005,10 +1005,10 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t: TestRunner) -> v
 				for j in range(i + 1, bands.size()):
 					pairs += 1
 					var gap := stands[i].distance_to(stands[j])
-					var apart := bands[i].def.notice_within() + bands[j].def.notice_within()
+					var apart := bands[i].notice_within() + bands[j].notice_within()
 					t.check(gap >= apart, "seed %d: the roadblocks at %s and %s stand %.0fpx apart, at least the %.0fpx their two notices take"
-							% [seed_value, map.world_to_tile(bands[i].position),
-							map.world_to_tile(bands[j].position), gap, apart])
+							% [seed_value, map.world_to_tile(bands[i].placed_at()),
+							map.world_to_tile(bands[j].placed_at()), gap, apart])
 	t.check(pairs > 0, "there were pairs of roadblocks to measure (%d)" % pairs)
 
 ## Whether `item` draws on `layer`: the absolute depth a node asked onto the layer
@@ -1077,7 +1077,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t: TestRunner) -> void
 				var warned_here := false
 				var open_walk := true
 				var where := "seed %d band %s from %d°" % [seed_value,
-						map.world_to_tile(band_plan.position), bearing * 360 / 16]
+						map.world_to_tile(band_plan.placed_at()), bearing * 360 / 16]
 				var frames_in := 0
 				while her.distance_to(band) > 40.0 and not charged and frames_in < int(20.0 / step):
 					frames_in += 1
@@ -1139,7 +1139,7 @@ static func _escape_roadblocks(
 		placements: Array[EventPlan]) -> Array[EventPlan]:
 	var found: Array[EventPlan] = []
 	for placement in placements:
-		if placement.def == EventCatalogue.escape_roadblock():
+		if placement.row() == EventCatalogue.escape_roadblock():
 			found.append(placement)
 	return found
 
@@ -1178,7 +1178,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
 		for band_plan in bands:
-			var street := map.network.segment_containing(map.world_to_tile(band_plan.position))
+			var street := map.network.segment_containing(map.world_to_tile(band_plan.placed_at()))
 			if hers and street and street.key() == hers.key():
 				on_her_street += 1
 		t.check(hers != null and on_her_street <= 1,
@@ -1188,10 +1188,10 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 		for i in bands.size():
 			for j in range(i + 1, bands.size()):
 				t.check(stands[i].distance_to(stands[j])
-						>= bands[i].def.notice_within() + bands[j].def.notice_within(),
+						>= bands[i].notice_within() + bands[j].notice_within(),
 						"seed %d: the bands at %s and %s notice her from no common ground"
-						% [PLAYERS_SEED, map.world_to_tile(bands[i].position),
-						map.world_to_tile(bands[j].position)])
+						% [PLAYERS_SEED, map.world_to_tile(bands[i].placed_at()),
+						map.world_to_tile(bands[j].placed_at())])
 		var blocked := {}
 		_block_every_body(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
@@ -1254,19 +1254,19 @@ func _test_the_escape_stands_its_rows_on_the_days_own_ground(t: TestRunner) -> v
 		var placements: Array[EventPlan] = built["placements"]
 		var offered := {}
 		for placement in placements:
-			if not ESCAPE_ROWS.has(placement.def.id):
+			if not ESCAPE_ROWS.has(placement.row_id()):
 				continue
 			asked += 1
-			var key := placement.def.get_instance_id()
+			var key := placement.row().get_instance_id()
 			if not offered.has(key):
 				var tiles := {}
-				for tile in EventScheduler.row_ground(map, null, false).tiles_for(placement.def):
+				for tile in EventScheduler.row_ground(map, null, false).tiles_for(placement.row()):
 					tiles[tile] = true
 				offered[key] = tiles
-			var at := map.world_to_tile(placement.position)
+			var at := map.world_to_tile(placement.placed_at())
 			var tiles_offered: Dictionary = offered[key]
 			t.check(tiles_offered.has(at), "seed %d: the %s at %s stands on ground a day offers it"
-					% [seed_value, placement.def.id, at])
+					% [seed_value, placement.row_id(), at])
 	t.check(asked > 0, "there were escape rows to ask about (%d)" % asked)
 
 ## The escape stands no mast: the game hands its dawn no mast site (`DayPlanner.plan_the_escape_city()`).
@@ -1295,12 +1295,12 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("mouths:%d:%d" % [day, roll])
 			for seal in SealPlanner.plan_day(map_of_days, DaySpec.for_day(day), tree, rng):
-				if map_of_days.tile_at(map_of_days.world_to_tile(seal.position)) \
+				if map_of_days.tile_at(map_of_days.world_to_tile(seal.placed_at())) \
 						!= GameEnums.TileType.ALLEY:
 					continue
 				day_walls += 1
-				t.check(seal.def.obstructs_within() * 2.0 <= mouth,
-						"day %d's alley-mouth row %s fits the mouth" % [day, seal.def.id])
+				t.check(seal.obstructs_within() * 2.0 <= mouth,
+						"day %d's alley-mouth row %s fits the mouth" % [day, seal.row_id()])
 	t.check(day_walls > 0, "there were days' alley-mouth walls to ask about (%d)" % day_walls)
 	var walls := 0
 	for seed_value: int in SEEDS:
@@ -1310,7 +1310,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 		var placements: Array[EventPlan] = built["placements"]
 		var ground := WalkGround.new(map)
 		for placement in placements:
-			var tile := map.world_to_tile(placement.position)
+			var tile := map.world_to_tile(placement.placed_at())
 			if map.tile_at(tile) != GameEnums.TileType.ALLEY:
 				continue
 			walls += 1
@@ -1325,7 +1325,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t: TestRunner) -> void:
 								and map.tile_at(map.world_to_tile(at)) == GameEnums.TileType.BUILDING:
 							over = true
 			t.check(not over, "seed %d: the %s in the alley mouth at %s keeps its body off the buildings"
-					% [seed_value, placement.def.id, tile])
+					% [seed_value, placement.row_id(), tile])
 	t.check(walls > 0, "there were alley-mouth walls to ask about (%d)" % walls)
 
 ## **Nothing the escape stands reaches over a building**, seals and events alike, with its body or
@@ -1341,13 +1341,13 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t: TestRunner) -> v
 		var placements: Array[EventPlan] = built["placements"]
 		var ground := WalkGround.new(map)
 		for placement in placements:
-			if placement.def.id == "barricade":
+			if placement.row_id() == "barricade":
 				barricades += 1
 			var body := Reach.body_overhang(map, ground, placement)
 			var drawn := Reach.drawing_overhang(map, placement)
 			t.check(body <= 0.5 and drawn <= 0.5,
 					"seed %d: the %s at %s keeps off the buildings (body %.1fpx, drawing %.1fpx over)"
-					% [seed_value, placement.def.id, map.world_to_tile(placement.position), body,
+					% [seed_value, placement.row_id(), map.world_to_tile(placement.placed_at()), body,
 					drawn])
 	t.check(barricades > 0, "there were barricade pieces among them (%d)" % barricades)
 
@@ -1371,7 +1371,7 @@ func _test_a_restart_plans_the_same_escape(t: TestRunner) -> void:
 	for i in mini(first.size(), second.size()):
 		var a := first[i]
 		var b := second[i]
-		same = same and a.def.id == b.def.id and a.position.is_equal_approx(b.position)
+		same = same and a.row_id() == b.row_id() and a.placed_at().is_equal_approx(b.placed_at())
 	t.check(same and first.size() > 0,
 			"a restart plans the same %d placements as the first plan" % first.size())
 
@@ -1417,7 +1417,7 @@ func _test_a_street_stands_one_event_and_a_refused_marble_stays(t: TestRunner) -
 			var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
 			var here := 0
 			for placement in placed:
-				if rect.has_point(placement.position):
+				if rect.has_point(placement.placed_at()):
 					here += 1
 			most = maxi(most, here)
 		t.check(most <= 1, "seed %d: no street stands more than one of the escape's rows (%d)"
@@ -1444,7 +1444,7 @@ static func _streets_with_nothing(map: CityMap, streets: Array[StreetNetwork.Seg
 		var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
 		var here := false
 		for placement in placed:
-			here = here or rect.has_point(placement.position)
+			here = here or rect.has_point(placement.placed_at())
 		if not here:
 			empty += 1
 	return empty
@@ -1464,12 +1464,12 @@ func _test_the_game_draws_the_escape_from_tunings_bag(t: TestRunner) -> void:
 		var placed := _escape_rows_from(map, bare, _city_spec().walk_bag())
 		var played: Array[EventPlan] = []
 		for placement in placements:
-			if ESCAPE_ROWS.has(placement.def.id):
+			if ESCAPE_ROWS.has(placement.row_id()):
 				played.append(placement)
 		var same := played.size() == placed.size()
 		for i in mini(played.size(), placed.size()):
-			same = same and played[i].def.id == placed[i].def.id \
-					and played[i].position.is_equal_approx(placed[i].position)
+			same = same and played[i].row_id() == placed[i].row_id() \
+					and played[i].placed_at().is_equal_approx(placed[i].placed_at())
 		t.check(same and played.size() > 0, "seed %d: the game's plan is Tuning's bag (%d and %d)"
 				% [seed_value, played.size(), placed.size()])
 
@@ -1502,7 +1502,7 @@ static func _same_rows(a: Array[EventPlan], b: Array[EventPlan]) -> bool:
 	if a.size() != b.size():
 		return false
 	for i in a.size():
-		if a[i].def.id != b[i].def.id or a[i].position != b[i].position:
+		if a[i].row_id() != b[i].row_id() or a[i].placed_at() != b[i].placed_at():
 			return false
 	return true
 
@@ -1573,15 +1573,15 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -
 				"seed %d: she is put down on walkable ground" % seed_value)
 		for placement: EventPlan in placements:
 			checked += 1
-			for def: EventDef in [placement.def, EventCatalogue.by_id(placement.def.aftermath.on_finish)]:
+			for def: EventDef in [placement.row(), EventCatalogue.by_id(placement.row().leaves_behind())]:
 				if def == null or def.obstructs_within() <= 0.0:
 					continue
-				if placement.position.distance_to(spawn) \
+				if placement.placed_at().distance_to(spawn) \
 						<= def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS:
 					on_her += 1
 					t.check(false,
 							"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the "
-							% [seed_value, def.id, placement.position.distance_to(spawn)]
+							% [seed_value, def.id, placement.placed_at().distance_to(spawn)]
 							+ "%.0fpx its body and her own take up"
 							% (def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS))
 	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
@@ -1618,15 +1618,15 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t: TestRunner) -> 
 				_city_spec(), GamePlanBuilder.over(map))
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		for placement: EventPlan in placements:
-			if not placement.def.hard_fail:
+			if not placement.ends_the_day():
 				continue
 			lethal += 1
-			var gap := placement.position.distance_to(spawn)
-			if gap <= placement.def.outer_radius:
+			var gap := placement.placed_at().distance_to(spawn)
+			if gap <= placement.heard_within():
 				over_her += 1
 				t.check(false,
 						"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the %.0fpx "
-						% [seed_value, placement.def.id, gap, placement.def.outer_radius]
+						% [seed_value, placement.row_id(), gap, placement.heard_within()]
 						+ "field that raises the mark over her head")
 	t.check(lethal > 0, "the escape places lethal rows to ask about (%d)" % lethal)
 	t.check(over_her == 0,
@@ -2142,14 +2142,14 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t: TestRunner) -> v
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		for placement in GameDawn.of(_city_spec(), rng, map).masts(_NO_MASTS).on(plan).plan().placements():
-			var tile := map.world_to_tile(placement.position)
+			var tile := map.world_to_tile(placement.placed_at())
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"
-							% [seed_value, placement.def.id, tile])
+							% [seed_value, placement.row_id(), tile])
 			checked += 1
 		rng.seed = seed_value
 		for seal in SealPlanner.plan_day(map, _city_spec(), plan, rng):
-			if trees.has(map.world_to_tile(seal.position)):
+			if trees.has(map.world_to_tile(seal.placed_at())):
 				in_a_tree += 1
 			checked += 1
 	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)

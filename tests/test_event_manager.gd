@@ -243,8 +243,8 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 			if not plan.is_placed():
 				continue
 			placed += 1
-			var tiles := EventSpawner.obstructed_footprint(_city.map, plan.def, plan.position,
-					plan.facing)
+			var tiles := EventSpawner.obstructed_footprint(_city.map, plan.row(), plan.placed_at(),
+					plan.faces())
 			if not tiles.is_empty():
 				expected.append(str(tiles))
 	expected.sort()
@@ -452,14 +452,14 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 	for candidate in RunCity.events(_city).plans():
 		# Not mobile: a route means the reach is measured to the nearest point of it, which is a
 		# different check.
-		if candidate.is_placed() and candidate.path.is_empty():
+		if candidate.is_placed() and candidate.walks().is_empty():
 			plan = candidate
 			break
 	t.check(plan != null, "day 1 has a stationary event somewhere in the city")
 	if not plan:
 		return
 
-	var at := plan.position
+	var at := plan.placed_at()
 	var away := at + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0)
 	RunCity.events(_city).stream_around(away)
 	t.check(not plan.is_in_the_world(), "an event across the city is not in the world")
@@ -502,9 +502,9 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's route
 	# ends; a parked van never does).
 	for candidate in RunCity.events(_city).plans():
-		if candidate.is_placed() and candidate.def.aftermath.on_finish == "" \
-				and candidate.path.size() > 1:
-			RunCity.events(_city).stream_around(candidate.position)
+		if candidate.is_placed() and candidate.row().leaves_behind() == "" \
+				and candidate.walks().size() > 1:
+			RunCity.events(_city).stream_around(candidate.placed_at())
 			if candidate.is_in_the_world() and _run_to_its_end(_live(candidate)):
 				plan = candidate
 				break
@@ -513,13 +513,13 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 		RunCity.events(_city).stream_within(INF)
 		return
 
-	RunCity.events(_city).stream_around(plan.position)
+	RunCity.events(_city).stream_around(plan.placed_at())
 	t.check(plan.is_in_the_world(), "she walks up to it and it is there")
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(plan.spent and not plan.is_in_the_world(), "it runs its course and the plan is spent")
+	t.check(plan.is_spent() and not plan.is_in_the_world(), "it runs its course and the plan is spent")
 
-	RunCity.events(_city).stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
-	RunCity.events(_city).stream_around(plan.position)
+	RunCity.events(_city).stream_around(plan.placed_at() + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
+	RunCity.events(_city).stream_around(plan.placed_at())
 	t.check(not plan.is_in_the_world(), "and coming back does not start it over")
 	RunCity.events(_city).stream_within(INF)
 
@@ -539,8 +539,8 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	var plan: EventPlan = null
 	for candidate in RunCity.events(_city).plans():
-		if candidate.is_placed() and candidate.def.mobile and candidate.path.size() > 1 \
-				and not candidate.def.still_while_telegraphing:
+		if candidate.is_placed() and candidate.row().moves() and candidate.walks().size() > 1 \
+				and not candidate.row().holds_still():
 			plan = candidate
 			break
 	t.check(plan != null, "day 1 has something walking down a street")
@@ -548,7 +548,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 		RunCity.events(_city).stream_within(INF)
 		return
 
-	RunCity.events(_city).stream_around(plan.position)
+	RunCity.events(_city).stream_around(plan.placed_at())
 	t.check(plan.is_in_the_world(), "she comes near it and it is there")
 	var started := _live(plan).global_position
 	for i in 120:
@@ -559,7 +559,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 			% started.distance_to(walked))
 	var aged := _live(plan).age()
 
-	RunCity.events(_city).stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
+	RunCity.events(_city).stream_around(plan.placed_at() + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
 	t.check(not plan.is_in_the_world(), "she walks away and it leaves the world")
 	RunCity.events(_city).stream_around(walked)
 	t.check(plan.is_in_the_world(), "she comes back and it is there again")
@@ -584,13 +584,13 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 		_start(day)
 		var by_row := {}
 		for plan in RunCity.events(_city).plans():
-			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
+			if plan.row().kind != GameEnums.EventKind.ONE_SHOT:
 				continue
-			by_row[plan.def.id] = int(by_row.get(plan.def.id, 0)) + 1
+			by_row[plan.row_id()] = int(by_row.get(plan.row_id(), 0)) + 1
 			owed_to_her_walk += 1
-			t.check(not plan.is_placed() and not plan.has_been_in_the_world() and not plan.spent,
+			t.check(not plan.is_placed() and not plan.has_been_in_the_world() and not plan.is_spent(),
 					"day %d: '%s' is an unsited plan waiting for a walk that never happens here"
-					% [day, plan.def.id])
+					% [day, plan.row_id()])
 		for id: String in by_row:
 			t.check(int(by_row[id]) == 1, "day %d: '%s' is one plan, not several (%d)"
 					% [day, id, by_row[id]])
@@ -665,7 +665,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	if not _live(plan):
 		return
 
-	var her := plan.position + Vector2(def.notice_within() - 10.0, 0.0)
+	var her := plan.placed_at() + Vector2(def.notice_within() - 10.0, 0.0)
 	RunCity.events(_city).world.where_she_is().tell(her)
 	_live(plan).step(1.0 / 60.0)
 	t.check(not _live(plan).is_waiting(), "she is inside the trigger, so it notices her")
@@ -804,7 +804,7 @@ func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRun
 		_start(day)
 		var left_for_her_walk := false
 		for plan in RunCity.events(_city).plans():
-			if plan.def.on_her_way != null and not plan.is_placed():
+			if plan.row().on_her_way != null and not plan.is_placed():
 				left_for_her_walk = true
 		if not left_for_her_walk:
 			continue

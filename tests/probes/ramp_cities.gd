@@ -20,7 +20,7 @@ func run(t: TestRunner) -> void:
 					.spent(consumed).planned()
 			var n := 0
 			for plan in dawn.events().placements():
-				if plan.def.kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
+				if plan.row().kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
 					n += 1
 			counts.append(n)
 		print("RAMP city %d day1 %d day14 %d ratio %.2f" % [city_seed, counts[0], counts[1],

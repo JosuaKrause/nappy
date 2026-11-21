@@ -831,7 +831,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 			_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot())
 	var mast_plan: EventPlan = null
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id() == site.id() and plan.def.id == "loudspeaker":
+		if plan.mast_id() == site.id() and plan.row_id() == "loudspeaker":
 			mast_plan = plan
 	t.check(mast_plan != null and mast_plan.is_in_the_world(),
 			"the mast at her focus is live from the day it was started")

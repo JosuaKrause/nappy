@@ -26,7 +26,7 @@ func run(t: TestRunner) -> void:
 	t.check(shouting.counts_against_the_line(),
 			"the man shouting, with the same field, still counts")
 	var announcing := EventPlan.new(EventCatalogue.by_id("curfew_announce"), here)
-	t.check(announcing.def.role != EventDef.Role.MAST and announcing.counts_against_the_line(),
+	t.check(announcing.row().role != EventDef.Role.MAST and announcing.counts_against_the_line(),
 			"the curfew announcement, a row of its own, counts when no mast carries it")
 	announcing.stand_as_a_mast("site-0")
 	t.check(not announcing.counts_against_the_line(),

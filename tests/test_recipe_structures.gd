@@ -102,8 +102,8 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 	for i in mini(authored.door_bodies.size(), bodies.size()):
 		var mine: EventPlan = authored.door_bodies[i]
 		var theirs: EventPlan = bodies[i]
-		same = same and mine.position == theirs.position and mine.def.id == theirs.def.id \
-				and mine.facing == theirs.facing
+		same = same and mine.placed_at() == theirs.placed_at() and mine.row_id() == theirs.row_id() \
+				and mine.faces() == theirs.faces()
 	t.check(same, "and each body stands where the day's does, as the same row")
 	setup.erase("gates")
 
@@ -143,7 +143,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 			stood.append(_along_and_side(street, centre, instance.position))
 	var where: Array[Vector2] = []
 	for body in expected.bodies:
-		where.append(_along_and_side(street, centre, body.position))
+		where.append(_along_and_side(street, centre, body.placed_at()))
 	stood.sort()
 	where.sort()
 	t.check(stood == where, "its bodies stand where the day's pass sites the same picture, one on"

@@ -263,7 +263,7 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t: TestRunner) -> void:
 	her.global_position = home + Vector2(0.0, 2400.0) # a teleport, see above
 	await _frame(t, city)
 	t.check(not plan.is_in_the_world(), "she is far away and it is streamed out")
-	t.check(plan.spent, "and its plan is spent, a departure being over once it is streamed out")
+	t.check(plan.is_spent(), "and its plan is spent, a departure being over once it is streamed out")
 	var seen := false
 	while her.global_position.y > home.y:
 		her.global_position.y = maxf(her.global_position.y - Tuning.WALK_SPEED * STEP * SPEED, home.y)

@@ -154,7 +154,7 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
 	var counts := {}
 	for plan in plans:
-		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+		counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
 	return counts
 
 ## Walks the encounter the way it is actually played: she is walking into it when it lunges, dithers

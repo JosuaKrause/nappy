@@ -350,9 +350,9 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 		reaches = reaches and out
 		var point := (stretch.a + stretch.b) * 0.5 + Vector2(stretch.outward) * Tuning.TILE_SIZE
 		for plan in RunCity.events(city).plans():
-			if plan.spent or not plan.is_placed() or area.has_point(plan.position):
+			if plan.is_spent() or not plan.is_placed() or area.has_point(plan.placed_at()):
 				continue
-			var def := plan.def
+			var def := plan.row()
 			if def.obstructs_within() <= 0.0 and not def.hard_fail:
 				continue
 			var reach := def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
@@ -361,9 +361,9 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 				reach = maxf(reach, def.field_reach())
 			if def.hard_fail:
 				reach = maxf(reach, def.lethal_reach() + Tuning.PLAYER_BODY_RADIUS)
-			if point.distance_to(plan.position) < reach:
+			if point.distance_to(plan.placed_at()) < reach:
 				clear = false
-				blocker = "%s %.0fpx away, reach %.0fpx" % [def.id, point.distance_to(plan.position),
+				blocker = "%s %.0fpx away, reach %.0fpx" % [def.id, point.distance_to(plan.placed_at()),
 						reach]
 	var other := false
 	for tile in map.calm_tiles():

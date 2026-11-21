@@ -354,7 +354,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for plan: EventPlan in planned:
 		if not plan.is_placed():
 			continue
-		var def := plan.def
+		var def := plan.row()
 		if def.obstructs_within() <= 0.0 or def.role == EventDef.Role.SCENERY:
 			continue
 		if def.id.begins_with(_DOOR_ID_PREFIX):
@@ -362,7 +362,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		var body := Body.new()
 		body.id = def.id
 		body.radius = def.obstructs_within()
-		body.position = plan.position
+		body.position = plan.placed_at()
 		body.source = int(provenance.get(plan.get_instance_id(), Source.OTHER))
 		body.paces = def.paces
 		bodies.append(body)

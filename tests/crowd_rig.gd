@@ -1630,9 +1630,9 @@ func _check_a_walker_finds_a_hut_across_a_bucket_edge(t: TestRunner, lane: Dicti
 		await PhysicsTicks.pass_ticks(t, 1)
 		var wanted: EventPlan = case["found"]
 		var hut := walker.lane().door_ahead()
-		t.check(hut != null and hut.stands_at() == wanted.position,
+		t.check(hut != null and hut.stands_at() == wanted.placed_at(),
 				"%s, %s (found %s, wanted %s)" % [case["says"], side,
-				hut.stands_at() if hut else "none", wanted.position])
+				hut.stands_at() if hut else "none", wanted.placed_at()])
 
 ## A car driving `direction` along a straight stretch of ordinary street on the axis `vertical`, with a
 ## closed gate (`Crowd.set_gates()`, which `main` hands the day's gates) sited ahead of it where the
@@ -1994,13 +1994,13 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var vertical := not door.horizontal
 	var huts: Array[Vector2] = []
 	for body in city.streets().region_plan().door_bodies:
-		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
+		if body.row().detains_for() <= 0.0 or not mouth.has_point(body.placed_at()):
 			continue
-		var across: float = body.position.x if vertical else body.position.y
+		var across: float = body.placed_at().x if vertical else body.placed_at().y
 		if CityMap.is_road_offset(
 				CityMap.corridor_offset(floori(across / float(Tuning.TILE_SIZE)))):
 			continue    # the boom over the roadway, which is the cars' own
-		huts.append(body.position)
+		huts.append(body.placed_at())
 	t.check(huts.size() == 2, "the door stands a hut on each of its two sidewalks (%d)" % huts.size())
 	if huts.size() != 2:
 		city.free()
