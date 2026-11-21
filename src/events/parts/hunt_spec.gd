@@ -4,10 +4,10 @@ extends Resource
 ## behaviour `EventDef.at_heat()` attaches to its copy (`EventDef.hunting`), authored on the cold row
 ## (`EventDef.hunts`). One of two shapes, never both:
 ##
-## - **A vehicle that lets men out** (`lets_out`): once it notices her it stops and lets that many
+## - **A vehicle that lets men out** (`lets_out()`): once it notices her it stops and lets that many
 ##   men out on foot, who pursue her (`EventInvestigation`); the vehicle itself never chases. The
 ##   patrol car on the `PRESSES` rung lets one out, the two vans on the `HUNTS` rung two.
-## - **A man who pursues her himself** (`pursuit`): the roadblock's guard, whose hunting copy takes
+## - **A man who pursues her himself** (`pursuit()`): the roadblock's guard, whose hunting copy takes
 ##   this `PursuitSpec` at the ladder's own speed and notice.
 ##
 ## **It carries its rung**: a row answers to heat exactly when it holds one. `pressing()` is the `PRESSES` rung, the patrol that

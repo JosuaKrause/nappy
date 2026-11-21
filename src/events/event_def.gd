@@ -1552,6 +1552,10 @@ func validate() -> bool:
 	# either letting men out or pursuing, never both and never neither, with its rung and its catch
 	# beside it: the patrol rung never pursues, and only a hunt that pursues ends the day by its own
 	# catch. What no construction rules out is the patrol rung on a row that ends the day itself.
+	# A hunt does exactly one of the two: `HuntSpec.new()` builds neither, which no factory does.
+	if hunts != null and (hunts.lets_out() > 0) == (hunts.pursuit() != null):
+		push_error("event '%s' hunts neither by letting men out nor by pursuing, or both" % id)
+		return false
 	if hunts != null and hunts.presses() and hard_fail:
 		push_error("event '%s' presses but would end the day or chase her itself" % id)
 		return false

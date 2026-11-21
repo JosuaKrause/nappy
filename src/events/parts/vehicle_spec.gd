@@ -40,10 +40,15 @@ static func driving() -> VehicleSpec:
 
 ## The same car with its field priced from its centre, a point, rather than from its body.
 func priced_from_its_centre() -> VehicleSpec:
-	var spec := VehicleSpec.new()
+	var spec := _copy()
 	spec._field_from_its_centre = true
 	return spec
 
 ## Whether its field is priced from its centre rather than from its body (`priced_from_its_centre()`).
 func prices_its_field_from_its_centre() -> bool:
 	return _field_from_its_centre
+
+func _copy() -> VehicleSpec:
+	var spec := VehicleSpec.new()
+	spec._field_from_its_centre = _field_from_its_centre
+	return spec
