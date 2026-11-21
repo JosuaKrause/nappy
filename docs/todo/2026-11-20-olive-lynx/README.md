@@ -18,8 +18,8 @@ section 9).
 
 **Read as** (the filer's, open to the player's correction): a bug a refactor step finds, filed `bug` (inbox #1519 in
 breezy-magpie): the code does what its own docs say it should not, since the record of a body's tiles is meant to be
-the body's own solid (`event_spawner.gd`'s comment where the record is laid out: "so the record and the body are one
-solid").
+the body's own solid (the doc of `EventFootprints.solid_footprint_of()`, the body's collision outline: "so the body and the record are
+one solid").
 
 **Item:** `stand-once.md`.
 

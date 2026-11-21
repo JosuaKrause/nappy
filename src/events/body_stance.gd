@@ -7,6 +7,10 @@ extends RefCounted
 ## (`EventInstance`, `EventBody`) and the developer's rigs all ask this one class and a planned
 ## body and its built one agree because both read it.
 ##
+## It also lays out a body's pieces where they stand (`pieces_at()`, `pieces_laid_out()`): the one
+## layout the dawn's walk (`WalkGround`), the map's record of standing bodies and the route rig ask,
+## and a live body's own footprint is laid out by.
+##
 ## The measuring of a row's pictures is not here: `EventFootprints` reads the baked pictures for
 ## the looks and the siting's drawn box. This reads the row's data and the map.
 
@@ -108,6 +112,36 @@ static func solid_axis_of(row: EventDef, heading: Vector2, spread_vertical: bool
 
 ## The ground-plane direction a sited body's spine lies along — `solid_axis_of()` for a body that does
 ## not exist yet, off the same two statics its instance would read about the street at `placed`.
-static func body_axis(map: WorldMap, row: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
+static func _body_axis(map: WorldMap, row: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
 	return solid_axis_of(row, facing, lies_vertically_at(map, placed),
 			stands_side_on(row, map, placed, facing))
+
+## **The pieces of a body of `row` built at `at` and sited facing `facing`, each where it stands**: the
+## body stood where `stands_at()` puts it, laid along its street (`lies_vertically_at()`), its spine
+## along `_body_axis()`, and each of its pieces (`EventDef.body_pieces()`) offset along the street's
+## axis by the piece's own reading of the picture in use. Nothing for a row with no body or no ground
+## shape. It does not filter a row that moves or a door's body: each caller asks for the rows it
+## counts. The one layout of a body not yet built, or built and recorded: the walk's ground, the
+## map's record of standing bodies and the route rig all ask it, so the three cannot disagree.
+static func pieces_at(map: WorldMap, row: EventDef, at: Vector2,
+		facing: Vector2) -> Array[StandingPiece]:
+	var none: Array[StandingPiece] = []
+	if row.ground_shape() == null or not row.has_a_body():
+		return none
+	var stands := stands_at(map, row, at)
+	return pieces_laid_out(row, stands, _body_axis(map, row, stands, facing),
+			lies_vertically_at(map, stands))
+
+## **The pieces of `row`'s body standing at `center`**, its spine along `axis` and laid down the
+## screen when `vertical`: each piece offset along that axis by its own reading of the picture in use
+## (`EventDef.SolidPart.offset_for()`). For a body whose stance is already decided, a live one's own
+## (`EventFootprints.solid_footprint_of()`, laid round its origin); `pieces_at()` decides it first.
+static func pieces_laid_out(row: EventDef, center: Vector2, axis: Vector2,
+		vertical: bool) -> Array[StandingPiece]:
+	var laid: Array[StandingPiece] = []
+	for piece in row.body_pieces():
+		var offset := piece.offset_for(vertical)
+		laid.append(StandingPiece.new(
+				center + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)),
+				piece.ground_shape(), axis))
+	return laid

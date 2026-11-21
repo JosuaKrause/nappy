@@ -27,7 +27,7 @@ extends RefCounted
 ## after its guard has left (`EventBarrierPost.stand_as_the_barrier()`), and a burst leaves its
 ## crater where it went off for the rest of the sequence — so a row that spawns a solid successor
 ## is counted at the successor's body too (`solids_of()`). Mobile rows are traffic and close no
-## ground. Each body is where `EventInstance.setup()` will put it — recentred on the pavement band,
+## ground. Each body is where `BodyStance.pieces_at()` puts it, as `EventInstance.setup()` will — recentred on the pavement band,
 ## laid along the street's own spread axis, in its own pieces — rather than a disc at the tile it
 ## was rolled on, because the half tile between the two is what decides whether a lane survives.
 ##
@@ -42,9 +42,9 @@ extends RefCounted
 ## sidewalk for about six tiles — so a walk's street with an unused alley beside it has that much
 ## less sidewalk before anything of the walk's own is put down.
 
-## One solid piece of something that stands for the whole walk, where it actually stands:
-## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` for a body that
-## does not exist yet, off the same `BodyStance` the instance reads when it is built.
+## One solid piece of something that stands for the whole walk: a body's `StandingPiece`
+## (`BodyStance.pieces_at()`) or a standing lethal reach (`held_by()`), with the walk's own
+## questions on it.
 class Solid extends RefCounted:
 	## How far apart a capsule's covering discs may be — see `discs()`. At 8px a 24px-round band's
 	## discs are a third of a pixel wider than the band.
@@ -207,32 +207,24 @@ func _stands_at(plan: EventPlan) -> Vector2:
 			route[0] if route.size() > 0 else plan.placed_at())
 
 ## A placement's pieces as they stand for the whole walk — its own body, and its successor's
-## where it leaves a solid one — with nothing for a mobile row or one with no body. The same
-## reading `EventInstance.setup()` makes of a stationary body: the first point of its path when
-## it has one, recentred on the pavement band unless `pavement_side` pins it or on the kerb beside
-## its lane for a row that stands at its kerb (`BodyStance.stands_at()`), its pieces laid
-## by `BodyStance.lies_vertically_at()` and its spine along `BodyStance.body_axis()`.
+## where it leaves a solid one — with nothing for a mobile row or one with no body. Each is
+## `BodyStance.pieces_at()`, the layout `EventInstance.setup()` stands a stationary body by,
+## asked of where the plan was placed: recentred on the pavement band unless `pavement_side` pins it
+## or on the kerb beside its lane for a row that stands at its kerb, its pieces laid along the
+## street's own spread axis.
 func solids_of(plan: EventPlan) -> Array[Solid]:
 	var found: Array[Solid] = []
 	var row := plan.row()
-	var route := plan.walks()
 	var defs: Array[EventDef] = [row]
 	if row.leaves_behind() != "":
 		var successor := EventCatalogue.by_id(row.leaves_behind())
 		if successor:
 			defs.append(successor)
 	for def in defs:
-		if def.moves() or not def.has_a_body() or def.ground_shape() == null:
+		if def.moves():
 			continue
-		var at: Vector2 = route[0] if def == row and route.size() > 0 else plan.placed_at()
-		at = BodyStance.stands_at(_map, def, at)
-		var axis := BodyStance.body_axis(_map, def, at, plan.faces())
-		var vertical := BodyStance.lies_vertically_at(_map, at)
-		for piece in def.body_pieces():
-			var offset := piece.offset_for(vertical)
-			found.append(Solid.new(
-					at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)),
-					piece.shape, axis))
+		for piece in BodyStance.pieces_at(_map, def, plan.placed_at(), plan.faces()):
+			found.append(Solid.new(piece.center(), piece.ground_shape(), piece.axis()))
 	return found
 
 ## **One sidewalk of every street the candidate reaches stays walkable from junction to

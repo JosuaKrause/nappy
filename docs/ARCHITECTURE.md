@@ -277,6 +277,9 @@ src/
 	                      have drawn and a way stands that no undrawn unit lies near
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
+	body_stance.gd        where a body built at a point stands on its street, how it lies, and its
+	                      pieces laid out there: the one layout the walk, the record and the rig ask
+	standing_piece.gd     one solid piece of a body where it stands: its middle, shape and axis
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
 	placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a
 	                      park or a square, and which tile types each holds for a row to stand on

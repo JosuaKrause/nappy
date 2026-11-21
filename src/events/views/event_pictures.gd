@@ -1273,7 +1273,7 @@ static func _collect_views(sources: Dictionary, tables: Array) -> void:
 ## `WHEELS_BEHIND_THE_BODY`, under it.
 ##
 ## **`draw_shadow` is false only for `RoadblockLook._draw_roadblock()`'s guard.** Every other
-## caller's own body shadow — `def.parts()`'s default single piece, `def.shape` at local origin — is
+## caller's own body shadow — `def.body_pieces()`'s default single piece, `def.shape` at local origin — is
 ## exactly the shadow this row wants under the picture this function draws. A heated roadblock's
 ## guard is the one exception: `def.shape` there is the barrier band's own shape, not his, and the
 ## band's real shadow is already drawn separately, back at the post he left

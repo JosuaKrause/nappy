@@ -262,13 +262,13 @@ var shape: GroundShape = null
 func solid(new_shape: GroundShape) -> void:
 	shape = new_shape
 	obstructs_radius = new_shape.reach()
-	# `parts()` caches a one-piece default built from `shape`; replacing the shape drops it.
+	# `body_pieces()` caches a one-piece default built from `shape`; replacing the shape drops it.
 	_default_parts = []
 
 ## One solid piece of a row's body: where it sits along the scene's own spread axis, and the
 ## `GroundShape` it collides and casts its shadow as there.
 ##
-## **Almost every row is one piece at the origin**, which is what `parts()` answers for a row that
+## **Almost every row is one piece at the origin**, which is what `body_pieces()` answers for a row that
 ## declares none. The list exists for the one scene whose picture leaves real ground open inside its
 ## own span: a crash is two cars with debris between them and an onlooker on each sidewalk, and a body
 ## spanning the whole street would be a wall where the picture shows a way through.
@@ -315,11 +315,12 @@ static func part(along: float, along_vertical: float, part_shape: GroundShape) -
 ## `duplicate()` shares the list as it shares `shape`, and neither is ever mutated in place.
 var solid_parts: Array[SolidPart] = []
 
-## `solid_parts` with the default filled in: the declared pieces, or one piece at the origin
-## carrying `shape`. The one form a live event's body (`EventBody`, through `body_pieces()`), its
-## shadow and the per-tile record are built from. The default is built once per def, since `EventLook._draw_body_shadow()` asks on every draw
+## `solid_parts` with the default filled in: the pieces its body is made of, in the scene's own frame —
+## the declared ones, or one piece at the origin carrying `shape`. The one form a live event's body
+## (`EventBody`), its shadow and `BodyStance`'s layout of a body (`pieces_at()`) are built from. The
+## default is built once per def, since `EventLook._draw_body_shadow()` asks on every draw
 ## of every visible event; `solid()` drops the cache when it replaces `shape`.
-func parts() -> Array[SolidPart]:
+func body_pieces() -> Array[SolidPart]:
 	if not solid_parts.is_empty():
 		return solid_parts
 	if _default_parts.is_empty():
@@ -342,7 +343,7 @@ func solid_reach() -> float:
 	if shape == null or obstructs_radius <= 0.0:
 		return 0.0
 	var furthest := 0.0
-	for piece in parts():
+	for piece in body_pieces():
 		furthest = maxf(furthest, piece.reach())
 	return furthest
 
@@ -354,11 +355,6 @@ func ground_shape() -> GroundShape:
 ## Whether a shadow is put down under its body (`draws_body_shadow`).
 func casts_a_shadow() -> bool:
 	return draws_body_shadow
-
-## The pieces its body is made of, in the scene's own frame (`parts()`, which the readers outside
-## the live event's body still ask): one piece at the origin for every row but the crash.
-func body_pieces() -> Array[SolidPart]:
-	return parts()
 
 ## Whether it has a body at all (`obstructs_radius`): something she is stopped by, rather than a
 ## figure she walks up to or a picture flat on the ground.
