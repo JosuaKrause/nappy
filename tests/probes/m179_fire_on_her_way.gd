@@ -225,7 +225,7 @@ func _clear_of_the_pair(plan: EventPlan, engine: EventDef, engine_at: Vector2,
 		direction: Vector2) -> Vector2:
 	var reach: float = plan.def.outer_radius
 	if engine and engine_at != Vector2.INF:
-		reach = maxf(reach, engine_at.distance_to(plan.position) + engine.outer_radius)
+		reach = maxf(reach, engine_at.distance_to(plan.position) + engine.heard_within())
 	return plan.position + direction * (reach + Tuning.TILE_SIZE)
 
 func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
@@ -253,7 +253,7 @@ func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
 				if centre.distance_to(plan.position) <= plan.def.outer_radius:
 					continue
 				if engine and engine_at != Vector2.INF \
-						and centre.distance_to(engine_at) <= engine.outer_radius:
+						and centre.distance_to(engine_at) <= engine.heard_within():
 					continue
 			seen[next] = int(seen[node]) + 1
 			queue.append(next)

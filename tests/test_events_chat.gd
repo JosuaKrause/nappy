@@ -127,7 +127,7 @@ func _test_a_conversation_locks_her_and_releases(t: TestRunner) -> void:
 
 	# Up to 0.2s short of the lock's end, the 11 ticks above counted.
 	var spent := 11.0 / Engine.physics_ticks_per_second
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds - spent - 0.2, WAIT_SCALE),
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detains_for() - spent - 0.2, WAIT_SCALE),
 			Callable(), WAIT_SCALE)
 	t.check(stroller.is_detained(), "still locked a few frames before detain_seconds is up")
 	t.close_to(stroller.velocity.length(), 0.0, "and stays at rest for the whole lock", 1.0)
@@ -179,7 +179,7 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(stroller.is_detained(), "a capture starts whether she is awake or asleep")
 
-		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds, WAIT_SCALE) + 2,
+		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detains_for(), WAIT_SCALE) + 2,
 				Callable(), WAIT_SCALE)
 
 		if awake:
@@ -236,9 +236,9 @@ func _test_a_conversation_only_starts_inside_detain_radius(t: TestRunner) -> voi
 
 	# Just outside the capture and well inside inner_radius: the ambient field still reaches her
 	# and only the conversation must not.
-	t.check(def.detain_distance() < def.inner_radius,
+	t.check(def.detain_distance() < def.core_within(),
 			"there is ground outside her capture and inside her field to stand on (%.1f < %.1f)"
-			% [def.detain_distance(), def.inner_radius])
+			% [def.detain_distance(), def.core_within()])
 	stroller.global_position = at + Vector2(0.0, def.detain_distance() + 0.5)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(not stroller.is_detained(),
@@ -269,7 +269,7 @@ func _test_a_conversation_happens_once_per_instance(t: TestRunner) -> void:
 
 	# Her own ticks run the lock down; the conversation ends on the manager's, with her still
 	# standing inside its reach.
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detains_for() + 0.1, WAIT_SCALE),
 			Callable(), WAIT_SCALE)
 	t.check(mother.has_chatted() and not mother.is_chatting() and mother.is_leaving,
 			"it ends, and she is spent as a detainer — see 'departs like dog_walker'")
@@ -309,7 +309,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t: TestRunner
 		_free_manager(manager)
 		return
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detains_for() + 0.1, WAIT_SCALE),
 			Callable(), WAIT_SCALE)
 	t.check(mother.is_leaving, "it ends with her leaving")
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
@@ -336,11 +336,11 @@ func _test_the_take_begins_only_once_she_is_close(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
-	instance_where.tell(Vector2(def.outer_radius + 40.0, 0.0))
+	instance_where.tell(Vector2(def.heard_within() + 40.0, 0.0))
 	_advance(instance, 2.0)
 	t.check(not instance.is_taking_a_victim(), "outside the field, nothing has started")
 
-	instance_where.tell(Vector2(def.outer_radius - 20.0, 0.0))
+	instance_where.tell(Vector2(def.heard_within() - 20.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "and it begins the frame she comes inside it")
 	instance.free()
@@ -352,7 +352,7 @@ func _test_a_completed_take_is_logged_exactly_once(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where,
 			RecordingTrace.new(lines))
-	instance_where.tell(Vector2(def.outer_radius - 20.0, 0.0))
+	instance_where.tell(Vector2(def.heard_within() - 20.0, 0.0))
 	_advance(instance, instance.def.abduction.taken_over * 0.5)
 	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
 

@@ -346,7 +346,7 @@ static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
 	var tile := map.world_to_tile(mark)
 	var robbery := EventCatalogue.mark_guard()
 	var spot := AlleyMarks.expected_guard_spot(map, tile, mark,
-			robbery.inner_radius + ContactPoint.REACH)
+			robbery.core_within() + ContactPoint.REACH)
 	if spot != Vector2.INF:
 		return spot
 	var court := AlleyMarks.courtyard_of(map, tile)

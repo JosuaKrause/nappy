@@ -66,41 +66,41 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 ## geometry, phase and finish checks only guard against a future unrelated writer.
 func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> void:
 	var def := EventDef.new()
-	t.check(not def.has_a_spread, "a default invisible definition has no spread")
+	t.check(not def.lies_as_a_spread(), "a default invisible definition has no spread")
 	def.look = EventDef.Look.ROADWORKS
-	t.check(not def.has_a_spread, "drawing a spread's picture does not make a row a spread by itself")
+	t.check(not def.lies_as_a_spread(), "drawing a spread's picture does not make a row a spread by itself")
 
 	for source in EventCatalogue.all():
-		var expected := _SPREAD_LOOKS.has(source.look) \
-				and source.look != EventDef.Look.PROTEST and source.look != EventDef.Look.FIREFIGHT
-		t.check(source.has_a_spread == expected,
+		var expected := _SPREAD_LOOKS.has(source.picture()) \
+				and source.picture() != EventDef.Look.PROTEST and source.picture() != EventDef.Look.FIREFIGHT
+		t.check(source.lies_as_a_spread() == expected,
 				"catalogue row '%s' says it is a spread exactly when its picture is one" % source.id)
 
 	def = EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
 	def.solid(GroundShape.band(22.0))
 	def.inner_radius = 15.0
 	def.outer_radius = 90.0
-	t.check(def.has_a_spread,
+	t.check(def.lies_as_a_spread(),
 			"changing body and field geometry leaves a café's spread answer true")
 
 	var instance := EventInstance.new()
 	def.telegraph_time = STEP
 	instance.setup(def, Vector2.ZERO)
 	instance.step(STEP * 2.0)
-	t.check(not instance.is_telegraphing() and def.has_a_spread,
+	t.check(not instance.is_telegraphing() and def.lies_as_a_spread(),
 			"crossing an instance phase leaves its definition's classification true")
 	# The way the game ends one early: a resistance step's contact completing, which runs the
 	# instance's own `_be_done()` and, for a café that has no departure speed, finishes it.
 	instance.leave_for_a_completed_task()
-	t.check(instance.is_finished and def.has_a_spread,
+	t.check(instance.is_finished and def.lies_as_a_spread(),
 			"finishing the instance leaves the classification true")
 	instance.free()
 
 	for deep: bool in [false, true]:
 		var copied := EventCatalogue.by_id("construction").duplicate(deep) as EventDef
-		t.check(copied.has_a_spread, "Resource.duplicate(%s) keeps a spread's answer" % deep)
+		t.check(copied.lies_as_a_spread(), "Resource.duplicate(%s) keeps a spread's answer" % deep)
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
-	t.check(hot.has_a_spread, "and so does a heated copy")
+	t.check(hot.lies_as_a_spread(), "and so does a heated copy")
 
 ## **Where a body stands once built is `BodyStance.stands_at()`'s one answer**, which a body
 ## moved after dawn (`EventInstance.move_to()`) takes as a new body does: on a pavement lane, a
@@ -219,10 +219,10 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t: TestRunner) -> void:
 	var barriers := 0
 	for def in EventCatalogue.all():
-		if not def.barrier_structure:
+		if not def.counts_as_one_barrier():
 			continue
 		barriers += 1
-		var over_a_hold := def.intensity * EventCatalogue.CHECKPOINT_DETAIN_SECONDS
+		var over_a_hold := def.peak() * EventCatalogue.CHECKPOINT_DETAIN_SECONDS
 		t.check(over_a_hold < Tuning.CHAT_EXCITEMENT,
 				("one '%s' bills %.1f over a %.0fs hold at its core rate, under the %.1f the hold "
 				+ "itself charges") % [def.id, over_a_hold, EventCatalogue.CHECKPOINT_DETAIN_SECONDS,
@@ -244,12 +244,12 @@ func _test_catalogue_is_fair(t: TestRunner) -> void:
 			t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
 					"event '%s' warns %.2fs before it can reach her >= minimum %.2fs"
 					% [def.id, def.warning_time(), def.minimum_telegraph()])
-		t.check(def.outer_radius > def.inner_radius,
+		t.check(def.heard_within() > def.core_within(),
 				"event '%s' has a falloff band to fade across" % def.id)
 
 	# Ambient events are exempt because they never "appear"; assert that is deliberate.
 	var playground := EventCatalogue.by_id("playground")
-	t.check(playground.kind == GameEnums.EventKind.AMBIENT,
+	t.check(playground.is_ambient(),
 			"the playground is ambient, so its zero telegraph is intended")
 
 ## **Every row warned of before it exists is owed the same flat minimum, whatever its field and its
@@ -278,10 +278,10 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 				"'%s' is warned of %.2fs before it exists, at most the %.2fs ceiling"
 				% [def.id, def.warned_for(), Tuning.WARNING_ALONE_MAX])
 		t.check(def.validate(), "and '%s' gives what it owes" % def.id)
-		if def.pursuit != null:
+		if def.pursues():
 			continue
 		var wider: EventDef = def.duplicate()
-		wider.shape = def.shape
+		wider.shape = def.ground_shape()
 		wider.outer_radius *= 1.5
 		wider.speed *= 1.5
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
@@ -292,10 +292,10 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 	for id: String in ["cyclist", "fire_truck", "military_convoy", "charging_dog",
 			"robber_giving_chase", "van_guard_giving_chase"]:
 		t.check(ids.has(id), "'%s' is among the rows warned first (%s)" % [id, ", ".join(ids)])
-	t.check(is_equal_approx(column.telegraph_time, Tuning.WARNING_ALONE_MAX)
-			and convoy.telegraph_time > Tuning.WARNING_ALONE_MAX,
+	t.check(is_equal_approx(column.telegraphs_for(), Tuning.WARNING_ALONE_MAX)
+			and convoy.telegraphs_for() > Tuning.WARNING_ALONE_MAX,
 			"the column's badge is cut to the ceiling (%.2fs) and the planned convoy keeps its %.2fs"
-			% [column.telegraph_time, convoy.telegraph_time])
+			% [column.telegraphs_for(), convoy.telegraphs_for()])
 
 ## **The loose dog and the cat do not telegraph their coming.** *(PLAYTEST-145: "telegraphing is for
 ## things that go fast *and* are dangerous" · "go fast and towards the player" · "loose dog, cat
@@ -362,7 +362,7 @@ func _test_as_warned_first_carries_solid_parts_too(t: TestRunner) -> void:
 			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
 			% crash.solid_parts.size())
 	var widened := crash.duplicate() as EventDef
-	widened.shape = crash.shape
+	widened.shape = crash.ground_shape()
 	widened.solid_parts = crash.solid_parts
 	widened.telegraph_time = 5.0
 	var warned := widened.as_warned_first()
@@ -391,7 +391,7 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 	var walker := EventCatalogue.by_id("dog_walker").as_sent_ahead()
 	t.check(walker.comes_down_her_line() and not walker.warns_before_it_exists()
 			and not walker.announces_its_coming(Tuning.WALK_SPEED)
-			and walker.outer_radius < SpawnSiting.least_distance(),
+			and walker.heard_within() < SpawnSiting.least_distance(),
 			"the dog walker comes down her line created at once, with no badge, outside its own field")
 	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
 	t.check(patrol.spawn_mode_on(Tuning.RUN_LENGTH_DAYS) == EventDef.SpawnMode.TOWARD_PLAYER
@@ -433,7 +433,7 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if not _SPREAD_LOOKS.has(def.look) or def.placement.is_empty():
+		if not _SPREAD_LOOKS.has(def.picture()) or def.placement.is_empty():
 			continue
 		var half := maxf(11.0, def.obstructs_within())
 		for tile_type in def.placement:
@@ -948,16 +948,16 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 	var invisible := ["playground", "curfew_announce", "finale_explosion"]
 	var owner_of := {}
 	for def in EventCatalogue.all():
-		if def.look == EventDef.Look.NONE:
+		if def.picture() == EventDef.Look.NONE:
 			t.check(invisible.has(def.id), "'%s' draws nothing on purpose" % def.id)
 			continue
-		t.check(not owner_of.has(def.look),
+		t.check(not owner_of.has(def.picture()),
 				"'%s' has a picture of its own (else shared with '%s')"
-				% [def.id, owner_of.get(def.look, "")])
-		owner_of[def.look] = def.id
+				% [def.id, owner_of.get(def.picture(), "")])
+		owner_of[def.picture()] = def.id
 	for id: String in invisible:
 		var def := EventCatalogue.by_id(id)
-		t.check(def != null and def.look == EventDef.Look.NONE,
+		t.check(def != null and def.picture() == EventDef.Look.NONE,
 				"'%s' is still one of the invisible ones" % id)
 	t.check(owner_of.size() >= 25,
 			"and the catalogue draws %d different things" % owner_of.size())
@@ -971,9 +971,9 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 func _test_every_look_carries_its_own_silhouette(t: TestRunner) -> void:
 	var seen := {}
 	for def in EventCatalogue.all():
-		if def.look == EventDef.Look.NONE:
+		if def.picture() == EventDef.Look.NONE:
 			continue
-		var icon := EventPictures.icon_for(def.look)
+		var icon := EventPictures.icon_for(def.picture())
 		t.check(not icon.is_empty(), "'%s' has a silhouette a badge could draw" % def.id)
 		if icon.is_empty():
 			continue
@@ -996,7 +996,7 @@ func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t: TestRunne
 			continue
 		t.check(def.obstructs_within() <= 0.0 and def.solid_reach() <= 0.0,
 				"'%s' has no body on the sidewalk (obstructs %.0f)" % [id, def.obstructs_within()])
-		t.check(not def.draws_body_shadow, "and casts no shadow there")
+		t.check(not def.casts_a_shadow(), "and casts no shadow there")
 
 ## **A one-shot is sited on her way, or it is refused** (`EventDef.is_a_one_shot_off_her_way()`,
 ## which `EventDef.validate()` refuses a row for): a set piece has to be met wherever she goes, and

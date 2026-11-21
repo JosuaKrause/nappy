@@ -130,7 +130,7 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 		# when it reaches her is the flight, not the moment she walked up. See the class doc.
 		return _pass_net(def, offset, decay, sensitivity, 0.0)
 	var total := 0.0
-	var phase_span: float = def.pulse_period if def.pulse_period > 0.0 else 1.0
+	var phase_span: float = def.pulses_every() if def.pulses_every() > 0.0 else 1.0
 	for i in PHASE_SAMPLES:
 		var phase_delay := phase_span * float(i) / float(PHASE_SAMPLES)
 		total += _pass_net(def, offset, decay, sensitivity, phase_delay)
@@ -150,7 +150,7 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 ## bodies at each other in a straight line. Measuring one here at a crossing row's lead would price
 ## a geometry the director does not produce, which is the error this whole branch exists to remove.
 static func sited_toward_her(def: EventDef) -> bool:
-	return def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER \
+	return def.comes_toward_her() \
 			and not def.is_sent_ahead()
 
 static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: float,
@@ -164,7 +164,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# that comes at her is created with its telegraph already spent and meets her from there.
 	if toward_her:
 		instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
-	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
+	var warm := 0.0 if toward_her else def.telegraphs_for() + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:
 		instance.step(STEP)
@@ -193,7 +193,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	for _i in steps:
 		instance.step(STEP)
 		her_pos += her_velocity * STEP
-		if her_pos.distance_to(instance.position) <= def.outer_radius:
+		if her_pos.distance_to(instance.position) <= def.heard_within():
 			incoming_sum += instance.source().contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 

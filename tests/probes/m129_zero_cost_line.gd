@@ -463,10 +463,10 @@ func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 		if not plan.is_placed() or plan.mast_id() != "":
 			continue
 		var def := plan.def
-		if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with("checkpoint") \
-				or (def.mobile and not def.paces):
+		if def.is_scenery() or def.pursues() or def.id.begins_with("checkpoint") \
+				or (def.moves() and not def.paces_a_beat()):
 			continue
-		var emits := def.intensity > 0.0
+		var emits := def.has_a_field()
 		var radius := def.line_reach()
 		if radius <= 0.0:
 			continue
@@ -474,7 +474,7 @@ func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 		row.id = def.id
 		row.radius = radius
 		row.position = plan.position
-		row.paces = def.paces
+		row.paces = def.paces_a_beat()
 		row.emits = emits
 		row.obstructs = def.obstructs_within() > 0.0
 		row.source = int(_sources.get(plan.get_instance_id(), Source.CATALOGUE))
@@ -1190,8 +1190,8 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 		var def := EventCatalogue.by_id(id)
 		var reach := "" if not def else \
 				" (intensity %.1f over %.0fpx, denies %.0fpx, body %.0fpx%s)" \
-				% [def.intensity, def.outer_radius, def.line_reach(),
-				def.obstructs_within(), ", paces" if def.paces else ""]
+				% [def.peak(), def.heard_within(), def.line_reach(),
+				def.obstructs_within(), ", paces" if def.paces_a_beat() else ""]
 		print("      %-4d %s%s" % [blame[id], id, reach])
 
 	print("\n-- the grower's own mid-block crossings --")

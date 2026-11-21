@@ -85,17 +85,17 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(instance_where))
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"a row that waits starts waiting")
-	instance_where.tell(Vector2(def.notice.within - 10.0, 0.0))
+	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WARNING and not instance.is_waiting(),
 			"inside its one radius it notices her and warns")
 	t.check(instance.save().noticed_at() != INF, "and its notice has a start")
-	instance_where.tell(Vector2(def.notice.within + 40.0, 0.0))
+	instance_where.tell(Vector2(def.notice_within() + 40.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"back outside its radius, it waits again")
 	t.check(instance.save().noticed_at() == INF, "with no notice left")
-	instance_where.tell(Vector2(def.notice.within - 10.0, 0.0))
+	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	var frames := 0
 	while instance.phase == EventInstance.Phase.WARNING or frames == 0:
 		instance.step(STEP)
@@ -145,30 +145,30 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 			EventSurroundings.new().hearing(dog_where))
 	var her := Vector2(400.0, 0.0)
 	var clock := 0.0
-	while not dog.is_leaving and clock < def.telegraph_time:
+	while not dog.is_leaving and clock < def.telegraphs_for():
 		if clock >= 1.2:
 			dog_where.tell(dog_where.at(), Vector2.INF, Rect2(), true)
 			her += Vector2(Tuning.RUN_SPEED * STEP, 0.0)
 		dog_where.tell(her, Vector2.INF, Rect2(), dog_where.is_running())
 		dog.step(STEP)
 		clock += STEP
-	t.check(dog.is_leaving and dog.chase_age() < def.telegraph_time,
+	t.check(dog.is_leaving and dog.chase_age() < def.telegraphs_for(),
 			"run from 1.2s, the lesson dog gives up %.1fs into its %.1fs telegraph"
-			% [dog.chase_age(), def.telegraph_time])
+			% [dog.chase_age(), def.telegraphs_for()])
 	t.check(dog.is_telegraphing(), "and is still telegraphing as it leaves")
 	t.check(dog.has_given_up(), "having given up: she shook it off, its clock did not run out")
 	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
-	while dog.chase_age() < def.telegraph_time - 2.0 * STEP and not dog.is_finished:
+	while dog.chase_age() < def.telegraphs_for() - 2.0 * STEP and not dog.is_finished:
 		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
 				dog_where.is_running())
 		dog.step(STEP)
 		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.chase_age())
-	while dog.chase_age() < def.telegraph_time + STEP and not dog.is_finished:
+	while dog.chase_age() < def.telegraphs_for() + STEP and not dog.is_finished:
 		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
 				dog_where.is_running())
 		dog.step(STEP)
 	t.check(not dog.is_finished and dog.is_leaving, "still in the world, leaving")
-	t.check(not dog.is_telegraphing(), "and not once its %.1fs have run" % def.telegraph_time)
+	t.check(not dog.is_telegraphing(), "and not once its %.1fs have run" % def.telegraphs_for())
 	dog.free()
 
 ## A notice that was held (a held lunge with her inside its stand-off, a charger behind a wall at its
@@ -209,13 +209,13 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("roadblock")
 	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
-	t.check(cold.pursuit == null and cold.hunts.pursuit != null, "the cold roadblock does not pursue")
-	t.check(hot.pursuit != null and hot.pursuit != cold.hunts.pursuit,
+	t.check(not cold.pursues() and cold.hunts.pursuit != null, "the cold roadblock does not pursue")
+	t.check(hot.pursues() and hot.pursuit != cold.hunts.pursuit,
 			"its hunting copy pursues with a spec of its own")
-	t.check(is_equal_approx(hot.pursuit.speed, Tuning.HEAT_HUNTS_SPEED)
+	t.check(is_equal_approx(hot.chase_speed(), Tuning.HEAT_HUNTS_SPEED)
 			and is_equal_approx(cold.hunts.pursuit.speed, 0.0),
 			"at the ladder's speed, leaving the row's spec as it was")
-	t.check(hot.notice != null and is_equal_approx(hot.notice.within, EventDef.HEAT_HUNTS_WITHIN),
+	t.check(hot.waits_for_her() and is_equal_approx(hot.notice_within(), EventDef.HEAT_HUNTS_WITHIN),
 			"noticing her at the ladder's distance")
 
 # -------------------------------------------------------------- the badge alone ---
@@ -271,8 +271,8 @@ func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRun
 	var tried := 0
 	for def: EventDef in EventCatalogue.all():
 		var body := def.datum()
-		if body == null or body.kind != GroundShape.Kind.SEGMENT or def.mobile or def.drives() \
-				or def.pursuit != null or def.flock_size > 0:
+		if body == null or body.kind != GroundShape.Kind.SEGMENT or def.moves() or def.drives() \
+				or def.pursues() or def.is_a_flock():
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)

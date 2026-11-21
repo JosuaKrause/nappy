@@ -199,8 +199,8 @@ func _intended_shares(day: int) -> Dictionary:
 		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER \
 				and not def.is_sent_ahead():
 			continue
-		shares[def.id] = def.weight
-		total += def.weight
+		shares[def.id] = def.drawn_as_often()
+		total += def.drawn_as_often()
 	for id: String in shares:
 		shares[id] = float(shares[id]) / total
 	return shares

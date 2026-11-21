@@ -213,7 +213,7 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 	for i in 4:
 		await t.get_tree().process_frame
 	t.check(edge.badges().announcing().size() == 6, "six badges listed (%d)" % edge.badges().announcing().size())
-	var body := StringName(EventPictures.icon_for(def.look))
+	var body := StringName(EventPictures.icon_for(def.picture()))
 	var drawn := 0
 	if not atlas.passes.is_empty():
 		for name: StringName in atlas.passes[atlas.passes.size() - 1]:

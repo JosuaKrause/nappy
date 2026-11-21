@@ -199,7 +199,7 @@ func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 		var def := live.def
 		if live.is_finished or not live.is_leaving or not area.has_point(live.global_position):
 			continue
-		if def.kind != GameEnums.EventKind.AMBIENT and def.pursuit == null and def.vehicle == null \
+		if def.kind != GameEnums.EventKind.AMBIENT and not def.pursues() and not def.drives() \
 				and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 			people += 1
 	return people
@@ -353,13 +353,13 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 			if plan.spent or not plan.is_placed() or area.has_point(plan.position):
 				continue
 			var def := plan.def
-			if def.obstructs_within() <= 0.0 and not def.hard_fail:
+			if def.obstructs_within() <= 0.0 and not def.ends_the_day():
 				continue
 			var reach := def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 					+ Stroller.PRAM_BODY_RADIUS
-			if def.intensity > 0.0:
+			if def.has_a_field():
 				reach = maxf(reach, def.field_reach())
-			if def.hard_fail:
+			if def.ends_the_day():
 				reach = maxf(reach, def.lethal_reach() + Tuning.PLAYER_BODY_RADIUS)
 			if point.distance_to(plan.position) < reach:
 				clear = false

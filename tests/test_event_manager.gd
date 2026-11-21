@@ -125,7 +125,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 	var first := events.spawner.create(lesson, at)
 	var second := events.spawner.create(dog, at)
 	t.check(lesson.id == "charging_dog_tutorial" and lesson != dog
-			and lesson.pursuit != null and lesson.look == dog.look,
+			and lesson.pursues() and lesson.picture() == dog.picture(),
 			"the lesson's dog is a row of its own, drawn and chasing as the dog does")
 	t.check(first.logged_name() == "charging_dog_tutorial" and second.logged_name() == "charging_dog",
 			"and seen apart (%s, %s)" % [first.logged_name(), second.logged_name()])
@@ -485,7 +485,7 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 func _widest_field() -> float:
 	var widest := 0.0
 	for def in EventCatalogue.all():
-		widest = maxf(widest, def.outer_radius)
+		widest = maxf(widest, def.heard_within())
 	return widest
 
 ## The other half, and the one a naive implementation gets wrong: an event that has already
@@ -753,7 +753,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 			else:
 				rig.velocity = Vector2.ZERO
 		var ticks := 0
-		var limit := PhysicsTicks.ticks_for(def.telegraph_time + 10.0, Rig.WALK_SCALE)
+		var limit := PhysicsTicks.ticks_for(def.telegraphs_for() + 10.0, Rig.WALK_SCALE)
 		while seen["arrived"] == null and ticks < limit:
 			await PhysicsTicks.pass_ticks(t, 1, each, Rig.WALK_SCALE)
 			ticks += 1
@@ -769,10 +769,10 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 		t.check(arrived != null, "'%s' is sent down her line and created" % def.id)
 		if not arrived:
 			continue
-		t.check(not arrived.is_telegraphing() and is_equal_approx(arrived.current_intensity(1.0), def.intensity),
+		t.check(not arrived.is_telegraphing() and is_equal_approx(arrived.current_intensity(1.0), def.peak()),
 				("'%s' is created with its telegraph spent, emitting at its own intensity rather "
 				% def.id) + "than the telegraph's %.0f%%" % (EventInstance.TELEGRAPH_INTENSITY_FRACTION * 100.0))
-		if def.hard_fail:
+		if def.ends_the_day():
 			t.check(arrived.is_lethal_at(arrived.global_position),
 					"and '%s', declared hard_fail, is lethal from its first frame" % def.id)
 		events.retire(arrived)

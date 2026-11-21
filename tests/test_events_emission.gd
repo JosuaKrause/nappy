@@ -41,35 +41,35 @@ func _test_telegraph_damps_emission(t: TestRunner) -> void:
 	var instance := _instance(t, def)
 
 	t.check(instance.is_telegraphing(), "an event starts in its telegraph phase")
-	t.close_to(instance.current_intensity(), def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
+	t.close_to(instance.current_intensity(), def.peak() * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
 			"a telegraphing event emits only a fraction of its intensity")
 	t.close_to(instance.source().contribution_at(Vector2(1000.0, 0.0)), 0.0,
 			"an event contributes nothing beyond its outer radius")
 
-	_advance(instance, def.telegraph_time + 0.05)
+	_advance(instance, def.telegraphs_for() + 0.05)
 	t.check(not instance.is_telegraphing(), "the telegraph phase ends after telegraph_time")
-	t.close_to(instance.current_intensity(), def.intensity,
+	t.close_to(instance.current_intensity(), def.peak(),
 			"an active event emits its full intensity", 0.05)
-	t.close_to(instance.source().contribution_at(Vector2(def.inner_radius * 0.5, 0.0)), def.intensity,
+	t.close_to(instance.source().contribution_at(Vector2(def.core_within() * 0.5, 0.0)), def.peak(),
 			"inside the inner radius the full intensity applies", 0.05)
 	instance.free()
 
 func _test_pulse_envelope(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
-	t.check(def.pulse_period > 0.0, "the yeller pulses rather than holding")
+	t.check(def.pulses_every() > 0.0, "the yeller pulses rather than holding")
 	var instance := _instance(t, def)
-	_advance(instance, def.telegraph_time + 0.05)
+	_advance(instance, def.telegraphs_for() + 0.05)
 
 	var lowest := INF
 	var highest := -INF
-	for i in int(def.pulse_period / STEP):
+	for i in int(def.pulses_every() / STEP):
 		instance.step(STEP)
 		lowest = minf(lowest, instance.current_intensity())
 		highest = maxf(highest, instance.current_intensity())
 
 	t.check(highest > lowest * 2.0, "the pulse envelope has a real swing between beats")
 	t.check(lowest > 0.0, "a pulsing event never goes completely silent")
-	t.check(highest <= def.intensity + 0.001, "the pulse never exceeds the stated intensity")
+	t.check(highest <= def.peak() + 0.001, "the pulse never exceeds the stated intensity")
 	instance.free()
 
 ## **A two-part field is two parts in the meter, not only in the cost table.** The leaf blower is a
@@ -87,8 +87,8 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 			"the leaf blower carries a core")
 	t.check(busker.core_intensity == 0.0,
 			"the busker is one field, which is what makes it the row to compare against")
-	t.check(is_equal_approx(leaf.intensity, busker.intensity)
-			and is_equal_approx(leaf.outer_radius, busker.outer_radius),
+	t.check(is_equal_approx(leaf.peak(), busker.peak())
+			and is_equal_approx(leaf.heard_within(), busker.heard_within()),
 			"away from the core the leaf blower is the busker, number for number")
 
 	var blower := _instance(t, leaf)
@@ -98,15 +98,15 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	t.check(near.length() < leaf.core_radius and far.length() > leaf.core_radius,
 			"32px is inside the core and 100px is outside it")
 
-	var blower_near := blower.field_at(near, leaf.intensity, Vector2.INF)
-	var busker_near := player.field_at(near, busker.intensity, Vector2.INF)
+	var blower_near := blower.field_at(near, leaf.peak(), Vector2.INF)
+	var busker_near := player.field_at(near, busker.peak(), Vector2.INF)
 	t.check(blower_near > busker_near + 1.0,
 			"a leaf blower charges more than a busker inside its core (%.2f/s against %.2f/s)"
 			% [blower_near, busker_near])
 	t.close_to(blower_near, leaf.core_intensity,
 			"and what it charges there is the core's own rate")
-	t.close_to(blower.field_at(far, leaf.intensity, Vector2.INF),
-			player.field_at(far, busker.intensity, Vector2.INF),
+	t.close_to(blower.field_at(far, leaf.peak(), Vector2.INF),
+			player.field_at(far, busker.peak(), Vector2.INF),
 			"past the core the two rows charge the same rate")
 
 	# The damping is the half a def-level check cannot see: a quarter of a beat has to be a quarter
@@ -114,7 +114,7 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	# as the fraction the phase put on the row's own peak, so it holds wherever in the telegraph and
 	# the pulse envelope this instance happens to be standing.
 	t.check(blower.is_telegraphing(), "an instance starts in its telegraph")
-	var fraction := blower.current_intensity() / leaf.intensity
+	var fraction := blower.current_intensity() / leaf.peak()
 	t.check(fraction < 1.0, "and is emitting less than its catalogued peak while it does")
 	t.close_to(blower.source().contribution_at(near), leaf.core_intensity * fraction,
 			"the phase damps the core by exactly the fraction it damps the field by")
@@ -175,7 +175,7 @@ func _test_duration_and_finish(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	t.check(def.departure_speed() <= 0.0, "the van that was parked there does not drive off")
 	var instance := _instance(t, def)
-	_advance(instance, def.telegraph_time + def.duration + 0.1)
+	_advance(instance, def.telegraphs_for() + def.duration + 0.1)
 	t.check(instance.is_finished, "an event with a duration finishes")
 	t.close_to(instance.source().contribution_at(Vector2.ZERO), 0.0,
 			"a finished event contributes nothing")
@@ -196,7 +196,7 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance_where.tell(Vector2(60.0, 0.0))
-	_advance(instance, def.telegraph_time + def.duration + 0.1)
+	_advance(instance, def.telegraphs_for() + def.duration + 0.1)
 	t.check(not instance.is_finished, "a flock that is done is not deleted where it stands")
 	t.check(instance.is_leaving, "it is leaving")
 	t.close_to(instance.source().contribution_at(instance_where.at()), 0.0,
@@ -218,7 +218,7 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	alone_where.tell(Vector2.ZERO)
 	alone.step(STEP)
 	alone_where.tell(Vector2.INF)
-	_advance(alone, def.telegraph_time + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
+	_advance(alone, def.telegraphs_for() + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
 
@@ -233,10 +233,10 @@ func _test_no_field_reaches_past_silent_beyond(t: TestRunner) -> void:
 	var heard_past := 0
 	var rows := 0
 	for def: EventDef in EventCatalogue.all():
-		if def.flock_size > 0:
+		if def.is_a_flock():
 			continue
 		rows += 1
-		var peak := maxf(maxf(def.intensity, def.core_intensity), 1.0) * 2.0
+		var peak := maxf(maxf(def.peak(), def.core_intensity), 1.0) * 2.0
 		var past := def.silent_beyond() + 0.01
 		for facing: Vector2 in [Vector2.RIGHT, Vector2(1.0, 1.0).normalized()]:
 			var instance := EventInstance.new()
@@ -280,7 +280,7 @@ func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 	var heard := 0
 	var heard_by_its_body := 0
 	for def in rows:
-		var bodyless := (maxf(def.inner_radius, def.outer_radius) + 1.0) \
+		var bodyless := (maxf(def.core_within(), def.heard_within()) + 1.0) \
 				/ (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 		var instance := EventInstance.new()
 		instance.setup(def, node, PackedVector2Array(), Vector2.RIGHT)
