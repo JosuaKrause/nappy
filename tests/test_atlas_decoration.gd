@@ -44,6 +44,14 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	t.check(tree.shape() != null and is_equal_approx(tree.shape().radius, expected_tree),
 			"a tree's shadow radius follows scale_factor() off the region table's own size (%.2f against %.2f)"
 			% [tree.shape().radius if tree.shape() else -1.0, expected_tree])
+	var own_size_tree := Prop.new()
+	own_size_tree.dress(null, Prop.Kind.TREE, 0)
+	t.add_child(own_size_tree)
+	var own_reach := own_size_tree.shape().reach() if own_size_tree.shape() else 0.0
+	t.check(own_reach > 0.0 and is_equal_approx(tree.shape().reach(), own_reach * 1.3),
+			"a tree dressed 1.3 times its picture's size reaches 1.3 times as far as one at its own size (%.2f against %.2f)"
+			% [tree.shape().reach() if tree.shape() else -1.0, own_reach])
+	own_size_tree.free()
 	tree.free()
 
 	var frame := Prop.new()
@@ -77,7 +85,7 @@ func _test_the_street_tree_footprint_covers_every_picture(t: TestRunner) -> void
 				% [TreePictures.region(variant), reach, TreePictures.widest_reach()])
 		widest = maxf(widest, reach)
 		tree.free()
-		# A street tree dressed with a park tree's scale is still grounded at its picture's own size.
+		# A street tree dressed with any scale is still grounded at its picture's own size.
 		var scaled := Prop.new()
 		scaled.dress(null, Prop.Kind.STREET_TREE, variant, 2.0)
 		t.add_child(scaled)
