@@ -17,9 +17,11 @@ stream-in and `_done_for_now()` carry the save, a mast restored at the broadcast
 `EventsAhead`'s two sends restore `EventSave.aged(...)`. A script rewrote thirty `.resume(` lines in twenty-one suite,
 probe and rig files, the rest by hand; `tools/field_reads.txt` loses five lines. Nothing a player sees changes.
 
-**Open to overturn, the builder's where the design was silent:** the suites that compared two whole behaviour-state
-dictionaries round a stream-out compare one named behaviour's state through `state_of()`, since the save gives no
-whole-dictionary reader; `restore()`'s parameter is `saved` so as not to shadow `save()`.
+**Open to overturn, the builder's where the design was silent:** the save gives no whole-dictionary reader, so the
+suites that compared two whole behaviour-state dictionaries round a stream-out compare the two saves' age, distance
+and notice and loop `state_of()` over a written list of the behaviours that keep a state (`STATEFUL` in
+`test_event_behaviours.gd`, which a new such behaviour joins by hand); `restore()`'s parameter is `saved` so as not
+to shadow `save()`.
 
 **The item.** Row 3b stays open: streaming's own state per plan and the live event's age are left. `_done_for_now()`
 still reads the plan's public `arrives_aged`, which streaming's own state per plan makes private.
