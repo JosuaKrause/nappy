@@ -36,6 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_a_row_handed_to_her_walk_is_recorded_unplaced(t)
 	_test_a_row_that_travels_a_sidewalk_takes_one_location(t)
 	_test_every_open_location_ends_drawn(t)
+	_test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once_given_back(t)
 	_test_the_plans_handed_in_are_left_as_handed(t)
 	_test_one_marble_a_unit_stands_a_row_alone(t)
 	_test_one_marble_a_unit_an_empty_marble_leaves_it_empty(t)
@@ -387,6 +388,21 @@ func _test_every_open_location_ends_drawn(t: TestRunner) -> void:
 	for location in street.locations():
 		all_drawn = all_drawn and location.is_drawn()
 	t.check(all_drawn, "a street that draws only empty marbles ends with every location drawn")
+
+## A location holding a beat her walk stood on it is recorded drawn like every other as its unit fills
+## in, what stands on it left alone, so once the beat is given back it reads drawn with nothing on it
+## and not open in a unit that will not draw again.
+func _test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once_given_back(t: TestRunner) -> void:
+	var lot := _lot(3)
+	var held := lot.locations()[0]
+	var beat := EventPlan.new(EventCatalogue.by_id("busker"), held.centre())
+	held.take_for_her_walk(beat)
+	_drawn(lot, _Bag.new([] as Array[String]), _Ground.new(), _Locations.new())
+	t.check(held.is_drawn() and held.beat() == beat,
+			"the draw leaves the location drawn, with the beat still standing on it")
+	held.give_back(beat)
+	t.check(held.is_drawn() and not held.is_open() and not held.is_taken(),
+			"given back, it reads drawn with nothing on it, not open")
 
 ## The plans handed in are what every ask is judged among first, and the list is not added to.
 func _test_the_plans_handed_in_are_left_as_handed(t: TestRunner) -> void:

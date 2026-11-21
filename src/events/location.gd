@@ -32,6 +32,9 @@ var _view := PlacementView.View.OFF_THE_ROUTE
 var _available := true
 ## What a phase put here, or null while nothing has.
 var _plan: EventPlan = null
+## The beat her walk stood here (`take_for_her_walk()`) and has not given back, or null. It is a
+## beat only while it is what stands here (`beat()`).
+var _beat: EventPlan = null
 var _kind := Kind.SECTION
 ## Whether a draw has filled it, with an event or with nothing (`record()`).
 var _drawn := false
@@ -140,13 +143,30 @@ func takes(type: int) -> bool:
 			return type == GameEnums.TileType.CROSSING or type == GameEnums.TileType.SIDEWALK \
 					or type == GameEnums.TileType.ROAD
 
-## **Gives the location back where `plan` is what stands on it**: a beat her walk laid here and has
-## laid somewhere else (`DayLocations.give_back()`). Where something else stands here, or nothing,
-## it changes nothing. Whether a draw has filled it stays as it was: a location whose unit has not
-## drawn is open again, and one whose unit has is drawn with nothing on it.
+## **Stands `plan`, a beat her walk lays, here for the day** (`DayLocations.take_for_her_walk()`),
+## and remembers it as the beat: the location is the one place that says a beat stands on it, and
+## the unit reads it from its locations (`PlacementUnit.beats()`).
+func take_for_her_walk(plan: EventPlan) -> void:
+	_plan = plan
+	_beat = plan
+
+## **The beat her walk stands here, while it is what stands here**, else null: a section swapped in
+## over it (day 13's task roadblock, `take()`) ends it without a second call.
+func beat() -> EventPlan:
+	if _beat != null and _plan == _beat:
+		return _beat
+	return null
+
+## **Gives the location back where `plan` is the beat here**: a beat her walk laid here and has laid
+## somewhere else (`DayLocations.give_back()`). Where something else stands here, or nothing, it
+## changes nothing. Whether a draw has filled it stays as it was: a location whose unit has not
+## drawn is open again, and one whose unit has is drawn with nothing on it (`MarbleDraw.draw()` left
+## it drawn while the beat stood on it).
 func give_back(plan: EventPlan) -> void:
 	if _plan == plan:
 		_plan = null
+	if _beat == plan:
+		_beat = null
 
 ## Whether a draw has filled it yet, with an event or with nothing.
 func is_drawn() -> bool:

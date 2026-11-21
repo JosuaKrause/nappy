@@ -133,8 +133,10 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 			break
 	for placing in laid:
 		_locations.record(placing.location(), placing.plan())
+	# A location holding a beat her walk stood on it is drawn too, so given back it reads
+	# drawn-empty; what stands on it is left (`Location.record()` of nothing only sets the mark).
 	for location in unit.locations():
-		if location.is_open():
+		if location.is_open() or location.beat() != null:
 			_locations.record(location, null)
 	var placed: Array[EventPlan] = []
 	for def in drawn:

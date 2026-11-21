@@ -19,8 +19,8 @@ extends RefCounted
 ## shouting and day 7's van a mark rigs just ahead of her; `WalkSiting`) takes a location on her
 ## way, of the nearest unit that has not drawn where the beat's siting offers one, and the unit is
 ## told
-## (`PlacementUnit.rig()`): its room starts without the location, and it and the units touching it
-## are judged among the beat, drawn or not (`PlacementUnit.rigged()`). *(The player: "repeating
+## (`Location.take_for_her_walk()`): its room starts without the location, and it and the units
+## touching it are judged among the beat, drawn or not (`PlacementUnit.beats()`). *(The player: "repeating
 ## the day has the exact same preconditions. if the player does something differently different
 ## things might happen. if the player were to do exactly the same everything would behave exactly
 ## the same. beats are marbles, yes"; inbox #1521 in breezy-magpie.)* So a unit a beat stands in or
@@ -126,9 +126,9 @@ func draw_in_their_order() -> Array[EventPlan]:
 ## as a beat of the unit it landed in.
 func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 	var among: Array[EventPlan] = _dawn.duplicate()
-	among.append_array(unit.rigged())
+	among.append_array(unit.beats())
 	for other in _units.touching(unit):
-		among.append_array(other.rigged())
+		among.append_array(other.beats())
 		if not other.is_drawn():
 			continue
 		for plan in other.drawn():

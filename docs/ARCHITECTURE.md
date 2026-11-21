@@ -294,12 +294,13 @@ src/
 	                      corridor, the streets the walk names and nothing beyond them
 	street_locations.gd   one street's locations: three sections along it, two sidewalk locations
 	                      in each, a section taken whole by an event that spans the street
-	location.gd           one location: its street, section, tiles, view, what stands on it, the whole
-	                      it is part of and the run a route starting in it may lie on
+	location.gd           one location: its street, section, tiles, view, what stands on it and the
+	                      beat her walk stood there, the whole it is part of and the run a route
+	                      starting in it may lie on
 	placement_unit.gd     one unit of the day's locations, drawn in one go: a street, a junction box,
 	                      an alley, a park or a square (its kind of ground); its name, its rank and
 	                      its stream for the day, its view, the most permissive of its locations',
-	                      and the beats her walk laid in it
+	                      and the beats her walk stands on its locations
 	unit_room.gd          what is left of a unit for its draw to speak for: a street's whole
 	                      sections and half-filled ones, what share of a street (a section, a
 	                      location) a marble may still take

@@ -2,8 +2,8 @@ extends RefCounted
 ## `WalkSiting`, the siting that lays the rows her walk places (a *beat*): offers a beat the free
 ## locations on her way, nearest first, and stands it on the first location the judge answers for.
 ## A beat laid ahead of her takes the nearest free location of the day's route tree ahead of her, a
-## unit's that has not drawn before one a drawn unit left empty, and the unit is told (rigged, and
-## the beat taken back out on a move); a placed beat is judged without its own body and gives its
+## unit's that has not drawn before one a drawn unit left empty, and the location holds it (and gives
+## it back on a move); a placed beat is judged without its own body and gives its
 ## location back only once it has another, drawn with nothing on it where its unit has drawn since;
 ## a row refused in a look is not judged again in it; one ask offers at most `LOCATIONS_A_LOOK`
 ## locations; a mast near the mark takes the first free location of the tiles it is offered; a fire
@@ -14,10 +14,9 @@ extends RefCounted
 ##
 ## Run with stand-ins for everything it is handed (`FakeRouteTree` whose cells and carried tiles a
 ## check sets, `FakeWalkEvents`, `_Locations` whose table of locations a check sets and which
-## records each take and give-back, `_Units` whose table of which unit a location is a part of a
-## check sets, `_Judge` which answers a plan on the first tile it is handed or null for a location
+## records each take and give-back, `_Judge` which answers a plan on the first tile it is handed or null for a location
 ## set to refuse, `_Ground` whose tiles a check sets and which records each ask); `Location`,
-## `PlacementUnit`, `EventPlan` and `EventDef` are real (state and data) on the bare lattice
+## `EventPlan` and `EventDef` are real (state and data) on the bare lattice
 ## (`CityMap.new()`), a hand-drawn map as `tests/test_ruled_location_ground.gd` builds its own. What
 ## the judge says of a candidate is `tests/test_ruled_location_ground.gd`'s and `StreetInvalidation`'s,
 ## and which tile is a row's ground `tests/test_sited_ground.gd`'s.
@@ -27,7 +26,7 @@ func run(t: TestRunner) -> void:
 	_test_a_taken_or_unavailable_location_is_never_offered_nor_a_tile_the_tree_does_not_carry(t)
 	_test_off_the_routes_it_waits_and_says_so(t)
 	_test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_empty(t)
-	_test_the_unit_a_beat_takes_a_location_of_is_told_and_takes_it_back_on_a_move(t)
+	_test_the_location_a_beat_takes_holds_it_and_gives_it_back_on_a_move(t)
 	_test_a_location_given_back_in_a_unit_that_has_drawn_reads_drawn(t)
 	_test_a_placed_beat_keeps_its_location_until_another_takes_it(t)
 	_test_a_row_refused_in_a_look_is_not_judged_again_in_it(t)
@@ -52,7 +51,6 @@ class _Rig extends RefCounted:
 	var tree: FakeRouteTree
 	var walk := FakeWalkEvents.new()
 	var locations := _Locations.new()
-	var units := _Units.new()
 	var judge := _Judge.new()
 	var ground := _Ground.new()
 	var siting: WalkSiting
@@ -76,21 +74,12 @@ class _Locations extends DayLocations:
 	## Overrides DayLocations.take_for_her_walk.
 	func take_for_her_walk(location: Location, plan: EventPlan) -> void:
 		taken.append([location, plan])
-		location.take(plan)
+		location.take_for_her_walk(plan)
 
 	## Overrides DayLocations.give_back.
 	func give_back(location: Location, plan: EventPlan) -> void:
 		given_back.append([location, plan])
 		location.give_back(plan)
-
-## Which unit a location is a part of, as a check sets it: none for a location it names no unit
-## for, which the siting counts as drawn.
-class _Units extends DayUnits:
-	var table := {}
-
-	## Overrides DayUnits.unit_of.
-	func unit_of(location: Location) -> PlacementUnit:
-		return table.get(location)
 
 ## What judges a location: answers a plan on the first tile handed, or null for a location (or a
 ## row) set to refuse, and records each ask.
@@ -163,24 +152,14 @@ static func _rig(first_cell: int, last_cell: int) -> _Rig:
 				carried.append(tile)
 				rig.ground.set_of_tiles[tile] = 1
 	rig.tree.set_cells_ahead(cells).set_carried_tiles(carried)
-	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations, rig.units,
+	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations,
 			rig.judge, rig.ground)
 	return rig
 
-## A unit of the street kind holding `locations`, drawn or not, and named for each of them in the
-## rig's table of units.
-static func _unit_of(rig: _Rig, locations: Array[Location], drawn := false) -> PlacementUnit:
-	var tiles := locations[0].tiles()
-	for location in locations:
-		tiles = tiles.merge(location.tiles())
-	var unit := PlacementUnit.new(PlacementGround.Kind.STREET, tiles,
-			Rect2(Vector2(tiles.position) * float(Tuning.TILE_SIZE),
-					Vector2(tiles.size) * float(Tuning.TILE_SIZE)), locations, 1)
-	if drawn:
-		unit.record_draw([] as Array[EventPlan])
-	for location in locations:
-		rig.units.table[location] = unit
-	return unit
+## `location`, as a draw that filled in its unit leaves it: drawn, with nothing on it.
+static func _drawn(location: Location) -> Location:
+	location.record(null)
+	return location
 
 static func _her() -> Vector2:
 	return Vector2(HER) * float(Tuning.TILE_SIZE) + Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
@@ -232,7 +211,7 @@ func _test_a_taken_or_unavailable_location_is_never_offered_nor_a_tile_the_tree_
 	var free := _location(80, ROW_Y)
 	taken.take(EventPlan.new(EventCatalogue.by_id("cafe_tables"), taken.centre()))
 	rig.tree = _tree_without(rig, uncarried.tiles())
-	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations, rig.units,
+	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations,
 			rig.judge, rig.ground)
 	rig.locations.table = [near, taken, unavailable, uncarried, free] as Array[Location]
 	var fire := _unplaced("burning_building")
@@ -283,8 +262,7 @@ func _test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_
 	var undrawn_far := _location(70, ROW_Y)
 	var undrawn_further := _location(80, ROW_Y)
 	rig.locations.table = [drawn_near, undrawn_far, undrawn_further] as Array[Location]
-	_unit_of(rig, [drawn_near] as Array[Location], true)
-	_unit_of(rig, [undrawn_far, undrawn_further] as Array[Location])
+	_drawn(drawn_near)
 	rig.judge.refuses = [undrawn_far] as Array[Location]
 	var fire := _unplaced("burning_building")
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
@@ -298,8 +276,7 @@ func _test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_
 	var drawn_a := _location(50, ROW_Y)
 	var undrawn_b := _location(70, ROW_Y)
 	fallback.locations.table = [drawn_a, undrawn_b] as Array[Location]
-	_unit_of(fallback, [drawn_a] as Array[Location], true)
-	_unit_of(fallback, [undrawn_b] as Array[Location])
+	_drawn(drawn_a)
 	fallback.judge.refuses = [undrawn_b] as Array[Location]
 	var second := _unplaced("burning_building")
 	fallback.siting.begin_look(_her(), Vector2.RIGHT)
@@ -310,51 +287,47 @@ func _test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_
 	var all_drawn := _rig(24, 50)
 	var only := _location(60, ROW_Y)
 	all_drawn.locations.table = [only] as Array[Location]
-	_unit_of(all_drawn, [only] as Array[Location], true)
+	_drawn(only)
 	var third := _unplaced("burning_building")
 	all_drawn.siting.begin_look(_her(), Vector2.RIGHT)
 	t.check(all_drawn.siting.lay_ahead(third) and only.is_taken(),
 			"and with every unit on her way drawn, the ground a drawn unit left empty takes it")
 	all_drawn.siting.end_look()
 
-## The unit a beat takes a location of is told (`PlacementUnit.rig()`), and a beat moved elsewhere is
-## taken back out of it and laid in the new location's unit.
-func _test_the_unit_a_beat_takes_a_location_of_is_told_and_takes_it_back_on_a_move(t: TestRunner) -> void:
+## The location a beat takes holds it (`Location.beat()`), and a beat moved elsewhere is given back by
+## the old location and held by the new one.
+func _test_the_location_a_beat_takes_holds_it_and_gives_it_back_on_a_move(t: TestRunner) -> void:
 	var rig := _rig(24, 50)
 	var l60 := _location(60, ROW_Y)
 	var l70 := _location(70, ROW_Y)
 	rig.locations.table = [l60, l70] as Array[Location]
-	var first := _unit_of(rig, [l60] as Array[Location])
-	var second := _unit_of(rig, [l70] as Array[Location])
 	var fire := _unplaced("burning_building")
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
 	rig.siting.lay_ahead(fire)
 	rig.siting.end_look()
-	t.check(first.rigged() == ([fire] as Array[EventPlan]) and second.rigged().is_empty(),
-			"the unit of the location the beat took holds it, and no other unit does")
+	t.check(l60.beat() == fire and l70.beat() == null,
+			"the location the beat took holds it, and no other location does")
 	rig.judge.refuses = [l60] as Array[Location]
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
 	var moved := rig.siting.lay_ahead(fire)
 	rig.siting.end_look()
-	t.check(moved and first.rigged().is_empty() and second.rigged() == ([fire] as Array[EventPlan]),
-			"moved, it is taken out of the old unit and held by the new one")
+	t.check(moved and l60.beat() == null and l70.beat() == fire,
+			"moved, the old location gives it back and the new one holds it")
 	t.check(l60.is_open() and not l60.is_drawn(),
 			"and the old location, its unit undrawn, is open again for the unit's draw")
 
-## A location given back after its unit has drawn round the beat reads drawn with nothing on it,
-## since its unit will not draw again.
+## A location given back after its unit filled in round the beat reads drawn with nothing on it,
+## with no repair by the siting: the draw left it drawn while the beat stood on it.
 func _test_a_location_given_back_in_a_unit_that_has_drawn_reads_drawn(t: TestRunner) -> void:
 	var rig := _rig(24, 50)
 	var l60 := _location(60, ROW_Y)
 	var l70 := _location(70, ROW_Y)
 	rig.locations.table = [l60, l70] as Array[Location]
-	var first := _unit_of(rig, [l60] as Array[Location])
-	_unit_of(rig, [l70] as Array[Location])
 	var fire := _unplaced("burning_building")
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
 	rig.siting.lay_ahead(fire)
 	rig.siting.end_look()
-	first.record_draw([] as Array[EventPlan])
+	_drawn(l60)
 	rig.judge.refuses = [l60] as Array[Location]
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
 	var moved := rig.siting.lay_ahead(fire)
@@ -472,7 +445,7 @@ func _test_at_dusk_off_her_path_first_then_merely_away_and_no_location_is_taken(
 			for x in range(rect.position.x, rect.end.x):
 				rig.ground.set_of_tiles[Vector2i(x, y)] = 1
 	rig.tree = _tree_without(rig, off_the_routes.tiles())
-	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations, rig.units,
+	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations,
 			rig.judge, rig.ground)
 	var fire := _unplaced("burning_building")
 	var rng := RandomNumberGenerator.new()

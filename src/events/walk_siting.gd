@@ -5,10 +5,10 @@ extends RefCounted
 ## stands it on the first tile of the first location the day's rules leave valid, through the judge
 ## a unit's own draw uses (`LocationGround.offer_on()`). Nothing rolls a tile and nothing ranks tiles
 ## by room (docs/EVENTS.md, "A set piece happens where she is going"). The location is taken for the
-## day (`DayLocations.take_for_her_walk()`), so no draw fills it and no other beat stands on it, and
-## the unit it is a part of is told (`PlacementUnit.rig()`), so the unit's draw and the draws of the
-## units touching it are judged among the beat (`UnitDraw`). *(The player: "beats are marbles,
-## yes", inbox #1521 in breezy-magpie.)* Day 6's man shouting and day 7's van a mark rigs are laid
+## day (`DayLocations.take_for_her_walk()`), so no draw fills it and no other beat stands on it; the
+## location says the beat stands on it (`Location.beat()`), so the unit's draw and the draws of the
+## units touching it are judged among the beat (`PlacementUnit.beats()`, `UnitDraw`). *(The player:
+## "beats are marbles, yes", inbox #1521 in breezy-magpie.)* Day 6's man shouting and day 7's van a mark rigs are laid
 ## the same way, just ahead of her (`lay_just_ahead()`).
 ##
 ## **A free location** is one nothing stands on and no fixed part holds
@@ -74,9 +74,6 @@ var _map: CityMap
 var _tree: RouteTree
 var _walk: WalkEvents
 var _locations: DayLocations
-## The day's units, which a location names (`DayUnits.unit_of()`): whether its unit has drawn, and
-## the unit a beat laid on it is rigged in.
-var _units: DayUnits
 ## The judge of a location (`LocationGround.offer_on()`): the day's rules, with a candidate built on
 ## each tile handed, the first none refuses.
 var _judge: LocationGround
@@ -104,15 +101,13 @@ var _waits := {}
 
 ## `tree` is the day's route tree, `walk` the walk's events (its plans,
 ## which every beat is spaced and judged among, its doors and its calm), `locations` the day's
-## locations, `units` the units they are grouped into (the walk's draw's), `judge` the day's rules
-## over them and `ground` the tiles a row may stand on.
+## locations, `judge` the day's rules over them and `ground` the tiles a row may stand on.
 func _init(map: CityMap, tree: RouteTree, walk: WalkEvents, locations: DayLocations,
-		units: DayUnits, judge: LocationGround, ground: SitedGround) -> void:
+		judge: LocationGround, ground: SitedGround) -> void:
 	_map = map
 	_tree = tree
 	_walk = walk
 	_locations = locations
-	_units = units
 	_judge = judge
 	_ground = ground
 
@@ -159,9 +154,10 @@ func lay_ahead(plan: EventPlan) -> bool:
 ## straight ahead of her (ahead along her heading, within `PATH_HALF_WIDTH` of her line of travel)
 ## and out of her view, which the day's rules accept. Straight ahead, because the view is wider than
 ## it is tall: ground beside her leaves the view sooner than ground ahead, so without it the nearest
-## place out of view is often round the corner of a fork or a turn she does not take. The ground there has drawn, so the location is one
-## a drawn unit left empty, the way a beat is laid on one where her way has no undrawn unit; its
-## unit is told, so the units touching it that draw later are judged among it. *(The player: "you
+## place out of view is often round the corner of a fork or a turn she does not take. The ground
+## there has drawn, so the location is one a drawn unit left empty, the way a beat is laid on one
+## where her way has no undrawn unit; its location says the beat stands on it, so the units touching
+## it that draw later are judged among it. *(The player: "you
 ## would draw only for the path and only just ahead", inbox #1549.)* A wait is ordinary (she is off
 ## the day's routes, or the stretch just ahead has no free ground of the row's out of her view) and
 ## the answer is to ask again a look later, from wherever she has got to. Inside a look.
@@ -270,7 +266,8 @@ func waits() -> Dictionary:
 ## drew as it started. A tile counts when the tree itself carries it (a cell is not always one
 ## piece: `ReachabilityGrid` splits it into a node per connected component and a route carries
 ## nodes, so a second node the route never touches is no site) and it is at least `NOT_YET_REAL`
-## from her. A location no unit holds counts as drawn.
+## from her. A free location is of a unit that has not drawn exactly while it is open
+## (`Location.is_open()`): a draw records every open location of its unit as it fills in.
 func _on_her_branch(def: EventDef) -> Dictionary:
 	var undrawn := {}
 	var drawn := {}
@@ -291,7 +288,7 @@ func _on_her_branch(def: EventDef) -> Dictionary:
 				var location := _locations.holding(tile, _map.tile_at(tile))
 				if not _is_free(location):
 					continue
-				var tier := undrawn if _before_its_unit_draws(location) else drawn
+				var tier := undrawn if location.is_open() else drawn
 				if not tier.has(location) and tier.size() >= LOCATIONS_A_LOOK:
 					continue
 				if _tree.branches_on(tile).is_empty():
@@ -375,11 +372,6 @@ func _could_be_in_her_view(def: EventDef, feet: Vector2, her: Vector2) -> bool:
 			(Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
 	return view.intersects(drawn, true)
 
-## Whether `location`'s unit has not drawn yet, so a beat laid on it goes before the unit's draw.
-func _before_its_unit_draws(location: Location) -> bool:
-	var unit := _units.unit_of(location) if _units else null
-	return unit != null and not unit.is_drawn()
-
 ## **`def`'s ground by the cell of the route tree each tile lies in**, each cell's tiles in row-then-
 ## column order, worked out once a row: a tree has far more tiles than a row's ground, so a look asks
 ## only the tiles a row may stand on, cell by cell, instead of every tile of every cell.
@@ -430,8 +422,7 @@ func _tiles_of(grouped: Dictionary, location: Location) -> Array[Vector2i]:
 	return tiles
 
 ## **Stands `plan` where `sited` was judged, on `location`**: gives its old location back (only now
-## that another is found), takes the new for the day, rigs the beat in the new location's unit, and
-## turns a crew to face the wall it pastes,
+## that another is found), takes the new for the day and turns a crew to face the wall it pastes,
 ## its back to the street (`PlanBuilder.build()` turned it by the dawn's own side, out of a wall it
 ## was never going to stand at).
 func _stand(plan: EventPlan, sited: EventPlan, location: Location) -> void:
@@ -440,28 +431,19 @@ func _stand(plan: EventPlan, sited: EventPlan, location: Location) -> void:
 	if plan.stands_at_a_front():
 		plan.face(Vector2.UP)
 	_locations.take_for_her_walk(location, plan)
-	var unit := _units.unit_of(location) if _units else null
-	if unit:
-		unit.rig(plan)
 	_laid[plan] = location
 	_nowhere.clear()
 
-## **Gives back the location `plan` took**, where it took one, and takes the beat out of its unit
-## (`PlacementUnit.unrig()`). A location whose unit has drawn while the beat stood there is recorded
-## as drawn with nothing on it, so nothing reads it as open in a unit that will not draw again; what
-## the unit drew round the beat stays as drawn.
+## **Gives back the location `plan` took**, where it took one. A location whose unit drew while the
+## beat stood there was left drawn by that draw (`MarbleDraw.draw()`), so it reads drawn with nothing
+## on it, not open, in a unit that will not draw again; what the unit drew round the beat stays as
+## drawn.
 func _give_back(plan: EventPlan) -> void:
 	if not _laid.has(plan):
 		return
 	var location: Location = _laid[plan]
 	_locations.give_back(location, plan)
 	_laid.erase(plan)
-	var unit := _units.unit_of(location) if _units else null
-	if not unit:
-		return
-	unit.unrig(plan)
-	if unit.is_drawn() and location.is_open():
-		_locations.record(location, null)
 
 ## Records why an ask laid nothing and answers false. See `waits()`.
 func _waited(reason: String) -> bool:
