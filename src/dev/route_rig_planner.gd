@@ -540,20 +540,11 @@ func _live_pieces(instance: EventInstance) -> Array[StandingPiece]:
 func _angle_of(piece: StandingPiece) -> float:
 	return piece.axis().angle() if piece.ground_shape().spine_half_length() > 0.0 else 0.0
 
-## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
-## first point of its path or its position, moved to the middle of the sidewalk band for a
-## stationary solid row that `pavement_side` does not pin to an edge, or onto the kerb beside its
-## lane for a row that stands at its kerb (`BodyStance.stands_at()`).
-func _planned_position(plan: EventPlan) -> Vector2:
-	var route := plan.walks()
-	return BodyStance.stands_at(_map, plan.row(),
-			route[0] if route.size() > 0 else plan.placed_at())
-
 ## Where a door body stands now: its live event's place while it is in the world
 ## (`EventPlan.where_it_stands_now()`), where its instance will stand otherwise
-## (`_planned_position()`).
+## (`BodyStance.planned_body_at()`).
 func _door_now(plan: EventPlan) -> Vector2:
-	return plan.where_it_stands_now() if plan.is_in_the_world() else _planned_position(plan)
+	return plan.where_it_stands_now() if plan.is_in_the_world() else BodyStance.planned_body_at(_map, plan)
 
 ## Every tile whose centre lies within a door's reach — `EventPlan.detain_distance()` from a
 ## `checkpoint_hut` or `checkpoint_post` (`EventPlan.detains_again()`, the two that inspect her),
@@ -589,7 +580,7 @@ func door_tiles() -> Dictionary:
 	for plan: EventPlan in _events.plans():
 		if not plan.is_placed() or plan.is_spent() or not plan.detains_again():
 			continue
-		var door := _planned_position(plan)
+		var door := BodyStance.planned_body_at(_map, plan)
 		var facing := plan.faces()
 		if plan.is_in_the_world():
 			if plan.its_event_is_gone():
@@ -669,7 +660,7 @@ func _gate_ground() -> Dictionary:
 	for gate in doors:
 		if gate.gate() == null:
 			continue
-		var at := _planned_position(gate)
+		var at := BodyStance.planned_body_at(_map, gate)
 		var reach := gate.solid_reach() + Tuning.PLAYER_BODY_RADIUS + ARRIVE_RADIUS
 		var centre_tile := _map.world_to_tile(at)
 		var span := ceili(reach / Tuning.TILE_SIZE) + 1
@@ -682,7 +673,7 @@ func _gate_ground() -> Dictionary:
 					continue
 				var nearest_is_gate := true
 				for other in doors:
-					if other != gate and point.distance_to(_planned_position(other)) < distance:
+					if other != gate and point.distance_to(BodyStance.planned_body_at(_map, other)) < distance:
 						nearest_is_gate = false
 						break
 				if nearest_is_gate:
@@ -1206,7 +1197,7 @@ func _body_pieces_near(point: Vector2, radius: float) -> Array[StandingPiece]:
 				or not planned.stands_as_a_fixed_body():
 			continue
 		var bound := radius + planned.ground_shape().reach() * 2.0
-		if _planned_position(planned).distance_to(point) > bound:
+		if BodyStance.planned_body_at(_map, planned).distance_to(point) > bound:
 			continue
 		_add_pieces_near(pieces, _planned_pieces(planned), point, radius)
 	return pieces

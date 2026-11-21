@@ -194,17 +194,8 @@ func held_by(plan: EventPlan) -> Array[Solid]:
 	var reach := def.lethal_reach() - Tuning.PLAYER_BODY_RADIUS
 	if reach <= 0.0:
 		return found
-	found.append(Solid.new(_stands_at(plan), GroundShape.point(reach), Vector2.RIGHT))
+	found.append(Solid.new(BodyStance.planned_body_at(_map, plan), GroundShape.point(reach), Vector2.RIGHT))
 	return found
-
-## Where a placement stands once it is built: the first point of its path when it has one,
-## recentred on the pavement band when it has a body `pavement_side` does not pin, or on the kerb
-## beside its lane for a row that stands at its kerb (the roadblock) — the reading
-## `EventInstance.setup()` makes (`BodyStance.stands_at()`).
-func _stands_at(plan: EventPlan) -> Vector2:
-	var route := plan.walks()
-	return BodyStance.stands_at(_map, plan.row(),
-			route[0] if route.size() > 0 else plan.placed_at())
 
 ## A placement's pieces as they stand for the whole walk — its own body, and its successor's
 ## where it leaves a solid one — with nothing for a mobile row or one with no body. Each is
