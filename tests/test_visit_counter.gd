@@ -690,7 +690,7 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t: TestRunner) -> void:
 	_walk(dog, dog_where, Vector2(def.notice_within() - 10.0, 0.0), 0.5)
 	t.check(counter.sent.size() == 1, "walked out of and back into, it is not counted again (%s)"
 		% [counter.sent])
-	_walk(dog, dog_where, Vector2(standoff - 2.0, 0.0), def.pursuit.warns_for + 0.2)
+	_walk(dog, dog_where, Vector2(standoff - 2.0, 0.0), def.pursuit.warns_for() + 0.2)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day, "nappy-day-%d-dog-chased" % day],
 		"its charge, once its warning has run with her still inside, is counted chased (%s)"
 		% [counter.sent])
@@ -865,9 +865,9 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(man_where))
 	t.add_child(man)
 	man.set_process(false)
-	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within + 100.0)), 0.5)
+	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within() + 100.0)), 0.5)
 	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
-	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within - 10.0)), 1.0 / 60.0)
+	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within() - 10.0)), 1.0 / 60.0)
 	t.check(counter.sent == [name + "warned", name + "chased"],
 		"his run is counted chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
@@ -885,7 +885,7 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(caught_where))
 	t.add_child(caught)
 	caught.set_process(false)
-	_walk(caught, caught_where, Vector2(0.0, -(def.notice.runs_within - 10.0)),
+	_walk(caught, caught_where, Vector2(0.0, -(def.notice.runs_within() - 10.0)),
 			Tuning.WARNING_ALONE_MAX + 0.1)
 	caught.report_the_catch()
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],

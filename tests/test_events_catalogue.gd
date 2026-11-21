@@ -1043,7 +1043,7 @@ func _test_every_copy_of_a_row_keeps_its_ground_weights(t: TestRunner) -> void:
 	var pressing := EventDef.new()
 	pressing.id = "pressing"
 	pressing.placement = [GameEnums.TileType.SIDEWALK] as Array[int]
-	pressing.heat_response = EventDef.HeatResponse.PRESSES
+	pressing.hunts = HuntSpec.pressing()
 	pressing.weigh_on(PlacementGround.Kind.STREET, 0.25)
 	for pair: Array in [[dog, dog.for_day(4)], [pressing, pressing.at_heat(Tuning.RESISTANCE_GOAL)]]:
 		var row: EventDef = pair[0]

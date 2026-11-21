@@ -29,7 +29,7 @@ func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef,
 
 ## Whether the walk is running right now.
 func is_taking() -> bool:
-	return _taken_at != INF and (_figure.age() - _taken_at) < _spec.taken_over
+	return _taken_at != INF and (_figure.age() - _taken_at) < _spec.taken_over()
 
 ## How far into the walk it is, in seconds, while it runs.
 func walked_for() -> float:
@@ -49,11 +49,11 @@ func step(_delta: float) -> void:
 		return
 	if _taken_at == INF:
 		if _where.at() == Vector2.INF or not _figure.field_reaches(_where.at()) \
-				or _time_left() < _spec.taken_over:
+				or _time_left() < _spec.taken_over():
 			return
 		_taken_at = _figure.age()
 		return
-	if _logged or _figure.age() - _taken_at < _spec.taken_over:
+	if _logged or _figure.age() - _taken_at < _spec.taken_over():
 		return
 	_logged = true
 	_trace.note("taken", "'%s' takes a bystander" % _row.id)

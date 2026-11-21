@@ -89,7 +89,7 @@ against a flat minimum, never a figure worked out from its field or speed
 `EventDef.validate()` calls), warned first or not, and three things bind a change to any of them.
 The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`). A pursuer
 that waited for her, a robber included, warns inside its one radius on its own clock
-(`PursuitSpec.warns_for`), so that floor bounds nothing it does (inbox #788 in minty-lemur). And
+(`PursuitSpec.warns_for()`), so that floor bounds nothing it does (inbox #788 in minty-lemur). And
 **verify escape with the actual Baby meter**: reaching the pursuit cap after the baby cries is a
 lost day.
 

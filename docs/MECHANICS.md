@@ -1095,7 +1095,7 @@ outcomes* rather than the same outcome at two prices:
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
+| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement()`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does, and for a charger that waits for her only once he has charged, never while he warns — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
@@ -1146,7 +1146,7 @@ it stands while she is nearer than the stand-off, follows at the stand-off once 
 lunges the moment she is back at the full stand-off with the line clear. One held while it stands
 for its notice (day 13's task guard set on her in her view, `EventInstance.notice_her_at()`)
 follows nowhere: it stands where it is and lunges the same way. **A pursuer that
-waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`), so a
+waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for()`), so a
 late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
 keeps the line from clearing until she is out of its radius, it never charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
 held lunge has her inside the stand-off** (`EventPursuit.pause_a_held_notice()`), since a notice ending there
@@ -1169,7 +1169,7 @@ after the first second.
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`PursuitSpec.standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
+  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach()`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
@@ -1232,7 +1232,7 @@ and price and route around, and that becomes a chase if you do not. Three states
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **warning** (for its `PursuitSpec.warns_for` while she is inside `EventDef.notice`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands`: the waiting dog, the hunting roadblock's guard) |
+| **warning** (for its `PursuitSpec.warns_for()` while she is inside `EventDef.notice`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed()`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands_for_its_notice()`: the waiting dog, the hunting roadblock's guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. **The warning is one radius
@@ -1240,7 +1240,7 @@ and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she 
 inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
 comes inside `EventDef.notice` along a clear line and with its warning picture in the camera's view,
-not when the day put it there; leaving the radius before its `PursuitSpec.warns_for` has run stops it, and it
+not when the day put it there; leaving the radius before its `PursuitSpec.warns_for()` has run stops it, and it
 waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
 in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
 arrive charging warns first"). A guard a task sets
@@ -1251,7 +1251,7 @@ sent at her under a badge of the same second. And its warning does **not** damp 
 that alley since she came round the corner has started. What has not started is the lunge.
 
 **The second of those flips for a row whose waiting state is the harmless one**, and
-`NoticeSpec.quiet` is where a row says so. `pigeon_flock` waits the same way without
+`NoticeSpec.is_quiet()` is where a row says so. `pigeon_flock` waits the same way without
 being a pursuer at all — birds pecking on a pavement, priced and walked around from down the
 street — and there the damping is telling the truth: what is standing there is nearly nothing and
 the event is the flock going up. With the flag, the top two rows of the table above read *at

@@ -32,4 +32,23 @@ extends Resource
 ## `docs/COSTS.md` prices as a point's: the body it is given to be solid is not a reason for the
 ## street beside a parked engine to cost more, and the 340px the fire's siting check closes about
 ## its kerb (`WalkSiting`) is then the whole of its field.
-@export var field_from_its_centre := false
+var _field_from_its_centre := false
+
+## A car that drives, its field priced from its body (`GroundShape.field_distance()`).
+static func driving() -> VehicleSpec:
+	return VehicleSpec.new()
+
+## The same car with its field priced from its centre, a point, rather than from its body.
+func priced_from_its_centre() -> VehicleSpec:
+	var spec := _copy()
+	spec._field_from_its_centre = true
+	return spec
+
+## Whether its field is priced from its centre rather than from its body (`priced_from_its_centre()`).
+func prices_its_field_from_its_centre() -> bool:
+	return _field_from_its_centre
+
+func _copy() -> VehicleSpec:
+	var spec := VehicleSpec.new()
+	spec._field_from_its_centre = _field_from_its_centre
+	return spec

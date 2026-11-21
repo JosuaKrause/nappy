@@ -158,7 +158,7 @@ const COLUMN_SPACING := 128.0
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
-# *that* it answers to the resistance with `EventDef.heat_response`; these say what answering costs.
+# *that* it answers to the resistance with `EventDef.hunts`; these say what answering costs.
 # Keeping the numbers here rather than on the rows is what stops heat becoming a per-row difficulty
 # dial — there is one ladder and every row that climbs it climbs the same one.
 #
@@ -865,7 +865,7 @@ const WARNING_ALONE_MAX := 1.0
 ## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own: his warning came
 ## before he was set on her, a hut's guard's raised hand from her crossing for `CheckpointController.CROSSING_WARNING`
 ## (`PursuitSpec.Start.CHARGES_AT_ONCE`). A pursuer that waited for her warns on its own clock
-## inside its one radius (`PursuitSpec.warns_for`), so this floor bounds nothing it does.
+## inside its one radius (`PursuitSpec.warns_for()`), so this floor bounds nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she has to be **running** before it gives up, in seconds.
@@ -914,7 +914,7 @@ const PURSUIT_SHAKEN_OFF := 0.35
 ##   sets off beside her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`) stands with its warning up
 ##   for its notice and is owed the badge's heads-up, `OFFSCREEN_WARNING_MIN`, rather than an
 ##   approach she never sees.
-## - **A pursuer that waited for her warns inside its one radius for its `PursuitSpec.warns_for`
+## - **A pursuer that waited for her warns inside its one radius for its `PursuitSpec.warns_for()`
 ##   and charges if she is still inside once that has run** (`EventInstance.warns_by_radius()`;
 ##   inbox #788 in minty-lemur). Leaving the radius first is never charged, and once charged
 ##   walking loses and running wins by the speed clauses above. `tests/test_events_pursuit.gd`

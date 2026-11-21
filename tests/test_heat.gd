@@ -81,14 +81,14 @@ func _test_every_shape_of_every_row_is_fair(t: TestRunner) -> void:
 ## does at every heat, `EventDef.vehicle`, which is not a rung — `tests/test_police_car.gd`.)
 func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
-		if def.heat_response != EventDef.HeatResponse.PRESSES:
+		if not def.answers_to_heat() or def.hunts_for_her():
 			continue
 		for level in EventCatalogue.heat_levels():
 			t.check(not EventCatalogue.heated(def, level).ends_the_day(),
 					"'%s' presses without ever becoming hard_fail (heat %d)" % [def.id, level])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
-		t.check(not out.ends_the_day() and out.pursuit.stop_excitement > 0.0,
+		t.check(not out.ends_the_day() and out.pursuit.stop_excitement() > 0.0,
 				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
@@ -101,13 +101,13 @@ func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 func _test_a_hunts_row_wakes_up_at_its_own_threshold(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.heat_response != EventDef.HeatResponse.HUNTS:
+		if not def.hunts_for_her():
 			continue
 		checked += 1
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			var should_hunt := level >= EventDef.HEAT_HUNTS_LEVEL
-			if def.hunts.lets_out > 0:
+			if def.hunts.lets_out() > 0:
 				t.check(hot.investigates() == should_hunt and not hot.pursues()
 						and hot.ends_the_day() == def.ends_the_day(),
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
@@ -218,7 +218,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 				("heat %d: and well inside the %.0fpx the band's own body would have forced, "
 						+ "which is only possible because the man leaves it behind")
 				% [level, hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS])
-		t.check(hot.pursuit.leaves_its_body,
+		t.check(hot.pursuit.leaves_its_body_standing(),
 				"heat %d: and the barrier he leaves stays where it was built" % level)
 		t.check(hot.lethal_reach() <= hot.core_within(),
 				"heat %d: the catch is inside the field's own core, so it is never silent" % level)
@@ -231,7 +231,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 func _test_a_row_that_answers_to_nothing_is_untouched(t: TestRunner) -> void:
 	var untouched := 0
 	for def in EventCatalogue.all():
-		if def.heat_response != EventDef.HeatResponse.NONE:
+		if def.answers_to_heat():
 			continue
 		untouched += 1
 		for level in EventCatalogue.heat_levels():
@@ -246,7 +246,7 @@ func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
 		# rather than a little of it.
 		t.check(EventCatalogue.heated(def, 0) == def,
 				"'%s' at heat 0 is the catalogue's own row" % def.id)
-		if def.heat_response == EventDef.HeatResponse.NONE:
+		if not def.answers_to_heat():
 			continue
 		t.check(EventCatalogue.heated(def, 1) == EventCatalogue.heated(def, 1),
 				"'%s' is derived once at a level and kept" % def.id)
@@ -291,7 +291,7 @@ func _cold_patrol() -> EventDef:
 ## not just cold vs. full heat, which would pass even if the ladder dipped in the middle.
 func _test_the_patrol_presses_more_and_louder(t: TestRunner) -> void:
 	var cold := _cold_patrol()
-	t.check(cold.heat_response == EventDef.HeatResponse.PRESSES,
+	t.check(cold.answers_to_heat() and not cold.hunts_for_her(),
 			"the patrol answers to the resistance, the way that never hunts")
 	var last_population := cold.most_in_a_day()
 	var last_intensity := cold.peak()
@@ -511,18 +511,18 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
 
-	# He warns, standing where she can see him, for his `PursuitSpec.warns_for` while she stays
+	# He warns, standing where she can see him, for his `PursuitSpec.warns_for()` while she stays
 	# in his radius, and nothing is lethal during it (`EventInstance.warns_by_radius()`); then
 	# he charges.
 	var frames := 0
-	while guard.is_telegraphing() and frames < int((hot.pursuit.warns_for + 1.0) / STEP):
+	while guard.is_telegraphing() and frames < int((hot.pursuit.warns_for() + 1.0) / STEP):
 		t.check(not guard.is_lethal_at(guard.global_position),
 				"nothing is lethal while he warns")
 		guard_where.tell(her)
 		guard.step(STEP)
 		frames += 1
-	t.check(absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
-			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.pursuit.warns_for])
+	t.check(absf(frames * STEP - hot.pursuit.warns_for()) <= 2.0 * STEP,
+			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.pursuit.warns_for()])
 	t.check(not guard.is_telegraphing() and not guard.is_waiting(),
 			"and then, she still inside his radius, he charges")
 
@@ -558,13 +558,13 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 ## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
 ## centre. That post is nearer her than the centre where his notice is measured: she comes straight
 ## across the band, the approach that puts his post nearest her, and stands still once he has
-## noticed her. He warns for his row's `PursuitSpec.warns_for` with nothing lethal in it and
+## noticed her. He warns for his row's `PursuitSpec.warns_for()` with nothing lethal in it and
 ## charges when it has run, she still inside his radius *(inbox #788 in minty-lemur: one radius,
 ## a warning inside it)*, not on the frame he notices her. Both street axes, both sides.
 func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
-	t.check(hot.pursuit.warns_for >= Tuning.OFFSCREEN_WARNING_MIN,
-			"the hunting guard warns for %.1fs before he charges" % hot.pursuit.warns_for)
+	t.check(hot.pursuit.warns_for() >= Tuning.OFFSCREEN_WARNING_MIN,
+			"the hunting guard warns for %.1fs before he charges" % hot.pursuit.warns_for())
 	var post := Vector2(400.0, 0.0)
 	for vertical: bool in [false, true]:
 		for side: int in [-1, 1]:
@@ -598,7 +598,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> v
 				guard_where.tell(her)
 				guard.step(STEP)
 				frames += 1
-			t.check(not lethal and absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
+			t.check(not lethal and absf(frames * STEP - hot.pursuit.warns_for()) <= 2.0 * STEP,
 					"%s: he warns her for %.2fs, nothing lethal in it, then charges"
 					% [what, frames * STEP])
 			t.check(guard.is_chasing(), "%s: and he charges, she still inside his radius" % what)

@@ -510,24 +510,24 @@ func most_in_a_day() -> int:
 ## through `spawn_mode_on()` and `_notice_on()`, never by hand.
 @export var from_day_after: DaySwitch = null
 
-## Which `SpawnMode` this row is sited in on `day`: `spawn_mode` through `from_day_after.after_day`,
+## Which `SpawnMode` this row is sited in on `day`: `spawn_mode` through `from_day_after.after_day()`,
 ## the switch's own past it. Every reader that sites an event by its day asks this.
 func spawn_mode_on(day: int) -> SpawnMode:
-	if from_day_after and day > from_day_after.after_day:
-		return from_day_after.spawn_mode
+	if from_day_after and day > from_day_after.after_day():
+		return from_day_after.spawn_mode()
 	return spawn_mode
 
 ## Whether `day` is past the day this row's siting switches (`from_day_after`): false for a row with no
 ## switch. `charging_dog` is sprinkled into the route only once its first siting has switched.
 func is_past_its_switch_on(day: int) -> bool:
-	return from_day_after != null and day > from_day_after.after_day
+	return from_day_after != null and day > from_day_after.after_day()
 
-## How this row notices her on `day`: `notice` through `from_day_after.after_day`, the switch's own
+## How this row notices her on `day`: `notice` through `from_day_after.after_day()`, the switch's own
 ## past it. An instance reads `notice` off the def it was handed, so a placement past the switch is
 ## handed a copy carrying this (`for_day()`); a director-sited row keeps its own.
 func _notice_on(day: int) -> NoticeSpec:
-	if from_day_after and day > from_day_after.after_day:
-		return from_day_after.notice
+	if from_day_after and day > from_day_after.after_day():
+		return from_day_after.notice()
 	return notice
 
 ## A `MAP` placement's own answer to `_notice_on(day)`: a derived copy, since the catalogue's rows
@@ -704,7 +704,7 @@ func departure_speed() -> float:
 ## everything that merely emits, so it is right only if the alternative is losing the day. A pursuer
 ## is lethal, faster than a walk and slower than a run. One kind is a cost rather than the end of the
 ## day: the man an investigating patrol car lets out, whose catch is a stop
-## (`PursuitSpec.stop_excitement`).
+## (`PursuitSpec.stop_excitement()`).
 @export var pursuit: PursuitSpec = null
 
 ## **How it notices her**, or null for a row with no wait (see `NoticeSpec`). A row with none is a
@@ -725,7 +725,7 @@ func departure_speed() -> float:
 @export var hunting: HuntSpec = null
 
 ## Whether this copy is a vehicle that stops for her and lets men out (`hunting` with
-## `HuntSpec.lets_out`), which `EventInvestigation` runs.
+## `HuntSpec.lets_out()`), which `EventInvestigation` runs.
 ##
 ## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
 ## her; the vehicle itself never chases** (merry-stork). Heated copies carry it, each made by
@@ -737,7 +737,7 @@ func departure_speed() -> float:
 ##   box**: noticed with its body in one, it drives on until the body is clear of it and stops
 ##   there. It lets one man out; once he is back in, the car drives on along its route as a patrol
 ##   does, and the end of its route is where it leaves. Its man's catch costs her and never ends
-##   the day by itself (`PursuitSpec.stop_excitement`).
+##   the day by itself (`PursuitSpec.stop_excitement()`).
 ## - **`night_raid`'s and `abduction`'s hunting copies**, vans that stand at the kerb: they stop
 ##   nowhere, since they never move, and let two men out, whose catch ends the day; men who give up
 ##   walk back, and the van stands where it stood. No vehicle chases her like a running man; the van
@@ -749,11 +749,11 @@ func departure_speed() -> float:
 ## pursuit contract and walk back to it when they are done. While a car stands for them it is not
 ## driving, so it neither warns nor strikes.
 func investigates() -> bool:
-	return hunting != null and hunting.lets_out > 0
+	return hunting != null and hunting.lets_out() > 0
 
-## How many men this copy lets out once it stops for her (`HuntSpec.lets_out`), or 0.
+## How many men this copy lets out once it stops for her (`HuntSpec.lets_out()`), or 0.
 func lets_out() -> int:
-	return hunting.lets_out if hunting else 0
+	return hunting.lets_out() if hunting else 0
 
 ## How far round its position its body stops her (`obstructs_radius`), or 0 for a row that stops
 ## nothing: what the walked-sidewalk rule reads of a body (`RouteSidewalkRule`).
@@ -788,7 +788,7 @@ func is_handed_to_her_walk() -> bool:
 func is_sited_from_her_walk() -> bool:
 	return on_her_way != null
 
-## Whether her walk stands it at a building's front it pastes (`OnHerWay.at_a_front`).
+## Whether her walk stands it at a building's front it pastes (`OnHerWay.pastes_a_front()`).
 func stands_at_a_front() -> bool:
 	return on_her_way != null and on_her_way.pastes_a_front()
 
@@ -835,7 +835,7 @@ func lies_as_a_spread() -> bool:
 func burns_its_front() -> bool:
 	return aftermath.leaves_the_scar(EventCatalogue.BURNT_SHELL_ID)
 
-## The id of the row it calls in the moment it is first seen (`Aftermath.on_sight`), or "" for a row
+## The id of the row it calls in the moment it is first seen (`Aftermath.calls_in()`), or "" for a row
 ## that calls none: the burning building calls the fire engine in.
 func calls_in() -> String:
 	return aftermath.calls_in()
@@ -861,19 +861,19 @@ func own_first_day() -> int:
 ## Its notice radius, or 0 for a row with no wait: the number every "how close before it notices"
 ## rule reads.
 func notice_within() -> float:
-	return notice.within if notice else 0.0
+	return notice.within() if notice else 0.0
 
 ## Its chase speed, or 0 for a row that does not pursue.
 func chase_speed() -> float:
-	return pursuit.speed if pursuit else 0.0
+	return pursuit.speed() if pursuit else 0.0
 
 ## Whether its pursuer, cold or hunting, leaves its body standing when he sets off
-## (`PursuitSpec.leaves_its_body`): the roadblock's, whose cold row carries it on its hunt.
+## (`PursuitSpec.leaves_its_body_standing()`): the roadblock's, whose cold row carries it on its hunt.
 func leaves_its_body() -> bool:
 	var chase := pursuit
 	if chase == null and hunts != null:
-		chase = hunts.pursuit
-	return chase != null and chase.leaves_its_body
+		chase = hunts.pursuit()
+	return chase != null and chase.leaves_its_body_standing()
 
 ## Whether its pursuer walks round buildings toward her once he is after her
 ## (`PursuitSpec.walks_round_buildings()`): the roadblock's hunting copy, whose posted guard follows
@@ -883,7 +883,7 @@ func walks_round_buildings() -> bool:
 
 ## Whether it pursues with a chase that begins in `start`'s way.
 func starts_by(start: PursuitSpec.Start) -> bool:
-	return pursuit != null and pursuit.start == start
+	return pursuit != null and pursuit.start() == start
 
 ## How this row answers to the resistance.
 ##
@@ -901,27 +901,19 @@ func starts_by(start: PursuitSpec.Start) -> bool:
 ## of every row exists at boot and `EventCatalogue.all()` validates all of them. A def that mutated
 ## mid-run would be checked in the shape it booted in, and the fairness contract would not be
 ## stated about the dangerous one.
-enum HeatResponse {
-	## Answers to nothing. Everything in act I, and the default: a cat does not care who you know.
-	NONE,
-	## **More of them, and more expensive to stand near, and past a threshold it investigates**
-	## (its `hunts`: it stops near her and a man on foot gets out and pursues her). The rung that
-	## does not hunt: it never gains `hard_fail`, and the man it lets out costs her when he reaches
-	## her rather than ending the day (`PursuitSpec.stop_excitement`). (The patrol that carries it
-	## strikes as a car does at every heat, see `vehicle`; that is not a rung.)
-	PRESSES,
-	## **It stops being a place and starts being a hunter.** The lethal rung: `roadblock`'s guard
-	## hunts her himself, and the two vans on it (`abduction`, `night_raid`) hunt on foot (their
-	## `hunts` let men out), whose catch ends the day.
-	HUNTS,
-}
+##
+## **A row answers to heat exactly when it says how it hunts** (`hunts`, a `HuntSpec` that carries its
+## rung): `HuntSpec.pressing()` is the rung of more of them, more expensive to stand near, that
+## investigates past a threshold and never gains `hard_fail`, and `HuntSpec.letting_out()` and
+## `HuntSpec.pursuing()` are the lethal rung. A row without one answers to nothing: everything in
+## act I, a cat does not care who you know.
+func answers_to_heat() -> bool:
+	return hunts != null
 
-@export var heat_response := HeatResponse.NONE
-
-## Whether, at the heat that hunts, it stops being a place and starts being a hunter
-## (`heat_response` `HUNTS`), the lethal rung: `roadblock`'s guard and the two vans.
+## Whether, at the heat that hunts, it stops being a place and starts being a hunter, the lethal
+## rung (`HuntSpec.presses()` false): `roadblock`'s guard and the two vans.
 func hunts_for_her() -> bool:
-	return heat_response == HeatResponse.HUNTS
+	return hunts != null and not hunts.presses()
 
 ## Radius of solid obstruction, in px. 0 for events you can walk through. Being *forced* to reroute
 ## is a different pressure from choosing to.
@@ -1083,7 +1075,7 @@ enum Pavement {
 	## lot behind it, the one face of a building the city draws. Where a fire catches, so the
 	## building it burns is the one drawn burnt afterwards (`burning_building`'s own
 	## `pavement_side`), and where a poster crew pastes (`SitedGround` asks it for a
-	## row whose `OnHerWay.at_a_front` is set).
+	## row whose `OnHerWay.pastes_a_front()` is set).
 	AT_THE_FRONT,
 }
 
@@ -1217,22 +1209,22 @@ func takes_of_a_street() -> StreetShare:
 ## the core his field shares with the roadblock's guard. `lethal_reach()` reads it.
 @export var catch_reach := 0.0
 
-## **The distance that ends the day**: a pursuer's `PursuitSpec.catch_reach` where it sets one (a
+## **The distance that ends the day**: a pursuer's `PursuitSpec.catch_reach()` where it sets one (a
 ## roadblock's guard catches at a man's reach, not at his band's core), the row's own `catch_reach`
 ## where it sets one, the field's own core otherwise. Every caller asks this, so none has to know
 ## which kind of row it holds.
 func lethal_reach() -> float:
-	if pursuit and pursuit.catch_reach > 0.0:
-		return pursuit.catch_reach
+	if pursuit and pursuit.catch_reach() > 0.0:
+		return pursuit.catch_reach()
 	if catch_reach > 0.0:
 		return catch_reach
 	return inner_radius
 
-## What `PursuitSpec.standoff()` is stated over for this row: its `PursuitSpec.lunge_reach`
+## What `PursuitSpec.standoff()` is stated over for this row: its `PursuitSpec.lunge_reach()`
 ## where it sets one, the catch (`lethal_reach()`) otherwise.
 func standoff_reach() -> float:
-	if pursuit and pursuit.lunge_reach > 0.0:
-		return pursuit.lunge_reach
+	if pursuit and pursuit.lunge_reach() > 0.0:
+		return pursuit.lunge_reach()
 	return lethal_reach()
 
 ## Whether its lunge is measured from inside its own catch, which would leave her less than
@@ -1240,7 +1232,7 @@ func standoff_reach() -> float:
 ## her: the contract `PursuitSpec.standoff()` keeps. `validate()` refuses it; a predicate so
 ## a test can ask without raising the error.
 func lunge_is_inside_the_catch() -> bool:
-	return pursuit != null and pursuit.lunge_reach > 0.0 and pursuit.lunge_reach < lethal_reach()
+	return pursuit != null and pursuit.lunge_reach() > 0.0 and pursuit.lunge_reach() < lethal_reach()
 
 ## Which side or sides of a `Look.ROADBLOCK` band `RoadblockLook._draw_roadblock()` posts a standing
 ## guard on: `-1`/`+1` in `guard_post_offset()`'s own reading of `side`, the same sign
@@ -1292,7 +1284,7 @@ enum Role {
 @export var intensity_ramp := 1.0
 
 ## **The rows this one brings after it** — see `Aftermath`; empty for a row that brings none.
-@export var aftermath := Aftermath.new()
+@export var aftermath := Aftermath.none()
 
 ## Which act the row belongs to, narratively. Only `own_first_day()` reads it, for a `SCRIPTED` row,
 ## whose own day is the first day of its act (`first_day` decides when any other row can appear);
@@ -1319,7 +1311,7 @@ func effect() -> GameEnums.BlockerEffect:
 ## validated once at boot. `EventCatalogue.at_heat()` caches these, so a level costs one duplicate
 ## per row per run rather than one per placement.
 func at_heat(level: int) -> EventDef:
-	if heat_response == HeatResponse.NONE or level <= 0:
+	if not answers_to_heat() or level <= 0:
 		return self
 	var through := clampf(float(level) / float(Tuning.RESISTANCE_GOAL), 0.0, 1.0)
 	var hot := duplicate() as EventDef
@@ -1332,7 +1324,7 @@ func at_heat(level: int) -> EventDef:
 	hot.solid_parts = solid_parts
 	var hunts_from := HEAT_HUNTS_LEVEL
 	var notices_within := HEAT_HUNTS_WITHIN
-	if heat_response == HeatResponse.PRESSES:
+	if hunts.presses():
 		# More of them, and more expensive to be near. Population is the axis that changes the
 		# *route*, and intensity is what makes one of them worth planning around. Below its own
 		# threshold a `HUNTS` row is untouched: that rung answers a different question, not *how much
@@ -1346,17 +1338,16 @@ func at_heat(level: int) -> EventDef:
 		hot.intensity = intensity * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)
 		hunts_from = HEAT_INVESTIGATES_LEVEL
 		notices_within = HEAT_INVESTIGATE_WITHIN
-	if hunts == null or level < hunts_from:
+	if level < hunts_from:
 		return hot
 	# **At its rung's threshold the copy takes the row's hunt** (`hunts`, `HuntSpec`) and notices her
 	# at the rung's own distance: a vehicle stops on its road, or stands where it is, and lets its men
 	# out (`investigates()`), keeping its cold row's `hard_fail`; or a man pursues her himself.
 	hot.hunting = hunts
 	hot.notice = NoticeSpec.at(notices_within)
-	if hunts.pursuit != null:
+	if hunts.pursuit() != null:
 		# He hunts as the row says, at the ladder's own speed.
-		hot.pursuit = hunts.pursuit.duplicate() as PursuitSpec
-		hot.pursuit.speed = Tuning.HEAT_HUNTS_SPEED
+		hot.pursuit = hunts.pursuit().at_speed(Tuning.HEAT_HUNTS_SPEED)
 		# The shared trigger is authored once, against the widest cold field in the catalogue
 		# (`abduction`'s 250px); a row whose own `outer_radius` sits under it would notice her from
 		# outside its own field, which `Tuning.validate_pursuit()` refuses. Widening only the hunting
@@ -1366,10 +1357,10 @@ func at_heat(level: int) -> EventDef:
 		# For a pursuer `duration` is the length of the chase, not the length of the idle (see
 		# `notice`). Cold, this row simply sits for `duration` seconds and is done.
 		hot.duration = Tuning.PURSUIT_TIME
-	# A hunt whose own catch ends the day (`HuntSpec.ends_the_day`, the roadblock's guard) makes the
+	# A hunt whose own catch ends the day (`HuntSpec.ends_the_day()`, the roadblock's guard) makes the
 	# copy lethal: a pursuer is exempt from the rule that nothing else happens inside a lethal
 	# event's field (`EventPlan.keeps_its_field_clear()`).
-	if hunts.ends_the_day:
+	if hunts.ends_the_day():
 		hot.hard_fail = true
 	return hot
 
@@ -1478,9 +1469,9 @@ func validate() -> bool:
 				% [id, obstructs_radius] + "that it leaves a route to a park")
 		return false
 	# The same, over the day the row switches to: `spawn_mode_on()` is what every placement asks.
-	if from_day_after and from_day_after.spawn_mode != SpawnMode.MAP and obstructs_radius > 0.0:
+	if from_day_after and from_day_after.spawn_mode() != SpawnMode.MAP and obstructs_radius > 0.0:
 		push_error(("event '%s' is director-sited from day %d onward and obstructs %.0fpx: "
-				% [id, from_day_after.after_day + 1, obstructs_radius])
+				% [id, from_day_after.after_day() + 1, obstructs_radius])
 				+ "nothing checks that it leaves a route to a park")
 		return false
 	# **A one-shot she has to meet is sited on her way.** A one-shot is a set piece, which has to be
@@ -1532,9 +1523,9 @@ func validate() -> bool:
 			push_error("event '%s' stops where it arrives and does not move: there is no route " % id
 					+ "for it to run out of")
 			return false
-		if aftermath.on_finish != "":
+		if aftermath.leaves_behind() != "":
 			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
-					% [id, aftermath.on_finish] + "does one or the other, never both")
+					% [id, aftermath.leaves_behind()] + "does one or the other, never both")
 			return false
 	# **A pursuer awake from its first frame is never the scheduler's to place.** With no notice its
 	# telegraph and its chase are clocked from the moment it exists, so a `MAP` row would spend both
@@ -1544,51 +1535,45 @@ func validate() -> bool:
 	# `charging_dog`, notice-less only while the director sites it, is allowed.
 	if pursuit and not (kind == GameEnums.EventKind.SCRIPTED and scripted_day == 0):
 		var awake_on_the_map := spawn_mode == SpawnMode.MAP and notice == null
-		if from_day_after and from_day_after.spawn_mode == SpawnMode.MAP \
-				and from_day_after.notice == null:
+		if from_day_after and from_day_after.spawn_mode() == SpawnMode.MAP \
+				and from_day_after.notice() == null:
 			awake_on_the_map = true
 		if awake_on_the_map:
 			push_error(("event '%s' is placed on the map and pursues from the moment it exists: " % id)
 					+ "its notice and its chase would run out wherever the stream put it — only a "
 					+ "row nothing but a director sets on her (SCRIPTED, day 0) may have no notice")
 			return false
-	for each_notice: NoticeSpec in [notice, from_day_after.notice if from_day_after else null]:
-		if each_notice and each_notice.within <= 0.0:
+	for each_notice: NoticeSpec in [notice, from_day_after.notice() if from_day_after else null]:
+		if each_notice and each_notice.within() <= 0.0:
 			push_error("event '%s' notices her at %.0fpx: a notice needs a distance" % [id,
-					each_notice.within])
+					each_notice.within()])
 			return false
-	# **A row that answers to the resistance says how it hunts** (`hunts`), and only such a row does:
-	# a vehicle that lets men out or a man who pursues, never both and never neither; the patrol rung
-	# never pursues and never kills, and only a hunt that pursues ends the day by its own catch.
-	if (heat_response == HeatResponse.NONE) != (hunts == null):
-		push_error("event '%s' answers to the resistance exactly when it says how it hunts (hunts)"
-				% id)
+	# **A row that answers to the resistance says how it hunts** (`hunts`), and a `HuntSpec` is built
+	# either letting men out or pursuing, never both and never neither, with its rung and its catch
+	# beside it: the patrol rung never pursues, and only a hunt that pursues ends the day by its own
+	# catch. What no construction rules out is the patrol rung on a row that ends the day itself.
+	# A hunt does exactly one of the two: `HuntSpec.new()` builds neither, which no factory does.
+	if hunts != null and (hunts.lets_out() > 0) == (hunts.pursuit() != null):
+		push_error("event '%s' hunts neither by letting men out nor by pursuing, or both" % id)
 		return false
-	if hunts != null and (hunts.lets_out > 0) == (hunts.pursuit != null):
-		push_error("event '%s' hunts either by letting men out or by pursuing her, one of the two"
-				% id)
-		return false
-	if hunts != null and hunts.ends_the_day and hunts.pursuit == null:
-		push_error("event '%s' hunts by letting men out, whose catch is their own row's" % id)
-		return false
-	if heat_response == HeatResponse.PRESSES and (hard_fail or hunts.pursuit != null):
+	if hunts != null and hunts.presses() and hard_fail:
 		push_error("event '%s' presses but would end the day or chase her itself" % id)
 		return false
 	var waits_on_some_day := notice != null \
-			or (from_day_after != null and from_day_after.notice != null)
+			or (from_day_after != null and from_day_after.notice() != null)
 	if pursuit:
 		# Standing for a notice is a decision about a pursuer that takes one.
-		if pursuit.stands and not waits_on_some_day \
-				and pursuit.start != PursuitSpec.Start.SETS_OFF_BESIDE_HER:
+		if pursuit.stands_for_its_notice() and not waits_on_some_day \
+				and pursuit.start() != PursuitSpec.Start.SETS_OFF_BESIDE_HER:
 			push_error("event '%s' stands for a notice it never takes: it neither waits for her nor "
 					% id + "sets off beside her")
 			return false
 		# A notice walk is a walk at her through a notice it took by waiting, slower than its chase.
-		if pursuit.walk_speed > 0.0 and (pursuit.stands or not waits_on_some_day
-				or pursuit.walk_speed >= pursuit.speed):
+		if pursuit.walk_speed() > 0.0 and (pursuit.stands_for_its_notice() or not waits_on_some_day
+				or pursuit.walk_speed() >= pursuit.speed()):
 			push_error("event '%s' walks %.0fpx/s through a notice it never walks: it must wait for "
-					% [id, pursuit.walk_speed] + "her, not stand, and walk slower than its "
-					+ "%.0fpx/s chase" % pursuit.speed)
+					% [id, pursuit.walk_speed()] + "her, not stand, and walk slower than its "
+					+ "%.0fpx/s chase" % pursuit.speed())
 			return false
 	# Holding a body back through the notice means nothing on a row with no body, and a row with no
 	# notice has nothing to hold it back through.
@@ -1621,7 +1606,7 @@ func validate() -> bool:
 	# **A pursuer is outside the rule rather than excepted from it**: the inference holds only while
 	# the body and the thing that kills are the same point, and a pursuer's is not, because it comes
 	# to her. Every one either drops its body the frame it starts hunting or, with
-	# `PursuitSpec.leaves_its_body`, walks out of a body it leaves standing. `tests/test_heat.gd`
+	# `PursuitSpec.leaves_its_body_standing()`, walks out of a body it leaves standing. `tests/test_heat.gd`
 	# holds that pair, so the exemption cannot become a loophole for a pursuer that kept its body
 	# and carried it along.
 	if hard_fail and pursuit == null and solid_reach() > 0.0 \
@@ -1663,10 +1648,10 @@ func validate() -> bool:
 		return false
 		# A stop is a pursuer's catch made a cost: a row that also ended the day would do both at
 		# once, and one at or over the whole meter would end a calm day by itself.
-	if pursuit and pursuit.stop_excitement > 0.0 and (hard_fail \
-			or pursuit.stop_excitement >= Tuning.METER_MAX):
+	if pursuit and pursuit.stop_excitement() > 0.0 and (hard_fail \
+			or pursuit.stop_excitement() >= Tuning.METER_MAX):
 		push_error("event '%s' stops her for %.0f points but is not a pursuer whose catch is only "
-				% [id, pursuit.stop_excitement] + "a cost under the whole meter")
+				% [id, pursuit.stop_excitement()] + "a cost under the whole meter")
 		return false
 	if vehicle:
 		if not mobile or speed < Tuning.CAR_STRIKE_MIN_SPEED or shape == null:
@@ -1689,14 +1674,14 @@ func validate() -> bool:
 		return false
 	if lunge_is_inside_the_catch():
 		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
-				% [id, pursuit.lunge_reach, lethal_reach()])
+				% [id, pursuit.lunge_reach(), lethal_reach()])
 		return false
 	# A row that runs its own line once she is near is a mobile row that does not pursue and notices
 	# her from further than it runs.
-	if notice and notice.runs_within > 0.0 \
-			and (pursuit or not mobile or notice.within <= notice.runs_within):
+	if notice and notice.runs_within() > 0.0 \
+			and (pursuit or not mobile or notice.within() <= notice.runs_within()):
 		push_error("event '%s' runs within %.0fpx but is not a mobile row that waits for her "
-				% [id, notice.runs_within] + "from further than that")
+				% [id, notice.runs_within()] + "from further than that")
 		return false
 	if starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and notice:
 		push_error("event '%s' charges at once but waits for her as well" % id)
@@ -1705,24 +1690,24 @@ func validate() -> bool:
 			and not (warns_before_it_exists() and warned_for() > 0.0):
 		push_error("event '%s' arrives chasing but is not a pursuer warned of first" % id)
 		return false
-	if pursuit and not Tuning.validate_pursuit(id, pursuit.speed, duration, lethal_reach(),
+	if pursuit and not Tuning.validate_pursuit(id, pursuit.speed(), duration, lethal_reach(),
 			telegraph_time, notice_within(), outer_radius, standoff_reach(),
-			pursuit.start == PursuitSpec.Start.ARRIVES_CHASING
-					or pursuit.start == PursuitSpec.Start.CHARGES_AT_ONCE,
-			pursuit.start == PursuitSpec.Start.SETS_OFF_BESIDE_HER):
+			pursuit.start() == PursuitSpec.Start.ARRIVES_CHASING
+					or pursuit.start() == PursuitSpec.Start.CHARGES_AT_ONCE,
+			pursuit.start() == PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 		return false
 		# The notice after the day switch is a second shape of the same contract:
 		# `EventCatalogue.all()` validates every heat shape, but the day axis is orthogonal.
-	if pursuit and from_day_after and from_day_after.notice \
-			and not Tuning.validate_pursuit(id, pursuit.speed, duration, lethal_reach(), telegraph_time,
-					from_day_after.notice.within, outer_radius, standoff_reach()):
+	if pursuit and from_day_after and from_day_after.notice() \
+			and not Tuning.validate_pursuit(id, pursuit.speed(), duration, lethal_reach(), telegraph_time,
+					from_day_after.notice().within(), outer_radius, standoff_reach()):
 		return false
-	# **A pursuer that waits for her warns on a clock** (`PursuitSpec.warns_for`) inside its one
+	# **A pursuer that waits for her warns on a clock** (`PursuitSpec.warns_for()`) inside its one
 	# radius.
-	if pursuit and pursuit.start == PursuitSpec.Start.NOTICES and waits_on_some_day \
-			and pursuit.warns_for < Tuning.OFFSCREEN_WARNING_MIN:
+	if pursuit and pursuit.start() == PursuitSpec.Start.NOTICES and waits_on_some_day \
+			and pursuit.warns_for() < Tuning.OFFSCREEN_WARNING_MIN:
 		push_error("event '%s' waits for her but warns for %.1fs, less than the %.1fs heads-up"
-				% [id, pursuit.warns_for, Tuning.OFFSCREEN_WARNING_MIN])
+				% [id, pursuit.warns_for(), Tuning.OFFSCREEN_WARNING_MIN])
 		return false
 	if pursuit:
 		# A pursuer has no line to be walked out of, so the ordinary escape-distance rule says nothing
@@ -1840,10 +1825,10 @@ func holds_still() -> bool:
 func waits_for_her() -> bool:
 	return notice != null
 
-## Whether it runs its own line once she comes close (`NoticeSpec.runs_within`), rather than
+## Whether it runs its own line once she comes close (`NoticeSpec.runs_within()`), rather than
 ## ending its notice on a clock: the masked man on the escape's stairs.
 func runs_its_own_line() -> bool:
-	return notice != null and notice.runs_within > 0.0
+	return notice != null and notice.runs_within() > 0.0
 
 ## **Whether its warning emits only a telegraph's share of its peak**: its telegraph, and its wait
 ## where it has one. True for a row that does not wait and for one whose wait is quiet
@@ -1925,7 +1910,7 @@ func as_warned_first() -> EventDef:
 ##
 ## `half_length + outer_radius` for a segment its field is priced from (`datum()`); this does not
 ## grow with speed, so for the patrol car it is the reach of its field standing. A row whose field
-## is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) is a point,
+## is priced from its centre (`VehicleSpec.prices_its_field_from_its_centre()`, the fire engine) is a point,
 ## whatever its body. Otherwise `outer_radius * Field.scale(e)`, `e` from whichever speed the row's
 ## own motion uses: its chase speed for a pursuer, `speed` for an ordinary mobile row, zero (the
 ## plain disc) for anything standing still.
@@ -1938,7 +1923,7 @@ func field_reach() -> float:
 	var priced_from := datum()
 	if priced_from != null and priced_from.kind == GroundShape.Kind.SEGMENT:
 		return priced_from.half_length + outer_radius
-	var moving_speed := pursuit.speed if pursuit else (speed if mobile else 0.0)
+	var moving_speed := pursuit.speed() if pursuit else (speed if mobile else 0.0)
 	return outer_radius * Field.scale(Field.eccentricity(moving_speed))
 
 # ------------------------------------------------------------ what a row costs ---
@@ -2085,10 +2070,10 @@ func peak() -> float:
 
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
 ## body gives it (`field_reach()`): its `shape`, or none — a point at its centre — for a row whose
-## field is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) or that
+## field is priced from its centre (`VehicleSpec.prices_its_field_from_its_centre()`, the fire engine) or that
 ## has no shape.
 func datum() -> GroundShape:
-	return null if vehicle and vehicle.field_from_its_centre else shape
+	return null if vehicle and vehicle.prices_its_field_from_its_centre() else shape
 
 ## Whether what its field lands on her ignores every wall between (`from_outside`), where every
 ## other field stops at one: the explosion outside the building.
@@ -2272,12 +2257,12 @@ func was_sent_at_her() -> bool:
 func paces_a_beat() -> bool:
 	return paces
 
-## The id of the row it leaves where it ends (`Aftermath.on_finish`), or "" for a row that leaves
+## The id of the row it leaves where it ends (`Aftermath.leaves_behind()`), or "" for a row that leaves
 ## nothing: the escape's explosion leaves its crater in the road.
 func leaves_behind() -> String:
-	return aftermath.on_finish
+	return aftermath.leaves_behind()
 
-## The id of the scar it leaves on the run where it happens (`Aftermath.scar`), or "" for a row that
+## The id of the scar it leaves on the run where it happens (`Aftermath.scar_id()`), or "" for a row that
 ## leaves none: the burning building's burnt shell, the roadblock's barricade.
 func scar_id() -> String:
 	return aftermath.scar_id()

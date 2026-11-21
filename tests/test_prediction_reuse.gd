@@ -186,7 +186,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			source.row().set(field, float(source.row().get(field)) + 3.0)
 			_event_parity(t, source, at, definition.id + " mutable " + field)
 		if source.row().pursuit:
-			source.row().pursuit.speed += 3.0
+			source.row().pursuit = source.row().pursuit.at_speed(source.row().pursuit.speed() + 3.0)
 			_event_parity(t, source, at, definition.id + " mutable chase speed")
 		source.row().shape = GroundShape.segment(17.0, 12.0)
 		_event_parity(t, source, at, definition.id + " shape replacement")

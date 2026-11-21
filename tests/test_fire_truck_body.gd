@@ -357,12 +357,12 @@ func _test_parked_it_is_solid_and_harmless(t: TestRunner) -> void:
 	engine.free()
 
 ## Parked, its field is priced from its centre as it was before it had a body
-## (`VehicleSpec.field_from_its_centre`): along its street it reaches as far as abeam, so the 340px
+## (`VehicleSpec.prices_its_field_from_its_centre()`): along its street it reaches as far as abeam, so the 340px
 ## the fire's siting check closes about its kerb is the whole of it and a pass costs what
 ## `docs/COSTS.md` says.
 func _test_parked_its_field_is_a_points(t: TestRunner) -> void:
 	var def := _truck()
-	t.check(def.vehicle.field_from_its_centre, "fire_truck's field is priced from its centre")
+	t.check(def.vehicle.prices_its_field_from_its_centre(), "fire_truck's field is priced from its centre")
 	var moving := def.heard_within() * Field.scale(Field.eccentricity(def.speed))
 	t.check(is_equal_approx(def.field_reach(), moving),
 			"and its field's reach is a moving point's, %.0fpx, not its body's (%.0fpx)"

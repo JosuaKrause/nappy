@@ -1,6 +1,6 @@
 class_name EventBarrierPost
 extends EventBehaviour
-## **A barrier its guards stand at, and walk out of** (`PursuitSpec.leaves_its_body`): the roadblock,
+## **A barrier its guards stand at, and walk out of** (`PursuitSpec.leaves_its_body_standing()`): the roadblock,
 ## cold or hunting. **Two guards, one on each side of the band** (PLAYTEST-135 3), and which of them
 ## set off: `0` while both hold their posts, then the side of the one on her side — the only one who
 ## gives chase, the other being blocked by his own barrier.

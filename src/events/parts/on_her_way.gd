@@ -24,8 +24,18 @@ extends Resource
 ## building's front, facing the wall, rather than on the side `EventDef.pavement_side` names —
 ## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). A location's draw offers the
 ## row by `pavement_side`, as it offers any row, and only the walk's siting reads this.
-@export var at_a_front := false
+var _at_a_front := false
 
-## Whether her walk stands the row at a building's front it pastes (`at_a_front`).
+## Her walk sites the row on a tile of its own ground.
+static func on_its_ground() -> OnHerWay:
+	return OnHerWay.new()
+
+## Her walk sites the row at a building's front, which it pastes (`pastes_a_front()`).
+static func at_a_front() -> OnHerWay:
+	var way := OnHerWay.new()
+	way._at_a_front = true
+	return way
+
+## Whether her walk stands the row at a building's front it pastes.
 func pastes_a_front() -> bool:
-	return at_a_front
+	return _at_a_front

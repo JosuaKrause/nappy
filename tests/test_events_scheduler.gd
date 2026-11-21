@@ -407,22 +407,22 @@ func _test_successors_resolve(t: TestRunner) -> void:
 				"'%s' spawns '%s', which exists in the catalogue"
 				% [def.id, def.leaves_behind()])
 
-## The opposite direction: `aftermath.on_sight` names what arrives once a row has been seen,
-## `aftermath.on_finish`'s own check above, mirrored. `burning_building` is the only row that
+## The opposite direction: `aftermath.calls_in()` names what arrives once a row has been seen,
+## `aftermath.leaves_behind()`'s own check above, mirrored. `burning_building` is the only row that
 ## carries one today.
 func _test_sighted_successors_resolve(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.aftermath.on_sight == "":
+		if def.aftermath.calls_in() == "":
 			continue
 		checked += 1
-		t.check(EventCatalogue.by_id(def.aftermath.on_sight) != null,
+		t.check(EventCatalogue.by_id(def.aftermath.calls_in()) != null,
 				"'%s' summons '%s' on sight, which exists in the catalogue"
-				% [def.id, def.aftermath.on_sight])
-	t.check(checked > 0, "there is at least one row with an aftermath.on_sight ('burning_building')")
+				% [def.id, def.aftermath.calls_in()])
+	t.check(checked > 0, "there is at least one row with an aftermath.calls_in() ('burning_building')")
 
 ## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can
-## put one in the world — see `EventDef.aftermath.on_sight` on `burning_building`.
+## put one in the world — see `EventDef.aftermath.calls_in()` on `burning_building`.
 func _test_fire_truck_is_never_scheduled(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")

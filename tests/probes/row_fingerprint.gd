@@ -23,7 +23,9 @@ extends RefCounted
 ## row's own id, so both sides of "a unit draws it unless it is the roadblock phase's own row"
 ## print); a method whose answer is an object other than a row, a shape or a body piece (a
 ## part's settings) is printed through that object's own public methods and variables, as deep
-## as it goes (a cycle is cut).
+## as it goes (a cycle is cut). A refinement, which answers a new value of its own class
+## (`PursuitSpec.standing()`), is not opened and prints a `REFINES <method> <Class>` marker line, so
+## a step that adds or removes a refinement shows in the diff.
 ##
 ## **Every script variable of the row and of each object it holds is printed too**, as
 ## `var <name>` lines sorted by name, because a setting no method reads would otherwise never be
@@ -44,7 +46,7 @@ const FULL := false
 ## dump that printed them would depend on what was asked before it.
 const SKIP_VARS: Array[String] = ["_cost_cache", "_default_parts"]
 ## Methods that are not asked by name. Every method that returns nothing is skipped for that
-## reason (a writer such as `solid()` or `PursuitSpec.follow_her_round_buildings()` changes what
+## reason (a writer such as `solid()` changes what
 ## is being measured, and one a later step adds is skipped too); these return something and are
 ## left out for their own reason: the copies the probe makes itself, the check, and the
 ## engine's.
@@ -184,6 +186,13 @@ func _dump(target: Object, prefix := "") -> PackedStringArray:
 			continue
 		for combo: Array in combos:
 			var answer: Variant = target.callv(name, combo)
+			if answer is Object and answer != target \
+					and (answer as Object).get_script() == target.get_script():
+				# A refinement (`PursuitSpec.standing()`) answers a new value of its own class, which
+				# would open another to open again without end; a value is printed by its questions.
+				var refined_script: Script = (answer as Object).get_script()
+				lines.append("%s%s REFINES %s" % [prefix, name, String(refined_script.get_global_name())])
+				continue
 			var shown := combo.map(func(v: Variant) -> String: return _text(v))
 			var call := "%s%s(%s)" % [prefix, name, ",".join(shown)]
 			if _is_opened(answer):

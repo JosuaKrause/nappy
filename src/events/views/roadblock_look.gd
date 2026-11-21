@@ -43,7 +43,7 @@ func drawn_heading() -> Vector2:
 ## - **Once the one on her side sets off** — the only one who does, his own barrier blocking the
 ##   other — the event's own node *is* him: it steps out to his post and `EventPursuit` walks it at
 ##   her (`EventBarrierPost.leave_the_body()`). The barrier he left is drawn back at
-##   `body_position()`, where its collision body is pinned (`PursuitSpec.leaves_its_body`), and the
+##   `body_position()`, where its collision body is pinned (`PursuitSpec.leaves_its_body_standing()`), and the
 ##   other guard still stands at his post beside it. `guard_alert_*`, hand raised, while he stands
 ##   at that post for his notice (`_chaser_pictures()`), and `guard_lunging_*` once he is actually
 ##   giving chase — each read from his own travel heading through `_draw_eight_view()`, so he turns

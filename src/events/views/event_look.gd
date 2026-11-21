@@ -151,7 +151,7 @@ const SWELL_STEPS := 128.0
 ## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a **burning
 ## building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age × k)` and
 ## are drawn rather than authored; and an **abduction mid-take**, whose victim slides from her
-## standing offset to the van over `AbductionSpec.taken_over` seconds. Every one of them is a
+## standing offset to the van over `AbductionSpec.taken_over()` seconds. Every one of them is a
 ## handful of instances on a day at most, and none of them was ever going to be gated.
 func _picture_never_settles() -> bool:
 	if not event.birds().is_empty():

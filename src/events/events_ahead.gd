@@ -243,7 +243,7 @@ func send_a_pursuer() -> void:
 ## flank `OFFICER_SPACING` apart when there are two, or on the other side where hers is not ground
 ## he may stand on (`SpawnSiting.Rule.OPEN_TO_IT`), or at the vehicle itself where neither is. They
 ## appear in her view, so there is no badge: their notice is the sight of them, standing with a hand
-## raised (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`, `PursuitSpec.stands`). Outside the day's plan,
+## raised (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`, `PursuitSpec.stands_for_its_notice()`). Outside the day's plan,
 ## like everything put down after dawn by a director.
 func let_the_officers_out() -> void:
 	var siting := _spawn_siting if _spawn_siting else SpawnSiting.over(world.city_map())

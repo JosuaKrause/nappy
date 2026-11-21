@@ -95,7 +95,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 func _draw_abduction(canvas: CanvasItem) -> void:
 	if event.is_taking_a_victim():
 		var through := _victim_walk_share()
-		var offset := _row.abduction.standing_offset
+		var offset := _row.abduction.standing_offset()
 		var standing := Vector2(-offset if _heading_is_west() else offset, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)
@@ -113,9 +113,9 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 
 ## How far through its walk to the van the victim is, from 0 where the walk starts to 1 at the van:
 ## the time it has walked (`EventInstance.how_long_its_victim_has_walked()`) over the walk's length
-## (`AbductionSpec.taken_over`). The one place the two are divided.
+## (`AbductionSpec.taken_over()`). The one place the two are divided.
 func _victim_walk_share() -> float:
-	return event.how_long_its_victim_has_walked() / _row.abduction.taken_over
+	return event.how_long_its_victim_has_walked() / _row.abduction.taken_over()
 
 ## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
 ## `age` rather than anything that touches the ground travelled, so it gets its own derived stride
@@ -123,12 +123,12 @@ func _victim_walk_share() -> float:
 ## that the walk's own time restarting at zero does not already give it. The walk is at a constant
 ## speed by construction (linear interpolation over a fixed time), so the distance covered by
 ## moment `t` is exactly its share of the way (`_victim_walk_share()`) times
-## `AbductionSpec.standing_offset`, fed through the same `GAIT_RATE` and doubled-phase test
+## `AbductionSpec.standing_offset()`, fed through the same `GAIT_RATE` and doubled-phase test
 ## `gait_is_stepping()` uses. `sin(0) == 0`, so the walk always starts on frame a rather than
 ## mid-stride.
 ## Overrides EventLook.victim_gait_is_stepping.
 func victim_gait_is_stepping() -> bool:
 	if not event.is_taking_a_victim():
 		return false
-	var covered := _victim_walk_share() * _row.abduction.standing_offset
+	var covered := _victim_walk_share() * _row.abduction.standing_offset()
 	return sin(covered * EventInstance.GAIT_RATE * 2.0) > 0.0

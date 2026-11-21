@@ -82,7 +82,7 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## whole picture — it is drawn whole, in the order its slices draw it. `origin` moves the whole
 ## spread, its shadow included, to a local point other than the event's own — which is what a body
 ## left standing while its owner walks away needs (`RoadblockLook._draw_roadblock()`,
-## `PursuitSpec.leaves_its_body`). Zero, the default, is every other caller: the spread is drawn
+## `PursuitSpec.leaves_its_body_standing()`). Zero, the default, is every other caller: the spread is drawn
 ## where the instance is.
 func _draw_spread(segment_picture: String, cap: String, canvas: CanvasItem,
 		origin := Vector2.ZERO) -> void:

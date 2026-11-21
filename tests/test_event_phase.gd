@@ -104,7 +104,7 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 			break
 	t.check(instance.phase == EventInstance.Phase.ACTIVE,
 			"staying inside, it charges once its warning has run (%d frames)" % frames)
-	t.close_to(frames * STEP, def.pursuit.warns_for, "after its own warning", 2.0 * STEP)
+	t.close_to(frames * STEP, def.pursuit.warns_for(), "after its own warning", 2.0 * STEP)
 	instance.free()
 
 func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
@@ -209,11 +209,11 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("roadblock")
 	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
-	t.check(not cold.pursues() and cold.hunts.pursuit != null, "the cold roadblock does not pursue")
-	t.check(hot.pursues() and hot.pursuit != cold.hunts.pursuit,
+	t.check(not cold.pursues() and cold.hunts.pursuit() != null, "the cold roadblock does not pursue")
+	t.check(hot.pursues() and hot.pursuit != cold.hunts.pursuit(),
 			"its hunting copy pursues with a spec of its own")
 	t.check(is_equal_approx(hot.chase_speed(), Tuning.HEAT_HUNTS_SPEED)
-			and is_equal_approx(cold.hunts.pursuit.speed, 0.0),
+			and is_equal_approx(cold.hunts.pursuit().speed(), 0.0),
 			"at the ladder's speed, leaving the row's spec as it was")
 	t.check(hot.waits_for_her() and is_equal_approx(hot.notice_within(), EventDef.HEAT_HUNTS_WITHIN),
 			"noticing her at the ladder's distance")

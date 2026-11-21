@@ -314,7 +314,7 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 			pictures.append(picture)
 	return pictures
 
-## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over` seconds
+## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over()` seconds
 ## rather than anything that touches `_path_travelled`, so it gets its own derived query
 ## (`victim_gait_is_stepping()`) instead of sharing `_gait_phase` — see that function's own doc. It
 ## must start on frame a (`sin(0) == 0`) and later step, the same shape the distance-driven gait
@@ -330,7 +330,7 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
 	instance.abduction.step(0.0)
 	t.check(not instance.look.victim_gait_is_stepping(), "the walk starts on frame a")
 	var saw_b := false
-	var steps := int(instance.row().abduction.taken_over / STEP)
+	var steps := int(instance.row().abduction.taken_over() / STEP)
 	for i in steps:
 		instance.restore(EventSave.aged(instance.age() + STEP))
 		if instance.look.victim_gait_is_stepping():
