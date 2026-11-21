@@ -442,7 +442,7 @@ opt-out line on the bus as the one file that cannot be typed, with its reason.
 | Stage a plan at an age, keep it in the world, make it a mast | plan `arrive_aged(seconds)` ok, `keep_in_the_world()` ok, `stand_as_a_mast(id)` ok, `telegraphs_for()` ok (the latest age it may be staged at), `is_in_the_world()` ok, `placed_at()` ok, `faces()` ok, `walks()` ok, `row_id()` ok | the plan |
 | The live event of a plan, to name or command it | `EventManager.event_of(plan)` ok, for a caller that commands it (the scene recipes); then live `notice_her_at()` ok, `forget_her_run()` ok (a relentless pursuer, through `EventPursuit.forget_her_run()`), `walks_straight_away()` ok and `hold_by_hand()` ok (a held event walked on by hand); what it watches, live `row_id()` ok, `pursues()` ok, `is_gone()` ok, `is_on_its_way_out()` ok, `is_waiting()` ok, `is_telegraphing()` ok, `drawn_box()` ok, and the manager's `visible_view()` ok | streaming |
 | The dev rig's spawn and follow targets, the auto screenshot's flee | live `row_id()` ok, `pursues()` ok; plan `row_id()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `placed_at()` ok, `faces()` ok | the plan, for its row; pursuit |
-| The route rig's hazards and bodies | live `is_a_standing_lethal_place()` ok, `lethal_reach()` ok, `stands_as_a_fixed_body()` ok; plan `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `ground_shape()` ok, `solid_reach()` ok, `gate()` ok; plan `detains_again()` ok, `detain_distance()` ok, `where_it_stands_now()` ok, `faces_now()` ok; plan `its_event_is_gone()` ok for whether a door's live event is gone (the plan answers; the manager hands the live event only to a caller that commands it, inbox #1278 in olive-ferret) | lethal, body, hold |
+| The route rig's hazards and bodies | live `is_a_standing_lethal_place()` ok, `lethal_reach()` ok, `stands_as_a_fixed_body()` ok; plan `stands_as_a_fixed_body()` ok, `ground_shape()` ok, `solid_reach()` ok, `gate()` ok; a planned body's pieces where they stand from `BodyStance.pieces_at()` ok (the record curly-stork); plan `detains_again()` ok, `detain_distance()` ok, `where_it_stands_now()` ok, `faces_now()` ok; plan `its_event_is_gone()` ok for whether a door's live event is gone (the plan answers; the manager hands the live event only to a caller that commands it, inbox #1278 in olive-ferret) | lethal, body, hold |
 
 ### 2.9 The tests
 
@@ -576,7 +576,7 @@ than its core (the masked man on the escape's stairs, a hunting roadblock's guar
 track keeps it as it is, under its name; it is made correct in a pull request of its own (section
 7, point 6). **Where a plan's body stands on its
 sidewalk band and which tiles it takes** is worked out by `BodyStance`, a model class of statics (`stands_at()`,
-`lies_vertically_at()`, `body_axis()` and the rest, the record minty-quail-azure-ferret), which the plan builder,
+`lies_vertically_at()`, `pieces_at()` and the rest, the records minty-quail-azure-ferret and curly-stork), which the plan builder,
 the walk's ground, the spawner, the live event and its body, and the two rigs ask; the plan answers `body_at()` and
 `stands_without_a_map()` and holds no copy of that geometry.
 
@@ -700,7 +700,7 @@ field under `[EventPlan]`.
 
 | Field | Reads | Replaced by |
 |---|---|---|
-| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`spawn_mode_on(day)` ok, `is_sent_ahead()` ok, `is_a_one_shot()` ok, `calls_in()` ok, `pursues()` ok, `ends_the_day()` ok, `detains_her()` ok, `detains_again()` ok, `detain_distance()` ok, `is_a_boom()` ok, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()` ok, `body_pieces()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `telegraphs_for()` ok, `field_reach()` ok, `line_reach()` ok, `spans_the_street()` ok, `is_handed_to_her_walk()` ok, `is_sited_from_her_walk()` ok, `is_a_set_piece_on_her_way()` ok, `stands_at_a_front()` ok) |
+| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`spawn_mode_on(day)` ok, `is_sent_ahead()` ok, `is_a_one_shot()` ok, `calls_in()` ok, `pursues()` ok, `ends_the_day()` ok, `detains_her()` ok, `detains_again()` ok, `detain_distance()` ok, `is_a_boom()` ok, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()` ok, `is_ambient()` ok, `notice_within()` ok, `heard_within()` ok, `telegraphs_for()` ok, `field_reach()` ok, `line_reach()` ok, `spans_the_street()` ok, `is_handed_to_her_walk()` ok, `is_sited_from_her_walk()` ok, `is_a_set_piece_on_her_way()` ok, `stands_at_a_front()` ok) |
 | `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `stand_where(sited)` ok for her walk's siting (the design's pick in place of `place_at(at)`, open to the player) and `came_at(at)` ok for streaming's record of where a plan that comes where she stands last came |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
 | `facing` | 18 | `faces()` ok; set as the plan is built, or turned by `face(direction)` ok: a crew facing the wall it pastes, a van backed in by the plan builder, a door body's axis set by the region planner |
