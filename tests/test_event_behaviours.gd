@@ -44,9 +44,27 @@ func _round_trip(t: TestRunner, first: EventInstance, what: String, behaviour: S
 	t.check(not state.state_of(behaviour).is_empty(), "%s: there is state to carry" % what)
 	var second := _instance(t, first.def, first.global_position, first.path, where)
 	second.restore(state)
-	t.check(second.save().state_of(behaviour) == state.state_of(behaviour),
-			"%s: streamed back in, the behaviour's state is what was saved" % what)
+	_check_the_same_save(t, second.save(), state,
+			"%s: streamed back in" % what)
 	return second
+
+## Every behaviour that keeps state (each class with a `save()`), so a row composing several, such as a
+## heated roadblock's barrier post and pursuit, has every one compared.
+const STATEFUL := [
+	"EventPursuit", "EventNoticeRun", "EventHold", "EventFlock", "EventInvestigation",
+	"EventOfficer", "EventDeparture", "EventUnreachable", "EventAbduction", "EventBarrierPost",
+]
+
+## Whether `back` is `saved`: the same age, distance and notice, and the same state of every
+## behaviour that keeps one.
+func _check_the_same_save(t: TestRunner, back: EventSave, saved: EventSave, what: String) -> void:
+	t.close_to(back.age(), saved.age(), "%s: its age is what was saved" % what, 0.0001)
+	t.close_to(back.travelled(), saved.travelled(), "%s: so is its distance" % what, 0.0001)
+	t.check(back.noticed_at() == saved.noticed_at(),
+			"%s: and where it noticed her" % what)
+	for behaviour: String in STATEFUL:
+		t.check(back.state_of(behaviour) == saved.state_of(behaviour),
+				"%s: and %s's state" % [what, behaviour])
 
 # -------------------------------------------------------------------- pursuit ---
 
@@ -150,8 +168,7 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 	second.flock.build()
 	t.check(second.flock.offsets() == scattered, "a fresh flock stands where the first was built")
 	second.restore(state)
-	t.check(second.save().state_of("EventFlock") == state.state_of("EventFlock"),
-			"flock: streamed back in, its state is what was saved")
+	_check_the_same_save(t, second.save(), state, "flock: streamed back in")
 	t.check(second.flock.offsets() == first.flock.offsets(), "every bird comes back where it was")
 	t.check(second.flock.velocities() == first.flock.velocities(), "and going the way it was")
 	first.free()
@@ -280,12 +297,10 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 			EventSurroundings.new().on(map) \
 				.hearing(second_where))
 	second_where.tell(first_where.at())
-	second.restore(EventSave.new(state.age(), state.travelled(), state.noticed_at()))
-	t.check(second.is_leaving and second.departure.save().get("must_clear_sight", false),
-			"restored with its road cut behind where it had got to, the car is leaving, held to her sight")
 	second.restore(state)
-	t.check(second.departure.save().get("must_clear_sight", false),
-			"and the stream-in's restore leaves its departure as it began")
+	t.check(second.is_leaving and second.departure.save().get("must_clear_sight", false),
+			"restored once, as the stream-in does, with its road cut behind where it had got to, the car "
+			+ "is leaving, held to her sight, and the restore of its behaviours leaves the departure as it began")
 	first.free()
 	second.free()
 
