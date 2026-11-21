@@ -22,7 +22,8 @@ about 52 walking seconds later rather than at the mark. Of the five walks that n
 main either; on the two new ones its marble is handed out at 84 and 92 seconds of a 105-second walk, after which the
 probe walks home by the shortest way, off the day's routes, where no siting lays anything. The just-ahead siting never
 failed where it should have succeeded. The van's two fewer sightings meet, and do not cross, the stop Fable's design set
-(more than two below the built row); Fable's review of this pull request judges it. `placement_rows.gd` prints the same
+(more than two below the built row); Fable's review of this pull request accepted it as the cost of the bag's
+later handout, with her walk laying only on the day's routes, and not a number to fit to. `placement_rows.gd` prints the same
 on main and the branch.
 
 **Rejected:** a bag of one, the other reading of "the next draw will guarantee" (inbox #1520 in breezy-magpie), which
