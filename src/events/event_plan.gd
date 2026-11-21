@@ -31,24 +31,23 @@ var _mast_id := ""
 var _silenced := false
 
 ## **A plan that comes again** (`repeats()`): seconds from one of its instances coming to the
-## next, kept on its own clock, and seconds from one being done to the next coming
-## (`EventDef.repeat_every`, `repeat_after`, the row's unless a placement gives this plan its own,
-## as each of the building's vents has its own period). `EventManager` keeps the clock.
-var repeat_every := 0.0
-var repeat_after := 0.0
-## Seconds until this plan's instance next comes; nothing streams it in before then. 0 for a plan
-## whose instance may be in the world now, which is every plan that does not repeat.
-var comes_in := 0.0
+## next, and seconds from one being done to the next coming (`EventDef.repeat_every`,
+## `repeat_after`, the row's unless a placement gives this plan its own, as each of the building's
+## vents has its own period). Streaming keeps the clock they set (`EventStreaming`).
+var _repeat_every := 0.0
+var _repeat_after := 0.0
+## Seconds from the start of the walk to its first instance coming (`come_first_in()`), so plans that
+## come again on clocks of their own start out of step. 0 for a plan whose instance may be in the
+## world at once, which is every plan that does not repeat.
+var _first_comes_in := 0.0
 ## Whether this plan's instance is put where she stands each time it comes, rather than at
 ## `position` — the explosion outside, whose charge stands where she is wherever in the building
 ## she has got to. Its `position` is where it last came.
-var at_her := false
+var _at_her := false
 ## The age each of its instances arrives at: 0 for one that comes and gives its notice, the
 ## row's `telegraph_time` for one whose notice is already over when it comes (the explosion
 ## outside: what the windows say is that it has already happened).
-var arrives_aged := 0.0
-## Set the frame a wait on its last instance begins, so that frame is not counted off the wait.
-var wait_began := false
+var _arrives_aged := 0.0
 
 func _init(definition: EventDef, at: Vector2,
 		route := PackedVector2Array()) -> void:
@@ -56,26 +55,28 @@ func _init(definition: EventDef, at: Vector2,
 	position = at
 	path = route
 	if definition:
-		repeat_every = definition.comes_again_every()
-		repeat_after = definition.comes_again_after()
+		_repeat_every = definition.comes_again_every()
+		_repeat_after = definition.comes_again_after()
 
-## Whether this plan's instance comes again once it is done (`repeat_every`, `repeat_after`).
+## Whether this plan's instance comes again once it is done (`comes_again_every()`,
+## `comes_again_after()`).
 func repeats() -> bool:
-	return repeat_every > 0.0 or repeat_after > 0.0
+	return _repeat_every > 0.0 or _repeat_after > 0.0
 
-## The live instance, while this plan is streamed in. Owned by `EventManager`: a plan is the
-## day's intention and the instance is the few seconds it exists for, and those are not the
-## same span of time.
-var live: EventInstance = null
+## Where its live event stands while this plan is streamed in, nowhere otherwise: the handle it was
+## told when its event entered the world (`enter_the_world()`). A plan is the day's intention and
+## the live event is the few seconds it exists for, and those are not the same span of time; the
+## event itself is streaming's (`EventStreaming.event_of()`).
+var _standing: WhereItStands = WhereItStands.nowhere()
 ## True once the event has run its course, so walking back past it does not start it again.
 var spent := false
 ## True for something the *run* left here rather than something today rolled — a burnt-out
 ## shell, a barricade. It is world history and the day may not tidy it away.
 var _permanent := false
 ## True once something that rides this plan's instance asked for it to stay in the world for
-## the rest of the day wherever she walks (`EventManager.keep_live()`), so streaming never takes
-## it away from under what rides it.
-var kept_live := false
+## the rest of the day wherever she walks (`keep_in_the_world()`), so streaming never takes it
+## away from under what rides it.
+var _kept_in_the_world := false
 ## What the day placed this **for**, against today's corridor. See `GameEnums.BlockerRole` and
 ## `EventScheduler.role_for`.
 ##
@@ -86,10 +87,10 @@ var kept_live := false
 ## carry it from one plan to another: it decides where the plan went, it does not decide anything
 ## afterwards.
 var _role := GameEnums.BlockerRole.NONE
-## True once it has been in the world at least once. What it is *for* is the bookkeeping
-## that must happen exactly once however many times an event is streamed in and out: a
-## burnt-out shell records the fire that made it the first time it is seen and never again.
-var was_live := false
+## True once it has been in the world at least once (`has_been_in_the_world()`). What it is *for*
+## is the bookkeeping that must happen exactly once however many times an event is streamed in and
+## out: a burnt-out shell records the fire that made it the first time it is seen and never again.
+var _has_been_in_the_world := false
 ## What its instance was in the middle of when it was last streamed out, so streaming it back in
 ## **restores** it rather than rewinding it (`EventStreaming.stream_in()`): its age, its distance,
 ## where it had noticed her (without it a row streamed out mid-chase comes back `is_waiting()`,
@@ -180,19 +181,32 @@ func is_in_the_wall() -> bool:
 func stand_in_the_wall() -> void:
 	_in_the_wall = true
 
-## Whether this plan's instance is in the world now (`live`).
+## Whether this plan's instance is in the world now: its handle says there is a live event to ask
+## (`WhereItStands.is_there()`).
 func is_in_the_world() -> bool:
-	return live != null
+	return _standing.is_there()
 
-## This plan's instance while it is in the world, null otherwise: the node the streaming made of it
-## (`EventStreaming.stream_in()`), which knows it as the live event it is.
-func instance() -> Node2D:
-	return live
+## Whether this plan's instance has been in the world at least once, however long ago: what the
+## director asks before it moves a plan, since a plan streamed in once has done what is done exactly
+## once (a scar recorded, a block moved along its arc).
+func has_been_in_the_world() -> bool:
+	return _has_been_in_the_world
+
+## **Tells the plan its instance has entered the world**, standing where `where` says: streaming
+## says it as it puts the instance there (`EventStreaming.stream_in()`).
+func enter_the_world(where: WhereItStands) -> void:
+	_standing = where
+	_has_been_in_the_world = true
 
 ## Keeps this plan's instance in the world for the rest of the day, wherever she walks: the
-## streaming never takes it out (`kept_live`).
+## streaming never takes it out (`is_kept_in_the_world()`).
 func keep_in_the_world() -> void:
-	kept_live = true
+	_kept_in_the_world = true
+
+## Whether something asked for this plan's instance to stay in the world for the rest of the day
+## (`keep_in_the_world()`), which streaming asks before it takes the instance away.
+func is_kept_in_the_world() -> bool:
+	return _kept_in_the_world
 
 ## **Whether this plan is one of the city's fixed parts rather than one of the day's events**: the
 ## region wall's body (`is_in_the_wall()`), a door's (`is_door()`), a seal (`stand_as_a_seal()`), a
@@ -271,7 +285,7 @@ func clearance(her_reach: float) -> float:
 ## Where this event stands now: its instance's position while it is in the world, where it stands
 ## as placed otherwise (`body_at()`).
 func where_it_stands_now() -> Vector2:
-	return live.global_position if live and is_instance_valid(live) else body_at()
+	return _standing.at() if _standing.is_there() else body_at()
 
 ## Whether this event's field touches `rect` at all: grown by `field_reach()` rather than
 ## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
@@ -332,6 +346,16 @@ func distance_from(at: Vector2) -> float:
 		best = minf(best, at.distance_to(
 				Geometry2D.get_closest_point_to_segment(at, path[i - 1], path[i])))
 	return best
+
+## **How far she is from this plan for the streaming's sake**, `INF` for a plan streaming does not look
+## at: one that is spent or not placed. The same number `distance_from()` answers for a placed plan
+## (a point plan's own place, a route's nearest point), asked as one call because streaming puts the
+## question to every plan of the walk on every physics tick: it is the one question the loop puts to a
+## plan (`EventStreaming.stream_around()`).
+func streaming_distance_from(at: Vector2) -> float:
+	if spent or position == Vector2.INF:
+		return INF
+	return position.distance_to(at) if path.size() < 2 else distance_from(at)
 
 ## The closest endpoint-to-route distance between two events.
 ##
@@ -501,7 +525,7 @@ func ends_the_day() -> bool:
 ## the field's real shape), and false while it is not in the world, where no field stands to reach
 ## anything. The only caller, the run log's met-events watch, asks of plans in the world alone.
 func field_reaches(point: Vector2) -> bool:
-	return live != null and is_instance_valid(live) and live.field_reaches(point)
+	return _standing.is_there() and _standing.field_reaches(point)
 
 ## Whether it is a door's boom, solid only while lowered (`EventDef.is_a_boom()`): the door's
 ## line runs through it.
@@ -521,12 +545,12 @@ func faces() -> Vector2:
 ## Which way it faces now: its live event's facing while it is in the world
 ## (`EventInstance.facing_now()`), the way its siting decided (`faces()`) otherwise.
 func faces_now() -> Vector2:
-	return live.facing_now() if live and is_instance_valid(live) else facing
+	return _standing.facing() if _standing.is_there() else facing
 
 ## Whether its live event is in the world and over (`EventInstance.is_gone()`), in the moment
 ## before streaming takes it off this plan; false while it is not in the world.
 func its_event_is_gone() -> bool:
-	return live != null and is_instance_valid(live) and live.is_gone()
+	return _standing.is_there() and _standing.is_gone()
 
 ## Whether its body is one the map records for the whole day (`EventDef.stands_as_a_fixed_body()`):
 ## standing, solid, and no door's.
@@ -668,31 +692,60 @@ func make_permanent() -> void:
 	_permanent = true
 
 ## Makes it come again `seconds` after each of its instances came, on its own clock
-## (`repeat_every`), in place of its row's: each of the building's vents has its own period.
+## (`comes_again_every()`), in place of its row's: each of the building's vents has its own period.
 func come_again_every(seconds: float) -> void:
-	repeat_every = seconds
+	_repeat_every = seconds
 
-## Makes its first instance come `seconds` from the start (`comes_in`), so plans that come
+## Seconds from one of its instances coming to the next, on its own clock: its row's
+## (`EventDef.comes_again_every()`) unless a placement gave it its own (`come_again_every()`). 0 for
+## a plan that does not come again on a clock.
+func comes_again_every() -> float:
+	return _repeat_every
+
+## Seconds from one of its instances being done to the next coming (`EventDef.comes_again_after()`),
+## 0 for a plan that does not wait on its last instance.
+func comes_again_after() -> float:
+	return _repeat_after
+
+## Makes its first instance come `seconds` from the start (`first_comes_in()`), so plans that come
 ## again on clocks of their own start out of step: the building's vents, its explosions.
 func come_first_in(seconds: float) -> void:
-	comes_in = seconds
+	_first_comes_in = seconds
+
+## Seconds from the start of the walk to its first instance coming (`come_first_in()`), 0 for a plan
+## whose instance may be in the world at once.
+func first_comes_in() -> float:
+	return _first_comes_in
 
 ## Makes each of its instances come where she stands rather than where it was placed
-## (`at_her`): the explosion outside, whose charge is wherever in the building she has got to.
+## (`comes_where_she_stands()`): the explosion outside, whose charge is wherever in the building she
+## has got to.
 func come_where_she_stands() -> void:
-	at_her = true
+	_at_her = true
 
-## Makes each of its instances arrive `seconds` into its life (`arrives_aged`), its first
+## Whether each of its instances comes where she stands rather than where it was placed
+## (`come_where_she_stands()`).
+func comes_where_she_stands() -> bool:
+	return _at_her
+
+## Makes each of its instances arrive `seconds` into its life (`arrives_aged()`), its first
 ## included: the explosion outside, whose notice is already over when it comes.
 func arrive_aged(seconds: float) -> void:
-	arrives_aged = seconds
+	_arrives_aged = seconds
 	_saved = EventSave.aged(seconds)
+
+## The age each of its instances arrives at (`arrive_aged()`): 0 for one that comes and gives its
+## notice.
+func arrives_aged() -> float:
+	return _arrives_aged
 
 ## What its instance was in the middle of when it was last streamed out (`leave_the_world()`).
 func saved() -> EventSave:
 	return _saved
 
-## Keeps what its instance was in the middle of as it leaves the world: the one place the save
-## is written, by streaming.
+## **Tells the plan its instance has left the world** carrying `save`: back to nowhere, the save
+## kept for when it comes back. Streaming says it as it takes the instance away, and as it lets go
+## of a finished one (`EventStreaming`).
 func leave_the_world(save: EventSave) -> void:
+	_standing = WhereItStands.nowhere()
 	_saved = save

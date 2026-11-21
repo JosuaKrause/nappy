@@ -358,9 +358,9 @@ static func as_warned(def: EventDef) -> EventDef:
 ## player, as `EventsAhead.place_what_is_owed_ahead()` is.
 func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 	for plan in plans:
-		if not plan.live or plan.calls_in() == "" or _sighted.get(plan, false):
+		if not plan.is_in_the_world() or plan.calls_in() == "" or _sighted.get(plan, false):
 			continue
-		if not world.visible_view().sees(plan.live.global_position):
+		if not world.visible_view().sees(plan.where_it_stands_now()):
 			continue
 		# `VisitCounter`'s own "seen-fire" — the moment she could see it, whether or not the
 		# engine's warning can be put up below: a summon that finds no road off screen to wait on
@@ -369,7 +369,7 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 		if not _sight_reported.get(plan, false):
 			_sight_reported[plan] = true
 			world.reports().tell_event_sighted(plan.row_id())
-		if _summon_the_sighted_row(plan.row(), plan.live.global_position, plan):
+		if _summon_the_sighted_row(plan.row(), plan.where_it_stands_now(), plan):
 			_sighted[plan] = true
 
 ## Warns of the row `source.calls_in()` names, coming along `at`'s own street to `at` — `at`

@@ -2382,3 +2382,38 @@ func beat() -> PackedVector2Array:
 ## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`), solid and silent.
 func is_only_its_barrier() -> bool:
 	return phase == Phase.SPENT
+
+## **Where it stands now, for the plan it is the live event of** (`EventPlan.enter_the_world()`):
+## a handle that answers whether it is still there, where, which way it faces and whether it is
+## over, so the plan asks these without naming the event. Made new on each call.
+func standing() -> WhereItStands:
+	return Standing.new(self)
+
+## The event's own `WhereItStands`: its answers are the event's. An inner class, because it is the
+## event's own view of itself for its plan.
+class Standing:
+	extends WhereItStands
+	var _of: EventInstance
+
+	func _init(event: EventInstance) -> void:
+		_of = event
+
+	## Overrides WhereItStands.is_there.
+	func is_there() -> bool:
+		return is_instance_valid(_of)
+
+	## Overrides WhereItStands.at.
+	func at() -> Vector2:
+		return _of.global_position
+
+	## Overrides WhereItStands.facing.
+	func facing() -> Vector2:
+		return _of.facing_now()
+
+	## Overrides WhereItStands.is_gone.
+	func is_gone() -> bool:
+		return _of.is_gone()
+
+	## Overrides WhereItStands.field_reaches.
+	func field_reaches(point: Vector2) -> bool:
+		return _of.field_reaches(point)

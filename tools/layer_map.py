@@ -161,6 +161,7 @@ FILES: dict[str, str] = {
     "src/events/day_units.gd": "model",
     "src/events/event_plan.gd": "model",
     "src/events/event_save.gd": "model",
+    "src/events/where_it_stands.gd": "model",
     "src/events/event_scheduler.gd": "model",
     "src/events/location.gd": "model",
     "src/events/location_fit.gd": "model",
@@ -296,13 +297,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "CityMap",
         "the calendar computes its own task targets on the map",
         ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
-        "EventInstance",
-        "the plan holds its live event while it is in the world (`live`), which row 3b's streaming takes over",
-        ("src/events/event_plan.gd",),
-        more=(("src/events/event_plan.gd", 1),),
     ),
     Exception_(
         "names",

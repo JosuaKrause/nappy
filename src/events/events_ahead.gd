@@ -767,7 +767,7 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		return false
 	for plan in _walk.plans():
 		# The fire is the set piece a run owes; a crew she never met simply was not met.
-		if not plan.is_a_set_piece_on_her_way() or plan.was_live or plan.is_spent():
+		if not plan.is_a_set_piece_on_her_way() or plan.has_been_in_the_world() or plan.is_spent():
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
 		var rng := world.run().calendar().day_rng(world.day(), "dusk-fire")
