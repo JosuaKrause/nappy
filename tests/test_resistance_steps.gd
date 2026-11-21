@@ -93,7 +93,8 @@ func _test_days_6_7_and_11_rig_within_two_and_only_6_and_7_lay_just_ahead(t: Tes
 				% [step.day, step.rigs_within])
 		t.check(step.lays_its_rigged_row_just_ahead() == (step.day == 6 or step.day == 7),
 				"day %d lays its rigged row just ahead of her only on days 6 and 7" % step.day)
-	t.check(rigged_days == [6, 7, 11] as Array[int],
+	var expected_days: Array[int] = [6, 7, 11]
+	t.check(rigged_days == expected_days,
 			"the days that rig a row onto her route are 6, 7 and 11 (%s)" % [rigged_days])
 
 ## rosy-raven, "day 8's task text is short" — *"yeah, day 8th hint needs to be fixed. it's too

@@ -19,9 +19,9 @@ manager's tick). What streams is the *instantiation*.
 that unit draws round it** (`WalkSiting`, `PlacementUnit.rig()`). The unit's room starts without
 the location and its draw, and the draws of the units touching it, are judged among the beat
 (`UnitDraw`); nothing is drawn round a beat first. **A row a mark rigs** (day 6's man shouting,
-day 7's van; `EventManager.rig_the_next_draw()`) is the next thing her walk lays, as a beat, just
-ahead of her, straight ahead and out of her view (`WalkSiting.lay_just_ahead()`), where the ground
-has drawn (inbox #1520 in breezy-magpie). So a unit a beat stands in or beside draws by her path,
+day 7's van) is a marble of her route's bag (`EventManager.rig_her_route()`, with `just_ahead`); when
+it is handed out her walk lays it as a beat, just ahead of her, straight ahead and out of her view
+(`WalkSiting.lay_just_ahead()`), where the ground has drawn (inbox #1520 in breezy-magpie). So a unit a beat stands in or beside draws by her path,
 on purpose, as can a unit touching one whose draw that changed, since a unit is judged among the
 draws of the touching units drawn before it: a beat is a marble, and a day replayed the same way
 draws the same (inbox #1521 in breezy-magpie). **A place the resistance sends her to is asked by
