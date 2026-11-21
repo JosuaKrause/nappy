@@ -659,6 +659,9 @@ static func _alley_mouse() -> EventDef:
 	# and neither should be favoured over the other when both are offered the same tile.
 	def.weight = 1.5
 	def.max_per_day = 4
+	# Rather stands beside a sack pile: `RuledLocationGround` weighs an alley location by one and
+	# offers the mouse its tiles beside the pile first.
+	def.draw_to_sack_piles()
 	return def
 
 ## Stationary, loud, and *pulsing*: the intensity envelope means the counterplay is timing a pass
