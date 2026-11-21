@@ -95,9 +95,11 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 			"finishing the instance leaves the classification true")
 	instance.free()
 
-	for deep: bool in [false, true]:
-		var copied := EventCatalogue.by_id("construction").duplicate(deep) as EventDef
-		t.check(copied.lies_as_a_spread(), "Resource.duplicate(%s) keeps a spread's answer" % deep)
+	# A shallow copy shares the body value. A deep copy would rebuild it from stored properties
+	# only, and a body holds a GroundShape (a RefCounted, which cannot be stored), so the game
+	# never deep-copies a row.
+	var copied := EventCatalogue.by_id("construction").duplicate() as EventDef
+	t.check(copied.lies_as_a_spread(), "Resource.duplicate() keeps a spread's answer")
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(hot.lies_as_a_spread(), "and so does a heated copy")
 
@@ -651,7 +653,7 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 				"'%s' end view keeps its narrower authored projection" % def.id)
 
 ## **A spread never lands on a corner.** `RowGround._is_a_corner()` refuses any tile whose two
-## coordinates are both inside a corridor band to a row `EventDef.has_a_spread` names — see
+## coordinates are both inside a corridor band to a row whose body `BodySpec.as_a_spread()` names — see
 ## `docs/DECISIONS.md`, "a spread on a corner is placed as if the corner were nothing": such a tile
 ## has no single street for `BodyStance.lies_vertically_at()` or `BodyStance._centred_on_the_pavement_band()` to answer about.
 ## Walked over the **planned** placements of several seeds and every day of a run, rather than over
@@ -924,7 +926,9 @@ func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if def.body().declared_pieces().size() > 1:
 			continue
-		t.check(def.body().pieces().size() == 1, "'%s' is one body" % def.id)
+		var expected := 1 if def.body().has_a_body() else 0
+		t.check(def.body().pieces().size() == expected,
+				"'%s' is one body, or none where it has no shape (%d)" % [def.id, expected])
 		if def.obstructs_within() > 0.0:
 			t.check(is_equal_approx(def.solid_reach(), def.obstructs_within()),
 					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "

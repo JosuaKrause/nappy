@@ -510,7 +510,7 @@ func _rim_holder() -> Node2D:
 
 ## Whether this instance is solid right now (`EventBody.is_solid()`). True from `_ready()` for
 ## anything with a body, false once a pursuer that had a body stops waiting — see `_tick()` —
-## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for,
+## false through the notice of a `BodySpec.SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for,
 ## and false while a boom (`BodySpec.SolidWhen.WHILE_LOWERED`) stands raised (`is_raised()`).
 func is_solid() -> bool:
 	return _body.is_solid()
@@ -521,7 +521,7 @@ func is_solid() -> bool:
 func is_raised() -> bool:
 	return _gate_state != null and _gate_state.is_boom_up()
 
-## The body of a `SolidWhen.ONCE_IT_STARTS` row, put down the frame its notice ends — **unless she is
+## The body of a `BodySpec.SolidWhen.ONCE_IT_STARTS` row, put down the frame its notice ends — **unless she is
 ## standing in it** (`EventBody.come_down_clear_of_her()`), in which case the vent goes on emitting
 ## at full rate and stays passable until she is out of the footprint — and a car's body, held back
 ## from `_ready()` while she stood where it would stand, put down the first frame she does not.

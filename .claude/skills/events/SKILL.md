@@ -1,6 +1,6 @@
 ---
 name: events
-description: Rules for adding or changing an event in the catalogue — the fairness contracts every row must satisfy, what obstructs_radius and spawn_mode and role actually mean, and the drawing a row owes. Load this BEFORE touching src/events/event_catalogue.gd, EventDef, EventInstance, EventScheduler, or anything about telegraphs, pursuits, lethal radii or event placement.
+description: Rules for adding or changing an event in the catalogue — the fairness contracts every row must satisfy, what obstructs_within() and spawn_mode and role actually mean, and the drawing a row owes. Load this BEFORE touching src/events/event_catalogue.gd, EventDef, EventInstance, EventScheduler, or anything about telegraphs, pursuits, lethal radii or event placement.
 ---
 
 # Events
@@ -61,7 +61,7 @@ changes. In one line each:
   as what it does.
 - **The role is not a decision.** `EventScheduler.role_for()` reads it off the def, and a row that
   wants another role needs a change there, not a new field.
-- **`obstructs_radius` is not a decision**, and `pavement_side` usually is not one either.
+- **`obstructs_within()` is not a decision**, and `pavement_side` usually is not one either.
 - **`flock_size` changes what a row *is***, and `departs_at` matters only for a stationary event
   with a `duration`.
 
@@ -131,14 +131,14 @@ experiences the sum".
 
 ## A lethal radius and a solid body are the same mechanism
 
-The player is stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS` from the centre of a
+The player is stopped with her centre `obstructs_within() + PLAYER_BODY_RADIUS` from the centre of a
 thing, so a `hard_fail` event whose body reaches its own inner radius **can never fire at all** —
 which is not an unfair event, it is an event that has quietly been switched off, and that is worse.
 `EventDef.validate()` refuses the arrangement on load.
 
 ## Anything that stands still is solid at the width it is drawn
 
-`obstructs_radius` is **half the silhouette** and not a balance value — `SpreadLook._draw_spread()`
+`obstructs_within()` is **half the silhouette** and not a balance value — `SpreadLook._draw_spread()`
 draws a blocking object at exactly the width it obstructs for the same reason in the other
 direction.
 
@@ -149,12 +149,12 @@ too — several bodies wheeling inside one disc have no silhouette to be half of
 is the event). `tests/test_events_solid.gd` requires everything else to have one.
 
 **A body is a route cost, not a closure.** `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD` is the
-`obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can
+`obstructs_within()` a spoiler may carry and still count as something a park can hold — a body you can
 walk around does not close a park; one you have to route around does. **If a rule tests
-`obstructs_radius > 0`, ask whether it means *has a body* or *closes ground*.**
+`obstructs_within() > 0`, ask whether it means *has a body* or *closes ground*.**
 
 **A car that drives is the one body that moves** (`EventDef.vehicle`: the patrol car and the fire
-engine). It never moves into her, its `obstructs_radius` stays zero, and its lethality is a strike
+engine). It never moves into her, its `obstructs_within()` stays zero, and its lethality is a strike
 area ahead of its nose, only while it drives its route, only with her on the carriageway, under the
 crowd car's contract of the carriageway and the horn instead of a telegraph. It gives way where the
 crowd's cars do. `references/event-cars.md` owns that rule and the seven traps.
@@ -166,7 +166,7 @@ nor expires. A stationary source is a line the player draws once; a man pacing a
 sidewalk is a timing problem on top of a routing one.
 
 The price is the body: anything mobile is exempt from the solidity rule, so making something pace
-**takes its `obstructs_radius` away**, and what has to replace it is intensity.
+**takes its `obstructs_within()` away**, and what has to replace it is intensity.
 
 ## Nothing vanishes while you are looking at it
 

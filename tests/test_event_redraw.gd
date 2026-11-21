@@ -623,7 +623,7 @@ static func _never_settles(instance: EventInstance) -> bool:
 
 ## A copy of `def` to change without changing the catalogue's own row, which every suite shares: made
 ## the way the game makes a derived row (`EventDef.at_heat()`, `as_warned_first()`), a
-## `Resource.duplicate()` with `shape` and `solid_parts` carried across by hand, since a plain
+## `Resource.duplicate()` with its body carried across by hand, since a plain
 ## `RefCounted` variable is not saved out and so not duplicated.
 static func _copy_of(def: EventDef) -> EventDef:
 	var copy := def.duplicate() as EventDef

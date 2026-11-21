@@ -39,7 +39,7 @@ and a street draws a row only while it has that much room left (`UnitRoom`). Not
 takes the whole street: the rows that drive a street's length, the police patrol and the military
 convoy, are sent ahead of her by the director (`EventDef.is_sent_ahead()`) and drawn by no unit.
 
-**`obstructs_radius` is not a decision.** If it stands still and it is drawn, it is solid at half
+**`obstructs_within()` is not a decision.** If it stands still and it is drawn, it is solid at half
 its silhouette.
 
 **`pavement_side` usually is not one either** — `ANY` is right for most rows. A kerb

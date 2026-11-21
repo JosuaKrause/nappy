@@ -1043,7 +1043,7 @@ func _test_reversing_lorry_only_ever_faces_the_side_view(t: TestRunner) -> void:
 ## Every front, back and diagonal view's own ground contact — the vehicle's wheels — sits within a
 ## few pixels of its own canvas's bottom edge, the same edge `Sprites.draw_standing()` places at the
 ## event's ground point (`_draw_eight_view()` always draws at local `Vector2.ZERO`, the same point
-## `_draw_shape_shadow()` centres `def.shape`'s own shadow on, with no per-view offset anywhere in
+## `_draw_shape_shadow()` centres the row's body shape's own shadow on, with no per-view offset anywhere in
 ## between). A picture whose ink stopped well short of the bottom would draw the vehicle floating
 ## above its own shadow. The tolerance is generous on purpose — the fact worth pinning is "close to
 ## the edge," not any one picture's own last row of pixels; `docs/evidence/svg-vehicles-2026-09-10/

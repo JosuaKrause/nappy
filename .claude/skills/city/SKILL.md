@@ -33,7 +33,7 @@ it up front. **The geometry the player learns stays true; the meaning of it does
 
 **No purpose change may move a walkable tile.** `tests/test_blocks.gd` pushes every block to the end
 of its arc across the suite's seeds and asserts the walkable set is identical tile for tile. Per-day
-*closures* remain events with an `obstructs_radius`, not tile edits.
+*closures* remain events with an `obstructs_within()`, not tile edits.
 
 ## The lattice is not a full grid
 

@@ -546,7 +546,7 @@ func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
 				% [id, positions.size()])
 
 ## **A placed seal is a duplicate of its catalogue row, and a duplicate drops what is not stored.**
-## `SealPlanner.sealed_variant` carries `shape` and `solid_parts` across by hand because
+## `SealPlanner.sealed_variant` carries the body across by hand because
 ## `Resource.duplicate()` copies neither — both are plain `var`s holding `RefCounted`s, which have
 ## no storage usage. Dropped, a crash falls back to one body spanning the street and **nothing
 ## fails**: it simply seals the gaps its picture shows, which is the defect this milestone exists to
