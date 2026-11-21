@@ -15,11 +15,13 @@ shape's; a piece with no shape: `BodyPiece.at()` refuses it) and keeps "solid on
 pieces-inside check, and a new refusal of a body that claims to be solid with no shape, which the old reach check
 caught.
 
-**A defect the step found and its construction fixes.** The director's copy of a row offered ground
-(`EventDirector._with_ground()`) carried the shape but not the pieces, so a crash it handed out stood solid across the
-whole street (reach 96) instead of only at its two cars (36.1), against M118 (a car crash is solid only where the cars
-are). A copy now shares the body and keeps its pieces; the row fingerprint shows the seven copies that moved, and no
-other answer did.
+**A latent defect the step found and its construction fixes.** The director's copy of a row offered ground
+(`EventDirector._with_ground()`) carried the shape but not the pieces, so a crash copied that way would stand solid
+across the whole street (reach 96) instead of only at its two cars (36.1), against M118 (a car crash is solid only
+where the cars are). No player could meet it: that copy serves day 1's dog-walker rig, the task rigs, the return patrol
+and the scene recipes' route bag, and none names the crash, which only the seal planner places. A copy now shares the
+body and keeps its pieces, and a check holds it; the row fingerprint shows the seven copies that moved, and no other
+answer did.
 
 **Measured.** The row fingerprint (`tests/probes/row_fingerprint.gd`): every old body setting shows the base's value
 under `body()`, and `obstructs_within()` equals the old `obstructs_radius` on all 55 rows; the differing lines are the
