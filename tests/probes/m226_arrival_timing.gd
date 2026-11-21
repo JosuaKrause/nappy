@@ -164,7 +164,7 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var view: String = instance.look.select_view(instance._heading)
 	var bob: float = instance.look.current_bob()
 	var picture := ""
-	match def.look:
+	match def.picture():
 		EventDef.Look.CYCLIST:
 			var rider := [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B] \
 					if instance.is_drawn_as_a_pelican() \
@@ -186,10 +186,10 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 		_:
 			assert(false, "arrival collector has no drawing observer for this look")
 	parts.append(_picture_rect(picture, bob))
-	var wheels: Dictionary = EventPictures.WHEELS_BY_LOOK.get(def.look, {})
+	var wheels: Dictionary = EventPictures.WHEELS_BY_LOOK.get(def.picture(), {})
 	if not wheels.is_empty():
 		parts.append(_picture_rect(wheels[view], 0.0))
-	if def.draws_body_shadow:
+	if def.casts_a_shadow():
 		for piece in def.body_pieces():
 			var points: PackedVector2Array = piece.shape.shadow_outline(Vector2.ZERO)
 			var shadow := Rect2(points[0], Vector2.ZERO)
