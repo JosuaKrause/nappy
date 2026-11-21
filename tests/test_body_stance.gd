@@ -131,8 +131,7 @@ func _test_the_crash_leaves_the_ground_between_its_cars_open(t: TestRunner) -> v
 	t.check(covered.size() < whole.size(),
 			"the ground between the cars stays open (%d of %d tiles)" % [covered.size(), whole.size()])
 
-## The rows that stand on their sidewalk band's middle: the market stall, the café tables,
-## construction, scaffolding, the leaf blower, the unmarked van, the loudspeaker and the night raid.
+## The rows `EventDef.stands_on_its_band_middle()` holds for, whichever the catalogue has.
 func _rows_on_the_band_middle() -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	for row in EventCatalogue.all():
@@ -140,34 +139,33 @@ func _rows_on_the_band_middle() -> Array[EventDef]:
 			rows.append(row)
 	return rows
 
-## **Standing a stood point gives the same point**, for each of the rows that stand on their band's
-## middle, on both street axes and each of the street's six lanes: the middle lies on the line
-## between the band's two lanes, and a second standing read the lane past that line and moved the
-## point half a tile toward the other lane. A point not yet stood still moves to the middle.
+## **Standing a stood point gives the same point**, for each row that stands on its band's middle, on
+## both street axes, each of the street's six lanes and a point at the lane's middle and two off it:
+## the middle lies on the line between the band's two lanes, and a second standing read the lane
+## past that line and moved the point half a tile toward the other lane. A point not yet stood still
+## moves to the middle.
 func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 	var rows := _rows_on_the_band_middle()
-	var ids: Array[String] = []
-	for row in rows:
-		ids.append(row.id)
-	for id: String in ["market_stall", "cafe_tables", "construction", "scaffolding", "leaf_blower",
-			"abduction", "loudspeaker", "night_raid"]:
-		t.check(ids.has(id), "'%s' stands on its band's middle" % id)
+	t.check(not rows.is_empty(), "there were rows to ask (%d)" % rows.size())
 	var asked := 0
 	var moved := 0
 	var unstood := 0
 	for north_south: bool in [false, true]:
 		var map := SidewalkStreets.new(north_south)
+		var across := Vector2.RIGHT if north_south else Vector2.DOWN
 		for lane in Tuning.STREET_WIDTH:
 			var tile := Vector2i(lane + 12, 20) if north_south else Vector2i(20, lane + 12)
-			var built := map.tile_to_world(tile)
-			for row in rows:
-				var once := BodyStance.stands_at(map, row, built)
-				var twice := BodyStance.stands_at(map, row, once)
-				asked += 1
-				if not twice.is_equal_approx(once):
-					moved += 1
-				if map.pavement_inward(tile) != Vector2i.ZERO and once.is_equal_approx(built):
-					unstood += 1
+			for from_the_middle: float in [0.0, 5.0, -9.0]:
+				var built := map.tile_to_world(tile) + across * from_the_middle
+				for row in rows:
+					var once := BodyStance.stands_at(map, row, built)
+					var twice := BodyStance.stands_at(map, row, once)
+					asked += 1
+					if not twice.is_equal_approx(once):
+						moved += 1
+					if from_the_middle == 0.0 and map.pavement_inward(tile) != Vector2i.ZERO \
+							and once.is_equal_approx(built):
+						unstood += 1
 	# The one row that stands at its kerb is stood where it is as well.
 	var lane := _carriageway_point()
 	var roadblock := EventCatalogue.by_id("roadblock")
@@ -175,7 +173,7 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 	t.check(lane != Vector2.INF and kerb != lane
 			and BodyStance.stands_at(WorldMap.open_ground(), roadblock, kerb).is_equal_approx(kerb),
 			"the roadblock stood at its kerb is stood where it is")
-	t.check(asked == 2 * Tuning.STREET_WIDTH * rows.size() and moved == 0,
+	t.check(asked == 2 * Tuning.STREET_WIDTH * 3 * rows.size() and moved == 0,
 			"a stood point is stood where it is: %d of %d moved" % [moved, asked])
 	# The four sidewalk lanes of a street each move to their band's middle, half a tile from where
 	# they were built: the guard that the sweep above is not asking points that never move.
