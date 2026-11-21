@@ -73,7 +73,7 @@ func _her_at() -> Vector2:
 
 ## Overrides ExcitementSource._contribution_stamp.
 func _contribution_stamp() -> float:
-	return _event.age
+	return _event.age()
 
 ## **A source beyond `EventDef.silent_beyond()` of the point answers zero before anything else is
 ## asked** — its intensity, its velocity, its shape — since its field is zero there by construction.
@@ -198,7 +198,7 @@ func will_be_lethal(player_position: Vector2) -> bool:
 ##
 ## Overrides ExcitementSource._caret_key.
 func _caret_key() -> Variant:
-	return [_event.age, _where.at()]
+	return [_event.age(), _where.at()]
 
 ## A permanent feature of a fixed map never appears, so there is no moment to mark — the reason the
 ## fairness contract exempts an `AMBIENT` row — and nothing finished or leaving is marked.

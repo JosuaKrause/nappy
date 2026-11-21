@@ -179,7 +179,7 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 func _test_the_investigation_round_trips(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var first := _instance(t, hot)
-	first.age = 2.0
+	first.restore(EventSave.aged(2.0))
 	var state := {"seen_her": true, "officers_owed": 1, "investigated": true, "left_her_once": true}
 	first.investigation.restore(state)
 	var second := _round_trip(t, first, "investigation", &"EventInvestigation")
@@ -192,7 +192,7 @@ func _test_the_investigation_round_trips(t: TestRunner) -> void:
 
 func _test_the_officer_round_trips(t: TestRunner) -> void:
 	var first := _instance(t, EventCatalogue.by_id("policeman_giving_chase"))
-	first.age = 3.0
+	first.restore(EventSave.aged(3.0))
 	var state := {"trail": PackedVector2Array([Vector2(10.0, 0.0), Vector2(20.0, 0.0)]),
 			"stopped_ago": 1.0}
 	first.on_foot.restore(state)
@@ -211,7 +211,7 @@ func _test_the_departure_round_trips(t: TestRunner) -> void:
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first_where.tell(Vector2(200.0, 0.0))
-	first.age = 1.0
+	first.restore(EventSave.aged(1.0))
 	first.give_up_the_chase()
 	t.check(first.is_leaving, "given up, the dog leaves")
 	_advance(first, 0.5)

@@ -87,7 +87,7 @@ func _accident_at(map: CityMap, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("car_accident"), at, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(map))
-	instance.age = 10.0
+	instance.restore(EventSave.aged(10.0))
 	return instance
 
 ## Every lateral offset along the scene's own spread axis she can actually walk through: her centre

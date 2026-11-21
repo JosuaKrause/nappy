@@ -17,15 +17,9 @@ var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
 var path: PackedVector2Array = PackedVector2Array()
 
-## How long it has existed, in seconds: its own clock. A set from outside (a restore, a rig) settles
-## the phase against the new age; its own tick advances `_age` and settles once its notice clock has
-## been held.
-var age: float:
-	get:
-		return _age
-	set(value):
-		_age = value
-		_settle_the_notice()
+## How long it has existed, in seconds: its own clock, asked through `age()`. Its own tick advances
+## it and settles once its notice clock has been held; `restore()` sets it and settles the phase
+## against the new age.
 var _age := 0.0
 ## Whether this was created where a warning pointed, once that warning was over
 ## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` asks it
@@ -144,6 +138,10 @@ func transition(to: Phase) -> void:
 		_move.parked = _body.parks()
 	elif to == Phase.LEAVING or to == Phase.DONE:
 		_move.parked = false
+
+## How long it has existed, in seconds: its own clock (`_age`).
+func age() -> float:
+	return _age
 
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
@@ -1051,7 +1049,7 @@ func _noticed_at() -> float:
 ## Noticing her: its notice's clock starts now and it is warning (`Phase.WARNING`), or already past
 ## a notice of no length.
 func _notice_her() -> void:
-	_notice.start(age)
+	_notice.start(_age)
 	transition(Phase.WARNING)
 	_settle_the_notice()
 
@@ -1065,7 +1063,7 @@ func save() -> EventSave:
 		if not state.is_empty():
 			var script: Script = behaviour.get_script()
 			states[script.get_global_name()] = state
-	return EventSave.new(age, _path_travelled, _noticed_at(), states)
+	return EventSave.new(_age, _path_travelled, _noticed_at(), states)
 
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
@@ -1085,7 +1083,8 @@ func restore(saved: EventSave) -> void:
 func _restore_the_moment(saved: EventSave) -> void:
 	if saved.age() <= 0.0:
 		return
-	age = saved.age()
+	_age = saved.age()
+	_settle_the_notice()
 	_path_travelled = saved.travelled()
 	if def.notice != null and saved.noticed_at() != INF:
 		_notice.start(saved.noticed_at())
@@ -1357,7 +1356,7 @@ func is_waiting() -> bool:
 ## a held lunge with her inside its stand-off, a waiting charger behind a wall at its warning's last
 ## moment, the masked man's wait. Zero for a row that waits and has not noticed her.
 func chase_age() -> float:
-	return _notice.elapsed(age)
+	return _notice.elapsed(_age)
 
 ## **Whether this pursuer warns by radius rather than by a clock**: one that waited for her and
 ## noticed her by sight (`EventDef.notice` on the def it was handed) — the dog that waited, the
@@ -1450,7 +1449,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 	# hand the first instant of the burst the multiplier the *end* of it is meant to have. The
 	# pulse beats on `age` rather than `chase_age()` on purpose: a pulse is the thing's own rhythm,
 	# which is running whether or not anybody has walked up to it.
-	return def.peak_through(age, chase_age() - notice_time(), pulse_multiplier_override) \
+	return def.peak_through(_age, chase_age() - notice_time(), pulse_multiplier_override) \
 			* _notice_damping()
 
 ## The pulse envelope's own mean over `[age, age + Tuning.EXPECTED_IMPACT_HORIZON]`, closed-form
@@ -1514,7 +1513,7 @@ func caret_intensity_over_horizon() -> float:
 	var pulse_override := -1.0
 	var period := def.pulses_every()
 	if period > 0.0:
-		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON, period)
+		pulse_override = _pulse_mean_multiplier(_age, Tuning.EXPECTED_IMPACT_HORIZON, period)
 	return current_intensity(pulse_override) / _notice_damping()
 
 ## **This event's field at a point**, with no question about what stands between: what its source

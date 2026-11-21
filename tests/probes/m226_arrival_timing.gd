@@ -199,7 +199,7 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 			parts.append(shadow)
 	var mark: Rect2 = instance.look.mark_rect()
 	if mark.has_area() and not (instance.is_telegraphing() \
-			and fmod(instance.age * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55):
+			and fmod(instance.age() * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55):
 		parts.append(mark)
 	return parts
 

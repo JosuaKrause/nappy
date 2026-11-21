@@ -51,7 +51,7 @@ func _draw_fire(canvas: CanvasItem) -> void:
 	var against_the_wall := _wall_offset()
 	var flames := _flames_across(_fire_facade_runs())
 	for i in flames.size():
-		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
+		var flicker := 1.0 + 0.25 * sin(event.age() * 9.0 + i * 1.7)
 		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
 		_drawer.stand(canvas, EventPictures.FLAME,
 				against_the_wall + Vector2(flames[i].x, 0.0), Vector2(flames[i].y, height))
@@ -95,7 +95,7 @@ func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	for i in 5:
 		var offset := (i - 2.0) * 11.0
-		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
+		var flicker := 1.0 + 0.25 * sin(event.age() * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
 		_drawer.stand(canvas, EventPictures.FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
 

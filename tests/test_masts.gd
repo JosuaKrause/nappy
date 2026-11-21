@@ -210,7 +210,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	t.check(plan_a != null and plan_a.live != null, "the first mast is live")
 	if plan_a == null or plan_a.live == null:
 		return
-	var age_a := plan_a.live.age
+	var age_a := plan_a.live.age()
 
 	await _advance(6.0)
 	# Walking to the second mast takes the first out of the world.
@@ -219,7 +219,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	t.check(plan_b != null and plan_b.live != null, "the second mast is live")
 	if plan_b == null or plan_b.live == null:
 		return
-	var age_b := plan_b.live.age
+	var age_b := plan_b.live.age()
 	t.check(age_b > age_a + 5.0,
 			"time genuinely passed between the two (%.1fs)" % (age_b - age_a))
 
@@ -228,7 +228,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	RunCity.events(_city).stream_around(a.foot())
 	t.check(plan_a.live != null, "the first mast is back in the world")
 	if plan_a.live:
-		t.close_to(plan_a.live.age, age_b,
+		t.close_to(plan_a.live.age(), age_b,
 				"a mast streamed back in tells the same time as the one met minutes later", 0.05)
 
 func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:

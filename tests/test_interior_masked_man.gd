@@ -248,12 +248,12 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 			var was_leaving: bool = was_leaving_by_id.get(id, false)
 			var which: int = known[id]
 			if warned_at[which] == INF and not instance.is_waiting():
-				warned_at[which] = instance.age
+				warned_at[which] = instance.age()
 			if not before.is_equal_approx(instance.global_position):
 				if instance.is_telegraphing():
 					moved_while_telegraphing += 1
 				if first_step_age[which] < 0.0:
-					first_step_age[which] = instance.age - warned_at[which]
+					first_step_age[which] = instance.age() - warned_at[which]
 			if instance.is_on_its_way_out() and not was_leaving:
 				left.append(at)
 		stood.clear()

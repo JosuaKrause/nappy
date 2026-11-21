@@ -262,7 +262,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 						errors.append(where + ".mast_id must be a unique nonempty string")
 					else:
 						mast_ids[mast_id] = true
-				_number(entry.get("age", 0), where + ".age", 0, 3600, errors)
+				_number(entry.get("age", 0), where + ".age()", 0, 3600, errors)
 				_number(entry.get("route_seed", 1), where + ".route_seed", 0, 2147483647, errors, true)
 				_number(entry.get("heat", 0), where + ".heat", 0, Tuning.RESISTANCE_GOAL, errors, true)
 				if entry.has("hold") and not entry.hold is bool:
@@ -1008,7 +1008,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		var age := float(entry.get("age", 0))
 		plan.arrive_aged(age)
 		if age > plan.telegraphs_for():
-			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
+			errors.append("event %s.age() cannot skip active simulation; use playback warmup" % entry.name)
 		plan.set_meta("recipe_name", entry.name)
 		if bool(entry.get("hold", false)):
 			if hold_refusal(def) != "":
