@@ -1,13 +1,9 @@
 # Fable looks over the designs Opus wrote in its place
 
-**What it looks at.** Every piece of work whose design an Opus agent wrote in Fable's place while
+**What it looks at.** polite-tapir's six merged designs have Fable's verdicts and their changes are filed (the
+record calm-lemur). Every other piece of work whose design an Opus agent wrote in Fable's place while
 Fable's quota was out, and which merged without Fable's review (inbox #1571 in teal-quail):
 
-- polite-tapir's (the refactor's design review) pull requests #1548 (the beats become rigged marbles
-  in the units ahead of her, placement step 4's last pull request), #1564 (the city's ways out are a
-  data type, CityExit), #1567 (the run log is handed the edge's danger badges, EdgeBadges), #1568
-  (the street trees' pictures are a data class, TreePictures), #1569 (DrawnView stands in the world
-  beside VisibleView) and #1570 (the map interface's world half split off WorldMap);
 - minty-quail's (the refactor by layer) rows 3a and 3b of `event-interface.md`, the events'
   interface, whose designs Opus wrote and whose pull requests merge one by one;
 - any further design Opus writes in Fable's place before the quota returns, each named here by the
