@@ -18,8 +18,6 @@ reason.
 **The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
 review; a builder runs it again):
 
-- **Dawn planning reading live-event geometry**: one use is left, the plan holding its live event
-  while it is in the world (`event_plan.gd`'s `live`).
 - **The rest**, small misplacements: the task calendar
   computing on the map; the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's type tests where she is not handed in
