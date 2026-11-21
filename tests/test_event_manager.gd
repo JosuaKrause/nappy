@@ -529,7 +529,7 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 ##
 ## Reported as *"dog walkers are not moving?"*, which they were: at 32px/s a dog walker covers a
 ## tile a second, and every time the player left its radius and came back it was rebuilt from
-## `plan.position` and teleported to the top of its street. At a third of her walking speed that
+## `plan.placed_at()` and teleported to the top of its street. At a third of her walking speed that
 ## is most times, so from outside it was an event that never went anywhere.
 func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 	RunCity.events(_city).stream_within(Tuning.EVENT_STREAM_RADIUS)

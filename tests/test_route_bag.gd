@@ -491,7 +491,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 	var looks := int(walked / EventDirector.ON_HER_WAY_LOOK) + 1
 	var asked_for_the_mast := 0
 	for asked: EventPlan in siting.asked:
-		if asked.row().id == "loudspeaker":
+		if asked.row_id() == "loudspeaker":
 			asked_for_the_mast += 1
 	t.check(asked_for_the_mast > 0 and asked_for_the_mast <= looks,
 			"the refused siting is asked on the look's cadence, %d times in %.0fs of walking"

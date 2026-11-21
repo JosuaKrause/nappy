@@ -68,9 +68,9 @@ func lay_off_her_path(plan: EventPlan, _away_from: Vector2, _rng: RandomNumberGe
 	return _lay_at_its_place(plan)
 
 func _lay_at_its_place(plan: EventPlan) -> bool:
-	if not _places.has(plan.row().id):
+	if not _places.has(plan.row_id()):
 		return false
-	plan.stand_where(EventPlan.new(plan.row(), _places[plan.row().id]))
+	plan.stand_where(EventPlan.new(plan.row(), _places[plan.row_id()]))
 	return true
 
 ## Overrides WalkSiting.still_ahead_of.

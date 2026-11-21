@@ -242,7 +242,7 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t: TestRunner
 
 
 ## A car that is leaving and is streamed out beyond her sight is over, and its plan says so
-## (`EventPlan.spent`): a departure that has ended is not run again. She is *teleported* away and back
+## (`EventPlan.is_spent()`): a departure that has ended is not run again. She is *teleported* away and back
 ## here, which is not how she moves; walking, the plan streams in only 900px from its route's end, and
 ## the car is rebuilt out of her view and finishes at once. So this holds the bookkeeping, and the
 ## second half walks her back and holds that nothing is ever inside her view.
