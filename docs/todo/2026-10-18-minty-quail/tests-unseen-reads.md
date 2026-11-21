@@ -84,7 +84,7 @@ under `src/dev`, the scene-recipe and rig tools): about 55 names, among them `Cr
 and `recipe_coverage`, `DayStreets.replace_region_plan`, `ResistanceDirector.read_mark`,
 `start_recipe_task` and `scene_task_errors`, `EventManager.start_recipe`,
 `PlanBuilder.place_at`, `EventScheduler.recipe_placement`, `EventInstance.walk_on_by_hand`,
-`is_solid`, `WorldMap.is_obstructed` and
+`standing_pieces` and `is_solid`, `WorldMap.is_obstructed` and
 `VisibleView.visible_share`. The first reading above counts `src/dev` among the game's own classes,
 and the item's own seams `add_recipe_actor`, `place_at` and `read_mark` depend on it. The SELF-only
 readers (public, the only caller the defining file itself) are `tests-own-class-members.md`'s.

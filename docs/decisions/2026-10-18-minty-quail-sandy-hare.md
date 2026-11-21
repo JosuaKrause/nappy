@@ -13,4 +13,6 @@ body's method takes the heading as well as the point, since the axis a body lies
 sketch named the point alone).
 
 **Measured.** The looks' `LK` lines (`tests/probes/look_fingerprint.gd`) and curly-stork's sweep
-(`tests/probes/curly_stork_piece_layout.gd`) print the same on main and the branch. Nothing a player sees changes.
+(`tests/probes/curly_stork_piece_layout.gd`) print the same on main and the branch. The shadow is drawn straight onto the canvas, which no probe records (the
+record minty-quail-tall-toad), so that it lands where it did rests on reading the code: the same offsets from the same
+flag, in the same order. Nothing a player sees changes.
