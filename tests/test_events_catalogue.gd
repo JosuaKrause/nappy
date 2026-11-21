@@ -906,10 +906,11 @@ func _lateral_offsets(instance: EventInstance) -> PackedFloat32Array:
 ## Whether her centre may stand at `offset` along the spread axis — clear of every piece by her own
 ## body radius.
 func _is_blocked_at(instance: EventInstance, offset: float) -> bool:
-	var offsets := _lateral_offsets(instance)
-	var pieces := instance.standing_pieces()
-	for i in offsets.size():
-		if absf(offset - offsets[i]) < pieces[i].ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
+	var vertical := instance.solid_axis() == Vector2.DOWN
+	for piece in instance.standing_pieces():
+		var delta := piece.center() - instance.global_position
+		var along: float = delta.y if vertical else delta.x
+		if absf(offset - along) < piece.ground_shape().reach() + Tuning.PLAYER_BODY_RADIUS:
 			return true
 	return false
 

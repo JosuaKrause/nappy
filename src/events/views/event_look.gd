@@ -34,6 +34,13 @@ var _drawer: EventDrawer
 ## `--skip events`: nothing of the event is drawn.
 var _skip_draw := false
 
+## The row's body pieces laid out round the origin along `_shadow_axis` (`BodyStance.pieces_laid_out()`),
+## kept until the axis or the street's direction changes: the body shadow is asked on every draw, and
+## a standing body's axis never does. Empty until the first shadow is drawn.
+var _shadow_pieces: Array[StandingPiece] = []
+var _shadow_axis := Vector2.ZERO
+var _shadow_vertical := false
+
 func _init(owner: EventInstance, row: EventDef, drawer: EventDrawer, skip_draw: bool) -> void:
 	event = owner
 	_row = row
@@ -363,7 +370,8 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 	shape.draw_shadow(canvas, at, event.solid_axis())
 
 ## This row's own body shadow: one `GroundShape` shadow per solid piece, at the piece's own offset
-## along the spread axis: one ellipse or capsule for anything that declares no parts, and two
+## along the spread axis (the pieces laid out once for the axis it lies along, `_shadow_pieces`, and
+## the same halo guard as `_draw_shape_shadow()`): one ellipse or capsule for anything that declares no parts, and two
 ## patches under two cars for the one row that does, so the ground under a crash is dark where the
 ## cars are and lit where the picture leaves a way through.
 ##
@@ -374,8 +382,16 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if not _row.casts_a_shadow():
 		return
-	for piece in BodyStance.pieces_laid_out(_row, origin, event.solid_axis(), event.runs_vertically()):
-		_draw_shape_shadow(canvas, piece.ground_shape(), piece.center())
+	if canvas == event.rim():
+		return
+	var axis := event.solid_axis()
+	var vertical := event.runs_vertically()
+	if _shadow_pieces.is_empty() or axis != _shadow_axis or vertical != _shadow_vertical:
+		_shadow_axis = axis
+		_shadow_vertical = vertical
+		_shadow_pieces = BodyStance.pieces_laid_out(_row, Vector2.ZERO, axis, vertical)
+	for piece in _shadow_pieces:
+		piece.ground_shape().draw_shadow(canvas, origin + piece.center(), piece.axis())
 
 ## Whether this event is worth a mark at all.
 ##
