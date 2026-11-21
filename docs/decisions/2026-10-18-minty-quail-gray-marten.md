@@ -16,7 +16,7 @@ field by reference rather than copying six of its values; the flock and the cost
 row in place, since a row can no longer change; a check is never dropped, so each is held by a second row differing in
 that one setting, refined from the row's own field (`FieldSpec.holding_to()` lets the inner radius alone differ) and
 asked right after the row's own; the core rate and reach are varied on a row that has a core, the leaf blower, and asked
-inside it. The suite's check count rose from 6,608 on main to 8,105. With the cache key made to leave the field out, the
+inside it. The suite's check count rose from 6,608 on main to 7,463. With the cache key made to leave the field out, the
 falloff, inner- and outer-radius, core rate and core reach variants fail; the peak and pulse fail once the key also loses
 the live intensity, and the two speeds once it loses the velocity (the review's measurement).
 
