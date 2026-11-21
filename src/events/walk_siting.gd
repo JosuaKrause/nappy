@@ -1,15 +1,16 @@
 class_name WalkSiting
 extends RefCounted
-## **Lays the rows her walk places** (a *beat*: the fire, the poster crews, the route mast, day 11's
-## mast near the mark, and the fire lit at dusk): offers a beat the free locations on her way and
-## stands it on the first tile of the first location the day's rules leave valid, through the judge
-## a unit's own draw uses (`LocationGround.offer_on()`). Nothing rolls a tile and nothing ranks tiles
-## by room (docs/EVENTS.md, "A set piece happens where she is going"). The location is taken for the
-## day (`DayLocations.take_for_her_walk()`), so no draw fills it and no other beat stands on it; the
-## location says the beat stands on it (`Location.beat()`), so the unit's draw and the draws of the
-## units touching it are judged among the beat (`PlacementUnit.beats()`, `UnitDraw`). *(The player:
-## "beats are marbles, yes", inbox #1521 in breezy-magpie.)* Day 6's man shouting and day 7's van a mark rigs are laid
-## the same way, just ahead of her (`lay_just_ahead()`).
+## **Lays the rows her walk places** (a *beat*: the fire, the poster crews, the route mast, day
+## 11's mast near the mark, and the fire lit at dusk): offers a beat the free locations on her
+## way and stands it on the first tile of the first location the day's rules leave valid,
+## through the judge a unit's own draw uses (`LocationGround.offer_on()`). Nothing rolls a tile
+## and nothing ranks tiles by room (docs/EVENTS.md, "A set piece happens where she is going").
+## The location is taken for the day (`DayLocations.take_for_her_walk()`), so no draw fills it
+## and no other beat stands on it; the location says the beat stands on it (`Location.beat()`),
+## so the unit's draw and the draws of the units touching it are judged among the beat
+## (`PlacementUnit.beats()`, `UnitDraw`). *(The player: "beats are marbles, yes", inbox #1521 in
+## breezy-magpie.)* Day 6's man shouting and day 7's van a mark rigs are laid the same way, just
+## ahead of her (`lay_just_ahead()`).
 ##
 ## **A free location** is one nothing stands on and no fixed part holds
 ## (`Location.is_available()`, not `Location.is_taken()`).
@@ -266,8 +267,10 @@ func waits() -> Dictionary:
 ## drew as it started. A tile counts when the tree itself carries it (a cell is not always one
 ## piece: `ReachabilityGrid` splits it into a node per connected component and a route carries
 ## nodes, so a second node the route never touches is no site) and it is at least `NOT_YET_REAL`
-## from her. A free location is of a unit that has not drawn exactly while it is open
-## (`Location.is_open()`): a draw records every open location of its unit as it fills in.
+## from her. A free location is of a unit that has not drawn while it is open
+## (`Location.is_open()`): a draw records every open location of its unit as it fills in. The one
+## corner is a street section a dawn phase closed: free, and drawn before its unit fills in, so it
+## is offered in the second tier (no beat's ground is carriageway today).
 func _on_her_branch(def: EventDef) -> Dictionary:
 	var undrawn := {}
 	var drawn := {}
@@ -434,10 +437,10 @@ func _stand(plan: EventPlan, sited: EventPlan, location: Location) -> void:
 	_laid[plan] = location
 	_nowhere.clear()
 
-## **Gives back the location `plan` took**, where it took one. A location whose unit drew while the
-## beat stood there was left drawn by that draw (`MarbleDraw.draw()`), so it reads drawn with nothing
-## on it, not open, in a unit that will not draw again; what the unit drew round the beat stays as
-## drawn.
+## **Gives back the location `plan` took**, where it took one. A location whose unit drew while
+## the beat stood there was left drawn by that draw (`MarbleDraw.draw()`), so it reads drawn
+## with nothing on it, not open, in a unit that will not draw again; what the unit drew round
+## the beat stays as drawn.
 func _give_back(plan: EventPlan) -> void:
 	if not _laid.has(plan):
 		return

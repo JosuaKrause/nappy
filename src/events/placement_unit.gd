@@ -13,10 +13,10 @@ extends RefCounted
 ## draws** (`DayUnits`, `UnitDraw`): of two that touch, the lower rank always draws first, which is
 ## what makes a unit's draw the same whatever her path.
 ##
-## **A beat her walk lays in it goes first** (`beats()`, which its locations answer, `Location.beat()`):
-## it holds its location, so the unit's room starts without it, and the unit's draw and the draws of
-## the units touching it are judged among it (`UnitDraw`). *(The player: "beats are marbles, yes", inbox #1521 in
-## breezy-magpie.)*
+## **A beat her walk lays in it goes first** (`beats()`, which its locations answer,
+## `Location.beat()`): it holds its location, so the unit's room starts without it, and the unit's
+## draw and the draws of the units touching it are judged among it (`UnitDraw`). *(The player:
+## "beats are marbles, yes", inbox #1521 in breezy-magpie.)*
 ##
 ## Pure state: no node, and **no reference to another unit**, since two `RefCounted` objects holding
 ## each other leak at exit; `DayUnits` holds which touch which, by name. What it drew is written
@@ -111,14 +111,14 @@ func drawn() -> Array[EventPlan]:
 	return _placed.duplicate()
 
 ## **The beats her walk stands on the unit's locations** (`Location.beat()`), in the locations'
-## order, each once: what the unit's draw, and the draws of the units touching it, are judged among
-## besides the dawn's plans and each other's rows (`UnitDraw`). A row a draw or a dawn phase put
-## there is no beat, nor is one her walk gave back.
+## order: what the unit's draw, and the draws of the units touching it, are judged among besides
+## the dawn's plans and each other's rows (`UnitDraw`). A row a draw or a dawn phase put there is
+## no beat, nor is one her walk gave back or a plan put over it.
 func beats() -> Array[EventPlan]:
 	var found: Array[EventPlan] = []
 	for location in _locations:
 		var beat := location.beat()
-		if beat != null and not found.has(beat):
+		if beat != null:
 			found.append(beat)
 	return found
 

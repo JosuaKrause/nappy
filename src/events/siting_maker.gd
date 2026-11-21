@@ -29,17 +29,18 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 	return _assemble(day, _world.city_map(), tree, _walk, _world.plan_builder(), ground, fronts,
 			_world.day_stream(day, "siting").seed)
 
-## **A siting from pieces** (`make()` hands it the world's). `base` seeds the streams its judge builds
-## candidates on. Builds, in order: the tree where none was
-## handed (`RouteTree.for_day()`); the corridor made of it; the calm she has not used
+## **A siting from pieces** (`make()` hands it the world's). `base` seeds the streams its judge
+## builds candidates on. Builds, in order: the tree where none was handed
+## (`RouteTree.for_day()`); the corridor made of it; the calm she has not used
 ## (`CalmAreas.unused_ground()`, none for a walk with no calm); the day's rules
 ## (`StreetInvalidation`) over the map, the corridor, that calm and the walk's doors; the fit
-## (`LocationFit`, of which the judge asks only `build()`); the judge, a `RuledLocationGround` with no
-## standing bodies (a beat is judged among the walk's whole plan, the seals and the wall included),
-## its `roomiest` setting off (the first tile no rule refuses: nothing ranks a tile by room) and a
-## route kept on its location's run (`DawnDraw.ROUTES_STAY_ON_THE_RUN`); the locations, the walk's
-## or, for a walk that carries none (a scene recipe's), laid out here; the tiles a row may stand on (`SitedGround`) over `fronts`,
-## the fronts a crew may paste (empty for a walk with no city).
+## (`LocationFit`, of which the judge asks only `build()`); the judge, a `RuledLocationGround`
+## with no standing bodies (a beat is judged among the walk's whole plan, the seals and the wall
+## included), its `roomiest` setting off (the first tile no rule refuses: nothing ranks a tile
+## by room) and a route kept on its location's run (`DawnDraw.ROUTES_STAY_ON_THE_RUN`); the
+## locations, the walk's or, for a walk that carries none (a scene recipe's), laid out here; the
+## tiles a row may stand on (`SitedGround`) over `fronts`, the fronts a crew may paste (empty
+## for a walk with no city).
 static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 		builder: PlanBuilder, ground: RowGround, fronts: Dictionary, base: int) -> WalkSiting:
 	var the_tree := tree if tree else RouteTree.for_day(map, day)

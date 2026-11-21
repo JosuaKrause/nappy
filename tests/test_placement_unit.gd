@@ -2,9 +2,9 @@ extends RefCounted
 ## `PlacementUnit`, one unit of the day's locations: the same name, rank and stream for the same
 ## day's seed and tiles, so a unit draws alike on every start of the day, and another rank and
 ## stream for another seed; the draw order between two units total (`draws_before()`); what it
-## drew written once; its view the most permissive of its locations'; and the beats her walk stood on
-## its locations answered, in the locations' order. Built of plain values: a unit, its locations and
-## a plan are state, so nothing is mocked.
+## drew written once; its view the most permissive of its locations'; and the beats her walk
+## stood on its locations answered, in the locations' order. Built of plain values: a unit, its
+## locations and a plan are state, so nothing is mocked.
 
 func run(t: TestRunner) -> void:
 	_test_the_same_seed_and_tiles_give_the_same_unit(t)
@@ -117,8 +117,8 @@ func _test_its_beats_are_what_her_walk_stood_on_its_locations(t: TestRunner) -> 
 	var middle := _location(Rect2i(tiles.position + Vector2i(2, 0), Vector2i(4, 2)))
 	var locations: Array[Location] = [near, far, middle]
 	var unit := PlacementUnit.new(PlacementGround.Kind.STREET, tiles,
-			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE, Vector2(tiles.size) * Tuning.TILE_SIZE),
-			locations, 5)
+			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE,
+					Vector2(tiles.size) * Tuning.TILE_SIZE), locations, 5)
 	t.check(unit.beats().is_empty(), "a unit holds no beat until her walk stands one on a location")
 	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2(200, 100))
 	var crew := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2(260, 100))
@@ -130,10 +130,12 @@ func _test_its_beats_are_what_her_walk_stood_on_its_locations(t: TestRunner) -> 
 			"the beats are answered in the locations' order, and a row a draw put there is none")
 	unit.record_draw([] as Array[EventPlan])
 	t.check(unit.beats() == ([fire, crew] as Array[EventPlan]), "and drawing changes none of it")
-	near.take_for_her_walk(crew)
-	t.check(unit.beats() == ([crew] as Array[EventPlan]) and near.beat() == crew,
-			"a beat standing on two locations is answered once")
-	near.give_back(crew)
+	near.take(drawn)
+	t.check(unit.beats() == ([crew] as Array[EventPlan]),
+			"a plan put over a beat (day 13's task roadblock) ends it")
+	near.give_back(fire)
+	t.check(unit.beats() == ([crew] as Array[EventPlan]) and near.is_taken(),
+			"and giving the ended beat back changes nothing")
 	middle.give_back(crew)
 	t.check(unit.beats().is_empty(), "a beat given back is answered no more")
 	var answered := unit.beats()

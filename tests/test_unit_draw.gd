@@ -205,12 +205,12 @@ func _test_a_unit_waits_for_the_lower_touching_units_down_a_chain(t: TestRunner)
 	t.check(_readable(drawing.calls, ranked).back() == "u3 among dawn",
 			"and draws alone, among the dawn's plans, when asked for")
 
-## **A draw is judged among a beat her walk laid in its unit or a touching one, and no other plan
-## her walk sites.** A fire her walk laid in the lowest of three units stands on its location
-## (`Location.take_for_her_walk()`, as `WalkSiting` does through `DayLocations`); the unit drawing is judged among it, and so is a unit
-## touching it, drawn after; a unit that touches neither is not. A crew a unit handed to her walk and
-## a set piece the dawn left with no place, each since given a place but laid in no unit, are in no
-## draw's judgment.
+## **A draw is judged among a beat her walk laid in its unit or a touching one, and no other
+## plan her walk sites.** A fire her walk laid in the lowest of three units stands on its
+## location (`Location.take_for_her_walk()`, as `WalkSiting` does through `DayLocations`); the
+## unit drawing is judged among it, and so is a unit touching it, drawn after; a unit that
+## touches neither is not. A crew a unit handed to her walk and a set piece the dawn left with
+## no place, each since given a place but laid in no unit, are in no draw's judgment.
 func _test_a_draw_is_judged_among_a_beat_stood_in_its_unit_or_a_touching_one(t: TestRunner) -> void:
 	var drawing := _Drawing.new()
 	var ranked := _ranked([_unit(0), _unit(1), _unit(2)] as Array[PlacementUnit])

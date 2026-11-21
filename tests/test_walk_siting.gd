@@ -1,25 +1,25 @@
 extends RefCounted
-## `WalkSiting`, the siting that lays the rows her walk places (a *beat*): offers a beat the free
-## locations on her way, nearest first, and stands it on the first location the judge answers for.
-## A beat laid ahead of her takes the nearest free location of the day's route tree ahead of her, a
-## unit's that has not drawn before one a drawn unit left empty, and the location holds it (and gives
-## it back on a move); a placed beat is judged without its own body and gives its
-## location back only once it has another, drawn with nothing on it where its unit has drawn since;
-## a row refused in a look is not judged again in it; one ask offers at most `LOCATIONS_A_LOOK`
-## locations; a mast near the mark takes the first free location of the tiles it is offered; a fire
-## lit at dusk is laid off her path first. A row a mark rigs (`lay_just_ahead()`) takes the nearest
-## free location straight ahead of her on her branch and out of her view, within `JUST_AHEAD`: never
-## one in her view, never one beyond that reach, and never one up a side street of her branch nearer
-## to walk to; with none, it waits and says why.
+## `WalkSiting`, the siting that lays the rows her walk places (a *beat*): offers a beat the
+## free locations on her way, nearest first, and stands it on the first location the judge
+## answers for. A beat laid ahead of her takes the nearest free location of the day's route tree
+## ahead of her, a unit's that has not drawn before one a drawn unit left empty, and the
+## location holds it (and gives it back on a move); a placed beat is judged without its own body
+## and gives its location back only once it has another, drawn with nothing on it where its unit
+## has drawn since; a row refused in a look is not judged again in it; one ask offers at most
+## `LOCATIONS_A_LOOK` locations; a mast near the mark takes the first free location of the tiles
+## it is offered; a fire lit at dusk is laid off her path first. A row a mark rigs
+## (`lay_just_ahead()`) takes the nearest free location straight ahead of her on her branch and
+## out of her view, within `JUST_AHEAD`: never one in her view, never one beyond that reach, and
+## never one up a side street of her branch nearer to walk to; with none, it waits and says why.
 ##
-## Run with stand-ins for everything it is handed (`FakeRouteTree` whose cells and carried tiles a
-## check sets, `FakeWalkEvents`, `_Locations` whose table of locations a check sets and which
-## records each take and give-back, `_Judge` which answers a plan on the first tile it is handed or null for a location
-## set to refuse, `_Ground` whose tiles a check sets and which records each ask); `Location`,
-## `EventPlan` and `EventDef` are real (state and data) on the bare lattice
-## (`CityMap.new()`), a hand-drawn map as `tests/test_ruled_location_ground.gd` builds its own. What
-## the judge says of a candidate is `tests/test_ruled_location_ground.gd`'s and `StreetInvalidation`'s,
-## and which tile is a row's ground `tests/test_sited_ground.gd`'s.
+## Run with stand-ins for everything it is handed (`FakeRouteTree` whose cells and carried tiles
+## a check sets, `FakeWalkEvents`, `_Locations` whose table of locations a check sets and which
+## records each take and give-back, `_Judge` which answers a plan on the first tile it is handed
+## or null for a location set to refuse, `_Ground` whose tiles a check sets and which records
+## each ask); `Location`, `EventPlan` and `EventDef` are real (state and data) on the bare
+## lattice (`CityMap.new()`), a hand-drawn map as `tests/test_ruled_location_ground.gd` builds
+## its own. What the judge says of a candidate is `tests/test_ruled_location_ground.gd`'s and
+## `StreetInvalidation`'s, and which tile is a row's ground `tests/test_sited_ground.gd`'s.
 
 func run(t: TestRunner) -> void:
 	_test_a_branch_beat_takes_the_nearest_free_location_and_one_that_refuses_passes_it_on(t)
@@ -27,7 +27,6 @@ func run(t: TestRunner) -> void:
 	_test_off_the_routes_it_waits_and_says_so(t)
 	_test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_empty(t)
 	_test_the_location_a_beat_takes_holds_it_and_gives_it_back_on_a_move(t)
-	_test_a_location_given_back_in_a_unit_that_has_drawn_reads_drawn(t)
 	_test_a_placed_beat_keeps_its_location_until_another_takes_it(t)
 	_test_a_row_refused_in_a_look_is_not_judged_again_in_it(t)
 	_test_one_ask_offers_no_more_than_the_locations_a_look_allows(t)
@@ -294,8 +293,8 @@ func _test_a_unit_that_has_not_drawn_is_offered_before_ground_a_drawn_unit_left_
 			"and with every unit on her way drawn, the ground a drawn unit left empty takes it")
 	all_drawn.siting.end_look()
 
-## The location a beat takes holds it (`Location.beat()`), and a beat moved elsewhere is given back by
-## the old location and held by the new one.
+## The location a beat takes holds it (`Location.beat()`), and a beat moved elsewhere is given
+## back by the old location and held by the new one.
 func _test_the_location_a_beat_takes_holds_it_and_gives_it_back_on_a_move(t: TestRunner) -> void:
 	var rig := _rig(24, 50)
 	var l60 := _location(60, ROW_Y)
@@ -315,25 +314,6 @@ func _test_the_location_a_beat_takes_holds_it_and_gives_it_back_on_a_move(t: Tes
 			"moved, the old location gives it back and the new one holds it")
 	t.check(l60.is_open() and not l60.is_drawn(),
 			"and the old location, its unit undrawn, is open again for the unit's draw")
-
-## A location given back after its unit filled in round the beat reads drawn with nothing on it,
-## with no repair by the siting: the draw left it drawn while the beat stood on it.
-func _test_a_location_given_back_in_a_unit_that_has_drawn_reads_drawn(t: TestRunner) -> void:
-	var rig := _rig(24, 50)
-	var l60 := _location(60, ROW_Y)
-	var l70 := _location(70, ROW_Y)
-	rig.locations.table = [l60, l70] as Array[Location]
-	var fire := _unplaced("burning_building")
-	rig.siting.begin_look(_her(), Vector2.RIGHT)
-	rig.siting.lay_ahead(fire)
-	rig.siting.end_look()
-	_drawn(l60)
-	rig.judge.refuses = [l60] as Array[Location]
-	rig.siting.begin_look(_her(), Vector2.RIGHT)
-	var moved := rig.siting.lay_ahead(fire)
-	rig.siting.end_look()
-	t.check(moved and l60.is_drawn() and not l60.is_open() and not l60.is_taken(),
-			"given back once its unit has drawn, the location is drawn with nothing on it, not open")
 
 ## A placed beat is judged among the walk's plans but itself, keeps its location where nothing
 ## else takes it, and gives it back the moment another does.

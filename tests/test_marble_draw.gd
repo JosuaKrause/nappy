@@ -389,10 +389,11 @@ func _test_every_open_location_ends_drawn(t: TestRunner) -> void:
 		all_drawn = all_drawn and location.is_drawn()
 	t.check(all_drawn, "a street that draws only empty marbles ends with every location drawn")
 
-## A location holding a beat her walk stood on it is recorded drawn like every other as its unit fills
-## in, what stands on it left alone, so once the beat is given back it reads drawn with nothing on it
-## and not open in a unit that will not draw again.
-func _test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once_given_back(t: TestRunner) -> void:
+## A location holding a beat her walk stood on it is recorded drawn like every other as its unit
+## fills in, what stands on it left alone, so once the beat is given back it reads drawn with
+## nothing on it and not open in a unit that will not draw again.
+func _test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once_given_back(
+		t: TestRunner) -> void:
 	var lot := _lot(3)
 	var held := lot.locations()[0]
 	var beat := EventPlan.new(EventCatalogue.by_id("busker"), held.centre())

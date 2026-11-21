@@ -41,7 +41,8 @@ extends RefCounted
 ##
 ## A row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew) is drawn and laid
 ## as any other and kept with no position, for her walk to site (`_as_drawn()`), so the rows laid
-## after it are judged without it. Every location of the unit left open ends recorded as drawn.
+## after it are judged without it. Every location of the unit left open, or holding a beat her
+## walk stood on it, ends recorded as drawn.
 ##
 ## Handed the day's locations, which record each draw, the rows the bag's marbles name
 ## (`id -> EventDef`) and the day's ground. Model: no node.
@@ -96,8 +97,9 @@ func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
 
 ## **Draws `unit`'s marbles from `bag` and lays its rows out**, judged among `among`: answers the
 ## events placed, in the order drawn, a row handed to her walk among them with no position. Every
-## location of the unit left open is recorded as drawn; one not open (unavailable, taken or drawn)
-## is left as it is. `among` is left as handed.
+## location of the unit left open is recorded as drawn, and so is one holding a beat her walk stood
+## on it (what stands there is left, so given back it reads drawn-empty); one else not open
+## (unavailable, taken or drawn) is left as it is. `among` is left as handed.
 func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[EventPlan]:
 	var room := UnitRoom.of(unit)
 	var street := unit.kind() == PlacementGround.Kind.STREET

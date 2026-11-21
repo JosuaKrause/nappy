@@ -181,19 +181,20 @@ const SITINGS := 4
 ## The longest the walking test walks, in seconds of walking.
 const WALK_SECONDS := 170.0
 
-## **A beat her walk lays stands in a unit before it draws, and changes no draw but its unit's and
-## the touching units'** (`WalkSiting.lay_ahead()`, `Location.take_for_her_walk()`, `UnitDraw`).
-## She walks the day's longest route out and back at a played day's stream radius, through the manager's own tick,
-## until her walk has laid `SITINGS` poster crews, each a row a unit drew as she walked and handed to
-## her walk (`EventsAhead._take_what_was_drawn()`, `EventDirector.owe_on_her_way()`). Each crew
-## stands on a location of a unit; at least one in a unit that had not drawn when it was laid, every
-## other on a location a drawn unit left empty. With the rest of the day drawn after the walk, nothing a unit
-## drew stands within `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row
-## on the crew's location, and every unit that drew otherwise than on the day drawn whole holds a
-## crew, touches a unit that does, or is reached from such a unit along touching units that drew
-## otherwise (a unit is judged among the draws of the touching units drawn before it, so a difference
-## can carry, and two touching units that both differ do not excuse each other): no unit differs out
-## of nowhere, and some unit far from every crew is compared.
+## **A beat her walk lays stands in a unit before it draws, and changes no draw but its unit's
+## and the touching units'** (`WalkSiting.lay_ahead()`, `Location.take_for_her_walk()`,
+## `UnitDraw`). She walks the day's longest route out and back at a played day's stream radius,
+## through the manager's own tick, until her walk has laid `SITINGS` poster crews, each a row a
+## unit drew as she walked and handed to her walk (`EventsAhead._take_what_was_drawn()`,
+## `EventDirector.owe_on_her_way()`). Each crew stands on a location of a unit; at least one in
+## a unit that had not drawn when it was laid, every other on a location a drawn unit left
+## empty. With the rest of the day drawn after the walk, nothing a unit drew stands within
+## `EventScheduler.EVENT_SPACING_ANY` of a crew, no unit holding a crew drew a row on the crew's
+## location, and every unit that drew otherwise than on the day drawn whole holds a crew,
+## touches a unit that does, or is reached from such a unit along touching units that drew
+## otherwise (a unit is judged among the draws of the touching units drawn before it, so a
+## difference can carry, and two touching units that both differ do not excuse each other): no
+## unit differs out of nowhere, and some unit far from every crew is compared.
 func _test_a_beat_her_walk_lays_stands_in_a_unit_before_it_draws(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
 	var map := _city.map
