@@ -90,7 +90,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	RunCity.events(city).start_day(spec, rng, consumed)
 	var plan: EventPlan = null
 	for candidate in RunCity.events(city).plans():
-		if candidate.row_id() == "burning_building":
+		if candidate.def.id == "burning_building":
 			plan = candidate
 	if not plan:
 		print("%-6d %-12s no fire planned" % [seed_value, walk_name])
@@ -131,8 +131,8 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 		lit = RunCity.events(city).light_what_she_never_met(rig.global_position)
 		if lit:
 			print("      lit at dusk at %s, %.0fpx from where she finished"
-					% [RunTrace.tile(city.map.world_to_tile(plan.placed_at())),
-					plan.placed_at().distance_to(rig.global_position)])
+					% [RunTrace.tile(city.map.world_to_tile(plan.position)),
+					plan.position.distance_to(rig.global_position)])
 	rig.free()
 	GivenRun.scars(city.run, scars)
 	var out := state.duplicate()
@@ -165,8 +165,8 @@ func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventPl
 			state["clock"] = float(state["clock"]) + STEP
 			if not was_placed and plan.is_placed():
 				state["sited_at"] = state["clock"]
-				state["lead"] = plan.placed_at().distance_to(here)
-			if plan.is_placed() and RunCity.events(city).sees(plan.placed_at()):
+				state["lead"] = plan.position.distance_to(here)
+			if plan.is_placed() and RunCity.events(city).sees(plan.position):
 				state["seen_at"] = state["clock"]
 				return
 			toward = route[i] - rig.global_position
@@ -196,10 +196,10 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 		# The manager's tick steps every instance, so the engine leaves the top of its street and
 		# the fire finishes its telegraph.
 		RunCity.events(city)._physics_process(STEP)
-	var engine_at := EventSpawner._where_the_summoned_row_stops(city.map, plan.placed_at())
-	var engine := EventCatalogue.by_id(plan.row().aftermath.on_sight)
+	var engine_at := EventSpawner._where_the_summoned_row_stops(city.map, plan.position)
+	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT
-	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.placed_at()))
+	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.position))
 	if inward != Vector2i.ZERO:
 		along = Vector2(inward.y, inward.x)
 	var from := _clear_of_the_pair(plan, engine, engine_at, -along)
@@ -223,10 +223,10 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 ## past the pair starts and ends.
 func _clear_of_the_pair(plan: EventPlan, engine: EventDef, engine_at: Vector2,
 		direction: Vector2) -> Vector2:
-	var reach: float = plan.heard_within()
+	var reach: float = plan.def.outer_radius
 	if engine and engine_at != Vector2.INF:
-		reach = maxf(reach, engine_at.distance_to(plan.placed_at()) + engine.outer_radius)
-	return plan.placed_at() + direction * (reach + Tuning.TILE_SIZE)
+		reach = maxf(reach, engine_at.distance_to(plan.position) + engine.heard_within())
+	return plan.position + direction * (reach + Tuning.TILE_SIZE)
 
 func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
 		engine: EventDef, engine_at: Vector2) -> float:
@@ -250,10 +250,10 @@ func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
 				continue
 			var centre := tree.cell_centre(grid.cell_of(next))
 			if next != goal:
-				if centre.distance_to(plan.placed_at()) <= plan.heard_within():
+				if centre.distance_to(plan.position) <= plan.def.outer_radius:
 					continue
 				if engine and engine_at != Vector2.INF \
-						and centre.distance_to(engine_at) <= engine.outer_radius:
+						and centre.distance_to(engine_at) <= engine.heard_within():
 					continue
 			seen[next] = int(seen[node]) + 1
 			queue.append(next)

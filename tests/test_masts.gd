@@ -62,9 +62,9 @@ func _test_no_row_is_city_wide(t: TestRunner) -> void:
 			"EventDef carries no city_wide field any more")
 	var loudspeaker := EventCatalogue.by_id("loudspeaker")
 	var curfew := EventCatalogue.by_id("curfew_announce")
-	t.check(loudspeaker.outer_radius > loudspeaker.inner_radius,
+	t.check(loudspeaker.heard_within() > loudspeaker.core_within(),
 			"the loudspeaker has an edge a route can go round")
-	t.check(curfew.outer_radius > curfew.inner_radius,
+	t.check(curfew.heard_within() > curfew.core_within(),
 			"so does the curfew announcement it carries on DawnMasts.CURFEW_ANNOUNCE_DAY")
 
 # ------------------------------------------------------------------- sites ---
@@ -108,7 +108,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -
 	var checked := 0
 	for seed_value: int in SITE_SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var reach := EventCatalogue.by_id("loudspeaker").outer_radius
+		var reach := EventCatalogue.by_id("loudspeaker").heard_within()
 		var doorstep := map.doorstep_world_position()
 		var home := map.home_world_position()
 		var home_margin := MastSites.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
@@ -146,11 +146,11 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -
 
 func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loudspeaker")
-	t.check(is_zero_approx(def.emission_at_distance(def.outer_radius + 1.0)),
+	t.check(is_zero_approx(def.emission_at_distance(def.heard_within() + 1.0)),
 			"the field is zero just past its own outer radius")
-	var at_inner := def.emission_at_distance(def.inner_radius)
-	var at_middle := def.emission_at_distance((def.inner_radius + def.outer_radius) * 0.5)
-	var at_outer := def.emission_at_distance(def.outer_radius - 1.0)
+	var at_inner := def.emission_at_distance(def.core_within())
+	var at_middle := def.emission_at_distance((def.core_within() + def.heard_within()) * 0.5)
+	var at_outer := def.emission_at_distance(def.heard_within() - 1.0)
 	t.check(at_inner > at_middle and at_middle > at_outer and at_outer > 0.0,
 			"the field falls away between the inner and outer radius (%.2f > %.2f > %.2f > 0)"
 			% [at_inner, at_middle, at_outer])

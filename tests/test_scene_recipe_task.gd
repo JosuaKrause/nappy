@@ -215,7 +215,7 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t: TestRunn
 			guards.append(instance.global_position)
 	var robbery := EventCatalogue.mark_guard()
 	var for_the_mouth := AlleyMarks.expected_guard_spot(map, MOUTH, at_mouth,
-			robbery.inner_radius + ContactPoint.REACH)
+			robbery.core_within() + ContactPoint.REACH)
 	t.check(guards.size() == 1 and for_the_mouth != Vector2.INF, "the mark's guard stands in the street")
 	if guards.size() != 1:
 		_free_day(made)

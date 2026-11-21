@@ -234,13 +234,13 @@ func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
 	# Past the telegraph, the same warm-up `M174Pass._pass_net()` gives a row met on the map.
-	var warm_steps := int(ceil((def.telegraph_time + 0.05) / STEP))
+	var warm_steps := int(ceil((def.telegraphs_for() + 0.05) / STEP))
 	for _i in warm_steps:
 		instance.step(STEP)
 
 	_build(t)
 	_baby.seed_meters(_baby.sleepiness_level(), Tuning.METER_MAX)
-	var lead := def.outer_radius + 40.0
+	var lead := def.heard_within() + 40.0
 	var lateral := 40.0
 	_stroller.global_position = Vector2(-lead, lateral)
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -269,7 +269,7 @@ func _stand_in_row(t: TestRunner, id: String, seconds: float) -> Dictionary:
 	var def := EventCatalogue.by_id(id)
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
-	var warm_steps := int(ceil((def.telegraph_time + 0.05) / STEP))
+	var warm_steps := int(ceil((def.telegraphs_for() + 0.05) / STEP))
 	for _i in warm_steps:
 		instance.step(STEP)
 

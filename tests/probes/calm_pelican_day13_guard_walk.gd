@@ -285,7 +285,7 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 	var from_arrow := guard.global_position.distance_to(arrow.body_position())
 	var clear := city.map.clear_line(guard.global_position, arrow.body_position())
 	var kind := "elsewhere"
-	if from_arrow >= robbery.inner_radius + reach - 0.5 \
+	if from_arrow >= robbery.core_within() + reach - 0.5 \
 			and from_arrow <= robbery.notice_within() + reach + 0.5 and clear:
 		kind = "guarding"
 	elif clear and from_arrow <= ResistanceDirector.TASK_GUARD_FARTHEST + 0.5:

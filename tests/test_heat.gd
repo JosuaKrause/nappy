@@ -84,11 +84,11 @@ func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 		if def.heat_response != EventDef.HeatResponse.PRESSES:
 			continue
 		for level in EventCatalogue.heat_levels():
-			t.check(not EventCatalogue.heated(def, level).hard_fail,
+			t.check(not EventCatalogue.heated(def, level).ends_the_day(),
 					"'%s' presses without ever becoming hard_fail (heat %d)" % [def.id, level])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
-		t.check(not out.hard_fail and out.pursuit.stop_excitement > 0.0,
+		t.check(not out.ends_the_day() and out.pursuit.stop_excitement > 0.0,
 				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
@@ -108,34 +108,34 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t: TestRunner) -> void:
 			var hot := EventCatalogue.heated(def, level)
 			var should_hunt := level >= EventDef.HEAT_HUNTS_LEVEL
 			if def.hunts.lets_out > 0:
-				t.check(hot.investigates() == should_hunt and hot.pursuit == null
-						and hot.hard_fail == def.hard_fail,
+				t.check(hot.investigates() == should_hunt and not hot.pursues()
+						and hot.ends_the_day() == def.ends_the_day(),
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
 						% [def.id, level] + "chasing her itself")
 				var man := EventCatalogue.out_of_the_car(DaySpec.for_day(10), false)
-				t.check(man.hard_fail, "'%s': and its men's catch ends the day" % def.id)
+				t.check(man.ends_the_day(), "'%s': and its men's catch ends the day" % def.id)
 				var reach := PursuitSpec.standoff(man.chase_speed(), man.standoff_reach())
 				t.check(not should_hunt or (reach < hot.notice_within()
-						and hot.notice_within() <= hot.outer_radius),
+						and hot.notice_within() <= hot.heard_within()),
 						"'%s' heat %d: its men's stand-off %.0f < its notice %.0f <= its field %.0f"
-						% [def.id, level, reach, hot.notice_within(), hot.outer_radius])
+						% [def.id, level, reach, hot.notice_within(), hot.heard_within()])
 				continue
-			t.check(hot.pursuit != null == should_hunt,
+			t.check(hot.pursues() == should_hunt,
 					"'%s' heat %d: it hunts iff at or past its own threshold" % [def.id, level])
 			# Population and intensity are `PRESSES`'s axes, never this one's — at every level,
 			# not only below the threshold, since a `HUNTS` row has nothing else to move.
-			t.check(hot.max_per_day == def.max_per_day and hot.intensity == def.intensity,
+			t.check(hot.most_in_a_day() == def.most_in_a_day() and hot.peak() == def.peak(),
 					"'%s' heat %d: hunting moves neither population nor intensity"
 					% [def.id, level])
 			if not should_hunt:
 				continue
-			t.check(hot.hard_fail, "'%s' heat %d: the lethal rung stays lethal" % [def.id, level])
+			t.check(hot.ends_the_day(), "'%s' heat %d: the lethal rung stays lethal" % [def.id, level])
 			# The pursuit contract restated as the distances it is actually played over: the
 			# stand-off she is owed, then the trigger, then the edge of the field as it reaches
 			# ahead of him at his speed — each strictly inside the next, which is what
 			# `Tuning.validate_pursuit` also checks at boot.
-			var standoff := PursuitSpec.standoff(hot.chase_speed(), hot.inner_radius)
-			var ahead := hot.outer_radius \
+			var standoff := PursuitSpec.standoff(hot.chase_speed(), hot.core_within())
+			var ahead := hot.heard_within() \
 					* Field.scale(Field.eccentricity(hot.chase_speed()))
 			t.check(standoff < hot.notice_within() and hot.notice_within() <= ahead,
 					"'%s' heat %d: stand-off %.0f < trigger %.0f <= field ahead %.0f"
@@ -158,7 +158,7 @@ func _cold_raid() -> EventDef:
 ## here, and the stand-off/trigger/field ordering in the generic `HUNTS` loop above.
 func _test_the_raid_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	var cold := _cold_raid()
-	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
+	t.check(cold.hunts_for_her(),
 			"the raid answers to the resistance, on the hunting rung")
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
@@ -167,14 +167,14 @@ func _test_the_raid_hunts_past_its_own_threshold(t: TestRunner) -> void:
 		for day in range(1, 15):
 			same_days = same_days and hot.available_on(day) == cold.available_on(day)
 		t.check(same_days, "heat %d: heat moves what the raid does and never when it appears" % level)
-		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
+		t.check(hot.most_in_a_day() == cold.most_in_a_day() and hot.peak() == cold.peak(),
 				"heat %d: hunting moves neither population nor intensity" % level)
 		if level < EventDef.HEAT_HUNTS_LEVEL:
-			t.check(not hot.investigates() and hot.pursuit == null and not hot.hard_fail
+			t.check(not hot.investigates() and not hot.pursues() and not hot.ends_the_day()
 					and hot.duration == cold.duration,
 					"heat %d: below its own threshold the raid is untouched" % level)
 			continue
-		t.check(hot.investigates() and hot.lets_out() == 2 and hot.pursuit == null and not hot.hard_fail,
+		t.check(hot.investigates() and hot.lets_out() == 2 and not hot.pursues() and not hot.ends_the_day(),
 				"heat %d: at or past its threshold the raid's van lets two men out, and never "
 				% level + "chases or kills")
 
@@ -190,28 +190,28 @@ func _cold_roadblock() -> EventDef:
 ## raid above.
 func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	var cold := _cold_roadblock()
-	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
+	t.check(cold.hunts_for_her(),
 			"the roadblock answers to the resistance, the lethal way")
-	t.check(not cold.hard_fail, "cold, it is still only a closed street")
+	t.check(not cold.ends_the_day(), "cold, it is still only a closed street")
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
 		t.check(hot.validate(), "the roadblock is fair at heat %d" % level)
 		t.check(hot.first_day == cold.first_day,
 				"heat %d: hunting moves what it does, never when it may appear" % level)
-		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
+		t.check(hot.most_in_a_day() == cold.most_in_a_day() and hot.peak() == cold.peak(),
 				"heat %d: hunting moves neither its population nor its intensity" % level)
 		if level < EventDef.HEAT_HUNTS_LEVEL:
-			t.check(hot.pursuit == null and not hot.hard_fail,
+			t.check(not hot.pursues() and not hot.ends_the_day(),
 					"heat %d: below its own threshold the roadblock is still just a band" % level)
 			continue
-		t.check(hot.pursuit != null and hot.hard_fail,
+		t.check(hot.pursues() and hot.ends_the_day(),
 				"heat %d: at or past its threshold its guards leave the post and it kills" % level)
 		# **What kills is a man, at a man's reach**, and the band it stands at no longer has
 		# anything to do with it. Asked as the two facts that make that true rather than as the
 		# number: the catch is the same one the escape's masked man uses, and it is well inside
 		# the reach the band's own body would have forced if the barrier were the killer — which
 		# is exactly the arrangement this row used to be in.
-		t.check(hot.lethal_reach() == EventCatalogue.by_id("masked_pursuer").inner_radius,
+		t.check(hot.lethal_reach() == EventCatalogue.by_id("masked_pursuer").core_within(),
 				"heat %d: it catches at a masked man's own reach (%.0fpx)"
 				% [level, hot.lethal_reach()])
 		t.check(hot.lethal_reach() < hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS,
@@ -220,7 +220,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 				% [level, hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS])
 		t.check(hot.pursuit.leaves_its_body,
 				"heat %d: and the barrier he leaves stays where it was built" % level)
-		t.check(hot.lethal_reach() <= hot.inner_radius,
+		t.check(hot.lethal_reach() <= hot.core_within(),
 				"heat %d: the catch is inside the field's own core, so it is never silent" % level)
 
 # ------------------------------------------------------------- the derivation ---
@@ -254,8 +254,8 @@ func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
 				"'%s' answers to heat, so heat gives back something else" % def.id)
 		# Progress can reach five over the five tasks while four is what qualifies, so the top of
 		# the ladder has to be a ceiling rather than a number the arithmetic runs past.
-		t.check(EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL + 1).intensity
-						== EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL).intensity,
+		t.check(EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL + 1).peak()
+						== EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL).peak(),
 				"'%s' cannot be heated past the goal" % def.id)
 
 # --------------------------------------------------------------------- a day ---
@@ -293,26 +293,26 @@ func _test_the_patrol_presses_more_and_louder(t: TestRunner) -> void:
 	var cold := _cold_patrol()
 	t.check(cold.heat_response == EventDef.HeatResponse.PRESSES,
 			"the patrol answers to the resistance, the way that never hunts")
-	var last_population := cold.max_per_day
-	var last_intensity := cold.intensity
+	var last_population := cold.most_in_a_day()
+	var last_intensity := cold.peak()
 	for level in range(1, EventCatalogue.heat_levels()):
 		var hot := EventCatalogue.heated(cold, level)
-		t.check(hot.max_per_day >= last_population,
+		t.check(hot.most_in_a_day() >= last_population,
 				"the patrol's population never drops between heat %d and %d" % [level - 1, level])
-		t.check(hot.intensity >= last_intensity,
+		t.check(hot.peak() >= last_intensity,
 				"and neither does what it costs to stand near it (heat %d)" % level)
-		last_population = hot.max_per_day
-		last_intensity = hot.intensity
+		last_population = hot.most_in_a_day()
+		last_intensity = hot.peak()
 	var full := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
-	t.check(full.max_per_day > cold.max_per_day,
+	t.check(full.most_in_a_day() > cold.most_in_a_day(),
 			"and at full heat there really are more of them (%d vs %d)"
-			% [full.max_per_day, cold.max_per_day])
-	t.check(full.intensity > cold.intensity,
+			% [full.most_in_a_day(), cold.most_in_a_day()])
+	t.check(full.peak() > cold.peak(),
 			"and it really does cost more to stand near (%.1f vs %.1f)"
-			% [full.intensity, cold.intensity])
+			% [full.peak(), cold.peak()])
 	# The escalation moves population and intensity, deliberately not the radii: a wider field
 	# would silently owe a longer telegraph than the row ships with. See M56's decision record.
-	t.check(full.inner_radius == cold.inner_radius and full.outer_radius == cold.outer_radius,
+	t.check(full.core_within() == cold.core_within() and full.heard_within() == cold.heard_within(),
 			"the field itself does not widen — only what is inside it changes")
 
 ## It does not investigate below the threshold, and does at and above it — checked over every
@@ -328,15 +328,15 @@ func _test_the_patrol_investigates_past_the_threshold(t: TestRunner) -> void:
 		var should_investigate := level >= EventDef.HEAT_INVESTIGATES_LEVEL
 		t.check(hot.investigates() == should_investigate,
 				"heat %d: the patrol investigates iff it is at or past the threshold" % level)
-		t.check(hot.pursuit == null, "heat %d: and the car itself never pursues her" % level)
+		t.check(not hot.pursues(), "heat %d: and the car itself never pursues her" % level)
 		if should_investigate:
 			for day: int in [8, 9]:
 				var officer := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
 				var standoff := PursuitSpec.standoff(officer.chase_speed(),
 						officer.standoff_reach())
-				t.check(standoff < hot.notice_within() and hot.notice_within() <= hot.outer_radius,
+				t.check(standoff < hot.notice_within() and hot.notice_within() <= hot.heard_within(),
 						"heat %d: the man's stand-off %.0f < its notice %.0f <= its field %.0f"
-						% [level, standoff, hot.notice_within(), hot.outer_radius])
+						% [level, standoff, hot.notice_within(), hot.heard_within()])
 
 ## A waiting pursuer with a route runs it rather than standing at attention. Sited far from her so
 ## it is never noticed, a heated patrol has to actually cover ground along its path while
@@ -345,7 +345,7 @@ func _test_the_patrol_investigates_past_the_threshold(t: TestRunner) -> void:
 ## away the moment it started answering to heat.
 func _test_it_patrols_while_it_waits(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
-	t.check(hot.investigates() and hot.mobile, "the fully heated patrol is a mobile investigator")
+	t.check(hot.investigates() and hot.moves(), "the fully heated patrol is a mobile investigator")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
@@ -466,7 +466,7 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 ## - **The barrier catches nobody.** Standing right against it, at the distance the old lethal
 ##   radius would have fired from, ends nothing while the man is elsewhere.
 func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: TestRunner) -> void:
-	var reach: float = EventCatalogue.by_id("masked_pursuer").inner_radius
+	var reach: float = EventCatalogue.by_id("masked_pursuer").core_within()
 	var cold := _cold_roadblock()
 	var post := Vector2(400.0, 0.0)
 

@@ -481,7 +481,7 @@ func _test_the_guard_is_seeded(t: TestRunner) -> void:
 	before.free()
 
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 
 	for day: int in [6, 7, 8, 9]:
 		GivenRun.completed_steps(run, _completed_through(2 * (day - 6)))

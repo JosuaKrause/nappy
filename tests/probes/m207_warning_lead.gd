@@ -181,7 +181,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var clock := 0.0
 	var warned_at := 0.0
 	# Include the badge before the long cap so even a chase that never catches her has an ending.
-	var limit := maxf(LIMIT, def.warned_for() + def.telegraph_time + def.duration + 1.0)
+	var limit := maxf(LIMIT, def.warned_for() + def.telegraphs_for() + def.duration + 1.0)
 	while clock < limit:
 		her += velocity * STEP
 		clock += STEP
@@ -464,7 +464,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		instance.setup(def, path[0], path, Vector2.RIGHT,
 				EventSurroundings.new().hearing(instance_where))
 		instance.arrive_from_its_warning()
-		if def.pursuit == null:
+		if not def.pursues():
 			instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		created.append(instance)
 		return true

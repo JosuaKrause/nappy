@@ -61,14 +61,14 @@ func _test_the_dog_walker_is_created_at_a_drawn_point_of_its_bark(t: TestRunner)
 	var earliest := INF
 	var latest := -INF
 	for age in made:
-		past = past and age >= def.telegraph_time
-		var point := fposmod(age - def.telegraph_time, def.pulse_period)
+		past = past and age >= def.telegraphs_for()
+		var point := fposmod(age - def.telegraphs_for(), def.pulses_every())
 		earliest = minf(earliest, point)
 		latest = maxf(latest, point)
-	t.check(past, "each dog walker is created past its %.1fs telegraph (%s)" % [def.telegraph_time, made])
-	t.check(latest - earliest >= def.pulse_period * 0.25,
+	t.check(past, "each dog walker is created past its %.1fs telegraph (%s)" % [def.telegraphs_for(), made])
+	t.check(latest - earliest >= def.pulses_every() * 0.25,
 			"at points of its %.1fs bark spread over it, %.2fs to %.2fs (%s)"
-			% [def.pulse_period, earliest, latest, made])
+			% [def.pulses_every(), earliest, latest, made])
 
 ## Every loose dog sent is created at the age a warned row has (`EventSpawner.age_when_warned()`),
 ## read within the two ticks the manager may have stepped it by when it is first seen.

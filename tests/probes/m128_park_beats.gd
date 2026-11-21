@@ -74,7 +74,7 @@ func _busker_never_fills_the_day(t: TestRunner) -> void:
 
 	var busker_at: Vector2 = map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 	var real := EventCatalogue.by_id("busker")
-	var standing_at := busker_at + Vector2(real.inner_radius, 0.0)
+	var standing_at := busker_at + Vector2(real.core_within(), 0.0)
 
 	print("\n== time to a full sleep meter, standing at inner_radius from the busker's own core ==")
 	print(("one-block PARK, starting excitement %.0f, sleepiness 0, capped at %.0fs "
@@ -131,10 +131,10 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	var def := EventDef.new()
 	def.id = "busker"
 	def.intensity = intensity
-	def.inner_radius = real.inner_radius
-	def.outer_radius = real.outer_radius
-	def.pulse_period = real.pulse_period
-	def.telegraph_time = real.telegraph_time
+	def.inner_radius = real.core_within()
+	def.outer_radius = real.heard_within()
+	def.pulse_period = real.pulses_every()
+	def.telegraph_time = real.telegraphs_for()
 
 	var instance := EventInstance.new()
 	instance.setup(def, busker_at)
@@ -143,7 +143,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	RunCity.events(city).world.take_in(instance)
 
 	var step := 1.0 / 60.0
-	var warm_up := int(ceil((def.telegraph_time + 0.1) / step))
+	var warm_up := int(ceil((def.telegraphs_for() + 0.1) / step))
 	for i in warm_up:
 		instance.step(step)
 
@@ -215,7 +215,7 @@ func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 	print("before: intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
 			% [OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER, before_denial])
 	print("after:  intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
-			% [def.intensity, def.inner_radius, def.outer_radius, after_denial])
+			% [def.peak(), def.core_within(), def.heard_within(), after_denial])
 
 	# The floor stated over a whole beat, not just its peak: standing at (or inside) inner_radius,
 	# the meter must not trend down over a full pulse cycle. `mean_multiplier` (0.625 for this
@@ -229,7 +229,7 @@ func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 			% [calm_decay, mean_multiplier])
 	for row: Dictionary in [
 		{"label": "before", "intensity": OLD_BUSKER_INTENSITY},
-		{"label": "after", "intensity": def.intensity},
+		{"label": "after", "intensity": def.peak()},
 	]:
 		var intensity: float = row["intensity"]
 		var top: float = intensity * 1.0 - calm_decay

@@ -60,12 +60,12 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	if path.is_empty() and row.mobile and row.pursuit == null:
+	if path.is_empty() and row.moves() and not row.pursues():
 		path = PackedVector2Array([at, her + (her - at)])
 	instance.setup(row, at, path, Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
 	instance.arrive_from_its_warning()
-	if row.pursuit == null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
+	if not row.pursues() or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.restore(EventSave.new(EventSpawner.age_when_warned(row), 0.0))
 	instance_where.tell(her)
 	return instance
@@ -92,7 +92,7 @@ func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 						way)]
 				if row.comes_down_her_line():
 					places.append(PendingWarning.down_her_line(null, row, her, way, view))
-				if row.pursuit != null:
+				if row.pursues():
 					places.append(PendingWarning.along_her_heading(null, row, her, way, view))
 				for at in places:
 					var instance := _arrival(row, at, her)
@@ -216,7 +216,7 @@ func _test_the_patrol_sent_down_the_road(t: TestRunner) -> void:
 					var row := due[0] as EventDef
 					var car := _created_at_once(row, path, her)
 					placed += 1
-					if path[0].distance_to(her) <= row.outer_radius and inside.size() < 3:
+					if path[0].distance_to(her) <= row.heard_within() and inside.size() < 3:
 						inside.append("seed %d, patrol %.0fpx from her at %v" % [seed_value,
 								path[0].distance_to(her), her])
 					if inward.x != 0:

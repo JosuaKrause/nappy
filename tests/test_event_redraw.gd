@@ -230,7 +230,7 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t: TestRunner) 
 	t.check(instance.is_telegraphing(), "a cat starts crouched in its telegraph")
 	_asks(instance)
 	var crossed := false
-	var ticks := int(ceil(def.telegraph_time / STEP)) + 10
+	var ticks := int(ceil(def.telegraphs_for() / STEP)) + 10
 	for i in ticks:
 		instance.step(STEP)
 		if not instance.is_telegraphing():
@@ -333,7 +333,7 @@ func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 ## ridden straight at her read as carrying no caret.
 func _test_asking_for_the_key_does_not_freeze_the_caret(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
-	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
+	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
 	if not def:
 		return
 	var her := WhereSheIs.nowhere()
@@ -344,10 +344,10 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t: TestRunner) -> void:
 	# Ticks with nobody's position known, so the gate caches an answer for this `age` against
 	# `Vector2.INF` — the state the running game is in on any frame whose event `_process()` runs
 	# before whoever tells where she is (`WhereSheIs.tell()`).
-	for i in int(ceil(def.telegraph_time / STEP)) + 1:
+	for i in int(ceil(def.telegraphs_for() / STEP)) + 1:
 		instance.step(STEP)
 	t.check(instance.source().caret_strength() == 0, "with nobody to aim at there is no caret")
-	her.tell(instance.global_position + Vector2(def.outer_radius, 0.0))
+	her.tell(instance.global_position + Vector2(def.heard_within(), 0.0))
 	t.check(instance.source().caret_strength() == 2,
 			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
 	instance.free()
@@ -600,12 +600,12 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loudspeaker")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	instance.restore(EventSave.aged(def.pulse_period + def.telegraph_time + 1.0))
+	instance.restore(EventSave.aged(def.pulses_every() + def.telegraphs_for() + 1.0))
 	_asks(instance)
-	instance.restore(EventSave.aged(2.0 * def.pulse_period + 0.5))
+	instance.restore(EventSave.aged(2.0 * def.pulses_every() + 0.5))
 	t.check(instance.look.mast_is_telegraphing_now() and _asks(instance),
 			"the next cycle's telegraph moves the mast's key")
-	instance.restore(EventSave.aged(2.0 * def.pulse_period + def.telegraph_time + 1.0))
+	instance.restore(EventSave.aged(2.0 * def.pulses_every() + def.telegraphs_for() + 1.0))
 	_asks(instance)
 	instance.silence()
 	t.check(_asks(instance), "silencing the mast moves its key")
@@ -627,6 +627,6 @@ static func _never_settles(instance: EventInstance) -> bool:
 ## `RefCounted` variable is not saved out and so not duplicated.
 static func _copy_of(def: EventDef) -> EventDef:
 	var copy := def.duplicate() as EventDef
-	copy.shape = def.shape
+	copy.shape = def.ground_shape()
 	copy.solid_parts = def.solid_parts
 	return copy

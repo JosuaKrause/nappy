@@ -616,7 +616,7 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 ## streamed back in mid-chase, which reports nothing a second time.
 func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
-	t.check(def.pursuit != null and def.notice_within() <= 0.0,
+	t.check(def.pursues() and def.notice_within() <= 0.0,
 		"'charging_dog' is a pursuer that never waits, the case a resume could misread")
 	var began: Array[String] = []
 	var on_began := func(id: String) -> void: began.append(id)
@@ -630,7 +630,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 			EventSurroundings.new().hearing(placed_where))
 	t.add_child(placed)
 	placed.set_process(false)
-	for i in int(ceil((def.telegraph_time + 0.5) / step)):
+	for i in int(ceil((def.telegraphs_for() + 0.5) / step)):
 		placed_where.tell(her)
 		placed.step(step)
 	t.check(began.size() == 1, "placed at once, its chase is reported once after its telegraph "
@@ -660,7 +660,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	t.add_child(warned)
 	warned.set_process(false)
 	warned.arrive_from_its_warning()
-	warned.restore(EventSave.new(def.telegraph_time, 0.0))
+	warned.restore(EventSave.new(def.telegraphs_for(), 0.0))
 	for i in 10:
 		warned_where.tell(her)
 		warned.step(step)
@@ -775,7 +775,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t: TestRunner) -> void:
 	counter.sent.clear()
 	var outlasted_where := WhereSheIs.nowhere()
 	var outlasted := _charger(t, def, outlasted_where)
-	for i in int(round((def.telegraph_time + def.duration + 1.0) / step)):
+	for i in int(round((def.telegraphs_for() + def.duration + 1.0) / step)):
 		outlasted_where.tell(outlasted.global_position + Vector2(400.0, 0.0))
 		outlasted.step(step)
 		if outlasted.is_leaving:
@@ -796,7 +796,7 @@ func _test_the_lesson_dog_has_its_own_set(t: TestRunner) -> void:
 	var def := EventCatalogue.lesson_of(EventCatalogue.by_id("charging_dog"))
 	var lesson_where := WhereSheIs.nowhere()
 	var lesson := _charger(t, def, lesson_where)
-	_walk(lesson, lesson_where, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
+	_walk(lesson, lesson_where, Vector2(400.0, 0.0), def.telegraphs_for() + 0.5)
 	lesson.report_the_catch()
 	t.check(counter.sent == ["nappy-day-%d-dog-tutorial-chased" % day,
 			"nappy-day-%d-dog-tutorial-caught" % day],
@@ -806,7 +806,7 @@ func _test_the_lesson_dog_has_its_own_set(t: TestRunner) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	var later_where := WhereSheIs.nowhere()
 	var later := _charger(t, dog, later_where)
-	_walk(later, later_where, Vector2(400.0, 0.0), dog.telegraph_time + 0.5)
+	_walk(later, later_where, Vector2(400.0, 0.0), dog.telegraphs_for() + 0.5)
 	t.check(counter.sent == ["nappy-day-%d-dog-chased" % day],
 		"a dog that is not the lesson's is an ordinary dog (%s)" % [counter.sent])
 	later.free()
@@ -828,7 +828,7 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t: TestRunner) 
 	var name := "nappy-day-%d-guardsman-giving-chase-" % day
 	t.check(counter.sent == [name + "warned"],
 		"his raised hand is counted warned at once (%s)" % [counter.sent])
-	_walk(man, man_where, Vector2.ZERO, def.telegraph_time - 0.1)
+	_walk(man, man_where, Vector2.ZERO, def.telegraphs_for() - 0.1)
 	t.check(counter.sent == [name + "warned"],
 		"and nothing more while it is up (%s)" % [counter.sent])
 	_walk(man, man_where, Vector2.ZERO, 0.2)

@@ -416,7 +416,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]
 	# isolation table.
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
-		doors.append(body.placed_at())
+		doors.append(body.position)
 	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
@@ -462,19 +462,19 @@ func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 	for plan: EventPlan in plans:
 		if not plan.is_placed() or plan.mast_id() != "":
 			continue
-		var def := plan.row()
-		if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with("checkpoint") \
-				or (def.mobile and not def.paces):
+		var def := plan.def
+		if def.is_scenery() or def.pursues() or def.id.begins_with("checkpoint") \
+				or (def.moves() and not def.paces_a_beat()):
 			continue
-		var emits := def.intensity > 0.0
+		var emits := def.has_a_field()
 		var radius := def.line_reach()
 		if radius <= 0.0:
 			continue
 		var row := Row.new()
 		row.id = def.id
 		row.radius = radius
-		row.position = plan.placed_at()
-		row.paces = def.paces
+		row.position = plan.position
+		row.paces = def.paces_a_beat()
 		row.emits = emits
 		row.obstructs = def.obstructs_within() > 0.0
 		row.source = int(_sources.get(plan.get_instance_id(), Source.CATALOGUE))
@@ -485,18 +485,18 @@ func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 ## The points a moving row occupies over its own route, at `BEAT_SAMPLE_PX` spacing. One point for
 ## anything that stands still.
 func _samples_along(plan: EventPlan) -> PackedVector2Array:
-	var points := PackedVector2Array([plan.placed_at()])
-	if plan.walks().size() < 2:
+	var points := PackedVector2Array([plan.position])
+	if plan.path.size() < 2:
 		return points
 	points = PackedVector2Array()
-	for i in range(1, plan.walks().size()):
-		var from := plan.walks()[i - 1]
-		var to := plan.walks()[i]
+	for i in range(1, plan.path.size()):
+		var from := plan.path[i - 1]
+		var to := plan.path[i]
 		var span := from.distance_to(to)
 		var steps := maxi(1, ceili(span / BEAT_SAMPLE_PX))
 		for step in steps:
 			points.append(from.lerp(to, float(step) / float(steps)))
-	points.append(plan.walks()[plan.walks().size() - 1])
+	points.append(plan.path[plan.path.size() - 1])
 	return points
 
 ## Every tile a line may not stand on, under one reading: today's closures, plus each row's own
@@ -1190,8 +1190,8 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 		var def := EventCatalogue.by_id(id)
 		var reach := "" if not def else \
 				" (intensity %.1f over %.0fpx, denies %.0fpx, body %.0fpx%s)" \
-				% [def.intensity, def.outer_radius, def.line_reach(),
-				def.obstructs_within(), ", paces" if def.paces else ""]
+				% [def.peak(), def.heard_within(), def.line_reach(),
+				def.obstructs_within(), ", paces" if def.paces_a_beat() else ""]
 		print("      %-4d %s%s" % [blame[id], id, reach])
 
 	print("\n-- the grower's own mid-block crossings --")

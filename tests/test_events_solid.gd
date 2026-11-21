@@ -33,7 +33,7 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		# A moving wall pins her against a building on a two-tile pavement, which is a different
 		# game from being priced out of a street. See `dog_walker`.
-		if def.mobile or def.pursuit != null:
+		if def.moves() or def.pursues():
 			continue
 		# Nothing checks that a thing sited out of where she happens to be walking leaves a route
 		# to a park, so `EventDef.validate()` refuses a body on one outright.
@@ -41,12 +41,12 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 			continue
 		# Nothing drawn, nothing to bump into: a curfew announcement carried by a mast that is
 		# already solid on its own, a playground the park itself draws.
-		if def.look == EventDef.Look.NONE:
+		if def.picture() == EventDef.Look.NONE:
 			continue
 		# A flock is several bodies wheeling inside one disc with pavement between them, so there is
 		# no silhouette for a body to be half of — and being walked into is the whole event, which a
 		# body would stop at the rim. `EventDef.validate()` refuses one that obstructs.
-		if def.flock_size > 0:
+		if def.is_a_flock():
 			continue
 		# The picture is drawn on the building the row stands against rather than on the sidewalk it
 		# is sited on — the fire on its facade, the burnt building it leaves — so there is no
@@ -69,12 +69,12 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 func _test_a_lethal_thing_can_still_be_reached(t: TestRunner) -> void:
 	var lethal := 0
 	for def in EventCatalogue.all():
-		if not def.hard_fail or def.obstructs_within() <= 0.0:
+		if not def.ends_the_day() or def.obstructs_within() <= 0.0:
 			continue
 		lethal += 1
-		t.check(def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS < def.inner_radius,
+		t.check(def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS < def.core_within(),
 				"'%s' is solid to %.0f and lethal inside %.0f, so touching it still ends the day"
-				% [def.id, def.obstructs_within(), def.inner_radius])
+				% [def.id, def.obstructs_within(), def.core_within()])
 	t.check(lethal > 0, "and there are lethal solid things to check")
 
 ## `Tuning.PLAYER_BODY_RADIUS` is a copy of a number authored in the player's scene, and the rule
