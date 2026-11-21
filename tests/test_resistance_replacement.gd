@@ -500,7 +500,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		var door := _city.map.doorstep_world_position()
 		var her := door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0)
 		# Where the raid stands is read off a first arrival with the camera nowhere near: the
-		# vans' feet and the patrol car's beat (`EventInstance.path`), which are put in the
+		# vans' feet and the patrol car's beat (`EventInstance.walks()`), which are put in the
 		# street and then taken out again before the raid this test waits for.
 		var scout := ResistanceHappenings.new()
 		scout.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city,

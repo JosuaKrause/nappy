@@ -205,7 +205,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 
 ## Not the ordinary placement check — `_test_scheduler_respects_placement_and_one_of_a_row_per_unit` already holds
 ## `alley_mouse` to landing on an `ALLEY` tile, the same as every other `MAP` row. What nothing else
-## checks is the alley dash's own reason for existing (`EventInstance.path` of the mouse): that the
+## checks is the alley dash's own reason for existing (`EventInstance.walks()` of the mouse): that the
 ## two-point dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
 ## off `CityMap.alley_lots()` rather than off a scheduled placement, so it holds for every alley a
 ## seed generates rather than only the ones a roll happens to use that day.
@@ -252,7 +252,7 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 	t.check(checked > 10 * solid,
 			"and the alleys passed over as solid are a few (%d of %d)" % [solid, checked + solid])
 
-## The dash `alley_mouse` is given when it is set up at `at` (`EventInstance.path`, which the
+## The dash `alley_mouse` is given when it is set up at `at` (`EventInstance.walks()`, which the
 ## event's own stepping walks): built from the alley it stands in and cut to the ground it fits on.
 func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 	var instance := EventInstance.new()
