@@ -396,7 +396,7 @@ func _run_to_its_end(instance: EventInstance) -> bool:
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
 ## node in the array while never tracking the successor at all.
 ##
-## `finale_explosion`/`impact_crater`, the one row `aftermath.on_finish` governs: a burst that has
+## `finale_explosion`/`impact_crater`, the one row `aftermath.leaves_behind()` governs: a burst that has
 ## run its course leaves its crater where it went off. Spawned directly, since the escape's rows are
 ## not a day's.
 func _test_successor_replaces_its_parent(t: TestRunner) -> void:

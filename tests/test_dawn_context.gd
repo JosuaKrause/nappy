@@ -50,7 +50,7 @@ func _test_a_day_is_handed_the_catalogues_rows_as_the_heat_puts_them(t: TestRunn
 		t.check(asked == expected, "a day at heat %d is handed the catalogue's rows of kind %d"
 				% [heat, kind])
 		for def in expected:
-			if def.heat_response != EventDef.HeatResponse.NONE:
+			if def.answers_to_heat():
 				heated += 1
 	t.check(heated > 0, "some row of day %d responds to the heat (%d)" % [day, heated])
 

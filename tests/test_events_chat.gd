@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## Plus the van: `abduction` draws its own scripted victim rather than touching a real `CrowdAgent`
 ## (docs/TODO.md, M56) -- drawing and telemetry only, so a data-level rig can drive the whole scene
-## by hand -- and `heat_response = HUNTS`, which turns the same row into a pursuer past
+## by hand -- and a `HuntSpec` on the `HUNTS` rung, which turns the same row into a pursuer past
 ## `EventDef.HEAT_HUNTS_LEVEL` (docs/EVENTS.md, "The heat"), stated against the fully heated copy.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again".
@@ -353,10 +353,10 @@ func _test_a_completed_take_is_logged_exactly_once(t: TestRunner) -> void:
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where,
 			RecordingTrace.new(lines))
 	instance_where.tell(Vector2(def.heard_within() - 20.0, 0.0))
-	_advance(instance, instance.row().abduction.taken_over * 0.5)
+	_advance(instance, instance.row().abduction.taken_over() * 0.5)
 	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
 
-	_advance(instance, instance.row().abduction.taken_over)
+	_advance(instance, instance.row().abduction.taken_over())
 	t.check(_takes(lines) == 1, "exactly one entry once it completes (%d)" % _takes(lines))
 
 	# Long past the completion, the count must not grow — the flag latches rather than re-firing.
@@ -371,7 +371,7 @@ static func _takes(lines: Array[String]) -> int:
 		takes += 1 if line.begins_with("taken ") else 0
 	return takes
 
-# `heat_response = HUNTS` turns the same row into a hunter on foot past `EventDef.HEAT_HUNTS_LEVEL` — see
+# a `HuntSpec` on the `HUNTS` rung turns the same row into a hunter on foot past `EventDef.HEAT_HUNTS_LEVEL` — see
 # docs/EVENTS.md, "The heat". Stated against the fully heated copy, the way `tests/test_heat.gd`'s
 # own pursuit tests are.
 

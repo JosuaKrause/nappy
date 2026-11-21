@@ -94,7 +94,7 @@ func _test_the_pursuit_round_trips(t: TestRunner) -> void:
 func _test_the_masked_mans_warning_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)])
-	var her := Vector2(def.notice.runs_within - 20.0, 0.0)
+	var her := Vector2(def.notice.runs_within() - 20.0, 0.0)
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, path, first_where)
 	first_where.tell(her)
@@ -125,7 +125,7 @@ func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t: T
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, path, instance_where)
-	instance_where.tell(Vector2((def.notice.runs_within + def.notice_within()) * 0.5, 0.0))
+	instance_where.tell(Vector2((def.notice.runs_within() + def.notice_within()) * 0.5, 0.0))
 	_advance(instance, Tuning.WARNING_ALONE_MAX + 0.5)
 	t.check(instance.phase == EventInstance.Phase.WARNING,
 			"outside his run distance he is still warning after his warning's length")

@@ -89,7 +89,7 @@ func _label(hud: Hud, node_name: String) -> Label:
 func _pursuer() -> EventInstance:
 	var def := EventDef.new()
 	def.id = "test_pursuer"
-	def.pursuit = PursuitSpec.new()
+	def.pursuit = PursuitSpec.at(0.0)
 	def.telegraph_time = 2.0
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)

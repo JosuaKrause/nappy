@@ -425,13 +425,13 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> vo
 		var own := EventCatalogue.on_foot_on(DaySpec.for_day(day))
 		t.check(out.id == own.id and out.picture() == own.picture(),
 				"day %d: the man out of a patrol car is %s" % [day, own.id])
-		t.check(not out.ends_the_day() and is_equal_approx(out.pursuit.stop_excitement,
+		t.check(not out.ends_the_day() and is_equal_approx(out.pursuit.stop_excitement(),
 				EventCatalogue.OFFICER_STOP_EXCITEMENT),
 				"day %d: and his catch is a stop of %.0f points, never the end of the day"
-				% [day, out.pursuit.stop_excitement])
+				% [day, out.pursuit.stop_excitement()])
 		t.check(not out.warns_before_it_exists() and not out.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"day %d: he gets out in her view, with no off-screen badge" % day)
-		t.check(out.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and out.pursuit.stands
+		t.check(out.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and out.pursuit.stands_for_its_notice()
 				and is_equal_approx(out.telegraphs_for(), Tuning.WARNING_ALONE_MAX)
 				and out.telegraphs_for() >= Tuning.OFFSCREEN_WARNING_MIN,
 				"day %d: he stands with his hand raised for a %.1fs heads-up before he chases"
@@ -859,7 +859,7 @@ func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 			t.check(hot.validate(), "'%s' heat %d: and it is fair" % [id, level])
 	for day: int in [8, 10]:
 		var man := EventCatalogue.out_of_the_car(DaySpec.for_day(day), false)
-		t.check(man.ends_the_day() and man.pursuit.stop_excitement == 0.0 and man.validate(),
+		t.check(man.ends_the_day() and man.pursuit.stop_excitement() == 0.0 and man.validate(),
 				"day %d: a hunting van's man ends the day when he catches her" % day)
 
 ## **No vehicle chases her like a running man, at any heat** *(azure-koala, finding 7: "police cars

@@ -396,7 +396,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
 	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
 	guard.arrive_from_its_warning()
-	guard.restore(EventSave.new(guard.row().pursuit.warns_for + 0.1, 0.0, 0.0))
+	guard.restore(EventSave.new(guard.row().pursuit.warns_for() + 0.1, 0.0, 0.0))
 	var her := Vector2(134.0, 122.0)
 	t.check(guard.ends_the_day() and not guard.is_telegraphing() and not guard.is_waiting()
 			and not guard.is_chasing()

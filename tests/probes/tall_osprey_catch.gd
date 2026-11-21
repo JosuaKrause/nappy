@@ -40,8 +40,7 @@ func run(t: TestRunner) -> void:
 func _def(catch_radius: float, lunge: float) -> EventDef:
 	var def := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
 	def.inner_radius = catch_radius
-	def.pursuit = def.pursuit.duplicate() as PursuitSpec
-	def.pursuit.lunge_reach = lunge
+	def.pursuit = def.pursuit.lunging_from(lunge)
 	return def
 
 func _report(catch_radius: float, lunge: float) -> void:

@@ -564,7 +564,7 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "the take is running")
 	t.check(_never_settles(instance), "a van mid-take is never gated")
-	instance.restore(EventSave.aged(instance.age() + instance.row().abduction.taken_over))
+	instance.restore(EventSave.aged(instance.age() + instance.row().abduction.taken_over()))
 	instance_where.tell(Vector2.INF)
 	instance.step(STEP)
 	t.check(not instance.is_taking_a_victim(), "the take is over")

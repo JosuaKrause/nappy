@@ -27,8 +27,7 @@ func run(t: TestRunner) -> void:
 			var copy := def.duplicate() as EventDef
 			copy.shape = def.ground_shape()
 			copy.solid_parts = def.solid_parts
-			copy.pursuit = def.pursuit.duplicate() as PursuitSpec
-			copy.pursuit.warns_for = warns_for
+			copy.pursuit = def.pursuit.warning_for(warns_for)
 			var said: Array[String] = []
 			for walk: String in ["back", "stand", "bait", "on"]:
 				var r := _walk(t, copy, walk)

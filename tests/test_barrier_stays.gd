@@ -49,7 +49,7 @@ func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null) -> Array
 func _charge(guard: EventInstance, where: WhereSheIs) -> Vector2:
 	var her := where.at()
 	var frames := 0
-	while guard.is_telegraphing() and frames < int((guard.row().pursuit.warns_for + 1.0) / STEP):
+	while guard.is_telegraphing() and frames < int((guard.row().pursuit.warns_for() + 1.0) / STEP):
 		where.tell(her)
 		guard.step(STEP)
 		frames += 1
@@ -390,7 +390,7 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner
 			"a second band's body in the line still hides her")
 	# She walks round to the far side while he warns, and he charges anyway.
 	frames = 0
-	while not guard.is_chasing() and frames < int((guard.row().pursuit.warns_for + 2.0) / STEP):
+	while not guard.is_chasing() and frames < int((guard.row().pursuit.warns_for() + 2.0) / STEP):
 		RoadblockRig.tick(where, made, far, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges her across his own band (%d frames)" % frames)
@@ -418,21 +418,21 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
 	# The catalogue's own row, its arms lengthened for the case and put back after it.
 	var def := _hot_roadblock()
-	var arms := def.pursuit.catch_reach
-	def.pursuit.catch_reach = 90.0
+	var arms := def.pursuit.catch_reach()
+	def.pursuit = def.pursuit.catching_within(90.0)
 	var stage := RoadblockRig.Stage.new(t, map)
 	var guard := stage.stand(EventPlan.new(def, Vector2(2128.0, 80.0)))
 	var body := guard.body_position()
 	var near := _open_ground_either_side(map, body)
 	t.check(near != Vector2.INF, "there is open ground either side of the band")
 	if near == Vector2.INF:
-		def.pursuit.catch_reach = arms
+		def.pursuit = def.pursuit.catching_within(arms)
 		stage.close()
 		return
 	var made: Array[EventInstance] = [guard]
 	var where := stage.manager.world.where_she_is()
 	var frames := 0
-	while not guard.is_chasing() and frames < int((def.pursuit.warns_for + 3.0) / STEP):
+	while not guard.is_chasing() and frames < int((def.pursuit.warns_for() + 3.0) / STEP):
 		RoadblockRig.tick(where, made, near, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges (%d frames)" % frames)
@@ -445,5 +445,5 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 			"the point is within his reach and beyond his band's body")
 	t.check(guard.clear_line_to(across), "he sees it across his own band")
 	t.check(not guard.is_lethal_at(across), "and his catch does not reach through his own band")
-	def.pursuit.catch_reach = arms
+	def.pursuit = def.pursuit.catching_within(arms)
 	stage.close()

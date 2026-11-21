@@ -345,7 +345,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 					"day %d: and it is a place that stands still, not a director's moment" % day)
 			if plan.row().kind != GameEnums.EventKind.ONE_SHOT:
 				crews += 1
-				t.check(plan.row_id() == "poster_crew" and plan.row().on_her_way.at_a_front,
+				t.check(plan.row_id() == "poster_crew" and plan.row().on_her_way.pastes_a_front(),
 						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
 						% [day, plan.row_id()])
 				continue
