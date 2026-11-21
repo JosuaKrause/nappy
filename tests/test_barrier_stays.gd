@@ -307,7 +307,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	guard.step(STEP)
 	her = _charge(guard, where)
 	t.check(not guard.is_telegraphing(), "she stays in his radius and he charges")
-	t.check(guard.barrier_post.has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.barrier_post.has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age])
+	t.check(guard.barrier_post.has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.barrier_post.has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age()])
 	var side := guard.barrier_post.chaser_side()
 	# Stream out in the middle of his walking away.
 	var frames := 0

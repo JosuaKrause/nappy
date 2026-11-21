@@ -412,7 +412,7 @@ func _share_of_its_peak_now() -> float:
 ## size.
 func _mark_is_flashed_off() -> bool:
 	return event.is_telegraphing() \
-			and fmod(event.age * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55
+			and fmod(event.age() * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55
 
 ## What colour the mark is, and it means exactly one thing: **how bad this is.**
 ##
@@ -615,7 +615,7 @@ func robber_waiting_heading() -> Vector2:
 func mast_is_telegraphing_now() -> bool:
 	if _row.pulses_every() <= 0.0:
 		return false
-	return fmod(event.age, _row.pulses_every()) < _row.telegraphs_for()
+	return fmod(event.age(), _row.pulses_every()) < _row.telegraphs_for()
 
 ## Where a protest points (`EventInstance.where_its_placards_point()`), or `Vector2.INF`, nothing
 ## to point at.

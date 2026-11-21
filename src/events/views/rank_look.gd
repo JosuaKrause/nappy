@@ -192,7 +192,7 @@ func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> 
 		_drawer.stand(canvas, EventPictures.GUNMAN, at, Vector2.ZERO,
 				side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
-		var flare := strength * (0.6 + 0.4 * sin(event.age * 17.0 + side * 2.1))
+		var flare := strength * (0.6 + 0.4 * sin(event.age() * 17.0 + side * 2.1))
 		if flare <= 0.25:
 			continue
 		var muzzle := at + Vector2(side * 15.0, -12.0)

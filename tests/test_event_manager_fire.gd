@@ -528,7 +528,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 					"and it is created just out of sight (%.0fpx from her)"
 					% arrived.path[0].distance_to(her_at))
 			# Counted from its creation: the tick that made it took its first step too.
-			var to_reach := arrived.age
+			var to_reach := arrived.age()
 			var reaches := func() -> bool:
 				return arrived.is_lethal_at(her_at) if arrived.def.hard_fail \
 						else arrived.source().contribution_at(her_at) > 0.0

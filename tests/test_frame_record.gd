@@ -466,14 +466,14 @@ func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 			"as one timed call, and the clock goes back to what was running")
 	# Past its telegraph, so its first step announces it, in whatever bucket was running: its step
 	# times nothing itself, so the time spent in the announcement is the rest of the process's.
-	event.age = def.telegraph_time + 0.01
-	var age := event.age
+	event.restore(EventSave.aged(def.telegraph_time + 0.01))
+	var age := event.age()
 	var slept := func(_instance: Variant) -> void: OS.delay_usec(SPENT_US)
 	EventBus.event_activated.connect(slept)
 	event.step(STEP)
 	EventBus.event_activated.disconnect(slept)
 	var stepped := _row_so_far(scratch)
-	t.check(is_equal_approx(event.age, age + STEP)
+	t.check(is_equal_approx(event.age(), age + STEP)
 			and stepped[FrameLedger.FIRST_BUCKET + FrameRecord.PROCESS_REST] >= SPENT_US
 			and stepped[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] < SPENT_US
 			and stepped[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0,

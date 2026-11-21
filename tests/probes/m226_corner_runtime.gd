@@ -48,7 +48,7 @@ func _process(delta: float) -> void:
 		if states.get(id, "") != state:
 			print("CORNER %.3f camera=%s visible=%s badge=%s joystick=%s relative=%s age=%.3f" % [
 					elapsed, on_camera, in_visible_area, badge, joystick,
-					instance.global_position - view.view.get_center(), instance.age])
+					instance.global_position - view.view.get_center(), instance.age()])
 			states[id] = state
 		if on_camera and not in_visible_area and badge and joystick:
 			covered = true

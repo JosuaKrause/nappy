@@ -66,7 +66,7 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t: TestRunner) -> vo
 	manager.world.where_she_is().tell(at + Vector2(def.notice.within - 10.0, 0.0))
 	for _i in 3:
 		manager.event_of(plan).step(STEP)
-	var age := manager.event_of(plan).age
+	var age := manager.event_of(plan).age()
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	var leaving := manager.event_of(plan)
@@ -78,7 +78,7 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t: TestRunner) -> vo
 	streaming.stream_around(at)
 	t.check(plan.is_in_the_world(), "back within reach, it is streamed in again")
 	if manager.event_of(plan):
-		t.close_to(manager.event_of(plan).age, age, "picking up where it left off")
+		t.close_to(manager.event_of(plan).age(), age, "picking up where it left off")
 	streaming.clear()
 	t.check(not plan.is_in_the_world() and manager.walk_events().plans().is_empty(),
 			"cleared, the day's plan is gone")

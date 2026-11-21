@@ -144,7 +144,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			source.flock.build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
-			source.age = phase
+			source.restore(EventSave.aged(phase))
 			for at: Vector2 in [Vector2(-170.0, 30.0), Vector2(20.0, 30.0), Vector2(1000.0, 0.0)]:
 				source.source().set_her_motion(Vector2(92.0, 0.0), 6.0, 0.8)
 				_event_parity(t, source, at, definition.id + " phase/position")
@@ -330,8 +330,8 @@ func _test_consumer_order(t: TestRunner) -> void:
 	# sources use the baseline gross function even when called from existing caret methods.
 	for step in 20:
 		var at := Vector2(210.0 - float(step) * 4.0, 20.0)
-		cached.age += 0.1
-		reference.age = cached.age
+		cached.restore(EventSave.aged(cached.age() + 0.1))
+		reference.restore(EventSave.aged(cached.age()))
 		car.mood().advance(0.1)
 		reference_car.mood().advance(0.1)
 		cached_where.tell(at)
@@ -389,7 +389,7 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
 		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO,
 				PackedVector2Array(), Vector2.RIGHT, EventSurroundings.new().drawn_from(atlas))
-		source.age = 3.0
+		source.restore(EventSave.aged(3.0))
 		manager.add_child(source)
 		source.set_process(false)
 		manager.world.take_in(source)

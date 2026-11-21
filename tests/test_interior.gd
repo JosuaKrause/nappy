@@ -1516,7 +1516,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 				(blows[instance.global_position] as Array[float]).append(live)
 				if instance.is_solid():
 					solid["before_the_notice"] += 1
-			if instance.is_solid() and instance.age < steam.telegraphs_for():
+			if instance.is_solid() and instance.age() < steam.telegraphs_for():
 				solid["before_the_notice"] += 1
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(WINDOW, SCALE), watch, SCALE)
 	t.check(solid["before_the_notice"] == 0,
@@ -1587,7 +1587,7 @@ func _test_a_vent_never_closes_around_her(t: TestRunner) -> void:
 			if instance.is_solid():
 				watched["solid"] += 1
 			watched["charged"] += instance.source().contribution_at(inside) * tick_seconds
-			watched["blowing"] = instance.age > steam.telegraphs_for() and not instance.is_gone()
+			watched["blowing"] = instance.age() > steam.telegraphs_for() and not instance.is_gone()
 		if watched["blowing"]:
 			# Stopped at the frame the contract is about.
 			events.set_physics_process(false)
