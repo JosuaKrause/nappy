@@ -13,7 +13,7 @@ extends Resource
 ## shoving her. She is stopped by it the way she is stopped by anything solid, and nothing follows
 ## her into a wall.
 ##
-## **`obstructs_radius` stays zero, because it closes no ground**: it drives down a carriageway she
+## **`obstructs_within()` stays zero, because it closes no ground**: it drives down a carriageway she
 ## walks round it on. So the planners' disc, the crowd's per-tile record and the director's refusal
 ## of a director-sited body know nothing about it, and the body is `shape` itself, laid along the
 ## car's heading (`EventInstance.solid_axis()`).

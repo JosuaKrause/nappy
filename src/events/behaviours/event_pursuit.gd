@@ -131,7 +131,7 @@ func _chase(delta: float) -> void:
 	# navigator is the one place that gets to say no, so a chase stops where she would. **Swept,
 	# and with its body's reach**: a long frame cannot carry him through a wall a tile thick, and
 	# the ground his radius reaches past the landing point has to be open too. **Not a body**:
-	# `obstructs_radius` is for something that stands still ("Solid things are solid" in
+	# `obstructs_within()` is for something that stands still ("Solid things are solid" in
 	# docs/EVENTS.md), and giving a pursuer one would let a moving wall pin her against a building
 	# on a two-tile pavement, what `dog_walker`'s own exemption exists to avoid. **It slides along
 	# whichever single axis is still open**, the larger first, rather than stopping dead the instant

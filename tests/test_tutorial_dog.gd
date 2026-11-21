@@ -309,7 +309,6 @@ func _test_no_other_day_hands_out_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var row := EventCatalogue.by_id("charging_dog")
 	var dog: EventDef = row.duplicate()
-	dog.shape = row.ground_shape()
 	dog.from_day_after = null
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	t.check(dog.spawn_mode_on(day) == EventDef.SpawnMode.AHEAD_OF_PLAYER,

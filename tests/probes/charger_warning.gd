@@ -25,8 +25,6 @@ func run(t: TestRunner) -> void:
 	for def in _waiting_chargers():
 		for warns_for in TIMES:
 			var copy := def.duplicate() as EventDef
-			copy.shape = def.ground_shape()
-			copy.solid_parts = def.solid_parts
 			copy.pursuit = def.pursuit.warning_for(warns_for)
 			var said: Array[String] = []
 			for walk: String in ["back", "stand", "bait", "on"]:

@@ -10,7 +10,7 @@ extends RefCounted
 ## planned on it), agents placed by hand on a straight stretch of street this seed's map has, and the crowd stepped as it
 ## is in the game (`Crowd.step()`, which gathers the map's separation pass first). The figure is a
 ## move put on the map's list by hand (`WorldMap.moves`), since what the crowd reads is the move and
-## never the event behind it. **The events' own half** — a row's `stands_as` and `when_it_stops`
+## never the event behind it. **The events' own half** — a row's body's `is_walked_round()` and `parks()`
 ## reaching its move, an event leaving the list of moves where it goes, a placement not being a walk
 ## — is asked of real instances and a real event manager and is the event suites' to hold; it stays
 ## here until the events' conversion moves it (`src/events/` and its tests are another agent's).
@@ -174,7 +174,7 @@ func _a_row_on_a_map(t: TestRunner, id: String) -> Dictionary:
 	return {"instance": instance, "map": map,
 			"move": listed[0] if listed.size() == 1 and map.moves.size() == 1 else null}
 
-## **A row's `stands_as` reaches its move** (`EventInstance.setup()`): the patrol car, a vehicle, is
+## **A row's body's `is_walked_round()` reaches its move** (`EventInstance.setup()`): the patrol car, a vehicle, is
 ## walked round while it stands; the charging dog, an animal, is not, so the dog waiting on the map
 ## before its charge may be walked through, as the player allowed. One row of each answer shows the
 ## declaration is handed over rather than fixed. That every row declares it is
@@ -191,7 +191,7 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t: TestRunner) -> void:
 		var instance: EventInstance = rig["instance"]
 		instance.free()
 
-## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
+## **Each row's body's `parks()` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
 ## a stall, which never moves, has parked from the start; the fire engine has not while it
 ## drives and has once it stops at its fire, and not once it leaves; the patrol car and the charging
 ## dog go on, so never. That every row declares it is `EventDef.validate()`'s refusal to load

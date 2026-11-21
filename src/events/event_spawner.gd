@@ -66,8 +66,8 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 ## door body, or a row with no body at all.
 ##
 ## **The row's pieces are laid out by `BodyStance.pieces_at()`**, the one layout the walk's ground and
-## the route rig ask too, and each is rasterised, never the one disc of `obstructs_radius`. A row
-## is solid where `EventDef.body_pieces()` says it is, which is one piece at the origin carrying `shape`
+## the route rig ask too, and each is rasterised, never the one disc of `obstructs_within()`. A row
+## is solid where `BodySpec.pieces()` says it is, which is one piece at the origin carrying `shape`
 ## for every row that declares none — so a one-piece row records exactly the tiles it always did,
 ## and a row solid in parts records its pieces and leaves the ground between them open. That is the
 ## whole of what makes a crash two cars to the crowd rather than a wall: the pieces are a subset of

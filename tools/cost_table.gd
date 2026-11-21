@@ -193,7 +193,7 @@ func _distance_row(def: EventDef, sensitivity: float) -> Dictionary:
 ## Net points from one real pass, `M174Pass.pass_net_averaged()` — the same simulation
 ## `tests/test_events.gd` runs, moving a real instance the way the game moves it and averaging
 ## over its own pulse phase. Offset 0 is dashed for a row with a solid, still body
-## (`obstructs_radius > 0.0`; anything mobile is exempt from that rule and so never sets one):
+## (`obstructs_within() > 0.0`; anything mobile is exempt from that rule and so never sets one):
 ## her own body cannot occupy the same line as a thing she cannot walk through.
 func _pass_row(def: EventDef, sensitivity: float) -> Dictionary:
 	var row := {}
@@ -360,7 +360,7 @@ func _header_text() -> String:
 			"state is driven by where the player is, which the rig never tells it, so there is no " +
 			"pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty " +
 			"for such a row. The 0px column is dashed for a row with a solid, still body " +
-			"(`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
+			"(`obstructs_within() > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
 			"through.")
 	lines.append("")
 	lines.append("**A row that comes at her is met the moment it is created, its telegraph " +

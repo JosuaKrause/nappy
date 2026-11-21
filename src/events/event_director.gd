@@ -584,7 +584,6 @@ static func _with_ground(def: EventDef) -> EventDef:
 	if not def.ground_kinds().is_empty() or not def.is_placed_on_the_map():
 		return def
 	var placed := def.duplicate() as EventDef
-	placed.shape = def.shape
 	placed.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	return placed
 

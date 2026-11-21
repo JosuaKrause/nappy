@@ -60,11 +60,11 @@ func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var row := EventCatalogue.by_id("car_accident")
 	var stood := BodyStance.stands_at(map, row, _AT)
 	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
-	var parts := row.body_pieces()
+	var parts: Array[BodyPiece] = row.body().pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on a north-south street (%d)" % pieces.size())
 	for k in mini(pieces.size(), parts.size()):
-		t.check(pieces[k].center().is_equal_approx(stood + Vector2(parts[k].along, 0.0)),
+		t.check(pieces[k].center().is_equal_approx(stood + Vector2(parts[k].offset_for(false), 0.0)),
 				"piece %d stands across the screen by its own offset" % k)
 		t.check(pieces[k].ground_shape() == parts[k].ground_shape(),
 				"piece %d has its part's own ground shape" % k)
@@ -76,11 +76,11 @@ func _test_the_crash_lies_down_an_east_west_street(t: TestRunner) -> void:
 	var row := EventCatalogue.by_id("car_accident")
 	var stood := BodyStance.stands_at(map, row, _AT)
 	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
-	var parts := row.body_pieces()
+	var parts: Array[BodyPiece] = row.body().pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on an east-west street (%d)" % pieces.size())
 	for k in mini(pieces.size(), parts.size()):
-		t.check(pieces[k].center().is_equal_approx(stood + Vector2(0.0, parts[k].along_vertical)),
+		t.check(pieces[k].center().is_equal_approx(stood + Vector2(0.0, parts[k].offset_for(true))),
 				"piece %d stands down the screen by its own vertical offset" % k)
 		t.check(pieces[k].axis().is_equal_approx(Vector2.DOWN),
 				"piece %d lies down the screen" % k)
@@ -109,7 +109,7 @@ func _carriageway_point() -> Vector2:
 
 func _test_a_shape_with_no_body_has_no_pieces(t: TestRunner) -> void:
 	var row := EventDef.new()
-	row.shape = GroundShape.point(10.0)
+	row.use_body(BodySpec.footprint(GroundShape.point(10.0)))
 	t.check(not row.has_a_body(), "the row has a shape and no body")
 	t.check(BodyStance.pieces_at(WorldMap.open_ground(), row, _AT, Vector2.RIGHT).is_empty(),
 			"a row with no body answers no pieces")

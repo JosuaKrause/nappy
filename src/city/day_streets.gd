@@ -74,7 +74,7 @@ func closure_summary() -> String:
 
 ## Today's region as a siting reads it (`SpawnSiting.Region`): the crossing alleys the wall closes,
 ## and each body of the wall and of the district doors as a disc, its centre and its
-## `obstructs_radius`; null before a day has grown a region plan.
+## `obstructs_within()`; null before a day has grown a region plan.
 ##
 ## **Built once for the plan and handed again until the plan is another plan**: the resistance asks
 ## for it for every candidate tile of a relocation (`ResistanceDirector._nearest_alley_within()`,

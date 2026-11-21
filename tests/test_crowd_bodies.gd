@@ -486,7 +486,7 @@ func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: A
 	return {"probe_walker": walkers[0], "wall": wall, "vertical": vertical, "base": base}
 
 # --------------------------------------------------------- a body in pieces ---
-# `EventSpawner.obstructed_footprint()` rasterises `EventDef.body_pieces()`, laid out through
+# `EventSpawner.obstructed_footprint()` rasterises `BodySpec.pieces()`, laid out through
 # `BodyStance.pieces_at()`, rather than the row's one `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
 # `shape`, and these two tests are the two halves of that sentence: nothing moved for the rows that
 # are one piece, and the crash records its two cars instead of the street they are lying across.
@@ -508,7 +508,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 		var def := EventCatalogue.by_id(id)
 		if def == null or def.ground_shape() == null or def.obstructs_within() <= 0.0:
 			continue
-		t.check(def.body_pieces().size() == 1, "'%s' is one piece, so it is this test's business" % id)
+		t.check(def.body().pieces().size() == 1, "'%s' is one piece, so it is this test's business" % id)
 		# Where the row's body stands once sited at `at`: the instance the spawner makes puts a
 		# stationary, unpinned body on the middle of its pavement band when it is set up.
 		var sited := EventInstance.new()
@@ -542,7 +542,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t: TestRun
 	if run.x < 0:
 		return
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("car_accident"), true)
-	t.check(def.body_pieces().size() == 2, "a crash is two cars (%d pieces)" % def.body_pieces().size())
+	t.check(def.body().pieces().size() == 2, "a crash is two cars (%d pieces)" % def.body().pieces().size())
 	var base := run.x * CityMap.period()
 	var along := run.y + 3
 	# The middle of the carriageway, which is where `SealPlanner._hard_positions` stands the one

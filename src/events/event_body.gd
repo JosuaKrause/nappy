@@ -6,12 +6,12 @@ extends RefCounted
 ## its outward questions about its body through (`is_solid()`, `runs_vertically()`,
 ## `stands_side_on()`, `solid_axis()`, `standing_pieces()`).
 ##
-## **It is handed what never changes under it** (its row, the map, where she is, the node its
+## **It is handed what never changes under it** (its row, the row's body part, the map, where she is, the node its
 ## collision body stands under, how it lies where it landed, and the boom state its arm is) and **tells nothing upward**: the
 ## event asks it, and tells it what happened (it came into the world, it started, its arm moved, its
 ## guard left it), handing it what changes with each call (where the event stands, which way it
 ## heads). Until the row is written as its parts it asks the row under the
-## body part's names (`EventDef.has_a_body()`, `solid_from()`, `body_pieces()` and the rest).
+## row's body part (`BodySpec`) for everything it says about the body.
 ##
 ## **The body and the day's blocked record are one solid read twice**: the body is built from the
 ## row's solid footprint (`EventFootprints.solid_footprint_of()`), and the tiles it is recorded on
@@ -19,8 +19,12 @@ extends RefCounted
 ## `BodyStance.pieces_laid_out()` and `BodyStance.pieces_at()`, so the body that stops her and the
 ## tiles that stop every other mover cannot disagree.
 
-## Its row: its pieces, when it is solid, whether it parks.
+## Its row, for the three things that span the body and what else the row is (whether it moves,
+## whether it drives, and the day's blocked record).
 var _row: EventDef
+## What it is on the ground: its pieces, when it is solid, what a walker takes it for, whether it
+## parks, how it lies.
+var _body: BodySpec
 ## The map it stands on, which the tiles of its body are recorded on.
 var _map: WorldMap
 ## Where she is (`WhereSheIs`): a body never goes down around her.
@@ -49,13 +53,14 @@ var _arm_was_open := false
 ## crowd writes; null for every row but a street door's boom, and read as lowered then.
 var _gate: GateState
 
-## Handed, as its event is set up, its row, the map, where she is, the node its collision body
+## Handed, as its event is set up, its row, the row's body, the map, where she is, the node its collision body
 ## stands under, where it landed (`at`), the way it was sited facing (`face`), and whether the
 ## street it landed on runs it down the screen (`vertical`), and the boom state its arm is (`gate`).
-func _init(row: EventDef, map: WorldMap, where: WhereSheIs, holder: Node2D, at: Vector2,
-		face: Vector2, vertical: bool, gate: GateState = null) -> void:
+func _init(row: EventDef, body: BodySpec, map: WorldMap, where: WhereSheIs, holder: Node2D,
+		at: Vector2, face: Vector2, vertical: bool, gate: GateState = null) -> void:
 	_gate = gate
 	_row = row
+	_body = body
 	_map = map
 	_where = where
 	_holder = holder
@@ -64,17 +69,17 @@ func _init(row: EventDef, map: WorldMap, where: WhereSheIs, holder: Node2D, at: 
 # ------------------------------------------------------------------ questions ---
 
 ## Whether a crowd walker goes round its figure while it stands still, as round an object or a
-## vehicle, rather than through it, as through a person or an animal (`EventDef.is_walked_round()`).
+## vehicle, rather than through it, as through a person or an animal (`BodySpec.is_walked_round()`).
 func is_walked_round() -> bool:
-	return _row.is_walked_round()
+	return _body.is_walked_round()
 
-## Whether its figure parks once it stands (`EventDef.parks()`): a crowd car behind it turns round.
+## Whether its figure parks once it stands (`BodySpec.parks()`): a crowd car behind it turns round.
 func parks() -> bool:
-	return _row.parks()
+	return _body.parks()
 
 ## Whether it has parked from the start: a figure that parks and never moves.
 func has_parked_from_the_start() -> bool:
-	return _row.parks() and not _row.moves()
+	return _body.parks() and not _row.moves()
 
 ## Whether its spread runs down the screen rather than across it.
 func runs_vertically() -> bool:
@@ -106,15 +111,15 @@ func is_in_place() -> bool:
 
 ## **Whether it is solid right now**: its body is down, and it is not a boom whose arm is up.
 func is_solid() -> bool:
-	return _obstruction != null and not (_row.is_a_boom() and _arm_is_up())
+	return _obstruction != null and not (_body.is_a_boom() and _arm_is_up())
 
 ## Whether its boom's arm is up: its gate's state, lowered with none.
 func _arm_is_up() -> bool:
 	return _gate != null and _gate.is_boom_up()
 
-## Whether its body is still to come down once it starts (`EventDef.SolidWhen.ONCE_IT_STARTS`).
+## Whether its body is still to come down once it starts (`BodySpec.SolidWhen.ONCE_IT_STARTS`).
 func waits_to_come_down() -> bool:
-	return _obstruction == null and _row.solid_from() == EventDef.SolidWhen.ONCE_IT_STARTS
+	return _obstruction == null and _body.solid_from() == BodySpec.SolidWhen.ONCE_IT_STARTS
 
 ## **Its solid pieces where they stand**, in world space, for a body whose centre stands at `at` and
 ## which heads along `heading`: each piece's middle offset along its street's axis, its ground shape
@@ -124,7 +129,7 @@ func waits_to_come_down() -> bool:
 ## row but the crash, which stands a piece under each car and leaves the ground between them open, the
 ## whole reason the crowd steps round the cars and walks the debris.
 func standing_pieces(at: Vector2, heading: Vector2) -> Array[StandingPiece]:
-	return BodyStance.pieces_laid_out(_row, at, solid_axis(heading), _spread_vertical)
+	return BodyStance.pieces_laid_out(_body, at, solid_axis(heading), _spread_vertical)
 
 ## The tiles its body is recorded on (`EventSpawner.obstructed_footprint()`) for a body standing at
 ## `at` and heading along `heading`, as a set; empty for a row with no body. Worked out once for
@@ -144,13 +149,13 @@ func tiles_at(at: Vector2, heading: Vector2) -> Dictionary:
 ## shows) is decided from that ground, as it is set up and again when it is moved to other ground.
 func land_at(at: Vector2, face: Vector2, vertical: bool) -> void:
 	_spread_vertical = vertical
-	_stationary_vehicle_side = BodyStance.stands_side_on(_row, _map, at, face)
+	_stationary_vehicle_side = BodyStance.stands_side_on(_body, _map, at, face)
 
 ## It came into the world heading along `heading`: a body solid from its first frame goes down.
-## A row solid once it starts (`EventDef.SolidWhen.ONCE_IT_STARTS`) waits for that
+## A row solid once it starts (`BodySpec.SolidWhen.ONCE_IT_STARTS`) waits for that
 ## (`come_down_clear_of_her()`).
 func come_into_the_world(heading: Vector2) -> void:
-	if _row.has_a_body() and _row.solid_from() != EventDef.SolidWhen.ONCE_IT_STARTS:
+	if _body.has_a_body() and _body.solid_from() != BodySpec.SolidWhen.ONCE_IT_STARTS:
 		go_down(heading)
 
 ## **Its body goes down now**, lying along `heading`'s axis (`solid_axis()`).
@@ -161,15 +166,15 @@ func come_into_the_world(heading: Vector2) -> void:
 ## `StaticBody2D` holds every piece, so nothing downstream (the debug view's bounding-box layer,
 ## which walks the physics tree, or `is_solid()`) has to learn that a row may have more than one.
 func go_down(heading: Vector2) -> void:
-	var body := EventFootprints.solid_footprint_of(_row, solid_axis(heading), _spread_vertical).body()
-	_holder.add_child(body)
-	_obstruction = body
+	var collision := EventFootprints.solid_footprint_of(_body, solid_axis(heading), _spread_vertical).body()
+	_holder.add_child(collision)
+	_obstruction = collision
 
 ## **It started, standing at `at` and heading along `heading`**: a body that waits to come down once
 ## it starts (`waits_to_come_down()`) goes down now, **unless she is standing in it**, in which case
 ## it stays passable until she is out of it.
 ##
-## Her centre comes to rest `EventDef.solid_reach()` + `Tuning.PLAYER_BODY_RADIUS` from the middle
+## Her centre comes to rest `BodySpec.solid_reach()` + `Tuning.PLAYER_BODY_RADIUS` from the middle
 ## of a body, so that distance is exactly "inside it": closing at any point nearer would put a wall
 ## around her rather than in front of her, and the only ways out of one are teleporting her or
 ## deleting the body again, which are a repair and an admission respectively. Deferring costs
@@ -181,7 +186,7 @@ func go_down(heading: Vector2) -> void:
 func come_down_clear_of_her(at: Vector2, heading: Vector2) -> void:
 	if not waits_to_come_down():
 		return
-	if at.distance_to(_where.at()) <= _row.solid_reach() + Tuning.PLAYER_BODY_RADIUS:
+	if at.distance_to(_where.at()) <= _body.solid_reach() + Tuning.PLAYER_BODY_RADIUS:
 		return
 	go_down(heading)
 
@@ -194,7 +199,7 @@ func come_down_clear_of_her(at: Vector2, heading: Vector2) -> void:
 ## the body cannot go down around her: following the arm is enough. Deferred, because the switch
 ## can land while the physics server is mid-query.
 func follow_the_arm() -> void:
-	if not _row.is_a_boom() or _obstruction == null:
+	if not _body.is_a_boom() or _obstruction == null:
 		return
 	var arm_is_up := _arm_is_up()
 	if arm_is_up == _arm_was_open:

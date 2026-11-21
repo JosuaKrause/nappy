@@ -480,11 +480,11 @@ static func leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 ## "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so hard
 ## to do correctly?")* The cost clause asks what a row bills a passer-by for being near it; this asks
 ## whether a passer-by has anywhere left to stand at all, and the two can disagree: `delivery_van`
-## is silent and its 22px `obstructs_radius` stays under the far-lane distance (`EventDef._THE_FAR_LANE`, one tile, 32px), so the cost clause
+## is silent and its 22px `obstructs_within()` stays under the far-lane distance (`EventDef._THE_FAR_LANE`, one tile, 32px), so the cost clause
 ## reads it as friction — but pinned `AT_THE_KERB`, 16px in from the kerb edge, it leaves only
 ## `(SIDEWALK_WIDTH * TILE_SIZE - TILE_SIZE * 0.5) - 22 = 26px` to the frontage, narrower than the
 ## 28px she needs, which `tests/test_events.gd`'s `_test_a_kerbed_body_still_pins_the_frontage`
-## already measures by hand for this one row. Read off `obstructs_radius` and `pavement_side` rather
+## already measures by hand for this one row. Read off `obstructs_within()` and `pavement_side` rather
 ## than off an id, so the next row this narrow is caught the same way without anybody adding it to a
 ## list — and a row whose reach already clears the far-lane distance (`EventDef.reaches_the_far_lane()`) never reaches this, so nothing already a wall
 ## is asked twice.

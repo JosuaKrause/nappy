@@ -139,6 +139,8 @@ FILES: dict[str, str] = {
     # dawn's phases are a folder of the model's.
     "src/events/parts/abduction_spec.gd": "data",
     "src/events/parts/aftermath.gd": "data",
+    "src/events/parts/body_piece.gd": "data",
+    "src/events/parts/body_spec.gd": "data",
     "src/events/parts/day_switch.gd": "data",
     "src/events/event_catalogue.gd": "data",
     "src/events/event_def.gd": "data",

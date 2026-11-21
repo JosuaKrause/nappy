@@ -15,7 +15,7 @@ extends RefCounted
 ## - on its contact for a mast's foot and the swing;
 ## - for a door on a facade, on the sidewalk tile straight below it, inside its reach;
 ## - for day 9's district door, where an inspection lets her out: the gatehouse the arrow names,
-##   `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) past the door's line
+##   `obstructs_within() + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) past the door's line
 ##   along the street, once on each side (`CheckpointController._release_finished_holds()`), so
 ##   day 9 counts two cases a city.
 ##

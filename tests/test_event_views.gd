@@ -353,7 +353,7 @@ func _test_roadblock_guard_stands_clear_of_the_band(t: TestRunner) -> void:
 ## **The barrier's picture covers the ground its body closes, on both axes, and no more.**
 ## *(2026-09-25: "only the barrier doesn't actually reach the full width/height is that
 ## intentional?")* Along the run, the repeated segments reach from one end of the body to the
-## other — the body's own reach along its spine, `obstructs_radius` — broadside across the picture
+## other — the body's own reach along its spine, `obstructs_within()` — broadside across the picture
 ## and end-on up it, where a segment standing on its middle would put the whole column half a
 ## segment up the screen from its own ground. Asked of the roadblock and of the roadworks barrier,
 ## the two rows that draw a capped band through `_draw_spread()`, each drawn with a recording
@@ -1043,7 +1043,7 @@ func _test_reversing_lorry_only_ever_faces_the_side_view(t: TestRunner) -> void:
 ## Every front, back and diagonal view's own ground contact — the vehicle's wheels — sits within a
 ## few pixels of its own canvas's bottom edge, the same edge `Sprites.draw_standing()` places at the
 ## event's ground point (`_draw_eight_view()` always draws at local `Vector2.ZERO`, the same point
-## `_draw_shape_shadow()` centres `def.shape`'s own shadow on, with no per-view offset anywhere in
+## `_draw_shape_shadow()` centres the row's body shape's own shadow on, with no per-view offset anywhere in
 ## between). A picture whose ink stopped well short of the bottom would draw the vehicle floating
 ## above its own shadow. The tolerance is generous on purpose — the fact worth pinning is "close to
 ## the edge," not any one picture's own last row of pixels; `docs/evidence/svg-vehicles-2026-09-10/

@@ -75,7 +75,6 @@ src/events/behaviours/event_abduction.gd duration
 src/events/behaviours/event_abduction.gd id
 src/events/behaviours/event_abduction.gd pursuit
 src/events/behaviours/event_barrier_post.gd guard_sides
-src/events/behaviours/event_barrier_post.gd shape
 src/events/behaviours/event_behaviours.gd abduction
 src/events/behaviours/event_behaviours.gd detain_seconds
 src/events/behaviours/event_behaviours.gd flock_size
@@ -87,7 +86,6 @@ src/events/behaviours/event_behaviours.gd vehicle
 src/events/behaviours/event_car_driving.gd mobile
 src/events/behaviours/event_car_driving.gd paces
 src/events/behaviours/event_car_driving.gd pursuit
-src/events/behaviours/event_car_driving.gd shape
 src/events/behaviours/event_car_driving.gd speed
 src/events/behaviours/event_car_driving.gd stops_where_it_arrives
 src/events/behaviours/event_departure.gd mobile
@@ -95,7 +93,6 @@ src/events/behaviours/event_departure.gd vehicle
 src/events/behaviours/event_flock.gd flock_size
 src/events/behaviours/event_flock.gd flock_spread
 src/events/behaviours/event_investigation.gd mobile
-src/events/behaviours/event_investigation.gd shape
 src/events/behaviours/event_investigation.gd vehicle
 src/events/behaviours/event_notice_run.gd flock_size
 src/events/behaviours/event_notice_run.gd flock_spread
@@ -127,13 +124,11 @@ src/events/event_catalogue.gd flock_size
 src/events/event_catalogue.gd flock_spread
 src/events/event_catalogue.gd from_day_after
 src/events/event_catalogue.gd hard_fail
-src/events/event_catalogue.gd has_a_spread
 src/events/event_catalogue.gd hides_in_its_hold
 src/events/event_catalogue.gd hunts
 src/events/event_catalogue.gd id
 src/events/event_catalogue.gd kind
 src/events/event_catalogue.gd last_day
-src/events/event_catalogue.gd lies_across_its_street
 src/events/event_catalogue.gd look
 src/events/event_catalogue.gd max_per_day
 src/events/event_catalogue.gd may_be_a_pelican
@@ -154,13 +149,8 @@ src/events/event_catalogue.gd repeat_after
 src/events/event_catalogue.gd repeat_every
 src/events/event_catalogue.gd role
 src/events/event_catalogue.gd scripted_day
-src/events/event_catalogue.gd shape
-src/events/event_catalogue.gd solid_parts
-src/events/event_catalogue.gd solid_when
 src/events/event_catalogue.gd spawn_mode
 src/events/event_catalogue.gd speed
-src/events/event_catalogue.gd stands_along_its_street
-src/events/event_catalogue.gd stands_as
 src/events/event_catalogue.gd still_while_telegraphing
 src/events/event_catalogue.gd stops_where_it_arrives
 src/events/event_catalogue.gd telegraph_time
@@ -170,11 +160,8 @@ src/events/event_catalogue.gd vehicle
 src/events/event_catalogue.gd warned_first
 src/events/event_catalogue.gd warning_picture
 src/events/event_catalogue.gd weight
-src/events/event_catalogue.gd when_it_stops
 src/events/event_director.gd id
 src/events/event_director.gd placement
-src/events/event_director.gd shape
-src/events/event_excitement.gd shape
 src/events/event_footprints.gd flock_spread
 src/events/event_footprints.gd warning_picture
 src/events/event_instance.gd counts_charges_as
@@ -185,7 +172,6 @@ src/events/event_instance.gd notice
 src/events/event_instance.gd path_mode
 src/events/event_instance.gd pursuit
 src/events/event_instance.gd redetains
-src/events/event_instance.gd shape
 src/events/event_instance.gd speed
 src/events/event_instance.gd stops_where_it_arrives
 src/events/event_instance.gd vehicle
@@ -200,16 +186,12 @@ src/events/plan_builder.gd path_mode
 src/events/ruled_location_ground.gd id
 src/events/views/event_vehicle_look.gd abduction
 src/resistance/happenings.gd paces
-src/resistance/happenings.gd shape
-src/resistance/happenings.gd solid_parts
 src/resistance/resistance_director.gd id
 src/resistance/resistance_director.gd speed
 src/routes/region_planner.gd guard_sides
 src/routes/seal_planner.gd aftermath
 src/routes/seal_planner.gd guard_sides
 src/routes/seal_planner.gd pavement_side
-src/routes/seal_planner.gd shape
-src/routes/seal_planner.gd solid_parts
 
 # [EventFlock] src/events/behaviours/event_flock.gd
 src/events/event_instance.gd birds

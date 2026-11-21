@@ -74,7 +74,7 @@ func _sweep(map: CityMap, plans: Array[EventPlan], label: String, seed_value: in
 		near.sort()
 		rigs.append("%s %s" % [row.id, str(near)])
 		totals["bodies"] = int(totals["bodies"]) + 1
-		var own := row.body_pieces().size()
+		var own := row.body().pieces().size()
 		var rasterised: Array[Vector2i] = []
 		for k in mini(own, solids.size()):
 			var solid: WalkGround.Solid = solids[k]

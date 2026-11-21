@@ -1034,7 +1034,7 @@ street.
 
 **Every rule below is stated over one disc, and it is not the row's outer radius.** A row denies
 the ground inside which it out-emits `Tuning.EXCITEMENT_DECAY_WALKING` — the rate an ordinary street
-gives back while she walks — plus its `obstructs_radius` wherever it has a body, whichever is
+gives back while she walks — plus its `obstructs_within()` wherever it has a body, whichever is
 larger. Past that crossing a walk through the field nets the meter *down*, so the ground is taken
 without being planned around, and a rule that refused a placement over it would be refusing ground
 nobody has to route around.
@@ -1460,7 +1460,7 @@ burst main (a crater between two barriers) leave no gaps to close and stay at ze
 
 **The seal still seals.** `ClosurePlanner` goes on counting a closed street as closed for the route
 guarantee, and `CityMap.held_streets()` still keeps the crowd off a hard seal's street; both are
-stated over `obstructs_radius` — the ground the scene *closes*, unmoved at 96px — rather than over
+stated over `obstructs_within()` — the ground the scene *closes*, unmoved at 96px — rather than over
 the bodies it puts down. That is the conservative direction and deliberately so: taking obstruction
 away can only add reachable ground, so a day proved winnable against the whole-street band is still
 winnable with two cars standing in it.
@@ -1673,7 +1673,7 @@ happen".)* Every pass that puts something in the city is handed the tile she is 
 chains enter the grid at her own cell, the sealing spares her street, and the events
 (`EventScheduler.build_day()`, drawing the section's marble bag) are never offered ground a body of
 their own would reach her from — a
-tile within `obstructs_radius + PLAYER_BODY_RADIUS` of her, plus the half tile a stationary body
+tile within `obstructs_within() + PLAYER_BODY_RADIUS` of her, plus the half tile a stationary body
 may be moved by when it is centred on its pavement band. It is refused rather than cleared up
 afterwards, and the spawn itself is never checked or moved: a check that rejected a bad spawn is
 the option the player named and rejected.

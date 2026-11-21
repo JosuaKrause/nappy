@@ -428,7 +428,7 @@ func _test_day_one_has_a_working_soft_pair(t: TestRunner) -> void:
 ## the tree"). So the untouched side of a thinned pair, `Tuning.STREET_WIDTH - Tuning.SIDEWALK_
 ## WIDTH` tiles of the far pavement plus the whole carriageway, was never obstructed by this seal
 ## at all — not merely cleared of the surviving body, never touched by either one. Confirmed rather
-## than assumed by checking every soft candidate's own `obstructs_radius` stays within its own
+## than assumed by checking every soft candidate's own `obstructs_within()` stays within its own
 ## pavement (`Tuning.SIDEWALK_WIDTH` tiles), so the surviving body can never bleed across into the
 ## side the thinning pass just opened.
 func _test_thinning_leaves_a_walkable_line(t: TestRunner) -> void:
@@ -488,7 +488,7 @@ func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
 	return null
 
 ## `SealPlanner.positions_across`'s contract for a hard seal: a hard seal's bodies span the street's whole
-## 192px width with no gap between them, whatever the row's own `obstructs_radius` is — see
+## 192px width with no gap between them, whatever the row's own `obstructs_within()` is — see
 ## `seal_planner.gd`'s class doc, "no gap between them." Checked directly for every `HARD`
 ## candidate, including all four dedicated hard-seal pictures, rather than trusted from the
 ## arithmetic alone.
@@ -527,7 +527,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t: TestRunner) -> void:
 	t.check(checked >= 5, "and every hard candidate was checked, M64's four included (%d)" % checked)
 
 ## `fallen_tree`, `car_accident`, `burst_water_main` and `collapsed_frontage` are authored at
-## `obstructs_radius` 96 — exactly half the 192px street — so `positions_across` places exactly one
+## `obstructs_within()` 96 — exactly half the 192px street — so `positions_across` places exactly one
 ## body spanning it edge to edge, rather than repeating the scene several times across the street.
 ## See each row's own class doc in `event_catalogue.gd`.
 func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
@@ -546,14 +546,14 @@ func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
 				% [id, positions.size()])
 
 ## **A placed seal is a duplicate of its catalogue row, and a duplicate drops what is not stored.**
-## `SealPlanner.sealed_variant` carries `shape` and `solid_parts` across by hand because
+## `SealPlanner.sealed_variant` carries the body across by hand because
 ## `Resource.duplicate()` copies neither — both are plain `var`s holding `RefCounted`s, which have
 ## no storage usage. Dropped, a crash falls back to one body spanning the street and **nothing
 ## fails**: it simply seals the gaps its picture shows, which is the defect this milestone exists to
 ## remove, wearing a green suite. Every other row has no parts to lose, so this is stated over the
 ## one that does, on the only path it is ever placed by.
 func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
-	var expected := EventCatalogue.by_id("car_accident").solid_parts.size()
+	var expected := EventCatalogue.by_id("car_accident").body().declared_pieces().size()
 	var found := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -561,9 +561,9 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
 				if plan.row_id() != "car_accident":
 					continue
 				found += 1
-				t.check(plan.row().solid_parts.size() == expected,
+				t.check(plan.row().body().declared_pieces().size() == expected,
 						"seed %d day %d: a placed crash still carries its %d car bodies (%d)"
-						% [map.city_seed(), day, expected, plan.row().solid_parts.size()])
+						% [map.city_seed(), day, expected, plan.row().body().declared_pieces().size()])
 				t.check(plan.ground_shape() != null,
 						"seed %d day %d: and the band its field and picture are stated over"
 						% [map.city_seed(), day])
@@ -703,7 +703,7 @@ func _test_no_seal_reaches_over_a_building(t: TestRunner) -> void:
 ## that fell somewhere she cannot see. The seal is one body spanning the whole carriageway
 ## (`_test_whole_scene_hard_seals_place_a_single_body`), so its position is the middle of the road
 ## and the pit is at the kerb — "covers it" is measured against the body's own
-## `obstructs_radius`, not against the tile it stands on.
+## `obstructs_within()`, not against the tile it stands on.
 ## Not routed through `_seals_for`'s cache: `map.is_tree_pit_emptied()` below reads the map's own
 ## live per-day bookkeeping, which only matches the day this loop is on when the plan was *just*
 ## made for it — a cached plan from earlier in the suite answers for a pit some other day's

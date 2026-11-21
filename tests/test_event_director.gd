@@ -82,6 +82,7 @@ func run(t: TestRunner) -> void:
 	_test_a_place_rigged_just_ahead_is_handed_over_with_its_marble_and_laid_just_ahead(t)
 	_test_a_place_rigged_without_the_setting_is_laid_past_the_band(t)
 	_test_nothing_is_rigged_under_force(t)
+	_test_the_copy_on_her_route_shares_its_rows_body(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
 ## sidewalk (`CityMap.corridor_offset()` 0 to 5), and building east of it. Turned where `vertical`
@@ -566,6 +567,29 @@ func _test_nothing_is_rigged_under_force(t: TestRunner) -> void:
 		director.site_what_is_on_her_way(0.1, _her(), Vector2.UP * Tuning.WALK_SPEED)
 	t.check(not siting.asked.any(func(plan: EventPlan) -> bool: return plan.row_id() == "homeless_yeller"),
 			"and the siting is never asked to lay the man")
+
+## **The copy the director hands out on her route shares its row's body**: a row with no ground of
+## its own is offered the sidewalk and the square (`EventDirector._with_ground()`), a copy of the heated
+## row, and the copy lies as the row does and stands on its shape. A copy that lost the body (a deep
+## copy does, `BodySpec` holding a `GroundShape` no resource can store) has no shape. Rigged on a route here: the loudspeaker mast, whose row names no
+## ground, and the car accident.
+func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
+	var director := EventDirector.new(_street())
+	director.use_way_on(FakeWayOn.new())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	director.start_day(DAY, _no_plans(), rng)
+	var ids: Array[String] = [EventCatalogue.mast().id, "car_accident"]
+	director.rig_her_route(ids, 2)
+	for id in ids:
+		var routed := director.route_row(id)
+		t.check(routed != null, "'%s' is a row of her route's bag" % id)
+		if routed == null:
+			continue
+		t.check(routed.body() == EventCatalogue.by_id(id).body(),
+				"the copy of '%s' on her route is the row's own body" % id)
+		t.check(routed.ground_shape() == EventCatalogue.by_id(id).ground_shape(),
+				"and it stands on the row's own shape")
 
 ## Walks her on the street past `ON_HER_WAY_AFTER`, rigs the man shouting as the next marble on her
 ## route (`just_ahead` as given), and walks on, the clock and her walk's looks ticking together a

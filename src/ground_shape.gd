@@ -89,7 +89,7 @@ static func rect(half_extents_in: Vector2) -> GroundShape:
 ## pavement band leaves 8px a side, under her 14px `Tuning.PLAYER_BODY_RADIUS`, so every pavement
 ## a band blocks today stays blocked; and a capsule of a given reach lies entirely inside the disc
 ## of the same reach it replaces (a capsule's every point is within `reach()` of its own centre,
-## same as a circle's), so every reachability guarantee stated over `obstructs_radius` as a disc
+## same as a circle's), so every reachability guarantee stated over `obstructs_within()` as a disc
 ## radius holds for the capsule by inclusion.
 const BAND_RADIUS := 24.0
 
@@ -104,7 +104,7 @@ static func band(reach: float) -> GroundShape:
 	return GroundShape.point(reach)
 
 ## The furthest any point of the shape lies from its own origin — the worst axis a planner has to
-## clear, and the number every disc-shaped guarantee in the game (`obstructs_radius`, a lethal
+## clear, and the number every disc-shaped guarantee in the game (`obstructs_within()`, a lethal
 ## radius, a park's obstruction allowance) is stated over. A rectangle's is its half-diagonal, the
 ## corner rather than an edge.
 func reach() -> float:

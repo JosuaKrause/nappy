@@ -142,11 +142,12 @@ func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 	if _flock:
 		return []
 	var row := _row
+	var shape := row.ground_shape()
 	return [_from, player_position, player_velocity, velocity,
 		_live_intensity, row.field(), _axis,
-		row.shape.kind if row.shape else -1,
-		row.shape.half_length if row.shape else 0.0,
-		row.shape.half_extents if row.shape else Vector2.ZERO]
+		shape.kind if shape else -1,
+		shape.half_length if shape else 0.0,
+		shape.half_extents if shape else Vector2.ZERO]
 
 ## The field at the translated point, at the live rate, its ellipse oriented by the source's own
 ## velocity rather than the pair's relative heading.

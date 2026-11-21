@@ -57,7 +57,7 @@ func _role_and_depth_sweep() -> void:
 
 	# The crossing-rate metric for item 2: a "crossing" is a corridor street that carries at
 	# least one stationary, solid friction placement — the pavement obstacles M48 gave a real
-	# body to (obstructs_radius > 0, not mobile, so a dog walker's route does not count: he does
+	# body to (obstructs_within() > 0, not mobile, so a dog walker's route does not count: he does
 	# not occupy a lane). Counted as *distinct corridor streets carrying one*, not as raw
 	# placements, because the question is how often she is made to cross, not how many things
 	# are near her.

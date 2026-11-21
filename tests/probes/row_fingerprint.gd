@@ -44,7 +44,7 @@ extends RefCounted
 const FULL := false
 ## Script variables that only cache an answer: filled by the first call that needs them, so a
 ## dump that printed them would depend on what was asked before it.
-const SKIP_VARS: Array[String] = ["_cost_cache", "_default_parts"]
+const SKIP_VARS: Array[String] = ["_cost_cache"]
 ## Methods that are not asked by name. Every method that returns nothing is skipped for that
 ## reason (a writer such as `solid()` changes what
 ## is being measured, and one a later step adds is skipped too); these return something and are
@@ -231,7 +231,7 @@ func _variables(target: Object, prefix: String) -> PackedStringArray:
 func _is_opened(value: Variant) -> bool:
 	if not (value is Object) or value == null:
 		return false
-	if value is EventDef or value is GroundShape or value is EventDef.SolidPart:
+	if value is EventDef or value is GroundShape or value is BodyPiece:
 		return false
 	return (value as Object).get_script() != null
 
@@ -246,8 +246,8 @@ func _text(value: Variant) -> String:
 		var shape := value as GroundShape
 		return "GS(%d,%.4f,%.4f,%s)" % [
 				shape.kind, shape.radius, shape.half_length, shape.half_extents]
-	if value is EventDef.SolidPart:
-		var piece := value as EventDef.SolidPart
+	if value is BodyPiece:
+		var piece := value as BodyPiece
 		return "P(%.4f,%.4f,%s)" % [
 				piece.offset_for(false), piece.offset_for(true), _text(piece.ground_shape())]
 	if value is Array:

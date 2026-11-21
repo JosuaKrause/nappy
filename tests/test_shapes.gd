@@ -1,7 +1,7 @@
 extends RefCounted
 ## `GroundShape`: the datum a shadow and a solid body are both derived from — M61, "one shape per
 ## object". `reach()` and `distance_to_spine()` over a point, a segment and a rectangle; `collision_shape()`'s three resource types; and the invariant every obstructing
-## catalogue row now carries, `shape.reach() == obstructs_radius`, checked over the whole
+## catalogue row now carries, `shape.reach() == obstructs_within()`, checked over the whole
 ## catalogue, every heated copy of every row, and every seal candidate's `sealed_variant()`.
 
 ## How far the probe that asks the physics world "is anything solid here" reaches round its point,

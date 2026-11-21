@@ -316,7 +316,7 @@ func spoils(ground: Rect2) -> bool:
 	return reaches(ground)
 
 ## **Whether this event blocks the way**: placed, not a region door's body (`is_door()`), and
-## either a body she cannot pass (`obstructs_radius`) or a hard fail. An abduction in progress is
+## either a body she cannot pass (`obstructs_within()`) or a hard fail. An abduction in progress is
 ## not something she walks through to reach the park behind it; a door is a crossing she walks
 ## through. What the day's reach (`DayReach`) stands as discs (`blocking_radius()`).
 func obstructs() -> bool:

@@ -109,7 +109,7 @@ func is_quiet_for_its_man() -> bool:
 ## own body, or nobody to be near.
 func _left_her() -> bool:
 	return _where.at() == Vector2.INF or _figure.place().distance_to(_where.at()) \
-			> _row.heard_within() + _row.shape.reach()
+			> _row.heard_within() + _row.ground_shape().reach()
 
 ## Whether it is running its route: before it has stopped for her, and again once it is done.
 func runs_its_route() -> bool:
@@ -120,10 +120,10 @@ func runs_its_route() -> bool:
 ## stops there: nothing stands in a box it cannot leave, and the crossing traffic cannot see a
 ## patrol car's body to wait for it (sunny-finch). False for anything that does not drive.
 func _stands_in_a_junction() -> bool:
-	if _row.vehicle == null or _row.shape == null:
+	if _row.vehicle == null or _row.ground_shape() == null:
 		return false
 	var axis := _figure.solid_axis()
-	var reach := _row.shape.reach()
+	var reach := _row.ground_shape().reach()
 	var at := _figure.place()
 	for i in JUNCTION_SAMPLES + 1:
 		var point: Vector2 = at + axis * lerpf(-reach, reach, float(i) / JUNCTION_SAMPLES)

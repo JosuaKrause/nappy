@@ -52,16 +52,16 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(EventPictures.ARMY_TRUCK_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.MOVING_VAN:
-			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, _row.drawn_width(),
+			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, _row.body().drawn_width(),
 					canvas)
 		EventDef.Look.BURNT_OUT_CAR:
 			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR,
-					_row.drawn_width(), canvas)
+					_row.body().drawn_width(), canvas)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
-## Its shadow is `def.shape` — a point for `burnt_out_car`, a capsule along the street for
-## `moving_van`, whose `obstructs_radius` clears `GroundShape.BAND_RADIUS` — rather than a
+## Its shadow is `def.ground_shape()` — a point for `burnt_out_car`, a capsule along the street for
+## `moving_van`, whose `obstructs_within()` clears `GroundShape.BAND_RADIUS` — rather than a
 ## hand-picked radius of its own.
 func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 		canvas: CanvasItem) -> void:

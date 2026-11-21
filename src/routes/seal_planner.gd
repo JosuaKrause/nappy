@@ -34,7 +34,7 @@ extends RefCounted
 ## `skip_scaffolding_pair`, `burst_main_seal`, `moving_van_pair`, `burnt_out_car_seal` and
 ## `collapsed_frontage_seal` are dedicated seal drawings, each backed by its own `SCRIPTED`,
 ## `scripted_day = 0`, `intensity = 0.0` row in `EventCatalogue` — see the class doc there, "seal
-## pictures". `homeless_yeller` is excluded because it carries no `obstructs_radius`, so it
+## pictures". `homeless_yeller` is excluded because it carries no `obstructs_within()`, so it
 ## obstructs nothing and a pavement with only that on it is not sealed, soft or otherwise.
 ##
 ## **A sealed street's def is never the catalogue's own row.** `sealed_variant` duplicates it and
@@ -524,7 +524,7 @@ static func _place(map: CityMap, segment: StreetNetwork.Segment,
 
 ## A hard seal: the named row, repeated across the street's whole width so nothing can slip past
 ## on either side of it. See `_hard_positions` for how many copies that takes and why the count
-## is a function of the row's own `obstructs_radius` rather than a fixed number.
+## is a function of the row's own `obstructs_within()` rather than a fixed number.
 static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 		def_id: String, along: int = -1) -> Array[EventPlan]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
@@ -555,16 +555,14 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## `road_index` from — and a crossing's two sidewalk bodies keep the row's own default two guards
 ## each (`EventDef.guard_sides`) while the road body between them draws none, so a crossing posts
 ## four rather than six. The choice is carried on the placement: `_no_wall_guards` duplicates the
-## shared def once more, the same manual carry `sealed_variant` already needs for `shape` and
-## `solid_parts`, with `guard_sides` emptied — `_draw_roadblock()` never has to guess a body's
+## shared def once more (a copy shares the row's body), with `guard_sides` emptied — `_draw_roadblock()` never has to guess a body's
 ## position back out of where it happens to stand.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventPlan]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
-	# Overrides the row's own shape too, not only its `obstructs_radius`: `EventDef.validate()`
-	# requires the two to agree, and a point of `Tuning.TILE_SIZE` is what a body this narrow
-	# actually is here, whatever shape the row carries as a catalogue candidate.
-	def.solid(GroundShape.point(Tuning.TILE_SIZE))
+	# A solid body of a point of `Tuning.TILE_SIZE` is what a body this narrow actually is here,
+	# whatever shape the row carries as a catalogue candidate; the rest of what its body says is kept.
+	def.use_body(def.body().reshaped(GroundShape.point(Tuning.TILE_SIZE)))
 	var positions := positions_across(map.tile_rect_to_world(segment.mouth_rect(at_a)),
 			segment.horizontal, def.obstructs_within())
 	var road_def := _no_wall_guards(def) if positions.size() == 3 else null
@@ -581,10 +579,6 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 ## shared def, and giving it no guards would take theirs too.
 static func _no_wall_guards(def: EventDef) -> EventDef:
 	var variant: EventDef = def.duplicate()
-	# `shape` and `solid_parts` need the same manual carry `sealed_variant` documents — plain `var`s
-	# holding `RefCounted`s, which `Resource.duplicate()` does not copy.
-	variant.shape = def.shape
-	variant.solid_parts = def.solid_parts
 	variant.guard_sides = [] as Array[int]
 	return variant
 
@@ -671,17 +665,10 @@ static func _mark_soft_sealed(map: CityMap, tiles: Array[Vector2i]) -> void:
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` for the new callers.
 static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	var variant: EventDef = def.duplicate()
-	# `shape` and `solid_parts` are plain `var`s holding `RefCounted`s rather than `Resource`s, so
-	# they carry no storage usage and `Resource.duplicate()` does not copy either — carried across
-	# by hand instead. Safe to share the references: neither is ever mutated in place. See
-	# `EventDef.at_heat()` for the same note against the other caller of `duplicate()`.
-	#
-	# **The parts matter here more than anywhere**, because this is the only path a crash is ever
-	# placed by: dropped, the row falls back to one body spanning the whole street, and nothing
-	# fails — it simply seals the gaps its picture shows, which is the bug this milestone exists to
-	# fix, wearing a passing test suite.
-	variant.shape = def.shape
-	variant.solid_parts = def.solid_parts
+	# **The body's pieces matter here more than anywhere**, because this is the only path a crash is
+	# ever placed by: a copy that lost them would fall back to one body spanning the whole street,
+	# and nothing would fail — it would seal the gaps its picture shows. The copy shares the row's
+	# body (`BodySpec`), pieces included.
 	variant.aftermath = Aftermath.none()
 	if suppress_recenter and variant.pavement_side == EventDef.Pavement.ANY:
 		variant.pavement_side = EventDef.Pavement.AT_THE_KERB
@@ -706,12 +693,12 @@ static func _cross_section_tiles(segment: StreetNetwork.Segment,
 	return tiles
 
 ## Where a hard seal's bodies stand, spaced so their circles cover the street edge to edge with
-## no gap between them — the geometry a single `obstructs_radius` cannot promise on its own (a
+## no gap between them — the geometry a single `obstructs_within()` cannot promise on its own (a
 ## `barricade` at 62px reaches 124 of the street's 192, which is most of it and not all of it).
 ##
 ## **The count is a function of the row's own radius, not a constant.** `copies` is the fewest
 ## bodies whose circles still touch their neighbours across the whole width, so a wider or
-## narrower future hard candidate gets exactly the coverage its own `obstructs_radius` calls for —
+## narrower future hard candidate gets exactly the coverage its own `obstructs_within()` calls for —
 ## the count is derived, never chosen per row, which is the whole of what "generic over the
 ## candidate list" asks for here.
 ##
@@ -736,7 +723,7 @@ static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 
 ## The same spacing arithmetic as `_hard_positions`, generalised to any world rect rather than a
 ## segment's own whole `tile_rect()`, and to a radius alone rather than one def's own
-## `obstructs_radius` — `place_hard_on` hands it a one-tile-deep mouth rect, and `RegionPlanner`'s
+## `obstructs_within()` — `place_hard_on` hands it a one-tile-deep mouth rect, and `RegionPlanner`'s
 ## door structure hands it the same rect again to place three *different* defs (two huts and a
 ## gate) at the wall's own three-body spacing, which a def-typed signature could not do without a
 ## dummy def to carry the radius. Otherwise identical geometry either way: cover `world`'s
@@ -852,7 +839,7 @@ static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_star
 	return _alley_mouth_plan(map, rect, vertical, at_start, def)
 
 ## The row of `pictures` that best fills a two-tile alley mouth today — the widest
-## `obstructs_radius` among today's eligible rows, since a wider body leaves less of the mouth's own
+## `obstructs_within()` among today's eligible rows, since a wider body leaves less of the mouth's own
 ## 64px open beside it, and never one wider than the mouth (`_widest_that_fits_a_mouth()`). Generic
 ## over the candidate list for the same reason `_place` is: a future candidate with a wider row
 ## simply wins this pick on the days it is eligible.
@@ -878,7 +865,7 @@ static func _alley_mouth_def(pictures: Array[Candidate], day: int) -> String:
 				ids.append(id)
 	return _widest_that_fits_a_mouth(ids)
 
-## Of `ids`, the row with the widest `obstructs_radius` whose body still fits a through-alley's
+## Of `ids`, the row with the widest `obstructs_within()` whose body still fits a through-alley's
 ## mouth — `Tuning.ALLEY_WIDTH_TILES` across, so twice its radius no wider than that — or `""` when
 ## none does. The first of equals, in `ids`' own order.
 static func _widest_that_fits_a_mouth(ids: Array[String]) -> String:

@@ -75,7 +75,7 @@ class Region:
 	var walled_alleys: Array[Rect2i] = []
 	## Where each body of the wall and the doors stands, in world px.
 	var centres := PackedVector2Array()
-	## How far each body's disc reaches from its centre (`EventDef.obstructs_radius`), paired with
+	## How far each body's disc reaches from its centre (`EventDef.obstructs_within()`), paired with
 	## `centres` index for index.
 	var radii := PackedFloat64Array()
 

@@ -541,7 +541,7 @@ empty street.
   but may walk through a person or an animal standing still** (inbox #905 in freckled-moose): he walks round a
   parked van, the patrol car at a light or the fire engine at its fire, and through a street
   musician, a policeman standing for his notice or a dog waiting or crouched before its charge.
-  Each row says which it is (`EventDef.stands_as`); a figure counts as under way for a third of a
+  Each row says which it is (its body's `is_walked_round()`); a figure counts as under way for a third of a
   second after it last moved. An object with a solid body, a stall or a café's tables, is walked
   round by its tiles as well. A person or an animal put on the map who has not yet taken a step, a dog
   waiting for her or a policeman at his post, is a figure standing still, so he is walked through.
@@ -565,7 +565,7 @@ empty street.
   that has parked it turns round**, as it does at a blocked street, rather than hold the lane all
   day: the fire engine once it is at its fire. Behind one that is only stopping — the patrol car at
   a red light or while its man is out, a dog standing for its notice — it waits until it moves.
-  Each row says whether its figure parks (`EventDef.when_it_stops`), and the figure says when it
+  Each row says whether its figure parks (its body's `parks()`), and the figure says when it
   has: one that drives to where it stops has parked only once it is there, so the fire engine at a
   red light on its way is waited for. What was placed and never moved, a stall or a barricade, is left
   to the map: it is a blockage by its tiles, as it always was, and a thing standing there with no
@@ -1121,7 +1121,7 @@ the direct line is not, rather than cutting the corner of a building or a barrie
 unclamped chase would. **The step is swept**: every tile it crosses is asked, so a long frame cannot
 carry a chaser through a wall a tile thick, and the ground his body's reach takes past where he
 lands, in the way he is going, has to be open too. It is not a body — a pursuer stays exempt from
-`obstructs_radius` for the same reason `dog_walker` is, a moving wall on a two-tile pavement pins her
+`obstructs_within()` for the same reason `dog_walker` is, a moving wall on a two-tile pavement pins her
 against a building.
 
 **Nor does it reach through them: it catches her only by touching her.** *(freckled-goose, #544:

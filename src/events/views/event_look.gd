@@ -389,7 +389,7 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if _shadow_pieces.is_empty() or axis != _shadow_axis or vertical != _shadow_vertical:
 		_shadow_axis = axis
 		_shadow_vertical = vertical
-		_shadow_pieces = BodyStance.pieces_laid_out(_row, Vector2.ZERO, axis, vertical)
+		_shadow_pieces = BodyStance.pieces_laid_out(_row.body(), Vector2.ZERO, axis, vertical)
 	for piece in _shadow_pieces:
 		piece.ground_shape().draw_shadow(canvas, origin + piece.center(), piece.axis())
 
