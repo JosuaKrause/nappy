@@ -613,7 +613,9 @@ const ROUTE_SKIP_LIMIT := 64
 ## route — is handed out the moment it is drawn, like any other marble: its owed slot and the marble
 ## are spent, and the place goes on the list of what her walk sites (`site_what_is_on_her_way()`),
 ## unplaced, the way day 3's fire waits there. That half sites it on its own cadence: on the nearest
-## free location of the branch of the day's route tree she is walking, past the streaming band, in a
+## free location of the branch of the day's route tree she is walking, past the streaming band
+## (`WalkSiting.lay_ahead()`), or, for a row its rig asked laid just ahead (day 6's man shouting, day 7's
+## van; `rig_her_route()`), just ahead of her and out of her view (`WalkSiting.lay_just_ahead()`), in a
 ## unit that has not drawn where her way has one (`WalkSiting`), through every acceptance rule a
 ## dawn placement is under, so it is never seen to appear, it is reachable on the route she is
 ## walking, and it is in the world once she walks on; and it re-sites it ahead of her if she turns

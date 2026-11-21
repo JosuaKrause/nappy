@@ -137,21 +137,19 @@ class Step extends RefCounted:
 	## mark (`ResistanceDirector._rig_her_route_for()`), or 0 for a task that rigs nothing there. The
 	## row is the mast's, for a `TargetKind.MAST` task.
 	var rigs_within := 0
-	## Whether the place its rigged row is handed to her walk as is laid just ahead of her, on her
-	## path and out of her view (`WalkSiting.lay_just_ahead()`), rather than past the streaming band
-	## (`WalkSiting.lay_ahead()`): day 6's second man shouting and day 7's second van. Set by
+	## Whether her walk lays the rigged row just ahead of her, on her path and out of her view
+	## (`WalkSiting.lay_just_ahead()`), rather than past the streaming band (`WalkSiting.lay_ahead()`): day 6's second man shouting and day 7's second van. Set by
 	## `lay_the_rigged_row_just_ahead()`. *(inbox #1520 in breezy-magpie: "the bag gets the biased
 	## bag in front (via the chained bags mechanism) and the next draw (whenever that happens) will
 	## guarantee the shouting man" · inbox #1549: "you would draw only for the path and only just
 	## ahead".)*
 	var _lays_its_rigged_row_just_ahead := false
 
-	## Sets that the place its rigged row is handed to her walk as is laid just ahead of her.
+	## Makes her walk lay the rigged row just ahead of her.
 	func lay_the_rigged_row_just_ahead() -> void:
 		_lays_its_rigged_row_just_ahead = true
 
-	## Whether the place its rigged row is handed to her walk as is laid just ahead of her
-	## (`lay_the_rigged_row_just_ahead()`).
+	## Whether her walk lays the rigged row just ahead of her (`lay_the_rigged_row_just_ahead()`).
 	func lays_its_rigged_row_just_ahead() -> bool:
 		return _lays_its_rigged_row_just_ahead
 
