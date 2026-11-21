@@ -789,7 +789,7 @@ written once, after it is final.
   `test_police_car`, `test_fire_truck_body`, `test_car_front`, `test_protest`,
   `test_events_chat`, the drawing suites: one real live event on open ground or a hand-drawn map,
   a `WhereSheIs` the test moves, a fake navigator where a wall matters, and what a look shows read
-  off a recording drawer handed to the event before `setup()` (`tests/recording_event_drawer.gd`)
+  off a recording drawer handed to the event in its setup call (`tests/recording_event_drawer.gd`)
   or, for a question no picture answers, off a look the suite makes with `EventLooks.for_row()`
   round a `FakeEvent` (*proposed, not asked for:* the plainer alternative is that the live event's
   public `look` stays for them); the event manager and its
