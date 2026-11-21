@@ -97,7 +97,8 @@ func _director(t: TestRunner) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(), _city, null,
+	director.setup(_city.map, _city.run, RunCity.events(_city), _city.streets(), _city.fronts(),
+			_city, null,
 			RunCity.spawn_siting(_city))
 	return director
 

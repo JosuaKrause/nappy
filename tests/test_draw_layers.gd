@@ -218,7 +218,8 @@ func _test_the_slices_go_with_their_event(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
+	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
+			PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(WorldMap.open_ground()) \
 				.drawn_in(world) \
 				.drawn_from(atlas))
@@ -278,7 +279,8 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 			t.add_child(world)
 			var instance := EventInstance.new()
 			var drawer := RecordingEventDrawer.new(atlas)
-			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(), Vector2.RIGHT,
+			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0),
+					PackedVector2Array(), Vector2.RIGHT,
 					EventSurroundings.new().on(_ground_in(vertical)) \
 						.drawn_in(world) \
 						.drawn_from(atlas) \

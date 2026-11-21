@@ -7,7 +7,7 @@ extends RefCounted
 ## `paint_band()` lays the part of a wide scene that falls in one slice's band; and `scenery()`
 ## builds the scenery that stands behind one slice of a crash or a burst main. The event's manager
 ## builds one over its atlas (`EventManager.use_atlas()`) and every instance it makes is handed it
-## (`EventSpawner.create()`, `EventInstance.drawer`); an instance nobody handed one (a suite's, a
+## (`EventSpawner.create()`, through `EventSurroundings.drawing_through()`); an instance nobody handed one (a suite's, a
 ## developer's rig) draws through one of its own over its own atlas.
 ##
 ## The look decides which picture the event shows where (a café sitter turned to her table, an end

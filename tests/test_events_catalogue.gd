@@ -705,7 +705,7 @@ func _test_a_spread_cap_matches_what_it_obstructs(t: TestRunner) -> void:
 		var axis := "end-on" if vertical else "broadside"
 		var along := Vector2.DOWN if vertical else Vector2.RIGHT
 		var instance: EventInstance = await DrawnEvent.stand(t, def, vertical)
-		var drawer: RecordingEventDrawer = instance.drawer
+		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
 		var segment := EventPictures.roadwork_segment_texture(vertical)
 		# Each slice's draws in its own order, the slices far end first.
 		var slices: Array = []
@@ -801,7 +801,7 @@ func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 	for is_vertical: bool in [false, true]:
 		var texture := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
 		var instance: EventInstance = await DrawnEvent.stand(t, tree, is_vertical)
-		var drawer: RecordingEventDrawer = instance.drawer
+		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
 		var wholes: Array[Rect2] = []
 		for entry in drawer.shown():
 			if entry.kind == &"band" and entry.picture == texture:

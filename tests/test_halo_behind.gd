@@ -23,7 +23,8 @@ func _test_the_rim_is_painted_before_the_scene(t: TestRunner) -> void:
 		# stands on decides.
 		var ground: WorldMap = EastWestStreet.new() if vertical else WorldMap.open_ground()
 		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(),
+				Vector2.RIGHT,
 				EventSurroundings.new().on(ground) \
 					.drawn_from(atlas))
 		t.add_child(instance)
@@ -56,7 +57,8 @@ func _test_the_rim_is_given_back_when_the_slices_go(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+	instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(),
+			Vector2.RIGHT,
 			EventSurroundings.new().drawn_from(atlas))
 	t.add_child(instance)
 	await t.get_tree().process_frame

@@ -1287,7 +1287,8 @@ func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
+	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0), PackedVector2Array(),
+			Vector2.RIGHT,
 			EventSurroundings.new().on(map) \
 				.moving_by(Navigator.new(map)) \
 				.hearing(instance_where))

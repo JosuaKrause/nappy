@@ -1,6 +1,6 @@
 extends EventDrawer
 ## An event drawer that records what a look tells it to draw instead of painting it, handed to an
-## instance through `EventInstance.drawer` the way its manager's spawner hands the real one. A check
+## instance through `EventSurroundings.drawing_through()` the way its manager's spawner hands the real one. A check
 ## reads the pictures an event was drawn with off this, without reading what the look holds; which
 ## picture an event shows where is the look's to decide, and how a picture looks on a canvas is the
 ## real drawer's.

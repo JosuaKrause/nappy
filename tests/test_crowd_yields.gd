@@ -165,7 +165,8 @@ func _rng(day: int) -> RandomNumberGenerator:
 func _a_row_on_a_map(t: TestRunner, id: String) -> Dictionary:
 	var map := WorldMap.open_ground()
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id(id), Vector2(100.0, 100.0), PackedVector2Array(), Vector2.RIGHT,
+	instance.setup(EventCatalogue.by_id(id), Vector2(100.0, 100.0), PackedVector2Array(),
+			Vector2.RIGHT,
 			EventSurroundings.new().on(map) \
 				.drawing_nothing())
 	t.add_child(instance)

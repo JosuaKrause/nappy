@@ -111,7 +111,8 @@ func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("dog_walker")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(40.0, 0.0)]), Vector2.RIGHT,
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(40.0, 0.0)]),
+			Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
 	instance_where.tell(Vector2(0.0, 2000.0))
 	var frames := 0

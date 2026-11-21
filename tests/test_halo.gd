@@ -33,7 +33,7 @@ const STEP := 1.0 / 60.0
 const WALK_FRAMES := 40
 
 ## The events' atlas page, held for the suite: an event in the tree is drawn on real frames, and the
-## game hands every one it places its world's library (`EventInstance.atlas`).
+## game hands every one it places its world's library (`EventSurroundings.drawn_from()`).
 var _atlas := AtlasLibrary.new()
 
 func run(t: TestRunner) -> void:

@@ -9,8 +9,8 @@ extends RefCounted
 ## Nothing here calls a `_draw_*` function directly — `Sprites.draw_standing()` and the raw
 ## `canvas.draw_*` calls inside them are only valid from an actual draw pass. A check about where a
 ## picture stands or which way it faces hands the instance a recording drawer
-## (`tests/recording_event_drawer.gd`) through `EventInstance.drawer`, the member its manager's
-## spawner assigns, lets real frames draw it, and reads what the look told the drawer to draw; one
+## (`tests/recording_event_drawer.gd`) through `EventSurroundings.drawing_through()`, as its manager's
+## spawner hands one in, lets real frames draw it, and reads what the look told the drawer to draw; one
 ## about a selector asks the selector the look asks (`select_view()`, the `_BY_VIEW` tables). The
 ## rendered evidence sheets under
 ## `docs/evidence/m108-event-people-2026-09-11/` and `docs/evidence/m108-event-vehicles-2026-09-11/`
@@ -420,13 +420,16 @@ func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 		return
 	var barrier := EventCatalogue.by_id("construction")
 	var across_a_horizontal := EventInstance.new()
-	across_a_horizontal.setup(barrier, map.tile_to_world(horizontal.position + horizontal.size / 2), PackedVector2Array(), Vector2.RIGHT,
+	across_a_horizontal.setup(barrier,
+			map.tile_to_world(horizontal.position + horizontal.size / 2), PackedVector2Array(),
+			Vector2.RIGHT,
 			EventSurroundings.new().on(map))
 	t.check(across_a_horizontal.runs_vertically(),
 			"a horizontal alley gets a vertical barrier spread across its mouth")
 	across_a_horizontal.free()
 	var across_a_vertical := EventInstance.new()
-	across_a_vertical.setup(barrier, map.tile_to_world(vertical.position + vertical.size / 2), PackedVector2Array(), Vector2.RIGHT,
+	across_a_vertical.setup(barrier, map.tile_to_world(vertical.position + vertical.size / 2),
+			PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(map))
 	t.check(not across_a_vertical.runs_vertically(),
 			"a vertical alley keeps a horizontal barrier spread across its mouth")
@@ -798,7 +801,8 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	# The sent robber arrives chasing, with no notice to be alert through.
 	var sent_where := WhereSheIs.nowhere()
 	var sent := EventInstance.new()
-	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(),
+			Vector2.RIGHT,
 			EventSurroundings.new().hearing(sent_where) \
 				.drawing_through(DrawnEvent.recording(sent, RecordingEventDrawer.new())))
 	_hold(sent, sent_where, Vector2(300.0, 0.0), STEP)

@@ -39,7 +39,7 @@ static func build(parent: Node, def: EventDef, vertical: bool,
 			EventSurroundings.new().on(ground) \
 				.hearing(where) \
 				.drawn_from(atlas) \
-				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(atlas))))
+				.drawing_through(recording(instance, RecordingEventDrawer.new(atlas))))
 	parent.add_child(instance)
 	return instance
 
@@ -63,4 +63,4 @@ static func drawer_of(instance: EventInstance) -> RecordingEventDrawer:
 ## What `instance` shows now: the pictures its drawer recorded for the time each canvas was last
 ## drawn (`RecordingEventDrawer.shown()`).
 static func shown(instance: EventInstance) -> Array[Dictionary]:
-	return DrawnEvent.drawer_of(instance).shown()
+	return drawer_of(instance).shown()

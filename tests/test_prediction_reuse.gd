@@ -138,8 +138,8 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		var source_where := WhereSheIs.nowhere()
 		var source := CountedEvent.new()
 		source.setup(_copy_definition(definition), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT, null, null,
-			source_where)
+			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(source_where))
 		if source.def.flock_size > 0:
 			source.flock.build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id + " before player")
@@ -316,11 +316,11 @@ func _test_consumer_order(t: TestRunner) -> void:
 	var car := CountedCrowd.new()
 	var reference_car := ReferenceCrowd.new()
 	cached.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT, null, null,
-			cached_where)
+			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(cached_where))
 	reference.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT, null, null,
-			reference_where)
+			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
+			EventSurroundings.new().hearing(reference_where))
 	for source: CrowdAgent in [car, reference_car]:
 		source.kind = CrowdAgent.Kind.CAR
 		source._speed = 80.0
@@ -387,8 +387,8 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 		manager.set_physics_process(false)
 		managers.append(manager)
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
-		source.atlas = atlas
-		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
+		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO,
+				PackedVector2Array(), Vector2.RIGHT, EventSurroundings.new().drawn_from(atlas))
 		source.age = 3.0
 		manager.add_child(source)
 		source.set_process(false)

@@ -387,7 +387,8 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	map.fill_rect(Rect2i(0, 0, 8, 8), GameEnums.TileType.SIDEWALK)
 	map.set_tile(Vector2i(4, 4), GameEnums.TileType.BUILDING)
 	var guard := EventInstance.new()
-	guard.setup(EventCatalogue.by_id("alley_robbery"), Vector2(122.0, 134.0), PackedVector2Array(), Vector2.RIGHT,
+	guard.setup(EventCatalogue.by_id("alley_robbery"), Vector2(122.0, 134.0),
+			PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(map) \
 				.moving_by(Navigator.new(map)))
 	t.add_child(guard)
