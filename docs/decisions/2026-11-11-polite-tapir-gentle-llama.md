@@ -6,7 +6,7 @@ in olive-ferret). This group is "the city edge's kinds". Fable's quota is out, a
 "yes, continue with one fable task at a time and use opus for it" (grassy-bison #1560), so an Opus agent
 designed and built it in Fable's place; the pull request (#1564) carries the `fable-only` label. It was
 held unmerged for Fable's review of the design (entry grassy-ibis) until the player lifted that
-hold while Fable's quota is out (inbox #1571), and merged on its Opus review.
+hold while Fable's quota is out (inbox #1571 in teal-quail), and merged on its Opus review.
 
 **What was built.** `CityEdge` (`src/city/city_edge.gd`, the world-layer node that draws where the
 main road leaves the map) had one enum answering two questions: which way out of the city she takes,

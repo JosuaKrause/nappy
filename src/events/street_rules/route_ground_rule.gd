@@ -69,7 +69,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## streets no line is flooded, as on a street (`RouteLineRule`, `RouteSidewalkRule`); the route's
 ## own tiles there stay free of cost, which is stricter than asking whether a free way round exists.
 func _denies_a_route_off_the_streets(candidate: EventPlan) -> bool:
-	var reach := candidate.row().line_reach()
+	var reach := candidate.line_reach()
 	if reach <= 0.0:
 		return false
 	var centre := candidate.walks()[0] if candidate.walks_a_beat() else candidate.placed_at()

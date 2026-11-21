@@ -67,7 +67,7 @@ The rules live in `.claude/skills/`, one per kind of work. **A `PreToolUse` hook
 govern it are read whole** (inbox #1267 in olive-ferret): the refusal names each skill with its path and size, and
 the same edit made again passes once the transcript of the session or sub-agent making it shows each skill read (a
 Read of the whole file, a Skill call, or another tool call, a shell or script command, naming the file); the check and its
-cap of three attempts are the orchestrator's proposal (sandy-trout). No hook prints a skill's text to a Claude Code session, since the
+cap of three attempts are the orchestrator's proposal (sandy-trout), which the player approved (inbox #1588 in teal-quail). No hook prints a skill's text to a Claude Code session, since the
 harness cuts a long hook output to its opening.
 
 **A rule you have to remember to load is not a rule**: every skill exists to stop a mistake already

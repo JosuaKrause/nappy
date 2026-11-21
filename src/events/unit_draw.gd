@@ -116,7 +116,7 @@ func draw_in_their_order() -> Array[EventPlan]:
 		if not unit.is_drawn():
 			placed.append_array(_draw_among(unit, before))
 		for plan in unit.drawn():
-			if not plan.row().is_handed_to_her_walk():
+			if not plan.is_handed_to_her_walk():
 				before.append(plan)
 	return placed
 
@@ -132,7 +132,7 @@ func _draw_alone(unit: PlacementUnit) -> Array[EventPlan]:
 		if not other.is_drawn():
 			continue
 		for plan in other.drawn():
-			if not plan.row().is_handed_to_her_walk():
+			if not plan.is_handed_to_her_walk():
 				among.append(plan)
 	return _draw_among(unit, among)
 

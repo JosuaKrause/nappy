@@ -13,7 +13,7 @@ func _init(doors: PackedVector2Array) -> void:
 func allows(candidate: EventPlan, _tile: Vector2i,
 		_placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
 	return clear_of_the_doors(candidate.body_at(), candidate.walks(), _doors,
-			candidate.row().field_reach())
+			candidate.field_reach())
 
 ## Whether a placement keeps `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around every one of
 ## today's region-door bodies — *"there should be a gap for events immediately surrounding the

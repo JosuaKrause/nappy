@@ -169,10 +169,10 @@ static func room_around(candidate: EventPlan, already: Array[EventPlan]) -> floa
 		var gap := candidate.gap_to(plan)
 		if gap < EventScheduler.EVENT_SPACING_ANY:
 			return -INF
-		if plan.keeps_its_field_clear() and gap < plan.row().field_reach():
+		if plan.keeps_its_field_clear() and gap < plan.field_reach():
 			return -INF
 		if plan.is_the_same_row_as(candidate):
 			room_same = minf(room_same, gap)
-		if candidate.keeps_its_field_clear() and gap < candidate.row().field_reach():
+		if candidate.keeps_its_field_clear() and gap < candidate.field_reach():
 			return -INF
 	return INF if room_same >= EventScheduler.EVENT_SPACING_SAME else room_same

@@ -111,8 +111,8 @@ func _closes_its_last_sidewalk(street: StreetNetwork.Segment, candidate: EventPl
 ## its band as the escape reads the same hunting roadblock (`WalkGround`). *Read as (the
 ## orchestrator's, open to the player's correction):* the band is the roadblock's body at every heat.
 static func _closing_radius(plan: EventPlan) -> float:
-	if plan.row().spans_the_street():
-		return plan.row().obstructs_within()
+	if plan.spans_the_street():
+		return plan.obstructs_within()
 	return plan.blocking_radius()
 
 ## Whether one of `bands` can be walked junction to junction past `bodies`.
