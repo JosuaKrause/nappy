@@ -184,6 +184,11 @@ func _dump(target: Object, prefix := "") -> PackedStringArray:
 			continue
 		for combo: Array in combos:
 			var answer: Variant = target.callv(name, combo)
+			if answer is Object and answer != target \
+					and (answer as Object).get_script() == target.get_script():
+				# A refinement (`PursuitSpec.standing()`) answers a new value of its own class, which
+				# would open another to open again without end; a value is printed by its questions.
+				continue
 			var shown := combo.map(func(v: Variant) -> String: return _text(v))
 			var call := "%s%s(%s)" % [prefix, name, ",".join(shown)]
 			if _is_opened(answer):

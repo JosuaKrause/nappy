@@ -55,8 +55,8 @@ func scar_id() -> String:
 	return _scar
 
 ## Whether the scar it leaves is the one `scar_id` names.
-func leaves_the_scar(id: String) -> bool:
-	return _scar == id
+func leaves_the_scar(scar_id: String) -> bool:
+	return _scar == scar_id
 
 func _copy() -> Aftermath:
 	var after := Aftermath.new()
