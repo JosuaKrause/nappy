@@ -270,7 +270,7 @@ func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 			GroundShape.rect(Vector2(400.0, 300.0))]:
 		var long_body: EventDef = EventCatalogue.by_id("scaffolding").duplicate()
 		long_body.use_field(FieldSpec.of(10.0, 20.0, 60.0))
-		long_body.solid(shape)
+		long_body.use_body(BodySpec.solid(shape))
 		rows.append(long_body)
 	var node := Vector2(300.0, -200.0)
 	var differed := 0

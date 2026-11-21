@@ -464,7 +464,6 @@ func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 	var def := EventDef.new()
 	def.id = "test_hard_fail"
 	def.use_body(BodySpec.none().walked_round().going_on())
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.use_field(FieldSpec.of(20.0, 40.0, 120.0))
 	def.hard_fail = true
 	def.telegraph_time = def.minimum_telegraph()
