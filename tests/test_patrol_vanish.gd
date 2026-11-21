@@ -253,10 +253,13 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t: TestRunner) -> void:
 	var plan: EventPlan = rig[2]
 	var home := her.global_position
 	var ticks := 0
-	while ticks < PhysicsTicks.ticks_for(30.0, SPEED) and (not plan.is_in_the_world() or not RunCity.events(city).event_of(plan).is_leaving):
+	var events := RunCity.events(city)
+	while ticks < PhysicsTicks.ticks_for(30.0, SPEED) \
+			and (not plan.is_in_the_world() or not events.event_of(plan).is_leaving):
 		await _frame(t, city)
 		ticks += 1
-	t.check(plan.is_in_the_world() and RunCity.events(city).event_of(plan).is_leaving, "the patrol ran out of route and is leaving")
+	t.check(plan.is_in_the_world() and events.event_of(plan).is_leaving,
+			"the patrol ran out of route and is leaving")
 	her.global_position = home + Vector2(0.0, 2400.0) # a teleport, see above
 	await _frame(t, city)
 	t.check(not plan.is_in_the_world(), "she is far away and it is streamed out")

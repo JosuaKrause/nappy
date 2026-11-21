@@ -340,7 +340,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 		# Streamed out once more, spent for good this time.
 		RunCity.events(city).streaming.stream_out(plan)
 		RunCity.events(city).streaming.stream_in(plan)
-		t.check(plan.is_in_the_world() and RunCity.events(city).event_of(plan).is_waiting() and RunCity.events(city).event_of(plan).barrier_post.is_spent(),
+		var again := RunCity.events(city).event_of(plan)
+		t.check(again != null and again.is_waiting() and again.barrier_post.is_spent(),
 				"and a barrier streamed out and in again stays spent")
 		RunCity.events(city).end_the_charges_still_running()
 		t.check(counted == ["warned:roadblock", "chased:roadblock", "shaken:roadblock"],

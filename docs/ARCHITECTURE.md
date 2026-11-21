@@ -245,9 +245,11 @@ src/
 	                      handed to every phase, and what a phase asks it to record or judge: a fixed
 	                      part's location, a body off the routes
 	event_plan.gd         one placed event's row, position, role and path: what the manager needs to
-	                      spawn one instance
+	                      spawn one instance; told when its live event enters and leaves the world
 	event_save.gd         what a live event was in the middle of when it left the world: its age,
 	                      distance, notice and each behaviour's state, one value its plan carries
+	where_it_stands.gd    where a plan's live event stands now (`WhereItStands`): there or not, where,
+	                      facing which way, over or not; the plan asks it without naming the event
 	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
 	                      the street, room among placed plans, where its body stands; handed the map
 	                      and what it asks (what stops a row, where a body stands, the room)
@@ -367,8 +369,9 @@ src/
 	                       handed (`DayStreets`), the rows planned on the dawn's context it makes;
 	                       the escape city's seals and rows on its chains; the building's own
 	                       placements
-	event_streaming.gd    the day's plan and the live instance each plan streams in as, carrying
-	                       its state out and back; the repeats, the masts, a finished plan spent
+	event_streaming.gd    the day's plan and the live instance each plan streams in as, kept in its
+	                       own table with the clock of a plan that comes again, carrying its state
+	                       out and back; the repeats, the masts, a finished plan spent
 	event_spawner.gd      every instance made, with its scar, its body and the bang outside;
 	                       what a finished row leaves; the rows summoned on sight; the pelican bag,
 	                       and the pelican's first landing on her

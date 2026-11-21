@@ -280,7 +280,8 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	manager.stream_around(far)
-	t.check(move != null and not rig.plan.is_in_the_world() and not moves.has(move),
+	var plan: EventPlan = rig.plan
+	t.check(move != null and not plan.is_in_the_world() and not moves.has(move),
 			"streamed out, it is off the list in the same call")
 	_free_the_manager(rig)
 

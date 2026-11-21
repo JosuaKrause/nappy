@@ -162,7 +162,7 @@ func _test_what_it_says_of_its_live_event_is_its_handles_answer(t: TestRunner) -
 	var save := EventSave.aged(4.0)
 	plan.leave_the_world(save)
 	t.check(not plan.is_in_the_world() and plan.has_been_in_the_world() and plan.saved() == save,
-			"told it left, it is out of the world, has been in it, and keeps what it was in the middle of")
+			"told it left, it is out of the world, has been in it, and keeps what its event was in")
 	t.check(plan.where_it_stands_now() == plan.body_at() and plan.faces_now() == Vector2.UP,
 			"and it answers from its siting again")
 

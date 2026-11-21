@@ -210,7 +210,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	t.check(plan_a != null and plan_a.is_in_the_world(), "the first mast is live")
 	if plan_a == null or not plan_a.is_in_the_world():
 		return
-	var age_a := RunCity.events(_city).event_of(plan_a).age
+	var age_a := _live(plan_a).age
 
 	await _advance(6.0)
 	# Walking to the second mast takes the first out of the world.
@@ -219,7 +219,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	t.check(plan_b != null and plan_b.is_in_the_world(), "the second mast is live")
 	if plan_b == null or not plan_b.is_in_the_world():
 		return
-	var age_b := RunCity.events(_city).event_of(plan_b).age
+	var age_b := _live(plan_b).age
 	t.check(age_b > age_a + 5.0,
 			"time genuinely passed between the two (%.1fs)" % (age_b - age_a))
 
@@ -227,8 +227,8 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 	# the one clock, so their ages match although the first was first met minutes before.
 	RunCity.events(_city).stream_around(a.foot())
 	t.check(plan_a.is_in_the_world(), "the first mast is back in the world")
-	if RunCity.events(_city).event_of(plan_a):
-		t.close_to(RunCity.events(_city).event_of(plan_a).age, age_b,
+	if _live(plan_a):
+		t.close_to(_live(plan_a).age, age_b,
 				"a mast streamed back in tells the same time as the one met minutes later", 0.05)
 
 func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:
@@ -247,30 +247,30 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 	RunCity.events(_city).stream_around(target.foot())
 	var plan := _plan_for(target.id())
 	t.check(plan != null and plan.is_in_the_world(), "the mast is live before it is silenced")
-	if not (plan and RunCity.events(_city).event_of(plan)):
+	if not (plan and _live(plan)):
 		return
-	t.check(RunCity.events(_city).event_of(plan).current_intensity() > 0.0, "and it is actually speaking")
+	t.check(_live(plan).current_intensity() > 0.0, "and it is actually speaking")
 	var nearby := target.foot() + Vector2(50.0, 0.0)
 	# Asked once before silencing, on purpose: `contribution_at()` caches per `(age, position)`,
 	# and silencing does not move `age` — without its own cache invalidation this would go on
 	# answering the pre-silence figure for the rest of the tick; `EventInstance.silence()` drops that
 	# cache (`ExcitementSource.invalidate_contribution()`) as it silences.
-	var _primed := RunCity.events(_city).event_of(plan).source().contribution_at(nearby)
+	var _primed := _live(plan).source().contribution_at(nearby)
 
 	t.check(RunCity.events(_city).silence_mast(target.id()), "silencing a mast by id finds it")
-	t.check(is_zero_approx(RunCity.events(_city).event_of(plan).current_intensity()), "a silenced mast's field is gone")
-	t.check(is_zero_approx(RunCity.events(_city).event_of(plan).source().contribution_at(nearby)),
+	t.check(is_zero_approx(_live(plan).current_intensity()), "a silenced mast's field is gone")
+	t.check(is_zero_approx(_live(plan).source().contribution_at(nearby)),
 			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
-	t.check(not RunCity.events(_city).event_of(plan).is_finished, "but the mast still stands — it has not left")
+	t.check(not _live(plan).is_finished, "but the mast still stands — it has not left")
 
 	# Streamed out and back in, the silence holds.
 	RunCity.events(_city).stream_around(Vector2(-99999.0, -99999.0))
 	t.check(not plan.is_in_the_world(), "walking away streams it back out")
 	RunCity.events(_city).stream_around(target.foot())
 	t.check(plan.is_in_the_world(), "and walking back streams it in again")
-	if RunCity.events(_city).event_of(plan):
-		t.check(RunCity.events(_city).event_of(plan).is_silenced(), "still silenced — for the rest of the day")
-		t.check(is_zero_approx(RunCity.events(_city).event_of(plan).current_intensity()), "still no field")
+	if _live(plan):
+		t.check(_live(plan).is_silenced(), "still silenced — for the rest of the day")
+		t.check(is_zero_approx(_live(plan).current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
 	_start(DawnMasts.CURFEW_ANNOUNCE_DAY)
@@ -298,8 +298,8 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> 
 			continue
 		mast_plans_checked += 1
 		t.check(plan.is_silenced(), "'%s' at '%s' is silenced" % [plan.def.id, plan.mast_id()])
-		if RunCity.events(_city).event_of(plan):
-			t.check(is_zero_approx(RunCity.events(_city).event_of(plan).current_intensity()),
+		if _live(plan):
+			t.check(is_zero_approx(_live(plan).current_intensity()),
 					"'%s' at '%s' has no field" % [plan.def.id, plan.mast_id()])
 	t.check(mast_plans_checked == standing_ids.size() * 2,
 			("and both of today's mast rows were checked (%d): the ordinary broadcast and "
@@ -343,3 +343,7 @@ func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> v
 func _teardown() -> void:
 	if _city:
 		_city.free()
+
+## The live event of `plan`, asked of the city's event manager.
+func _live(plan: EventPlan) -> EventInstance:
+	return RunCity.events(_city).event_of(plan)
