@@ -102,9 +102,9 @@ func _sampled_days() -> Array[Array]:
 ## three-quarters of what this suite's shape section cost (10.8s of its ~11s, against 3.6s once
 ## the plan is shared). Keyed on `map.city_seed()`, which is distinct per generated map, rather than
 ## on the map object itself, so the cache reads the same regardless of which test asks first.
-var _plan_cache: Dictionary[String, RegionPlanner.RegionPlan] = {}
+var _plan_cache: Dictionary[String, RegionPlan] = {}
 
-func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
+func _plan_for(map: CityMap, day: int) -> RegionPlan:
 	var key := "%d:%d" % [map.city_seed(), day]
 	if not _plan_cache.has(key):
 		_repaint_for(map, day)
@@ -421,7 +421,7 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	t.check(live_hut != null, "with streaming off, a checkpoint_hut actually goes live")
 	t.check(live_gate != null, "and a checkpoint_gate actually goes live")
 	if live_gate:
-		var shared: Array[RegionPlanner.GateState] = []
+		var shared: Array[GateState] = []
 		shared.assign(region_plan.gates)
 		for door_state in shared:
 			door_state.raised = true
@@ -562,13 +562,13 @@ func _real_stroller(t: TestRunner) -> Stroller:
 ## hands it. `age` and `route` are the plan's: where its instance arrives in its life, and the path
 ## a mover walks.
 func _door_instance(manager: EventManager, id: String, at: Vector2, face: Vector2,
-		gate_state: RegionPlanner.GateState = null, age := 0.0,
+		gate_state: GateState = null, age := 0.0,
 		route := PackedVector2Array()) -> EventInstance:
 	return _planned_instance(manager, EventCatalogue.by_id(id), at, face, gate_state, age, route)
 
 ## `_door_instance()` for a row that is not in the catalogue as it stands (a heated copy of one).
 func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: Vector2,
-		gate_state: RegionPlanner.GateState = null, age := 0.0,
+		gate_state: GateState = null, age := 0.0,
 		route := PackedVector2Array()) -> EventInstance:
 	var plan := EventPlan.new(def, at, route)
 	plan.facing = face
@@ -582,7 +582,7 @@ func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: 
 ## the southern hut, a tile apart across the street, the geometry `RegionPlanner._add_door_bodies`
 ## builds — in a manager with a real stroller, the gate's shared boom state `gate_state` where one is
 ## handed. `_free_door_rig()` frees all of it.
-func _door_rig(t: TestRunner, gate_state: RegionPlanner.GateState = null) -> Dictionary:
+func _door_rig(t: TestRunner, gate_state: GateState = null) -> Dictionary:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -1787,9 +1787,9 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 		return
 	RunCity.crowd(city).use_focus(FakeCrowdFocus.new(car.global_position))
 
-	var gate := RegionPlanner.GateState.new()
+	var gate := GateState.new()
 	gate.position = car.global_position + car.heading() * 150.0
-	var gates: Array[RegionPlanner.GateState] = [gate]
+	var gates: Array[GateState] = [gate]
 	RunCity.crowd(city).set_gates(gates)
 
 	var stopped_seconds := 0.0
@@ -1836,7 +1836,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) 
 ## the arm is down and not while it is up — and a hut still takes her in from its own sidewalk, so
 ## the toll is where the guard is.
 func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
-	var state := RegionPlanner.GateState.new()
+	var state := GateState.new()
 	state.position = Vector2(5200.0, 5200.0)
 	var rig := _door_rig(t, state)
 	var manager: EventManager = rig["manager"]
@@ -1881,10 +1881,10 @@ func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 	var stroller := _real_stroller(t)
 	RunCity.crowd(city).use_player(stroller)
 
-	var gate := RegionPlanner.GateState.new()
+	var gate := GateState.new()
 	gate.position = Vector2(-5000.0, -5000.0)
 	gate.raised = true
-	var gates: Array[RegionPlanner.GateState] = [gate]
+	var gates: Array[GateState] = [gate]
 	RunCity.crowd(city).set_gates(gates)
 
 	stroller.global_position = gate.position + Vector2(40.0, 10.0)
@@ -1913,7 +1913,7 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> 
 	var axis := Vector2.RIGHT
 	var centre := Vector2(7000.0, 7000.0)
 	var hut := _door_instance(manager, "checkpoint_hut", centre, axis)
-	var gate := RegionPlanner.GateState.new()
+	var gate := GateState.new()
 	gate.position = centre + Vector2(0.0, 64.0)
 	gate.raised = true
 	_door_instance(manager, "checkpoint_gate", gate.position, axis, gate)
@@ -1947,7 +1947,7 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
 	t.check(not plan.gates.is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
 	var gate: EventInstance = null
-	var state: RegionPlanner.GateState = null
+	var state: GateState = null
 	var huts: Array[EventInstance] = []
 	if not plan.gates.is_empty():
 		state = plan.gates[0]
@@ -2008,7 +2008,7 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	(rig["state"] as RegionPlanner.GateState).raised = true
+	(rig["state"] as GateState).raised = true
 	var lane := gate.global_position + across * 16.0
 	_step_her_to(rig, lane - axis * 20.0)
 	_step_her_to(rig, lane - axis * 2.0)
@@ -2068,7 +2068,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	(rig["state"] as RegionPlanner.GateState).raised = true
+	(rig["state"] as GateState).raised = true
 	var lane := gate.global_position + across * 16.0
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]
@@ -2137,7 +2137,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 		return
 	var axis := gate.facing_now()
 	var across := Vector2(-axis.y, axis.x)
-	(rig["state"] as RegionPlanner.GateState).raised = true
+	(rig["state"] as GateState).raised = true
 	var lane := gate.global_position + across * 16.0
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]

@@ -640,7 +640,7 @@ func _latched_door_bodies() -> Dictionary:
 	return under
 
 ## Every tile under a street door's boom (`checkpoint_gate`, the plan carrying a
-## `RegionPlanner.GateState`): within reach of her body touching the boom's — its own
+## `GateState`): within reach of her body touching the boom's — its own
 ## `solid_reach()` plus `Tuning.PLAYER_BODY_RADIUS`, plus `ARRIVE_RADIUS` for the corner she cuts
 ## at a waypoint — and nearer the boom than any other door body. Always blocked, in every plan
 ## (`_blocked_for_phase()`), because **the rig never goes through the boom**, raised or

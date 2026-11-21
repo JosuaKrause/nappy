@@ -668,7 +668,7 @@ func _a_junction_to_seal(t: TestRunner) -> Dictionary:
 ## carved out of the same check — a car still brakes and queues for the gate
 ## (`Crowd._stop_for_gates()`, built for M62) and a walker still passes the hut, rather than either
 ## turning away at the last junction. Driven off a real day (`City.start_day` then
-## `EventManager.start_day`), the only way to get an actual `RegionPlanner.RegionPlan` with real
+## `EventManager.start_day`), the only way to get an actual `RegionPlan` with real
 ## wall and door segments on it, over however many sampled days it takes this seed's tree to cross
 ## its own boundary at least once.
 func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void:
@@ -1101,7 +1101,7 @@ func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> v
 	RunCity.crowd(city).clear()
 	var map: CityMap = scene["map"]
 	var vertical: bool = scene["vertical"]
-	var gate: RegionPlanner.GateState = city.streets().region_plan().gates[0]
+	var gate: GateState = city.streets().region_plan().gates[0]
 	var gate_across: float = gate.position.x if vertical else gate.position.y
 	var gate_along: float = gate.position.y if vertical else gate.position.x
 	var corridor := CrowdLanes.corridor_at(gate_across)

@@ -235,7 +235,7 @@ func report_the_pelicans_in_view() -> void:
 ## missed by whichever path created the event. `gate` is the shared boom state of a street door's
 ## boom (`EventPlan.gate()`), handed to the event's one setup call; null for any other.
 func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
-		facing := Vector2.RIGHT, gate: RegionPlanner.GateState = null) -> EventInstance:
+		facing := Vector2.RIGHT, gate: GateState = null) -> EventInstance:
 	show_the_bang(def)
 	var instance := EventInstance.new(world.reports())
 	var surroundings := world.surroundings()

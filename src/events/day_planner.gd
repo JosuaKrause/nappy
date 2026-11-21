@@ -143,7 +143,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# it began itself.
 	var streets: DayStreets = world.streets()
 	var tree: RouteTree = streets.route_tree()
-	var region_plan: RegionPlanner.RegionPlan = streets.region_plan()
+	var region_plan: RegionPlan = streets.region_plan()
 
 	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
 	# `CityMap.held`. Closures, the region's own wall and door segments, and the
@@ -152,9 +152,9 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	city_map.clear_day_holds()
 	for closure in streets.closures():
 		city_map.hold_segment(closure.street_key(), HeldStreets.Why.CLOSURE)
-	for segment in region_plan.walls:
+	for segment in region_plan.wall_segments():
 		city_map.hold_segment(segment.key(), HeldStreets.Why.WALL)
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		city_map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	if spec.keeps_the_home_streets_clear():
 		for segment in city_map.street_network().around_blocks(Rect2i(city_map.home_block_coordinate(), Vector2i.ONE)):
@@ -169,13 +169,13 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# milestone's second half places there. Segment keys (`Vector3i`) and alley rect positions
 	# (`Vector2i`) share one `Dictionary` without colliding — see `SealPlanner.plan_day`'s own doc.
 	var boundary := {}
-	for segment in region_plan.walls:
+	for segment in region_plan.wall_segments():
 		boundary[segment.key()] = true
-	for segment in region_plan.doors:
+	for segment in region_plan.door_segments():
 		boundary[segment.key()] = true
-	for rect in region_plan.alley_walls:
+	for rect in region_plan.walled_alleys():
 		boundary[rect.position] = true
-	for rect in region_plan.alley_doors:
+	for rect in region_plan.door_alleys():
 		boundary[rect.position] = true
 	# **Planned before `build_day`.** `SealPlanner.plan_day` is a pure function of the map, the day,
 	# `tree` and its own RNG stream (`world.run().calendar().day_rng(day, "seals")`, never shared
@@ -197,16 +197,16 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# under. The wall's own bodies are deliberately not in this list: a wall is structure and stands
 	# where the boundary is.
 	var doors := PackedVector2Array()
-	for body in region_plan.door_bodies:
+	for body in region_plan.door_plans():
 		doors.append(body.placed_at())
 	# What obstructs the day whatever the catalogue does: the seals just planned and the region
 	# wall's own bodies, which the day's rules read with what it places (`StreetInvalidation`).
 	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
-	standing.append_array(region_plan.wall_bodies)
+	standing.append_array(region_plan.wall_plans())
 	# The wall's own bodies say so, as a door's do (`EventPlan.stand_as_a_door()`): day 13's task never
 	# takes one for a roadblock the day placed, nor swaps one out.
-	for body in region_plan.wall_bodies:
+	for body in region_plan.wall_plans():
 		body.stand_in_the_wall()
 	# The day's narrow resistance target — day 9's door, day 12's swing, the station's front door —
 	# as the tiles its contact may stand on today: the swing's park is the calm area set aside. The
@@ -234,15 +234,15 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
-	# wants to know where the wall stands reads `region_plan.wall_bodies` directly rather than
+	# wants to know where the wall stands reads `region_plan.wall_plans()` directly rather than
 	# filtering it back out of the whole day's plan.
-	placements.append_array(region_plan.wall_bodies)
+	placements.append_array(region_plan.wall_plans())
 	# The door structure — a hut on each pavement and a gate over the road at a street door, a
-	# guard at each mouth of an alley door. Same reasoning as `wall_bodies` just above: kept as
+	# guard at each mouth of an alley door. Same reasoning as `wall_plans()` just above: kept as
 	# its own list on `region_plan` and appended here rather than merged into `SealPlanner`'s, so
-	# `region_plan.door_bodies` stays the one place that answers "where do today's doors stand"
+	# `region_plan.door_plans()` stays the one place that answers "where do today's doors stand"
 	# without filtering.
-	placements.append_array(region_plan.door_bodies)
+	placements.append_array(region_plan.door_plans())
 	var result := Plan.new(placements, tree, doors)
 	result.use_calm(calm)
 	result.use_locations(dawn.locations())

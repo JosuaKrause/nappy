@@ -53,7 +53,7 @@ func run(t: TestRunner) -> void:
 ## The two mouth bodies the day's plan stands at each walled alley, keyed by the alley's rect: the
 ## start mouth first, then the end one. `RegionPlanner.plan_day()` appends them after the street
 ## walls' bodies, two to a walled alley in `alley_walls` order, which is the order read back here.
-func _alley_wall_mouths(plan: RegionPlanner.RegionPlan) -> Dictionary[Rect2i, Array]:
+func _alley_wall_mouths(plan: RegionPlan) -> Dictionary[Rect2i, Array]:
 	var mouths: Dictionary[Rect2i, Array] = {}
 	var first := plan.wall_bodies.size() - plan.alley_walls.size() * 2
 	for i in plan.alley_walls.size():
@@ -128,7 +128,7 @@ func _area_for_block(areas: Array[ClosurePlanner.CalmArea], block: Vector2i) -> 
 ## Every key `EventManager.start_day` hands `SealPlanner.plan_day` as `skip` for this plan —
 ## segment keys (`Vector3i`) for walls and doors, and an alley rect's own `position` (`Vector2i`)
 ## for a crossing alley, wall or door. The two types never collide in one `Dictionary`.
-func _boundary_keys(plan: RegionPlanner.RegionPlan) -> Dictionary:
+func _boundary_keys(plan: RegionPlan) -> Dictionary:
 	var keys := {}
 	for segment in plan.walls:
 		keys[segment.key()] = true

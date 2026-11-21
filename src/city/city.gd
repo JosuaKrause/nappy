@@ -1061,8 +1061,8 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	var plan := RegionPlanner.plan_day(map, spec, tree)
 	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
-			% [plan.walls.size() + plan.doors.size(), plan.walls.size(),
-			plan.doors.size(), RegionPlanner.regions_with_calm(map)])
+			% [plan.wall_segments().size() + plan.door_segments().size(), plan.wall_segments().size(),
+			plan.door_segments().size(), RegionPlanner.regions_with_calm(map)])
 	var closures := ClosurePlanner.plan_day(map, spec, rng, tree, plan, trace)
 	_streets.begin_day(tree, plan, closures)
 	map.close_streets(closures)

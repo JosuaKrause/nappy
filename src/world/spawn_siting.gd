@@ -71,7 +71,7 @@ const HELD_CONTACT_GROUND: Array[Rule] = [Rule.GROUND_EVEN_IF_HELD, Rule.OPEN_TO
 ## them wherever it crosses.
 class Region:
 	extends RefCounted
-	## The walled-off crossing alleys (`RegionPlanner.RegionPlan.alley_walls`).
+	## The walled-off crossing alleys (`RegionPlan.walled_alleys()`).
 	var walled_alleys: Array[Rect2i] = []
 	## Where each body of the wall and the doors stands, in world px.
 	var centres := PackedVector2Array()
