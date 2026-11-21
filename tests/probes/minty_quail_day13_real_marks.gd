@@ -166,7 +166,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 		_misses += 1
 		return ["missed", INF]
 	for plan in RunCity.events(city).plans():
-		if not before.has(plan) and plan.instance() == placed:
+		if not before.has(plan) and RunCity.events(city).event_of(plan) == placed:
 			_took("swapped", took)
 			# The swap's fallback walk alone, her paths over the whole city, timed apart.
 			var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE

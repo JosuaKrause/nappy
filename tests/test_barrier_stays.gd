@@ -295,7 +295,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	var plan := EventPlan.new(_hot_roadblock(), post)
 	RunCity.events(city).streaming.add(plan)
 	RunCity.events(city).streaming.stream_in(plan)
-	var guard: EventInstance = plan.live
+	var guard: EventInstance = RunCity.events(city).event_of(plan)
 	t.check(guard != null, "the roadblock streams in")
 	if guard == null:
 		city.free()
@@ -321,7 +321,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	t.check(bool(carried.get("spent", false)) and int(carried.get("side", 0)) == side,
 			"the plan carries the spent guard and the side he left (%s)" % [carried])
 	RunCity.events(city).streaming.stream_in(plan)
-	var back: EventInstance = plan.live
+	var back: EventInstance = RunCity.events(city).event_of(plan)
 	t.check(back != null and back != guard, "a fresh instance comes back")
 	if back != null:
 		t.check(back.is_waiting() and not back.is_leaving and not back.is_finished,
@@ -340,7 +340,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 		# Streamed out once more, spent for good this time.
 		RunCity.events(city).streaming.stream_out(plan)
 		RunCity.events(city).streaming.stream_in(plan)
-		t.check(plan.live != null and plan.live.is_waiting() and plan.live.barrier_post.is_spent(),
+		t.check(plan.is_in_the_world() and RunCity.events(city).event_of(plan).is_waiting() and RunCity.events(city).event_of(plan).barrier_post.is_spent(),
 				"and a barrier streamed out and in again stays spent")
 		RunCity.events(city).end_the_charges_still_running()
 		t.check(counted == ["warned:roadblock", "chased:roadblock", "shaken:roadblock"],

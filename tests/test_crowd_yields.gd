@@ -259,7 +259,7 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
 	var moves: ProposedMoves = manager.world.map().moves
-	var live: EventInstance = rig.plan.live
+	var live: EventInstance = manager.event_of(rig.plan)
 	var move: MoveProposal = rig.move
 	t.check(live != null and move != null and moves.has(move), "a streamed-in event is on the list")
 	if live == null or move == null:
@@ -275,12 +275,12 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> voi
 	rig = _a_manager_with_a_live_event(t, at)
 	manager = rig.manager
 	moves = manager.world.map().moves
-	live = rig.plan.live
+	live = manager.event_of(rig.plan)
 	move = rig.move
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	manager.stream_around(far)
-	t.check(move != null and rig.plan.live == null and not moves.has(move),
+	t.check(move != null and not rig.plan.is_in_the_world() and not moves.has(move),
 			"streamed out, it is off the list in the same call")
 	_free_the_manager(rig)
 
@@ -302,7 +302,7 @@ func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
 	var moves: ProposedMoves = manager.world.map().moves
-	var live: EventInstance = rig.plan.live
+	var live: EventInstance = manager.event_of(rig.plan)
 	var pass_over := SeparationPass.new(moves)
 	var live_move: MoveProposal = rig.move
 	t.check(live_move != null, "the streamed-in figure is on the list to be placed")

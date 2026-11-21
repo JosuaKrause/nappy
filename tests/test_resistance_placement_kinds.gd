@@ -1265,7 +1265,7 @@ func _test_the_market_is_found_gone(t: TestRunner) -> void:
 		t.check(shuttered > 0, "and it has buildings to shutter")
 		for plan in RunCity.events(_city).plans():
 			if plan.def.id == "market_stall" and frontage.has_point(plan.position):
-				t.check(plan.spent or (plan.live and plan.live.is_finished),
+				t.check(plan.spent or (RunCity.events(_city).event_of(plan) and RunCity.events(_city).event_of(plan).is_finished),
 						"no market stall of it is left in the day")
 		state.begin_day(_city.map.plans_by_block(), ResistanceHappenings.MARKET_DAY + 1)
 		t.check(state.purpose_of(_city.map.plans_by_block(), block)

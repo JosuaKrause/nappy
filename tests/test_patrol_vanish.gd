@@ -130,7 +130,7 @@ func _test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t: TestRunner) -
 	while ticks < PhysicsTicks.ticks_for(60.0, SPEED):
 		await _frame(t, city)
 		ticks += 1
-		car = car if car != null else plan.live
+		car = car if car != null else RunCity.events(city).event_of(plan)
 		if car != null and _removed(car):
 			seen_at_the_end = _seen(car.global_position, her.global_position)
 			break
@@ -155,7 +155,7 @@ func _test_an_investigating_car_leaves_out_of_her_sight(t: TestRunner) -> void:
 	while ticks < PhysicsTicks.ticks_for(90.0, SPEED):
 		await _frame(t, city)
 		ticks += 1
-		car = car if car != null else plan.live
+		car = car if car != null else RunCity.events(city).event_of(plan)
 		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
 			officer = MenLetOut.first_of(RunCity.events(city), car)
@@ -186,7 +186,7 @@ func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(
 	while ticks < PhysicsTicks.ticks_for(120.0, SPEED):
 		await _frame(t, city, is_instance_valid(officer) and not officer.is_finished)
 		ticks += 1
-		car = car if car != null else plan.live
+		car = car if car != null else RunCity.events(city).event_of(plan)
 		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
 			officer = MenLetOut.first_of(RunCity.events(city), car)
@@ -221,7 +221,7 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t: TestRunner
 	while ticks < PhysicsTicks.ticks_for(60.0, SPEED):
 		await _frame(t, city)
 		ticks += 1
-		car = car if car != null else plan.live
+		car = car if car != null else RunCity.events(city).event_of(plan)
 		if car == null:
 			continue
 		if followed < reach + 300.0:
@@ -253,13 +253,13 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t: TestRunner) -> void:
 	var plan: EventPlan = rig[2]
 	var home := her.global_position
 	var ticks := 0
-	while ticks < PhysicsTicks.ticks_for(30.0, SPEED) and (plan.live == null or not plan.live.is_leaving):
+	while ticks < PhysicsTicks.ticks_for(30.0, SPEED) and (not plan.is_in_the_world() or not RunCity.events(city).event_of(plan).is_leaving):
 		await _frame(t, city)
 		ticks += 1
-	t.check(plan.live != null and plan.live.is_leaving, "the patrol ran out of route and is leaving")
+	t.check(plan.is_in_the_world() and RunCity.events(city).event_of(plan).is_leaving, "the patrol ran out of route and is leaving")
 	her.global_position = home + Vector2(0.0, 2400.0) # a teleport, see above
 	await _frame(t, city)
-	t.check(plan.live == null, "she is far away and it is streamed out")
+	t.check(not plan.is_in_the_world(), "she is far away and it is streamed out")
 	t.check(plan.spent, "and its plan is spent, a departure being over once it is streamed out")
 	var seen := false
 	while her.global_position.y > home.y:
@@ -269,6 +269,6 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t: TestRunner) -> void:
 			seen = seen or _seen(instance.global_position, her.global_position)
 	for i in 30:
 		await _frame(t, city)
-	t.check(plan.live == null and not seen,
+	t.check(not plan.is_in_the_world() and not seen,
 			"walking back to its route, nothing of it is ever in her view")
 	_done(city, her)

@@ -609,9 +609,9 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 					"a mast put on her route is a mast the day can silence, named by its foot")
 			t.check(MastSites.is_eligible(plan.position, map),
 					"a mast put on her route stands where a mast site may (off the home street)")
-		t.check(plan.live == null, "day %d: it is not in the world while she is far from it" % day)
+		t.check(not plan.is_in_the_world(), "day %d: it is not in the world while she is far from it" % day)
 		RunCity.events(city).stream_around(plan.position)
-		t.check(plan.live != null and is_instance_valid(plan.live),
+		t.check(plan.is_in_the_world() and is_instance_valid(RunCity.events(city).event_of(plan)),
 				"day %d: and it is in the world once she walks to it" % day)
 	player.free()
 	city.free()

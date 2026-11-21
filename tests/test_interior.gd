@@ -1411,7 +1411,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 	var spacing := INF
 	for i in vents.size():
 		var vent: EventPlan = vents[i]
-		periods[vent.repeat_every] = true
+		periods[vent.comes_again_every()] = true
 		var tile := scene.map().world_to_tile(vent.placed_at())
 		t.check(walk.has(tile), "vent %d stands on the walk she has to take (%s)" % [i, tile])
 		t.check(vent.placed_at().is_equal_approx(scene.map().tile_to_world(tile)),
@@ -1533,7 +1533,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 			beats += 1
 			# A blow is first seen on the tick it began in, so its time is off by less than one tick
 			# and a gap between two of them by less than one tick either way.
-			if absf((times[i] - times[i - 1]) - vent.repeat_every) > tick_seconds + 0.0001:
+			if absf((times[i] - times[i - 1]) - vent.comes_again_every()) > tick_seconds + 0.0001:
 				off_period += 1
 	t.check(beats > 0, "there were gaps between blows to measure (%d)" % beats)
 	t.check(off_period == 0, "and every one of them is that vent's own period (%d were not)"
@@ -1700,10 +1700,10 @@ func _longest_both_shut(a: EventPlan, b: EventPlan, steam: EventDef) -> float:
 ## then `EventCatalogue.FINALE_STEAM_BLOWS_FOR` of blowing, then nothing until its own period comes round;
 ## `until_the_next_blow` is how far into the first cycle it starts.
 func _is_shut(vent: EventPlan, at: float, steam: EventDef) -> bool:
-	var since := at - (vent.comes_in - vent.repeat_every)
+	var since := at - (vent.first_comes_in() - vent.comes_again_every())
 	if since < 0.0:
 		return false
-	var phase := fmod(since, vent.repeat_every)
+	var phase := fmod(since, vent.comes_again_every())
 	return phase >= steam.telegraphs_for() \
 			and phase < steam.telegraphs_for() + EventCatalogue.FINALE_STEAM_BLOWS_FOR
 

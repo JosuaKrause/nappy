@@ -859,10 +859,10 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_
 	for index in plans_before:
 		var plan := plans[index]
 		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
-				and not plan.is_door() and plan.instance() == roadblock)
+				and not plan.is_door() and RunCity.events(city).event_of(plan) == roadblock)
 	var swapped := false
 	for index in range(plans_before, plans.size()):
-		swapped = swapped or plans[index].instance() == roadblock
+		swapped = swapped or RunCity.events(city).event_of(plans[index]) == roadblock
 	t.check(found or swapped,
 			"seed %d: it is a roadblock the day placed, or one put across a section in place of what it held"
 			% seed_value)
@@ -1081,8 +1081,9 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	var expected := map.blocked.copy()
 	for plan in held:
 		expected.release(plan.get_instance_id())
-		if plan.instance():
-			expected.release(plan.instance().get_instance_id())
+		var instance := RunCity.events(city).event_of(plan)
+		if instance:
+			expected.release(instance.get_instance_id())
 	if director.current_step():
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
@@ -1094,7 +1095,7 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	t.check(all_spent, "(content) everything the section held is spent (%d)" % held.size())
 	var actual := map.blocked.copy()
 	for plan in RunCity.events(city).plans():
-		if roadblock != null and plan.instance() == roadblock:
+		if roadblock != null and RunCity.events(city).event_of(plan) == roadblock:
 			actual.release(plan.get_instance_id())
 			actual.release(roadblock.get_instance_id())
 	t.check(actual.todays_body_tiles() == expected.todays_body_tiles() \

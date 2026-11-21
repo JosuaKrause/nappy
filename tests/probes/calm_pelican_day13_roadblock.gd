@@ -82,7 +82,7 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 			continue
 		tasks += 1
 		var newest: EventPlan = RunCity.events(city).plans().back()
-		var by_rules: bool = RunCity.events(city).plans().size() > plans_before and newest.live == own
+		var by_rules: bool = RunCity.events(city).plans().size() > plans_before and RunCity.events(city).event_of(newest) == own
 		if by_rules:
 			placed_by_rules += 1
 		var distance := own.body_position().distance_to(mark_at)

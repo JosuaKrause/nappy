@@ -58,29 +58,29 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t: TestRunner) -> vo
 	var plans: Array[EventPlan] = [plan]
 	manager.walk_events().take(plans)
 	streaming.stream_around(at)
-	t.check(plan.live != null and manager.instances().has(plan.live),
+	t.check(plan.is_in_the_world() and manager.instances().has(manager.event_of(plan)),
 			"within reach, the plan is streamed in and joins the world's live instances")
-	if plan.live == null:
+	if not plan.is_in_the_world():
 		_free_manager(manager)
 		return
 	manager.world.where_she_is().tell(at + Vector2(def.notice.within - 10.0, 0.0))
 	for _i in 3:
-		plan.live.step(STEP)
-	var age := plan.live.age
+		manager.event_of(plan).step(STEP)
+	var age := manager.event_of(plan).age
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
-	var leaving := plan.live
+	var leaving := manager.event_of(plan)
 	streaming.stream_around(far)
-	t.check(plan.live == null and not manager.instances().has(leaving),
+	t.check(not plan.is_in_the_world() and not manager.instances().has(leaving),
 			"out of reach, it is streamed out and leaves the live instances")
 	t.close_to(plan.saved().age(), age, "its plan keeps how far it had run")
 	t.check(not plan.saved().state_of("EventPursuit").is_empty(), "and its pursuit's state")
 	streaming.stream_around(at)
-	t.check(plan.live != null, "back within reach, it is streamed in again")
-	if plan.live:
-		t.close_to(plan.live.age, age, "picking up where it left off")
+	t.check(plan.is_in_the_world(), "back within reach, it is streamed in again")
+	if manager.event_of(plan):
+		t.close_to(manager.event_of(plan).age, age, "picking up where it left off")
 	streaming.clear()
-	t.check(plan.live == null and manager.walk_events().plans().is_empty(),
+	t.check(not plan.is_in_the_world() and manager.walk_events().plans().is_empty(),
 			"cleared, the day's plan is gone")
 	_free_manager(manager)
 
@@ -175,7 +175,7 @@ func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> vo
 	var post_plan := EventPlan.new(EventCatalogue.by_id("checkpoint_post"), post_at)
 	manager.streaming.add(post_plan)
 	manager.streaming.stream_around(post_at)
-	var hut := post_plan.live
+	var hut := manager.event_of(post_plan)
 	var her := _her(t)
 	her.global_position = hut.global_position + Vector2(0.0, 4.0)
 	manager.use_player(her)
@@ -225,12 +225,12 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	her.global_position = at + off
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	t.check(plan.live == null,
+	t.check(not plan.is_in_the_world(),
 			"a player in the tree's `player` group but never handed in is nobody the events see")
 	manager.use_player(her)
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	t.check(plan.live != null and _her_side(plan.live, def) > 0.0,
+	t.check(plan.is_in_the_world() and _her_side(manager.event_of(plan), def) > 0.0,
 			"handed in, the events around her stream in and are told where she is")
 	# Stood aside for the title, she is handed in and still nobody the events see.
 	her.stand_aside()
@@ -239,7 +239,7 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	her.global_position = at - off
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	t.check(not manager.world.has_player() and _her_side(plan.live, def) > 0.0,
+	t.check(not manager.world.has_player() and _her_side(manager.event_of(plan), def) > 0.0,
 			"stood aside for the title, she is told nothing and nothing can strike her")
 	manager.use_player(null)
 	manager.free()

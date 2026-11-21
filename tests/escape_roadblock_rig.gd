@@ -154,13 +154,14 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 ## the manager's `stream_around()` does when she comes near it), so the spawner makes the
 ## instance the way a day's is made: on the map, in the world's entity layer, with its look's nodes
 ## to attach on the next idle frame (`settle()`). `close()` frees the world, gives back the bodies
-## the plans recorded on the map and leaves the map and every plan as the stage found them.
+## the plans recorded on the map and leaves the map as the stage found it, every plan stood out of
+## the world.
 class Stage extends RefCounted:
 	var world: WorldContext
 	var manager: EventManager
 	var _map: WorldMap
-	## Each plan stood, with whether it had been live and what it held.
-	var _stood: Array = []
+	## Each plan stood.
+	var _stood: Array[EventPlan] = []
 	var _successors: Array[EventInstance] = []
 
 	## Under `t`, or in no tree when `t` is null, for a rig that only reads where an event
@@ -183,10 +184,10 @@ class Stage extends RefCounted:
 	## Puts `plan` in the world as the day's streaming does, and answers the instance, its
 	## own process off (a case that lets frames draw it turns it on).
 	func stand(plan: EventPlan) -> EventInstance:
-		_stood.append([plan, plan.was_live, plan.live])
+		_stood.append(plan)
 		manager.streaming.add(plan)
 		manager.streaming.stream_in(plan)
-		var instance := plan.live
+		var instance := manager.event_of(plan)
 		instance.set_process(false)
 		return instance
 
@@ -203,13 +204,12 @@ class Stage extends RefCounted:
 		for made in _successors:
 			_map.release_obstruction(made.get_instance_id())
 		_stood.reverse()
-		for stood: Array in _stood:
-			var plan: EventPlan = stood[0]
-			_map.release_obstruction(plan.get_instance_id())
-			if plan.live != null and is_instance_valid(plan.live):
-				_map.release_obstruction(plan.live.get_instance_id())
-			plan.was_live = stood[1]
-			plan.live = stood[2]
+		for stood: EventPlan in _stood:
+			_map.release_obstruction(stood.get_instance_id())
+			var instance := manager.event_of(stood)
+			if instance != null and is_instance_valid(instance):
+				_map.release_obstruction(instance.get_instance_id())
+			stood.leave_the_world(stood.saved())
 		world.free()
 
 ## Lets the idle frames pass that a made event's drawing nodes wait for (`EventLook.build_nodes()`

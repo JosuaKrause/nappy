@@ -173,7 +173,7 @@ class Walk extends RefCounted:
 			if seen_at < 0.0 and off.x <= Tuning.VIEW_HALF_EXTENT.x \
 					and off.y <= Tuning.VIEW_HALF_EXTENT.y:
 				seen_at = walked
-			was_live = was_live or van.was_live
+			was_live = was_live or van.has_been_in_the_world()
 
 	func outcome() -> String:
 		if van == null:

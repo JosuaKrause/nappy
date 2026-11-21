@@ -833,9 +833,9 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	for plan in RunCity.events(_city).plans():
 		if plan.mast_id() == site.id() and plan.def.id == "loudspeaker":
 			mast_plan = plan
-	t.check(mast_plan != null and mast_plan.live != null,
+	t.check(mast_plan != null and mast_plan.is_in_the_world(),
 			"the mast at her focus is live from the day it was started")
-	var mast := mast_plan.live
+	var mast := RunCity.events(_city).event_of(mast_plan)
 	for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
 		mast.step(STEP)
 	var nearby := site.foot() + Vector2(50.0, 0.0)

@@ -13,6 +13,7 @@ func run(t: TestRunner) -> void:
 	_test_which_plans_are_fixed_parts(t)
 	_test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t)
 	_test_what_its_field_reaches(t)
+	_test_what_it_says_of_its_live_event_is_its_handles_answer(t)
 	_test_where_its_body_stands(t)
 	_test_a_plan_stands_where_a_candidate_was_judged(t)
 	_test_a_plan_turns_to_face(t)
@@ -122,25 +123,78 @@ func _test_what_its_field_reaches(t: TestRunner) -> void:
 	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), Vector2(320, 320))
 	var point := Vector2(500, 40)
 	t.check(not plan.field_reaches(point), "a plan out of the world reaches nothing")
-	var live := FakeLive.new()
-	plan.live = live
-	live.answers = true
+	var standing := FakeStanding.new()
+	plan.enter_the_world(standing)
+	standing.field_answer = true
 	t.check(plan.field_reaches(point), "in the world it reaches where its live event says its field does")
-	t.check(live.asked == point, "and it asks its live event about the point it was given")
-	live.answers = false
+	t.check(standing.asked == point, "and it asks its live event about the point it was given")
+	standing.field_answer = false
 	t.check(not plan.field_reaches(point), "and not where its live event says it does not")
-	plan.live = null
-	live.free()
+	plan.leave_the_world(EventSave.new())
+	standing.field_answer = true
+	t.check(not plan.field_reaches(point), "and once it has left the world it reaches nothing again")
 
-## A live event that answers `field_reaches()` as a test sets it and records the point it was asked.
-class FakeLive extends EventInstance:
-	var answers := false
+## **A plan is in the world while the handle it was told says there is a live event there**
+## (`enter_the_world()`), and says where it stands, which way it faces and whether it is over as that
+## event does, until it is told it left (`leave_the_world()`), when it answers as it did before it
+## entered: where its siting put it, facing as its siting decided, over for nobody. That it has been
+## in the world is true from the first entering for good, and what it was in the middle of is kept.
+func _test_what_it_says_of_its_live_event_is_its_handles_answer(t: TestRunner) -> void:
+	var at := Vector2(320, 320)
+	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)
+	plan.face(Vector2.UP)
+	t.check(not plan.is_in_the_world() and not plan.has_been_in_the_world(),
+			"a new plan is not in the world and has not been")
+	var standing := FakeStanding.new()
+	plan.enter_the_world(standing)
+	t.check(plan.is_in_the_world() and plan.has_been_in_the_world(),
+			"told its event entered, it is in the world and has been")
+	t.check(plan.where_it_stands_now() == standing.place and plan.faces_now() == standing.heading,
+			"it stands where its live event stands and faces as it faces")
+	t.check(not plan.its_event_is_gone(), "its live event is not over")
+	standing.over = true
+	t.check(plan.its_event_is_gone(), "and is over when its live event is")
+	standing.there = false
+	t.check(not plan.is_in_the_world() and plan.where_it_stands_now() == plan.body_at()
+			and plan.faces_now() == Vector2.UP and not plan.its_event_is_gone(),
+			"a live event that is no longer there leaves it answering from its siting")
+	standing.there = true
+	var save := EventSave.aged(4.0)
+	plan.leave_the_world(save)
+	t.check(not plan.is_in_the_world() and plan.has_been_in_the_world() and plan.saved() == save,
+			"told it left, it is out of the world, has been in it, and keeps what it was in the middle of")
+	t.check(plan.where_it_stands_now() == plan.body_at() and plan.faces_now() == Vector2.UP,
+			"and it answers from its siting again")
+
+## A live event's handle, answering as a test sets it: what a plan asks of the event it stands for.
+class FakeStanding extends WhereItStands:
+	var there := true
+	var place := Vector2(11.0, 12.0)
+	var heading := Vector2.LEFT
+	var over := false
+	var field_answer := false
 	var asked := Vector2.INF
 
-	## Overrides EventInstance.field_reaches.
+	## Overrides WhereItStands.is_there.
+	func is_there() -> bool:
+		return there
+
+	## Overrides WhereItStands.at.
+	func at() -> Vector2:
+		return place
+
+	## Overrides WhereItStands.facing.
+	func facing() -> Vector2:
+		return heading
+
+	## Overrides WhereItStands.is_gone.
+	func is_gone() -> bool:
+		return over
+
+	## Overrides WhereItStands.field_reaches.
 	func field_reaches(point: Vector2) -> bool:
 		asked = point
-		return answers
+		return field_answer
 
 ## **Where a plan's body stands** (`EventPlan.body_at()`): a roadblock placed in a carriageway lane
 ## stands on the kerb beside it (`CityMap.kerb_beside()`), and its geometry reads it there; a

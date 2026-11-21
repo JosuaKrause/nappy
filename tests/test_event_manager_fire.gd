@@ -64,14 +64,14 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner, bus: _BUS) -
 	var day := Tuning.RUN_TAUGHT_DAY
 	_start(day)
 	var plan := _fire_plan()
-	t.check(plan != null and not plan.is_placed() and not plan.was_live,
+	t.check(plan != null and not plan.is_placed() and not plan.has_been_in_the_world(),
 			"the day ends with the fire owed, planned and never in the world")
 	if not plan:
 		return
 	var doorstep := _city.map.doorstep_world_position()
 	t.check(RunCity.events(_city).light_what_she_never_met(doorstep),
 			"the end of a won day lights it")
-	t.check(plan.is_placed() and plan.was_live,
+	t.check(plan.is_placed() and plan.has_been_in_the_world(),
 			"and it has been in the world, which is what records what a fire does to a run")
 	var told: Array[String] = ["burning_building"]
 	t.check(lit_unmet == told,
@@ -292,7 +292,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 		var instance := EventInstance.new()
 		instance.setup(def, at)
 		_city.add_child(instance)
-		plan.live = instance
+		plan.enter_the_world(instance.standing())
 		events.streaming.add(plan)
 		sighted.clear()
 		var warnings_before := events.pending_warnings().size()
@@ -415,9 +415,9 @@ func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 		RunCity.events(_city).stream_within(INF)
 		return
 
-	await _walk(t, rig, route, func() -> bool: return plan.was_live)
-	t.check(plan.was_live, "and walking on puts it in the world")
-	if plan.was_live:
+	await _walk(t, rig, route, func() -> bool: return plan.has_been_in_the_world())
+	t.check(plan.has_been_in_the_world(), "and walking on puts it in the world")
+	if plan.has_been_in_the_world():
 		var burning_at := plan.position
 		var scar_here := false
 		for scar in _city.run.attempt_spend().scars():
@@ -458,7 +458,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 		RunCity.events(_city).stream_within(INF)
 		return
 
-	var fire: EventInstance = plan.live
+	var fire: EventInstance = RunCity.events(_city).event_of(plan)
 	t.check(fire != null, "the fire is in the world by the time it is on screen")
 	if fire:
 		# **What the first sight owes is the walk out of it, not a clear screen.** The fire is on the
@@ -579,8 +579,8 @@ func _test_a_fire_that_was_never_lit_was_not_spent(t: TestRunner) -> void:
 	var route := _a_route_out(day)
 	var rig := Rig.walker(t, _city, route[0])
 	_walk_clock = 0.0
-	await _walk(t, rig, route, func() -> bool: return plan.was_live)
-	t.check(plan.was_live and "burning_building" in consumed,
+	await _walk(t, rig, route, func() -> bool: return plan.has_been_in_the_world())
+	t.check(plan.has_been_in_the_world() and "burning_building" in consumed,
 			"walking into it is what spends it")
 	Rig.start(_city, day, consumed)
 	t.check(_fire_plan() == null, "and no later day plans a second one")
