@@ -573,7 +573,7 @@ func _what_a_day_placed(map: CityMap) -> Array[EventPlan]:
 ## The first catalogue row that ends the day (`lethal`) or only costs.
 func _a_row(lethal: bool) -> EventDef:
 	for def in EventCatalogue.all():
-		if def.hard_fail == lethal:
+		if def.ends_the_day() == lethal:
 			return def
 	return null
 

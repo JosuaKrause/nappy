@@ -25,7 +25,7 @@ func run(t: TestRunner) -> void:
 	for def in _waiting_chargers():
 		for warns_for in TIMES:
 			var copy := def.duplicate() as EventDef
-			copy.shape = def.shape
+			copy.shape = def.ground_shape()
 			copy.solid_parts = def.solid_parts
 			copy.pursuit = def.pursuit.duplicate() as PursuitSpec
 			copy.pursuit.warns_for = warns_for
@@ -47,7 +47,7 @@ static func _waiting_chargers() -> Array[EventDef]:
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 				var def := EventCatalogue.heated(row, level).for_day(day)
-				if def.pursuit == null or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
+				if not def.pursues() or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 					continue
 				var key := "%s|%.2f|%.2f" % [def.id, def.notice_within(), def.chase_speed()]

@@ -22,7 +22,7 @@ func run(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
-			if hot.vehicle != null and hot.mobile and not defs.has(hot):
+			if hot.drives() and hot.moves() and not defs.has(hot):
 				defs.append(hot)
 	var cases := 0
 	for city_seed in SEEDS:

@@ -37,9 +37,9 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 func _flock_flushes_at(t: TestRunner, def: EventDef, offset: float) -> float:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
-	var her := Vector2(-def.outer_radius - 120.0, offset)
+	var her := Vector2(-def.heard_within() - 120.0, offset)
 	var answer := INF
-	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+	for _i in int(ceil(((def.heard_within() + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
 		instance_where.tell(her)
 		instance.step(STEP)
 		if not instance.is_waiting() and not instance.is_telegraphing():
@@ -55,12 +55,12 @@ func _flock_flushes_at(t: TestRunner, def: EventDef, offset: float) -> float:
 func _flock_walked_through(t: TestRunner, def: EventDef, offset: float) -> float:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
-	var her := Vector2(-def.outer_radius - 120.0, offset)
+	var her := Vector2(-def.heard_within() - 120.0, offset)
 	var net := 0.0
-	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+	for _i in int(ceil(((def.heard_within() + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
 		instance_where.tell(her)
 		instance.step(STEP)
-		if her.distance_to(instance.position) <= def.outer_radius:
+		if her.distance_to(instance.position) <= def.heard_within():
 			net += (instance.source().contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 		her.x += Tuning.WALK_SPEED * STEP
 	instance.free()
@@ -95,7 +95,7 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 ##   sources: the price of one depends on whether you went through it or round it.
 func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	t.check(def.flock_spread < def.outer_radius,
+	t.check(def.flock_spread < def.heard_within(),
 			"and the room it takes up comes out of the field it emits over, not on top of it")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
@@ -103,8 +103,8 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 	# the ground about to go. Without a player position a flock waits for ever and every assertion
 	# below would be made about eleven birds pecking — see `_test_a_flock_is_a_place_she_can_see`.
 	instance_where.tell(Vector2.ZERO)
-	_advance(instance, def.telegraph_time + 0.2)
-	t.check(not instance.is_waiting() and not instance.is_telegraphing() and not instance.is_on_its_way_out(),
+	_advance(instance, def.telegraphs_for() + 0.2)
+	t.check(not instance.is_waiting() and not instance.is_telegraphing() and not instance.is_leaving,
 			"the flock is up")
 
 	var spread_before := _widest_gap_between_birds(instance)
@@ -120,7 +120,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 	var furthest := 0.0
 	for i in int(2.0 / STEP):
 		instance.step(STEP)
-		if instance.is_on_its_way_out():
+		if instance.is_leaving:
 			break
 		for bird in instance.flock.birds:
 			furthest = maxf(furthest, bird.at().length())
@@ -129,11 +129,11 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 			% [def.flock_spread, furthest])
 
 	var middle := instance.source().contribution_at(Vector2.ZERO)
-	var rim := instance.source().contribution_at(Vector2(def.outer_radius - 6.0, 0.0))
+	var rim := instance.source().contribution_at(Vector2(def.heard_within() - 6.0, 0.0))
 	t.check(middle > rim * 4.0,
 			"walking through the middle of a flock (%.1f/s) costs far more than skirting it (%.1f/s)"
 			% [middle, rim])
-	t.check(instance.source().contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
+	t.check(instance.source().contribution_at(Vector2(def.heard_within() + 80.0, 0.0)) == 0.0,
 			"and nothing at all reaches past the radius the contract was checked against")
 	instance.free()
 
@@ -229,9 +229,9 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(def.spawn_mode_on(day) == EventDef.SpawnMode.MAP,
 				"day %d sites a flock on a tile rather than in front of her" % day)
-	t.check(def.notice_within() > 0.0 and def.notice_within() < def.outer_radius,
+	t.check(def.notice_within() > 0.0 and def.notice_within() < def.heard_within(),
 			"it waits for her inside its own %.0fpx field (trigger %.0fpx)"
-			% [def.outer_radius, def.notice_within()])
+			% [def.heard_within(), def.notice_within()])
 
 	var planned_flocks := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -253,14 +253,14 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance_where.tell(Vector2(Tuning.EVENT_STREAM_RADIUS, 0.0))
 	_advance(instance, 5.0)
-	t.check(instance.is_waiting() and not instance.is_gone(),
+	t.check(instance.is_waiting() and not instance.is_finished,
 			"five seconds out of reach and the flock is still standing there")
 	var still_grounded := true
 	for bird in instance.flock.birds:
 		still_grounded = still_grounded and is_zero_approx(bird.lift())
 	t.check(still_grounded, "every bird is on the pavement, which is what she can see from there")
 	t.close_to(instance.current_intensity(),
-			def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
+			def.peak() * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
 			"and pecking costs a fraction of what going up does", 0.1)
 
 	# She comes inside the trigger: the notice starts here rather than at dawn.
@@ -276,7 +276,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	# eleven birds happened to be on the frame each was taken.
 	var on_the_ground := instance.source().contribution_at(Vector2.ZERO)
 
-	_advance(instance, def.telegraph_time + 0.2)
+	_advance(instance, def.telegraphs_for() + 0.2)
 	var up := 0
 	for bird in instance.flock.birds:
 		if bird.lift() > 0.0:
@@ -302,7 +302,7 @@ func _test_mobile_follows_its_path(t: TestRunner) -> void:
 
 	# Off the end of the route is over, whatever the nominal duration says.
 	_advance(instance, 3.0)
-	t.check(instance.is_gone() or instance.is_on_its_way_out(),
+	t.check(instance.is_finished or instance.is_leaving,
 			"a mobile event is done with its path at its end")
 	instance.free()
 
@@ -318,7 +318,7 @@ func _test_a_crouching_event_holds_still_until_it_bolts(t: TestRunner) -> void:
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(400.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 
-	_advance(instance, def.telegraph_time - 0.1)
+	_advance(instance, def.telegraphs_for() - 0.1)
 	t.check(instance.position == Vector2.ZERO, "it has not moved while telegraphing")
 	t.check(instance.is_telegraphing(), "and it is still telegraphing")
 

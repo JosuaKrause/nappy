@@ -511,7 +511,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 func _test_a_static_row_is_seen_and_never_influenced(t: TestRunner) -> void:
 	var boxless: Array[String] = []
 	for def in EventCatalogue.all():
-		if EventPictures.icon_for(def.look).is_empty():
+		if EventPictures.icon_for(def.picture()).is_empty():
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
@@ -537,7 +537,7 @@ func _chasing_dog(t: TestRunner, def: EventDef) -> EventInstance:
 	t.add_child(dog)
 	dog.set_process(false)
 	dog.arrive_from_its_warning()
-	dog.restore(EventSave.new(def.telegraph_time, 0.0))
+	dog.restore(EventSave.new(def.telegraphs_for(), 0.0))
 	for _i in 3:
 		dog_where.tell(Vector2.ZERO)
 		dog.step(STEP)

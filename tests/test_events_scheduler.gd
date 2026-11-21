@@ -272,7 +272,7 @@ func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 ## isolation.
 func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_mouse")
-	t.check(def.notice_within() > 0.0 and def.pursuit == null,
+	t.check(def.notice_within() > 0.0 and not def.pursues(),
 			"alley_mouse waits like a pursuer without becoming one")
 
 	var map: CityMap
@@ -311,7 +311,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	t.check(not instance.is_waiting(), "she notices it")
 	t.check(instance.is_telegraphing(), "and it starts telegraphing from the notice, not from dawn")
 
-	_advance(instance, def.telegraph_time + 0.05)
+	_advance(instance, def.telegraphs_for() + 0.05)
 	t.check(not instance.is_telegraphing(), "the telegraph ends")
 	t.check(not instance.is_gone(), "and the dash runs rather than the event already being over")
 
@@ -401,11 +401,11 @@ func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 
 func _test_successors_resolve(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
-		if def.aftermath.on_finish == "":
+		if def.leaves_behind() == "":
 			continue
-		t.check(EventCatalogue.by_id(def.aftermath.on_finish) != null,
+		t.check(EventCatalogue.by_id(def.leaves_behind()) != null,
 				"'%s' spawns '%s', which exists in the catalogue"
-				% [def.id, def.aftermath.on_finish])
+				% [def.id, def.leaves_behind()])
 
 ## The opposite direction: `aftermath.on_sight` names what arrives once a row has been seen,
 ## `aftermath.on_finish`'s own check above, mirrored. `burning_building` is the only row that
@@ -464,7 +464,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			var instance := EventInstance.new()
 			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT,
 					EventSurroundings.new().hearing(her_where))
-			instance.restore(EventSave.new(truck.telegraph_time, 0.0))
+			instance.restore(EventSave.new(truck.telegraphs_for(), 0.0))
 			created.append(instance)
 			return true
 		var warning := PendingWarning.new(truck, where, arrive)

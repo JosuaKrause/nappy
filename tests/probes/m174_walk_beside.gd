@@ -68,18 +68,18 @@ func run(t: TestRunner) -> void:
 	t.check(true, "zz_m174 walk-beside probe ran")
 
 func _walkable_beside(def: EventDef) -> bool:
-	if def.intensity <= 0.0:
+	if def.peak() <= 0.0:
 		return false
 	if def.id in _SCENERY or def.id in _DETAINERS:
 		return false
-	if def.pursuit != null or def.notice_within() > 0.0:
+	if def.pursues() or def.notice_within() > 0.0:
 		return false
 	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return false
 	return true
 
 func _mean_rate_at_inner_radius(def: EventDef) -> float:
-	var base: float = def.emission_at(Vector2(def.inner_radius, 0.0))
-	if def.pulse_period > 0.0:
+	var base: float = def.emission_at(Vector2(def.core_within(), 0.0))
+	if def.pulses_every() > 0.0:
 		return base * PULSE_MEAN
 	return base

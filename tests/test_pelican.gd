@@ -450,7 +450,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	# The warning runs down on the manager's own ticks, with her standing where she is.
 	var pelican: EventInstance = null
 	var ticks := 0
-	var limit := PhysicsTicks.ticks_for(def.telegraph_time + 3.0)
+	var limit := PhysicsTicks.ticks_for(def.telegraphs_for() + 3.0)
 	while pelican == null and ticks < limit:
 		await PhysicsTicks.pass_ticks(t, 1)
 		ticks += 1

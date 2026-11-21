@@ -173,7 +173,7 @@ func _test_a_source_above_the_floor_is_selected(t: TestRunner) -> void:
 func _test_it_goes_to_zero_out_of_reach(t: TestRunner) -> void:
 	var def := _def("reach", 10.0)
 	var instance := _instance_at(def, Vector2.ZERO)
-	var far := Vector2(def.outer_radius + 1.0, 0.0)
+	var far := Vector2(def.heard_within() + 1.0, 0.0)
 	t.check((await HaloRig.lit_among(t, [instance.source()], far)).is_empty(),
 			"a field she has walked out of contributes nothing, so nothing is drawn for it")
 	instance.free()
@@ -688,12 +688,12 @@ func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:
 
 	# Mid-telegraph: `TELEGRAPH_INTENSITY_FRACTION` (0.15) damps 17/s to 2.55/s, still comfortably
 	# above `CONTRIBUTION_FLOOR` (1.0) at zero distance.
-	cat.step(def.telegraph_time * 0.5)
+	cat.step(def.telegraphs_for() * 0.5)
 	t.check((await HaloRig.lit_among(t, [cat.source()], Vector2.ZERO)).size() == 1,
 			"a cat_dash instance standing on her clears the floor while still telegraphing")
 
-	var elapsed := def.telegraph_time * 0.5
-	while elapsed < def.telegraph_time + def.duration:
+	var elapsed := def.telegraphs_for() * 0.5
+	while elapsed < def.telegraphs_for() + def.duration:
 		cat.step(STEP)
 		elapsed += STEP
 		var contribution: float = cat.source().contribution_at(Vector2.ZERO)
@@ -717,12 +717,12 @@ func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 	flock_where.tell(Vector2.ZERO)
 	flock.step(STEP)
 
-	flock.step(def.telegraph_time * 0.5)
+	flock.step(def.telegraphs_for() * 0.5)
 	t.check((await HaloRig.lit_among(t, [flock.source()], Vector2.ZERO)).size() == 1,
 			"a flock standing on her clears the floor while still on the ground telegraphing")
 
-	var elapsed := def.telegraph_time * 0.5
-	while elapsed < def.telegraph_time + def.duration:
+	var elapsed := def.telegraphs_for() * 0.5
+	while elapsed < def.telegraphs_for() + def.duration:
 		flock.step(STEP)
 		elapsed += STEP
 		var contribution: float = flock.source().contribution_at(Vector2.ZERO)
@@ -753,7 +753,7 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t: TestRunner) -> vo
 	# pecking about on the ground.
 	flock_where.tell(Vector2.ZERO)
 	flock.step(STEP)
-	flock.step(def.telegraph_time + 0.1)
+	flock.step(def.telegraphs_for() + 0.1)
 
 	var before: Array[Vector2] = []
 	for bird in flock.flock.birds:

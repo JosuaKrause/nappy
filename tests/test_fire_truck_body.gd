@@ -37,7 +37,7 @@ func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs) -> Eve
 	var engine := EventInstance.new()
 	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(),
 			EventSurroundings.new().hearing(where))
-	engine.restore(EventSave.new(def.telegraph_time, 0.0))
+	engine.restore(EventSave.new(def.telegraphs_for(), 0.0))
 	t.add_child(engine)
 	engine.set_process(false)
 	return engine
@@ -88,10 +88,10 @@ func _what_stops(player: Stroller, heading: Vector2) -> Object:
 
 func _test_the_row_is_a_car_with_the_engines_body(t: TestRunner) -> void:
 	var def := _truck()
-	t.check(def.vehicle != null, "fire_truck drives: solid in every state, lethal in front while driving")
-	t.check(def.shape != null and def.shape.kind == GroundShape.Kind.SEGMENT,
+	t.check(def.drives(), "fire_truck drives: solid in every state, lethal in front while driving")
+	t.check(def.ground_shape() != null and def.ground_shape().kind == GroundShape.Kind.SEGMENT,
 			"its body is a capsule laid along its heading")
-	t.check(def.shape.reach() < def.inner_radius,
+	t.check(def.ground_shape().reach() < def.core_within(),
 			"and the body lies inside the field's inner radius")
 
 # ------------------------------------------------------------------ driving ---
@@ -162,7 +162,7 @@ func _test_in_front_of_it_the_warning_comes_first(t: TestRunner) -> void:
 func _test_where_it_is_created_she_is_warned_in_full(t: TestRunner) -> void:
 	var def := _truck()
 	var warning_reach := (EventCarDriving.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
-			+ def.shape.half_length + def.shape.radius + Tuning.PLAYER_BODY_RADIUS
+			+ def.ground_shape().half_length + def.ground_shape().radius + Tuning.PLAYER_BODY_RADIUS
 	var nearer_than_its_warning := 0
 	var sides := {Vector2.DOWN: "the north", Vector2.UP: "the south", Vector2.RIGHT: "the west",
 			Vector2.LEFT: "the east"}
@@ -363,7 +363,7 @@ func _test_parked_it_is_solid_and_harmless(t: TestRunner) -> void:
 func _test_parked_its_field_is_a_points(t: TestRunner) -> void:
 	var def := _truck()
 	t.check(def.vehicle.field_from_its_centre, "fire_truck's field is priced from its centre")
-	var moving := def.outer_radius * Field.scale(Field.eccentricity(def.speed))
+	var moving := def.heard_within() * Field.scale(Field.eccentricity(def.speed))
 	t.check(is_equal_approx(def.field_reach(), moving),
 			"and its field's reach is a moving point's, %.0fpx, not its body's (%.0fpx)"
 			% [moving, def.field_reach()])
@@ -378,12 +378,12 @@ func _test_parked_its_field_is_a_points(t: TestRunner) -> void:
 	t.check(engine.has_parked() and engine.travel_velocity().is_zero_approx(),
 			"the truck has parked and stands still")
 	var same := true
-	for d: float in [40.0, 100.0, 250.0, def.outer_radius - 5.0]:
+	for d: float in [40.0, 100.0, 250.0, def.heard_within() - 5.0]:
 		var along := engine.field_at(Vector2(d, 0.0), -1.0, Vector2.ZERO)
 		var abeam := engine.field_at(Vector2(0.0, d), -1.0, Vector2.ZERO)
 		same = same and absf(along - abeam) < 0.0001 and along > 0.0
 	t.check(same, "along its street its field is what it is abeam, at every distance")
-	t.check(engine.field_at(Vector2(def.outer_radius + 5.0, 0.0), -1.0, Vector2.ZERO) == 0.0,
+	t.check(engine.field_at(Vector2(def.heard_within() + 5.0, 0.0), -1.0, Vector2.ZERO) == 0.0,
 			"and it ends at its 340px along the street, not past its body's end")
 	player.free()
 	engine.free()
@@ -402,7 +402,7 @@ func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var kerbs := _kerbs(map)
 	t.check(kerbs.size() >= 20, "enough kerbs were tried (%d)" % kerbs.size())
-	var truck := _truck().shape
+	var truck := _truck().ground_shape()
 	var lost := _routes_lost(map, kerbs, truck)
 	t.check(lost.x == 0 and lost.y == 0,
 			"with the parked engine's tiles blocked, no street is closed (%d) and no calm area "
@@ -525,7 +525,7 @@ func _test_its_picture_stands_over_its_body(t: TestRunner) -> void:
 	var engine_where := WhereSheIs.nowhere()
 	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]),
 			engine_where)
-	var shape := _truck().shape
+	var shape := _truck().ground_shape()
 	t.check(is_equal_approx(engine.look.body_anchor("side").y,
 			shape.half_length * absf(engine.solid_axis().y) + shape.radius
 			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),

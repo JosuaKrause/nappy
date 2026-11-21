@@ -231,7 +231,7 @@ func _test_a_walk_goes_round_what_was_put_down(t: TestRunner) -> void:
 ## its own driving would never take.
 func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
-	t.check(patrol.vehicle != null, "the patrol is a car that drives")
+	t.check(patrol.drives(), "the patrol is a car that drives")
 	for ground: GameEnums.TileType in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK, GameEnums.TileType.SIDEWALK]:
 		var map := _yard(Vector2i(8, 8))
@@ -254,7 +254,7 @@ func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	var whole := float(Tuning.STREET_WIDTH) * TILE
-	var on_time := cat.telegraph_time + whole / cat.speed
+	var on_time := cat.telegraphs_for() + whole / cat.speed
 	for run: float in [whole, whole * 0.5, TILE]:
 		var instance := EventInstance.new()
 		var path := PackedVector2Array([Vector2(-run, 0.0), Vector2(run, 0.0)])
@@ -455,9 +455,9 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 			if crouch > 0.0:
 				cut += 1
 			var clock := 0.0
-			while clock <= cat.telegraph_time + crouch:
+			while clock <= cat.telegraphs_for() + crouch:
 				if (her + heading * Tuning.WALK_SPEED * clock).distance_to(run[0]) \
-						<= cat.outer_radius:
+						<= cat.heard_within():
 					in_its_field += 1
 					break
 				clock += 0.02
@@ -542,14 +542,14 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 	var stalled: Array[String] = []
 	var anchor := map.doorstep_world_position()
 	for def in EventCatalogue.all():
-		if not (def.mobile or def.pursuit != null or def.flock_size > 0):
+		if not (def.moves() or def.pursues() or def.is_a_flock()):
 			continue
 		var mover := EventInstance.mover_for(def)
 		var at := _a_start_for(map, def, mover, anchor)
 		if at == Vector2.INF:
 			continue
 		var route := PackedVector2Array()
-		if def.mobile and def.pursuit == null:
+		if def.moves() and not def.pursues():
 			route = PackedVector2Array([at, at + Vector2(0.0, -12.0 * TILE)])
 		var instance := RunCity.events(city).spawn_extra(def, at, route)
 		instance.set_process(false)

@@ -206,10 +206,10 @@ func _check_he_guards(t: TestRunner, director: ResistanceDirector, roadblock: Ev
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var reach := ContactPoint.body_reach(roadblock)
 	var from_body := guard.global_position.distance_to(roadblock.body_position())
-	t.check(from_body >= robbery.inner_radius + reach - 0.5
+	t.check(from_body >= robbery.core_within() + reach - 0.5
 			and from_body <= robbery.notice_within() + reach + 0.5,
 			"at %s he stands in its band, %.0fpx from its body (%.0f-%.0fpx)"
-			% [what, from_body, robbery.inner_radius + reach, robbery.notice_within() + reach])
+			% [what, from_body, robbery.core_within() + reach, robbery.notice_within() + reach])
 	t.check(_a_clear_line(_city.map, guard.global_position, roadblock.body_position()),
 			"at %s he has a clear line to its body, so he can notice her there" % what)
 	t.check(guard.global_position.distance_to(player.global_position) > robbery.notice_within(),

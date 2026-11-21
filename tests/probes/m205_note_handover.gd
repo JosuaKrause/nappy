@@ -89,7 +89,7 @@ func run(t: TestRunner) -> void:
 func _handover_net_averaged(def: EventDef, at_inner_radius: bool, decay: float,
 		sensitivity: float) -> float:
 	var total := 0.0
-	var phase_span: float = def.pulse_period if def.pulse_period > 0.0 else 1.0
+	var phase_span: float = def.pulses_every() if def.pulses_every() > 0.0 else 1.0
 	for i in PHASE_SAMPLES:
 		total += _handover_net(def, at_inner_radius, decay, sensitivity,
 				phase_span * float(i) / float(PHASE_SAMPLES))
@@ -103,7 +103,7 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 
 	# Past the telegraph, plus the requested phase offset — the same warm-up `M174Pass` gives every
 	# row it measures, since a `MAP` row's telegraph is hours over by the time she reaches it.
-	var warm_steps := int(ceil((def.telegraph_time + 0.05 + phase_delay) / STEP))
+	var warm_steps := int(ceil((def.telegraphs_for() + 0.05 + phase_delay) / STEP))
 	for _i in warm_steps:
 		instance.step(STEP)
 
@@ -119,10 +119,10 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 		if to_instance.length() > 1.0:
 			her_pos += to_instance.normalized() * Tuning.WALK_SPEED * STEP
 		var distance := her_pos.distance_to(instance.global_position)
-		if distance <= def.outer_radius:
+		if distance <= def.heard_within():
 			incoming_sum += instance.source().contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
-		var stop_radius := def.inner_radius if at_inner_radius else ContactPoint.REACH
+		var stop_radius := def.core_within() if at_inner_radius else ContactPoint.REACH
 		if distance <= stop_radius:
 			break
 
@@ -138,7 +138,7 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 func _handover_then_linger_net_averaged(def: EventDef, decay: float, sensitivity: float,
 		linger_seconds: float) -> float:
 	var total := 0.0
-	var phase_span: float = def.pulse_period if def.pulse_period > 0.0 else 1.0
+	var phase_span: float = def.pulses_every() if def.pulses_every() > 0.0 else 1.0
 	for i in PHASE_SAMPLES:
 		total += _handover_then_linger_net(def, decay, sensitivity,
 				phase_span * float(i) / float(PHASE_SAMPLES), linger_seconds)
@@ -150,7 +150,7 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 	var instance := EventInstance.new()
 	instance.setup(def, path[0], path)
 
-	var warm_steps := int(ceil((def.telegraph_time + 0.05 + phase_delay) / STEP))
+	var warm_steps := int(ceil((def.telegraphs_for() + 0.05 + phase_delay) / STEP))
 	for _i in warm_steps:
 		instance.step(STEP)
 
@@ -171,10 +171,10 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 		# past him, not back the way she came -- exactly like an ordinary pass.
 		her_pos += direction * Tuning.WALK_SPEED * STEP
 		var distance := her_pos.distance_to(instance.global_position)
-		if distance <= def.outer_radius:
+		if distance <= def.heard_within():
 			incoming_sum += instance.source().contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
-		if not reached and distance <= def.inner_radius:
+		if not reached and distance <= def.core_within():
 			reached = true
 		if reached:
 			linger_remaining -= STEP

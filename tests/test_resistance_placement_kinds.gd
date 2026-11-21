@@ -1404,7 +1404,7 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 
 	happenings.start_day(ResistanceHappenings.COLUMN_DAY)
 	happenings.tick(ResistanceHappenings.COLUMN_BY, far_from_it, Vector2.ZERO)
-	RunCity.events(_city).warnings.run(convoy.telegraph_time + STEP, far_from_it)
+	RunCity.events(_city).warnings.run(convoy.telegraphs_for() + STEP, far_from_it)
 	t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
 			"at COLUMN_BY it comes wherever she is")
 	for truck in happenings.column:

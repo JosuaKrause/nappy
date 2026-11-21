@@ -63,7 +63,7 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t: TestRunner) -> vo
 	if not plan.is_in_the_world():
 		_free_manager(manager)
 		return
-	manager.world.where_she_is().tell(at + Vector2(def.notice.within - 10.0, 0.0))
+	manager.world.where_she_is().tell(at + Vector2(def.notice_within() - 10.0, 0.0))
 	for _i in 3:
 		manager.event_of(plan).step(STEP)
 	var age := manager.event_of(plan).age()
@@ -221,7 +221,7 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	var her := _her(t)
 	# Off the robber's own heading and beyond his notice, so he stands as he was sited, and the side
 	# a man would get out of him on is hers once he knows where she is (`door_for_its_officer()`).
-	var off := Vector2(def.notice.within, def.notice.within)
+	var off := Vector2(def.notice_within(), def.notice_within())
 	her.global_position = at + off
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame

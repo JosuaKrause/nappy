@@ -466,7 +466,7 @@ func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 			"as one timed call, and the clock goes back to what was running")
 	# Past its telegraph, so its first step announces it, in whatever bucket was running: its step
 	# times nothing itself, so the time spent in the announcement is the rest of the process's.
-	event.restore(EventSave.aged(def.telegraph_time + 0.01))
+	event.restore(EventSave.aged(def.telegraphs_for() + 0.01))
 	var age := event.age()
 	var slept := func(_instance: Variant) -> void: OS.delay_usec(SPENT_US)
 	EventBus.event_activated.connect(slept)

@@ -258,23 +258,23 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) ->
 	var limited: EventDef = null
 	for id: String in EventDirector.ordinary_route_marbles(RETURN_DAY, 0):
 		var def := EventCatalogue.by_id(id)
-		if limited == null or def.max_per_day < limited.max_per_day:
+		if limited == null or def.most_in_a_day() < limited.most_in_a_day():
 			limited = def
 	var marbles := []
 	for i in 80:
 		marbles.append(limited.id)
 	var director := _the_return_days_director(map, 31)
 	# The row's whole day is owed first: exactly `max_per_day` of them, handed out as she walks.
-	director.start_recipe_route(marbles, [], limited.max_per_day, 0.0, 0)
+	director.start_recipe_route(marbles, [], limited.most_in_a_day(), 0.0, 0)
 	var walk := Walk.new(director, map)
 	var its_day: Array[String] = []
 	while walk.clock < 600.0 and director.owed() > 0:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
 			its_day.append((due[0] as EventDef).id)
-	t.check(its_day.size() == limited.max_per_day and director.owed() == 0,
+	t.check(its_day.size() == limited.most_in_a_day() and director.owed() == 0,
 			"'%s' has had its %d a day before the return (%d handed out, %d owed)"
-			% [limited.id, limited.max_per_day, its_day.size(), director.owed()])
+			% [limited.id, limited.most_in_a_day(), its_day.size(), director.owed()])
 	director.owe_the_return(RETURN_DAY, 0)
 	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(RETURN_DAY) - 1]
 	var met: Array[String] = []

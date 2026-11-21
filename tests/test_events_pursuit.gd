@@ -273,7 +273,7 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> voi
 			"guardsman_giving_chase"]
 	for def in EventCatalogue.all():
 		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
-		if def.pursuit != null and not robbers.has(def.id):
+		if def.pursues() and not robbers.has(def.id):
 			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
 					"'%s' lunges from its own catch" % def.id)
 	# A `PursuitSpec.lunge_reach` inside the catch would stand the pursuer off closer than
@@ -312,11 +312,11 @@ func _test_a_pursuer_leaves_room_to_answer(t: TestRunner) -> void:
 		# `door_guard` at a door instead.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
 		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
-		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
+		if not def.pursues() or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		pursuers += 1
 		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
-		t.check(standoff > def.inner_radius,
+		t.check(standoff > def.core_within(),
 				"'%s' holds off outside the radius that ends the day" % def.id)
 		# One that waits for her charges on its warning's clock, not at its stand-off; it is walked
 		# in `_test_every_waiting_charger_warns_by_radius`.
@@ -347,9 +347,9 @@ func _test_a_pursuer_leaves_room_to_answer(t: TestRunner) -> void:
 		t.check(not ran["caught"], "running away from '%s' works" % def.id)
 		t.check(ran["gave_up"],
 				"and '%s' breaks off rather than tailing her for the whole chase" % def.id)
-		t.check(ran["ended_at"] < def.telegraph_time + def.duration,
+		t.check(ran["ended_at"] < def.telegraphs_for() + def.duration,
 				"which ends '%s' early: %.1fs against a %.1fs chase"
-				% [def.id, ran["ended_at"], def.telegraph_time + def.duration])
+				% [def.id, ran["ended_at"], def.telegraphs_for() + def.duration])
 		var cost: float = ran["ended_at"] * Baby.EXCITEMENT_FROM_RUNNING
 		t.check(cost < Tuning.METER_MAX * 0.6,
 				"and running from '%s' costs %.0f of a %.0f meter rather than the day"
@@ -383,7 +383,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t: TestRunner) -> void:
 		# Sited beside her rather than by the director — see `_test_a_pursuer_leaves_room_to_answer`.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
 		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
-		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
+		if not def.pursues() or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		# One that waits for her charges on its warning's clock and is walked in
 		# `_test_every_waiting_charger_warns_by_radius`.
@@ -392,9 +392,9 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t: TestRunner) -> void:
 		var at_once := _answer_rig(def, 0.0)
 		t.check(not at_once["caught"],
 				"'%s' can be answered at the lunge (closest %.0fpx)" % [def.id, at_once["closest"]])
-		t.check(at_once["closest"] > def.inner_radius,
+		t.check(at_once["closest"] > def.core_within(),
 				"and answering it clears the %.0fpx that ends the day by %.0fpx"
-				% [def.inner_radius, at_once["closest"] - def.inner_radius])
+				% [def.core_within(), at_once["closest"] - def.core_within()])
 
 		# The price is the about-turn plus being visibly outrun, and nothing else. A chase that ran
 		# its clock however well it was played would cost `PURSUIT_TIME` here instead.
@@ -444,7 +444,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t: TestRunner) -> void:
 		# Sited beside her by construction, which is what its own stand-off rule answers.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
 		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
-		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
+		if not def.pursues() or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 		var floor_lead := SpawnSiting.least_distance()
@@ -476,7 +476,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t: TestRunner) -> void:
 func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.hard_fail:
+		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.ends_the_day():
 			continue
 		checked += 1
 		var arrived: Array[EventInstance] = []
@@ -798,7 +798,7 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void
 func _test_every_pursuer_sent_from_off_screen_is_warned_first(t: TestRunner) -> void:
 	var sent := 0
 	for def in EventCatalogue.all():
-		if def.pursuit == null or def.notice_within() > 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
+		if not def.pursues() or def.notice_within() > 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 			continue
 		sent += 1
 		var warned := EventSpawner.as_warned(def)
@@ -947,10 +947,10 @@ func _test_a_pursuer_can_wait(t: TestRunner) -> void:
 	t.check(instance.is_waiting(), "he is still standing there half a minute later")
 	t.check(not instance.is_gone(), "and his duration has not been running")
 	t.close_to(instance.position.x, 0.0, "he has not moved", 0.5)
-	t.close_to(instance.current_intensity(), def.intensity,
+	t.close_to(instance.current_intensity(), def.peak(),
 			"he is loud from the moment she can see him, not damped to a telegraph", 0.05)
 	t.check(not instance.is_lethal_at(instance_where.at()), "and he cannot end the day yet")
-	t.check(instance.source().contribution_at(Vector2(def.outer_radius - 10.0, 0.0)) > 0.0,
+	t.check(instance.source().contribution_at(Vector2(def.heard_within() - 10.0, 0.0)) > 0.0,
 			"his field reaches the far end of the alley")
 
 	# She steps inside the trigger: the notice starts *now*.
@@ -1180,11 +1180,11 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 				var def := EventCatalogue.heated(row, level).for_day(day)
-				if def.pursuit == null or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
+				if not def.pursues() or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or not keep.call(def):
 					continue
 				var key := "%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f|%s" % [def.id, def.notice_within(),
-						def.telegraph_time, def.chase_speed(), def.duration, def.lethal_reach(),
+						def.telegraphs_for(), def.chase_speed(), def.duration, def.lethal_reach(),
 						def.pursuit.walk_speed, def.pursuit.stands]
 				if seen.has(key):
 					continue
@@ -1298,7 +1298,7 @@ func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	# Clear the telegraph with her held far off, so what follows is about the wall and not about
 	# the stand-off.
 	instance_where.tell(map.tile_to_world(north) + Vector2(-4000.0, 0.0))
-	_advance(instance, def.telegraph_time + 0.1)
+	_advance(instance, def.telegraphs_for() + 0.1)
 	t.check(not instance.is_telegraphing(), "the dog is chasing by the time she rounds the corner")
 
 	# She walks from the building's north face round to its east face — the corner a straight
@@ -1610,9 +1610,9 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t: TestRunner) -> vo
 ## depends on where its samples fall.
 func _test_the_red_caret_is_measured_from_the_catch(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
-	t.check(hot.pursuit != null and hot.hard_fail and hot.lethal_reach() < hot.inner_radius,
+	t.check(hot.pursues() and hot.ends_the_day() and hot.lethal_reach() < hot.core_within(),
 			"the hunting roadblock catches inside its field's core (%.0fpx < %.0fpx)"
-			% [hot.lethal_reach(), hot.inner_radius])
+			% [hot.lethal_reach(), hot.core_within()])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), null, instance_where)
 	instance_where.tell(Vector2(hot.notice_within() - 10.0, 0.0))

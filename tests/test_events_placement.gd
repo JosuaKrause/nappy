@@ -260,7 +260,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 		var map := _repainted_city(day)
 		var corridor := Corridor.of(RouteTree.for_day(map, day))
 		for def in EventCatalogue.all():
-			if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces:
+			if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces_a_beat():
 				continue
 			if _role_it_places_as(def, day, map, corridor) != GameEnums.BlockerRole.FRICTION:
 				continue
@@ -281,7 +281,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	for day: int in [8, 10, 14]:
 		cities[day] = _repainted_city(day)
 	for def in EventCatalogue.all():
-		if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces or def.mobile:
+		if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces_a_beat() or def.moves():
 			continue
 		if def.obstructs_within() <= 0.0:
 			continue
@@ -289,7 +289,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 		# (the scheduler answers it before the cost or physical clause ever runs), so a
 		# solid one on a sidewalk is exempt here. `burning_building` carries no body (the fire truck
 		# it calls in is the danger, not the fire), so the check above already passes it over.
-		if def.kind == GameEnums.EventKind.ONE_SHOT:
+		if def.is_a_one_shot():
 			continue
 		solid_on_a_sidewalk += 1
 		var gap := _gap_past_the_body(def)
@@ -308,7 +308,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 			t.check(role == GameEnums.BlockerRole.WALL,
 					"day %d: '%s' leaves %.1fpx where she needs %.0f (obstructs %.1fpx, %s), so it has to"
 					% [day, def.id, gap, her_clearance, def.obstructs_within(),
-					EventDef.Pavement.keys()[def.pavement_side]]
+					EventDef.Pavement.keys()[def.sidewalk_lane()]]
 					+ " be placed as a wall rather than friction")
 		narrow_and_placed += 1 if placed_on > 0 else 0
 		t.check(placed_on > 0, "'%s' is placed on one of the days asked (%d)" % [def.id, placed_on])
@@ -351,7 +351,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 func _gap_past_the_body(def: EventDef) -> float:
 	var band := float(Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
 	var pos: float
-	match def.pavement_side:
+	match def.sidewalk_lane():
 		EventDef.Pavement.AT_THE_KERB:
 			pos = Tuning.TILE_SIZE * 0.5
 		EventDef.Pavement.AGAINST_THE_BUILDING:
@@ -364,7 +364,7 @@ func _gap_past_the_body(def: EventDef) -> float:
 ## def's public readings: its reach spans the far lane, or its body leaves a gap under what she
 ## needs. A pacing row is asked of its beat instead (`_paces_a_beat_with_no_way_out`).
 func _takes_a_whole_sidewalk(def: EventDef) -> bool:
-	return not def.paces and _leaves_no_line_along_a_sidewalk(def)
+	return not def.paces_a_beat() and _leaves_no_line_along_a_sidewalk(def)
 
 func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 	if not def.placement.has(GameEnums.TileType.SIDEWALK) or not def.has_a_line_to_avoid():
@@ -395,7 +395,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 	var ground := EventScheduler.row_ground(map)
 	var asked := 0
 	for def in EventCatalogue.all():
-		if def.pavement_side == EventDef.Pavement.ANY or def.placement.is_empty():
+		if def.sidewalk_lane() == EventDef.Pavement.ANY or def.placement.is_empty():
 			continue
 		var offered := {}
 		for tile in ground.tiles_for(def):
@@ -406,7 +406,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 			asked += 1
 			t.check(wanted > 0,
 					"'%s' is pinned %s, and the %s ground it lists has %d tiles that side exists on"
-					% [def.id, EventDef.Pavement.keys()[def.pavement_side],
+					% [def.id, EventDef.Pavement.keys()[def.sidewalk_lane()],
 					GameEnums.TileType.keys()[type], wanted])
 	t.check(asked >= 4, "and the catalogue has pinned rows to ask it of (%d)" % asked)
 	# The pool the roll actually draws from, for the one row the player asked about: `poster_crew`
@@ -1060,10 +1060,10 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 func _test_a_lethal_rows_line_reach_is_its_whole_field(t: TestRunner) -> void:
 	var lethal := 0
 	for def in EventCatalogue.all():
-		if not def.hard_fail:
+		if not def.ends_the_day():
 			continue
 		lethal += 1
-		t.check(is_equal_approx(def.line_reach(), maxf(def.outer_radius, def.obstructs_within())),
+		t.check(is_equal_approx(def.line_reach(), maxf(def.heard_within(), def.obstructs_within())),
 				"%s: a lethal row's line reach is its whole field (%.0fpx)"
 				% [def.id, def.line_reach()])
 	t.check(lethal > 0, "the catalogue has lethal rows to ask (%d)" % lethal)

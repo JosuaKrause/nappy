@@ -226,7 +226,7 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRu
 ## towards it; what can be seen is `drawn_rect_now()`, the drawing's own extent, caret included.
 func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
-	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
+	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
 	if not def:
 		return
 	var screen := _screen(t, Vector2(-2000.0, 0.0))
@@ -240,7 +240,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	# asks for a redraw whatever the event's visibility, and that answer is what is checked.
 	cyclist.visible = false
 	screen.add_child(cyclist)
-	her.tell(cyclist.global_position + Vector2(def.outer_radius, 0.0))
+	her.tell(cyclist.global_position + Vector2(def.heard_within(), 0.0))
 	# A twin it is asked of first: whether the gate worked out the caret is read off what it left
 	# cached (below), and reading it works the caret out.
 	var twin := EventInstance.new()

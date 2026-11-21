@@ -153,7 +153,7 @@ func _body_shape(car: EventInstance) -> CollisionShape2D:
 ## The body is the car's drawn ground contact — the side view's 42px bumper to bumper and the end
 ## view's 24px flank to flank — and it turns with the car.
 func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t: TestRunner) -> void:
-	var shape := _patrol().shape
+	var shape := _patrol().ground_shape()
 	t.check(is_equal_approx(shape.reach() * 2.0, 42.0) and is_equal_approx(shape.radius * 2.0, 24.0),
 			"the body is 42px long and 24px wide (%.0f by %.0f)" % [shape.reach() * 2.0,
 			shape.radius * 2.0])
@@ -504,7 +504,7 @@ func _a_wall(map: CityMap) -> Array:
 ## behind, it turns and comes back at her with its whole warning.
 func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 	var raid: EventDef = _patrol().duplicate()
-	raid.shape = _patrol().shape
+	raid.shape = _patrol().ground_shape()
 	raid.paces = true
 	var beat := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	for behind: float in [41.0, 49.0, 61.0, 101.0, 141.0]:

@@ -807,7 +807,7 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	var hut := _door_instance(manager, "checkpoint_hut", centre, axis)
 	# Past its own telegraph, so the field it is standing there with is the field it declares.
 	var loud := _door_instance(manager, "loudspeaker", centre + Vector2(0.0, 72.0), axis, null,
-			EventCatalogue.by_id("loudspeaker").telegraph_time + 1.0)
+			EventCatalogue.by_id("loudspeaker").telegraphs_for() + 1.0)
 
 	var entry := centre + axis * 60.0
 	stroller.global_position = entry
@@ -869,7 +869,7 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 	for i in 3:
 		kit.append(_door_instance(manager, "checkpoint_post",
 				here + Vector2(-56.0, -32.0 + i * 32.0), axis, null,
-				EventCatalogue.by_id("checkpoint_post").telegraph_time + 1.0))
+				EventCatalogue.by_id("checkpoint_post").telegraphs_for() + 1.0))
 	kit.append(_door_instance(manager, "checkpoint_hut", here + Vector2(0.0, 54.0), axis))
 	kit.append(_door_instance(manager, "checkpoint_gate", here + Vector2(64.0, 54.0), axis))
 
@@ -1747,7 +1747,7 @@ func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 	stroller.global_position = at
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(mother.is_chatting(), "the first approach starts the one conversation")
-	await _pass_the_hold(t, def.detain_seconds + 0.5)
+	await _pass_the_hold(t, def.detains_for() + 0.5)
 	t.check(mother.has_chatted() and not mother.is_chatting(),
 			"spent as a detainer once the conversation ends")
 
@@ -2174,7 +2174,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 ## 48px across.
 func _test_the_guard_leaves_room_to_answer(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("door_guard")
-	t.check(def != null and def.pursuit != null and def.hard_fail and def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE),
+	t.check(def != null and def.pursues() and def.ends_the_day() and def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE),
 			"door_guard is a lethal pursuer that charges at once once the crossing's warning has run")
 	if not def:
 		return
@@ -2227,7 +2227,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 		elapsed += STEP
 		if guard.is_lethal_at(her):
 			result["caught"] = true
-			result["lethal_in_notice"] = elapsed < def.telegraph_time
+			result["lethal_in_notice"] = elapsed < def.telegraphs_for()
 			break
 	result["gave_up"] = guard.has_given_up()
 	result["ended_at"] = elapsed
@@ -2340,7 +2340,7 @@ func _test_a_hold_does_not_end_the_roadblock_guard(t: TestRunner) -> void:
 	var far_hut := doors[2]
 
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
-	t.check(hot.pursuit != null and hot.hard_fail, "the heated roadblock hunts like any other pursuer")
+	t.check(hot.pursues() and hot.ends_the_day(), "the heated roadblock hunts like any other pursuer")
 	var axis := far_hut.facing_now()
 	var road_guard := _planned_instance(manager, hot, far_hut.global_position + axis * 200.0, axis)
 

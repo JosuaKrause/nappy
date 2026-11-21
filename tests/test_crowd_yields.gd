@@ -84,7 +84,7 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 ## on `map`'s list, keeping its course, parked when `parked`.
 func _a_vehicle(map: CityMap, at: Vector2, parked: bool) -> MoveProposal:
 	var move := MoveProposal.new()
-	move.radius = EventCatalogue.by_id("police_patrol").shape.reach()
+	move.radius = EventCatalogue.by_id("police_patrol").ground_shape().reach()
 	move.stood_round = true
 	move.parked = parked
 	map.moves.join(move, at)
@@ -425,7 +425,7 @@ func _test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t: TestRun
 		return
 	var tile := float(Tuning.TILE_SIZE)
 	var far_side := float(block.y + Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH) * tile
-	var reach := EventCatalogue.by_id("police_patrol").shape.reach()
+	var reach := EventCatalogue.by_id("police_patrol").ground_shape().reach()
 	var got := _drive_at_a_vehicle(crowd, map, block.x, (float(block.y) + 1.5) * tile,
 			far_side + reach + 8.0, false, 6.0, 0.0)
 	t.check(not got["in_the_box"], "a car holds at the line for a vehicle standing just past the box")

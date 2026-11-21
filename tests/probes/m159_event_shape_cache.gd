@@ -49,13 +49,13 @@ func _measure_cached(defs: Array[EventDef]) -> Vector2i:
 	var hits := 0
 	for _pass in PASSES:
 		for def in defs:
-			if def.has_a_spread:
+			if def.lies_as_a_spread():
 				hits += 1
 	return Vector2i(Time.get_ticks_usec() - began, hits)
 
 ## An equivalent uncached classifier, kept here as an independent timing and parity oracle.
 static func _legacy_has_a_spread(def: EventDef) -> bool:
-	match def.look:
+	match def.picture():
 		EventDef.Look.ROADWORKS, EventDef.Look.BURNT_SHELL, EventDef.Look.STALL, \
 				EventDef.Look.ROADBLOCK, EventDef.Look.BARRICADE, EventDef.Look.CAFE, \
 				EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN, \

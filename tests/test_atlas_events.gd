@@ -98,7 +98,7 @@ func _collect_paths(value: Variant, found: Dictionary) -> void:
 func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t: TestRunner) -> void:
 	var looks: Dictionary = {}
 	for def in EventCatalogue.all():
-		looks[def.look] = def.id
+		looks[def.picture()] = def.id
 	var checked := 0
 	for look: EventDef.Look in looks.keys():
 		if look == EventDef.Look.NONE:
@@ -121,9 +121,9 @@ func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t: TestRunner) ->
 func _test_every_badge_silhouette_is_on_the_page(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.look == EventDef.Look.NONE:
+		if def.picture() == EventDef.Look.NONE:
 			continue
-		var icon := EventPictures.icon_for(def.look)
+		var icon := EventPictures.icon_for(def.picture())
 		t.check(not icon.is_empty(), "'%s' has a silhouette for the badge" % def.id)
 		if icon.is_empty():
 			continue

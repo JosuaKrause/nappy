@@ -405,7 +405,7 @@ static func _block_every_standing_reach(t: TestRunner, map: CityMap,
 	var count := 0
 	for placement: EventPlan in placements:
 		var def := placement.def
-		if def.mobile or not def.hard_fail or def.pursuit != null:
+		if def.moves() or not def.ends_the_day() or def.pursues():
 			continue
 		var instance := stage.stand(placement)
 		count += 1
@@ -523,10 +523,10 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 	var escape := EventCatalogue.escape_roadblock()
 	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(escape == day, "the escape's roadblock is a day's at full resistance progress, one row")
-	t.check(escape.pursuit != null and escape.pursuit.leaves_its_body and escape.hard_fail,
+	t.check(escape.pursues() and escape.pursuit.leaves_its_body and escape.ends_the_day(),
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
-	t.check(EventCatalogue.by_id("roadblock").intensity == 0.0 and day.intensity == 0.0
-			and escape.intensity == 0.0, "the roadblock row, cold and hunting, has no field strength")
+	t.check(EventCatalogue.by_id("roadblock").peak() == 0.0 and day.peak() == 0.0
+			and escape.peak() == 0.0, "the roadblock row, cold and hunting, has no field strength")
 	var step := 1.0 / 60.0
 	for def: EventDef in [escape, day]:
 		var name := "the escape's" if def == escape else "a day's"
@@ -1748,7 +1748,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
 	# picture is a region of the `events` page now, and `AtlasTable.baked().native_size()` answers the
 	# source picture's own size with nothing acquired.
-	var picture := EventPictures.icon_for(crater.look)
+	var picture := EventPictures.icon_for(crater.picture())
 	var drawn_width := EventPictures.native_size(picture).x
 	t.check(is_equal_approx(crater.obstructs_within(), drawn_width * 0.5),
 			"the crater obstructs %.0fpx against a %.0fpx picture"

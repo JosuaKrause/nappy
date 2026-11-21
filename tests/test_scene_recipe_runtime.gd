@@ -184,7 +184,7 @@ func _test_hold_is_for_a_straight_departure(t: TestRunner) -> void:
 				"%s is refused" % row)
 	var flock := ""
 	for def: EventDef in EventCatalogue.all():
-		if def.flock_size > 0 and def.pursuit == null:
+		if def.is_a_flock() and not def.pursues():
 			flock = SceneRecipeRuntime.hold_refusal(def)
 	t.check(flock.contains("does not pursue"), "a flock is refused for not pursuing: %s" % flock)
 	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.by_id("roadblock"))

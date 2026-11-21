@@ -40,7 +40,7 @@ func _roles_of_the_named_rows() -> void:
 		var role := EventScheduler.role_for(def)
 		var role_name: String = ["NONE", "WALL", "FRICTION", "SET_PIECE"][role]
 		print("  %-16s cost=%6.2f hard_fail=%s role=%s"
-				% [id, def.walk_through_cost(), def.hard_fail, role_name])
+				% [id, def.walk_through_cost(), def.ends_the_day(), role_name])
 
 # ---------------------------------------------------------- role x depth sweep ---
 

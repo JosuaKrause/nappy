@@ -575,7 +575,7 @@ func _test_cat_state_predicate_selects_the_telegraph_posture(t: TestRunner) -> v
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
-	for i in int(round((def.telegraph_time + 0.05) / STEP)):
+	for i in int(round((def.telegraphs_for() + 0.05) / STEP)):
 		instance.step(STEP)
 	t.check(not instance.is_telegraphing(), "and is running once the telegraph ends")
 	instance.free()
@@ -609,7 +609,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
 	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
-	for i in int(round((def.telegraph_time + 2.0) / STEP)):
+	for i in int(round((def.telegraphs_for() + 2.0) / STEP)):
 		alert = alert \
 				and await _drawn_from(t, instance, [EventPictures.GUARD_ALERT_BY_VIEW])
 		instance.step(STEP)
@@ -771,7 +771,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	t.check(alert_frames.size() == 2 and other == 0,
 			"his alert walk shows both its frames (%s) and nothing else (%d frames)"
 			% [", ".join(alert_frames.keys()), other])
-	_hold(instance, instance_where, her, def.telegraph_time)
+	_hold(instance, instance_where, her, def.telegraphs_for())
 	t.check(not instance.is_telegraphing()
 			and await _drawn_from(t, instance, [EventPictures.ROBBER_LUNGING_BY_VIEW, EventPictures.ROBBER_LUNGING_BY_VIEW_B]),
 			"once his slow walk has brought her inside his stand-off he lunges")
@@ -845,7 +845,7 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t: Test
 	# `CheckpointController.warn_at_the_doors()`); the man set on her once it has run with her still across charges from his first frame
 	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
 	var def := EventCatalogue.by_id("door_guard")
-	t.check(def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and is_zero_approx(def.telegraph_time),
+	t.check(def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and is_zero_approx(def.telegraphs_for()),
 			"the door guard owes no notice of his own")
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
@@ -884,10 +884,10 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) 
 			var def := EventCatalogue.out_of_the_car(DaySpec.for_day(day_of[id]), stops)
 			var name := "%s out of %s" % [id, "a patrol car" if stops else "a hunting van"]
 			t.check(def.pursuit.stands and def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
-					and is_equal_approx(def.telegraph_time, Tuning.WARNING_ALONE_MAX),
-					"%s stands for a %.1fs heads-up" % [name, def.telegraph_time])
+					and is_equal_approx(def.telegraphs_for(), Tuning.WARNING_ALONE_MAX),
+					"%s stands for a %.1fs heads-up" % [name, def.telegraphs_for()])
 			var alert_pictures := EventPictures.POLICEMAN_ALERT_BY_VIEW \
-					if def.look == EventDef.Look.POLICEMAN_GIVING_CHASE else EventPictures.GUARD_ALERT_BY_VIEW
+					if def.picture() == EventDef.Look.POLICEMAN_GIVING_CHASE else EventPictures.GUARD_ALERT_BY_VIEW
 			var man_where := WhereSheIs.nowhere()
 			var man := EventInstance.new()
 			man.setup(def, Vector2(32.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
@@ -896,7 +896,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) 
 			var her := Vector2(0.0, 0.0)
 			var still := true
 			var alert := true
-			for i in int(round((def.telegraph_time - 0.05) / STEP)):
+			for i in int(round((def.telegraphs_for() - 0.05) / STEP)):
 				her.x -= Tuning.WALK_SPEED * STEP
 				_hold(man, man_where, her, STEP)
 				still = still and man.global_position.is_equal_approx(Vector2(32.0, 0.0))
@@ -1083,9 +1083,9 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t: TestRunner) -> voi
 ## (`docs/EVENTS.md`, "Seal pictures") and keeps the ordinary shadow, so the flag is the only
 ## difference between the two.
 func _test_burst_water_main_draws_no_body_shadow(t: TestRunner) -> void:
-	t.check(not EventCatalogue.by_id("burst_water_main").draws_body_shadow,
+	t.check(not EventCatalogue.by_id("burst_water_main").casts_a_shadow(),
 			"burst_water_main opts out of the body shadow every other seal draws")
-	t.check(EventCatalogue.by_id("fallen_tree").draws_body_shadow,
+	t.check(EventCatalogue.by_id("fallen_tree").casts_a_shadow(),
 			"fallen_tree, burst_water_main's same-geometry sibling, keeps the ordinary body shadow")
 
 # ------------------------------------------------------------ the wheels ---

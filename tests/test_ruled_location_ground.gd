@@ -162,7 +162,7 @@ func _test_a_locations_weight_is_its_grounds_alone(t: TestRunner) -> void:
 func _test_a_costly_wall_is_weighed_with_no_corridor(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("military_convoy")
 	var day := DaySpec.CITY_DAY
-	t.check(EventScheduler.role_for(truck, day) == GameEnums.BlockerRole.WALL and not truck.hard_fail,
+	t.check(EventScheduler.role_for(truck, day) == GameEnums.BlockerRole.WALL and not truck.ends_the_day(),
 			"the army truck is a wall that does not end the day on the escape's day")
 	var ground := RowGround.new(null, null, true, RowGround.Weights.new(),
 			func(_def: EventDef) -> bool: return true)

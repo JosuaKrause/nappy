@@ -216,16 +216,16 @@ func _drive(t: TestRunner, atlas: AtlasLibrary, ground: String, drive: String, s
 func _applies(row: EventDef, drive: String) -> bool:
 	match drive:
 		"pelican":
-			return row.look == EventDef.Look.CYCLIST
+			return row.picture() == EventDef.Look.CYCLIST
 		"silenced":
-			return row.look == EventDef.Look.LOUDSPEAKER_MAST
+			return row.picture() == EventDef.Look.LOUDSPEAKER_MAST
 		"boom":
-			return row.look == EventDef.Look.CHECKPOINT_GATE
+			return row.picture() == EventDef.Look.CHECKPOINT_GATE
 		"hand":
-			return row.look == EventDef.Look.CHECKPOINT_HUT \
-					or row.look == EventDef.Look.CHECKPOINT_POST
+			return row.picture() == EventDef.Look.CHECKPOINT_HUT \
+					or row.picture() == EventDef.Look.CHECKPOINT_POST
 		"points":
-			return row.look == EventDef.Look.PROTEST
+			return row.picture() == EventDef.Look.PROTEST
 	return true
 
 ## `row` stood the way `DrawnEvent.build()` stands one, under a holder of its own so that what the

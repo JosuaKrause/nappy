@@ -60,7 +60,7 @@ var _atlas := AtlasLibrary.new()
 ## caret` for the one PLAYTEST-115 overturned: the same café, her walking toward it.
 func _test_a_stationary_thing_she_stands_in_is_unmarked(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cafe_tables")
-	t.check(def != null and not def.mobile, "cafe_tables is a stationary row")
+	t.check(def != null and not def.moves(), "cafe_tables is a stationary row")
 	if not def:
 		return
 	var where := WhereSheIs.nowhere()
@@ -81,7 +81,7 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t: TestRunner) -> voi
 	if not def:
 		return
 	var instance := _instance(def)
-	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
+	var approach := Vector2(-def.heard_within() - 30.0, 0.0)
 	instance.source().set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
 	t.check(instance.source().expected_impact_at(approach) > 0.0,
 			"walking straight at a stationary café five seconds out nets something, unlike " +
@@ -157,20 +157,20 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 	var phases := 4
 	for id: String in ["homeless_yeller", "busker"]:
 		var def: EventDef = EventCatalogue.by_id(id)
-		t.check(def != null and def.pulse_period > 0.0, "%s pulses" % id)
+		t.check(def != null and def.pulses_every() > 0.0, "%s pulses" % id)
 		if not def:
 			continue
 		var carets: Array[float] = []
 		var reals: Array[float] = []
 		for phase_i in phases:
-			var start_age := def.pulse_period * float(phase_i) / float(phases)
+			var start_age := def.pulses_every() * float(phase_i) / float(phases)
 			var instance := _instance(def)
 			# Past the row's own telegraph first — `_caret_intensity_over_horizon()` already reads
 			# the live, undamped rate through the telegraph (`_test_a_cyclist_on_course_is_red_one_
 			# passing_wide_is_not` holds that promise elsewhere), but the real walk below has no
 			# such exemption: catching a still-telegraphing row for real genuinely nets 15% of it,
 			# which is a second variable this test does not want mixed into the pulse comparison.
-			_advance(instance, def.telegraph_time + start_age)
+			_advance(instance, def.telegraphs_for() + start_age)
 			var player_velocity := Vector2(Tuning.WALK_SPEED, 0.0)
 			var decay := Tuning.EXCITEMENT_DECAY_WALKING
 			var lead := player_velocity.length() * horizon * 0.5
@@ -304,8 +304,8 @@ func _test_a_cat_dashing_at_her_is_unmarked(t: TestRunner) -> void:
 	var instance := _instance(def, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]), where)
 	# One frame past the telegraph is enough to turn the crouch into a heading — `cat_dash` is
 	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
-	_advance(instance, def.telegraph_time + STEP)
-	where.tell(Vector2(def.outer_radius, 0.0))
+	_advance(instance, def.telegraphs_for() + STEP)
+	where.tell(Vector2(def.heard_within(), 0.0))
 	t.check((await _carets(t, instance)).is_empty(),
 			"a cat driving straight at a standing player still lands under the line")
 	instance.free()
@@ -315,7 +315,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t: TestRunner) -> void:
 ## it — however loud its field still reads along the way — carries nothing at all.
 func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
-	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
+	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
 	if not def:
 		return
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)])
@@ -327,14 +327,14 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> 
 	# telegraph to be over to read red.)
 	var on_course_where := WhereSheIs.nowhere()
 	var on_course := _instance(def, route, on_course_where)
-	_advance(on_course, def.telegraph_time + STEP)
-	on_course_where.tell(on_course.global_position + Vector2(def.outer_radius, 0.0))
+	_advance(on_course, def.telegraphs_for() + STEP)
+	on_course_where.tell(on_course.global_position + Vector2(def.heard_within(), 0.0))
 	t.check(_is_the_doubled_red(await _carets(t, on_course)),
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
 
 	var wide := _instance(def, route)
-	_advance(wide, def.telegraph_time + STEP)
+	_advance(wide, def.telegraphs_for() + STEP)
 	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
 	# but past the inner radius (33) it would have to cross to end the day.
 	var her := wide.global_position + Vector2(0.0, 60.0)
@@ -360,7 +360,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 		var cyclist := _instance(cyclist_def,
 				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]), cyclist_where)
 		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
-		cyclist_where.tell(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
+		cyclist_where.tell(cyclist.global_position + Vector2(cyclist_def.heard_within(), 0.0))
 		t.check(_is_the_doubled_red(await _carets(t, cyclist)),
 				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
 						"the doubled red caret")
@@ -371,7 +371,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 
 	var dog_def := EventCatalogue.by_id("charging_dog")
 	if dog_def:
-		t.check(dog_def.hard_fail and dog_def.pursuit != null and dog_def.notice_within() <= 0.0,
+		t.check(dog_def.ends_the_day() and dog_def.pursues() and dog_def.notice_within() <= 0.0,
 				"charging_dog is a hard-fail pursuer sited already noticing her")
 		var dog_where := WhereSheIs.nowhere()
 		var dog := _instance(dog_def, PackedVector2Array(), dog_where)
@@ -485,17 +485,17 @@ func _test_the_arterial_at_ordinary_density_marks_nobody(t: TestRunner) -> void:
 ## stops being something to time a pass through and becomes something that hurts at random.
 func _test_the_mark_still_breathes(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
-	t.check(def != null and def.pulse_period > 0.0, "the yeller pulses")
+	t.check(def != null and def.pulses_every() > 0.0, "the yeller pulses")
 	if not def:
 		return
 	var where := WhereSheIs.nowhere()
 	var instance := _instance(def, PackedVector2Array(), where)
-	_advance(instance, def.telegraph_time + 0.1)
+	_advance(instance, def.telegraphs_for() + 0.1)
 
 	var lowest := INF
 	var highest := 0.0
-	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
-	for i in int(round(def.pulse_period / STEP)):
+	var approach := Vector2(-def.heard_within() - 30.0, 0.0)
+	for i in int(round(def.pulses_every() / STEP)):
 		instance.step(STEP)
 		where.tell(approach)
 		instance.source().set_her_motion(Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
