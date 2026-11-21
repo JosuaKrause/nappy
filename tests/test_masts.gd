@@ -77,9 +77,9 @@ func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) ->
 	for day: int in [Tuning.MAST_FIRST_DAY, Tuning.MAST_FIRST_DAY + 2, Tuning.RUN_LENGTH_DAYS]:
 		var by_id := {}
 		for plan in _mast_plans(day):
-			if plan.def.id != "loudspeaker":
+			if plan.row_id() != "loudspeaker":
 				continue
-			by_id[plan.mast_id()] = plan.position
+			by_id[plan.mast_id()] = plan.placed_at()
 		t.check(by_id.size() == Tuning.MAST_COUNT,
 				"day %d carries all %d masts (%d)" % [day, Tuning.MAST_COUNT, by_id.size()])
 		by_day[day] = by_id
@@ -187,7 +187,7 @@ func _advance(seconds: float) -> void:
 
 func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
 	for plan in RunCity.events(_city).plans():
-		if plan.mast_id() == mast_id and plan.def.id == row_id:
+		if plan.mast_id() == mast_id and plan.row_id() == row_id:
 			return plan
 	return null
 
@@ -297,10 +297,10 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> 
 		if plan.mast_id() == "":
 			continue
 		mast_plans_checked += 1
-		t.check(plan.is_silenced(), "'%s' at '%s' is silenced" % [plan.def.id, plan.mast_id()])
+		t.check(plan.is_silenced(), "'%s' at '%s' is silenced" % [plan.row_id(), plan.mast_id()])
 		if _live(plan):
 			t.check(is_zero_approx(_live(plan).current_intensity()),
-					"'%s' at '%s' has no field" % [plan.def.id, plan.mast_id()])
+					"'%s' at '%s' has no field" % [plan.row_id(), plan.mast_id()])
 	t.check(mast_plans_checked == standing_ids.size() * 2,
 			("and both of today's mast rows were checked (%d): the ordinary broadcast and "
 			% mast_plans_checked) + "the curfew announcement, one pair per standing site")

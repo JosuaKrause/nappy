@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 		var took := Time.get_ticks_msec() - started
 		var counts := {}
 		for placement in placements:
-			counts[placement.def.id] = int(counts.get(placement.def.id, 0)) + 1
+			counts[placement.row_id()] = int(counts.get(placement.row_id(), 0)) + 1
 		var parts: Array[String] = []
 		for id in ROWS:
 			parts.append("%s %d" % [id, int(counts.get(id, 0))])

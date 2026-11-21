@@ -84,7 +84,7 @@ func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2,
 func _doors_shut(city: City) -> Array:
 	var blockers: Array[EventPlan] = []
 	for plan in RunCity.events(city).plans():
-		if plan.is_placed() and (plan.def.obstructs_within() > 0.0 or plan.def.hard_fail):
+		if plan.is_placed() and (plan.obstructs_within() > 0.0 or plan.ends_the_day()):
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)

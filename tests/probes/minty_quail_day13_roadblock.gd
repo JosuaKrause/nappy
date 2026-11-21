@@ -66,10 +66,10 @@ func _count_the_dawn(city: City, seed_value: int) -> void:
 	var standing := 0
 	var beside := 0
 	for plan in RunCity.events(city).plans():
-		if plan.def.id != "roadblock" or not plan.is_placed() or plan.is_door() or wall.has(plan):
+		if plan.row_id() != "roadblock" or not plan.is_placed() or plan.is_door() or wall.has(plan):
 			continue
 		standing += 1
-		if _beside(city.map, corridor, city.map.world_to_tile(plan.position)):
+		if _beside(city.map, corridor, city.map.world_to_tile(plan.placed_at())):
 			beside += 1
 	print("RB_DAWN seed %d | %d roadblocks the day placed | %d beside her routes"
 			% [seed_value, standing, beside])

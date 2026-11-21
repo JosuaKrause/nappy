@@ -107,17 +107,17 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 func _car_bodies(map: CityMap, events: EventManager) -> Array:
 	var bodies := []
 	for plan in events.plans():
-		if not plan.is_placed() or plan.def == null or plan.def.solid_parts.is_empty():
+		if not plan.is_placed() or plan.row() == null or plan.row().solid_parts.is_empty():
 			continue
 		# The instance the spawner would make for the plan: where it stands and which way its
 		# pieces are laid out are what it decides when it is set up.
 		var sited := EventInstance.new()
-		sited.setup(plan.def, plan.position, PackedVector2Array(), plan.facing,
+		sited.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),
 				EventSurroundings.new().on(map))
 		var placed := sited.position
 		var vertical := sited.runs_vertically()
 		sited.free()
-		for piece in plan.def.body_pieces():
+		for piece in plan.row().body_pieces():
 			var offset := piece.offset_for(vertical)
 			var centre := placed + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0))
 			bodies.append([centre, piece.shape.reach()])

@@ -180,17 +180,17 @@ func _ask_the_arrows_mast(t: TestRunner, seed_value: int, held: Dictionary) -> v
 	var far_foot := Vector2.INF
 	var beside := Vector2i(-1, -1)
 	for plan in RunCity.events(_city).plans():
-		if plan.def.id != "loudspeaker" or plan.is_silenced() or not plan.is_placed() \
-				or plan.position.distance_to(first) < 0.5:
+		if plan.row_id() != "loudspeaker" or plan.is_silenced() or not plan.is_placed() \
+				or plan.placed_at().distance_to(first) < 0.5:
 			continue
 		if far_foot != Vector2.INF \
-				and plan.position.distance_to(mark) <= far_foot.distance_to(mark):
+				and plan.placed_at().distance_to(mark) <= far_foot.distance_to(mark):
 			continue
 		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var tile := map.world_to_tile(plan.position) + side
+			var tile := map.world_to_tile(plan.placed_at()) + side
 			if SpawnSiting.is_legal_ground(map, tile, _walled_alleys()) \
 					and not map.is_obstructed(tile) and ResistanceReads.reaches_home(reach, tile):
-				far_foot = plan.position
+				far_foot = plan.placed_at()
 				beside = tile
 				break
 	if far_foot != Vector2.INF and director.current_step() != null:

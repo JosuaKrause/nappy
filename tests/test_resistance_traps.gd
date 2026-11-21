@@ -360,22 +360,22 @@ func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: Resis
 				else _start_a_guarded_target_day(t, 9)[0]
 		var hut: EventPlan = null
 		for body in _city.streets().region_plan().door_bodies:
-			if body.def.redetains and body.position.distance_to(director.red_arrow_target()) < 0.5:
+			if body.detains_again() and body.placed_at().distance_to(director.red_arrow_target()) < 0.5:
 				hut = body
 		if side > 0.0:
 			t.check(hut != null, "day 9: the arrow names a gatehouse of the named door")
 		if hut == null:
 			director.free()
 			return
-		var out := hut.def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
+		var out := hut.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 				+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
-		var her := hut.position + hut.facing * side * out
+		var her := hut.placed_at() + hut.faces() * side * out
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(her)),
 				"day 9: the ground she is let out onto is open (%s)" % _city.map.world_to_tile(her))
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		_watch_the_screen_round(director, her)
-		RunCity.events(_city).door_crossed.emit(hut.position, hut.facing, true)
+		RunCity.events(_city).door_crossed.emit(hut.placed_at(), hut.faces(), true)
 		t.check(director.contact().is_done, "day 9: an inspected crossing completes the task")
 		var label := "day 9, let out %.0fpx along the street from the gatehouse" % (side * out)
 		if _warning_for(RunCity.events(_city), "robber_giving_chase") == null:
@@ -505,7 +505,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 	var through_a_door := false
 	var plan := _city.streets().region_plan()
 	for body: EventPlan in plan.door_bodies if plan else []:
-		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_within(),
+		if DoorLine.crossed_by(body.placed_at(), body.faces(), body.obstructs_within(),
 				start, her):
 			through_a_door = true
 	t.check(not through_a_door,
@@ -868,5 +868,5 @@ func _assert_a_trap_row_is_never_the_schedulers(t: TestRunner, id: String) -> vo
 			.plan().placements()
 	t.check(not plans.is_empty(), "the day planned something to look through (%d)" % plans.size())
 	for plan in plans:
-		t.check(plan.def.id != id,
+		t.check(plan.row_id() != id,
 				"day %d's own plan places no '%s'" % [ResistanceDirector.TRAP_FIRST_DAY, id])

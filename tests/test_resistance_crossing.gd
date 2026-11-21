@@ -63,7 +63,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		gatehouse = house
 		var at_a_house := false
 		for body in _city.streets().region_plan().door_bodies:
-			if body.def.redetains and body.position.distance_to(house) < 0.5:
+			if body.detains_again() and body.placed_at().distance_to(house) < 0.5:
 				at_a_house = true
 		t.check(at_a_house and director.red_arrow_target() == house,
 				"and on a gatehouse of today's district doors")
@@ -71,9 +71,9 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		# is not vacuous.
 		var walked_before := _walks_under(walks_told)
 		for body in _city.streets().region_plan().door_bodies:
-			if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED \
-					and body.position.distance_to(_door_position(director)) > 200.0:
-				_walk_through(body.position, body.facing, direction, player)
+			if body.is_a_boom() \
+					and body.placed_at().distance_to(_door_position(director)) > 200.0:
+				_walk_through(body.placed_at(), body.faces(), direction, player)
 				break
 		t.check(_walks_under(walks_told) > walked_before,
 				"another district door's line was walked through")
@@ -193,10 +193,10 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: Tes
 			# Another door's boom with the named door well to one side of its line, so that she
 			# can be across A's line while she stands at B.
 			for body in _city.streets().region_plan().door_bodies:
-				if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and body.position.distance_to(b_at) > 200.0 \
-						and absf((b_at - body.position).dot(body.facing)) > 100.0:
-					a_at = body.position
-					a_axis = body.facing
+				if body.is_a_boom() and body.placed_at().distance_to(b_at) > 200.0 \
+						and absf((b_at - body.placed_at()).dot(body.faces())) > 100.0:
+					a_at = body.placed_at()
+					a_axis = body.faces()
 					break
 			t.check(b_at != Vector2.INF and a_at != Vector2.INF, "day 9 names a door and has another")
 			if b_at == Vector2.INF or a_at == Vector2.INF:
@@ -358,8 +358,8 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: Te
 					"the inspected crossing sends the robber after her")
 			if trap:
 				for body in _city.streets().region_plan().door_bodies:
-					t.check(not DoorLine.crossed_by(body.position, body.facing,
-							body.def.obstructs_within(), trap.global_position,
+					t.check(not DoorLine.crossed_by(body.placed_at(), body.faces(),
+							body.obstructs_within(), trap.global_position,
 							player.global_position),
 							"his run at her from %s never crosses a district door's line"
 							% _city.map.world_to_tile(trap.global_position))
@@ -425,17 +425,17 @@ func _named_door(director: ResistanceDirector) -> Array:
 		var boom: EventPlan = null
 		var first_house: EventPlan = null
 		for body in region_plan.door_bodies:
-			if not area.has_point(body.position):
+			if not area.has_point(body.placed_at()):
 				continue
-			if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED:
+			if body.is_a_boom():
 				boom = body
-			elif body.def.redetains and (first_house == null or body.position.x < first_house.position.x
-					or (body.position.x == first_house.position.x
-					and body.position.y < first_house.position.y)):
+			elif body.detains_again() and (first_house == null or body.placed_at().x < first_house.placed_at().x
+					or (body.placed_at().x == first_house.placed_at().x
+					and body.placed_at().y < first_house.placed_at().y)):
 				first_house = body
 		var line := boom if boom != null else first_house
 		if line != null:
-			return [line.position, line.facing]
+			return [line.placed_at(), line.faces()]
 	return [Vector2.INF, Vector2.ZERO]
 
 func _door_position(director: ResistanceDirector) -> Vector2:

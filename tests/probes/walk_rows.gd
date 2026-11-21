@@ -309,7 +309,7 @@ class _Day extends RefCounted:
 			seal.stand_as_a_seal()
 		var doors := PackedVector2Array()
 		for body in region_plan.door_bodies:
-			doors.append(body.position)
+			doors.append(body.placed_at())
 		var standing: Array[EventPlan] = []
 		standing.append_array(seals)
 		standing.append_array(region_plan.wall_bodies)

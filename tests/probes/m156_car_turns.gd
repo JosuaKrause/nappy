@@ -182,12 +182,12 @@ func _bodies(map: CityMap, plans: Array[EventPlan]) -> Array:
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		var covered := EventSpawner.obstructed_footprint(map, plan.def, plan.position, plan.facing)
+		var covered := EventSpawner.obstructed_footprint(map, plan.row(), plan.placed_at(), plan.faces())
 		if covered.is_empty():
 			continue
 		found.append({
-			"id": plan.def.id,
-			"at": map.world_to_tile(plan.position),
+			"id": plan.row_id(),
+			"at": map.world_to_tile(plan.placed_at()),
 			"tiles": covered,
 		})
 	for key: Vector3i in keys:

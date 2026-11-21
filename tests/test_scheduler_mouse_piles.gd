@@ -50,12 +50,12 @@ func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 1000 + roll
 			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).plan().placements():
-				if plan.def.id != mouse.id:
+				if plan.row_id() != mouse.id:
 					continue
 				mice += 1
 				expected += share
 				variance += share * (1.0 - share)
-				if beside.has(map.world_to_tile(plan.position)):
+				if beside.has(map.world_to_tile(plan.placed_at())):
 					near += 1
 	t.check(mice > 100, "the pinned last days stand enough mice to count (%d)" % mice)
 	var bar := expected + 5.0 * sqrt(variance)

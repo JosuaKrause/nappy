@@ -60,7 +60,7 @@ func _events_per_street_by_band() -> void:
 				if not plan.is_placed():
 					continue
 				placed_total += 1
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				# Only a thing standing on a street can be met by somebody walking down it.
 				if not map.network.segment_containing(tile):
 					continue

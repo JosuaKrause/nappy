@@ -290,7 +290,7 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 	var step := 0.1
 	while walked < 600.0:
 		for plan in RunCity.events(_city).plans():
-			if plan.def.role == EventDef.Role.MAST and plan.mast_id() != "" \
+			if plan.is_a_mast() and plan.mast_id() != "" \
 					and not at_the_mark.has(plan.mast_id()):
 				_seconds_walked_to_the_route_mast = walked
 				return plan.mast_id()
@@ -545,9 +545,9 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 		ResistanceSteps.TargetKind.DOOR:
 			var nearest := Vector2.INF
 			for body in _city.streets().region_plan().door_bodies:
-				if body.def.redetains and (nearest == Vector2.INF or body.position.distance_to(
+				if body.detains_again() and (nearest == Vector2.INF or body.placed_at().distance_to(
 						director.contact_position()) < nearest.distance_to(director.contact_position())):
-					nearest = body.position
+					nearest = body.placed_at()
 			return nearest
 		ResistanceSteps.TargetKind.MAST:
 			return RunCity.events(_city).mast_foot(ResistanceReads.mast_at(director, RunCity.events(_city)))

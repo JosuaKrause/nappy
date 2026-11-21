@@ -675,15 +675,15 @@ func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
 			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements():
-				if not plan.is_placed() or not plan.def.has_a_spread:
+				if not plan.is_placed() or not plan.row().lies_as_a_spread():
 					continue
 				checked += 1
-				var tile := map.world_to_tile(plan.position)
+				var tile := map.world_to_tile(plan.placed_at())
 				var on_corner := CityMap.corridor_offset(tile.x) >= 0 \
 						and CityMap.corridor_offset(tile.y) >= 0
 				t.check(not on_corner,
 						"seed %d day %d: '%s' at tile %s is not on a corner"
-						% [run_seed, day, plan.def.id, tile])
+						% [run_seed, day, plan.row_id(), tile])
 	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
 
 ## **A spread's end cap is drawn at exactly the width it obstructs, not past it.**

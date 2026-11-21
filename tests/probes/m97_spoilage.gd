@@ -136,7 +136,7 @@ func _reproduce_zero_density_visits() -> void:
 				elif fd < 0.34 and low_examples.size() < MAX_EXAMPLES:
 					var ids: Array[String] = []
 					for plan: EventPlan in full_in_lot:
-						ids.append(plan.def.id)
+						ids.append(plan.row_id())
 					low_examples.append("  seed=%d day=%d block=%s: %s in the park she used yesterday, %s — denied %.0f%% of open ground (roll alone: %d placed, denied %.0f%%)"
 							% [i, day, block, ", ".join(ids), RunTrace.tile(block), fd * 100.0, rc, rd * 100.0])
 
@@ -207,7 +207,7 @@ func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
 		for plan: EventPlan in plans:
 			if not plan.is_placed():
 				continue
-			if world.distance_to(plan.position) <= DawnSpoilers._denial_radius(plan.def):
+			if world.distance_to(plan.placed_at()) <= DawnSpoilers._denial_radius(plan.row()):
 				is_denied = true
 				break
 		if is_denied:

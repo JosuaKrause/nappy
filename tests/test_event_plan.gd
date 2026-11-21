@@ -228,14 +228,14 @@ func _test_a_plan_stands_where_a_candidate_was_judged(t: TestRunner) -> void:
 			"it takes the place the candidate was judged at")
 	t.check(owed.walks() == judged.walks() and not owed.stands_still(),
 			"and the route, so a beat that paces walks the stretch it was judged on")
-	t.check(owed.facing == Vector2.UP, "and its facing")
+	t.check(owed.faces() == Vector2.UP, "and its facing")
 	t.check(owed.role() == GameEnums.BlockerRole.WALL, "and the role the judge gave it")
-	t.check(judged.position == Vector2(640, 96) and judged.role() == GameEnums.BlockerRole.WALL,
+	t.check(judged.placed_at() == Vector2(640, 96) and judged.role() == GameEnums.BlockerRole.WALL,
 			"while the candidate is left as it was")
 
 func _test_a_plan_turns_to_face(t: TestRunner) -> void:
 	var plan := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2(640, 96))
 	plan.face(Vector2.UP)
-	t.check(plan.facing == Vector2.UP, "a crew turned to face the wall it pastes faces it")
+	t.check(plan.faces() == Vector2.UP, "a crew turned to face the wall it pastes faces it")
 	plan.face(Vector2.LEFT)
-	t.check(plan.facing == Vector2.LEFT, "and turns again where it is told to")
+	t.check(plan.faces() == Vector2.LEFT, "and turns again where it is told to")

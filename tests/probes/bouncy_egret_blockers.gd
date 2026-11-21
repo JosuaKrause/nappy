@@ -101,7 +101,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	var sealed := {}
 	var mouths := 0
 	for plan in seals:
-		var tile := map.world_to_tile(plan.position)
+		var tile := map.world_to_tile(plan.placed_at())
 		if map.tile_at(tile) == GameEnums.TileType.ALLEY:
 			mouths += 1
 			continue
@@ -114,7 +114,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	standing.append_array(region_plan.wall_bodies)
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
-		doors.append(body.position)
+		doors.append(body.placed_at())
 	var consumed: Array[String] = []
 	var walls := 0
 	var friction := 0

@@ -124,7 +124,7 @@ static func _past_the_bands(group: Array[EventPlan], from: Vector2, to: Vector2,
 	var heading := (to - from).normalized()
 	var last := -INF
 	for placement in group:
-		last = maxf(last, (placement.position - from).dot(heading))
+		last = maxf(last, (placement.placed_at() - from).dot(heading))
 	return (at - from).dot(heading) - last
 
 static func _say(w: Dictionary) -> String:

@@ -99,7 +99,7 @@ func _test_a_body_closing_a_beats_opening_is_refused(t: TestRunner) -> void:
 		var band: Rect2i = entry[1]
 		var man := GamePlanBuilder.over(_map).build(EventCatalogue.by_id("homeless_yeller"),
 				band.get_center(), RandomNumberGenerator.new())
-		if man == null or man.path.size() < 2:
+		if man == null or man.walks().size() < 2:
 			continue
 		man.give_role(GameEnums.BlockerRole.FRICTION)
 		var around: Array[EventPlan] = [man]

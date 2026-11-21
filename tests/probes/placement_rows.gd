@@ -71,7 +71,7 @@ func run(t: TestRunner) -> void:
 				seal.stand_as_a_seal()
 			var doors := PackedVector2Array()
 			for body in region_plan.door_bodies:
-				doors.append(body.position)
+				doors.append(body.placed_at())
 			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
 			standing.append_array(region_plan.wall_bodies)
@@ -85,10 +85,10 @@ func run(t: TestRunner) -> void:
 			for plan in GameDawn.of(spec, rng, map).masts(sites).spent(consumed).on(tree) \
 					.doors(doors).standing(standing) \
 					.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan().placements():
-				var mode := plan.def.spawn_mode_on(day)
+				var mode := plan.spawn_mode_on(day)
 				# A row the director sends ahead of her is a moment where the dawn left it unplaced.
 				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
-						or (plan.def.is_sent_ahead() and not plan.is_placed()):
+						or (plan.is_sent_ahead() and not plan.is_placed()):
 					moments += 1
 					continue
 				if not plan.is_placed():

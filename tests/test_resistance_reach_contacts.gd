@@ -41,7 +41,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
 		if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
 			continue
-		var gap := map.tile_to_world(tile).distance_to(lorry.position)
+		var gap := map.tile_to_world(tile).distance_to(lorry.placed_at())
 		if gap > EventScheduler.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
 			inside.append(tile)
 		elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
@@ -90,7 +90,7 @@ func _test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t: TestR
 	for candidate_tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
 		if SpawnSiting.is_legal_ground(map, candidate_tile, walled) \
 				and not map.is_obstructed(candidate_tile) and map.tile_to_world(candidate_tile) \
-				.distance_to(first.position) > EventScheduler.EVENT_SPACING_ANY + 600.0:
+				.distance_to(first.placed_at()) > EventScheduler.EVENT_SPACING_ANY + 600.0:
 			far = candidate_tile
 			break
 	var elsewhere := builder.place_at(def, far, rng, crowded)

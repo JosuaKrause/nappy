@@ -54,7 +54,7 @@ func _test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t: Te
 	var compared := 0
 	for a in plans:
 		for b in plans:
-			if a.path.size() >= 2 and b.path.size() >= 2:
+			if a.walks().size() >= 2 and b.walks().size() >= 2:
 				continue
 			compared += 1
 			t.check(a.gap_to(b) == _symmetric_gap(a, b),

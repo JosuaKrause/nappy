@@ -98,7 +98,7 @@ func _fire_director(day: int, plans: Array[EventPlan], siting: FakeWalkSiting) -
 
 func _fire_in(plans: Array[EventPlan]) -> EventPlan:
 	for plan in plans:
-		if plan.def.id == "burning_building":
+		if plan.row_id() == "burning_building":
 			return plan
 	return null
 
@@ -220,7 +220,7 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 
 	var at := _walk_the_director(director, plans, out[0], out, 120.0,
 			func() -> bool: return fire.is_placed())
-	t.check(fire.is_placed() and fire.position == first,
+	t.check(fire.is_placed() and fire.placed_at() == first,
 			"walking the day's own route out of the doorstep has the siting lay it where it answers")
 	t.check(not siting.looks.is_empty() and siting.calls.size() % 3 == 0
 			and siting.calls.slice(0, 3) == ["begin_look", "lay_ahead", "end_look"],
@@ -235,16 +235,16 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 	# over "is it behind her" cannot answer.
 	siting.set_still_ahead(false).set_place(fire.row_id(), second)
 	at = _walk_the_director(director, plans, at, _fire_route(day, false), 200.0,
-			func() -> bool: return fire.position != first)
-	t.check(fire.position == second,
+			func() -> bool: return fire.placed_at() != first)
+	t.check(fire.placed_at() == second,
 			"it is moved once the siting says it is no longer ahead of her for long enough")
 
 	# Real. From here it is where the city remembers it burning, and nothing moves it.
-	var burning_at := fire.position
+	var burning_at := fire.placed_at()
 	fire.enter_the_world(WhereItStands.nowhere())
 	siting.set_place(fire.row_id(), first)
 	_walk_the_director(director, plans, at, _fire_route(day), 30.0)
-	t.check(fire.position == burning_at,
+	t.check(fire.placed_at() == burning_at,
 			"once it has been in the world, walking away from it for half a minute leaves it "
 			+ "exactly where it burned")
 
@@ -272,7 +272,7 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 	if not fire.is_placed():
 		t.check(false, "walking the day's route lays the fire")
 		return
-	var sited := fire.position
+	var sited := fire.placed_at()
 
 	# On down the same branch for twice the patience the rule has, which is several turnings.
 	var before := _last_heading
@@ -281,7 +281,7 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 	for i in int(round(patience / STEP)):
 		at = _walk_the_director(director, plans, at, out, STEP)
 		sharpest = minf(sharpest, before.dot(_last_heading))
-	t.check(fire.position == sited,
+	t.check(fire.placed_at() == sited,
 			"carrying on down the same branch for %.0fs leaves the fire where it is" % patience)
 	t.check(sharpest < 0.7,
 			"and the walk really did turn a corner in that time (%.0f degrees off where it started)"
@@ -337,22 +337,22 @@ func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 	var crews := 0
 	for day in range(1, 15):
 		for plan in _planned(day):
-			if plan.def.on_her_way == null:
+			if plan.row().on_her_way == null:
 				continue
 			t.check(not plan.is_placed(), "day %d: '%s' is planned with no position"
-					% [day, plan.def.id])
-			t.check(plan.def.spawn_mode == EventDef.SpawnMode.MAP and not plan.def.mobile,
+					% [day, plan.row_id()])
+			t.check(plan.row().is_placed_on_the_map() and not plan.row().moves(),
 					"day %d: and it is a place that stands still, not a director's moment" % day)
-			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
+			if plan.row().kind != GameEnums.EventKind.ONE_SHOT:
 				crews += 1
-				t.check(plan.def.id == "poster_crew" and plan.def.on_her_way.at_a_front,
+				t.check(plan.row_id() == "poster_crew" and plan.row().on_her_way.at_a_front,
 						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
-						% [day, plan.def.id])
+						% [day, plan.row_id()])
 				continue
 			owed += 1
-			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.def.id == "burning_building",
+			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.row_id() == "burning_building",
 					"day %d: the only set piece the day leaves for her walk is day 3's fire, not '%s'"
-					% [day, plan.def.id])
+					% [day, plan.row_id()])
 	t.check(owed == 1, "exactly one set piece in a fourteen-day run is owed to her walk (%d)" % owed)
 	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
 
@@ -374,13 +374,13 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 		var handed_crews := 0
 		var handed_placed := 0
 		for plan in handed:
-			if plan.def.id == "poster_crew":
+			if plan.row_id() == "poster_crew":
 				handed_crews += 1
 				handed_placed += 1 if plan.is_placed() else 0
 		var kept_crews := 0
 		var kept_placed := 0
 		for plan in kept:
-			if plan.def.id == "poster_crew":
+			if plan.row_id() == "poster_crew":
 				kept_crews += 1
 				kept_placed += 1 if plan.is_placed() else 0
 		t.check(handed_crews > 0 and handed_placed == 0,

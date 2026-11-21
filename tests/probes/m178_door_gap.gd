@@ -46,7 +46,7 @@ func run(_t: TestRunner) -> void:
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var doors := PackedVector2Array()
 			for body in plan.door_bodies:
-				doors.append(body.position)
+				doors.append(body.placed_at())
 
 			var before := _plan_day(map, day, tree, PackedVector2Array())
 			var after := _plan_day(map, day, tree, doors)
@@ -91,7 +91,7 @@ func _inside(plans: Array[EventPlan], doors: PackedVector2Array) -> int:
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		if not DoorClearanceRule.clear_of_the_doors(plan.position, plan.path, doors,
-				plan.def.field_reach()):
+		if not DoorClearanceRule.clear_of_the_doors(plan.placed_at(), plan.walks(), doors,
+				plan.field_reach()):
 			total += 1
 	return total

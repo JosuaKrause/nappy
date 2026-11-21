@@ -120,7 +120,7 @@ func _on_a_clear_line(start: Vector2) -> Vector2:
 	var bodies: Array[Vector2] = []
 	for plan in _events.plans():
 		if plan.is_placed() and plan.obstructs():
-			bodies.append(plan.position)
+			bodies.append(plan.placed_at())
 	for step in 64:
 		var her := start + Vector2.UP * Tuning.TILE_SIZE * step
 		var clear := true

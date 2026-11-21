@@ -55,7 +55,7 @@ func _ready() -> void:
 		var matched := false
 		for plan in RunCity.events(city).plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
-				matched = plan.position.is_equal_approx(position_of(entry.at, anchors, city))
+				matched = plan.placed_at().is_equal_approx(position_of(entry.at, anchors, city))
 		if not matched:
 			fail("construction moved the pinned subject")
 			return
@@ -69,13 +69,13 @@ func _ready() -> void:
 			return
 	if setup.has("seals"):
 		for plan in RunCity.events(city).plans():
-			if plan.def.id == "cafe_tables" and not is_equal_approx(plan.position.x, 2576):
+			if plan.row_id() == "cafe_tables" and not is_equal_approx(plan.placed_at().x, 2576):
 				fail("restaurant guests did not move exactly one block east")
 				return
 	if setup.has("barriers"):
 		for plan in RunCity.events(city).plans():
-			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1552)
-					or plan.position.y < 2240 or plan.position.y > 2432):
+			if plan.row_id() == "roadblock" and (not is_equal_approx(plan.placed_at().x, 1552)
+					or plan.placed_at().y < 2240 or plan.placed_at().y > 2432):
 				fail("truck barrier is not a vertical band across the left street")
 				return
 	if setup.has("posters"):
@@ -88,9 +88,9 @@ func _ready() -> void:
 	if anchors.has("gate"):
 		var found := false
 		for body in city.streets().region_plan().door_bodies:
-			if body.def.id == "checkpoint_gate" and body.position.is_equal_approx(
+			if body.row_id() == "checkpoint_gate" and body.placed_at().is_equal_approx(
 					anchors.gate + Vector2(0, 64)):
-				found = not EventPictures.gate_runs_north_south(body.facing)
+				found = not EventPictures.gate_runs_north_south(body.faces())
 		if not found:
 			fail("the father's horizontal approach does not meet the standard vertical gate")
 			return

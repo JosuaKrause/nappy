@@ -22,9 +22,9 @@ func run(_t: TestRunner) -> void:
 		var doors := PackedVector2Array()
 		var calm := CalmAreas.of(map)
 		for body in regions.door_bodies:
-			doors.append(body.position)
-			if body.def.id == "checkpoint_hut":
-				print("GATE ", body.position)
+			doors.append(body.placed_at())
+			if body.row_id() == "checkpoint_hut":
+				print("GATE ", body.placed_at())
 		var def := EventCatalogue.by_id("leaf_blower" if day == 1 else "military_convoy")
 		var tiles: Array[Vector2i] = []
 		tiles.assign(EventScheduler.row_ground(map, corridor).offers_for_role(def,
@@ -41,7 +41,7 @@ func run(_t: TestRunner) -> void:
 					at, 1, prior, corridor, doors, calm, none, locations)
 			if not plan:
 				continue
-			print("SITE ", def.id, " tile=", tile, " world=", at, " path=", plan.path)
+			print("SITE ", def.id, " tile=", tile, " world=", at, " path=", plan.walks())
 			accepted += 1
 			if accepted >= 5:
 				break

@@ -154,21 +154,21 @@ func _test_a_waiting_row_stands_outside_its_trigger(t: TestRunner) -> void:
 	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	var found: EventPlan = null
 	for plan in RunCity.events(_city).plans():
-		if plan.def.notice_within() > 0.0 and plan.is_placed():
+		if plan.notice_within() > 0.0 and plan.is_placed():
 			found = plan
 			break
 	t.check(found != null, "day %d has a placed row that waits to stand outside of" % DAY)
 	if found == null:
 		return
-	var at := DevRig.for_spawn_target("event:" + found.def.id, _city.map, RunCity.events(_city),
+	var at := DevRig.for_spawn_target("event:" + found.row_id(), _city.map, RunCity.events(_city),
 			_city.streets(), _resistance, _city.run.header(), _city.trace)
-	var dist := at.distance_to(found.position)
-	t.check(dist > found.def.notice_within(),
+	var dist := at.distance_to(found.placed_at())
+	t.check(dist > found.notice_within(),
 			"stands outside the wait trigger, %.0fpx > its notice's %.0fpx"
-					% [dist, found.def.notice_within()])
-	t.check(dist > found.def.outer_radius,
+					% [dist, found.notice_within()])
+	t.check(dist > found.heard_within(),
 			"and outside the field itself, %.0fpx > outer_radius %.0fpx"
-					% [dist, found.def.outer_radius])
+					% [dist, found.heard_within()])
 
 ## Moved from `tests/test_main.gd`, where `_pavement_offset` lived before this milestone — see
 ## that file's own history for the defect this pins: a fixed local-Y step left her on the same
@@ -230,7 +230,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 
 	var huts: Array[EventPlan] = []
 	for body in city.streets().region_plan().door_bodies:
-		if body.def.id == "checkpoint_hut":
+		if body.row_id() == "checkpoint_hut":
 			huts.append(body)
 	t.check(not huts.is_empty(), "seed %d day %d has at least one checkpoint hut" % [_CHECKPOINT_SEED, day])
 	if huts.is_empty():
@@ -241,11 +241,11 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 			_resistance, city.run.header(), city.trace)
 	t.check(city.map.is_walkable(city.map.world_to_tile(at)), "--spawn door:0 lands on a walkable tile (%s)" % at)
 	var hut := huts[0]
-	var expected := hut.position - hut.facing * Tuning.TILE_SIZE * 4.0
+	var expected := hut.placed_at() - hut.faces() * Tuning.TILE_SIZE * 4.0
 	t.check(at.distance_to(expected) < Tuning.TILE_SIZE * 2.0,
 			"stands close to four tiles back from the hut along its own facing axis (got %s, hut %s, facing %s)"
-					% [at, hut.position, hut.facing])
-	var closer := at + hut.facing * Tuning.TILE_SIZE
-	t.check(closer.distance_to(hut.position) < at.distance_to(hut.position),
+					% [at, hut.placed_at(), hut.faces()])
+	var closer := at + hut.faces() * Tuning.TILE_SIZE
+	t.check(closer.distance_to(hut.placed_at()) < at.distance_to(hut.placed_at()),
 			"walking one tile in the hut's own facing direction closes the distance to it")
 	city.free()
