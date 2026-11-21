@@ -93,6 +93,7 @@ class ReferenceCrowd extends CrowdAgent:
 
 func run(t: TestRunner) -> void:
 	_test_catalogue_and_mutations(t)
+	_test_a_cored_row(t)
 	_test_crowd_mutations(t)
 	_test_live_net_and_skipped_work(t)
 	_test_consumer_order(t)
@@ -113,18 +114,16 @@ func _copy_definition(original: EventDef) -> EventDef:
 	copy.solid_parts = original.solid_parts
 	return copy
 
-## The rows that differ from `definition` in one setting of its field, its speed or its chase speed,
-## by the setting's name, each made as the game makes a row: a refinement of the row's field part or
-## a copy with its pursuit at another speed. A setting the row does not carry is made to carry one
-## (a core on a row with none), so every row is held against every setting.
+## The rows that differ from `definition` in one setting of its field (but its core, which only a
+## cored row has: `_test_a_cored_row()`), its speed or its chase speed, by the setting's name, each
+## made as the game makes a row: a refinement of the row's field part or a copy with its pursuit at
+## another speed.
 func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 	var field := definition.field()
 	var fields := {
 		"peak": field.at_peak(field.peak() + 3.0),
 		"inner radius": field.holding_to(lerpf(field.core_within(), field.heard_within(), 0.5)),
 		"outer radius": field.reaching(field.heard_within() + 3.0),
-		"core rate": field.with_a_core(field.core_rate() + 3.0, field.core_reach()),
-		"core reach": field.with_a_core(field.core_rate(), field.core_reach() + 3.0),
 		"falloff": field.falling_off(field.falloff() + 3.0),
 		"pulse": field.pulsing_every(field.pulses_every() + 3.0),
 	}
@@ -164,6 +163,43 @@ func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: Stri
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " repeats exactly")
 	t.check(source.sampling_runs == runs, label + " repeats without sampling")
+
+## **The core's two settings, held where they can be told apart**: on the one row that has a core
+## (the leaf blower), at a point inside its inner radius (where the core's rate is the price) and at
+## one between its inner radius and its reach (where the reach is). Each is varied by a second row
+## with that one setting changed, handed to the same source after the row's own, and the answers
+## must differ from the row's own (so the check cannot be passing on equal numbers) and match the
+## reference.
+func _test_a_cored_row(t: TestRunner) -> void:
+	var row := EventCatalogue.by_id("leaf_blower")
+	var field := row.field()
+	var inside := Vector2(-(field.core_within() * 0.5), 0.0)
+	var between := Vector2(-(field.core_within() + (field.core_reach() - field.core_within()) * 0.5), 0.0)
+	var where := WhereSheIs.nowhere()
+	var source := CountedEvent.new()
+	source.setup(_copy_definition(row), Vector2.ZERO,
+		PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
+		EventSurroundings.new().hearing(where))
+	source.restore(EventSave.aged(0.0))
+	# Barely moving, so the answer is the price of the point and its surroundings, not an average over
+	# a whole pass (a still baby is projected as zero).
+	source.source().set_her_motion(Vector2(4.0, 0.0), 6.0, 0.8)
+	var variants := {
+		"core rate": [field.with_a_core(field.core_rate() + 3.0, field.core_reach()), inside],
+		"core reach": [field.with_a_core(field.core_rate(), field.core_reach() + 3.0), between],
+	}
+	for label: String in variants:
+		var at: Vector2 = (variants[label] as Array)[1]
+		var other := _copy_definition(row)
+		other.use_field((variants[label] as Array)[0] as FieldSpec)
+		_under_a_different_row(source, row)
+		_event_parity(t, source, at, "the leaf blower, its own row before a different " + label)
+		var own_answer := source.source().expected_gross_at(at)
+		_under_a_different_row(source, other)
+		_event_parity(t, source, at, "the leaf blower, a different " + label)
+		t.check(not _same_bits(source.source().expected_gross_at(at), own_answer),
+				"a different " + label + " gives the leaf blower another answer at that point")
+	source.free()
 
 func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	# What retires an instance from outside its tick (`EventManager.retire()`).
