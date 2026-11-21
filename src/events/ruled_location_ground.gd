@@ -24,11 +24,12 @@ extends LocationGround
 ##   precinct street as many times over as the walk's ground offers a precinct tile
 ##   (`RowGround.Weights.precinct()`, four), the street between two strands of the routes as many
 ##   times over for a costly wall as the ground offers a gap (`RowGround.Weights.gap()`, six), and
-##   five times over for the mouse in an alley beside a sack pile (`_MOUSE_PILE_EXTRA_COPIES` and
-##   one): the location's own ground alone. A row's weight on a kind of ground is in the bag's
-##   fill already (`EventDef.weight_on()`, `UnitFills`) and is not counted again here. And the
-##   mouse a location draws is offered the location's tiles beside a pile first
-##   (`_beside_a_pile_first()`), so it stands by the sacks where the location reaches them.
+##   five times over for a row drawn to sack piles (the mouse) in an alley beside one
+##   (`_PILE_EXTRA_COPIES` and one): the location's own ground alone. A row's weight on a kind of
+##   ground is in the bag's fill already (`EventDef.weight_on()`, `UnitFills`) and is not counted
+##   again here. And a row drawn to sack piles (`EventDef.is_drawn_to_sack_piles()`) is offered the
+##   location's tiles beside a pile first (`_beside_a_pile_first()`), so it stands by the sacks
+##   where the location reaches them.
 ##
 ## Handed the day, the day's seed, the map, the bodies the day stands (the seals and the region
 ## wall's, `DayEvents.standing()`), the walk's corridor, the fit (`LocationFit`), the day's rules,
@@ -36,13 +37,12 @@ extends LocationGround
 ## `RowGround.is_a_wall_by_cost()`), and its two settings. It keeps no plan: what a candidate is
 ## judged among comes with each `offer()`. Model: no node.
 
-## `alley_mouse`'s own preference: an alley location beside a garbage-sack pile
-## (`GarbageSacks.alley_pile_tiles()`, within `_MOUSE_PILE_ADJACENCY` tiles) weighs the mouse
-## `_MOUSE_PILE_EXTRA_COPIES` and one times over (`scale()`), and the mouse it
-## draws is offered its tiles beside the pile first.
-const _MOUSE_ID := "alley_mouse"
-const _MOUSE_PILE_ADJACENCY := 1
-const _MOUSE_PILE_EXTRA_COPIES := 4
+## The preference of a row that `is_drawn_to_sack_piles()` (the alley mouse): an alley location beside a
+## garbage-sack pile (`GarbageSacks.alley_pile_tiles()`, within `_PILE_ADJACENCY` tiles) weighs the row
+## `_PILE_EXTRA_COPIES` and one times over (`scale()`), and the row it draws is offered its tiles
+## beside the pile first.
+const _PILE_ADJACENCY := 1
+const _PILE_EXTRA_COPIES := 4
 
 var _day := 0
 var _base := 0
@@ -87,7 +87,7 @@ func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventP
 		var kept := fits[i]
 		fits[i] = fits[j]
 		fits[j] = kept
-	if def.id == _MOUSE_ID:
+	if def.is_drawn_to_sack_piles():
 		fits = _beside_a_pile_first(fits)
 	return _first_valid(def, location, fits, among, rng)
 
@@ -144,11 +144,11 @@ func scale(def: EventDef, location: Location) -> float:
 			and EventScheduler.role_for(def, _day) == GameEnums.BlockerRole.WALL \
 			and _corridor != null and _corridor.is_in_a_gap(middle):
 		times *= float(_ground.weights().gap())
-	if def.id == _MOUSE_ID and _beside_a_pile(location.tiles()):
-		times *= float(_MOUSE_PILE_EXTRA_COPIES + 1)
+	if def.is_drawn_to_sack_piles() and _beside_a_pile(location.tiles()):
+		times *= float(_PILE_EXTRA_COPIES + 1)
 	return times
 
-## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
+## `tiles` with those within `_PILE_ADJACENCY` of a sack pile first, each half in the order
 ## it was handed.
 func _beside_a_pile_first(tiles: Array[Vector2i]) -> Array[Vector2i]:
 	var beside: Array[Vector2i] = []
@@ -161,12 +161,12 @@ func _beside_a_pile_first(tiles: Array[Vector2i]) -> Array[Vector2i]:
 	beside.append_array(rest)
 	return beside
 
-## Whether a sack pile stands within `_MOUSE_PILE_ADJACENCY` tiles of `tiles`.
+## Whether a sack pile stands within `_PILE_ADJACENCY` tiles of `tiles`.
 func _beside_a_pile(tiles: Rect2i) -> bool:
-	for y in range(tiles.position.y - _MOUSE_PILE_ADJACENCY,
-			tiles.end.y + _MOUSE_PILE_ADJACENCY):
-		for x in range(tiles.position.x - _MOUSE_PILE_ADJACENCY,
-				tiles.end.x + _MOUSE_PILE_ADJACENCY):
+	for y in range(tiles.position.y - _PILE_ADJACENCY,
+			tiles.end.y + _PILE_ADJACENCY):
+		for x in range(tiles.position.x - _PILE_ADJACENCY,
+				tiles.end.x + _PILE_ADJACENCY):
 			if _piles.has(Vector2i(x, y)):
 				return true
 	return false

@@ -22,7 +22,7 @@ func run(t: TestRunner) -> void:
 ## the probability of that ground's share of such tiles, and the count near is a sum of those
 ## chances: its mean is the sum of the shares and its variance the sum of share * (1 - share). With
 ## the preference an alley location beside a pile draws the mouse five times as often (itself and
-## `_MOUSE_PILE_EXTRA_COPIES` more, `RuledLocationGround.scale()`) and the mouse it draws is offered
+## `_PILE_EXTRA_COPIES` more, `RuledLocationGround.scale()`) and the mouse it draws is offered
 ## the tiles beside the pile first. The bar is the mean plus five standard deviations of the
 ## no-preference count, far enough above chance that no pinned roll passes by luck; dropping the
 ## preference puts the count near the mean and fails it.
