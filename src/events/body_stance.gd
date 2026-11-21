@@ -23,6 +23,8 @@ extends RefCounted
 ## `EventInstance.setup()` and `move_to()` stand the body there, the scheduler's and the walk's
 ## siting of its band and the body's recorded footprint (`EventSpawner.obstructed_footprint()`) read
 ## it for a body not yet built, so a body moved after dawn stands where the record says it does.
+## **A point already stood is returned as it is** (standing it again gives the same point), so a
+## caller holding a live body's own position asks it as it asks a build point.
 static func stands_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
 	if row.stands_on_its_band_middle():
 		return _centred_on_the_pavement_band(map, at)
@@ -56,8 +58,17 @@ static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2
 	var offset := x_offset if x_offset >= 0 else offsets.y
 	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
 			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
+	var along := Vector2.RIGHT if x_offset >= 0 else Vector2.DOWN
+	# The band's middle lies on the line between two lanes, which belongs to the lane past it. A point
+	# already stood sits exactly there, half a tile before that lane's own middle, so it is where
+	# the body stands and is returned as it is: standing it again would read the lane past the line
+	# and move it half a tile toward the other lane.
+	var from_the_lane_middle := (at - map.tile_to_world(tile)).dot(along)
+	if is_equal_approx(offset, band_offset) \
+			and is_equal_approx(from_the_lane_middle, -Tuning.TILE_SIZE * 0.5):
+		return at
 	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
-	return at + (Vector2.RIGHT if x_offset >= 0 else Vector2.DOWN) * shift
+	return at + along * shift
 
 ## **A spread's rotation is a property of the street it stands on**, not a field on the row: a
 ## barrier that lies correctly across a north-south street lies along the kerb — parallel to the
