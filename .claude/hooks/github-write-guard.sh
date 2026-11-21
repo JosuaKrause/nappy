@@ -2228,8 +2228,11 @@ fi
 # whose options hold an unquoted command substitution, a `gh pr merge`, any `gh issue` write,
 # any other `gh` write, any `gh api` write, a pushing `tools/` script, a reviewer's push, a command
 # too long to read and one the guard could not parse stay denied: a release needs the player's go-ahead in conversation and a merge is the
-# orchestrating session's under its standing permission (CLAUDE.md), and a prompt is too easy to click through for any of them -- on the mobile app
-# it shows only the command, not this reason. A direct `gh issue` write is never asked about because
+# orchestrating session's under its standing permission (CLAUDE.md), and a prompt is too easy to click through for any of them. The
+# prompt's text is this hook's reason alone, so a reason naming only the kind of write left the
+# player unable to tell which push, to where, or whether it pushed anything (rosy-marmot,
+# minty-hedgehog 15: "it shows me the hook's code instead"); the reason therefore opens with the
+# command itself, cut to its first 200 characters with an ellipsis when cut. A direct `gh issue` write is never asked about because
 # the player wants an agent's issue writes to go through a script rather than a direct command
 # *(2026-09-27, bouncy-heron statement 14: "if it goes through a script it's safe we just need to
 # get it working once -- an agent shouldn't use gh issue directly")*: that script is
@@ -2261,7 +2264,14 @@ if [ "${NAPPY_ASK_FOR_PLAYER_WRITES:-}" = "1" ] \
 		&& [ "$askable" = "true" ]
 then
 	decision="ask"
-	reason="This command ($flagged) would go out under the player's own GitHub account: no agent \
+	shown=$(printf '%s' "$input" | jq -r '
+		(.tool_input.command // "")
+		| if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end
+		| if length > 200 then .[:200] + "..." else . end' 2>/dev/null) \
+		|| shown="(the command could not be read back)"
+	reason="The command to approve: $shown
+--
+This command ($flagged) would go out under the player's own GitHub account: no agent \
 identity can work here (a Claude Code cloud session, or no identities set up on this machine). \
 Approve it only if you want this one command run as you; the next one is asked about again. To have \
 such writes refused instead, remove NAPPY_ASK_FOR_PLAYER_WRITES=1 from the environment the session \
