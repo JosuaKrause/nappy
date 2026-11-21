@@ -19,8 +19,9 @@ manager's `world` and the live event's `transition` stay listed with their reaso
 **Against the row's text:** the row says no line under `src/` changes; the design's F1 makes the fields private in
 the same pull request, which changes the four files above mechanically, so no field stays public only for tests.
 
-**Merged twice.** Main's #1600 (curly-stork) merged clean; #1601 (row 4a's row reads) conflicted on one line each in
-eight test files, resolved by taking main's side and rerunning the script, as the design's section 5 says.
+**Merged twice.** Main's #1600 (curly-stork) merged clean; #1601 (row 4a's row reads) conflicted in fifteen places in
+eight test files, resolved by taking main's side and rerunning the script, as the design's section 5 says, and by
+redoing the one hand edit the rerun cannot make (the flock's offsets and velocities asked of the live event).
 
 **Left for row 4b:** 34 reads through `x.row().<field>` with no row method (a row's `id`, a spec's field, writes).
 
