@@ -50,5 +50,5 @@ its silhouette.
 already leaves at its own speed, and anything without a duration never ends.
 
 **`flock_size` changes what a row *is* rather than what it does.** Reach for it only when the event
-genuinely is a number of creatures, and set `flock_spread` out of `outer_radius` rather than on top
+genuinely is a number of creatures, and set `flock_spread` out of the outer radius rather than on top
 of it.
