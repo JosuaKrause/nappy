@@ -348,10 +348,13 @@ func distance_from(at: Vector2) -> float:
 	return best
 
 ## **How far she is from this plan for the streaming's sake**, `INF` for a plan streaming does not look
-## at: one that is spent or not placed. The same number `distance_from()` answers for a placed plan
-## (a point plan's own place, a route's nearest point), asked as one call because streaming puts the
-## question to every plan of the walk on every physics tick: it is the one question the loop puts to a
-## plan (`EventStreaming.stream_around()`).
+## at: one that is spent or not placed. It measures from where the plan was placed (`position`) for a
+## plan that stands at one point, and to the nearest point of its route for one that walks, the number
+## `distance_from()` answers for a route. **It is not `distance_from()` for a point plan**, which
+## measures from where its body stands (`body_at()`, the kerb for a row that stands at its kerb): a
+## streaming radius is a reach round where the day put the row, not round its body. Asked as one call
+## because streaming puts the question to every plan of the walk on every physics tick: it is the one
+## question the loop puts to a plan (`EventStreaming.stream_around()`).
 func streaming_distance_from(at: Vector2) -> float:
 	if spent or position == Vector2.INF:
 		return INF
