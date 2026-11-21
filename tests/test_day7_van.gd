@@ -1,14 +1,15 @@
 extends RefCounted
 ## Day 7's van gets a second instance on her way, from a rigged bag *(inbox #586 in
 ## olive-hedgehog: "each olive badger rigged bag should be 2 or 3"; inbox #650 in mossy-beaver: "I
-## guess that leaves only the van?")*, laid by the next draw on her path, just ahead of her
+## guess that leaves only the van?")*, laid when its marble is handed out on her route, just ahead of her
 ## *(inbox #1520 in breezy-magpie, of day 6's man shouting and day 7's van: "the bag gets the biased
 ## bag in front (via the chained bags mechanism) and the next draw (whenever that happens) will
 ## guarantee the shouting man"; inbox #1549: "you would draw only for the path and only just
 ## ahead")*.
 ##
-## Holds, through a real city: reading day 7's mark rigs the next draw on her path with one
-## `delivery_van` (`EventManager.rig_the_next_draw()`); walking the day's longest route until it is
+## Holds, through a real city: reading day 7's mark rigs her route's bag with one `delivery_van`,
+## so its marble is one of the next `ResistanceSteps.VAN_WITHIN_THE_NEXT` events handed out on it
+## (`EventManager.rig_her_route()`); walking the day's longest route until it is handed out and
 ## laid, and on the way she was heading after that (keeping on her way, which is what the rule
 ## promises; a fork of her branch she turns off at is a walk the probe below measures), she meets it: her walk lays it straight ahead of her on her branch (`WalkSiting.lay_just_ahead()`)
 ## with no part of what it draws in the camera's view of her on the tick it is laid, and keeping on

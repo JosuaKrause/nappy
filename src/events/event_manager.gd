@@ -838,14 +838,10 @@ func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
 	return ahead.swap_in_a_section(section, plan)
 
-## Rigs her route's bag for a task (`EventsAhead.rig_her_route()`).
-func rig_her_route(ids: Array[String], size: int) -> Array:
-	return ahead.rig_her_route(ids, size)
-
-## Rigs the next draw on her path to stand the rows of `ids` for a task, laid just ahead of her
-## (`EventsAhead.rig_the_next_draw()`).
-func rig_the_next_draw(ids: Array[String]) -> Array[String]:
-	return ahead.rig_the_next_draw(ids)
+## Rigs her route's bag for a task, its place laid just ahead of her where `just_ahead`
+## (`EventsAhead.rig_her_route()`).
+func rig_her_route(ids: Array[String], size: int, just_ahead := false) -> Array:
+	return ahead.rig_her_route(ids, size, just_ahead)
 
 ## Lights the set piece she never met, at dusk on a won day
 ## (`EventsAhead.light_what_she_never_met()`).

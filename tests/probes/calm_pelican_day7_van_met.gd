@@ -1,7 +1,7 @@
 extends RefCounted
-## Measurement probe for olive-badger's day-7 route van: once reading the mark rigs a second
-## `delivery_van` in front of the next draw on her path (`EventManager.rig_the_next_draw()`) and her
-## walk lays it on her path just ahead of her (`WalkSiting.lay_just_ahead()`), does a played walk
+## Measurement probe for olive-badger's day-7 route van: once reading the mark rigs her route's bag
+## with a second `delivery_van` (`EventManager.rig_her_route()`) and her walk lays it on her path just
+## ahead of her when its marble is handed out (`WalkSiting.lay_just_ahead()`), does a played walk
 ## bring it into her view? Not a suite: it
 ## prints what each walk met, so it lives under `tests/probes/` and runs only by name:
 ##

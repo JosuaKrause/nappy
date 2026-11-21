@@ -500,8 +500,8 @@ func place_what_is_owed_ahead(delta: float) -> void:
 		def.id, verb, lead,
 		RunTrace.tile(world.map().world_to_tile(body.global_position))])
 
-## A place a marble from her route's bag named — the mast day 11's rigged bag puts on it — or a row a
-## mark rigged just ahead of her (day 6's man shouting, day 7's van; `rig_the_next_draw()`), sited
+## A place a marble from her route's bag named — the mast day 11's rigged bag puts on it, the man
+## shouting or the van a day-6 or day-7 mark rigged — sited
 ## for the first time by the director ahead of her on the branch she is walking
 ## (`EventDirector._place_on_her_route()`, then `EventDirector.site_what_is_on_her_way()`). It joins
 ## the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the way
@@ -524,50 +524,23 @@ func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 ## see `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them (day 11's second
 ## mast) is handed to her walk when its marble comes up and laid ahead of her once her walk finds it
 ## a location, by the day's placement context, which is built here if the day had none, and its
-## first scans are done now rather than on the frame it is laid. Answers the rigged bag's marbles.
-func rig_her_route(ids: Array[String], size: int) -> Array:
+## first scans are done now rather than on the frame it is laid. A place laid `just_ahead` is laid on her
+## path just ahead of her and out of her view (`WalkSiting.lay_just_ahead()`) instead of past the
+## streaming band. Answers the rigged bag's marbles.
+func rig_her_route(ids: Array[String], size: int, just_ahead := false) -> Array:
 	# A rig that never started a day has no route to rig, and building it a placement context for
 	# nothing would grow a route tree to no end.
 	if not _director.route_bag():
 		return []
 	if not _siting:
 		_siting = _a_siting(world.day(), _day_tree)
-	var rigged := _director.rig_her_route(ids, size, world.run().resistance().progress(), _siting)
+	var rigged := _director.rig_her_route(ids, size, world.run().resistance().progress(), _siting,
+			just_ahead)
 	for id in ids:
 		var row := _director.route_row(id)
 		if row and row.spawn_mode_on(world.day()) == EventDef.SpawnMode.MAP \
 				and not row.is_sent_ahead():
 			_siting.prepare(row)
-	return rigged
-
-## **Rigs the next draw on her path to stand the rows of `ids`**, at the day's heat
-## (`EventDirector.rig_the_next_draw()`): day 6's man shouting and day 7's van once she has read the
-## day's mark, each laid by the next look on the first free location on her path just ahead of her,
-## out of her view (`WalkSiting.lay_just_ahead()`), by the day's placement context, which is built
-## here if the day had none, and its first scans are done now rather than on the frame it is laid.
-## *(The player: "the bag gets the biased bag in front (via the chained bags mechanism) and the next
-## draw (whenever that happens) will guarantee the shouting man", inbox #1520 in breezy-magpie; "you
-## would draw only for the path and only just ahead", inbox #1549.)* Answers the ids rigged: none on
-## a rig that never started a day, or for an id the catalogue does not hold.
-func rig_the_next_draw(ids: Array[String]) -> Array[String]:
-	var rigged: Array[String] = []
-	# A rig that never started a day has no path to lay on, and building it a placement context
-	# for nothing would grow a route tree to no end.
-	if not _director or not _director.route_bag():
-		return rigged
-	if not _siting:
-		_siting = _a_siting(world.day(), _day_tree)
-	var rows: Array[EventDef] = []
-	for id in ids:
-		var def := EventCatalogue.by_id(id)
-		if not def:
-			push_error("a rigged draw names no event in the catalogue: '%s'" % id)
-			continue
-		var row := EventCatalogue.heated(def, world.run().resistance().progress()).for_day(world.day())
-		_siting.prepare(row)
-		rows.append(row)
-		rigged.append(id)
-	_director.rig_the_next_draw(rows, _siting)
 	return rigged
 
 ## A row the director sited down her own line, warned first: the badge goes up at once, pointing
