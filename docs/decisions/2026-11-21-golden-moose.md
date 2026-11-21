@@ -15,10 +15,17 @@ laying the rigged row just ahead of her is a setting of the rig, asked of the st
 (`Step.lays_its_rigged_row_just_ahead()`), and the director lays a drawn marble's plan just ahead where it is set.
 `rig_the_next_draw()` and its run-log line go from all four classes. Day 11's mast is untouched.
 
-**Measured** (`tests/probes/calm_pelican_day7_van_met.gd` and its day 6 twin, twelve walks each): the man shouting is
-seen on 9 walks and laid on 11 (main as #1548 built it: seen on 8 of 11 laid); the van is seen on 6 walks and laid on 7
-(as built: seen on 8 of 9 laid). The rigged row now joins her walk at its marble's handout, 11 to 26 walking seconds
-after the mark rather than at it, so fewer looks remain before a probe walk ends; on five walks the van's marble was
-handed out but no place out of her view just ahead was found before the walk ended, which the placement rules read as
-a place she does not meet. The van's two fewer sightings are at the edge of the stop Fable's design set (no more than
-two below the built row), so Fable's review of this pull request judges it.
+**Measured** (`tests/probes/calm_pelican_day7_van_met.gd`, which holds the day 6 and the day 7 case, twelve walks each,
+on main as #1548 built it and on the branch): the man shouting is seen on 9 walks (8 on main) and the van on 6 (8 on
+main). The rigged row now joins her walk as one of the next two marbles handed out after the mark, so it can come up to
+about 52 walking seconds later rather than at the mark. Of the five walks that never lay the van, three never lay it on
+main either; on the two new ones its marble is handed out at 84 and 92 seconds of a 105-second walk, after which the
+probe walks home by the shortest way, off the day's routes, where no siting lays anything. The just-ahead siting never
+failed where it should have succeeded. The van's two fewer sightings meet, and do not cross, the stop Fable's design set
+(more than two below the built row); Fable's review of this pull request judges it. `placement_rows.gd` prints the same
+on main and the branch.
+
+**Rejected:** a bag of one, the other reading of "the next draw will guarantee" (inbox #1520 in breezy-magpie), which
+would lay the row at the next handout but makes the mark's row no marble of a chained bag of the size the player set
+("2 or 3", inbox #586 in olive-hedgehog); and laying day 11's second mast just ahead too, which the mast's own placement
+does not want (it stands where the region plan puts it, not in front of her).
