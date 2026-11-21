@@ -608,11 +608,11 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 
 ## `EventBus.pursuit_began` (the counter's `dog-chased`) fires once per chase, and **a pursuer
 ## created where its warning pointed reports the chase it starts**. `EventManager.spawn_warned()`
-## creates such a row through `EventInstance.resume()` to spend the telegraph the warning already
-## ran, and a resume otherwise stands for an instance streamed back in, whose chase — for a row
+## creates such a row through `EventInstance.restore()` to spend the telegraph the warning already
+## ran, and a restore otherwise stands for an instance streamed back in, whose chase — for a row
 ## like `charging_dog` that never waits (`EventDef.notice` 0.0) — began before it streamed out and
 ## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
-## warned the way `spawn_warned()` does it (`arrive_from_its_warning()` told, then `resume()`), and
+## warned the way `spawn_warned()` does it (`arrive_from_its_warning()` told, then `restore()`), and
 ## streamed back in mid-chase, which reports nothing a second time.
 func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
@@ -646,7 +646,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 			EventSurroundings.new().hearing(streamed_where))
 	t.add_child(streamed)
 	streamed.set_process(false)
-	streamed.resume(age, travelled)
+	streamed.restore(EventSave.new(age, travelled))
 	for i in 10:
 		streamed_where.tell(her)
 		streamed.step(step)
@@ -660,7 +660,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -
 	t.add_child(warned)
 	warned.set_process(false)
 	warned.arrive_from_its_warning()
-	warned.resume(def.telegraph_time, 0.0)
+	warned.restore(EventSave.new(def.telegraph_time, 0.0))
 	for i in 10:
 		warned_where.tell(her)
 		warned.step(step)

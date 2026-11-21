@@ -73,8 +73,8 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t: TestRunner) -> vo
 	streaming.stream_around(far)
 	t.check(plan.live == null and not manager.instances().has(leaving),
 			"out of reach, it is streamed out and leaves the live instances")
-	t.close_to(plan.age, age, "its plan keeps how far it had run")
-	t.check(plan.behaviours.has(&"EventPursuit"), "and its pursuit's state")
+	t.close_to(plan.saved().age(), age, "its plan keeps how far it had run")
+	t.check(not plan.saved().state_of("EventPursuit").is_empty(), "and its pursuit's state")
 	streaming.stream_around(at)
 	t.check(plan.live != null, "back within reach, it is streamed in again")
 	if plan.live:

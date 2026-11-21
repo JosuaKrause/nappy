@@ -170,7 +170,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
 		# resistance's sent robber and guard) with its telegraph spent.
 		if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
-			created.resume(EventSpawner.age_when_warned(def), 0.0)
+			created.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		made.append(created)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
@@ -401,7 +401,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	instance.setup(def, spawn, path, Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
 	if encounter.has("age"):
-		instance.resume(float(encounter["age"]), 0.0)
+		instance.restore(EventSave.new(float(encounter["age"]), 0.0))
 	var her: Vector2 = encounter["her"]
 	var heading: Vector2 = encounter["heading"]
 	var velocity := heading * Tuning.WALK_SPEED
@@ -465,7 +465,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 				EventSurroundings.new().hearing(instance_where))
 		instance.arrive_from_its_warning()
 		if def.pursuit == null:
-			instance.resume(EventSpawner.age_when_warned(def), 0.0)
+			instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		created.append(instance)
 		return true
 	var warning := PendingWarning.new(def, encounter["where"], arrive)

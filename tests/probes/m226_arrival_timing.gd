@@ -94,7 +94,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 			instance.be_drawn_as_the_pelican()
 		# Created at the age the game creates a warned row at: its telegraph spent, and a pulsing
 		# row's beat kept.
-		instance.resume(EventSpawner.age_when_warned(def), 0.0)
+		instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 		source.add_child(instance)
 		source.live.append(instance)
 		return true
@@ -109,7 +109,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		var instance := EventInstance.new()
 		instance.setup(def, route[0], route, Vector2.RIGHT,
 				EventSurroundings.new().hearing(where))
-		instance.resume(float(encounter.get("age", 0.0)), 0.0)
+		instance.restore(EventSave.new(float(encounter.get("age", 0.0)), 0.0))
 		source.add_child(instance)
 		source.live.append(instance)
 		result.created = 0.0

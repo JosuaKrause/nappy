@@ -317,7 +317,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 		frames += 1
 	t.check(guard.is_leaving, "she shook him off and he is walking away")
 	RunCity.events(city).streaming.stream_out(plan)
-	var carried: Dictionary = plan.behaviours.get(&"EventBarrierPost", {})
+	var carried := plan.saved().state_of("EventBarrierPost")
 	t.check(bool(carried.get("spent", false)) and int(carried.get("side", 0)) == side,
 			"the plan carries the spent guard and the side he left (%s)" % [carried])
 	RunCity.events(city).streaming.stream_in(plan)

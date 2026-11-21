@@ -380,7 +380,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: T
 					PackedVector2Array(), Vector2.RIGHT,
 					EventSurroundings.new().hearing(pursuer_where))
 			pursuer.arrive_from_its_warning()
-			pursuer.resume(EventSpawner.age_when_warned(def), 0.0)
+			pursuer.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 			var at := Vector2.ZERO
 			var elapsed := 0.0
 			var caught := INF

@@ -50,7 +50,7 @@ func advance(delta: float) -> void:
 	# the route, so the same walk up and down happens for ever and the end of the path is never
 	# reached — which is what stops a fixture that moves from departing like something that was
 	# passing through. Folded rather than reset, so streaming it out and back in resumes it mid-beat
-	# exactly as `resume()` promises.
+	# exactly as `restore()` promises.
 	var back := false
 	if _row.paces:
 		var beat := length()

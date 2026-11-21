@@ -346,7 +346,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	t.check(lorry.is_telegraphing() and _influenced.is_empty(),
 			"reversing_lorry: inside its reach while still telegraphing is no catch (%s)"
 			% [_influenced])
-	lorry.resume(lorry.def.telegraph_time + 0.1, 0.0, 0.0)
+	lorry.restore(EventSave.new(lorry.def.telegraph_time + 0.1, 0.0, 0.0))
 	t.check(not lorry.is_telegraphing() and lorry.is_lethal_at(inside),
 			"the lorry is now past its telegraph and the game's own test catches her")
 	_stand(watch, [lorry] as Array[EventInstance], inside)
@@ -396,7 +396,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
 	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
 	guard.arrive_from_its_warning()
-	guard.resume(guard.def.pursuit.warns_for + 0.1, 0.0, 0.0)
+	guard.restore(EventSave.new(guard.def.pursuit.warns_for + 0.1, 0.0, 0.0))
 	var her := Vector2(134.0, 122.0)
 	t.check(guard.def.hard_fail and not guard.is_telegraphing() and not guard.is_waiting()
 			and not guard.is_chasing()
@@ -465,7 +465,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 	var released := centre - axis * maxf(40.0, clearance) + Vector2(0.0, 16.0)
 	var cyclist := manager.spawn_extra(EventCatalogue.by_id("cyclist"), released)
 	cyclist.set_process(false)
-	cyclist.resume(cyclist.def.telegraph_time + 0.1, 0.0, 0.0)
+	cyclist.restore(EventSave.new(cyclist.def.telegraph_time + 0.1, 0.0, 0.0))
 	# Where the test puts it: the manager's tick does not step it off the place the door sets her.
 	cyclist.hold_by_hand()
 	var reach := cyclist.def.lethal_reach()
@@ -537,7 +537,7 @@ func _chasing_dog(t: TestRunner, def: EventDef) -> EventInstance:
 	t.add_child(dog)
 	dog.set_process(false)
 	dog.arrive_from_its_warning()
-	dog.resume(def.telegraph_time, 0.0)
+	dog.restore(EventSave.new(def.telegraph_time, 0.0))
 	for _i in 3:
 		dog_where.tell(Vector2.ZERO)
 		dog.step(STEP)

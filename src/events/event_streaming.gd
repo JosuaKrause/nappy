@@ -204,24 +204,25 @@ func stream_in(plan: EventPlan) -> void:
 	# time the player leaves its radius and returns, and at 32px/s against her 92 that is most
 	# times. From outside it reads as an event that never goes anywhere.
 	#
-	# It resumes rather than catching up on lost time, which is the whole design of streaming: the
+	# It restores rather than catching up on lost time, which is the whole design of streaming: the
 	# day is planned across the whole city but an event **waits** for her. Ageing it in absentia
 	# would put back exactly the thing streaming exists to fix — a twenty-second event that is over
 	# before anybody could reach it.
 	#
-	# `plan.noticed_at` carries the same resume for a `EventDef.notice` row: without it a pursuer
-	# streamed out mid-chase forgets she was ever noticed and comes back `is_waiting()`, standing
-	# where the day planted it rather than still coming for her.
+	# The plan's save carries the same restore for a `EventDef.notice` row: without its notice a
+	# pursuer streamed out mid-chase forgets she was ever noticed and comes back `is_waiting()`,
+	# standing where the day planted it rather than still coming for her.
 	#
-	# **A mast's own age is the broadcast clock, not `plan.age`.** Every mast reads the same clock
-	# at every stream-in, first time or the fifth, so two masts met minutes apart still read the
+	# **A mast's own age is the broadcast clock, not the saved age.** Every mast reads the same
+	# clock at every stream-in, first time or the fifth, so two masts met minutes apart still read the
 	# same pulse phase — "all masts speak at once" is true because they are all telling the same
 	# time, not because anything coordinates them frame to frame. See `_broadcast_clock` below.
-	var resume_age := _broadcast_clock if plan.mast_id() != "" else plan.age
-	plan.live.resume(resume_age, plan.travelled, plan.noticed_at)
+	var save := plan.saved()
+	if plan.mast_id() != "":
+		save = save.at_age(_broadcast_clock)
 	# A guard spent before the stream-out comes back as only his barrier, never as a guard again
 	# (`EventBarrierPost.restore()`).
-	plan.live.restore_behaviours(plan.behaviours)
+	plan.live.restore(save)
 	if plan.is_silenced():
 		plan.live.silence()
 	plan.was_live = true
@@ -240,10 +241,7 @@ func _could_be_watched(instance: EventInstance, at: Vector2) -> bool:
 			and instance.global_position.distance_to(at) <= Tuning.OUT_OF_SIGHT
 
 func stream_out(plan: EventPlan) -> void:
-	plan.age = plan.live.age
-	plan.travelled = plan.live.path_travelled()
-	plan.noticed_at = plan.live.noticed_at()
-	plan.behaviours = plan.live.save_behaviours()
+	plan.leave_the_world(plan.live.save())
 	# **A departure streamed out is over**, as one that finished is (`_mark_plan_spent()`): it is not
 	# rebuilt to run an ended event again. Walking back, it would be rebuilt 900px or more from her
 	# and finish out of view, so no car is seen coming back; what the spend keeps out is a person
@@ -441,10 +439,7 @@ func find_what_repeats() -> void:
 func _done_for_now(plan: EventPlan) -> void:
 	plan.live = null
 	world.map().release_obstruction(plan.get_instance_id())
-	plan.age = plan.arrives_aged
-	plan.travelled = 0.0
-	plan.noticed_at = INF
-	plan.behaviours = {}
+	plan.leave_the_world(EventSave.aged(plan.arrives_aged))
 	if plan.repeat_after > 0.0:
 		plan.comes_in = maxf(plan.comes_in, plan.repeat_after)
 		plan.wait_began = true

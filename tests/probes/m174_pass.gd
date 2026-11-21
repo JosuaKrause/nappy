@@ -163,7 +163,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# Past the telegraph, plus the requested phase offset -- moved for real, nobody watching. A row
 	# that comes at her is created with its telegraph already spent and meets her from there.
 	if toward_her:
-		instance.resume(EventSpawner.age_when_warned(def), 0.0)
+		instance.restore(EventSave.new(EventSpawner.age_when_warned(def), 0.0))
 	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:
