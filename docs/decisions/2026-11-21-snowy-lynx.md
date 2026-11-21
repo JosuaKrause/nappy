@@ -14,5 +14,10 @@ manager's `setup()` keeps no default of its own. `EventWorld.navigator()` return
 one over its map only where none was handed; the comparison that replaced a handed one goes. A suite holds that a
 manager handed a navigator returns that same object, and that the building's navigator walks the building's map.
 
+**Left alone on purpose** (Fable's design): the five rig defaults that build a navigator when handed none,
+`Crowd.setup()`, `EventDirector._init()`, `EventSurroundings.navigator()`, `ResistanceDirector.setup()` and
+`ResistanceHappenings.setup()`, and `EventManager.setup_world()`'s navigator, which stays optional: each is the one
+default of a class a suite stands on its own, and the game hands every one a navigator.
+
 **Nothing a player sees changes:** a navigator holds nothing but its map, and no caller handed one over another map
 (the search is in the pull request), so the deleted branch was never taken.
