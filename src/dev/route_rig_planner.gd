@@ -496,7 +496,7 @@ const _CAUGHT_CLEARANCE := Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 ## "a body is a body whether or not the player has come near enough to stream it in". A plan that
 ## knew only the live ones kept meeting a van streaming in over a waypoint a few tiles ahead, and
 ## re-planned onto a street whose own van streamed in next. So each placed, unspent plan answers
-## from where its instance will stand (`_planned_body_tiles()`), and a live instance from where it
+## from where its instance will stand (`_planned_body_tiles()`, off `BodyStance.pieces_at()`), and a live instance from where it
 ## does stand, which also covers a body the director sites from her walk and has no plan position
 ## at dawn.
 func body_clear_tiles() -> Dictionary:
@@ -517,23 +517,28 @@ var _planned_clear := {}
 func _planned_body_tiles(plan: EventPlan) -> Dictionary:
 	if _planned_clear.has(plan):
 		return _planned_clear[plan]
-	var parts := _planned_parts(plan)
-	var tiles := _tiles_near_pieces(parts[0], parts[1], parts[2], _BODY_CLEARANCE)
+	var tiles := _tiles_near_pieces(_planned_pieces(plan), _BODY_CLEARANCE)
 	_planned_clear[plan] = tiles
 	return tiles
 
-## A placed plan's solid pieces as its instance will stand — `[centres, shapes, axis]`, the
-## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` it will have.
-func _planned_parts(plan: EventPlan) -> Array:
-	var at := _planned_position(plan)
-	var vertical := BodyStance.lies_vertically_at(_map, at)
-	var centres := PackedVector2Array()
-	var shapes: Array[GroundShape] = []
-	for piece in plan.body_pieces():
-		var offset := piece.offset_for(vertical)
-		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
-		shapes.append(piece.ground_shape())
-	return [centres, shapes, BodyStance.body_axis(_map, plan.row(), at, plan.faces())]
+## A placed plan's solid pieces as its instance will stand (`BodyStance.pieces_at()`, the layout the
+## walk's ground and the map's record ask too).
+func _planned_pieces(plan: EventPlan) -> Array[StandingPiece]:
+	return BodyStance.pieces_at(_map, plan.row(), plan.placed_at(), plan.faces())
+
+## A live instance's solid pieces where they stand: its `EventInstance.solid_part_centres()` and
+## `solid_part_shapes()`, the same pieces its collision is built from, along `solid_axis()`.
+func _live_pieces(instance: EventInstance) -> Array[StandingPiece]:
+	var pieces: Array[StandingPiece] = []
+	var centres := instance.solid_part_centres()
+	var shapes := instance.solid_part_shapes()
+	for k in centres.size():
+		pieces.append(StandingPiece.new(centres[k], shapes[k], instance.solid_axis()))
+	return pieces
+
+## The angle a piece's spine lies at: its axis for a shape with a spine, none for a disc.
+func _angle_of(piece: StandingPiece) -> float:
+	return piece.axis().angle() if piece.ground_shape().spine_half_length() > 0.0 else 0.0
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
@@ -731,24 +736,22 @@ func ground_round_point(point: Vector2) -> Dictionary:
 ## `EventInstance.solid_part_centres()` and `solid_part_shapes()`, the same pieces its collision is
 ## built from, along `solid_axis()`.
 func _tiles_near_body(instance: EventInstance, margin: float) -> Dictionary:
-	return _tiles_near_pieces(instance.solid_part_centres(), instance.solid_part_shapes(),
-			instance.solid_axis(), margin)
+	return _tiles_near_pieces(_live_pieces(instance), margin)
 
-## The tiles whose centre lies within `margin` of any of a body's pieces, each measured against its
-## real shape: a segment turned along `axis` the way `EventBody.go_down()` turns its
+## The tiles whose centre lies within `margin` of any of a body's `StandingPiece`s, each measured
+## against its real shape: a segment turned along its axis the way `EventBody.go_down()` turns its
 ## capsule, and a rectangle left square.
-func _tiles_near_pieces(centres: PackedVector2Array, shapes: Array[GroundShape], axis: Vector2,
-		margin: float) -> Dictionary:
+func _tiles_near_pieces(pieces: Array[StandingPiece], margin: float) -> Dictionary:
 	var near := {}
-	for k in centres.size():
-		var shape := shapes[k]
-		var angle := axis.angle() if shape.spine_half_length() > 0.0 else 0.0
-		var centre_tile := _map.world_to_tile(centres[k])
+	for piece in pieces:
+		var shape := piece.ground_shape()
+		var angle := _angle_of(piece)
+		var centre_tile := _map.world_to_tile(piece.center())
 		var span := ceili((shape.reach() + margin) / Tuning.TILE_SIZE) + 1
 		for dy in range(-span, span + 1):
 			for dx in range(-span, span + 1):
 				var tile := centre_tile + Vector2i(dx, dy)
-				var local := (_map.tile_to_world(tile) - centres[k]).rotated(-angle)
+				var local := (_map.tile_to_world(tile) - piece.center()).rotated(-angle)
 				if shape.distance_to_spine(local) - shape.rounding_radius() < margin:
 					near[tile] = true
 	return near
@@ -1180,25 +1183,24 @@ func _roomiest_point(tile: Vector2i) -> Vector2:
 	return best
 
 ## How far `point` is from the nearest of `pieces`' surfaces and `walls`' squares.
-func _room_at(point: Vector2, pieces: Array, walls: Array[Vector2i]) -> float:
+func _room_at(point: Vector2, pieces: Array[StandingPiece], walls: Array[Vector2i]) -> float:
 	var room := INF
-	for piece: Array in pieces:
-		var shape: GroundShape = piece[1]
-		var local := (point - (piece[0] as Vector2)).rotated(-float(piece[2]))
+	for piece in pieces:
+		var shape := piece.ground_shape()
+		var local := (point - piece.center()).rotated(-_angle_of(piece))
 		room = minf(room, shape.distance_to_spine(local) - shape.rounding_radius())
 	for wall in walls:
 		room = minf(room, _tile_nearest_distance(wall, point))
 	return room
 
-## Every solid piece of a standing body within `radius` of `point`, as `[centre, shape, angle]` —
-## the live instances `body_clear_tiles()` keeps clear of, and the placed plans not yet built,
+## Every solid `StandingPiece` of a standing body within `radius` of `point` — the live instances
+## `body_clear_tiles()` keeps clear of, and the placed plans not yet built (`BodyStance.pieces_at()`),
 ## measured the same way.
-func _body_pieces_near(point: Vector2, radius: float) -> Array:
-	var pieces: Array = []
+func _body_pieces_near(point: Vector2, radius: float) -> Array[StandingPiece]:
+	var pieces: Array[StandingPiece] = []
 	for instance: EventInstance in _events.instances():
 		if _is_standing_body(instance):
-			_add_pieces_near(pieces, instance.solid_part_centres(), instance.solid_part_shapes(),
-					instance.solid_axis(), point, radius)
+			_add_pieces_near(pieces, _live_pieces(instance), point, radius)
 	for planned: EventPlan in _events.plans():
 		if planned.is_in_the_world() or not planned.is_placed() or planned.is_spent() \
 				or not planned.stands_as_a_fixed_body():
@@ -1206,18 +1208,14 @@ func _body_pieces_near(point: Vector2, radius: float) -> Array:
 		var bound := radius + planned.ground_shape().reach() * 2.0
 		if _planned_position(planned).distance_to(point) > bound:
 			continue
-		var parts := _planned_parts(planned)
-		_add_pieces_near(pieces, parts[0], parts[1], parts[2], point, radius)
+		_add_pieces_near(pieces, _planned_pieces(planned), point, radius)
 	return pieces
 
-func _add_pieces_near(pieces: Array, centres: PackedVector2Array, shapes: Array[GroundShape],
-		axis: Vector2, point: Vector2, radius: float) -> void:
-	for k in centres.size():
-		var shape := shapes[k]
-		if centres[k].distance_to(point) - shape.reach() > radius:
-			continue
-		var angle := axis.angle() if shape.spine_half_length() > 0.0 else 0.0
-		pieces.append([centres[k], shape, angle])
+func _add_pieces_near(pieces: Array[StandingPiece], candidates: Array[StandingPiece],
+		point: Vector2, radius: float) -> void:
+	for piece in candidates:
+		if piece.center().distance_to(point) - piece.ground_shape().reach() <= radius:
+			pieces.append(piece)
 
 # ----------------------------------------------------------------- unsticking ---
 

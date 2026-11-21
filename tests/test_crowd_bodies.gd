@@ -486,8 +486,8 @@ func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: A
 	return {"probe_walker": walkers[0], "wall": wall, "vertical": vertical, "base": base}
 
 # --------------------------------------------------------- a body in pieces ---
-# `EventSpawner.obstructed_footprint()` rasterises `EventDef.parts()` rather than the row's one
-# `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
+# `EventSpawner.obstructed_footprint()` rasterises `EventDef.body_pieces()`, laid out through
+# `BodyStance.pieces_at()`, rather than the row's one `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
 # `shape`, and these two tests are the two halves of that sentence: nothing moved for the rows that
 # are one piece, and the crash records its two cars instead of the street they are lying across.
 
@@ -506,9 +506,9 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 	var checked := 0
 	for id: String in ["cafe_tables", "construction", "delivery_van"]:
 		var def := EventCatalogue.by_id(id)
-		if def == null or def.ground_shape() == null or def.obstructs_within() <= 0.0:
+		if def == null or def.shape == null or def.obstructs_within() <= 0.0:
 			continue
-		t.check(def.parts().size() == 1, "'%s' is one piece, so it is this test's business" % id)
+		t.check(def.body_pieces().size() == 1, "'%s' is one piece, so it is this test's business" % id)
 		# Where the row's body stands once sited at `at`: the instance the spawner makes puts a
 		# stationary, unpinned body on the middle of its pavement band when it is set up.
 		var sited := EventInstance.new()
@@ -516,8 +516,8 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 				EventSurroundings.new().on(map))
 		var placed := sited.position
 		sited.free()
-		var axis := BodyStance.body_axis(map, def, placed, Vector2.RIGHT)
-		var before := def.ground_shape().tiles_under(placed, axis)
+		var axis := BodyStance.pieces_at(map, def, at, Vector2.RIGHT)[0].axis()
+		var before := def.shape.tiles_under(placed, axis)
 		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 		before.sort()
 		after.sort()
@@ -542,15 +542,15 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t: TestRun
 	if run.x < 0:
 		return
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("car_accident"), true)
-	t.check(def.parts().size() == 2, "a crash is two cars (%d pieces)" % def.parts().size())
+	t.check(def.body_pieces().size() == 2, "a crash is two cars (%d pieces)" % def.body_pieces().size())
 	var base := run.x * CityMap.period()
 	var along := run.y + 3
 	# The middle of the carriageway, which is where `SealPlanner._hard_positions` stands the one
 	# copy a 96px reach takes to span a 6-tile street.
 	var at := Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
 			(float(along) + 0.5) * Tuning.TILE_SIZE)
-	var axis := BodyStance.body_axis(map, def, at, Vector2.RIGHT)
-	var whole_band := def.ground_shape().tiles_under(at, axis)
+	var axis := BodyStance.pieces_at(map, def, at, Vector2.RIGHT)[0].axis()
+	var whole_band := def.shape.tiles_under(at, axis)
 	var cars := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 	t.check(not cars.is_empty(), "the cars stand on ground (%d tiles)" % cars.size())
 	t.check(cars.size() < whole_band.size(),
@@ -664,7 +664,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t: TestRunner, crowd: Cro
 	var base := corridor * CityMap.period()
 	var body_at := run.y + CityMap.period() + 2
 	var def := EventCatalogue.by_id("delivery_van")
-	t.check(def != null and def.sidewalk_lane() == EventDef.Pavement.AT_THE_KERB,
+	t.check(def != null and def.pavement_side == EventDef.Pavement.AT_THE_KERB,
 			"'delivery_van' is the kerb-pinned row this test is about")
 	var kerb_lane: int = CrowdLanes.SIDEWALK_OFFSETS[1]
 	var covered := _stand_a_row(map, def, Vector2(CrowdLanes.lane_centre(corridor, kerb_lane),

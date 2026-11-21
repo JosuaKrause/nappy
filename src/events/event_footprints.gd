@@ -108,18 +108,18 @@ static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
 
 # ------------------------------------------------------------------- the body ---
 
-## **A row's solid footprint**, its origin at the row's own: one piece per `EventDef.parts()`
+## **A row's solid footprint**, its origin at the row's own: one piece per `EventDef.body_pieces()`
 ## entry — one at the origin carrying `shape` for every row that declares none, a car per piece
 ## for the crash — each offset along the spread axis (`spread_vertical`,
 ## `EventInstance.spread_at()`) by the piece's own reading of whichever picture is in use, its spine
-## along `axis` (`BodyStance.solid_axis_of()`). The physics body (`EventBody.go_down()`) and the
-## blocked record (`EventSpawner.obstructed_footprint()`) both come from here.
+## along `axis` (`BodyStance.solid_axis_of()`). Laid out by `BodyStance.pieces_laid_out()` round the
+## origin, the layout the blocked record (`EventSpawner.obstructed_footprint()`) takes through
+## `BodyStance.pieces_at()`, so the body and the record are one solid. The physics body
+## (`EventBody.go_down()`) comes from here.
 static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bool) -> Footprint:
 	var footprint := Footprint.new()
-	for piece in row.parts():
-		var offset := piece.offset_for(spread_vertical)
-		footprint.add(piece.shape,
-				Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0), axis)
+	for piece in BodyStance.pieces_laid_out(row, Vector2.ZERO, axis, spread_vertical):
+		footprint.add(piece.ground_shape(), piece.center(), piece.axis())
 	return footprint
 
 # ------------------------------------------------------------ the guard post ---

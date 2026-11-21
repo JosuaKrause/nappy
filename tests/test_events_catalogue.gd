@@ -531,7 +531,7 @@ func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> vo
 					else Vector2i(off_the_corridor, lane)
 			var placed := map.tile_to_world(tile)
 			var stands := BodyStance.stands_at(map, row, placed)
-			var axis := BodyStance.body_axis(map, row, stands, Vector2.RIGHT)
+			var axis := BodyStance.pieces_at(map, row, placed, Vector2.RIGHT)[0].axis()
 			var own_low := lane * 2 < Tuning.STREET_WIDTH
 			var own_edge := 0.0 if own_low else street
 			var far_kerb := street - sidewalk if own_low else sidewalk
@@ -928,7 +928,7 @@ func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if def.solid_parts.size() > 1:
 			continue
-		t.check(def.parts().size() == 1, "'%s' is one body" % def.id)
+		t.check(def.body_pieces().size() == 1, "'%s' is one body" % def.id)
 		if def.obstructs_within() > 0.0:
 			t.check(is_equal_approx(def.solid_reach(), def.obstructs_within()),
 					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "
