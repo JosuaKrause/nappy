@@ -15,7 +15,8 @@ extends RefCounted
 ##
 ## **The body and the day's blocked record are one solid read twice**: the body is built from the
 ## row's solid footprint (`EventFootprints.solid_footprint_of()`), and the tiles it is recorded on
-## are the record's own (`EventSpawner.obstructed_footprint()`), so the body that stops her and the
+## are the record's own (`EventSpawner.obstructed_footprint()`), each laid out by
+## `BodyStance.pieces_laid_out()` and `BodyStance.pieces_at()`, so the body that stops her and the
 ## tiles that stop every other mover cannot disagree.
 
 ## Its row: its pieces, when it is solid, whether it parks.
@@ -119,8 +120,8 @@ func waits_to_come_down() -> bool:
 ## paired index for index with `solid_part_shapes()`.
 ##
 ## **A per-tile solid record reads the same pieces, index for index.**
-## `EventSpawner.obstructed_footprint()` steps the row's pieces on its own rather than calling this
-## pair, but it is the same data: one piece for every row but the crash, which records tiles under
+## `EventSpawner.obstructed_footprint()` lays the row's pieces out through `BodyStance.pieces_at()`
+## rather than calling this pair, but it is the same data: one piece for every row but the crash, which records tiles under
 ## each car and leaves the ground between them open, the whole reason the crowd steps round the
 ## cars and walks the debris.
 func solid_part_centres(at: Vector2) -> PackedVector2Array:
@@ -166,8 +167,9 @@ func come_into_the_world(heading: Vector2) -> void:
 
 ## **Its body goes down now**, lying along `heading`'s axis (`solid_axis()`).
 ##
-## **Built from the row's solid footprint** (`EventFootprints.solid_footprint_of()`), the one the
-## day's blocked record is written from too (`EventSpawner.obstructed_footprint()`). One
+## **Built from the row's solid footprint** (`EventFootprints.solid_footprint_of()`), laid out by the
+## `BodyStance` layout the day's blocked record is written from too
+## (`EventSpawner.obstructed_footprint()`). One
 ## `StaticBody2D` holds every piece, so nothing downstream (the debug view's bounding-box layer,
 ## which walks the physics tree, or `is_solid()`) has to learn that a row may have more than one.
 func go_down(heading: Vector2) -> void:

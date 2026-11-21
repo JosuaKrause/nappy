@@ -153,6 +153,7 @@ FILES: dict[str, str] = {
     "src/events/sent_ahead.gd": "data",
     "src/events/vehicle_spec.gd": "data",
     "src/events/body_stance.gd": "model",
+    "src/events/standing_piece.gd": "model",
     "src/events/calm_areas.gd": "model",
     "src/events/dawn_context.gd": "model",
     "src/events/day_events.gd": "model",
