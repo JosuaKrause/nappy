@@ -95,13 +95,55 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 			"finishing the instance leaves the classification true")
 	instance.free()
 
-	# A shallow copy shares the body value. A deep copy would rebuild it from stored properties
-	# only, and a body holds a GroundShape (a RefCounted, which cannot be stored), so the game
-	# never deep-copies a row.
-	var copied := EventCatalogue.by_id("construction").duplicate() as EventDef
-	t.check(copied.lies_as_a_spread(), "Resource.duplicate() keeps a spread's answer")
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
-	t.check(hot.lies_as_a_spread(), "and so does a heated copy")
+	_test_a_copy_of_a_row_lies_as_the_row_does(t)
+
+## **A copy of a row lies as the row does, for every copy the game makes**: a copy shares the row's
+## body value (`BodySpec`), so what it is on the ground is the row's own. **A deep copy loses the
+## body**: `Resource.duplicate(true)` rebuilds a sub-resource from its stored properties only, and a
+## body holds a `GroundShape` (a `RefCounted`, which cannot be stored), so the copy has no shape
+## and lies as it faces, with nothing said. The first check names that trap, and the last holds
+## that no game code reaches it.
+func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
+	var construction := EventCatalogue.by_id("construction")
+	t.check(construction.lies_as_a_spread(), "construction is a spread, so the copies below have an answer to keep")
+	var deep := construction.duplicate(true) as EventDef
+	t.check(not deep.lies_as_a_spread() and deep.ground_shape() == null,
+			"a deep copy of a row loses its body: no shape, and no spread (the trap the game avoids)")
+
+	var drafts: Array[EventDef] = []
+	for source in EventCatalogue.all():
+		drafts.append(source.duplicate() as EventDef)
+		drafts.append(source.as_sent_ahead())
+		drafts.append(source.for_day(1))
+		drafts.append(source.for_day(Tuning.RESISTANCE_GOAL))
+		drafts.append(EventCatalogue.heated(source, Tuning.RESISTANCE_GOAL))
+		drafts.append(SealPlanner.sealed_variant(source, true))
+		drafts.append(SealPlanner.sealed_variant(source, false))
+	var kept := 0
+	for copy in drafts:
+		if copy.body() == EventCatalogue.by_id(copy.id).body():
+			kept += 1
+		else:
+			t.check(false, "a copy of '%s' shares its row's body" % copy.id)
+	t.check(kept == drafts.size() and kept > 0,
+			"every copy the game makes (duplicate, sent ahead (warned first where it is), for a day, heated, sealed) shares its row's body (%d)" % kept)
+
+	var deep_copies: Array[String] = []
+	for folder: String in ["res://src/events", "res://src/routes", "res://src/resistance", "res://src/day"]:
+		_find_deep_copies(folder, deep_copies)
+	t.check(deep_copies.is_empty(),
+			"no game code deep-copies a resource (a row's body would be lost): %s" % [deep_copies])
+
+## Appends the files under `folder` that call `duplicate(true)` or `duplicate_deep(`.
+func _find_deep_copies(folder: String, into: Array[String]) -> void:
+	for file_name in DirAccess.get_files_at(folder):
+		if not file_name.ends_with(".gd"):
+			continue
+		var text := FileAccess.get_file_as_string("%s/%s" % [folder, file_name])
+		if text.contains("duplicate(true)") or text.contains("duplicate_deep("):
+			into.append("%s/%s" % [folder, file_name])
+	for sub in DirAccess.get_directories_at(folder):
+		_find_deep_copies("%s/%s" % [folder, sub], into)
 
 ## **Where a body stands once built is `BodyStance.stands_at()`'s one answer**, which a body
 ## moved after dawn (`EventInstance.move_to()`) takes as a new body does: on a pavement lane, a

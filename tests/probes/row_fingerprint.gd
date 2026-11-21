@@ -44,7 +44,7 @@ extends RefCounted
 const FULL := false
 ## Script variables that only cache an answer: filled by the first call that needs them, so a
 ## dump that printed them would depend on what was asked before it.
-const SKIP_VARS: Array[String] = ["_cost_cache", "_default_parts"]
+const SKIP_VARS: Array[String] = ["_cost_cache"]
 ## Methods that are not asked by name. Every method that returns nothing is skipped for that
 ## reason (a writer such as `solid()` changes what
 ## is being measured, and one a later step adds is skipped too); these return something and are
