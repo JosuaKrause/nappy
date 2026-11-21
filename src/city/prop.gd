@@ -146,7 +146,7 @@ func _draw_tree() -> void:
 	_draw_tree_at(TreePictures.drawn_size(_variant, _scale_factor))
 
 ## The same standing tree every park tree draws, at its picture's own size whatever the prop was
-## dressed with (`TreePictures.street_tree_shape()`). The street tree's pit is a ground decal owned
+## dressed with (`TreePictures.street_tree_size()`). The street tree's pit is a ground decal owned
 ## by `CityDecals`, so it stays under the player and other entities.
 func _draw_street_tree() -> void:
 	_draw_tree_at(TreePictures.street_tree_size(_variant))

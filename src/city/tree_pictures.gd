@@ -24,7 +24,7 @@ static func region(variant: int) -> StringName:
 ## A tree's ground shape: a point reaching `_REACH_FRACTION` of its picture's width, drawn
 ## `scaled` times its picture's own size.
 static func shape(variant: int, scaled: float) -> GroundShape:
-	return GroundShape.point(drawn_size(variant, scaled).x * _REACH_FRACTION)
+	return _ground_of(drawn_size(variant, scaled))
 
 ## The size a tree of `variant` is drawn at when it is `scaled` times its picture's own size, in px:
 ## the one place that multiplies the two, which the prop's drawing and `shape()` both ask.
@@ -39,7 +39,12 @@ static func street_tree_size(variant: int) -> Vector2:
 ## A street tree's ground shape, at `street_tree_size()`, which `Prop` takes for
 ## `Kind.STREET_TREE` and `widest_reach()` keeps clear.
 static func street_tree_shape(variant: int) -> GroundShape:
-	return GroundShape.point(street_tree_size(variant).x * _REACH_FRACTION)
+	return _ground_of(street_tree_size(variant))
+
+## The ground shape of a tree drawn `size` large: the one place that says how much of its width it
+## reaches.
+static func _ground_of(size: Vector2) -> GroundShape:
+	return GroundShape.point(size.x * _REACH_FRACTION)
 
 ## The widest tree picture's width at its own size, in px: what a park tree's spacing is worked out
 ## from (`City._min_tree_spacing()`), at the largest scale a park tree is rolled.

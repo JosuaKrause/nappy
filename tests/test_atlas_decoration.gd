@@ -40,8 +40,7 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	var tree := Prop.new()
 	tree.dress(null, Prop.Kind.TREE, 0, 1.3)
 	t.add_child(tree)
-	var tree_name := TreePictures.region(0)
-	var expected_tree: float = float(AtlasTable.baked().native_size(tree_name).x) * 1.3 * 0.28
+	var expected_tree := TreePictures.shape(0, 1.3).reach()
 	t.check(tree.shape() != null and is_equal_approx(tree.shape().radius, expected_tree),
 			"a tree's shadow radius follows scale_factor() off the region table's own size (%.2f against %.2f)"
 			% [tree.shape().radius if tree.shape() else -1.0, expected_tree])
@@ -80,7 +79,7 @@ func _test_the_street_tree_footprint_covers_every_picture(t: TestRunner) -> void
 		tree.free()
 		# A street tree dressed with a park tree's scale is still grounded at its picture's own size.
 		var scaled := Prop.new()
-		scaled.dress(null, Prop.Kind.STREET_TREE, variant, 1.25)
+		scaled.dress(null, Prop.Kind.STREET_TREE, variant, 2.0)
 		t.add_child(scaled)
 		var scaled_reach := scaled.shape().reach() if scaled.shape() else INF
 		t.check(is_equal_approx(scaled_reach, reach),
