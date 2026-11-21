@@ -65,42 +65,33 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 ## empty list for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a
 ## door body, or a row with no body at all.
 ##
-## **The placement and the axis are read back out of `EventInstance`'s own statics rather than
-## worked out again here.** Where a body actually stands is not `EventPlan.position`: a stationary,
-## unpinned body is shifted onto the middle of its pavement band, or onto the kerb beside its lane
-## for a row that stands at its kerb (the roadblock), and a segment body lies along
-## whichever axis the street it stands on gives it. Both are decided in exactly one place, and a
-## second copy of that arithmetic would agree with it right up to the first time one of the two
-## took an argument — which would leave the crowd avoiding ground no body is on and walking
-## through the ground one is.
-##
-## **It is the row's pieces that are rasterised, never the one disc of `obstructs_radius`.** A row
-## is solid where `EventDef.parts()` says it is, which is one piece at the origin carrying `shape`
+## **The row's pieces are laid out by `BodyStance.pieces_at()`**, the one layout the walk's ground and
+## the route rig ask too, and each is rasterised, never the one disc of `obstructs_radius`. A row
+## is solid where `EventDef.body_pieces()` says it is, which is one piece at the origin carrying `shape`
 ## for every row that declares none — so a one-piece row records exactly the tiles it always did,
 ## and a row solid in parts records its pieces and leaves the ground between them open. That is the
 ## whole of what makes a crash two cars to the crowd rather than a wall: the pieces are a subset of
 ## `shape` (`EventDef.validate()` refuses one reaching past it), so the change only ever *removes*
 ## tiles from the record, and removing obstruction can only add reachable ground.
+##
+## A hard seal's own body and a region wall's are recorded like any other, and that is what a walker
+## actually meets. The hold on their segment is a car's answer — a car cannot turn round against a
+## barrier, so it has to turn at the last junction, before it can see one — and it is nobody else's:
+## a walker walks the street up to the body and turns where it stands, so the record has to say where
+## the body is. It is also what keeps a crash walkable on its pavements, since a row solid in parts
+## records its pieces and the two cars are the only pieces there are.
 static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 		facing: Vector2) -> Array[Vector2i]:
-	var nothing: Array[Vector2i] = []
+	var covered: Array[Vector2i] = []
 	if def == null or not def.stands_as_a_fixed_body():
-		return nothing
-	var placed := BodyStance.stands_at(map, def, at)
-	# A hard seal's own body and a region wall's are recorded like any other, and that is what a
-	# walker actually meets. The hold on their segment is a car's answer — a car cannot turn round
-	# against a barrier, so it has to turn at the last junction, before it can see one — and it is
-	# nobody else's: a walker walks the street up to the body and turns where it stands, so the
-	# record has to say where the body is. It is also what keeps a crash walkable on its pavements,
-	# since a row solid in parts records its pieces and the two cars are the only pieces there are.
-	var axis := BodyStance.body_axis(map, def, placed, facing)
-	# Which way round a piece's own offset is laid is `EventInstance.spread_at()`'s question, and
-	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
-	# way is a body recorded across the street from the car it belongs to.
-	var spread_vertical := BodyStance.lies_vertically_at(map, placed)
-	# The footprint the instance builds its physics body from
-	# (`EventFootprints.solid_footprint_of()`), so the record and the body are one solid.
-	return EventFootprints.solid_footprint_of(def, axis, spread_vertical).tiles(placed)
+		return covered
+	for piece in BodyStance.pieces_at(map, def, at, facing):
+		for tile in piece.tiles():
+			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body that
+			# recorded one tile twice would need two releases to give it back.
+			if not covered.has(tile):
+				covered.append(tile)
+	return covered
 
 ## Adds an event outside the day's plan and outside the streaming, at a path the caller chose.
 ## The director's cats arrive this way, and so does the resistance's robbery.

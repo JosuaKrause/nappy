@@ -117,7 +117,7 @@ func _car_bodies(map: CityMap, events: EventManager) -> Array:
 		var placed := sited.position
 		var vertical := sited.runs_vertically()
 		sited.free()
-		for piece in plan.row().parts():
+		for piece in plan.row().body_pieces():
 			var offset := piece.offset_for(vertical)
 			var centre := placed + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0))
 			bodies.append([centre, piece.shape.reach()])
