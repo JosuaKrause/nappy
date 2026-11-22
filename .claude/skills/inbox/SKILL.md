@@ -12,13 +12,14 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 - **A further word on a note the agent already knows is appended to it**; the inbox is never searched for an overlap.
 - **When it is not certain what the words refer to, the agent asks before recording any reading.**
 - **`tools/inbox.py` is the one way an agent writes an issue**, as `claude-orchestrator` (Codex: `codex-coder`).
-- **A batch is filed only when the player asks**, in one pull request that names each note `Filed from #N`, and never waits on a question.
+- **The orchestrating session files the open notes on its own, periodically, and when the player asks**, in one pull request that names each note `Filed from #N`, and never waits on a question.
 
 **GitHub Issues are the player's inbox, and nothing else** (bouncy-heron 5). A note is an open
 issue carrying the label `inbox`, and an issue without it is never filed (plaid-tapir 2), whoever
 opened it: `tools/inbox.py` skips it and refuses to close a batch naming it, and CI's
 `tools/ci_transcription.py` fails a filing pull request that names it. The player writes one at any
-time, edits it until it is filed, and says when a batch of notes becomes a filing pull request. The
+time and edits it until it is filed. The orchestrating session turns a batch of notes into a filing
+pull request on its own, periodically, and when the player asks (inbox #1619 in teal-dolphin). The
 queue, the review items, the playtest files and the decision records stay in the repository, because
 an entry is reviewed when it enters the queue (`tools/decisions.sh leafy-finch` has the reasons, and
 the options weighed against them).
@@ -203,8 +204,10 @@ playtest file states the question before the answer it quotes.
 
 ## Filing a batch
 
-**A batch is filed when the player asks, never on the agent's own initiative**, and one filing pull
-request carries the whole batch. `references/filing-a-batch.md` has the steps in order, from
+**The orchestrating session files the open notes on its own, periodically, as well as when the
+player asks** (inbox #1619 in teal-dolphin); no other session files, since the queue is the
+orchestrating session's. One filing pull request carries the whole batch, and the filing's time goes
+into the restart prompt's `## Last checked` (**session-cleanup**, step 8). `references/filing-a-batch.md` has the steps in order, from
 reading the notes to closing them; read it whole before filing. What holds whether or not that
 file is open:
 
@@ -220,3 +223,12 @@ file is open:
   (bouncy-heron 22), and a filing that is abandoned reopens its notes with `reopen --pr P`.
 - **Anything written after a filing cites the playtest file, not the closed issue**;
   `tools/inbox.py cite` puts the playtest beside the citations that already exist.
+
+## Proposed, not asked for
+
+These rules are the filer's proposals and readings, not the player's words, and hold until the player
+corrects them:
+
+- **That the periodic filing is the hourly beat of the orchestrating session's recurring check**
+  ("Filing a batch"; **orchestrating**, "What the orchestrator keeps"); the player's words are that
+  the session files the inbox by itself, periodically (inbox #1619 in teal-dolphin).
