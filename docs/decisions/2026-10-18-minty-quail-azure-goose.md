@@ -6,13 +6,15 @@ this is its eighth pull request, "the look is a part", built as #1628 by Sonnet 
 
 **What was built.** `LookSpec` (`src/events/parts/look_spec.gd`, data) holds how an event is drawn: its picture, its
 warning picture (`WarningPicture` moved onto it), whether it casts a shadow, whether it trails a lead, whether it hides
-in its hold, whether it may be drawn as a pelican, and the checkpoint wall's guarded sides (`of()`, `none()` and
+in its hold, whether it may be drawn as a pelican, and the guarded sides of the roadblock band's wall (`of()`, `none()` and
 refinements). The row holds one with `use_look()` and `look()`, forwarding `picture()` and `casts_a_shadow()`. Each
 look is handed its part by `EventLooks.for_row()` and holds no row; the van's look is handed the abduction part as the
 abduction behaviour is. The live event gains a question only where a look asked one it lacked: `drawn_body()`,
 `footprint()`, `moves()`, `approach_speed()`, `peak()`, `pulses_every()`, `notice_within()`. The barrier post asks
 `guard_sides()`; the seal and region planners' wall copies refine the look with `guarded_on()`. The catalogue's writers
 are rewritten by `convert_catalogue_look.py`, kept with the design, three rows by hand.
+
+Row 2b's line and the abduction row of event-interface's section 4.1 say the look is handed its part.
 
 **Measured.** The row fingerprint on main and the branch: every removed look setting shows the base's value under
 `look()` on every row and copy, the wall copies' guarded sides equal; the look fingerprint (every line), the excitement
@@ -21,5 +23,5 @@ no cost figure moved. The look fingerprint's own timing, one run each, read 3.6%
 of single runs.
 
 **Open to overturn:** the design's forks; the seven new questions of the live event; `EventDef.takes_a_victim_by()`,
-which stands until the abduction setting becomes a part; the refinement `casting_a_shadow()`; `guard_sides()`
+which asks the row's abduction part for the live event; the refinement `casting_a_shadow()`; `guard_sides()`
 returning a copy.
