@@ -22,5 +22,7 @@ polite-tapir-velvet-heron):
   dangers a street and 34% of streets with none (trucks 167, explosions 193, vans 91, roadblocks 44),
   and walked out to the tunnel on 13 walks and to the bridge on 10; after it, 0.66 and 34% (181,
   178, 89, 46), 12 and 10.
+- **Streaming's loop over every plan, listed for the end remeasure**: `EventStreaming.stream_around()`,
+  which row 3b's design asked to be measured and which was not (the record minty-quail-gray-koala).
 - **Nothing is judged here.** A number that moved is listed for the end remeasure; no step waits on
   a reading.
