@@ -1,7 +1,7 @@
 # calm-lemur — Fable's verdicts on polite-tapir's six merged designs · 2026-11-21
 
 **What was asked.** The entry calm-lemur: once Fable's quota was back, Fable looks over the designs Opus wrote in its
-place while it was out (inbox #1571 in teal-quail); the player asked for it on 2026-11-21 (inbox #1610). Three Fable
+place while it was out (inbox #1571 in teal-quail); the player asked for it on 2026-11-21 (inbox #1610 in teal-dolphin). Three Fable
 agents judged polite-tapir's six merged pull requests, each against the design review item it answered, the Opus
 design, the merged code on main and its record, and wrote each change wanted as a design. Shown the verdicts, the
 player: "yes, fables complaints are valid. get the fix and then let fable review again".

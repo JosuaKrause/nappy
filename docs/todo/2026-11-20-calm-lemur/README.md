@@ -20,6 +20,8 @@ lift; its record says what it was.
 that is Fable's, and writes any change it wants as a design, never as code and never as a code review
 (inbox #1501 and #1504 in silky-lemur).
 
+**Fable is back** (inbox #1610 in teal-dolphin): the player asked for Fable to review "the merged fable-only items that opus did", "so it can request follow up changes". **Read as** (the filer's): this entry's work starts now; the words add nothing the item does not already list, and they narrow nothing, so minty-quail's rows 3a and 3b, which the item lists from the earlier words though they are not fable-only, stay in it.
+
 **Item:** `fable-looks-over-merged-work.md`.
 
 The band `now` is the filer's proposal; the note carried no band label. The entry has no `after:`
