@@ -201,7 +201,7 @@ since the player answers from the board and not from the issue. **When the note 
 each answer is recorded with the question it answers**, as **playtest-feedback** asks for words said
 in conversation: the playtest file states the question before the answer it quotes. `show` prints
 the player's own comments on an issue they opened, which are read as they stand. No rule asks
-through `tools/inbox.py ask` now; retiring it is a follow-up the orchestrator files.
+through `tools/inbox.py ask` now.
 
 ## Filing a batch
 

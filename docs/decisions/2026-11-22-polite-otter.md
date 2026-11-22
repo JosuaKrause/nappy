@@ -10,7 +10,8 @@ questions and answers happen on the board, new notes can come to the board too, 
 open an issue directly on GitHub, and a follow-up question about one goes to the board
 (inbox #1639 in gentle-penguin). `CLAUDE.md`'s line for asking the player a question, the **board**
 skill and the **inbox** skill (with its filing steps) now send every question there, naming the note
-it is about, and capture the player's answer on the board into the note.
+it is about. Capturing the player's board answer into the note it is about is the filer's proposal,
+listed under the inbox skill's "Proposed, not asked for".
 
 **What was not taken.** Keeping the issue as a second place for a question about a note was the
 exception the answer removes; the orchestrator's pick on the board was board only, and the player answered
