@@ -20,12 +20,12 @@ lift; its record says what it was.
 that is Fable's, and writes any change it wants as a design, never as code and never as a code review
 (inbox #1501 and #1504 in silky-lemur).
 
-**Fable is back** (inbox #1610 in teal-dolphin): the player asked for Fable to review "the merged fable-only items that opus did", "so it can request follow up changes". **Read as** (the filer's): this entry's work starts now; the words add nothing the item does not already list, and they narrow nothing, so minty-quail's rows 3a and 3b, which the item lists from the earlier words though they are not fable-only, stay in it.
+**Fable is back** (inbox #1610 in teal-dolphin): the player asked for Fable to review "the merged fable-only items that opus did", "so it can request follow up changes". Fable's verdicts on polite-tapir's six designs followed (the record calm-lemur). **Open:** whether Fable also looks at minty-quail's rows 3a and 3b, which the item lists from the earlier words (inbox #1571 in teal-quail) though they are not fable-only, while the words on #1610 name the fable-only items. It is asked on the board (the question fable-rows-3a-3b), and the work goes on built on the filer's pick, that Fable looks at them: a request for one part of the work is read as not dropping the rest.
 
 **Item:** `fable-looks-over-merged-work.md`.
 
 The band `now` is the filer's proposal; the note carried no band label. The entry has no `after:`
-line: it waits on Fable's quota, which the queue has no line for, so it prints in `now` though
-nothing here starts until the quota is back. It carries no `fable-only: true` line: that label marks
+line: it waited on Fable's quota, which the queue has no line for, and the quota is back
+(inbox #1610 in teal-dolphin). It carries no `fable-only: true` line: that label marks
 work as Fable's to design, and this entry's work is Fable judging designs already built; the pull
 requests it looks at carry the label from the entries they built.

@@ -2,7 +2,7 @@
 
 2026-11-21.
 
-Two notes from the orchestrating session's chat, filed by the orchestrating session under the player's standing ask in #1619 to file the inbox on its own.
+Three notes from the orchestrating session's chat, filed by the orchestrating session under the player's standing ask in #1619 to file the inbox on its own.
 
 ## #1610
 
@@ -32,13 +32,13 @@ Two notes from the orchestrating session's chat, filed by the orchestrating sess
 
    > also the above check system etc -- make sure you write that down
 
-4. **The player's words.**
-
-   > since you're running code mode now I won't be able to check with you in the chat that often. that's why it's important for you to communicate through the board
-
-5. **Context** (the assistant's):
+4. **Context** (the assistant's):
 
    Said a few minutes after the quotes above, while the orchestrating session was starting its first agents of 2026-11-22.
+
+5. **The player's words.**
+
+   > since you're running code mode now I won't be able to check with you in the chat that often. that's why it's important for you to communicate through the board
 
 ## #1621
 
@@ -52,6 +52,6 @@ Two notes from the orchestrating session's chat, filed by the orchestrating sess
 
 ## Filed as
 
-- #1610 is a further word on calm-lemur (Fable looks over the work that merged without it), whose item already lists polite-tapir's six designs (reviewed by Fable since) and minty-quail's rows 3a and 3b; it is filed as a line in that entry, not as an entry of its own.
+- #1610 was the go-ahead for calm-lemur's (Fable looks over the work that merged without it) work, acted on before it was filed (the record calm-lemur: Fable's verdicts on polite-tapir's six designs). It is filed as a line in that entry, not as an entry of its own, with the question it leaves open: whether Fable also looks at minty-quail's rows 3a and 3b, which the entry lists from earlier words though they are not fable-only.
 - #1619 is built in the same pull request that files it: the board, inbox, orchestrating and session-cleanup skills say what it asks, and the record named in the pull request says what was built.
 - #1621 says what "about every hour" in #1619 means, and is built with it.
