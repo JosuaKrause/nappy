@@ -6,10 +6,11 @@ extends RefCounted
 ## writes to, the lights a car of it stops at and where a protest of it points its placards.
 ## **One value for a world's whole life**, built where the world is built and handed to its manager
 ## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
-## handed the same one (`EventWorld.surroundings()`), so a hand-in made after an event is set up
-## reaches it too. The game hands it nothing after the manager is set up but where a protest
-## points (`pointing_protests_with()`), since the resistance that answers is built over the
-## events.
+## handed the same one (`EventWorld.surroundings()`). An event keeps what it read of it when it was
+## set up, so a later hand-in reaches only the events made after it; what an event asks each time
+## follows one: where a protest points (`pointing_protests_with()`) and where she is, through the
+## one `WhereSheIs`. The game hands it nothing after the manager is set up but where a protest
+## points, since the resistance that answers is built over the events.
 ##
 ## **Built by chaining**: `EventSurroundings.new().on(map).hearing(where)` and so on, each call
 ## returning the same object. It is the one place each default is stated: what is not handed is
@@ -37,8 +38,8 @@ func on(map: WorldMap) -> EventSurroundings:
 	_map = map
 	return self
 
-## The map of a city's world (`CityMap`), which is the map it stands on and the city's own, to plan a
-## day over (`city_map()`).
+## The map of a city's world (`CityMap`), which is the map it stands on and the city's own, to
+## plan a day over (`city_map()`).
 func in_the_city(map: CityMap) -> EventSurroundings:
 	_map = map
 	_city_map = map
@@ -49,8 +50,8 @@ func moving_by(navigator: Navigator) -> EventSurroundings:
 	_navigator = navigator
 	return self
 
-## Where she is (`WhereSheIs`), in place of the one it makes itself: the one its manager tells once a
-## physics tick.
+## Where she is (`WhereSheIs`), in place of the one it makes itself: the one its manager tells
+## once a physics tick.
 func hearing(where: WhereSheIs) -> EventSurroundings:
 	_where_she_is = where
 	return self

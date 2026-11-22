@@ -21,8 +21,8 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 var _trace := RunTrace.new()
 ## The baked atlas pages every part draws from; a part handed none makes its own.
 var _atlas: AtlasLibrary = null
-## Where the events charge their time to the frame record; none until handed, and they then charge it
-## to the null sink.
+## Where the events charge their time to the frame record; none until handed, and until then the
+## events charge it to the null sink their surroundings hold.
 var _timing: FrameTiming = null
 ## The bus the events, the crowd, the poster walls and the blackout report on; none, and they tell
 ## nobody.
@@ -171,11 +171,12 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 	world.add_child(simulation)
 	return simulation
 
-## **What the events of a world are set up in, the one way for every world**: its trace, its atlas, its
-## frame timing, and whether they skip their drawing, drawn in `world`. The caller adds the map and
-## what it moves by.
+## **What the events of a world are set up in, the one way for every world**: its trace, its
+## atlas, its frame timing, and whether they skip their drawing, drawn in `world`. The caller adds
+## the map and what it moves by.
 func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
-	var surroundings := EventSurroundings.new().drawn_in(world).tracing_to(_trace).drawn_from(_atlas)
+	var surroundings := EventSurroundings.new().drawn_in(world).tracing_to(_trace) \
+			.drawn_from(_atlas)
 	if _timing != null:
 		surroundings.timed_by(_timing)
 	if _skip_event_drawing:

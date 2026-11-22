@@ -314,10 +314,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_drawn_in = _surroundings.world_drawn_in()
 	_def = definition
 	_path = route
-	_where = WhereSheIs.nowhere()
-	var hears := _surroundings.where_she_is()
-	if hears:
-		_where = hears.handle_for_an_event()
+	_where = _surroundings.where_she_is().handle_for_an_event()
 	_excitement.use_row_and_where_she_is(definition, _where)
 	_map = _surroundings.map()
 	_navigator = _surroundings.navigator()

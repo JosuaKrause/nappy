@@ -53,8 +53,8 @@ var _poster_walls: PosterWalls
 var _plan_builder: PlanBuilder
 
 ## Where she is this tick (`WhereSheIs`), told once a physics tick by
-## `EventManager._tell_them_where_she_is()` while she is in the world: the surroundings' own, one for
-## the world's whole life, so an instance keeps it.
+## `EventManager._tell_them_where_she_is()` while she is in the world: the surroundings' own, one
+## for the world's whole life, so an instance keeps it.
 func where_she_is() -> WhereSheIs:
 	return _surroundings.where_she_is()
 
