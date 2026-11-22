@@ -583,9 +583,9 @@ static func _routed(def: EventDef, heat: int) -> EventDef:
 static func _with_ground(def: EventDef) -> EventDef:
 	if not def.ground_kinds().is_empty() or not def.is_placed_on_the_map():
 		return def
-	var placed := def.duplicate() as EventDef
-	placed.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
-	return placed
+	var draft := def.redraft()
+	draft.ground([GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE])
+	return draft.build()
 
 ## The row the next marble from the route's bag names, peeked rather than drawn — a siting that
 ## fails must not spend it. A marble whose row has been met `max_per_day` times today is spent unmet

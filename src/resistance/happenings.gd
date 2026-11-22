@@ -252,8 +252,9 @@ func _maybe_raid(her: Vector2) -> void:
 	for at in _raid_vans:
 		_raid.append(_events.spawn_extra(van, at))
 	if _raid_beat.size() == 2:
-		var patrol: EventDef = row.duplicate()
-		patrol.use_route(row.route().pacing())
+		var pacing := row.redraft()
+		pacing.route(row.route().pacing())
+		var patrol := pacing.build()
 		_raid.append(_events.spawn_extra(patrol, _raid_beat[0], _raid_beat))
 	# What she comes home to besides the raid itself: her own street door, sealed, out of her
 	# sight the same as the vans (PLAYTEST-131: "when returning to find the raid the door

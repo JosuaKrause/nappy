@@ -37,7 +37,7 @@ extends RefCounted
 ## pictures". `homeless_yeller` is excluded because it carries no `obstructs_within()`, so it
 ## obstructs nothing and a pavement with only that on it is not sealed, soft or otherwise.
 ##
-## **A sealed street's def is never the catalogue's own row.** `sealed_variant` duplicates it and
+## **A sealed street's def is never the catalogue's own row.** `sealed_variant` copies it and
 ## strips `aftermath`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
 ## (`EventSpawner._mark_the_block`) because *that* barricade is the aftermath of something that
 ## happened. A seal is a fact about *today's* tree — tomorrow's may run straight down this same
@@ -555,14 +555,16 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## `road_index` from — and a crossing's two sidewalk bodies keep the row's own default two guards
 ## each (`LookSpec.guard_sides()`) while the road body between them draws none, so a crossing posts
 ## four rather than six. The choice is carried on the placement: `_no_wall_guards` duplicates the
-## shared def once more (a copy shares the row's body), with its look's guard sides emptied —
+## shared def once more (a redraft of it), with its look's guard sides emptied —
 ## `_draw_roadblock()` never has to guess a body's position back out of where it happens to stand.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventPlan]:
-	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
+	var candidate := EventCatalogue.by_id(def_id)
+	var sealed := sealed_draft(candidate, true)
 	# A solid body of a point of `Tuning.TILE_SIZE` is what a body this narrow actually is here,
 	# whatever shape the row carries as a catalogue candidate; the rest of what its body says is kept.
-	def.use_body(def.body().reshaped(GroundShape.point(Tuning.TILE_SIZE)))
+	sealed.body(candidate.body().reshaped(GroundShape.point(Tuning.TILE_SIZE)))
+	var def := sealed.build()
 	var positions := positions_across(map.tile_rect_to_world(segment.mouth_rect(at_a)),
 			segment.horizontal, def.obstructs_within())
 	var road_def := _no_wall_guards(def) if positions.size() == 3 else null
@@ -575,12 +577,12 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 
 ## `def` with its posted guards removed on both sides — the region wall's own road body, standing
 ## between two sidewalk bodies that keep `def`'s own guard sides unchanged. A plain duplicate
-## rather than a mutation of `def` itself: the two sidewalk positions above still hand out the same
+## rather than a change of `def` itself: the two sidewalk positions above still hand out the same
 ## shared def, and giving it no guards would take theirs too.
 static func _no_wall_guards(def: EventDef) -> EventDef:
-	var variant: EventDef = def.duplicate()
-	variant.use_look(variant.look().guarded_on([] as Array[int]))
-	return variant
+	var draft := def.redraft()
+	draft.look(def.look().guarded_on([] as Array[int]))
+	return draft.build()
 
 ## A soft seal: one body per pavement, at the lane nearest the kerb — which is where a kerbed row
 ## like `delivery_van` already wants to be, and where any other row's own auto-centring
@@ -664,15 +666,21 @@ static func _mark_soft_sealed(map: CityMap, tiles: Array[Vector2i]) -> void:
 ## file's own candidates — see `place_hard_on` and `alley_mouth_wall` for the precedent, and
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` for the new callers.
 static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
-	var variant: EventDef = def.duplicate()
-	# **The body's pieces matter here more than anywhere**, because this is the only path a crash is
-	# ever placed by: a copy that lost them would fall back to one body spanning the whole street,
-	# and nothing would fail — it would seal the gaps its picture shows. The copy shares the row's
-	# body (`BodySpec`), pieces included.
-	variant.aftermath = Aftermath.none()
-	if suppress_recenter and variant.pavement_side == EventDef.Pavement.ANY:
-		variant.pavement_side = EventDef.Pavement.AT_THE_KERB
-	return variant
+	return sealed_draft(def, suppress_recenter).build()
+
+## The draft of `sealed_variant()`, for a caller that changes a part of the sealed row too and
+## builds it once.
+##
+## **The body's pieces matter here more than anywhere**, because this is the only path a crash is
+## ever placed by: a copy that lost them would fall back to one body spanning the whole street,
+## and nothing would fail — it would seal the gaps its picture shows. A redraft carries the row's
+## body (`BodySpec`), pieces included.
+static func sealed_draft(def: EventDef, suppress_recenter: bool) -> EventDraft:
+	var draft := def.redraft()
+	draft.aftermath(Aftermath.none())
+	if suppress_recenter and def.sidewalk_lane() == EventDef.Pavement.ANY:
+		draft.in_the_lane(EventDef.Pavement.AT_THE_KERB)
+	return draft
 
 ## The street's own cross-section, one tile per lane: sidewalk, sidewalk, road, road, sidewalk,
 ## sidewalk in lattice order, whichever axis the street runs on. `along` is the tile on the
@@ -831,11 +839,11 @@ static func _alley_mouth_plan(map: CityMap, rect: Rect2i, vertical: bool, at_sta
 	return EventPlan.new(def, map.tile_rect_to_world(mouth).get_center())
 
 ## The public entry point to the same alley-mouth placement, for `RegionPlanner`'s own crossing-
-## alley wall — one body per mouth, from the roadblock row rather than from this file's own
-## candidate list, the same relationship `place_hard_on` has to `_place_hard`.
+## alley wall — one body per mouth, of the sealed roadblock row `def` (`sealed_draft()`) rather
+## than of this file's own candidate list, the same relationship `place_hard_on` has to
+## `_place_hard`.
 static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_start: bool,
-		def_id: String) -> EventPlan:
-	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
+		def: EventDef) -> EventPlan:
 	return _alley_mouth_plan(map, rect, vertical, at_start, def)
 
 ## The row of `pictures` that best fills a two-tile alley mouth today — the widest

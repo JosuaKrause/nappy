@@ -599,8 +599,8 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## The wall's own body at one mouth of a crossing alley — `SealPlanner.alley_mouth_wall()`'s own
 ## placement, with its def's shape then overridden to a point of half the alley's own width
 ## (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0`, 32px) rather than left at the catalogue
-## row's own 64px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
-## duplicated the def, so this touches nothing the catalogue or another instance shares.
+## row's own 64px reach. The row is a redraft of the catalogue's (`SealPlanner.sealed_draft()`), so
+## this touches nothing the catalogue or another instance shares.
 ##
 ## **The same reach `place_hard_on` already overrides, at the alley's own mouth this time.** The
 ## catalogue `roadblock` row's band (`EventCatalogue.ROADBLOCK_REACH`) draws and collides at 128px
@@ -615,17 +615,17 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## player, on a walled alley's own two guards per mouth: "one guard in alleys on each end.")* The
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
 ## reach — so its look's guard sides are set here to the one side that does, the same way
-## `body.row().use_body()` already replaces the body of the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
-## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
+## `SealPlanner.sealed_draft()` already replaces the body of the sealed row it hands
+## `SealPlanner.alley_mouth_wall()` — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventPlan:
-	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
-	body.row().use_body(body.row().body().reshaped(
+	var wall := EventCatalogue.by_id(_WALL_DEF_ID)
+	var draft := SealPlanner.sealed_draft(wall, true)
+	draft.body(wall.body().reshaped(
 			GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0)))
-	body.row().use_look(body.row().look().guarded_on(
-			[_alley_mouth_street_side(at_start)] as Array[int]))
-	return body
+	draft.look(wall.look().guarded_on([_alley_mouth_street_side(at_start)] as Array[int]))
+	return SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, draft.build())
 
 ## Which side of a mouth body's own band is the street side, in `LookSpec.guard_sides()`'s own `-1`/
 ## `+1` reading of `EventFootprints.guard_post_offset()`'s `side` — the one this mouth's alone,
