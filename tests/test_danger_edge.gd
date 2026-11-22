@@ -105,7 +105,7 @@ static func _convoy_box() -> Rect2:
 ## Whether the convoy's badge is on the edge.
 static func _up(edge: DangerEdge) -> bool:
 	for badge in edge.badges().announcing():
-		if badge["id"] == "military_convoy":
+		if badge.logged_name() == "military_convoy":
 			return true
 	return false
 

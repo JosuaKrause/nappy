@@ -181,8 +181,8 @@ func _count_the_badge(edge: DangerEdge, then: Dictionary, log: Dictionary) -> vo
 	if log.get("done", false):
 		return
 	var up := false
-	for b: Dictionary in edge.badges().announcing():
-		up = up or b["id"] == "masked_pursuer"
+	for b: EdgeBadges.Badge in edge.badges().announcing():
+		up = up or b.logged_name() == "masked_pursuer"
 	if up and int(log["first"]) < 0:
 		log["first"] = log["unseen"]
 	elif not up and int(log["first"]) >= 0:
