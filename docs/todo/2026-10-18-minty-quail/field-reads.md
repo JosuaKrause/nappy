@@ -105,10 +105,8 @@ Left, each its own design question:
   `obstruction_version` and `size`, read by the crowd, the chase's way (`chase_way`), the resistance
   director and the rigs. *Read as* (the orchestrator's reading): they are converted with whatever
   pass gives the blocked tiles an owner of their own. The fields the events read of
-  `MoveProposal` (`to`, `radius`, `parked`, `open`, `stood_round`), `GroundShape` (`kind`,
-  `half_length`, `radius`, `half_extents`), `Stroller` (`outright_moves`) and `VisibleView` (`view`)
-  stay public and go private with the events' interface
-  (`event-interface.md`); every reader under `src/` outside the events asks their methods.
+  `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are private,
+  asked through their methods (row 4b of `event-interface.md`).
   `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask
   `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public too, as are `Stroller.carrying` and `facing`, which the game
   asks through `is_carrying()` and `facing_direction()` and the suites still read (`[kept]` lines);
