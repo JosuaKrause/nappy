@@ -55,10 +55,10 @@ engine) becomes the object that derives the box once a process frame and is hand
   argument is required, so a forgotten one cannot mean a second memo; the nine suites and probes
   that build a `ScreenCrowdView` pass `DrawnView.on(anchor)`. `CrowdView`, the crowd and its
   agents do not change.
-- `SimulationBuilder._new_events()` hands it to each world's events
-  (`EventManager.use_drawn_view()`, kept by `EventWorld`); `EventWorld.surroundings()` puts it in
-  what every live event is set up in (`EventSurroundings.shown_by(view)`, read back by
-  `drawn_view()`, default `DrawnView.new()`).
+- `SimulationBuilder._the_events_surroundings()` puts it in what every live event of a world is
+  set up in (`EventSurroundings.shown_by(view)`, read back by `drawn_view()`, default
+  `DrawnView.new()`): one member and one reader on the surroundings, no hand-in on the manager or
+  the world.
 - `EventInstance.setup()` hands it to its look with the row and the drawer
   (`EventLooks.for_row()`, `EventLook._init()`, and `RoadblockLook._init()` passing it up), since
   it is one more thing that never changes under a look. The two gates ask `_drawn_view.shows(...)`.
@@ -77,8 +77,8 @@ screen, the wide burning front) hand a stand-in whose box the case moves, with n
 frame waited for the memo. Its crowd cases keep `ScreenCrowdView` over the `SubViewport`.
 `tests/test_frame_record.gd`'s one look built by hand takes the new argument.
 
-**Order, one pull request:** the class; `ScreenCrowdView` and `main`; the builder, the manager,
-the world and the surroundings; the looks; the suites and probes. It answers the architecture
+**Order, one pull request:** the class; `ScreenCrowdView` and `main`; the builder and the
+surroundings; the looks; the suites and probes. It answers the architecture
 questions; question 3 (handed and fetched) is the point of it.
 
 **What holds parity.** Nothing a player sees changes: the same box, the same margin, the same
@@ -91,7 +91,7 @@ loses a meta lookup and gains a field read.
 
 **Cost.** Medium. About ten files under `src/` with a few lines each (`src/world/drawn_view.gd`,
 `src/ui/screen_crowd_view.gd`, `src/main.gd`, `src/simulation_builder.gd`,
-`src/events/event_manager.gd`, `event_world.gd`, `event_surroundings.gd`, `event_instance.gd`,
+`src/events/event_surroundings.gd`, `event_instance.gd`,
 `views/event_looks.gd`, `views/event_look.gd`, `views/roadblock_look.gd`), one suite reworked, and
 about ten one-line edits in suites and probes. No new file, no line in `tools/layer_map.py`, and
 the rules hook's row for `src/world/drawn_view.gd` stands as it is. `CrowdView`'s and `DrawnView`'s
