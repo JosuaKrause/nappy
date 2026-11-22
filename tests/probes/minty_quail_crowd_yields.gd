@@ -356,7 +356,7 @@ class Meeting extends RefCounted:
 			elif still < SeparationPass.NEVER_MOVED:
 				still += 1
 			_seen[move] = [move.steps_to(), still]
-			if still <= SeparationPass.UNDER_WAY_TICKS or move.stood_round_a_body():
+			if still <= SeparationPass.UNDER_WAY_TICKS or move.is_walked_round():
 				for_walkers.append(move)
 			if still != SeparationPass.NEVER_MOVED:
 				for_cars.append(move)

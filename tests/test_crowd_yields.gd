@@ -186,7 +186,7 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t: TestRunner) -> void:
 		var move: MoveProposal = rig["move"]
 		t.check(move != null, "%s puts one move on its map's list" % id)
 		if move != null:
-			t.check(move.stood_round_a_body() == expected[id],
+			t.check(move.is_walked_round() == expected[id],
 					"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
 		var instance: EventInstance = rig["instance"]
 		instance.free()

@@ -15,7 +15,7 @@ extends RefCounted
 ##
 ## - **A walker gives way to a keeper under way**, one that moved within the last `UNDER_WAY_TICKS`
 ##   gatherings, whatever it is; **and to a standing one only if its move says a walker goes round
-##   it** (`MoveProposal.stood_round_a_body()`): an object or a vehicle — a parked van, the
+##   it** (`MoveProposal.is_walked_round()`): an object or a vehicle — a parked van, the
 ##   patrol car at a light, the fire engine at its fire — and not a person or an animal, whom a
 ##   walker may walk through while they stand: a street musician, a policeman standing for his
 ##   notice, a dog waiting or crouched before its charge (inbox #905 in freckled-moose). A
@@ -244,7 +244,7 @@ class Keeper extends RefCounted:
 	var ticks_still := NEVER_MOVED
 	## How far its body reaches round its centre (`MoveProposal.body_radius()`).
 	var radius := 0.0
-	## Whether a walker goes round it while it stands (`MoveProposal.stood_round_a_body()`): an
+	## Whether a walker goes round it while it stands (`MoveProposal.is_walked_round()`): an
 	## object or a vehicle.
 	var stood_round := false
 
@@ -255,7 +255,7 @@ class Keeper extends RefCounted:
 	## Reads its pose off its move: how far it went since the last look, and whether it stood.
 	func look() -> void:
 		radius = move.body_radius()
-		stood_round = move.stood_round_a_body()
+		stood_round = move.is_walked_round()
 		step = move.stands_at() - at
 		at = move.stands_at()
 		if step.length() > PLACEMENT_STEP:

@@ -96,7 +96,7 @@ enum SolidWhen {
 ## freckled-moose): a walker may walk through a person or an animal standing still, and walks round
 ## an object or a vehicle. A figure under way is given way to whatever it is, and a crowd car stands
 ## for any figure in its lane once it has moved; this is only the walker's question about a figure
-## that stands (`MoveProposal.stood_round_a_body()`, which `EventInstance.setup()` sets from
+## that stands (`MoveProposal.is_walked_round()`, which `EventInstance.setup()` sets from
 ## it).
 ##
 ## Every row declares it, and `EventDef.validate()` refuses one that does not: a default would have

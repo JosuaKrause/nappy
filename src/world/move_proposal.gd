@@ -118,8 +118,9 @@ func is_on_the_list() -> bool:
 func stand_on_the_list(now: bool) -> void:
 	on_the_list = now
 
-## Whether the mover was last left standing round a body it was kept clear of.
-func stood_round_a_body() -> bool:
+## Whether a walker goes round the mover while it stands still: an object or a vehicle, not a
+## person or an animal.
+func is_walked_round() -> bool:
 	return _stood_round
 
 ## Says whether a walker goes round the mover while it stands still: an object or a vehicle, not
