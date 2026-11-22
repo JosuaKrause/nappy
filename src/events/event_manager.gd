@@ -24,27 +24,28 @@ extends Node
 ## events stand in (`WorldMap`) and starts every walk on it the one way (`start_day(spec)`): the
 ## spec chooses what plans it (`DayPlanner`) — a city's day, the escape's city on its two chains, the
 ## building's own placements (`BuildingPlan`). A world that is not the city has no city to plan a
-## day over (`setup_world()`): no director sites anything ahead of her there, and a plan that comes
-## again (`EventPlan.repeats()`) is brought back on its own clock.
+## day over: no director sites anything ahead of her there, and a plan that comes again
+## (`EventPlan.repeats()`) is brought back on its own clock.
 ##
-## **Handed what it depends on, never fetching it**: the city's map, today's streets, the lights,
-## the run, the navigator and the poster walls (`setup()`), or a world that is not the city, its
-## map, its run and its navigator (`setup_world()`), one or the other and once, since a manager is
-## set up for one world and asserts so; the run alone for a rig that sets up neither
-## (`use_run()`); the player (`use_player()`); the walk's spec (`use_the_spec()`).
+## **Handed what it depends on, never fetching it**: what its events are set up in, built where its
+## world is and handed as the manager is made (`EventManager.new()`, `EventSurroundings`: the map
+## and whether it is the city's, the navigator, the lights, the run log, the atlas, the drawing and
+## the frame timing); then the run, today's streets and the poster walls (`setup()`), once, since
+## a manager is set up for one world and asserts so; the player (`use_player()`); the walk's spec
+## (`use_the_spec()`).
 ##
 ## Lookup is a linear scan. Only what is inside `EVENT_STREAM_RADIUS` is live, a few dozen at most
 ## — that many distance checks per physics tick is nothing, and a spatial hash would be more code with more
 ## ways to be subtly wrong. Revisit if an act ever wants hundreds of sources at once.
 ##
 ## **This node owns no instance as a scene child.** Every `EventInstance` is added to the world it
-## is drawn in (`draw_in()`, `WorldContext.add_entity()`), under that world's y-sorted entity layer rather than
+## is drawn in (`EventSurroundings.world_drawn_in()`, `WorldContext.add_entity()`), under that world's y-sorted entity layer rather than
 ## under here, so `EventInstance._ready()` sets its own physics interpolation rather than inheriting
 ## the setting from this node.
 
 ## What every part works over: the world, the run, the player, what she can see and the live
 ## instances.
-var world := EventWorld.new()
+var world: EventWorld
 ## The walk's plans, read through one object (`walk_events()`).
 var _walk_events := WalkEvents.new()
 ## The live instances the walk's plans stream in as.
@@ -59,46 +60,13 @@ var ahead: EventsAhead
 ## walks under a raised boom and the guard a crossing sets on her, over this manager's own live
 ## instances.
 var checkpoints: CheckpointController
-## The baked atlas pages this manager holds the events' group on (`AtlasLibrary`), handed in before
-## it enters the tree (`use_atlas()`); a manager nobody handed one (a suite's) makes its own when it
-## first enters the tree.
-var _atlas: AtlasLibrary = null
-## Where the manager charges its own step to the frame record (`use_timing()`): the null sink until
-## it is handed one. The same sink it hands the world, for every instance made here.
-var _timing := FrameTiming.new()
-
 ## **Hands in what a protest points at**, answering a world point or `Vector2.INF` for nothing: the
 ## resistance's (`ResistanceDirector.setup()`, its `_pointable_objective()`), asked on behalf of
-## every instance made here. Never handed where there is no resistance, and a protest then points at
+## every instance made here, one made before it included, since they share the one
+## `EventSurroundings`. Never handed where there is no resistance, and a protest then points at
 ## nothing.
 func use_protest_target(where: Callable) -> void:
-	world.use_protest_target(where)
-
-## **Hands in where the manager, the day's planning and every instance it creates write their own
-## account for the run log**: the run's, handed in before `setup()` by whoever stands the manager
-## (`SimulationBuilder`); silent until then.
-func use_trace(trace: RunTrace) -> void:
-	world.use_trace(trace)
-
-## **Makes every instance this manager makes skip its own drawing** (`--skip events`), handed in
-## before `setup()` by whoever stands it (`SimulationBuilder`).
-func draw_nothing() -> void:
-	world.draw_nothing()
-
-## **Hands in where the manager and every instance it creates charge their time to the frame
-## record**, before `setup()` by whoever stands the manager (`SimulationBuilder`); the null sink
-## until then.
-func use_timing(timing: FrameTiming) -> void:
-	_timing = timing
-	world.use_timing(timing)
-
-## **Hands in the baked atlas pages** this manager holds the events' group on and every instance it
-## creates draws from (`AtlasLibrary`), before it enters the tree, by whoever stands it
-## (`SimulationBuilder`). Each atlas comes with the one drawer every instance made here paints
-## through (`EventDrawer`, `EventSurroundings.drawer()`).
-func use_atlas(atlas: AtlasLibrary) -> void:
-	_atlas = atlas
-	world.use_atlas(atlas)
+	world.surroundings().pointing_protests_with(where)
 
 ## **Sets how close the player has to be for a planned event to exist**
 ## (`EventStreaming.stream_within()`). `INF` turns streaming off and puts the whole day in the world
@@ -132,7 +100,10 @@ var _walk: RouteSource = null
 var _recipe_plan := false
 
 ## Builds the parts, each handed the one world, and connects the doors' intents and crossings.
-func _init() -> void:
+## `surroundings` is what its events are set up in, built where the world is (`SimulationBuilder`);
+## none, and they are set up on open ground with every default, as a suite's manager is.
+func _init(surroundings: EventSurroundings = null) -> void:
+	world = EventWorld.new(surroundings)
 	warnings = WarningBoard.new(world)
 	_planner = DayPlanner.new(world)
 	spawner = EventSpawner.new(world, warnings)
@@ -157,12 +128,10 @@ func _init() -> void:
 ## `_enter_tree()`/`_exit_tree()` rather than `_ready()`, so a manager that leaves the tree and
 ## comes back keeps the count right.
 func _enter_tree() -> void:
-	if _atlas == null:
-		use_atlas(AtlasLibrary.new())
-	_atlas.acquire(EventPictures.ATLAS_GROUP)
+	world.surroundings().atlas().acquire(EventPictures.ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	_atlas.release(EventPictures.ATLAS_GROUP)
+	world.surroundings().atlas().release(EventPictures.ATLAS_GROUP)
 
 ## **Lets go of the warnings when the manager goes**, so the parts go with it. A warning still up
 ## holds the callbacks that put its row in the world or owe it again (`PendingWarning.arrive`,
@@ -174,32 +143,32 @@ func _notification(what: int) -> void:
 		warnings.clear()
 		ahead.clear()
 
-## **Hands the manager the city's parts its events read**: the map it places on; today's streets
-## (`DayStreets`), the city's own, which a day is planned against and a siting reads its region off;
-## the lights a car that drives stops at (`TrafficSignals`); the run its events belong to; the
-## navigator its figures move by, or none for a rig, whose events' world then moves by one over the
-## map; and the poster walls a crew pastes on. The city's plan builder is made here, once a city,
-## over `map` (`EventWorld.plan_builder()`), and so is where something sent at her may start
-## (`spawn_siting()`).
+## **Hands the manager the parts of its world that are not what its events are set up in**: the run
+## its events belong to, today's streets (`DayStreets`), the city's own, which a day is planned
+## against and a siting reads its region off, and the poster walls a crew pastes on
+## (`PosterWalls`). The map, the navigator and the lights it works over are asked of what its events
+## are set up in (`EventSurroundings`). Where that is the city's map (`EventSurroundings.in_the_city()`)
+## the city's plan builder is made here, once, over it (`EventWorld.plan_builder()`), and so is where
+## something sent at her may start (`spawn_siting()`); a world that is not the city has none, no
+## director siting anything ahead of her, and what runs there is the walk it is handed
+## (`start_day()`).
 ## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
 ## against the streets it hands, so it hands streets whose day it began (`DayStreets.begin_day()`).
 ##
-## **A manager is set up once, for one world** (`setup()` or `setup_world()`, never both nor
-## either twice): nothing is undone by a second call, so one is refused in a debug run.
-func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = null,
-		run: RunState = null, navigator: Navigator = null,
-		poster_walls: PosterWalls = null) -> void:
+## **A manager is set up once, for one world**: nothing is undone by a second call, so one is
+## refused in a debug run.
+func setup(run: RunState, streets: DayStreets = null, poster_walls: PosterWalls = null) -> void:
 	assert(not _set_up, "a manager is set up for one world")
 	_set_up = true
-	world.use_map(map, map)
+	world.use_run(run)
+	world.use_streets(streets)
+	world.use_poster_walls(poster_walls)
+	var map := world.city_map()
+	if map == null:
+		return
 	world.work_out_mast_sites(map)
 	world.use_plan_builder(PlanBuilder.new(map, EventInstance.mover_for,
 			StreetInvalidation.room_around))
-	world.use_streets(streets)
-	world.use_poster_walls(poster_walls)
-	world.use_lights(signals)
-	world.use_run(run)
-	world.use_navigator(navigator)
 	var director := EventDirector.new(map, world.navigator())
 	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
 			streets.siting_region if streets else Callable())
@@ -214,22 +183,8 @@ func spawn_siting() -> SpawnSiting:
 
 ## The siting `spawn_siting()` answers, made by `setup()`; null in a world that is not the city.
 var _spawn_siting: SpawnSiting
-## Whether `setup()` or `setup_world()` has been called: a manager is set up for one world.
+## Whether `setup()` has been called: a manager is set up for one world.
 var _set_up := false
-
-## Hands the manager a world that is not the city — the escape's building — whose events stand on
-## `map` and move by its navigator, belonging to `run`: no city to plan a day over, no director
-## siting anything ahead of her, no lights. What runs there is the building's own plan
-## (`start_day()` with the building's spec). Set up once, like `setup()`, which it is the
-## alternative to: the city's parts `setup()` makes are never made, so there is nothing to undo.
-## `navigator` is the one its figures move by, or none for a rig, whose events' world then moves by
-## one over the map.
-func setup_world(map: WorldMap, run: RunState, navigator: Navigator = null) -> void:
-	assert(not _set_up, "a manager is set up for one world")
-	_set_up = true
-	world.use_map(map, null)
-	world.use_navigator(navigator)
-	world.use_run(run)
 
 ## The event bus script, so the bus handed in has a class.
 const _BUS := preload("res://src/autoload/event_bus.gd")
@@ -244,17 +199,6 @@ func use_bus(bus: _BUS) -> void:
 	world.reports().use_bus(bus)
 	if bus and not bus.return_phase_started.is_connected(_owe_the_return):
 		bus.return_phase_started.connect(_owe_the_return)
-
-## **Hands the manager the world its events are drawn in** (`WorldContext`): every instance is added
-## to it, on its y-sorted entity layer, and a row from outside the walls is shown coming by it. Null
-## for none, a rig's: an event then adds what it draws beside itself next to itself. Handed in by
-## whoever builds the world (`SimulationBuilder`), before `setup()`.
-func draw_in(drawn_in: WorldContext) -> void:
-	world.use_drawing(drawn_in)
-
-## Hands the manager the run its events belong to, for a rig that never calls `setup()`.
-func use_run(run: RunState) -> void:
-	world.use_run(run)
 
 ## **Hands the manager the player**, whose position every instance is told each tick, whose sight
 ## the events are placed out of and whose catch ends the day; null for none in the world. The run
@@ -543,10 +487,11 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 # ------------------------------------------------------------------ ticking ---
 
 func _physics_process(delta: float) -> void:
-	if _timing.is_on():
-		var outer := _timing.enter(FrameTiming.EVENTS)
+	var timing := world.surroundings().timing()
+	if timing.is_on():
+		var outer := timing.enter(FrameTiming.EVENTS)
 		_tick_the_events(delta)
-		_timing.leave(outer)
+		timing.leave(outer)
 	else:
 		_tick_the_events(delta)
 

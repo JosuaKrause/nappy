@@ -5,52 +5,33 @@ extends RefCounted
 ## object, shared by `EventManager` and the parts it hands its work to (`EventStreaming`,
 ## `EventSpawner`, `WarningBoard`, `EventsAhead`, `CheckpointController`), so a world handed over
 ## once — a city's day, the escape's building, a rig's open ground — is the world every part sees.
-## Nothing here is fetched: the manager hands each part in (`use_map()`, `use_run()`,
-## `use_player()`, `take_in()` and the rest), and every other part asks through the methods. What a
-## live event is set up in is built from these hand-ins, one for each (`surroundings()`).
+## Nothing here is fetched: the manager hands each part in (`use_run()`, `use_player()`,
+## `take_in()` and the rest), and every other part asks through the methods. What the world is in
+## (its map, navigator, trace, drawing and where she is) is the one `EventSurroundings` it was made
+## over, and every live event is set up in that same object (`surroundings()`).
 
 ## The live instances, in the order they came into the world (`instances()`). Shared by reference —
 ## the danger edge and the halo hold it across frames — so it is changed in place, never
 ## reassigned.
 var _instances: Array[EventInstance] = []
-## The map of the world these events stand in (`map()`). Open ground until a world is handed over,
-## for a rig that never hands one.
-var _map: WorldMap = WorldMap.open_ground()
-## The city's own map (`city_map()`), or null where the world is not the city
-## (`EventManager.setup_world()`).
-var _city_map: CityMap
-## The lights a car that drives stops at, the crowd's own (`EventSurroundings.lights()`): handed in by
-## `EventManager.setup()` (`use_lights()`); none in a world with no streets.
-var _lights: TrafficSignals
-## Where the manager, the day's planning and every instance it creates write their own account for
-## the run log (`trace()`) — the city's, handed in before `EventManager.setup()`; silent until then.
-var _trace := RunTrace.new()
+## What the events are set up in (`surroundings()`): the map they stand on and the city's own, the
+## navigator they move by, the run log, the world they are drawn in, the lights, the atlas and where
+## she is. Handed in once, as the world is made, and the same object for every live event.
+var _surroundings: EventSurroundings
+
+## **A world over `surroundings`**, or over open ground with every default where none is handed (a
+## suite's).
+func _init(surroundings: EventSurroundings = null) -> void:
+	_surroundings = surroundings if surroundings else EventSurroundings.new()
 ## The run these events belong to (`run()`).
 var _run: RunState
 ## The player (`player()`), or null for none in the world.
 var _player: Node2D
 ## Today's own day number (`day()`).
 var _day := 0
-## `--skip events`: every instance made here skips its own drawing (`draw_nothing()`).
-var _skip_drawing := false
-## Where every instance this world makes charges its time to the frame record; the null sink until
-## the manager is handed one (`use_timing()`).
-var _timing := FrameTiming.new()
-## The baked atlas pages every instance made here draws from (`AtlasLibrary`): the manager's,
-## which holds the events' group on it; none until the manager is handed or makes one
-## (`use_atlas()`).
-var _atlas: AtlasLibrary
 ## The run's mast sites (`MastSites.compute()`), worked out once when the manager is handed its city
 ## (`work_out_mast_sites()`) and handed to every dawn after (`mast_sites()`); none before.
 var _mast_sites: Array[MastSites.Site] = []
-## What every instance made here paints its pictures through (`EventDrawer`): the manager's, built
-## over its atlas (`use_atlas()`); none until the manager is handed or makes one, and an instance
-## handed none draws through one of its own.
-var _drawer: EventDrawer
-## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
-## resistance (`ResistanceDirector.setup()`, its `_pointable_objective()`; `use_protest_target()`).
-## Unset where there is no resistance, and a protest then points at nothing.
-var _points_at := Callable()
 ## What she can see this frame — the one answer to "can she see it" for everything on a day
 ## (`VisibleView`): the screen-edge badge, the placing of what arrives from off screen, the fire's
 ## sighting, a chalk mark's notice (`ResistanceDirector.set_sight()`, wired to
@@ -70,20 +51,11 @@ var _poster_walls: PosterWalls
 ## where the world is not the city.
 var _plan_builder: PlanBuilder
 
-## How every figure made here moves over `map` (`Navigator`): the one handed in by
-## `EventManager.setup()` or `setup_world()`, or, where none was handed (a rig), one over the map
-## that `navigator()` makes on the first ask.
-var _navigator: Navigator
-
 ## Where she is this tick (`WhereSheIs`), told once a physics tick by
-## `EventManager._tell_them_where_she_is()` while she is in the world, and handed to every instance
-## made here (`EventSpawner.create()`). One for the world's whole life, never replaced, so an
-## instance keeps it.
-var _where_she_is := WhereSheIs.nowhere()
-
-## Where she is this tick, the one every instance made here is handed.
+## `EventManager._tell_them_where_she_is()` while she is in the world: the surroundings' own, one for
+## the world's whole life, so an instance keeps it.
 func where_she_is() -> WhereSheIs:
-	return _where_she_is
+	return _surroundings.where_she_is()
 
 ## What these events report to whoever listens (`reports()`): one for the world's whole life, never
 ## replaced, so a part and a live event keep it. Silent until the manager is handed a bus
@@ -99,7 +71,7 @@ func reports() -> EventReports:
 ## **Today's streets as dawn left them** (`DayStreets`): the route tree, the region wall and doors
 ## and the closures a day is planned against (`DayPlanner`), and the region a siting reads. The
 ## city's own, handed in once and begun again every dawn; a rig that builds no city hands one it
-## began itself. Null where the world is not the city (`EventManager.setup_world()`).
+## began itself. Null where the world is not the city (`EventSurroundings.city_map()`).
 func streets() -> DayStreets:
 	return _streets
 
@@ -121,7 +93,7 @@ func use_poster_walls(walls: PosterWalls) -> void:
 ## **The city's plan builder** (`PlanBuilder`), made once a city over its map: what the dawn
 ## (`DayPlanner`, handing it to its `DawnContext`), a siting made while she walks, the resistance's
 ## and the happenings' build a plan at a tile with. Null where
-## the world is not the city (`EventManager.setup_world()`).
+## the world is not the city (`EventSurroundings.city_map()`).
 func plan_builder() -> PlanBuilder:
 	return _plan_builder
 
@@ -151,26 +123,20 @@ func let_go_of_every_event() -> void:
 ## **The map of the world these events stand in** (`WorldMap`): every instance is made on it and
 ## stopped by its walls, and its blocked record holds their bodies.
 func map() -> WorldMap:
-	return _map
+	return _surroundings.map()
 
 ## **The city's own map**, for planning a day over it — its holds, its route tree, its blocks — or
 ## null where the world is not the city; asked by a class that makes something over it
 ## (`SitingMaker`).
 func city_map() -> CityMap:
-	return _city_map
-
-## Hands the world the map its events stand on and the city's own map over it, or null for `city`
-## where the world is not the city (`EventManager.setup()`, `EventManager.setup_world()`).
-func use_map(map: WorldMap, city: CityMap) -> void:
-	_map = map
-	_city_map = city
+	return _surroundings.city_map()
 
 ## The run these events belong to (`RunState`): its seed and day streams, its scars, its heat, the
 ## calm she has used this act and the pelican bag's draws. Null for a rig that hands none.
 func run() -> RunState:
 	return _run
 
-## Hands the world the run its events belong to (`EventManager.setup()`, `use_run()`).
+## Hands the world the run its events belong to (`EventManager.setup()`).
 func use_run(run: RunState) -> void:
 	_run = run
 
@@ -192,13 +158,9 @@ func take_the_day(day: int) -> void:
 	_day = day
 
 ## Where the manager, the day's planning and every instance it creates write their own account for
-## the run log; the silent one until a trace is handed in.
+## the run log (`EventSurroundings.trace()`).
 func trace() -> RunTrace:
-	return _trace
-
-## Hands the world the trace the run log is written through (`EventManager.use_trace()`).
-func use_trace(trace: RunTrace) -> void:
-	_trace = trace
+	return _surroundings.trace()
 
 ## What she can see this frame (`VisibleView`): the one instance for the world's life, so a caller
 ## may keep it. Named for what it answers, since `visible()` would read as a yes-or-no question.
@@ -215,31 +177,15 @@ func day_stream(for_day: int, stream: String) -> RandomNumberGenerator:
 func use_plan_builder(builder: PlanBuilder) -> void:
 	_plan_builder = builder
 
-## Hands the world the navigator its figures move by; null is "none handed", and `navigator()` then
-## makes one over the map.
-func use_navigator(navigator: Navigator) -> void:
-	_navigator = navigator
-
+## How every figure made here moves over the map (`EventSurroundings.navigator()`).
 func navigator() -> Navigator:
-	if _navigator == null:
-		_navigator = Navigator.new(_map)
-	return _navigator
+	return _surroundings.navigator()
 
 ## The world these events are drawn in (`WorldContext`): what every instance is added to
 ## (`EventSpawner.create()`) and handed (`EventInstance.setup()`), and what shows a row coming from
-## outside the walls. Handed in by `EventManager.draw_in()`; null for none, or one freed since, for
-## a rig that draws nowhere.
-var _drawn_in: WorldContext
-
-## Hands the world the world it is drawn in. See `drawn_in()`.
-func use_drawing(drawn_in: WorldContext) -> void:
-	_drawn_in = drawn_in
-
-## The world these events are drawn in, or null where none was handed or it was freed.
+## outside the walls. Null for none, or one freed since, for a rig that draws nowhere.
 func drawn_in() -> WorldContext:
-	if _drawn_in == null or not is_instance_valid(_drawn_in):
-		return null
-	return _drawn_in
+	return _surroundings.world_drawn_in()
 
 ## Whether she is in the world: handed in, not freed since, and not stood aside for the title
 ## screen. `Stroller.stand_aside()` takes her out of the `player` group, which is the whole of
@@ -251,51 +197,10 @@ func has_player() -> bool:
 		return false
 	return not (_player is Stroller) or _player.is_in_group("player")
 
-## What the resistance handed in to point a protest, asked now, so an instance made before the
-## resistance handed it in points too.
-func _where_protests_point() -> Vector2:
-	return _points_at.call() if _points_at.is_valid() else Vector2.INF
-
-## Hands the world the lights a car that drives stops at (`EventManager.setup()`); none for a world
-## with no streets.
-func use_lights(lights: TrafficSignals) -> void:
-	_lights = lights
-
-## Makes every instance made here skip its own drawing (`EventManager.draw_nothing()`).
-func draw_nothing() -> void:
-	_skip_drawing = true
-
-## Hands the world where every instance made here charges its time (`EventManager.use_timing()`).
-func use_timing(timing: FrameTiming) -> void:
-	_timing = timing
-
-## Hands the world the atlas pages its instances draw from, and makes the one drawer they paint
-## through over them (`EventManager.use_atlas()`).
-func use_atlas(atlas: AtlasLibrary) -> void:
-	_atlas = atlas
-	use_drawer(EventDrawer.new(atlas))
-
-## Hands the world the one drawer every instance made here paints through, in place of the one
-## `use_atlas()` makes: a suite hands one that records what it is told to paint.
-func use_drawer(drawer: EventDrawer) -> void:
-	_drawer = drawer
-
-## Hands the world what a protest points at (`EventManager.use_protest_target()`).
-func use_protest_target(where: Callable) -> void:
-	_points_at = where
-
-## **What a live event made here is set up in** (`EventSurroundings`): one built for each, from the
-## world's hand-ins as they stand now, so an event made before the manager was handed the lights or
-## the atlas is not the one a later one is.
+## **What a live event made here is set up in** (`EventSurroundings`): the one object the world was
+## made over, the same for every event of it.
 func surroundings() -> EventSurroundings:
-	var made := EventSurroundings.new().on(_map).moving_by(navigator()).hearing(_where_she_is) \
-			.drawn_in(drawn_in()).drawn_from(_atlas).timed_by(_timing).tracing_to(_trace) \
-			.stopping_at(_lights).pointing_protests_with(_where_protests_point)
-	if _drawer != null:
-		made.drawing_through(_drawer)
-	if _skip_drawing:
-		made.drawing_nothing()
-	return made
+	return _surroundings
 
 ## **Works out the run's mast sites on `map`**, once, when the manager is handed its city: a mast's
 ## location is known from the start of the run (inbox #1185 in gentle-owl; `docs/EVENTS.md`, "The three views and

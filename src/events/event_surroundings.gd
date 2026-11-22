@@ -4,17 +4,22 @@ extends RefCounted
 ## on and the navigator it moves by, where she is, the world it is drawn in, the pictures and the
 ## drawer it paints through, whether it draws at all, where it charges its time, the run log it
 ## writes to, the lights a car of it stops at and where a protest of it points its placards.
-## One value built for each live event (`EventWorld.surroundings()`, from the world's own
-## hand-ins), so the event keeps what it asks and nothing writes to it after it is set up.
+## **One value for a world's whole life**, built where the world is built and handed to its manager
+## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
+## handed the same one (`EventWorld.surroundings()`), so one made before a hand-in is set up in
+## what one made after it is. Nothing is handed to it after the manager is set up but where a protest
+## points (`pointing_protests_with()`), since the resistance that answers is built over the events.
 ##
 ## **Built by chaining**: `EventSurroundings.new().on(map).hearing(where)` and so on, each call
-## returning the same object. What is not handed has a default a rig that names nothing gets: open
-## ground with a navigator over it, nowhere, no world, a silent trace, the null timing sink, a
-## drawer of its own over the atlas, drawn, no lights, protests pointing at nothing.
+## returning the same object. It is the one place each default is stated: what is not handed is
+## open ground with a navigator over it, a `WhereSheIs` that says she is nowhere, no world, a silent
+## trace, the null timing sink, an atlas and a drawer of its own, drawn, no lights, protests
+## pointing at nothing.
 
 var _map: WorldMap = null
+var _city_map: CityMap = null
 var _navigator: Navigator = null
-var _where_she_is: WhereSheIs = null
+var _where_she_is := WhereSheIs.nowhere()
 var _drawn_in: WorldContext = null
 var _atlas: AtlasLibrary = null
 var _drawer: EventDrawer = null
@@ -31,12 +36,20 @@ func on(map: WorldMap) -> EventSurroundings:
 	_map = map
 	return self
 
+## The map of a city's world (`CityMap`), which is the map it stands on and the city's own, to plan a
+## day over (`city_map()`).
+func in_the_city(map: CityMap) -> EventSurroundings:
+	_map = map
+	_city_map = map
+	return self
+
 ## How a figure moves over the map (`Navigator`).
 func moving_by(navigator: Navigator) -> EventSurroundings:
 	_navigator = navigator
 	return self
 
-## Where she is (`WhereSheIs`), the one its manager tells once a physics tick.
+## Where she is (`WhereSheIs`), in place of the one it makes itself: the one its manager tells once a
+## physics tick.
 func hearing(where: WhereSheIs) -> EventSurroundings:
 	_where_she_is = where
 	return self
@@ -98,18 +111,31 @@ func navigator() -> Navigator:
 		_navigator = Navigator.new(map())
 	return _navigator
 
-## Where she is, or null where none was handed (the event is then told she is nowhere).
+## The city's own map, for planning a day over it, or null where the world is not the city.
+func city_map() -> CityMap:
+	return _city_map
+
+## Where she is this tick: the one handed, or the one it made, which says she is nowhere until her
+## manager tells it otherwise.
 func where_she_is() -> WhereSheIs:
 	return _where_she_is
 
-## The world it is drawn in, or null (what `drawn_in()` handed).
+## The world it is drawn in, or null where none was handed or it was freed since.
 func world_drawn_in() -> WorldContext:
+	if _drawn_in == null or not is_instance_valid(_drawn_in):
+		return null
 	return _drawn_in
 
-## What its look paints through: the one handed, or one of its own over the atlas.
+## The baked atlas pages its pictures come from: the one handed, or one of its own.
+func atlas() -> AtlasLibrary:
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	return _atlas
+
+## What its look paints through: the one handed, or one of its own over `atlas()`.
 func drawer() -> EventDrawer:
 	if _drawer == null:
-		_drawer = EventDrawer.new(_atlas)
+		_drawer = EventDrawer.new(atlas())
 	return _drawer
 
 ## Whether it draws at all.
