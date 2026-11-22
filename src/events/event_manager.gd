@@ -39,9 +39,9 @@ extends Node
 ## ways to be subtly wrong. Revisit if an act ever wants hundreds of sources at once.
 ##
 ## **This node owns no instance as a scene child.** Every `EventInstance` is added to the world it
-## is drawn in (`EventSurroundings.world_drawn_in()`, `WorldContext.add_entity()`), under that world's y-sorted entity layer rather than
-## under here, so `EventInstance._ready()` sets its own physics interpolation rather than inheriting
-## the setting from this node.
+## is drawn in (`EventSurroundings.world_drawn_in()`, `WorldContext.add_entity()`), under that
+## world's y-sorted entity layer rather than under here, so `EventInstance._ready()` sets its own
+## physics interpolation rather than inheriting the setting from this node.
 
 ## What every part works over: the world, the run, the player, what she can see and the live
 ## instances.
@@ -62,9 +62,9 @@ var ahead: EventsAhead
 var checkpoints: CheckpointController
 ## **Hands in what a protest points at**, answering a world point or `Vector2.INF` for nothing: the
 ## resistance's (`ResistanceDirector.setup()`, its `_pointable_objective()`), asked on behalf of
-## every instance made here, one made before it included, since they share the one
-## `EventSurroundings`. Never handed where there is no resistance, and a protest then points at
-## nothing.
+## every instance made here, an instance made before it was handed included, since they share
+## the one `EventSurroundings`. Never handed where there is no resistance, and a protest then
+## points at nothing.
 func use_protest_target(where: Callable) -> void:
 	world.surroundings().pointing_protests_with(where)
 
@@ -146,12 +146,12 @@ func _notification(what: int) -> void:
 ## **Hands the manager the parts of its world that are not what its events are set up in**: the run
 ## its events belong to, today's streets (`DayStreets`), the city's own, which a day is planned
 ## against and a siting reads its region off, and the poster walls a crew pastes on
-## (`PosterWalls`). The map, the navigator and the lights it works over are asked of what its events
-## are set up in (`EventSurroundings`). Where that is the city's map (`EventSurroundings.in_the_city()`)
-## the city's plan builder is made here, once, over it (`EventWorld.plan_builder()`), and so is where
-## something sent at her may start (`spawn_siting()`); a world that is not the city has none, no
-## director siting anything ahead of her, and what runs there is the walk it is handed
-## (`start_day()`).
+## (`PosterWalls`). The map, the navigator and the lights it works over are asked of what its
+## events are set up in (`EventSurroundings`). Where that is the city's map
+## (`EventSurroundings.in_the_city()`) the city's plan builder is made here, once, over it
+## (`EventWorld.plan_builder()`), and so is where something sent at her may start
+## (`spawn_siting()`); a world that is not the city has none, no director siting anything ahead
+## of her, and what runs there is the walk it is handed (`start_day()`).
 ## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
 ## against the streets it hands, so it hands streets whose day it began (`DayStreets.begin_day()`).
 ##

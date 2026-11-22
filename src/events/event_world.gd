@@ -23,6 +23,7 @@ var _surroundings: EventSurroundings
 ## suite's).
 func _init(surroundings: EventSurroundings = null) -> void:
 	_surroundings = surroundings if surroundings else EventSurroundings.new()
+
 ## The run these events belong to (`run()`).
 var _run: RunState
 ## The player (`player()`), or null for none in the world.
