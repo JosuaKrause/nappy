@@ -1,9 +1,9 @@
 # A car that drives is a body that moves, and its strike is not the body
 
-Read this before touching `EventDef.vehicle`, `EventCarDriving`, `EventInvestigation`, the patrol
+Read this before touching `VehicleSpec`, `EventCarDriving`, `EventInvestigation`, the patrol
 car (`police_patrol` and every copy of it) or the fire engine (`fire_truck`).
 
-`EventDef.vehicle` makes the only bodies that move, and it answers the pin the mobile exemption is
+`VehicleSpec` makes the only bodies that move, and it answers the pin the mobile exemption is
 for by **never moving into her**: every event's step is proposed, checked and then committed
 (`EventInstance.step()`), and a car's check is its own (`EventCarDriving.check()`): a step or turn
 that would bring the body into her or her pram is taken back, with whatever the step decided on that

@@ -10,7 +10,7 @@ three seconds of cat is not a place. `TOWARD_PLAYER` (`cyclist`, `loose_dog`) is
 coming at her: traffic she answers with a route, not an ambush. Neither director-sited mode may
 obstruct.
 
-**`EventDef.on_her_way` is a decision about *when* a place is chosen.** A `MAP` row, a one-shot
+**`OnHerWay` is a decision about *when* a place is chosen.** A `MAP` row, a one-shot
 (day 3's fire) or recurring (the poster crews), never mobile, placed by her walk rather than at
 dawn; `EventDef.validate()` refuses any other combination.
 

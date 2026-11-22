@@ -31,13 +31,13 @@ reached the code is a diff nobody can review.
 ## Acts
 
 A run is 14 days, split into four acts. The act determines the colour cast, the ambient
-audio bed, and which events are eligible (every `EventDef` carries an `act_tag`, and a test
+audio bed, and which events are eligible (a scripted row carries its act, and a test
 asserts no scripted row from a later act fires on an earlier day).
 
 The colour cast is the quietest part of the telling: the same corner, four times, getting
 colder. Warm afternoon → drained → cold and overcast → smoke.
 
-The loudest part is that **the city remembers**. `EventDef.aftermath`'s scar makes a one-off event permanent
+The loudest part is that **the city remembers**. `Aftermath`'s scar makes a one-off event permanent
 for the rest of the run: the building that burned on day 3 still stands burnt on day 12,
 its windows black under soot. The
 route you memorised on day 2 stops existing, one closure at a time.

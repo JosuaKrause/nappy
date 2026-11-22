@@ -30,8 +30,8 @@ area each, to be read whole before the first edit there:
 | Before touching | Read |
 |---|---|
 | `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`, a thing sent from out of her sight | `references/warned-first.md` |
-| `EventDef.vehicle`, `EventCarDriving`, the patrol car, the fire engine | `references/event-cars.md` |
-| `EventDef.pursuit`, `EventDef.notice`, `PursuitSpec`, `EventPursuit`, a charger, robber or guard | `references/pursuits.md` |
+| `VehicleSpec`, `EventCarDriving`, the patrol car, the fire engine | `references/event-cars.md` |
+| `EventDef.pursuit()`, `EventDef.notice()`, `PursuitSpec`, `EventPursuit`, a charger, robber or guard | `references/pursuits.md` |
 | `EventDef.flock()`, `FlockSpec`, `EventFlock`, a look that moves, a partly animated picture | `references/flocks-and-moving-pictures.md` |
 | a new row, `spawn_mode`, `on_her_way`, `lethal()`, the role, `pavement_side` | `references/fields.md` |
 | `EventScheduler.build_day()`, `UnitDraw`, `EventStreaming`, `ExcitementSource`, anything that emits | `references/plan-and-excitement.md` |
@@ -164,7 +164,7 @@ is the event). `tests/test_events_solid.gd` requires everything else to have one
 walk around does not close a park; one you have to route around does. **If a rule tests
 `obstructs_within() > 0`, ask whether it means *has a body* or *closes ground*.**
 
-**A car that drives is the one body that moves** (`EventDef.vehicle`: the patrol car and the fire
+**A car that drives is the one body that moves** (`VehicleSpec`: the patrol car and the fire
 engine). It never moves into her, its `obstructs_within()` stays zero, and its lethality is a strike
 area ahead of its nose, only while it drives its route, only with her on the carriageway, under the
 crowd car's contract of the carriageway and the horn instead of a telegraph. It gives way where the
