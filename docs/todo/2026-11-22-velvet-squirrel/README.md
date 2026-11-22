@@ -16,8 +16,7 @@ request is, and Fable then reviews the built pull request against its design bef
 
 **Item:** `body-stance-value.md`, Fable's design as written.
 
-**When it runs** (the filer's ordering, proposed; Fable named the collisions). Before or after minty-newt (the events'
-looks are handed the drawn view), one after the other, since both change the look's constructors and
-`EventInstance.setup()`; before row 5's live-event and drawing suites.
+**When it runs** (the filer's ordering, proposed; Fable named the collisions). Before row 5's live-event and drawing
+suites, so they are written once.
 
 **Proposed, not asked for:** the band `now` (the refactor's own kind of work).
