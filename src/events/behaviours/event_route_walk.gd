@@ -13,6 +13,8 @@ extends EventBehaviour
 
 ## Its row: its speed, and whether it paces a beat.
 var _row: EventDef
+## How it travels (`RouteSpec`): how fast it walks and whether it paces a beat.
+var _course: RouteSpec
 ## How it moves along its route: every step through the navigator, as what it walks as.
 var _navigator: Navigator
 var _mover: Mover
@@ -20,13 +22,14 @@ var _mover: Mover
 ## where it ends.
 var _way_on: WayOn = null
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, and how it moves over
-## the ground.
-func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, navigator: Navigator,
-		mover: Mover) -> void:
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, and
+## how it moves over the ground.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
+		navigator: Navigator, mover: Mover) -> void:
 	_figure = figure
 	_where = where
 	_row = row
+	_course = course
 	_navigator = navigator
 	_mover = mover
 
@@ -39,12 +42,12 @@ func step(delta: float) -> void:
 			and not _figure.has_parked():
 		advance(delta)
 
-## Walks `delta` seconds of its route at its row's `speed`.
+## Walks `delta` seconds of its route at its route's speed.
 func advance(delta: float) -> void:
 	var path := _figure.walks()
 	# Movement starts when the telegraph does, so an approaching siren is audible and
 	# visible while it is still far away — which is what makes the warning usable.
-	_figure.walk_on(_row.speed * delta)
+	_figure.walk_on(_course.speed() * delta)
 	var remaining := _figure.travelled()
 	# **A beat rather than a journey.** The distance covered is folded back and forth over
 	# the route, so the same walk up and down happens for ever and the end of the path is never
@@ -52,7 +55,7 @@ func advance(delta: float) -> void:
 	# passing through. Folded rather than reset, so streaming it out and back in resumes it mid-beat
 	# exactly as `restore()` promises.
 	var back := false
-	if _row.paces:
+	if _course.paces_a_beat():
 		var beat := length()
 		if beat <= 0.0:
 			return
@@ -74,7 +77,7 @@ func advance(delta: float) -> void:
 		remaining -= segment_length
 	if not _keep_to(path[path.size() - 1]):
 		return
-	if _row.paces:
+	if _course.paces_a_beat():
 		return
 	if _goes_on():
 		return
@@ -94,7 +97,7 @@ func _keep_to(on_the_route: Vector2) -> bool:
 	_figure.arrive_at(reached)
 	if reached == on_the_route:
 		return true
-	if not _row.paces:
+	if not _course.paces_a_beat():
 		_figure.end_its_route()
 	return false
 

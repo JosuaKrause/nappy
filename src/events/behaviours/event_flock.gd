@@ -77,13 +77,16 @@ class Bird extends RefCounted:
 
 ## Its birds, each its own body.
 var birds: Array[Bird] = []
-## Its row: how many birds, how far they spread, and the field each one's share is cut from.
-var _row: EventDef
+## How many birds and how far they spread (`FlockSpec`).
+var _flock: FlockSpec
+## The field each bird's share is cut from (`FieldSpec`).
+var _field: FieldSpec
 
-## Handed, as its event is set up, the figure it moves and its row.
-func _init(figure: EventInstance.Figure, row: EventDef) -> void:
+## Handed, as its event is set up, the figure it moves, its flock and its field.
+func _init(figure: EventInstance.Figure, flock: FlockSpec, field: FieldSpec) -> void:
 	_figure = figure
-	_row = row
+	_flock = flock
+	_field = field
 
 ## How fast a bird crosses the ground once it is up, and how slowly it shuffles before it is.
 const FLIGHT_SPEED := 96.0
@@ -100,13 +103,13 @@ const DEPARTURE_GAIN := 2.1
 ## gives the same flock every time the same flock is built, which is the property that matters.
 func build() -> void:
 	birds.clear()
-	var count: int = _row.flock_size
+	var count: int = _flock.count()
 	for i in count:
 		var bird := Bird.new()
 		# Spread round the middle rather than scattered independently, so eleven birds read as a
 		# flock rather than as eleven birds who happen to be near each other.
 		var angle := TAU * (float(i) + 0.35 * _roll(i, 1)) / float(count)
-		var reach: float = _row.flock_spread * (0.3 + 0.7 * _roll(i, 2))
+		var reach: float = _flock.spread() * (0.3 + 0.7 * _roll(i, 2))
 		bird.place(Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach)
 		bird.face(Vector2.from_angle(TAU * _roll(i, 3)))
 		bird.speed = GROUND_SPEED
@@ -173,16 +176,16 @@ func _fly(delta: float) -> void:
 			# of about 21px, so a bird that is still heading outwards when it reaches the edge is
 			# already outside by the time it has come round. Starting at half the spread leaves it
 			# the room the turn costs.
-			if bird.at().length() > _row.flock_spread * 0.5:
+			if bird.at().length() > _flock.spread() * 0.5:
 				bird.face(_steer(bird.heading(), -bird.at().normalized(), TURN_IN, delta))
 		bird.place(bird.at() + bird.heading() * bird.speed * Vector2(1.0, GROUND_SQUASH) * delta)
-		if not _figure.is_on_its_way_out() and bird.at().length() > _row.flock_spread:
+		if not _figure.is_on_its_way_out() and bird.at().length() > _flock.spread():
 			# The steering above is what a bird turning back *looks* like; this is the line that
 			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
 			# `bird_outer()` is `outer radius - flock_spread` precisely so that a bird at the rim
 			# reaches exactly as far as the event was validated to. Steering from half way out means
 			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
-			bird.place(bird.at().normalized() * _row.flock_spread)
+			bird.place(bird.at().normalized() * _flock.spread())
 
 ## Turns `heading` toward `wanted` at up to `rate` radians a second.
 ##
@@ -203,7 +206,7 @@ const TURN_IN := 4.6
 ## The radius one bird emits over. The rest of the field is the room the flock takes up: a bird at
 ## the far edge of the wheel reaches exactly as far as the event says it does and no further.
 func bird_outer() -> float:
-	return maxf(_row.core_within() + 1.0, _row.heard_within() - _row.flock_spread)
+	return maxf(_field.core_within() + 1.0, _field.heard_within() - _flock.spread())
 
 ## A tick of the flock while its event is neither leaving nor held: pecking on the ground through
 ## the wait and the telegraph, up and wheeling once it has gone up.

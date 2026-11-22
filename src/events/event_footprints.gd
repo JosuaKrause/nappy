@@ -47,7 +47,7 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 	elif lies == BodySpec.Lie.SPREAD or lies == BodySpec.Lie.ALONG:
 		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
 	if row.is_a_flock():
-		box = box.grow(row.flock_spread)
+		box = box.grow(row.flock().spread())
 	return box
 
 ## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it

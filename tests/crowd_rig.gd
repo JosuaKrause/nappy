@@ -358,7 +358,7 @@ func _test_a_car_is_louder_and_carries_further_than_a_person(t: TestRunner) -> v
 			"a car is heard from further away than a person")
 	t.check(Tuning.CAR_SPEED.x > Tuning.WALK_SPEED,
 			"even the slowest car outpaces a walk, so a road cannot be strolled alongside")
-	t.check(Tuning.CAR_SPEED.y <= EventCatalogue.by_id("fire_truck").speed,
+	t.check(Tuning.CAR_SPEED.y <= EventCatalogue.by_id("fire_truck").speed(),
 			"an emergency vehicle is still the fastest thing on the road")
 
 ## Finding 4, and the reason the crowd exists at all: a day must not be winnable by walking any

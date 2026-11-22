@@ -321,7 +321,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var world_rect := map.tile_rect_to_world(rect)
 	var vertical := rect.size.y > rect.size.x
 	var narrow_px := float(mini(rect.size.x, rect.size.y)) * Tuning.TILE_SIZE
-	var crossing_time := narrow_px / def.speed
+	var crossing_time := narrow_px / def.speed()
 	_advance(instance, crossing_time * 0.5)
 	t.check(instance.global_position.x >= world_rect.position.x - 1.0
 			and instance.global_position.x <= world_rect.end.x + 1.0
@@ -508,7 +508,7 @@ func _test_along_street_paths_stay_in_bounds(t: TestRunner) -> void:
 	for day in range(1, 15):
 		for plan in _planned(day):
 			# A moment the director is owed has no route yet (`DawnMoments`).
-			if plan.row().path_mode != EventDef.PathMode.ALONG_STREET or not plan.is_placed():
+			if plan.row().route().kind() != RouteSpec.Kind.ALONG_STREET or not plan.is_placed():
 				continue
 			t.check(plan.walks().size() == 2, "an along-street route has two waypoints")
 			# The route must not finish jammed against the boundary along the axis it

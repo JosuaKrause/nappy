@@ -241,7 +241,7 @@ func _stand(t: TestRunner, atlas: AtlasLibrary, where: WhereSheIs, row: EventDef
 	var instance := EventInstance.new()
 	var map: WorldMap = EastWestStreet.new() if ground == "street" else WorldMap.open_ground()
 	var route := PackedVector2Array()
-	if row.speed > 0.0:
+	if row.speed() > 0.0:
 		route = PackedVector2Array([AT, AT + Vector2(900.0, 0.0)])
 	var surroundings := EventSurroundings.new().on(map).hearing(where).drawn_from(atlas) \
 			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(atlas)))

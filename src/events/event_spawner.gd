@@ -323,9 +323,9 @@ func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> 
 ## pass costs (`docs/COSTS.md`, `tests/probes/m174_pass.gd`, which creates it at this same age).
 static func age_when_warned(def: EventDef) -> float:
 	var spent := def.telegraphs_for()
-	if def.pulses_every() <= 0.0 or not def.moves() or def.speed <= 0.0:
+	if def.pulses_every() <= 0.0 or not def.moves() or def.speed() <= 0.0:
 		return spent
-	var flight := SpawnSiting.least_distance() / (def.speed + Tuning.WALK_SPEED)
+	var flight := SpawnSiting.least_distance() / (def.speed() + Tuning.WALK_SPEED)
 	var beat := def.pulses_every()
 	var loud_on_her := beat * 0.5 - flight
 	return loud_on_her + ceilf((spent - loud_on_her) / beat - 0.001) * beat

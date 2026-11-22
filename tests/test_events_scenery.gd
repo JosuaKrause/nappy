@@ -95,7 +95,7 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 ##   sources: the price of one depends on whether you went through it or round it.
 func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	t.check(def.flock_spread < def.heard_within(),
+	t.check(def.flock().spread() < def.heard_within(),
 			"and the room it takes up comes out of the field it emits over, not on top of it")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
@@ -124,9 +124,9 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 			break
 		for bird in instance.flock.birds:
 			furthest = maxf(furthest, bird.at().length())
-	t.check(furthest <= def.flock_spread + 2.0,
+	t.check(furthest <= def.flock().spread() + 2.0,
 			"every bird stayed inside the %.0fpx flock for the whole burst (furthest %.0fpx)"
-			% [def.flock_spread, furthest])
+			% [def.flock().spread(), furthest])
 
 	var middle := instance.source().contribution_at(Vector2.ZERO)
 	var rim := instance.source().contribution_at(Vector2(def.heard_within() - 6.0, 0.0))
@@ -154,7 +154,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 ## `docs/COSTS.md` never does and the reason that table dashes this row.
 func _test_a_flock_goes_up_when_she_reaches_the_birds(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS
+	var touch := def.flock().spread() + Tuning.PLAYER_BODY_RADIUS
 	t.check(touch < def.notice_within(),
 			"she is inside the trigger (%.0fpx) well before she is among the birds (%.0fpx)"
 			% [def.notice_within(), touch])
@@ -201,7 +201,7 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t: Te
 	# fires at all, so what is left out there is a fraction of the rate against a decay she is
 	# earning the whole way — the line can and does come out negative, and the claim is the gap
 	# rather than its sign.
-	var skirted := _flock_walked_through(t, def, def.flock_spread + Tuning.PLAYER_BODY_RADIUS + 30.0)
+	var skirted := _flock_walked_through(t, def, def.flock().spread() + Tuning.PLAYER_BODY_RADIUS + 30.0)
 	t.check(skirted < through * 0.5,
 			"skirting one costs %.1f, far less than the %.1f of walking through it"
 			% [skirted, through])
@@ -297,7 +297,7 @@ func _test_mobile_follows_its_path(t: TestRunner) -> void:
 	t.check(instance.position == Vector2.ZERO, "a mobile event starts at its first waypoint")
 
 	_advance(instance, 0.5)
-	t.close_to(instance.position.x, def.speed * 0.5, "a mobile event travels at its speed", 5.0)
+	t.close_to(instance.position.x, def.speed() * 0.5, "a mobile event travels at its speed", 5.0)
 	t.close_to(instance.position.y, 0.0, "a mobile event stays on its path")
 
 	# Off the end of the route is over, whatever the nominal duration says.
@@ -324,12 +324,12 @@ func _test_a_crouching_event_holds_still_until_it_bolts(t: TestRunner) -> void:
 
 	_advance(instance, 0.5)
 	t.check(not instance.is_telegraphing(), "then the telegraph ends")
-	t.close_to(instance.position.x, def.speed * 0.4,
+	t.close_to(instance.position.x, def.speed() * 0.4,
 			"and it bolts at its full speed from where it was crouched", 20.0)
 
 	# The duration has to outlast the crossing, or it expires in the middle of the road.
 	var crossing := float(EventDirector.CROSSING_REACH_TILES * Tuning.TILE_SIZE) * 2.0
-	t.check(def.duration >= crossing / def.speed,
+	t.check(def.duration >= crossing / def.speed(),
 			"it lives long enough (%.2fs) to cross the whole street (%.2fs)"
-			% [def.duration, crossing / def.speed])
+			% [def.duration, crossing / def.speed()])
 	instance.free()

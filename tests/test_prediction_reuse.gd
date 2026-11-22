@@ -134,13 +134,24 @@ func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 		row.use_field(fields[label] as FieldSpec)
 		rows[label] = row
 	var faster := _copy_definition(definition)
-	faster.speed = definition.speed + 3.0
+	if definition.moves():
+		faster.use_route(_route_at_another_speed(definition.route(), definition.speed() + 3.0))
 	rows["speed"] = faster
 	if definition.pursuit:
 		var chasing := _copy_definition(definition)
 		chasing.pursuit = definition.pursuit.at_speed(definition.pursuit.speed() + 3.0)
 		rows["chase speed"] = chasing
 	return rows
+
+## The route `route` walks at `speed` and is otherwise the same: its kind, its length, whether it
+## paces and whether it stops where it arrives.
+func _route_at_another_speed(route: RouteSpec, speed: float) -> RouteSpec:
+	var other := RouteSpec.at(speed, route.kind()).up_to_tiles(route.tiles())
+	if route.paces_a_beat():
+		other = other.pacing()
+	if route.parks_where_it_arrives():
+		other = other.parking_where_it_arrives()
+	return other
 
 ## Hands a live event another row, as its own and its source's: what a row replaced under an event
 ## would be, which the game never does and a cache over the row has to survive.

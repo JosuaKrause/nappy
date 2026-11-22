@@ -305,7 +305,7 @@ func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 			"the fire engine is the row that stops where it arrives")
 	if not def:
 		return
-	var kerb := Vector2(def.speed * 2.0, 0.0)
+	var kerb := Vector2(def.speed() * 2.0, 0.0)
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, kerb]))
 	# Past the end of a two-second route by a good margin, and then a while longer.
 	_advance(instance, 4.0)

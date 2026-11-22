@@ -379,7 +379,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		_notice.start(0.0)
 		phase = Phase.WARNING
 		_settle_the_notice()
-	if definition.path_mode == EventDef.PathMode.ACROSS_ITS_ALLEY:
+	if definition.route().kind() == RouteSpec.Kind.ACROSS_ITS_ALLEY:
 		# Placed on the map with no route at all, so its own dash is built here, from the alley it
 		# actually landed in rather than a flat offset, and cut to the ground it fits on.
 		_path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
@@ -996,8 +996,8 @@ func travel_velocity() -> Vector2:
 		if is_waiting() or is_telegraphing():
 			return Vector2.ZERO
 		return _heading * _def.chase_speed()
-	if _def.mobile and _def.speed > 0.0 and _path.size() > 1 and not is_telegraphing_still():
-		return _heading * _def.speed
+	if _def.moves() and _def.speed() > 0.0 and _path.size() > 1 and not is_telegraphing_still():
+		return _heading * _def.speed()
 	return Vector2.ZERO
 
 ## `travel_velocity()`'s own answer, except for a pursuer that has been noticed and is holding
@@ -1090,7 +1090,7 @@ func _restore_the_moment(saved: EventSave) -> void:
 	# rather than left to rely on that.
 	_gait_phase = 0.0
 	_gait_moving = false
-	if _def.mobile and _path.size() > 1:
+	if _def.moves() and _path.size() > 1:
 		route.advance(0.0)
 	# Put back where it was, not slid there from wherever it was made.
 	reset_physics_interpolation()
@@ -1184,7 +1184,7 @@ func _be_done(may_park := true) -> void:
 		# catching her, `_gave_up` telling which of the two ways. A charge that caught or was cut
 		# short already ended, so the record says nothing (`ChargeRecord`).
 		_charge.end(_gave_up)
-	if _def.stops_where_it_arrives and may_park:
+	if _def.parks_where_it_arrives() and may_park:
 		transition(Phase.PARKED)
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left

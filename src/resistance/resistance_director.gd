@@ -2492,7 +2492,7 @@ func _send_the_neighbor_home() -> EventInstance:
 		return null
 	var def := EventCatalogue.neighbor_heading_home()
 	var door := _map.world_to_tile(_map.doorstep_world_position())
-	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
+	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed() / Tuning.TILE_SIZE)
 	var ground := _spawn_siting.ask_of_ground()
 	var kept := NO_TILE
 	for pass_index in WayConfirmation.PASSES:

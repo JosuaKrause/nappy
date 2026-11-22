@@ -254,7 +254,7 @@ func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	var whole := float(Tuning.STREET_WIDTH) * TILE
-	var on_time := cat.telegraphs_for() + whole / cat.speed
+	var on_time := cat.telegraphs_for() + whole / cat.speed()
 	for run: float in [whole, whole * 0.5, TILE]:
 		var instance := EventInstance.new()
 		var path := PackedVector2Array([Vector2(-run, 0.0), Vector2(run, 0.0)])
@@ -469,10 +469,10 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 	var ends := 0
 	var in_a_lot := 0
 	var none: Array[EventPlan] = []
-	# No catalogue row is planned as a crossing (`EventDef.PathMode.CROSS_STREET`: the cat is sited by
+	# No catalogue row is planned as a crossing (`RouteSpec.Kind.CROSS_STREET`: the cat is sited by
 	# the director), so the row is the cat with the plan builder's crossing path laid for it.
 	var scheduled := cat.duplicate() as EventDef
-	scheduled.path_mode = EventDef.PathMode.CROSS_STREET
+	scheduled.use_route(RouteSpec.at(cat.speed(), RouteSpec.Kind.CROSS_STREET))
 	var builder := GamePlanBuilder.over(map)
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		if tile.x % 7 != 0 or not map.passable(tile, Mover.on_foot()):

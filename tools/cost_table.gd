@@ -168,8 +168,8 @@ func _geometry_row(def: EventDef) -> Dictionary:
 	# that moves reads its own `speed`.
 	if def.pursues():
 		row["speed"] = "%.1f" % def.chase_speed()
-	elif def.moves() and def.speed > 0.0:
-		row["speed"] = "%.1f" % def.speed
+	elif def.moves() and def.speed() > 0.0:
+		row["speed"] = "%.1f" % def.speed()
 	else:
 		row["speed"] = "—"
 	row["walk_through_cost"] = "%.1f" % def.walk_through_cost()

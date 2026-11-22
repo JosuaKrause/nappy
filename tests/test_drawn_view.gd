@@ -409,7 +409,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunne
 	var asked_when_up := false
 	var went_up := false
 	for i in 120:
-		engine.global_position -= Vector2(def.speed * t.get_process_delta_time(), 0.0)
+		engine.global_position -= Vector2(def.speed() * t.get_process_delta_time(), 0.0)
 		var asked := await _redraws(t, edge, drawn)
 		if not edge.badges().announcing().is_empty() and not went_up:
 			went_up = true

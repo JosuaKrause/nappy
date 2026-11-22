@@ -50,11 +50,11 @@ func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 			# coming towards you and it has to be the end that is in the yard.
 			placed.face(-Vector2(_map.pavement_inward(tile)))
 		return placed
-	match def.path_mode:
-		EventDef.PathMode.CROSS_STREET:
+	match def.route().kind():
+		RouteSpec.Kind.CROSS_STREET:
 			var crossing := _cross_street_path(tile)
 			return null if crossing.is_empty() else EventPlan.new(def, at, crossing)
-		EventDef.PathMode.ALONG_STREET:
+		RouteSpec.Kind.ALONG_STREET:
 			var route := _along_street_path(tile, def, rng, within)
 			# Nowhere to go from here; a "mobile" event that stands still is worse than
 			# another roll of the dice.
@@ -113,10 +113,10 @@ func _along_street_path(tile: Vector2i, def: EventDef,
 	var along := forward
 	var room := forward_room
 	# Prefer whichever way fits the whole route; if both do, or neither, flip a coin.
-	if backward_room > forward_room and backward_room >= def.path_length_tiles:
+	if backward_room > forward_room and backward_room >= def.route().tiles():
 		along = backward
 		room = backward_room
-	elif forward_room >= def.path_length_tiles and backward_room >= def.path_length_tiles:
+	elif forward_room >= def.route().tiles() and backward_room >= def.route().tiles():
 		if rng.randf() < 0.5:
 			along = backward
 			room = backward_room
@@ -124,7 +124,7 @@ func _along_street_path(tile: Vector2i, def: EventDef,
 		along = backward
 		room = backward_room
 
-	var length := mini(def.path_length_tiles, room)
+	var length := mini(def.route().tiles(), room)
 	# Stop short of anything that stops the row (`CityMap.passable()`, as it moves: a closure's
 	# barrier, a seal, a body standing today) rather than walking or driving through it — and short
 	# of a calm zone's absorbed corridor as well. A corridor that ends in a park is not a corridor a

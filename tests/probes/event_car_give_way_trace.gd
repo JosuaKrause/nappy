@@ -32,7 +32,7 @@ func run(t: TestRunner) -> void:
 				var report := _drive(t, map, def, rig)
 				report["seed"] = city_seed
 				report["def"] = def.id
-				report["speed"] = def.speed
+				report["speed"] = def.speed()
 				report["rig"] = rig["name"]
 				var route: PackedVector2Array = rig["route"]
 				report["start"] = snappedf(route[0].x, 0.001) if rig["axis"] == "x" \

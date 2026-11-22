@@ -339,7 +339,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 			continue
 		var wider: EventDef = def.duplicate()
 		wider.use_field(wider.field().reaching(wider.heard_within() * 1.5))
-		wider.speed *= 1.5
+		wider.use_route(RouteSpec.at(wider.speed() * 1.5, wider.route().kind()))
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),
 				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
