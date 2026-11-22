@@ -87,12 +87,13 @@ func _test_the_nets_sum_to_the_bar_rise(t: TestRunner) -> void:
 	t.check(none == 0.0, "a decay past everything landed leaves every net at zero")
 
 ## An event caches the rate its field gives at an age and a point until the source is told to
-## work it out again (`invalidate_contribution()`). **A cache kept stale after the row's field
-## changed cannot arise any more, and the check that held it is gone for that reason**: a row is
-## never changed after it is built (`EventDraft.build()` hands the row a copy of the draft), so
-## the field an instance reads cannot move under its cache. What holds is the cache answering the
-## same at the same age and point, being worked out again after an invalidation, and a row whose
-## field peaks higher being charged more.
+## work it out again (`invalidate_contribution()`). The cache is keyed on the event's age, so it
+## goes stale in play when a phase changes, a mast is silenced or the event is moved, each of which
+## clears it. The silenced mast's case, the cache primed and then the rate asked again in the same
+## tick, is held by `tests/test_masts.gd`, `_test_silencing_one_mast_works_for_the_rest_of_the_day`
+## (`contribution_at() answers zero in the same tick, not the pre-silence cache`), so it is not
+## held twice here. What this holds is the cache answering the same at the same age and point and
+## a row whose field peaks higher being charged more.
 func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(_def("cached", 20.0), Vector2.ZERO)
@@ -103,9 +104,6 @@ func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 			"an event's rate on open ground is its field (%.2f/s)" % first)
 	t.check(source.contribution_at(at) == first,
 			"asked again at the same age and point, the cached rate answers")
-	source.invalidate_contribution()
-	t.check(source.contribution_at(at) == first,
-			"invalidated, it is worked out again from the same field to the same rate")
 	t.check(source.contribution_at(Vector2(1000.0, 0.0)) == 0.0,
 			"and a point past its reach is charged nothing")
 	var stronger := EventInstance.new()
