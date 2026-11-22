@@ -1,0 +1,127 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+-- test_finale_a.gd                       44941 ms
+[RunState] run started, seed=4216201080
+[Main] 10 atlas pages held from escape in 23 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 99 ms (act 1): 6 events (3 live, 0 ahead), 180s
+[Main] finale planned: tunnel via 3 calm, 119 cells | bridge via 3 calm, 177 cells | 33 open streets, 582 placements
+[Main] day 16 started in 1004 ms (act 1): 582 events (55 live, 3 ahead), 0 crowd, 180s | calm: 1 quiet_square, 2 forest, 3 courtyard, 3 park | closed: none
+-- test_finale_b.gd                       59089 ms
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 944 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 652 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 96 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[Main] day 15 started in 2 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 1038 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 973 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 626 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 19 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 962 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 88 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 988 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=4242
+[RunState] run started, seed=1351681065
+[Main] 10 atlas pages held from escape in 21 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 92 ms (act 1): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[RunState] run started, seed=3338489357
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 89 ms (act 1): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[RunState] run started, seed=1126024647
+[Main] 10 atlas pages held from escape in 21 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 91 ms (act 1): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[RunState] run started, seed=4235942775
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 89 ms (act 1): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[RunState] run started, seed=2810380968
+[Main] 10 atlas pages held from escape in 21 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 91 ms (act 1): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[RunState] run started, seed=452713617
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 88 ms (act 1): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 90 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 19 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 90 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 994 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 671 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[Main] day 15 started in 91 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 88 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 1060 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 21 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 1008 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] day 15 started in 89 ms (act 4): 6 events (3 live, 0 ahead), 180s
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes   6 frame graph   7 event routes
+[Main] finale planned: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] day 16 started in 990 ms (act 4): 606 events (66 live, 0 ahead), 0 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: none
+-- test_finale_c.gd                       31128 ms
+
+9463 checks, 0 failures
+PARTIAL RUN — only suites matching test_finale. Not a green build.
