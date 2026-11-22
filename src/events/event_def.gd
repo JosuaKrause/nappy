@@ -1705,7 +1705,7 @@ func bird_emission_at(at_distance: float, share: float, outer: float) -> float:
 ##
 ## **Not `field_reach()`**, which is the field's own extent for the planners; this is the looser
 ## figure nothing can be past and still charge her. The body's reach is asked on every call, since
-## its shape is a class with public fields a rig may change after an instance has read them.
+## it is one read of the row's shape, which is never changed once the row is built.
 func silent_beyond() -> float:
 	var body := ground_shape().reach() if ground_shape() != null else 0.0
 	return body + _field.silent_beyond()
