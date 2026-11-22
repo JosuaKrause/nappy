@@ -604,7 +604,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	await t.get_tree().process_frame
 	var badged := false
 	for badge in edge.badges().announcing():
-		badged = badged or badge["id"] == "cyclist"
+		badged = badged or badge.logged_name() == "cyclist"
 	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
 
 	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
@@ -658,7 +658,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 				into_sight = since
 			var still_badged := false
 			for badge in edge.badges().announcing():
-				still_badged = still_badged or badge["id"] == "cyclist"
+				still_badged = still_badged or badge.logged_name() == "cyclist"
 			if gone == INF and not still_badged:
 				gone = since
 		# At once from just out of sight; where its ground is further — the carriageway of a cross

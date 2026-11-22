@@ -51,7 +51,7 @@ static func _step(model: BadgeModel, subjects: Array) -> void:
 
 static func _up(model: BadgeModel, id: String) -> bool:
 	for b in model.announcing():
-		if b["id"] == id:
+		if b.logged_name() == id:
 			return true
 	return false
 
@@ -393,8 +393,9 @@ func _test_a_pending_warning_is_listed_closing_at_its_approach_speed(t: TestRunn
 	w.logged_name = "dog"
 	model.step(STEP, Vector2.ZERO, [w], _sees)
 	var listed := model.announcing()
-	t.check(listed.size() == 1 and is_equal_approx(float(listed[0]["approach"]), 240.0),
-			"a pending warning is listed closing at its approach speed (%s)" % str(listed))
+	t.check(listed.size() == 1 and is_equal_approx(listed[0].approach(), 240.0),
+			"a pending warning is listed closing at its approach speed (%s)"
+			% [listed.map(func(b: EdgeBadges.Badge) -> float: return b.approach())])
 
 ## A pending warning with 0.7s left is ranked against a live thing by when each arrives: the live
 ## one, still 0.6s off, is listed ahead of it, and once it is 0.75s off the warning is. A warning's
@@ -415,7 +416,7 @@ func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t: Test
 		var arrives := live.position.x / live.approach_speed
 		var names := []
 		for b in model.announcing():
-			names.append(b["id"])
+			names.append(b.logged_name())
 		if arrives >= 0.72 and arrives <= 0.78 and after_it.is_empty():
 			after_it = names
 		if arrives >= 0.6 and arrives <= 0.68 and before_it.is_empty():
@@ -438,7 +439,7 @@ func _test_the_warning_with_less_time_left_is_listed_first(t: TestRunner) -> voi
 		model.step(STEP, Vector2.ZERO, handed, _sees)
 		var names := []
 		for b in model.announcing():
-			names.append(b["id"])
+			names.append(b.logged_name())
 		t.check(names == ["soon", "late"], "the warning with less time left is first, handed in either order (%s)" % str(names))
 
 func _test_every_badge_is_listed_soonest_arrival_first(t: TestRunner) -> void:
@@ -454,7 +455,7 @@ func _test_every_badge_is_listed_soonest_arrival_first(t: TestRunner) -> void:
 		_step(model, subjects)
 	var names := []
 	for b in model.announcing():
-		names.append(b["id"])
+		names.append(b.logged_name())
 	t.check(names == ["v0", "v1", "v2", "v3", "v4"], "all five, the soonest to arrive first (%s)" % str(names))
 
 func _test_a_subject_no_longer_handed_over_is_forgotten(t: TestRunner) -> void:

@@ -5,12 +5,12 @@ extends EdgeBadges
 ## no scene, no camera and no frame timing: the live dangers and the warnings that are up
 ## (`Subject`), where she is, how long the frame was, and a `sees` Callable that answers "is this
 ## world point in sight, counting this many screen px past the edge as in sight". `DangerEdge`
-## builds those from the event source and the camera once a frame and draws what `announcing()` says
-## (every badge in `coming`, soonest arrival first).
+## builds those from the event source and the camera once a frame and draws what `drawn()` says
+## (every badge up, soonest arrival first).
 ##
 ## **The seam for the event manager's warning board.** Whatever collects the live dangers and the
 ## pending warnings (`EventManager`, or the `WarningBoard` split out of it) hands this model
-## `Subject`s and a view and reads `coming` / `announcing()` back; nothing here knows `EventInstance`,
+## `Subject`s and a view and reads `announcing()` / `drawn()` back; nothing here knows `EventInstance`,
 ## `PendingWarning`, `VisibleView` or a node.
 ##
 ## The thresholds are the badge's: see each constant. The reasons for the rules (its own approach
@@ -75,16 +75,41 @@ class Subject extends RefCounted:
 	## Any of it is in sight (its point or what it draws).
 	var shown := false
 	var logged_name := ""
-	## Handed back untouched on a badge, for the drawing (the row).
-	var payload: Variant = null
+	## Handed back untouched on a badge, for the drawing; null where a suite sets none.
+	var payload: EventDef = null
 	## A warning not yet a thing: the place it will come from and the seconds its warning has left.
 	var pending := false
 	var left := 0.0
 
 
-## What to put on the edge this frame, soonest arrival first:
-## `[time_to_reach, distance, payload, world position, approach, logged name]`.
-var coming: Array = []
+## One badge as the edge draws it: what the run log reads (`EdgeBadges.Badge`) and what only the
+## model's sort and the drawing read, how long until it arrives, its row and where it points.
+class Drawn extends EdgeBadges.Badge:
+	var _arrives_in := 0.0
+	var _row: EventDef = null
+	var _points_at := Vector2.ZERO
+
+	func _init(logged_name_: String, distance_: float, approach_: float, arrives_in_: float,
+			row_: EventDef, points_at_: Vector2) -> void:
+		super(logged_name_, distance_, approach_)
+		_arrives_in = arrives_in_
+		_row = row_
+		_points_at = points_at_
+
+	## Seconds until it reaches her at its approach; the order the badges are sorted in.
+	func arrives_in() -> float:
+		return _arrives_in
+
+	## The row it announces, whose picture and colour the edge draws.
+	func row() -> EventDef:
+		return _row
+
+	## The world point it points at.
+	func points_at() -> Vector2:
+		return _points_at
+
+## What to put on the edge this frame, soonest arrival first.
+var _coming: Array[Drawn] = []
 ## Per live subject: where it was last frame (`was`), its smoothed approach speed (`approach`),
 ## whether its badge is up (`up`), whether it has been in sight (`seen`), whether its charge has been
 ## met (`charged`), and the generation it was last touched on (`generation`). Keyed by `Subject.key` and mutated in
@@ -104,7 +129,8 @@ static func _announces(approach: float, gap: float) -> bool:
 	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
 
 ## One frame. `here` is where she stands; `sees(point, margin_px)` is whether a world point is in
-## sight with `margin_px` screen px past the edge counted as in sight. Replaces `coming`.
+## sight with `margin_px` screen px past the edge counted as in sight. Takes down last frame's
+## badges and puts up this frame's.
 ##
 ## **Two paths, and only the first is the design.** `_announce_the_warnings()` is the end state: a
 ## warning is put up before its danger is placed, the badge points at where it will come from, and
@@ -113,12 +139,12 @@ static func _announces(approach: float, gap: float) -> bool:
 ## reads) badges dangers that are already in the world; the stairwell's masked man and the army truck
 ## still need it, and it goes, as a deletion, in the follow-up that places those two after their badge.
 func step(delta: float, here: Vector2, subjects: Array, sees: Callable) -> void:
-	coming.clear()
+	_coming.clear()
 	if delta <= 0.0:
 		return
 	_measure_dangers_in_the_world(delta, here, subjects, sees)
 	_announce_the_warnings(here, subjects)
-	coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	_coming.sort_custom(func(a: Drawn, b: Drawn) -> bool: return a.arrives_in() < b.arrives_in())
 
 ## A warning with nothing in the world yet is announced for the whole of its warning, on screen or
 ## off: it points at where the thing will come from, and there is nothing there to see yet. Sorted
@@ -127,8 +153,8 @@ func _announce_the_warnings(here: Vector2, subjects: Array) -> void:
 	for subject: Subject in subjects:
 		if not subject.pending or not subject.announces:
 			continue
-		coming.append([maxf(subject.left, 0.0), subject.position.distance_to(here), subject.payload,
-				subject.position, subject.approach_speed, subject.logged_name])
+		_coming.append(Drawn.new(subject.logged_name, subject.position.distance_to(here),
+				subject.approach_speed, maxf(subject.left, 0.0), subject.payload, subject.position))
 
 ## The in-the-world path: see `step()`.
 func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array,
@@ -198,29 +224,26 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable) -> 
 	if state["up"]:
 		# Sorted by *when it arrives* rather than by how near it is: the soonest arrival comes first
 		# (and is drawn last, on top where badges overlap), which a slow thing standing closer is not.
-		coming.append([gap / maxf(approach, 1.0), distance, subject.payload, at, approach,
-				subject.logged_name])
+		_coming.append(Drawn.new(subject.logged_name, distance, approach, gap / maxf(approach, 1.0),
+				subject.payload, at))
 
 ## Whether any badge is up now.
 func has_badges() -> bool:
-	return not coming.is_empty()
+	return not _coming.is_empty()
 
 ## Takes every badge down, ahead of the frame's new measurement.
 func clear_badges() -> void:
-	coming.clear()
+	_coming.clear()
 
-## What is on the edge right now, nearest arrival first, one entry per badge: `{id, distance,
-## approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
-## is nothing between `coming` and this list: every badge is in it, and `DangerEdge` draws exactly it.
+## What is on the edge right now, nearest arrival first, one entry per badge: the same objects
+## `drawn()` answers, read as the run log reads them.
 ## Overrides EdgeBadges.announcing.
-func announcing() -> Array[Dictionary]:
-	var badges: Array[Dictionary] = []
-	for i in coming.size():
-		badges.append({
-			"id": str(coming[i][5]),
-			"distance": float(coming[i][1]),
-			"approach": float(coming[i][4]),
-			"def": coming[i][2],
-			"position": coming[i][3],
-		})
+func announcing() -> Array[EdgeBadges.Badge]:
+	var badges: Array[EdgeBadges.Badge] = []
+	badges.assign(_coming)
 	return badges
+
+## What the edge draws right now, nearest arrival first: every badge up, with its row and where it
+## points.
+func drawn() -> Array[Drawn]:
+	return _coming
