@@ -14,7 +14,7 @@ and gained nothing. **Rejected:** keeping the slots public and filled from `setu
 read; a setter per slot (minty-dolphin #852).
 
 **Two members deleted.** `EventDef.effect()`, which nothing called; with it the enum it answered,
-`GameEnums.BlockerEffect`, has no reader, which `dead-code-sweep.md` now lists. `EventHold.stop()`, a hold ended by
+`GameEnums.BlockerEffect`, which had no other reader. `EventHold.stop()`, a hold ended by
 hand for a rig no rig was: its one caller, `test_prediction_reuse.gd`, reaches a hold that is over the way the game
 does, by saving the event with no time left and restoring it.
 

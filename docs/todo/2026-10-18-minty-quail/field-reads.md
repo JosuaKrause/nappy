@@ -119,7 +119,10 @@ Left, each its own design question:
   that suite reads through a method the game also calls.
 - **The lines other work touches** are converted with that work:
   - `src/events/`, what the placement rewrite left (closed, polite-tapir's record
-    polite-tapir-feathery-kestrel) going with the events' own conversion;
+    polite-tapir-feathery-kestrel) going with the events' own conversion; what that conversion
+    (row 4b of `event-interface.md`) left are the folder's own groups `[ChargeRecord]`,
+    `[EventBehaviour]`, `[EventFlock]` and `[Warning]`, read by other files of `src/events/`, which
+    go with row 5 of the same file, when each behaviour's suite is handed its own fakes;
   - `main.gd`'s reads of the city's own fields (its map, its navigator and the eight settings it
     hands the city), which go with the city scene's pass (`city-hand-ins.md`); `day_director.gd`'s
     reads of other classes' fields wait for those classes' passes;
