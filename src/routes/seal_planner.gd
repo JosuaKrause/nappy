@@ -42,7 +42,7 @@ extends RefCounted
 ## (`EventSpawner._mark_the_block`) because *that* barricade is the aftermath of something that
 ## happened. A seal is a fact about *today's* tree — tomorrow's may run straight down this same
 ## street — so a seal that scarred the city would seal it for the rest of the run, which is a
-## closure no `RouteTree` decided on. The same duplication also disables `EventInstance`'s
+## closure no `RouteTree` decided on. The same copy also disables `EventInstance`'s
 ## pavement auto-centring for the hard band, which places its own bodies precisely; see
 ## `_hard_positions`.
 ##

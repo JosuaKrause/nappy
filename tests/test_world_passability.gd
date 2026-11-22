@@ -602,7 +602,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 static func _a_start_for(map: CityMap, def: EventDef, mover: Mover, anchor: Vector2) -> Vector2:
 	var best := Vector2.INF
 	var best_distance := INF
-	for type in def.placement:
+	for type in def.ground_kinds():
 		for tile in map.tiles_of_type(type as GameEnums.TileType):
 			var at := map.tile_to_world(tile)
 			var distance := at.distance_squared_to(anchor)

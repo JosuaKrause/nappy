@@ -204,7 +204,8 @@ func _test_an_alley_row_is_refused_an_alley_the_routes_run_down(t: TestRunner) -
 		t.check(not offers.has(required) and offers.has(a_turning_away),
 				"a row that stands only in alleys is refused an alley the routes run down (role %d)"
 				% role)
-	var anywhere := _row(GameEnums.TileType.ALLEY)
-	anywhere.placement.append(GameEnums.TileType.SIDEWALK)
+	var elsewhere_too := EventDraft.new("")
+	elsewhere_too.ground([GameEnums.TileType.ALLEY, GameEnums.TileType.SIDEWALK] as Array[int])
+	var anywhere := elsewhere_too.build()
 	t.check(ground.offers_for_role(anywhere, GameEnums.BlockerRole.FRICTION).has(required),
 			"and a row that stands elsewhere too is offered it")
