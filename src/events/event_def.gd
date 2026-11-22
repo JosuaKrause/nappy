@@ -441,8 +441,9 @@ func keeps_to_the_carriageway() -> bool:
 ## `TOWARD_PLAYER`, down her sidewalk on foot (the dog walker) or down the carriageway beside her
 ## (the patrol), with no badge (`telegraphs_its_coming()` false: a row the director creates at once
 ## just out of sight is met as it comes, which the rule gives both anyway, each slower than a walk
-## and neither lethal, PLAYTEST-145 18-23); one warned of first is its `as_warned_first()` copy, still `MAP`, since its
-## 300px field is wider than a `TOWARD_PLAYER` row may be (the convoy). Validated as it is made.
+## and neither lethal, PLAYTEST-145 18-23); one warned of first is its `as_warned_first()` copy,
+## still `MAP`, since its 300px field is wider than a `TOWARD_PLAYER` row may be (the convoy).
+## Validated as it is made.
 ## Itself for a row the director does not send.
 func as_sent_ahead() -> EventDef:
 	if _sent_ahead == null:
