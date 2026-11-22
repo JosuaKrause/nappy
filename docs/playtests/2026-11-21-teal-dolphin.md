@@ -22,7 +22,7 @@ Three notes from the orchestrating session's chat, filed by the orchestrating se
 
 1. **Context** (the assistant's):
 
-   Said to the orchestrating session on 2026-11-22 while it was reading the live state at session start, after the player's "orchestrator, continue". The second quote followed a few minutes later, after the player asked whether questions about Fable were still on the board. "Make a note" is read under CLAUDE.md as a change written into the repository (the board, inbox and orchestrating skills), not an assistant's memory.
+   Said to the orchestrating session on the evening of 2026-11-21 local time (2026-11-22 UTC) while it was reading the live state at session start, after the player's "orchestrator, continue". The second quote followed a few minutes later, after the player asked whether questions about Fable were still on the board. "Make a note" is read under CLAUDE.md as a change written into the repository (the board, inbox and orchestrating skills), not an assistant's memory.
 
 2. **The note.**
 
@@ -34,7 +34,7 @@ Three notes from the orchestrating session's chat, filed by the orchestrating se
 
 4. **Context** (the assistant's):
 
-   Said a few minutes after the quotes above, while the orchestrating session was starting its first agents of 2026-11-22.
+   Said a few minutes after the quotes above, while the orchestrating session was starting its first agents of that evening.
 
 5. **The player's words.**
 
