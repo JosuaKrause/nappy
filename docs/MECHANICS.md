@@ -1088,7 +1088,7 @@ accident to be tuned away — an event that merely emits is a *place*, and the a
 a route.
 
 The exception is the one kind of thing a route cannot answer: something that **follows**.
-`EventDef.pursues()` marks it, and three properties make walking and running give *opposite
+Such a row says so (`EventDef.pursues()`), and three properties make walking and running give *opposite
 outcomes* rather than the same outcome at two prices:
 
 | | |
@@ -1225,7 +1225,7 @@ own telegraph, which a player has watched and called nonsense. See `docs/playtes
 ### A pursuer can be a place before it is a moment
 
 `charging_dog` is a **moment**: the director sites it in front of her and the chase is the whole of
-it. `EventDef.waits_for_her()` is the other shape — a thing that is **somewhere**, that you can see
+it. A row that waits for her (`EventDef.waits_for_her()`) is the other shape — a thing that is **somewhere**, that you can see
 and price and route around, and that becomes a chase if you do not. Three states rather than two:
 
 | | it emits | it can kill | it moves |

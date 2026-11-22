@@ -185,11 +185,11 @@ func _cold_roadblock() -> EventDef:
 
 ## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
 ## `EventDef.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
-## at or above it its guards leave the post: `EventDef.pursues()` and `ends_the_day()` turn on
-## for the same body, and neither when it may appear nor its population nor its intensity moves,
-## since heat sets what a row does and never when it is allowed to. The pursuit numbers
-## themselves are left to `validate()` and to the generic loop's ordering check, for the reason
-## given on the raid above.
+## at or above it its guards leave the post: the row pursues (`EventDef.pursues()`) and
+## `ends_the_day()` holds for the same body, and neither when it may appear nor its population
+## nor its intensity moves, since heat sets what a row does and never when it is allowed to. The
+## pursuit numbers themselves are left to `validate()` and to the generic loop's ordering check,
+## for the reason given on the raid above.
 func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	var cold := _cold_roadblock()
 	t.check(cold.hunts_for_her(),
@@ -645,9 +645,9 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 ## forgotten why it was coming. Checked against `chase_age()` as well as `is_waiting()`, so the
 ## fix is that the chase's own clock picks up where it left off, not only that the flag agrees —
 ## a restored notice that disagreed with the restored `age` would still read `not is_waiting()`
-## while timing the telegraph and the duration from the wrong moment. `alley_robbery` has had
-## the same `EventDef.waits_for_her()` shape since the mechanic was built, just never in a
-## position to be streamed out mid-chase, since a stationary pursuer's field never moves far
+## while timing the telegraph and the duration from the wrong moment. `alley_robbery` has waited
+## for her (`EventDef.waits_for_her()`) the same way since the mechanic was built, just never in
+## a position to be streamed out mid-chase, since a stationary pursuer's field never moves far
 ## enough from where the day planted it — see `_test_every_waiting_row_resumes_the_notice` for
 ## the same restore checked against that row rather than only the patrol that surfaced the gap.
 func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
@@ -729,7 +729,7 @@ func _count_patrols(planned: Array[EventPlan]) -> int:
 	return count
 
 ## `restore()`'s restored notice is not particular to the heated patrol that surfaced the gap —
-## `alley_robbery` carries the identical `EventDef.waits_for_her()` shape cold, with no heat
+## `alley_robbery` waits for her the same way, cold (`EventDef.waits_for_her()`), with no heat
 ## level needed to reach it, and this is the same restore checked against that row instead.
 func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")

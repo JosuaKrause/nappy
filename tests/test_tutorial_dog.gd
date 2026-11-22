@@ -162,8 +162,8 @@ func _test_the_notice_switches_after_the_teaching_day(t: TestRunner) -> void:
 
 ## The waiting itself, on the copy `EventDef.for_day()` hands a `MAP` placement past the
 ## switch. `EventInstance` never asks a day of anybody — this is where the day answer actually has
-## to arrive: a different `EventDef`, `EventDef.waits_for_her()` already set, never a mutation
-## of the one day 3's own dog reads.
+## to arrive: a different `EventDef` that already waits for her (`EventDef.waits_for_her()`),
+## never a mutation of the one day 3's own dog reads.
 func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("charging_dog")
 	if not cold:

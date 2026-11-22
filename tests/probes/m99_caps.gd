@@ -6,14 +6,15 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/m99_caps.gd
 ##
-## Both rows carry `EventDef.most_in_a_day()` (`cyclist` 14, `loose_dog` 24) but arrive through
-## `EventDirector`'s single FIFO queue at `EventDirector.AHEAD_INTERVAL` (11-26s) pacing rather than
-## being map-placed, sharing that queue with every other `AHEAD_OF_PLAYER`/`TOWARD_PLAYER` row a
-## day budgets — `cat_dash`, `charging_dog`, and each other. `cyclist`'s own catalogue comment
-## already states the claim this measures: *"how many of fourteen she could ever actually meet is
-## bounded by the day's own length long before the cap is."* This counts how many the queue
-## actually hands out over a whole day of continuous walking, across every act, and holds it next
-## to the two numbers on the row.
+## Both rows cap how many are out in a day (`EventDef.most_in_a_day()`: `cyclist` 14,
+## `loose_dog` 24) but arrive through `EventDirector`'s single FIFO queue at
+## `EventDirector.AHEAD_INTERVAL` (11-26s) pacing rather than being map-placed, sharing that
+## queue with every other `AHEAD_OF_PLAYER`/`TOWARD_PLAYER` row a day budgets — `cat_dash`,
+## `charging_dog`, and each other. `cyclist`'s own catalogue comment already states the claim
+## this measures: *"how many of fourteen she could ever actually meet is bounded by the day's
+## own length long before the cap is."* This counts how many the queue actually hands out over
+## a whole day of continuous walking, across every act, and holds it next to the two numbers
+## on the row.
 ##
 ## Walked the same way `tests/test_events.gd`'s `_test_a_rig_meets_the_three_things_that_arrive`
 ## drives `EventDirector` — continuous motion on a real street

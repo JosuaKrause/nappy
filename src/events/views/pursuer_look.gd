@@ -19,7 +19,7 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ## her, through his notice; leaning out over a forward leg once he lunges.
 ##
 ## The same rule as the cat above, at the one row where reading it wrong ends the run: the postures
-## are the states `EventDef.waits_for_her()` invented, and `is_waiting()` and
+## are the states waiting for her (`EventDef.waits_for_her()`) invented, and `is_waiting()` and
 ## `is_telegraphing()` are exactly the lines between them. What the player has to be able to see
 ## from an alley mouth is not "there is a man there" but *which of the three men that is* — so
 ## the change of posture happens on the frame he notices her, and again on the frame he lunges
@@ -100,8 +100,8 @@ func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 ## The guard-drawn pursuer's picture for this frame. **The alert, hand raised, is every notice one
 ## of them gives**: the guardsman a vehicle lets out, standing for his notice
 ## (`is_standing_for_its_notice()`, read off `PursuitSpec.stands_for_its_notice()`), and the masked man standing at
-## the foot of the shaft through his notice (`is_telegraphing()` after his wait, which his row's
-## `EventDef.waits_for_her()` gives him and no other guard-drawn row has). *(Inbox #764 in
+## the foot of the shaft through his notice (`is_telegraphing()` after his wait: his row waits
+## for her, `EventDef.waits_for_her()`, as no other guard-drawn row does). *(Inbox #764 in
 ## minty-lemur, the player: an event that does not spawn already charging always needs a
 ## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging
 ## and never give one, nor does the door guard, whose warning was the hut's or the post's

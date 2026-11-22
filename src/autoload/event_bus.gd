@@ -96,10 +96,10 @@ signal hard_fail_triggered(reason: String)
 ## `id()`.
 ## Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal event_sighted(id: String)
-## `EventManager.light_what_she_never_met()`'s own moment an `EventDef.is_sited_from_her_walk()`
-## row (only day 3's fire today) is lit off her path at dusk on a day she won without meeting
-## it. `id` is the lit row's own `id()`. Listen-only, for `VisitCounter` — see
-## docs/TELEMETRY.md, "The page counts visits".
+## `EventManager.light_what_she_never_met()`'s own moment a row sited from her walk
+## (`EventDef.is_sited_from_her_walk()`, only day 3's fire today) is lit off her path at dusk on
+## a day she won without meeting it. `id` is the lit row's own `id()`. Listen-only, for
+## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal event_lit_unmet(id: String)
 # **A charge, counted on its own whatever the day does** *(inbox #764 in minty-lemur, the player: "Ending a day and
 # a charging counter are not the same thing"; "Charging is independent of an ended day")*. Each

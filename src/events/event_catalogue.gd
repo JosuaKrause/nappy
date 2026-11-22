@@ -557,13 +557,14 @@ static func _cat_dash() -> EventDef:
 ## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
 ## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px), so a row that started
 ## telegraphing on arrival would dash and finish off screen before she was anywhere near. The row
-## sets `EventDef.notice_within()` (150px) without `EventDef.pursues()`: `EventNoticeRun` holds it
-## `is_waiting()`, emitting nothing above the ordinary field and not yet on the clock, until she is
-## within 150px, and only then does the telegraph start and the path run. 150px is inside
-## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she faces) and past the
-## field's own outer radius (60px), so the telegraph is already on screen by the time she could
-## feel it. `Tuning.validate_event()` is stated over the row's telegraph (`telegraphs_for()`) against the field's geometry,
-## not over when the clock starts, so it is unaffected.
+## has a `EventDef.notice_within()` of 150px and does not pursue (`EventDef.pursues()`):
+## `EventNoticeRun` holds it `is_waiting()`, emitting nothing above the ordinary field and not
+## yet on the clock, until she is within 150px, and only then does the telegraph start and the
+## path run. 150px is inside `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds
+## whichever way she faces) and past the field's own outer radius (60px), so the telegraph is
+## already on screen by the time she could feel it. `Tuning.validate_event()` is stated over the
+## row's telegraph (`telegraphs_for()`) against the field's geometry, not over when the clock
+## starts, so it is unaffected.
 ##
 ## **The dash crosses the alley's own short axis by construction.** `EventInstance` reads
 ## `map.alley_lots()` for the rect this instance landed in and lays its two-point path across the
@@ -1001,9 +1002,9 @@ static func _burnt_shell() -> EventDef:
 ##
 ## `TOWARD_PLAYER`, sited by `EventDirector` on her own line when she gets close, since a dog sited
 ## before the day knows where she walks is a dog she may never pass, and the whole content of the
-## row is meeting it. It is not `EventDef.pursues()`: it does not adjust to her or stop at a
-## stand-off; it is a straight line down the sidewalk that she answers by crossing the street or
-## turning.
+## row is meeting it. It is not a pursuer (`EventDef.pursues()`): it does not adjust to her or
+## stop at a stand-off; it is a straight line down the sidewalk that she answers by crossing the
+## street or turning.
 ##
 ## Not lethal, deliberately. Act I gets exactly two things that end the day and this is not one of
 ## them: a loose dog is chaos, and the day it ruins is ruined through the meter, where most of the
@@ -1153,10 +1154,10 @@ static func _leaf_blower() -> EventDef:
 ## street is the thing she is deciding about.
 ##
 ## **The telegraph contract is then paid in geometry, as the robber's is.**
-## `EventDef.waits_for_her()` is the wait: the birds stand there unclocked and quiet, and the
-## clock starts when she comes inside the trigger rather than at dawn, four streets away. It is
-## the shape `alley_mouse` and a `MAP`-placed `charging_dog` use, and it keeps "it must not be
-## over before she arrives" true without siting the row on top of her.
+## Its waiting for her (`EventDef.waits_for_her()`) is the wait: the birds stand there unclocked
+## and quiet, and the clock starts when she comes inside the trigger rather than at dawn, four
+## streets away. It is the shape `alley_mouse` and a `MAP`-placed `charging_dog` use, and it
+## keeps "it must not be over before she arrives" true without siting the row on top of her.
 ##
 ## **The birds go up when she reaches them, which a clock cannot know.** They are on the ground for
 ## the whole telegraph by construction, so under the clock alone a walk straight in put them up
@@ -2684,12 +2685,12 @@ static func _impact_crater() -> EventDef:
 ## A masked man running up the stairwell: masked pursuers run up the stairs and can be avoided by
 ## going into a corridor and letting them pass.
 ##
-## **Mobile, not `EventDef.pursues()`, and that is the whole counterplay.** A pursuer steers at her,
-## so the only answer to one is speed; this runs a line (the shaft, bottom landing to top) and the
-## answer to it is *not being on that line*, which in a building whose stairwell doors are a fade
-## and a teleport means stepping through the nearest one and letting him go past. It is
-## `loose_dog`'s contract indoors: a thing coming down the corridor you are in, answered by leaving
-## the corridor.
+## **Mobile, not a pursuer (`EventDef.pursues()`), and that is the whole counterplay.** A
+## pursuer steers at her, so the only answer to one is speed; this runs a line (the shaft,
+## bottom landing to top) and the answer to it is *not being on that line*, which in a building
+## whose stairwell doors are a fade and a teleport means stepping through the nearest one and
+## letting him go past. It is `loose_dog`'s contract indoors: a thing coming down the corridor
+## you are in, answered by leaving the corridor.
 ##
 ## **Faster than a walk, so it cannot be out-walked**, which makes stepping aside the answer rather
 ## than a preference, and makes the telegraph contract ask for a long one: at 130px/s it prices the
@@ -2710,11 +2711,11 @@ static func _masked_pursuer() -> EventDef:
 	row.route(RouteSpec.at(Tuning.HEAT_HUNTS_SPEED))
 	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
 	# moment the section begins and being gone before she has come down a floor.
-	# `EventDef.waits_for_her()` without `EventDef.pursues()` stands unclocked until she is in
-	# range and then runs its ordinary path, which is `alley_mouse`'s shape at a stairwell's
-	# scale. 900px is the shaft's own height (three floors of eight tiles is 768px) with room
-	# over it, so he notices her the moment she is anywhere in the same stairwell and never from
-	# the hallway two parts away.
+	# A row that waits for her but does not pursue (`EventDef.waits_for_her()`,
+	# `EventDef.pursues()`) stands unclocked until she is in range and then runs its ordinary
+	# path, which is `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own
+	# height (three floors of eight tiles is 768px) with room over it, so he notices her the
+	# moment she is anywhere in the same stairwell and never from the hallway two parts away.
 	row.notice(NoticeSpec.at(900.0)
 			# And the warning is spent standing, not approaching: a man already running when he first
 			# becomes visible has given no notice at all.

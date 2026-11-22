@@ -1,7 +1,7 @@
 class_name EventNoticeRun
 extends EventBehaviour
 ## **A row that waits for her and then runs its own event, without chasing her**: the alley mouse,
-## the pigeon flock and the masked man on the escape's stairs (`EventDef.waits_for_her()` with no
+## the pigeon flock and the masked man on the escape's stairs (`EventDef.waits_for_her()`, not
 ## `EventDef.pursues()`). It stands unclocked until she is within its notice, so a `MAP` row placed
 ## at dawn well outside her view does not spend its telegraph off screen; then its telegraph runs,
 ## and its route after it. A flock goes up early once she is among the birds; the masked man runs
