@@ -227,6 +227,9 @@ src/
 	  aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
 	  vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
 	  abduction_spec.gd     the unmarked van's take of a bystander
+	  lethal_spec.gd        whether contact ends her day and the reach it is measured from
+	  hold_spec.gd          whether a row holds her when she comes to it: its seconds, its reach, whether it holds again
+	  warning_spec.gd       what a row does before it acts: its telegraph, whether it holds still, whether its coming is announced, whether it is warned first
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's

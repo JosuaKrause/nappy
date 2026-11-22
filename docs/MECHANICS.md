@@ -199,7 +199,7 @@ vocabulary," for the whole cue and its colour and transparency curves.
 
 `chatting_mother` is the one row in the catalogue that takes the player's own controls away rather
 than costing a meter: coming within `EventDef.detain_distance()` of an instance that has not yet
-chatted locks her movement input for `detain_seconds` (5s) — the run key does nothing, and she
+chatted locks her movement input for `detains_for()` (5s) — the run key does nothing, and she
 keeps no speed of her own: velocity runs out through
 the ordinary friction rather than stopping her dead, the same as letting go of every key would.
 
@@ -267,11 +267,11 @@ lift it I expect it to remain active".)* The release zeroes her velocity. A key,
 joystick drag still down at the release steer her from that frame on; one let go during the hold is
 gone, so she stands still until the player chooses again. A tap's or a drag's locked heading whose
 finger is already up counts as let go and is dropped (`TouchControls.stand_still_after_hold()`). It
-is one mechanism for every `redetains` hold: the street doors' gatehouses and the alley guard.
+is one mechanism for every `detains_again()` hold: the street doors' gatehouses and the alley guard.
 `tests/test_checkpoints.gd` holds both halves for a key, a tap's finger and a joystick drag's.
 
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
-a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
+a `detains_again()` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`. Every other event field
 and the whole crowd are off: a set of sources that holds her alone is the whole of what
 `WorldContext.excitement_sources_at()` answers (`ExcitementSources.all_at()`), and the events' set
@@ -307,7 +307,7 @@ walker has no about-face to make once it is standing in a queue.
 
 It is the crowd's own state throughout — `Crowd._hold_walkers_at_doors()`, `WalkerDoorHold` and
 `WalkerStrategy`'s four `DoorState`s, keyed on the gatehouse body's ground point from the region plan. It
-reads no catalogue row: not `detain_radius`, which is the reach *she* is caught at, and none of the
+reads no catalogue row: not `detain_distance()`, which is the reach *she* is caught at, and none of the
 detention above, which teleports her, hides her, moves the camera and charges her meter.
 
 **The camera eases onto the door instead of following her**, and back again once she is released —
@@ -585,8 +585,7 @@ check (`MoveProposal`).
 
 ### A car is lethal
 
-Stepping into the carriageway in front of a moving car ends the day (`hard_fail`
-`car_strike`). The strike volume is a **box** — 26px along the car, 14px either side of its
+Stepping into the carriageway in front of a moving car ends the day (`car_strike`). The strike volume is a **box** — 26px along the car, 14px either side of its
 axis — from the car's centre forward, so it is the front half of the car and its sides; behind a
 car that drives away from her she is safe. A box rather than a radius, because a car is two tiles
 long and one wide and a radius that covered its length would kill people standing beside it. It
@@ -1095,12 +1094,12 @@ outcomes* rather than the same outcome at two prices:
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement()`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
+| Lethal | it ends the day (`lethal()`), so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement()`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does, and for a charger that waits for her only once he has charged, never while he warns — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
 telegraphs. One sent at her from off screen is warned of first like everything that arrives from off
-screen, its badge alone its own half second (`EventDef.offscreen_notice`): the day-3 dog is then
+screen, its badge alone its own half second (`EventDef.warned_for()`): the day-3 dog is then
 placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
 fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
 and guard arrive already chasing (`PursuitSpec.Start.ARRIVES_CHASING`: "the proximity rule is only for
@@ -1131,7 +1130,7 @@ line from it to her crosses any ground a figure on foot may not enter (`CityMap.
 every tile the line enters, so within reach across a building's corner, a barrier or a café is not
 a catch. The line sees out of a band the pursuer stands in, and the tile she stands on never hides
 her. The reach itself is unchanged, and only
-a pursuer asks — every other `hard_fail` row's catch is still the straight-line distance.
+a pursuer asks — every other lethal row's catch is still the straight-line distance.
 
 **Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a
 clear line"; mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs a
@@ -1262,7 +1261,7 @@ lunge of a pursuer that comes for her through its telegraph (the day-3 dog) fire
 its stand-off rather than when its clock runs out, and a flock's flush fires when she reaches the birds — `flock_spread` plus her own body — for the same
 reason: the birds are on the ground for the whole telegraph, so its length is the wait between her
 walking into them and them reacting, and a fixed wait puts them up behind whoever walked in.
-`telegraph_time` is then the backstop for a flock she came near and never reached, and the
+`telegraphs_for()` is then the backstop for a flock she came near and never reached, and the
 geometry `Tuning.validate_event()` checks is untouched either way.
 
 `validate_pursuit()` gained two clauses for the trigger and a third that was found by measuring
@@ -1359,7 +1358,7 @@ drawn from (`docs/EVENTS.md`, "What she meets on her route is drawn from a marbl
 
 ## Telegraphing
 
-Every event has a `telegraph_time` (default `2.5 s`, longer for big events) during which:
+Every event has a `telegraphs_for()` (default `2.5 s`, longer for big events) during which:
 
 - The event is **visible** (sprite, audio cue).
 - It emits at most `TELEGRAPH_INTENSITY_FRACTION` (default `0.15`) of its full intensity.
@@ -1373,10 +1372,10 @@ The design contract: *from the moment an event becomes visible, the player must 
 time to walk out of its outer radius at normal walking speed.* Event authoring must satisfy
 
 ```
-telegraph_time × walk_speed >= escape_distance × margin
+telegraphs_for() × walk_speed >= escape_distance × margin
 ```
 
-where `margin` is 2 for `hard_fail` events, and
+where `margin` is 2 for lethal events, and
 
 ```
 escape_distance = outer − inner     for anything at or below walking pace

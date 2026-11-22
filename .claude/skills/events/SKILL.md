@@ -33,7 +33,7 @@ area each, to be read whole before the first edit there:
 | `EventDef.vehicle`, `EventCarDriving`, the patrol car, the fire engine | `references/event-cars.md` |
 | `EventDef.pursuit`, `EventDef.notice`, `PursuitSpec`, `EventPursuit`, a charger, robber or guard | `references/pursuits.md` |
 | `EventDef.flock_size`, `EventFlock`, a look that moves, a partly animated picture | `references/flocks-and-moving-pictures.md` |
-| a new row, `spawn_mode`, `on_her_way`, `hard_fail`, the role, `pavement_side` | `references/fields.md` |
+| a new row, `spawn_mode`, `on_her_way`, `lethal()`, the role, `pavement_side` | `references/fields.md` |
 | `EventScheduler.build_day()`, `UnitDraw`, `EventStreaming`, `ExcitementSource`, anything that emits | `references/plan-and-excitement.md` |
 
 ## Adding a row
@@ -57,7 +57,7 @@ changes. In one line each:
 - **`spawn_mode` is a decision**: `MAP` unless the whole content is the moment it happens to her
   (`AHEAD_OF_PLAYER`) or traffic on her line she answers with a route (`TOWARD_PLAYER`). Neither
   director-sited mode may obstruct.
-- **`on_her_way` and `hard_fail` are decisions**; `hard_fail` decides where the thing goes as well
+- **`on_her_way` and `lethal()` are decisions**; a row that ends the day (`lethal().ends_the_day()`) decides where the thing goes as well
   as what it does.
 - **The role is not a decision.** `EventScheduler.role_for()` reads it off the def, and a row that
   wants another role needs a change there, not a new field.
@@ -97,7 +97,7 @@ lost day.
 
 **A thing telegraphs its coming only if it goes fast, comes toward her, and carries a heavy penalty
 — it can end the day or hit her hard** (PLAYTEST-145 18-23; olive-hedgehog #598). A thing that does
-not is **outside** the screen-edge badge and warning-first placement (`EventDef.telegraphs` is
+not is **outside** the screen-edge badge and warning-first placement (`EventDef.telegraphs_its_coming()` is
 false), and its in-world telegraph still satisfies the fairness contract. `docs/EVENTS.md`, "What
 telegraphs", has the rule row by row with each row's numbers. **Do not turn a row's telegraphing
 off to make a contract pass**: whether it telegraphs is the rule's question, not the contract's.
@@ -113,7 +113,7 @@ held to, what is created with its telegraph spent, and the two things that are n
 
 ## The contract is per event and the player experiences the sum
 
-**Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
+**Nothing else happens inside a lethal event's field.** A lethal event (`ends_the_day()`) keeps its whole
 outer radius clear of every other event at placement (`StreetInvalidation.room_around()`), and it
 is the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
 inherits this, not just the telegraph. **One case of it is held and the whole is not.**
@@ -132,7 +132,7 @@ experiences the sum".
 ## A lethal radius and a solid body are the same mechanism
 
 The player is stopped with her centre `obstructs_within() + PLAYER_BODY_RADIUS` from the centre of a
-thing, so a `hard_fail` event whose body reaches its own inner radius **can never fire at all** —
+thing, so a lethal event whose body reaches its own inner radius **can never fire at all** —
 which is not an unfair event, it is an event that has quietly been switched off, and that is worse.
 `EventDef.validate()` refuses the arrangement on load.
 
