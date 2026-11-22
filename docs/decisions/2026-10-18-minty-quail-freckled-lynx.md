@@ -22,5 +22,6 @@ moved; `m159_tick_sweep_events_cost.gd`'s chain hashes are equal, with the same 
 known fault of that probe's own copy of the frame step).
 
 **Open to overturn:** the design's forks; `up_to_tiles(n)` as the refinement beside the question `tiles()`; the
-factories' asserts; `speed()` answering 0 for a row that does not move; the test helper that builds a row differing in
-speed alone.
+factories' asserts; `speed()` answering 0 for a row that does not move; the two test helpers, one per suite, that build a
+row differing in speed alone. The row fingerprint probe prints a refinement (a method that returns its own class) as
+`REFINES` instead of calling it, since a route refinement asserts on a row that does not move.
