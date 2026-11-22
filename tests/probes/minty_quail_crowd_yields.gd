@@ -344,19 +344,19 @@ class Meeting extends RefCounted:
 		var for_walkers: Array[MoveProposal] = []
 		var for_cars: Array[MoveProposal] = []
 		for move in _city.map.moves.keeping_their_course():
-			if move.radius <= 0.0:
+			if move.body_radius() <= 0.0:
 				continue
-			var seen: Array = _seen.get(move, [move.to, SeparationPass.NEVER_MOVED])
+			var seen: Array = _seen.get(move, [move.steps_to(), SeparationPass.NEVER_MOVED])
 			var still: int = seen[1]
-			var step: float = move.to.distance_to(seen[0])
+			var step: float = move.steps_to().distance_to(seen[0])
 			if step > SeparationPass.PLACEMENT_STEP:
 				step = 0.0
 			if step > 0.0:
 				still = 0
 			elif still < SeparationPass.NEVER_MOVED:
 				still += 1
-			_seen[move] = [move.to, still]
-			if still <= SeparationPass.UNDER_WAY_TICKS or move.stood_round:
+			_seen[move] = [move.steps_to(), still]
+			if still <= SeparationPass.UNDER_WAY_TICKS or move.is_walked_round():
 				for_walkers.append(move)
 			if still != SeparationPass.NEVER_MOVED:
 				for_cars.append(move)
@@ -374,21 +374,22 @@ class Meeting extends RefCounted:
 			var standing := is_car and agent.speed() < 1.0
 			var for_a_figure := false
 			for figure in (for_cars if is_car else for_walkers):
-				var offset := figure.to - here
+				var offset := figure.steps_to() - here
 				if offset.length() > 200.0:
 					continue
 				var overlaps := false
 				if is_car:
-					var spine := clampf(offset.dot(forward), -agent.shape().half_length,
-							agent.shape().half_length)
+					var spine := clampf(offset.dot(forward), -agent.shape().spine_half_length(),
+							agent.shape().spine_half_length())
 					overlaps = (offset - forward * spine).length() \
-							< agent.shape().radius + figure.radius - 0.5
+							< agent.shape().rounding_radius() + figure.body_radius() - 0.5
 					var along := offset.dot(forward)
 					if standing and along > 0.0 and along < AHEAD \
-							and absf(offset.dot(side)) < agent.shape().radius + figure.radius + 4.0:
+							and absf(offset.dot(side)) < agent.shape().rounding_radius() + figure.body_radius() + 4.0:
 						for_a_figure = true
 				else:
-					overlaps = offset.length() < agent.shape().reach() + figure.radius - 0.5
+					overlaps = offset.length() \
+							< agent.shape().reach() + figure.body_radius() - 0.5
 				if not overlaps:
 					continue
 				var key := [agent, figure]

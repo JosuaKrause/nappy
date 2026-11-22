@@ -78,16 +78,16 @@ func _test_collision_shape_types_and_sizes(t: TestRunner) -> void:
 
 func _test_band_reduces_to_a_point_under_its_own_radius(t: TestRunner) -> void:
 	var wide := GroundShape.band(60.0)
-	t.check(wide.half_length > 0.0, "a band wider than BAND_RADIUS is a real segment")
+	t.check(wide.spine_half_length() > 0.0, "a band wider than BAND_RADIUS is a real segment")
 	t.check(is_equal_approx(wide.reach(), 60.0), "and its reach is exactly what it was asked for")
 
 	var narrow := GroundShape.band(20.0)
-	t.check(narrow.half_length <= 0.0,
+	t.check(narrow.spine_half_length() <= 0.0,
 			"a band at or under BAND_RADIUS has no spine to be a capsule about — a point instead")
 	t.check(is_equal_approx(narrow.reach(), 20.0), "still reaching exactly what it was asked for")
 
 	var boundary := GroundShape.band(GroundShape.BAND_RADIUS)
-	t.check(boundary.half_length <= 0.0,
+	t.check(boundary.spine_half_length() <= 0.0,
 			"exactly BAND_RADIUS is the boundary case and reduces to a point too")
 
 # ------------------------------------------------------- the catalogue invariant ---
@@ -219,7 +219,8 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var def := EventCatalogue.by_id("barricade")
-	t.check(def != null and def.ground_shape() != null and def.ground_shape().half_length > 0.0,
+	t.check(def != null and def.ground_shape() != null
+			and def.ground_shape().spine_half_length() > 0.0,
 			"'barricade' is a hard seal row whose shape is a real segment, not a point")
 	for horizontal: bool in [true, false]:
 		var segment := _real_segment(map, horizontal)
@@ -389,7 +390,7 @@ func _test_field_distance_of_a_stationary_point_is_unchanged(t: TestRunner) -> v
 func _test_field_distance_of_a_stationary_segment_is_a_capsule(t: TestRunner) -> void:
 	var shape := GroundShape.segment(40.0, 24.0)
 	var outer := 90.0
-	var along_point := Vector2(shape.half_length + outer, 0.0)
+	var along_point := Vector2(shape.spine_half_length() + outer, 0.0)
 	t.check(is_equal_approx(
 					shape.field_distance(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, along_point), outer),
 			"along the spine, the level set at 'outer' sits at half_length + outer from the centre")
@@ -480,7 +481,7 @@ func _test_approaching_costs_more_than_receding(t: TestRunner) -> void:
 func _test_no_emitting_segment_row_moves(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.ground_shape() == null or def.ground_shape().kind != GroundShape.Kind.SEGMENT or def.peak() <= 0.0:
+		if def.ground_shape() == null or not def.ground_shape().is_segment() or def.peak() <= 0.0:
 			continue
 		checked += 1
 		if not def.moves() and not def.pursues():

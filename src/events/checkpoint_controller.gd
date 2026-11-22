@@ -75,8 +75,9 @@ signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
 var _door_entry_side: Dictionary = {}
 
 ## Where she stood the last time `watch_the_door_lines()` looked, and how many outright moves
-## (`Stroller.outright_moves`) she had had by then — the frame-to-frame step the walk-under check
-## reads. `Vector2.INF` until the first look of a day, so a day's first frame compares nothing.
+## (`Stroller.times_put_down()`) she had had by then — the frame-to-frame step the walk-under
+## check reads. `Vector2.INF` until the first look of a day, so a day's first frame compares
+## nothing.
 var _last_seen_at := Vector2.INF
 var _last_outright_moves := 0
 ## The guard a walked crossing last set on her, or `null` — one at a time, see
@@ -400,9 +401,9 @@ func watch_the_door_lines(delta := 0.0) -> void:
 		return
 	var here := body.global_position
 	var was := _last_seen_at
-	var put_down := body.outright_moves != _last_outright_moves
+	var put_down := body.times_put_down() != _last_outright_moves
 	_last_seen_at = here
-	_last_outright_moves = body.outright_moves
+	_last_outright_moves = body.times_put_down()
 	if was == Vector2.INF or put_down:
 		return
 	var called_off := _run_the_crossing_warning(here, delta)

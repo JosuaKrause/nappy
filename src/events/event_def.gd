@@ -1535,12 +1535,12 @@ func as_warned_first() -> EventDef:
 ## outgrows its resting radius (`EventPlan.keeps_its_field_clear()`'s clearance, the streaming rect,
 ## `ExcitementSource.expected_gross_at()`'s early-out).
 ##
-## `half_length + heard_within()` for a segment its field is priced from (`datum()`); this does not
-## grow with speed, so for the patrol car it is the reach of its field standing. A row whose field
-## is priced from its centre (`FieldSpec.from_its_centre()`, the fire engine) is a point,
-## whatever its body. Otherwise `heard_within() * Field.scale(e)`, `e` from whichever speed the
-## row's own motion uses: its chase speed for a pursuer, its route's speed for an ordinary moving
-## row, zero (the plain disc) for anything standing still.
+## The spine half-length plus `heard_within()` for a segment its field is priced from
+## (`datum()`); this does not grow with speed, so for the patrol car it is the reach of its
+## field standing. A row whose field is priced from its centre (`FieldSpec.from_its_centre()`,
+## the fire engine) is a point, whatever its body. Otherwise `heard_within() * Field.scale(e)`,
+## `e` from whichever speed the row's own motion uses: its chase speed for a pursuer, its
+## route's speed for an ordinary moving row, zero (the plain disc) for anything standing still.
 ##
 ## **Not `is_lethal_at()`'s business.** Lethal is contact, not noise: a circle of `lethal_reach()`
 ## about the centre, with no eccentricity, and for a pursuer only where the straight line to her
@@ -1548,8 +1548,8 @@ func as_warned_first() -> EventDef:
 ## `EventInstance.is_lethal_at()`).
 func field_reach() -> float:
 	var priced_from := datum()
-	if priced_from != null and priced_from.kind == GroundShape.Kind.SEGMENT:
-		return priced_from.half_length + heard_within()
+	if priced_from != null and priced_from.is_segment():
+		return priced_from.spine_half_length() + heard_within()
 	var moving_speed := _pursuit.speed() if _pursuit else _route.speed()
 	return heard_within() * Field.scale(Field.eccentricity(moving_speed))
 
@@ -1705,7 +1705,7 @@ func bird_emission_at(at_distance: float, share: float, outer: float) -> float:
 ##
 ## **Not `field_reach()`**, which is the field's own extent for the planners; this is the looser
 ## figure nothing can be past and still charge her. The body's reach is asked on every call, since
-## its shape is a class with public fields a rig may change after an instance has read them.
+## it is one read of the row's shape, which is never changed once the row is built.
 func silent_beyond() -> float:
 	var body := ground_shape().reach() if ground_shape() != null else 0.0
 	return body + _field.silent_beyond()

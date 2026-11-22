@@ -130,7 +130,7 @@ func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, h
 	_clock += delta
 	_frame += 1
 	_hold_source = hold_source
-	var view := visible.view
+	var view := visible.camera_view()
 	for instance in instances:
 		# Most live instances are out of view, with nothing open and nothing new landed, and there is
 		# nothing to do for them: asked here, before the look at one, which is most of the cost.

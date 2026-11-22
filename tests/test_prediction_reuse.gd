@@ -109,15 +109,7 @@ func _copy_definition(original: EventDef) -> EventDef:
 func _draft_of(original: EventDef) -> EventDraft:
 	# Shallow, as every copy of a row is: the row's parts are values, shared by reference between a row
 	# and its copies.
-	var copy := original.redraft()
-	# The body is shared like every part, but a check changes its shape in place, so the copy stands
-	# as a shape of its own (every other thing the body says is kept).
-	if original.ground_shape():
-		var shape := GroundShape.new(original.ground_shape().half_length, original.ground_shape().radius)
-		shape.kind = original.ground_shape().kind
-		shape.half_extents = original.ground_shape().half_extents
-		copy.body(original.body().reshaped(shape))
-	return copy
+	return original.redraft()
 
 ## The rows that differ from `definition` in one setting of its field (but its core, which only a
 ## cored row has: `_test_a_cored_row()`), its speed (a row that moves) or its chase speed, by the setting's name, each
@@ -293,11 +285,10 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		var reshaped_row := reshaping.build()
 		_under_a_different_row(source, reshaped_row)
 		_event_parity(t, source, at, definition.id() + " shape replacement")
-		source.ground_shape().half_length = 63.0
-		_event_parity(t, source, at, definition.id() + " shape length mutation")
-		source.ground_shape().kind = GroundShape.Kind.RECT
-		source.ground_shape().half_extents = Vector2(52.0, 8.0)
-		_event_parity(t, source, at, definition.id() + " shape kind/extents mutation")
+		var boxed := _draft_of(definition)
+		boxed.body(own_row.body().reshaped(GroundShape.rect(Vector2(52.0, 8.0))))
+		_under_a_different_row(source, boxed.build())
+		_event_parity(t, source, at, definition.id() + " shape kind/extents")
 		source._body._spread_vertical = not source._body._spread_vertical
 		source._body._stationary_vehicle_side = not source._body._stationary_vehicle_side
 		_event_parity(t, source, at, definition.id() + " body axis")

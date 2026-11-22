@@ -63,7 +63,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 						SpawnSiting.seen_from(source.visible_view(), player.global_position),
 						EventFootprints.footprint_of(row), player.global_position, way)
 				var box := EventFootprints.footprint_of(row)
-				t.check(not source.visible_view().view.intersects(Rect2(arrival + box.position, box.size)),
+				t.check(not source.visible_view().camera_view().intersects(Rect2(arrival + box.position, box.size)),
 						"the same covered bearing places the whole arrival outside the camera")
 		controls.set_mode(ControlsMode.Mode.TAP)
 		source.visible_view().look_from(player.global_position)
@@ -102,7 +102,7 @@ static func _badge_sees(t: TestRunner, edge: DangerEdge, source: _Source, row: E
 func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t: TestRunner) -> void:
 	var tap := VisibleView.around(Vector2.ZERO, null)
 	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
-	var view := tap.view
+	var view := tap.camera_view()
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
 	var in_left := view.position + TouchCover.joystick().left_corner().get_center() * scale
 	var in_right := view.position + TouchCover.joystick().right_corner().get_center() * scale
@@ -124,9 +124,9 @@ func _test_the_margin_counts_past_the_edge_and_into_a_corner(t: TestRunner) -> v
 	var past := Vector2(0.0, -Tuning.VIEW_HALF_EXTENT.y - 10.0)
 	t.check(not joystick.sees(past) and joystick.sees(past, 20.0),
 			"10px past the top edge is out of sight, and in sight with a 20px margin")
-	var scale := joystick.view.size / ScreenOrientation.DESIGN_SIZE
-	var corner_top := joystick.view.position.y + TouchCover.joystick().left_corner().position.y * scale.y
-	var corner_x := joystick.view.position.x + TouchCover.joystick().left_corner().get_center().x * scale.x
+	var scale := joystick.camera_view().size / ScreenOrientation.DESIGN_SIZE
+	var corner_top := joystick.camera_view().position.y + TouchCover.joystick().left_corner().position.y * scale.y
+	var corner_x := joystick.camera_view().position.x + TouchCover.joystick().left_corner().get_center().x * scale.x
 	var just_in := Vector2(corner_x, corner_top + 10.0)
 	t.check(not joystick.sees(just_in) and joystick.sees(just_in, 20.0),
 			"10px into a covered corner is out of sight, and in sight with a 20px margin")
@@ -197,7 +197,7 @@ func _test_the_view_is_about_the_centre_it_is_handed_and_follows_the_scheme(t: T
 	var centre := Vector2(540.0, 280.0)
 	var view := VisibleView.new()
 	view.look_from(centre)
-	t.check(view.view.get_center().is_equal_approx(centre) and _sees_the_corners(view),
+	t.check(view.camera_view().get_center().is_equal_approx(centre) and _sees_the_corners(view),
 			"the view is about the centre it is handed, in the tap scheme with no controls")
 	# With the game's own controls handed in, the scheme they are in decides the corners.
 	t.add_child(body)
@@ -223,10 +223,11 @@ func _test_the_view_is_about_the_centre_it_is_handed_and_follows_the_scheme(t: T
 ## Whether `view` sees the middle of both corners the joystick's controls cover, laid onto its world
 ## view as `look()` lays them: true in the tap scheme, false in the joystick's.
 static func _sees_the_corners(view: VisibleView) -> bool:
-	var scale := view.view.size / ScreenOrientation.DESIGN_SIZE
+	var scale := view.camera_view().size / ScreenOrientation.DESIGN_SIZE
 	var cover := TouchCover.joystick()
-	return view.sees(view.view.position + cover.left_corner().get_center() * scale) \
-			and view.sees(view.view.position + cover.right_corner().get_center() * scale)
+	var origin := view.camera_view().position
+	return view.sees(origin + cover.left_corner().get_center() * scale) \
+			and view.sees(origin + cover.right_corner().get_center() * scale)
 
 ## *(PLAYTEST-71 era rotation, `ScreenOrientation`: a portrait touch window presents the game turned
 ## a quarter.)* The world goes through the camera, turned, and the controls through their layer,
@@ -301,7 +302,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 		bike.restore(EventSave.new(EventCatalogue.by_id("cyclist").telegraphs_for(), 0.0))
 		bike.arrive_from_its_warning()
 		source.live.append(bike)
-		source.visible_view().look(VisibleView.around(her, null).view, TouchCover.joystick() if joystick else null)
+		source.visible_view().look(VisibleView.around(her, null).camera_view(), TouchCover.joystick() if joystick else null)
 		var edge := DangerEdge.new()
 		edge.use_atlas(atlas)
 		edge.setup(source, player)

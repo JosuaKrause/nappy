@@ -11,20 +11,22 @@ extends RefCounted
 ##
 ## **The movers that keep their course** (a "keeper", a name of this class's, each held as a
 ## `Keeper`) are the moves on the list that do not give way (`MoveProposal.yields` false) and have a
-## body (`radius` above zero). Which of them a body gives way to depends on the body:
+## body (a body radius above zero). Which of them a body gives way to depends on the body:
 ##
 ## - **A walker gives way to a keeper under way**, one that moved within the last `UNDER_WAY_TICKS`
 ##   gatherings, whatever it is; **and to a standing one only if its move says a walker goes round
-##   it** (`MoveProposal.stood_round`): an object or a vehicle — a parked van, the patrol car at a
-##   light, the fire engine at its fire — and not a person or an animal, whom a walker may walk
-##   through while they stand: a street musician, a policeman standing for his notice, a dog waiting
-##   or crouched before its charge (inbox #905 in freckled-moose). A standing object with a solid body is walked round
-##   by its tiles as well (`CityMap.obstructed_tiles`).
+##   it** (`MoveProposal.is_walked_round()`): an object or a vehicle — a parked van, the
+##   patrol car at a light, the fire engine at its fire — and not a person or an animal, whom a
+##   walker may walk through while they stand: a street musician, a policeman standing for his
+##   notice, a dog waiting or crouched before its charge (inbox #905 in freckled-moose). A
+##   standing object with a solid body is walked round by its tiles as well
+##   (`CityMap.obstructed_tiles`).
 ## - **A crowd car gives way to a keeper that has moved since this pass first saw it**, moving or
 ##   standing, for as long as it stands, and never drives through one; **behind one that has parked**
-##   (`MoveProposal.parked`, the fire engine at its fire) it turns round as at a blocked street
-##   (inbox #909 in freckled-moose). What was placed and has never moved is left to the map: a solid body is a
-##   blockage the car brakes for and turns round at, and a door's boom has its own hold.
+##   (`MoveProposal.has_parked()`, the fire engine at its fire) it turns round as at a blocked
+##   street (inbox #909 in freckled-moose). What was placed and has never moved is left to the
+##   map: a solid body is a blockage the car brakes for and turns round at, and a door's boom
+##   has its own hold.
 ##
 ## **Read at each crowd body's own step, against the others' committed poses.** `gather()` takes the
 ## keepers off the list once a crowd tick, at its start, before any crowd body steps, and notes each
@@ -114,12 +116,12 @@ func has_keepers_for_cars() -> bool:
 func walker_keepers() -> Array[Keeper]:
 	return _for_walkers
 
-## **Where a walker's proposed step (`move.to`) stands clear of every keeper's body it gives way
-## to**: moved straight out from each keeper it would overlap to where the two bodies touch
-## (`move.body_radius()` plus the keeper's), the keepers taken in turn; `move.to` itself when it overlaps
-## none. A body exactly on a keeper's centre goes out along `side`. Positional, never a force, as every separation
-## between bodies here is (the **crowd-traffic** skill): a body a figure walks into is pushed out of
-## it on the tick it would be inside it.
+## **Where a walker's proposed step (`move.steps_to()`) stands clear of every keeper's body it
+## gives way to**: moved straight out from each keeper it would overlap to where the two bodies
+## touch (`move.body_radius()` plus the keeper's), the keepers taken in turn; `move.steps_to()`
+## itself when it overlaps none. A body exactly on a keeper's centre goes out along `side`.
+## Positional, never a force, as every separation between bodies here is (the **crowd-traffic**
+## skill): a body a figure walks into is pushed out of it on the tick it would be inside it.
 func clear_of_the_keepers(move: MoveProposal, side: Vector2) -> Vector2:
 	var at := move.steps_to()
 	for keeper in _for_walkers:
@@ -150,9 +152,9 @@ func clear_along(move: MoveProposal, axis: Vector2) -> Vector2:
 		at = keeper.at + across + axis * (needed if along >= 0.0 else -needed)
 	return at
 
-## **Whether a walker's proposed step (`move.to`) would overlap a keeper standing still**: an object
-## or a vehicle, the only standing keepers a walker gives way to. What tells a walker squeezed
-## against a wall to wait behind it rather than walk on through it.
+## **Whether a walker's proposed step (`move.steps_to()`) would overlap a keeper standing
+## still**: an object or a vehicle, the only standing keepers a walker gives way to. What tells
+## a walker squeezed against a wall to wait behind it rather than walk on through it.
 func overlaps_one_standing(move: MoveProposal) -> bool:
 	for keeper in _for_walkers:
 		if keeper.ticks_still <= UNDER_WAY_TICKS:
@@ -167,11 +169,11 @@ func overlaps_one_standing(move: MoveProposal) -> bool:
 ## within `lead_ticks` of its own travel comes into, the band `half_width` either side of the line,
 ## ahead of `at` and within `reach` of it; `INF` for none. Only keepers a car gives way to count
 ## (see the class doc), moving or standing; with `parked_only`, only those that have parked and
-## stood still since the last gathering (`MoveProposal.parked`), which a car turns round behind.
-## **Across the line a keeper's body counts for at most `widest`**:
-## a move's `radius` is the circle round its whole body, which for a car is its length, and a car
-## passing in the next lane is not in this one. What a crowd car brakes for, and turns round at
-## (`CarStrategy._give_way()`, `CarStrategy._distance_to_the_blockage()`).
+## stood still since the last gathering (`MoveProposal.has_parked()`), which a car turns round
+## behind. **Across the line a keeper's body counts for at most `widest`**: a move's body radius
+## (`body_radius()`) is the circle round its whole body, which for a car is its length, and a
+## car passing in the next lane is not in this one. What a crowd car brakes for, and turns round
+## at (`CarStrategy._give_way()`, `CarStrategy._distance_to_the_blockage()`).
 func edge_ahead(at: Vector2, forward: Vector2, half_width: float, widest: float, reach: float,
 		lead_ticks: float, parked_only := false) -> float:
 	if _for_cars.is_empty() or not _car_bounds.grow(reach + _WIDEST_REACH).has_point(at):
@@ -240,10 +242,10 @@ class Keeper extends RefCounted:
 	## How many gatherings in a row it has stood still, or `NEVER_MOVED` while it has not moved since
 	## this pass first saw it.
 	var ticks_still := NEVER_MOVED
-	## How far its body reaches round its centre (`MoveProposal.radius`).
+	## How far its body reaches round its centre (`MoveProposal.body_radius()`).
 	var radius := 0.0
-	## Whether a walker goes round it while it stands (`MoveProposal.stood_round`): an object or a
-	## vehicle.
+	## Whether a walker goes round it while it stands (`MoveProposal.is_walked_round()`): an
+	## object or a vehicle.
 	var stood_round := false
 
 	func _init(of: MoveProposal) -> void:
@@ -253,7 +255,7 @@ class Keeper extends RefCounted:
 	## Reads its pose off its move: how far it went since the last look, and whether it stood.
 	func look() -> void:
 		radius = move.body_radius()
-		stood_round = move.stood_round_a_body()
+		stood_round = move.is_walked_round()
 		step = move.stands_at() - at
 		at = move.stands_at()
 		if step.length() > PLACEMENT_STEP:

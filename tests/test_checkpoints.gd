@@ -1206,11 +1206,11 @@ func _planned_field_at(plans: Array[EventPlan], at: Vector2) -> float:
 		if not plan.is_placed() or plan.row().peak() <= 0.0:
 			continue
 		var gap := plan.distance_from(at)
-		if plan.ground_shape() != null and plan.ground_shape().kind == GroundShape.Kind.SEGMENT:
+		if plan.ground_shape() != null and plan.ground_shape().is_segment():
 			# The field is a capsule about the body's own spine. Read as a disc grown by the spine's
 			# half length, which is the conservative direction: too loud off the axis, never too
 			# quiet along it.
-			gap = maxf(0.0, gap - plan.ground_shape().half_length)
+			gap = maxf(0.0, gap - plan.ground_shape().spine_half_length())
 		if gap > plan.heard_within():
 			continue
 		var rate := plan.row().emission_at_distance(gap)
@@ -1363,8 +1363,8 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 		if plan.row() == wall:
 			walls += plan.row().emission_at_distance(maxf(0.0,
 					plan.placed_at().distance_to(released)
-					- (plan.ground_shape().half_length if plan.ground_shape().kind
-					== GroundShape.Kind.SEGMENT else 0.0)))
+					- (plan.ground_shape().spine_half_length()
+					if plan.ground_shape().is_segment() else 0.0)))
 	t.check(walls == 0.0,
 			"the wall's three roadblocks beside the release cost nothing (%.1f/s)" % walls)
 

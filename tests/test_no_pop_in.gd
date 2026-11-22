@@ -74,7 +74,8 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 ## included).
 static func _drawn_in(view: VisibleView, instance: EventInstance) -> bool:
 	var rect := instance.look.drawn_rect_now()
-	return Rect2(instance.global_position + rect.position, rect.size).intersects(view.view)
+	return Rect2(instance.global_position + rect.position, rect.size) \
+			.intersects(view.camera_view())
 
 func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 	var her := Vector2(1000.0, 1000.0)
@@ -101,7 +102,7 @@ func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 						marked += 1
 					if _drawn_in(view, instance) and popped.size() < 3:
 						popped.append("'%s' along %v, camera at %v%s" % [row.id(), way,
-								view.view.get_center() - her, " (joystick)" if v % 2 == 1 else ""])
+								view.camera_view().get_center() - her, " (joystick)" if v % 2 == 1 else ""])
 					instance.free()
 	t.check(placed > 0 and popped.is_empty(),
 			"on open ground, nothing any of %d arrivals draws (%d with a caret) is in view on its "
@@ -225,7 +226,8 @@ func _test_the_patrol_sent_down_the_road(t: TestRunner) -> void:
 						down_the_row += 1
 					if _drawn_in(view, car) and popped.size() < 3:
 						popped.append("seed %d, patrol at %v with her at %v walking %v, camera at %v"
-								% [seed_value, path[0], her, way, view.view.get_center() - her])
+								% [seed_value, path[0], her, way,
+								view.camera_view().get_center() - her])
 					car.free()
 	t.check(down_the_column > 0 and down_the_row > 0 and popped.is_empty(),
 			"nothing any of %d patrols sent down the road (%d beside a street running north-south, "
@@ -316,7 +318,7 @@ func _test_a_turned_window_shows_nothing_either(t: TestRunner) -> void:
 	for row in _rows():
 		for view in _views(her):
 			var turned := Transform2D(-camera.rotation, zoom, 0.0, presented * 0.5) \
-					* Transform2D(0.0, -view.view.get_center())
+					* Transform2D(0.0, -view.camera_view().get_center())
 			for i in BEARINGS:
 				var way := Vector2.RIGHT.rotated(TAU * i / BEARINGS)
 				var at := SpawnSiting.just_out_of_sight(SpawnSiting.seen_from(view, her),

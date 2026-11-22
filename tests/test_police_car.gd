@@ -116,7 +116,8 @@ func _test_her_walk_into_a_standing_car_stops_at_its_side(t: TestRunner) -> void
 		t.check(walked < 160.0, "walking %s into a standing patrol car, she is stopped (%.0fpx)"
 				% [approach, walked])
 		# Her pram leads, 14px out on her circumference with its own 8px: it is what touches.
-		var touch := shape.radius + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
+		var touch := shape.rounding_radius() + Tuning.PLAYER_BODY_RADIUS \
+				+ Stroller.PRAM_BODY_RADIUS
 		t.check(absf(stopped_at - touch) <= WALK + 0.5,
 				"and stopped where its flank is: her centre %.1fpx from its middle, the touch %.1f"
 				% [stopped_at, touch])
@@ -154,9 +155,9 @@ func _body_shape(car: EventInstance) -> CollisionShape2D:
 ## view's 24px flank to flank — and it turns with the car.
 func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t: TestRunner) -> void:
 	var shape := _patrol().ground_shape()
-	t.check(is_equal_approx(shape.reach() * 2.0, 42.0) and is_equal_approx(shape.radius * 2.0, 24.0),
+	t.check(is_equal_approx(shape.reach() * 2.0, 42.0) and is_equal_approx(shape.rounding_radius() * 2.0, 24.0),
 			"the body is 42px long and 24px wide (%.0f by %.0f)" % [shape.reach() * 2.0,
-			shape.radius * 2.0])
+			shape.rounding_radius() * 2.0])
 	var side := EventPictures.native_size(EventPictures.POLICE_CAR)
 	t.check(shape.reach() * 2.0 <= side.x, "and no longer than the side view is drawn (%.0fpx)"
 			% side.x)
@@ -165,7 +166,7 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t: TestRunner)
 	var car := _car(t, _patrol(), route, null, car_where)
 	var collision := _body_shape(car)
 	var capsule := collision.shape as CapsuleShape2D
-	t.check(capsule != null and is_equal_approx(capsule.radius, shape.radius)
+	t.check(capsule != null and is_equal_approx(capsule.radius, shape.rounding_radius())
 			and is_equal_approx(capsule.height, shape.reach() * 2.0),
 			"its collision is the same capsule its shadow is drawn from")
 	var spine := Vector2.DOWN.rotated(collision.rotation)
@@ -179,9 +180,9 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t: TestRunner)
 	t.check(car.facing_now().is_equal_approx(Vector2.RIGHT), "the car turns east at the corner of its route")
 	spine = Vector2.DOWN.rotated(collision.rotation)
 	t.check(absf(spine.dot(Vector2.RIGHT)) > 0.999, "and turned east, east-west (%s)" % spine)
-	t.check(car.look.body_anchor("side").y == shape.radius,
+	t.check(car.look.body_anchor("side").y == shape.rounding_radius(),
 			"its side picture's bottom lands on its body's southern edge, %.0fpx below the node"
-			% shape.radius)
+			% shape.rounding_radius())
 	car.free()
 
 # ----------------------------------------------------------------- driving ---

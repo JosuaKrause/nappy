@@ -99,10 +99,10 @@ comments and the cues skill's `references/drawing-and-redraw-gates.md` say the b
 
 **What it collides with, and when it runs.**
 
-- **It waits for minty-quail's `event-interface.md` row 4b (a row is written as its parts), running
-  now.** Row 4b hands each look its settings (`LookSpec`), which rewrites the same lines: the looks'
-  constructors, `EventLooks.for_row()` and the look's line in `EventInstance.setup()`. Start after
-  row 4b's last pull request.
+- **It follows minty-quail's `event-interface.md` row 4b (a row is written as its parts)**, whose
+  look part (`LookSpec`) rewrote the same lines: the looks' constructors, `EventLooks.for_row()` and
+  the look's line in `EventInstance.setup()`. What is left of row 4b (the composer's writes of the
+  live event's behaviour slots, two unused members) touches none of them, so it can start.
 - **It lands before row 5's drawing-suite group** (the events' suites test one module each), so
   those suites are written handing the stand-in rather than converted twice.
 - misty-raven (the danger cues and the events do less work for what cannot matter) and

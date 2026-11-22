@@ -44,7 +44,7 @@ const TILE := float(Tuning.TILE_SIZE)
 ## of the wall in this projection, which is ground she may step a little way into rather than a
 ## wall she stops a tile short of. *(2026-09-11, the player, PLAYTEST-57.md: "also allow going in
 ## a little bit for northern edges of roofs.")* 6px, pinned here and open to overturn. The south
-## edge is untouched: `_rebuild()` shrinks `_shape.half_extents.y` by half of this and shifts the
+## edge is untouched: `_rebuild()` shrinks the shape's half depth by half of this and shifts the
 ## shape's centre south by the same half, so the south edge (the lot's own kerb, where the
 ## building meets the street) stays exactly where it was.
 const NORTH_EDGE_INSET := 6.0

@@ -86,14 +86,14 @@ func _visible_view(t: TestRunner) -> void:
 
 ## Prints what `view` sees, `joystick` being whether it was looked through in the joystick scheme.
 func _print_view(label: String, view: VisibleView, joystick: bool) -> void:
-	print("SR_VV %s | view %s | joystick %s" % [label, _rect_hex(view.view), joystick])
-	var origin := view.view.position
+	print("SR_VV %s | view %s | joystick %s" % [label, _rect_hex(view.camera_view()), joystick])
+	var origin := view.camera_view().position
 	var seen: Array[String] = []
 	var y := -POINTS_STEP
-	while y < view.view.size.y + POINTS_STEP:
+	while y < view.camera_view().size.y + POINTS_STEP:
 		var row := ""
 		var x := -POINTS_STEP
-		while x < view.view.size.x + POINTS_STEP:
+		while x < view.camera_view().size.x + POINTS_STEP:
 			var at := origin + Vector2(x, y)
 			row += ("1" if view.sees(at) else "0") + ("1" if view.sees(at, 9.0) else "0") \
 					+ ("1" if view.sees(at, -9.0) else "0")
@@ -104,9 +104,9 @@ func _print_view(label: String, view: VisibleView, joystick: bool) -> void:
 	var shares: Array[float] = []
 	for size in SHARE_BOXES:
 		var sy := -size.y
-		while sy < view.view.size.y + size.y:
+		while sy < view.camera_view().size.y + size.y:
 			var sx := -size.x
-			while sx < view.view.size.x + size.x:
+			while sx < view.camera_view().size.x + size.x:
 				shares.append(view.share_of(Rect2(origin + Vector2(sx, sy), size)))
 				sx += size.x * 1.5
 			sy += size.y * 1.5
@@ -117,7 +117,7 @@ func _print_view(label: String, view: VisibleView, joystick: bool) -> void:
 			var way := Vector2.RIGHT.rotated(TAU * step / 16.0)
 			for box: Rect2 in [Rect2(), Rect2(-12.0, -30.0, 24.0, 30.0), Rect2(-60.0, -20.0, 120.0, 40.0)]:
 				for least: float in [0.0, 30.0]:
-					clears.append(view.clear_of_sight(view.view.get_center() + start, way, box, least))
+					clears.append(view.clear_of_sight(view.camera_view().get_center() + start, way, box, least))
 	print("SR_VV %s | clear %s" % [label, _hex(clears)])
 
 func _crowd_view(t: TestRunner) -> void:

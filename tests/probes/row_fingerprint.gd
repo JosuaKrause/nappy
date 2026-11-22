@@ -246,8 +246,9 @@ func _text(value: Variant) -> String:
 		return "row:" + (value as EventDef).id()
 	if value is GroundShape:
 		var shape := value as GroundShape
-		return "GS(%d,%.4f,%.4f,%s)" % [
-				shape.kind, shape.radius, shape.half_length, shape.half_extents]
+		var kind := 1 if shape.is_segment() else 2 if shape.is_rect() else 0
+		return "GS(%d,%.4f,%.4f,%s)" % [kind, shape.rounding_radius(),
+				shape.spine_half_length(), shape.rect_half_extents()]
 	if value is BodyPiece:
 		var piece := value as BodyPiece
 		return "P(%.4f,%.4f,%s)" % [

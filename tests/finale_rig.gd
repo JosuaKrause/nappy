@@ -437,7 +437,7 @@ static func _block_every_body(t: TestRunner, map: CityMap, placements: Array[Eve
 				var shape := piece.ground_shape()
 				var centre := piece.center()
 				var axis := piece.axis()
-				var rounding := shape.radius if shape.kind != GroundShape.Kind.RECT else 0.0
+				var rounding := shape.rounding_radius() if not shape.is_rect() else 0.0
 				var reach := shape.reach() + Tuning.PLAYER_BODY_RADIUS
 				for gy in range(floori((centre.y - reach) / BODY_FLOOD_STEP),
 						ceili((centre.y + reach) / BODY_FLOOD_STEP) + 1):

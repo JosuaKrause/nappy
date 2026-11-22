@@ -32,18 +32,20 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 		prop.dress(null, kind)
 		t.add_child(prop)
 		var expected: float = float(AtlasTable.baked().native_size(region).x) * fraction
-		t.check(prop.shape() != null and is_equal_approx(prop.shape().radius, expected),
+		t.check(prop.shape() != null
+				and is_equal_approx(prop.shape().rounding_radius(), expected),
 				"Prop.Kind %d's shadow radius is off the region table's own size (%.2f against %.2f)"
-				% [kind, prop.shape().radius if prop.shape() else -1.0, expected])
+				% [kind, prop.shape().rounding_radius() if prop.shape() else -1.0, expected])
 		prop.free()
 
 	var tree := Prop.new()
 	tree.dress(null, Prop.Kind.TREE, 0, 1.3)
 	t.add_child(tree)
 	var expected_tree := TreePictures.shape(0, 1.3).reach()
-	t.check(tree.shape() != null and is_equal_approx(tree.shape().radius, expected_tree),
+	t.check(tree.shape() != null
+			and is_equal_approx(tree.shape().rounding_radius(), expected_tree),
 			"a tree's shadow radius follows scale_factor() off the region table's own size (%.2f against %.2f)"
-			% [tree.shape().radius if tree.shape() else -1.0, expected_tree])
+			% [tree.shape().rounding_radius() if tree.shape() else -1.0, expected_tree])
 	var own_size_tree := Prop.new()
 	own_size_tree.dress(null, Prop.Kind.TREE, 0)
 	t.add_child(own_size_tree)
@@ -60,11 +62,12 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	var frame_size := Vector2(AtlasTable.baked().native_size(Prop.SWING_FRAME))
 	var expected_radius := frame_size.y * 0.5
 	var expected_half_length := frame_size.x * 0.5 - expected_radius
-	t.check(frame.shape() != null and is_equal_approx(frame.shape().radius, expected_radius)
-			and is_equal_approx(frame.shape().half_length, expected_half_length),
+	t.check(frame.shape() != null
+			and is_equal_approx(frame.shape().rounding_radius(), expected_radius)
+			and is_equal_approx(frame.shape().spine_half_length(), expected_half_length),
 			"the swing frame's capsule is sized off the region table (radius %.2f, half-length %.2f)"
-			% [frame.shape().radius if frame.shape() else -1.0,
-					frame.shape().half_length if frame.shape() else -1.0])
+			% [frame.shape().rounding_radius() if frame.shape() else -1.0,
+					frame.shape().spine_half_length() if frame.shape() else -1.0])
 	frame.free()
 
 ## `TreePictures.widest_reach()` is the reach `StreetTrees.footprint_tiles()` keeps the day's events

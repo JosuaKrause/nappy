@@ -390,10 +390,10 @@ func _distance_to_stop_line() -> float:
 ## `FIGURE_LEAD_TICKS` of its own travel, within `Tuning.CAR_ZEBRA_SIGHT` (the map's
 ## `SeparationPass.edge_ahead()`), less the car's nose and `FIGURE_SETBACK`. **Moving or standing,
 ## for as long as it stands** (inbox #909 in freckled-moose): a car never drives through a figure. One that has parked
-## (`MoveProposal.parked`, the fire engine at its fire) is also a blockage the car turns round at,
-## as at a blocked street (`_distance_to_the_blockage()`), so it does not hold the lane for the rest
-## of the day; one that is only stopping — the patrol car at a red light or while its man is out —
-## is waited for.
+## (`MoveProposal.has_parked()`, the fire engine at its fire) is also a blockage the car turns
+## round at, as at a blocked street (`_distance_to_the_blockage()`), so it does not hold the
+## lane for the rest of the day; one that is only stopping — the patrol car at a red light or
+## while its man is out — is waited for.
 ##
 ## **No commit rule, unlike her zebra's**: a car too close to stop for a figure brakes as hard as it
 ## can and its step is then held short of the figure's body (`give_way_on_the_step()`), since a
@@ -426,10 +426,10 @@ func road_before_a_figure(reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
 	return edge - nose
 
 ## **The clear road from its nose to the near edge of a parked figure in its lane ahead**
-## (`MoveProposal.parked`, inbox #909 in freckled-moose), or `INF` for none: a blockage like a closed tile, met at
-## the distance a car meets a wall at (`LaneMover.LOOKAHEAD`), since what it does about one is the
-## same turn round. Read into `_distance_to_the_blockage()`, so the brake that leaves it room to
-## turn and every arc the planner tries stop short of it.
+## (`MoveProposal.has_parked()`, inbox #909 in freckled-moose), or `INF` for none: a blockage
+## like a closed tile, met at the distance a car meets a wall at (`LaneMover.LOOKAHEAD`), since
+## what it does about one is the same turn round. Read into `_distance_to_the_blockage()`, so
+## the brake that leaves it room to turn and every arc the planner tries stop short of it.
 func road_before_a_parked_figure() -> float:
 	var separation := _map.separation
 	if not separation.has_keepers_for_cars() or _lane.is_in_the_arc():

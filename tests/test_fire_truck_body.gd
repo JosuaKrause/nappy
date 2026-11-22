@@ -90,7 +90,7 @@ func _what_stops(player: Stroller, heading: Vector2) -> Object:
 func _test_the_row_is_a_car_with_the_engines_body(t: TestRunner) -> void:
 	var def := _truck()
 	t.check(def.drives(), "fire_truck drives: solid in every state, lethal in front while driving")
-	t.check(def.ground_shape() != null and def.ground_shape().kind == GroundShape.Kind.SEGMENT,
+	t.check(def.ground_shape() != null and def.ground_shape().is_segment(),
 			"its body is a capsule laid along its heading")
 	t.check(def.ground_shape().reach() < def.core_within(),
 			"and the body lies inside the field's inner radius")
@@ -163,7 +163,7 @@ func _test_in_front_of_it_the_warning_comes_first(t: TestRunner) -> void:
 func _test_where_it_is_created_she_is_warned_in_full(t: TestRunner) -> void:
 	var def := _truck()
 	var warning_reach := (EventCarDriving.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed() \
-			+ def.ground_shape().half_length + def.ground_shape().radius + Tuning.PLAYER_BODY_RADIUS
+			+ def.ground_shape().spine_half_length() + def.ground_shape().rounding_radius() + Tuning.PLAYER_BODY_RADIUS
 	var nearer_than_its_warning := 0
 	var sides := {Vector2.DOWN: "the north", Vector2.UP: "the south", Vector2.RIGHT: "the west",
 			Vector2.LEFT: "the east"}
@@ -409,7 +409,7 @@ func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
 			"with the parked engine's tiles blocked, no street is closed (%d) and no calm area "
 			% lost.x + "loses a route from home (%d)" % lost.y)
 	var street := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
-	var wide := _routes_lost(map, kerbs, GroundShape.segment(truck.half_length, street))
+	var wide := _routes_lost(map, kerbs, GroundShape.segment(truck.spine_half_length(), street))
 	t.check(wide.x > 0,
 			"and a body the street's whole width closes the street it stands in (%d of %d kerbs; "
 			% [wide.x, kerbs.size()] + "%d calm areas then lose a route)" % wide.y)
@@ -461,8 +461,8 @@ func _routes_lost(map: CityMap, kerbs: Array[Array], body: GroundShape) -> Vecto
 ## centres it covers, which for a 26px body is one tile in six across the street.
 func _tiles_touched(body: GroundShape, at: Vector2, along: Vector2) -> Dictionary:
 	var size := float(Tuning.TILE_SIZE)
-	var spine := Rect2(at - along * body.half_length, Vector2.ZERO).expand(at + along * body.half_length)
-	var reach := ceili((body.half_length + body.radius) / size) + 1
+	var spine := Rect2(at - along * body.spine_half_length(), Vector2.ZERO).expand(at + along * body.spine_half_length())
+	var reach := ceili((body.spine_half_length() + body.rounding_radius()) / size) + 1
 	var centre := Vector2i(floori(at.x / size), floori(at.y / size))
 	var touched := {}
 	for dy in range(-reach, reach + 1):
@@ -472,7 +472,7 @@ func _tiles_touched(body: GroundShape, at: Vector2, along: Vector2) -> Dictionar
 			var gap := Vector2(
 					maxf(0.0, maxf(box.position.x - spine.end.x, spine.position.x - box.end.x)),
 					maxf(0.0, maxf(box.position.y - spine.end.y, spine.position.y - box.end.y)))
-			if gap.length() < body.radius:
+			if gap.length() < body.rounding_radius():
 				touched[tile] = true
 	return touched
 
@@ -486,7 +486,8 @@ func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
 	var cross := tile.x if vertical else tile.y
 	var first := cross - CityMap.corridor_offset(cross)
 	var down := tile.y if vertical else tile.x
-	var span := ceili((body.half_length + body.radius) / float(Tuning.TILE_SIZE)) + 2
+	var span := ceili((body.spine_half_length() + body.rounding_radius())
+			/ float(Tuning.TILE_SIZE)) + 2
 	var make := func(a: int, c: int) -> Vector2i:
 		return Vector2i(c, a) if vertical else Vector2i(a, c)
 	var open := func(at_tile: Vector2i) -> bool:
@@ -528,7 +529,7 @@ func _test_its_picture_stands_over_its_body(t: TestRunner) -> void:
 			engine_where)
 	var shape := _truck().ground_shape()
 	t.check(is_equal_approx(engine.look.body_anchor("side").y,
-			shape.half_length * absf(engine.solid_axis().y) + shape.radius
+			shape.spine_half_length() * absf(engine.solid_axis().y) + shape.rounding_radius()
 			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
 			"the side view's bottom lands on the body's southern edge")
 	t.check(EventFootprints.footprint_of(_truck()).end.y > shape.reach(),

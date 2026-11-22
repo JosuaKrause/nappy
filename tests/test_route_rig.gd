@@ -716,7 +716,7 @@ func _test_a_plan_never_goes_through_a_precincts_posts(t: TestRunner) -> void:
 	var along := Vector2(0.0, 1.0) if vertical else Vector2(1.0, 0.0)
 	var from := _city.map.world_to_tile(middle - along * Tuning.TILE_SIZE * 3.0)
 	var to := _city.map.world_to_tile(middle + along * Tuning.TILE_SIZE * 3.0)
-	var reach := Prop.bollard_shape().radius + Tuning.PLAYER_BODY_RADIUS
+	var reach := Prop.bollard_shape().rounding_radius() + Tuning.PLAYER_BODY_RADIUS
 	var shut := func(tile: Vector2i) -> bool:
 		for at in posts:
 			if _city.map.tile_to_world(tile).distance_to(at) < reach:
