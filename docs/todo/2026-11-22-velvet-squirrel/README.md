@@ -5,8 +5,8 @@ priority: now
 **The finding.** Fable's review of the design for row 3a of minty-quail's `event-interface.md` (the dawn and the walk's ground ask rows and plans), which an
 Opus agent wrote in Fable's place while Fable's quota was out and which merged on adversarial review alone (inbox #1571 in
 teal-quail). The player asked Fable, once back, to review the merged designs so it can request follow-up changes
-(inbox #1610 in teal-dolphin), rows 3a and 3b included (inbox #1624 in dappled-bison); the record calm-lemur lists every
-verdict. Fable judged the design to stand and wants the change the item describes, written as Fable's design.
+(inbox #1610 in teal-dolphin), rows 3a and 3b included (inbox #1624 in dappled-bison); the record calm-lemur-jolly-dolphin holds
+these verdicts. Fable judged the design to stand and wants the change the item describes, written as Fable's design.
 
 **Read as** (the filer's, open to the player's correction): the player's go-ahead for Fable's earlier verdicts holds for
 these, since the ask was for Fable to request follow-up changes (inbox #1610 in teal-dolphin): the change is built as Fable
