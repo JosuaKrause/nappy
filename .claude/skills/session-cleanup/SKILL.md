@@ -173,8 +173,8 @@ are what the player asks of it (frosty-owl #1065); this is the layout:
 6. `## Plan`;
 7. `## Fences`;
 8. `## Last checked`, the UTC times of the last board read, the last inbox check and the last
-   filing of the inbox, each rewritten by the orchestrating session's recurring check as it makes
-   the read or the filing (**orchestrating**, "What the orchestrator keeps"; inbox #1619 in
+   filing of the inbox, each rewritten whenever the board is read or the inbox is checked or filed, by
+   the recurring check or any other read (**orchestrating**, "What the orchestrator keeps"; inbox #1619 in
    teal-dolphin). They live only in this git-ignored file, never in anything checked in.
 
 **`## Plan` holds what is already decided about what comes when** (inbox #1235 in gentle-owl): the phases in

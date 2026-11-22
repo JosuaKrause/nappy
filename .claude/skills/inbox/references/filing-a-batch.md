@@ -6,8 +6,7 @@ and what it leaves for a hand fix. The rules that hold at every other moment (wh
 capturing, asking) are in `SKILL.md`.
 
 **The orchestrating session files the open notes on its own, periodically, as well as when the
-player asks** (inbox #1619 in teal-dolphin); no other session files, since the queue is the
-orchestrating session's. One filing pull request carries the whole batch:
+player asks** (inbox #1619 in teal-dolphin); a session the player asks to file a batch files it too. One filing pull request carries the whole batch:
 
 - **List and read every note** with `list` and `show`, and settle what is unclear by asking on the
   issue first.

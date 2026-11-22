@@ -14,7 +14,7 @@ The rules the orchestrating session must not miss, one line each; the sections b
   while the player has put one entry first means that entry's items (inbox #1210 in gentle-owl)
   and the work that goes first (inbox #1305 in grassy-trout), and a running agent is looked at at least every 45 minutes.
 - **The session does not end when it runs out of tasks**: it writes a note on the board saying so and
-  ends its turn, and a recurring job wakes it at most every 45 minutes to look for new work
+  ends its turn, and a recurring job wakes it at least every 45 minutes (no gap longer than 45) to look for new work
   (inbox #1619 in teal-dolphin). The same job reads the board about every hour, never more than
   about 55 minutes apart (inbox #1621 in teal-dolphin), and files the open inbox notes on its own.
 - **Work on how the project is worked on goes first**: a change to a skill, `CLAUDE.md`, a rule, a
@@ -266,11 +266,11 @@ before spawning:
 
 - **The work moving, until there is none left** (inbox #1196 in gentle-owl). The orchestrating session does not end
   because no task is left to start or advance: it writes the note on the board and ends its turn
-  (the next bullet) (inbox #1619 in teal-dolphin). While agents run, it briefs and spawns every queue item
+  ("Out of tasks, the session writes the note and waits", below) (inbox #1619 in teal-dolphin). While agents run, it briefs and spawns every queue item
   it can start whose files the running agents do not own; holding startable work back, to limit
   the reviews to come or for any other reason, is stopping early. **While the player has put one
   entry first, startable means that entry's items only** (inbox #1210 in gentle-owl), apart from
-  the work that goes first (the next bullet), until that entry closes:
+  the work that goes first ("Work on how the project is worked on goes first", below), until that entry closes:
   its `README.md` says so, and work on another entry before it is done is work done twice, on code
   about to change. The up-next marker (`docs/TODO.md`) orders the queue and fences nothing, and the
   end-of-session pass drops it from an entry open pull requests are building, so the fence is the
@@ -282,8 +282,8 @@ before spawning:
   player, a blocking board question or a review item, which the session keeps checking the board for.
 - **Out of tasks, the session writes the note and waits** (inbox #1619 in teal-dolphin). It puts the
   line under Running on the board saying no task is left and that it keeps checking (**board**,
-  "The layout"), and ends its turn; it never ends the session. The recurring job wakes it at most
-  every 45 minutes, so the prompt cache stays warm, and each wake looks for new work: the open pull
+  "The layout"), and ends its turn; it never ends the session. The recurring job wakes it at least
+  every 45 minutes (no gap longer than 45), so the prompt cache stays warm, and each wake looks for new work: the open pull
   requests, `tools/queue.sh` on `origin/main` after a fetch, the inbox, and the board. New work
   found is started as above; none found, the turn ends again. The player is in code mode and
   looks at the board and rarely at the chat, so what they should learn goes on the board.

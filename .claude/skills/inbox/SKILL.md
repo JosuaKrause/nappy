@@ -205,8 +205,7 @@ playtest file states the question before the answer it quotes.
 ## Filing a batch
 
 **The orchestrating session files the open notes on its own, periodically, as well as when the
-player asks** (inbox #1619 in teal-dolphin); no other session files, since the queue is the
-orchestrating session's. One filing pull request carries the whole batch, and the filing's time goes
+player asks** (inbox #1619 in teal-dolphin); a session the player asks to file a batch files it too. One filing pull request carries the whole batch, and the filing's time goes
 into the restart prompt's `## Last checked` (**session-cleanup**, step 8). `references/filing-a-batch.md` has the steps in order, from
 reading the notes to closing them; read it whole before filing. What holds whether or not that
 file is open:
@@ -231,5 +230,5 @@ corrects them:
 
 - **That the periodic filing rides the same beat as the hourly read, every run of the orchestrating session's recurring check**
   ("Filing a batch"; **orchestrating**, "What the orchestrator keeps"); the player's words are that
-  the session files the inbox by itself, periodically (inbox #1619 in teal-dolphin), and that
-  the hour is under about 55 minutes (inbox #1621 in teal-dolphin), so the filing rides every run.
+  the session files the inbox by itself, periodically, and the filing at every run is the filer's reading
+  of "periodically" (inbox #1619 in teal-dolphin).
