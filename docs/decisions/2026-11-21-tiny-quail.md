@@ -12,10 +12,11 @@ each also asked when it arrives, its row and where it points; the public untyped
 log's observer and the edge's drawing ask the methods; the suites, the masked-man rig and the corner probe (a caller the
 design did not list) do too.
 
-**Differences from the design:** `announcing()` and `drawn()` hand out a fresh array of the same objects, so a caller
-cannot reorder the model's list.
+**Differences from the design:** `announcing()` hands out a fresh array of the same objects, which GDScript requires (a
+function declared to answer the base's badges cannot answer the model's list of drawn ones).
 
-**Measured.** The run log is the same line for line on main and the branch on a headless day that raises badges (seed
-4242, day 6, routed to her mark, a charging dog and, separately, a cyclist forced): two edge-badge lines each, one
-distance in the badge's going line differing from run to run on both sides with frame timing. The day the design named
-raised no badge, since its walk left her on the doorstep.
+**Measured.** On main and the branch, on a headless day that raises badges (seed 4242, day 6, routed to her mark, a
+charging dog forced, and separately a cyclist), every run-log line the branch printed main printed too, over eight runs a
+side for the dog and two for the cyclist: two edge-badge lines each, whose distances (where the badge goes up and where
+it goes) vary from run to run with frame timing on both sides. The day the design named raised no badge, since its walk
+left her on the doorstep.
