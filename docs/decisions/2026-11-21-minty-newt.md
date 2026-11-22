@@ -16,5 +16,5 @@ stand-in view in place of a viewport and a frame wait.
 factory, a fourth look file the design's cost line did not name; it takes the view and passes it up.
 
 **Measured.** On main and the branch: the screen-reads fingerprint byte-identical, and the run log of a headless day
-that walks her to her mark into a forced charging dog identical line for line but one badge distance, which varies run
-to run on both sides with frame timing.
+that walks her to her mark into a forced charging dog identical line for line but three distances, which vary run to run on
+both sides with frame timing.
