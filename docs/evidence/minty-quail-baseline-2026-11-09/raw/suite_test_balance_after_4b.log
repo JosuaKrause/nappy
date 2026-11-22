@@ -1,0 +1,29 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[RunState] run started, seed=2
+[RunState] run started, seed=2
+[Main] day 1 started in 1557 ms (act 1): 296 events (45 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(6,7)
+[RunState] run started, seed=2
+[Main] day 1 started in 1544 ms (act 1): 296 events (45 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(6,7)
+[RunState] run started, seed=2
+[Main] day 1 started in 1540 ms (act 1): 296 events (45 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(6,7)
+[Main] day 2 started in 1583 ms (act 1): 342 events (49 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(1,8)
+[Main] day 3 started in 1941 ms (act 1): 316 events (39 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks h(10,6)
+[Main] day 4 started in 2206 ms (act 2): 349 events (41 live, 28 ahead), 176 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: accident v(3,6), cordoned off v(8,9)
+[Main] day 5 started in 1945 ms (act 2): 363 events (40 live, 27 ahead), 176 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: cordoned off v(2,5), roadworks v(5,3)
+[Main] day 6 started in 2292 ms (act 2): 405 events (47 live, 27 ahead), 176 crowd, 180s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: cordoned off v(3,10), accident v(6,3)
+[Main] day 7 started in 2179 ms (act 2): 389 events (41 live, 27 ahead), 176 crowd, 180s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(8,6), roadworks h(2,4)
+[Main] day 8 started in 2465 ms (act 3): 352 events (31 live, 30 ahead), 50 crowd, 180s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: cordoned off h(8,3), cordoned off h(0,6), roadworks v(4,7)
+[Main] day 9 started in 2407 ms (act 3): 278 events (42 live, 29 ahead), 50 crowd, 180s | calm: 2 courtyard, 2 forest, 2 park, 2 quiet_square | closed: cordoned off v(3,8), accident h(5,7), park closed h(1,4)
+[Main] day 10 started in 2011 ms (act 3): 293 events (49 live, 29 ahead), 50 crowd, 180s | calm: 2 courtyard, 2 forest, 2 park, 2 quiet_square | closed: accident h(8,10), cordoned off h(4,4), park closed h(1,4)
+[Main] day 11 started in 1658 ms (act 3): 283 events (40 live, 29 ahead), 50 crowd, 180s | calm: 2 courtyard, 2 forest, 2 park, 2 quiet_square | closed: cordoned off v(7,1), accident h(0,5), park closed h(1,4)
+[Main] day 12 started in 1924 ms (act 4): 273 events (41 live, 32 ahead), 86 crowd, 180s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: collapsed h(8,7), cordoned off h(6,4)
+[Main] day 13 started in 3205 ms (act 4): 312 events (42 live, 33 ahead), 86 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: collapsed h(7,10), fallen tree v(0,8)
+[Main] day 14 started in 1934 ms (act 4): 281 events (40 live, 32 ahead), 86 crowd, 180s | calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square | closed: accident v(1,1), collapsed h(8,5)
+[RunState] run started, seed=2
+[Main] day 1 started in 1542 ms (act 1): 296 events (45 live, 26 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks v(6,7)
+-- test_balance.gd                        58646 ms
+
+36 checks, 0 failures
+PARTIAL RUN — only suites matching test_balance. Not a green build.

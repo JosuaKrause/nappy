@@ -10,13 +10,19 @@ nothing", the player: "sure" (inbox #1268 in olive-ferret).
 repository, so the end remeasure has something to compare with. *The specifics are the
 orchestrator's, proposed and open to the player's correction.*
 
-**What is left** (two readings are built in `docs/evidence/minty-quail-baseline-2026-11-09/`: `v0.29.0`
-beside a mid-refactor `main`, record mossy-raven, and a third column with placement closed, record
-polite-tapir-velvet-heron):
+**What is left** (four readings are built in `docs/evidence/minty-quail-baseline-2026-11-09/`: `v0.29.0`
+beside a mid-refactor `main`, record mossy-raven, a third column with placement closed, record
+polite-tapir-velvet-heron, and a fourth after the events' field-read conversion, record polite-tapir-crisp-heron):
 
-- **One more reading, in the background:** winnability and frame time after the events' field-read
-  conversion (row 4b of minty-quail's `event-interface.md`), added to the same folder as a further
-  column, with the same commands and seeds, and the machine's load noted before each run.
+- **What moved after the events' field-read conversion, listed for the end remeasure** (the fourth
+  column against the third, the record polite-tapir-crisp-heron): dawn planning (a copy of today's `placement_rows.gd`
+  with the third column's timers, set against the third column's own copy) inside `build_day()` 51.6 s to 44.1 s,
+  inside `draw_every_unit()` 345.6 to 334.3, the whole probe 568.6 to 505.2; the crowd tick's mean
+  whole-mode median about 2,466 µs to 2,351 µs; the frame profile's callback interval with
+  `--invincible` 4.9 ms to 4.0 profiled and 7.5 to 6.3 with the profiler off; `test_acts` 349
+  checks to 45 (its sweep holds scripted rows only) and `test_finale` 9,464 to 9,463; the
+  unmodified frame-profile launcher's six runs all rejected by the analyzer (an 8.3 ms callback
+  interval), not looked into.
 - **The escape's mix and walks, listed for the end remeasure** (step 5's switch, the record
   polite-tapir-coral-badger; `tests/probes/escape_winnable.gd`, 24 seeds): main before the switch planned 0.66
   dangers a street and 34% of streets with none (trucks 167, explosions 193, vans 91, roadblocks 44),
