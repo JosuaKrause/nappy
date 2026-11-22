@@ -113,10 +113,10 @@ func spine_along(heading: Vector2) -> Vector2:
 
 ## **Its pieces where they stand**, each at its own offset along its street's axis from where its
 ## center stands (`BodySpec.pieces()`, each by its own reading of the picture in use), its spine
-## along `spine_along()` the way it was sited facing. Nothing for a row with no body or no ground shape. It does not filter a row that
-## moves or a door's body: each caller asks for the rows it counts. The one layout of a body not
-## yet built, or built and recorded: the walk's ground, the map's record of standing bodies and the
-## route rig ask it, so the three cannot disagree.
+## along `spine_along()` the way it was sited facing. Nothing for a row with no body or no ground
+## shape. It does not filter a row that moves or a door's body: each caller asks for the rows it
+## counts. The one layout of a body not yet built, or built and recorded: the walk's ground, the
+## map's record of standing bodies and the route rig ask it, so the three cannot disagree.
 func pieces() -> Array[StandingPiece]:
 	var none: Array[StandingPiece] = []
 	if _row.ground_shape() == null or not _row.has_a_body():
@@ -125,7 +125,8 @@ func pieces() -> Array[StandingPiece]:
 
 ## **Its pieces laid out round `center`**, a body that is standing or driving there and heading
 ## along `heading`: the one layout, which a live body's own footprint and its shadow are laid out by
-## round the origin, and a live body's solid pieces by round where it is now.
+## round the origin, and a live body's solid pieces by round where it is now. Round the origin a body
+## that does not drive is handed the pieces it keeps (`round_the_origin()`).
 func pieces_at(center: Vector2, heading: Vector2) -> Array[StandingPiece]:
 	if center == Vector2.ZERO and not _row.drives():
 		return round_the_origin()

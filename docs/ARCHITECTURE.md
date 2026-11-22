@@ -186,10 +186,9 @@ src/
 	                       between ticks; its excitement is a composed `EventExcitement` and
 	                       its body a composed `EventBody`
 	event_body.gd         what a live event is on the ground (`EventBody`): its collision body,
-	                       the tiles it is recorded on, the axis it lies along on its street, the
-	                       side a vehicle standing still shows, a boom's body following its arm;
-	                       handed its row, the map, where she is and its gate's boom state, asked
-	                       by its event and told what happens to it
+	                       the tiles it is recorded on, a boom's body following its arm; handed
+	                       its row, how it stands on its street (`BodyStance`), where she is and
+	                       its gate's boom state, asked by its event and told what happens to it
 	event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
 	                       map and navigator, where she is, the world it is drawn in, its drawer,
 	                       the drawn view its looks are gated by, its timing sink, its trace, its
@@ -289,8 +288,10 @@ src/
 	                      have drawn and a way stands that no undrawn unit lies near
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
-	body_stance.gd        where a body built at a point stands on its street, how it lies, and its
-	                      pieces laid out there: the one layout the walk, the record and the rig ask
+	body_stance.gd        how a body built at a point stands on its street, derived once and handed
+	                      round: where, which way it lies, the side a vehicle shows, and its
+	                      pieces laid out there, the one layout the walk, the record, the live body
+	                      and its look and the rig ask
 	standing_piece.gd     one solid piece of a body where it stands: its middle, shape and axis
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
 	placement_ground.gd   the four kinds of ground a unit is: a street, a junction box, an alley, a
