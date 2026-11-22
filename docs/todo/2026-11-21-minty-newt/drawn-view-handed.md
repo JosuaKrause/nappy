@@ -78,8 +78,8 @@ frame waited for the memo. Its crowd cases keep `ScreenCrowdView` over the `SubV
 `tests/test_frame_record.gd`'s one look built by hand takes the new argument.
 
 **Order, one pull request:** the class; `ScreenCrowdView` and `main`; the builder and the
-surroundings; the looks; the suites and probes. It answers the architecture
-questions; question 3 (handed and fetched) is the point of it.
+surroundings; the looks; the suites and probes. It answers the architecture questions; question 3
+(handed and fetched) is the point of it.
 
 **What holds parity.** Nothing a player sees changes: the same box, the same margin, the same
 once-a-frame rule, asked of the same viewport. Shown by `tests/probes/screen_reads_fingerprint.gd`
@@ -91,8 +91,8 @@ loses a meta lookup and gains a field read.
 
 **Cost.** Medium. About ten files under `src/` with a few lines each (`src/world/drawn_view.gd`,
 `src/ui/screen_crowd_view.gd`, `src/main.gd`, `src/simulation_builder.gd`,
-`src/events/event_surroundings.gd`, `event_instance.gd`,
-`views/event_looks.gd`, `views/event_look.gd`, `views/roadblock_look.gd`), one suite reworked, and
+`src/events/event_surroundings.gd`, `event_instance.gd`, `views/event_looks.gd`,
+`views/event_look.gd`, `views/roadblock_look.gd`), one suite reworked, and
 about ten one-line edits in suites and probes. No new file, no line in `tools/layer_map.py`, and
 the rules hook's row for `src/world/drawn_view.gd` stands as it is. `CrowdView`'s and `DrawnView`'s
 comments and the cues skill's `references/drawing-and-redraw-gates.md` say the box is handed.
