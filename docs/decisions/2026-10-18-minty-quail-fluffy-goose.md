@@ -17,12 +17,14 @@ rows of their own (a test dawn handed a row, `game_dawn.with_row()`; a planner s
 The docs and the events skill say how a row is written now; the skill's "Adding a row" changed, which the player was
 told on the board.
 
-**A check that became unwritable, and one held elsewhere.** A deep copy that loses the body cannot be made (a row is not a
-`Resource` and has no deep copy), which the test says where its source scan stays. The excitement source's check that a
-cached rate goes stale until invalidated is held by `tests/test_masts.gd` (silencing a mast answers zero in the same
-tick, not the cache), which fails with the invalidation deleted; the check in `test_excitement_source.gd` that stood in for it held nothing and is gone.
-`test_acts` holds what the game reads: a scripted row's first day is not after the day it fires on; a non-scripted row's
-act has no reader, which row 4b's line in `event-interface.md` leaves to the next step.
+**Checks that became unwritable, and one held elsewhere.** A deep copy that loses the body cannot be made (a row is not
+a `Resource` and has no deep copy), which the test says where its source scan stays; and a hunting copy cannot write its
+pursuit onto its row (a `PursuitSpec` has no setter), which `test_event_phase.gd` says where that check stood. The
+excitement source's check that a cached rate goes stale until invalidated is held by `tests/test_masts.gd` (silencing a
+mast answers zero in the same tick, not the cache), which fails with the invalidation deleted; the check in
+`test_excitement_source.gd` that stood in for it held nothing and is gone. `test_acts` holds what the game reads: a
+scripted row's first day is not after the day it fires on; a non-scripted row's act has no reader, which row 4b's line
+in `event-interface.md` leaves to the next step.
 
 **The event names, deleted with `display_name`.** `Texts.EVENT_NAMES` held a display name per row, read by nothing but
 the catalogue's own writes of `display_name`, which nothing read (event-interface section 7, point 6). Kept here, since
