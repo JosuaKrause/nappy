@@ -12,10 +12,11 @@ ones only where the game asks: `id()`, `lasts_for()`, `is_of_kind(kind)` (the ca
 `ambient_source()` (the dawn's ambient), `charges_counted_as()` (the live event), `pursuit()` and `notice()` (the
 behaviours and the live event, none when the row has neither), which stay inside the events folder: the suites that ask
 them test a module of that folder, and a suite of a module outside asks the row's or the live event's own questions, but
-for four reads of the masked man's notice radius in the run-log visit counter's suite and the masked-man meeting probe,
-which no question answers and no game caller asks. No `is_scripted()` or `is_recurring()`: only tests would ask them.
-`EventCatalogue.by_role()`, read only by `mast()`, is gone; `mast()` asks `is_a_mast()`. `tools/field_reads.txt` lost
-every `[EventDef]` line and gained none.
+for four reads of the radius at which the masked man starts his run up the stairwell (his notice settings' run, not his
+notice radius, which `notice_within()` answers), in the visit counter's suite and the shared walk of the two interior
+masked-man suites, which no question answers and no game caller asks. No `is_scripted()` or `is_recurring()`: only tests
+would ask them. `EventCatalogue.by_role()`, read only by `mast()`, is gone; `mast()` asks `is_a_mast()`.
+`tools/field_reads.txt` lost every `[EventDef]` line and gained none.
 
 **The act is a scripted row's alone.** Every row wrote an act, but only a scripted row's is read (its own first day).
 `EventDraft.scripted_on(day, act)` writes a scripted row's act with its day, and `from_day(first)` writes only the first
@@ -30,6 +31,6 @@ days unchanged. The look, excitement and placement fingerprints, `placement_rows
 `curly_stork_piece_layout.gd` print the same but timings; no cost figure moved.
 
 **Open to overturn:** the act a scripted row's alone; `is_of_kind(kind)` where the design named a question per kind;
-`pursuit()` and `notice()` handed out beside the row's own questions about them; the four test reads of the masked man's
-notice radius left reading his notice settings; `test_heat`'s comparison of a row's kind written as a loop over every
-kind; `docs/EVENTS.md`'s settings table naming the settings a draft writes.
+`pursuit()` and `notice()` handed out beside the row's own questions about them; the four test reads of the radius at
+which the masked man starts his run, left reading his notice settings; `test_heat`'s comparison of a row's kind written
+as a loop over every kind; `docs/EVENTS.md`'s settings table naming the settings a draft writes.

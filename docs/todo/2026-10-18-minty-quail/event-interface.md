@@ -506,7 +506,7 @@ conversion finds nothing to redo in those files.
 | 3 | which ground takes a row | row `stands_on(tile_type)` ok, `ground_kinds()` ok, `stands_only_in_alleys()` ok, `sidewalk_lane()` ok, `lies_as_a_spread()` ok |
 | 3 | rows that take the same ground share one cached answer (today a key built from `placement`, `pavement_side`, `hard_fail` and `has_a_spread` in five places) | `RowGround` keys its caches by the row's own answers (`ground_kinds()`, `sidewalk_lane()`, `lies_as_a_spread()`, `burns_its_front()`, `ends_the_day()`) |
 | 3 | a row's role by view (wall, friction, set piece), which `EventScheduler.role_for()` works out | row `ends_the_day()` ok, `walk_through_cost()` ok, `is_scenery()` ok, `is_a_one_shot()` ok, `spawn_mode_on(day)` ok, `line_reach()` ok |
-| 3 | a row's act, for the table's act column | row `act()` (new) |
+| 3 | the act, for the table's act column | the day's act (`Tuning.act_for_day(day)`); a row answers no act |
 | 3 | the most of a row a day stands | row `most_in_a_day()` ok; once step 2 drops the caps for drawn rows its callers are the director's moments and the scene recipes, and the step says whether any is left |
 | 4, the beats as rigged marbles | is a row sited from her walk, at a building's front; is it the set piece | row `is_sited_from_her_walk()` ok, `stands_at_a_front()` ok, `is_a_set_piece_on_her_way()` ok, `is_handed_to_her_walk()` ok |
 | 4 | a rigged marble takes its location | plan `stand_where(sited)` ok, `face(direction)` ok (the design's pick in place of `place_at(at)`, open to the player) |
