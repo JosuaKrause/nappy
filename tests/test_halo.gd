@@ -188,7 +188,7 @@ func _test_the_cap_keeps_the_strongest(t: TestRunner) -> void:
 		var def := _def("source_%d" % i, intensity)
 		instances.append(_instance_at(def, Vector2.ZERO))
 		if i < ExcitementHalo.MAX_SOURCES:
-			expected_ids.append(def.id)
+			expected_ids.append(def.id())
 
 	var candidates: Array = []
 	for instance in instances:
@@ -691,7 +691,7 @@ func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:
 			"a cat_dash instance standing on her clears the floor while still telegraphing")
 
 	var elapsed := def.telegraphs_for() * 0.5
-	while elapsed < def.telegraphs_for() + def.duration:
+	while elapsed < def.telegraphs_for() + def.lasts_for():
 		cat.step(STEP)
 		elapsed += STEP
 		var contribution: float = cat.source().contribution_at(Vector2.ZERO)
@@ -720,7 +720,7 @@ func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 			"a flock standing on her clears the floor while still on the ground telegraphing")
 
 	var elapsed := def.telegraphs_for() * 0.5
-	while elapsed < def.telegraphs_for() + def.duration:
+	while elapsed < def.telegraphs_for() + def.lasts_for():
 		flock.step(STEP)
 		elapsed += STEP
 		var contribution: float = flock.source().contribution_at(Vector2.ZERO)

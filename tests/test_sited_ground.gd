@@ -29,7 +29,7 @@ class _Ground extends RowGround:
 	## Overrides RowGround.offers_for.
 	func offers_for(def: EventDef, side: int = -1) -> Dictionary:
 		asks += 1
-		var answer: Dictionary = answers.get("%s:%d" % [def.id, side], {})
+		var answer: Dictionary = answers.get("%s:%d" % [def.id(), side], {})
 		return answer
 
 static func _set_of(tiles: Array[Vector2i]) -> Dictionary:
@@ -43,7 +43,7 @@ func _test_a_crew_is_offered_only_the_fronts_of_its_lane(t: TestRunner) -> void:
 	var crew := EventCatalogue.by_id("poster_crew")
 	var lane: Array[Vector2i] = [Vector2i(10, 10), Vector2i(11, 10), Vector2i(12, 10), Vector2i(13, 10)]
 	var ground := _Ground.new()
-	ground.answers["%s:%d" % [crew.id, EventDef.Pavement.AT_THE_FRONT]] = _set_of(lane)
+	ground.answers["%s:%d" % [crew.id(), EventDef.Pavement.AT_THE_FRONT]] = _set_of(lane)
 	var fronts := {Vector2i(11, 10): true, Vector2i(13, 10): true, Vector2i(40, 40): true}
 	var sited := SitedGround.new(null, ground, fronts)
 	var offered := sited.tiles_of(crew)
@@ -69,7 +69,7 @@ func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void
 		if every % 9 == 0:
 			sidewalks.append(tile)
 	var ground := _Ground.new()
-	ground.answers["%s:%d" % [mast.id, -1]] = _set_of(sidewalks)
+	ground.answers["%s:%d" % [mast.id(), -1]] = _set_of(sidewalks)
 	var sited := SitedGround.new(map, ground, {})
 	var doors := MastSites.possible_door_points(map)
 	var accepted := 0
@@ -92,7 +92,7 @@ func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void
 func _test_any_other_row_is_offered_what_the_ground_offers(t: TestRunner) -> void:
 	var tables := EventCatalogue.by_id("cafe_tables")
 	var ground := _Ground.new()
-	ground.answers["%s:%d" % [tables.id, -1]] = _set_of([Vector2i(3, 4), Vector2i(5, 6)] as Array[Vector2i])
+	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4), Vector2i(5, 6)] as Array[Vector2i])
 	var sited := SitedGround.new(null, ground, {Vector2i(3, 4): true})
 	t.check(sited.takes(tables, Vector2i(3, 4)) and sited.takes(tables, Vector2i(5, 6))
 			and not sited.takes(tables, Vector2i(7, 7)),
@@ -103,7 +103,7 @@ func _test_any_other_row_is_offered_what_the_ground_offers(t: TestRunner) -> voi
 func _test_prepare_asks_the_ground_once_and_a_later_ask_asks_no_more(t: TestRunner) -> void:
 	var tables := EventCatalogue.by_id("cafe_tables")
 	var ground := _Ground.new()
-	ground.answers["%s:%d" % [tables.id, -1]] = _set_of([Vector2i(3, 4)] as Array[Vector2i])
+	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4)] as Array[Vector2i])
 	var sited := SitedGround.new(null, ground, {})
 	sited.prepare(tables)
 	var after_prepare := ground.asks

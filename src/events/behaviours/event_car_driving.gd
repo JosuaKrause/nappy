@@ -360,7 +360,7 @@ func drives_its_route() -> bool:
 		return false
 	if not _course.moves() or _figure.walks().size() < 2 or _figure.is_telegraphing_still():
 		return false
-	if _row.pursuit != null and not _figure.is_waiting():
+	if _row.pursues() and not _figure.is_waiting():
 		return false
 	if _investigation != null and not _investigation.runs_its_route():
 		return false

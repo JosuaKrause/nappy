@@ -464,7 +464,7 @@ func _walk_every_day(reach: float) -> void:
 					var t1 := Time.get_ticks_usec()
 					var due := director.due(TICK, at, velocity)
 					if not due.is_empty():
-						var handed_id := (due[0] as EventDef).id
+						var handed_id := (due[0] as EventDef).id()
 						handed[handed_id] = int(handed.get(handed_id, 0)) + 1
 					var moved := director.site_what_is_on_her_way(TICK, at, velocity)
 					siting_ticks.append(Time.get_ticks_usec() - t1)
@@ -689,11 +689,11 @@ static func _unit_draw_reaching(dawn: DawnContext, reach: float) -> UnitDraw:
 	var day := dawn.day()
 	var map := dawn.map()
 	var beside_the_routes := dawn.roadblock_row()
-	var beside_id := beside_the_routes.id if beside_the_routes != null else ""
+	var beside_id := beside_the_routes.id() if beside_the_routes != null else ""
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, dawn.heat()):
 		if def.is_drawn_by_units(day, beside_id):
-			rows[def.id] = def.for_day(day)
+			rows[def.id()] = def.for_day(day)
 	var ground := dawn.ground()
 	var events := dawn.events()
 	var judged := RuledLocationGround.new(day, dawn.day_seed(), map, events.standing(),

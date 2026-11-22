@@ -152,13 +152,13 @@ func run(t: TestRunner) -> void:
 func _stand_the_rows() -> void:
 	var last_day := DaySpec.for_day(Tuning.RUN_LENGTH_DAYS)
 	for row in EventCatalogue.all():
-		_add_a_row(row, row.id)
+		_add_a_row(row, row.id())
 		var hot := EventCatalogue.heated(row, EventCatalogue.heat_levels() - 1)
 		if hot != row:
-			_add_a_row(hot, row.id + "@heat")
+			_add_a_row(hot, row.id() + "@heat")
 		var late := row.for_day(Tuning.RUN_LENGTH_DAYS)
 		if late != row:
-			_add_a_row(late, row.id + "@late")
+			_add_a_row(late, row.id() + "@late")
 	_add_a_row(EventCatalogue.out_of_the_car(last_day), "guardsman_out_of_the_car")
 	_add_a_row(EventCatalogue.out_of_the_car(last_day, false), "guardsman_out_of_the_car@hunts")
 	var first_day := DaySpec.for_day(1)

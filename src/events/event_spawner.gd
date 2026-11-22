@@ -241,7 +241,7 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
 		world.trace().note("scar", "%s left at %s by %s" % [
 			def.scar_id(), RunTrace.tile(world.map().world_to_tile(instance.global_position)),
-			def.id])
+			def.id()])
 		world.run().add_scar(def.scar_id(), instance.global_position)
 		_mark_the_block(def.scar_id(), instance.global_position)
 	return instance
@@ -381,7 +381,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 		sighted_by: EventPlan = null) -> bool:
 	var summoned := EventCatalogue.by_id(source.calls_in())
 	if not summoned:
-		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.calls_in()])
+		push_error("event '%s' summons unknown '%s' on sight" % [source.id(), source.calls_in()])
 		return false
 	var inward := world.map().pavement_inward(world.map().world_to_tile(at))
 	if inward == Vector2i.ZERO:
@@ -389,7 +389,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 	var along := Vector2(inward.y, inward.x)
 	var road_at := _where_the_summoned_row_stops(world.city_map(), at)
 	var headings: Array[Vector2] = [along, -along]
-	if world.run().calendar().day_rng(world.day(), "sighted:%s" % source.id).randf() < 0.5:
+	if world.run().calendar().day_rng(world.day(), "sighted:%s" % source.id()).randf() < 0.5:
 		headings.reverse()
 	var her := world.player().global_position if world.player() else at
 	for heading in headings:

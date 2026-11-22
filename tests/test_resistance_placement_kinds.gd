@@ -501,7 +501,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 	for guard in guards:
 		t.check(not guard.is_gone() and is_instance_valid(guard),
 				"the mark's own guard stays too, not retired for the door")
-	t.check(_live(EventCatalogue.task_guard().id).is_empty(),
+	t.check(_live(EventCatalogue.task_guard().id()).is_empty(),
 			"the door stands no guard of its own: its trap comes to her once she crosses")
 
 	# The door's task expiring (its deadline, or its rider gone) ends the task, not the day:

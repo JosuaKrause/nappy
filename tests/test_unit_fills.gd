@@ -41,7 +41,7 @@ static func _weights() -> RowGround.Weights:
 
 ## Whether a row is a wall by what it costs: one of the hand rows `ids` names.
 static func _by_cost(ids: Array[String]) -> Callable:
-	return func(def: EventDef) -> bool: return ids.has(def.id)
+	return func(def: EventDef) -> bool: return ids.has(def.id())
 
 ## A recurring row placed on the map, standing on `placement`, of weight one, scenery unless
 ## `role` says otherwise: `"friction"` a quiet row, `"wall"` one whose field is too costly to walk
@@ -66,7 +66,7 @@ static func _catalogue(day: int) -> Dictionary:
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, 0):
 		if def.is_drawn_by_units(day, ""):
-			rows[def.id] = def.for_day(day)
+			rows[def.id()] = def.for_day(day)
 	return rows
 
 static func _fills(rows: Dictionary, day: int, share := 1.0,
@@ -218,7 +218,7 @@ func _test_a_view_weighs_a_row_by_its_role(t: TestRunner) -> void:
 	for def: EventDef in [_row("scenery", sidewalk), _row("friction", sidewalk, "friction"),
 			_row("fit_wall", sidewalk, "wall"), _row("costly_wall", sidewalk, "wall"),
 			_row("lethal_wall", sidewalk, "lethal")]:
-		rows[def.id] = def
+		rows[def.id()] = def
 	var by_cost := _by_cost(["costly_wall", "lethal_wall"] as Array[String])
 	var fills := _fills(rows, 1, 1.0, by_cost)
 	var expected := {

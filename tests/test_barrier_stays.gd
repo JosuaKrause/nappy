@@ -49,7 +49,7 @@ func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null) -> Array
 func _charge(guard: EventInstance, where: WhereSheIs) -> Vector2:
 	var her := where.at()
 	var frames := 0
-	while guard.is_telegraphing() and frames < int((guard.row().pursuit.warns_for() + 1.0) / STEP):
+	while guard.is_telegraphing() and frames < int((guard.row().pursuit().warns_for() + 1.0) / STEP):
 		where.tell(her)
 		guard.step(STEP)
 		frames += 1
@@ -390,7 +390,7 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner
 			"a second band's body in the line still hides her")
 	# She walks round to the far side while he warns, and he charges anyway.
 	frames = 0
-	while not guard.is_chasing() and frames < int((guard.row().pursuit.warns_for() + 2.0) / STEP):
+	while not guard.is_chasing() and frames < int((guard.row().pursuit().warns_for() + 2.0) / STEP):
 		RoadblockRig.tick(where, made, far, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges her across his own band (%d frames)" % frames)
@@ -431,7 +431,7 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 	var made: Array[EventInstance] = [guard]
 	var where := stage.manager.world.where_she_is()
 	var frames := 0
-	while not guard.is_chasing() and frames < int((def.pursuit.warns_for() + 3.0) / STEP):
+	while not guard.is_chasing() and frames < int((def.pursuit().warns_for() + 3.0) / STEP):
 		RoadblockRig.tick(where, made, near, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges (%d frames)" % frames)

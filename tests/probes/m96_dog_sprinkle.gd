@@ -50,7 +50,7 @@ func _measure_sprinkle_rate() -> void:
 			director_rng.seed = hash("m96:ahead:%d:%d" % [map.city_seed(), day])
 			director.start_day(day, planned, director_rng)
 			for queued: EventDef in director._owed:
-				if queued.id == "charging_dog":
+				if queued.id() == "charging_dog":
 					offered_this_run += 1
 
 			var y_min := 0.0
@@ -66,7 +66,7 @@ func _measure_sprinkle_rate() -> void:
 				var due: Array = director.due(step, pos, vel)
 				if not due.is_empty():
 					var def: EventDef = due[0]
-					if def.id == "charging_dog":
+					if def.id() == "charging_dog":
 						met_this_run += 1
 				pos += vel * step
 				if pos.y < y_min or pos.y > y_max:

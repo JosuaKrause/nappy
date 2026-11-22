@@ -295,7 +295,7 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 ## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
 static func _task_guard(city: City) -> EventInstance:
 	for instance in RunCity.events(city).instances():
-		if instance.row_id() == EventCatalogue.task_guard().id and not instance.is_gone():
+		if instance.row_id() == EventCatalogue.task_guard().id() and not instance.is_gone():
 			return instance
 	return null
 

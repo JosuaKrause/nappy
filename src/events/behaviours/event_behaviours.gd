@@ -21,8 +21,8 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		mover: Mover, trace: RunTrace, lights: TrafficSignals, move: MoveProposal) -> Array[EventBehaviour]:
 	# The siblings another behaviour is handed are made first; each ticks in its own place below.
 	var on_foot: EventOfficer = null
-	if row.pursuit != null:
-		on_foot = EventOfficer.new(figure, where, row, row.pursuit, navigator, mover)
+	if row.pursues():
+		on_foot = EventOfficer.new(figure, where, row, row.pursuit(), navigator, mover)
 	var barrier_post: EventBarrierPost = null
 	if row.leaves_its_body():
 		barrier_post = EventBarrierPost.new(figure, where, row, row.look(), map, navigator, mover)
@@ -34,7 +34,7 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	if row.investigates():
 		investigation = EventInvestigation.new(figure, where, row, row.route(), map, route)
 	var car: EventCarDriving = null
-	if row.vehicle:
+	if row.drives():
 		car = EventCarDriving.new(figure, where, row, row.route(), map, route, investigation,
 				move, lights)
 	# The investigation stands its car for her once its men are back: made after it, since the car
@@ -60,8 +60,8 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	if investigation != null:
 		event.investigation = investigation
 		out.append(investigation)
-	if row.pursuit != null:
-		event.pursuit = EventPursuit.new(figure, where, row, row.pursuit, navigator, mover, route,
+	if row.pursues():
+		event.pursuit = EventPursuit.new(figure, where, row, row.pursuit(), navigator, mover, route,
 				on_foot, barrier_post)
 		out.append(event.pursuit)
 		event.on_foot = on_foot
@@ -69,11 +69,11 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	if barrier_post != null:
 		event.barrier_post = barrier_post
 		out.append(barrier_post)
-	if row.notice != null and row.pursuit == null and not row.investigates():
+	if row.waits_for_her() and not row.pursues() and not row.investigates():
 		event.notice_run = EventNoticeRun.new(
-				figure, where, row.route(), row.flock(), row.notice, route)
+				figure, where, row.route(), row.flock(), row.notice(), route)
 		out.append(event.notice_run)
-	if row.moves() and not row.investigates() and row.pursuit == null and row.notice == null:
+	if row.moves() and not row.investigates() and not row.pursues() and not row.waits_for_her():
 		out.append(route)
 	if row.detains_her():
 		event.hold = EventHold.new(figure, row.hold())
@@ -81,7 +81,7 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	if row.comes_down_her_line() and not row.telegraphs_its_coming():
 		event.unreachable = EventUnreachable.new(figure, where)
 		out.append(event.unreachable)
-	if row.abduction != null:
-		event.abduction = EventAbduction.new(figure, where, row, row.abduction, trace)
+	if row.takes_a_victim_by() != null:
+		event.abduction = EventAbduction.new(figure, where, row, row.takes_a_victim_by(), trace)
 		out.append(event.abduction)
 	return out

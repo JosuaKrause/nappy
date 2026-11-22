@@ -183,7 +183,7 @@ var _drawn_box_known := false
 ## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
 ## chase as an influence.
 func is_chasing() -> bool:
-	return _def.pursuit != null and _charge.began and not is_gone() and not is_on_its_way_out() \
+	return _def.pursues() and _charge.began and not is_gone() and not is_on_its_way_out() \
 			and not is_waiting()
 
 ## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
@@ -199,7 +199,7 @@ func has_charged() -> bool:
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
 ## otherwise the row's own `_def.id`. Telemetry only — nothing that decides anything reads it.
 func logged_name() -> String:
-	return named_for_the_log(_def.id, _is_pelican)
+	return named_for_the_log(_def.id(), _is_pelican)
 
 ## `logged_name()` for a row id and a pelican choice that may not have an instance yet — a warning
 ## still up (`PendingWarning.logged_name()`).
@@ -374,7 +374,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_idle_phase_offset = _position_roll(101)
 	# A row that waits has not noticed her yet; any other is in its telegraph from now, or past a
 	# telegraph of no length.
-	if definition.notice != null:
+	if definition.waits_for_her():
 		_notice.stop()
 		phase = Phase.WAITING
 	else:
@@ -452,7 +452,7 @@ func body_position() -> Vector2:
 ## directly), where the notice is the radius alone.
 func _would_stand_in_her_view() -> bool:
 	var view := _where.view()
-	if _def.pursuit == null or not warns_by_radius() or not view.has_area():
+	if not _def.pursues() or not warns_by_radius() or not view.has_area():
 		return true
 	return view.encloses(warning_rect())
 
@@ -743,7 +743,7 @@ func _tick(delta: float) -> void:
 ## on the entity layer at his own feet. Taken on the drawn frame (`_process()`), from the phase the
 ## last tick left: a look never writes the event, and the tick writes no drawing property.
 func _take_the_layer_it_warns_on() -> void:
-	if _def.pursuit == null or not _def.pursuit.is_drawn_over_the_street():
+	if not _def.pursues() or not _def.pursuit().is_drawn_over_the_street():
 		return
 	DrawLayer.draw_on(self, DrawLayer.Layer.WARNING if is_standing_for_its_notice()
 			else DrawLayer.Layer.ENTITIES)
@@ -801,14 +801,14 @@ var _guard_warns_her := false
 ## and runs its own line at her once she is near (`NoticeSpec.runs_within()`, the masked man in the
 ## escape's stairwell). Telemetry only.
 func counts_a_charge() -> bool:
-	return _def.pursuit != null or (_def.notice != null and _def.notice.runs_within() > 0.0)
+	return _def.pursues() or _def.runs_its_own_line()
 
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
 ## `pursuit_ended`): the row's `EventDef.counts_charges_as` where it sets one (the task guard sent
 ## from out of her view counts as `task_guard`), otherwise the row's own `_def.id` — the day-3
 ## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
 func _charger_name() -> String:
-	return _def.counts_charges_as if _def.counts_charges_as != "" else _def.id
+	return _def.charges_counted_as() if _def.charges_counted_as() != "" else _def.id()
 
 ## **Its charge caught her**, said once: by `EventManager.check_hard_fails()` when its catch ends
 ## the day, ahead of `hard_fail_triggered`, and by a patrol car's man the frame he stops her
@@ -994,7 +994,7 @@ func travel_velocity() -> Vector2:
 	# as a closing speed, and an engine standing at a kerb is not closing on anybody.
 	if has_parked():
 		return Vector2.ZERO
-	if _def.pursuit != null:
+	if _def.pursues():
 		if is_waiting() or is_telegraphing():
 			return Vector2.ZERO
 		return _heading * _def.chase_speed()
@@ -1016,7 +1016,7 @@ func travel_velocity() -> Vector2:
 func caret_velocity() -> Vector2:
 	if is_gone() or is_on_its_way_out():
 		return Vector2.ZERO
-	if _def.pursuit != null:
+	if _def.pursues():
 		if is_waiting():
 			return Vector2.ZERO
 		return _heading * _def.chase_speed()
@@ -1034,7 +1034,7 @@ func facing_now() -> Vector2:
 ## Where on its own clock it noticed her, held time counted back in, or `INF` for a row that waits
 ## and has not noticed her (and for a row with no wait) — what `save()` carries.
 func _noticed_at() -> float:
-	return _notice.started_at() if _def.notice != null else INF
+	return _notice.started_at() if _def.waits_for_her() else INF
 
 ## Noticing her: its notice's clock starts now and it is warning (`Phase.WARNING`), or already past
 ## a notice of no length.
@@ -1076,7 +1076,7 @@ func _restore_the_moment(saved: EventSave) -> void:
 	_age = saved.age()
 	_settle_the_notice()
 	_path_travelled = saved.travelled()
-	if _def.notice != null and saved.noticed_at() != INF:
+	if _def.waits_for_her() and saved.noticed_at() != INF:
 		_notice.start(saved.noticed_at())
 		transition(Phase.WARNING)
 		_settle_the_notice()
@@ -1258,7 +1258,7 @@ func _has_expired() -> bool:
 	# man it let out is back in.
 	if investigation and not investigation.all_back():
 		return false
-	return _def.duration > 0.0 and chase_age() >= notice_time() + _def.duration
+	return _def.lasts_for() > 0.0 and chase_age() >= notice_time() + _def.lasts_for()
 
 ## **Ends it now**, from outside as well as from its own step: it leaves as an event that is over does
 ## (`transition()` into `Phase.DONE`), and its manager frees it in its ordinary sweep
@@ -1290,7 +1290,7 @@ func is_telegraphing() -> bool:
 ## trigger to have waited behind — is false here and spends its telegraph coming, which is the
 ## lesson; and false for anything that has not noticed her yet or has lunged.
 func is_standing_for_its_notice() -> bool:
-	var stands := _def.pursuit != null and _def.pursuit.stands_for_its_notice()
+	var stands := _def.pursues() and _def.pursuit().stands_for_its_notice()
 	return (stands or _stands_for_this_notice) and is_telegraphing() \
 			and (_def.waits_for_her() or _def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER))
 
@@ -1308,8 +1308,8 @@ func hold_still_longer(seconds: float) -> void:
 func notice_time() -> float:
 	if _notice_time >= 0.0:
 		return _notice_time
-	if warns_by_radius() and _def.pursuit and _def.pursuit.warns_for() > 0.0:
-		return _def.pursuit.warns_for()
+	if warns_by_radius() and _def.pursues() and _def.pursuit().warns_for() > 0.0:
+		return _def.pursuit().warns_for()
 	return _def.telegraphs_for()
 
 ## True for a row that waits (`EventDef.waits_for_her()`) and has not noticed her: its notice's
@@ -1346,7 +1346,7 @@ func chase_age() -> float:
 ## and everything sent at her from off screen, whose approach or badge is the warning — nor one that
 ## sets off beside her, whose notice is a clock by construction.
 func warns_by_radius() -> bool:
-	return _def.waits_for_her() and (_def.pursuit != null or _def.runs_its_own_line()) \
+	return _def.waits_for_her() and (_def.pursues() or _def.runs_its_own_line()) \
 			and not _def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and not _set_on_her
 
 ## **The stand-off a pursuer closes to and holds**, `PursuitSpec.standoff()` over
@@ -1374,7 +1374,7 @@ func _hold_the_notice_clock(delta: float) -> void:
 		_notice.hold(delta)
 		return
 	var her := _where.at()
-	if warns_by_radius() and _def.pursuit and her != Vector2.INF \
+	if warns_by_radius() and _def.pursues() and her != Vector2.INF \
 			and chase_age() >= notice_time() and chase_age() - delta < notice_time() \
 			and not clear_line_to(her):
 		_notice.hold(delta)
@@ -1407,7 +1407,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# spike rather than a field she strolls out of, and his field, so walking away takes some
 		# of it off. Nothing after it: he is walking back by then (`_tick()`).
 		var into := clampf(on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
-		return 2.0 * _def.pursuit.stop_excitement() / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
+		return 2.0 * _def.pursuit().stop_excitement() / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner radius`
 		# by construction (`detain_distance() < inner radius`), so there is no distance to shape.
@@ -1636,7 +1636,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 		return false
 	if global_position.distance_to(world_position) > _def.lethal_reach():
 		return false
-	return _def.pursuit == null or _navigator.clear_line(global_position, world_position, _sight)
+	return not _def.pursues() or _navigator.clear_line(global_position, world_position, _sight)
 
 ## **Whether this car's own course strikes `point` before the horizon is out**, her position held
 ## fixed (`EventCarDriving.will_strike()`): the doubled caret's question for a car that drives,
@@ -2159,7 +2159,7 @@ func row() -> EventDef:
 ## The id of the row this is a live one of (`EventDef.id`), which the run log's chase lines and the
 ## poster walls name it by. `logged_name()` is the name a log line calls the thing she met.
 func row_id() -> String:
-	return _def.id
+	return _def.id()
 
 ## The id of the row it leaves where it ends (`EventDef.leaves_behind()`), or "" for a row that
 ## leaves nothing.
@@ -2193,7 +2193,7 @@ func was_warned_of() -> bool:
 
 ## Whether it comes after her (its row's `pursuit`).
 func pursues() -> bool:
-	return _def.pursuit != null
+	return _def.pursues()
 
 ## Whether it hunts for her (`EventDef.hunts_for_her()`): at the heat that hunts it stops being a place
 ## and starts being a hunter, the roadblock's guard or a van that lets out men who pursue her.
@@ -2218,7 +2218,7 @@ func walks_straight_away() -> bool:
 
 ## Whether it is a car that drives (its row's `vehicle`), whose strike is its driving's.
 func drives() -> bool:
-	return _def.vehicle != null
+	return _def.drives()
 
 ## Whether it is a permanent feature of a fixed map that never appears (`EventDef.is_ambient()`).
 func is_ambient() -> bool:

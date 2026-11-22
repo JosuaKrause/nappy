@@ -353,10 +353,10 @@ func _test_a_completed_take_is_logged_exactly_once(t: TestRunner) -> void:
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where,
 			RecordingTrace.new(lines))
 	instance_where.tell(Vector2(def.heard_within() - 20.0, 0.0))
-	_advance(instance, instance.row().abduction.taken_over() * 0.5)
+	_advance(instance, instance.row().takes_a_victim_by().taken_over() * 0.5)
 	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
 
-	_advance(instance, instance.row().abduction.taken_over())
+	_advance(instance, instance.row().takes_a_victim_by().taken_over())
 	t.check(_takes(lines) == 1, "exactly one entry once it completes (%d)" % _takes(lines))
 
 	# Long past the completion, the count must not grow — the flag latches rather than re-firing.

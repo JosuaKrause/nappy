@@ -69,47 +69,6 @@ src/simulation_builder.gd view
 # [EventBehaviour] src/events/behaviours/event_behaviour.gd
 src/events/event_instance.gd steps_each_tick
 
-# [EventDef] src/events/event_def.gd
-src/dev/scene_recipe_runtime.gd id
-src/events/behaviours/event_abduction.gd duration
-src/events/behaviours/event_abduction.gd id
-src/events/behaviours/event_abduction.gd pursuit
-src/events/behaviours/event_behaviours.gd abduction
-src/events/behaviours/event_behaviours.gd notice
-src/events/behaviours/event_behaviours.gd pursuit
-src/events/behaviours/event_behaviours.gd vehicle
-src/events/behaviours/event_car_driving.gd pursuit
-src/events/behaviours/event_departure.gd vehicle
-src/events/behaviours/event_investigation.gd vehicle
-src/events/dawn_phases/dawn_ambient.gd ambient_source
-src/events/dawn_phases/dawn_draw.gd id
-src/events/dawn_phases/dawn_lesson.gd id
-src/events/dawn_phases/dawn_moments.gd id
-src/events/dawn_phases/dawn_one_shots.gd id
-src/events/dawn_phases/dawn_roadblock_count.gd id
-src/events/dawn_phases/dawn_roadblocks.gd id
-src/events/dawn_phases/dawn_spoilers.gd id
-src/events/event_catalogue.gd departs_at
-src/events/event_catalogue.gd duration
-src/events/event_catalogue.gd id
-src/events/event_catalogue.gd kind
-src/events/event_catalogue.gd pursuit
-src/events/event_catalogue.gd role
-src/events/event_director.gd id
-src/events/event_instance.gd counts_charges_as
-src/events/event_instance.gd duration
-src/events/event_instance.gd id
-src/events/event_instance.gd notice
-src/events/event_instance.gd pursuit
-src/events/event_instance.gd vehicle
-src/events/event_plan.gd id
-src/events/event_scheduler.gd id
-src/events/event_spawner.gd id
-src/events/events_ahead.gd id
-src/events/pending_warning.gd id
-src/events/ruled_location_ground.gd id
-src/resistance/resistance_director.gd id
-
 # [EventFlock] src/events/behaviours/event_flock.gd
 src/events/event_instance.gd birds
 

@@ -26,5 +26,5 @@ func run(context: DawnContext) -> void:
 			continue
 		events.add(EventPlan.new(def, Vector2.INF))
 		context.note("plan", "day %d owes no pursuit, so the run lesson is added: %s"
-				% [day, def.id])
+				% [day, def.id()])
 		return

@@ -426,8 +426,8 @@ func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Arra
 	director.use_player(player)
 	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if seen else Rect2())
 	director.set_sight(RunCity.events(_city).sees)
-	var mark_guard := EventCatalogue.mark_guard().id
-	var task_guard := EventCatalogue.task_guard().id
+	var mark_guard := EventCatalogue.mark_guard().id()
+	var task_guard := EventCatalogue.task_guard().id()
 	var marks_before := _live(mark_guard)
 	var tasks_before := _live(task_guard)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
@@ -507,10 +507,10 @@ func _test_the_guard_is_seeded(t: TestRunner) -> void:
 		# retires a day's guard before the next iteration spawns another, so a search by distance
 		# alone can pick up an earlier day's stale robber instead of the one this day's trap set.
 		# The one that was not in the street before this day started is his.
-		var guards_before := _live(robbery.id)
+		var guards_before := _live(robbery.id())
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var at := director.contact_position()
-		var guard := _new_one(robbery.id, guards_before)
+		var guard := _new_one(robbery.id(), guards_before)
 		t.check(guard != null and is_instance_valid(guard), "day %d's mark is guarded" % day)
 		var distance := guard.global_position.distance_to(at) if guard else -1.0
 		if guard:
@@ -523,9 +523,9 @@ func _test_the_guard_is_seeded(t: TestRunner) -> void:
 		director.free()
 
 		var replay := _director(t)
-		var replays_before := _live(robbery.id)
+		var replays_before := _live(robbery.id())
 		replay.start_day(day, _rng(day, "resistance"), 300.0)
-		var replay_guard := _new_one(robbery.id, replays_before)
+		var replay_guard := _new_one(robbery.id(), replays_before)
 		if guard and replay_guard and is_instance_valid(replay_guard):
 			t.close_to(replay_guard.global_position.distance_to(replay.contact_position()),
 					distance, "day %d's guard distance replays the same way" % day, 0.5)

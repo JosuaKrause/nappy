@@ -3472,7 +3472,7 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 		return
 	if task.rigs_within <= 0:
 		return
-	var row := EventCatalogue.mast().id if task.target_kind == ResistanceSteps.TargetKind.MAST \
+	var row := EventCatalogue.mast().id() if task.target_kind == ResistanceSteps.TargetKind.MAST \
 			else task.task_event_id
 	var size := task.rigs_within
 	var ids: Array[String] = [row]

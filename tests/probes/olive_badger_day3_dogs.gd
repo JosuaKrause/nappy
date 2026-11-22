@@ -74,7 +74,7 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 		var step := minf(STEP, day_len - t)
 		var due: Array = director.due(step, pos, vel)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 		pos += vel * step
 		if pos.y < 0.0 or pos.y > y_max:
 			vel.y = -vel.y

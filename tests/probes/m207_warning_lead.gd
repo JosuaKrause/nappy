@@ -89,7 +89,7 @@ func run(t: TestRunner) -> void:
 				exists = "%.2f" % result["created_at"]
 		# A row that does not telegraph (`EventDef.telegraphs_its_coming()`) is outside the contract: no floor.
 		var telegraphs := def.telegraphs_its_coming()
-		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [def.id,
+		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [def.id(),
 				encounter["how"], cells[0], cells[1], cells[2], exists,
 				"%.2f" % floor_s if telegraphs else "outside",
 				" / ".join(overs) if telegraphs else "—"])
@@ -120,7 +120,7 @@ static func _print_the_gold_timing(edge: DangerEdge) -> void:
 		for answer: Answer in GOLD_ANSWERS:
 			var result := gold(encounter, answer, edge)
 			var caught: bool = result["caught"]
-			print("| `%s`, %s | %s | %s | %s | %s | %s | %s |" % [def.id,
+			print("| `%s`, %s | %s | %s | %s | %s | %s | %s |" % [def.id(),
 					encounter["how"], ["walking toward", "standing", "walking away", "running away"][answer],
 					_seconds(result["seen_at"]), _seconds(result["chase_at"]),
 					_seconds(result["caught_at"]) if caught else str(result["ends"]),
@@ -181,7 +181,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var clock := 0.0
 	var warned_at := 0.0
 	# Include the badge before the long cap so even a chase that never catches her has an ending.
-	var limit := maxf(LIMIT, def.warned_for() + def.telegraphs_for() + def.duration + 1.0)
+	var limit := maxf(LIMIT, def.warned_for() + def.telegraphs_for() + def.lasts_for() + 1.0)
 	while clock < limit:
 		her += velocity * STEP
 		clock += STEP
@@ -414,7 +414,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var model := BadgeModel.new()
 	var subject := DangerEdge.subject_for_def(def)
 	subject.key = 1
-	subject.logged_name = def.id
+	subject.logged_name = def.id()
 	var sees := func(point: Vector2, margin_px: float) -> bool:
 		return _in_view(point - her_box["at"], margin_px / ZOOM)
 	var elapsed := 0.0

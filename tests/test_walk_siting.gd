@@ -92,8 +92,8 @@ class _Judge extends LocationGround:
 	## Overrides LocationGround.offer_on.
 	func offer_on(def: EventDef, location: Location, tiles: Array[Vector2i],
 			among: Array[EventPlan]) -> EventPlan:
-		asks.append([def.id, location, tiles.duplicate(), among])
-		if refuses_everything or location in refuses or def.id in refuses_rows:
+		asks.append([def.id(), location, tiles.duplicate(), among])
+		if refuses_everything or location in refuses or def.id() in refuses_rows:
 			return null
 		return EventPlan.new(def, Vector2(tiles[0]) * float(Tuning.TILE_SIZE))
 

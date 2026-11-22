@@ -521,7 +521,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 	var escape := EventCatalogue.escape_roadblock()
 	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(escape == day, "the escape's roadblock is a day's at full resistance progress, one row")
-	t.check(escape.pursues() and escape.pursuit.leaves_its_body_standing() and escape.ends_the_day(),
+	t.check(escape.pursues() and escape.pursuit().leaves_its_body_standing() and escape.ends_the_day(),
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
 	t.check(EventCatalogue.by_id("roadblock").peak() == 0.0 and day.peak() == 0.0
 			and escape.peak() == 0.0, "the roadblock row, cold and hunting, has no field strength")
@@ -545,7 +545,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 		# She stays inside his radius until his warning has run: he charges. She runs; he gives up
 		# and walks away.
 		var waited := 0
-		while guard.is_telegraphing() and waited < int((def.pursuit.warns_for() + 1.0) / step):
+		while guard.is_telegraphing() and waited < int((def.pursuit().warns_for() + 1.0) / step):
 			guard.step(step)
 			waited += 1
 		var charged := false
@@ -610,7 +610,7 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 	guard.step(step)
 	var waited := 0
-	while guard.is_telegraphing() and waited < int((def.pursuit.warns_for() + 1.0) / step):
+	while guard.is_telegraphing() and waited < int((def.pursuit().warns_for() + 1.0) / step):
 		guard.step(step)
 		waited += 1
 	var posted_through_the_chase := true
@@ -820,7 +820,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	told.tell(band.global_position + Vector2(0.0, band.row().notice_within() - 10.0))
 	band.step(step)
 	var waited := 0
-	while band.is_telegraphing() and waited < int((band.row().pursuit.warns_for() + 1.0) / step):
+	while band.is_telegraphing() and waited < int((band.row().pursuit().warns_for() + 1.0) / step):
 		band.step(step)
 		waited += 1
 	var frames := 0
@@ -1579,7 +1579,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -
 					on_her += 1
 					t.check(false,
 							"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the "
-							% [seed_value, def.id, placement.placed_at().distance_to(spawn)]
+							% [seed_value, def.id(), placement.placed_at().distance_to(spawn)]
 							+ "%.0fpx its body and her own take up"
 							% (def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS))
 	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
@@ -1778,7 +1778,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	await t.get_tree().physics_frame
 	var craters := 0
 	for instance in RunCity.events(city).instances():
-		if instance.row_id() == crater.id:
+		if instance.row_id() == crater.id():
 			craters += 1
 			t.check(instance.is_solid(), "and the crater it left is solid")
 	t.check(craters == 1, "exactly one crater is left where the burst was")

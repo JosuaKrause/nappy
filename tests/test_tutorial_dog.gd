@@ -232,7 +232,7 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t: TestRunner) ->
 			t.check(handed.size() == owed, "seed %d: all %d the day owes are handed out (%d)"
 					% [seed, owed, handed.size()])
 			for row: EventDef in handed:
-				t.check(row.id == "charging_dog" and row.notice_within() <= 0.0,
+				t.check(row.id() == "charging_dog" and row.notice_within() <= 0.0,
 						("seed %d: the sprinkle is charging_dog itself, with no notice " +
 								"— day 3's own shape, not the waiting one a MAP placement " +
 								"past the switch would carry") % seed)
@@ -262,7 +262,7 @@ func _test_the_sprinkle_never_runs_on_the_teaching_day(t: TestRunner) -> void:
 func _handed_out(director: EventDirector, at: Vector2, heading: Vector2, seconds: float) -> Array[String]:
 	var ids: Array[String] = []
 	for row in _handed_out_rows(director, at, heading, seconds):
-		ids.append(row.id)
+		ids.append(row.id())
 	return ids
 
 ## The same, as the rows themselves.

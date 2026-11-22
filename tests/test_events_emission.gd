@@ -175,7 +175,7 @@ func _test_duration_and_finish(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	t.check(def.departure_speed() <= 0.0, "the van that was parked there does not drive off")
 	var instance := _instance(t, def)
-	_advance(instance, def.telegraphs_for() + def.duration + 0.1)
+	_advance(instance, def.telegraphs_for() + def.lasts_for() + 0.1)
 	t.check(instance.is_gone(), "an event with a duration finishes")
 	t.close_to(instance.source().contribution_at(Vector2.ZERO), 0.0,
 			"a finished event contributes nothing")
@@ -196,7 +196,7 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance_where.tell(Vector2(60.0, 0.0))
-	_advance(instance, def.telegraphs_for() + def.duration + 0.1)
+	_advance(instance, def.telegraphs_for() + def.lasts_for() + 0.1)
 	t.check(not instance.is_gone(), "a flock that is done is not deleted where it stands")
 	t.check(instance.is_on_its_way_out(), "it is leaving")
 	t.close_to(instance.source().contribution_at(instance_where.at()), 0.0,
@@ -218,7 +218,7 @@ func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	alone_where.tell(Vector2.ZERO)
 	alone.step(STEP)
 	alone_where.tell(Vector2.INF)
-	_advance(alone, def.telegraphs_for() + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
+	_advance(alone, def.telegraphs_for() + def.lasts_for() + EventDeparture.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_gone(), "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
 

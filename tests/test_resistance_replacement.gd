@@ -269,7 +269,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 		for i in range(0, through.size(), 2):
 			var her := map.tile_to_world(through[i])
 			_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
-			var guards_before := _live(EventCatalogue.mark_guard().id)
+			var guards_before := _live(EventCatalogue.mark_guard().id())
 			var mark := _relocate_round(director, player, her, away)
 			if mark == Vector2.INF:
 				continue
@@ -277,7 +277,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 			t.check(not _box_on_screen(mark, Vector2(16.0, 16.0), her),
 					"seed %d: from %s, no part of the relocated mark at %s is on screen"
 					% [seed_value, through[i], map.world_to_tile(mark)])
-			var guard := _new_one(EventCatalogue.mark_guard().id, guards_before)
+			var guard := _new_one(EventCatalogue.mark_guard().id(), guards_before)
 			t.check(guard != null, "seed %d: the mark relocated to %s is guarded"
 					% [seed_value, map.world_to_tile(mark)])
 			if guard != null:

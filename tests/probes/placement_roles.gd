@@ -12,5 +12,5 @@ func run(t: TestRunner) -> void:
 		for def: EventDef in EventCatalogue.all():
 			var role: int = EventScheduler.role_for(def, day)
 			if role == GameEnums.BlockerRole.WALL or role == GameEnums.BlockerRole.FRICTION:
-				print("ROLE %d %s %d" % [day, def.id, role])
+				print("ROLE %d %s %d" % [day, def.id(), role])
 	t.check(true, "roles printed")

@@ -143,7 +143,7 @@ func _test_forced_queue_is_untouched(t: TestRunner) -> void:
 	var after := walk.hand_outs(40.0)
 	var cyclists_only := true
 	for handed: Array in before + after:
-		cyclists_only = cyclists_only and (handed[1] as EventDef).id == "cyclist"
+		cyclists_only = cyclists_only and (handed[1] as EventDef).id() == "cyclist"
 	t.check(before.size() >= 6 and after.size() >= 6 and cyclists_only,
 			"and only the forced row is handed out, before the return (%d) and after (%d)"
 			% [before.size(), after.size()])
@@ -231,7 +231,7 @@ func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 	while walk.clock < 400.0 and met.size() < count * x:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 	# The nth patrol among the first n bags of `x` events after the return: a patrol that comes early,
 	# or one of the ordinary bag's, leaves the next free to come late in its own bag.
 	var within := met.size() == count * x
@@ -262,7 +262,7 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) ->
 			limited = def
 	var marbles := []
 	for i in 80:
-		marbles.append(limited.id)
+		marbles.append(limited.id())
 	var director := _the_return_days_director(map, 31)
 	# The row's whole day is owed first: exactly `max_per_day` of them, handed out as she walks.
 	director.start_recipe_route(marbles, [], limited.most_in_a_day(), 0.0, 0)
@@ -271,10 +271,10 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) ->
 	while walk.clock < 600.0 and director.owed() > 0:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
-			its_day.append((due[0] as EventDef).id)
+			its_day.append((due[0] as EventDef).id())
 	t.check(its_day.size() == limited.most_in_a_day() and director.owed() == 0,
 			"'%s' has had its %d a day before the return (%d handed out, %d owed)"
-			% [limited.id, limited.most_in_a_day(), its_day.size(), director.owed()])
+			% [limited.id(), limited.most_in_a_day(), its_day.size(), director.owed()])
 	director.owe_the_return(RETURN_DAY, 0)
 	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(RETURN_DAY) - 1]
 	var met: Array[String] = []
@@ -282,7 +282,7 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) ->
 	while walk.clock - before < 300.0 and met.size() < count:
 		var due := walk.tick(STEP)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 	t.check(met.size() == count and met.count("police_patrol") == count,
 			"with the ordinary row capped, all %d patrols still come, one after another (%s)"
 			% [count, met])
@@ -304,7 +304,7 @@ func _test_sited_on_driveable_road_toward_her(t: TestRunner) -> void:
 	var handed := []
 	while walk.clock < 120.0 and handed.is_empty():
 		var due := walk.tick(STEP)
-		if not due.is_empty() and (due[0] as EventDef).id == "police_patrol":
+		if not due.is_empty() and (due[0] as EventDef).id() == "police_patrol":
 			handed = due
 	t.check(not handed.is_empty(), "the patrol is handed out on her street")
 	if handed.is_empty():
@@ -345,7 +345,7 @@ func _test_empty_in_a_park(t: TestRunner) -> void:
 	in_the_park.on_the_spot = true
 	var patrols := 0
 	for hand_out: Array in in_the_park.hand_outs(150.0):
-		if (hand_out[1] as EventDef).id == "police_patrol":
+		if (hand_out[1] as EventDef).id() == "police_patrol":
 			patrols += 1
 	t.check(patrols == 0,
 			"no carriageway to drive on in a park, so no patrol is handed out (%d)" % patrols)
@@ -353,5 +353,5 @@ func _test_empty_in_a_park(t: TestRunner) -> void:
 	var found := false
 	while on_the_street.clock < 60.0 and not found:
 		var due := on_the_street.tick(STEP)
-		found = not due.is_empty() and (due[0] as EventDef).id == "police_patrol"
+		found = not due.is_empty() and (due[0] as EventDef).id() == "police_patrol"
 	t.check(found, "and it was kept, not spent: it comes down her street as soon as she is on one")

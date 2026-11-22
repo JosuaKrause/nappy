@@ -463,7 +463,7 @@ func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 		if not plan.is_placed() or plan.mast_id() != "":
 			continue
 		var def := plan.row()
-		if def.is_scenery() or def.pursues() or def.id.begins_with("checkpoint") \
+		if def.is_scenery() or def.pursues() or def.id().begins_with("checkpoint") \
 				or (def.moves() and not def.paces_a_beat()):
 			continue
 		var emits := def.has_a_field()
@@ -471,7 +471,7 @@ func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
 		if radius <= 0.0:
 			continue
 		var row := Row.new()
-		row.id = def.id
+		row.id = def.id()
 		row.radius = radius
 		row.position = plan.placed_at()
 		row.paces = def.paces_a_beat()

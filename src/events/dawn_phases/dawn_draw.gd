@@ -72,11 +72,11 @@ static func _rows_of(context: DawnContext) -> Dictionary:
 		return spec.walk_bag_rows()
 	var day := context.day()
 	var beside_the_routes := context.roadblock_row()
-	var beside_id := beside_the_routes.id if beside_the_routes != null else ""
+	var beside_id := beside_the_routes.id() if beside_the_routes != null else ""
 	var rows := {}
 	for def in context.catalogue_rows(GameEnums.EventKind.RECURRING):
 		if def.is_drawn_by_units(day, beside_id):
-			rows[def.id] = def.for_day(day)
+			rows[def.id()] = def.for_day(day)
 	return rows
 
 ## **What answers a unit's bag** (`UnitBags`): one bag for the whole walk where the spec holds one

@@ -192,7 +192,7 @@ static func all() -> Array[EventDef]:
 static func heated(def: EventDef, level: int) -> EventDef:
 	if not def.answers_to_heat() or level <= 0:
 		return def
-	var key := "%s|%d" % [def.id, level]
+	var key := "%s|%d" % [def.id(), level]
 	if not _hot.has(key):
 		_hot[key] = def.at_heat(level)
 	return _hot[key]
@@ -235,7 +235,7 @@ static func building_fire() -> EventDef:
 		# The building's own row, placed by its plan and nothing else: `SCRIPTED` on day 0, the day
 		# nobody plays, like the escape's other rows, so no day's dawn reaches it and the rule that
 		# a one-shot is sited from her walk does not apply to it.
-		draft.scripted_on(0)
+		draft.scripted_on(0, 1)
 		_building_fire = draft.build()
 	return _building_fire
 
@@ -257,21 +257,17 @@ static func explosion_outside() -> EventDef:
 
 static func by_id(id: String) -> EventDef:
 	for def in all():
-		if def.id == id:
+		if def.id() == id:
 			return def
 	return null
 
-## The row that plays `role` (`EventDef.Role`), the first in catalogue order, or null.
-static func by_role(role: EventDef.Role) -> EventDef:
-	for def in all():
-		if def.role == role:
-			return def
-	return null
-
-## The loudspeaker mast (`EventDef.Role.MAST`): what the masts' sites, the day's masts and the
-## resistance's mast task are made of.
+## The loudspeaker mast (the first row that is one, in catalogue order): what the masts' sites,
+## the day's masts and the resistance's mast task are made of.
 static func mast() -> EventDef:
-	return by_role(EventDef.Role.MAST)
+	for def in all():
+		if def.is_a_mast():
+			return def
+	return null
 
 ## **The day-3 lesson's own row for `row`**: for the charging dog, `charging_dog_tutorial`, the dog
 ## under an id of its own, which `EventDirector._teach_the_run()` hands out in place of the first
@@ -280,7 +276,7 @@ static func mast() -> EventDef:
 ## other. A derived copy, built once: it shares the dog's picture and every number, and the day's
 ## roll never places it.
 static func lesson_of(row: EventDef) -> EventDef:
-	if row == null or row.id != "charging_dog":
+	if row == null or row.id() != "charging_dog":
 		return row
 	if _lesson_dog == null:
 		var draft := _charging_dog().redraft()
@@ -326,7 +322,7 @@ static func available_on(day: int, heat: int = 0) -> Array[EventDef]:
 static func of_kind(kind: GameEnums.EventKind, day: int, heat: int = 0) -> Array[EventDef]:
 	var found: Array[EventDef] = []
 	for def in available_on(day, heat):
-		if def.kind == kind:
+		if def.is_of_kind(kind):
 			found.append(def)
 	return found
 
@@ -435,10 +431,9 @@ static func _build() -> Array[EventDef]:
 ## fairness contract asks of every row: intensity 0, radii drawn tight round the figure.
 static func _neighbor() -> EventDef:
 	var row := EventDraft.new("neighbor")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.NEIGHBOR))
 	row.body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
-	row.from_day(1, 1)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.field(FieldSpec.of(0.0, 20.0, 40.0))
 	row.warning(WarningSpec.lasting(0.5))
@@ -838,7 +833,7 @@ static func _busker() -> EventDef:
 	var row := EventDraft.new("busker")
 	row.look(LookSpec.of(EventDef.Look.BUSKER))
 	row.body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
-	row.from_day(2, 1)
+	row.from_day(2)
 	row.ground([GameEnums.TileType.PARK, GameEnums.TileType.SQUARE])
 	# The lowest tenth, with a small margin above the sweep's own crossing, whose day never fills
 	# a sleep meter standing at his own core (see the note above).
@@ -866,7 +861,7 @@ static func _construction() -> EventDef:
 			.walked_round()
 			.parked()
 			.as_a_spread())
-	row.from_day(2, 1)
+	row.from_day(2)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.field(FieldSpec.of(0.0, 46.0, 200.0))
 	row.warning(WarningSpec.lasting(1.8))
@@ -889,7 +884,7 @@ static func _construction() -> EventDef:
 ## encounters the burning building before the engine.
 static func _fire_truck() -> EventDef:
 	var row := EventDraft.new("fire_truck")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.FIRE_ENGINE))
 	row.body(BodySpec.footprint(GroundShape.segment(16.0, 13.0)).walked_round().parked())
 	# **The body is the drawing's ground contact**: 58px long (`fire_engine.svg`, x 2 to 60, bumper
@@ -954,7 +949,7 @@ static func _burning_building() -> EventDef:
 	# A footprint, no solid body: `EventDef.validate()` requires a shape wherever there is a
 	# look to draw, but nothing stands here to be solid.
 	row.body(BodySpec.footprint(GroundShape.point(30.0)).unmet().parked())
-	row.from_day(3, 1)
+	row.from_day(3)
 	row.until_day(3)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.in_the_lane(EventDef.Pavement.AT_THE_FRONT)
@@ -981,7 +976,7 @@ static func _burning_building() -> EventDef:
 ## outer radius 90 → 78.
 static func _burnt_shell() -> EventDef:
 	var row := EventDraft.new(BURNT_SHELL_ID)
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.BURNT_SHELL).casting_no_shadow())
 	row.body(BodySpec.footprint(GroundShape.band(36.0)).unmet().parked().as_a_spread())
 	row.field(FieldSpec.of(2.5, 24.0, 78.0))
@@ -1302,7 +1297,7 @@ static func _cyclist() -> EventDef:
 	var row := EventDraft.new("cyclist")
 	row.look(LookSpec.of(EventDef.Look.CYCLIST).maybe_a_pelican())
 	row.body(BodySpec.footprint(GroundShape.point(12.0)).walked_through().going_on())
-	row.from_day(2, 1)
+	row.from_day(2)
 	row.ground([GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE])
 	row.sited(EventDef.SpawnMode.TOWARD_PLAYER)
 	row.field(FieldSpec.of(18.0, 33.0, 90.0))
@@ -1342,7 +1337,7 @@ static func _ice_cream_van() -> EventDef:
 	var row := EventDraft.new("ice_cream_van")
 	row.look(LookSpec.of(EventDef.Look.ICE_CREAM_VAN))
 	row.body(BodySpec.solid(GroundShape.point(24.0)).walked_round().parked())
-	row.from_day(2, 1)
+	row.from_day(2)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.in_the_lane(EventDef.Pavement.AT_THE_KERB)
 	# The jingle is a loop, so the meter cost comes and goes on the same period it does.
@@ -1376,7 +1371,7 @@ static func _reversing_lorry() -> EventDef:
 	var row := EventDraft.new("reversing_lorry")
 	row.look(LookSpec.of(EventDef.Look.LORRY))
 	row.body(BodySpec.solid(GroundShape.point(28.0)).walked_round().parked())
-	row.from_day(3, 1)
+	row.from_day(3)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.in_the_lane(EventDef.Pavement.AGAINST_THE_BUILDING)
 	# The beeper. Steady enough to locate, slow enough to be a countdown rather than a wall.
@@ -1427,7 +1422,7 @@ static func _chatting_mother() -> EventDef:
 	var row := EventDraft.new("chatting_mother")
 	row.look(LookSpec.of(EventDef.Look.CHATTING_MOTHER))
 	row.body(BodySpec.footprint(GroundShape.point(14.0)).walked_through().going_on())
-	row.from_day(1, 1)
+	row.from_day(1)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.field(FieldSpec.of(4.5, 56.0, 70.0))
 	# (70-56)/92 = 0.15s required; it does not end the day, so no doubled margin. Generous rather than tight,
@@ -1491,7 +1486,7 @@ static func _charging_dog() -> EventDef:
 	row.look(LookSpec.of(EventDef.Look.CHARGING_DOG)
 			.warning_as(LookSpec.WarningPicture.DOG_ALERT))
 	row.body(BodySpec.footprint(GroundShape.point(13.0)).walked_through().going_on())
-	row.from_day(Tuning.RUN_TAUGHT_DAY, 1)
+	row.from_day(Tuning.RUN_TAUGHT_DAY)
 	row.ground([GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE])
 	# No `last_day`: the dog recurs after the teaching day rather than being spent by it. On
 	# `RUN_TAUGHT_DAY` itself `spawn_mode` is `AHEAD_OF_PLAYER` and `EventDirector` puts it dead
@@ -1578,7 +1573,7 @@ static func _police_patrol() -> EventDef:
 	# (`police_car_front.svg`, x 3 to 27), as a capsule laid along its heading, the datum its
 	# shadow is drawn from. `vehicle` makes it the body as well.
 	row.vehicle(VehicleSpec.driving())
-	row.from_day(4, 2)
+	row.from_day(4)
 	row.ground([GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING])
 	row.field(FieldSpec.of(10.0, 44.0, 185.0))
 	# Slower than a walk, so the escape distance is the falloff band stretched forward by the
@@ -1621,7 +1616,7 @@ static func _poster_crew() -> EventDef:
 	var row := EventDraft.new("poster_crew")
 	row.look(LookSpec.of(EventDef.Look.POSTER_CREW))
 	row.body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
-	row.from_day(4, 2)
+	row.from_day(4)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.in_the_lane(EventDef.Pavement.AGAINST_THE_BUILDING)
 	row.sited_from_her_walk(true)
@@ -1653,7 +1648,7 @@ static func _poster_crew_square() -> EventDef:
 	var row := EventDraft.new("poster_crew_square")
 	row.look(LookSpec.of(EventDef.Look.POSTER_CREW_SQUARE))
 	row.body(BodySpec.solid(GroundShape.point(PERSON_BODY)).walked_through().parked())
-	row.from_day(4, 2)
+	row.from_day(4)
 	row.ground([GameEnums.TileType.SQUARE])
 	row.field(FieldSpec.of(5.0, 30.0, 110.0))
 	row.warning(WarningSpec.lasting(1.0))
@@ -1676,10 +1671,9 @@ static func _poster_crew_square() -> EventDef:
 static func _loudspeaker() -> EventDef:
 	var row := EventDraft.new("loudspeaker")
 	row.plays(EventDef.Role.MAST)
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.LOUDSPEAKER_MAST))
 	row.body(BodySpec.solid(GroundShape.point(MAST_BODY)).walked_round().parked())
-	row.from_day(1, 2)
 	row.field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(22.0))
 	row.warning(WarningSpec.lasting(3.0))
 	# `DawnMasts` places one at every site `MastSites.compute()` names, which is
@@ -1698,10 +1692,9 @@ static func _loudspeaker() -> EventDef:
 ## **Stronger than an ordinary broadcast**: intensity half again `_loudspeaker()`'s own.
 static func _curfew_announce() -> EventDef:
 	var row := EventDraft.new("curfew_announce")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.none())
 	row.body(BodySpec.none().unmet().parked())
-	row.from_day(1, 2)
 	row.field(FieldSpec.of(30.0, 45.0, 210.0).swelling_by(0.2))
 	row.lasts(26.0)
 	row.warning(WarningSpec.lasting(2.0))
@@ -1796,7 +1789,7 @@ static func _roadblock() -> EventDef:
 			.as_a_spread())
 	# `GOES_ON` and not `PARKS`: his guard leaves his post and gives chase, and `validate()` refuses
 	# `PARKS` for a row that chases. The concrete band turns cars by its tiles.
-	row.from_day(7, 2)
+	row.from_day(7)
 	row.ground([GameEnums.TileType.ROAD])
 	row.field(FieldSpec.of(0.0, 86.0, 179.0).as_one_barrier())
 	row.warning(WarningSpec.lasting(1.8))
@@ -1840,7 +1833,7 @@ static func _abduction() -> EventDef:
 	row.look(LookSpec.of(EventDef.Look.UNMARKED_VAN))
 	row.body(BodySpec.solid(GroundShape.point(VEHICLE_BODY)).walked_round().parked())
 	row.abduction(AbductionSpec.standard())
-	row.from_day(8, 3)
+	row.from_day(8)
 	row.ground([GameEnums.TileType.SIDEWALK, GameEnums.TileType.CROSSING])
 	row.field(FieldSpec.of(20.0, 54.0, 250.0))
 	row.lasts(34.0)
@@ -1889,7 +1882,7 @@ static func _alley_robbery() -> EventDef:
 	row.look(LookSpec.of(EventDef.Look.ROBBER)
 			.warning_as(LookSpec.WarningPicture.ROBBER_ALERT))
 	row.body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
-	row.from_day(8, 3)
+	row.from_day(8)
 	row.ground([GameEnums.TileType.ALLEY])
 	# **The lunge is further out than the catch**: 38px + 130px/s × `PURSUIT_REACTION` = 116px,
 	# while the catch is 26px. The stand-off is stated over `PursuitSpec.lunge_reach()` rather than
@@ -1982,10 +1975,9 @@ static func _alley_robbery() -> EventDef:
 static func _robber_giving_chase() -> EventDef:
 	var alley := _alley_robbery()
 	var row := EventDraft.new("robber_giving_chase")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.ROBBER_GIVING_CHASE))
 	row.body(BodySpec.footprint(alley.ground_shape()).walked_through().going_on())
-	row.from_day(1, 2)
 	row.field(alley.field())
 	# The day-3 dog's own timing, read off its row: its badge alone, its approach and its chase.
 	var dog := _charging_dog()
@@ -1993,10 +1985,10 @@ static func _robber_giving_chase() -> EventDef:
 			.warned_first()
 			.badged_for(dog.warning().badge_notice()))
 	# No telegraph: he arrives already chasing.
-	row.lasts(dog.duration)
-	row.pursuit(PursuitSpec.at(alley.pursuit.speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING)
-			.lunging_from(alley.pursuit.lunge_reach()))
-	row.leaves_at(alley.departs_at)
+	row.lasts(dog.lasts_for())
+	row.pursuit(PursuitSpec.at(alley.pursuit().speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING)
+			.lunging_from(alley.pursuit().lunge_reach()))
+	row.leaves_at(alley.departure_speed())
 	row.lethal(alley.lethal())
 	return row.build()
 
@@ -2026,10 +2018,9 @@ static func _van_guard_giving_chase() -> EventDef:
 	var guard := _door_guard()
 	var alley := _alley_robbery()
 	var row := EventDraft.new("van_guard_giving_chase")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.VAN_GUARD_GIVING_CHASE))
 	row.body(BodySpec.footprint(guard.ground_shape()).walked_through().going_on())
-	row.from_day(1, 2)
 	row.field(guard.field())
 	# The day-3 dog's own timing, read off its row, as the robber's is.
 	var dog := _charging_dog()
@@ -2037,9 +2028,9 @@ static func _van_guard_giving_chase() -> EventDef:
 			.warned_first()
 			.badged_for(dog.warning().badge_notice()))
 	# No telegraph: he arrives already chasing.
-	row.lasts(dog.duration)
-	row.pursuit(PursuitSpec.at(guard.pursuit.speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING))
-	row.leaves_at(alley.departs_at)
+	row.lasts(dog.lasts_for())
+	row.pursuit(PursuitSpec.at(guard.pursuit().speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING))
+	row.leaves_at(alley.departure_speed())
 	row.lethal(guard.lethal())
 	return row.build()
 
@@ -2119,11 +2110,11 @@ static func out_of_the_car(spec: DaySpec, stops := true) -> EventDef:
 
 ## The man `out_of_the_car()` describes, made from the pursuer on foot `on_foot`.
 static func _out_of(on_foot: EventDef, stops: bool) -> EventDef:
-	var key := on_foot.id + (":stops" if stops else ":hunts")
+	var key := on_foot.id() + (":stops" if stops else ":hunts")
 	if not _out_of_the_car.has(key):
 		var draft := on_foot.redraft()
 		draft.warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX))
-		var chase := on_foot.pursuit.starting_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER).standing()
+		var chase := on_foot.pursuit().starting_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER).standing()
 		if stops:
 			draft.lethal(LethalSpec.none())
 			chase = chase.stopping_her_for(OFFICER_STOP_EXCITEMENT)
@@ -2178,10 +2169,9 @@ static var _task_guard_sent: EventDef = null
 ## out beside that body (`EventInstance.door_for_its_officer()`).
 static func _night_raid() -> EventDef:
 	var row := EventDraft.new("night_raid")
-	row.scripted_on(10)
+	row.scripted_on(10, 3)
 	row.look(LookSpec.of(EventDef.Look.RIOT_VAN))
 	row.body(BodySpec.solid(GroundShape.point(44.0)).walked_round().parked())
-	row.from_day(1, 3)
 	row.ground([GameEnums.TileType.SIDEWALK])
 	row.field(FieldSpec.of(24.0, 70.0, 330.0).pulsing_every(6.0))
 	row.warning(WarningSpec.lasting(3.0))
@@ -2199,7 +2189,7 @@ static func _military_convoy() -> EventDef:
 	var row := EventDraft.new("military_convoy")
 	row.look(LookSpec.of(EventDef.Look.ARMY_TRUCK))
 	row.body(BodySpec.footprint(GroundShape.point(26.0)).walked_round().going_on())
-	row.from_day(13, 4)
+	row.from_day(13)
 	row.ground([GameEnums.TileType.ROAD])
 	row.field(FieldSpec.of(22.0, 76.0, 300.0))
 	# As a place the day planned, faster than a walk, so the escape distance is the forward reach:
@@ -2225,10 +2215,9 @@ static func _military_convoy() -> EventDef:
 ## nothing she could see past the wall itself.
 static func _barricade() -> EventDef:
 	var row := EventDraft.new("barricade")
-	row.scripted_on(0)
+	row.scripted_on(0, 4)
 	row.look(LookSpec.of(EventDef.Look.BARRICADE))
 	row.body(BodySpec.solid(GroundShape.band(62.0)).walked_round().parked().as_a_spread())
-	row.from_day(1, 4)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
 	row.aftermath(Aftermath.none().scarring("barricade"))
@@ -2259,7 +2248,7 @@ static func _protest() -> EventDef:
 			.walked_through()
 			.parked()
 			.along_its_street())
-	row.from_day(12, 4)
+	row.from_day(12)
 	row.ground([GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING])
 	row.field(FieldSpec.of(19.5, 39.0, 269.0).pulsing_every(8.0).swelling_by(1.9))
 	row.lasts(150.0)
@@ -2297,13 +2286,12 @@ static func _protest() -> EventDef:
 ## subtracting the same term from both, so the telegraph arithmetic is untouched.
 static func _firefight() -> EventDef:
 	var row := EventDraft.new("firefight")
-	row.scripted_on(13)
+	row.scripted_on(13, 4)
 	row.look(LookSpec.of(EventDef.Look.FIREFIGHT))
 	row.body(BodySpec.solid(GroundShape.band(30.0))
 			.walked_through()
 			.parked()
 			.along_its_street())
-	row.from_day(1, 4)
 	row.ground([GameEnums.TileType.CROSSING, GameEnums.TileType.SQUARE])
 	row.field(FieldSpec.of(30.0, 84.0, 374.0).pulsing_every(2.5))
 	# Ends the day: (374-84)/92 * 2 = 6.3s.
@@ -2331,10 +2319,9 @@ static func _firefight() -> EventDef:
 ## `SpreadLook._draw_spread` draws that one copy rather than repeating a tree across the street.
 static func _fallen_tree() -> EventDef:
 	var row := EventDraft.new("fallen_tree")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.FALLEN_TREE))
 	row.body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
-	row.from_day(1, 1)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
 	return row.build()
@@ -2360,14 +2347,13 @@ static func _fallen_tree() -> EventDef:
 ## into it, the reason closures are silent in the first place.
 static func _car_accident() -> EventDef:
 	var row := EventDraft.new("car_accident")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.CAR_ACCIDENT))
 	row.body(BodySpec.solid(GroundShape.band(96.0))
 			.in_pieces(_car_accident_parts())
 			.walked_round()
 			.parked()
 			.as_a_spread())
-	row.from_day(1, 1)
 	var gaps := FieldSpec.of(CAR_ACCIDENT_INTENSITY, GroundShape.BAND_RADIUS, 96.0)
 	row.field(gaps)
 	row.warning(WarningSpec.lasting(0.9))
@@ -2406,10 +2392,9 @@ static func _car_accident_parts() -> Array[BodyPiece]:
 ## `SealPlanner._place_soft` puts it rather than spreading it across the whole band.
 static func _skip() -> EventDef:
 	var row := EventDraft.new("skip")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.SKIP))
 	row.body(BodySpec.solid(GroundShape.point(VEHICLE_BODY)).walked_round().parked())
-	row.from_day(1, 1)
 	row.in_the_lane(EventDef.Pavement.AT_THE_KERB)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
@@ -2419,13 +2404,12 @@ static func _skip() -> EventDef:
 ## so the auto-centring `construction` uses fills the whole 64px band.
 static func _scaffolding() -> EventDef:
 	var row := EventDraft.new("scaffolding")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.SCAFFOLDING))
 	row.body(BodySpec.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 			.walked_round()
 			.parked()
 			.as_a_spread())
-	row.from_day(1, 1)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
 	return row.build()
@@ -2436,12 +2420,11 @@ static func _scaffolding() -> EventDef:
 ## two frames (`EventPictures.BURST_MAIN_B` and its vertical sibling), so the water reads as water.
 static func _burst_water_main() -> EventDef:
 	var row := EventDraft.new("burst_water_main")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	# The crater is sunk into the road, not standing above it, so the body and the barriers keep
 	# their ordinary geometry and only the shadow patch is refused (its look casts none).
 	row.look(LookSpec.of(EventDef.Look.BURST_MAIN).casting_no_shadow())
 	row.body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
-	row.from_day(1, 1)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
 	return row.build()
@@ -2455,10 +2438,9 @@ static func _burst_water_main() -> EventDef:
 ## `lorry.svg` with its own picture: open doors and a ramp reaching the ground.
 static func _moving_van() -> EventDef:
 	var row := EventDraft.new("moving_van")
-	row.scripted_on(0)
+	row.scripted_on(0, 1)
 	row.look(LookSpec.of(EventDef.Look.MOVING_VAN))
 	row.body(BodySpec.solid(GroundShape.band(28.0)).walked_round().parked())
-	row.from_day(1, 1)
 	row.in_the_lane(EventDef.Pavement.AT_THE_KERB)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
@@ -2472,13 +2454,12 @@ static func _moving_van() -> EventDef:
 ## scene.
 static func _burnt_out_car() -> EventDef:
 	var row := EventDraft.new("burnt_out_car")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.BURNT_OUT_CAR))
 	row.body(BodySpec.solid(GroundShape.band(24.0))
 			.walked_round()
 			.parked()
 			.across_its_street())
-	row.from_day(1, 2)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
 	return row.build()
@@ -2490,10 +2471,9 @@ static func _burnt_out_car() -> EventDef:
 ## another row's picture.
 static func _collapsed_frontage() -> EventDef:
 	var row := EventDraft.new("collapsed_frontage")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.COLLAPSED_FRONTAGE))
 	row.body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
-	row.from_day(1, 2)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
 	return row.build()
@@ -2537,10 +2517,9 @@ static func _collapsed_frontage() -> EventDef:
 ## there. It changes nothing about what a detention costs, which is `Tuning.CHAT_EXCITEMENT` flat.
 static func _checkpoint_hut() -> EventDef:
 	var row := EventDraft.new("checkpoint_hut")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.CHECKPOINT_HUT))
 	row.body(BodySpec.solid(GroundShape.point(32.0)).walked_round().parked())
-	row.from_day(1, 2)
 	row.field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
 	row.warning(WarningSpec.lasting(1.0))
 	row.hold(HoldSpec.for_seconds(CHECKPOINT_DETAIN_SECONDS)
@@ -2565,13 +2544,12 @@ static func _checkpoint_hut() -> EventDef:
 ## north-south road from an east-west one and is the door's own line for the walk-under check.
 static func _checkpoint_gate() -> EventDef:
 	var row := EventDraft.new("checkpoint_gate")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.CHECKPOINT_GATE))
 	row.body(BodySpec.solid(GroundShape.point(32.0))
 			.while_lowered()
 			.walked_round()
 			.parked())
-	row.from_day(1, 2)
 	row.field(FieldSpec.of(0.0, 84.0, 120.0).as_one_barrier())
 	row.warning(WarningSpec.lasting(0.9))
 	return row.build()
@@ -2583,10 +2561,9 @@ static func _checkpoint_gate() -> EventDef:
 ## on.
 static func _checkpoint_post() -> EventDef:
 	var row := EventDraft.new("checkpoint_post")
-	row.scripted_on(0)
+	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.CHECKPOINT_POST).hiding_in_its_hold())
 	row.body(BodySpec.solid(GroundShape.point(32.0)).walked_through().parked())
-	row.from_day(1, 2)
 	row.field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
 	row.warning(WarningSpec.lasting(1.0))
 	row.hold(HoldSpec.for_seconds(CHECKPOINT_DETAIN_SECONDS)
@@ -2618,10 +2595,9 @@ static func _checkpoint_post() -> EventDef:
 ## The answer is the warning, go back or go on running, which `tests/test_checkpoints.gd` walks.
 static func _door_guard() -> EventDef:
 	var row := EventDraft.new("door_guard")
-	row.scripted_on(0)
+	row.scripted_on(0, 3)
 	row.look(LookSpec.of(EventDef.Look.DOOR_GUARD))
 	row.body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
-	row.from_day(1, 3)
 	row.field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
 	# No notice of his own: his warning was the hut guard's raised hand from her crossing
 	# (`CheckpointController.warn_at_the_doors()`), and he charges the moment he is set on her
@@ -2664,10 +2640,9 @@ static func _door_guard() -> EventDef:
 ## baby.
 static func _finale_explosion() -> EventDef:
 	var row := EventDraft.new("finale_explosion")
-	row.scripted_on(0)
+	row.scripted_on(0, 4)
 	row.look(LookSpec.none())
 	row.body(BodySpec.none().unmet().parked())
-	row.from_day(1, 4)
 	row.ground([GameEnums.TileType.ROAD])
 	row.field(FieldSpec.of(24.0, 300.0, 520.0))
 	row.warning(WarningSpec.lasting(2.5))
@@ -2695,10 +2670,9 @@ static func _finale_explosion() -> EventDef:
 ## put an entry in `RunState.attempt_spend().scars()` that no later day reads.
 static func _impact_crater() -> EventDef:
 	var row := EventDraft.new("impact_crater")
-	row.scripted_on(0)
+	row.scripted_on(0, 4)
 	row.look(LookSpec.of(EventDef.Look.IMPACT_CRATER))
 	row.body(BodySpec.solid(GroundShape.point(32.0)).unmet().parked())
-	row.from_day(1, 4)
 	row.field(FieldSpec.of(0.0, 40.0, 120.0))
 	row.warning(WarningSpec.lasting(0.9))
 	return row.build()
@@ -2724,10 +2698,9 @@ static func _impact_crater() -> EventDef:
 ## against the shaft. What stops her walking into him is that it ends the section.
 static func _masked_pursuer() -> EventDef:
 	var row := EventDraft.new("masked_pursuer")
-	row.scripted_on(0)
+	row.scripted_on(0, 4)
 	row.look(LookSpec.of(EventDef.Look.MASKED_PURSUER))
 	row.body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
-	row.from_day(1, 4)
 	row.field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
 	row.warning(WarningSpec.lasting(3.6).holding_still())
 	row.route(RouteSpec.at(Tuning.HEAT_HUNTS_SPEED))
@@ -2793,13 +2766,12 @@ static func _masked_pursuer() -> EventDef:
 ## (`EventPictures.STEAM_B`) for the whole blow.
 static func _basement_steam() -> EventDef:
 	var row := EventDraft.new("basement_steam")
-	row.scripted_on(0)
+	row.scripted_on(0, 4)
 	row.look(LookSpec.of(EventDef.Look.STEAM))
 	row.body(BodySpec.solid(GroundShape.point(STEAM_VENT_BODY))
 			.once_it_starts()
 			.unmet()
 			.parked())
-	row.from_day(1, 4)
 	# **25, so one blow costs 40 to 50 points awake** at the 30px a vent holds her out (inbox #747 in woolly-penguin):
 	# 44 awake, 24 asleep. The pulse is kept, since it is what makes the blow swell and fall back
 	# rather than hold flat. What bounds it from above is the pocket between two vents, shut at both

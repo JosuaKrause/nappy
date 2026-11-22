@@ -189,7 +189,7 @@ func _walk_and_count(director: EventDirector, start_pos: Vector2, start_vel: Vec
 		if not due.is_empty():
 			count += 1
 			var def: EventDef = due[0]
-			ids.append(def.id)
+			ids.append(def.id())
 		pos += vel * step
 		if pos.y < y_min or pos.y > y_max:
 			vel.y = -vel.y

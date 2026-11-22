@@ -26,7 +26,7 @@ func run(context: DawnContext) -> void:
 	var shut := DayReach.shut_by(map, down)
 	var covered := {}
 	for plan: EventPlan in down:
-		if plan.row_id() != def.id or not plan.is_placed() or plan.is_door() \
+		if plan.row_id() != def.id() or not plan.is_placed() or plan.is_door() \
 				or plan.is_in_the_wall():
 			continue
 		for reached: Vector2i in RuledRoadblockGround.close_by(map, shut, plan):
@@ -42,4 +42,4 @@ func run(context: DawnContext) -> void:
 			if not covered.has(tile):
 				left += 1
 	context.note("plan", "%d of %d route tiles have no %s within %.0fpx along her paths as the day stands"
-			% [left, tiles, def.id, RuledRoadblockGround.TASK_ROW_CLOSE_BY])
+			% [left, tiles, def.id(), RuledRoadblockGround.TASK_ROW_CLOSE_BY])

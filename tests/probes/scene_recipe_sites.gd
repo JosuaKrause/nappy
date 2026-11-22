@@ -41,7 +41,7 @@ func run(_t: TestRunner) -> void:
 					at, 1, prior, corridor, doors, calm, none, locations)
 			if not plan:
 				continue
-			print("SITE ", def.id, " tile=", tile, " world=", at, " path=", plan.walks())
+			print("SITE ", def.id(), " tile=", tile, " world=", at, " path=", plan.walks())
 			accepted += 1
 			if accepted >= 5:
 				break

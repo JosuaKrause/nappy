@@ -360,7 +360,7 @@ func _a_mast_can_be_sited_along_her_route() -> bool:
 	var events := RunCity.events(_city)
 	var siting := SitingMaker.new(events.world, events.walk_events()).make(
 			11, _city.streets().route_tree(), events.walk_events().ground())
-	var def: EventDef = events.ahead.director().route_row(EventCatalogue.mast().id)
+	var def: EventDef = events.ahead.director().route_row(EventCatalogue.mast().id())
 	var path := _longest_route_points()
 	for i in range(0, path.size() - 1, 4):
 		var heading := (path[i + 1] - path[i]).normalized()

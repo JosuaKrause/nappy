@@ -65,10 +65,10 @@ class _Ground extends LocationGround:
 
 	## Overrides LocationGround.offer.
 	func offer(def: EventDef, location: Location, among: Array[EventPlan]) -> EventPlan:
-		asked.append([def.id, location, among.duplicate()])
-		if refused.has([def.id, location]):
+		asked.append([def.id(), location, among.duplicate()])
+		if refused.has([def.id(), location]):
 			return null
-		var by: String = refused_among.get(def.id, "")
+		var by: String = refused_among.get(def.id(), "")
 		for plan in among:
 			if plan.is_placed() and plan.row_id() == by:
 				return null
@@ -76,7 +76,7 @@ class _Ground extends LocationGround:
 
 	## Overrides LocationGround.scale.
 	func scale(def: EventDef, location: Location) -> float:
-		var of_row: Dictionary = weights.get(def.id, {})
+		var of_row: Dictionary = weights.get(def.id(), {})
 		return float(of_row.get(location, 1.0))
 
 	## The asks for `id`.

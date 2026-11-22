@@ -330,7 +330,7 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
 	instance.abduction.step(0.0)
 	t.check(not instance.look.victim_gait_is_stepping(), "the walk starts on frame a")
 	var saw_b := false
-	var steps := int(instance.row().abduction.taken_over() / STEP)
+	var steps := int(instance.row().takes_a_victim_by().taken_over() / STEP)
 	for i in steps:
 		instance.restore(EventSave.aged(instance.age() + STEP))
 		if instance.look.victim_gait_is_stepping():

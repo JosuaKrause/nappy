@@ -75,27 +75,27 @@ func run(t: TestRunner) -> void:
 	var rows := EventCatalogue.all()
 	for row in rows:
 		for line in _dump(row):
-			print("RF %s %s" % [row.id, line])
+			print("RF %s %s" % [row.id(), line])
 	var count := rows.size()
 	for row in rows:
 		for level in range(1, EventCatalogue.heat_levels()):
-			_variant("%s@heat%d" % [row.id, level], EventCatalogue.heated(row, level))
+			_variant("%s@heat%d" % [row.id(), level], EventCatalogue.heated(row, level))
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			_variant("%s@day%d" % [row.id, day], row.for_day(day))
+			_variant("%s@day%d" % [row.id(), day], row.for_day(day))
 		for level in range(0, EventCatalogue.heat_levels()):
 			# The copy the director hands out at this heat: the heated row, sent ahead or given ground.
 			# `EventDirector._routed()` is private and has no public road to it; a probe is not a suite,
 			# so it makes the call itself rather than copy the director's choice.
-			_variant("%s@routed%d" % [row.id, level], EventDirector._routed(row, level))
+			_variant("%s@routed%d" % [row.id(), level], EventDirector._routed(row, level))
 		if row.is_sent_ahead():
-			_variant("%s@sent" % row.id, row.as_sent_ahead())
-		if row.id in WARNED_FIRST:
-			_variant("%s@warned" % row.id, row.as_warned_first())
-		_variant("%s@sealed" % row.id, SealPlanner.sealed_variant(row, false))
-		_variant("%s@sealed_kerb" % row.id, SealPlanner.sealed_variant(row, true))
+			_variant("%s@sent" % row.id(), row.as_sent_ahead())
+		if row.id() in WARNED_FIRST:
+			_variant("%s@warned" % row.id(), row.as_warned_first())
+		_variant("%s@sealed" % row.id(), SealPlanner.sealed_variant(row, false))
+		_variant("%s@sealed_kerb" % row.id(), SealPlanner.sealed_variant(row, true))
 		# `EventDirector._with_ground()` is private and has no public road to its copy; a probe is not a
 		# suite, so it makes the call itself.
-		_variant("%s@ground" % row.id, EventDirector._with_ground(row))
+		_variant("%s@ground" % row.id(), EventDirector._with_ground(row))
 	_variant("escape_roadblock", EventCatalogue.escape_roadblock())
 	_variant("building_fire", EventCatalogue.building_fire())
 	_variant("explosion_outside", EventCatalogue.explosion_outside())
@@ -169,7 +169,7 @@ func _dump(target: Object, prefix := "") -> PackedStringArray:
 		for param: Dictionary in params:
 			var values: Array = _samples.get(String(param.name), [])
 			if String(param.name) == "beside_the_routes" and target is EventDef:
-				values = values + [(target as EventDef).id]
+				values = values + [(target as EventDef).id()]
 			elif String(param.name) == "scar_id" and target is Aftermath:
 				values = values + [(target as Aftermath).scar_id()]
 			if values.is_empty():
@@ -242,7 +242,7 @@ func _text(value: Variant) -> String:
 	if value is float:
 		return "%.5f" % value
 	if value is EventDef:
-		return "row:" + (value as EventDef).id
+		return "row:" + (value as EventDef).id()
 	if value is GroundShape:
 		var shape := value as GroundShape
 		return "GS(%d,%.4f,%.4f,%s)" % [

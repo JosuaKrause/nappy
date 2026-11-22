@@ -154,7 +154,7 @@ class _Coming extends EventInstance:
 
 	## Overrides EventInstance.logged_name.
 	func logged_name() -> String:
-		return _row.id
+		return _row.id()
 
 	## Overrides EventInstance.drawn_box.
 	func drawn_box() -> Rect2:

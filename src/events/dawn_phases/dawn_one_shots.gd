@@ -23,10 +23,10 @@ func run(context: DawnContext) -> void:
 	var events := context.events()
 	var consumed := context.spent_one_shots()
 	for def in context.catalogue_rows(GameEnums.EventKind.ONE_SHOT):
-		if def.id in consumed:
+		if def.id() in consumed:
 			continue
 		var owed := EventPlan.new(def, Vector2.INF)
 		owed.give_role(EventScheduler.role_for(def, day))
 		events.add(owed)
 		context.note("roll", "one-shot %s: owed to her walk, sited when her heading is clear"
-				% def.id)
+				% def.id())

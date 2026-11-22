@@ -65,7 +65,7 @@ var _is_pelican := false
 ## What the run log calls the thing this warns of — `EventInstance.logged_name()` before there is
 ## an instance to ask.
 func logged_name() -> String:
-	return EventInstance.named_for_the_log(_def.id, _is_pelican)
+	return EventInstance.named_for_the_log(_def.id(), _is_pelican)
 
 func _init(row: EventDef, where: Callable, arrive: Callable) -> void:
 	_def = row

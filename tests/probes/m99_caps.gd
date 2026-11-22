@@ -98,8 +98,8 @@ func _measure_caps() -> void:
 				if not due.is_empty():
 					total_owed += 1
 					var def: EventDef = due[0]
-					if def.id in counts:
-						counts[def.id] += 1
+					if def.id() in counts:
+						counts[def.id()] += 1
 				pos += vel * step
 				if pos.y < y_min or pos.y > y_max:
 					vel.y = -vel.y

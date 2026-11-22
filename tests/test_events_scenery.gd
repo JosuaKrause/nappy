@@ -237,7 +237,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	var planned_flocks := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		for plan in _planned(day):
-			if plan.row_id() != def.id:
+			if plan.row_id() != def.id():
 				continue
 			planned_flocks += 1
 			t.check(plan.is_placed(), "day %d's flock has ground of its own" % day)
@@ -330,7 +330,7 @@ func _test_a_crouching_event_holds_still_until_it_bolts(t: TestRunner) -> void:
 
 	# The duration has to outlast the crossing, or it expires in the middle of the road.
 	var crossing := float(EventDirector.CROSSING_REACH_TILES * Tuning.TILE_SIZE) * 2.0
-	t.check(def.duration >= crossing / def.speed(),
+	t.check(def.lasts_for() >= crossing / def.speed(),
 			"it lives long enough (%.2fs) to cross the whole street (%.2fs)"
-			% [def.duration, crossing / def.speed()])
+			% [def.lasts_for(), crossing / def.speed()])
 	instance.free()

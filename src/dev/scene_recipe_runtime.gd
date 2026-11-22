@@ -987,13 +987,13 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			errors.append("event %s fails ordinary day/ground/route/spacing placement%s"
 					% [entry.name, (": " + "; ".join(why)) if not why.is_empty() else ""])
 			continue
-		counts[def.id] = int(counts.get(def.id, 0)) + 1
+		counts[def.id()] = int(counts.get(def.id(), 0)) + 1
 		# A day holds no cap on a row its units draw (one of a row in a unit instead,
 		# `MarbleDraw`), so a row a unit draws is held to none here either.
 		var beside := ResistanceSteps.guarded_row_on(_run.header().day())
 		var capped := not def.is_drawn_by_units(_run.header().day(), beside) \
 				and def.most_in_a_day() > 0
-		if capped and int(counts[def.id]) > def.most_in_a_day():
+		if capped and int(counts[def.id()]) > def.most_in_a_day():
 			errors.append("event %s exceeds the ordinary per-day cap" % entry.name)
 		var requested := PackedVector2Array()
 		for point: Variant in entry.get("path", []):
@@ -1061,9 +1061,9 @@ func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_
 		finale: FinalePlanner.Plan, prior: Array[EventPlan],
 		route_seed: int) -> EventPlan:
 	var rows := _walk_spec.walk_bag_rows()
-	if not rows.has(def.id):
+	if not rows.has(def.id()):
 		return null
-	def = rows[def.id]
+	def = rows[def.id()]
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
@@ -1199,7 +1199,7 @@ static func relentless_refusal(def: EventDef) -> String:
 
 ## The error a refused `hold` reports, naming the event and the row.
 static func hold_refusal_message(event_name: String, def: EventDef) -> String:
-	return "event %s.hold is refused: row %s %s" % [event_name, def.id, hold_refusal(def)]
+	return "event %s.hold is refused: row %s %s" % [event_name, def.id(), hold_refusal(def)]
 
 ## The pursuers the recipe asked never to give up (`relentless`).
 var _relentless: Array[EventInstance] = []

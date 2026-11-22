@@ -360,10 +360,10 @@ func _take_the_forced_row() -> void:
 func _teach_the_run(day: int, lesson: EventDef) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY or not lesson:
 		return
-	if _route_rows.has(lesson.id):
+	if _route_rows.has(lesson.id()):
 		if not _owed.has(null):
 			return
-		_route.rig([lesson.id], 1)
+		_route.rig([lesson.id()], 1)
 		_bag_the_next(1)
 	else:
 		var at := _owed.find(lesson)
@@ -456,8 +456,8 @@ func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> voi
 	_route_rows.clear()
 	_ordinary_rows.clear()
 	for def in _route_rows_on(day, heat):
-		_route_rows[def.id] = def
-		_ordinary_rows[def.id] = true
+		_route_rows[def.id()] = def
+		_ordinary_rows[def.id()] = true
 	_route = MarbleBag.new([], ordinary_route_marbles(day, heat), hash("%d:route-bag" % rng.seed))
 
 ## The rows the director sites on `day` — recurring, available, and `AHEAD_OF_PLAYER` or
@@ -481,9 +481,9 @@ static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
 	var other_weights := {}
 	for def in _route_rows_on(day, heat):
-		weights[def.id] = def.drawn_as_often()
-		if not ROUTE_BAG_SHARE_OF.has(def.id):
-			other_weights[def.id] = def.drawn_as_often()
+		weights[def.id()] = def.drawn_as_often()
+		if not ROUTE_BAG_SHARE_OF.has(def.id()):
+			other_weights[def.id()] = def.drawn_as_often()
 	var others := MarbleBag.in_proportion(other_weights, ROUTE_BAG_MARBLES_PER_WEIGHT).size()
 	var counts := {}
 	for id: String in ROUTE_BAG_SHARE_OF:
@@ -632,11 +632,11 @@ func _place_on_her_route(def: EventDef) -> void:
 	_handed_from_the_route()
 	if not _siting:
 		return
-	_met_today[def.id] = int(_met_today.get(def.id, 0)) + 1
+	_met_today[def.id()] = int(_met_today.get(def.id(), 0)) + 1
 	var waiting := EventPlan.new(def, Vector2.INF)
 	_on_her_way.append(waiting)
 	_placed_from_the_route[waiting] = true
-	if _rigged_just_ahead.has(def.id):
+	if _rigged_just_ahead.has(def.id()):
 		_just_ahead[waiting] = true
 
 ## Whether `plan` is a place a marble from her route's bag put on her way (`_place_on_her_route()`),
@@ -1071,8 +1071,8 @@ func _hand_out(next: EventDef, from_the_bag: bool) -> EventDef:
 		handed = next
 		_route.draw()
 		_handed_from_the_route()
-	_met_today[handed.id] = int(_met_today.get(handed.id, 0)) + 1
-	if _lesson and handed.id == _lesson.id:
+	_met_today[handed.id()] = int(_met_today.get(handed.id(), 0)) + 1
+	if _lesson and handed.id() == _lesson.id():
 		handed = EventCatalogue.lesson_of(handed)
 		_lesson = null
 	return handed

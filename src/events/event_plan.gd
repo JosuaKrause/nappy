@@ -123,11 +123,11 @@ func spend() -> void:
 
 ## The id of the row this plan places (`EventDef.id`).
 func row_id() -> String:
-	return _def.id
+	return _def.id()
 
 ## Whether `other` places the same row as this plan.
 func is_the_same_row_as(other: EventPlan) -> bool:
-	return _def.id == other._def.id
+	return _def.id() == other._def.id()
 
 ## Where the day placed this plan, `Vector2.INF` while it is unsited (`is_placed()`). Its instance
 ## may have moved since: `where_it_stands_now()` answers where it is.

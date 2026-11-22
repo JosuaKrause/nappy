@@ -41,7 +41,7 @@ func _def(catch_radius: float, lunge: float) -> EventDef:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var draft := robbery.redraft()
 	draft.field(robbery.field().holding_to(catch_radius))
-	draft.pursuit(robbery.pursuit.lunging_from(lunge))
+	draft.pursuit(robbery.pursuit().lunging_from(lunge))
 	return draft.build()
 
 func _report(catch_radius: float, lunge: float) -> void:

@@ -63,16 +63,16 @@ func _sweep(map: CityMap, plans: Array[EventPlan], label: String, seed_value: in
 		var row := plan.row()
 		var solids := ground.solids_of(plan)
 		for solid in solids:
-			walk.append("%s %.3f,%.3f %d %.3f %.3f %.4f,%.4f" % [row.id, solid.centre.x,
+			walk.append("%s %.3f,%.3f %d %.3f %.3f %.4f,%.4f" % [row.id(), solid.centre.x,
 					solid.centre.y, solid.shape.kind, solid.shape.reach(),
 					solid.shape.spine_half_length(), solid.axis.x, solid.axis.y])
 		var tiles := EventSpawner.obstructed_footprint(map, row, plan.placed_at(), plan.faces())
-		record.append("%s %s" % [row.id, str(tiles)])
+		record.append("%s %s" % [row.id(), str(tiles)])
 		if not row.stands_as_a_fixed_body():
 			continue
 		var near := rig._planned_body_tiles(plan).keys()
 		near.sort()
-		rigs.append("%s %s" % [row.id, str(near)])
+		rigs.append("%s %s" % [row.id(), str(near)])
 		totals["bodies"] = int(totals["bodies"]) + 1
 		var own := row.body().pieces().size()
 		var rasterised: Array[Vector2i] = []

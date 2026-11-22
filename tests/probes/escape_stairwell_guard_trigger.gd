@@ -151,7 +151,7 @@ class _Planner extends DayPlanner:
 			if placed.row_id() != "masked_pursuer":
 				continue
 			var draft := placed.row().redraft()
-			draft.notice(placed.row().notice.running_within(_within))
+			draft.notice(placed.row().notice().running_within(_within))
 			placements[i] = EventPlan.new(draft.build(), placed.placed_at(), placed.walks())
 		return planned
 

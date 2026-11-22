@@ -32,11 +32,11 @@ func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 	# other: the run is exactly as long as its last act, so no day falls off the end of the acts.
 	t.check(Tuning.act_for_day(Tuning.RUN_LENGTH_DAYS) == 4, "the last day is act IV")
 
-	# Nothing from a later act may leak into an earlier day. Only a `SCRIPTED` row's act is held:
-	# its own first day is the first day of its `act_tag`'s act (`EventDef.own_first_day()`), the one
-	# place the game reads an act, and it must not come after the day the row fires on. Every other
-	# row's own first day is its `first_day`, which `available_on()` already holds back, and its
-	# `act_tag` has no reader, so there is nothing to hold for it.
+	# Nothing from a later act may leak into an earlier day. Only a `SCRIPTED` row has an act: its own
+	# first day is the first day of its act (`EventDef.own_first_day()`), the one place the game
+	# reads an act, and it must not come after the day the row fires on. Every other row's own first
+	# day is the day it first appears, which `available_on()` already holds back, and it says no act,
+	# so there is nothing to hold for it.
 	var swept := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var act := Tuning.act_for_day(day)
@@ -45,7 +45,7 @@ func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 			var from_act := Tuning.act_for_day(def.own_first_day())
 			t.check(from_act <= act,
 					"day %d (act %d) does not offer '%s' from act %d"
-					% [day, act, def.id, from_act])
+					% [day, act, def.id(), from_act])
 	t.check(swept > 0, "the sweep checked at least one scripted row (%d)" % swept)
 
 # ------------------------------------------------------------------ mechanics ---
@@ -63,17 +63,17 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 
 func _test_a_protest_grows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
-	t.check(def.peak_through(0.0, def.duration, 1.0) > def.peak(),
+	t.check(def.peak_through(0.0, def.lasts_for(), 1.0) > def.peak(),
 			"a protest swells rather than holding")
 	var instance := _instance(t, def)
 	_advance(instance, def.telegraphs_for() + 0.05)
 
 	# Sample across whole pulse periods so the ramp, not the pulse, is what is compared.
 	var early := _peak_over(instance, def.pulses_every())
-	_advance(instance, def.duration * 0.75)
+	_advance(instance, def.lasts_for() * 0.75)
 	var late := _peak_over(instance, def.pulses_every())
 	t.check(late > early * 1.3, "a protest is markedly worse later than when you saw it")
-	t.check(late <= def.peak_through(0.0, def.duration, 1.0) + 0.01,
+	t.check(late <= def.peak_through(0.0, def.lasts_for(), 1.0) + 0.01,
 			"and never exceeds its stated ceiling")
 	instance.free()
 
