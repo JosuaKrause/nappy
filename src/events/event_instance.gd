@@ -197,7 +197,7 @@ func has_charged() -> bool:
 			and not is_waiting()
 
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
-## otherwise the row's own `_def.id`. Telemetry only — nothing that decides anything reads it.
+## otherwise the row's own `id()`. Telemetry only — nothing that decides anything reads it.
 func logged_name() -> String:
 	return named_for_the_log(_def.id(), _is_pelican)
 
@@ -709,7 +709,7 @@ func _tick(delta: float) -> void:
 		# The pursuit's own note on its step says why a moving pursuer may not keep a body
 		# (`EventPursuit`): giving a pursuer one would let a moving wall pin her against a
 		# building on a two-tile pavement.
-		# A hunting `abduction` or raid never gets here: it lets its men out (`EventDef.answers_to_heat()`)
+		# A hunting `abduction` or raid never gets here: it lets its men out (`EventDef.investigates()`)
 		# and stays parked, solid, while its men come after her.
 		#
 		# **`PursuitSpec.leaves_its_body_standing()` is the other case, and it is not an exception to that rule.** The
@@ -805,7 +805,7 @@ func counts_a_charge() -> bool:
 
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
 ## `pursuit_ended`): the row's `EventDef.charges_counted_as()` where it sets one (the task guard sent
-## from out of her view counts as `task_guard`), otherwise the row's own `_def.id` — the day-3
+## from out of her view counts as `task_guard`), otherwise the row's own `id()` — the day-3
 ## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
 func _charger_name() -> String:
 	return _def.charges_counted_as() if _def.charges_counted_as() != "" else _def.id()

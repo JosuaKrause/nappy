@@ -5,7 +5,7 @@ extends RefCounted
 ## the numbers here and the row's notice (`NoticeSpec`); `standoff()` is that contract in distance.
 ##
 ## A row has a `PursuitSpec` only when it pursues; one that only pursues once it hunts (the
-## roadblock, `EventDef.answers_to_heat()`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
+## roadblock) keeps the spec its hunting copy takes in its `HuntSpec`, and `EventDef.at_heat()`
 ## gives that copy its speed (`at_speed()`) and its notice.
 ##
 ## A value: built by `at()`, refined by methods that each return a new pursuit, never changed, so a row and

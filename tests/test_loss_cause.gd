@@ -18,7 +18,7 @@ func _crying(landed_by_group: Dictionary) -> String:
 	return LossCause.of(GameEnums.DayResult.LOST_CRYING, "", "", landed_by_group)
 
 ## `car_strike` is the one hard fail that is not a catalogue row and gets its own short name;
-## every other reason is a `def.id`, hyphenated the same way every other cause name in this file
+## every other reason is a row's `id()`, hyphenated the same way every other cause name in this file
 ## already is — `roadblock` included, so a row that turns lethal only once the resistance's heat
 ## reaches it (`EventDef.at_heat()`) needs no entry of its own here. Raw, unprefixed
 ## — `VisitCounter._loss_event_suffix()` is what folds it onto `lost-hard-fail`.

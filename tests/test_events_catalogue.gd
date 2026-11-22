@@ -485,7 +485,7 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 ## `PARK` and `ALLEY` are wide open and carry no bound here; a tile type with no clearance defined is
 ## skipped rather than treated as a failure.
 ##
-## **Blind spot, not a hole this test can close:** `barricade` carries no `def.placement` of its
+## **Blind spot, not a hole this test can close:** `barricade` lists no `ground_kinds()` of its
 ## own — it is a spawn sited wherever `military_convoy` stopped rather than placed by
 ## `def.placement` — so the loop below never sees it and a future regression on its
 ## `obstructs_within()` would pass silently. Checked by hand instead: it lands on `ROAD` (its

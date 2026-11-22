@@ -93,7 +93,7 @@ func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
 ## pursues, keeps ending the day, and its derived numbers satisfy the pursuit contract measured from
-## its own data — or, a row that hunts on foot (`EventDef.answers_to_heat()` letting men out, the two vans), it lets
+## its own data — or, a row that hunts on foot (`HuntSpec.letting_out()`, the two vans), it lets
 ## its men out instead, never a pursuer itself and as lethal as it is cold, its men's stand-off
 ## inside its notice and their catch ending the day. Checked over the response rather than over the one row that carries it, the same
 ## shape `_test_the_ladder_has_a_top` uses, so a second `HUNTS` row added later inherits the promise

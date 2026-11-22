@@ -235,7 +235,7 @@ func id() -> String:
 
 var _kind: GameEnums.EventKind
 
-## Whether it is a row of `_kind`: what the catalogue picks the day's rows of one kind by.
+## Whether it is a row of `kind`: what the catalogue picks the day's rows of one kind by.
 func is_of_kind(kind: GameEnums.EventKind) -> bool:
 	return _kind == kind
 
@@ -397,7 +397,7 @@ var _spawn_mode: SpawnMode
 ## through `spawn_mode_on()` and `_notice_on()`, never by hand.
 var _from_day_after: DaySwitch
 
-## Which `SpawnMode` this row is sited in on `day`: `_spawn_mode` through `from_day_after.after_day()`,
+## Which `SpawnMode` this row is sited in on `day`: its own spawn mode through the day switch's `after_day()`,
 ## the switch's own past it. Every reader that sites an event by its day asks this.
 func spawn_mode_on(day: int) -> SpawnMode:
 	if _from_day_after and day > _from_day_after.after_day():
@@ -409,17 +409,17 @@ func spawn_mode_on(day: int) -> SpawnMode:
 func is_past_its_switch_on(day: int) -> bool:
 	return _from_day_after != null and day > _from_day_after.after_day()
 
-## How this row notices her on `day`: `_notice` through `from_day_after.after_day()`, the switch's own
-## past it. An instance reads `_notice` off the def it was handed, so a placement past the switch is
-## handed a copy carrying this (`for_day()`); a director-sited row keeps its own.
+## How this row notices her on `day`: its own notice settings through the day switch's `after_day()`, the
+## switch's own past it. An instance asks the def it was handed (`waits_for_her()`, `notice_within()`),
+## so a placement past the switch is handed a copy carrying this (`for_day()`); a director-sited row keeps its own.
 func _notice_on(day: int) -> NoticeSpec:
 	if _from_day_after and day > _from_day_after.after_day():
 		return _from_day_after.notice()
 	return _notice
 
 ## A `MAP` placement's own answer to `_notice_on(day)`: a derived copy, since the catalogue's rows
-## are shared by every day of the run and a placement past `_from_day_after` cannot set the shared
-## row's `_notice`. An instance reads `_notice` off the def it was handed. This row itself for every
+## are shared by every day of the run and a placement past the switch cannot set the shared
+## row's notice. An instance asks the def it was handed. This row itself for every
 ## row whose notice does not change by day.
 func for_day(day: int) -> EventDef:
 	var that_day := _notice_on(day)
@@ -736,8 +736,8 @@ func starts_by(start: PursuitSpec.Start) -> bool:
 ## **The city gets worse the further into the subquest you are**, and this is the whole of how a row
 ## says so. `RunState.resistance().progress()` is an integer 0..`Tuning.RESISTANCE_GOAL`, and
 ## `at_heat()` below turns a level into a **derived copy** of the row with its numbers moved, so
-## nothing downstream of the day's plan has to know that heat exists: an `EventInstance` reads
-## its peak, `_pursuit` and the rest off whichever copy the day handed it.
+## nothing downstream of the day's plan has to know that heat exists: an `EventInstance` asks
+## its peak, `pursues()` and the rest of whichever copy the day handed it.
 ##
 ## **It is a field rather than a switch set per placement**, as the blocking role is:
 ## `EventScheduler.role_for` derives a role from the def, so no two placements of one row can

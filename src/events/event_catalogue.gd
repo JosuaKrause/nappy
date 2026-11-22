@@ -537,7 +537,7 @@ static func _cat_dash() -> EventDef:
 ## **`MAP`, not `AHEAD_OF_PLAYER`.** `_cat_dash` needs the director because a road tile picked at
 ## dawn could be anywhere and she may never cross it; alleys are rare, and one she is routed through
 ## she is about to walk down. Placing it on the tile itself lets `EventScheduler._refuses_required_
-## alleys` reach it: that check is stated over `def.placement == [ALLEY]` rather than over
+## alleys` reach it: that check is stated over `def.ground_kinds() == [ALLEY]` rather than over
 ## `alley_robbery`'s id, so a required alley (one the day's corridor runs down with no way round)
 ## never offers one; only an alley she chose to detour into can.
 ##
@@ -1793,7 +1793,7 @@ static func _roadblock() -> EventDef:
 	row.ground([GameEnums.TileType.ROAD])
 	row.field(FieldSpec.of(0.0, 86.0, 179.0).as_one_barrier())
 	row.warning(WarningSpec.lasting(1.8))
-	# **How his hunting copy pursues** (`EventDef.answers_to_heat()`, `HuntSpec.pursuing()`, a catch that ends
+	# **How his hunting copy pursues** (`HuntSpec.pursuing()`, a catch that ends
 	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
 	# (woolly-penguin #748) on the clock every charger that waits for her keeps.
@@ -1821,7 +1821,7 @@ static func _roadblock() -> EventDef:
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 ##
 ## **The `HUNTS` rung, the lethal rung of the resistance's ladder, hunted on foot**
-## (`EventDef.answers_to_heat()`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched
+## (`HuntSpec.letting_out()`). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched
 ## (population and intensity are `PRESSES`'s axes). At and above it, the derived copy stops idling
 ## for a stranger and hunts her with its men: it stays parked and solid, and once she is within
 ## `EventDef.HEAT_HUNTS_WITHIN` of it along a clear line it lets two men out at its door,
@@ -1843,7 +1843,7 @@ static func _abduction() -> EventDef:
 	row.warning(WarningSpec.lasting(4.6))
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
 	# body never shields her from the van's own reach. It keeps the body at every heat: hunting, it
-	# stays parked and lets its men out (`EventDef.answers_to_heat()`), so nothing about a moving wall applies.
+	# stays parked and lets its men out (`EventDef.investigates()`), so nothing about a moving wall applies.
 	row.lethal(LethalSpec.at_its_core())
 	# The caps on the rows that end the day rise with the rest, but by half as much: at one event per block the late
 	# city should feel *occupied*, not landmined. Four unmarked vans across forty-nine blocks is one
@@ -2146,7 +2146,7 @@ static var _task_guard_sent: EventDef = null
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
 ## **The `HUNTS` rung `abduction` climbs, but it hunts on foot**
-## (`EventDef.answers_to_heat()`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed
+## (`HuntSpec.letting_out()`). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed
 ## block and nothing more. At and above it, the derived copy `investigates`: the van stays where it
 ## stands, and the moment she is within `EventDef.HEAT_HUNTS_WITHIN` (180px) of it along a clear
 ## line it lets two men out at its door on her side, who pursue her under the pursuit contract

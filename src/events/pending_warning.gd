@@ -109,7 +109,7 @@ const FURTHER_TILES := Tuning.STREET_WIDTH * 2
 const LATERAL_TILES := Tuning.STREET_WIDTH
 
 ## Where a row that comes down her own line (`cyclist`, `loose_dog`) is created: just out of sight in
-## `direction` from her (`SpawnSiting.just_out_of_sight()`), on the nearest ground `def.placement`
+## `direction` from her (`SpawnSiting.just_out_of_sight()`), on the nearest ground `def.ground_kinds()`
 ## names — a sidewalk or a square — and still out of sight there. Moved sideways first, within
 ## `LATERAL_TILES`, and where there is none level with that point — the carriageway of a cross street
 ## is ahead — further down her line, within `FURTHER_TILES`, never nearer. `Vector2.INF` where there
