@@ -9,6 +9,7 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 - **Only the orchestrating Claude Code session acts on it**, changing it or answering on it, and Claude is never @-mentioned on it.
 - **It is read at session start, at every run of the orchestrating session's recurring check (about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **What the player should learn goes on the board**, not only into a chat report (inbox #1619 in teal-dolphin).
+- **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check lists at every run as it reads the board (inbox #1623 in dappled-bison).
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
 - **A question is a level-3 heading over one nested list** (Question, Context, My pick, You, Me) and asks one thing.
@@ -37,7 +38,8 @@ separate session that has none of this context.
 turn** (the check is in **orchestrating**, "What the orchestrator keeps"). The reads at session start, on "doc"
 and before a write are the player's words (inbox #830 in minty-dolphin, inbox #1267 in olive-ferret); the
 player's later words replace their earlier no-polling ones for the cadence, and set the hour's
-length (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin). Nothing notifies the terminal session of an edit, so the
+length (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin). The check covers the inbox as well as the board: new
+tasks are posted in the inbox, questions and answers are on the board (inbox #1623 in dappled-bison). Nothing notifies the terminal session of an edit, so the
 recurring read is what finds an answer the player left; the player is in code mode and looks at the
 board rather than the chat, so the board is where the orchestrating session communicates with them
 (inbox #1619 in teal-dolphin). The read before a turn's first write is what keeps a write from

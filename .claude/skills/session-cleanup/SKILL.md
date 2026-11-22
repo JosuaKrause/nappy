@@ -175,7 +175,7 @@ are what the player asks of it (frosty-owl #1065); this is the layout:
 8. `## Last checked`, the UTC times of the last board read, the last inbox check and the last
    filing of the inbox, each rewritten by the orchestrating session whenever it reads the board, checks the inbox
    or files it, the recurring check included, and by no other session (**orchestrating**, "What the orchestrator keeps"; inbox #1619 in
-   teal-dolphin). They live only in this git-ignored file, never in anything checked in.
+   teal-dolphin, inbox #1623 in dappled-bison). They live only in this git-ignored file, never in anything checked in.
 
 **`## Plan` holds what is already decided about what comes when** (inbox #1235 in gentle-owl): the phases in
 order, what starts each (a merge, an agent's report, the player's go-ahead), what runs in parallel
