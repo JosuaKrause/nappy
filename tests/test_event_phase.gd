@@ -203,9 +203,9 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 	first.free()
 	second.free()
 
-# A hunting copy (`at_heat()`) does not write its pursuit onto the row it was made from: a
-# `PursuitSpec` has no setter, so that cannot be written and there is nothing to hold. What the copy
-# answers at the ladder's speed and notice distance is `tests/test_heat.gd`'s.
+# A hunting copy cannot write its pursuit onto its row, since a `PursuitSpec` has no setter.
+# `tests/test_heat.gd` holds whether a hunting copy pursues; the chase speed and notice distance
+# are settings, not read back by any suite.
 
 # -------------------------------------------------------------- the badge alone ---
 
