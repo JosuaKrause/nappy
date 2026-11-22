@@ -1,5 +1,5 @@
 class_name AbductionSpec
-extends Resource
+extends RefCounted
 ## **The unmarked van takes somebody first** (`EventDef.abduction`, `EventAbduction`): the first time
 ## she comes close enough to see it, a bystander is walked to the van and taken. Drawing and
 ## telemetry only — nothing here reaches into the crowd, and nothing here changes the van's field.

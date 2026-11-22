@@ -1,5 +1,5 @@
 class_name OnHerWay
-extends Resource
+extends RefCounted
 ## **The day plans the row but leaves where it stands to the walk she takes** (`EventDef.on_her_way`).
 ##
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the

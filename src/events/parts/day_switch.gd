@@ -1,5 +1,5 @@
 class_name DaySwitch
-extends Resource
+extends RefCounted
 ## **How a row is sited and noticed from the day after `after_day`**, for a row whose first
 ## appearance is different from every later one: `charging_dog` is sited dead ahead of her on
 ## `Tuning.RUN_TAUGHT_DAY`, the run's lesson, and from the day after it is a place on the map that

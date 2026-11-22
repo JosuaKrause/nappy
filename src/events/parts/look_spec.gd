@@ -1,5 +1,5 @@
 class_name LookSpec
-extends Resource
+extends RefCounted
 ## **How a row is drawn and what its drawing owes**, as one value: its picture, the warning picture
 ## it stands in while it warns, whether a shadow is put down under its body, whether it trails a
 ## slack lead, whether its own hold hides the whole of it, whether a rider of it may be the run's

@@ -1,5 +1,5 @@
 class_name Aftermath
-extends Resource
+extends RefCounted
 ## **The rows an event brings after it** (`EventDef.aftermath`): the scar it leaves on the run, the
 ## row it leaves where it ends, and the row it calls in once she has seen it. One resource because
 ## they are one thing to take away: the escape's rows and the seals' are made without them

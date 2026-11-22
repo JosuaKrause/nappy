@@ -1,5 +1,5 @@
 class_name SentAhead
-extends Resource
+extends RefCounted
 ## **How the director sends a row ahead of her on an ordinary day** (`EventDef.send_ahead()`): the
 ## dog walker, the police patrol and the military convoy, drawn when she is close by and put just
 ## ahead of her on the street she is walking. *(inbox #1460 in silky-lemur: "neither of these should be drawn at

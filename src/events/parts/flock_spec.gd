@@ -1,5 +1,5 @@
 class_name FlockSpec
-extends Resource
+extends RefCounted
 ## **How many creatures a row is and how far they spread**, as one value: a row that is several
 ## bodies rather than one thing drawn several times. A row holds one (`EventDef.flock()`); nothing
 ## changes it once it exists (a refinement returns a new value). `none()` is a row that is one body.

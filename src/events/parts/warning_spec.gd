@@ -1,5 +1,5 @@
 class_name WarningSpec
-extends Resource
+extends RefCounted
 ## **How a row warns of its coming**, as one value: the seconds of telegraph it gives, whether it
 ## holds still through them, whether its coming is announced at the screen edge, whether it is warned
 ## of before it exists, and how long that badge is up alone. A row holds one (`EventDef.warning()`);

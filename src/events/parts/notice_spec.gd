@@ -1,5 +1,5 @@
 class_name NoticeSpec
-extends Resource
+extends RefCounted
 ## **How a row that waits for her notices her**: a place until she comes within `within` of it
 ## along a clear line, then a moment. Its wait emits at full strength, is not lethal and does not
 ## move; once it notices her, its telegraph, its duration and, for a pursuer, its warning and
