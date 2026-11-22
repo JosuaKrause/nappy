@@ -54,10 +54,9 @@ var _sight_reported: Dictionary = {}
 # for exactly this reason, so neither release can open ground the other is still standing on.
 
 ## Records the footprint of a body with no instance (a plan's, `EventManager._take()`,
-## `EventStreaming`) under `owner`, or nothing at all for anything the record leaves out, and
-## answers the tiles it recorded (none for the latter). Safe to call for every plan: the
-## deciding is in `footprint_of()`, which a row the record leaves out is cut off before its
-## stance is made.
+## `EventStreaming`) under `owner` and answers the tiles it recorded. Safe to call for every
+## plan: `record_the_body()` itself cuts off a row the record leaves out before a stance is made,
+## and records and answers nothing for it.
 func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> Array[Vector2i]:
 	if def == null or not def.stands_as_a_fixed_body():
 		var none: Array[Vector2i] = []
@@ -101,13 +100,6 @@ static func footprint_of(stance: BodyStance) -> Array[Vector2i]:
 		for tile in piece.tiles():
 			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body
 			# that recorded one tile twice would need two releases to give it back.
-			if not covered.has(tile):
-				covered.append(tile)
-	return covered
-	for piece in stance.pieces():
-		for tile in piece.tiles():
-			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body that
-			# recorded one tile twice would need two releases to give it back.
 			if not covered.has(tile):
 				covered.append(tile)
 	return covered

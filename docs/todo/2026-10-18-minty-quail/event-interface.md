@@ -449,7 +449,7 @@ minty-quail-olive-finch).
 | a distance compared with `def.outer_radius` | the unmarked van's take | live `field_reaches(point)` ok, which the run log's observer already asks |
 | `distance <= def.inner_radius` | the resistance's contact point | live `core_reaches(point)` ok |
 | `not is_finished and def.hard_fail and not def.mobile` | the route rig | live `is_a_standing_lethal_place()` ok |
-| `shape != null and obstructs_radius > 0 and not mobile and detain_seconds <= 0 and solid_when != WHILE_LOWERED` | the spawner's own record (`EventSpawner.obstructed_footprint()`, 3b) | row `stands_as_a_fixed_body()` ok |
+| `shape != null and obstructs_radius > 0 and not mobile and detain_seconds <= 0 and solid_when != WHILE_LOWERED` | the spawner's own record (`EventSpawner.footprint_of()` of a stance, 3b) | row `stands_as_a_fixed_body()` ok |
 | `kind != AMBIENT and pursuit == null and vehicle == null and not warned_first and not starts_by(ARRIVES_CHASING)` | the park cordon | live `is_ambient()` ok, `was_sent_at_her()` ok, `drives()` ok |
 | `solid_when == WHILE_LOWERED`, five places; `redetains` read as "this is a door's hut or post", six places | the live event and its hold, the spawner, the resistance, the route rig (the checkpoint controller asks already) | row and live `is_a_boom()` ok, `detains_again()` ok; the plan's `is_a_boom()` ok and `detains_again()` ok |
 | `on_her_way != null and on_her_way.at_a_front`, three times; `on_her_way != null and kind == ONE_SHOT`, twice | the scheduler, streaming | row `stands_at_a_front()` ok, `is_a_set_piece_on_her_way()` ok |
