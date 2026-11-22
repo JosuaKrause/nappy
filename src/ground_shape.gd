@@ -155,7 +155,7 @@ func tiles_under(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> Array[Vector2i]:
 
 ## The half-extents, in world axes, of the box the rounding is applied around: the origin for a
 ## point, the spine for a segment, the whole rectangle for a rect (which carries its rounding in
-## the box itself and has `radius` zero).
+## the box itself and has a rounding radius of zero).
 func _spine_half_extents(along: Vector2) -> Vector2:
 	match _kind:
 		Kind.RECT:
@@ -261,7 +261,7 @@ func _circle_field_outline(centre: Vector2, level: float, samples: int) -> Packe
 
 ## A stadium at radius `level` about this shape's own spine — the same two-cap-and-two-sides
 ## construction `DebugLayers._capsule_outline` draws for a body, at the field's `level` instead of
-## the body's own `radius`.
+## the body's own rounding radius.
 func _stadium_field_outline(at: Vector2, axis: Vector2, level: float, samples: int
 		) -> PackedVector2Array:
 	var along := axis.normalized()
@@ -297,8 +297,8 @@ func _eccentric_field_outline(at: Vector2, velocity: Vector2, level: float, samp
 	return points
 
 ## This shape's own collision resource: a `CircleShape2D` for a point, a `CapsuleShape2D`
-## (`radius`, `height = 2 * reach()`) for a segment, a `RectangleShape2D` (`size = 2 *
-## half_extents`) for a rectangle.
+## (the rounding radius, `height = 2 * reach()`) for a segment, a `RectangleShape2D` (`size` twice
+## the half extents) for a rectangle.
 ##
 ## **Godot's capsule stands along local Y.** A caller that wants this shape's segment lying along
 ## its own local X — the axis every other method here treats as "along the spine" — has to rotate

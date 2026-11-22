@@ -1535,12 +1535,12 @@ func as_warned_first() -> EventDef:
 ## outgrows its resting radius (`EventPlan.keeps_its_field_clear()`'s clearance, the streaming rect,
 ## `ExcitementSource.expected_gross_at()`'s early-out).
 ##
-## `half_length + heard_within()` for a segment its field is priced from (`datum()`); this does not
-## grow with speed, so for the patrol car it is the reach of its field standing. A row whose field
-## is priced from its centre (`FieldSpec.from_its_centre()`, the fire engine) is a point,
-## whatever its body. Otherwise `heard_within() * Field.scale(e)`, `e` from whichever speed the
-## row's own motion uses: its chase speed for a pursuer, its route's speed for an ordinary moving
-## row, zero (the plain disc) for anything standing still.
+## The spine half-length plus `heard_within()` for a segment its field is priced from
+## (`datum()`); this does not grow with speed, so for the patrol car it is the reach of its
+## field standing. A row whose field is priced from its centre (`FieldSpec.from_its_centre()`,
+## the fire engine) is a point, whatever its body. Otherwise `heard_within() * Field.scale(e)`,
+## `e` from whichever speed the row's own motion uses: its chase speed for a pursuer, its
+## route's speed for an ordinary moving row, zero (the plain disc) for anything standing still.
 ##
 ## **Not `is_lethal_at()`'s business.** Lethal is contact, not noise: a circle of `lethal_reach()`
 ## about the centre, with no eccentricity, and for a pursuer only where the straight line to her

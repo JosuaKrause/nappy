@@ -57,7 +57,7 @@ extends RefCounted
 var _view := Rect2()
 ## Whether the joystick scheme's controls cover the view's bottom corners, as `look()` was last told.
 var _joystick := false
-## The two covered corners laid onto `view`, while `_joystick` holds.
+## The two covered corners laid onto the view, while `_joystick` holds.
 var _left := Rect2()
 var _right := Rect2()
 ## What the on-screen controls cover and whether their scheme is in force, **handed in** by whoever
@@ -149,7 +149,7 @@ func clear_of_sight(from: Vector2, direction: Vector2, box: Rect2, at_least := 0
 const SIGHT_STEP := 2.0
 
 ## The least distance at least `at_least` along `direction` at which `box`, carried from `from`,
-## is wholly outside `view` — the nearest of the sides the way leaves through.
+## is wholly outside the view — the nearest of the sides the way leaves through.
 func _leaves_the_view(from: Vector2, direction: Vector2, box: Rect2, at_least: float) -> float:
 	var shape := box if box.has_area() else Rect2(Vector2.ZERO, Vector2.ZERO)
 	var best := INF
@@ -174,10 +174,11 @@ static func _box_at(feet: Vector2, box: Rect2) -> Rect2:
 		return Rect2(feet - Vector2.ONE * 0.5, Vector2.ONE)
 	return Rect2(feet + box.position, box.size)
 
-## The share, 0 to 1, of `rect` (world space) the player can see in `view` (the world the camera
-## shows), leaving out the corners `covering` says are covered (`null` for the whole view, the tap
-## scheme, as is a cover not in force). 0 for a rectangle with no area. The two corners never overlap each other, so what they cover of `rect` is a plain
-## sum. Allocates nothing, so a caller may ask it for every live thing every frame.
+## The share, 0 to 1, of `rect` (world space) the player can see in the view (the world the
+## camera shows), leaving out the corners `covering` says are covered (`null` for the whole
+## view, the tap scheme, as is a cover not in force). 0 for a rectangle with no area. The two
+## corners never overlap each other, so what they cover of `rect` is a plain sum. Allocates
+## nothing, so a caller may ask it for every live thing every frame.
 static func visible_share(rect: Rect2, in_view: Rect2, covering: ScreenCover) -> float:
 	if covering == null or not covering.is_in_force():
 		return _share(rect, in_view, false, Rect2(), Rect2())
@@ -195,6 +196,7 @@ static func _share(rect: Rect2, in_view: Rect2, covered: bool, left: Rect2, righ
 		inside -= rect.intersection(right).get_area()
 	return maxf(0.0, inside) / area
 
-## A design-box rectangle laid onto `view`, `scale` being the view's size over the design box's.
+## A design-box rectangle laid onto the view, `scale` being the view's size over the design
+## box's.
 static func _onto(design: Rect2, onto: Rect2, scale: Vector2) -> Rect2:
 	return Rect2(onto.position + design.position * scale, design.size * scale)

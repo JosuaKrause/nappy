@@ -369,10 +369,11 @@ func drives_its_route() -> bool:
 
 ## Whether a circle of `radius` at `centre` is in front of a car at `at` facing `heading`, within
 ## `seconds` of its travel past the point its body would touch it: past the nose (`shape`'s spine
-## ends `half_length` ahead of its centre), across no wider than the body and the circle together —
-## the ground the body sweeps — and no further ahead than the touch plus that travel. **Nothing
-## behind it and nothing beside it**: a circle level with the body's flank is outside, whatever the
-## car is doing. *(leafy-puffin, inbox #648: "lethal only in front while driving".)*
+## ends its half-length ahead of its centre), across no wider than the body and the circle
+## together — the ground the body sweeps — and no further ahead than the touch plus that travel.
+## **Nothing behind it and nothing beside it**: a circle level with the body's flank is outside,
+## whatever the car is doing. *(leafy-puffin, inbox #648: "lethal only in front while
+## driving".)*
 func _in_front(at: Vector2, heading: Vector2, centre: Vector2, radius: float,
 		seconds: float) -> bool:
 	var local := (centre - at).rotated(-heading.angle())

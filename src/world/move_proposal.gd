@@ -7,7 +7,7 @@ extends RefCounted
 ## steps in three parts:
 ##
 ## 1. **Propose** (`propose()`): the tick opens its move at the pose it stands at, and works out
-##    where it would go (`to`).
+##    where it would go (its proposed end).
 ## 2. **Check**: the mover's own checker passes the proposal or changes it — the navigator's swept
 ##    step for a figure, taken as each part of the step is, which is why a figure's proposal reaches
 ##    its end already checked; a car's own checks once its whole tick is proposed
@@ -19,18 +19,19 @@ extends RefCounted
 ##    a route reached, a departure begun or ended, a catch — only once it is committed.
 ##
 ## **Only a crowd body's move can be changed between its proposal and its check.** `LaneMover`
-## proposes its along and cross step without moving, and its check (`_keep_out_of_a_body()`) is what
-## then holds whatever the move says to the tiles its body may stand on; a pass that changed `to` in
-## between would be checked like the step itself. Every other mover's move is the pose it publishes
-## for the others to read: an event figure and a cordon officer are walked through the navigator
-## during the tick, so the move records a pose the figure already stands at, and an event car's
-## check holds the step to her, the stop line and the turn onto her, never to a wall. That is the
-## seam the player's rule for who gives way needs (inbox #884 in plaid-raven): the crowd yields,
-## and an event figure keeps its course and its timing, so the crowd's moves are the ones a pass
-## changes and everyone else's committed pose is what they yield to. **Each move carries what that
-## pass reads about its mover**: how far its body reaches round its centre (`radius`) and whether it
-## is one that gives way (`yields`). The pass is the map's `SeparationPass`, which each crowd body
-## asks at its own step, between its proposal and its check.
+## proposes its along and cross step without moving, and its check (`_keep_out_of_a_body()`) is
+## what then holds whatever the move says to the tiles its body may stand on; a pass that
+## changed the proposed end in between would be checked like the step itself. Every other
+## mover's move is the pose it publishes for the others to read: an event figure and a cordon
+## officer are walked through the navigator during the tick, so the move records a pose the
+## figure already stands at, and an event car's check holds the step to her, the stop line and
+## the turn onto her, never to a wall. That is the seam the player's rule for who gives way
+## needs (inbox #884 in plaid-raven): the crowd yields, and an event figure keeps its course and
+## its timing, so the crowd's moves are the ones a pass changes and everyone else's committed
+## pose is what they yield to. **Each move carries what that pass reads about its mover**: how
+## far its body reaches round its centre (`body_radius()`) and whether it is one that gives way
+## (`yields`). The pass is the map's `SeparationPass`, which each crowd body asks at its own
+## step, between its proposal and its check.
 ##
 ## **Outside a step the move stands where its mover does** (`stands_at()` and `steps_to()` both
 ## answer its pose): a mover joins at the pose it stands at, and anything that moves it outside its own step — a body
