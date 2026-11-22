@@ -104,7 +104,7 @@ func _test_told_none_it_ends_its_route_whatever_its_row(t: TestRunner) -> void:
 ## folds back and forth and has no end to go on from.
 func _test_a_pacing_row_never_asks(t: TestRunner) -> void:
 	var pacing: EventDef = EventCatalogue.by_id("police_patrol").duplicate()
-	pacing.paces = true
+	pacing.use_route(pacing.route().pacing())
 	var where := WhereSheIs.new()
 	var way_on := FakeWayOn.new()
 	var instance := EventInstance.new()

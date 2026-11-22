@@ -442,8 +442,7 @@ static func _neighbor() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(0.0, 20.0, 40.0))
 	def.use_warning(WarningSpec.lasting(0.5))
-	def.mobile = true
-	def.speed = NEIGHBOR_WALK_SPEED
+	def.use_route(RouteSpec.at(NEIGHBOR_WALK_SPEED))
 	return def
 
 ## An unhurried walk, half hers (`Tuning.WALK_SPEED`, 92px/s): somebody going to a shift, and
@@ -454,15 +453,15 @@ const NEIGHBOR_WALK_SPEED := 46.0
 const NEIGHBOR_RUN_SPEED := 150.0
 
 ## The day-10 neighbor: the same row walking home from out in the city along a path the director
-## gives it, who **stops at the door** (`stops_where_it_arrives`), walked home into the vans, which
-## is the task lost, and who, warned first, runs (`departs_at`), which
+## gives it, who **stops at the door** (its route parks where it arrives), walked home into the
+## vans, which is the task lost, and who, warned first, runs (`departs_at`), which
 ## `EventInstance.leave_for_a_completed_task()` turns away from her. A copy rather than a second
 ## row, since it is the same person in the same picture.
 static func neighbor_heading_home() -> EventDef:
 	var row := by_id("neighbor")
 	var def: EventDef = row.duplicate()
 	def.use_body(def.body().parked())
-	def.stops_where_it_arrives = true
+	def.use_route(def.route().parking_where_it_arrives())
 	def.departs_at = NEIGHBOR_RUN_SPEED
 	return def
 
@@ -533,8 +532,7 @@ static func _cat_dash() -> EventDef:
 	# Faster than a walk, so the escape distance is the forward reach, not the plain radius:
 	# `outer radius · Field.scale(e)` at the cat's own speed (240px/s, e = 0.48, just under the
 	# eccentricity cap): 120 * 1.92 / 92 = 2.51s, plus the row's margin.
-	def.mobile = true
-	def.speed = 240.0
+	def.use_route(RouteSpec.at(240.0))
 	# Shared with the other things that happen *to* her rather than being the whole of the moments
 	# she is owed: the director also has the cyclist and, from day 3, the dog.
 	def.weight = 2.5
@@ -602,7 +600,6 @@ static func _alley_mouse() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.MOUSE
 	def.use_body(BodySpec.footprint(GroundShape.point(4.0)).walked_through().going_on())
-	def.path_mode = EventDef.PathMode.ACROSS_ITS_ALLEY
 	def.placement = [GameEnums.TileType.ALLEY]
 	# **Priced against the cat on each row's own ground, which is not the same ground.** A cat is
 	# met on an ordinary street, where 6.0/s is given back; a mouse is only met in an alley, where
@@ -622,8 +619,7 @@ static func _alley_mouse() -> EventDef:
 	# Comfortably past the ~0.32s the physical crossing takes at this speed over the alley's 64px
 	# width (`ALLEY_WIDTH_TILES · Tuning.TILE_SIZE`), so `_has_expired()` never cuts the dash short.
 	def.duration = 1.0
-	def.mobile = true
-	def.speed = 200.0
+	def.use_route(RouteSpec.at(200.0, RouteSpec.Kind.ACROSS_ITS_ALLEY))
 	# Waits unclocked until she is this close (`EventDef.notice`): inside VIEW_HALF_EXTENT.y (180px)
 	# with room to spare, past outer radius (60px).
 	def.notice = NoticeSpec.at(150.0)
@@ -639,9 +635,9 @@ static func _alley_mouse() -> EventDef:
 ## Stationary, loud, and *pulsing*: the intensity envelope means the counterplay is timing a pass
 ## between yells, a different skill from routing around a hazard.
 ##
-## He **paces** (`EventDef.paces`), a design decision rather than polish: a stationary source is a
-## fixed price on a fixed patch of sidewalk, a line you draw once and never think about again. A man
-## walking up and down two hundred and fifty pixels of footway is a *timing* problem on top of a
+## He **paces** (`RouteSpec.pacing()`), a design decision rather than polish: a stationary source is
+## a fixed price on a fixed patch of sidewalk, a line you draw once and never think about again. A
+## man walking up and down two hundred and fifty pixels of footway is a *timing* problem on top of a
 ## routing one, as his pulse is at a larger scale.
 ##
 ## **The cost of pacing is the body.** Anything mobile is exempt from *solid things are solid*, since a
@@ -678,7 +674,7 @@ static func _alley_mouse() -> EventDef:
 ## passes that she can **leave** by. A junction box is one (she takes the crosswalk while he is at
 ## the far end of his loop) and a side route off the sidewalk's own side is the other, so he is
 ## friction and stays on the route. A beat that passes neither leaves her nothing but walking
-## through him, and that placement is a wall. `path_length_tiles` (8) against a block of
+## through him, and that placement is a wall. His beat of eight tiles against a block of
 ## `Tuning.BLOCK_SIZE` (8) is why the first is the ordinary case: a beat runs into a junction unless
 ## a closure, a calm zone's absorbed corridor or the map's own margin cuts it short.
 ## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk` decides it, per placement.
@@ -691,20 +687,16 @@ static func _homeless_yeller() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(5.0))
 	def.use_warning(WarningSpec.lasting(2.6))
-	def.mobile = true
-	def.paces = true
 	# A third of a walking pace: something that shuffles reads as somebody who lives on this
 	# sidewalk rather than somebody crossing it.
-	def.speed = 30.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
 	# Eight tiles of footway, walked in about eight seconds each way: long enough that where he is
 	# now is worth looking at, short enough that it is still *a place he is*.
-	def.path_length_tiles = 8
-	# `paces` never reaches the end of its own path and he carries no `duration`, so he leaves only
-	# when the resistance hands him a note (`EventInstance.leave_for_a_completed_task()`); this is
-	# that departure's speed, not his pacing shuffle. Faster than the shuffle, so the note visibly
-	# changes what he is doing, and well under her `Tuning.WALK_SPEED` (92px/s), so following him
-	# out is never the fast way home.
+	def.use_route(RouteSpec.at(30.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(8).pacing())
+	# His pacing route never reaches the end of its path and he carries no `duration`, so he leaves
+	# only when the resistance hands him a note (`EventInstance.leave_for_a_completed_task()`); this
+	# is that departure's speed, not his pacing shuffle. Faster than the shuffle, so the note
+	# visibly changes what he is doing, and well under her `Tuning.WALK_SPEED` (92px/s), so
+	# following him out is never the fast way home.
 	def.departs_at = 60.0
 	def.weight = 2.0
 	def.max_per_day = 18
@@ -752,10 +744,7 @@ static func _dog_walker() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(33.0, 26.0, 105.0).pulsing_every(3.5))
 	def.use_warning(WarningSpec.lasting(1.4))
-	def.mobile = true
-	def.speed = 32.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
-	def.path_length_tiles = 30
+	def.use_route(RouteSpec.at(32.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(30))
 	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460 in silky-lemur, "the same for
 	# the dog walker"): the director creates it at once just out of sight down her own sidewalk,
 	# walking toward her, as the loose dog comes, so the dog-walker decision is one she always meets.
@@ -949,12 +938,10 @@ static func _fire_truck() -> EventDef:
 	# where it is created, so that second is the whole of what the contract's flat
 	# `Tuning.OFFSCREEN_WARNING_MIN` measures.
 	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
-	def.mobile = true
-	def.speed = 190.0
-	# And it stays at the fire once it gets there (`EventDef.stops_where_it_arrives`): the standing
-	# field beside a fire she was led to, and the pair of them, is a street she is meant to turn
-	# round rather than walk down.
-	def.stops_where_it_arrives = true
+	# And it stays at the fire once it gets there (`RouteSpec.parking_where_it_arrives()`): the
+	# standing field beside a fire she was led to, and the pair of them, is a street she is meant to
+	# turn round rather than walk down.
+	def.use_route(RouteSpec.at(190.0).parking_where_it_arrives())
 	return def
 
 ## Act I's finale, and the day's own one-shot: a building alight on a sidewalk, with the engine
@@ -1098,8 +1085,7 @@ static func _loose_dog() -> EventDef:
 	def.use_field(FieldSpec.of(39.0, 30.0, 140.0).pulsing_every(2.2))
 	# Spent before it is ever met (see above); it decides only where its beat starts.
 	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).unannounced())
-	def.mobile = true
-	def.speed = 132.0
+	def.use_route(RouteSpec.at(132.0))
 	# The other half of day 1's wall pool; see `leaf_blower` for the measurement both numbers came
 	# out of. Between them they are what "leaving the path should be lethal or very expensive" can
 	# be built from on the one day the game has nothing lethal in it at all.
@@ -1226,9 +1212,9 @@ static func _leaf_blower() -> EventDef:
 ##
 ## **The birds go up when she reaches them, which a clock cannot know.** They are on the ground for
 ## the whole telegraph by construction, so under the clock alone a walk straight in put them up
-## about 84px past her. `EventNoticeRun` fires the burst at `flock_spread` plus her own body, the
-## distance at which she is among the birds rather than near them, as a pursuer's lunge is fired by
-## her reaching its stand-off.
+## about 84px past her. `EventNoticeRun` fires the burst at the flock's spread plus her own body,
+## the distance at which she is among the birds rather than near them, as a pursuer's lunge is fired
+## by her reaching its stand-off.
 ##
 ## **Its telegraph (`telegraphs_for()`) is 1.7s and is the backstop rather than the wait.** It only decides a flock she
 ## came near and never reached (80px off the middle, say); shortening it would put *those* birds up
@@ -1265,15 +1251,15 @@ static func _leaf_blower() -> EventDef:
 ## - The **birds** have to move, not just the event. Copies of one sprite at fixed offsets sharing a
 ##   single `rise` term go up in one movement and hang in the air for the whole burst.
 ##
-## So it is `flock_size` birds, each with its own heading, speed, height and wingbeat, each an
+## So it is eleven birds, each with its own heading, speed, height and wingbeat, each an
 ## emitter in its own right (see `EventInstance`, "the flock"):
 ##
 ## - **The intensity is a total to be shared out**, so it buys eleven overlapping fields rather than
 ##   one: walking round the edge meets one bird, through the middle five. It is the third loudest
 ##   thing on an act I sidewalk at the centre and nearly free at the rim.
-## - **`flock_spread` comes out of outer radius, not on top of it.** A bird emits over
-##   `outer radius - flock_spread`, so the union of eleven moving fields is inside the one disc the
-##   fairness contract was checked against. The telegraph is still measured against 168px.
+## - **The spread comes out of the outer radius, not on top of it.** A bird emits over
+##   the outer radius less the spread, so the union of eleven moving fields is inside the one disc
+##   the fairness contract was checked against. The telegraph is still measured against 168px.
 ## - **It fades as they climb.** swell is the burst being loudest at the instant they go
 ##   up, which also earns it a caret for the whole burst rather than only the telegraph: a flock is
 ##   danger that changes over time, the one thing the mark is for.
@@ -1303,8 +1289,7 @@ static func _pigeon_flock() -> EventDef:
 	def.use_field(FieldSpec.of(42.0, 26.0, 168.0).swelling_by(0.4))
 	# Eleven of them over a 62px wheel: enough that the middle is unmistakably a crowd of birds and
 	# few enough that a player can see the gaps between them and aim at one.
-	def.flock_size = 11
-	def.flock_spread = 62.0
+	def.use_flock(FlockSpec.of(11, 62.0))
 	def.duration = 4.0
 	# On the ground the whole time, which makes this a thing to walk around rather than a thing that
 	# happens. Over the 1.55s the contract asks of a 168px field, measured from the moment it
@@ -1382,8 +1367,7 @@ static func _cyclist() -> EventDef:
 	# closest (180px) to his 33px reach at 257px/s with her
 	# walking into him.
 	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX))
-	def.mobile = true
-	def.speed = 165.0
+	def.use_route(RouteSpec.at(165.0))
 	def.use_lethal(LethalSpec.at_its_core())
 	def.weight = 1.5
 	# Well under the ordinary act I rows, and the cap does different work than its number suggests:
@@ -1511,12 +1495,8 @@ static func _chatting_mother() -> EventDef:
 	# (70-56)/92 = 0.15s required; it does not end the day, so no doubled margin. Generous rather than tight,
 	# since the ambient field is nearly nothing next to what the conversation costs.
 	def.use_warning(WarningSpec.lasting(1.0))
-	def.mobile = true
-	def.paces = true
 	# A pram's pace, slower than an ordinary walk and a touch slower than `dog_walker`'s 32.
-	def.speed = 26.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
-	def.path_length_tiles = 8
+	def.use_route(RouteSpec.at(26.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(8).pacing())
 	def.weight = 2.0
 	def.max_per_day = 2
 	def.use_hold(HoldSpec.for_seconds(5.0).from(48.0))
@@ -1673,10 +1653,7 @@ static func _police_patrol() -> EventDef:
 	# Slower than a walk, so the escape distance is the falloff band stretched forward by the
 	# patrol's own eccentricity: `(outer radius - inner radius) · Field.scale(e)` at 74px/s
 	# (e = 0.148) is 165px, 1.80s, plus the row's margin.
-	def.mobile = true
-	def.speed = 74.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
-	def.path_length_tiles = 40
+	def.use_route(RouteSpec.at(74.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(40))
 	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460 in silky-lemur, "just spawn in
 	# the car just ahead of the player? then you guarantee an encounter"): created at once down the
 	# carriageway lane that drives toward her, the return leg's patrols among them.
@@ -2339,10 +2316,7 @@ static func _military_convoy() -> EventDef:
 	# is cut to `Tuning.WARNING_ALONE_MAX`, and it is held to the flat
 	# `Tuning.OFFSCREEN_WARNING_MIN`.
 	def.use_warning(WarningSpec.lasting(4.43))
-	def.mobile = true
-	def.speed = 120.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
-	def.path_length_tiles = 50
+	def.use_route(RouteSpec.at(120.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(50))
 	# **Sent ahead of her on an ordinary day** (`EventDef.send_ahead()`; inbox #1460 in silky-lemur, "the same for
 	# [...] the convoy"; "just spawn in the car just ahead of the player"): warned of first, its badge
 	# alone for a second, then created in the lane beside her just out of sight up the road ahead of
@@ -2921,8 +2895,7 @@ static func _masked_pursuer() -> EventDef:
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
 	def.use_warning(WarningSpec.lasting(3.6).holding_still())
-	def.mobile = true
-	def.speed = Tuning.HEAT_HUNTS_SPEED
+	def.use_route(RouteSpec.at(Tuning.HEAT_HUNTS_SPEED))
 	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
 	# moment the section begins and being gone before she has come down a floor. `EventDef.notice`
 	# without `EventDef.pursuit` stands unclocked until she is in range and then runs its ordinary

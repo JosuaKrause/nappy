@@ -264,7 +264,7 @@ func _test_no_field_reaches_past_silent_beyond(t: TestRunner) -> void:
 func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 	var rows: Array[EventDef] = []
 	for def: EventDef in EventCatalogue.all():
-		if def.flock_size <= 0:
+		if def.flock().count() <= 0:
 			rows.append(def)
 	for shape: GroundShape in [GroundShape.segment(500.0, 10.0),
 			GroundShape.rect(Vector2(400.0, 300.0))]:

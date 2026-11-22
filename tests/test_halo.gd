@@ -677,7 +677,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 # the actual received amount counts")*, actually fixed. This rig stays as the regression: the two
 # rows a player once reported as invisible still reach the meter.
 
-## `cat_dash` is `AHEAD_OF_PLAYER` and `mobile`, but a rig instance built with no route never
+## `cat_dash` is `AHEAD_OF_PLAYER` and moves along a route, but a rig instance built with no route never
 ## enters `EventRouteWalk.advance()` (`path.size() > 1` is false), so it holds still at `at` for its
 ## whole life -- exactly what "standing on her" needs to hold the distance at zero throughout.
 func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:
@@ -707,7 +707,7 @@ func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var flock_where := WhereSheIs.nowhere()
 	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
-	t.check(flock.flock.birds.size() == def.flock_size,
+	t.check(flock.flock.birds.size() == def.flock().count(),
 			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
 	# Standing in it: a flock waits on the pavement until she is inside `EventDef.notice`, and both
 	# the telegraph and the burst below are measured from the moment it notices her — which is the

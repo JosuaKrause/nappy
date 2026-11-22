@@ -16,7 +16,8 @@ extends RefCounted
 ## **The rig.** A real `EventInstance` (`EventCatalogue`'s own def, or a historical copy — see
 ## `_historical_def()`), given a long straight two-point path so `EventRouteWalk.advance()` — the
 ## same function the scheduler's placement drives — carries it at its own `speed`, pacing back
-## and forth if `def.paces`. Never added to a tree: `contribution_at()`, `accumulate_landed()` and
+## and forth if the row paces a beat. Never added to a tree: `contribution_at()`,
+## `accumulate_landed()` and
 ## `_process()` all work on a bare `.setup()` instance, the same convention
 ## `tests/test_halo.gd`'s `_instance_at()` uses. Her line is parallel to the instance's own path,
 ## offset in Y by a fixed lateral distance, and her direction is fixed **opposite the instance's
@@ -184,7 +185,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# nothing either way — the sums below only accrue while she is inside outer radius.
 	var steps := int(ceil((LEAD * 2.0 / Tuning.WALK_SPEED) / STEP)) + 120
 	if toward_her:
-		var closing := def.speed + Tuning.WALK_SPEED
+		var closing := def.speed() + Tuning.WALK_SPEED
 		steps = int(ceil(((lead + def.field_reach()) / closing) / STEP)) + 120
 	for _i in steps:
 		instance.step(STEP)

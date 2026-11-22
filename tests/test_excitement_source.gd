@@ -125,8 +125,7 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	var def := _def("moving", 30.0)
-	def.mobile = true
-	def.speed = 80.0
+	def.use_route(RouteSpec.at(80.0))
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]))
 	var her := Vector2(200.0, 0.0)
 	var gross := instance.source().expected_gross_at(her)

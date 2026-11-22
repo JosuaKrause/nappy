@@ -670,7 +670,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 	var driven := 0.0
 	while driven < 1.0:
 		var delta: float = t.get_process_delta_time()
-		engine.global_position -= Vector2(def.speed * delta, 0.0)
+		engine.global_position -= Vector2(def.speed() * delta, 0.0)
 		driven += delta
 		await t.get_tree().process_frame
 	t.check(edge.badges().announcing().size() == 1, "a fire engine actually coming down the street does")
@@ -729,7 +729,7 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner
 	var driven := 0.0
 	while driven < 1.0:
 		var delta: float = t.get_process_delta_time()
-		engine.global_position -= Vector2(def.speed * delta, 0.0)
+		engine.global_position -= Vector2(def.speed() * delta, 0.0)
 		driven += delta
 		await t.get_tree().process_frame
 	t.check(edge.badges().announcing().size() == 1, "a live instance closing from off screen is badged")

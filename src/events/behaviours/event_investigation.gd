@@ -33,10 +33,12 @@ var _investigated := false
 var _left_her_once := false
 
 ## Its row: how near it notices her, how many men it lets out, its body's shape, how far its field
-## reaches, whether it moves and whether it is a car.
+## reaches and whether it is a car.
 var _row: EventDef
 ## The map it stands on, whose junction boxes it never stops in.
 var _map: WorldMap
+## How it travels (`RouteSpec`): whether it moves along a route at all.
+var _course: RouteSpec
 ## Its route walk (`EventRouteWalk`), which drives its route while it runs it; null for a vehicle
 ## that does not move.
 var _route: EventRouteWalk
@@ -46,13 +48,14 @@ var _route: EventRouteWalk
 ## that does not drive.
 var _car: WeakRef = null
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, the map and its route
-## walk (or none).
-func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
-		route: EventRouteWalk) -> void:
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the
+## map and its route walk (or none).
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
+		map: WorldMap, route: EventRouteWalk) -> void:
 	_figure = figure
 	_where = where
 	_row = row
+	_course = course
 	_map = map
 	_route = route
 
@@ -66,7 +69,7 @@ func take_its_car(car: EventCarDriving) -> void:
 ## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	_investigate()
-	if runs_its_route() and _row.mobile and _figure.walks().size() > 1:
+	if runs_its_route() and _course.moves() and _figure.walks().size() > 1:
 		_route.advance(delta)
 
 func _investigate() -> void:

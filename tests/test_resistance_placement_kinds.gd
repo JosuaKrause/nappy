@@ -954,10 +954,10 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t: TestRunner) -> void
 		var length := 0.0
 		for i in range(1, neighbor.walks().size()):
 			length += neighbor.walks()[i - 1].distance_to(neighbor.walks()[i])
-		var seconds := length / neighbor.row().speed
+		var seconds := length / neighbor.row().speed()
 		t.check(absf(seconds - ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS)
 				<= (ResistanceDirector.NEIGHBOR_WALK_BAND_TILES + 2) * Tuning.TILE_SIZE
-				/ neighbor.row().speed,
+				/ neighbor.row().speed(),
 				"a walk of about %.0fs (%.0fs)" % [ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS, seconds])
 		t.check(director.red_arrow_target() == director.contact_position(),
 				"and the red arrow points at them")

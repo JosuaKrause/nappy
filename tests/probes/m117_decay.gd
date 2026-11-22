@@ -246,7 +246,7 @@ func _cost_table() -> void:
 	for def in EventCatalogue.all():
 		rows.append({"id": def.id, "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
-				"hard_fail": def.ends_the_day(), "flock": def.flock_size > 1,
+				"hard_fail": def.ends_the_day(), "flock": def.flock().count() > 1,
 				"pursues": def.pursues(), "emission": _mean_emission(def),
 				"intensity": def.peak(), "outer": def.heard_within()})
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["walk"] < b["walk"])

@@ -32,7 +32,7 @@ area each, to be read whole before the first edit there:
 | `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`, a thing sent from out of her sight | `references/warned-first.md` |
 | `EventDef.vehicle`, `EventCarDriving`, the patrol car, the fire engine | `references/event-cars.md` |
 | `EventDef.pursuit`, `EventDef.notice`, `PursuitSpec`, `EventPursuit`, a charger, robber or guard | `references/pursuits.md` |
-| `EventDef.flock_size`, `EventFlock`, a look that moves, a partly animated picture | `references/flocks-and-moving-pictures.md` |
+| `EventDef.flock()`, `FlockSpec`, `EventFlock`, a look that moves, a partly animated picture | `references/flocks-and-moving-pictures.md` |
 | a new row, `spawn_mode`, `on_her_way`, `lethal()`, the role, `pavement_side` | `references/fields.md` |
 | `EventScheduler.build_day()`, `UnitDraw`, `EventStreaming`, `ExcitementSource`, anything that emits | `references/plan-and-excitement.md` |
 
@@ -62,7 +62,7 @@ changes. In one line each:
 - **The role is not a decision.** `EventScheduler.role_for()` reads it off the def, and a row that
   wants another role needs a change there, not a new field.
 - **`obstructs_within()` is not a decision**, and `pavement_side` usually is not one either.
-- **`flock_size` changes what a row *is***, and `departs_at` matters only for a stationary event
+- **A flock (`FlockSpec`) changes what a row *is***, and `departs_at` matters only for a stationary event
   with a `duration`.
 
 ## The telegraph fairness contract
@@ -159,7 +159,7 @@ area ahead of its nose, only while it drives its route, only with her on the car
 crowd car's contract of the carriageway and the horn instead of a telegraph. It gives way where the
 crowd's cars do. `references/event-cars.md` owns that rule and the seven traps.
 
-## A fixture can move, and `EventDef.paces` is how
+## A fixture can move, and a pacing route (`RouteSpec.pacing()`) is how
 
 A **beat** rather than a journey: it walks its route, turns round at the ends, and neither departs
 nor expires. A stationary source is a line the player draws once; a man pacing a stretch of
@@ -197,7 +197,7 @@ never on a distance; **no row but the checkpoint guard may start `CHARGES_AT_ONC
 player's word** (inbox #764 in minty-lemur, inbox #788 in minty-lemur). The traps are
 `references/pursuits.md`.
 
-A thing made of several bodies is `EventDef.flock_size`; a moving thing bobs by distance covered;
+A thing made of several bodies is a `FlockSpec` (`EventDef.flock()`); a moving thing bobs by distance covered;
 a partly animated scene keeps its still pixels and its moving pixels in separate layers. All three
 are `references/flocks-and-moving-pictures.md`.
 

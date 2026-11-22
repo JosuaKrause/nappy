@@ -13,22 +13,25 @@ extends EventBehaviour
 var _line_warning := Warning.new()
 ## Whether he noticed her already inside his run distance, so his run waits for his warning.
 var _noticed_inside := false
-## Its row: how near she comes before it notices her, whether it walks a route, and a flock's
-## spread.
-var _row: EventDef
-## How it notices her (`NoticeSpec`): the distance a row that runs its own line runs from.
+## How it travels (`RouteSpec`): whether it walks a route.
+var _course: RouteSpec
+## Its flock (`FlockSpec`): how many birds, and how far they spread.
+var _flock: FlockSpec
+## How it notices her (`NoticeSpec`): how near she comes before it notices her, and the distance a
+## row that runs its own line runs from.
 var _spec: NoticeSpec
 ## Its route walk (`EventRouteWalk`), which it walks once it has noticed her; null for a row that
 ## does not move.
 var _route: EventRouteWalk
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, how it notices her
-## and the route walk it walks once it has.
-func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, spec: NoticeSpec,
-		route: EventRouteWalk) -> void:
+## Handed, as its event is set up, the figure it moves, where she is, how it travels, its flock, how
+## it notices her and the route walk it walks once it has.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, course: RouteSpec, flock: FlockSpec,
+		spec: NoticeSpec, route: EventRouteWalk) -> void:
 	_figure = figure
 	_where = where
-	_row = row
+	_course = course
+	_flock = flock
 	_spec = spec
 	_route = route
 	_line_warning.cancel_if = _she_has_left_his_notice
@@ -41,7 +44,7 @@ func step(delta: float) -> void:
 	_check_for_notice()
 	_warn_on_its_line(delta)
 	_flush_the_flock_if_she_is_among_them()
-	if not _figure.is_waiting() and _row.mobile and _figure.walks().size() > 1 \
+	if not _figure.is_waiting() and _course.moves() and _figure.walks().size() > 1 \
 			and not _figure.is_telegraphing_still():
 		_route.advance(delta)
 
@@ -53,7 +56,7 @@ func _check_for_notice() -> void:
 	if her == Vector2.INF or not _figure.is_waiting():
 		return
 	var toward: Vector2 = her - _figure.place()
-	if toward.length() > _row.notice_within():
+	if toward.length() > _spec.within():
 		return
 	_figure.notice_her()
 	_figure.turn_to(toward.normalized())
@@ -98,7 +101,7 @@ func _keep_warning_once_it_has_run() -> void:
 ## Whether she is back outside the masked man's notice: what calls his warning off.
 func _she_has_left_his_notice() -> bool:
 	return _where.at() != Vector2.INF \
-			and _figure.place().distance_to(_where.at()) > _row.notice_within()
+			and _figure.place().distance_to(_where.at()) > _spec.within()
 
 ## **Birds go up when she reaches them, and a clock cannot know when that is** (2026-09-20: they
 ## should basically start fluttering when I touch them, not after). The flush fires on her arrival
@@ -107,11 +110,11 @@ func _she_has_left_his_notice() -> bool:
 ## flock she came near and never reached, not the wait.
 func _flush_the_flock_if_she_is_among_them() -> void:
 	var her: Vector2 = _where.at()
-	if _row.flock_size <= 0 or _figure.notice_has_run() or her == Vector2.INF:
+	if not _flock.is_a_flock() or _figure.notice_has_run() or her == Vector2.INF:
 		return
 	if _figure.is_waiting() or not _figure.is_telegraphing():
 		return
-	if _figure.place().distance_to(her) > _row.flock_spread + Tuning.PLAYER_BODY_RADIUS:
+	if _figure.place().distance_to(her) > _flock.spread() + Tuning.PLAYER_BODY_RADIUS:
 		return
 	_figure.begin(EventInstance.Phase.ACTIVE)
 

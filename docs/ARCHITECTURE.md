@@ -230,6 +230,8 @@ src/
 	  lethal_spec.gd        whether contact ends her day and the reach it is measured from
 	  hold_spec.gd          whether a row holds her when she comes to it: its seconds, its reach, whether it holds again
 	  warning_spec.gd       what a row does before it acts: its telegraph, whether it holds still, whether its coming is announced, whether it is warned first
+	  route_spec.gd         how a row travels: whether it moves, how fast, how its route is built and how long, whether it paces a beat, whether it parks where it arrives
+	  flock_spec.gd         how many creatures a row is and how far they spread
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's

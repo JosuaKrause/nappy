@@ -663,7 +663,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
 				Vector2.UP)
 		var further := maxf(0.0, (bike.walks()[0] - just_out).dot(Vector2.UP))
-		t.check(into_sight <= further / def.speed + 3.0 * STEP,
+		t.check(into_sight <= further / def.speed() + 3.0 * STEP,
 				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
 				% further + "just out of sight (%.2fs after he exists)" % into_sight)
 		t.check(gone <= into_sight + 0.2,
@@ -692,7 +692,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 		# What the walk measures is the contract's own figure on this axis: his second, then his
 		# approach from just out of sight to his reach. The horizontal axis adds only the wider view.
 		var heading: Vector2 = encounter["heading"]
-		var closing := row.speed + Tuning.WALK_SPEED
+		var closing := row.speed() + Tuning.WALK_SPEED
 		var created_at := PendingWarning.down_her_line(null, row, Vector2.ZERO, heading).length()
 		var predicted := row.warned_for() + (created_at - row.lethal_reach()) / closing
 		t.close_to(toward["lead"], predicted,
@@ -910,7 +910,7 @@ func _test_a_paced_event_walks_a_beat(t: TestRunner) -> void:
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(256.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 
-	var out := 256.0 / def.speed
+	var out := 256.0 / def.speed()
 	_advance(instance, out - 0.2)
 	t.close_to(instance.position.x, 256.0, "it walks to the far end of its beat", 8.0)
 	t.check(instance.facing_now().x > 0.0, "facing the way it is going")

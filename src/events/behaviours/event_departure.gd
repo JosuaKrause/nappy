@@ -41,8 +41,10 @@ var _way_speed := 0.0
 ## Whether this departure has begun (`begin()`, `for_a_completed_task()`, `along()`) and not been
 ## cleared since (`reset()`): what `save()` carries only then.
 var _begun := false
-## Its row: whether it walks a route, whether it drives, the pace it leaves and chases at.
+## Its row: whether it drives, the pace it leaves and chases at.
 var _row: EventDef
+## How it travels (`RouteSpec`): whether it moves along a route at all.
+var _course: RouteSpec
 ## The ground it plans a way out over, and plans and steps it through, as what it walks as.
 var _map: WorldMap
 var _navigator: Navigator
@@ -56,15 +58,16 @@ var _on_foot: EventOfficer
 ## (`EventSpawner.spawn()`), so it is never streamed out and back.
 var _goes_on_by: WayOn = null
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, the ground and how it
-## moves over it, and the two behaviours its way out depends on.
-func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
-		navigator: Navigator, mover: Mover, barrier_post: EventBarrierPost,
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the
+## ground and how it moves over it, and the two behaviours its way out depends on.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
+		map: WorldMap, navigator: Navigator, mover: Mover, barrier_post: EventBarrierPost,
 		on_foot: EventOfficer) -> void:
 	steps_each_tick = false
 	_figure = figure
 	_where = where
 	_row = row
+	_course = course
 	_map = map
 	_navigator = navigator
 	_mover = mover
@@ -78,7 +81,7 @@ func begin() -> void:
 	_begun = true
 	_leaving_for = 0.0
 	var her: Vector2 = _where.at()
-	if not (_row.mobile and _figure.walks().size() > 1) and her != Vector2.INF \
+	if not (_course.moves() and _figure.walks().size() > 1) and her != Vector2.INF \
 			and not _figure.place().is_equal_approx(her):
 		_figure.turn_to((_figure.place() - her).normalized())
 	if _row.vehicle != null:

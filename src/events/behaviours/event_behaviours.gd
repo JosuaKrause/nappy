@@ -27,23 +27,23 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	if row.leaves_its_body():
 		barrier_post = EventBarrierPost.new(figure, where, row, map, navigator, mover)
 	var route: EventRouteWalk = null
-	if row.mobile:
-		route = EventRouteWalk.new(figure, where, row, navigator, mover)
+	if row.moves():
+		route = EventRouteWalk.new(figure, where, row, row.route(), navigator, mover)
 		event.route = route
 	var investigation: EventInvestigation = null
 	if row.investigates():
-		investigation = EventInvestigation.new(figure, where, row, map, route)
+		investigation = EventInvestigation.new(figure, where, row, row.route(), map, route)
 	var car: EventCarDriving = null
 	if row.vehicle:
-		car = EventCarDriving.new(figure, where, row, map, route, investigation, move,
-				lights)
+		car = EventCarDriving.new(figure, where, row, row.route(), map, route, investigation,
+				move, lights)
 	# The investigation stands its car for her once its men are back: made after it, since the car
 	# is handed the investigation, the car is handed to it once it is made.
 	if investigation != null and car != null:
 		investigation.take_its_car(car)
 	var out: Array[EventBehaviour] = []
-	event.departure = EventDeparture.new(figure, where, row, map, navigator, mover, barrier_post,
-			on_foot)
+	event.departure = EventDeparture.new(figure, where, row, row.route(), map, navigator, mover,
+			barrier_post, on_foot)
 	out.append(event.departure)
 	# The man on foot walks back, and the barrier post's guard walks off, by the departure that is
 	# handed them: made after them, it is handed to them once it is made.
@@ -54,8 +54,8 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	if car != null:
 		event.car = car
 		out.append(car)
-	if row.flock_size > 0:
-		event.flock = EventFlock.new(figure, row)
+	if row.is_a_flock():
+		event.flock = EventFlock.new(figure, row.flock(), row.field())
 		out.append(event.flock)
 	if investigation != null:
 		event.investigation = investigation
@@ -70,9 +70,10 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		event.barrier_post = barrier_post
 		out.append(barrier_post)
 	if row.notice != null and row.pursuit == null and not row.investigates():
-		event.notice_run = EventNoticeRun.new(figure, where, row, row.notice, route)
+		event.notice_run = EventNoticeRun.new(
+				figure, where, row.route(), row.flock(), row.notice, route)
 		out.append(event.notice_run)
-	if row.mobile and not row.investigates() and row.pursuit == null and row.notice == null:
+	if row.moves() and not row.investigates() and row.pursuit == null and row.notice == null:
 		out.append(route)
 	if row.detains_her():
 		event.hold = EventHold.new(figure, row.hold())

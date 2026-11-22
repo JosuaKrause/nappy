@@ -2471,7 +2471,7 @@ const NEIGHBOR_WALK_BAND_TILES := 8
 ## ground the day's closures and bodies leave open (`_reach()`, the day's own
 ## reachability answer), on sidewalks and crossings where they reach and over any walkable ground
 ## where they do not. **The walk is the deadline**: `EventCatalogue.neighbor_heading_home()` stops
-## at the door (`stops_where_it_arrives`), and `tick()` reads a parked neighbor as the task
+## at the door (its route parks where it arrives), and `tick()` reads a parked neighbor as the task
 ## lost. Null when no start qualifies, which leaves the task with nowhere to go.
 ##
 ## The start is drawn by the day's RNG from the band of tiles `NEIGHBOR_WALK_BAND_TILES` either side
@@ -2492,7 +2492,7 @@ func _send_the_neighbor_home() -> EventInstance:
 		return null
 	var def := EventCatalogue.neighbor_heading_home()
 	var door := _map.world_to_tile(_map.doorstep_world_position())
-	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
+	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed() / Tuning.TILE_SIZE)
 	var ground := _spawn_siting.ask_of_ground()
 	var kept := NO_TILE
 	for pass_index in WayConfirmation.PASSES:

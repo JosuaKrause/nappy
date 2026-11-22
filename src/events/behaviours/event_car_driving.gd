@@ -95,11 +95,13 @@ var _known := false
 var _ahead_before := false
 var _was_leaving := false
 
-## Its row: its body's `shape`, its `speed`, whether it parks where it arrives or paces a beat,
-## whether it moves and whether it pursues.
+## Its row: its body's ground shape and whether it pursues.
 var _row: EventDef
 ## The map it drives on: the street lattice its give-way is laid on, the zebras, the carriageway.
 var _map: WorldMap
+## How it travels (`RouteSpec`): how fast it drives, whether it stops where it arrives or paces a
+## beat, and whether it moves at all.
+var _course: RouteSpec
 ## Its route walk (`EventRouteWalk`), which says how long its route is; null for a row that does
 ## not move.
 var _route: EventRouteWalk
@@ -113,16 +115,17 @@ var _move: MoveProposal
 ## with no city, which then has no red light to stop at.
 var _lights: TrafficSignals
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, the map, its route
-## walk (or none), the vehicle's investigation (or none), its event's move and the lights it stops
-## at (or none).
-func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
-		route: EventRouteWalk, investigation: EventInvestigation, move: MoveProposal,
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the
+## map, its route walk (or none), the vehicle's investigation (or none), its event's move and the
+## lights it stops at (or none).
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
+		map: WorldMap, route: EventRouteWalk, investigation: EventInvestigation, move: MoveProposal,
 		lights: TrafficSignals) -> void:
 	steps_each_tick = false
 	_figure = figure
 	_where = where
 	_row = row
+	_course = course
 	_map = map
 	_route = route
 	_investigation = investigation
@@ -205,7 +208,7 @@ func strikes(her: Vector2) -> bool:
 func will_strike(her: Vector2) -> bool:
 	if not _is_driving():
 		return false
-	var speed: float = _row.speed
+	var speed: float = _course.speed()
 	var at := _figure.place()
 	var heading := _figure.heading()
 	var horizon := speed * Tuning.EXPECTED_IMPACT_HORIZON
@@ -297,27 +300,27 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 func short_of_its_line(seconds: float) -> float:
 	var cut := short_of_its_stop(seconds, route_left(_figure.travelled()))
 	var line := _room_to_its_line(_figure.place(), _figure.heading())
-	if line == INF or _row.speed <= 0.0:
+	if line == INF or _course.speed() <= 0.0:
 		return cut
-	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / _row.speed)
+	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / _course.speed())
 
-## **How far a car that stops where it arrives (`EventDef.stops_where_it_arrives`, the fire engine
-## at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for every
-## other row, which drives on past the end of its route as it leaves. The kerb is a place it stops,
-## like a line it gives way at, but with nothing past it: where it parks it is not driving, so its
-## warning, its strike and its standing for her end at the touch it would make there, without
-## `PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day,
-## and one created with her past its kerb stood off screen for as long as she stayed there.
+## **How far a car that stops where it arrives (`RouteSpec.parks_where_it_arrives()`, the fire
+## engine at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for
+## every other row, which drives on past the end of its route as it leaves. The kerb is a place it
+## stops, like a line it gives way at, but with nothing past it: where it parks it is not driving,
+## so its warning, its strike and its standing for her end at the touch it would make there, without
+## `PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day, and one
+## created with her past its kerb stood off screen for as long as she stayed there.
 func route_left(travelled: float) -> float:
-	if not _row.stops_where_it_arrives or _row.paces or _figure.walks().size() < 2:
+	if not _course.parks_where_it_arrives() or _course.paces_a_beat() or _figure.walks().size() < 2:
 		return INF
 	return maxf(_route.length() - travelled, 0.0)
 
 ## `seconds` of the car's travel cut to the `left` px of a route it stops at (`route_left()`).
 func short_of_its_stop(seconds: float, left: float) -> float:
-	if left == INF or _row.speed <= 0.0:
+	if left == INF or _course.speed() <= 0.0:
 		return seconds
-	return minf(seconds, left / _row.speed)
+	return minf(seconds, left / _course.speed())
 
 ## Lays a car's body along its heading, which `EventBody.go_down()` read once
 ## (`Figure.turn_its_body_to()`, which turns nothing before the body is down). A capsule turns; a
@@ -355,13 +358,13 @@ func _is_driving() -> bool:
 func drives_its_route() -> bool:
 	if _figure.is_gone() or _figure.is_on_its_way_out() or _figure.has_parked():
 		return false
-	if not _row.mobile or _figure.walks().size() < 2 or _figure.is_telegraphing_still():
+	if not _course.moves() or _figure.walks().size() < 2 or _figure.is_telegraphing_still():
 		return false
 	if _row.pursuit != null and not _figure.is_waiting():
 		return false
 	if _investigation != null and not _investigation.runs_its_route():
 		return false
-	return _row.speed >= Tuning.CAR_STRIKE_MIN_SPEED
+	return _course.speed() >= Tuning.CAR_STRIKE_MIN_SPEED
 
 ## Whether a circle of `radius` at `centre` is in front of a car at `at` facing `heading`, within
 ## `seconds` of its travel past the point its body would touch it: past the nose (`shape`'s spine
@@ -375,7 +378,7 @@ func _in_front(at: Vector2, heading: Vector2, centre: Vector2, radius: float,
 	var nose := _row.ground_shape().half_length
 	if local.x <= nose or absf(local.y) > _row.ground_shape().radius + radius:
 		return false
-	return local.x <= nose + _row.ground_shape().radius + radius + _row.speed * seconds
+	return local.x <= nose + _row.ground_shape().radius + radius + _course.speed() * seconds
 
 ## Whether her body or her pram, with her at `her`, is in front of a car at `at` facing `heading`
 ## within `seconds` of its travel past the touch, **with her on the carriageway** — the crowd car's

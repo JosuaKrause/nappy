@@ -161,7 +161,7 @@ func _test_in_front_of_it_the_warning_comes_first(t: TestRunner) -> void:
 ## after the full warning.
 func _test_where_it_is_created_she_is_warned_in_full(t: TestRunner) -> void:
 	var def := _truck()
-	var warning_reach := (EventCarDriving.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
+	var warning_reach := (EventCarDriving.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed() \
 			+ def.ground_shape().half_length + def.ground_shape().radius + Tuning.PLAYER_BODY_RADIUS
 	var nearer_than_its_warning := 0
 	var sides := {Vector2.DOWN: "the north", Vector2.UP: "the south", Vector2.RIGHT: "the west",
@@ -216,8 +216,8 @@ func _test_where_it_is_created_she_is_warned_in_full(t: TestRunner) -> void:
 
 ## **Its kerb is where it stops, so nothing of it reaches past.** A car's warning, strike and stand
 ## reach 1.7s of its travel past the touch, but the engine's route ends at the kerb it parks at
-## (`stops_where_it_arrives`): past it, in its lane, she gets no mark and no doubled caret, is never
-## struck by an engine that parks short of her, and does not hold it off screen.
+## (its route parks where it arrives): past it, in its lane, she gets no mark and no doubled caret,
+## is never struck by an engine that parks short of her, and does not hold it off screen.
 func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 	# 120px past the kerb, the truck already driving: no warning that cannot come true.
 	var engine_where := WhereSheIs.nowhere()
@@ -363,7 +363,7 @@ func _test_parked_it_is_solid_and_harmless(t: TestRunner) -> void:
 func _test_parked_its_field_is_a_points(t: TestRunner) -> void:
 	var def := _truck()
 	t.check(def.field().is_priced_from_its_centre(), "fire_truck's field is priced from its centre")
-	var moving := def.heard_within() * Field.scale(Field.eccentricity(def.speed))
+	var moving := def.heard_within() * Field.scale(Field.eccentricity(def.speed()))
 	t.check(is_equal_approx(def.field_reach(), moving),
 			"and its field's reach is a moving point's, %.0fpx, not its body's (%.0fpx)"
 			% [moving, def.field_reach()])

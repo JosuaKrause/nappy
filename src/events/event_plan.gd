@@ -438,9 +438,9 @@ func denies(at: Vector2, reach: float) -> bool:
 		return true
 	return at.distance_to(body_at()) <= reach
 
-## **Whether this plan walks a beat**: its row paces (`EventDef.paces_a_beat()`) and a beat is laid, so what
-## it denies is the ground the beat never leaves free (`denies()`), and the street it paces is one
-## the line rule lets her pass him on by its far sidewalk (`RouteLineRule`).
+## **Whether this plan walks a beat**: its row paces (`RouteSpec.paces_a_beat()`) and a beat is
+## laid, so what it denies is the ground the beat never leaves free (`denies()`), and the street it
+## paces is one the line rule lets her pass him on by its far sidewalk (`RouteLineRule`).
 func walks_a_beat() -> bool:
 	return _def.paces_a_beat() and _path.size() >= 2
 
@@ -572,7 +572,7 @@ func solid_reach() -> float:
 func is_ambient() -> bool:
 	return _def.is_ambient()
 
-## Whether its row paces a beat (`EventDef.paces_a_beat()`), whether or not a beat is laid
+## Whether its row paces a beat (`RouteSpec.paces_a_beat()`), whether or not a beat is laid
 ## (`walks_a_beat()`).
 func paces_a_beat() -> bool:
 	return _def.paces_a_beat()
