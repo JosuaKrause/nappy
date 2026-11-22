@@ -8,7 +8,7 @@ Sonnet agent, reviewed adversarially, then by Fable against its design.
 
 **What was built.** `DrawnView` is an object: a view with no screen, or the screen an anchor's viewport shows, whose box
 is worked out once a frame in its own fields; the statics and the metadata memo are gone, with no forwarder. `main`
-makes one and hands it to the simulation builder, which hands it to the crowd's screen view (a required argument) and
+makes one and hands it two ways: to the crowd's screen view (a required argument) and to the simulation builder, which
 puts it in the events' surroundings; each live event hands it to its look, whose two gates ask it. A suite hands a
 stand-in view in place of a viewport and a frame wait.
 
