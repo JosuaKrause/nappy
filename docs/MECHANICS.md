@@ -933,7 +933,7 @@ which `EventStreaming.add()` (a plan new to the walk: the draw, the swap, the ma
 and `EventStreaming.move_the_body()` (a plan the walk already holds that the director sites on her
 way, the first time or again: day 3's fire, a poster crew, a route's mast before it is in the
 world) call, through one routine, with the ground the body stands on
-(`EventSpawner.obstructed_footprint()`) once the body is recorded, so the car's new place is
+(`EventSpawner.footprint_of()`) once the body is recorded, so the car's new place is
 rolled with the body already on the map. Every car whose body covers one of those tiles is
 recycled (`LaneMover.leave_if_unseen()`). A car can stand there because the crowd's field reaches
 further than a draw's distance: its box's corners are 1,131px from her, and a lane's entry band

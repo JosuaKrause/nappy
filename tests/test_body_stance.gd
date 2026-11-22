@@ -188,7 +188,8 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 
 ## **A stance made from a point already stood lays its pieces out where its build point's does**:
 ## a stance is made from a build point and never from a stance, and where a caller holds only the
-## point a live body stands at (a rig's, a test's) it still gets the body built at `at`.
+## point a body already stands at (a successor built where its predecessor stood, `successor_of()`;
+## a rig's or a test's) it still gets the body built at `at`.
 func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRunner) -> void:
 	var asked := 0
 	var differ := 0
@@ -248,9 +249,14 @@ func _test_a_stance_lays_its_pieces_out_round_any_point(t: TestRunner) -> void:
 						and own[k].axis() == moved[k].axis()
 				if not same:
 					differ += 1
-			t.check(stance.round_the_origin().size() == own.size()
-					and is_same(stance.round_the_origin(), stance.round_the_origin()),
-					"%s keeps its pieces round the origin once they are made" % id)
+			t.check(stance.round_the_origin().size() == own.size(),
+					"%s keeps the same pieces round the origin as it lays out there (%d)"
+					% [id, stance.round_the_origin().size()])
+			for k in mini(own.size(), stance.round_the_origin().size()):
+				t.check(stance.round_the_origin()[k].center().is_equal_approx(
+						round_the_origin[k].center()) and stance.round_the_origin()[k].axis()
+						== round_the_origin[k].axis(),
+						"%s's kept piece %d is the one it lays out round the origin" % [id, k])
 	t.check(asked > 0 and differ == 0, "pieces round any point are shifted copies: %d of %d differ"
 			% [differ, asked])
 

@@ -681,13 +681,13 @@ func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
 	instance.free()
 	return vertical
 
-## Stationary seal vehicles use the street axis even though their default facing is right. The van
-## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
-## while end art keeps the narrower projection instead of stretching into a square.
 ## How the row `id` stands on `map` when it is built at `at` facing right.
 func _stance_of(id: String, map: WorldMap, at: Vector2) -> BodyStance:
 	return BodyStance.of(map, EventCatalogue.by_id(id), at, Vector2.RIGHT)
 
+## Stationary seal vehicles use the street axis even though their default facing is right. The van
+## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
+## while end art keeps the narrower projection instead of stretching into a square.
 func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)

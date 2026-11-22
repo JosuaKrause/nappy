@@ -15,7 +15,7 @@ extends RefCounted
 ## placements.
 ##
 ## **A body's footprint is measured with the day's holds lifted**, because
-## `EventSpawner.obstructed_footprint()` returns nothing for a body on a held segment — the record
+## `EventSpawner.footprint_of()` returns nothing for a body on a held segment — the record
 ## leaves those out while the hold speaks for them. Lifting the holds for the measurement and
 ## putting them straight back is what lets the table answer *does this body cover the roadway* for
 ## a hard seal as well as for a café.
@@ -182,7 +182,7 @@ func _bodies(map: CityMap, plans: Array[EventPlan]) -> Array:
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		var covered := EventSpawner.obstructed_footprint(map, plan.row(), plan.placed_at(), plan.faces())
+		var covered := EventSpawner.footprint_of(BodyStance.of(map, plan.row(), plan.placed_at(), plan.faces()))
 		if covered.is_empty():
 			continue
 		found.append({

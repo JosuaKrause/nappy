@@ -807,7 +807,7 @@ of its front one.
 **A row may be solid in parts, and one is.** `BodySpec.in_pieces()` declares a list of pieces — each an
 offset along the scene's own spread axis and a `GroundShape` of its own — and a live event puts
 down one collision shape (its body, `EventBody`), one shadow patch (its look) and one entry in the
-per-tile solid record (`EventSpawner.obstructed_footprint()`) per piece.
+per-tile solid record (`EventSpawner.footprint_of()`) per piece.
 Every other row declares none, which means one piece at the origin carrying `shape`: exactly the
 single body they always had. **The pieces live inside `shape` and never past it**, which
 `EventDef.validate()` refuses, and that is what keeps every planner reading one disc:
@@ -833,7 +833,7 @@ a body stands on its street, derived once, and lays its pieces out (`pieces()` w
 piece carrying `shape` for every row but the crash, at the offset and along the axis the instance
 itself draws them). The row's solid footprint (`EventFootprints.solid_footprint_of()`, a
 `Footprint`) is built from the stance's `pieces_at()` and builds the instance's physics body
-(`Footprint.body()`), and `EventSpawner.obstructed_footprint()` rasterises the stance's `pieces()` at
+(`Footprint.body()`), and `EventSpawner.footprint_of()` rasterises the stance's `pieces()` at
 the placement into `CityMap.obstructed_tiles` (`StandingPiece.tiles()`), so the body that stops her and
 the record that stops everything else cannot disagree. The walk's ground (`WalkGround.solids_of()`)
 and the developer's route rig ask the same `pieces()`. The walkers and the cars read that record — a walker steps

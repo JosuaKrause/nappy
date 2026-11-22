@@ -132,7 +132,7 @@ func standing_pieces(at: Vector2, heading: Vector2) -> Array[StandingPiece]:
 func tiles() -> Dictionary:
 	if not _own_tiles_are_worked_out:
 		_own_tiles.clear()
-		for tile in EventSpawner.footprint_of(_row, _stance):
+		for tile in EventSpawner.footprint_of(_stance):
 			_own_tiles[tile] = true
 		_own_tiles_are_worked_out = true
 	return _own_tiles

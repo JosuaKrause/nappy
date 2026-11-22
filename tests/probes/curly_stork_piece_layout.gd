@@ -10,7 +10,7 @@ extends RefCounted
 ## steps of 31, days 1 to 14, each day planned as that probe plans it) and
 ## `tests/probes/escape_density.gd`'s ten escape cities (run seed 2,
 ## `DayPlanner.plan_the_escape_city()`). It asks only what every tree has: the walk's ground
-## (`WalkGround.solids_of()`), the map's record (`EventSpawner.obstructed_footprint()`) and the
+## (`WalkGround.solids_of()`), the map's record (`EventSpawner.footprint_of()`) and the
 ## route rig's tiles near a planned body, which it reads off the rig's private
 ## `_planned_body_tiles()` because the public `body_clear_tiles()` needs a live events manager.
 ##
@@ -68,7 +68,7 @@ func _sweep(map: CityMap, plans: Array[EventPlan], label: String, seed_value: in
 					1 if solid.shape.is_segment() else 2 if solid.shape.is_rect() else 0,
 					solid.shape.reach(),
 					solid.shape.spine_half_length(), solid.axis.x, solid.axis.y])
-		var tiles := EventSpawner.obstructed_footprint(map, row, plan.placed_at(), plan.faces())
+		var tiles := EventSpawner.footprint_of(BodyStance.of(map, row, plan.placed_at(), plan.faces()))
 		record.append("%s %s" % [row.id(), str(tiles)])
 		if not row.stands_as_a_fixed_body():
 			continue

@@ -132,7 +132,7 @@ func _start(t: TestRunner, seed_value: int) -> City:
 	return city
 
 ## Where each beat's own body stands on the street it is put on: the tiles its footprint records
-## (`EventSpawner.obstructed_footprint()`) at its sites, and whether a sidewalk tile is left open on
+## (`EventSpawner.footprint_of()`) at its sites, and whether a sidewalk tile is left open on
 ## each side of the street across from it. The barricade on the main road's lanes, the roadblock on
 ## its own ground, a few hundred sites each.
 func _bodies(city: City, seed_value: int) -> void:
@@ -159,7 +159,7 @@ func _bodies(city: City, seed_value: int) -> void:
 				tiles.append([map.tile_to_world(ground[i]), Vector2.RIGHT])
 		for site: Array in tiles:
 			var at: Vector2 = site[0]
-			var foot := EventSpawner.obstructed_footprint(map, def, at, site[1])
+			var foot := EventSpawner.footprint_of(BodyStance.of(map, def, at, site[1]))
 			var segment := map.network.segment_containing(map.world_to_tile(at))
 			if not segment:
 				continue

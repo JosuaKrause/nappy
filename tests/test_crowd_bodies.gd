@@ -486,7 +486,7 @@ func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: A
 	return {"probe_walker": walkers[0], "wall": wall, "vertical": vertical, "base": base}
 
 # --------------------------------------------------------- a body in pieces ---
-# `EventSpawner.obstructed_footprint()` rasterises `BodySpec.pieces()`, laid out through
+# `EventSpawner.footprint_of()` rasterises `BodySpec.pieces()`, laid out through
 # `BodyStance.pieces()`, rather than the row's one `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
 # `shape`, and these two tests are the two halves of that sentence: nothing moved for the rows that
 # are one piece, and the crash records its two cars instead of the street they are lying across.
@@ -518,7 +518,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 		sited.free()
 		var axis := BodyStance.of(map, def, at, Vector2.RIGHT).pieces()[0].axis()
 		var before := def.ground_shape().tiles_under(placed, axis)
-		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
+		var after := EventSpawner.footprint_of(BodyStance.of(map, def, at, Vector2.RIGHT))
 		before.sort()
 		after.sort()
 		t.check(not before.is_empty(), "'%s' stands on ground at all (%d tiles)" % [id, before.size()])
@@ -551,7 +551,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t: TestRun
 			(float(along) + 0.5) * Tuning.TILE_SIZE)
 	var axis := BodyStance.of(map, def, at, Vector2.RIGHT).pieces()[0].axis()
 	var whole_band := def.ground_shape().tiles_under(at, axis)
-	var cars := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
+	var cars := EventSpawner.footprint_of(BodyStance.of(map, def, at, Vector2.RIGHT))
 	t.check(not cars.is_empty(), "the cars stand on ground (%d tiles)" % cars.size())
 	t.check(cars.size() < whole_band.size(),
 			"the two cars take less ground than the band across the street would (%d of %d tiles)"
@@ -630,11 +630,11 @@ func _test_a_walker_passes_a_crash_on_its_pavement(t: TestRunner, crowd: Crowd, 
 # these two are the two ends of that one rule: a van at the kerb, which overhangs the carriageway
 # and takes none of it, and a tree across the street, which takes all of it.
 
-## Stands a real row's own body on the street through the same `EventSpawner.obstructed_footprint()`
+## Stands a real row's own body on the street through the same `EventSpawner.footprint_of()`
 ## a day fills the record with, and gives back the tiles it took. Sited by hand rather than by
 ## planning a day, so the placement under test is this one and not whatever the seed rolled.
 func _stand_a_row(map: CityMap, def: EventDef, at: Vector2) -> Array[Vector2i]:
-	var covered := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
+	var covered := EventSpawner.footprint_of(BodyStance.of(map, def, at, Vector2.RIGHT))
 	map.obstruct_tiles(2, covered)
 	return covered
 

@@ -1877,7 +1877,7 @@ func is_a_boom() -> bool:
 ## (`detains_her()`) or the boom (`is_a_boom()`), a crossing the day keeps open, answered for a
 ## walker by `WalkerDoorHold` at a hut or a post and for a car by `Crowd._stop_for_gates()` at the
 ## boom, which detains nobody, so it is named by its own flag rather than by its hold. The rows whose
-## ground the map's record of blocked tiles holds (`EventSpawner.obstructed_footprint()` asks it),
+## ground the map's record of blocked tiles holds (`EventSpawner.footprint_of()` asks it),
 ## and the bodies the route rig keeps clear of before they are streamed in.
 func stands_as_a_fixed_body() -> bool:
 	return ground_shape() != null and has_a_body() and not moves() and not detains_her() \

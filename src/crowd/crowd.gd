@@ -1383,7 +1383,7 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 ## covers a tile of `tiles` (`GroundShape.tiles_under()`, which always holds the tile its centre,
 ## so the tile of its lane it stands on, is in), told to leave where it is, out of her view
 ## (`LaneMover.leave_if_unseen()`). `tiles` is the ground the body stands on
-## (`EventSpawner.obstructed_footprint()`), which `EventStreaming` names to its listener once the
+## (`EventSpawner.footprint_of()`), which `EventStreaming` names to its listener once the
 ## body is recorded (`EventStreaming.use_body_listener()`): a unit drawn as she comes near it, day
 ## 13's swapped roadblock, a mast put up, a place put on her route and a siting moved.
 ##

@@ -7,7 +7,7 @@ extends RefCounted
 ##     grep '^SG' out.txt
 ##
 ## Per seed, day 13, started the way `DayDirector.start()` starts one. A body's tiles are what
-## the map records for it (`EventSpawner.obstructed_footprint()`). For every line across the street
+## the map records for it (`EventSpawner.footprint_of()`). For every line across the street
 ## its footprint covers, each side's sidewalk tiles left open are counted, and the body is read by
 ## its worst line: `near/far` is the side with fewer open, then the other. Asked of:
 ##
@@ -69,7 +69,7 @@ func run(t: TestRunner) -> void:
 ## `near/far` for `def` standing at `at` looking `facing`, or what keeps it from being read: "off a
 ## street" for a body on no street segment, "no record" for one the map records no tiles for.
 func _gap(map: CityMap, def: EventDef, at: Vector2, facing: Vector2) -> String:
-	var foot := EventSpawner.obstructed_footprint(map, def, at, facing)
+	var foot := EventSpawner.footprint_of(BodyStance.of(map, def, at, facing))
 	if foot.is_empty():
 		return "no record"
 	var segment := map.network.segment_containing(map.world_to_tile(at))

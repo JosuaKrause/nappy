@@ -26,6 +26,13 @@ class ToldCrowdSource extends CrowdExcitement:
 		super(velocity, decay_rate, sensitivity)
 
 ## An event whose source counts the samplings it really runs.
+## Open ground whose street runs east-west from the line x = 0 eastward and north-south west of it,
+## so an event moved across the line is stood by the other street's answers (`BodyStance.of()`).
+class SplitStreets extends WorldMap:
+	## Overrides WorldMap.corridor_offsets.
+	func corridor_offsets(tile: Vector2i) -> Vector2i:
+		return Vector2i(-1, 0) if tile.x >= 0 else Vector2i(0, -1)
+
 class CountedEvent extends EventInstance:
 	var sampling_runs: int:
 		get:
@@ -221,7 +228,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		var source := CountedEvent.new()
 		source.setup(_copy_definition(definition), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(source_where))
+			EventSurroundings.new().on(SplitStreets.new()).hearing(source_where))
 		if source.row().is_a_flock():
 			source.behaviours().flock().build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id() + " before player")
@@ -293,9 +300,10 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		boxed.body(own_row.body().reshaped(GroundShape.rect(Vector2(52.0, 8.0))))
 		_under_a_different_row(source, boxed.build())
 		_event_parity(t, source, at, definition.id() + " shape kind/extents")
-		var stood := source.stance()
-		source._body.land_at(BodyStance.new(own_row, stood.center(), not stood.lies_vertically(),
-				not stood.stands_side_on(), source.facing_now()))
+		# Moved across the line where the street turns, so the body and its look are handed the
+		# stance the other street gives, as the game hands it (`EventInstance.move_to()`).
+		source.move_to(Vector2(-300.0, 0.0) if source.global_position.x >= 0.0
+				else Vector2(300.0, 0.0))
 		_event_parity(t, source, at, definition.id() + " body axis")
 		var shapeless := _draft_of(definition)
 		shapeless.body(BodySpec.none())

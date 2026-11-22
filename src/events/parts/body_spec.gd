@@ -85,7 +85,7 @@ enum SolidWhen {
 	## alone, and a hut never takes her in from the carriageway its own door's boom spans.
 	##
 	## Read in three more places, each because a boom is a door body that does not detain:
-	## `EventSpawner.obstructed_footprint()` keeps it out of the crowd's per-tile record as it keeps
+	## `EventSpawner.footprint_of()` keeps it out of the crowd's per-tile record as it keeps
 	## the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's clear
 	## ground around it, and the live event's body lets its collision body follow the arm
 	## (`EventBody.follow_the_arm()`).

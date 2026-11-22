@@ -1068,8 +1068,8 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) 
 		if instance.row_id() == "night_raid":
 			vans += 1
 			t.check(not instance.pursues(), "a van at her door does not hunt")
-			for tile in EventSpawner.obstructed_footprint(_city.map, instance.row(),
-					instance.global_position, Vector2.RIGHT):
+			for tile in EventSpawner.footprint_of(BodyStance.of(_city.map, instance.row(),
+					instance.global_position, Vector2.RIGHT)):
 				t.check(tile.y > door_tile.y + Tuning.SIDEWALK_WIDTH - 1,
 						"a van's body is off her own sidewalk (%s)" % tile)
 		elif instance.row_id() == "police_patrol":

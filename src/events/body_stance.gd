@@ -10,8 +10,9 @@ extends RefCounted
 ##
 ## **A stance is made from a build point and never from another stance** (`of()`, `of_plan()`):
 ## the point a body is built at is moved to where it stands, and a stance holds the point it was
-## moved to, so a point is stood once. A body that moves to other ground (`EventInstance.move_to()`)
-## is given a stance made from the point it is moved to.
+## moved to. A body that moves to other ground (`EventInstance.move_to()`) is given a stance made
+## from the point it is moved to. Standing a point already stood gives the same point, so a
+## successor built where its predecessor stood (`EventSpawner.successor_of()`) stands there too.
 ##
 ## Two questions stay statics, both about a street rather than a body: where the lattice alone
 ## stands a body (`stands_without_a_map()`, which a plan, holding no map, asks) and whether a street
@@ -50,7 +51,7 @@ func _init(row: EventDef, center: Vector2, vertical: bool, side_on: bool, facing
 ## the row stands it (`_stood_at()`), and, read at that point, the way its street runs
 ## (`lies_vertically_at()`) and the side a vehicle standing still shows. `EventInstance.setup()`
 ## and `move_to()` stand the live body from it, the scheduler's and the walk's siting of its band
-## and the body's recorded footprint (`EventSpawner.obstructed_footprint()`) read it for a body not
+## and the body's recorded footprint (`EventSpawner.footprint_of()`) read it for a body not
 ## yet built, so a body moved after dawn stands where the record says it does.
 static func of(map: WorldMap, row: EventDef, at: Vector2, facing: Vector2) -> BodyStance:
 	var center := _stood_at(map, row, at)
@@ -80,6 +81,10 @@ static func stands_without_a_map(row: EventDef, at: Vector2) -> Vector2:
 	return CityMap.kerb_beside(at) if row.stands_at_its_kerb() else at
 
 # ------------------------------------------------------------------ questions ---
+
+## The row it is the stance of.
+func row() -> EventDef:
+	return _row
 
 ## Where its center stands: the build point moved to the middle of its pavement band when the row is
 ## a stationary solid body that `pavement_side` does not pin to an edge and that does not span the
@@ -125,16 +130,14 @@ func pieces() -> Array[StandingPiece]:
 
 ## **Its pieces laid out round `center`**, a body that is standing or driving there and heading
 ## along `heading`: the one layout, which a live body's own footprint and its shadow are laid out by
-## round the origin, and a live body's solid pieces by round where it is now. Round the origin a body
-## that does not drive is handed the pieces it keeps (`round_the_origin()`).
+## round the origin, and a live body's solid pieces by round where it is now. A new array every time.
 func pieces_at(center: Vector2, heading: Vector2) -> Array[StandingPiece]:
-	if center == Vector2.ZERO and not _row.drives():
-		return round_the_origin()
 	return _laid_out(center, spine_along(heading))
 
-## Its pieces laid out round the origin along its street's spine, kept: what the footprint of its
-## collision body and its shadow are made from for a body that does not drive. A car that drives
-## has its pieces laid out afresh for each heading (`pieces_at()`).
+## Its pieces laid out round the origin along its street's spine, made once and kept: what its
+## shadow is drawn from on every frame for a body that does not drive. **Read only**: the array is
+## the one the stance keeps, so a caller that changed it would change every later answer. A car
+## that drives has its pieces laid out for each heading (`pieces_at()`).
 func round_the_origin() -> Array[StandingPiece]:
 	if _round_the_origin.is_empty():
 		_round_the_origin = _laid_out(Vector2.ZERO, _street_spine)
