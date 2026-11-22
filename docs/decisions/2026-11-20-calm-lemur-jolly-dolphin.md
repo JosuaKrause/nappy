@@ -4,7 +4,11 @@
 Fable, once its quota was back, review the designs Opus wrote in its place (inbox #1610 in teal-dolphin), minty-quail's
 rows 3a and 3b of `event-interface.md` included (inbox #1624 in dappled-bison). polite-tapir's six had their verdicts
 (the record calm-lemur); this record holds the last two. With them every design the entry listed has Fable's verdict and
-each change it asked for is filed, so the entry closes; Fable read main read-only and sent its verdict whole.
+each change it asked for is filed, so the entry closes: no further design was written in Fable's place, since minty-quail
+carries no `fable-only` line and its other rows' designs (4a, 4b) were Opus's own work, not written in Fable's place; rows
+3a and 3b were listed from the player's earlier words (inbox #1571 in teal-quail). Fable read main read-only, after row
+4b's eleventh pull request and before its twelfth (the player's answer put the look after row 4b, inbox #1624 in
+dappled-bison), and sent its verdict whole; the two changes are timed after the twelfth.
 
 **Where the entry's changes went.** Row 3a's change is the entry velvet-squirrel (how a body stands on its street is one value,
 derived once); row 3b's is amber-dolphin (what the events are set up in is built once, where the world is built, and handed

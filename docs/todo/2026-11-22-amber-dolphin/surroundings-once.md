@@ -47,4 +47,4 @@
 - minty-newt, the events' looks are handed the drawn view: either order. If this is first, minty-newt's hand-in is one line at the builder and one member of the surroundings. If minty-newt is first, this removes its two pass-throughs.
 - Row 5's event-manager suites: this lands before them.
 - Row 4b's twelfth pull request: line-level.
-- The row 3a change above: one after the other in `EventInstance.setup()`.
+- The row 3a change (velvet-squirrel, how a body stands on its street is one value): one after the other in `EventInstance.setup()`.
