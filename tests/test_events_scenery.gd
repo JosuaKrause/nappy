@@ -70,8 +70,8 @@ func _flock_walked_through(t: TestRunner, def: EventDef, offset: float) -> float
 ## when they move independently and does not when they move as one shape.
 func _widest_gap_between_birds(instance: EventInstance) -> float:
 	var widest := 0.0
-	for a in instance.behaviours().flock().birds:
-		for b in instance.behaviours().flock().birds:
+	for a in instance.birds():
+		for b in instance.birds():
 			widest = maxf(widest, a.at().distance_to(b.at()))
 	return widest
 
@@ -122,7 +122,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 		instance.step(STEP)
 		if instance.is_on_its_way_out():
 			break
-		for bird in instance.behaviours().flock().birds:
+		for bird in instance.birds():
 			furthest = maxf(furthest, bird.at().length())
 	t.check(furthest <= def.flock().spread() + 2.0,
 			"every bird stayed inside the %.0fpx flock for the whole burst (furthest %.0fpx)"
@@ -257,7 +257,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	t.check(instance.is_waiting() and not instance.is_gone(),
 			"five seconds out of reach and the flock is still standing there")
 	var still_grounded := true
-	for bird in instance.behaviours().flock().birds:
+	for bird in instance.birds():
 		still_grounded = still_grounded and is_zero_approx(bird.lift())
 	t.check(still_grounded, "every bird is on the pavement, which is what she can see from there")
 	t.close_to(instance.current_intensity(),
@@ -269,7 +269,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(),
 			"walking up to it is what starts it")
-	for bird in instance.behaviours().flock().birds:
+	for bird in instance.birds():
 		still_grounded = still_grounded and is_zero_approx(bird.lift())
 	t.check(still_grounded, "and the telegraph is still eleven birds on the ground")
 	# Read at the flock's own middle rather than at her: every bird is inside the flock's spread of
@@ -279,10 +279,10 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 
 	_advance(instance, def.telegraphs_for() + 0.2)
 	var up := 0
-	for bird in instance.behaviours().flock().birds:
+	for bird in instance.birds():
 		if bird.lift() > 0.0:
 			up += 1
-	t.check(up == instance.behaviours().flock().birds.size(), "then all %d of them are up" % instance.behaviours().flock().birds.size())
+	t.check(up == instance.birds().size(), "then all %d of them are up" % instance.birds().size())
 	t.check(instance.source().contribution_at(Vector2.ZERO) > on_the_ground * 3.0,
 			"and the burst is what costs (%.1f/s through the middle against %.1f/s while they peck)"
 			% [instance.source().contribution_at(Vector2.ZERO), on_the_ground])

@@ -560,7 +560,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 			frames += 1
 		var her := told.at()
 		told.tell(her)
-		var leaving := guard.is_on_its_way_out() and guard.behaviours().barrier_post().is_spent()
+		var leaving := guard.is_on_its_way_out() and guard.has_lost_its_guard()
 		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		frames = 0
 		while guard.is_on_its_way_out() and frames < int(30.0 / step):
@@ -568,7 +568,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 			guard.step(step)
 			strongest = maxf(strongest, guard.source().contribution_at(beside))
 			frames += 1
-		var gone := guard.behaviours().barrier_post().is_spent() and not guard.is_on_its_way_out() and guard.is_solid()
+		var gone := guard.has_lost_its_guard() and not guard.is_on_its_way_out() and guard.is_solid()
 		strongest = maxf(strongest, guard.source().contribution_at(beside))
 		t.check(warned and charged and leaving and gone,
 				"%s guard warns, charges, is shaken off and leaves the band standing solid" % name)
@@ -579,7 +579,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 		stage.manager.streaming.stream_out(plan)
 		stage.manager.streaming.stream_in(plan)
 		var streamed := stage.manager.event_of(plan)
-		t.check(streamed.behaviours().barrier_post().is_spent() and streamed.is_solid()
+		t.check(streamed.has_lost_its_guard() and streamed.is_solid()
 				and streamed.source().contribution_at(beside) == 0.0,
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
 		stage.close()
@@ -627,8 +627,9 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	t.check(posted_first and posted_through_the_chase,
 			"the far guard stands at his post until his partner leaves")
 	t.check(guard.is_on_its_way_out(), "the guard on her side was shaken off and walks away")
-	var set_off := guard.behaviours().barrier_post().where_the_far_guard_walks()
-	t.check(set_off != Vector2.INF and guard.behaviours().barrier_post().sides_still_posted().is_empty(),
+	var guard_post := guard.behaviours().barrier_post()
+	var set_off := guard_post.where_the_far_guard_walks()
+	t.check(set_off != Vector2.INF and guard_post.sides_still_posted().is_empty(),
 			"the far guard sets off from his post the frame his partner starts to leave")
 	t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
 			"and he sets off from the far post, beyond the band from her")
@@ -653,7 +654,8 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 		if now == Vector2.INF:
 			break
 		paced = paced and now.distance_to(last) <= def.chase_speed() * step + 0.01 \
-				and is_equal_approx(guard.behaviours().barrier_post().how_far_the_far_guard_has_walked(),
+				and is_equal_approx(
+						guard.behaviours().barrier_post().how_far_the_far_guard_has_walked(),
 						def.chase_speed() * step * walked)
 		last = now
 	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
@@ -667,7 +669,8 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 	t.check(guard.get_parent().get_node_or_null("FarGuard") == null, "his node goes with him")
 	stage.manager.streaming.stream_out(plan)
 	stage.manager.streaming.stream_in(plan)
-	t.check(stage.manager.event_of(plan).behaviours().barrier_post().sides_still_posted().is_empty(),
+	var streamed_post := stage.manager.event_of(plan).behaviours().barrier_post()
+	t.check(streamed_post.sides_still_posted().is_empty(),
 			"a band streamed back in after its guard was spent stands unmanned")
 	stage.close()
 	atlas.release(EventPictures.ATLAS_GROUP)

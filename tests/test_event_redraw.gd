@@ -530,7 +530,7 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
 	# `_ready()` is what builds the birds in a real scene; a bare rig has to ask for them.
 	flock.behaviours().flock().build()
-	t.check(not flock.behaviours().flock().birds.is_empty(), "the flock has birds")
+	t.check(not flock.birds().is_empty(), "the flock has birds")
 	t.check(_never_settles(flock), "a flock is never gated — every bird moves every tick")
 	flock.free()
 

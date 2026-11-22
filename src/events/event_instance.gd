@@ -40,53 +40,23 @@ func arrive_from_its_warning() -> void:
 ## `EventDef.is_sent_ahead()`, day 13's column and the escape's trucks among them, and those end their
 ## routes where they end.
 func go_on_by(way_on: WayOn) -> void:
-	if _route != null:
-		_route.go_on_by(way_on)
-	_departure.go_on_by(way_on)
+	if _composed.route() != null:
+		_composed.route().go_on_by(way_on)
+	_composed.departure().go_on_by(way_on)
 
 ## **What this event does**, composed per catalogue row (`EventBehaviours.compose()`): each an
-## `EventBehaviour` owning its own state, ticked in this order. The typed fields below are the same
-## objects, taken from what the composer hands back at setup, null for a behaviour the row is not
-## composed of.
-var _behaviours: Array[EventBehaviour] = []
-## What the composer handed back at setup: every behaviour above, by name.
-var _composed: EventBehaviours
+## `EventBehaviour` owning its own state, ticked in this order. The composer hands them back as
+## one value at setup, which answers for each by name (null for a behaviour the row is not
+## composed of); an event not yet set up holds the empty one.
+var _composed: EventBehaviours = EventBehaviours.new()
 ## **The figure its behaviours move** (`Figure`): what changes about it — its place, heading, way
 ## covered, clocks and phase — as its behaviours may ask it and tell it, handed to each as it is
 ## composed.
 var _figure := Figure.new(self)
-## A conversation or a door's hold (`HoldSpec`).
-var _hold: EventHold
-## The unmarked van's take of a bystander.
-var _abduction: EventAbduction
-## Going away once it is over (`Phase.LEAVING`); every event has one.
-var _departure: EventDeparture
-## Following its route or pacing its beat (`EventDef.moves()`).
-var _route: EventRouteWalk
-## A car's driving: its proposed frame, its standing for her, its give-way and its strike
-## (`EventCarDriving`). Null for anything that does not drive.
-var _car: EventCarDriving
-## A barrier its guards stand at and walk out of (`EventBarrierPost`): the roadblock's. Null for
-## anything else.
-var _barrier_post: EventBarrierPost
-## A vehicle that stops for her and lets men out (`EventDef.investigates()`).
-var _investigation: EventInvestigation
-## Coming after her: the notice, the stand-off and lunge, the charge, the give-up
-## (`EventDef.pursues()`).
-var _pursuit: EventPursuit
-## A man on foot who may stop her and walk back to the vehicle that let him out (every pursuer).
-var _on_foot: EventOfficer
-## A row that waits for her and then runs its own event without chasing her (the mouse, the
-## flock, the masked man).
-var _notice_run: EventNoticeRun
-## A flock's birds (as many as `EventDef.flock().count()`).
-var _flock: EventFlock
-## A row sent down her line that is retired once it cannot reach her (the loose dog).
-var _unreachable: EventUnreachable
 
 ## The behaviours this event is composed of, each by name (`EventBehaviours`): for the suites that
-## hold one behaviour's own state through the event it is composed into. The game asks each of them
-## through the event's own methods.
+## hold one behaviour's own state through the event it is composed into. The game asks each of
+## them through the event's own methods.
 func behaviours() -> EventBehaviours:
 	return _composed
 
@@ -354,19 +324,6 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_mover = mover_for(definition)
 	_composed = EventBehaviours.compose(definition, _where, _figure, _map, _navigator, _mover,
 			_surroundings.trace(), _surroundings.lights(), _move)
-	_behaviours = _composed.in_tick_order()
-	_abduction = _composed.abduction()
-	_barrier_post = _composed.barrier_post()
-	_car = _composed.car()
-	_departure = _composed.departure()
-	_flock = _composed.flock()
-	_hold = _composed.hold()
-	_investigation = _composed.investigation()
-	_notice_run = _composed.notice_run()
-	_on_foot = _composed.on_foot()
-	_pursuit = _composed.pursuit()
-	_route = _composed.route()
-	_unreachable = _composed.unreachable()
 	_move.use_body_radius(_mover.radius)
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	# A pursuer whose row walks round buildings to her (the roadblock's posted guard) holds his way
@@ -378,7 +335,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_heading = face
 	look = EventLooks.for_row(self, definition.look(), definition.body(),
 			definition.takes_a_victim_by(), _surroundings.drawer(), not _surroundings.draws(),
-			_barrier_post)
+			_composed.barrier_post())
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
@@ -454,17 +411,18 @@ func _ready() -> void:
 	# A car's body is its `shape` (`EventDef.drives()`), put down here like any other unless she is
 	# already where it would stand, in which case `_become_solid_once_it_starts()` puts it down the
 	# first frame she is not — a body never goes down around her.
-	if _car and _car.gap_to_her(position, _heading) >= 0.0:
+	if _composed.car() and _composed.car().gap_to_her(position, _heading) >= 0.0:
 		_body.go_down(_heading)
-	if _flock:
-		_flock.build()
+	if _composed.flock():
+		_composed.flock().build()
 	look.build_nodes()
 
 ## Where its body stands, which is where the street is still shut: `global_position`, or where a
 ## barrier's guard left it (`EventBarrierPost.body_position()`), so a caller never has to ask which
 ## case it is holding.
 func body_position() -> Vector2:
-	return _barrier_post.body_position() if _barrier_post else global_position
+	var post := _composed.barrier_post()
+	return post.body_position() if post else global_position
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
 ## picture (`warning_rect()`) inside the camera's view this frame (`WhereSheIs.view()`; inbox #788
@@ -483,7 +441,7 @@ func _would_stand_in_her_view() -> bool:
 ## feet: a roadblock's guard at the post on her side of the band
 ## (`EventFootprints.warning_guard_rect()`), anyone else where he stands.
 func warning_rect() -> Rect2:
-	if _barrier_post:
+	if _composed.barrier_post():
 		return EventFootprints.warning_guard_rect(_body.runs_vertically(), body_position(),
 				_where.at())
 	var size := EventFootprints.warning_picture_size(_def.look())
@@ -551,7 +509,8 @@ func is_raised() -> bool:
 ## at full rate and stays passable until she is out of the footprint — and a car's body, held back
 ## from `_ready()` while she stood where it would stand, put down the first frame she does not.
 func _become_solid_once_it_starts() -> void:
-	if _car and not _body.is_in_place() and _car.gap_to_her(position, _heading) >= 0.0:
+	var car := _composed.car()
+	if car and not _body.is_in_place() and car.gap_to_her(position, _heading) >= 0.0:
 		_body.go_down(_heading)
 		return
 	if not _body.waits_to_come_down():
@@ -571,7 +530,7 @@ func _become_solid_once_it_starts() -> void:
 ## back: while that step is open the end is kept (`_ends_its_route_on_commit`) and acted on once the
 ## step is committed (`_commit_the_step()`), never if the pose that reached it is taken back.
 func _end_its_route(may_park := true) -> void:
-	if _car != null and _move.is_mid_step():
+	if _composed.car() != null and _move.is_mid_step():
 		_ends_its_route_on_commit = true
 		_may_park_on_commit = _may_park_on_commit and may_park
 		return
@@ -626,7 +585,7 @@ func hold_by_hand() -> void:
 ## manager's step. Its move stands where it now does (`MoveProposal.place()`), since the crowd's
 ## separation pass reads the move, not the node.
 func walk_on_by_hand(delta: float) -> void:
-	var step := _departure.speed() * delta
+	var step := _composed.departure().speed() * delta
 	position += _heading * step
 	_move.place(position)
 	_path_travelled += step
@@ -660,8 +619,8 @@ func _propose_the_step() -> void:
 	_move.propose(position)
 	_ends_its_route_on_commit = false
 	_may_park_on_commit = true
-	if _car != null:
-		_car.note_the_pose()
+	if _composed.car() != null:
+		_composed.car().note_the_pose()
 
 ## **Closes the step**: the pose the tick proposed is checked (a car's own checks; a figure's were
 ## made as each part was taken), committed, and only then is what the tick decided on it acted on —
@@ -671,16 +630,16 @@ func _commit_the_step() -> void:
 	_move.step_to(position)
 	var ends := _ends_its_route_on_commit
 	_ends_its_route_on_commit = false
-	if _car != null and not _car.check(ends):
+	if _composed.car() != null and not _composed.car().check(ends):
 		ends = false
 	var at := _move.commit()
 	if position != at:
 		position = at
-	if _car == null or is_gone():
+	if _composed.car() == null or is_gone():
 		return
 	if ends:
 		_be_done(_may_park_on_commit)
-	_car.turn_the_body()
+	_composed.car().turn_the_body()
 
 ## What it does in one tick, run by `step()`.
 func _tick(delta: float) -> void:
@@ -688,8 +647,8 @@ func _tick(delta: float) -> void:
 	_age += delta
 	_hold_the_notice_clock(delta)
 	_settle_the_notice()
-	if _barrier_post:
-		_barrier_post.walk_the_far_guard_off(delta)
+	if _composed.barrier_post():
+		_composed.barrier_post().walk_the_far_guard_off(delta)
 	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
 	# whichever behaviour does the adding or none of them — see `_advance_gait()`, called once at
 	# every exit from this function.
@@ -700,20 +659,21 @@ func _tick(delta: float) -> void:
 		_reports.tell_event_activated(self)
 
 	if is_on_its_way_out():
-		_departure.leave(delta)
-		for behaviour in _behaviours:
+		_composed.departure().leave(delta)
+		for behaviour in _composed.in_tick_order():
 			behaviour.step_leaving(delta)
 		_advance_gait(_path_travelled - _travelled_before)
-		if _barrier_post and _barrier_post.has_left_its_body() and not is_gone():
+		var post := _composed.barrier_post()
+		if post and post.has_left_its_body() and not is_gone():
 			# He walks off and the barrier does not go with him: its body stays where it was built
 			# through the departure as through the chase (its picture is its own node).
-			_barrier_post.keep_the_body()
+			post.keep_the_body()
 		return
 
 	if is_chatting():
 		# The one thing that runs while she is otherwise frozen (`EventHold.step()`): her own controls
 		# are locked by `Stroller.detain()`, and here only the hold's clock runs.
-		_hold.step(delta)
+		_composed.hold().step(delta)
 		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
 		# than leaving `_gait_moving` at whatever it read the tick before the conversation started.
 		_advance_gait(0.0)
@@ -721,7 +681,7 @@ func _tick(delta: float) -> void:
 
 	# What it does, in the order it was composed (`EventBehaviours.compose()`): each behaviour
 	# decides for itself whether this tick is one it acts on.
-	for behaviour in _behaviours:
+	for behaviour in _composed.in_tick_order():
 		if behaviour.steps_each_tick:
 			behaviour.step(delta)
 
@@ -740,8 +700,8 @@ func _tick(delta: float) -> void:
 		# a road is not the bulk of the man who was standing at it, so he walks out of it and it
 		# stays where it was built — the street he abandoned stays shut. Nothing is pinned, because
 		# nothing follows her.
-		if _barrier_post:
-			_barrier_post.leave_the_body()
+		if _composed.barrier_post():
+			_composed.barrier_post().leave_the_body()
 		else:
 			_body.drop()
 
@@ -752,12 +712,13 @@ func _tick(delta: float) -> void:
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
 		_be_done()
-	if _barrier_post and _barrier_post.has_left_its_body() and not _guard_spent:
+	var post := _composed.barrier_post()
+	if post and post.has_left_its_body() and not _guard_spent:
 		# The body is a child of a node that is walking away, so it is re-pinned on every frame he
 		# moves. The band's picture is its own node (`RoadblockLook.RoadblockBand`), which stands at
 		# the body and needs no redraw for it. A spent guard moves nothing, so there is nothing to
 		# re-pin.
-		_barrier_post.keep_the_body()
+		post.keep_the_body()
 
 ## **A pursuer that warns over the street is drawn on the warning layer for the whole of its
 ## warning** (`PursuitSpec.is_drawn_over_the_street()`, `DrawLayer.Layer.WARNING`): the roadblock's guard,
@@ -777,7 +738,7 @@ func _take_the_layer_it_warns_on() -> void:
 ## `_tick()`) and switches a mother's posture from strolling to talking
 ## (`FigureLook._draw_chatting_mother`).
 func is_chatting() -> bool:
-	return _hold != null and _hold.is_running()
+	return _composed.hold() != null and _composed.hold().is_running()
 
 ## Whether the guard this instance draws is inside with her for its own hold right now — he is the
 ## one taking her in, so he is not also standing in the street, see
@@ -791,13 +752,13 @@ func is_its_guard_inside() -> bool:
 ## Whether this instance has ever held her (`EventHold.has_held()`). `CheckpointController` does
 ## not start a second hold on a row that has held her and does not `detains_again()`.
 func has_chatted() -> bool:
-	return _hold != null and _hold.has_held()
+	return _composed.hold() != null and _composed.hold().has_held()
 
 ## Starts a hold, the frame `CheckpointController.check_detentions()` decides she has come within
 ## `_def.detain_distance()` of an instance that may take her (`EventHold.start()`).
 func start_chat() -> void:
-	if _hold:
-		_hold.start()
+	if _composed.hold():
+		_composed.hold().start()
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.
@@ -874,21 +835,27 @@ func _its_notice_is_a_warning() -> bool:
 
 ## A car that stood for its man is quiet until it has left her (`EventInvestigation`).
 func is_quiet_for_its_man() -> bool:
-	return _investigation != null and _investigation.is_quiet_for_its_man()
+	var investigation := _composed.investigation()
+	return investigation != null and investigation.is_quiet_for_its_man()
 
 ## How many men this vehicle has stopped for and still owes (`EventInvestigation`). Read by
 ## `EventsAhead.let_the_officers_out()`.
 func officers_owed() -> int:
-	return _investigation.officers_owed() if _investigation else 0
+	return _composed.investigation().officers_owed() if _composed.investigation() else 0
 
 ## Hands the vehicle one man `EventManager` put down at its door, so it stands until he is back
 ## (`EventInvestigation.let_out()`), and starts his trail at that door with this vehicle as the one
 ## he walks back to (`EventOfficer.let_out_of()`).
 func let_out(officer: EventInstance) -> void:
-	if _investigation:
-		_investigation.let_out(officer)
-		if officer._on_foot:
-			officer._on_foot.let_out_of(self)
+	if _composed.investigation():
+		_composed.investigation().let_out(officer)
+		officer.walk_back_to(self)
+
+## Starts this man's trail back to `vehicle`, the one that let him out
+## (`EventOfficer.let_out_of()`); nothing for an event that is no man on foot.
+func walk_back_to(vehicle: EventInstance) -> void:
+	if _composed.on_foot():
+		_composed.on_foot().let_out_of(vehicle)
 
 ## **One of its men has stopped her: every man it let out walks back to it** (inbox #669 in
 ## coral-lark), so a vehicle that let out more than one man whose catch is a stop costs her once,
@@ -896,8 +863,8 @@ func let_out(officer: EventInstance) -> void:
 ## `stopped_by`, the one who stopped her and stands with her through his stop first, is over and
 ## walks back. Asked by that man's figure the frame he stops her (`Figure.stopped_her()`).
 func call_back_its_officers(stopped_by: EventInstance) -> void:
-	if _investigation:
-		for officer in _investigation.its_officers():
+	if _composed.investigation():
+		for officer in _composed.investigation().its_officers():
 			if officer != stopped_by:
 				officer._be_done()
 
@@ -915,7 +882,7 @@ func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
 
 ## Whether this man has reached her and stopped her (`EventOfficer`, `PursuitSpec.stop_excitement()`).
 func has_stopped_her() -> bool:
-	return _on_foot != null and _on_foot.has_stopped_her()
+	return _composed.on_foot() != null and _composed.on_foot().has_stopped_her()
 
 ## **Ends this chase from outside it**, in the state `EventPursuit` leaves a pursuer she has outrun:
 ## `_gave_up` set and `_be_done()` called, so the same departure, drawing and "gave up" line as an
@@ -952,7 +919,7 @@ func give_up_the_chase() -> void:
 ## here he walks round buildings toward her (`_chase_way`), since he may start a city away, and he
 ## no longer warns by radius (`warns_by_radius()`, `_set_on_her`).
 func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
-	if _pursuit == null:
+	if _composed.pursuit() == null:
 		return
 	if not (is_waiting() or (is_telegraphing() and warns_by_radius())) or her == Vector2.INF \
 			or is_gone() or is_on_its_way_out():
@@ -970,7 +937,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	var toward := her - global_position
 	if toward.length() >= 1.0:
 		_heading = toward.normalized()
-	_pursuit.was_set_on_her(her)
+	_composed.pursuit().was_set_on_her(her)
 
 # ------------------------------------------------------------- the way round to her ---
 
@@ -1071,7 +1038,7 @@ func _notice_her() -> void:
 ## her, and every behaviour's own state keyed by its class.
 func save() -> EventSave:
 	var states := {}
-	for behaviour in _behaviours:
+	for behaviour in _composed.in_tick_order():
 		var state := behaviour.save()
 		if not state.is_empty():
 			var script: Script = behaviour.get_script()
@@ -1087,7 +1054,7 @@ func save() -> EventSave:
 ## save does not name keeps it fresh. A save of age 0 puts back no moment, only the behaviours.
 func restore(saved: EventSave) -> void:
 	_restore_the_moment(saved)
-	for behaviour in _behaviours:
+	for behaviour in _composed.in_tick_order():
 		var script: Script = behaviour.get_script()
 		var state := saved.state_of(script.get_global_name())
 		if not state.is_empty():
@@ -1116,7 +1083,7 @@ func _restore_the_moment(saved: EventSave) -> void:
 	_gait_phase = 0.0
 	_gait_moving = false
 	if _def.moves() and _path.size() > 1:
-		_route.advance(0.0)
+		_composed.route().advance(0.0)
 	# Put back where it was, not slid there from wherever it was made.
 	reset_physics_interpolation()
 
@@ -1139,38 +1106,38 @@ func move_to(at: Vector2) -> void:
 ## Whether the van's take of a bystander is running right now (`EventAbduction`), for
 ## `EventVehicleLook._draw_abduction` and for a test to drive by hand.
 func is_taking_a_victim() -> bool:
-	return _abduction != null and _abduction.is_taking()
+	return _composed.abduction() != null and _composed.abduction().is_taking()
 
 ## How long the victim of the van's take has been walking to it, in seconds, while the take runs
 ## (`EventAbduction.walked_for()`): what the van's look places and strides the victim by. Nothing,
 ## 0, for a row with no take and between takes, as an event without a part answers that part's
 ## questions.
 func how_long_its_victim_has_walked() -> float:
-	return _abduction.walked_for() if is_taking_a_victim() else 0.0
+	return _composed.abduction().walked_for() if is_taking_a_victim() else 0.0
 
 # ------------------------------------------------------------------ the flock ---
 
 ## The radius one bird emits over (`EventFlock.bird_outer()`), or 0 without a flock: the outer ring
 ## `field_rings()` gives a flock, the exact radius `_flock_contribution_at()` sums over.
 func _flock_outer_radius() -> float:
-	return _flock.bird_outer() if _flock else 0.0
+	return _composed.flock().bird_outer() if _composed.flock() else 0.0
 
 ## Each live bird's own ground-plane offset from this instance's origin — empty for anything
 ## without a flock. What `DebugLayers` draws one pair of radii per bird from.
 func flock_offsets() -> Array[Vector2]:
-	if _flock == null:
+	if _composed.flock() == null:
 		return [] as Array[Vector2]
-	return _flock.offsets()
+	return _composed.flock().offsets()
 
 ## Each live bird's own `heading * speed`, parallel to `flock_offsets()`.
 func flock_velocities() -> Array[Vector2]:
-	if _flock == null:
+	if _composed.flock() == null:
 		return [] as Array[Vector2]
-	return _flock.velocities()
+	return _composed.flock().velocities()
 
 ## Its birds (`EventFlock.birds`), or none for a row that is one body.
 func birds() -> Array[EventFlock.Bird]:
-	return _flock.birds if _flock else _NO_BIRDS
+	return _composed.flock().birds if _composed.flock() else _NO_BIRDS
 
 static var _NO_BIRDS: Array[EventFlock.Bird] = []
 
@@ -1215,14 +1182,14 @@ func _be_done(may_park := true) -> void:
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
 		# where the last step put it, so `path_travelled()` still answers "the whole route" for a
 		# streaming restore.
-		_path_travelled = _route.length()
+		_path_travelled = _composed.route().length()
 		queue_redraw()
 		return
-	if (_departure.speed() <= 0.0 or _def.leaves_behind() != ""):
+	if (_composed.departure().speed() <= 0.0 or _def.leaves_behind() != ""):
 		end_now()
 		return
 	transition(Phase.LEAVING)
-	_departure.begin()
+	_composed.departure().begin()
 
 ## Ends this instance early because a resistance step's contact rode on it and she has just
 ## completed the step — called by `ResistanceDirector._on_contact_completed()` on the instance
@@ -1250,17 +1217,17 @@ func leave_for_a_completed_task() -> void:
 	_be_done(false)
 	if not is_on_its_way_out():
 		return
-	_departure.for_a_completed_task()
+	_composed.departure().for_a_completed_task()
 
 ## **Leaves down a way chosen for it** (`EventDeparture.along()`): day 12's park people, walked out
 ## through the cordon's last gap rather than through the tape. Answers whether it is now leaving
 ## along the way.
 func leave_along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
-	return _departure.along(way, speed, avoid)
+	return _composed.departure().along(way, speed, avoid)
 
 ## What is left of the way `leave_along()` set, in order (`EventDeparture.way_left()`).
 func way_left() -> PackedVector2Array:
-	return _departure.way_left()
+	return _composed.departure().way_left()
 
 ## True once the guard who set off from a barrier is gone for good, and this instance is only the
 ## barrier: solid and silent, for as long as the roadblock would have stood
@@ -1279,7 +1246,7 @@ func _has_expired() -> bool:
 	# **A vehicle waits for its men**: a hunting van's `duration` runs from its notice, and a van
 	# gone from the kerb would leave a man walking back to nothing. It may leave only once every
 	# man it let out is back in.
-	if _investigation and not _investigation.all_back():
+	if _composed.investigation() and not _composed.investigation().all_back():
 		return false
 	return _def.lasts_for() > 0.0 and chase_age() >= notice_time() + _def.lasts_for()
 
@@ -1403,8 +1370,8 @@ func _hold_the_notice_clock(delta: float) -> void:
 			and not clear_line_to(her):
 		_notice.hold(delta)
 		return
-	if _pursuit:
-		_pursuit.pause_a_held_notice(delta)
+	if _composed.pursuit():
+		_composed.pursuit().pause_a_held_notice(delta)
 
 ## Current peak intensity at the centre: its row's peak through its swell and its pulse
 ## (`EventDef.peak_through()`), after this phase's damping (`_notice_damping()`).
@@ -1430,7 +1397,8 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# beside him — at the centre of his own field, which is where his catch puts her. A short sharp
 		# spike rather than a field she strolls out of, and his field, so walking away takes some
 		# of it off. Nothing after it: he is walking back by then (`_tick()`).
-		var into := clampf(_on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
+		var stopped := _composed.on_foot().stopped_for()
+		var into := clampf(stopped / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
 		return 2.0 * _def.pursuit().stop_excitement() / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner radius`
@@ -1619,7 +1587,7 @@ func notice_within() -> float:
 func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float:
 	var total_intensity := intensity if intensity >= 0.0 else current_intensity()
 	var share := total_intensity / float(birds().size())
-	var outer := _flock.bird_outer()
+	var outer := _composed.flock().bird_outer()
 	var total := 0.0
 	for bird in birds():
 		total += _def.bird_emission_at(_bird_distance(bird, world_position), share, outer)
@@ -1654,8 +1622,8 @@ func _bird_distance(bird: EventFlock.Bird, world_position: Vector2) -> float:
 ## (`EventCarDriving`). Its telegraph is not asked: its warning is a car's,
 ## `EventCarDriving.closes_on()`, not a field coming up to strength.
 func is_lethal_at(world_position: Vector2) -> bool:
-	if _car:
-		return _car.strikes(world_position)
+	if _composed.car():
+		return _composed.car().strikes(world_position)
 	# The row's own flag first: it is the one most rows fail, and the two calls after it are pure.
 	if not _def.ends_the_day() or is_gone() or is_on_its_way_out() or is_waiting() or is_telegraphing():
 		return false
@@ -1668,7 +1636,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## which its source asks in place of a projection of its field. False for anything that does not
 ## drive.
 func will_strike(point: Vector2) -> bool:
-	return _car != null and _car.will_strike(point)
+	return _composed.car() != null and _composed.car().will_strike(point)
 
 ## **The way from it to her where it can see her**: from its node to where she is, when something
 ## has told it where she is and nothing built stands between them (`clear_line_to()`, the line its
@@ -1808,7 +1776,8 @@ class Rim extends SourceRim:
 ## Whether the band carries this event's rim: a guard has left the barrier he stood at and the band
 ## still stands.
 func _the_band_carries_the_rim() -> bool:
-	return is_on_its_way_out() and _barrier_post != null and _barrier_post.has_left_its_body() \
+	var post := _composed.barrier_post()
+	return is_on_its_way_out() and post != null and post.has_left_its_body() \
 			and look.band_node() != null and not is_gone()
 
 ## The band's rim, behind the band's first slice, drawn before every other part of the band, as a
@@ -2230,8 +2199,8 @@ func hunts_for_her() -> bool:
 ## chase does not give up because she ran; nothing for an event with no pursuit. A scene recipe's
 ## relentless pursuer, every tick.
 func forget_her_run() -> void:
-	if _pursuit != null:
-		_pursuit.forget_her_run()
+	if _composed.pursuit() != null:
+		_composed.pursuit().forget_her_run()
 
 ## **Whether, leaving, it walks straight away from her** at its departure's pace, the departure's
 ## plain branch (`EventDeparture.leave()`) that `walk_on_by_hand()` reproduces: not a walk down a
@@ -2239,8 +2208,10 @@ func forget_her_run() -> void:
 ## him out (`EventOfficer.walks_back()`), nor a guard who has left his barrier standing
 ## (`EventBarrierPost.has_left_its_body()`).
 func walks_straight_away() -> bool:
-	return not (_departure.walks_a_way() or (_on_foot != null and _on_foot.walks_back()) \
-			or (_barrier_post != null and _barrier_post.has_left_its_body()))
+	var man := _composed.on_foot()
+	var post := _composed.barrier_post()
+	return not (_composed.departure().walks_a_way() or (man != null and man.walks_back()) \
+			or (post != null and post.has_left_its_body()))
 
 ## Whether it is a car that drives (its row's `vehicle`), whose strike is its driving's.
 func drives() -> bool:
@@ -2284,12 +2255,12 @@ func heard_within() -> float:
 ## having left his body, which `is_only_its_barrier()` does not yet say. False for anything with no
 ## barrier.
 func has_lost_its_guard() -> bool:
-	return _barrier_post != null and _barrier_post.is_spent()
+	return _composed.barrier_post() != null and _composed.barrier_post().is_spent()
 
 ## **Whether this car is closing on `point` with the mark over her head**
 ## (`EventCarDriving.closes_on()`): false for anything that does not drive.
 func closes_on(point: Vector2) -> bool:
-	return _car != null and _car.closes_on(point)
+	return _composed.car() != null and _composed.car().closes_on(point)
 
 ## **Whether its field reaches `point`**, in the shape the field is priced in: the distance
 ## `field_at()` prices (`_field_distance()`, a stationary body's capsule about its spine, a mover's
@@ -2301,7 +2272,7 @@ func closes_on(point: Vector2) -> bool:
 func field_reaches(point: Vector2) -> bool:
 	if not birds().is_empty():
 		for bird in birds():
-			if _bird_distance(bird, point) <= _flock.bird_outer():
+			if _bird_distance(bird, point) <= _composed.flock().bird_outer():
 				return true
 		return false
 	return _field_distance(point, travel_velocity()) <= _def.heard_within()

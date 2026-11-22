@@ -10,7 +10,8 @@ extends RefCounted
 static func of(events: EventManager, vehicle: EventInstance) -> Array[EventInstance]:
 	var men: Array[EventInstance] = []
 	for instance in events.instances():
-		if instance.behaviours().on_foot() != null and instance.behaviours().on_foot().vehicle == vehicle:
+		var man := instance.behaviours().on_foot()
+		if man != null and man.vehicle == vehicle:
 			men.append(instance)
 	return men
 

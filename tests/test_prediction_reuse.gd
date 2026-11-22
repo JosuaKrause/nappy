@@ -253,17 +253,17 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id() + " player velocity")
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id() + " sensitivity")
+		var before_the_chat: Dictionary = {}
 		if source.detains_her():
-			source.behaviours().hold().start()
+			before_the_chat = source.behaviours().hold().save()
+			source.start_chat()
 			_event_parity(t, source, at, definition.id() + " chatting")
 		source_where.tell(at, Vector2.INF, Rect2(), false, false)
 		_event_parity(t, source, at, definition.id() + " sleep")
-		if source.behaviours().hold():
-			# Her conversation over, as a streamed event comes back with it: the hold is
-			# restored with no time left, with no departure or release in the way.
-			var held: Dictionary = source.behaviours().hold().save()
-			held["seconds_left"] = 0.0
-			source.behaviours().hold().restore(held)
+		if source.detains_her():
+			# The hold is put back as the game's own save of it made before the chat, so the
+			# checks below run with no hold running and with no departure or release in the way.
+			source.behaviours().hold().restore(before_the_chat)
 		source.source().set_outranked(true)
 		_event_parity(t, source, at, definition.id() + " outranked")
 		source.source().set_outranked(false)

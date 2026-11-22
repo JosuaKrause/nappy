@@ -2,8 +2,8 @@ class_name EventBehaviours
 extends RefCounted
 ## **Which behaviours a catalogue row's event is composed of, read off the row's data**, and the
 ## order they tick in. One place, so a row's behaviour is its data and no event type has a class.
-## `compose()` makes the value; the event that asked for it is handed it whole and asks it for the
-## behaviour it answers for, so nothing writes a field of the event.
+## `compose()` makes the value; the event that asked for it is handed it whole and asks it for
+## the behaviour it answers for, so nothing writes a field of the event.
 
 ## Every behaviour of the event, in the order it ticks.
 var _ticking: Array[EventBehaviour] = []
@@ -18,7 +18,6 @@ var _notice_run: EventNoticeRun = null
 var _on_foot: EventOfficer = null
 var _pursuit: EventPursuit = null
 var _route: EventRouteWalk = null
-var _unreachable: EventUnreachable = null
 
 ## The unmarked van's take of a bystander, null for a row that takes none.
 func abduction() -> EventAbduction:
@@ -64,10 +63,6 @@ func pursuit() -> EventPursuit:
 func route() -> EventRouteWalk:
 	return _route
 
-## A row sent down her line that is retired once it cannot reach her, null for any other.
-func unreachable() -> EventUnreachable:
-	return _unreachable
-
 ## The behaviours in the order `step()` runs them each tick.
 func in_tick_order() -> Array[EventBehaviour]:
 	return _ticking
@@ -75,7 +70,7 @@ func in_tick_order() -> Array[EventBehaviour]:
 ## The behaviours an event of `row` is made of, in the order `step()` runs them each tick. Each is
 ## handed what never changes under it as it is made: the figure it moves (`figure`, the event's
 ## `EventInstance.Figure`), its settings (the row, or its part's settings class), where she is as
-## `event` hears it (`where`), the map, the navigator, what the event walks as (`mover`), where the
+## the event hears it (`where`), the map, the navigator, what the event walks as (`mover`), where the
 ## event writes its account for the run log (`trace`), the lights a car of it stops at (`lights`,
 ## null where there are none), the event's move (`move`, which a car's
 ## driving checks) and the behaviours beside it it works with, where it needs them. The value it
@@ -85,8 +80,8 @@ func in_tick_order() -> Array[EventBehaviour]:
 ## **The order is load-bearing**: a flock's birds move before its flush can put them up, a
 ## pursuer's chase runs before its man's stop is looked for, and a row that runs nothing else walks
 ## its route. A vehicle that investigates is never also a pursuer (`EventDef.validate()`).
-static func compose(row: EventDef, where: WhereSheIs, figure: EventInstance.Figure, map: WorldMap,
-		navigator: Navigator, mover: Mover, trace: RunTrace, lights: TrafficSignals,
+static func compose(row: EventDef, where: WhereSheIs, figure: EventInstance.Figure,
+		map: WorldMap, navigator: Navigator, mover: Mover, trace: RunTrace, lights: TrafficSignals,
 		move: MoveProposal) -> EventBehaviours:
 	var made := EventBehaviours.new()
 	# The siblings another behaviour is handed are made first; each ticks in its own place below.
@@ -149,8 +144,7 @@ static func compose(row: EventDef, where: WhereSheIs, figure: EventInstance.Figu
 		made._hold = EventHold.new(figure, row.hold())
 		out.append(made._hold)
 	if row.comes_down_her_line() and not row.telegraphs_its_coming():
-		made._unreachable = EventUnreachable.new(figure, where)
-		out.append(made._unreachable)
+		out.append(EventUnreachable.new(figure, where))
 	if row.takes_a_victim_by() != null:
 		made._abduction = EventAbduction.new(figure, where, row, row.takes_a_victim_by(), trace)
 		out.append(made._abduction)

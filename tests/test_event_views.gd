@@ -817,7 +817,8 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t: TestRunner) -> voi
 	var guard := _drawn_at_the_origin(t, hot, guard_where)
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
 	_hold(guard, guard_where, her, STEP)
-	t.check(guard.behaviours().barrier_post().chaser_side() != 0 and guard.is_standing_for_its_notice(),
+	t.check(guard.behaviours().barrier_post().chaser_side() != 0
+			and guard.is_standing_for_its_notice(),
 			"the guard on her side has noticed her and stands for his notice")
 	t.check(_is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_ALERT_BY_VIEW), "hand raised")
 	var post := guard.global_position
