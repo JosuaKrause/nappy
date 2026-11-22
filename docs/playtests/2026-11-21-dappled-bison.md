@@ -8,7 +8,7 @@ Three notes the player wrote on the Nappy board, filed by the orchestrating sess
 
 1. **Context** (the assistant's):
 
-   Written on the Nappy board on 2026-11-22 as a loose "You:" paragraph under the Waiting on you section, after the orchestrator had merged PR #1620 (the standing checks: the board read at every run of the ~30-minute recurring check, the inbox filed by the orchestrating session on its own, a board note and a 45-minute wake when out of work; filed from #1619 and #1621 in teal-dolphin). "Checking" refers to #1619's "automatically check updates on the board every hour or so".
+   Written on the Nappy board on the evening of 2026-11-21 local time (2026-11-22 UTC) as a loose "You:" paragraph under the Waiting on you section, after the orchestrator had merged PR #1620 (the standing checks: the board read at every run of the ~30-minute recurring check, the inbox filed by the orchestrating session on its own, a board note and a 45-minute wake when out of work; filed from #1619 and #1621 in teal-dolphin). "Checking" refers to #1619's "automatically check updates on the board every hour or so".
 
 2. **The note.**
 
@@ -18,7 +18,7 @@ Three notes the player wrote on the Nappy board, filed by the orchestrating sess
 
 1. **Context** (the assistant's):
 
-   Written on the Nappy board on 2026-11-22 as the You line of the question fable-rows-3a-3b, which read exactly:
+   Written on the Nappy board on the evening of 2026-11-21 local time (2026-11-22 UTC) as the You line of the question fable-rows-3a-3b, which read exactly:
 
    ### fable-rows-3a-3b
 
@@ -42,7 +42,7 @@ Three notes the player wrote on the Nappy board, filed by the orchestrating sess
 
 1. **Context** (the assistant's):
 
-   Written on the Nappy board on 2026-11-22 as a loose "You:" paragraph under the Waiting on you section, below the question notes-questions-where. "The one above" is read as the player's earlier loose board note (#1623: "to clarify, by checking I meant checking both the board and the inbox. New tasks will be posted in the inbox, questions and answers are on the board. Update the skills accordingly."), which the orchestrator captured into the inbox. Said while PR #1625, which files #1623, was open.
+   Written on the Nappy board on the evening of 2026-11-21 local time (2026-11-22 UTC) as a loose "You:" paragraph under the Waiting on you section, below the question notes-questions-where. "The one above" is read as the player's earlier loose board note (#1623: "to clarify, by checking I meant checking both the board and the inbox. New tasks will be posted in the inbox, questions and answers are on the board. Update the skills accordingly."), which the orchestrator captured into the inbox. Said while PR #1625, which files #1623, was open.
 
 2. **The note.**
 
