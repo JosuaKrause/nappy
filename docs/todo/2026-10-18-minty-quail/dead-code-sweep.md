@@ -22,9 +22,8 @@ file reaches whose name another class shares) finds these, in the events; each i
 it goes, and a member only tests reach stays where its test is the only check of behaviour the game
 uses.
 
-- `src/events/`, for the events' interface rows that rewrite its files (`event-interface.md`):
-  `EventDef.effect()`, which nothing calls (4b); `EventHold.stop()`, a hold ended by
-  hand "for a rig", which no rig calls (4b, with the hold's part).
+- `src/game_enums.gd`: `GameEnums.BlockerEffect`, which nothing reads since the row's
+  `effect()`, its one reader, went with row 4b of `event-interface.md`.
 - `src/resistance/`: nothing.
 
 The pass after these runs the survey again.
