@@ -6,11 +6,12 @@ this is its eighth pull request, "the look is a part", built as #1628 by Sonnet 
 
 **What was built.** `LookSpec` (`src/events/parts/look_spec.gd`, data) holds how an event is drawn: its picture, its
 warning picture (`WarningPicture` moved onto it), whether it casts a shadow, whether it trails a lead, whether it hides
-in its hold, whether it may be drawn as a pelican, and the guarded sides of the roadblock band's wall (`of()`, `none()` and
-refinements). The row holds one with `use_look()` and `look()`, forwarding `picture()` and `casts_a_shadow()`. Each
-look is handed its part by `EventLooks.for_row()` and holds no row; the van's look is handed the abduction part as the
-abduction behaviour is. The live event gains a question only where a look asked one it lacked: `drawn_body()`,
-`footprint()`, `moves()`, `approach_speed()`, `peak()`, `pulses_every()`, `notice_within()`. The barrier post asks
+in its hold, whether it may be drawn as a pelican, and the guarded sides of the roadblock's band, which the region wall's copies override (`of()`, `none()` and
+refinements). The row holds one with `use_look()` and `look()`, forwarding only `picture()`. Each look is handed its
+look part and the row's body part by `EventLooks.for_row()`, when the live event sets itself up, and holds no row; the
+van's look is handed the abduction part the same way. The live event gains a question only where a look asked one it lacked: `footprint()`, `moves()`,
+`approach_speed()`, `peak()`, `pulses_every()`, `notice_within()`; the body part, which never changes, is handed to the
+look rather than asked of the live event on every draw (event-interface 2.1 and 2.10). The barrier post asks
 `guard_sides()`; the seal and region planners' wall copies refine the look with `guarded_on()`. The catalogue's writers
 are rewritten by `convert_catalogue_look.py`, kept with the design, three rows by hand.
 
@@ -22,6 +23,7 @@ and placement fingerprints, `placement_rows.gd`, `escape_density.gd` and `curly_
 no cost figure moved. The look fingerprint's own timing, one run each, read 3.6% higher on the branch, within the noise
 of single runs.
 
-**Open to overturn:** the design's forks; the seven new questions of the live event; `EventDef.takes_a_victim_by()`,
-which asks the row's abduction part for the live event; the refinement `casting_a_shadow()`; `guard_sides()`
+**Open to overturn:** the design's forks; the six new questions of the live event; `EventDef.takes_a_victim_by()`,
+which asks the row's abduction part for the live event and stands until the row's public
+`abduction` field goes private; the refinement `casting_a_shadow()`; `guard_sides()`
 returning a copy.
