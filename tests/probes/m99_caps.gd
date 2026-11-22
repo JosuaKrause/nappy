@@ -24,7 +24,7 @@ extends RefCounted
 
 const SEEDS := 6
 ## One sample day per act (`Tuning.ACT_START_DAYS` is `[1, 4, 8, 12]`), the earliest each row
-## could actually appear at all — day 2 rather than day 1, since `cyclist.first_day == 2`.
+## could actually appear at all — day 2 rather than day 1, since the cyclist's first day is 2.
 const ACT_SAMPLE_DAYS: Array[int] = [2, 5, 9, 13]
 const BASE_SEED := 550209
 const STEP := 0.2

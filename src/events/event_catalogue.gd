@@ -70,11 +70,11 @@ const FINALE_EXPLOSION_INTERVAL := 22.0
 ##
 ## **Stated against what one run costs her.** A shaft is three floors of eight tiles (768px) and he
 ## runs it at `Tuning.HEAT_HUNTS_SPEED` (130px/s), so a run is about six seconds, and before it he
-## stands at the foot with his hand raised until she comes within `masked_pursuer.notice.runs_within()`
-## of him. Six seconds of nothing between runs is long enough that stepping out of a door and
-## straight back in is a real answer, short enough that waiting one out and strolling down is not.
-## A first number, and the one to move if the shaft reads as either a corridor with a man in it or
-## a corridor with a man near it.
+## stands at the foot with his hand raised until she comes within the masked man's
+## `NoticeSpec.runs_within()` of him. Six seconds of nothing between runs is long enough that
+## stepping out of a door and straight back in is a real answer, short enough that waiting one
+## out and strolling down is not. A first number, and the one to move if the shaft reads as
+## either a corridor with a man in it or a corridor with a man near it.
 const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
 ## How long one vent blows, in seconds, once its notice is over: the *on* half of the on/off split,
 ## against the periods above.

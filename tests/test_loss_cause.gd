@@ -30,7 +30,7 @@ func _test_hard_fail_cause_suffix(t: TestRunner) -> void:
 	t.check(_hard_fail("roadblock") == "roadblock",
 		"a row whose id already has no underscore to hyphenate")
 	t.check(_hard_fail("night_raid") == "night-raid",
-		"a row whose id has an underscore, named off the same `def.id` as every other")
+		"a row whose id has an underscore, named off the same `id()` as every other")
 	t.check(_hard_fail("alley_robbery") == "alley-robbery",
 		"the chalk mark's own guard")
 

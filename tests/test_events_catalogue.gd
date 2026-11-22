@@ -487,14 +487,14 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 ##
 ## **Blind spot, not a hole this test can close:** `barricade` lists no `ground_kinds()` of its
 ## own — it is a spawn sited wherever `military_convoy` stopped rather than placed by
-## `def.placement` — so the loop below never sees it and a future regression on its
+## `ground_kinds()` — so the loop below never sees it and a future regression on its
 ## `obstructs_within()` would pass silently. Checked by hand instead: it lands on `ROAD` (its
 ## spawning row's own placement), and 62px sits inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
 ## (`burnt_shell`, the other row with no placement, has no body to fit.)
 ##
 ## **The same blind spot covers every seal-only row** (`fallen_tree`, `car_accident`,
 ## `skip`, `scaffolding`, `burst_water_main`, `moving_van`, `burnt_out_car`,
-## `collapsed_frontage`) — none carries a `def.placement` either, since `SealPlanner` sites them
+## `collapsed_frontage`) — none lists a `ground_kinds()` either, since `SealPlanner` sites them
 ## directly from the street lattice rather than through `EventScheduler`'s tile pool. Their
 ## clearance is checked in `tests/test_seals.gd` instead, against the street's own 192px width
 ## rather than a single tile's, which is the ground they actually stand on.

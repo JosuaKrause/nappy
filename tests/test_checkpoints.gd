@@ -2330,7 +2330,7 @@ func _test_a_hold_at_the_guards_own_hut_ends_it_too(t: TestRunner) -> void:
 
 ## **The roadblock's hunting guard is never `_guard_after_her`, so a hold never reaches it** — it
 ## keeps chasing through a hut's hold exactly as it does today. (The escape's `masked_pursuer`
-## follows a fixed path rather than `EventPursuit` and never carries a `def.pursuit`,
+## follows a fixed path rather than `EventPursuit` and never carries a `PursuitSpec`,
 ## so it has no give-up state to reach in the first place.)
 func _test_a_hold_does_not_end_the_roadblock_guard(t: TestRunner) -> void:
 	var rig := _guard_after_her_rig(t)
