@@ -237,8 +237,9 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> v
 	draft_a.field(FieldSpec.of(30.0, 40.0, 200.0))
 	draft_a.warning(WarningSpec.lasting(0.0))
 	var def_a := draft_a.build()
-	var draft_b := draft_a.copy()
-	draft_b.known_as("share_decay_b")
+	var draft_b := EventDraft.new("share_decay_b")
+	draft_b.field(FieldSpec.of(30.0, 40.0, 200.0))
+	draft_b.warning(WarningSpec.lasting(0.0))
 	var def_b := draft_b.build()
 
 	var a := _instance(def_a)

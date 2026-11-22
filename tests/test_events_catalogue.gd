@@ -105,9 +105,8 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 
 ## **A copy of a row lies as the row does, for every copy the game makes**: a copy shares the row's
 ## body value (`BodySpec`), so what it is on the ground is the row's own. A row is not a resource,
-## so it has no deep copy to lose its body (`Resource.duplicate(true)` rebuilt a sub-resource from
-## its stored properties only, and a body holds a `GroundShape`, which cannot be stored); the last
-## check holds that no game code deep-copies a resource a row's parts could be held in.
+## so it has no deep copy to lose its body (a body holds a `GroundShape`, a `RefCounted`, which a
+## resource's deep copy cannot store); the last check holds that no game code deep-copies a resource.
 func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 	var construction := EventCatalogue.by_id("construction")
 	t.check(construction.lies_as_a_spread(), "construction is a spread, so the copies below have an answer to keep")
