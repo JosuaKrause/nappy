@@ -23,7 +23,8 @@ func center() -> Vector2:
 func ground_shape() -> GroundShape:
 	return _shape
 
-## The way the piece's spine lies on the ground (`BodyStance.spine_along()`'s answer, a unit vector).
+## The way the piece's spine lies on the ground (`BodyStance.spine_along()`'s answer, a unit
+## vector).
 func axis() -> Vector2:
 	return _axis
 

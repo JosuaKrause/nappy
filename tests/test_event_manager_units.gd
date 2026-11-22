@@ -405,7 +405,8 @@ func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
 	events.use_body_listener(func(tiles: Array[Vector2i]) -> void:
 		told.append(str(tiles)))
 	var swapped := events.swap_in_a_section(chosen, across)
-	var across_footprint := EventSpawner.footprint_of(BodyStance.of(map, across.row(), across.placed_at(),
+	var across_footprint := EventSpawner.footprint_of(
+			BodyStance.of(map, across.row(), across.placed_at(),
 			across.faces()))
 	t.check(not across_footprint.is_empty() and str(across_footprint) in told,
 			"the swap tells the crowd's listener the roadblock's footprint, as a drawn body is told")

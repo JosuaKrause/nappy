@@ -464,9 +464,9 @@ static func mover_for(row: EventDef) -> Mover:
 func standing_pieces() -> Array[StandingPiece]:
 	return _body.standing_pieces(global_position, _heading)
 
-## **How this instance stands on its street** (`BodyStance`): derived once as it is set up and again
-## when it is moved (`move_to()`), and handed to what asks: its body, its look, the spawner's record
-## of where it stands (`EventSpawner.move_extra()`).
+## **How this instance stands on its street** (`BodyStance`): derived once as it is set up and
+## again when it is moved (`move_to()`), and handed to what asks: its body, its look, the
+## spawner's record of where it stands (`EventSpawner.move_extra()`).
 func stance() -> BodyStance:
 	return _body.stance()
 

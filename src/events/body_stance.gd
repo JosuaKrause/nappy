@@ -4,9 +4,9 @@ extends RefCounted
 ## build point and the way the body was sited facing, and then handed round: where its center
 ## stands, whether it lies down the screen, whether a vehicle standing still shows its side, the
 ## direction its spine lies along, and its pieces where they stand. The dawn's planners
-## (`PlanBuilder`, `WalkGround`), the spawner's record of a body, the live event (`EventInstance`,
-## `EventBody`), its look and its footprint and the developer's rigs all read one value, so a
-## planned body and its built one agree because both are the same derivation.
+## (`PlanBuilder`, `WalkGround`), the spawner's record of a body, the live event
+## (`EventInstance`, `EventBody`), its look and its footprint and the developer's rigs all read
+## one value, so a planned body and its built one agree because both are the same derivation.
 ##
 ## **A stance is made from a build point and never from another stance** (`of()`, `of_plan()`):
 ## the point a body is built at is moved to where it stands, and a stance holds the point it was
@@ -15,8 +15,8 @@ extends RefCounted
 ## successor built where its predecessor stood (`EventSpawner.successor_of()`) stands there too.
 ##
 ## Two questions stay statics, both about a street rather than a body: where the lattice alone
-## stands a body (`stands_without_a_map()`, which a plan, holding no map, asks) and whether a street
-## lies down the screen (`lies_vertically_at()`, which the developer's rig asks as well).
+## stands a body (`stands_without_a_map()`, which a plan, holding no map, asks) and whether a
+## street lies down the screen (`lies_vertically_at()`, which the developer's rig asks as well).
 ##
 ## The measuring of a row's pictures is not here: `EventFootprints` reads the baked pictures for
 ## the looks and the siting's drawn box. This reads the row's data and the map.
@@ -39,7 +39,8 @@ var _street_spine := Vector2.RIGHT
 var _round_the_origin: Array[StandingPiece] = []
 
 ## Not asked for directly: `of()` and `of_plan()` are how a stance is made.
-func _init(row: EventDef, center: Vector2, vertical: bool, side_on: bool, facing: Vector2) -> void:
+func _init(row: EventDef, center: Vector2, vertical: bool, side_on: bool,
+		facing: Vector2) -> void:
 	_row = row
 	_center = center
 	_vertical = vertical
@@ -59,24 +60,25 @@ static func of(map: WorldMap, row: EventDef, at: Vector2, facing: Vector2) -> Bo
 			_stands_side_on(row.body(), map, center, facing), facing)
 
 ## **How a planned body stands once it is built**: `of()` of where its plan was placed
-## (`EventPlan.placed_at()`) and the way it is sited facing (`EventPlan.faces()`), the one stance
-## the walk's ground, the plan builder (`PlanBuilder.body_stands_at()`) and the route rig ask.
-## `EventInstance.setup()` stands the built body from the same point. A plan's route does not enter
-## into it: every plan that carries one starts its route where it was placed (the director's and the
-## finale's are made at `path[0]`, the plan builder's along-street route starts at the placed tile),
-## and no row is planned cross-street, the one route that starts elsewhere.
+## (`EventPlan.placed_at()`) and the way it is sited facing (`EventPlan.faces()`), the one
+## stance the walk's ground, the plan builder (`PlanBuilder.body_stands_at()`) and the route rig
+## ask. `EventInstance.setup()` stands the built body from the same point. A plan's route does
+## not enter into it: every plan that carries one starts its route where it was placed (the
+## director's and the finale's are made at `path[0]`, the plan builder's along-street route
+## starts at the placed tile), and no row is planned cross-street, the one route that starts
+## elsewhere.
 static func of_plan(map: WorldMap, plan: EventPlan) -> BodyStance:
 	return of(map, plan.row(), plan.placed_at(), plan.faces())
 
 ## **Where a body of `row` built at `at` stands, as far as the lattice says without a map**: on
 ## the kerb beside its carriageway lane when the row stands at its kerb
-## (`EventDef.stands_at_its_kerb()`, the roadblock, `CityMap.kerb_beside()`), otherwise `at`. The
-## one place that decides the kerb: `of()` starts from it, and the plan's own reading of where its body
-## stands (`EventPlan.body_at()`) asks it. **A plan's own reading stays without the move onto a
-## sidewalk band's middle**: the move needs the pavement, which a plan holds no map to read, keeps
-## a body on its own sidewalk, at most half a tile across it, and the day's rules have always read a
-## sidewalk body where it was placed; the kerb changes what a band covers, the street's far
-## sidewalk, and so is read here.
+## (`EventDef.stands_at_its_kerb()`, the roadblock, `CityMap.kerb_beside()`), otherwise `at`.
+## The one place that decides the kerb: `of()` starts from it, and the plan's own reading of
+## where its body stands (`EventPlan.body_at()`) asks it. **A plan's own reading stays without
+## the move onto a sidewalk band's middle**: the move needs the pavement, which a plan holds no
+## map to read, keeps a body on its own sidewalk, at most half a tile across it, and the day's
+## rules have always read a sidewalk body where it was placed; the kerb changes what a band
+## covers, the street's far sidewalk, and so is read here.
 static func stands_without_a_map(row: EventDef, at: Vector2) -> Vector2:
 	return CityMap.kerb_beside(at) if row.stands_at_its_kerb() else at
 
@@ -86,31 +88,32 @@ static func stands_without_a_map(row: EventDef, at: Vector2) -> Vector2:
 func row() -> EventDef:
 	return _row
 
-## Where its center stands: the build point moved to the middle of its pavement band when the row is
-## a stationary solid body that `pavement_side` does not pin to an edge and that does not span the
-## street (`EventDef.stands_on_its_band_middle()`), to the kerb beside its carriageway lane for a
-## row that stands at its kerb, and the build point itself for any other.
+## Where its center stands: the build point moved to the middle of its pavement band when the
+## row is a stationary solid body that `pavement_side` does not pin to an edge and that does not
+## span the street (`EventDef.stands_on_its_band_middle()`), to the kerb beside its carriageway
+## lane for a row that stands at its kerb, and the build point itself for any other.
 func center() -> Vector2:
 	return _center
 
 ## Whether it lies down the screen rather than across it, as its street runs
-## (`lies_vertically_at()`): never a per-row field, since two rows on the same street face the same
-## way for the same reason, and a row that had to say so itself could disagree with the street it
-## was actually placed on.
+## (`lies_vertically_at()`): never a per-row field, since two rows on the same street face the
+## same way for the same reason, and a row that had to say so itself could disagree with the
+## street it was actually placed on.
 func lies_vertically() -> bool:
 	return _vertical
 
-## Whether a vehicle standing still shows its side rather than its end: the moving van stands along
-## its street while the burnt car lies across it, and a junction, off-street ground or open ground
-## follows its facing.
+## Whether a vehicle standing still shows its side rather than its end: the moving van stands
+## along its street while the burnt car lies across it, and a junction, off-street ground or
+## open ground follows its facing.
 func stands_side_on() -> bool:
 	return _side_on
 
 ## The direction its spine lies along while it heads along `heading`: the heading for a car that
-## drives (`EventDef.drives()`; the way it is driving, turned by `EventCarDriving.turn_the_body()`),
-## and its street's lay for every other row, whatever the heading: a spread-drawn row down the
-## screen on a street laid that way and across it otherwise, a stationary vehicle along whichever of
-## the street's axes it shows. Never asked of a point shape, where an axis means nothing.
+## drives (`EventDef.drives()`; the way it is driving, turned by
+## `EventCarDriving.turn_the_body()`), and its street's lay for every other row, whatever the
+## heading: a spread-drawn row down the screen on a street laid that way and across it
+## otherwise, a stationary vehicle along whichever of the street's axes it shows. Never asked of
+## a point shape, where an axis means nothing.
 func spine_along(heading: Vector2) -> Vector2:
 	if _row.drives():
 		return heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
@@ -129,15 +132,16 @@ func pieces() -> Array[StandingPiece]:
 	return pieces_at(_center, _facing)
 
 ## **Its pieces laid out round `center`**, a body that is standing or driving there and heading
-## along `heading`: the one layout, which a live body's own footprint and its shadow are laid out by
-## round the origin, and a live body's solid pieces by round where it is now. A new array every time.
+## along `heading`: the one layout, which a live body's own footprint and its shadow are laid
+## out by round the origin, and a live body's solid pieces by round where it is now. A new array
+## every time.
 func pieces_at(center: Vector2, heading: Vector2) -> Array[StandingPiece]:
 	return _laid_out(center, spine_along(heading))
 
 ## Its pieces laid out round the origin along its street's spine, made once and kept: what its
-## shadow is drawn from on every frame for a body that does not drive. **Read only**: the array is
-## the one the stance keeps, so a caller that changed it would change every later answer. A car
-## that drives has its pieces laid out for each heading (`pieces_at()`).
+## shadow is drawn from on every frame for a body that does not drive. **Read only**: the array
+## is the one the stance keeps, so a caller that changed it would change every later answer. A
+## car that drives has its pieces laid out for each heading (`pieces_at()`).
 func round_the_origin() -> Array[StandingPiece]:
 	if _round_the_origin.is_empty():
 		_round_the_origin = _laid_out(Vector2.ZERO, _street_spine)
@@ -157,8 +161,8 @@ func _laid_out(center: Vector2, spine: Vector2) -> Array[StandingPiece]:
 	return laid
 
 ## Where a body of `row` built at `at` stands: `at` moved to the middle of its pavement band
-## (`_centred_on_the_pavement_band()`) when the row stands on its band's middle, otherwise where the
-## lattice puts it (`stands_without_a_map()`).
+## (`_centred_on_the_pavement_band()`) when the row stands on its band's middle, otherwise where
+## the lattice puts it (`stands_without_a_map()`).
 static func _stood_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
 	if row.stands_on_its_band_middle():
 		return _centred_on_the_pavement_band(map, at)

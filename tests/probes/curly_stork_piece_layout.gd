@@ -68,7 +68,8 @@ func _sweep(map: CityMap, plans: Array[EventPlan], label: String, seed_value: in
 					1 if solid.shape.is_segment() else 2 if solid.shape.is_rect() else 0,
 					solid.shape.reach(),
 					solid.shape.spine_half_length(), solid.axis.x, solid.axis.y])
-		var tiles := EventSpawner.footprint_of(BodyStance.of(map, row, plan.placed_at(), plan.faces()))
+		var tiles := EventSpawner.footprint_of(
+				BodyStance.of(map, row, plan.placed_at(), plan.faces()))
 		record.append("%s %s" % [row.id(), str(tiles)])
 		if not row.stands_as_a_fixed_body():
 			continue

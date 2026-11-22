@@ -1,8 +1,8 @@
 extends RefCounted
-## `BodyStance`: how a body built at a point stands on its street (`of()`, `of_plan()`): where its center
-## stands, which way it lies, the side a vehicle standing still shows, and each of its pieces
-## (`pieces()`), which every reader of a body's layout (the walk's ground, the map's record, the route
-## rig, a live body and its look) takes from it.
+## `BodyStance`: how a body built at a point stands on its street (`of()`, `of_plan()`): where
+## its center stands, which way it lies, the side a vehicle standing still shows, and each of
+## its pieces (`pieces()`), which every reader of a body's layout (the walk's ground, the map's
+## record, the route rig, a live body and its look) takes from it.
 ##
 ## Rows are the catalogue's own, built as they are (data), except check 4's, a bare row with a shape and no body. The map is a stand-in per street axis
 ## (`tests/east_west_street.gd` and the north-south twin below), so no city is generated and the
@@ -186,10 +186,10 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 	# they were built: the guard that the sweep above is not asking points that never move.
 	t.check(unstood == 0, "a sidewalk point built at a lane's middle is moved (%d stayed)" % unstood)
 
-## **A stance made from a point already stood lays its pieces out where its build point's does**:
-## a stance is made from a build point and never from a stance, and where a caller holds only the
-## point a body already stands at (a successor built where its predecessor stood, `successor_of()`;
-## a rig's or a test's) it still gets the body built at `at`.
+## **A stance made from a point already stood lays its pieces out where its build point's
+## does**: a stance is made from a build point and never from a stance, and where a caller holds
+## only the point a body already stands at (a successor built where its predecessor stood,
+## `successor_of()`; a rig's or a test's) it still gets the body built at `at`.
 func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRunner) -> void:
 	var asked := 0
 	var differ := 0
@@ -223,11 +223,12 @@ func _test_a_planned_body_stands_where_its_plan_was_placed(t: TestRunner) -> voi
 				"%s's planned body stands where its row stands a body built at the plan's point" % id)
 		t.check(from_plan.lies_vertically() == from_row.lies_vertically()
 				and from_plan.stands_side_on() == from_row.stands_side_on(),
-				"%s's planned body lies as a body built at the plan's point and facing does" % id)
+				"%s's planned body lies as one built at the plan's point and facing does" % id)
 
-## **A stance lays the one body out wherever it is asked**: round its own center (`pieces()`), round
-## the origin (what a live body's collision body and shadow are made from) and round a point a live
-## body has moved to are the same pieces, shifted, along the same spine, on both street axes.
+## **A stance lays the one body out wherever it is asked**: round its own center (`pieces()`),
+## round the origin (what a live body's collision body and shadow are made from) and round a
+## point a live body has moved to are the same pieces, shifted, along the same spine, on both
+## street axes.
 func _test_a_stance_lays_its_pieces_out_round_any_point(t: TestRunner) -> void:
 	var elsewhere := Vector2(120.0, -40.0)
 	var asked := 0
@@ -243,8 +244,9 @@ func _test_a_stance_lays_its_pieces_out_round_any_point(t: TestRunner) -> void:
 					% [id, own.size(), round_the_origin.size(), moved.size()])
 			for k in mini(own.size(), mini(round_the_origin.size(), moved.size())):
 				asked += 1
-				var same := own[k].center().is_equal_approx(stance.center() + round_the_origin[k].center())
-				same = same and moved[k].center().is_equal_approx(elsewhere + round_the_origin[k].center())
+				var shift := round_the_origin[k].center()
+				var same := own[k].center().is_equal_approx(stance.center() + shift)
+				same = same and moved[k].center().is_equal_approx(elsewhere + shift)
 				same = same and own[k].axis() == round_the_origin[k].axis() \
 						and own[k].axis() == moved[k].axis()
 				if not same:
@@ -257,12 +259,12 @@ func _test_a_stance_lays_its_pieces_out_round_any_point(t: TestRunner) -> void:
 						round_the_origin[k].center()) and stance.round_the_origin()[k].axis()
 						== round_the_origin[k].axis(),
 						"%s's kept piece %d is the one it lays out round the origin" % [id, k])
-	t.check(asked > 0 and differ == 0, "pieces round any point are shifted copies: %d of %d differ"
-			% [differ, asked])
+	t.check(asked > 0 and differ == 0,
+			"pieces round any point are shifted copies: %d of %d differ" % [differ, asked])
 
-## **Only a car that drives lies along the heading it is asked with**; every other row lies along its
-## street whatever it heads, which is why a live body that does not drive never lays its pieces out
-## again.
+## **Only a car that drives lies along the heading it is asked with**; every other row lies
+## along its street whatever it heads, which is why a live body that does not drive never lays
+## its pieces out again.
 func _test_only_a_car_that_drives_lies_along_its_heading(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
 	var drivers := 0
@@ -275,12 +277,14 @@ func _test_only_a_car_that_drives_lies_along_its_heading(t: TestRunner) -> void:
 		var along_down := stance.spine_along(Vector2.DOWN)
 		if row.drives():
 			drivers += 1
-			t.check(along_up.is_equal_approx(Vector2.UP) and along_down.is_equal_approx(Vector2.DOWN),
+			t.check(along_up.is_equal_approx(Vector2.UP)
+					and along_down.is_equal_approx(Vector2.DOWN),
 					"%s, a car that drives, lies along the heading it is asked with" % row.id())
 			t.check(stance.spine_along(Vector2.ZERO).is_equal_approx(Vector2.RIGHT),
 					"%s with no heading lies along the right" % row.id())
 		else:
 			stood_still += 1
-			t.check(along_up == along_down, "%s lies along its street whatever it heads" % row.id())
+			t.check(along_up == along_down,
+					"%s lies along its street whatever it heads" % row.id())
 	t.check(drivers > 0 and stood_still > 0,
 			"there were cars that drive and rows that do not (%d, %d)" % [drivers, stood_still])

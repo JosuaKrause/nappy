@@ -257,7 +257,8 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 			if not plan.is_placed():
 				continue
 			placed += 1
-			var tiles := EventSpawner.footprint_of(BodyStance.of(_city.map, plan.row(), plan.placed_at(),
+			var tiles := EventSpawner.footprint_of(
+					BodyStance.of(_city.map, plan.row(), plan.placed_at(),
 					plan.faces()))
 			if not tiles.is_empty():
 				expected.append(str(tiles))

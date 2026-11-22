@@ -27,9 +27,10 @@ extends RefCounted
 ## after its guard has left (`EventBarrierPost.stand_as_the_barrier()`), and a burst leaves its
 ## crater where it went off for the rest of the sequence — so a row that spawns a solid successor
 ## is counted at the successor's body too (`solids_of()`). Mobile rows are traffic and close no
-## ground. Each body is where `BodyStance.pieces()` puts it, as `EventInstance.setup()` will — recentred on
-## the pavement band, laid along the street's own spread axis, in its own pieces — rather than a disc at the tile it
-## was rolled on, because the half tile between the two is what decides whether a lane survives.
+## ground. Each body is where `BodyStance.pieces()` puts it, as `EventInstance.setup()` will —
+## recentred on the pavement band, laid along the street's own spread axis, in its own pieces —
+## rather than a disc at the tile it was rolled on, because the half tile between the two is what
+## decides whether a lane survives.
 ##
 ## **And a lethal reach that stands is counted as ground she cannot cross** (`held_by()`): the van's
 ## 54px, round where it is parked, takes her however open the ground under it is, so a sidewalk kept
@@ -192,15 +193,16 @@ func held_by(plan: EventPlan) -> Array[Solid]:
 	var reach := def.lethal_reach() - Tuning.PLAYER_BODY_RADIUS
 	if reach <= 0.0:
 		return found
-	found.append(Solid.new(BodyStance.of_plan(_map, plan).center(), GroundShape.point(reach), Vector2.RIGHT))
+	var stands := BodyStance.of_plan(_map, plan).center()
+	found.append(Solid.new(stands, GroundShape.point(reach), Vector2.RIGHT))
 	return found
 
 ## A placement's pieces as they stand for the whole walk — its own body, and its successor's
 ## where it leaves a solid one — with nothing for a mobile row or one with no body. Each is
 ## `BodyStance.pieces()`, the layout `EventInstance.setup()` stands a stationary body by,
-## asked of the stance made from where the plan was placed: recentred on the pavement band unless `pavement_side` pins it
-## or on the kerb beside its lane for a row that stands at its kerb, its pieces laid along the
-## street's own spread axis.
+## asked of the stance made from where the plan was placed: recentred on the pavement band unless
+## `pavement_side` pins it or on the kerb beside its lane for a row that stands at its kerb, its
+## pieces laid along the street's own spread axis.
 func solids_of(plan: EventPlan) -> Array[Solid]:
 	var found: Array[Solid] = []
 	var row := plan.row()

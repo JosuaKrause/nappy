@@ -25,9 +25,9 @@ class ToldCrowdSource extends CrowdExcitement:
 		told_sensitivity = sensitivity
 		super(velocity, decay_rate, sensitivity)
 
-## An event whose source counts the samplings it really runs.
-## Open ground whose street runs east-west from the line x = 0 eastward and north-south west of it,
-## so an event moved across the line is stood by the other street's answers (`BodyStance.of()`).
+## An event whose source counts the samplings it really runs. Open ground whose street runs
+## east-west from the line x = 0 eastward and north-south west of it, so an event moved across
+## the line is stood by the other street's answers (`BodyStance.of()`).
 class SplitStreets extends WorldMap:
 	## Overrides WorldMap.corridor_offsets.
 	func corridor_offsets(tile: Vector2i) -> Vector2i:

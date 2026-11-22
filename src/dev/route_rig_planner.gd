@@ -493,13 +493,13 @@ const _CAUGHT_CLEARANCE := Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 ##
 ## **Every body the day has, not only the ones streamed in near her.** `EventManager` builds an
 ## instance only once she is within `EventManager.stream_radius()` of its plan and takes it away
-## again once she leaves, but it records every planned body in `obstructed_tiles` at dawn, because
-## "a body is a body whether or not the player has come near enough to stream it in". A plan that
-## knew only the live ones kept meeting a van streaming in over a waypoint a few tiles ahead, and
-## re-planned onto a street whose own van streamed in next. So each placed, unspent plan answers
-## from where its instance will stand (`_planned_body_tiles()`, off `BodyStance.pieces()`), and a live instance from where it
-## does stand, which also covers a body the director sites from her walk and has no plan position
-## at dawn.
+## again once she leaves, but it records every planned body in `obstructed_tiles` at dawn,
+## because "a body is a body whether or not the player has come near enough to stream it in". A
+## plan that knew only the live ones kept meeting a van streaming in over a waypoint a few tiles
+## ahead, and re-planned onto a street whose own van streamed in next. So each placed, unspent
+## plan answers from where its instance will stand (`_planned_body_tiles()`, off
+## `BodyStance.pieces()`), and a live instance from where it does stand, which also covers a
+## body the director sites from her walk and has no plan position at dawn.
 func body_clear_tiles() -> Dictionary:
 	var near := {}
 	for plan: EventPlan in _events.plans():
@@ -665,7 +665,8 @@ func _gate_ground() -> Dictionary:
 					continue
 				var nearest_is_gate := true
 				for other in doors:
-					if other != gate and point.distance_to(BodyStance.of_plan(_map, other).center()) < distance:
+					var other_at := BodyStance.of_plan(_map, other).center()
+					if other != gate and point.distance_to(other_at) < distance:
 						nearest_is_gate = false
 						break
 				if nearest_is_gate:
@@ -1175,9 +1176,9 @@ func _room_at(point: Vector2, pieces: Array[StandingPiece], walls: Array[Vector2
 		room = minf(room, _tile_nearest_distance(wall, point))
 	return room
 
-## Every solid `StandingPiece` of a standing body within `radius` of `point` — the live instances
-## `body_clear_tiles()` keeps clear of, and the placed plans not yet built (`BodyStance.pieces()`),
-## measured the same way.
+## Every solid `StandingPiece` of a standing body within `radius` of `point` — the live
+## instances `body_clear_tiles()` keeps clear of, and the placed plans not yet built
+## (`BodyStance.pieces()`), measured the same way.
 func _body_pieces_near(point: Vector2, radius: float) -> Array[StandingPiece]:
 	var pieces: Array[StandingPiece] = []
 	for instance: EventInstance in _events.instances():

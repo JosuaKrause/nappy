@@ -55,8 +55,9 @@ var _sight_reported: Dictionary = {}
 
 ## Records the footprint of a body with no instance (a plan's, `EventManager._take()`,
 ## `EventStreaming`) under `owner`, or nothing at all for anything the record leaves out, and
-## answers the tiles it recorded (none for the latter). Safe to call for every plan: the deciding is
-## in `footprint_of()`, which a row the record leaves out is cut off before its stance is made.
+## answers the tiles it recorded (none for the latter). Safe to call for every plan: the
+## deciding is in `footprint_of()`, which a row the record leaves out is cut off before its
+## stance is made.
 func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> Array[Vector2i]:
 	if def == null or not def.stands_as_a_fixed_body():
 		var none: Array[Vector2i] = []
@@ -64,26 +65,27 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 	return record_the_stance(owner, BodyStance.of(world.map(), def, at, facing))
 
 ## **Records a body's footprint under `owner` from its stance**, the one a live instance holds
-## (`EventInstance.stance()`) when it is created or moved (`move_extra()`): the tiles it recorded,
-## none for a row the record leaves out.
+## (`EventInstance.stance()`) when it is created or moved (`move_extra()`): the tiles it
+## recorded, none for a row the record leaves out.
 func record_the_stance(owner: int, stance: BodyStance) -> Array[Vector2i]:
 	var tiles := footprint_of(stance)
 	world.map().obstruct_tiles(owner, tiles)
 	return tiles
 
-## The tiles a row's own solid body stands on as its `stance` says it stands, or an empty list for
-## anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a door body, or a
-## row with no body at all. A body built at a point is asked through `BodyStance.of()`, a live one
-## through the stance it holds (`EventInstance.stance()`, `EventBody.tiles()`).
+## The tiles a row's own solid body stands on as its `stance` says it stands, or an empty list
+## for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a door body,
+## or a row with no body at all. A body built at a point is asked through `BodyStance.of()`, a
+## live one through the stance it holds (`EventInstance.stance()`, `EventBody.tiles()`).
 ##
-## **The row's pieces are laid out by `BodyStance.pieces()`**, the one layout the walk's ground and
-## the route rig ask too, and each is rasterised, never the one disc of `obstructs_within()`. A row
-## is solid where `BodySpec.pieces()` says it is, which is one piece at the origin carrying `shape`
-## for every row that declares none — so a one-piece row records exactly the tiles it always did,
-## and a row solid in parts records its pieces and leaves the ground between them open. That is the
-## whole of what makes a crash two cars to the crowd rather than a wall: the pieces are a subset of
-## `shape` (`EventDef.validate()` refuses one reaching past it), so the change only ever *removes*
-## tiles from the record, and removing obstruction can only add reachable ground.
+## **The row's pieces are laid out by `BodyStance.pieces()`**, the one layout the walk's ground
+## and the route rig ask too, and each is rasterised, never the one disc of
+## `obstructs_within()`. A row is solid where `BodySpec.pieces()` says it is, which is one piece
+## at the origin carrying `shape` for every row that declares none — so a one-piece row records
+## exactly the tiles it always did, and a row solid in parts records its pieces and leaves the
+## ground between them open. That is the whole of what makes a crash two cars to the crowd
+## rather than a wall: the pieces are a subset of `shape` (`EventDef.validate()` refuses one
+## reaching past it), so the change only ever *removes* tiles from the record, and removing
+## obstruction can only add reachable ground.
 ##
 ## A hard seal's own body and a region wall's are recorded like any other, and that is what a walker
 ## actually meets. The hold on their segment is a car's answer — a car cannot turn round against a
@@ -97,8 +99,8 @@ static func footprint_of(stance: BodyStance) -> Array[Vector2i]:
 		return covered
 	for piece in stance.pieces():
 		for tile in piece.tiles():
-			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body that
-			# recorded one tile twice would need two releases to give it back.
+			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body
+			# that recorded one tile twice would need two releases to give it back.
 			if not covered.has(tile):
 				covered.append(tile)
 	return covered

@@ -1613,10 +1613,11 @@ func stands_on_its_band_middle() -> bool:
 
 ## Whether the row's body stands on the kerb beside the carriageway lane it is placed in rather
 ## than on the lane (`CityMap.kerb_beside()`): a stationary solid body that spans the street
-## (`spans_the_street()`) and that `_pavement_side` does not pin, the roadblock. From the kerb its
-## band reaches across its own sidewalk and the road and stops at the far kerb, so the far sidewalk
-## stays whole. A region wall's bodies are pinned (`SealPlanner.sealed_variant()`) and stand where
-## they are put. Read by `BodyStance.stands_without_a_map()`, the one place that moves a body there.
+## (`spans_the_street()`) and that `_pavement_side` does not pin, the roadblock. From the kerb
+## its band reaches across its own sidewalk and the road and stops at the far kerb, so the far
+## sidewalk stays whole. A region wall's bodies are pinned (`SealPlanner.sealed_variant()`) and
+## stand where they are put. Read by `BodyStance.stands_without_a_map()`, the one place that
+## moves a body there.
 func stands_at_its_kerb() -> bool:
 	return _is_an_unpinned_standing_body() and _spans_the_street
 

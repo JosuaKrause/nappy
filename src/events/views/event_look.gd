@@ -695,8 +695,8 @@ func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
 func face(heading: Vector2) -> void:
 	_view_sector = EightDirection.nearest(heading)
 
-## Takes how the event stands on its street: handed as the event is set up, and again each time it
-## is moved to other ground, where its pieces and its spread lie differently.
+## Takes how the event stands on its street: handed as the event is set up, and again each time
+## it is moved to other ground, where its pieces and its spread lie differently.
 func stand_as(stance: BodyStance) -> void:
 	_stance = stance
 	_driven_pieces = []

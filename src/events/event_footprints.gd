@@ -109,13 +109,13 @@ static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
 # ------------------------------------------------------------------- the body ---
 
 ## **A row's solid footprint**, its origin at the row's own: one piece per `BodySpec.pieces()`
-## entry — one at the origin carrying its shape for every row that declares none, a car per piece
-## for the crash — each offset along the street's axis by the piece's own reading of whichever
-## picture is in use, its spine along the stance's (`BodyStance.spine_along()`, asked with
-## `heading`, which only a car that drives lies along). Laid out by `BodyStance.pieces_at()` round
-## the origin, the layout the blocked record (`EventSpawner.footprint_of()`) takes through
-## `BodyStance.pieces()`, so the body and the record are one solid. The physics body
-## (`EventBody.go_down()`) comes from here.
+## entry — one at the origin carrying its shape for every row that declares none, a car per
+## piece for the crash — each offset along the street's axis by the piece's own reading of
+## whichever picture is in use, its spine along the stance's (`BodyStance.spine_along()`, asked
+## with `heading`, which only a car that drives lies along). Laid out by
+## `BodyStance.pieces_at()` round the origin, the layout the blocked record
+## (`EventSpawner.footprint_of()`) takes through `BodyStance.pieces()`, so the body and the
+## record are one solid. The physics body (`EventBody.go_down()`) comes from here.
 static func solid_footprint_of(stance: BodyStance, heading: Vector2) -> Footprint:
 	var footprint := Footprint.new()
 	for piece in stance.pieces_at(Vector2.ZERO, heading):

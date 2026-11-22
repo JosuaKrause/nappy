@@ -487,9 +487,10 @@ func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: A
 
 # --------------------------------------------------------- a body in pieces ---
 # `EventSpawner.footprint_of()` rasterises `BodySpec.pieces()`, laid out through
-# `BodyStance.pieces()`, rather than the row's one `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
-# `shape`, and these two tests are the two halves of that sentence: nothing moved for the rows that
-# are one piece, and the crash records its two cars instead of the street they are lying across.
+# `BodyStance.pieces()`, rather than the row's one `shape`. Every row but the crash declares no
+# parts, which means one piece at the origin carrying `shape`, and these two tests are the two
+# halves of that sentence: nothing moved for the rows that are one piece, and the crash records
+# its two cars instead of the street they are lying across.
 
 ## A row that is one piece records **exactly** the tiles its own `shape` covers — the tiles it
 ## recorded before the record learned about pieces.

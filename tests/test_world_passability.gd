@@ -368,7 +368,8 @@ func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) ->
 		if not plan.is_placed() or plan.row().moves() or plan.detains_her() \
 				or plan.is_a_boom() or plan.obstructs_within() <= 0.0:
 			continue
-		var recorded := EventSpawner.footprint_of(BodyStance.of(map, plan.row(), plan.placed_at(),
+		var recorded := EventSpawner.footprint_of(
+				BodyStance.of(map, plan.row(), plan.placed_at(),
 				plan.faces()))
 		var instance := EventInstance.new()
 		instance.setup(plan.row(), plan.placed_at(), PackedVector2Array(), plan.faces(),

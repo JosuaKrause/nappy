@@ -182,7 +182,8 @@ func _bodies(map: CityMap, plans: Array[EventPlan]) -> Array:
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		var covered := EventSpawner.footprint_of(BodyStance.of(map, plan.row(), plan.placed_at(), plan.faces()))
+		var covered := EventSpawner.footprint_of(
+				BodyStance.of(map, plan.row(), plan.placed_at(), plan.faces()))
 		if covered.is_empty():
 			continue
 		found.append({
