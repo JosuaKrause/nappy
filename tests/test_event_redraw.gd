@@ -179,7 +179,7 @@ func _test_the_normal_dogs_opposite_step_moves_its_key(t: TestRunner) -> void:
 		var drawn := [0]
 		instance.draw.connect(func() -> void: drawn[0] += 1)
 		instance.leave_for_a_completed_task()
-		var speed := instance.departure.speed()
+		var speed := instance.behaviours().departure().speed()
 		t.check(speed > 0.0, "%s walks on once sent off" % id)
 		if speed <= 0.0:
 			instance.free()
@@ -529,8 +529,8 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void
 	var flock := EventInstance.new()
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
 	# `_ready()` is what builds the birds in a real scene; a bare rig has to ask for them.
-	flock.flock.build()
-	t.check(not flock.flock.birds.is_empty(), "the flock has birds")
+	flock.behaviours().flock().build()
+	t.check(not flock.birds().is_empty(), "the flock has birds")
 	t.check(_never_settles(flock), "a flock is never gated — every bird moves every tick")
 	flock.free()
 

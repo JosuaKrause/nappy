@@ -134,7 +134,7 @@ func _test_in_front_of_it_the_warning_comes_first(t: TestRunner) -> void:
 			var was_at := engine.global_position
 			_step(engine, engine_where, player)
 			var now := float(i) * STEP
-			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
+			if warned_at < 0.0 and engine.closes_on(player.global_position):
 				warned_at = now
 			held = held or engine.global_position.is_equal_approx(was_at)
 			if engine.is_lethal_at(player.global_position):
@@ -197,7 +197,7 @@ func _test_where_it_is_created_she_is_warned_in_full(t: TestRunner) -> void:
 		for i in int(5.0 / STEP):
 			_step(engine, engine_where, player)
 			var now := float(i) * STEP
-			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
+			if warned_at < 0.0 and engine.closes_on(player.global_position):
 				warned_at = now
 			if engine.is_lethal_at(player.global_position):
 				struck_at = now
@@ -229,7 +229,7 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 	var lethal := false
 	for i in int(5.0 / STEP):
 		_step(engine, engine_where, player)
-		warned = warned or engine.car.closes_on(player.global_position)
+		warned = warned or engine.closes_on(player.global_position)
 		lethal = lethal or engine.source().will_be_lethal(player.global_position) \
 				or engine.is_lethal_at(player.global_position)
 		if engine.has_parked():
@@ -249,7 +249,8 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 			lethal = lethal or engine.is_lethal_at(player.global_position)
 			if engine.has_parked():
 				break
-		var gap := engine.car.gap_to_her(engine.global_position, engine.facing_now())
+		var car := engine.behaviours().car()
+		var gap := car.gap_to_her(engine.global_position, engine.facing_now())
 		t.check(engine.has_parked() and gap > 0.0 and not lethal,
 				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
 				% [past, gap])
@@ -278,7 +279,7 @@ func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 	for i in int(5.0 / STEP):
 		_step(engine, engine_where, player)
 		var now := float(i) * STEP
-		if warned_at < 0.0 and engine.car.closes_on(player.global_position):
+		if warned_at < 0.0 and engine.closes_on(player.global_position):
 			warned_at = now
 		if engine.is_lethal_at(player.global_position):
 			struck_at = now

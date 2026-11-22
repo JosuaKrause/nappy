@@ -312,13 +312,13 @@ func _test_a_flock_reaches_where_one_of_its_birds_does(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	instance.flock.build()
+	instance.behaviours().flock().build()
 	var any_bird := instance.birds()[0]
 	t.check(instance.field_reaches(any_bird.at()), "a flock reaches the place one of its birds stands")
 	var uncovered := Vector2(def.heard_within() - 1.0, 0.0)
 	var covered_by_a_bird := false
 	for bird in instance.birds():
-		if bird.at().distance_to(uncovered) <= instance.flock.bird_outer():
+		if bird.at().distance_to(uncovered) <= instance.behaviours().flock().bird_outer():
 			covered_by_a_bird = true
 	t.check(not covered_by_a_bird, "no bird's kernel covers a point just inside the flock's radius")
 	t.check(not instance.field_reaches(uncovered),

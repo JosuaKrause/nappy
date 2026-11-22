@@ -707,7 +707,7 @@ func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var flock_where := WhereSheIs.nowhere()
 	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
-	t.check(flock.flock.birds.size() == def.flock().count(),
+	t.check(flock.birds().size() == def.flock().count(),
 			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
 	# Standing in it: a flock waits on the pavement until she is inside
 	# `EventDef.notice_within()`, and both the telegraph and the burst below are measured from
@@ -755,16 +755,16 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t: TestRunner) -> vo
 	flock.step(def.telegraphs_for() + 0.1)
 
 	var before: Array[Vector2] = []
-	for bird in flock.flock.birds:
+	for bird in flock.birds():
 		before.append(bird.at())
 	flock.step(STEP)
 	var moved := 0
-	for i in flock.flock.birds.size():
-		if not flock.flock.birds[i].at().is_equal_approx(before[i]):
+	for i in flock.birds().size():
+		if not flock.birds()[i].at().is_equal_approx(before[i]):
 			moved += 1
-	t.check(flock.flock.birds.size() > 0 and moved == flock.flock.birds.size(),
+	t.check(flock.birds().size() > 0 and moved == flock.birds().size(),
 			"every one of the %d birds is somewhere new one frame on, so the silhouette the rim "
-			% flock.flock.birds.size()
+			% flock.birds().size()
 			+ "traces is a different silhouette every frame")
 
 	# And the rim over them is exactly the state that used to stop re-tracing.

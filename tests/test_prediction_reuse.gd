@@ -223,7 +223,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(source_where))
 		if source.row().is_a_flock():
-			source.flock.build()
+			source.behaviours().flock().build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id() + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.restore(EventSave.aged(phase))
@@ -253,13 +253,17 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id() + " player velocity")
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id() + " sensitivity")
+		var before_the_chat: Dictionary = {}
 		if source.detains_her():
-			source.hold.start()
+			before_the_chat = source.behaviours().hold().save()
+			source.start_chat()
 			_event_parity(t, source, at, definition.id() + " chatting")
 		source_where.tell(at, Vector2.INF, Rect2(), false, false)
 		_event_parity(t, source, at, definition.id() + " sleep")
-		if source.hold:
-			source.hold.stop()
+		if source.detains_her():
+			# The hold is put back as the game's own save of it made before the chat, so the
+			# checks below run with no hold running and with no departure or release in the way.
+			source.behaviours().hold().restore(before_the_chat)
 		source.source().set_outranked(true)
 		_event_parity(t, source, at, definition.id() + " outranked")
 		source.source().set_outranked(false)

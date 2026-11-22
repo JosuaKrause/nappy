@@ -38,20 +38,6 @@ enum EventKind {
 	SCRIPTED,  ## The scheduler is told exactly which day it fires.
 }
 
-## What a blocker does to a route that meets it. *(docs/CITY.md, "The words for it", adopted from
-## the player 2026-08-31.)*
-##
-## **`LETHAL` is not the top of a scale**, it is a different thing: the other two are prices and it
-## is an ending. And a body is not `IMPASSABLE` — almost everything that stands still is solid at
-## the width it is drawn, and a café she walks round is `COSTLY` like the dog walker
-## beside it. What is impassable is a thing that takes the **street**, which in this game is a
-## closure and nothing else.
-enum BlockerEffect {
-	LETHAL,      ## Ends the day.
-	IMPASSABLE,  ## Stops passage, does not kill.
-	COSTLY,      ## Passable at a price she can read before committing.
-}
-
 ## What the scheduler placed a blocker **for** — the third of the three axes in docs/CITY.md,
 ## "The words for it".
 ##

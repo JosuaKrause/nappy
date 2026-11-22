@@ -447,7 +447,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 			break
 		meter.feed(instances, her, false, speed == 0.0)
 		for instance in instances:
-			warned = warned or (not instance.is_waiting() and not instance.barrier_post.is_spent())
+			warned = warned or (not instance.is_waiting() and not instance.has_lost_its_guard())
 		speed = move_toward(speed, 0.0 if warned else Tuning.WALK_SPEED, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
 		if warned:
@@ -474,7 +474,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 	while not caught and frames < int(30.0 / STEP):
 		var gone := true
 		for instance: EventInstance in lured:
-			gone = gone and instance.barrier_post.is_spent() and not instance.is_on_its_way_out()
+			gone = gone and instance.has_lost_its_guard() and not instance.is_on_its_way_out()
 		if gone:
 			break
 		if tick(where, instances, her, false, -heading):

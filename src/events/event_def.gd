@@ -933,15 +933,6 @@ var _aftermath: Aftermath
 ## `tests/test_acts.gd` holds a scripted row's own first day against the day it fires on.
 var _act_tag: int
 
-## What this row does to a route that meets it, in the words `docs/CITY.md` fixes.
-##
-## **No row in the catalogue is `IMPASSABLE`**: impassable means *stops passage without killing*,
-## which in this game is a closure taking a whole street. An event with a body takes part of a
-## sidewalk, so it is walked round at a price (`costly`). A rule that tests `obstructs_within() > 0`
-## should ask whether it means *has a body* or *closes ground* (the **events** skill).
-func effect() -> GameEnums.BlockerEffect:
-	return GameEnums.BlockerEffect.LETHAL if ends_the_day() else GameEnums.BlockerEffect.COSTLY
-
 ## This row as it is at a given resistance level, which is `self` for almost everything.
 ##
 ## `level` is `RunState.resistance().progress()`, clamped here rather than by the caller: it can reach

@@ -77,13 +77,14 @@ func _test_the_pursuit_round_trips(t: TestRunner) -> void:
 	t.check(first.phase == EventInstance.Phase.WARNING, "the robber has noticed her")
 	# His held lunge is his own state, so it is set the one way the game sets it from outside: the
 	# state a stream-out carries, put back (`EventPursuit.restore()`).
-	var state := first.pursuit.save()
+	var state := first.behaviours().pursuit().save()
 	state["lunge_held"] = true
 	state["outrun_for"] = 0.4
-	first.pursuit.restore(state)
+	first.behaviours().pursuit().restore(state)
 	var second := _round_trip(t, first, "pursuit", &"EventPursuit")
-	var carried := second.pursuit.save()
-	t.check(bool(carried["lunge_held"]) and is_equal_approx(second.pursuit.outrun_for, 0.4),
+	var carried := second.behaviours().pursuit().save()
+	var run := second.behaviours().pursuit().outrun_for
+	t.check(bool(carried["lunge_held"]) and is_equal_approx(run, 0.4),
 			"his held lunge and his running clock come back")
 	t.check(second.phase == EventInstance.Phase.WARNING, "and he is still warning")
 	first.free()
@@ -157,8 +158,8 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
-	first.flock.build()
-	t.check(first.flock.birds.size() == def.flock().count(),
+	first.behaviours().flock().build()
+	t.check(first.birds().size() == def.flock().count(),
 			"the flock has its %d birds" % def.flock().count())
 	var scattered := first.flock_offsets()
 	first_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
@@ -166,7 +167,7 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 	t.check(first.flock_offsets() != scattered, "and they have moved from where they were built")
 	var state := first.save()
 	var second := _instance(t, def, first.global_position, first.walks())
-	second.flock.build()
+	second.behaviours().flock().build()
 	t.check(second.flock_offsets() == scattered, "a fresh flock stands where the first was built")
 	second.restore(state)
 	_check_the_same_save(t, second.save(), state, "flock: streamed back in")
@@ -182,9 +183,10 @@ func _test_the_investigation_round_trips(t: TestRunner) -> void:
 	var first := _instance(t, hot)
 	first.restore(EventSave.aged(2.0))
 	var state := {"seen_her": true, "officers_owed": 1, "investigated": true, "left_her_once": true}
-	first.investigation.restore(state)
+	first.behaviours().investigation().restore(state)
 	var second := _round_trip(t, first, "investigation", &"EventInvestigation")
-	t.check(second.investigation.save() == state, "every field of its state survives the trip")
+	t.check(second.behaviours().investigation().save() == state,
+			"every field of its state survives the trip")
 	t.check(second.officers_owed() == 1, "and it still owes its man")
 	first.free()
 	second.free()
@@ -196,11 +198,12 @@ func _test_the_officer_round_trips(t: TestRunner) -> void:
 	first.restore(EventSave.aged(3.0))
 	var state := {"trail": PackedVector2Array([Vector2(10.0, 0.0), Vector2(20.0, 0.0)]),
 			"stopped_ago": 1.0}
-	first.on_foot.restore(state)
+	first.behaviours().on_foot().restore(state)
 	var second := _round_trip(t, first, "officer", &"EventOfficer")
-	t.check(second.on_foot.save() == state, "every field of its state survives the trip")
-	t.check(second.on_foot.trail == first.on_foot.trail, "his trail back comes back")
-	t.check(second.has_stopped_her() and is_equal_approx(second.on_foot.stopped_for(), 1.0),
+	var man := second.behaviours().on_foot()
+	t.check(man.save() == state, "every field of its state survives the trip")
+	t.check(man.trail == first.behaviours().on_foot().trail, "his trail back comes back")
+	t.check(second.has_stopped_her() and is_equal_approx(man.stopped_for(), 1.0),
 			"and so does his stop, as far into it")
 	first.free()
 	second.free()
@@ -226,13 +229,15 @@ func _test_the_unreachable_dog_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loose_dog")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
-	t.check(first.unreachable != null, "the loose dog is retired once it cannot reach her")
 	first_where.tell(Vector2(Tuning.OUT_OF_SIGHT + 400.0, 0.0))
 	var state := {"gap_looked_at": Tuning.OUT_OF_SIGHT + 380.0, "look_clock": 0.3,
 			"not_closing_for": 1.0}
-	first.unreachable.restore(state)
+	first.restore(EventSave.new(0.0, 0.0, INF, {"EventUnreachable": state}))
+	t.check(first.save().state_of("EventUnreachable") == state,
+			"the loose dog carries the state of its unreachable behaviour")
 	var second := _round_trip(t, first, "unreachable", &"EventUnreachable")
-	t.check(second.unreachable.save() == state, "every field of its state survives the trip")
+	t.check(second.save().state_of("EventUnreachable") == state,
+			"every field of its state survives the trip")
 	first.free()
 	second.free()
 
@@ -259,7 +264,8 @@ func _test_the_route_walk_has_no_state_of_its_own(t: TestRunner) -> void:
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	var first := _instance(t, def, Vector2.ZERO, path)
 	_advance(first, def.telegraphs_for() + 2.0)
-	t.check(first.route.save().is_empty(), "the route walk saves nothing of its own")
+	t.check(first.behaviours().route().save().is_empty(),
+			"the route walk saves nothing of its own")
 	var second := _instance(t, def, Vector2.ZERO, path)
 	second.restore(first.save())
 	t.check(second.global_position.is_equal_approx(first.global_position),
@@ -299,7 +305,7 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 				.hearing(second_where))
 	second_where.tell(first_where.at())
 	second.restore(state)
-	t.check(second.is_on_its_way_out() and second.departure.save().get("must_clear_sight", false),
+	t.check(second.is_on_its_way_out() and second.behaviours().departure().save().get("must_clear_sight", false),
 			"restored once, as the stream-in does, with its road cut behind where it had got to, the car "
 			+ "is leaving, held to her sight, and the restore of its behaviours leaves the departure as it began")
 	first.free()
@@ -331,16 +337,16 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 		return
 	manager.world.where_she_is().tell(at + Vector2(def.notice_within() - 10.0, 0.0))
 	_advance(robber, 0.3)
-	var held := robber.pursuit.save()
+	var held := robber.behaviours().pursuit().save()
 	held["lunge_held"] = true
-	robber.pursuit.restore(held)
+	robber.behaviours().pursuit().restore(held)
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	manager.stream_around(far)
 	t.check(not plan.is_in_the_world() and not plan.saved().state_of("EventPursuit").is_empty(),
 			"streamed out, his plan carries his pursuit's state")
 	manager.stream_around(at)
-	t.check(plan.is_in_the_world() and bool(manager.event_of(plan).pursuit.save()["lunge_held"]),
+	t.check(plan.is_in_the_world() and bool(manager.event_of(plan).behaviours().pursuit().save()["lunge_held"]),
 			"and streamed back in, his lunge is still held")
 	manager.free()
 	world.free()
@@ -357,14 +363,15 @@ func _test_the_barrier_post_round_trips(t: TestRunner) -> void:
 	t.check(carried.is_empty(),
 			"both guards at their posts, there is nothing to carry")
 	first_where.tell(Vector2(0.0, 120.0))
-	first.barrier_post.leave_the_body()
-	var side := first.barrier_post.chaser_side()
-	first.barrier_post.stand_as_the_barrier()
-	t.check(side != 0 and first.barrier_post.is_spent(), "his guard set off from his post and is spent")
+	first.behaviours().barrier_post().leave_the_body()
+	var side := first.behaviours().barrier_post().chaser_side()
+	first.behaviours().barrier_post().stand_as_the_barrier()
+	t.check(side != 0 and first.has_lost_its_guard(), "his guard set off from his post and is spent")
 	var second := _round_trip(t, first, "barrier post", &"EventBarrierPost")
-	t.check(second.barrier_post.is_spent() and second.barrier_post.chaser_side() == side
+	var post := second.behaviours().barrier_post()
+	t.check(second.has_lost_its_guard() and post.chaser_side() == side
 			and second.phase == EventInstance.Phase.SPENT
-			and second.barrier_post.sides_still_posted().is_empty(),
+			and second.behaviours().barrier_post().sides_still_posted().is_empty(),
 			"it comes back as only the barrier, his post empty and the far guard gone")
 	first.free()
 	second.free()
@@ -378,7 +385,7 @@ func _test_a_car_is_composed_of_its_vehicle(t: TestRunner) -> void:
 	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
 	patrol_where.tell(Vector2(0.0, 5000.0))
 	_advance(patrol, 0.5)
-	t.check(patrol.car != null and robber.car == null and patrol.global_position == Vector2.ZERO,
+	t.check(patrol.behaviours().car() != null and robber.behaviours().car() == null and patrol.global_position == Vector2.ZERO,
 			"a patrol car drives, but stays put with no route to drive; a robber does not drive")
 	patrol.free()
 	robber.free()
