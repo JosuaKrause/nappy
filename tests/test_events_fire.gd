@@ -337,7 +337,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 	var crews := 0
 	for day in range(1, 15):
 		for plan in _planned(day):
-			if plan.row().on_her_way == null:
+			if not plan.row().is_sited_from_her_walk():
 				continue
 			t.check(not plan.is_placed(), "day %d: '%s' is planned with no position"
 					% [day, plan.row_id()])
@@ -345,7 +345,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 					"day %d: and it is a place that stands still, not a director's moment" % day)
 			if plan.row().kind != GameEnums.EventKind.ONE_SHOT:
 				crews += 1
-				t.check(plan.row_id() == "poster_crew" and plan.row().on_her_way.pastes_a_front(),
+				t.check(plan.row_id() == "poster_crew" and plan.row().stands_at_a_front(),
 						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
 						% [day, plan.row_id()])
 				continue
@@ -357,20 +357,20 @@ func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
 
 ## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every
-## crew the day draws has no position, for the director to site; with the flag off, the same day
-## stands its crews placed. A unit's draw hands a crew on as it lays it out
+## crew the day draws has no position, for the director to site; with the crew row not sited from her walk, the
+## same day stands its crews placed. A unit's draw hands a crew on as it lays it out
 ## (`MarbleDraw.draw()`), so the rows drawn after it are spaced without it and the two days
 ## need not match beyond the crews.
 func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
-	var crew := EventCatalogue.by_id("poster_crew")
-	var crew_way := crew.on_her_way
+	var crew_draft := EventCatalogue.by_id("poster_crew").redraft()
+	crew_draft.not_sited_from_her_walk()
+	var crew := crew_draft.build()
 	for day: int in [4, 8, 12]:
 		var tree := RouteTree.for_day(map, day)
 		var handed := GameDawn.of(DaySpec.for_day(day), _rng(day), map).on(tree).plan().placements()
-		crew.on_her_way = null
-		var kept := GameDawn.of(DaySpec.for_day(day), _rng(day), map).on(tree).plan().placements()
-		crew.on_her_way = crew_way
+		var kept := GameDawn.of(DaySpec.for_day(day), _rng(day), map).with_row(crew).on(tree) \
+				.plan().placements()
 		var handed_crews := 0
 		var handed_placed := 0
 		for plan in handed:
@@ -387,7 +387,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 				"day %d: every crew drawn for her walk has no position (%d of %d placed)"
 				% [day, handed_placed, handed_crews])
 		t.check(kept_crews > 0 and kept_placed == kept_crews,
-				"day %d: with the flag off, every crew stands placed (%d of %d)"
+				"day %d: not sited from her walk, every crew stands placed (%d of %d)"
 				% [day, kept_placed, kept_crews])
 
 ## **The three rows that never had an impact, meeting the rig they were designed for.** The bike,
@@ -408,7 +408,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
 		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
-		director.start_day(def.first_day, plans, rng)
+		director.start_day(def.own_first_day(), plans, rng)
 
 		# Somewhere on a street, walking north — the same rig `_test_the_director_puts_it_in_front_
 		# of_her` walks, so a real street is guaranteed long enough for this.

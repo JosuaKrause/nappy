@@ -36,9 +36,13 @@ func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var act := Tuning.act_for_day(day)
 		for def in EventCatalogue.available_on(day):
-			t.check(def.act_tag <= act,
+			# A `SCRIPTED` row's own first day is the first day of its `act_tag`'s act
+			# (`EventDef.own_first_day()`); every other row's is its `first_day`, which
+			# `available_on()` already holds back, so for them this cannot fail.
+			var from_act := Tuning.act_for_day(def.own_first_day())
+			t.check(from_act <= act,
 					"day %d (act %d) does not offer '%s' from act %d"
-					% [day, act, def.id, def.act_tag])
+					% [day, act, def.id, from_act])
 
 # ------------------------------------------------------------------ mechanics ---
 

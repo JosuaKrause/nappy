@@ -208,13 +208,14 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 ## so the copy's speed is not written onto the row every other copy is made from.
 func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("roadblock")
-	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
-	t.check(not cold.pursues() and cold.hunts.pursuit() != null, "the cold roadblock does not pursue")
-	t.check(hot.pursues() and hot.pursuit != cold.hunts.pursuit(),
-			"its hunting copy pursues with a spec of its own")
-	t.check(is_equal_approx(hot.chase_speed(), Tuning.HEAT_HUNTS_SPEED)
-			and is_equal_approx(cold.hunts.pursuit().speed(), 0.0),
-			"at the ladder's speed, leaving the row's spec as it was")
+	var hot := cold.at_heat(Tuning.RESISTANCE_GOAL)
+	var again := cold.at_heat(Tuning.RESISTANCE_GOAL)
+	t.check(not cold.pursues(), "the cold roadblock does not pursue")
+	t.check(hot.pursues() and hot.pursuit != again.pursuit,
+			"each hunting copy pursues with a spec of its own: one written for the ladder's speed"
+			+ " would be shared, and a second copy would answer with the same object")
+	t.check(is_equal_approx(hot.chase_speed(), Tuning.HEAT_HUNTS_SPEED) and not cold.pursues(),
+			"at the ladder's speed, leaving the cold row's chase as it was")
 	t.check(hot.waits_for_her() and is_equal_approx(hot.notice_within(), EventDef.HEAT_HUNTS_WITHIN),
 			"noticing her at the ladder's distance")
 

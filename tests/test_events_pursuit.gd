@@ -479,7 +479,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t: TestRunner) -> void:
 func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.ends_the_day():
+		if not def.comes_toward_her() or not def.ends_the_day():
 			continue
 		checked += 1
 		var arrived: Array[EventInstance] = []

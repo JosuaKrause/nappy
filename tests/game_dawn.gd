@@ -31,6 +31,30 @@ var _trace: RunTrace = null
 var _roadblock: EventDef = null
 ## Whether `undrawn()` was said: the dawn left as the game leaves it, no unit drawn.
 var _undrawn := false
+var _rows: Array[EventDef] = []
+
+## A dawn whose catalogue answers with some rows replaced: what the game's own rows are, but for the
+## ones the test hands in, each taking the place of the catalogue's row of its id
+## (`DawnContext.catalogue_rows()`). The row a test hands in is a copy it drafted
+## (`row.redraft()...build()`), so the catalogue's own row is never written.
+class _Dawn extends DawnContext:
+	var _handed: Array[EventDef] = []
+
+	func _init(spec: DaySpec, seed_value: int, map: CityMap, walk: RouteSource, calm: CalmAreas,
+			builder: PlanBuilder, ground_of: Callable, handed: Array[EventDef]) -> void:
+		super(spec, seed_value, map, walk, calm, builder, ground_of)
+		_handed = handed
+
+	## Overrides DawnContext.catalogue_rows.
+	func catalogue_rows(kind: GameEnums.EventKind) -> Array[EventDef]:
+		var rows: Array[EventDef] = []
+		for def in super.catalogue_rows(kind):
+			var stands_in := def
+			for handed in _handed:
+				if handed.id == def.id:
+					stands_in = handed
+			rows.append(stands_in)
+		return rows
 
 ## The dawn of the walk `spec` describes on `map`, its seed the one `rng` was made with.
 static func of(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap) -> GameDawn:
@@ -88,6 +112,11 @@ func traced(to: RunTrace) -> GameDawn:
 	_trace = to
 	return self
 
+## The catalogue's row of `row`'s id answers as `row` does, in a dawn the test plans.
+func with_row(row: EventDef) -> GameDawn:
+	_rows.append(row)
+	return self
+
 ## The row the roadblock phase stands beside the day's routes.
 func roadblock(row: EventDef) -> GameDawn:
 	_roadblock = row
@@ -96,10 +125,10 @@ func roadblock(row: EventDef) -> GameDawn:
 ## The dawn's context as the game's planner makes it, not yet planned: for a probe that runs
 ## one pass of the dawn.
 func context() -> DawnContext:
-	var dawn := DawnContext.new(_spec, _rng.seed, _map,
+	var dawn := _Dawn.new(_spec, _rng.seed, _map,
 			_walk if _walk else RouteTree.for_day(_map, _spec.day_number()),
 			_calm if _calm else CalmAreas.of(_map), GamePlanBuilder.over(_map),
-			EventScheduler.row_ground)
+			EventScheduler.row_ground, _rows)
 	dawn.use_the_run(_spent, _scars, _heat)
 	dawn.use_the_doors(_doors)
 	dawn.use_what_stands(_standing)

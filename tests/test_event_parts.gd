@@ -134,7 +134,7 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	var manager := _manager(t)
 	var streaming := manager.streaming
 	var def := EventCatalogue.by_id("burning_building")
-	t.check(def.aftermath.scar_id() != "", "the fire leaves a scar")
+	t.check(def.scar_id() != "", "the fire leaves a scar")
 	t.check(manager.world.run().attempt_spend().scars().is_empty(), "and the run starts with none")
 	var at := Vector2(6000.0, 6000.0)
 	var plan := EventPlan.new(def, at)

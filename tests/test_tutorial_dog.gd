@@ -311,7 +311,7 @@ func _test_no_other_day_hands_out_the_lesson(t: TestRunner) -> void:
 	# The row with its day switch taken off: a switch no day reaches, so the row is director-sited on
 	# every day as the teaching day's is.
 	var unswitched := row.redraft()
-	unswitched.switching_after(1000, EventDef.SpawnMode.MAP, null)
+	unswitched.switching_after(Tuning.RUN_LENGTH_DAYS, EventDef.SpawnMode.MAP, null)
 	var dog := unswitched.build()
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	t.check(dog.spawn_mode_on(day) == EventDef.SpawnMode.AHEAD_OF_PLAYER,

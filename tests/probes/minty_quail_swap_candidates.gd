@@ -57,7 +57,7 @@ func run(t: TestRunner) -> void:
 			var spine := 0
 			for plan in adjacent:
 				var tile := map.world_to_tile(plan.placed_at())
-				if plan.blocking_radius() < width or not beat.placement.has(map.tile_at(tile)):
+				if plan.blocking_radius() < width or not beat.stands_on(map.tile_at(tile)):
 					continue
 				fits.append(plan)
 				var segment := map.network.segment_containing(tile)

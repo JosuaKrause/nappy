@@ -107,7 +107,7 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t: TestRunner) -> void:
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			var should_hunt := level >= EventDef.HEAT_HUNTS_LEVEL
-			if def.hunts.lets_out() > 0:
+			if EventCatalogue.heated(def, EventDef.HEAT_HUNTS_LEVEL).investigates():
 				t.check(hot.investigates() == should_hunt and not hot.pursues()
 						and hot.ends_the_day() == def.ends_the_day(),
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
@@ -196,7 +196,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
 		t.check(hot.validate(), "the roadblock is fair at heat %d" % level)
-		t.check(hot.first_day == cold.first_day,
+		t.check(hot.own_first_day() == cold.own_first_day(),
 				"heat %d: hunting moves what it does, never when it may appear" % level)
 		t.check(hot.most_in_a_day() == cold.most_in_a_day() and hot.peak() == cold.peak(),
 				"heat %d: hunting moves neither its population nor its intensity" % level)

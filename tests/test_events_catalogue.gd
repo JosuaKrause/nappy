@@ -104,9 +104,10 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	_test_a_solid_body_with_no_shape_is_refused(t)
 
 ## **A copy of a row lies as the row does, for every copy the game makes**: a copy shares the row's
-## body value (`BodySpec`), so what it is on the ground is the row's own. A row is not a resource,
-## so it has no deep copy to lose its body (a body holds a `GroundShape`, a `RefCounted`, which a
-## resource's deep copy cannot store); the last check holds that no game code deep-copies a resource.
+## body value (`BodySpec`), so what it is on the ground is the row's own. A row is not a
+## `Resource`, so `duplicate(true)` is not written on one and a deep copy that loses the body (a body
+## holds a `GroundShape`, a `RefCounted`, which a resource's deep copy cannot store) cannot be
+## made of it; the last check, the source scan, holds that no game code deep-copies a resource.
 func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 	var construction := EventCatalogue.by_id("construction")
 	t.check(construction.lies_as_a_spread(), "construction is a spread, so the copies below have an answer to keep")
@@ -233,7 +234,7 @@ const _KERB_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
 ## you something is that the row changed role.
 func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
-	var day := def.first_day
+	var day := def.own_first_day()
 	var map := CityGenerator.generate(4242)
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)
@@ -500,10 +501,10 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if not _SPREAD_LOOKS.has(def.picture()) or def.placement.is_empty():
+		if not _SPREAD_LOOKS.has(def.picture()) or def.ground_kinds().is_empty():
 			continue
 		var half := maxf(11.0, def.obstructs_within())
-		for tile_type in def.placement:
+		for tile_type in def.ground_kinds():
 			var clearance := INF
 			if tile_type == GameEnums.TileType.SIDEWALK:
 				clearance = _SIDEWALK_SPREAD_CLEARANCE
@@ -1082,7 +1083,7 @@ func _test_a_one_shot_is_sited_on_her_way(t: TestRunner) -> void:
 	t.check(unsited.is_a_one_shot_off_her_way(),
 			"the same one-shot not sited from her walk is refused")
 	t.check(not EventCatalogue.by_id("delivery_van").is_a_one_shot_off_her_way(),
-			"a recurring row with no on_her_way keeps it")
+			"a recurring row not sited from her walk keeps it")
 
 ## **A row is weighed only on ground it stands on**
 ## (`EventDef.is_weighed_on_ground_it_cannot_stand_on()`, which `EventDef.validate()` refuses a row

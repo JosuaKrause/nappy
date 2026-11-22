@@ -86,6 +86,13 @@ func _test_the_nets_sum_to_the_bar_rise(t: TestRunner) -> void:
 		none += ExcitementSource.net_landed(points, total, 25.0)
 	t.check(none == 0.0, "a decay past everything landed leaves every net at zero")
 
+## An event caches the rate its field gives at an age and a point until the source is told to
+## work it out again (`invalidate_contribution()`). **A cache kept stale after the row's field
+## changed cannot arise any more, and the check that held it is gone for that reason**: a row is
+## never changed after it is built (`EventDraft.build()` hands the row a copy of the draft), so
+## the field an instance reads cannot move under its cache. What holds is the cache answering the
+## same at the same age and point, being worked out again after an invalidation, and a row whose
+## field peaks higher being charged more.
 func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(_def("cached", 20.0), Vector2.ZERO)

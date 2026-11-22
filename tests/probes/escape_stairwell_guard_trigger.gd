@@ -60,7 +60,15 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 		if instance.row_id() == "masked_pursuer":
 			man = instance
 	if OS.get_environment("CHARGES_WITHIN") != "":
-		man.row().notice = man.row().notice.running_within(float(OS.get_environment("CHARGES_WITHIN")))
+		# His row with another notice, drafted as a copy (the catalogue's own row is shared), stands
+		# where and as he stood: he is taken away and the copy added at his place on his way.
+		var draft := man.row().redraft()
+		draft.notice(man.row().notice.running_within(float(OS.get_environment("CHARGES_WITHIN"))))
+		var at := man.global_position
+		var way := man.way_left()
+		var his_row: Array[String] = ["masked_pursuer"]
+		events.take_away_within(Rect2(at - Vector2.ONE, Vector2.ONE * 2.0), his_row)
+		man = events.spawn_extra(draft.build(), at, way)
 	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door_tile: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
 	var second_door: Vector2i = (f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile
