@@ -209,16 +209,14 @@ static func _alley_robbery() -> EventDef:
 What the form buys, beyond the rule:
 
 - **A variant is a draft started from a row** (`row.redraft()`), with the parts it changes
-  replaced. It serves every place that copies a row today with `Resource.duplicate()` and then
-  writes fields, or builds it again to give it another id: the heated copy (`at_heat()`), the copy
+  replaced. It serves every place that copies a row, or gives a copy another id: the heated copy (`at_heat()`), the copy
   for a later day (`for_day()`), the copy warned of first, the row without its aftermath, the
   building's fire, the explosion outside, the neighbor heading home, the men a vehicle lets out,
   the lesson's dog and the two task guards (a new id), a seal's copy and the wall's unguarded
   middle body (`SealPlanner`), the alley mouth's wall body (`RegionPlanner`), the raid's pacing
   patrol car (`ResistanceHappenings`), and the director's two (a patrol sent toward her, a forced
-  row given ground). Each site that duplicates carries `shape` and `solid_parts` across by hand
-  today because `duplicate()` does not copy them, and a site that forgets draws and charges
-  nothing with no error. A draft copies parts, so the trap is gone.
+  row given ground). A draft copies its parts, so no site carries a setting across by hand and none can
+  forget one.
 - **`validate()` loses the pairing checks a part makes unwritable** (a spread that also lies
   across its street, a catch reach set on the row and on its pursuit at once, a hunt with no
   rung) and keeps the checks that span parts (a hold on a row that ends the day, a body reaching its own
