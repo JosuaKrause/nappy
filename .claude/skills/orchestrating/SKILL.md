@@ -15,8 +15,8 @@ The rules the orchestrating session must not miss, one line each; the sections b
   and the work that goes first (inbox #1305 in grassy-trout), and a running agent is looked at at least every 45 minutes.
 - **The session does not end when it runs out of tasks**: it writes a note on the board saying so and
   ends its turn, and a recurring job wakes it at most every 45 minutes to look for new work
-  (inbox #1619 in teal-dolphin). The same job reads the board about every hour and files the open
-  inbox notes on its own.
+  (inbox #1619 in teal-dolphin). The same job reads the board about every hour, never more than
+  about 55 minutes apart (inbox #1621 in teal-dolphin), and files the open inbox notes on its own.
 - **Work on how the project is worked on goes first**: a change to a skill, `CLAUDE.md`, a rule, a
   hook, a general project script or anything else of that kind is started, reviewed and merged
   ahead of everything else but a queue update (inbox #1305 in grassy-trout); a wait the player set on an entry
@@ -308,9 +308,9 @@ before spawning:
   No wait of the orchestrator's own runs past 45 minutes without such a check. The check is a
   recurring job about every 30 minutes, since a scheduler can fire up to half its period late and
   a 30-minute job so stays inside 45. **The job runs for the whole session, whether or not an
-  agent runs** (inbox #1619 in teal-dolphin), and each run carries the agent check, about every
-  hour the board's read (**board**, "When it is read"), the filing of the open inbox notes
-  (**inbox**, "Filing a batch"), and the rewrite of the times in the restart prompt's
+  agent runs** (inbox #1619 in teal-dolphin), and each run carries the agent check, the board's read
+  (**board**, "When it is read"), so no gap between reads passes about 55 minutes (inbox #1621 in
+  teal-dolphin), the filing of the open inbox notes (**inbox**, "Filing a batch"), and the rewrite of the times in the restart prompt's
   `## Last checked` (**session-cleanup**, step 8). It is not a tick in the sense of the agent
   contract's one-notification rule, which keeps a wait from ending a turn on every minute.
 - **The queue and the archive.** Agents never edit the queue or the archive; two writers on one
@@ -475,11 +475,12 @@ to the player's correction:
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
 - **That the one recurring job carries the hourly board read and the inbox filing** ("What the
-  orchestrator keeps"), the hourly read being every other run of the 30-minute job, the filing on
-  the same hourly beat, the out-of-tasks note being the line under Running on the board, and the 45-minute
+  orchestrator keeps"), the hourly read being every run of the 30-minute job, so that no gap passes about 55 minutes,
+  the filing on the same beat, the out-of-tasks note being the line under Running on the board, and the 45-minute
   wake looking at the open pull requests, `tools/queue.sh` on `origin/main`, the inbox and the
   board. The player's words are the hour, the periodic filing, the note on the board and the
-  wake every 45 minutes (inbox #1619 in teal-dolphin).
+  wake every 45 minutes (inbox #1619 in teal-dolphin), and that the hour means under about 55
+  minutes (inbox #1621 in teal-dolphin).
 - **How the resume hook remembers and words its refusal** ("What the orchestrator keeps"): the
   filer's design. The player's are the hook itself, refusing the resume of an agent that has
   compacted automatically or grown too large (inbox #1291 in grassy-trout), the size it refuses at, that nothing

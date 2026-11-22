@@ -229,6 +229,7 @@ file is open:
 These rules are the filer's proposals and readings, not the player's words, and hold until the player
 corrects them:
 
-- **That the periodic filing is the hourly beat of the orchestrating session's recurring check**
+- **That the periodic filing rides the same beat as the hourly read, every run of the orchestrating session's recurring check**
   ("Filing a batch"; **orchestrating**, "What the orchestrator keeps"); the player's words are that
-  the session files the inbox by itself, periodically (inbox #1619 in teal-dolphin).
+  the session files the inbox by itself, periodically (inbox #1619 in teal-dolphin), and that
+  the hour is under about 55 minutes (inbox #1621 in teal-dolphin), so the filing rides every run.

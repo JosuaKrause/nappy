@@ -7,7 +7,7 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 
 - **A question to the player goes on the board, never in a modal dialog in the chat**; one about an inbox note may go on its issue.
 - **Only the orchestrating Claude Code session acts on it**, changing it or answering on it, and Claude is never @-mentioned on it.
-- **It is read at session start, about every hour by the orchestrating session's recurring check, when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin).
+- **It is read at session start, about every hour, never more than about 55 minutes apart, by the orchestrating session's recurring check, when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **What the player should learn goes on the board**, not only into a chat report, and the Running and Recently done tables are current within about an hour.
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
@@ -32,10 +32,10 @@ separate session that has none of this context.
 
 ## When it is read
 
-**The board is read at session start, about every hour by the orchestrating session's recurring
-check, when the player says "doc" or "check the doc", and before the first write to it in a
+**The board is read at session start, about every hour (never more than about 55 minutes
+apart) by the orchestrating session's recurring check, when the player says "doc" or "check the doc", and before the first write to it in a
 turn** (the check is in **orchestrating**, "What the orchestrator keeps"; inbox #830 in minty-dolphin, inbox #1267 in
-olive-ferret, inbox #1619 in teal-dolphin). Nothing notifies the terminal session of an edit, so the
+olive-ferret, inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin). Nothing notifies the terminal session of an edit, so the
 hourly read is what finds an answer the player left; the player is in code mode and looks at the
 board rather than the chat, so the board is where the orchestrating session communicates with them
 (inbox #1619 in teal-dolphin). The read before a turn's first write is what keeps a write from
@@ -270,8 +270,9 @@ the player corrects them. The citation is the player's word each one extends:
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
   inbox #1163 in gray-dolphin).
 - **Where the out-of-tasks note stands, and the hourly beat** ("The layout", part 4; "When it is
-  read"): the note is the line under Running, and the hourly read is every other run of the
-  30-minute recurring check (inbox #1619 in teal-dolphin).
+  read"): the note is the line under Running, and the hourly read is every run of the
+  30-minute recurring check, so no gap passes about 55 minutes, which the player's words set
+  (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **One read covers a turn's run of writes** ("When it is read"): the pick the player took is a
   read before each write (inbox #1267 in olive-ferret), read as before the first of a turn, since each later write
   is anchored on the acknowledgement of the one before it.
