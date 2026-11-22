@@ -32,7 +32,7 @@ reached the code is a diff nobody can review.
 
 A run is 14 days, split into four acts. The act determines the colour cast, the ambient
 audio bed, and which events are eligible (every `EventDef` carries an `act_tag`, and a test
-asserts nothing from a later act leaks into an earlier day).
+asserts no scripted row from a later act fires on an earlier day).
 
 The colour cast is the quietest part of the telling: the same corner, four times, getting
 colder. Warm afternoon → drained → cold and overcast → smoke.

@@ -545,13 +545,13 @@ func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
 				"'%s' is one continuous scene, so it places exactly one body (got %d)"
 				% [id, positions.size()])
 
-## **A placed seal is a duplicate of its catalogue row, and a duplicate drops what is not stored.**
-## `SealPlanner.sealed_variant` carries the body across by hand because
-## `Resource.duplicate()` copies neither — both are plain `var`s holding `RefCounted`s, which have
-## no storage usage. Dropped, a crash falls back to one body spanning the street and **nothing
-## fails**: it simply seals the gaps its picture shows, which is the defect this milestone exists to
-## remove, wearing a green suite. Every other row has no parts to lose, so this is stated over the
-## one that does, on the only path it is ever placed by.
+## **A placed seal is a copy of its catalogue row drafted again, and it keeps the body.**
+## `SealPlanner.sealed_variant` starts from `EventDef.redraft()`, which holds every part of the
+## row, its body among them (a body holds `RefCounted`s, which a `Resource`'s copy could not
+## store). Dropped, a crash falls back to one body spanning the street and **nothing fails**: it
+## simply seals the gaps its picture shows, which is the defect this milestone exists to remove,
+## wearing a green suite. Every other row has no parts to lose, so this is stated over the one that
+## does, on the only path it is ever placed by.
 func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
 	var expected := EventCatalogue.by_id("car_accident").body().declared_pieces().size()
 	var found := 0

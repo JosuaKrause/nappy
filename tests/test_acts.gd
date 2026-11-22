@@ -32,13 +32,21 @@ func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 	# other: the run is exactly as long as its last act, so no day falls off the end of the acts.
 	t.check(Tuning.act_for_day(Tuning.RUN_LENGTH_DAYS) == 4, "the last day is act IV")
 
-	# Nothing from a later act may leak into an earlier day.
+	# Nothing from a later act may leak into an earlier day. Only a `SCRIPTED` row's act is held:
+	# its own first day is the first day of its `act_tag`'s act (`EventDef.own_first_day()`), the one
+	# place the game reads an act, and it must not come after the day the row fires on. Every other
+	# row's own first day is its `first_day`, which `available_on()` already holds back, and its
+	# `act_tag` has no reader, so there is nothing to hold for it.
+	var swept := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var act := Tuning.act_for_day(day)
-		for def in EventCatalogue.available_on(day):
-			t.check(def.act_tag <= act,
+		for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
+			swept += 1
+			var from_act := Tuning.act_for_day(def.own_first_day())
+			t.check(from_act <= act,
 					"day %d (act %d) does not offer '%s' from act %d"
-					% [day, act, def.id, def.act_tag])
+					% [day, act, def.id, from_act])
+	t.check(swept > 0, "the sweep checked at least one scripted row (%d)" % swept)
 
 # ------------------------------------------------------------------ mechanics ---
 

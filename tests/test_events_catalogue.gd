@@ -65,9 +65,11 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 ## along their street without being drawn as a spread (`BodySpec.along_its_street()`). The
 ## geometry, phase and finish checks only guard against a future unrelated writer.
 func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> void:
-	var def := EventDef.new()
+	var def := EventDraft.new("").build()
 	t.check(not def.lies_as_a_spread(), "a default invisible definition has no spread")
-	def.use_look(LookSpec.of(EventDef.Look.ROADWORKS))
+	var roadworks := EventDraft.new("")
+	roadworks.look(LookSpec.of(EventDef.Look.ROADWORKS))
+	def = roadworks.build()
 	t.check(not def.lies_as_a_spread(), "drawing a spread's picture does not make a row a spread by itself")
 
 	for source in EventCatalogue.all():
@@ -76,14 +78,17 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 		t.check(source.lies_as_a_spread() == expected,
 				"catalogue row '%s' says it is a spread exactly when its picture is one" % source.id)
 
-	def = EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
-	def.use_body(def.body().reshaped(GroundShape.band(22.0)))
-	def.use_field(def.field().holding_to(15.0).reaching(90.0))
+	var cafe := EventCatalogue.by_id("cafe_tables")
+	var reshaped := cafe.redraft()
+	reshaped.body(cafe.body().reshaped(GroundShape.band(22.0)))
+	reshaped.field(cafe.field().holding_to(15.0).reaching(90.0))
+	def = reshaped.build()
 	t.check(def.lies_as_a_spread(),
 			"changing body and field geometry leaves a café's spread answer true")
 
 	var instance := EventInstance.new()
-	def.use_warning(WarningSpec.lasting(STEP))
+	reshaped.warning(WarningSpec.lasting(STEP))
+	def = reshaped.build()
 	instance.setup(def, Vector2.ZERO)
 	instance.step(STEP * 2.0)
 	t.check(not instance.is_telegraphing() and def.lies_as_a_spread(),
@@ -99,21 +104,17 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 	_test_a_solid_body_with_no_shape_is_refused(t)
 
 ## **A copy of a row lies as the row does, for every copy the game makes**: a copy shares the row's
-## body value (`BodySpec`), so what it is on the ground is the row's own. **A deep copy loses the
-## body**: `Resource.duplicate(true)` rebuilds a sub-resource from its stored properties only, and a
-## body holds a `GroundShape` (a `RefCounted`, which cannot be stored), so the copy has no shape
-## and lies as it faces, with nothing said. The first check names that trap, and the last holds
-## that no game code reaches it.
+## body value (`BodySpec`), so what it is on the ground is the row's own. A row is not a
+## `Resource`, so `duplicate(true)` is not written on one and a deep copy that loses the body (a body
+## holds a `GroundShape`, a `RefCounted`, which a resource's deep copy cannot store) cannot be
+## made of it; the last check, the source scan, holds that no game code deep-copies a resource.
 func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 	var construction := EventCatalogue.by_id("construction")
 	t.check(construction.lies_as_a_spread(), "construction is a spread, so the copies below have an answer to keep")
-	var deep := construction.duplicate(true) as EventDef
-	t.check(not deep.lies_as_a_spread() and deep.ground_shape() == null,
-			"a deep copy of a row loses its body: no shape, and no spread (the trap the game avoids)")
 
 	var drafts: Array[EventDef] = []
 	for source in EventCatalogue.all():
-		drafts.append(source.duplicate() as EventDef)
+		drafts.append(source.redraft().build())
 		drafts.append(source.as_sent_ahead())
 		drafts.append(source.for_day(1))
 		drafts.append(source.for_day(Tuning.RESISTANCE_GOAL))
@@ -127,7 +128,7 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 		else:
 			t.check(false, "a copy of '%s' shares its row's body" % copy.id)
 	t.check(kept == drafts.size() and kept > 0,
-			"every copy the game makes (duplicate, sent ahead (warned first where it is), for a day, heated, sealed) shares its row's body (%d)" % kept)
+			"every copy the game makes (redrafted, sent ahead (warned first where it is), for a day, heated, sealed) shares its row's body (%d)" % kept)
 
 	var deep_copies: Array[String] = []
 	for folder: String in ["res://src/events", "res://src/routes", "res://src/resistance", "res://src/day"]:
@@ -141,12 +142,14 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 ## takes a shape a caller may hand as null. `EventDef.validate()` refuses it on this answer, but
 ## it reports a fault with an engine error, which fails the run, so the suite asks the body.
 func _test_a_solid_body_with_no_shape_is_refused(t: TestRunner) -> void:
-	var bare := EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
-	bare.use_look(LookSpec.none())
+	var draft := EventCatalogue.by_id("cafe_tables").redraft()
+	draft.look(LookSpec.none())
+	var bare := draft.build()
 	t.check(bare.validate(), "the row the faulty one is made from is valid")
 	t.check(not bare.body().is_solid_with_no_shape(), "and its body does not say it is solid with no shape")
-	bare.use_body(BodySpec.solid(null).walked_round().parked())
-	t.check(bare.body().is_solid_with_no_shape(), "a body built solid with no shape says so, which validate() refuses")
+	draft.body(BodySpec.solid(null).walked_round().parked())
+	var faulty := draft.build()
+	t.check(faulty.body().is_solid_with_no_shape(), "a body built solid with no shape says so, which validate() refuses")
 
 ## Appends the files under `folder` that call `duplicate(true)` or `duplicate_deep(`.
 func _find_deep_copies(folder: String, into: Array[String]) -> void:
@@ -231,7 +234,7 @@ const _KERB_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
 ## you something is that the row changed role.
 func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
-	var day := def.first_day
+	var day := def.own_first_day()
 	var map := CityGenerator.generate(4242)
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)
@@ -337,9 +340,10 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 		t.check(def.validate(), "and '%s' gives what it owes" % def.id)
 		if def.pursues():
 			continue
-		var wider: EventDef = def.duplicate()
-		wider.use_field(wider.field().reaching(wider.heard_within() * 1.5))
-		wider.use_route(_route_at_another_speed(def.route(), def.speed() * 1.5))
+		var widening := def.redraft()
+		widening.field(def.field().reaching(def.heard_within() * 1.5))
+		widening.route(_route_at_another_speed(def.route(), def.speed() * 1.5))
+		var wider := widening.build()
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),
 				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
@@ -426,8 +430,9 @@ func _test_as_warned_first_keeps_the_pieces_too(t: TestRunner) -> void:
 	t.check(crash.body().declared_pieces().size() >= 2,
 			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
 			% crash.body().declared_pieces().size())
-	var widened := crash.duplicate() as EventDef
-	widened.use_warning(WarningSpec.lasting(5.0))
+	var widening := crash.redraft()
+	widening.warning(WarningSpec.lasting(5.0))
+	var widened := widening.build()
 	var warned := widened.as_warned_first()
 	t.check(warned.validate(), "the widened telegraph clears the flat warned-first floor")
 	t.check(warned.body().declared_pieces().size() == crash.body().declared_pieces().size(),
@@ -496,10 +501,10 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if not _SPREAD_LOOKS.has(def.picture()) or def.placement.is_empty():
+		if not _SPREAD_LOOKS.has(def.picture()) or def.ground_kinds().is_empty():
 			continue
 		var half := maxf(11.0, def.obstructs_within())
-		for tile_type in def.placement:
+		for tile_type in def.ground_kinds():
 			var clearance := INF
 			if tile_type == GameEnums.TileType.SIDEWALK:
 				clearance = _SIDEWALK_SPREAD_CLEARANCE
@@ -1072,12 +1077,13 @@ func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t: TestRunne
 func _test_a_one_shot_is_sited_on_her_way(t: TestRunner) -> void:
 	var fire := EventCatalogue.by_id("burning_building")
 	t.check(not fire.is_a_one_shot_off_her_way(), "day 3's fire, sited from her walk, keeps the rule")
-	var unsited: EventDef = fire.duplicate()
-	unsited.on_her_way = null
+	var unsiting := fire.redraft()
+	unsiting.not_sited_from_her_walk()
+	var unsited := unsiting.build()
 	t.check(unsited.is_a_one_shot_off_her_way(),
 			"the same one-shot not sited from her walk is refused")
 	t.check(not EventCatalogue.by_id("delivery_van").is_a_one_shot_off_her_way(),
-			"a recurring row with no on_her_way keeps it")
+			"a recurring row not sited from her walk keeps it")
 
 ## **A row is weighed only on ground it stands on**
 ## (`EventDef.is_weighed_on_ground_it_cannot_stand_on()`, which `EventDef.validate()` refuses a row
@@ -1089,10 +1095,10 @@ func _test_a_row_is_weighed_only_on_ground_it_stands_on(t: TestRunner) -> void:
 		if def.is_weighed_on_ground_it_cannot_stand_on():
 			stray.append(def.id)
 	t.check(stray.is_empty(), "every catalogue row is weighed only where it stands (%s)" % [stray])
-	var bad := EventDef.new()
-	bad.id = "bad"
-	bad.placement = [GameEnums.TileType.SIDEWALK] as Array[int]
-	bad.weigh_on(PlacementGround.Kind.ALLEY, 0.5)
+	var stray_draft := EventDraft.new("bad")
+	stray_draft.ground([GameEnums.TileType.SIDEWALK] as Array[int])
+	stray_draft.weighed_on(PlacementGround.Kind.ALLEY, 0.5)
+	var bad := stray_draft.build()
 	t.check(bad.is_weighed_on_ground_it_cannot_stand_on(),
 			"a sidewalk row weighed on an alley is refused")
 
@@ -1105,11 +1111,11 @@ func _test_every_copy_of_a_row_keeps_its_ground_weights(t: TestRunner) -> void:
 	var grounds: Array[PlacementGround.Kind] = [PlacementGround.Kind.STREET,
 			PlacementGround.Kind.JUNCTION, PlacementGround.Kind.ALLEY, PlacementGround.Kind.OPEN]
 	var dog := EventCatalogue.by_id("charging_dog")
-	var pressing := EventDef.new()
-	pressing.id = "pressing"
-	pressing.placement = [GameEnums.TileType.SIDEWALK] as Array[int]
-	pressing.hunts = HuntSpec.pressing()
-	pressing.weigh_on(PlacementGround.Kind.STREET, 0.25)
+	var pressing_draft := EventDraft.new("pressing")
+	pressing_draft.ground([GameEnums.TileType.SIDEWALK] as Array[int])
+	pressing_draft.hunt(HuntSpec.pressing())
+	pressing_draft.weighed_on(PlacementGround.Kind.STREET, 0.25)
+	var pressing := pressing_draft.build()
 	for pair: Array in [[dog, dog.for_day(4)], [pressing, pressing.at_heat(Tuning.RESISTANCE_GOAL)]]:
 		var row: EventDef = pair[0]
 		var copy: EventDef = pair[1]

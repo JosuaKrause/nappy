@@ -416,17 +416,16 @@ func _open_ground_either_side(map: CityMap, body: Vector2) -> Vector2:
 ## the far side of the band's body from his post, is no catch while the sight across it is clear.
 func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
-	# The catalogue's own row, its arms lengthened for the case and put back after it.
-	var def := _hot_roadblock()
-	var arms := def.lethal()
-	def.use_lethal(LethalSpec.within(90.0))
+	# The catalogue's own row with its arms lengthened for the case, a row of its own.
+	var lengthening := _hot_roadblock().redraft()
+	lengthening.lethal(LethalSpec.within(90.0))
+	var def := lengthening.build()
 	var stage := RoadblockRig.Stage.new(t, map)
 	var guard := stage.stand(EventPlan.new(def, Vector2(2128.0, 80.0)))
 	var body := guard.body_position()
 	var near := _open_ground_either_side(map, body)
 	t.check(near != Vector2.INF, "there is open ground either side of the band")
 	if near == Vector2.INF:
-		def.use_lethal(arms)
 		stage.close()
 		return
 	var made: Array[EventInstance] = [guard]
@@ -445,5 +444,4 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 			"the point is within his reach and beyond his band's body")
 	t.check(guard.clear_line_to(across), "he sees it across his own band")
 	t.check(not guard.is_lethal_at(across), "and his catch does not reach through his own band")
-	def.use_lethal(arms)
 	stage.close()

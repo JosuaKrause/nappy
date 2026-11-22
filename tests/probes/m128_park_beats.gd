@@ -128,11 +128,11 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	# A fresh `EventDef`, not the catalogue's own, so the sweep never has to mutate and restore the
 	# live row — only `intensity` varies; everything else is read off the real def so the two can
 	# never quietly drift apart.
-	var def := EventDef.new()
-	def.id = "busker"
-	def.use_field(FieldSpec.of(intensity, real.core_within(), real.heard_within())
+	var draft := EventDraft.new("busker")
+	draft.field(FieldSpec.of(intensity, real.core_within(), real.heard_within())
 			.pulsing_every(real.pulses_every()))
-	def.use_warning(WarningSpec.lasting(real.telegraphs_for()))
+	draft.warning(WarningSpec.lasting(real.telegraphs_for()))
+	var def := draft.build()
 
 	var instance := EventInstance.new()
 	instance.setup(def, busker_at)
@@ -257,8 +257,9 @@ func _busker_street_side(t: TestRunner) -> void:
 	# A plain `EventDef`, not the catalogue's own — `emission_at()` only reads `intensity`,
 	# inner radius, outer radius and flock (none by default), so this is the M117 busker
 	# in every field the comparison cares about.
-	var before_def := EventDef.new()
-	before_def.use_field(FieldSpec.of(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER))
+	var before_draft := EventDraft.new("")
+	before_draft.field(FieldSpec.of(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER))
+	var before_def := before_draft.build()
 	var after_def := EventCatalogue.by_id("busker")
 	var samples := 0
 	var before_total := 0.0

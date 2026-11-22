@@ -98,10 +98,10 @@ func _test_scheduler_respects_placement_and_one_of_a_row_per_unit(t: TestRunner)
 		for plan: EventPlan in planned:
 			# An `AHEAD_OF_PLAYER` event has no tile: the director sites it in front of the player
 			# later.
-			if plan.row().placement.is_empty() or not plan.is_placed():
+			if plan.row().ground_kinds().is_empty() or not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.placed_at())
-			t.check(map.tile_at(tile) in plan.row().placement,
+			t.check(map.tile_at(tile) in plan.row().ground_kinds(),
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.row_id()])
 		var dawn := _dawn(day)
 		var units := dawn.unit_draw().units()
@@ -413,12 +413,12 @@ func _test_successors_resolve(t: TestRunner) -> void:
 func _test_sighted_successors_resolve(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.aftermath.calls_in() == "":
+		if def.calls_in() == "":
 			continue
 		checked += 1
-		t.check(EventCatalogue.by_id(def.aftermath.calls_in()) != null,
+		t.check(EventCatalogue.by_id(def.calls_in()) != null,
 				"'%s' summons '%s' on sight, which exists in the catalogue"
-				% [def.id, def.aftermath.calls_in()])
+				% [def.id, def.calls_in()])
 	t.check(checked > 0, "there is at least one row with an aftermath.calls_in() ('burning_building')")
 
 ## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can

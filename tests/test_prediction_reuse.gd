@@ -103,16 +103,20 @@ func _same_bits(a: float, b: float) -> bool:
 	return var_to_bytes(a) == var_to_bytes(b)
 
 func _copy_definition(original: EventDef) -> EventDef:
+	return _draft_of(original).build()
+
+## A draft of `original`'s copy, to write what the copy differs in before it is built.
+func _draft_of(original: EventDef) -> EventDraft:
 	# Shallow, as every copy of a row is: the row's parts are values, shared by reference between a row
 	# and its copies.
-	var copy := original.duplicate() as EventDef
+	var copy := original.redraft()
 	# The body is shared like every part, but a check changes its shape in place, so the copy stands
 	# as a shape of its own (every other thing the body says is kept).
 	if original.ground_shape():
 		var shape := GroundShape.new(original.ground_shape().half_length, original.ground_shape().radius)
 		shape.kind = original.ground_shape().kind
 		shape.half_extents = original.ground_shape().half_extents
-		copy.use_body(original.body().reshaped(shape))
+		copy.body(original.body().reshaped(shape))
 	return copy
 
 ## The rows that differ from `definition` in one setting of its field (but its core, which only a
@@ -130,17 +134,17 @@ func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 	}
 	var rows := {}
 	for label: String in fields:
-		var row := _copy_definition(definition)
-		row.use_field(fields[label] as FieldSpec)
-		rows[label] = row
+		var row := _draft_of(definition)
+		row.field(fields[label] as FieldSpec)
+		rows[label] = row.build()
 	if definition.moves():
-		var faster := _copy_definition(definition)
-		faster.use_route(_route_at_another_speed(definition.route(), definition.speed() + 3.0))
-		rows["speed"] = faster
+		var faster := _draft_of(definition)
+		faster.route(_route_at_another_speed(definition.route(), definition.speed() + 3.0))
+		rows["speed"] = faster.build()
 	if definition.pursuit:
-		var chasing := _copy_definition(definition)
-		chasing.pursuit = definition.pursuit.at_speed(definition.pursuit.speed() + 3.0)
-		rows["chase speed"] = chasing
+		var chasing := _draft_of(definition)
+		chasing.pursuit(definition.pursuit.at_speed(definition.pursuit.speed() + 3.0))
+		rows["chase speed"] = chasing.build()
 	return rows
 
 ## The route `route` walks at `speed` and is otherwise the same: its kind, its length, whether it
@@ -202,8 +206,9 @@ func _test_a_cored_row(t: TestRunner) -> void:
 	}
 	for label: String in variants:
 		var at: Vector2 = (variants[label] as Array)[1]
-		var other := _copy_definition(row)
-		other.use_field((variants[label] as Array)[0] as FieldSpec)
+		var differing := _draft_of(row)
+		differing.field((variants[label] as Array)[0] as FieldSpec)
+		var other := differing.build()
 		_under_a_different_row(source, row)
 		_event_parity(t, source, at, "the leaf blower, its own row before a different " + label)
 		var own_answer := source.source().expected_gross_at(at)
@@ -283,8 +288,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id + " its own row again")
 		# A row of another shape is a second row, as the field's settings are: the shape is not
 		# replaced under the live event.
-		var reshaped_row := _copy_definition(definition)
-		reshaped_row.use_body(own_row.body().reshaped(GroundShape.segment(17.0, 12.0)))
+		var reshaping := _draft_of(definition)
+		reshaping.body(own_row.body().reshaped(GroundShape.segment(17.0, 12.0)))
+		var reshaped_row := reshaping.build()
 		_under_a_different_row(source, reshaped_row)
 		_event_parity(t, source, at, definition.id + " shape replacement")
 		source.ground_shape().half_length = 63.0
@@ -295,8 +301,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source._body._spread_vertical = not source._body._spread_vertical
 		source._body._stationary_vehicle_side = not source._body._stationary_vehicle_side
 		_event_parity(t, source, at, definition.id + " body axis")
-		var shapeless_row := _copy_definition(definition)
-		shapeless_row.use_body(BodySpec.none())
+		var shapeless := _draft_of(definition)
+		shapeless.body(BodySpec.none())
+		var shapeless_row := shapeless.build()
 		_under_a_different_row(source, shapeless_row)
 		_event_parity(t, source, at, definition.id + " no shape")
 		# No row is replaced under a live event: its behaviours (`EventBehaviours.compose()`) and its

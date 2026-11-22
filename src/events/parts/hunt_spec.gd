@@ -1,5 +1,5 @@
 class_name HuntSpec
-extends Resource
+extends RefCounted
 ## **How a row hunts her once the resistance has heated it past its rung's threshold**: the
 ## behaviour `EventDef.at_heat()` attaches to its copy (`EventDef.hunting`), authored on the cold row
 ## (`EventDef.hunts`). One of two shapes, never both:

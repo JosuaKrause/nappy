@@ -167,33 +167,10 @@ lists who asks.
 ### 1.4 How a row declares its parts
 
 A row is written through **`EventDraft`** (a name this design proposes: a row being written). Each
-line names one ability; `build()` validates the whole and hands back the row, which has no
-setter. Two real rows, as they are and as they become.
+line names one ability; `build()` hands back the row, which has no setter (a row is validated where it
+was before, design fork F3). Two real rows, written as their parts.
 
-**Cafe tables** (a spread of tables that closes half a sidewalk and hums), today:
-
-```gdscript
-static func _cafe_tables() -> EventDef:
-	var def := EventDef.new()
-	def.id = "cafe_tables"
-	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.CAFE
-	def.stands_as = EventDef.StandsAs.SOMETHING
-	def.when_it_stops = EventDef.WhenItStops.PARKS
-	def.has_a_spread = true
-	def.placement = [GameEnums.TileType.SIDEWALK]
-	def.intensity = 12.0
-	def.inner_radius = 38.0
-	def.outer_radius = 64.0
-	def.telegraph_time = 1.6
-	def.pulse_period = 6.0
-	def.solid(GroundShape.band(24.0))
-	def.weight = 4.0
-	def.max_per_day = 24
-	return def
-```
-
-and as its parts:
+**Cafe tables** (a spread of tables that closes half a sidewalk and hums):
 
 ```gdscript
 static func _cafe_tables() -> EventDef:
@@ -208,39 +185,7 @@ static func _cafe_tables() -> EventDef:
 ```
 
 **The alley robber** (he waits in an alley, warns when she comes within 180px, then chases her; his
-catch ends the day), today:
-
-```gdscript
-static func _alley_robbery() -> EventDef:
-	var def := EventDef.new()
-	def.id = "alley_robbery"
-	def.display_name = Texts.EVENT_NAMES[def.id]
-	def.look = EventDef.Look.ROBBER
-	def.stands_as = EventDef.StandsAs.SOMEBODY
-	def.when_it_stops = EventDef.WhenItStops.GOES_ON
-	def.warning_picture = EventDef.WarningPicture.ROBBER_ALERT
-	def.shape = GroundShape.point(9.0)
-	def.first_day = 8
-	def.act_tag = 3
-	def.placement = [GameEnums.TileType.ALLEY]
-	def.intensity = 16.0
-	def.inner_radius = 26.0
-	def.outer_radius = 200.0
-	def.telegraph_time = 1.8
-	def.duration = Tuning.PURSUIT_TIME
-	def.pursuit = PursuitSpec.at(130.0)
-	def.pursuit.lunge_reach = 38.0
-	def.notice = NoticeSpec.at(180.0)
-	def.pursuit.walk_speed = 40.0
-	def.pursuit.warns_for = CHARGER_WARNING
-	def.departs_at = 100.0
-	def.hard_fail = true
-	def.weight = 1.5
-	def.max_per_day = 4
-	return def
-```
-
-and as its parts:
+catch ends the day):
 
 ```gdscript
 static func _alley_robbery() -> EventDef:
@@ -263,20 +208,18 @@ static func _alley_robbery() -> EventDef:
 
 What the form buys, beyond the rule:
 
-- **A variant is a draft started from a row** (`EventDraft.from(row)`), with the parts it changes
-  replaced. It serves every place that copies a row today with `Resource.duplicate()` and then
-  writes fields, or builds it again to give it another id: the heated copy (`at_heat()`), the copy
-  for a later day (`for_day()`), the copy warned of first, the row without its aftermath, the
-  building's fire, the explosion outside, the neighbor heading home, the men a vehicle lets out,
-  the lesson's dog and the two task guards (a new id), a seal's copy and the wall's unguarded
-  middle body (`SealPlanner`), the alley mouth's wall body (`RegionPlanner`), the raid's pacing
-  patrol car (`ResistanceHappenings`), and the director's two (a patrol sent toward her, a forced
-  row given ground). Each site that duplicates carries `shape` and `solid_parts` across by hand
-  today because `duplicate()` does not copy them, and a site that forgets draws and charges
-  nothing with no error. A draft copies parts, so the trap is gone.
-- **`validate()` loses the pairing checks a part makes unwritable** (a spread that also lies
-  across its street, a catch reach set on the row and on its pursuit at once, a hunt with no
-  rung) and keeps the checks that span parts (a hold on a row that ends the day, a body reaching its own
+- **A variant is a draft started from a row** (`row.redraft()`), with the parts it changes replaced.
+  It serves every place that copies a row, or gives a copy another id: the heated copy
+  (`at_heat()`), the copy for a later day (`for_day()`), the copy warned of first, the row without
+  its aftermath, the building's fire, the explosion outside, the neighbor heading home, the men a
+  vehicle lets out, the lesson's dog and the two task guards (a new id), a seal's copy and the
+  wall's unguarded middle body (`SealPlanner`), the alley mouth's wall body (`RegionPlanner`), the
+  raid's pacing patrol car (`ResistanceHappenings`), and the director's two (a patrol sent toward
+  her, a forced row given ground). A draft copies its parts, so no site carries a setting across by
+  hand and none can forget one.
+- **`validate()` loses the pairing checks a part makes unwritable** (a spread that also lies across
+  its street, a catch reach set on the row and on its pursuit at once, a hunt with no rung) and
+  keeps the checks that span parts (a hold on a row that ends the day, a body reaching its own
   lethal reach, the telegraph fairness contract).
 - **The row stops being a `Resource`.** It is a `RefCounted` value built in code; nothing saves it
   and nothing duplicates it. `EventCatalogue.all()` validates every shape on load as today.
@@ -432,7 +375,7 @@ opt-out line on the bus as the one file that cannot be typed, with its reason.
 | A mast still speaking | plan `is_a_live_mast()` ok, `mast_id()` ok, `placed_at()` ok | the plan |
 | A row's reach and speed for a task's arithmetic | row `core_within()` ok, `speed()` (with 4b, the field's name), `for_day(day)` ok | field, route |
 | Who in a closed park is walked out (today five fields in `ParkCordon`) | live `is_ambient()` ok, `was_sent_at_her()` ok, `drives()` ok, `departure_speed()` ok, `is_on_its_way_out()` ok | the row, pursuit, warning |
-| The raid's patrol car made to pace | `EventDraft.from(row)` with its route replaced | route |
+| The raid's patrol car made to pace | `row.redraft()` with its route replaced | route |
 
 ### 2.8 The scene recipes and the developer's rigs
 
@@ -745,7 +688,7 @@ also shows a search for the field's old name read without parentheses, every rem
 | **3b** | **The event manager's parts.** Built (the records minty-quail-curly-penguin, -brisk-magpie, -lilac-trout, -pebbly-toad, -tall-yak, -tall-hawk, -spry-trout, -spotted-chipmunk, -amber-squirrel, -tawny-lynx, -gentle-stork and -gray-koala): streaming keeps its own state per plan ok, tells the plan what happened and carries a live event's state out and back as one `EventSave` (built, the record minty-quail-tawny-lynx); the spawner hands a live event everything in one setup call (built, the record minty-quail-amber-squirrel: `EventSurroundings`, the gate last); `EventWorld`'s fields behind methods (the eight of them built, the record minty-quail-brisk-magpie) | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd` (asking through methods, the record minty-quail-tall-yak), the six event parameters of `src/autoload/event_bus.gd` (typed `Node2D`, the record minty-quail-curly-penguin), and `src/resistance/resistance_director.gd`'s `points_at` write (in 3b; now `EventManager.use_protest_target()`, the record minty-quail-lilac-trout) | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting). Beside 3a and 3c. A manager is set up once, for one world, and `setup()` and `setup_world()` assert so; `setup_world()` keeps no resets (built, the record minty-quail-pebbly-toad). Streaming asks the live event `is_gone()` and `is_on_its_way_out()` since row 4a's pull request deleted the two properties (the record minty-quail-grassy-elk) |
 | **3c** | **The resistance, the scene recipes and the rigs.** The resistance's part is built (the record minty-quail-curly-heron). Left in `src/resistance/`: the row's `id` and `speed` (4b), the happenings' pacing copy of the patrol car (4b's draft) and the world map's reads. The route rig's part is built (the record minty-quail-woolly-magpie); left in `route_rig.gd` and `route_rig_planner.gd`: the world map's `obstructed_tiles` and `size`. The debug views' part is built (the record minty-quail-mossy-marten): the debug layers, the readout, the dev rig, the still watch and the auto screenshot; left in them: the world map's `size` in `dev_rig.gd` (the region plan's door bodies are asked through `RegionPlan.door_plans()`, the record bouncy-puffin). The scene recipes' part is built (the record minty-quail-plush-toad): the scene recipe runtime; left in `scene_recipe_runtime.gd`: the row's `id` (4b), the city's and the city map's fields and the world map's `size` (the scene recipes' own pass with `AuthoredScene`, `city-hand-ins.md`), the call to the private `ResistanceHappenings._bring_the_column()` (the director's `crossing_ahead_of()` is public, 3b), and its opt-out line, which goes with that pass. `src/city/city.gd` reads no event field. The row's reads of the events are all built; what is left waits for the rows and the pass named | `src/dev/*`, `src/city/city.gd` | Waits for no other row. Beside 3a and 3b |
 | **4a** | **The tests, the probes and the cost table read through the methods.** One scripted rewrite, each replacement a line of section 4's tables, the script in the description so a branch merging main reruns it; the fields the tests alone read go private in the same pull request, so a few `src/` lines change mechanically (the design's pick, open to the player's overturn). Built (the records minty-quail-busy-walrus, -grassy-elk and -frosty-wombat): the row asked where it has the answer, the live event and the warning read through their methods, and the plan read through its methods, the last two with their fields private | `tests/**`, `tools/cost_table.gd`, and the fields' own files (`event_plan.gd`, `event_instance.gd`, `pending_warning.gd`), streaming's and the spawner's three reads, the two lists and the comments naming a field made private | After 3a to 3c |
-| **4b** | **A row is written as its parts.** `EventDraft`, the eight new specs, the row with no public field and no `Resource` base, the catalogue rewritten row by row, every variant made from a draft, `validate()` without the pairings a part makes unwritable; the tests that build or change a row use a draft; the live body's own layouts ask `BodyStance.pieces_laid_out()` (built: `standing_pieces()` on the body and the live event, the look's shadow laid out the same way, the route rig's stopgap gone; the records curly-stork and minty-quail-sandy-hare). `docs/EVENTS.md`'s "Adding a new event" and the events skill's "Adding a row" say the new form. Ten pull requests; the first eight are built (the third, the nine settings classes as values in `src/events/parts/`, the record minty-quail-gray-ibis; the fourth, the field of noise as one part, `FieldSpec`, the record minty-quail-gray-marten; the fifth, the body as one part, `BodySpec`, the record minty-quail-frosty-ibis; the sixth, ending the day, a hold and the warning as parts, `LethalSpec`, `HoldSpec` and `WarningSpec`, the record minty-quail-freckled-badger; the seventh, a route and a flock as parts, `RouteSpec` and `FlockSpec`, the record minty-quail-freckled-lynx; the eighth, the look as a part, `LookSpec`, the record minty-quail-azure-goose); the first, every row's every answer printed by `tests/probes/row_fingerprint.gd`, the parity proof the rest run on base and branch (the record minty-quail-sunny-puffin) | `event_def.gd`, `event_catalogue.gd`, `event_draft.gd` and the spec files, the variant sites in `seal_planner.gd`, `region_planner.gd`, `happenings.gd`, `event_director.gd`, `event_spawner.gd`, and `src/resistance/resistance_director.gd`'s `def.speed` and `EventCatalogue.mast().id` reads (in 4b); the tests that write a row | After 4a |
+| **4b** | **A row is written as its parts.** `EventDraft`, the eight new specs, the row with no public field and no `Resource` base, the catalogue rewritten row by row, every variant made from a draft, `validate()` without the pairings a part makes unwritable; the tests that build or change a row use a draft; the live body's own layouts ask `BodyStance.pieces_laid_out()` (built: `standing_pieces()` on the body and the live event, the look's shadow laid out the same way, the route rig's stopgap gone; the records curly-stork and minty-quail-sandy-hare). `docs/EVENTS.md`'s "Adding a new event" and the events skill's "Adding a row" say the new form. Ten pull requests; the first nine are built (the third, the nine settings classes as values in `src/events/parts/`, the record minty-quail-gray-ibis; the fourth, the field of noise as one part, `FieldSpec`, the record minty-quail-gray-marten; the fifth, the body as one part, `BodySpec`, the record minty-quail-frosty-ibis; the sixth, ending the day, a hold and the warning as parts, `LethalSpec`, `HoldSpec` and `WarningSpec`, the record minty-quail-freckled-badger; the seventh, a route and a flock as parts, `RouteSpec` and `FlockSpec`, the record minty-quail-freckled-lynx; the eighth, the look as a part, `LookSpec`, the record minty-quail-azure-goose; the ninth, a row written through `EventDraft` and every variant a redraft, the record minty-quail-fluffy-goose; open for the tenth: every row writes an act with `from_day(first, act)` though only a scripted row's act is read, so the step that makes the row's fields private decides whether the act becomes a scripted row's alone or gains a reader); the first, every row's every answer printed by `tests/probes/row_fingerprint.gd`, the parity proof the rest run on base and branch (the record minty-quail-sunny-puffin) | `event_def.gd`, `event_catalogue.gd`, `event_draft.gd` and the spec files, the variant sites in `seal_planner.gd`, `region_planner.gd`, `happenings.gd`, `event_director.gd`, `event_spawner.gd`, and `src/resistance/resistance_director.gd`'s `def.speed` and `EventCatalogue.mast().id` reads (in 4b); the tests that write a row | After 4a |
 | **5** | **The events' and the resistance's suites test one module each** (`tests-one-module.md`, entry 6), in the groups below | `tests/**` | After 4b; its groups beside each other |
 
 **What runs beside the placement track**: 1, 2a and 2b. They own no file it owns; 1 and 2a add methods to `event_def.gd`, where placement has been

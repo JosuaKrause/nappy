@@ -764,9 +764,9 @@ func _busker_in_the_park(pace := 0.0) -> EventInstance:
 	var area := _city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map, park))
 	var row := EventCatalogue.by_id("busker")
 	if pace > 0.0:
-		var walking: EventDef = row.duplicate()
-		walking.departs_at = pace
-		row = walking
+		var walking := row.redraft()
+		walking.leaves_at(pace)
+		row = walking.build()
 	return RunCity.events(_city).spawn_extra(row, area.position + area.size * Vector2(0.25, 0.3))
 
 ## **Spends the rows the day's units drew within twice `Tuning.OUT_OF_SIGHT` of `person`**

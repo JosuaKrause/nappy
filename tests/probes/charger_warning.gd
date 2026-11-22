@@ -24,8 +24,9 @@ const TIMES: Array[float] = [1.0, 1.5, 2.0, 2.5, 3.0]
 func run(t: TestRunner) -> void:
 	for def in _waiting_chargers():
 		for warns_for in TIMES:
-			var copy := def.duplicate() as EventDef
-			copy.pursuit = def.pursuit.warning_for(warns_for)
+			var warning := def.redraft()
+			warning.pursuit(def.pursuit.warning_for(warns_for))
+			var copy := warning.build()
 			var said: Array[String] = []
 			for walk: String in ["back", "stand", "bait", "on"]:
 				var r := _walk(t, copy, walk)

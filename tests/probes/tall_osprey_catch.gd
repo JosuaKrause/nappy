@@ -38,10 +38,11 @@ func run(t: TestRunner) -> void:
 	t.check(true, "tall_osprey_catch probe ran")
 
 func _def(catch_radius: float, lunge: float) -> EventDef:
-	var def := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
-	def.use_field(def.field().holding_to(catch_radius))
-	def.pursuit = def.pursuit.lunging_from(lunge)
-	return def
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var draft := robbery.redraft()
+	draft.field(robbery.field().holding_to(catch_radius))
+	draft.pursuit(robbery.pursuit.lunging_from(lunge))
+	return draft.build()
 
 func _report(catch_radius: float, lunge: float) -> void:
 	var standoff := PursuitSpec.standoff(130.0, _def(catch_radius, lunge).standoff_reach())

@@ -38,10 +38,14 @@ area each, to be read whole before the first edit there:
 
 ## Adding a row
 
-The steps are `docs/EVENTS.md`, "Adding a new event". The one that gets skipped is **a drawing**
-(its step 5): a look, an SVG, its pictures and a badge silhouette of the row's own. There is no
-generic to borrow, and `tests/test_events_catalogue.gd` fails if two rows share a picture or two
-looks share a silhouette.
+The steps are `docs/EVENTS.md`, "Adding a new event". A row is written through an `EventDraft`:
+one statement per ability it has (`row.look()`, `row.body()`, `row.field()`, ...), then `build()`;
+a part it has none of is left out and holds that part's default. A variant of a row (the heated
+shape, the copy for a later day, the one sent ahead) is its `redraft()`, the parts it differs in
+written over it and built again, and **a built row is never written to**. The step that gets
+skipped is **a drawing** (its step 5): a look, an SVG, its pictures and a badge silhouette of the
+row's own. There is no generic to borrow, and `tests/test_events_catalogue.gd` fails if two rows
+share a picture or two looks share a silhouette.
 
 How a row is drawn is a `LookSpec` (`EventDef.look()`): its picture, the picture it warns in,
 whether a shadow goes under it, a trailing lead, whether its hold hides it, whether a rider of it
@@ -49,9 +53,10 @@ may be drawn as the pelican and a roadblock's guard sides. The looks are handed 
 row's body part when they are made and read their settings from them; what a picture needs of the
 live event's field or route is the event's to answer.
 
-If it needs behaviour no field covers, add the field to `EventDef` and handle it in the behaviour
-that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour` that
-`EventBehaviours.compose()` adds for the rows whose data ask for it. **A behaviour that keeps
+If it needs behaviour no setting covers, add a setting to the part that owns the rule (and the draft
+statement that writes it), or a new part with a statement of its own on `EventDraft`, and handle it
+in the behaviour that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour`
+that `EventBehaviours.compose()` adds for the rows whose data ask for it. **A behaviour that keeps
 state saves and restores it** (`save()`, `restore()`), or a streamed-out event comes back with it
 fresh and nothing says so.
 

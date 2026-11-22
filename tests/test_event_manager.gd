@@ -818,7 +818,7 @@ func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRun
 		_start(day)
 		var left_for_her_walk := false
 		for plan in RunCity.events(_city).plans():
-			if plan.row().on_her_way != null and not plan.is_placed():
+			if plan.row().is_sited_from_her_walk() and not plan.is_placed():
 				left_for_her_walk = true
 		if not left_for_her_walk:
 			continue

@@ -169,6 +169,7 @@ src/
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
+	event_draft.gd        the one way a row is written: one statement per setting and part, then build()
 	way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
 	                      junction box to junction box by the walk's through roads, a walker
 	                      straight on; made once a walk and handed to the director

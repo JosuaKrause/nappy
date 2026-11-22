@@ -1,5 +1,5 @@
 class_name BodySpec
-extends Resource
+extends RefCounted
 ## **What a row is on the ground, as one value**: the ground shape its shadow and its solid body are
 ## both derived from, whether it is solid (and so closes ground), the pieces it is solid in, when
 ## it is solid, what a crowd walker takes it for while it stands, whether it parks once it stands,

@@ -99,10 +99,10 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t: TestRunner) -> voi
 ## said at the start of it. `total_landed` is `landed` itself: one source, so its whole share of
 ## the decay is its own, the same simplification `expected_impact_at()`'s own doc names.
 func _test_the_caret_matches_the_halo_after_the_horizon(t: TestRunner) -> void:
-	var def := EventDef.new()
-	def.id = "caret_matches_halo"
-	def.use_field(FieldSpec.of(30.0, 40.0, 200.0))
-	def.use_warning(WarningSpec.lasting(0.0))
+	var draft := EventDraft.new("caret_matches_halo")
+	draft.field(FieldSpec.of(30.0, 40.0, 200.0))
+	draft.warning(WarningSpec.lasting(0.0))
+	var def := draft.build()
 	var instance := _instance(def)
 	var player_velocity := Vector2(Tuning.WALK_SPEED, 0.0)
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
@@ -233,14 +233,14 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> void:
 	var horizon := Tuning.EXPECTED_IMPACT_HORIZON
 
-	var def_a := EventDef.new()
-	def_a.id = "share_decay_a"
-	def_a.use_field(FieldSpec.of(30.0, 40.0, 200.0))
-	def_a.use_warning(WarningSpec.lasting(0.0))
-	var def_b := EventDef.new()
-	def_b.id = "share_decay_b"
-	def_b.use_field(FieldSpec.of(30.0, 40.0, 200.0))
-	def_b.use_warning(WarningSpec.lasting(0.0))
+	var draft_a := EventDraft.new("share_decay_a")
+	draft_a.field(FieldSpec.of(30.0, 40.0, 200.0))
+	draft_a.warning(WarningSpec.lasting(0.0))
+	var def_a := draft_a.build()
+	var draft_b := EventDraft.new("share_decay_b")
+	draft_b.field(FieldSpec.of(30.0, 40.0, 200.0))
+	draft_b.warning(WarningSpec.lasting(0.0))
+	var def_b := draft_b.build()
 
 	var a := _instance(def_a)
 	a.global_position = Vector2(0.0, 20.0)

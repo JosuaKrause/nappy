@@ -94,9 +94,9 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 	# The day's poster crews are drawn by exactly these rules and handed to her walk with no
 	# position (`MarbleDraw.draw()`). What this asks is how the draw places, so the crews are
 	# read where the draw put them.
-	var crew := EventCatalogue.by_id("poster_crew")
-	var crew_way := crew.on_her_way
-	crew.on_her_way = null
+	var crew_draft := EventCatalogue.by_id("poster_crew").redraft()
+	crew_draft.not_sited_from_her_walk()
+	var crew := crew_draft.build()
 	var walls := 0
 	var walls_across_the_street := 0
 	var friction_on_the_route := 0
@@ -121,8 +121,8 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
 		var ground := EventScheduler.row_ground(map)
-		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).on(tree) \
-				.plan().placements():
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).with_row(crew) \
+				.spent(consumed).on(tree).plan().placements():
 			if not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.placed_at())
@@ -178,7 +178,6 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 			+ "they may stand on would (%.1f of %d)")
 			% [friction_on_the_route, friction_on_the_route_unweighted, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
-	crew.on_her_way = crew_way
 
 	# **The range, as a relationship rather than as two numbers.** *"It ranges from very costly to
 	# deadly"* is a claim about which of the two is further from the routes, so that is what is
@@ -260,7 +259,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 		var map := _repainted_city(day)
 		var corridor := Corridor.of(RouteTree.for_day(map, day))
 		for def in EventCatalogue.all():
-			if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces_a_beat():
+			if not def.stands_on(GameEnums.TileType.SIDEWALK) or def.paces_a_beat():
 				continue
 			if _role_it_places_as(def, day, map, corridor) != GameEnums.BlockerRole.FRICTION:
 				continue
@@ -281,7 +280,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	for day: int in [8, 10, 14]:
 		cities[day] = _repainted_city(day)
 	for def in EventCatalogue.all():
-		if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces_a_beat() or def.moves():
+		if not def.stands_on(GameEnums.TileType.SIDEWALK) or def.paces_a_beat() or def.moves():
 			continue
 		if def.obstructs_within() <= 0.0:
 			continue
@@ -367,7 +366,7 @@ func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 	return not def.paces_a_beat() and _leaves_no_line_along_a_sidewalk(def)
 
 func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
-	if not def.placement.has(GameEnums.TileType.SIDEWALK) or not def.has_a_line_to_avoid():
+	if not def.stands_on(GameEnums.TileType.SIDEWALK) or not def.has_a_line_to_avoid():
 		return false
 	return def.reaches_the_far_lane() \
 			or (def.obstructs_within() > 0.0 and _gap_past_the_body(def) < 2.0 * Tuning.PLAYER_BODY_RADIUS)
@@ -395,13 +394,13 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 	var ground := EventScheduler.row_ground(map)
 	var asked := 0
 	for def in EventCatalogue.all():
-		if def.sidewalk_lane() == EventDef.Pavement.ANY or def.placement.is_empty():
+		if def.sidewalk_lane() == EventDef.Pavement.ANY or def.ground_kinds().is_empty():
 			continue
 		var offered := {}
 		for tile in ground.tiles_for(def):
 			var offered_type := map.tile_at(tile)
 			offered[offered_type] = int(offered.get(offered_type, 0)) + 1
-		for type in def.placement:
+		for type in def.ground_kinds():
 			var wanted: int = offered.get(type, 0)
 			asked += 1
 			t.check(wanted > 0,
@@ -432,7 +431,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 ## stops it passing having placed nothing.
 func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("poster_crew_square")
-	t.check(def != null and def.first_day <= 14, "the square poster crew is in the catalogue")
+	t.check(def != null and def.own_first_day() <= 14, "the square poster crew is in the catalogue")
 	if not def:
 		return
 	var placed := 0
@@ -502,7 +501,7 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 	var would_leave := 0
 	for id: String in ["homeless_yeller", "chatting_mother"]:
 		var def := EventCatalogue.by_id(id)
-		var day := maxi(def.first_day, 6)
+		var day := maxi(def.own_first_day(), 6)
 		for i in 3:
 			var map := MapCache.of(4242 + i * 97)
 			var state := CityState.new()

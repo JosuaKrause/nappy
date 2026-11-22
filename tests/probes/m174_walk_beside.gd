@@ -74,7 +74,7 @@ func _walkable_beside(def: EventDef) -> bool:
 		return false
 	if def.pursues() or def.notice_within() > 0.0:
 		return false
-	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
+	if def.spawn_mode_on(1) == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return false
 	return true
 

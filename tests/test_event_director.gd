@@ -280,14 +280,20 @@ func _test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t: TestRunner
 				"and %d of 8 are where both answer, each asked of its own leg and a way on from its "
 				% sited + "end (%d)" % asked_right)
 
+## A row that ends the day at its core, its field holding to 30px and reaching `reach`, on a bare
+## row's field otherwise.
+func _lethal_by_hand(reach: float) -> EventDef:
+	var bare := EventDraft.new("lethal_by_hand").build()
+	var draft := bare.redraft()
+	draft.lethal(LethalSpec.at_its_core())
+	draft.field(bare.field().holding_to(30.0).reaching(reach))
+	return draft.build()
+
 ## A lethal row standing on the dog walker's way keeps its field clear: the dog walker is refused
 ## while the plan stands, and handed out at the next ask once it is spent.
 func _test_a_sent_row_keeps_out_of_a_field_kept_clear(t: TestRunner) -> void:
 	var map := _street()
-	var lethal := EventDef.new()
-	lethal.id = "lethal_by_hand"
-	lethal.use_lethal(LethalSpec.at_its_core())
-	lethal.use_field(lethal.field().holding_to(30.0).reaching(120.0))
+	var lethal := _lethal_by_hand(120.0)
 	var plan := EventPlan.new(lethal, _her() + Vector2(TILE, -3.0 * TILE))
 	t.check(plan.keeps_its_field_clear(), "a lethal row that is no wall keeps its field clear")
 	var plans: Array[EventPlan] = [plan]
@@ -306,10 +312,7 @@ func _test_a_sent_row_keeps_out_of_a_field_kept_clear(t: TestRunner) -> void:
 ## this rule's.
 func _test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t: TestRunner) -> void:
 	var map := _street()
-	var lethal := EventDef.new()
-	lethal.id = "lethal_by_hand"
-	lethal.use_lethal(LethalSpec.at_its_core())
-	lethal.use_field(lethal.field().holding_to(30.0).reaching(120.0))
+	var lethal := _lethal_by_hand(120.0)
 	# North of her is up the street; every place and leg below is in tiles north of her.
 	var north := func(tiles: float, across := 0.0) -> Vector2:
 		return _her() + Vector2(across, -tiles * TILE)
@@ -367,10 +370,7 @@ func _test_a_sent_row_starts_clear_of_a_placed_plan(t: TestRunner) -> void:
 ## one for each patrol, would come no sooner.
 func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) -> void:
 	var map := _street()
-	var lethal := EventDef.new()
-	lethal.id = "lethal_by_hand"
-	lethal.use_lethal(LethalSpec.at_its_core())
-	lethal.use_field(lethal.field().holding_to(30.0).reaching(600.0))
+	var lethal := _lethal_by_hand(600.0)
 	var blocking := EventPlan.new(lethal, _her() + Vector2(-1.5 * TILE, 0.0))
 	var plans: Array[EventPlan] = [blocking]
 	for _i in 12:

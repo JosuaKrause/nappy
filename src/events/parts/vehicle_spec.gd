@@ -1,5 +1,5 @@
 class_name VehicleSpec
-extends Resource
+extends RefCounted
 ## **A car: solid at its own `shape` in every state, and lethal only in front of it while it
 ## drives.** *(azure-koala, inbox #601: "police cars don't have a hitbox"; leafy-puffin, inbox
 ## #648, offered "solid in every state, lethal only in front while driving": "yes to the police car

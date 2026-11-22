@@ -63,17 +63,20 @@ func _test_the_wall_s_body_says_so(t: TestRunner) -> void:
 
 func _test_what_stands_clear_of_it(t: TestRunner) -> void:
 	var her := 14.0
-	var nothing := EventPlan.new(EventDef.new(), Vector2(320, 320))
+	var bare := EventDraft.new("").build()
+	var nothing := EventPlan.new(bare, Vector2(320, 320))
 	t.check(nothing.clearance(her) == 0.0, "an event with no body and no hard fail asks no clearance")
-	var body_def := EventDef.new()
-	body_def.use_body(BodySpec.solid(GroundShape.point(40.0)))
-	body_def.use_field(body_def.field().at_peak(0.0))
+	var silent := bare.redraft()
+	silent.body(BodySpec.solid(GroundShape.point(40.0)))
+	silent.field(bare.field().at_peak(0.0))
+	var body_def := silent.build()
 	var body := EventPlan.new(body_def, Vector2(320, 320))
 	t.check(is_equal_approx(body.clearance(her), 54.0),
 			"a silent body asks its own radius and her whole shape (%.0fpx)" % body.clearance(her))
-	var field_def := EventDef.new()
-	field_def.use_body(BodySpec.solid(GroundShape.point(40.0)))
-	field_def.use_field(field_def.field().at_peak(10.0).reaching(200.0))
+	var loud := bare.redraft()
+	loud.body(BodySpec.solid(GroundShape.point(40.0)))
+	loud.field(bare.field().at_peak(10.0).reaching(200.0))
+	var field_def := loud.build()
 	var field := EventPlan.new(field_def, Vector2(320, 320))
 	t.check(field.clearance(her) >= field_def.field_reach() and field.clearance(her) > 54.0,
 			"a body with a field asks its field (%.0fpx)" % field.clearance(her))

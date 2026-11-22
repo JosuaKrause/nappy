@@ -18,9 +18,9 @@ func run(t: TestRunner) -> void:
 
 ## A row whose body reaches `radius` from its centre, the one thing of its row the region reads.
 func _row(radius: float) -> EventDef:
-	var def := EventDef.new()
-	def.use_body(BodySpec.solid(GroundShape.point(radius)))
-	return def
+	var draft := EventDraft.new("")
+	draft.body(BodySpec.solid(GroundShape.point(radius)))
+	return draft.build()
 
 ## A day's wall and doors as data: one wall body, two door bodies and one walled alley.
 func _a_walled_plan() -> RegionPlan:

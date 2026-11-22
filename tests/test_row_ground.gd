@@ -73,12 +73,14 @@ func run(t: TestRunner) -> void:
 	_test_a_wall_never_stands_on_a_route(t)
 	_test_an_alley_row_is_refused_an_alley_the_routes_run_down(t)
 
-## A row that stands on `type`, in the lane `side` of a sidewalk.
-func _row(type: GameEnums.TileType, side := EventDef.Pavement.ANY) -> EventDef:
-	var def := EventDef.new()
-	def.placement.append(type)
-	def.pavement_side = side
-	return def
+## A row that stands on `type`, in the lane `side` of a sidewalk, one that ends the day when `lethal`.
+func _row(type: GameEnums.TileType, side := EventDef.Pavement.ANY, lethal := false) -> EventDef:
+	var draft := EventDraft.new("")
+	draft.ground([type] as Array[int])
+	draft.in_the_lane(side)
+	if lethal:
+		draft.lethal(LethalSpec.at_its_core())
+	return draft.build()
 
 ## The ground of a walk on the suite's map routed by `routes`, with the suite's weights, a precinct
 ## weighing nothing more, and its wall question: a row is a wall by cost unless `_by_fit` holds it.
@@ -158,8 +160,7 @@ func _test_a_wall_never_stands_on_a_route(t: TestRunner) -> void:
 	var tiles := _six_tiles(routes)
 	var ground := _ground(routes)
 	var costly := _row(GameEnums.TileType.SIDEWALK)
-	var lethal := _row(GameEnums.TileType.SIDEWALK)
-	lethal.use_lethal(LethalSpec.at_its_core())
+	var lethal := _row(GameEnums.TileType.SIDEWALK, EventDef.Pavement.ANY, true)
 	var by_fit := _row(GameEnums.TileType.SIDEWALK)
 	_by_fit = [by_fit]
 	var wall := GameEnums.BlockerRole.WALL
@@ -203,7 +204,8 @@ func _test_an_alley_row_is_refused_an_alley_the_routes_run_down(t: TestRunner) -
 		t.check(not offers.has(required) and offers.has(a_turning_away),
 				"a row that stands only in alleys is refused an alley the routes run down (role %d)"
 				% role)
-	var anywhere := _row(GameEnums.TileType.ALLEY)
-	anywhere.placement.append(GameEnums.TileType.SIDEWALK)
+	var elsewhere_too := EventDraft.new("")
+	elsewhere_too.ground([GameEnums.TileType.ALLEY, GameEnums.TileType.SIDEWALK] as Array[int])
+	var anywhere := elsewhere_too.build()
 	t.check(ground.offers_for_role(anywhere, GameEnums.BlockerRole.FRICTION).has(required),
 			"and a row that stands elsewhere too is offered it")

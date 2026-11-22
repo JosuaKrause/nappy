@@ -108,8 +108,9 @@ func _carriageway_point() -> Vector2:
 	return Vector2.INF
 
 func _test_a_shape_with_no_body_has_no_pieces(t: TestRunner) -> void:
-	var row := EventDef.new()
-	row.use_body(BodySpec.footprint(GroundShape.point(10.0)))
+	var draft := EventDraft.new("")
+	draft.body(BodySpec.footprint(GroundShape.point(10.0)))
+	var row := draft.build()
 	t.check(not row.has_a_body(), "the row has a shape and no body")
 	t.check(BodyStance.pieces_at(WorldMap.open_ground(), row, _AT, Vector2.RIGHT).is_empty(),
 			"a row with no body answers no pieces")

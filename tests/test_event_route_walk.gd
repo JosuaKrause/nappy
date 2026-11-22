@@ -103,8 +103,10 @@ func _test_told_none_it_ends_its_route_whatever_its_row(t: TestRunner) -> void:
 ## A row that paces a beat (the raid's car, the patrol pacing) told a way on never asks: its route
 ## folds back and forth and has no end to go on from.
 func _test_a_pacing_row_never_asks(t: TestRunner) -> void:
-	var pacing: EventDef = EventCatalogue.by_id("police_patrol").duplicate()
-	pacing.use_route(pacing.route().pacing())
+	var patrol := EventCatalogue.by_id("police_patrol")
+	var folding := patrol.redraft()
+	folding.route(patrol.route().pacing())
+	var pacing := folding.build()
 	var where := WhereSheIs.new()
 	var way_on := FakeWayOn.new()
 	var instance := EventInstance.new()

@@ -1,5 +1,5 @@
 class_name FieldSpec
-extends Resource
+extends RefCounted
 ## **The noise a row adds: the field of excitement the baby is charged for, as one value.** Its
 ## peak rate at the centre, the two radii it falls away between, the louder core a few rows carry,
 ## the curve of the drop, how it beats or swells, whether it reaches through walls, whether several

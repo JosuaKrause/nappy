@@ -1,5 +1,5 @@
 class_name LethalSpec
-extends Resource
+extends RefCounted
 ## **Whether a row's catch ends the day, and the distance it is measured from**, as one value. A row
 ## holds one (`EventDef.lethal()`); nothing changes it once it exists (a factory makes each, and a
 ## row's copies share it by reference).

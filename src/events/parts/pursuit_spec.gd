@@ -1,5 +1,5 @@
 class_name PursuitSpec
-extends Resource
+extends RefCounted
 ## **How a row comes after her**: faster than her walk and slower than her run, so walking away
 ## loses and running away wins. `Tuning.validate_pursuit()` is its fairness contract, stated over
 ## the numbers here and the row's notice (`NoticeSpec`); `standoff()` is that contract in distance.

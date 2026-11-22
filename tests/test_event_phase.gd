@@ -14,7 +14,6 @@ func run(t: TestRunner) -> void:
 	_test_a_departure_and_a_finish_are_phases(t)
 	_test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t)
 	_test_a_held_notice_comes_back_as_far_run(t)
-	_test_a_hunting_copy_does_not_share_its_rows_pursuit(t)
 	_test_a_badge_up_alone_points_and_counts_down(t)
 	_test_a_live_event_answers_for_its_row(t)
 	_test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t)
@@ -204,19 +203,9 @@ func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 	first.free()
 	second.free()
 
-## `at_heat()` gives a hunting copy its own `PursuitSpec`, never the cold row's own hunt's (`EventDef.hunts`),
-## so the copy's speed is not written onto the row every other copy is made from.
-func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t: TestRunner) -> void:
-	var cold := EventCatalogue.by_id("roadblock")
-	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
-	t.check(not cold.pursues() and cold.hunts.pursuit() != null, "the cold roadblock does not pursue")
-	t.check(hot.pursues() and hot.pursuit != cold.hunts.pursuit(),
-			"its hunting copy pursues with a spec of its own")
-	t.check(is_equal_approx(hot.chase_speed(), Tuning.HEAT_HUNTS_SPEED)
-			and is_equal_approx(cold.hunts.pursuit().speed(), 0.0),
-			"at the ladder's speed, leaving the row's spec as it was")
-	t.check(hot.waits_for_her() and is_equal_approx(hot.notice_within(), EventDef.HEAT_HUNTS_WITHIN),
-			"noticing her at the ladder's distance")
+# A hunting copy cannot write its pursuit onto its row, since a `PursuitSpec` has no setter.
+# `tests/test_heat.gd` holds whether a hunting copy pursues; the chase speed and notice distance
+# are settings, not read back by any suite.
 
 # -------------------------------------------------------------- the badge alone ---
 

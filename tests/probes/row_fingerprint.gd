@@ -46,12 +46,11 @@ const FULL := false
 ## dump that printed them would depend on what was asked before it.
 const SKIP_VARS: Array[String] = ["_cost_cache"]
 ## Methods that are not asked by name. Every method that returns nothing is skipped for that
-## reason (a writer such as `solid()` changes what
-## is being measured, and one a later step adds is skipped too); these return something and are
-## left out for their own reason: the copies the probe makes itself, the check, and the
-## engine's.
+## reason (it changes the row instead of answering a question about it, and one a later step adds
+## is skipped too); these return something and are left out for their own reason: the copies the
+## probe makes itself, the check, and the engine's.
 const SKIP: Array[String] = ["validate", "at_heat", "for_day", "as_sent_ahead", "as_warned_first",
-		"part", "redraft", "get_class", "duplicate"]
+		"part", "redraft", "get_class"]
 ## The rows the game makes a copy warned of first of (`EventSpawner.as_warned()`): the copy
 ## validates itself as it is made, and only these are held to the flat minimum a warning first
 ## owes.

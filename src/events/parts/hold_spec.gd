@@ -1,5 +1,5 @@
 class_name HoldSpec
-extends Resource
+extends RefCounted
 ## **Whether a row holds her when she comes to it, and how**, as one value: how many seconds it takes
 ## her controls, how far past its own solid edge she has to come, and whether it takes her again.
 ## A row holds one (`EventDef.hold()`); nothing changes it once it exists (a refinement returns a

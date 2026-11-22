@@ -471,8 +471,9 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 	var none: Array[EventPlan] = []
 	# No catalogue row is planned as a crossing (`RouteSpec.Kind.CROSS_STREET`: the cat is sited by
 	# the director), so the row is the cat with the plan builder's crossing path laid for it.
-	var scheduled := cat.duplicate() as EventDef
-	scheduled.use_route(RouteSpec.at(cat.speed(), RouteSpec.Kind.CROSS_STREET))
+	var crossing := cat.redraft()
+	crossing.route(RouteSpec.at(cat.speed(), RouteSpec.Kind.CROSS_STREET))
+	var scheduled := crossing.build()
 	var builder := GamePlanBuilder.over(map)
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		if tile.x % 7 != 0 or not map.passable(tile, Mover.on_foot()):
@@ -601,7 +602,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 static func _a_start_for(map: CityMap, def: EventDef, mover: Mover, anchor: Vector2) -> Vector2:
 	var best := Vector2.INF
 	var best_distance := INF
-	for type in def.placement:
+	for type in def.ground_kinds():
 		for tile in map.tiles_of_type(type as GameEnums.TileType):
 			var at := map.tile_to_world(tile)
 			var distance := at.distance_squared_to(anchor)

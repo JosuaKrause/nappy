@@ -37,7 +37,7 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 			continue
 		# Nothing checks that a thing sited out of where she happens to be walking leaves a route
 		# to a park, so `EventDef.validate()` refuses a body on one outright.
-		if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
+		if def.spawn_mode_on(1) == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		# Nothing drawn, nothing to bump into: a curfew announcement carried by a mast that is
 		# already solid on its own, a playground the park itself draws.

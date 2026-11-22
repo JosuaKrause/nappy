@@ -38,7 +38,7 @@ A test never asserts what a setting is, and the relationship tests that encode a
 **Change the event density:** the cells of the declared table (`PlacementDensity`: the events a
 unit's bag holds for every hundred draw locations, by view, kind of ground and act, and the
 moments an act owes her), then a row's `weight` and its weight on a kind of ground
-(`EventDef.weigh_on()`, on the catalogue row). A cell is what the bag holds, not what the day
+(`EventDraft.weighed_on()`, on the catalogue row). A cell is what the bag holds, not what the day
 places, and no number corrects another (`docs/EVENTS.md`, "The density, and why it is a declared
 table"). **`max_per_day` does not move a row the units draw**: no daily cap bounds one, a unit
 holding at most one of a row instead; it still bounds the moments, the director's marbles and the

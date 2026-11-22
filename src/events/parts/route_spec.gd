@@ -1,5 +1,5 @@
 class_name RouteSpec
-extends Resource
+extends RefCounted
 ## **How a row travels, as one value**: whether it moves along a route of its own, how fast, how the
 ## route is built and how long it is, whether it paces a beat on it, and whether it stops where it
 ## arrives. A row holds one (`EventDef.route()`); nothing changes it once it exists (a refinement

@@ -230,7 +230,7 @@ func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void
 func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 	var blockers: Array[EventDef] = []
 	for def in EventCatalogue.available_on(1):
-		if def.obstructs_within() > 0.0 and def.placement.has(GameEnums.TileType.SIDEWALK):
+		if def.obstructs_within() > 0.0 and def.stands_on(GameEnums.TileType.SIDEWALK):
 			blockers.append(def)
 	t.check(not blockers.is_empty(),
 			"something can be in the way of a pavement on day 1")

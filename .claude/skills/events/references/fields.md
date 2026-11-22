@@ -27,8 +27,8 @@ anything else is **friction** (weighted onto the corridor). The role of a row wi
 candidate loop, where the beat exists. A row that wants a role its data does not imply needs a
 change to `EventScheduler.role_for()`, not a new field.
 
-**A row's weight on a kind of ground is one number, set on the row.** `EventDef.weigh_on()` sets
-it beside the row's `weight` in the catalogue, as a multiple of it, where the row is rare on a
+**A row's weight on a kind of ground is one number, set on the row.** `EventDraft.weighed_on()`
+writes it beside the row's `weight` in the catalogue, as a multiple of it, where the row is rare on a
 ground or never stands there though its tiles lie there; every other ground its `placement` lists
 weighs one (`EventDef.weight_on()`, which a unit's bag fill reads, `UnitFills`). It is no table
 beside the catalogue, and `EventDef.validate()` refuses a weight on ground the row cannot stand on.
