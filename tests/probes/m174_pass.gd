@@ -16,7 +16,8 @@ extends RefCounted
 ## **The rig.** A real `EventInstance` (`EventCatalogue`'s own def, or a historical copy — see
 ## `_historical_def()`), given a long straight two-point path so `EventRouteWalk.advance()` — the
 ## same function the scheduler's placement drives — carries it at its own `speed`, pacing back
-## and forth if `def.paces`. Never added to a tree: `contribution_at()`, `accumulate_landed()` and
+## and forth if the row paces a beat. Never added to a tree: `contribution_at()`,
+## `accumulate_landed()` and
 ## `_process()` all work on a bare `.setup()` instance, the same convention
 ## `tests/test_halo.gd`'s `_instance_at()` uses. Her line is parallel to the instance's own path,
 ## offset in Y by a fixed lateral distance, and her direction is fixed **opposite the instance's
