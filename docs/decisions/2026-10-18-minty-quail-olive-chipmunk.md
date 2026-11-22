@@ -16,8 +16,11 @@ down outright, a new question named for what it counts (the checkpoint controlle
 `tools/field_reads.txt` lost the four classes' 26 lines and gained none.
 
 **A test that wrote a shape in place** (`test_prediction_reuse.gd`) builds rows of other shapes and swaps them in, since
-nothing in the game changes a shape after it is made; with the key's shape entry broken, 28 of its 7,043 checks fail, as the
-same checks did against the old key's copied values; a duplicate of the shape replacement's check is deleted, 164 checks
+nothing in the game changes a shape after it is made; with the key's shape entry broken, 28 of its 7,043 checks fail:
+the shape replacement's 8, the no-shape 12, and the swapped rectangle's 8, which holds what main's in-place write of a
+shape's kind and extents held. On main, with the old key's copied shape values made constant, 36 of 7,207 fail: the same
+replacement and no-shape checks and its two in-place writes, of a shape's length and of its kind and extents, 8 each.
+The swapped segment that stood for the length write held the same as the replacement check and is deleted, 164 checks
 across the catalogue's rows.
 
 **Measured.** On main and the branch, every line of the row fingerprint (every row, every copy, the planners' plans) is
