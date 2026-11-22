@@ -15,7 +15,8 @@ beside a mid-refactor `main`, record mossy-raven, a third column with placement 
 polite-tapir-velvet-heron, and a fourth after the events' field-read conversion, record polite-tapir-crisp-heron):
 
 - **What moved after the events' field-read conversion, listed for the end remeasure** (the fourth
-  column against the third, the record polite-tapir-crisp-heron): dawn planning inside `build_day()` 51.6 s to 44.1 s,
+  column against the third, the record polite-tapir-crisp-heron): dawn planning (a copy of today's `placement_rows.gd`
+  with the third column's timers, set against the third column's own copy) inside `build_day()` 51.6 s to 44.1 s,
   inside `draw_every_unit()` 345.6 to 334.3, the whole probe 568.6 to 505.2; the crowd tick's mean
   whole-mode median about 2,466 µs to 2,351 µs; the frame profile's callback interval with
   `--invincible` 4.9 ms to 4.0 profiled and 7.5 to 6.3 with the profiler off; `test_acts` 349

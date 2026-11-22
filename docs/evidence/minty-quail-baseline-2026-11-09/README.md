@@ -30,7 +30,7 @@ The suites that ask whether the days hold together and can be won, each run by n
 |---|---|---|---|---|
 | `test_full_run*` | 16739 checks, 0 failures (load 28.66) | 16537 checks, 0 failures (load 6.68) | 16236 checks, 0 failures (load 31.19) | 16236 checks, 0 failures (load 2.33) |
 | `test_finale*` | 6026 checks, 0 failures (load 11.27) | 9501 checks, 0 failures (load 7.72) | 9464 checks, 0 failures (load 3.69) | 9463 checks, 0 failures (load 3.14) |
-| `test_acts*` | 356 checks, 0 failures (load 16.42) | 349 checks, 0 failures (load 5.47) | 349 checks, 0 failures (load 11.61) | 45 checks, 0 failures (load 3.46) |
+| `test_acts*` | 356 checks, 0 failures (load 16.42) | 349 checks, 0 failures (load 5.47) | 349 checks, 0 failures (load 11.61) | 45 checks, 0 failures (load 3.46; since row 4b the act sweep holds scripted rows only) |
 | `test_regions*` | 178735 checks, 0 failures (load 13.95) | 388618 checks, 0 failures (load 7.80) | 388618 checks, 0 failures (load 9.55) | 388618 checks, 0 failures (load 3.49) |
 | `test_seals*` | 53906 checks, 0 failures (load 8.39) | 52814 checks, 0 failures (load 22.16) | 52900 checks, 0 failures (load 17.52) | 52900 checks, 0 failures (load 3.62) |
 | `test_routes_lattice*` | 19738 checks, 0 failures (load 5.65) | 19472 checks, 0 failures (load 20.06) | 19472 checks, 0 failures (load 20.81) | 19472 checks, 0 failures (load 3.14) |
@@ -108,7 +108,7 @@ The placement closed column of the day table is summed from the `RD` lines of `r
 
 After row 4b (b3693bee7) the column is summed from the `RD` lines of `raw/placement_rows_after_4b.log` over the same 18 cities and equals the placement closed column on every day. `tools/compare-placement-rows.py` (now in `tools/`, which reads the same `RD` / `RV` / `RK` lines) was run on the new log with the role table of the first reading (`raw/placement_roles.log`; the tree's own `placement_roles` run, `raw/placement_roles_after_4b.log`, prints the same table):
 - placement closed (4da1e5285) to after 4b: `raw/placement_comparison_placement_closed_to_after_4b.txt`: 476 cells compared, none outside 2 sigma, every summary line +0%.
-- before (v0.29.0) to after 4b: `raw/placement_comparison_before_to_after_4b.txt` (the tool's output for the first sample, with its (b) list of every cell outside 2 sigma pooled over the 18 cities; its role table is today's for both, as in the first reading). Its summary lines compare the old tree with the one that has placement closed, and are not reduced here.
+- before (v0.29.0) to after 4b: `raw/placement_comparison_before_to_after_4b.txt` (the tool's output for the first sample, with its (b) list of every cell outside 2 sigma pooled over the 18 cities; its role table is today's for both, as in the first reading). Its summary lines compare the old tree with the one after row 4b, and are not reduced here.
 
 
 ## 4 and 5. Timed measurements
