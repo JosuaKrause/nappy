@@ -1,0 +1,335 @@
+(b) Outside 2σ pooled over all 18 cities (90210+31i (18)), events per city per day, before (v0.29.0) → after 4b (b3693bee7):
+- friction by view: on her route all days, 19.69 → 6.57 (-67%, z -40.6); z per sample -40.6
+- friction by view: off the route all days, 37.24 → 20.54 (-45%, z -34.9); z per sample -34.9
+- friction by view: route-adjacent all days, 6.21 → 3.35 (-46%, z -14.6); z per sample -14.6
+- friction by view and day: off the route day 11, 47.61 → 19.83 (-58%, z -14.4); z per sample -14.4
+- friction by view and day: off the route day 14, 64.83 → 33.89 (-48%, z -13.2); z per sample -13.2
+- friction by view and day: off the route day 13, 61.94 → 32.17 (-48%, z -13.0); z per sample -13.0
+- friction by view and day: on her route day 7, 26.72 → 9.06 (-66%, z -12.5); z per sample -12.5
+- friction by view and day: on her route day 4, 22.61 → 6.72 (-70%, z -12.4); z per sample -12.4
+- friction by view and day: on her route day 6, 23.44 → 7.22 (-69%, z -12.4); z per sample -12.4
+- friction by view and day: route-adjacent day 13, 6.28 → 21.39 (+241%, z +12.2); z per sample +12.2
+- friction by view and day: off the route day 9, 42.56 → 20.33 (-52%, z -11.9); z per sample -11.9
+- friction by view and day: off the route day 10, 44.44 → 21.67 (-51%, z -11.9); z per sample -11.9
+- friction by view and day: on her route day 8, 26.39 → 9.83 (-63%, z -11.7); z per sample -11.7
+- friction by view and day: on her route day 13, 16.28 → 4.00 (-75%, z -11.6); z per sample -11.6
+- friction by view and day: on her route day 10, 18.94 → 5.72 (-70%, z -11.3); z per sample -11.3
+- friction by view and day: on her route day 5, 22.61 → 8.06 (-64%, z -11.2); z per sample -11.2
+- friction by view and day: off the route day 12, 55.67 → 31.44 (-44%, z -11.0); z per sample -11.0
+- friction by view and day: on her route day 1, 17.39 → 5.28 (-70%, z -10.8); z per sample -10.8
+- friction by view and day: on her route day 3, 14.39 → 3.83 (-73%, z -10.5); z per sample -10.5
+- friction by view and day: on her route day 12, 18.44 → 6.44 (-65%, z -10.2); z per sample -10.2
+- friction by view and day: on her route day 9, 18.83 → 7.33 (-61%, z -9.5); z per sample -9.5
+- friction by view and day: on her route day 14, 15.50 → 5.33 (-66%, z -9.5); z per sample -9.5
+- friction by view and day: on her route day 2, 15.83 → 5.72 (-64%, z -9.2); z per sample -9.2
+- friction by view and day: on her route day 11, 18.22 → 7.44 (-59%, z -9.0); z per sample -9.0
+- friction by view and day: route-adjacent day 12, 7.22 → 1.39 (-81%, z -8.4); z per sample -8.4
+- friction by view and day: route-adjacent day 9, 8.17 → 2.28 (-72%, z -7.7); z per sample -7.7
+- friction by view and day: route-adjacent day 8, 8.33 → 2.50 (-70%, z -7.5); z per sample -7.5
+- friction by view and day: route-adjacent day 10, 7.50 → 2.06 (-73%, z -7.5); z per sample -7.5
+- friction by view and day: off the route day 6, 30.39 → 18.17 (-40%, z -7.4); z per sample -7.4
+- friction by view and day: off the route day 8, 33.67 → 21.17 (-37%, z -7.2); z per sample -7.2
+- friction by view and day: route-adjacent day 7, 7.44 → 2.33 (-69%, z -6.9); z per sample -6.9
+- friction by view and day: off the route day 3, 21.44 → 12.33 (-42%, z -6.7); z per sample -6.7
+- friction by view and day: route-adjacent day 5, 6.00 → 1.67 (-72%, z -6.6); z per sample -6.6
+- friction by view and day: off the route day 7, 31.94 → 20.83 (-35%, z -6.5); z per sample -6.5
+- friction by view and day: off the route day 5, 28.28 → 18.17 (-36%, z -6.3); z per sample -6.3
+- friction by view and day: route-adjacent day 11, 6.83 → 2.44 (-64%, z -6.1); z per sample -6.1
+- friction by view and day: route-adjacent day 4, 5.00 → 1.44 (-71%, z -5.9); z per sample -5.9
+- friction by view and day: route-adjacent day 6, 6.67 → 2.44 (-63%, z -5.9); z per sample -5.9
+- friction by view and day: off the route day 4, 21.94 → 13.94 (-36%, z -5.7); z per sample -5.7
+- friction by view and day: route-adjacent day 14, 5.83 → 2.33 (-60%, z -5.2); z per sample -5.2
+- friction by view and day: off the route day 2, 19.61 → 12.78 (-35%, z -5.1); z per sample -5.1
+- friction by view and day: off the route day 1, 17.00 → 10.89 (-36%, z -4.9); z per sample -4.9
+- friction by view and day: route-adjacent day 3, 4.06 → 1.44 (-64%, z -4.7); z per sample -4.7
+- friction by view and day: route-adjacent day 2, 3.89 → 1.50 (-61%, z -4.4); z per sample -4.4
+- friction by view and day: route-adjacent day 1, 3.67 → 1.72 (-53%, z -3.6); z per sample -3.6
+- row by day: dog_walker day 14, 25.11 → 0.00 (-100%, z -21.3); z per sample -21.3
+- row by day: dog_walker day 13, 24.00 → 0.00 (-100%, z -20.8); z per sample -20.8
+- row by day: dog_walker day 11, 23.39 → 0.00 (-100%, z -20.5); z per sample -20.5
+- row by day: dog_walker day 10, 22.06 → 0.00 (-100%, z -19.9); z per sample -19.9
+- row by day: dog_walker day 12, 22.00 → 0.00 (-100%, z -19.9); z per sample -19.9
+- row by day: dog_walker day 1, 21.39 → 0.00 (-100%, z -19.6); z per sample -19.6
+- row by day: dog_walker day 8, 21.11 → 0.00 (-100%, z -19.5); z per sample -19.5
+- row by day: dog_walker day 9, 21.06 → 0.00 (-100%, z -19.5); z per sample -19.5
+- row by day: dog_walker day 6, 20.39 → 0.00 (-100%, z -19.2); z per sample -19.2
+- row by day: dog_walker day 7, 19.50 → 0.00 (-100%, z -18.7); z per sample -18.7
+- row by day: dog_walker day 2, 18.89 → 0.00 (-100%, z -18.4); z per sample -18.4
+- row by day: dog_walker day 3, 18.78 → 0.00 (-100%, z -18.4); z per sample -18.4
+- row by day: dog_walker day 4, 18.06 → 0.00 (-100%, z -18.0); z per sample -18.0
+- row by day: dog_walker day 5, 17.94 → 0.00 (-100%, z -18.0); z per sample -18.0
+- row by day: police_patrol day 11, 11.83 → 0.00 (-100%, z -14.6); z per sample -14.6
+- row by day: police_patrol day 7, 11.78 → 0.00 (-100%, z -14.6); z per sample -14.6
+- row by day: police_patrol day 13, 11.72 → 0.00 (-100%, z -14.5); z per sample -14.5
+- row by day: police_patrol day 12, 11.56 → 0.00 (-100%, z -14.4); z per sample -14.4
+- row by day: police_patrol day 14, 11.44 → 0.00 (-100%, z -14.4); z per sample -14.4
+- row by day: police_patrol day 6, 11.28 → 0.00 (-100%, z -14.2); z per sample -14.2
+- row by day: police_patrol day 9, 11.28 → 0.00 (-100%, z -14.2); z per sample -14.2
+- row by day: police_patrol day 10, 11.06 → 0.00 (-100%, z -14.1); z per sample -14.1
+- row by day: police_patrol day 8, 11.06 → 0.00 (-100%, z -14.1); z per sample -14.1
+- row by day: police_patrol day 5, 10.83 → 0.00 (-100%, z -14.0); z per sample -14.0
+- row by day: police_patrol day 4, 10.72 → 0.00 (-100%, z -13.9); z per sample -13.9
+- row by day: abduction day 13, 1.44 → 12.06 (+735%, z +12.3); z per sample +12.3
+- row by day: roadblock day 13, 6.00 → 20.00 (+233%, z +11.6); z per sample +11.6
+- row by day: abduction day 14, 2.17 → 12.61 (+482%, z +11.5); z per sample +11.5
+- row by day: abduction day 11, 1.83 → 10.28 (+461%, z +10.3); z per sample +10.3
+- row by day: abduction day 8, 4.00 → 14.17 (+254%, z +10.1); z per sample +10.1
+- row by day: abduction day 12, 2.22 → 10.50 (+372%, z +9.8); z per sample +9.8
+- row by day: abduction day 10, 1.78 → 8.94 (+403%, z +9.3); z per sample +9.3
+- row by day: abduction day 9, 2.11 → 6.89 (+226%, z +6.8); z per sample +6.8
+- row by day: cafe_tables day 1, 18.56 → 29.06 (+57%, z +6.5); z per sample +6.5
+- row by day: delivery_van day 1, 12.33 → 5.94 (-52%, z -6.3); z per sample -6.3
+- row by day: reversing_lorry day 6, 5.83 → 1.89 (-68%, z -6.0); z per sample -6.0
+- row by day: reversing_lorry day 7, 5.39 → 1.67 (-69%, z -5.9); z per sample -5.9
+- row by day: cafe_tables day 4, 16.78 → 25.67 (+53%, z +5.8); z per sample +5.8
+- row by day: delivery_van day 11, 5.39 → 1.89 (-65%, z -5.5); z per sample -5.5
+- row by day: cafe_tables day 3, 15.28 → 23.22 (+52%, z +5.4); z per sample +5.4
+- row by day: busker day 10, 9.22 → 4.72 (-49%, z -5.1); z per sample -5.1
+- row by day: delivery_van day 7, 8.56 → 4.28 (-50%, z -5.1); z per sample -5.1
+- row by day: busker day 14, 9.39 → 4.89 (-48%, z -5.1); z per sample -5.1
+- row by day: cafe_tables day 5, 16.67 → 24.17 (+45%, z +5.0); z per sample +5.0
+- row by day: busker day 11, 8.89 → 4.67 (-48%, z -4.9); z per sample -4.9
+- row by day: busker day 13, 8.89 → 4.67 (-48%, z -4.9); z per sample -4.9
+- row by day: reversing_lorry day 8, 5.28 → 2.17 (-59%, z -4.8); z per sample -4.8
+- row by day: pigeon_flock day 1, 4.78 → 8.94 (+87%, z +4.8); z per sample +4.8
+- row by day: reversing_lorry day 5, 5.56 → 2.39 (-57%, z -4.8); z per sample -4.8
+- row by day: chatting_mother day 5, 2.00 → 4.89 (+144%, z +4.7); z per sample +4.7
+- row by day: busker day 9, 8.28 → 4.39 (-47%, z -4.6); z per sample -4.6
+- row by day: reversing_lorry day 10, 4.33 → 1.67 (-62%, z -4.6); z per sample -4.6
+- row by day: cafe_tables day 2, 16.83 → 23.72 (+41%, z +4.6); z per sample +4.6
+- row by day: pigeon_flock day 4, 4.56 → 8.39 (+84%, z +4.5); z per sample +4.5
+- row by day: pigeon_flock day 5, 4.56 → 8.39 (+84%, z +4.5); z per sample +4.5
+- row by day: pigeon_flock day 6, 4.61 → 8.44 (+83%, z +4.5); z per sample +4.5
+- row by day: delivery_van day 2, 9.39 → 5.33 (-43%, z -4.5); z per sample -4.5
+- row by day: delivery_van day 5, 9.50 → 5.50 (-42%, z -4.4); z per sample -4.4
+- row by day: delivery_van day 3, 7.83 → 4.39 (-44%, z -4.2); z per sample -4.2
+- row by day: busker day 7, 7.61 → 4.28 (-44%, z -4.1); z per sample -4.1
+- row by day: busker day 3, 7.39 → 4.11 (-44%, z -4.1); z per sample -4.1
+- row by day: reversing_lorry day 4, 4.28 → 1.89 (-56%, z -4.1); z per sample -4.1
+- row by day: reversing_lorry day 3, 4.11 → 1.78 (-57%, z -4.1); z per sample -4.1
+- row by day: pigeon_flock day 7, 4.94 → 8.44 (+71%, z +4.1); z per sample +4.1
+- row by day: leaf_blower day 11, 9.00 → 5.44 (-40%, z -4.0); z per sample -4.0
+- row by day: delivery_van day 10, 4.83 → 2.33 (-52%, z -4.0); z per sample -4.0
+- row by day: busker day 5, 7.89 → 4.61 (-42%, z -3.9); z per sample -3.9
+- row by day: busker day 8, 8.44 → 5.06 (-40%, z -3.9); z per sample -3.9
+- row by day: busker day 6, 8.22 → 4.89 (-41%, z -3.9); z per sample -3.9
+- row by day: delivery_van day 13, 5.00 → 2.50 (-50%, z -3.9); z per sample -3.9
+- row by day: chatting_mother day 4, 2.00 → 4.28 (+114%, z +3.9); z per sample +3.9
+- row by day: delivery_van day 9, 5.50 → 2.89 (-47%, z -3.8); z per sample -3.8
+- row by day: busker day 12, 7.61 → 4.50 (-41%, z -3.8); z per sample -3.8
+- row by day: cafe_tables day 9, 9.22 → 13.39 (+45%, z +3.7); z per sample +3.7
+- row by day: chatting_mother day 7, 2.00 → 4.11 (+106%, z +3.6); z per sample +3.6
+- row by day: reversing_lorry day 13, 3.94 → 1.89 (-52%, z -3.6); z per sample -3.6
+- row by day: market_stall day 2, 5.78 → 9.06 (+57%, z +3.6); z per sample +3.6
+- row by day: delivery_van day 12, 5.39 → 2.94 (-45%, z -3.6); z per sample -3.6
+- row by day: delivery_van day 14, 5.83 → 3.28 (-44%, z -3.6); z per sample -3.6
+- row by day: cafe_tables day 8, 17.11 → 22.33 (+31%, z +3.5); z per sample +3.5
+- row by day: market_stall day 6, 6.89 → 10.33 (+50%, z +3.5); z per sample +3.5
+- row by day: chatting_mother day 6, 2.00 → 4.00 (+100%, z +3.5); z per sample +3.5
+- row by day: chatting_mother day 8, 2.00 → 4.00 (+100%, z +3.5); z per sample +3.5
+- row by day: chatting_mother day 9, 2.00 → 4.00 (+100%, z +3.5); z per sample +3.5
+- row by day: reversing_lorry day 11, 2.94 → 1.28 (-57%, z -3.4); z per sample -3.4
+- row by day: homeless_yeller day 9, 11.17 → 7.67 (-31%, z -3.4); z per sample -3.4
+- row by day: delivery_van day 6, 9.06 → 5.94 (-34%, z -3.4); z per sample -3.4
+- row by day: military_convoy day 14, 0.61 → 0.00 (-100%, z -3.3); z per sample -3.3
+- row by day: homeless_yeller day 12, 12.22 → 8.72 (-29%, z -3.2); z per sample -3.2
+- row by day: market_stall day 3, 5.72 → 8.61 (+50%, z +3.2); z per sample +3.2
+- row by day: pigeon_flock day 8, 4.78 → 7.44 (+56%, z +3.2); z per sample +3.2
+- row by day: pigeon_flock day 9, 4.89 → 7.56 (+55%, z +3.2); z per sample +3.2
+- row by day: delivery_van day 4, 8.44 → 5.61 (-34%, z -3.2); z per sample -3.2
+- row by day: leaf_blower day 7, 13.22 → 9.67 (-27%, z -3.2); z per sample -3.2
+- row by day: leaf_blower day 10, 7.61 → 5.00 (-34%, z -3.1); z per sample -3.1
+- row by day: market_stall day 4, 6.28 → 9.11 (+45%, z +3.1); z per sample +3.1
+- row by day: delivery_van day 8, 8.89 → 6.11 (-31%, z -3.0); z per sample -3.0
+- row by day: charging_dog day 14, 1.44 → 2.94 (+104%, z +3.0); z per sample +3.0
+- row by day: reversing_lorry day 9, 2.94 → 1.44 (-51%, z -3.0); z per sample -3.0
+- row by day: alley_mouse day 9, 4.00 → 2.22 (-44%, z -3.0); z per sample -3.0
+- row by day: leaf_blower day 8, 12.44 → 9.17 (-26%, z -3.0); z per sample -3.0
+- row by day: charging_dog day 13, 1.56 → 3.06 (+96%, z +3.0); z per sample +3.0
+- row by day: busker day 2, 6.28 → 4.11 (-35%, z -2.9); z per sample -2.9
+- row by day: pigeon_flock day 13, 4.89 → 7.22 (+48%, z +2.8); z per sample +2.8
+- row by day: military_convoy day 13, 0.44 → 0.00 (-100%, z -2.8); z per sample -2.8
+- row by day: pigeon_flock day 2, 4.44 → 6.67 (+50%, z +2.8); z per sample +2.8
+- row by day: pigeon_flock day 10, 4.83 → 7.06 (+46%, z +2.7); z per sample +2.7
+- row by day: cafe_tables day 12, 10.44 → 13.56 (+30%, z +2.7); z per sample +2.7
+- row by day: chatting_mother day 2, 2.00 → 3.44 (+72%, z +2.6); z per sample +2.6
+- row by day: roadblock day 10, 5.72 → 3.83 (-33%, z -2.6); z per sample -2.6
+- row by day: homeless_yeller day 10, 11.11 → 8.44 (-24%, z -2.6); z per sample -2.6
+- row by day: pigeon_flock day 12, 4.83 → 6.89 (+43%, z +2.5); z per sample +2.5
+- row by day: homeless_yeller day 14, 10.94 → 8.39 (-23%, z -2.5); z per sample -2.5
+- row by day: busker day 4, 6.89 → 4.94 (-28%, z -2.4); z per sample -2.4
+- row by day: chatting_mother day 10, 2.00 → 3.28 (+64%, z +2.4); z per sample +2.4
+- row by day: market_stall day 9, 3.44 → 5.06 (+47%, z +2.3); z per sample +2.3
+- row by day: cafe_tables day 6, 17.89 → 21.28 (+19%, z +2.3); z per sample +2.3
+- row by day: chatting_mother day 13, 2.00 → 3.22 (+61%, z +2.3); z per sample +2.3
+- row by day: homeless_yeller day 11, 10.78 → 8.44 (-22%, z -2.3); z per sample -2.3
+- row by day: leaf_blower day 3, 13.06 → 10.50 (-20%, z -2.2); z per sample -2.2
+- row by day: market_stall day 8, 6.78 → 8.83 (+30%, z +2.2); z per sample +2.2
+- row by day: chatting_mother day 14, 2.00 → 3.17 (+58%, z +2.2); z per sample +2.2
+- row by day: chatting_mother day 3, 2.00 → 3.17 (+58%, z +2.2); z per sample +2.2
+- row by day: homeless_yeller day 4, 7.94 → 10.11 (+27%, z +2.2); z per sample +2.2
+- row by day: chatting_mother day 1, 2.00 → 3.11 (+56%, z +2.1); z per sample +2.1
+- row by day: pigeon_flock day 3, 4.67 → 6.28 (+35%, z +2.1); z per sample +2.1
+- row by day: protest day 14, 11.67 → 9.44 (-19%, z -2.1); z per sample -2.1
+- row by day: charging_dog day 12, 1.44 → 2.39 (+65%, z +2.0); z per sample +2.0
+- row by day: construction day 14, 4.56 → 3.22 (-29%, z -2.0); z per sample -2.0
+- row by day: charging_dog day 4, 3.00 → 4.28 (+43%, z +2.0); z per sample +2.0
+- row by day: leaf_blower day 2, 14.56 → 12.11 (-17%, z -2.0); z per sample -2.0
+- row by kind of ground: dog_walker sidewalk, 15.13 → 0.00 (-100%, z -61.7); z per sample -61.7
+- row by kind of ground: dog_walker junction, 5.85 → 0.00 (-100%, z -38.4); z per sample -38.4
+- row by kind of ground: police_patrol carriageway, 5.77 → 0.00 (-100%, z -38.1); z per sample -38.1
+- row by kind of ground: police_patrol junction, 3.13 → 0.00 (-100%, z -28.1); z per sample -28.1
+- row by kind of ground: abduction sidewalk, 0.52 → 2.88 (+453%, z +20.3); z per sample +20.3
+- row by kind of ground: pigeon_flock junction, 1.51 → 4.12 (+172%, z +17.4); z per sample +17.4
+- row by kind of ground: abduction junction, 0.59 → 2.51 (+325%, z +17.3); z per sample +17.3
+- row by kind of ground: delivery_van sidewalk, 7.57 → 4.21 (-44%, z -15.5); z per sample -15.5
+- row by kind of ground: busker open, 7.50 → 4.27 (-43%, z -14.9); z per sample -14.9
+- row by kind of ground: reversing_lorry sidewalk, 3.57 → 1.59 (-55%, z -13.8); z per sample -13.8
+- row by kind of ground: cafe_tables sidewalk, 14.25 → 18.74 (+31%, z +12.4); z per sample +12.4
+- row by kind of ground: chatting_mother junction, 0.44 → 1.31 (+201%, z +10.5); z per sample +10.5
+- row by kind of ground: charging_dog junction, 0.63 → 1.51 (+138%, z +9.5); z per sample +9.5
+- row by kind of ground: homeless_yeller sidewalk, 7.29 → 5.64 (-23%, z -7.3); z per sample -7.3
+- row by kind of ground: market_stall sidewalk, 5.77 → 7.33 (+27%, z +6.8); z per sample +6.8
+- row by kind of ground: leaf_blower sidewalk, 9.07 → 7.57 (-17%, z -5.9); z per sample -5.9
+- row by kind of ground: chatting_mother sidewalk, 1.56 → 2.27 (+45%, z +5.7); z per sample +5.7
+- row by kind of ground: homeless_yeller junction, 2.64 → 3.43 (+30%, z +5.1); z per sample +5.1
+- row by kind of ground: military_convoy carriageway, 0.07 → 0.00 (-100%, z -4.2); z per sample -4.2
+- row by kind of ground: pigeon_flock open, 0.06 → 0.17 (+193%, z +3.8); z per sample +3.8
+- row by kind of ground: roadblock carriageway, 3.36 → 3.93 (+17%, z +3.4); z per sample +3.4
+- row by kind of ground: charging_dog sidewalk, 1.06 → 0.79 (-25%, z -3.2); z per sample -3.2
+- row by kind of ground: protest junction, 2.23 → 1.86 (-17%, z -2.9); z per sample -2.9
+- row by kind of ground: alley_mouse alley, 3.85 → 3.38 (-12%, z -2.8); z per sample -2.8
+- row by kind of ground: leaf_blower junction, 1.61 → 1.36 (-16%, z -2.3); z per sample -2.3
+- row by kind of ground: poster_crew_square open, 0.10 → 0.05 (-52%, z -2.1); z per sample -2.1
+- row by view: dog_walker on her route, 9.81 → 0.00 (-100%, z -49.7); z per sample -49.7
+- row by view: dog_walker off the route, 8.82 → 0.00 (-100%, z -47.1); z per sample -47.1
+- row by view: police_patrol off the route, 4.38 → 0.00 (-100%, z -33.2); z per sample -33.2
+- row by view: police_patrol on her route, 3.41 → 0.00 (-100%, z -29.3); z per sample -29.3
+- row by view: abduction off the route, 1.07 → 5.19 (+385%, z +26.1); z per sample +26.1
+- row by view: dog_walker route-adjacent, 2.35 → 0.00 (-100%, z -24.4); z per sample -24.4
+- row by view: cafe_tables on her route, 3.07 → 6.52 (+112%, z +17.7); z per sample +17.7
+- row by view: police_patrol route-adjacent, 1.10 → 0.00 (-100%, z -16.6); z per sample -16.6
+- row by view: busker off the route, 7.50 → 4.27 (-43%, z -14.9); z per sample -14.9
+- row by view: delivery_van route-adjacent, 1.90 → 0.58 (-69%, z -13.3); z per sample -13.3
+- row by view: reversing_lorry off the route, 3.02 → 1.41 (-53%, z -12.1); z per sample -12.1
+- row by view: pigeon_flock off the route, 2.63 → 4.67 (+78%, z +12.0); z per sample +12.0
+- row by view: roadblock route-adjacent, 0.70 → 1.71 (+143%, z +10.3); z per sample +10.3
+- row by view: delivery_van off the route, 2.53 → 1.31 (-48%, z -9.9); z per sample -9.9
+- row by view: market_stall on her route, 1.32 → 2.50 (+90%, z +9.6); z per sample +9.6
+- row by view: leaf_blower route-adjacent, 7.00 → 5.21 (-26%, z -8.1); z per sample -8.1
+- row by view: chatting_mother on her route, 1.15 → 1.98 (+71%, z +7.4); z per sample +7.4
+- row by view: chatting_mother off the route, 0.60 → 1.22 (+104%, z +7.3); z per sample +7.3
+- row by view: pigeon_flock on her route, 1.19 → 2.00 (+67%, z +7.1); z per sample +7.1
+- row by view: reversing_lorry route-adjacent, 0.55 → 0.18 (-67%, z -6.9); z per sample -6.9
+- row by view: cafe_tables off the route, 2.19 → 3.11 (+42%, z +6.3); z per sample +6.3
+- row by view: homeless_yeller route-adjacent, 1.33 → 0.77 (-42%, z -6.1); z per sample -6.1
+- row by view: construction on her route, 0.96 → 1.55 (+62%, z +6.0); z per sample +6.0
+- row by view: delivery_van on her route, 3.14 → 2.32 (-26%, z -5.6); z per sample -5.6
+- row by view: charging_dog off the route, 1.47 → 2.12 (+44%, z +5.4); z per sample +5.4
+- row by view: abduction route-adjacent, 0.04 → 0.19 (+390%, z +5.1); z per sample +5.1
+- row by view: construction route-adjacent, 3.10 → 2.40 (-23%, z -4.7); z per sample -4.7
+- row by view: homeless_yeller on her route, 3.77 → 3.07 (-19%, z -4.2); z per sample -4.2
+- row by view: roadblock off the route, 1.48 → 1.06 (-28%, z -4.2); z per sample -4.2
+- row by view: military_convoy off the route, 0.04 → 0.00 (-100%, z -3.2); z per sample -3.2
+- row by view: alley_mouse off the route, 3.68 → 3.19 (-13%, z -3.0); z per sample -3.0
+- row by view: protest off the route, 2.40 → 2.03 (-15%, z -2.8); z per sample -2.8
+- row by view: market_stall off the route, 0.90 → 1.14 (+27%, z +2.7); z per sample +2.7
+- row by view: military_convoy route-adjacent, 0.03 → 0.00 (-100%, z -2.6); z per sample -2.6
+- row by view: chatting_mother route-adjacent, 0.25 → 0.38 (+53%, z +2.6); z per sample +2.6
+- row by view: homeless_yeller off the route, 4.94 → 5.37 (+9%, z +2.2); z per sample +2.2
+- row by view: poster_crew_square off the route, 0.08 → 0.04 (-55%, z -2.0); z per sample -2.0
+- the day's whole count: day 11, 123.39 → 81.44 (-34%, z -12.4); z per sample -12.4
+- the day's whole count: day 10, 120.39 → 82.39 (-32%, z -11.3); z per sample -11.3
+- the day's whole count: day 7, 141.33 → 101.33 (-28%, z -10.9); z per sample -10.9
+- the day's whole count: day 14, 138.61 → 101.94 (-26%, z -10.0); z per sample -10.0
+- the day's whole count: day 9, 115.17 → 83.39 (-28%, z -9.6); z per sample -9.6
+- the day's whole count: day 12, 130.11 → 99.00 (-24%, z -8.7); z per sample -8.7
+- the day's whole count: day 6, 140.72 → 111.50 (-21%, z -7.8); z per sample -7.8
+- the day's whole count: day 5, 128.72 → 106.89 (-17%, z -6.0); z per sample -6.0
+- the day's whole count: day 8, 149.00 → 126.06 (-15%, z -5.9); z per sample -5.9
+- the day's whole count: day 3, 103.61 → 85.67 (-17%, z -5.5); z per sample -5.5
+- the day's whole count: day 13, 134.00 → 116.94 (-13%, z -4.6); z per sample -4.6
+- the day's whole count: day 4, 116.94 → 101.56 (-13%, z -4.4); z per sample -4.4
+- the day's whole count: day 2, 103.56 → 90.11 (-13%, z -4.1); z per sample -4.1
+- the day's whole count: day 1, 101.06 → 90.00 (-11%, z -3.4); z per sample -3.4
+- view by day: off the route day 11, 71.11 → 47.50 (-33%, z -9.2); z per sample -9.2
+- view by day: route-adjacent day 7, 46.56 → 30.28 (-35%, z -7.9); z per sample -7.9
+- view by day: off the route day 10, 67.67 → 49.11 (-27%, z -7.3); z per sample -7.3
+- view by day: off the route day 14, 92.50 → 71.11 (-23%, z -7.1); z per sample -7.1
+- view by day: on her route day 13, 22.78 → 13.22 (-42%, z -6.8); z per sample -6.8
+- view by day: on her route day 10, 25.11 → 15.11 (-40%, z -6.7); z per sample -6.7
+- view by day: off the route day 13, 87.61 → 68.56 (-22%, z -6.5); z per sample -6.5
+- view by day: off the route day 9, 62.67 → 46.89 (-25%, z -6.4); z per sample -6.4
+- view by day: route-adjacent day 13, 23.61 → 35.17 (+49%, z +6.4); z per sample +6.4
+- view by day: route-adjacent day 11, 27.61 → 17.89 (-35%, z -6.1); z per sample -6.1
+- view by day: on her route day 12, 25.83 → 16.56 (-36%, z -6.0); z per sample -6.0
+- view by day: route-adjacent day 10, 27.61 → 18.17 (-34%, z -5.9); z per sample -5.9
+- view by day: on her route day 7, 40.61 → 29.00 (-29%, z -5.9); z per sample -5.9
+- view by day: route-adjacent day 8, 45.33 → 33.11 (-27%, z -5.9); z per sample -5.9
+- view by day: route-adjacent day 6, 45.78 → 33.72 (-26%, z -5.7); z per sample -5.7
+- view by day: on her route day 14, 20.72 → 12.89 (-38%, z -5.7); z per sample -5.7
+- view by day: on her route day 11, 24.67 → 16.06 (-35%, z -5.7); z per sample -5.7
+- view by day: off the route day 12, 78.39 → 63.39 (-19%, z -5.3); z per sample -5.3
+- view by day: off the route day 7, 54.17 → 42.06 (-22%, z -5.2); z per sample -5.2
+- view by day: on her route day 9, 25.44 → 17.50 (-31%, z -5.1); z per sample -5.1
+- view by day: on her route day 1, 30.50 → 21.83 (-28%, z -5.1); z per sample -5.1
+- view by day: route-adjacent day 9, 27.06 → 19.00 (-30%, z -5.0); z per sample -5.0
+- view by day: off the route day 3, 38.67 → 29.33 (-24%, z -4.8); z per sample -4.8
+- view by day: route-adjacent day 14, 25.39 → 17.94 (-29%, z -4.8); z per sample -4.8
+- view by day: route-adjacent day 12, 25.89 → 19.06 (-26%, z -4.3); z per sample -4.3
+- view by day: on her route day 6, 38.22 → 30.33 (-21%, z -4.0); z per sample -4.0
+- view by day: off the route day 6, 56.72 → 47.44 (-16%, z -3.9); z per sample -3.9
+- view by day: off the route day 5, 48.06 → 39.78 (-17%, z -3.7); z per sample -3.7
+- view by day: on her route day 8, 40.06 → 32.56 (-19%, z -3.7); z per sample -3.7
+- view by day: route-adjacent day 5, 44.11 → 36.39 (-18%, z -3.7); z per sample -3.7
+- view by day: route-adjacent day 4, 40.22 → 33.44 (-17%, z -3.4); z per sample -3.4
+- view by day: route-adjacent day 2, 41.06 → 34.39 (-16%, z -3.3); z per sample -3.3
+- view by day: on her route day 3, 24.94 → 19.83 (-20%, z -3.2); z per sample -3.2
+- view by day: on her route day 4, 35.67 → 29.67 (-17%, z -3.1); z per sample -3.1
+- view by day: on her route day 5, 36.56 → 30.72 (-16%, z -3.0); z per sample -3.0
+- view by day: on her route day 2, 28.17 → 23.17 (-18%, z -3.0); z per sample -3.0
+- walls by view: on her route all days, 8.61 → 13.00 (+51%, z +15.0); z per sample +15.0
+- walls by view: route-adjacent all days, 27.82 → 23.89 (-14%, z -8.7); z per sample -8.7
+- walls by view: off the route all days, 18.40 → 21.58 (+17%, z +8.0); z per sample +8.0
+- walls by view and day: on her route day 4, 10.94 → 19.94 (+82%, z +6.9); z per sample +6.9
+- walls by view and day: on her route day 8, 11.50 → 19.67 (+71%, z +6.2); z per sample +6.2
+- walls by view and day: route-adjacent day 7, 36.83 → 26.06 (-29%, z -5.8); z per sample -5.8
+- walls by view and day: on her route day 5, 11.94 → 19.28 (+61%, z +5.6); z per sample +5.6
+- walls by view and day: on her route day 6, 12.83 → 19.67 (+53%, z +5.1); z per sample +5.1
+- walls by view and day: off the route day 13, 21.94 → 30.06 (+37%, z +4.8); z per sample +4.8
+- walls by view and day: on her route day 3, 8.50 → 13.67 (+61%, z +4.7); z per sample +4.7
+- walls by view and day: off the route day 14, 23.50 → 31.50 (+34%, z +4.6); z per sample +4.6
+- walls by view and day: off the route day 12, 18.78 → 25.89 (+38%, z +4.5); z per sample +4.5
+- walls by view and day: route-adjacent day 6, 37.72 → 29.56 (-22%, z -4.2); z per sample -4.2
+- walls by view and day: off the route day 8, 27.11 → 34.33 (+27%, z +3.9); z per sample +3.9
+- walls by view and day: on her route day 7, 12.06 → 16.56 (+37%, z +3.6); z per sample +3.6
+- walls by view and day: on her route day 13, 5.06 → 8.06 (+59%, z +3.5); z per sample +3.5
+- walls by view and day: route-adjacent day 11, 19.17 → 14.39 (-25%, z -3.5); z per sample -3.5
+- walls by view and day: on her route day 2, 10.72 → 14.67 (+37%, z +3.3); z per sample +3.3
+- walls by view and day: route-adjacent day 8, 35.06 → 28.94 (-17%, z -3.2); z per sample -3.2
+- walls by view and day: off the route day 2, 11.17 → 14.89 (+33%, z +3.1); z per sample +3.1
+- walls by view and day: off the route day 9, 16.67 → 21.06 (+26%, z +3.0); z per sample +3.0
+- walls by view and day: on her route day 9, 5.17 → 7.67 (+48%, z +3.0); z per sample +3.0
+- walls by view and day: on her route day 1, 11.11 → 14.44 (+30%, z +2.8); z per sample +2.8
+- walls by view and day: route-adjacent day 13, 16.44 → 12.89 (-22%, z -2.8); z per sample -2.8
+- walls by view and day: on her route day 12, 6.00 → 8.44 (+41%, z +2.7); z per sample +2.7
+- walls by view and day: route-adjacent day 10, 18.61 → 14.94 (-20%, z -2.7); z per sample -2.7
+- walls by view and day: route-adjacent day 14, 18.56 → 15.06 (-19%, z -2.6); z per sample -2.6
+- walls by view and day: on her route day 14, 4.22 → 6.17 (+46%, z +2.6); z per sample +2.6
+- walls by view and day: on her route day 10, 5.06 → 7.06 (+40%, z +2.4); z per sample +2.4
+- walls by view and day: off the route day 7, 19.00 → 15.67 (-18%, z -2.4); z per sample -2.4
+- walls by view and day: route-adjacent day 2, 35.50 → 31.50 (-11%, z -2.1); z per sample -2.1
+
+(c) Outside 2σ on at least two samples with the same sign (z per sample in the order of (b)):
+
+Summary, pooled over all 18 cities:
+- walls by view, on her route: 8.61 → 13.00 (+51%, z +15.0)
+- walls by view, route-adjacent: 27.82 → 23.89 (-14%, z -8.7)
+- walls by view, off the route: 18.40 → 21.58 (+17%, z +8.0)
+- friction by view, on her route: 19.69 → 6.57 (-67%, z -40.6)
+- friction by view, route-adjacent: 6.21 → 3.35 (-46%, z -14.6)
+- friction by view, off the route: 37.24 → 20.54 (-45%, z -34.9)
+- each row per kind of ground: 48 cells, every cell main or head has, from -100% (dog_walker junction) to +inf% (alley_mouse junction); within 2σ, from -100% to +inf%
+- each row per view: 65 cells, every cell main or head has, from -100% (dog_walker off the route) to +390% (abduction route-adjacent); within 2σ, from -100% to +200%
+
+Cells compared: 523. Outside 2σ pooled: 320. Outside on two samples or more, same sign: 0.
