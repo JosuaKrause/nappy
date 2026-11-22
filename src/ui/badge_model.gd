@@ -129,7 +129,8 @@ static func _announces(approach: float, gap: float) -> bool:
 	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
 
 ## One frame. `here` is where she stands; `sees(point, margin_px)` is whether a world point is in
-## sight with `margin_px` screen px past the edge counted as in sight. Takes down last frame's badges and puts up this frame's.
+## sight with `margin_px` screen px past the edge counted as in sight. Takes down last frame's
+## badges and puts up this frame's.
 ##
 ## **Two paths, and only the first is the design.** `_announce_the_warnings()` is the end state: a
 ## warning is put up before its danger is placed, the badge points at where it will come from, and
