@@ -137,7 +137,7 @@ func run(delta: float, here: Vector2) -> void:
 ## the way a crowd car's horn does, while it is closing on her in its lane.
 ##
 ## **Raising it for any telegraphing event whose radius reaches her is the mistake to avoid.** Most
-## of the catalogue is not a `hard_fail`, and for those the mark would mean *a number is about to
+## of the catalogue is not a lethal, and for those the mark would mean *a number is about to
 ## move faster*, which the meter already says continuously and proportionally — a mark a player can
 ## correctly ignore, *"I can just keep doing what I was doing"*. The caret over an entity follows
 ## the same rule — **a cue that marks everything says nothing** — except that this is the one cue in

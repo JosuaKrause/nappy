@@ -293,7 +293,7 @@ func _draw() -> void:
 ## her, on its current course, whether or not it has honked yet.
 ##
 ## Doubled and in `MARK_LETHAL` exactly when `mood().will_be_lethal()` says the strike box
-## reaches her, because a car is exactly as lethal as a `hard_fail` event and being told apart by
+## reaches her, because a car is exactly as lethal as a lethal event and being told apart by
 ## hue is what the doubling exists to avoid. **Breathes with the horn's own decay while one is running** —
 ## the one thing a ring does that a discrete symbol does not get for free — and holds full size
 ## the rest of the time, since a projected approach with no jolt running has no envelope of its

@@ -47,7 +47,7 @@ func _test_telegraph_damps_emission(t: TestRunner) -> void:
 			"an event contributes nothing beyond its outer radius")
 
 	_advance(instance, def.telegraphs_for() + 0.05)
-	t.check(not instance.is_telegraphing(), "the telegraph phase ends after telegraph_time")
+	t.check(not instance.is_telegraphing(), "the telegraph phase ends after telegraphs_for()")
 	t.close_to(instance.current_intensity(), def.peak(),
 			"an active event emits its full intensity", 0.05)
 	t.close_to(instance.source().contribution_at(Vector2(def.core_within() * 0.5, 0.0)), def.peak(),

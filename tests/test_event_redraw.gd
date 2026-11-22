@@ -290,7 +290,7 @@ func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 
 ## The caret's own 0/1/2 strength is a picture — no mark, one mark, a doubled mark — so the same
 ## instance in the same state reads three different keys for the three strengths. A loose dog that
-## ends the day on contact (a copy of its row with `hard_fail` set) is amber when she is far off and
+## ends the day on contact (a copy of its row with lethal set) is amber when she is far off and
 ## closing on it, doubled red with her on it, and nothing with her away and still, and each change
 ## of her state is drawn on the next frame.
 func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:

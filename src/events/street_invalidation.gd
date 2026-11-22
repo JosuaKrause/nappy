@@ -157,7 +157,7 @@ static func _a_side_route_opens_off(map: CityMap, tile: Vector2i) -> bool:
 ##   telegraph contract *per event* and the player experiences the sum, so at one event per block
 ##   "walk out of this radius" can quietly mean "walk into the next one". For a row that only costs
 ##   points that is what the density is *for*; for one that ends the day it is a death arriving out
-##   of a field she was already reading. A `hard_fail` event that cannot find room is not placed.
+##   of a field she was already reading. A lethal event that cannot find room is not placed.
 ## - `EventScheduler.EVENT_SPACING_SAME` — a second dog walker a few pixels from the first reads as a
 ##   duplicated sprite rather than a second incident. This one bends, because on a full map the
 ##   honest answer is the roomiest spot left rather than no event.

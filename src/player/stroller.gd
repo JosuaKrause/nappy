@@ -550,7 +550,7 @@ func detain(seconds: float) -> void:
 func is_detained() -> bool:
 	return _detained_for > 0.0
 
-## A checkpoint's own *"gone inside"* — called by a `redetains` event instance the frame its hold
+## A checkpoint's own *"gone inside"* — called by a `detains_again()` event instance the frame its hold
 ## starts, on the same `visible` switch `stand_aside()` uses for the same reason: hiding a
 ## `Node2D` does not touch physics, the meters, `is_detained()`'s own lock, or the `Camera2D`
 ## riding under it, so the day keeps advancing around a mother the player simply cannot see for a

@@ -292,10 +292,10 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 ## Creates `def` on `path`, for a row whose warning ran before it existed, placed where the warning
 ## pointed just out of sight. A non-pursuer is created with its telegraph already spent, since the
 ## warning was its telegraph: from its first frame it is what it is after it — lethal, for a
-## `hard_fail` row, and at its own intensity for a loud one. **A pursuer is created with its
+## lethal row, and at its own intensity for a loud one. **A pursuer is created with its
 ## telegraph still to run**, since a pursuer's telegraph is its approach, the sight of it closing
 ## that she is owed (`Tuning.PURSUIT_MIN_NOTICE`), and its warning was only the badge before it
-## (`EventDef.warned_for()`, its `offscreen_notice`) — unless it `PursuitSpec.Start.ARRIVES_CHASING`
+## (`EventDef.warned_for()`) — unless it `PursuitSpec.Start.ARRIVES_CHASING`
 ## (the resistance's sent robber and guard), which is created with its telegraph spent, chasing from
 ## its first frame.
 ##

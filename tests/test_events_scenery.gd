@@ -147,7 +147,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 ## into, it flushes at the birds** — `flock_spread` plus her own body, the distance at which she is
 ## among them rather than near them — within a frame of her reaching that distance and not before
 ## it. **Walked past without being reached, it still goes up on its clock**, so a flock she skirted
-## is startled rather than ignored, and `telegraph_time` still means something.
+## is startled rather than ignored, and `telegraphs_for()` still means something.
 ##
 ## Stated over the walk rather than over the numbers it was written from: the rig tells where
 ## she is (`WhereSheIs.tell()`) every tick, which is the one thing the pass rig behind

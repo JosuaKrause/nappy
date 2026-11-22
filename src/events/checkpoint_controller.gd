@@ -71,7 +71,7 @@ signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
 ## Which side of a redetaining instance's own crossing she was on when its conversation started —
 ## `instance -> signf(...)`, the sign of her offset from the body against `facing_now()`. Present
 ## only while that instance's own detention is running; `_release_finished_holds()` reads
-## and clears it the frame the conversation ends. See `EventDef.redetains`.
+## and clears it the frame the conversation ends. See `EventDef.detains_again()`.
 var _door_entry_side: Dictionary = {}
 
 ## Where she stood the last time `watch_the_door_lines()` looked, and how many outright moves
@@ -145,7 +145,7 @@ func _guard_is_after_her() -> bool:
 ## circle by construction for the whole hold, since the release only ever sets her down inside the
 ## same trigger.
 ##
-## **`redetains` rather than every detainer**, which is what keeps `chatting_mother` out of it: her
+## **`detains_again()` rather than every detainer**, which is what keeps `chatting_mother` out of it: her
 ## conversation happens on the pavement in plain sight, with her own picture, the player's and the
 ## street all still drawn, so a lorry reversing beside the two of them is part of what that
 ## conversation costs. A door is the opposite — she goes in.
@@ -158,10 +158,10 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 	return null
 
 ## Coming within `EventDef.detain_distance()` of an instance that has not yet chatted locks her
-## controls for `detain_seconds` — the one mechanic in the catalogue that takes them away rather
+## controls for `detains_for()` — the one mechanic in the catalogue that takes them away rather
 ## than costing a meter. This is the one place that decides it, and it says so as intents
 ## (`holds_her`, and `takes_her_in` at a door), which the manager carries out on the player it was
-## handed (`Stroller.detain()`). See `EventDef.detain_seconds`, `EventInstance.start_chat()`.
+## handed (`Stroller.detain()`). See `EventDef.detains_for()`, `EventInstance.start_chat()`.
 ##
 ## **Only the nearest eligible instance captures her**, and it is not an optimisation. A street
 ## door stands three bodies a tile apart across the street, each reaching a tile past its own edge,
@@ -169,7 +169,7 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 ## means two releases, the second reading the position the first teleported her to and sending her
 ## back through the door she has just come out of.
 ##
-## **A `redetains` row is armed again once released, and what re-arms it is her leaving** — in
+## **A `detains_again()` row is armed again once released, and what re-arms it is her leaving** — in
 ## either direction. `checkpoint_hut` and `checkpoint_post` are the two, and this is the whole of
 ## what makes a door a toll rather than a one-time gate. The boom between a street door's huts is
 ## not a third: it never inspects her (`BodySpec.SolidWhen.WHILE_LOWERED`).
@@ -612,7 +612,7 @@ func warn_at_the_doors() -> void:
 
 ## *(2026-09-24, the player, answering whether a hold should end the chase: "we can try b. if she
 ## voluntarily goes to a hut the whole pursuit has been accomplished".)* Called from
-## `check_detentions()` the moment any `redetains` row — a checkpoint hut or an alley post, the one
+## `check_detentions()` the moment any `detains_again()` row — a checkpoint hut or an alley post, the one
 ## `_guard_after_her` stepped out of included — starts a hold: he gives up exactly as
 ## `EventPursuit` has him give up when she outruns it, same state, same drawing, same
 ## telemetry, through `EventInstance.give_up_the_chase()` — the smallest reading of "the whole

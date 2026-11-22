@@ -147,7 +147,7 @@ func _run_the_warning(city: City, her: Node2D) -> void:
 
 ## Every number of each is the task robber's (`robber_giving_chase`): his field, his 130px/s, his
 ## 26px catch and 116px lunge, the dog's half-second badge, no telegraph, the 30s cap — and his
-## `hard_fail`. Only the picture and the id are their own.
+## lethal. Only the picture and the id are their own.
 func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t: TestRunner) -> void:
 	var robber := EventCatalogue.by_id("robber_giving_chase")
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
@@ -843,7 +843,7 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 
 ## **A hunting van stops and lets men out** *(inbox #669 in coral-lark: "Van stops, men get out (Recommended)",
 ## and for the unmarked van "Same as the police")*: the night raid's and the unmarked van's hunting
-## copies no longer pursue her themselves — they investigate, keeping their cold `hard_fail` — and
+## copies no longer pursue her themselves — they investigate, keeping their cold lethal — and
 ## let two men out, whose catch ends the day ("Ends the day (M56)"); cold each is what it always was.
 func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 	for id: String in ["night_raid", "abduction"]:
@@ -878,7 +878,7 @@ func _test_no_vehicle_pursues_her(t: TestRunner) -> void:
 	t.check(vehicles >= 3, "checked %d vehicle rows" % vehicles)
 
 ## **A hunting van waits for its men**: its `duration` runs from its notice, but it does not leave
-## the kerb past `telegraph_time + duration` while a man it let out is still out; once he is back
+## the kerb past `telegraphs_for()` + duration` while a man it let out is still out; once he is back
 ## in, it leaves.
 func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)

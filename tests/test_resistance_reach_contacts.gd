@@ -11,7 +11,7 @@ func run(t: TestRunner) -> void:
 
 ## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
 ## event to be generated"* (quiet-yak, inbox #503). On the test city's day 11, a stationary `reversing_lorry`
-## (hard_fail, 175px field) is planned on a sidewalk, and the mast is queued with only the sidewalk
+## (lethal, 175px field) is planned on a sidewalk, and the mast is queued with only the sidewalk
 ## inside that field to stand on: the scheduler's acceptance refuses every tile, so no mast is
 ## generated, as `StreetInvalidation.room_around()` refuses any row inside a lethal field ("Nothing else happens
 ## inside a lethal event's field"). Offered sidewalk well clear of it, the mast is generated, joins

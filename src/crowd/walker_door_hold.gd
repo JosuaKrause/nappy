@@ -10,7 +10,7 @@ extends RefCounted
 ## *these are the people waiting*.
 ##
 ## **Held on the hut's own ground point and on nothing else.** Not on the `checkpoint_hut` row's
-## `detain_radius` (48px, the reach at which the *player* is detained) and not on `EventInstance`'s
+## `detain_distance()` (48px, the reach at which the *player* is detained) and not on `EventInstance`'s
 ## detention, which teleports her, hides her, eases the camera onto the door and charges her meter.
 ## A walker is not the one being looked for; what it shares with her is the shape of the wait, not
 ## the machinery of it.

@@ -377,7 +377,7 @@ func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
 ## corridor nor off it, so placement cannot keep it clear of anything — `charging_dog` never
 ## reaches `StreetInvalidation.room_around()` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
 ## and sited with no tile, and `alley_robbery` (and `charging_dog` again, past the teaching day,
-## once `spawn_mode_on()` answers `MAP`) is exempt only because `hard_fail` always classifies a
+## once `spawn_mode_on()` answers `MAP`) is exempt only because lethal always classifies a
 ## `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before `EventScheduler.role_for()` ever asks whether it
 ## pursues. Forcing the role off `WALL` here is what tells the two reasons apart, and it is why
 ## a third pursuer — one a future `EventScheduler.role_for()` change routes through `SET_PIECE` or `FRICTION`

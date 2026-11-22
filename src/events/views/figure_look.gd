@@ -100,7 +100,7 @@ func _draw_cat(canvas: CanvasItem) -> void:
 	var telegraphing := event.is_telegraphing()
 	var by_view := EventPictures.CAT_CROUCHED_BY_VIEW if telegraphing \
 			else EventPictures.CAT_RUNNING_BY_VIEW
-	# The crouch holds still by construction (`still_while_telegraphing`), so only the dash gets a
+	# The crouch holds still by construction (`holds_still()`), so only the dash gets a
 	# second frame — a crouching cat has nothing to stride into yet.
 	if not telegraphing and gait_is_stepping():
 		by_view = EventPictures.CAT_RUNNING_BY_VIEW_B
@@ -185,7 +185,7 @@ func _draw_dog_walker(canvas: CanvasItem) -> void:
 	_drawer.stand(canvas, dog, to_the_dog, Vector2.ZERO, mirror)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
-## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
+## whole of her beat; talking is what she looks like for exactly the `detains_for()` of a
 ## conversation, and it is the only telegraph that mechanic gets — there is no exclamation mark,
 ## because she is a cost rather than a threat and that mark is spoken for. See
 ## `docs/EVENTS.md`, "The visual vocabulary".

@@ -165,7 +165,7 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	var path := due[1] as PackedVector2Array
 	t.check(path.size() == 2, "it is given a route across her line")
 	var def := due[0] as EventDef
-	# The cat is `still_while_telegraphing`, so its lead is `EventDef.ahead_of_player_lead()` —
+	# The cat is `holds_still()`, so its lead is `EventDef.ahead_of_player_lead()` —
 	# longer than the flat `AHEAD_LEAD_DISTANCE` by exactly the ground she covers while it holds
 	# its crouch — rather than the constant every other crossing row is sited at.
 	var lead := def.ahead_of_player_lead()

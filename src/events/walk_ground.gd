@@ -182,7 +182,7 @@ func stand(plan: EventPlan) -> void:
 				bucket.append(solid)
 
 ## **The ground a placement holds her off for the whole walk**: its body (`solids_of()`), and the
-## lethal reach of a row that stands — not mobile, `hard_fail` and no pursuer — as a disc round where
+## lethal reach of a row that stands — not mobile, lethal and no pursuer — as a disc round where
 ## its body stands, whose edge is where her centre is taken (`EventDef.lethal_reach()`, measured from
 ## the instance to her centre, as `EventInstance` measures it). A reach no wider than her own body
 ## holds nothing her body does not already.
