@@ -2777,20 +2777,21 @@ is the point of a city that does not change.
 
 **The contract is stated over the spine-measured band and the row's own forward reach**, which is
 larger than the catalogued outer radius for anything that moves. `outer radius − inner radius` is
-a band width, and subtracting a segment's spine half-length from both radii (see "Solid things are
-solid") leaves that width untouched; every emitting segment row but the patrol car is stationary,
-so its own forward reach never grows past its spine half-length plus its outer radius, and the patrol car's moving
-field is priced from its centre as a point's is. For a moving point — a cat, a dog, a cyclist, a
-pursuer — the escape she is owed is stated over `outer radius · Field.scale(e)` (a full
-forward-reach clearance for a row faster than a walk) or `(outer radius − inner radius) ·
-Field.scale(e)` (a band clearance for a slower one), `e` from the row's own route speed (`RouteSpec.speed()`) or
-`PursuitSpec.speed()`: `Tuning.required_telegraph_time()` and `Tuning.validate_pursuit()` are the two
-places this is stated, and every row in the catalogue whose forward reach grew past what its
-telegraph already bought had its `telegraphs_for()` re-derived — never its radii — to the new minimum
-plus the margin it already carried. What changes for a "how far" rule that reads the outer radius
-alone rather than a band width — the lethal clearance a placement keeps, the streaming radius,
-`expected_impact_at()`'s early-out — is `EventDef.field_reach()`: a segment's along-axis reach
-unchanged, or a moving point's own forward reach.
+a band width, and subtracting a segment's spine half-length from both radii (see "Solid things
+are solid") leaves that width untouched; every emitting segment row but the patrol car is
+stationary, so its own forward reach never grows past its spine half-length plus its outer
+radius, and the patrol car's moving field is priced from its centre as a point's is. For a moving
+point — a cat, a dog, a cyclist, a pursuer — the escape she is owed is stated over `outer radius
+· Field.scale(e)` (a full forward-reach clearance for a row faster than a walk) or `(outer radius
+− inner radius) · Field.scale(e)` (a band clearance for a slower one), `e` from the row's own
+route speed (`RouteSpec.speed()`) or `PursuitSpec.speed()`: `Tuning.required_telegraph_time()`
+and `Tuning.validate_pursuit()` are the two places this is stated, and every row in the catalogue
+whose forward reach grew past what its telegraph already bought had its `telegraphs_for()`
+re-derived — never its radii — to the new minimum plus the margin it already carried. What
+changes for a "how far" rule that reads the outer radius alone rather than a band width — the
+lethal clearance a placement keeps, the streaming radius, `expected_impact_at()`'s early-out — is
+`EventDef.field_reach()`: a segment's along-axis reach unchanged, or a moving point's own forward
+reach.
 
 ### The contract is per event, and the player experiences the sum
 
