@@ -45,5 +45,4 @@ This is the smell designing-classes names: a fact derived in more than one place
 
 **What it collides with.**
 
-- minty-newt, the events' looks are handed the drawn view: it rewrites the same look constructors, so one follows the other.
 - Row 5's live-event and drawing suites: this lands before them, so they are written once.

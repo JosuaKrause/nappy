@@ -11,8 +11,8 @@ var _abduction: AbductionSpec
 
 ## Handed, as its event is set up, what every look is handed and the abduction part of its row.
 func _init(owner: EventInstance, look: LookSpec, body: BodySpec, abduction: AbductionSpec,
-		drawer: EventDrawer, skip_draw: bool) -> void:
-	super(owner, look, body, drawer, skip_draw)
+		drawer: EventDrawer, skip_draw: bool, drawn_view: DrawnView) -> void:
+	super(owner, look, body, drawer, skip_draw, drawn_view)
 	_abduction = abduction
 
 ## Overrides EventLook._draw_figure.

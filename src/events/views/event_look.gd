@@ -39,6 +39,9 @@ var _drawer: EventDrawer
 ## `--skip events`: nothing of the event is drawn.
 var _skip_draw := false
 
+## The box its drawing is gated by: whether any of it can be on the screen (`DrawnView`).
+var _drawn_view: DrawnView
+
 ## The row's body pieces laid out round the origin along `_shadow_axis` (`BodyStance.pieces_laid_out()`),
 ## kept until the axis or the street's direction changes: the body shadow is asked on every draw, and
 ## a standing body's axis never does. Empty until the first shadow is drawn.
@@ -47,12 +50,13 @@ var _shadow_axis := Vector2.ZERO
 var _shadow_vertical := false
 
 func _init(owner: EventInstance, look: LookSpec, body: BodySpec, drawer: EventDrawer,
-		skip_draw: bool) -> void:
+		skip_draw: bool, drawn_view: DrawnView) -> void:
 	event = owner
 	_look = look
 	_body = body
 	_drawer = drawer
 	_skip_draw = skip_draw
+	_drawn_view = drawn_view
 
 ## The eight-view sector the event is drawn in, for whichever family reads
 ## `EventPictures.EIGHT_VIEW_BY_SECTOR` instead of a single side-mirrored picture — see
@@ -119,7 +123,7 @@ func _in_the_drawn_view() -> bool:
 	if event.is_on_its_way_out() and not event.birds().is_empty():
 		return true
 	var reach := _drawn_reach()
-	if DrawnView.shows(event, reach):
+	if _drawn_view.shows(event, reach):
 		return true
 	return _shows_its_nodes(reach)
 

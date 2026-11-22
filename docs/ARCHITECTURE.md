@@ -192,10 +192,11 @@ src/
 	                       by its event and told what happens to it
 	event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
 	                       map and navigator, where she is, the world it is drawn in, its drawer,
-	                       its timing sink, its trace, its atlas, the car's lights and where a
-	                       protest points; built once where the world is (`SimulationBuilder`),
-	                       handed to the manager as it is made and to every live event's one
-	                       `EventInstance.setup()` call, which takes the shared boom state last
+	                       the drawn view its looks are gated by, its timing sink, its trace, its
+	                       atlas, the car's lights and where a protest points; built once where the
+	                       world is (`SimulationBuilder`), handed to the manager as it is made and
+	                       to every live event's one `EventInstance.setup()` call, which takes the
+	                       shared boom state last
 	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
 	                       present rate cached on its age, the walls it does not pass, its live
 	                       course and rate for the projection, whether that course is lethal
@@ -526,8 +527,9 @@ src/
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
 	drawn_view.gd         what can be on the screen: the camera's view grown by two tiles, worked out
-	                      once a process frame per viewport, the one box every off-screen redraw
-	                      gate asks (`DrawnView`); the covered corners count, unlike `VisibleView`
+	                      once a process frame, the one box every off-screen redraw gate asks,
+	                      made once by `main` and handed to the events' looks and the crowd's view
+	                      (`DrawnView`); the covered corners count, unlike `VisibleView`
 	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,

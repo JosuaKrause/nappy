@@ -271,6 +271,13 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	t.check(events.world.surroundings().draws()
 			and not crowd.skip_agent_drawing and not crowd.skip_motion and crowd.view == null,
 			"a builder handed nothing stands an ordinary run's events and crowd")
+	var nothing := events.world.surroundings().drawn_view()
+	var far_off := Node2D.new()
+	far_off.position = Vector2(1.0e6, 1.0e6)
+	t.add_child(far_off)
+	t.check(nothing.box() == Rect2() and nothing.shows(far_off, Rect2(-1.0, -1.0, 2.0, 2.0)),
+			"and its events are handed a view with no screen: no box, and everything shows")
+	far_off.free()
 	# Not every cyclist is the pelican without `--pelican`: a full bag of 399 cyclists and one
 	# pelican (`EventSpawner.CYCLISTS_IN_THE_BAG`) rolls the pelican once, whatever the run's seed.
 	var cyclist := EventCatalogue.by_id("cyclist")
@@ -287,6 +294,8 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	var view := CrowdView.new()
 	var timing := CrowdTiming.new()
 	builder.use_the_crowds_screen(view, timing)
+	var drawn := DrawnView.new()
+	builder.use_the_drawn_view(drawn)
 	var trace := RunTrace.new()
 	var atlas := AtlasLibrary.new()
 	var frames := FrameTiming.new()
@@ -304,6 +313,8 @@ func _test_each_setting_reaches_its_part(t: TestRunner) -> void:
 	t.check(events.world.trace() == trace and events.world.surroundings().timing() == frames
 			and atlas.region(StringName(EventPictures.STEAM_GRATE)) != null and crowd.atlas == atlas,
 			"and what the events and the crowd are equipped with reaches each")
+	t.check(events.world.surroundings().drawn_view() == drawn,
+			"and the drawn view it was handed is the one its events are set up with")
 	_free(made)
 
 ## **Meeting her reaches the crowd, the walls and the blackout**, and nothing reaches them before:

@@ -332,7 +332,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_heading = face
 	look = EventLooks.for_row(self, definition.look(), definition.body(),
 			definition.takes_a_victim_by(), _surroundings.drawer(), not _surroundings.draws(),
-			_composed.barrier_post())
+			_surroundings.drawn_view(), _composed.barrier_post())
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
@@ -1798,10 +1798,10 @@ func rim() -> EntityHalo:
 
 # ------------------------------------------------------------------ the look ---
 
-## How this instance looks (`EventLooks.for_row()`, handed its row's look part, its body part and its
-## drawer in `setup()`): it draws the instance from what it asks it and, in the family looks, from
-## some of its public state, decides when it is drawn again, and holds the drawing nodes a long
-## picture is drawn in.
+## How this instance looks (`EventLooks.for_row()`, handed its row's look part, its body part,
+## its drawer and the drawn view in `setup()`): it draws the instance from what it asks it and,
+## in the family looks, from some of its public state, decides when it is drawn again, and holds
+## the drawing nodes a long picture is drawn in.
 ## Public because suites read it: no game file outside this one does, so the CI list of test-only
 ## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
 var look: EventLook
