@@ -57,14 +57,14 @@ var _may_be_a_pelican := false
 ##
 ## **Two overrides, both the region wall's own.** A wall crossing stands three bodies (sidewalk,
 ## road, sidewalk), and a guard on both sides of all three would draw six
-## (PLAYTEST-135 8): `SealPlanner.place_hard_on()` duplicates the middle one with the sides
+## (PLAYTEST-135 8): `SealPlanner.place_hard_on()` redrafts the middle one with the sides
 ## emptied, so the tarmac between the sidewalks draws none. A walled alley's two mouths would each
 ## draw two guards, one standing inside an alley she can never reach, so
 ## `RegionPlanner._alley_mouth_wall_body()` sets the one-element array naming the mouth's own
 ## street-facing side (`_alley_mouth_street_side()`).
 ##
 ## **Carried on the row, set on the placement**: nothing decides *which* side is which, so an
-## override is a value set on a fresh duplicate at placement. What reads the sides is the
+## override is a value written on a redraft at placement. What reads the sides is the
 ## roadblock's look when it draws the band and the barrier post when its guards leave (the side the
 ## far guard walks off from, which posts still have a man).
 var _guard_sides: Array[int] = [-1, 1]

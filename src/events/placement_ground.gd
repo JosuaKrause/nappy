@@ -5,7 +5,7 @@ extends RefCounted
 ## declared table is keyed by beside the view and the act (`PlacementDensity`), what a unit's bag is
 ## made by beside its view (`UnitFills.bag_for()`, `of()`), since a unit draws from one
 ## bag and a street's sidewalks and sections draw from it together, and what a catalogue row may
-## weigh itself on (`EventDef.weigh_on()`). A value and nothing else.
+## weigh itself on (`EventDraft.weighed_on()`). A value and nothing else.
 ##
 ## Not `Location.Kind`, the five kinds of location: a street's sidewalk and section locations are
 ## one ground here.

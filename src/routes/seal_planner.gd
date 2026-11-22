@@ -576,7 +576,7 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 	return planned
 
 ## `def` with its posted guards removed on both sides — the region wall's own road body, standing
-## between two sidewalk bodies that keep `def`'s own guard sides unchanged. A plain duplicate
+## between two sidewalk bodies that keep `def`'s own guard sides unchanged. A redraft
 ## rather than a change of `def` itself: the two sidewalk positions above still hand out the same
 ## shared def, and giving it no guards would take theirs too.
 static func _no_wall_guards(def: EventDef) -> EventDef:

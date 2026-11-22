@@ -934,7 +934,7 @@ static func _fire_truck() -> EventDef:
 ## every row the same way whether or not the field emits (`(outer radius - inner radius) /
 ## WALK_SPEED` = 2.17s). The `burnt_shell` scar it leaves is the
 ## building it burned, drawn burnt from the next morning on. **The finale's own fire, inside the
-## building on the last night, is a duplicate of this row with a field and a body**
+## building on the last night, is a copy of this row with a field and a body**
 ## (`building_fire()`), because in there the fire is the hazard and there is no truck to call.
 ##
 ## **It always catches on a wall the city actually draws**, since the building itself is shown burnt

@@ -144,6 +144,7 @@ FILES: dict[str, str] = {
     "src/events/parts/day_switch.gd": "data",
     "src/events/event_catalogue.gd": "data",
     "src/events/event_def.gd": "data",
+    "src/events/event_draft.gd": "data",
     "src/events/event_scenery_parts.gd": "data",
     "src/events/parts/field_spec.gd": "data",
     "src/events/parts/flock_spec.gd": "data",
