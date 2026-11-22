@@ -92,7 +92,7 @@ static func _badge_sees(t: TestRunner, edge: DangerEdge, source: _Source, row: E
 	await t.get_tree().process_frame
 	var badged := false
 	for badge in edge.badges().announcing():
-		badged = badged or badge["id"] == "cyclist"
+		badged = badged or badge.logged_name() == "cyclist"
 	source.live.erase(bike)
 	bike.free()
 	return not badged
@@ -316,7 +316,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 			await t.get_tree().process_frame
 		var badged := false
 		for badge in edge.badges().announcing():
-			badged = badged or badge["id"] == "cyclist"
+			badged = badged or badge.logged_name() == "cyclist"
 		t.check(badged == joystick, "%s scheme: a cyclist under the left corner %s"
 				% ["joystick" if joystick else "tap", "keeps its badge" if joystick else "has none"])
 		edge.free()

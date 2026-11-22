@@ -179,12 +179,12 @@ class StandInSource extends FakeEventManager:
 		return live
 
 ## The screen-edge badges as the observer reads them (`announcing()`): the list a case sets, each
-## entry the `id`, `distance` and `approach` the badge model answers for a badge that is up.
+## entry the badge value the badge model answers for a badge that is up.
 class StandInBadges extends EdgeBadges:
-	var up: Array[Dictionary] = []
+	var up: Array[EdgeBadges.Badge] = []
 
 	## Overrides EdgeBadges.announcing.
-	func announcing() -> Array[Dictionary]:
+	func announcing() -> Array[EdgeBadges.Badge]:
 		return up
 
 func run(t: TestRunner) -> void:
@@ -649,7 +649,7 @@ func _test_a_badge_it_is_handed_is_written_as_it_goes_up_and_comes_down(t: TestR
 	await rig.frame()
 	t.check(_badge_lines().is_empty(), "with no badge up, no edge badge line is written")
 
-	badges.up = [{"id": "fire_truck", "distance": 640.0, "approach": 190.0}]
+	badges.up = [EdgeBadges.Badge.new("fire_truck", 640.0, 190.0)]
 	for i in 15:
 		await rig.frame()
 	var lines := _badge_lines()

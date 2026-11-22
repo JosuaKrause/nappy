@@ -659,13 +659,13 @@ func _watch_the_cues(delta: float) -> void:
 
 	var up := {}
 	for badge in _edge_badges.announcing():
-		var id: String = badge["id"]
+		var id := badge.logged_name()
 		up[id] = true
 		if _badges.has(id):
 			continue
 		_badges[id] = _log.clock()
 		_log.note("cue", "edge badge: %s at %.0fpx, closing %.0fpx/s"
-				% [id, badge["distance"], badge["approach"]])
+				% [id, badge.distance(), badge.approach()])
 	for id: String in _badges.keys():
 		if up.has(id):
 			continue

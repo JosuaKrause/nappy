@@ -206,12 +206,12 @@ static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	subject.heard_within = def.heard_within()
 	return subject
 
-## The badges this edge has up (`EdgeBadges.announcing()`: `{id, distance, approach}` per badge,
-## nearest arrival first): its `BadgeModel`, held as the read-only `EdgeBadges`, the one object for
+## The badges this edge has up (`EdgeBadges.announcing()`: what each is called, how far it is and how
+## fast it closes, nearest arrival first): its `BadgeModel`, held as the read-only `EdgeBadges`, the one object for
 ## the edge's life, which the escape's re-pointing (`setup()`) keeps. For the run log, which has to
 ## be able to say what she was warned about and whether she then did anything about it, which
 ## nothing else in the log can say: `main` hands it to the run log's session (`RunSession.watch()`),
-## which may not name this view. `id` is the name the log calls the thing by
+## which may not name this view. A badge's `logged_name()` is the name the log calls the thing by
 ## (`EventInstance.logged_name()`): the row's id, or `pelican` for the pelican, from its warning on.
 func badges() -> EdgeBadges:
 	return _model
@@ -220,12 +220,11 @@ func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	# Exactly the badges the model announces (`_model.announcing()`, what `badges()` hands the run
-	# log), farthest arrival first so the soonest lies on top where two overlap.
-	var badges := _model.announcing()
+	# Exactly the badges the model announces (`_model.drawn()` are the objects `badges()` hands the
+	# run log), farthest arrival first so the soonest lies on top where two overlap.
+	var badges := _model.drawn()
 	for i in range(badges.size() - 1, -1, -1):
-		_draw_arrow(badges[i]["def"] as EventDef, badges[i]["position"] as Vector2,
-				float(badges[i]["distance"]), transform)
+		_draw_arrow(badges[i].row(), badges[i].points_at(), badges[i].distance(), transform)
 
 func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		transform: Transform2D) -> void:

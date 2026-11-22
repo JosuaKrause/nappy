@@ -10,8 +10,30 @@ extends RefCounted
 ## edge steps once a frame and draws, is the one that has badges; held as this, its holder can read
 ## what it announces and cannot step or clear it.
 
-## What is on the edge right now, soonest arrival first, one entry per badge, each carrying at
-## least `id` (the name the log calls the thing by, `EventInstance.logged_name()`), `distance`
-## (px from her) and `approach` (how fast it closes under its own steam, px/s).
-func announcing() -> Array[Dictionary]:
+## **One badge as the run log reads it**: what the thing is called, how far it is and how fast it
+## closes. Built with its three values, which it answers and nobody sets.
+class Badge extends RefCounted:
+	var _logged_name := ""
+	var _distance := 0.0
+	var _approach := 0.0
+
+	func _init(logged_name_: String, distance_: float, approach_: float) -> void:
+		_logged_name = logged_name_
+		_distance = distance_
+		_approach = approach_
+
+	## The name the log calls the thing by (`EventInstance.logged_name()`).
+	func logged_name() -> String:
+		return _logged_name
+
+	## How far the thing is from her, in px.
+	func distance() -> float:
+		return _distance
+
+	## How fast it closes under its own steam, in px/s.
+	func approach() -> float:
+		return _approach
+
+## What is on the edge right now, soonest arrival first, one entry per badge.
+func announcing() -> Array[Badge]:
 	return []
