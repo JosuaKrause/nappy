@@ -210,7 +210,7 @@ func _check_the_moves(t: TestRunner, seed_value: int, tick: int, poses: Array[Ar
 	var standing := {}
 	var open := 0
 	for move in listed:
-		if move.open:
+		if move.is_mid_step():
 			open += 1
 		elif move.stands_at() == move.steps_to():
 			standing[move.stands_at()] = int(standing.get(move.stands_at(), 0)) + 1

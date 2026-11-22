@@ -54,7 +54,7 @@ extends RefCounted
 
 ## The world the camera shows, as `look()` was last told. Empty until it has been told, and then
 ## nothing is in sight.
-var view := Rect2()
+var _view := Rect2()
 ## Whether the joystick scheme's controls cover the view's bottom corners, as `look()` was last told.
 var _joystick := false
 ## The two covered corners laid onto `view`, while `_joystick` holds.
@@ -73,7 +73,7 @@ func use_cover(covering: ScreenCover) -> void:
 
 ## The world the camera shows, as `look()` was last told: empty until it has been told.
 func camera_view() -> Rect2:
-	return view
+	return _view
 
 ## What the on-screen controls cover and whether their scheme is in force, as handed in
 ## (`use_cover()`); `null` where nothing built them.
@@ -92,12 +92,12 @@ static func around(centre: Vector2, covering: ScreenCover) -> VisibleView:
 ## what the controls cover, which counts only while their scheme is in force (`ScreenCover.is_in_force()`);
 ## `null` or a cover not in force is the whole view (tap).
 func look(at_view: Rect2, covering: ScreenCover) -> void:
-	view = at_view
+	_view = at_view
 	_joystick = covering != null and covering.is_in_force()
 	if _joystick:
-		var scale := view.size / covering.design_box()
-		_left = _onto(covering.left_corner(), view, scale)
-		_right = _onto(covering.right_corner(), view, scale)
+		var scale := _view.size / covering.design_box()
+		_left = _onto(covering.left_corner(), _view, scale)
+		_right = _onto(covering.right_corner(), _view, scale)
 
 ## Sets this frame's view from the point the camera is drawing from, `centre` (what
 ## `Stroller.view_centre_of()` answers): `Tuning.VIEW_HALF_EXTENT` about it, and the corners from the
@@ -107,14 +107,14 @@ func look_from(centre: Vector2) -> void:
 
 ## `visible_share()` for `rect` against what `look()` was last told.
 func share_of(rect: Rect2) -> float:
-	return _share(rect, view, _joystick, _left, _right)
+	return _share(rect, _view, _joystick, _left, _right)
 
 ## Whether a world point is in sight: inside the view, and not under a covered corner. `margin`
 ## world px count as in sight as well, past the view's edge and into a corner — the badge's
 ## hysteresis (`BadgeModel.SCREEN_MARGIN`), so a thing on the boundary does not trade places with its
 ## own badge every frame.
 func sees(point: Vector2, margin := 0.0) -> bool:
-	if not view.grow(margin).has_point(point):
+	if not _view.grow(margin).has_point(point):
 		return false
 	if not _joystick:
 		return true
@@ -156,13 +156,13 @@ func _leaves_the_view(from: Vector2, direction: Vector2, box: Rect2, at_least: f
 	# Past the right side once its left edge is, past the left once its right edge is; the same down
 	# and up.
 	if direction.x > 0.0:
-		best = minf(best, (view.end.x - shape.position.x - from.x) / direction.x)
+		best = minf(best, (_view.end.x - shape.position.x - from.x) / direction.x)
 	elif direction.x < 0.0:
-		best = minf(best, (view.position.x - shape.end.x - from.x) / direction.x)
+		best = minf(best, (_view.position.x - shape.end.x - from.x) / direction.x)
 	if direction.y > 0.0:
-		best = minf(best, (view.end.y - shape.position.y - from.y) / direction.y)
+		best = minf(best, (_view.end.y - shape.position.y - from.y) / direction.y)
 	elif direction.y < 0.0:
-		best = minf(best, (view.position.y - shape.end.y - from.y) / direction.y)
+		best = minf(best, (_view.position.y - shape.end.y - from.y) / direction.y)
 	return maxf(best + CLEAR_MARGIN, at_least)
 
 ## How far past the edge "wholly out of sight" is, in world px: one, so a box whose edge would sit

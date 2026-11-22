@@ -373,7 +373,8 @@ func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
 	t.check(pairs > 0, "there were placed pairs to measure (%d)" % pairs)
 
 ## **The third case of the clearance rule, pinned over whether a row pursues
-## (`EventDef.pursues()`) rather than over either of the two rows that pursue today.** A lethal
+## (`EventDef.pursues()`) rather than over either of the two placed rows that pursue today,
+## `charging_dog` and `alley_robbery`.** A lethal
 ## field that follows her is neither on the corridor nor off it, so placement cannot keep it
 ## clear of anything — `charging_dog` never reaches `StreetInvalidation.room_around()` at all on
 ## `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER` and sited with no tile, and

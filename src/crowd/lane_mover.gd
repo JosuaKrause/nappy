@@ -812,7 +812,7 @@ func _propose_the_step(delta: float) -> void:
 	_move.step_to(Vector2(cross, along) if _vertical else Vector2(along, cross))
 
 ## **The check on its proposed step**: keeps an agent's own centre out of a tile it may not stand on,
-## when the step proposed (`_move.to`) would carry it in. `stood_on` is the tile it was on before
+## when the step proposed (`_move.steps_to()`) would carry it in. `stood_on` is the tile it was on before
 ## that step.
 ##
 ## **A brake and a sidestep are both approaches, and an approach arrives late.** A car easing toward

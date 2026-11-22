@@ -709,7 +709,12 @@ func baby_is_awake() -> bool:
 ## she walked across from one she was set down across: an inspection's release puts her on the far
 ## side of that same line, and that is the lawful way through. A count rather than a flag, so no
 ## reader has to clear it and two readers cannot disagree about whether it has been seen.
-var outright_moves := 0
+var _outright_moves := 0
+
+## How many times she has been put somewhere outright rather than walked there (`teleport_to()`
+## and `reset_at()` each count one), for a reader that keeps the count it last saw and compares.
+func times_put_down() -> int:
+	return _outright_moves
 
 ## Puts her at `where` outright — the checkpoint's own teleport, released from a detention on the
 ## far side of the band she was captured in. Nothing else in this game has ever moved the player;
@@ -731,7 +736,7 @@ var outright_moves := 0
 ## caller.
 func teleport_to(where: Vector2) -> void:
 	global_position = where
-	outright_moves += 1
+	_outright_moves += 1
 	# Stops a one-tick slide from the old place — except while a checkpoint's hold still has her
 	# hidden, where `_reset_interpolation_if_shown()` is a documented no-op and
 	# `show_after_inspection()`'s own call, a line later, is the one that actually lands. See that
@@ -918,7 +923,7 @@ func _update_camera(delta: float) -> void:
 ## Puts the rig back on the doorstep at the start of a day, stopped and facing the street.
 func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	global_position = where
-	outright_moves += 1
+	_outright_moves += 1
 	velocity = Vector2.ZERO
 	facing = look.normalized()
 	_shove = Vector2.ZERO

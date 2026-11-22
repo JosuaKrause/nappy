@@ -27,52 +27,52 @@ extends RefCounted
 ## the way a positive `half_length` does for a segment.
 enum Kind { POINT, SEGMENT, RECT }
 
-var kind := Kind.POINT
+var _kind := Kind.POINT
 ## The spine's half-length along local +X. Zero for a point or a rectangle.
-var half_length := 0.0
+var _half_length := 0.0
 ## The rounding around the spine — the shape's half-thickness perpendicular to it. Zero for a
 ## rectangle, whose own half-thickness is the smaller of `half_extents`.
-var radius := 0.0
+var _radius := 0.0
 ## Half-width and half-depth of a rectangle, in the object's own frame, local X by local Y. Zero
 ## for a point or a segment.
-var half_extents := Vector2.ZERO
+var _half_extents := Vector2.ZERO
 
 ## Whether this is a rectangle (a building's lot), which lies its own frame rather than a spine.
 func is_rect() -> bool:
-	return kind == Kind.RECT
+	return _kind == Kind.RECT
 
 ## Whether this is a segment: a spine with a rounding around it (a band, a fence, a car).
 func is_segment() -> bool:
-	return kind == Kind.SEGMENT
+	return _kind == Kind.SEGMENT
 
 ## The spine's half-length (zero for a point or a rectangle).
 func spine_half_length() -> float:
-	return half_length
+	return _half_length
 
 ## The rounding around the spine, the half-thickness across it (zero for a rectangle).
 func rounding_radius() -> float:
-	return radius
+	return _radius
 
 ## A rectangle's half-width and half-depth in its own frame (zero for a point or a segment).
 func rect_half_extents() -> Vector2:
-	return half_extents
+	return _half_extents
 
 func _init(half_length_in: float, radius_in: float) -> void:
-	half_length = half_length_in
-	radius = radius_in
+	_half_length = half_length_in
+	_radius = radius_in
 
 ## A point shape: the disc every stationary point object in the game already draws and collides
 ## as.
 static func point(radius_in: float) -> GroundShape:
 	var shape := GroundShape.new(0.0, radius_in)
-	shape.kind = Kind.POINT
+	shape._kind = Kind.POINT
 	return shape
 
 ## A segment shape: a spine of `half_length_in` along local +X, rounded by `radius_in` — the
 ## capsule a spread-drawn row or a wide vehicle reduces to.
 static func segment(half_length_in: float, radius_in: float) -> GroundShape:
 	var shape := GroundShape.new(half_length_in, radius_in)
-	shape.kind = Kind.SEGMENT
+	shape._kind = Kind.SEGMENT
 	return shape
 
 ## A rectangle shape: `half_extents_in` in the object's own frame — a building's footprint, halved.
@@ -80,8 +80,8 @@ static func segment(half_length_in: float, radius_in: float) -> GroundShape:
 ## already a point or a band.
 static func rect(half_extents_in: Vector2) -> GroundShape:
 	var shape := GroundShape.new(0.0, 0.0)
-	shape.kind = Kind.RECT
-	shape.half_extents = half_extents_in
+	shape._kind = Kind.RECT
+	shape._half_extents = half_extents_in
 	return shape
 
 ## The fixed rounding a spread-drawn or stationary-vehicle row's segment carries, whatever its own
@@ -108,9 +108,9 @@ static func band(reach: float) -> GroundShape:
 ## radius, a park's obstruction allowance) is stated over. A rectangle's is its half-diagonal, the
 ## corner rather than an edge.
 func reach() -> float:
-	if kind == Kind.RECT:
-		return half_extents.length()
-	return half_length + radius
+	if _kind == Kind.RECT:
+		return _half_extents.length()
+	return _half_length + _radius
 
 ## Every tile of the lattice this shape's own body stands on when it is placed at `at` in world
 ## space, lying along `axis` — turned into the tiles `CityMap.obstructed_tiles` records so the
@@ -138,17 +138,17 @@ func tiles_under(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> Array[Vector2i]:
 	var tile := float(Tuning.TILE_SIZE)
 	var covered: Array[Vector2i] = []
 	covered.append(Vector2i(floori(at.x / tile), floori(at.y / tile)))
-	var low := Vector2i(floori((at.x - core.x - radius) / tile),
-			floori((at.y - core.y - radius) / tile))
-	var high := Vector2i(floori((at.x + core.x + radius) / tile),
-			floori((at.y + core.y + radius) / tile))
+	var low := Vector2i(floori((at.x - core.x - _radius) / tile),
+			floori((at.y - core.y - _radius) / tile))
+	var high := Vector2i(floori((at.x + core.x + _radius) / tile),
+			floori((at.y + core.y + _radius) / tile))
 	for y in range(low.y, high.y + 1):
 		for x in range(low.x, high.x + 1):
 			var here := Vector2i(x, y)
 			if here == covered[0]:
 				continue
 			var centre := Vector2((float(x) + 0.5) * tile, (float(y) + 0.5) * tile)
-			if distance_to_spine((centre - at).rotated(-along.angle())) <= radius:
+			if distance_to_spine((centre - at).rotated(-along.angle())) <= _radius:
 				covered.append(here)
 	return covered
 
@@ -156,14 +156,14 @@ func tiles_under(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> Array[Vector2i]:
 ## point, the spine for a segment, the whole rectangle for a rect (which carries its rounding in
 ## the box itself and has `radius` zero).
 func _spine_half_extents(along: Vector2) -> Vector2:
-	match kind:
+	match _kind:
 		Kind.RECT:
 			var across_axis := Vector2(-along.y, along.x)
 			return Vector2(
-					absf(along.x) * half_extents.x + absf(across_axis.x) * half_extents.y,
-					absf(along.y) * half_extents.x + absf(across_axis.y) * half_extents.y)
+					absf(along.x) * _half_extents.x + absf(across_axis.x) * _half_extents.y,
+					absf(along.y) * _half_extents.x + absf(across_axis.y) * _half_extents.y)
 		Kind.SEGMENT:
-			return Vector2(absf(along.x), absf(along.y)) * half_length
+			return Vector2(absf(along.x), absf(along.y)) * _half_length
 		_:
 			return Vector2.ZERO
 
@@ -175,13 +175,13 @@ func _spine_half_extents(along: Vector2) -> Vector2:
 ## segment's is the capsule it always gave, the field's core and outer radii meaning distance from
 ## the spine rather than from the centre.
 func distance_to_spine(local: Vector2) -> float:
-	match kind:
+	match _kind:
 		Kind.RECT:
-			var dx := maxf(absf(local.x) - half_extents.x, 0.0)
-			var dy := maxf(absf(local.y) - half_extents.y, 0.0)
+			var dx := maxf(absf(local.x) - _half_extents.x, 0.0)
+			var dy := maxf(absf(local.y) - _half_extents.y, 0.0)
 			return Vector2(dx, dy).length()
 		Kind.SEGMENT:
-			var clamped_x := clampf(local.x, -half_length, half_length)
+			var clamped_x := clampf(local.x, -_half_length, _half_length)
 			return local.distance_to(Vector2(clamped_x, 0.0))
 		_:
 			return local.length()
@@ -239,7 +239,7 @@ func field_outline(at: Vector2, axis: Vector2, velocity: Vector2, level: float,
 		samples: int = _ELLIPSE_SAMPLES) -> PackedVector2Array:
 	if not velocity.is_zero_approx():
 		return _eccentric_field_outline(at, velocity, level, samples)
-	if kind == Kind.SEGMENT:
+	if _kind == Kind.SEGMENT:
 		return _stadium_field_outline(at, axis, level, samples)
 	return _circle_field_outline(at, level, samples)
 
@@ -265,8 +265,8 @@ func _stadium_field_outline(at: Vector2, axis: Vector2, level: float, samples: i
 		) -> PackedVector2Array:
 	var along := axis.normalized()
 	var base := along.angle()
-	var lead := at + along * half_length
-	var trail := at - along * half_length
+	var lead := at + along * _half_length
+	var trail := at - along * _half_length
 	var half_samples := maxi(2, samples / 2)
 	var points := PackedVector2Array()
 	for i in half_samples + 1:
@@ -305,18 +305,18 @@ func _eccentric_field_outline(at: Vector2, velocity: Vector2, level: float, samp
 ## angle minus 90° when that axis is not X itself. A rectangle's own X/Y are already the frame it
 ## was built in, so nothing analogous applies to it — `Building` never rotates its own body.
 func collision_shape() -> Shape2D:
-	match kind:
+	match _kind:
 		Kind.POINT:
 			var circle := CircleShape2D.new()
-			circle.radius = radius
+			circle.radius = _radius
 			return circle
 		Kind.RECT:
 			var rectangle := RectangleShape2D.new()
-			rectangle.size = half_extents * 2.0
+			rectangle.size = _half_extents * 2.0
 			return rectangle
 		_:
 			var capsule := CapsuleShape2D.new()
-			capsule.radius = radius
+			capsule.radius = _radius
 			capsule.height = 2.0 * reach()
 			return capsule
 
@@ -345,7 +345,7 @@ const _ELLIPSE_SAMPLES := 28
 ## the rectangle's own local frame, so a rectangle turned to face `axis` still reads as lying flat
 ## in the same oblique view every other shadow does.
 func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2Array:
-	match kind:
+	match _kind:
 		Kind.POINT:
 			return _squashed_ellipse_points(at)
 		Kind.RECT:
@@ -353,8 +353,8 @@ func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2
 		_:
 			var along := axis.normalized()
 			var points := PackedVector2Array()
-			points.append_array(_ellipse_points(at + along * half_length))
-			points.append_array(_ellipse_points(at - along * half_length))
+			points.append_array(_ellipse_points(at + along * _half_length))
+			points.append_array(_ellipse_points(at - along * _half_length))
 			return Geometry2D.convex_hull(points)
 
 ## Draws this shape's shadow at `at`, in `canvas`'s own coordinates — the filled polygon
@@ -366,7 +366,7 @@ func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2
 ## the polygon with "Invalid polygon data, triangulation failed" once a frame for as long as it
 ## lasts. Nothing is lost by skipping it: it would have covered no pixel.
 func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
-	if radius < MIN_DRAWN_SHADOW_RADIUS:
+	if _radius < MIN_DRAWN_SHADOW_RADIUS:
 		return
 	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
 
@@ -377,7 +377,7 @@ func _ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in _ELLIPSE_SAMPLES:
 		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
-		points.append(centre + Vector2(cos(angle), sin(angle)) * radius)
+		points.append(centre + Vector2(cos(angle), sin(angle)) * _radius)
 	return points
 
 ## The same circle, squashed on Y by `SHADOW_SQUASH` around `centre` — the point case's own
@@ -388,7 +388,7 @@ func _squashed_ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in _ELLIPSE_SAMPLES:
 		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
-		points.append(centre + Vector2(cos(angle) * radius, sin(angle) * radius * SHADOW_SQUASH))
+		points.append(centre + Vector2(cos(angle) * _radius, sin(angle) * _radius * SHADOW_SQUASH))
 	return points
 
 ## The rectangle's four corners, rotated by `axis` about `at` and then squashed on Y — see
@@ -399,10 +399,10 @@ func _rect_points(at: Vector2, axis: Vector2) -> PackedVector2Array:
 	var along := axis.normalized()
 	var across_axis := Vector2(-along.y, along.x)
 	var corners: Array[Vector2] = [
-		Vector2(-half_extents.x, -half_extents.y),
-		Vector2(half_extents.x, -half_extents.y),
-		Vector2(half_extents.x, half_extents.y),
-		Vector2(-half_extents.x, half_extents.y),
+		Vector2(-_half_extents.x, -_half_extents.y),
+		Vector2(_half_extents.x, -_half_extents.y),
+		Vector2(_half_extents.x, _half_extents.y),
+		Vector2(-_half_extents.x, _half_extents.y),
 	]
 	var points := PackedVector2Array()
 	for corner in corners:

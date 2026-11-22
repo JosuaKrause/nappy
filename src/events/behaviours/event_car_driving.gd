@@ -326,7 +326,7 @@ func short_of_its_stop(seconds: float, left: float) -> float:
 ## (`Figure.turn_its_body_to()`, which turns nothing before the body is down). A capsule turns; a
 ## point would not need to.
 func turn_the_body() -> void:
-	if _row.ground_shape() == null or _row.ground_shape().half_length <= 0.0:
+	if _row.ground_shape() == null or _row.ground_shape().spine_half_length() <= 0.0:
 		return
 	_figure.turn_its_body_to(_figure.solid_axis().angle() - PI * 0.5)
 
@@ -343,7 +343,8 @@ func gap_to_her(at: Vector2, heading: Vector2) -> float:
 
 func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> float:
 	var local := (centre - at).rotated(-heading.angle())
-	return _row.ground_shape().distance_to_spine(local) - _row.ground_shape().radius - radius
+	var shape := _row.ground_shape()
+	return shape.distance_to_spine(local) - shape.rounding_radius() - radius
 
 ## Whether this car is driving right now: the one state its warning and its strike are live in. On
 ## its route (`drives_its_route()`) and not standing (`_standing`).
@@ -375,10 +376,11 @@ func drives_its_route() -> bool:
 func _in_front(at: Vector2, heading: Vector2, centre: Vector2, radius: float,
 		seconds: float) -> bool:
 	var local := (centre - at).rotated(-heading.angle())
-	var nose := _row.ground_shape().half_length
-	if local.x <= nose or absf(local.y) > _row.ground_shape().radius + radius:
+	var nose := _row.ground_shape().spine_half_length()
+	var rounding := _row.ground_shape().rounding_radius()
+	if local.x <= nose or absf(local.y) > rounding + radius:
 		return false
-	return local.x <= nose + _row.ground_shape().radius + radius + _course.speed() * seconds
+	return local.x <= nose + rounding + radius + _course.speed() * seconds
 
 ## Whether her body or her pram, with her at `her`, is in front of a car at `at` facing `heading`
 ## within `seconds` of its travel past the touch, **with her on the carriageway** — the crowd car's

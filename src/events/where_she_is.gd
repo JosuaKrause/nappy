@@ -81,7 +81,7 @@ func pram_at() -> Vector2:
 	var word := _told()
 	return word._pram_at
 
-## The camera's whole view this tick (`VisibleView.view`), empty where nothing has looked through
+## The camera's whole view this tick (`VisibleView.camera_view()`), empty where nothing has looked through
 ## a camera.
 func view() -> Rect2:
 	var word := _told()

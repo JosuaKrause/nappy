@@ -314,7 +314,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t: TestRunner) -> void:
 		var view := VisibleView.around(her + Vector2(45.0, 0.0), TouchCover.joystick() if joystick else null)
 		t.check(view.sees(mark_at) != joystick,
 				"the actual camera view covers the mark only in joystick mode")
-		RunCity.events(_city).visible_view().look(view.view, TouchCover.joystick() if joystick else null)
+		RunCity.events(_city).visible_view().look(view.camera_view(), TouchCover.joystick() if joystick else null)
 		director.set_sight(RunCity.events(_city).sees)
 		var player := _rig_player(t, her)
 		director.use_player(player)

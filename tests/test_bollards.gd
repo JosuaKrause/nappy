@@ -55,7 +55,8 @@ func _test_only_the_bollard_has_a_body(t: TestRunner) -> void:
 func _test_the_post_body_is_its_drawn_ground_contact(t: TestRunner) -> void:
 	var post := _prop(t, Prop.Kind.BOLLARD)
 	var circle := post.body_shape() as CircleShape2D
-	t.check(circle != null and is_equal_approx(circle.radius, Prop.bollard_shape().radius),
+	t.check(circle != null
+			and is_equal_approx(circle.radius, Prop.bollard_shape().rounding_radius()),
 			"the post's body is the circle its shadow is drawn from")
 	post.free()
 
@@ -71,7 +72,7 @@ func _row() -> Dictionary:
 ## its spacing and her body that makes a row a wall: nothing is asked of a map.
 func _test_every_gap_is_narrower_than_her_body(t: TestRunner) -> void:
 	var post := _prop(t, Prop.Kind.BOLLARD)
-	var post_radius: float = Prop.bollard_shape().radius
+	var post_radius: float = Prop.bollard_shape().rounding_radius()
 	post.free()
 	# Her body alone, whatever way she faces, is 2 x 14 across; a gap that holds it lets her by.
 	var body := 2.0 * Tuning.PLAYER_BODY_RADIUS

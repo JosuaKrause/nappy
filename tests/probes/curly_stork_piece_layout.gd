@@ -64,7 +64,9 @@ func _sweep(map: CityMap, plans: Array[EventPlan], label: String, seed_value: in
 		var solids := ground.solids_of(plan)
 		for solid in solids:
 			walk.append("%s %.3f,%.3f %d %.3f %.3f %.4f,%.4f" % [row.id(), solid.centre.x,
-					solid.centre.y, solid.shape.kind, solid.shape.reach(),
+					solid.centre.y,
+					1 if solid.shape.is_segment() else 2 if solid.shape.is_rect() else 0,
+					solid.shape.reach(),
 					solid.shape.spine_half_length(), solid.axis.x, solid.axis.y])
 		var tiles := EventSpawner.obstructed_footprint(map, row, plan.placed_at(), plan.faces())
 		record.append("%s %s" % [row.id(), str(tiles)])

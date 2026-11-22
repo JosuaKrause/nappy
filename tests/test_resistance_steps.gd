@@ -347,7 +347,7 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> vo
 			# Out along the bearing until her centre is a pixel past being stopped by the body.
 			var pressed := 0.0
 			while shape.distance_to_spine((bearing * pressed).rotated(-axis.angle())) \
-					- shape.radius < Tuning.PLAYER_BODY_RADIUS + 1.0:
+					- shape.rounding_radius() < Tuning.PLAYER_BODY_RADIUS + 1.0:
 				pressed += 0.5
 			var far := instance.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
 					+ ContactPoint.REACH + 2.0

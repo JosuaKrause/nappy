@@ -46,8 +46,8 @@ func run(t: TestRunner) -> void:
 ## when `stood_round`.
 func _a_figure(map: CityMap, at: Vector2, stood_round: bool) -> MoveProposal:
 	var move := MoveProposal.new()
-	move.radius = EventInstance.FIGURE_RADIUS
-	move.stood_round = stood_round
+	move.use_body_radius(EventInstance.FIGURE_RADIUS)
+	move.be_walked_round(stood_round)
 	map.moves.join(move, at)
 	return move
 
@@ -77,16 +77,16 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
 	map.moves.leave(figure)
-	return {"closest": closest, "touching": walker.lane().shape().reach() + figure.radius,
+	return {"closest": closest, "touching": walker.lane().shape().reach() + figure.body_radius(),
 			"past": deepest > at.y + float(Tuning.TILE_SIZE)}
 
 ## A vehicle's move, a patrol car's size (the reach of `police_patrol`'s body), standing at `at`
 ## on `map`'s list, keeping its course, parked when `parked`.
 func _a_vehicle(map: CityMap, at: Vector2, parked: bool) -> MoveProposal:
 	var move := MoveProposal.new()
-	move.radius = EventCatalogue.by_id("police_patrol").ground_shape().reach()
-	move.stood_round = true
-	move.parked = parked
+	move.use_body_radius(EventCatalogue.by_id("police_patrol").ground_shape().reach())
+	move.be_walked_round(true)
+	move.be_parked(parked)
 	map.moves.join(move, at)
 	return move
 
@@ -148,7 +148,7 @@ func _overlaps(car: CrowdAgent, figure: MoveProposal) -> bool:
 	var spine := car.heading() * car.lane().shape().spine_half_length()
 	var nearest := Geometry2D.get_closest_point_to_segment(figure.stands_at(), car.position - spine,
 			car.position + spine)
-	return nearest.distance_to(figure.stands_at()) < car.lane().shape().rounding_radius() + figure.radius - 0.5
+	return nearest.distance_to(figure.stands_at()) < car.lane().shape().rounding_radius() + figure.body_radius() - 0.5
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -186,7 +186,7 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t: TestRunner) -> void:
 		var move: MoveProposal = rig["move"]
 		t.check(move != null, "%s puts one move on its map's list" % id)
 		if move != null:
-			t.check(move.stood_round == expected[id],
+			t.check(move.stood_round_a_body() == expected[id],
 					"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
 		var instance: EventInstance = rig["instance"]
 		instance.free()
@@ -199,25 +199,25 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t: TestRunner) -> void:
 func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 	var stall := _a_row_on_a_map(t, "market_stall")
 	var stall_move: MoveProposal = stall["move"]
-	t.check(stall_move != null and stall_move.parked,
+	t.check(stall_move != null and stall_move.has_parked(),
 			"a stall, which never moves, has parked from the start")
 	var stall_instance: EventInstance = stall["instance"]
 	stall_instance.free()
 	var engine := _a_row_on_a_map(t, "fire_truck")
 	var engine_move: MoveProposal = engine["move"]
 	var engine_instance: EventInstance = engine["instance"]
-	t.check(engine_move != null and not engine_move.parked, "the fire engine has not parked while it drives")
+	t.check(engine_move != null and not engine_move.has_parked(), "the fire engine has not parked while it drives")
 	engine_instance.transition(EventInstance.Phase.PARKED)
-	t.check(engine_move != null and engine_move.parked, "and has once it stops at its fire")
+	t.check(engine_move != null and engine_move.has_parked(), "and has once it stops at its fire")
 	engine_instance.transition(EventInstance.Phase.LEAVING)
-	t.check(engine_move != null and not engine_move.parked, "and nothing leaving has parked")
+	t.check(engine_move != null and not engine_move.has_parked(), "and nothing leaving has parked")
 	engine_instance.free()
 	for id: String in ["police_patrol", "charging_dog"]:
 		var rig := _a_row_on_a_map(t, id)
 		var instance: EventInstance = rig["instance"]
 		instance.transition(EventInstance.Phase.PARKED)
 		var move: MoveProposal = rig["move"]
-		t.check(move != null and not move.parked, "%s goes on, so it never reads as parked" % id)
+		t.check(move != null and not move.has_parked(), "%s goes on, so it never reads as parked" % id)
 		instance.free()
 
 # -------------------------------------------------- the list of moves keeps up ---
@@ -310,7 +310,7 @@ func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
 	if live_move == null:
 		_free_the_manager(rig)
 		return
-	live_move.radius = EventInstance.FIGURE_RADIUS
+	live_move.use_body_radius(EventInstance.FIGURE_RADIUS)
 	pass_over.gather()
 	manager.move_extra(live, at + Vector2(400.0, 0.0))
 	pass_over.gather()
@@ -330,7 +330,7 @@ const PLACEMENT_WALK := 8.0
 
 func _a_figure_move_for_the_walk(moves: ProposedMoves, at: Vector2) -> MoveProposal:
 	var move := MoveProposal.new()
-	move.radius = EventInstance.FIGURE_RADIUS
+	move.use_body_radius(EventInstance.FIGURE_RADIUS)
 	moves.join(move, at)
 	return move
 

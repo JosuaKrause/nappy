@@ -81,7 +81,7 @@ func _test_out_of_sight_and_off_the_view(t: TestRunner) -> void:
 	var above := SpawnSiting.just_out_of_sight(asked.view, BOX, her, Vector2.UP)
 	t.check(siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, above),
 			"just out of sight above her is out of sight (%.1fpx up)" % (her.y - above.y))
-	t.check(above.y + BOX.end.y < view.view.position.y + 0.001,
+	t.check(above.y + BOX.end.y < view.camera_view().position.y + 0.001,
 			"and his whole drawing, feet and shadow, is above the view's top edge")
 	t.check(not siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, above + Vector2(0.0, 6.0)),
 			"a step down, his shadow shows")
@@ -93,7 +93,7 @@ func _test_out_of_sight_and_off_the_view(t: TestRunner) -> void:
 			Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 	t.check(not siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, asked, her + Vector2(330.0, 0.0)),
 			"the view is asked as it is now: the camera led right puts that point back on it")
-	var corner := view.view.end - Vector2(4.0, 4.0)
+	var corner := view.camera_view().end - Vector2(4.0, 4.0)
 	t.check(not view.sees(corner)
 			and not siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, asked, corner),
 			"a point under a covered corner is unseen, but on the view, since it is drawn there")
@@ -273,7 +273,7 @@ func _test_a_drawing_is_off_the_view_as_a_whole(t: TestRunner) -> void:
 	var siting := _siting(map, view)
 	var tall := siting.ask_of_drawing(Rect2(-14.0, -48.0, 28.0, 52.0))
 	var point := siting.ask_of_drawing(Rect2())
-	var edge := view.view.end.y
+	var edge := view.camera_view().end.y
 	var feet := Vector2(her.x, edge + 8.0)
 	t.check(siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, tall, feet),
 			"feet 8px below the view's bottom edge are off the view")

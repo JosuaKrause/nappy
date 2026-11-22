@@ -821,8 +821,8 @@ func _place_a_car(vertical: bool, direction: float, corridor := -1, back := 0.0,
 ## until it leaves the list (`ProposedMoves.leave()`).
 func _a_figure(at: Vector2) -> MoveProposal:
 	var move := MoveProposal.new()
-	move.radius = EventInstance.FIGURE_RADIUS
-	move.stood_round = true
+	move.use_body_radius(EventInstance.FIGURE_RADIUS)
+	move.be_walked_round(true)
 	_city.map.moves.join(move, at)
 	return move
 

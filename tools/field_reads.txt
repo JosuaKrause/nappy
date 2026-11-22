@@ -89,26 +89,6 @@ src/events/behaviours/event_behaviours.gd unreachable
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
 
-# [GroundShape] src/ground_shape.gd
-src/events/behaviours/event_car_driving.gd half_length
-src/events/behaviours/event_car_driving.gd radius
-src/events/event_def.gd half_length
-src/events/event_def.gd kind
-src/events/event_excitement.gd half_extents
-src/events/event_excitement.gd half_length
-src/events/event_excitement.gd kind
-src/events/event_instance.gd radius
-src/events/walk_ground.gd half_length
-src/events/walk_ground.gd kind
-src/events/walk_ground.gd radius
-
-# [MoveProposal] src/world/move_proposal.gd
-src/events/event_instance.gd open
-src/events/event_instance.gd parked
-src/events/event_instance.gd radius
-src/events/event_instance.gd stood_round
-src/events/event_instance.gd to
-
 # [Mover] src/world/mover.gd
 src/events/event_instance.gd blocked_by
 src/events/event_instance.gd radius
@@ -122,14 +102,8 @@ src/city/city.gd frame_locked
 # [StillWatch] src/dev/still_watch.gd
 src/main.gd trace
 
-# [Stroller] src/player/stroller.gd
-src/events/checkpoint_controller.gd outright_moves
-
 # [TouchControls] src/ui/touch_controls.gd
 src/main.gd rotated
-
-# [VisibleView] src/world/visible_view.gd
-src/events/encounter_watch.gd view
 
 # [Warning] src/events/warning.gd
 src/events/behaviours/event_notice_run.gd cancel_if

@@ -260,13 +260,13 @@ func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRun
 	var tried := 0
 	for def: EventDef in EventCatalogue.all():
 		var body := def.datum()
-		if body == null or body.kind != GroundShape.Kind.SEGMENT or def.moves() or def.drives() \
+		if body == null or not body.is_segment() or def.moves() or def.drives() \
 				or def.pursues() or def.is_a_flock():
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
 		var axis := instance.solid_axis()
-		var along := body.half_length + def.heard_within()
+		var along := body.spine_half_length() + def.heard_within()
 		t.check(instance.field_reaches(axis * (along - 1.0)),
 				"'%s' reaches a point just inside its capsule along its spine" % def.id())
 		t.check(not instance.field_reaches(axis * (along + 1.0)),

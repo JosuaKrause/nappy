@@ -581,7 +581,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	edge.size = Vector2(1280.0, 720.0)
 	t.add_child(edge)
 	edge.setup(manager, player)
-	manager.visible_view().look(VisibleView.around(her, null).view, null)
+	manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
 	var created: Array[EventInstance] = []
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at, null))
@@ -622,7 +622,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 		elif elapsed > 0.6 and elapsed <= 0.9:
 			step = Vector2.LEFT
 		her += step * Tuning.WALK_SPEED * STEP
-		manager.visible_view().look(VisibleView.around(her, null).view, null)
+		manager.visible_view().look(VisibleView.around(her, null).camera_view(), null)
 		manager.warnings.run(STEP, her)
 		elapsed += STEP
 		if not created.is_empty():

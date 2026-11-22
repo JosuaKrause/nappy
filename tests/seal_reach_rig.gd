@@ -22,7 +22,7 @@ static func body_overhang(map: CityMap, ground: WalkGround,
 		plan: EventPlan) -> float:
 	var worst := 0.0
 	for solid in ground.solids_of(plan):
-		var rounding := solid.shape.radius if solid.shape.kind != GroundShape.Kind.RECT else 0.0
+		var rounding := solid.shape.rounding_radius() if not solid.shape.is_rect() else 0.0
 		worst = maxf(worst, _box_overhang(map, _spine_box(solid), rounding))
 	return worst
 
@@ -61,12 +61,12 @@ static func _spine_box(solid: WalkGround.Solid) -> Rect2:
 		var reach := shape.reach()
 		return Rect2(solid.centre - Vector2(reach, reach), Vector2(reach, reach) * 2.0)
 	var half := Vector2.ZERO
-	match shape.kind:
-		GroundShape.Kind.RECT:
-			half = shape.half_extents if along_x else Vector2(shape.half_extents.y,
-					shape.half_extents.x)
-		GroundShape.Kind.SEGMENT:
-			half = Vector2(shape.half_length, 0.0) if along_x else Vector2(0.0, shape.half_length)
+	if shape.is_rect():
+		half = shape.rect_half_extents() if along_x else Vector2(shape.rect_half_extents().y,
+				shape.rect_half_extents().x)
+	elif shape.is_segment():
+		half = Vector2(shape.spine_half_length(), 0.0) if along_x \
+				else Vector2(0.0, shape.spine_half_length())
 	return Rect2(solid.centre - half, half * 2.0)
 
 ## How far `box`, grown by `rounding`, reaches past the edge of any building tile it meets: the

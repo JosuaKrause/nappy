@@ -39,7 +39,7 @@ func _rows(map: CityMap) -> Array:
 
 ## Every gap between two posts of a row is narrower than her body, on every map.
 func _test_every_gap_is_narrower_than_her_body(t: TestRunner) -> void:
-	var post_radius := Prop.bollard_shape().radius
+	var post_radius := Prop.bollard_shape().rounding_radius()
 	# Her body alone, whatever way she faces, is 2 x 14 across; a gap that holds it lets her by.
 	var body := 2.0 * Tuning.PLAYER_BODY_RADIUS
 	var widest := 0.0

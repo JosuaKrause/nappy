@@ -443,9 +443,10 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 			if trap != null:
 				RunCity.events(_city).world.where_she_is().tell(her)
 				var drawing := trap.look.drawn_rect_now()
-				t.check(view.view.intersects(Rect2(initial + drawing.position, drawing.size)),
+				t.check(view.camera_view().intersects(
+						Rect2(initial + drawing.position, drawing.size)),
 						"the camera moved far enough to expose a trap at the initial badge position")
-				t.check(not view.view.intersects(Rect2(trap.position + drawing.position, drawing.size)),
+				t.check(not view.camera_view().intersects(Rect2(trap.position + drawing.position, drawing.size)),
 						"warning expiry keeps the actual drawing outside the moved WHOLE camera")
 				t.check((trap.position - her).normalized().is_equal_approx(bearing),
 						"the trap keeps the badge's bearing when the camera moves")

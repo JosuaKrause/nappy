@@ -62,7 +62,7 @@ class Solid extends RefCounted:
 		centre = at
 		shape = piece_shape
 		axis = along.normalized()
-		_rounding = shape.radius if shape.kind != GroundShape.Kind.RECT else 0.0
+		_rounding = shape.rounding_radius() if not shape.is_rect() else 0.0
 		var held := shape.reach() + Tuning.PLAYER_BODY_RADIUS
 		_held_within_squared = held * held
 
@@ -84,21 +84,19 @@ class Solid extends RefCounted:
 	## discs at most `DISC_PITCH` apart along its spine, each grown to the half-pitch's diagonal so
 	## the gaps between them are covered too, and a rectangle as the one disc of its own reach.
 	func discs() -> Array[Vector3]:
-		match shape.kind:
-			GroundShape.Kind.POINT:
-				return [Vector3(centre.x, centre.y, shape.radius)]
-			GroundShape.Kind.SEGMENT:
-				var along := axis * shape.half_length
-				var count := ceili(shape.half_length * 2.0 / DISC_PITCH) + 1
-				var pitch := shape.half_length * 2.0 / float(count - 1)
-				var grown := Vector2(shape.radius, pitch * 0.5).length()
-				var found: Array[Vector3] = []
-				for i in count:
-					var at := centre - along + along * (2.0 * float(i) / float(count - 1))
-					found.append(Vector3(at.x, at.y, grown))
-				return found
-			_:
-				return [Vector3(centre.x, centre.y, shape.reach())]
+		if shape.is_segment():
+			var along := axis * shape.spine_half_length()
+			var count := ceili(shape.spine_half_length() * 2.0 / DISC_PITCH) + 1
+			var pitch := shape.spine_half_length() * 2.0 / float(count - 1)
+			var grown := Vector2(shape.rounding_radius(), pitch * 0.5).length()
+			var found: Array[Vector3] = []
+			for i in count:
+				var at := centre - along + along * (2.0 * float(i) / float(count - 1))
+				found.append(Vector3(at.x, at.y, grown))
+			return found
+		if shape.is_rect():
+			return [Vector3(centre.x, centre.y, shape.reach())]
+		return [Vector3(centre.x, centre.y, shape.rounding_radius())]
 
 ## The pitch of the lattice her centre is asked about on, a quarter of a tile: fine enough that
 ## a gap her 28px body fits through has a point in it, and the same lattice

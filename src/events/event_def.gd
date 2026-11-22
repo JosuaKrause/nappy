@@ -1548,8 +1548,8 @@ func as_warned_first() -> EventDef:
 ## `EventInstance.is_lethal_at()`).
 func field_reach() -> float:
 	var priced_from := datum()
-	if priced_from != null and priced_from.kind == GroundShape.Kind.SEGMENT:
-		return priced_from.half_length + heard_within()
+	if priced_from != null and priced_from.is_segment():
+		return priced_from.spine_half_length() + heard_within()
 	var moving_speed := _pursuit.speed() if _pursuit else _route.speed()
 	return heard_within() * Field.scale(Field.eccentricity(moving_speed))
 

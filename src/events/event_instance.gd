@@ -128,12 +128,12 @@ func transition(to: Phase) -> void:
 		_telegraph_ended = true
 	phase = to
 	_excitement.invalidate_contribution()
-	# **Parked while it stands for good, and only then** (`MoveProposal.parked`): a row that parks
+	# **Parked while it stands for good, and only then** (`MoveProposal.has_parked()`): a row that parks
 	# has once it stops where it arrives, and nothing leaving or gone stands anywhere for good.
 	if to == Phase.PARKED:
-		_move.parked = _body.parks()
+		_move.be_parked(_body.parks())
 	elif to == Phase.LEAVING or to == Phase.DONE:
-		_move.parked = false
+		_move.be_parked(false)
 
 ## How long it has existed, in seconds: its own clock (`_age`).
 func age() -> float:
@@ -344,7 +344,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_mover = mover_for(definition)
 	_behaviours = EventBehaviours.compose(self, definition, _where, _figure, _map, _navigator,
 			_mover, _surroundings.trace(), _surroundings.lights(), _move)
-	_move.radius = _mover.radius
+	_move.use_body_radius(_mover.radius)
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	# A pursuer whose row walks round buildings to her (the roadblock's posted guard) holds his way
 	# from the start; it sweeps nothing until he is after her (`EventPursuit`).
@@ -363,11 +363,11 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 			BodyStance.lies_vertically_at(_map, position), _gate_state)
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventBody.is_walked_round()`).
-	_move.stood_round = _body.is_walked_round()
+	_move.be_walked_round(_body.is_walked_round())
 	# Whether it has parked, for a crowd car behind it in its lane (`EventBody.parks()`): a figure
 	# that never moves has parked from the start; one that drives to where it stops parks once it is
 	# there (`transition()`).
-	_move.parked = _body.has_parked_from_the_start()
+	_move.be_parked(_body.has_parked_from_the_start())
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
 	_gait_phase = 0.0
 	_gait_moving = false
@@ -548,7 +548,7 @@ func _become_solid_once_it_starts() -> void:
 ## back: while that step is open the end is kept (`_ends_its_route_on_commit`) and acted on once the
 ## step is committed (`_commit_the_step()`), never if the pose that reached it is taken back.
 func _end_its_route(may_park := true) -> void:
-	if car != null and _move.open:
+	if car != null and _move.is_mid_step():
 		_ends_its_route_on_commit = true
 		_may_park_on_commit = _may_park_on_commit and may_park
 		return
@@ -645,7 +645,7 @@ func _propose_the_step() -> void:
 ## the end of a car's route reached on a pose it keeps (`_end_its_route()`) — and a car's body laid
 ## along its heading.
 func _commit_the_step() -> void:
-	_move.to = position
+	_move.step_to(position)
 	var ends := _ends_its_route_on_commit
 	_ends_its_route_on_commit = false
 	if car != null and not car.check(ends):
@@ -885,7 +885,7 @@ func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
 	var her := _where.at()
 	if her != Vector2.INF and (her - global_position).dot(across) < 0.0:
 		across = -across
-	var reach := _def.ground_shape().radius + (row.ground_shape().reach() if row.ground_shape() else 0.0) + 1.0
+	var reach := _def.ground_shape().rounding_radius() + (row.ground_shape().reach() if row.ground_shape() else 0.0) + 1.0
 	return global_position + across * side * reach + _heading * along
 
 # ------------------------------------------------------------------- the stop ---

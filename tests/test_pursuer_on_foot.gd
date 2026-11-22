@@ -610,7 +610,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 				t.check(events.pending_warnings().is_empty(),
 						"day %d: he gets out with no off-screen badge" % day)
 				var reach := door.distance_to(car.global_position)
-				t.check(reach <= car.ground_shape().radius + officer.ground_shape().reach() + 2.0,
+				t.check(reach <= car.ground_shape().rounding_radius() + officer.ground_shape().reach() + 2.0,
 						"day %d: at the car's door (%.0fpx from its middle)" % [day, reach])
 			if officer and is_instance_valid(officer):
 				if stopped_her_at == INF and officer.has_stopped_her():
@@ -833,7 +833,7 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 	for i in 17:
 		for j in 3:
 			var point := car.global_position + axis * lerpf(-reach, reach, float(i) / 16.0) \
-					+ axis.orthogonal() * lerpf(-car.ground_shape().radius, car.ground_shape().radius,
+					+ axis.orthogonal() * lerpf(-car.ground_shape().rounding_radius(), car.ground_shape().rounding_radius(),
 					float(j) / 2.0)
 			if CityMap.junction_at(map.world_to_tile(point)) != Vector2i(-1, -1):
 				return true

@@ -38,7 +38,7 @@ func _process(delta: float) -> void:
 		var in_visible_area := false
 		for part in DRAWING.drawing_parts(instance):
 			var world := Rect2(instance.global_position + part.position, part.size)
-			on_camera = on_camera or view.view.intersects(world)
+			on_camera = on_camera or view.camera_view().intersects(world)
 			in_visible_area = in_visible_area or view.sees_any(world)
 		var badge := false
 		for announcement in edge.badges().announcing():
@@ -48,7 +48,7 @@ func _process(delta: float) -> void:
 		if states.get(id, "") != state:
 			print("CORNER %.3f camera=%s visible=%s badge=%s joystick=%s relative=%s age=%.3f" % [
 					elapsed, on_camera, in_visible_area, badge, joystick,
-					instance.global_position - view.view.get_center(), instance.age()])
+					instance.global_position - view.camera_view().get_center(), instance.age()])
 			states[id] = state
 		if on_camera and not in_visible_area and badge and joystick:
 			covered = true
