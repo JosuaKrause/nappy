@@ -501,7 +501,8 @@ func route() -> RouteSpec:
 
 ## How fast it removes itself from the scene when it is over, in px/s.
 ##
-## **Nothing vanishes while you are looking at it.** Anything **mobile** leaves at its own `speed`.
+## **Nothing vanishes while you are looking at it.** Anything **mobile** leaves at its own route
+## speed.
 ## This field is for the rest: a flock that has to fly off, a dog that has lost interest and trots
 ## away. Zero means it simply ends, which is right for a *place* rather than a moment: a cafe does
 ## not walk home.
@@ -1588,8 +1589,10 @@ func _mean_emission_along_the_line() -> float:
 ##
 ## One disc for almost everything: all of its peak is at the centre and falls away from there.
 ##
-## **That is false for a flock.** A flock is `flock_size` birds sharing the intensity between them
-## and wheeling inside `flock_spread`, so the field is tighter and *quieter along a line through
+## **That is false for a flock.** A flock is `flock().count()` birds sharing the intensity
+## between them
+## and wheeling inside `flock().spread()`, so the field is tighter and *quieter along a line
+## through
 ## it*; priced as a disc, `pigeon_flock` reads substantially higher than a real instance costs. The
 ## birds are placed evenly round the wheel at its mean reach, since what a row costs is the average
 ## over where they might be.

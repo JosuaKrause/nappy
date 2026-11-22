@@ -305,7 +305,8 @@ func short_of_its_line(seconds: float) -> float:
 		return cut
 	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / _course.speed())
 
-## **How far a car that stops where it arrives (`EventDef.stops_where_it_arrives`, the fire engine
+## **How far a car that stops where it arrives (`RouteSpec.parks_where_it_arrives()`, the fire
+## engine
 ## at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for every
 ## other row, which drives on past the end of its route as it leaves. The kerb is a place it stops,
 ## like a line it gives way at, but with nothing past it: where it parks it is not driving, so its

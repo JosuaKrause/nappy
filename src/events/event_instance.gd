@@ -58,7 +58,7 @@ var hold: EventHold
 var abduction: EventAbduction
 ## Going away once it is over (`Phase.LEAVING`); every event has one.
 var departure: EventDeparture
-## Following its route or pacing its beat (`EventDef.mobile`).
+## Following its route or pacing its beat (`EventDef.moves()`).
 var route: EventRouteWalk
 ## A car's driving: its proposed frame, its standing for her, its give-way and its strike
 ## (`EventCarDriving`). Null for anything that does not drive.
@@ -76,7 +76,7 @@ var on_foot: EventOfficer
 ## A row that waits for her and then runs its own event without chasing her (the mouse, the
 ## flock, the masked man).
 var notice_run: EventNoticeRun
-## A flock's birds (`EventDef.flock_size`).
+## A flock's birds (as many as `EventDef.flock().count()`).
 var flock: EventFlock
 ## A row sent down her line that is retired once it cannot reach her (the loose dog).
 var unreachable: EventUnreachable
@@ -98,7 +98,8 @@ enum Phase {
 	STOPPED,
 	## Over and getting out of shot: it emits nothing, cannot end the day and carries no cue.
 	LEAVING,
-	## A row that stops where it arrives has stopped there (`EventDef.stops_where_it_arrives`):
+	## A row that stops where it arrives has stopped there
+	## (`RouteSpec.parks_where_it_arrives()`):
 	## still the same event, standing still, for the rest of the day.
 	PARKED,
 	## Its guard has gone for good and only his barrier stands, solid and silent
@@ -1165,7 +1166,8 @@ static var _NO_BIRDS: Array[EventFlock.Bird] = []
 ## event with an `aftermath.leaves_behind()` stops **where the thing it leaves belongs** — the escape's
 ## explosion leaves its crater where it went off, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes is simply over. And a row with
-## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
+## `EventDef.route().parks_where_it_arrives()` **parks**: the fire engine is sent to the near
+## kerb across from
 ## the building (`EventSpawner._where_the_summoned_row_stops()`) and stays there for the rest of the
 ## day, because a standing field beside a fire she was led to is the cost that makes the pair a
 ## street to turn round on rather than one to hurry past.
@@ -1217,7 +1219,8 @@ func _be_done(may_park := true) -> void:
 ## existence mid-screen while she is still nearby (`EventDeparture`).
 ##
 ## **A row that parks where its route runs out leaves anyway when asked** — the warned neighbor,
-## whose ordinary end is standing at the door (`EventDef.stops_where_it_arrives`) and who runs
+## whose ordinary end is standing at the door (`RouteSpec.parks_where_it_arrives()`) and who
+## runs
 ## instead: this departure is the task's answer, not the route's.
 func leave_for_a_completed_task() -> void:
 	if is_gone() or is_on_its_way_out() or has_parked():
@@ -1556,8 +1559,8 @@ func ground_shape() -> GroundShape:
 ## nothing in particular cannot say that.
 ##
 ## **Each bird is its own point kernel**, eccentric by its own `heading * speed` rather than the
-## instance's own `travel_velocity()` (always zero for a flock — it is not itself `mobile` or
-## `EventDef.pursuit`) — a cheap read off `Bird`, already carried for the wheel, so a bird
+## instance's own `travel_velocity()` (always zero for a flock — it does not move along a route
+## of its own and is no pursuer) — a cheap read off `Bird`, already carried for the wheel, so a bird
 ## diving toward her costs more than one peeling away exactly as any other moving point in the
 ## game does. The bodies stay points either way: a flock's own field was never a capsule, and
 ## eleven of them is not where the general capsule-and-ellipse sum earns its cost.
@@ -2148,7 +2151,7 @@ func is_on_its_way_out() -> bool:
 	return phase == Phase.LEAVING
 
 ## Whether it has stopped where its route ended, for the rest of the day (`Phase.PARKED`): day 10's
-## neighbor home before she reached them. A row that `EventDef.stops_where_it_arrives` parks at the
+## neighbor home before she reached them. A row whose route parks where it arrives parks at the
 ## end of its route; unlike `is_on_its_way_out()` this is not an ending: it is still the same event,
 ## standing still. See `_be_done()`.
 func has_parked() -> bool:
@@ -2352,7 +2355,8 @@ func where_its_placards_point() -> Vector2:
 func walks() -> PackedVector2Array:
 	return _path
 
-## The beat it paces (`EventDef.paces_a_beat()`), in world space: its route for one that walks to
+## The beat it paces (`RouteSpec.paces_a_beat()`), in world space: its route for one that walks
+## to
 ## and fro along it, empty for everything else, which has no beat to stand beside.
 func beat() -> PackedVector2Array:
 	return _path if _def.paces_a_beat() else PackedVector2Array()

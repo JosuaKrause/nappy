@@ -678,7 +678,7 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 
 	director.free()
 
-## `EventDef.paces` folds a beat back and forth over its path, so "the way it was going" mid-beat
+## A pacing row folds a beat back and forth over its path, so "the way it was going" mid-beat
 ## means something different on each half — walking out toward the far end, or already turned
 ## round and walking back. `_be_done()`'s own rule ("something on a route carries on the way it
 ## was going") would carry him at her on whichever half has him walking toward where she is

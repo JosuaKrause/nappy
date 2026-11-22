@@ -216,7 +216,8 @@ func _test_where_it_is_created_she_is_warned_in_full(t: TestRunner) -> void:
 
 ## **Its kerb is where it stops, so nothing of it reaches past.** A car's warning, strike and stand
 ## reach 1.7s of its travel past the touch, but the engine's route ends at the kerb it parks at
-## (`stops_where_it_arrives`): past it, in its lane, she gets no mark and no doubled caret, is never
+## (its route parks where it arrives): past it, in its lane, she gets no mark and no doubled
+## caret, is never
 ## struck by an engine that parks short of her, and does not hold it off screen.
 func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 	# 120px past the kerb, the truck already driving: no warning that cannot come true.

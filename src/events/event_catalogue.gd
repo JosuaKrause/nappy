@@ -635,7 +635,8 @@ static func _alley_mouse() -> EventDef:
 ## Stationary, loud, and *pulsing*: the intensity envelope means the counterplay is timing a pass
 ## between yells, a different skill from routing around a hazard.
 ##
-## He **paces** (`EventDef.paces`), a design decision rather than polish: a stationary source is a
+## He **paces** (`RouteSpec.pacing()`), a design decision rather than polish: a stationary
+## source is a
 ## fixed price on a fixed patch of sidewalk, a line you draw once and never think about again. A man
 ## walking up and down two hundred and fifty pixels of footway is a *timing* problem on top of a
 ## routing one, as his pulse is at a larger scale.
@@ -938,7 +939,8 @@ static func _fire_truck() -> EventDef:
 	# where it is created, so that second is the whole of what the contract's flat
 	# `Tuning.OFFSCREEN_WARNING_MIN` measures.
 	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
-	# And it stays at the fire once it gets there (`EventDef.stops_where_it_arrives`): the standing
+	# And it stays at the fire once it gets there (`RouteSpec.parking_where_it_arrives()`): the
+	# standing
 	# field beside a fire she was led to, and the pair of them, is a street she is meant to turn
 	# round rather than walk down.
 	def.use_route(RouteSpec.at(190.0).parking_where_it_arrives())
