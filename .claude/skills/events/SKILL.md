@@ -43,6 +43,12 @@ The steps are `docs/EVENTS.md`, "Adding a new event". The one that gets skipped 
 generic to borrow, and `tests/test_events_catalogue.gd` fails if two rows share a picture or two
 looks share a silhouette.
 
+How a row is drawn is a `LookSpec` (`EventDef.look()`): its picture, the picture it warns in,
+whether a shadow goes under it, a trailing lead, whether its hold hides it, whether a rider of it
+may be drawn as the pelican and a roadblock's guard sides. The looks are handed that part and the
+row's body part when they are made and read their settings from them; what a picture needs of the
+live event's field or route is the event's to answer.
+
 If it needs behaviour no field covers, add the field to `EventDef` and handle it in the behaviour
 that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour` that
 `EventBehaviours.compose()` adds for the rows whose data ask for it. **A behaviour that keeps
@@ -200,10 +206,6 @@ player's word** (inbox #764 in minty-lemur, inbox #788 in minty-lemur). The trap
 A thing made of several bodies is a `FlockSpec` (`EventDef.flock()`); a moving thing bobs by distance covered;
 a partly animated scene keeps its still pixels and its moving pixels in separate layers. All three
 are `references/flocks-and-moving-pictures.md`.
-
-How a row is drawn is a `LookSpec` (`EventDef.look()`): its picture, the picture it warns in, whether a shadow goes
-under it, a trailing lead, whether its hold hides it, the pelican and a roadblock's guard sides. A look's own
-settings are read from the part; what a picture needs of the live event's body, field or route is the event's to answer.
 
 ## The day follows from its seed, and excitement is a pure query
 

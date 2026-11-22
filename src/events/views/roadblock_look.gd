@@ -9,9 +9,9 @@ var _barrier_post: EventBarrierPost
 
 ## Handed, as its event is set up, what every look is handed and the barrier post its guards stand
 ## at, none for a row with no post (`EventBehaviours.compose()` makes it first).
-func _init(owner: EventInstance, look: LookSpec, drawer: EventDrawer, skip_draw: bool,
-		barrier_post: EventBarrierPost) -> void:
-	super(owner, look, drawer, skip_draw)
+func _init(owner: EventInstance, look: LookSpec, body: BodySpec, drawer: EventDrawer,
+		skip_draw: bool, barrier_post: EventBarrierPost) -> void:
+	super(owner, look, body, drawer, skip_draw)
 	_barrier_post = barrier_post
 
 ## Overrides SpreadLook._draw_figure.

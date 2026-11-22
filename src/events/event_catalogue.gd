@@ -982,9 +982,9 @@ static func _burning_building() -> EventDef:
 	def.id = "burning_building"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.ONE_SHOT
-	# A footprint, no solid body: `EventDef.validate()` requires a shape wherever there is a
-	# look to draw, but nothing stands here to be solid, and its look casts no shadow.
 	def.use_look(LookSpec.of(EventDef.Look.BURNING_BUILDING).casting_no_shadow())
+	# A footprint, no solid body: `EventDef.validate()` requires a shape wherever there is a
+	# look to draw, but nothing stands here to be solid.
 	def.use_body(BodySpec.footprint(GroundShape.point(30.0)).unmet().parked())
 	def.first_day = 3
 	def.last_day = 3

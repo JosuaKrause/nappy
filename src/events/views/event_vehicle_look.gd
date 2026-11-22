@@ -10,9 +10,9 @@ extends EventLook
 var _abduction: AbductionSpec
 
 ## Handed, as its event is set up, what every look is handed and the abduction part of its row.
-func _init(owner: EventInstance, look: LookSpec, abduction: AbductionSpec, drawer: EventDrawer,
-		skip_draw: bool) -> void:
-	super(owner, look, drawer, skip_draw)
+func _init(owner: EventInstance, look: LookSpec, body: BodySpec, abduction: AbductionSpec,
+		drawer: EventDrawer, skip_draw: bool) -> void:
+	super(owner, look, body, drawer, skip_draw)
 	_abduction = abduction
 
 ## Overrides EventLook._draw_figure.
@@ -63,11 +63,11 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(EventPictures.ARMY_TRUCK_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.MOVING_VAN:
-			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, event.drawn_body().drawn_width(),
+			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, _body.drawn_width(),
 					canvas)
 		EventDef.Look.BURNT_OUT_CAR:
 			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR,
-					event.drawn_body().drawn_width(), canvas)
+					_body.drawn_width(), canvas)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.

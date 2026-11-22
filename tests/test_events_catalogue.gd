@@ -1062,7 +1062,7 @@ func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t: TestRunne
 			continue
 		t.check(def.obstructs_within() <= 0.0 and def.solid_reach() <= 0.0,
 				"'%s' has no body on the sidewalk (obstructs %.0f)" % [id, def.obstructs_within()])
-		t.check(not def.casts_a_shadow(), "and casts no shadow there")
+		t.check(not def.look().casts_a_shadow(), "and casts no shadow there")
 
 ## **A one-shot is sited on her way, or it is refused** (`EventDef.is_a_one_shot_off_her_way()`,
 ## which `EventDef.validate()` refuses a row for): a set piece has to be met wherever she goes, and

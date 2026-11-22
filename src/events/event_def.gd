@@ -171,12 +171,12 @@ enum SpawnMode {
 @export var id := ""
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
-## **How it is drawn** (`LookSpec`): its picture, the picture it warns in, whether it casts a shadow,
-## whether it trails a lead, whether its hold hides all of it, whether a rider of it may be the
-## pelican and the sides its guards stand on. Written through `use_look()` until the draft writes
-## it; asked through `look()` and the questions below. Every visible row states its own picture;
-## `tests/test_events.gd` names the three that are legitimately invisible. `LookSpec.none()` is a
-## row with no picture.
+## **How it is drawn** (`LookSpec`): its picture, the picture it warns in, whether it casts a
+## shadow, whether it trails a lead, whether its hold hides all of it, whether a rider of it may be
+## the pelican and the sides its guards stand on. Written through `use_look()` until the draft
+## writes it; asked through `look()` and the questions below. Every visible row states its own
+## picture; `tests/test_events.gd` names the three that are legitimately invisible.
+## `LookSpec.none()` is a row with no picture.
 @export var _look := LookSpec.none()
 
 ## Makes the row drawn as `spec` says (`_look`). Only the catalogue, a copy being made and a
@@ -225,10 +225,6 @@ func body() -> BodySpec:
 ## row with no picture.
 func ground_shape() -> GroundShape:
 	return _body.ground_shape()
-
-## Whether a shadow is put down under its body (`LookSpec.casts_a_shadow()`).
-func casts_a_shadow() -> bool:
-	return _look.casts_a_shadow()
 
 ## Whether it has a body at all (`BodySpec.has_a_body()`): something she is stopped by, rather than
 ## a figure she walks up to or a picture flat on the ground.
@@ -1828,8 +1824,8 @@ func leaves_behind() -> String:
 func scar_id() -> String:
 	return aftermath.scar_id()
 
-## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`;
-## `LookSpec.picture()`).
+## The picture it is drawn as, which is the silhouette its badge carries
+## (`EventPictures.icon_for()`; `LookSpec.picture()`).
 func picture() -> Look:
 	return _look.picture()
 

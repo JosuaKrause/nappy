@@ -353,8 +353,9 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var start := BodyStance.stands_at(_map, definition, at)
 	position = start
 	_heading = face
-	look = EventLooks.for_row(self, definition.look(), definition.takes_a_victim_by(), _surroundings.drawer(),
-			not _surroundings.draws(), barrier_post)
+	look = EventLooks.for_row(self, definition.look(), definition.body(),
+			definition.takes_a_victim_by(), _surroundings.drawer(), not _surroundings.draws(),
+			barrier_post)
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
@@ -1546,13 +1547,9 @@ func field_shape() -> GroundShape:
 func ground_shape() -> GroundShape:
 	return _def.ground_shape()
 
-## What its look draws it from: its body (`EventDef.body()`), which says whether it has one, how wide it
-## is drawn, how far it obstructs and how its pieces lie. Asked by the looks.
-func drawn_body() -> BodySpec:
-	return _def.body()
-
-## Everything the row can put on the screen about its feet, caret included (`EventFootprints.footprint_of()`).
-## Asked by the look, which merges the run its street gives a spread into it.
+## Everything the row can put on the screen about its feet, caret included
+## (`EventFootprints.footprint_of()`). Asked by the look, which merges the run its street gives a
+## spread into it.
 func footprint() -> Rect2:
 	return EventFootprints.footprint_of(_def)
 
@@ -1560,13 +1557,13 @@ func footprint() -> Rect2:
 func moves() -> bool:
 	return _def.moves()
 
-## How fast it comes at her under its own steam, in px/s: its chase speed for a pursuer, otherwise its
-## route's speed (`EventDef.approach_speed()`). What a figure's bob follows.
+## How fast it comes at her under its own steam, in px/s: its chase speed for a pursuer, otherwise
+## its route's speed (`EventDef.approach_speed()`). What a figure's bob follows.
 func approach_speed() -> float:
 	return _def.approach_speed()
 
-## The peak rate of its field at its centre, or 0 for a row with no field (`EventDef.peak()`): what the
-## share it emits now is measured against.
+## The peak rate of its field at its centre, or 0 for a row with no field (`EventDef.peak()`): what
+## the share it emits now is measured against.
 func peak() -> float:
 	return _def.peak()
 
@@ -1810,9 +1807,10 @@ func rim() -> EntityHalo:
 
 # ------------------------------------------------------------------ the look ---
 
-## How this instance looks (`EventLooks.for_row()`, handed its row's look part and its drawer in `setup()`): it
-## draws the instance from what it asks it and, in the family looks, from some of its public state,
-## decides when it is drawn again, and holds the drawing nodes a long picture is drawn in.
+## How this instance looks (`EventLooks.for_row()`, handed its row's look part, its body part and its
+## drawer in `setup()`): it draws the instance from what it asks it and, in the family looks, from
+## some of its public state, decides when it is drawn again, and holds the drawing nodes a long
+## picture is drawn in.
 ## Public because suites read it: no game file outside this one does, so the CI list of test-only
 ## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
 var look: EventLook

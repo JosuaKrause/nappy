@@ -128,10 +128,9 @@ func _spread_slice_count(segment_picture: String) -> int:
 ## (`solid_footprint_of()`, `DrawLayer.run_of()`), the ground its body closes. A spread with no body
 ## covers `BodySpec.drawn_width()`'s narrowest either side of its origin, as `drawn_box()` reserves.
 func _spread_run() -> PackedVector2Array:
-	if event.drawn_body().has_a_body() and event.ground_shape() != null:
-		return DrawLayer.run_of(EventFootprints.solid_footprint_of(event.drawn_body(), event.spread_axis(),
-				event.runs_vertically()),
-				Vector2.ZERO)
+	if _body.has_a_body() and event.ground_shape() != null:
+		return DrawLayer.run_of(EventFootprints.solid_footprint_of(_body, event.spread_axis(),
+				event.runs_vertically()), Vector2.ZERO)
 	var half := _half_run()
 	return PackedVector2Array([event.spread_at(-half), event.spread_at(half)])
 
@@ -140,7 +139,7 @@ func _spread_run() -> PackedVector2Array:
 ## reserves). The café's tables, the protest's ranks, the firefight's two halves and a wide scene are
 ## each laid over it.
 func _half_run() -> float:
-	return event.drawn_body().drawn_width() * 0.5
+	return _body.drawn_width() * 0.5
 
 ## The segment and the end cap (`""` for none) a spread-drawn look repeats along its run, or an
 ## empty list for a look that is not drawn as a spread.

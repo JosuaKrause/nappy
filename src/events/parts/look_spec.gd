@@ -41,9 +41,9 @@ var _casts_a_shadow := true
 ## (`EventFootprints.footprint_of()`).
 var _drags_a_lead := false
 
-## **Whether its own hold hides the whole of it**: `checkpoint_post`, one guard at an alley mouth and
-## nothing else, who goes in with her (`EventFootprints.hidden_by_its_hold()`). A hut or a gate is a
-## structure, drawn through its hold.
+## **Whether its own hold hides the whole of it**: `checkpoint_post`, one guard at an alley mouth
+## and nothing else, who goes in with her (`EventFootprints.hidden_by_its_hold()`). A hut or a
+## gate is a structure, drawn through its hold.
 var _vanishes_into_its_hold := false
 
 ## **Whether a rider on it may be drawn as the pelican** (`EventSpawner.rolls_a_pelican()`): the
@@ -63,8 +63,10 @@ var _may_be_a_pelican := false
 ## `RegionPlanner._alley_mouth_wall_body()` sets the one-element array naming the mouth's own
 ## street-facing side (`_alley_mouth_street_side()`).
 ##
-## **Carried on the row, set on the placement, read only at draw time**: nothing decides *which* side
-## is which, so an override is a value set on a fresh duplicate at placement.
+## **Carried on the row, set on the placement**: nothing decides *which* side is which, so an
+## override is a value set on a fresh duplicate at placement. What reads the sides is the
+## roadblock's look when it draws the band and the barrier post when its guards leave (the side the
+## far guard walks off from, which posts still have a man).
 var _guard_sides: Array[int] = [-1, 1]
 
 ## A row with no picture of its own: nothing is drawn for it.

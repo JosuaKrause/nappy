@@ -5,13 +5,13 @@ extends RefCounted
 ## its own (`EventLooks.for_row()` picks it by the row's picture); this base holds what they share.
 ##
 ## **A look never writes the event.** It is handed what never changes under it when it is made: its
-## event, its look (`LookSpec`: the picture, the warning picture, whether it casts a shadow, whether
-## it trails a lead), the drawer it paints through and whether nothing of it is drawn. This base asks
-## the look what the row is drawn as and the live event the rest (its body, its shape, its peak and
-## what changes), through the questions any caller asks; the family looks still read some of the
-## event's fields as well. It holds the eight-view sector last
-## drawn, the redraw key, the caret's cache and the drawing nodes a long picture is drawn in, and
-## draws on the event's own canvas. What the event does is its behaviours'
+## event, its look (`LookSpec`: the picture, the warning picture, whether it casts a shadow,
+## whether it trails a lead), its body (`BodySpec`), the drawer it paints through and whether
+## nothing of it is drawn. This base asks the look what the row is drawn as, the body what stands
+## there and the live event the rest (its shape, its peak and what changes), through the questions
+## any caller asks; the family looks still read some of the event's fields as well. It holds the
+## eight-view sector last drawn, the redraw key, the caret's cache and the drawing nodes a long
+## picture is drawn in, and draws on the event's own canvas. What the event does is its behaviours'
 ## (`src/events/behaviours/`); nothing here decides it.
 ##
 ## The event calls its look. In `setup()` it makes it (`EventLooks.for_row()`) and faces it
@@ -29,6 +29,10 @@ var event: EventInstance
 ## What the event is drawn as: its picture and what the drawing owes (`LookSpec`).
 var _look: LookSpec
 
+## What stands where the event is, solid or not (`BodySpec`): whether it has a body, how wide it is
+## drawn, how far it obstructs and how its pieces lie.
+var _body: BodySpec
+
 ## What the look paints its pictures through (`EventDrawer`).
 var _drawer: EventDrawer
 
@@ -42,9 +46,11 @@ var _shadow_pieces: Array[StandingPiece] = []
 var _shadow_axis := Vector2.ZERO
 var _shadow_vertical := false
 
-func _init(owner: EventInstance, look: LookSpec, drawer: EventDrawer, skip_draw: bool) -> void:
+func _init(owner: EventInstance, look: LookSpec, body: BodySpec, drawer: EventDrawer,
+		skip_draw: bool) -> void:
 	event = owner
 	_look = look
+	_body = body
 	_drawer = drawer
 	_skip_draw = skip_draw
 
@@ -376,10 +382,10 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## patches under two cars for the one row that does, so the ground under a crash is dark where the
 ## cars are and lit where the picture leaves a way through.
 ##
-## A row whose look casts none (`LookSpec.casts_a_shadow()`: the crater sunk into the road and the two
-## drawn on the building they stand against) is left out entirely, its body and its picture untouched: this is the one function that puts a
-## shadow patch down, so refusing here is the whole of "no shadow" rather than a special case at
-## each call site.
+## A row whose look casts none (`LookSpec.casts_a_shadow()`: the crater sunk into the road and the
+## two drawn on the building they stand against) is left out entirely, its body and its picture
+## untouched: this is the one function that puts a shadow patch down, so refusing here is the whole
+## of "no shadow" rather than a special case at each call site.
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if not _look.casts_a_shadow():
 		return
@@ -390,7 +396,7 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if _shadow_pieces.is_empty() or axis != _shadow_axis or vertical != _shadow_vertical:
 		_shadow_axis = axis
 		_shadow_vertical = vertical
-		_shadow_pieces = BodyStance.pieces_laid_out(event.drawn_body(), Vector2.ZERO, axis, vertical)
+		_shadow_pieces = BodyStance.pieces_laid_out(_body, Vector2.ZERO, axis, vertical)
 	for piece in _shadow_pieces:
 		piece.ground_shape().draw_shadow(canvas, origin + piece.center(), piece.axis())
 
@@ -410,8 +416,8 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 func _wants_a_mark() -> bool:
 	return event.source().caret_strength() > 0
 
-## The share of its peak (`EventInstance.peak()`) the event emits right now, 0..1, or 1 for a row with
-## no field: how hard the mark is breathing, and what a family's own picture swells with.
+## The share of its peak (`EventInstance.peak()`) the event emits right now, 0..1, or 1 for a row
+## with no field: how hard the mark is breathing, and what a family's own picture swells with.
 ##
 ## **The mark breathing is the one thing the ring did that a symbol does not get for free**, and it
 ## is load-bearing: a pulsing event can be timed and slipped past between beats, and a mark that
@@ -515,7 +521,7 @@ func drawn_rect_now() -> Rect2:
 			rect = rect.merge(Rect2(-size.x * 0.5, -size.y, size.x, size.y))
 	var shape := event.ground_shape()
 	if _look.casts_a_shadow() and shape != null:
-		var r := event.drawn_body().obstructs_within() if event.drawn_body().has_a_body() else shape.rounding_radius()
+		var r := _body.obstructs_within() if _body.has_a_body() else shape.rounding_radius()
 		rect = rect.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
 	if _look.picture() == EventDef.Look.LOOSE_DOG:
 		var behind := EventFootprints.LOOSE_LEAD_REACH if _heading_is_west() \

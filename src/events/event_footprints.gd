@@ -74,7 +74,7 @@ static func footprint_of(row: EventDef) -> Rect2:
 	if not any:
 		return box_of(row)
 	box = _with_the_drop(row, box)
-	if row.casts_a_shadow() and row.ground_shape() != null:
+	if row.look().casts_a_shadow() and row.ground_shape() != null:
 		var r := row.obstructs_within() if row.has_a_body() else row.ground_shape().rounding_radius()
 		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
 	if row.look().drags_a_lead():

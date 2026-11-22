@@ -210,7 +210,8 @@ src/
 	                       tables that pick one; `EventLooks.for_row()` gives each row the look
 	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a
 	                       rank, the roadblock, a fire, the checkpoint kit, the flock), handed
-	                       its event, its row and its drawer as it is made, which holds the
+	                       its event, its look part, its body part and its drawer (the van's
+	                       look its abduction part) as it is made, which holds the
 	                       redraw gate, the caret and the slices a long picture is drawn in;
 	                       every picture a look draws goes through one `EventDrawer`
 	                       (`views/event_drawer.gd`), which the manager builds over its atlas
