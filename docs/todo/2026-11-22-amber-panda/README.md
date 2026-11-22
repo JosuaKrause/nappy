@@ -6,7 +6,7 @@ No player's words name this; it follows [#1640](https://github.com/JosuaKrause/n
 
 **Found.** No rule asks through `tools/inbox.py ask` now: the inbox skill says so ("No rule asks through `tools/inbox.py ask` now") and the using-tools catalogue marks it unused.
 
-**What holds today.** The subcommand stays until then because #1640 (polite-otter, `tools/decisions.sh polite-otter`: questions about an inbox note go on the board, not on its issue) left it in place, unused. Every place that mentions `ask` (`rg -n "\bask\b" .claude/hooks tools/inbox.py .claude/skills`):
+**What holds today.** The subcommand stays until this entry is built because #1640 (polite-otter, `tools/decisions.sh polite-otter`: questions about an inbox note go on the board, not on its issue) left it in place, unused. Every place that mentions `ask` (`rg -n "\bask\b" .claude/hooks tools/inbox.py .claude/skills`):
 
 - `.claude/hooks/github-write-guard.sh`: the comment at the list of the tool's subcommands (the line naming `capture`, `append`, `correct`, `ask`, `close --pr`, `reopen --pr`) and the denial message that lists `capture, append, correct, ask, close --pr, reopen --pr`.
 - `.claude/skills/inbox/SKILL.md`: the sentence on the tool's mark lines that tells them from "a question asked with `ask`", the list "`ask`, `capture`, ..." after it, and "No rule asks through `tools/inbox.py ask` now".

@@ -2,7 +2,7 @@ priority: later
 
 # calm-sparrow — An event's caret strength may depend on whether its look asked earlier in the same tick · filed 2026-11-22
 
-No player's words name this; it is a finding of the Opus review of [#1638](https://github.com/JosuaKrause/nappy/pull/1638#pullrequestreview-6014446627) (minty-newt, the events' looks are handed the drawn view; `git show 58ca0869d --stat`), and PR 1642's review corrected its first reading.
+No player's words name this; it is a finding of the Opus review of [#1638](https://github.com/JosuaKrause/nappy/pull/1638#pullrequestreview-6014446627) (minty-newt, the events' looks are handed the drawn view; `git show 58ca0869d --stat`).
 
 **Found.** The excitement fingerprint probe (`tests/probes/excitement_fingerprint.gd`) was run with its events always drawn (no drawn view handed) and again gated by the screen. Two caret values for one event flipped: `car_accident`, seed 4242, day 1, ticks 223 and 225 (caret 1 on one side, caret 0 on the other, as main has it).
 
