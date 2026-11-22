@@ -108,7 +108,7 @@ Left, each its own design question:
   `MoveProposal`, `GroundShape`, `Stroller` (`outright_moves`) and `VisibleView` (`view`) are private,
   asked through their methods (row 4b of `event-interface.md`).
   `MoveProposal.yields` and `on_the_list`, which nothing outside its file reads (callers ask
-  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public too, as are `Stroller.carrying` and `facing`, which the game
+  `gives_way()` and `is_on_the_list()`), and `Stroller.atlas` (below) are public, as are `Stroller.carrying` and `facing`, which the game
   asks through `is_carrying()` and `facing_direction()` and the suites still read (`[kept]` lines);
   `VisibleView.controls` is private, set through `use_cover()`.
 - **Her part and the badge's that only tests read.** `Stroller.atlas` and `DangerEdge.atlas` (the

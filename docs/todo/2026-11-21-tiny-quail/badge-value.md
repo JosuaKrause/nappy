@@ -63,10 +63,11 @@ call. The layer map does not change.
 
 **What it collides with.**
 
-- **minty-quail's `event-interface.md`, row 4b (a row is written as its parts), running now:** its
-  pull requests rewrite suites that build rows, and several are the suites this change edits a line
-  of (`test_danger`, `test_events_pursuit`, `test_interior`). Nothing depends in meaning, but
-  **start after row 4b's last pull request**, so no running branch has to merge it.
+- **minty-quail's `event-interface.md`, row 4b (a row is written as its parts):** its pull requests
+  rewrote suites that build rows, several of them suites this change edits a line of
+  (`test_danger`, `test_events_pursuit`, `test_interior`). What is left of row 4b (the composer's
+  writes of the live event's behaviour slots, two unused members) touches none of them, so it can
+  start.
 - **Row 5 of the same file (the events' suites test one module each):** land **before** its group
   that moves `test_danger`'s events-and-badge half, so the moved tests and their stand-ins are
   written once against the final interface.
