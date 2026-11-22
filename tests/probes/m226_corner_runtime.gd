@@ -42,7 +42,7 @@ func _process(delta: float) -> void:
 			in_visible_area = in_visible_area or view.sees_any(world)
 		var badge := false
 		for announcement in edge.badges().announcing():
-			badge = badge or announcement.id == "charging_dog"
+			badge = badge or announcement.logged_name() == "charging_dog"
 		var state := "%s/%s/%s" % [on_camera, in_visible_area, badge]
 		var id := instance.get_instance_id()
 		if states.get(id, "") != state:

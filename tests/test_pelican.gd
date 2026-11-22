@@ -441,7 +441,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 	await t.get_tree().process_frame
 	var badges: Array[String] = []
 	for badge in edge.badges().announcing():
-		badges.append(str(badge["id"]))
+		badges.append(badge.logged_name())
 	t.check(badges.has("pelican") and not badges.has("cyclist"),
 			"and its badge's line names the pelican (%s)" % [badges])
 	edge.free()
