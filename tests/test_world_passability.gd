@@ -516,7 +516,7 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 	var off := 0
 	var before := instance.global_position
 	for _frame in 120:
-		instance.departure.leave(0.05)
+		instance.behaviours().departure().leave(0.05)
 		if instance.is_gone():
 			break
 		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.layers_blocked())):
@@ -565,7 +565,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 			if instance.is_on_its_way_out():
 				if left_from == Vector2.INF:
 					left_from = instance.global_position
-				instance.departure.leave(0.05)
+				instance.behaviours().departure().leave(0.05)
 			else:
 				instance.step(0.05)
 			if instance.is_gone():
@@ -576,15 +576,15 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 				if not map.step_is_clear(before, now, asked):
 					bad.append("%s %s -> %s" % [def.id(), before, now])
 			before = now
-			if instance.barrier_post \
-					and instance.barrier_post.where_the_far_guard_walks() != Vector2.INF:
+			if instance.behaviours().barrier_post() \
+					and instance.behaviours().barrier_post().where_the_far_guard_walks() != Vector2.INF:
 				if guard_before != Vector2.INF \
 						and map.passable(map.world_to_tile(guard_before), asked) \
 						and not map.step_is_clear(guard_before,
-								instance.barrier_post.where_the_far_guard_walks(), asked):
+								instance.behaviours().barrier_post().where_the_far_guard_walks(), asked):
 					bad.append("%s's far guard %s -> %s" % [def.id(), guard_before,
-							instance.barrier_post.where_the_far_guard_walks()])
-				guard_before = instance.barrier_post.where_the_far_guard_walks()
+							instance.behaviours().barrier_post().where_the_far_guard_walks()])
+				guard_before = instance.behaviours().barrier_post().where_the_far_guard_walks()
 		if left_from != Vector2.INF and not instance.is_gone() \
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id())

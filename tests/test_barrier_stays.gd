@@ -86,7 +86,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestR
 	var stage: RoadblockRig.Stage = made[2]
 	var where := stage.manager.world.where_she_is()
 	var her: Vector2 = made[1]
-	t.check(guard.barrier_post.has_left_its_body(), "he has set off")
+	t.check(guard.behaviours().barrier_post().has_left_its_body(), "he has set off")
 	var worst := 0.0
 	var lifted := false
 	guard.set_process(true)
@@ -307,8 +307,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	guard.step(STEP)
 	her = _charge(guard, where)
 	t.check(not guard.is_telegraphing(), "she stays in his radius and he charges")
-	t.check(guard.barrier_post.has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.barrier_post.has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age()])
-	var side := guard.barrier_post.chaser_side()
+	t.check(guard.behaviours().barrier_post().has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.behaviours().barrier_post().has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age()])
+	var side := guard.behaviours().barrier_post().chaser_side()
 	# Stream out in the middle of his walking away.
 	var frames := 0
 	while not guard.is_on_its_way_out() and frames < int(60.0 / STEP):
@@ -328,8 +328,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 				"streamed out mid-walk, it comes back as the barrier and not as a chase")
 		t.check(back.is_solid() and back.body_position().is_equal_approx(post),
 				"solid where it was built")
-		t.check(back.barrier_post.chaser_side() == side, "with his post still empty")
-		t.check(back.departure.save().is_empty() and not back.departure.walks_a_way(),
+		t.check(back.behaviours().barrier_post().chaser_side() == side, "with his post still empty")
+		t.check(back.behaviours().departure().save().is_empty() and not back.behaviours().departure().walks_a_way(),
 				"and with nothing of the walk he was on when it streamed out")
 		# She walks up to it: nobody notices.
 		where.tell(post + Vector2(0.0, 20.0))
@@ -341,7 +341,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 		RunCity.events(city).streaming.stream_out(plan)
 		RunCity.events(city).streaming.stream_in(plan)
 		var again := RunCity.events(city).event_of(plan)
-		t.check(again != null and again.is_waiting() and again.barrier_post.is_spent(),
+		t.check(again != null and again.is_waiting() and again.behaviours().barrier_post().is_spent(),
 				"and a barrier streamed out and in again stays spent")
 		RunCity.events(city).end_the_charges_still_running()
 		t.check(counted == ["warned:roadblock", "chased:roadblock", "shaken:roadblock"],

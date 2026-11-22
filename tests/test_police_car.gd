@@ -97,7 +97,7 @@ func _stands(car: EventInstance, where: WhereSheIs, player: Stroller) -> bool:
 	return car.global_position.is_equal_approx(was_at)
 
 func _gap(car: EventInstance) -> float:
-	return car.car.gap_to_her(car.position, car.facing_now())
+	return car.behaviours().car().gap_to_her(car.position, car.facing_now())
 
 # ------------------------------------------------------------- the reproduction ---
 
@@ -250,7 +250,7 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t: TestRunner) 
 			var was_at := car.global_position
 			_drive(car, car_where, player)
 			var now := float(i) * STEP
-			if warned_at < 0.0 and car.car.closes_on(player.global_position):
+			if warned_at < 0.0 and car.behaviours().car().closes_on(player.global_position):
 				warned_at = now
 			held = held or car.global_position.is_equal_approx(was_at)
 			if car.is_lethal_at(player.global_position):
@@ -551,7 +551,7 @@ func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 	var struck_at := -1.0
 	for i in int(8.0 / STEP):
 		_drive(car, car_where, player)
-		if warned_at < 0.0 and car.car.closes_on(player.global_position):
+		if warned_at < 0.0 and car.behaviours().car().closes_on(player.global_position):
 			warned_at = float(i) * STEP
 		if car.is_lethal_at(player.global_position):
 			struck_at = float(i) * STEP
@@ -702,7 +702,7 @@ func _test_it_gives_way_at_a_zebra_she_waits_at(t: TestRunner) -> void:
 	for i in int(5.0 / STEP):
 		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
-		warned = warned or car.car.closes_on(player.global_position)
+		warned = warned or car.behaviours().car().closes_on(player.global_position)
 	var nose := car.global_position.x + car.ground_shape().reach()
 	var paint := floorf(zebra.x / Tuning.TILE_SIZE) * Tuning.TILE_SIZE
 	t.check(not struck and not warned, "on the zebra she is never warned or struck")
@@ -886,7 +886,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 			RunCity.crowd(city).sources(), "")
 	t.add_child(observer)
 	clock.start(180.0)
-	t.check(car.car.closes_on(player.global_position), "the car is closing on her in its lane")
+	t.check(car.behaviours().car().closes_on(player.global_position), "the car is closing on her in its lane")
 	run_log.begin_run(1, false)
 	run_log.begin_day(1, 1, 1, 1, 180.0)
 	await t.get_tree().process_frame

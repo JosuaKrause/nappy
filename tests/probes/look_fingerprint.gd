@@ -186,7 +186,7 @@ func _drive(t: TestRunner, atlas: AtlasLibrary, ground: String, drive: String, s
 			continue
 		var rig := _stand(t, atlas, where, row, ground, drive)
 		rig.label = _labels[index]
-		if drive == "hold" and rig.instance.hold == null:
+		if drive == "hold" and rig.instance.behaviours().hold() == null:
 			rig.holder.free()
 			continue
 		rigs.append(rig)

@@ -72,20 +72,6 @@ src/events/event_instance.gd steps_each_tick
 # [EventFlock] src/events/behaviours/event_flock.gd
 src/events/event_instance.gd birds
 
-# [EventInstance] src/events/event_instance.gd
-src/events/behaviours/event_behaviours.gd abduction
-src/events/behaviours/event_behaviours.gd barrier_post
-src/events/behaviours/event_behaviours.gd car
-src/events/behaviours/event_behaviours.gd departure
-src/events/behaviours/event_behaviours.gd flock
-src/events/behaviours/event_behaviours.gd hold
-src/events/behaviours/event_behaviours.gd investigation
-src/events/behaviours/event_behaviours.gd notice_run
-src/events/behaviours/event_behaviours.gd on_foot
-src/events/behaviours/event_behaviours.gd pursuit
-src/events/behaviours/event_behaviours.gd route
-src/events/behaviours/event_behaviours.gd unreachable
-
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
 

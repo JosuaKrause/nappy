@@ -223,7 +223,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(source_where))
 		if source.row().is_a_flock():
-			source.flock.build()
+			source.behaviours().flock().build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id() + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.restore(EventSave.aged(phase))
@@ -254,12 +254,16 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id() + " sensitivity")
 		if source.detains_her():
-			source.hold.start()
+			source.behaviours().hold().start()
 			_event_parity(t, source, at, definition.id() + " chatting")
 		source_where.tell(at, Vector2.INF, Rect2(), false, false)
 		_event_parity(t, source, at, definition.id() + " sleep")
-		if source.hold:
-			source.hold.stop()
+		if source.behaviours().hold():
+			# Her conversation over, as a streamed event comes back with it: the hold is
+			# restored with no time left, with no departure or release in the way.
+			var held: Dictionary = source.behaviours().hold().save()
+			held["seconds_left"] = 0.0
+			source.behaviours().hold().restore(held)
 		source.source().set_outranked(true)
 		_event_parity(t, source, at, definition.id() + " outranked")
 		source.source().set_outranked(false)
