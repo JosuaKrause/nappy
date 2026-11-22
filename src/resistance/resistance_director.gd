@@ -965,7 +965,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## `_maybe_set_a_trap()`). A mark stands only on a mark tile (`_marks()`; a recipe's pin off one is
 ## refused, `_the_pinned_mark()`), and every mark tile is in a through-alley or past a courtyard's
 ## passage, so a point on neither has no guard, as `_guard_spot()` answers off an alley. Every
-## candidate is refused within his `EventDef.notice()` of `her` and, with `on_screen_matters`, where
+## candidate is refused within his `EventDef.notice_within()` of `her` and, with `on_screen_matters`, where
 ## he would be drawn in her view (brisk-wombat, "a robber also appeared out of nowhere and
 ## instakilled me"): his spot is worked out from the contact alone, so those refusals are what keep
 ## him off her. `Vector2.INF` when no candidate qualifies. Split out so a move of the roadblock's guard
@@ -1011,7 +1011,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ##
 ## Refused, as every guard's ground is, where he may not stand (`SpawnSiting.CONTACT_GROUND`: not
 ## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — within
-## `EventDef.notice()` of `her`, and, when `on_screen_matters`, anywhere any part of him would be on
+## `EventDef.notice_within()` of `her`, and, when `on_screen_matters`, anywhere any part of him would be on
 ## screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
@@ -1426,7 +1426,7 @@ func _guard_spot(at: Vector2) -> Vector2:
 ## have to lure the robber out first.")* His distance from the mark is whatever the courtyard leaves.
 ##
 ## **Beyond `max_distance` of the mark wherever the courtyard is deep enough for that** —
-## `EventDef.notice()` plus `ContactPoint.REACH`, so reading the mark leaves him asleep — drawn
+## `EventDef.notice_within()` plus `ContactPoint.REACH`, so reading the mark leaves him asleep — drawn
 ## anywhere from the inner end up to `FAR_END_REACH_IN` in from it but never nearer the mark than
 ## that. **Where the inner end itself is nearer than that, he stands on it**: no farther place
 ## exists. An ordinary courtyard is four tiles square, so he is often inside `max_distance` and may

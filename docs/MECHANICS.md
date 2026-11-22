@@ -1088,7 +1088,7 @@ accident to be tuned away — an event that merely emits is a *place*, and the a
 a route.
 
 The exception is the one kind of thing a route cannot answer: something that **follows**.
-`EventDef.pursuit()` marks it, and three properties make walking and running give *opposite
+`EventDef.pursues()` marks it, and three properties make walking and running give *opposite
 outcomes* rather than the same outcome at two prices:
 
 | | |
@@ -1134,7 +1134,7 @@ a pursuer asks — every other lethal row's catch is still the straight-line dis
 
 **Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a
 clear line"; mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs a
-clear line".)* A waiting pursuer notices her within `EventDef.notice()` only along the same clear line,
+clear line".)* A waiting pursuer notices her within `EventDef.notice_within()` only along the same clear line,
 and its charge asks for it too: a waiting charger whose warning runs out with a wall between them
 goes on warning until the line clears or she leaves its radius. For a pursuer that comes for her, a
 lunge the wall holds back is not simply deferred
@@ -1225,20 +1225,20 @@ own telegraph, which a player has watched and called nonsense. See `docs/playtes
 ### A pursuer can be a place before it is a moment
 
 `charging_dog` is a **moment**: the director sites it in front of her and the chase is the whole of
-it. `EventDef.notice()` is the other shape — a thing that is **somewhere**, that you can see
+it. `EventDef.waits_for_her()` is the other shape — a thing that is **somewhere**, that you can see
 and price and route around, and that becomes a chase if you do not. Three states rather than two:
 
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **warning** (for its `PursuitSpec.warns_for()` while she is inside `EventDef.notice()`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed()`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands_for_its_notice()`: the waiting dog, the hunting roadblock's guard) |
+| **warning** (for its `PursuitSpec.warns_for()` while she is inside `EventDef.notice_within()`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed()`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands_for_its_notice()`: the waiting dog, the hunting roadblock's guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. **The warning is one radius
 and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she comes close; she can turn around;
 inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
-comes inside `EventDef.notice()` along a clear line and with its warning picture in the camera's view,
+comes inside `EventDef.notice_within()` along a clear line and with its warning picture in the camera's view,
 not when the day put it there; leaving the radius before its `PursuitSpec.warns_for()` has run stops it, and it
 waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
 in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
@@ -1471,7 +1471,7 @@ in reach. Its guard moves with it, to two-thirds of the way through that alley f
 nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
 distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
-his own `EventDef.notice()` of her or in view when he is placed — so where that spot is 216px or
+his own `EventDef.notice_within()` of her or in view when he is placed — so where that spot is 216px or
 more from the mark (his 180px notice and her 36px reach), entering the alley from the mark's own end, reading it and leaving the same way
 never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
 is on her screen, since the move retires him and he would vanish in front of her or out of a chase;

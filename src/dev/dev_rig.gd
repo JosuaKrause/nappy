@@ -267,7 +267,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 ## neighbouring unrecognised-target case already carries. `--follow <id>` tracks such a row once
 ## it exists.
 ##
-## **A row that waits for her** (`EventDef.notice()` — a `pigeon_flock`, an `alley_robbery`) is stood
+## **A row that waits for her** (`EventDef.waits_for_her()` — a `pigeon_flock`, an `alley_robbery`) is stood
 ## just *outside* its own trigger rather than inside it: the offset below is measured against
 ## whichever is larger of its field's reach (`EventPlan.heard_within()`) and its notice
 ## (`EventPlan.notice_within()`), plus a tile's width of clearance,
@@ -319,7 +319,7 @@ static func first_event_position(events: EventManager, map: CityMap, trace: RunT
 ##
 ## `scale` defaults to 0.6 — comfortably clear of an ordinary event's own `radius` without
 ## wandering off toward the next thing down the street. `first_event_position()` passes `1.0` for
-## a row that waits (`EventDef.notice()`), where `radius` already carries its own margin and the step
+## a row that waits (`EventDef.waits_for_her()`), where `radius` already carries its own margin and the step
 ## has to reach the full distance rather than a fraction of it.
 static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: float = 0.6) -> Vector2:
 	var vertical := BodyStance.lies_vertically_at(map, at)

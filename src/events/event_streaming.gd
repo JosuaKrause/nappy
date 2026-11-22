@@ -254,7 +254,7 @@ func stream_in(plan: EventPlan) -> void:
 	# would put back exactly the thing streaming exists to fix — a twenty-second event that is over
 	# before anybody could reach it.
 	#
-	# The plan's save carries the same restore for a `EventDef.notice()` row: without its notice a
+	# The plan's save carries the same restore for a `EventDef.waits_for_her()` row: without its notice a
 	# pursuer streamed out mid-chase forgets she was ever noticed and comes back `is_waiting()`,
 	# standing where the day planted it rather than still coming for her.
 	#

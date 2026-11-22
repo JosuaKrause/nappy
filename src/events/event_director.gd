@@ -405,7 +405,7 @@ func _bag_the_next(count: int) -> void:
 ## off her heading, already noticing her.
 ##
 ## **The row itself, untouched.** `EventCatalogue.by_id()` returns the shared, cold `EventDef` —
-## `EventDef.notice()` still its authored 0.0 — so nothing here has to build a copy the way
+## `EventDef.notice_within()` still its authored 0.0 — so nothing here has to build a copy the way
 ## `EventDef.for_day()` does for the waiting one: a director-sited dog is met exactly as
 ## day 3's is, charging the moment it streams in, because both are already-noticing encounters
 ## rather than places she is routed into. No tip and no guarantee are the whole of what changes —

@@ -69,7 +69,7 @@ var barrier_post: EventBarrierPost
 ## A vehicle that stops for her and lets men out (`EventDef.investigates()`).
 var investigation: EventInvestigation
 ## Coming after her: the notice, the stand-off and lunge, the charge, the give-up
-## (`EventDef.pursuit()`).
+## (`EventDef.pursues()`).
 var pursuit: EventPursuit
 ## A man on foot who may stop her and walk back to the vehicle that let him out (every pursuer).
 var on_foot: EventOfficer
@@ -85,7 +85,7 @@ var unreachable: EventUnreachable
 ## question about it — is it waiting, warning, done — reads one value rather than re-deriving the
 ## phase from a dozen flags each frame. Every row has one, a pursuer or not.
 enum Phase {
-	## A row that waits for her (`EventDef.notice()`) has not noticed her: standing there, at full
+	## A row that waits for her (`EventDef.waits_for_her()`) has not noticed her: standing there, at full
 	## strength unless its notice is quiet, not lethal, not moving.
 	WAITING,
 	## Its telegraph or notice is running: a row's own telegraph from the frame it exists, or for a
@@ -780,7 +780,7 @@ func start_chat() -> void:
 ## the telemetry, which is the only thing that can tell the two apart from outside.
 var _gave_up := false
 ## **Its notice's clock** (`Warning`, read against `age`): started when it exists for a row with no
-## wait, and when it notices her for one that waits (`EventDef.notice()`); stopped while it waits.
+## wait, and when it notices her for one that waits (`EventDef.waits_for_her()`); stopped while it waits.
 ## `chase_age()` is its elapsed time, and a stream-out carries its start (`save()`).
 var _notice := Warning.new()
 ## Its charge as it is counted — its warning, its start and the one way it ended — and the one
@@ -1333,10 +1333,10 @@ func chase_age() -> float:
 	return _notice.elapsed(_age)
 
 ## **Whether this pursuer warns by radius rather than by a clock**: one that waited for her and
-## noticed her by sight (`EventDef.notice()` on the def it was handed) — the dog that waited, the
+## noticed her by sight (`EventDef.waits_for_her()` on the def it was handed) — the dog that waited, the
 ## alley robber and every guard drawn from his row, the hunting roadblock's guard (inbox #788 in
 ## minty-lemur). **One radius, and a warning on a clock inside it**: from the frame it notices her
-## inside `EventDef.notice()` it warns for its row's `PursuitSpec.warns_for()` (`notice_time()`); back
+## inside `EventDef.notice_within()` it warns for its row's `PursuitSpec.warns_for()` (`notice_time()`); back
 ## outside the radius before that, the warning stops and it waits again (`EventPursuit`), its
 ## clock reset; still inside when it runs out, it charges.
 ##

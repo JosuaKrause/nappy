@@ -8,7 +8,7 @@ extends RefCounted
 ## The plan is the escape's (`DayPlanner.plan_the_escape_city()`) on seeds 1 to 40, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds
 ## it, and each band stands where `PlanBuilder.body_stands_at()` puts it, which is where its guard
 ## notices her from. "Under" counts the pairs nearer than the two guards' notices together
-## (`EventDef.notice()` each), the ground on which both can come for her at once.
+## (`EventDef.notice_within()` each), the ground on which both can come for her at once.
 
 const SEEDS := 40
 

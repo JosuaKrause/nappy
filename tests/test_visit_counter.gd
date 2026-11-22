@@ -610,7 +610,7 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 ## created where its warning pointed reports the chase it starts**. `EventManager.spawn_warned()`
 ## creates such a row through `EventInstance.restore()` to spend the telegraph the warning already
 ## ran, and a restore otherwise stands for an instance streamed back in, whose chase — for a row
-## like `charging_dog` that never waits (`EventDef.notice()` 0.0) — began before it streamed out and
+## like `charging_dog` that never waits (`EventDef.notice_within()` 0.0) — began before it streamed out and
 ## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
 ## warned the way `spawn_warned()` does it (`arrive_from_its_warning()` told, then `restore()`), and
 ## streamed back in mid-chase, which reports nothing a second time.

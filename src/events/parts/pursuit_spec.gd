@@ -38,7 +38,7 @@ const PURSUIT_REACTION := 0.6
 
 ## How a pursuer's chase begins.
 enum Start {
-	## **It notices her first.** One that waits for her (`EventDef.notice()`) warns inside its one
+	## **It notices her first.** One that waits for her (`EventDef.waits_for_her()`) warns inside its one
 	## radius for `warns_for` and charges if she is still inside once that has run; one with no
 	## notice closes on her through its telegraph and lunges at its stand-off (the day-3 dog).
 	NOTICES,

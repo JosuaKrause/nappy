@@ -557,7 +557,7 @@ static func _cat_dash() -> EventDef:
 ## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
 ## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px), so a row that started
 ## telegraphing on arrival would dash and finish off screen before she was anywhere near. The row
-## sets `EventDef.notice()` (150px) without `EventDef.pursuit()`: `EventNoticeRun` holds it
+## sets `EventDef.notice_within()` (150px) without `EventDef.pursues()`: `EventNoticeRun` holds it
 ## `is_waiting()`, emitting nothing above the ordinary field and not yet on the clock, until she is
 ## within 150px, and only then does the telegraph start and the path run. 150px is inside
 ## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she faces) and past the
@@ -607,7 +607,7 @@ static func _alley_mouse() -> EventDef:
 	# width (`ALLEY_WIDTH_TILES · Tuning.TILE_SIZE`), so `_has_expired()` never cuts the dash short.
 	row.lasts(1.0)
 	row.route(RouteSpec.at(200.0, RouteSpec.Kind.ACROSS_ITS_ALLEY))
-	# Waits unclocked until she is this close (`EventDef.notice()`): inside VIEW_HALF_EXTENT.y (180px)
+	# Waits unclocked until she is this close (`EventDef.notice_within()`): inside VIEW_HALF_EXTENT.y (180px)
 	# with room to spare, past outer radius (60px).
 	row.notice(NoticeSpec.at(150.0))
 	# Shared with `alley_robbery`'s own weight: the two rows draw from the same `ALLEY`-only pool
@@ -1001,7 +1001,7 @@ static func _burnt_shell() -> EventDef:
 ##
 ## `TOWARD_PLAYER`, sited by `EventDirector` on her own line when she gets close, since a dog sited
 ## before the day knows where she walks is a dog she may never pass, and the whole content of the
-## row is meeting it. It is not `EventDef.pursuit()`: it does not adjust to her or stop at a
+## row is meeting it. It is not `EventDef.pursues()`: it does not adjust to her or stop at a
 ## stand-off; it is a straight line down the sidewalk that she answers by crossing the street or
 ## turning.
 ##
@@ -1152,7 +1152,7 @@ static func _leaf_blower() -> EventDef:
 ## the day streams them in at `Tuning.EVENT_STREAM_RADIUS` (900px), so what she sees from down the
 ## street is the thing she is deciding about.
 ##
-## **The telegraph contract is then paid in geometry, as the robber's is.** `EventDef.notice()` is the
+## **The telegraph contract is then paid in geometry, as the robber's is.** `EventDef.waits_for_her()` is the
 ## wait: the birds stand there unclocked and quiet, and the clock starts when she comes inside the
 ## trigger rather than at dawn, four streets away. It is the shape `alley_mouse` and a `MAP`-placed
 ## `charging_dog` use, and it keeps "it must not be over before she arrives" true without siting the
@@ -1239,7 +1239,7 @@ static func _pigeon_flock() -> EventDef:
 	row.lasts(4.0)
 	# On the ground the whole time, which makes this a thing to walk around rather than a thing that
 	# happens. Over the 1.55s the contract asks of a 168px field, measured from the moment it
-	# notices her (`EventDef.notice()`). The backstop for a flock she passed without reaching; the
+	# notices her (`EventDef.notice_within()`). The backstop for a flock she passed without reaching; the
 	# flush at the birds ends it for one she walked into.
 	# Faster than she can run, and up: they are gone in a second and a half and they are gone
 	# *somewhere*.
@@ -1866,7 +1866,7 @@ static func _abduction() -> EventDef:
 ## - **Getting close is day ending.** Ending the day inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
-## - **Get close and he comes at you.** `EventDef.notice()` 180, his one radius: inside that he
+## - **Get close and he comes at you.** `EventDef.notice_within()` 180, his one radius: inside that he
 ##   stands up, turns to face her and walks at her slowly, at 40px/s (`PursuitSpec.walk_speed()`),
 ##   holding at his 116px stand-off, for his 2.0s warning (`PursuitSpec.warns_for()`; inbox #788 in
 ##   minty-lemur), and if she is still inside his radius once it has run he lunges, and chases at
@@ -1954,7 +1954,7 @@ static func _alley_robbery() -> EventDef:
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
 ## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`PursuitSpec.lunge_reach()`),
 ## his catch that ends the day and the way he walks off once he has lost her. What differs is **no trigger**
-## (`EventDef.notice()` 0), so he is never `is_waiting()`, and his timing: the day-3 dog's badge and
+## (`EventDef.notice_within()` 0), so he is never `is_waiting()`, and his timing: the day-3 dog's badge and
 ## chase, read off `_charging_dog()`. His chase does not give up on a walker
 ## (`Tuning.PURSUIT_TIME`, a long cap); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him
 ## off, including while he is still offscreen.
@@ -2010,7 +2010,7 @@ static func _robber_giving_chase() -> EventDef:
 ## robber's own 100px/s.
 ##
 ##
-## **No trigger, and the robber row's own timing**: `EventDef.notice()` stays 0.0, so he is never
+## **No trigger, and the robber row's own timing**: `EventDef.notice_within()` stays 0.0, so he is never
 ## `is_waiting()`; he is warned first for the dog's half second, arrives already chasing
 ## (`PursuitSpec.Start.ARRIVES_CHASING`) and does not give up on a walker (`Tuning.PURSUIT_TIME`),
 ## identical to `robber_giving_chase`, since nothing about the timing is the picture's to change.
@@ -2680,7 +2680,7 @@ static func _impact_crater() -> EventDef:
 ## A masked man running up the stairwell: masked pursuers run up the stairs and can be avoided by
 ## going into a corridor and letting them pass.
 ##
-## **Mobile, not `EventDef.pursuit()`, and that is the whole counterplay.** A pursuer steers at her,
+## **Mobile, not `EventDef.pursues()`, and that is the whole counterplay.** A pursuer steers at her,
 ## so the only answer to one is speed; this runs a line (the shaft, bottom landing to top) and the
 ## answer to it is *not being on that line*, which in a building whose stairwell doors are a fade
 ## and a teleport means stepping through the nearest one and letting him go past. It is
@@ -2705,8 +2705,8 @@ static func _masked_pursuer() -> EventDef:
 	row.warning(WarningSpec.lasting(3.6).holding_still())
 	row.route(RouteSpec.at(Tuning.HEAT_HUNTS_SPEED))
 	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
-	# moment the section begins and being gone before she has come down a floor. `EventDef.notice()`
-	# without `EventDef.pursuit()` stands unclocked until she is in range and then runs its ordinary
+	# moment the section begins and being gone before she has come down a floor. `EventDef.waits_for_her()`
+	# without `EventDef.pursues()` stands unclocked until she is in range and then runs its ordinary
 	# path, which is `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own height
 	# (three floors of eight tiles is 768px) with room over it, so he notices her the moment she is
 	# anywhere in the same stairwell and never from the hallway two parts away.
