@@ -186,10 +186,9 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 	# they were built: the guard that the sweep above is not asking points that never move.
 	t.check(unstood == 0, "a sidewalk point built at a lane's middle is moved (%d stayed)" % unstood)
 
-## **A body already stood lays its pieces out where its build point does**, so the record of a live
-## body's tiles (`EventBody.tiles_at()`) and the record of the move of a body
-## (`EventSpawner.move_extra()`), which hand the record the point the body stands at, are the
-## record of the body built at `at`.
+## **A stance made from a point already stood lays its pieces out where its build point's does**:
+## a stance is made from a build point and never from a stance, and where a caller holds only the
+## point a live body stands at (a rig's, a test's) it still gets the body built at `at`.
 func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRunner) -> void:
 	var asked := 0
 	var differ := 0
