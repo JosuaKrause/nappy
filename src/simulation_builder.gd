@@ -32,8 +32,8 @@ var _poster_art := PosterArt.new()
 ## What the crowd is handed of the screen and of the frame record: no screen (always drawn) and
 ## the null sink until handed others.
 var _crowd_view: CrowdView = null
-## The box every drawing gate is asked against, handed to every live event and to the crowd's view; a
-## view with no screen (everything drawn) until handed one.
+## The box every live event's look is asked against, put in the events' surroundings; a view
+## with no screen (everything drawn) until handed one.
 var _drawn_view := DrawnView.new()
 var _crowd_timing := CrowdTiming.new()
 ## `--skip events`, `--skip crowd` and `--skip motion`: what a frame reading leaves out.
@@ -180,8 +180,8 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 	return simulation
 
 ## **What the events of a world are set up in, the one way for every world**: its trace, its
-## atlas, its frame timing, the drawn view, and whether they skip their drawing, drawn in `world`. The caller adds
-## the map and what it moves by.
+## atlas, its frame timing, the drawn view, and whether they skip their drawing, drawn in
+## `world`. The caller adds the map and what it moves by.
 func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
 	var surroundings := EventSurroundings.new().drawn_in(world).tracing_to(_trace) \
 			.drawn_from(_atlas).shown_by(_drawn_view)

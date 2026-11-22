@@ -4,15 +4,16 @@ extends RefCounted
 ## change things with animation if it's of screen. If we have a bounding box that extends a little
 ## bit into of screen then it won't be noticable.")*
 ##
-## `DrawnView` is the one box every gate asks, handed to each gate: the crowd's cases keep a real
-## `SubViewport` under it, and the events' cases hand a stand-in whose box they move. Each gate here is held to the cues' own promise: a
-## caret or a badge that is owed is drawn on the frame its thing comes into view, never a frame late
-## — so each one is walked in from off screen a step at a time, and the frame it asks for its redraw
-## is checked against the first frame any of its drawing reaches the screen itself, measured from
-## the drawing's own numbers rather than from the reach the gate asks with. What is checked is that
-## the redraw is asked for and that the caret it would draw is up; `_draw()` reads nothing the redraw
-## does not. The badge edge runs on real frames, and its redraws are the engine's `draw` signal, which
-## a headless run emits like any other.
+## `DrawnView` is the one box every gate asks, handed to each gate: the crowd's cases keep a
+## real `SubViewport` under it, and the events' cases hand a stand-in whose box they move. Each
+## gate here is held to the cues' own promise: a caret or a badge that is owed is drawn on the
+## frame its thing comes into view, never a frame late — so each one is walked in from off
+## screen a step at a time, and the frame it asks for its redraw is checked against the first
+## frame any of its drawing reaches the screen itself, measured from the drawing's own numbers
+## rather than from the reach the gate asks with. What is checked is that the redraw is asked
+## for and that the caret it would draw is up; `_draw()` reads nothing the redraw does not. The
+## badge edge runs on real frames, and its redraws are the engine's `draw` signal, which a
+## headless run emits like any other.
 
 const STEP := 1.0 / 60.0
 const DrawnEvent := preload("res://tests/drawn_event.gd")
@@ -256,8 +257,8 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(her).shown_by(view))
 	cyclist.set_process(false)
-	# Hidden, so the frames the view pans through never draw it (it was handed no atlas): the gate
-	# asks for a redraw whatever the event's visibility, and that answer is what is checked.
+	# Hidden, so the runner's tree never draws it (it was handed no atlas): the gate asks for a
+	# redraw whatever the event's visibility, and that answer is what is checked.
 	cyclist.visible = false
 	t.add_child(cyclist)
 	her.tell(cyclist.global_position + Vector2(def.heard_within(), 0.0))

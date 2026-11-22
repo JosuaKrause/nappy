@@ -5,12 +5,11 @@ extends RefCounted
 ## behaviours.
 
 ## The look that draws `event`, a live one of a row drawn as `look`: the family its picture belongs
-## to, handed the event, the look part, the body part (`body`), the drawer it paints through and
-## whether nothing of it is drawn (`skip_draw`, `--skip events`) and the box its drawing is gated by
-## (`drawn_view`), none of which changes under it,
-## the van's the abduction part its row takes a victim by (`abduction`, null for a row that takes
-## nobody), and the roadblock's the barrier post its guards stand at (`barrier_post`, none for a
-## row with no post).
+## to, handed the event, the look part, the body part (`body`), the drawer it paints through,
+## whether nothing of it is drawn (`skip_draw`, `--skip events`) and the box its drawing is
+## gated by (`drawn_view`), none of which changes under it, the van's the abduction part its row
+## takes a victim by (`abduction`, null for a row that takes nobody), and the roadblock's the
+## barrier post its guards stand at (`barrier_post`, none for a row with no post).
 static func for_row(event: EventInstance, look: LookSpec, body: BodySpec,
 		abduction: AbductionSpec, drawer: EventDrawer, skip_draw: bool,
 		drawn_view: DrawnView, barrier_post: EventBarrierPost) -> EventLook:

@@ -846,8 +846,9 @@ func _build_the_city(dark_from_the_start := false) -> void:
 			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
 ## **The boot's simulation builder**, made the first time a world needs one: equipped with this
-## boot's trace, atlas and frame timing, the bus, the torn posters' textures, the drawn view of the
-## screen (one object, handed to the events and the crowd's view), the crowd's timing, and what the developer's flags decide.
+## boot's trace, atlas and frame timing, the bus, the torn posters' textures, the drawn view of
+## the screen (one object, handed to the builder for the events and to the crowd's view), the
+## crowd's timing, and what the developer's flags decide.
 func _simulation_builder() -> SimulationBuilder:
 	if _simulations:
 		return _simulations

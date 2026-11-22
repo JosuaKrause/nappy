@@ -192,10 +192,11 @@ src/
 	                       by its event and told what happens to it
 	event_surroundings.gd what every live event of a world is set up in (`EventSurroundings`): its
 	                       map and navigator, where she is, the world it is drawn in, its drawer,
-	                       the drawn view its looks are gated by, its timing sink, its trace, its atlas, the car's lights and where a
-	                       protest points; built once where the world is (`SimulationBuilder`),
-	                       handed to the manager as it is made and to every live event's one
-	                       `EventInstance.setup()` call, which takes the shared boom state last
+	                       the drawn view its looks are gated by, its timing sink, its trace, its
+	                       atlas, the car's lights and where a protest points; built once where the
+	                       world is (`SimulationBuilder`), handed to the manager as it is made and
+	                       to every live event's one `EventInstance.setup()` call, which takes the
+	                       shared boom state last
 	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
 	                       present rate cached on its age, the walls it does not pass, its live
 	                       course and rate for the projection, whether that course is lethal

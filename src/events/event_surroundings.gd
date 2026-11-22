@@ -1,9 +1,10 @@
 class_name EventSurroundings
 extends RefCounted
-## **What every live event of a world is set up in** (`EventInstance.setup()`): the map it stands
-## on and the navigator it moves by, where she is, the world it is drawn in, the pictures and the
-## drawer it paints through, the screen box its look is gated by, whether it draws at all, where it charges its time, the run log it
-## writes to, the lights a car of it stops at and where a protest of it points its placards.
+## **What every live event of a world is set up in** (`EventInstance.setup()`): the map it
+## stands on and the navigator it moves by, where she is, the world it is drawn in, the pictures
+## and the drawer it paints through, the screen box its look is gated by, whether it draws at
+## all, where it charges its time, the run log it writes to, the lights a car of it stops at and
+## where a protest of it points its placards.
 ## **One value for a world's whole life**, built where the world is built and handed to its manager
 ## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
 ## handed the same one (`EventWorld.surroundings()`). An event keeps what it read of it when it was
@@ -15,9 +16,9 @@ extends RefCounted
 ##
 ## **Built by chaining**: `EventSurroundings.new().on(map).hearing(where)` and so on, each call
 ## returning the same object. It is the one place each default is stated: what is not handed is
-## open ground with a navigator over it, a `WhereSheIs` that says she is nowhere, no world, a silent
-## trace, the null timing sink, an atlas and a drawer of its own, a view with no screen (everything is drawn), drawn, no lights, protests
-## pointing at nothing.
+## open ground with a navigator over it, a `WhereSheIs` that says she is nowhere, no world, a
+## silent trace, the null timing sink, an atlas and a drawer of its own, a view with no screen
+## (everything is drawn), drawn, no lights, protests pointing at nothing.
 
 var _map: WorldMap = null
 var _city_map: CityMap = null

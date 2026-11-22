@@ -28,16 +28,19 @@ since `EntityHalo` re-draws the body every frame: the halo stands where the body
 body does not. Sweep the continuous quantity in a test and assert the key moved with it.
 
 **A gate that skips off screen is a promise about everything the drawing covers, and it redraws on
-its first frame back.** `DrawnView` (`src/world/drawn_view.gd`) is the one box, the view grown by two
-tiles, that `CrowdAgent` and an event's look skip their redraw and caret projection outside of. It is
-handed to each of them (the crowd's view and every live event's surroundings), never fetched: a rig
-hands a `DrawnView` of its own, `DrawnView.new()` for no screen at all (everything is drawn) or a
-stand-in that overrides `has_screen()` and `box()`. The
-box a thing is tested against has to hold every pixel its drawing can reach, not the picture at its
-own point: a street fire's flames run the whole burning front, hundreds of pixels from where it
-stands, and a box of its point alone freezes them on screen. And it redraws on the first frame back
-whatever its key says, since nothing kept the picture current while it was away, so a caret owed on
-that frame is drawn on it.
+its first frame back.** `DrawnView` (`src/world/drawn_view.gd`) is the one box, the view grown by
+two tiles, that `CrowdAgent` and an event's look skip their redraw and caret projection outside of.
+It is handed to each of them, never fetched: `main` hands the one object to the builder for every
+live event's surroundings and to the crowd's `ScreenCrowdView`. An event with no screen is handed
+`DrawnView.new()` or nothing, and everything is drawn; a crowd agent with no screen is handed no
+view at all, since a `ScreenCrowdView` over a view with no screen answers an empty box, which a
+walker takes for off screen; a `ScreenCrowdView` is always handed `DrawnView.on(anchor)`. A suite's
+stand-in extends `DrawnView` and overrides `has_screen()` and `box()`. The box a thing is tested
+against has to hold every pixel its drawing can reach, not the picture at its own point: a street
+fire's flames run the whole burning front, hundreds of pixels from where it stands, and a box of its
+point alone freezes them on screen. And it redraws on the first frame back whatever its key says,
+since nothing kept the picture current while it was away, so a caret owed on that frame is drawn on
+it.
 
 **A headless run draws but makes no pixels**: it calls `_draw()` and emits `draw` like any other,
 and its dummy renderer leaves no picture to judge — see the **verify** skill, "What each one cannot

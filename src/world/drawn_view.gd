@@ -1,9 +1,10 @@
 class_name DrawnView
 extends RefCounted
 ## **The one box every off-screen drawing gate asks**: the world the current camera shows, grown by
-## `MARGIN`, derived once a process frame by this object and handed to everything that asks. *(velvet-marten, #700, the player: "Skipping redraws for of screen elements. Also we
-## don't really change things with animation if it's of screen. If we have a bounding box that
-## extends a little bit into of screen then it won't be noticable.")*
+## `MARGIN`, derived once a process frame by this object and handed to everything that asks.
+## *(velvet-marten, #700, the player: "Skipping redraws for of screen elements. Also we don't
+## really change things with animation if it's of screen. If we have a bounding box that extends
+## a little bit into of screen then it won't be noticable.")*
 ##
 ## **Drawing only.** A thing outside this box still does everything it does — where it is, what it
 ## costs her, its timing — and only its picture is left as it was last drawn. A retained canvas item
@@ -12,11 +13,12 @@ extends RefCounted
 ## the screen. Three callers ask it: an event's look (`EventLook._in_the_drawn_view()`), the
 ## roadblock's look for the band left at the post (`RoadblockLook._shows_its_nodes()`), and the
 ## crowd's view of the screen (`ScreenCrowdView.drawn_box()`), which hands the box to its agents.
-## `Main` makes the one (`DrawnView.on()`) and hands it to the simulation's builder, which hands it
-## to every live event's surroundings and to the crowd's view, so the events and the crowd see the
-## same box because they hold the same object. A view made with `DrawnView.new()` has no screen and
-## shows everything, which is what a rig with nothing to be off screen from is handed; a suite's
-## stand-in extends this class and overrides `has_screen()` and `box()`.
+## `Main` makes the one (`DrawnView.on()`) and hands that object two ways: to the simulation's
+## builder, which puts it in every live event's surroundings, and to `ScreenCrowdView`, so the
+## events and the crowd see the same box because they hold the same object. A view made with
+## `DrawnView.new()` has no screen and shows everything, which is what a rig with nothing to be
+## off screen from is handed; a suite's stand-in extends this class and overrides `has_screen()`
+## and `box()`.
 ##
 ## **Not `VisibleView`, and the two are not to be merged.** That one answers "has she seen it", with
 ## the controls' covered corners taken out; this one answers "can any of it be on the screen", and a

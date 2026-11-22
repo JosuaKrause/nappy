@@ -1,9 +1,9 @@
 class_name ScreenCrowdView
 extends CrowdView
 ## The crowd's view of the screen as the game shows it: the box of the `DrawnView` it is handed,
-## and the square the viewport's current camera looks at, sized from
-## `ScreenOrientation`'s design box and its rotated one (a portrait touch window presents the game
-## turned a quarter, `ScreenOrientation.apply_to_camera()`).
+## and the square the viewport's current camera looks at, sized from `ScreenOrientation`'s
+## design box and its rotated one (a portrait touch window presents the game turned a quarter,
+## `ScreenOrientation.apply_to_camera()`).
 ##
 ## **Owned by `Main`**, which owns the window and so the viewport and its camera, and handed to the
 ## simulation's builder (`SimulationBuilder.use_the_crowds_screen()`) that hands it to every city's

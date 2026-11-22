@@ -1798,10 +1798,10 @@ func rim() -> EntityHalo:
 
 # ------------------------------------------------------------------ the look ---
 
-## How this instance looks (`EventLooks.for_row()`, handed its row's look part, its body part, its
-## drawer and the drawn view in `setup()`): it draws the instance from what it asks it and, in the family looks, from
-## some of its public state, decides when it is drawn again, and holds the drawing nodes a long
-## picture is drawn in.
+## How this instance looks (`EventLooks.for_row()`, handed its row's look part, its body part,
+## its drawer and the drawn view in `setup()`): it draws the instance from what it asks it and,
+## in the family looks, from some of its public state, decides when it is drawn again, and holds
+## the drawing nodes a long picture is drawn in.
 ## Public because suites read it: no game file outside this one does, so the CI list of test-only
 ## members (`tools/test_only_members.txt`) holds it among those only their own file uses.
 var look: EventLook
