@@ -7,16 +7,16 @@ change to be built as Fable wrote it, reviewed adversarially, then reviewed by F
 calm-lemur). Built as #1641 by a Sonnet agent.
 
 **What was built.** `BodyStance` is a value made from a map, a row, a place and a facing, or from a plan; it answers where
-the body stands, which way it lies, whether a standing vehicle shows its side, and its pieces and tiles, each worked out
-once. The live event derives one at setup and again on a move, and hands it to its body and its look; the shadow, the
+the body stands, which way it lies, whether a standing vehicle shows its side, and its pieces, laid out on each ask from
+a layout round the origin kept once. The live event derives one at setup and again on a move, and hands it to its body and its look; the shadow, the
 footprint and the planned-side callers read the same value. Two statics stay, for the questions asked with no stance to
 hand.
 
 **Differences from the design:** the live body no longer takes the map, since nothing in it reads it once the stance is
-handed in; a stance's tiles are worked out once rather than asked per heading; the spawner gains two members so a live
+handed in; the body's own tiles are the ones its stance records, rather than asked again per position and heading; the spawner gains two members so a live
 body's tiles and a move's record come from the live stance; `obstructed_footprint` stays public, kept in the test-only
-list because the parity probes ask it by name on both trees; a suite that flipped two private fields hands the body a
-stance with the answers flipped.
+list because the parity probes ask it by name on both trees; a stance lays its pieces out round a given point and heading too, for a car that drives on after it is stood; a suite
+that flipped two private fields hands the body a stance with the answers flipped.
 
 **Measured.** On main and the branch: the piece-layout and placement-rows probes identical but their duration lines, the
 excitement fingerprint's lines identical, and the look fingerprint's lines identical.
