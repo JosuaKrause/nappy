@@ -454,8 +454,7 @@ const NEIGHBOR_RUN_SPEED := 150.0
 
 ## The day-10 neighbor: the same row walking home from out in the city along a path the director
 ## gives it, who **stops at the door** (its route parks where it arrives), walked home into the
-## vans, which
-## is the task lost, and who, warned first, runs (`departs_at`), which
+## vans, which is the task lost, and who, warned first, runs (`departs_at`), which
 ## `EventInstance.leave_for_a_completed_task()` turns away from her. A copy rather than a second
 ## row, since it is the same person in the same picture.
 static func neighbor_heading_home() -> EventDef:
@@ -636,10 +635,9 @@ static func _alley_mouse() -> EventDef:
 ## Stationary, loud, and *pulsing*: the intensity envelope means the counterplay is timing a pass
 ## between yells, a different skill from routing around a hazard.
 ##
-## He **paces** (`RouteSpec.pacing()`), a design decision rather than polish: a stationary
-## source is a
-## fixed price on a fixed patch of sidewalk, a line you draw once and never think about again. A man
-## walking up and down two hundred and fifty pixels of footway is a *timing* problem on top of a
+## He **paces** (`RouteSpec.pacing()`), a design decision rather than polish: a stationary source is
+## a fixed price on a fixed patch of sidewalk, a line you draw once and never think about again. A
+## man walking up and down two hundred and fifty pixels of footway is a *timing* problem on top of a
 ## routing one, as his pulse is at a larger scale.
 ##
 ## **The cost of pacing is the body.** Anything mobile is exempt from *solid things are solid*, since a
@@ -694,12 +692,11 @@ static func _homeless_yeller() -> EventDef:
 	# Eight tiles of footway, walked in about eight seconds each way: long enough that where he is
 	# now is worth looking at, short enough that it is still *a place he is*.
 	def.use_route(RouteSpec.at(30.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(8).pacing())
-	# His pacing route never reaches the end of its path and he carries no `duration`, so he
-	# leaves only
-	# when the resistance hands him a note (`EventInstance.leave_for_a_completed_task()`); this is
-	# that departure's speed, not his pacing shuffle. Faster than the shuffle, so the note visibly
-	# changes what he is doing, and well under her `Tuning.WALK_SPEED` (92px/s), so following him
-	# out is never the fast way home.
+	# His pacing route never reaches the end of its path and he carries no `duration`, so he leaves
+	# only when the resistance hands him a note (`EventInstance.leave_for_a_completed_task()`); this
+	# is that departure's speed, not his pacing shuffle. Faster than the shuffle, so the note
+	# visibly changes what he is doing, and well under her `Tuning.WALK_SPEED` (92px/s), so
+	# following him out is never the fast way home.
 	def.departs_at = 60.0
 	def.weight = 2.0
 	def.max_per_day = 18
@@ -942,9 +939,8 @@ static func _fire_truck() -> EventDef:
 	# `Tuning.OFFSCREEN_WARNING_MIN` measures.
 	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
 	# And it stays at the fire once it gets there (`RouteSpec.parking_where_it_arrives()`): the
-	# standing
-	# field beside a fire she was led to, and the pair of them, is a street she is meant to turn
-	# round rather than walk down.
+	# standing field beside a fire she was led to, and the pair of them, is a street she is meant to
+	# turn round rather than walk down.
 	def.use_route(RouteSpec.at(190.0).parking_where_it_arrives())
 	return def
 
@@ -1216,10 +1212,9 @@ static func _leaf_blower() -> EventDef:
 ##
 ## **The birds go up when she reaches them, which a clock cannot know.** They are on the ground for
 ## the whole telegraph by construction, so under the clock alone a walk straight in put them up
-## about 84px past her. `EventNoticeRun` fires the burst at the flock's spread plus her own
-## body, the
-## distance at which she is among the birds rather than near them, as a pursuer's lunge is fired by
-## her reaching its stand-off.
+## about 84px past her. `EventNoticeRun` fires the burst at the flock's spread plus her own body,
+## the distance at which she is among the birds rather than near them, as a pursuer's lunge is fired
+## by her reaching its stand-off.
 ##
 ## **Its telegraph (`telegraphs_for()`) is 1.7s and is the backstop rather than the wait.** It only decides a flock she
 ## came near and never reached (80px off the middle, say); shortening it would put *those* birds up
@@ -1263,9 +1258,8 @@ static func _leaf_blower() -> EventDef:
 ##   one: walking round the edge meets one bird, through the middle five. It is the third loudest
 ##   thing on an act I sidewalk at the centre and nearly free at the rim.
 ## - **The spread comes out of the outer radius, not on top of it.** A bird emits over
-##   the outer radius less the spread, so the union of eleven moving fields is inside the one
-## disc the
-##   fairness contract was checked against. The telegraph is still measured against 168px.
+##   the outer radius less the spread, so the union of eleven moving fields is inside the one disc
+##   the fairness contract was checked against. The telegraph is still measured against 168px.
 ## - **It fades as they climb.** swell is the burst being loudest at the instant they go
 ##   up, which also earns it a caret for the whole burst rather than only the telegraph: a flock is
 ##   danger that changes over time, the one thing the mark is for.

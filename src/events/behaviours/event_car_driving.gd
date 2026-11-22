@@ -95,8 +95,7 @@ var _known := false
 var _ahead_before := false
 var _was_leaving := false
 
-## Its row: its body's `shape`, its `speed`, whether it parks where it arrives or paces a beat,
-## whether it moves and whether it pursues.
+## Its row: its body's ground shape and whether it pursues.
 var _row: EventDef
 ## The map it drives on: the street lattice its give-way is laid on, the zebras, the carriageway.
 var _map: WorldMap
@@ -116,9 +115,9 @@ var _move: MoveProposal
 ## with no city, which then has no red light to stop at.
 var _lights: TrafficSignals
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the map,
-## its route walk (or none), the vehicle's investigation (or none), its event's move and the lights it stops
-## at (or none).
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the
+## map, its route walk (or none), the vehicle's investigation (or none), its event's move and the
+## lights it stops at (or none).
 func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
 		map: WorldMap, route: EventRouteWalk, investigation: EventInvestigation, move: MoveProposal,
 		lights: TrafficSignals) -> void:
@@ -306,13 +305,12 @@ func short_of_its_line(seconds: float) -> float:
 	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / _course.speed())
 
 ## **How far a car that stops where it arrives (`RouteSpec.parks_where_it_arrives()`, the fire
-## engine
-## at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for every
-## other row, which drives on past the end of its route as it leaves. The kerb is a place it stops,
-## like a line it gives way at, but with nothing past it: where it parks it is not driving, so its
-## warning, its strike and its standing for her end at the touch it would make there, without
-## `PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day,
-## and one created with her past its kerb stood off screen for as long as she stayed there.
+## engine at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for
+## every other row, which drives on past the end of its route as it leaves. The kerb is a place it
+## stops, like a line it gives way at, but with nothing past it: where it parks it is not driving,
+## so its warning, its strike and its standing for her end at the touch it would make there, without
+## `PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day, and one
+## created with her past its kerb stood off screen for as long as she stayed there.
 func route_left(travelled: float) -> float:
 	if not _course.parks_where_it_arrives() or _course.paces_a_beat() or _figure.walks().size() < 2:
 		return INF

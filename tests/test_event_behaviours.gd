@@ -158,7 +158,8 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first.flock.build()
-	t.check(first.flock.birds.size() == def.flock().count(), "the flock has its %d birds" % def.flock().count())
+	t.check(first.flock.birds.size() == def.flock().count(),
+			"the flock has its %d birds" % def.flock().count())
 	var scattered := first.flock_offsets()
 	first_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	_advance(first, def.telegraphs_for() + 1.0)

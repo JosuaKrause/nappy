@@ -191,7 +191,7 @@ func _reproduce_zero_density_visits() -> void:
 ## plan — the same question `DawnSpoilers._denial_radius()`'s own doc states: not the outer
 ## radius, the radius at
 ## which the source still outpaces the calm-ground decay. Everything in `plans` is stationary
-## (`DawnSpoilers._things_to_put_in_a_park()` excludes `mobile`), so a point-to-position
+## (`DawnSpoilers._things_to_put_in_a_park()` excludes a row that moves), so a point-to-position
 ## distance is exact rather
 ## than an approximation of a route.
 func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],

@@ -339,7 +339,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 			continue
 		var wider: EventDef = def.duplicate()
 		wider.use_field(wider.field().reaching(wider.heard_within() * 1.5))
-		wider.use_route(RouteSpec.at(wider.speed() * 1.5, wider.route().kind()))
+		wider.use_route(_route_at_another_speed(def.route(), def.speed() * 1.5))
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),
 				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
@@ -352,6 +352,16 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 			and convoy.telegraphs_for() > Tuning.WARNING_ALONE_MAX,
 			"the column's badge is cut to the ceiling (%.2fs) and the planned convoy keeps its %.2fs"
 			% [column.telegraphs_for(), convoy.telegraphs_for()])
+
+## The route `route` walks at `speed` and is otherwise the same: its kind, its length, whether it
+## paces and whether it stops where it arrives.
+func _route_at_another_speed(route: RouteSpec, speed: float) -> RouteSpec:
+	var other := RouteSpec.at(speed, route.kind()).up_to_tiles(route.tiles())
+	if route.paces_a_beat():
+		other = other.pacing()
+	if route.parks_where_it_arrives():
+		other = other.parking_where_it_arrives()
+	return other
 
 ## **The loose dog and the cat do not telegraph their coming.** *(PLAYTEST-145: "telegraphing is for
 ## things that go fast *and* are dangerous" · "go fast and towards the player" · "loose dog, cat

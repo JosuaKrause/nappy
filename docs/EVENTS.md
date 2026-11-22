@@ -190,7 +190,7 @@ with no along-corridor component to send it down, the literal heading is used ex
 
 It does not adjust to her the way a pursuer does. `EventDef.pursuit` closes on her or stands warning her,
 charges her and gives up if she runs; `TOWARD_PLAYER` is traffic, not an ambush — it travels the straight line it was
-sited on, at its own `speed`, whether or not she is in it. The same two rules bind it as bind
+sited on, at its route's own speed, whether or not she is in it. The same two rules bind it as bind
 `AHEAD_OF_PLAYER`: the clock only runs while she is walking, and `EventDef.validate()` refuses one
 whose `obstructs_within()` is nonzero, or whose outer radius reaches the closest it is ever created,
 `SpawnSiting.least_distance()` (the view's half height, 180px, for a row warned of first) — a
@@ -2781,7 +2781,7 @@ so its own forward reach never grows past `half_length + outer radius`, and the 
 field is priced from its centre as a point's is. For a moving point — a cat, a dog, a cyclist, a
 pursuer — the escape she is owed is stated over `outer radius · Field.scale(e)` (a full
 forward-reach clearance for a row faster than a walk) or `(outer radius − inner radius) ·
-Field.scale(e)` (a band clearance for a slower one), `e` from the row's own `speed` or
+Field.scale(e)` (a band clearance for a slower one), `e` from the row's own route speed (`RouteSpec.speed()`) or
 `PursuitSpec.speed()`: `Tuning.required_telegraph_time()` and `Tuning.validate_pursuit()` are the two
 places this is stated, and every row in the catalogue whose forward reach grew past what its
 telegraph already bought had its `telegraphs_for()` re-derived — never its radii — to the new minimum

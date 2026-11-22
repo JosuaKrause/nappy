@@ -570,15 +570,14 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 ## zero, every beat with a side route also reaches a junction and the half changes no placement in
 ## this sample — it is still what a beat truncated beside a park would be answered by.
 ##
-## **The walled count is small, and the arithmetic says it has to be.** `homeless_yeller` paces
-## The beat's eight tiles against a block of `Tuning.BLOCK_SIZE` (8), so a beat laid anywhere on
-## a
+## **The walled count is small, and the arithmetic says it has to be.** `homeless_yeller` paces a
+## beat of eight tiles against a block of `Tuning.BLOCK_SIZE` (8), so a beat laid anywhere on a
 ## street runs into the junction box at one end of it unless `PlanBuilder._along_street_path()`
-## truncates it — at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
-## case is that truncation, which is why the floor under it is *one* rather than a share: what it
-## guards is that the sweep can still produce the case at all. City 88 is in the sweep for it: its
-## day 1, before any mast holds a location, paces a walled beat, so the floor rests on a day no
-## change to the later days' draws moves.
+## truncates it — at a closure, at a calm zone's absorbed corridor, or against the map's own margin.
+## The walled case is that truncation, which is why the floor under it is *one* rather than a share:
+## what it guards is that the sweep can still produce the case at all. City 88 is in the sweep for
+## it: its day 1, before any mast holds a location, paces a walled beat, so the floor rests on a day
+## no change to the later days' draws moves.
 func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> void:
 	var on_the_route := 0
 	var walled := 0

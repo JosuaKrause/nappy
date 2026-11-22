@@ -1,18 +1,17 @@
 class_name EventRouteWalk
 extends EventBehaviour
-## **Following a route, or pacing a beat**: a mobile row walks its `path` at its `speed`, every step
-## through the navigator, and leaves from the end of a journey; a row with a pacing route folds
-## its walk
-## back and forth over the route for ever. The route and how far along it the event is are the
-## event's own, asked of the figure it moves (`EventInstance.Figure.walks()`, `travelled()`), and
-## streaming carries them; this is how it moves along it.
-## A pursuer, an investigating vehicle and a row that waits walk their routes through this too.
+## **Following a route, or pacing a beat**: a row that moves walks its `path` at its route's speed,
+## every step through the navigator, and leaves from the end of a journey; a row with a pacing route
+## folds its walk back and forth over the route for ever. The route and how far along it the event
+## is are the event's own, asked of the figure it moves (`EventInstance.Figure.walks()`,
+## `travelled()`), and streaming carries them; this is how it moves along it. A pursuer, an
+## investigating vehicle and a row that waits walk their routes through this too.
 ##
 ## **A row whose route is worked out as it goes** (`go_on_by()`: a row the director sent ahead of
 ## her) is given a further leg at the end of its route while she could be watching it, and goes on,
 ## still the event it was; out of her sight, or with no way on, it ends its route as any row does.
 
-## Its row: its speed, and whether it paces a beat.
+## Its row: asked only for a further leg when the walk runs out of route (`WayOn.next_leg()`).
 var _row: EventDef
 ## How it travels (`RouteSpec`): how fast it walks and whether it paces a beat.
 var _course: RouteSpec

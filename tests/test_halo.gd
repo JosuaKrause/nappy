@@ -677,7 +677,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 # the actual received amount counts")*, actually fixed. This rig stays as the regression: the two
 # rows a player once reported as invisible still reach the meter.
 
-## `cat_dash` is `AHEAD_OF_PLAYER` and `mobile`, but a rig instance built with no route never
+## `cat_dash` is `AHEAD_OF_PLAYER` and moves along a route, but a rig instance built with no route never
 ## enters `EventRouteWalk.advance()` (`path.size() > 1` is false), so it holds still at `at` for its
 ## whole life -- exactly what "standing on her" needs to hold the distance at zero throughout.
 func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:

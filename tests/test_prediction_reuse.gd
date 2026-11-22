@@ -116,7 +116,7 @@ func _copy_definition(original: EventDef) -> EventDef:
 	return copy
 
 ## The rows that differ from `definition` in one setting of its field (but its core, which only a
-## cored row has: `_test_a_cored_row()`), its speed or its chase speed, by the setting's name, each
+## cored row has: `_test_a_cored_row()`), its speed (a row that moves) or its chase speed, by the setting's name, each
 ## made as the game makes a row: a refinement of the row's field part or a copy with its pursuit at
 ## another speed.
 func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
@@ -133,10 +133,10 @@ func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 		var row := _copy_definition(definition)
 		row.use_field(fields[label] as FieldSpec)
 		rows[label] = row
-	var faster := _copy_definition(definition)
 	if definition.moves():
+		var faster := _copy_definition(definition)
 		faster.use_route(_route_at_another_speed(definition.route(), definition.speed() + 3.0))
-	rows["speed"] = faster
+		rows["speed"] = faster
 	if definition.pursuit:
 		var chasing := _copy_definition(definition)
 		chasing.pursuit = definition.pursuit.at_speed(definition.pursuit.speed() + 3.0)

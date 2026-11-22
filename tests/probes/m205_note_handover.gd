@@ -7,14 +7,13 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/m205_note_handover.gd
 ##
-## **The rig.** A real `homeless_yeller` `EventInstance`, given a long straight path so the
-## pacing route
-## moves it exactly as `EventScheduler` would. She starts `LEAD` px away and walks straight at its
-## *current* position every tick, the way a player closing on a moving rider actually does --
+## **The rig.** A real `homeless_yeller` `EventInstance`, given a long straight path so the pacing
+## route moves it exactly as `EventScheduler` would. She starts `LEAD` px away and walks straight at
+## its *current* position every tick, the way a player closing on a moving rider actually does --
 ## unlike `M174Pass`'s "the pass", which walks a fixed line past a row, this walks *up to* one and
-## then past it, which is what handing over a note and walking on is. Averaged over
-## `PHASE_SAMPLES` points in his own pulse, the same reason `M174Pass` does: starting at one instant
-## of his beat prices whichever phase the sample happened to land on rather than the row.
+## then past it, which is what handing over a note and walking on is. Averaged over `PHASE_SAMPLES`
+## points in his own pulse, the same reason `M174Pass` does: starting at one instant of his beat
+## prices whichever phase the sample happened to land on rather than the row.
 ##
 ## **The handover is instant; what follows it is not.** *(2026-09-26, the player, given a fork that
 ## proposed a dwell inside inner radius before the note completes: "the player should stand for

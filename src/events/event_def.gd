@@ -483,8 +483,8 @@ func use_warning(spec: WarningSpec) -> void:
 func warning() -> WarningSpec:
 	return _warning
 
-## **How the row travels** (`RouteSpec`): whether it moves along a route of its own, how fast, how the
-## route is built and how long, whether it paces a beat on it, and whether it stops where it
+## **How the row travels** (`RouteSpec`): whether it moves along a route of its own, how fast, how
+## the route is built and how long, whether it paces a beat on it, and whether it stops where it
 ## arrives. Written through `use_route()` until the draft writes it; asked through the questions
 ## below. `RouteSpec.none()` stays where it is placed, which is every row that does not move.
 @export var _route := RouteSpec.none()
@@ -502,10 +502,9 @@ func route() -> RouteSpec:
 ## How fast it removes itself from the scene when it is over, in px/s.
 ##
 ## **Nothing vanishes while you are looking at it.** Anything **mobile** leaves at its own route
-## speed.
-## This field is for the rest: a flock that has to fly off, a dog that has lost interest and trots
-## away. Zero means it simply ends, which is right for a *place* rather than a moment: a cafe does
-## not walk home.
+## speed. This field is for the rest: a flock that has to fly off, a dog that has lost interest and
+## trots away. Zero means it simply ends, which is right for a *place* rather than a moment: a cafe
+## does not walk home.
 @export var departs_at := 0.0
 
 ## **How many creatures the row is and how far they spread** (`FlockSpec`): a row that is several
@@ -785,9 +784,8 @@ enum Pavement {
 ## the capture has to sit strictly inside the field she is already fully charged for.
 ## `chatting_mother` carries no body (nothing mobile may), so her 48px is a radius from her centre,
 ## chosen against the **32px** spacing between the two lanes of a sidewalk (`Tuning.TILE_SIZE`):
-## under that, the far lane of a two-tile sidewalk is never inside it, whatever a pacing route
-## does, and
-## distance stays the counterplay.
+## under that, the far lane of a two-tile sidewalk is never inside it, whatever a pacing route does,
+## and distance stays the counterplay.
 @export var _hold := HoldSpec.none()
 
 ## Makes the row hold her as `spec` says (`_hold`). Only the catalogue, a copy being made and a
@@ -1154,8 +1152,9 @@ func validate() -> bool:
 				% [id, _flock.count(), obstructs_within()]
 				+ "silhouette to be solid at, and being walked into is what it is for")
 		return false
-	# A row that stops where it arrives (it has a route to run out of: `RouteSpec.parking_where_it_arrives()`
-	# asks one) cannot also hand its place to a successor: `_be_done()` cannot do both.
+	# A row that stops where it arrives (it has a route to run out of:
+	# `RouteSpec.parking_where_it_arrives()` asks one) cannot also hand its place to a successor:
+	# `_be_done()` cannot do both.
 	if _route.parks_where_it_arrives():
 		if aftermath.leaves_behind() != "":
 			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
@@ -1288,7 +1287,8 @@ func validate() -> bool:
 				% [id, pursuit.stop_excitement()] + "a cost under the whole meter")
 		return false
 	if vehicle:
-		if not _route.moves() or _route.speed() < Tuning.CAR_STRIKE_MIN_SPEED or ground_shape() == null:
+		if not _route.moves() or _route.speed() < Tuning.CAR_STRIKE_MIN_SPEED \
+				or ground_shape() == null:
 			push_error("event '%s' drives but has no route, speed (%.0f) or shape to drive with"
 					% [id, _route.speed()])
 			return false
@@ -1492,7 +1492,8 @@ func nearest_it_is_created() -> float:
 	var out_of_sight := SpawnSiting.least_distance()
 	if spawn_mode == SpawnMode.TOWARD_PLAYER and not comes_down_her_line() \
 			and not warns_before_it_exists():
-		return maxf(out_of_sight, Offscreen.min_lead(_route.speed() + Tuning.WALK_SPEED, _warning.badge_notice()))
+		return maxf(out_of_sight, Offscreen.min_lead(
+				_route.speed() + Tuning.WALK_SPEED, _warning.badge_notice()))
 	return out_of_sight
 
 ## Whether the director sends this row down her own line on foot: a `TOWARD_PLAYER` row whose
@@ -1543,9 +1544,9 @@ func as_warned_first() -> EventDef:
 ## `half_length + heard_within()` for a segment its field is priced from (`datum()`); this does not
 ## grow with speed, so for the patrol car it is the reach of its field standing. A row whose field
 ## is priced from its centre (`FieldSpec.from_its_centre()`, the fire engine) is a point,
-## whatever its body. Otherwise `heard_within() * Field.scale(e)`, `e` from whichever speed the row's
-## own motion uses: its chase speed for a pursuer, `speed` for an ordinary mobile row, zero (the
-## plain disc) for anything standing still.
+## whatever its body. Otherwise `heard_within() * Field.scale(e)`, `e` from whichever speed the
+## row's own motion uses: its chase speed for a pursuer, its route's speed for an ordinary moving
+## row, zero (the plain disc) for anything standing still.
 ##
 ## **Not `is_lethal_at()`'s business.** Lethal is contact, not noise: a circle of `lethal_reach()`
 ## about the centre, with no eccentricity, and for a pursuer only where the straight line to her
@@ -1590,13 +1591,11 @@ func _mean_emission_along_the_line() -> float:
 ##
 ## One disc for almost everything: all of its peak is at the centre and falls away from there.
 ##
-## **That is false for a flock.** A flock is `flock().count()` birds sharing the intensity
-## between them
-## and wheeling inside `flock().spread()`, so the field is tighter and *quieter along a line
-## through
-## it*; priced as a disc, `pigeon_flock` reads substantially higher than a real instance costs. The
-## birds are placed evenly round the wheel at its mean reach, since what a row costs is the average
-## over where they might be.
+## **That is false for a flock.** A flock is `flock().count()` birds sharing the intensity between
+## them and wheeling inside `flock().spread()`, so the field is tighter and *quieter along a line
+## through it*; priced as a disc, `pigeon_flock` reads substantially higher than a real instance
+## costs. The birds are placed evenly round the wheel at its mean reach, since what a row costs is
+## the average over where they might be.
 ##
 ## **This is the def's own model and not the instance's**: this one is a line through a flock at
 ## full strength, and what an instance charges depends on when the birds left the ground.
@@ -1801,7 +1800,8 @@ func announces_its_coming(walk_speed: float) -> bool:
 	return _route.moves() and _route.speed() > walk_speed
 
 ## How fast it comes at her under its own steam: its chase speed for a pursuer, otherwise its
-## `speed`. What the badge starts a thing that arrives under its warning closing at.
+## route's speed (`RouteSpec.speed()`). What the badge starts a thing that arrives under its warning
+## closing at.
 func approach_speed() -> float:
 	return chase_speed() if pursuit != null else _route.speed()
 
@@ -1843,8 +1843,8 @@ func parks_where_it_arrives() -> bool:
 func was_sent_at_her() -> bool:
 	return pursuit != null or _warning.is_warned_first()
 
-## Whether it paces a beat (`RouteSpec.pacing()`): it walks its route to and fro and neither departs nor
-## expires, where an ordinary mover walks its way once.
+## Whether it paces a beat (`RouteSpec.pacing()`): it walks its route to and fro and neither departs
+## nor expires, where an ordinary mover walks its way once.
 func paces_a_beat() -> bool:
 	return _route.paces_a_beat()
 

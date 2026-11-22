@@ -35,21 +35,21 @@ var _speed := 0.0
 var _kind := Kind.NONE
 
 ## Route length for `ALONG_STREET`, in tiles, at most: a route a unit draws is also bounded by its
-## location's run (`Location.run()`, inbox #1460 in silky-lemur: such as the far side of the junction box at its
-## street's end, the box itself for a row drawn in a box, or a square's lot), so a long row always
-## stops sooner there. A short beat (the shouting man, the chatting mother, 8 tiles) keeps its
-## length only where the run's edge is that far off: one drawn in a junction box is at most 5
-## tiles, and one on the last two tiles of a street before the box it heads for is 6 or 7.
+## location's run (`Location.run()`, inbox #1460 in silky-lemur: such as the far side of the
+## junction box at its street's end, the box itself for a row drawn in a box, or a square's lot), so
+## a long row always stops sooner there. A short beat (the shouting man, the chatting mother, 8
+## tiles) keeps its length only where the run's edge is that far off: one drawn in a junction box is
+## at most 5 tiles, and one on the last two tiles of a street before the box it heads for is 6 or 7.
 var _tiles := DEFAULT_TILES
 
 ## **Walks its route and turns round at the ends, for ever.**
 ##
 ## The difference between a **journey** and a **beat**. A dog walker is going somewhere: sent
-## ahead of her (`EventDef.as_sent_ahead()`), it walks down her sidewalk toward her and past her, it is gone at
-## the end of its route, and it costs the stretch of sidewalk it owns while you are there. A man
-## shouting is *at* a place, and without this the only way to say so is to make him stationary,
-## which reads from the street as "it didn't move". A paced event never reaches the end of its path,
-## so it never departs and never expires.
+## ahead of her (`EventDef.as_sent_ahead()`), it walks down her sidewalk toward her and past her, it
+## is gone at the end of its route, and it costs the stretch of sidewalk it owns while you are
+## there. A man shouting is *at* a place, and without this the only way to say so is to make him
+## stationary, which reads from the street as "it didn't move". A paced event never reaches the end
+## of its path, so it never departs and never expires.
 var _paces := false
 
 ## **Stops where its route ends and stays there for the rest of the day**, instead of driving on

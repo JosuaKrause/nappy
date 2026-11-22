@@ -17,10 +17,9 @@ extends RefCounted
 ## - `CL day view ground units room`: the units of that view and ground and their draw locations;
 ## - `CE day view ground row count`: the rows the units drew there, a row handed to her walk among
 ##   them;
-## - `CP day ground row tiles count`: the pacing rows drawn on that ground
-## (`RouteSpec.pacing()`: the man
-##   shouting and the chatting mother), by the length of their beat in whole tiles, which a junction
-##   box cuts short (`Location.run()`).
+## - `CP day ground row tiles count`: the pacing rows drawn on that ground (`RouteSpec.pacing()`:
+##   the man shouting and the chatting mother), by the length of their beat in whole tiles, which a
+##   junction box cuts short (`Location.run()`).
 ##
 ## The view and the ground are the unit's (`PlacementUnit.view()`, `kind()`): 0 on the route, 1
 ## route-adjacent, 2 off the route; `street`, `junction`, `alley`, `open`. The evidence folder

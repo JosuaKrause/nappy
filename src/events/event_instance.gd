@@ -1166,11 +1166,10 @@ static var _NO_BIRDS: Array[EventFlock.Bird] = []
 ## event with an `aftermath.leaves_behind()` stops **where the thing it leaves belongs** — the escape's
 ## explosion leaves its crater where it went off, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes is simply over. And a row with
-## `EventDef.route().parks_where_it_arrives()` **parks**: the fire engine is sent to the near
-## kerb across from
-## the building (`EventSpawner._where_the_summoned_row_stops()`) and stays there for the rest of the
-## day, because a standing field beside a fire she was led to is the cost that makes the pair a
-## street to turn round on rather than one to hurry past.
+## `EventDef.route().parks_where_it_arrives()` **parks**: the fire engine is sent to the near kerb
+## across from the building (`EventSpawner._where_the_summoned_row_stops()`) and stays there for the
+## rest of the day, because a standing field beside a fire she was led to is the cost that makes the
+## pair a street to turn round on rather than one to hurry past.
 ##
 ## **Parking is not being over.** It still emits, it still carries its cue, and it can still end a
 ## day that has a way to be ended by it — `is_on_its_way_out()` would take all three away, which is why this
@@ -1219,8 +1218,7 @@ func _be_done(may_park := true) -> void:
 ## existence mid-screen while she is still nearby (`EventDeparture`).
 ##
 ## **A row that parks where its route runs out leaves anyway when asked** — the warned neighbor,
-## whose ordinary end is standing at the door (`RouteSpec.parks_where_it_arrives()`) and who
-## runs
+## whose ordinary end is standing at the door (`RouteSpec.parks_where_it_arrives()`) and who runs
 ## instead: this departure is the task's answer, not the route's.
 func leave_for_a_completed_task() -> void:
 	if is_gone() or is_on_its_way_out() or has_parked():
@@ -2355,8 +2353,7 @@ func where_its_placards_point() -> Vector2:
 func walks() -> PackedVector2Array:
 	return _path
 
-## The beat it paces (`RouteSpec.paces_a_beat()`), in world space: its route for one that walks
-## to
+## The beat it paces (`RouteSpec.paces_a_beat()`), in world space: its route for one that walks to
 ## and fro along it, empty for everything else, which has no beat to stand beside.
 func beat() -> PackedVector2Array:
 	return _path if _def.paces_a_beat() else PackedVector2Array()

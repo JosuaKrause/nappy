@@ -70,7 +70,8 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		event.barrier_post = barrier_post
 		out.append(barrier_post)
 	if row.notice != null and row.pursuit == null and not row.investigates():
-		event.notice_run = EventNoticeRun.new(figure, where, row.route(), row.flock(), row.notice, route)
+		event.notice_run = EventNoticeRun.new(
+				figure, where, row.route(), row.flock(), row.notice, route)
 		out.append(event.notice_run)
 	if row.moves() and not row.investigates() and row.pursuit == null and row.notice == null:
 		out.append(route)

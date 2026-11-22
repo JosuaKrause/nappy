@@ -163,9 +163,9 @@ func _geometry_row(def: EventDef) -> Dictionary:
 	else:
 		row["pulse_period"] = "—"
 		row["pulse_trough"] = "—"
-	# A pursuer's relevant speed is how fast it closes once it notices, not its cold `speed`
+	# A pursuer's relevant speed is how fast it closes once it notices, not its cold route speed
 	# (almost always 0 for one, since most pursuers wait rather than patrol); everything else
-	# that moves reads its own `speed`.
+	# that moves reads its own route speed (`RouteSpec.speed()`).
 	if def.pursues():
 		row["speed"] = "%.1f" % def.chase_speed()
 	elif def.moves() and def.speed() > 0.0:
@@ -328,8 +328,8 @@ func _header_text() -> String:
 			"resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; " +
 			"`pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope " +
 			"`current_intensity()` uses, and a dash where a row does not pulse; `speed` is a " +
-			"pursuer's `PursuitSpec.speed()` (almost always faster than its own cold `speed`, which is " +
-			"usually 0), a mobile row's own `speed`, and a dash for anything that does not move; " +
+			"pursuer's `PursuitSpec.speed()` (almost always faster than its own cold route speed, which is " +
+			"usually 0), a moving row's own route speed (`RouteSpec.speed()`), and a dash for anything that does not move; " +
 			"`walk_through_cost()` is the field integrated along a straight line through the " +
 			"centre, less the walking decay over the same crossing.")
 	lines.append("")

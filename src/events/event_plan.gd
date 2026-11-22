@@ -439,9 +439,8 @@ func denies(at: Vector2, reach: float) -> bool:
 	return at.distance_to(body_at()) <= reach
 
 ## **Whether this plan walks a beat**: its row paces (`RouteSpec.paces_a_beat()`) and a beat is
-## laid, so what
-## it denies is the ground the beat never leaves free (`denies()`), and the street it paces is one
-## the line rule lets her pass him on by its far sidewalk (`RouteLineRule`).
+## laid, so what it denies is the ground the beat never leaves free (`denies()`), and the street it
+## paces is one the line rule lets her pass him on by its far sidewalk (`RouteLineRule`).
 func walks_a_beat() -> bool:
 	return _def.paces_a_beat() and _path.size() >= 2
 

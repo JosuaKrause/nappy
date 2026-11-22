@@ -110,7 +110,7 @@ func _she_has_left_his_notice() -> bool:
 ## flock she came near and never reached, not the wait.
 func _flush_the_flock_if_she_is_among_them() -> void:
 	var her: Vector2 = _where.at()
-	if _flock.count() <= 0 or _figure.notice_has_run() or her == Vector2.INF:
+	if not _flock.is_a_flock() or _figure.notice_has_run() or her == Vector2.INF:
 		return
 	if _figure.is_waiting() or not _figure.is_telegraphing():
 		return

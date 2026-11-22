@@ -41,7 +41,7 @@ var _way_speed := 0.0
 ## Whether this departure has begun (`begin()`, `for_a_completed_task()`, `along()`) and not been
 ## cleared since (`reset()`): what `save()` carries only then.
 var _begun := false
-## Its row: whether it walks a route, whether it drives, the pace it leaves and chases at.
+## Its row: whether it drives, the pace it leaves and chases at.
 var _row: EventDef
 ## How it travels (`RouteSpec`): whether it moves along a route at all.
 var _course: RouteSpec
@@ -58,8 +58,8 @@ var _on_foot: EventOfficer
 ## (`EventSpawner.spawn()`), so it is never streamed out and back.
 var _goes_on_by: WayOn = null
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the ground
-## and how it moves over it, and the two behaviours its way out depends on.
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it travels, the
+## ground and how it moves over it, and the two behaviours its way out depends on.
 func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, course: RouteSpec,
 		map: WorldMap, navigator: Navigator, mover: Mover, barrier_post: EventBarrierPost,
 		on_foot: EventOfficer) -> void:

@@ -184,15 +184,17 @@ func _dump(target: Object, prefix := "") -> PackedStringArray:
 		if missing != "":
 			lines.append("%s%s SKIPPED(no samples for %s)" % [prefix, name, missing])
 			continue
+		var own_class := String(script.get_global_name())
+		var declared: Dictionary = method.return
 		for combo: Array in combos:
-			var answer: Variant = target.callv(name, combo)
-			if answer is Object and answer != target \
-					and (answer as Object).get_script() == target.get_script():
+			if own_class != "" and String(declared.class_name) == own_class:
 				# A refinement (`PursuitSpec.standing()`) answers a new value of its own class, which
 				# would open another to open again without end; a value is printed by its questions.
-				var refined_script: Script = (answer as Object).get_script()
-				lines.append("%s%s REFINES %s" % [prefix, name, String(refined_script.get_global_name())])
-				continue
+				# It is not called: a refinement may assert what it is applied to (`RouteSpec.pacing()`
+				# on a route that does not move), and this probe calls it on every row.
+				lines.append("%s%s REFINES %s" % [prefix, name, own_class])
+				break
+			var answer: Variant = target.callv(name, combo)
 			var shown := combo.map(func(v: Variant) -> String: return _text(v))
 			var call := "%s%s(%s)" % [prefix, name, ",".join(shown)]
 			if _is_opened(answer):

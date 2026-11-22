@@ -144,9 +144,8 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 ## `is_telegraphing()` — so under the clock alone a walk straight in put them up well past her.
 ##
 ## Two claims, and the second is what stops the fix being a way of deleting the telegraph. **Walked
-## into, it flushes at the birds** — the flock's spread plus her own body, the distance at which
-## she is
-## among them rather than near them — within a frame of her reaching that distance and not before
+## into, it flushes at the birds** — the flock's spread plus her own body, the distance at which she
+## is among them rather than near them — within a frame of her reaching that distance and not before
 ## it. **Walked past without being reached, it still goes up on its clock**, so a flock she skirted
 ## is startled rather than ignored, and `telegraphs_for()` still means something.
 ##
@@ -202,7 +201,8 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t: Te
 	# fires at all, so what is left out there is a fraction of the rate against a decay she is
 	# earning the whole way — the line can and does come out negative, and the claim is the gap
 	# rather than its sign.
-	var skirted := _flock_walked_through(t, def, def.flock().spread() + Tuning.PLAYER_BODY_RADIUS + 30.0)
+	var skirted := _flock_walked_through(
+			t, def, def.flock().spread() + Tuning.PLAYER_BODY_RADIUS + 30.0)
 	t.check(skirted < through * 0.5,
 			"skirting one costs %.1f, far less than the %.1f of walking through it"
 			% [skirted, through])
@@ -272,9 +272,8 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	for bird in instance.flock.birds:
 		still_grounded = still_grounded and is_zero_approx(bird.lift())
 	t.check(still_grounded, "and the telegraph is still eleven birds on the ground")
-	# Read at the flock's own middle rather than at her: every bird is inside the flock's spread
-	# of it
-	# whatever the wheel is doing, so the two readings differ by the damping rather than by where
+	# Read at the flock's own middle rather than at her: every bird is inside the flock's spread of
+	# it whatever the wheel is doing, so the two readings differ by the damping rather than by where
 	# eleven birds happened to be on the frame each was taken.
 	var on_the_ground := instance.source().contribution_at(Vector2.ZERO)
 

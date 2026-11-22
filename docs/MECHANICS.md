@@ -1290,7 +1290,7 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 
 ### A beat rather than a journey
 
-`EventDef.paces` walks a route and turns round at the ends, for ever. It is the difference between
+A route that paces (`RouteSpec.pacing()`) walks and turns round at the ends, for ever. It is the difference between
 a `dog_walker`, which is *going somewhere* and is gone at the end of its route, sent down her
 sidewalk toward her and past her (inbox #1460 in silky-lemur), and a man shouting, who is **at** a place. Without
 it the only way to say the second thing is to make him stationary, and a stationary source on a
