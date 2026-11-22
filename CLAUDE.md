@@ -120,7 +120,7 @@ rather than a place:
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
 | build a worksheet for the player to answer the review items in | **review-answers** |
-| ask the player a question — never in a dialog; the orchestrating session's go on the board, and one about an inbox note may go on its issue — or read or write the Nappy board | **board** |
+| ask the player a question — never in a dialog; the orchestrating session's go on the board, a question about an inbox note included — or read or write the Nappy board | **board** |
 | start a session, or capture, read, ask on or file a note | **inbox** |
 | change anything under `src/` | **verify** |
 | **end a session** | **session-cleanup** |

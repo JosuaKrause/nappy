@@ -1,16 +1,16 @@
 ---
 name: board
-description: The Nappy board, the shared Claude Doc where the player and the orchestrator keep the open questions, the running work and the recent merges — its layout, how a question is written, answered and settled, how the player's words on it are captured, and the reads and writes that keep it cheap. Load this BEFORE the orchestrating session asks the player a question, which goes on the board rather than in a dialog (one about an inbox note may go on its issue instead), BEFORE reading or writing the board, and whenever the player says "doc" or "check the doc".
+description: The Nappy board, the shared Claude Doc where the player and the orchestrator keep the open questions, the running work and the recent merges — its layout, how a question is written, answered and settled, how the player's words on it are captured, and the reads and writes that keep it cheap. Load this BEFORE the orchestrating session asks the player a question, which goes on the board rather than in a dialog (a question about an inbox note included), BEFORE reading or writing the board, and whenever the player says "doc" or "check the doc".
 ---
 
 # The Nappy board
 
-- **A question to the player goes on the board, never in a modal dialog in the chat**; one about an inbox note may go on its issue.
+- **A question to the player goes on the board, never in a modal dialog in the chat**, a question about an inbox note or about an issue the player opened on GitHub included (inbox #1639 in gentle-penguin). Things move board, then inbox, then repository: the player talks and is asked on the board, a note goes to the inbox, its work to the repository. The player may still open an issue directly, and it is a note like any other; a follow-up question about it goes on the board, naming the note.
 - **Only the orchestrating Claude Code session acts on it**, changing it or answering on it, and Claude is never @-mentioned on it.
 - **It is read at session start, at every run of the orchestrating session's recurring check (about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **What the player should learn goes on the board**, not only into a chat report (inbox #1619 in teal-dolphin).
 - **A quick note to the inbox can be written in the board's `## Quick notes` section**, which each recurring check captures into the inbox word for word and then clears (inbox #1626 in dappled-bison).
-- **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check covers along with the board (inbox #1623 in dappled-bison). Whether a question about an inbox note may still go on its issue is open, asked on the board as notes-questions-where; both rules stand until the player answers it.
+- **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check covers along with the board (inbox #1623 in dappled-bison). A question is never asked on an issue.
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
 - **A question is a level-3 heading over one nested list** (Question, Context, My pick, You, Me) and asks one thing.
@@ -138,7 +138,7 @@ nested exactly like this, the layout the player set on the board:
 
 **No question is put to the player as a modal dialog in the chat** (inbox #830 in minty-dolphin): a dialog stops
 the session and the player cannot scroll back while it is open, so they lose the context they need
-to answer. The board is where a question goes, apart from one about an inbox note, which may go on its issue (**inbox**). Whether a question about an inbox note may still go on its issue is open, asked on the board as notes-questions-where; both rules stand until the player answers it. **A blocking question still blocks** (inbox #830 in minty-dolphin):
+to answer. The board is where a question goes, one about an inbox note included, which names the note on its Question line or in its Context (**inbox**; inbox #1639 in gentle-penguin). **A blocking question still blocks** (inbox #830 in minty-dolphin):
 the work it names stops until it is answered, and other work goes on.
 
 **A question blocks only when changing course after the answer would be very costly**
