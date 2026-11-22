@@ -352,7 +352,7 @@ func _header_text() -> String:
 			"pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather " +
 			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
 			"code. Dashed for a row that pursues or waits (`EventDef.pursues()` or " +
-			"`EventDef.waits_for_her()` set: alley_mouse, " +
+			"`EventDef.waits_for_her()`: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +
 			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase, " +
 			"masked_pursuer) — its notice " +
