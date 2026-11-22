@@ -1736,7 +1736,7 @@ sidewalk — and posts four guards between them, never six.** *(2026-09-25, PLAY
 8: "maybe four? one on each sidewalk. would that cover everything?")* The two sidewalk bodies keep
 the row's own two guards, one on each side of the band; the road body between them posts none,
 since a guard stands where she can walk up to it and the tarmac between the sidewalks is not that
-ground (`EventDef.guard_sides`, `SealPlanner.place_hard_on`). A crossing alley's own two mouth
+ground (`LookSpec.guard_sides()`, `SealPlanner.place_hard_on`). A crossing alley's own two mouth
 bodies post one guard each rather than two — *(2026-09-25, the player: "one guard in alleys on
 each end")* — on the side facing out of the alley, never the one that would stand inside an alley
 walled at both ends where she can never reach (`RegionPlanner._alley_mouth_wall_body`,

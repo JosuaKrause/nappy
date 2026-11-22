@@ -201,6 +201,10 @@ A thing made of several bodies is a `FlockSpec` (`EventDef.flock()`); a moving t
 a partly animated scene keeps its still pixels and its moving pixels in separate layers. All three
 are `references/flocks-and-moving-pictures.md`.
 
+How a row is drawn is a `LookSpec` (`EventDef.look()`): its picture, the picture it warns in, whether a shadow goes
+under it, a trailing lead, whether its hold hides it, the pelican and a roadblock's guard sides. A look's own
+settings are read from the part; what a picture needs of the live event's body, field or route is the event's to answer.
+
 ## The day follows from its seed, and excitement is a pure query
 
 **Do not move a guarantee out of the dawn (`EventScheduler.build_day()`) or a unit's own draw
