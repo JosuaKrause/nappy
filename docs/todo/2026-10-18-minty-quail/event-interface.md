@@ -190,7 +190,7 @@ catch ends the day):
 ```gdscript
 static func _alley_robbery() -> EventDef:
 	var row := EventDraft.new("alley_robbery")
-	row.from_day(8, 3)                 # first day, act
+	row.from_day(8)                    # its first day
 	row.ground([GameEnums.TileType.ALLEY])
 	row.drawn(1.5, 4)
 	row.lasts(Tuning.PURSUIT_TIME)
@@ -224,7 +224,8 @@ What the form buys, beyond the rule:
 - **The row stops being a `Resource`.** It is a `RefCounted` value built in code; nothing saves it
   and nothing duplicates it. `EventCatalogue.all()` validates every shape on load as today.
 - `display_name` and `act_tag` are absent from the examples on purpose: the first has no reader
-  (section 7), the second is `from_day()`'s second argument.
+  (section 7), the second is written only for a scripted row, with its day
+  (`scripted_on(day, act)`).
 
 ## 2. The interface
 
@@ -277,7 +278,7 @@ sites, and the seal and region planners under `src/routes/`.
 |---|---|---|
 | Is the row available on this day | row `available_on(day)` ok | the row |
 | Is it placed at dawn, sited from her walk, or sited by the director, on this day | row `spawn_mode_on(day)` ok, `is_sited_from_her_walk()` ok, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` ok | the row |
-| Which kind of row is it | row `is_ambient()` ok, `is_a_one_shot()` ok, `is_scripted()`; `ambient_source()` | the row |
+| Which kind of row is it | row `is_ambient()` ok, `is_a_one_shot()` ok, `is_of_kind(kind)`; `ambient_source()` | the row |
 | Which ground takes it | row `stands_on(tile_type)` ok, `ground_kinds()` ok, `stands_only_in_alleys()` ok, `sidewalk_lane()` ok, `stands_at_a_front()` ok | the row |
 | Does it need one street to lie across (so a corner is no site) | row `lies_as_a_spread()` ok | body |
 | Does it take a whole section of a street | row `spans_the_street()` ok | the row |
@@ -554,10 +555,10 @@ counted where it only writes.
 |---|---|---|
 | `id` | 9 in, 2 out (the scene recipes, the resistance) | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` ok |
 | `display_name` | written by the catalogue; no reader in `src/`, `tests/` or `tools/` | deleted, nobody would miss it (section 7) |
-| `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun_for(count)` ok (`noun(count)` once 4b makes the field private) |
+| `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun_for(count)` ok |
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
-| `act_tag` | 1 in (the row's `own_first_day()`), and `tests/test_acts.gd` | the row's `act()`, which 4b's draft gives (`from_day(first_day, act)`); `test_acts.gd`'s two reads wait for it |
-| `kind` | 3 in | row and plan `is_ambient()` ok, `is_a_one_shot()` ok, `is_scripted()` |
+| `act_tag` | 1 in (the row's `own_first_day()`), and `tests/test_acts.gd` | no question: only a scripted row writes an act, with its day (`scripted_on(day, act)`), and only its `own_first_day()` reads it; `test_acts.gd` asks `own_first_day()` |
+| `kind` | 3 in | row and plan `is_ambient()` ok, `is_a_one_shot()` ok; row `is_of_kind(kind)` (the catalogue's sort by kind) |
 | `first_day`, `last_day`, `scripted_day` | the catalogue; `SealPlanner` asks the row's `own_first_day()` (3a) | row `available_on(day)` ok, `own_first_day()` ok |
 | `weight` | the catalogue; `at_heat()` | row `drawn_as_often()` ok, `weight_on(ground)` ok (`UnitFills`) |
 | `max_per_day` | 3 in, 1 out (the scene recipes) | row `most_in_a_day()` ok |
