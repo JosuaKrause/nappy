@@ -51,7 +51,7 @@ extends RefCounted
 ## `points_at`). By string, so a rename shows as a difference in the labels rather than hiding one: a
 ## slice's place in `SpreadLook.slices()` and the far guard's node found by its name `FarGuard`.
 ## Of the look: `drawn_rect_now()`, `mark_rect()`, `drawn_heading()`, `current_bob()`,
-## `band_node()`, `redraw_if_the_picture_changed()`. Of the rows: `EventDef.id`, `look`,
+## `band_node()`, `redraw_if_the_picture_changed()`. Of the rows: `EventDef.id()`, `look`,
 ## `speed`, `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`,
 ## `out_of_the_car()`, `building_fire()`, `task_guard_sent()`. A later change which makes one
 ## of those private changes this probe with it.

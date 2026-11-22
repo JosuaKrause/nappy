@@ -5,7 +5,7 @@ extends RefCounted
 ## the numbers here and the row's notice (`NoticeSpec`); `standoff()` is that contract in distance.
 ##
 ## A row has a `PursuitSpec` only when it pursues; one that only pursues once it hunts (the
-## roadblock, `EventDef.hunts`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
+## roadblock, `EventDef.answers_to_heat()`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
 ## gives that copy its speed (`at_speed()`) and its notice.
 ##
 ## A value: built by `at()`, refined by methods that each return a new pursuit, never changed, so a row and
@@ -38,7 +38,7 @@ const PURSUIT_REACTION := 0.6
 
 ## How a pursuer's chase begins.
 enum Start {
-	## **It notices her first.** One that waits for her (`EventDef.notice`) warns inside its one
+	## **It notices her first.** One that waits for her (`EventDef.notice()`) warns inside its one
 	## radius for `warns_for` and charges if she is still inside once that has run; one with no
 	## notice closes on her through its telegraph and lunges at its stand-off (the day-3 dog).
 	NOTICES,

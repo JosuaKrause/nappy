@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for M180, posters she notices: whether the day's poster crews are met, now that
-## her walk sites them (`EventDef.on_her_way`, `OnHerWay.pastes_a_front()`), and how much they paste while
+## her walk sites them (`EventDef.is_sited_from_her_walk()`, `OnHerWay.pastes_a_front()`), and how much they paste while
 ## she is in sight of them. Not a suite: it prints rather than asserting, so it lives under
 ## `tests/probes/` and runs only by name:
 ##

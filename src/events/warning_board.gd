@@ -133,7 +133,7 @@ func run(delta: float, here: Vector2) -> void:
 ## `SOON` is a lethal event still telegraphing whose radius already covers her — the thing has
 ## not happened yet and walking out is the answer, which is exactly what the fairness contract
 ## promises her time to do. `NOW` is one of them live with her inside its reach: one step left
-## between her and the end of the day. A patrol car that drives (`EventDef.vehicle`) raises `SOON`
+## between her and the end of the day. A patrol car that drives (`EventDef.drives()`) raises `SOON`
 ## the way a crowd car's horn does, while it is closing on her in its lane.
 ##
 ## **Raising it for any telegraphing event whose radius reaches her is the mistake to avoid.** Most

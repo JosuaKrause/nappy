@@ -372,7 +372,7 @@ func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
 						% [day, a.row_id(), b.row_id(), gap])
 	t.check(pairs > 0, "there were placed pairs to measure (%d)" % pairs)
 
-## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
+## **The third case of the clearance rule, pinned over `EventDef.pursuit()` rather than over
 ## either row that carries it today.** A lethal field that follows her is neither on the
 ## corridor nor off it, so placement cannot keep it clear of anything — `charging_dog` never
 ## reaches `StreetInvalidation.room_around()` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
@@ -391,7 +391,7 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
 
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
-	# the `WALL` role — the exemption is `EventDef.pursuit`, not "the role happens not to be WALL".
+	# the `WALL` role — the exemption is `EventDef.pursuit()`, not "the role happens not to be WALL".
 	var stationary := EventCatalogue.by_id("reversing_lorry")
 	t.check(stationary.ends_the_day() and not stationary.pursues(),
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")

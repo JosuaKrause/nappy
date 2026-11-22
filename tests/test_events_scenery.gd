@@ -224,7 +224,7 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t: Te
 ## - **And it is on the ground, quiet, until she walks up to it.** A flock that streamed in already
 ##   bursting would have spent its whole event two screens away; one that emitted its full 42/s
 ##   while pecking would be a place nobody can walk past. The birds leave the ground only once she
-##   is inside `EventDef.notice`, which is the telegraph contract paid in geometry.
+##   is inside `EventDef.notice()`, which is the telegraph contract paid in geometry.
 func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):

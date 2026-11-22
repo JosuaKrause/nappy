@@ -257,7 +257,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 ##
 ## **A row the director sites while she walks has no position at dawn** — `cat_dash`, `cyclist`,
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
-## the day plans and sites from her walk (`EventDef.on_her_way`) — so `event:<id>` cannot
+## the day plans and sites from her walk (`EventDef.is_sited_from_her_walk()`) — so `event:<id>` cannot
 ## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
 ## **refuses by name**: the row and the reason are written to the run log through the run's trace
 ## (`trace.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
@@ -267,7 +267,7 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 ## neighbouring unrecognised-target case already carries. `--follow <id>` tracks such a row once
 ## it exists.
 ##
-## **A row that waits for her** (`EventDef.notice` — a `pigeon_flock`, an `alley_robbery`) is stood
+## **A row that waits for her** (`EventDef.notice()` — a `pigeon_flock`, an `alley_robbery`) is stood
 ## just *outside* its own trigger rather than inside it: the offset below is measured against
 ## whichever is larger of its field's reach (`EventPlan.heard_within()`) and its notice
 ## (`EventPlan.notice_within()`), plus a tile's width of clearance,
@@ -319,7 +319,7 @@ static func first_event_position(events: EventManager, map: CityMap, trace: RunT
 ##
 ## `scale` defaults to 0.6 — comfortably clear of an ordinary event's own `radius` without
 ## wandering off toward the next thing down the street. `first_event_position()` passes `1.0` for
-## a row that waits (`EventDef.notice`), where `radius` already carries its own margin and the step
+## a row that waits (`EventDef.notice()`), where `radius` already carries its own margin and the step
 ## has to reach the full distance rather than a fraction of it.
 static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: float = 0.6) -> Vector2:
 	var vertical := BodyStance.lies_vertically_at(map, at)

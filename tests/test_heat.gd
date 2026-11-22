@@ -78,7 +78,7 @@ func _test_every_shape_of_every_row_is_fair(t: TestRunner) -> void:
 ## than over the one row that carries it, so a second `PRESSES` row added later inherits the
 ## promise. Nor does the man it lets out end the day: his catch is a stop (inbox #669 in coral-lark, "it needs to
 ## give a substantial cost but not lethal directly"). (The patrol that carries it strikes as a car
-## does at every heat, `EventDef.vehicle`, which is not a rung — `tests/test_police_car.gd`.)
+## does at every heat, `EventDef.drives()`, which is not a rung — `tests/test_police_car.gd`.)
 func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if not def.answers_to_heat() or def.hunts_for_her():
@@ -93,7 +93,7 @@ func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
 ## pursues, keeps ending the day, and its derived numbers satisfy the pursuit contract measured from
-## its own data — or, a row that hunts on foot (`EventDef.hunts` letting men out, the two vans), it lets
+## its own data — or, a row that hunts on foot (`EventDef.answers_to_heat()` letting men out, the two vans), it lets
 ## its men out instead, never a pursuer itself and as lethal as it is cold, its men's stand-off
 ## inside its notice and their catch ending the day. Checked over the response rather than over the one row that carries it, the same
 ## shape `_test_the_ladder_has_a_top` uses, so a second `HUNTS` row added later inherits the promise
@@ -185,7 +185,7 @@ func _cold_roadblock() -> EventDef:
 
 ## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
 ## `EventDef.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
-## at or above it its guards leave the post: `EventDef.pursuit` and `ends_the_day()` turn on for the
+## at or above it its guards leave the post: `EventDef.pursuit()` and `ends_the_day()` turn on for the
 ## same body, and neither when it may appear nor its population nor its intensity moves, since
 ## heat sets what a row does and never when it is allowed to. The pursuit numbers themselves are
 ## left to `validate()` and to the generic loop's ordering check, for the reason given on the
@@ -394,7 +394,7 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> vo
 			"and it still leaves once it drives off the end, exactly as a plain mobile row would")
 	instance.free()
 
-## Once she comes inside `EventDef.notice` along a clear line it stops where it is on its road
+## Once she comes inside `EventDef.notice()` along a clear line it stops where it is on its road
 ## and owes the man it lets out — it never moves toward her; it stands while he is out, still while
 ## he walks back after giving up, and once he is back in it drives on along its route the way it was
 ## going, never turned round.
@@ -646,7 +646,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 ## fix is that the chase's own clock picks up where it left off, not only that the flag agrees —
 ## a restored notice that disagreed with the restored `age` would still read `not is_waiting()`
 ## while timing the telegraph and the duration from the wrong moment. `alley_robbery` has had
-## the same `EventDef.notice` shape since the mechanic was built, just never in a position to be
+## the same `EventDef.notice()` shape since the mechanic was built, just never in a position to be
 ## streamed out mid-chase, since a stationary pursuer's field never moves far enough from where
 ## the day planted it — see `_test_every_waiting_row_resumes_the_notice` for the same restore
 ## checked against that row rather than only the patrol that surfaced the gap.
@@ -729,7 +729,7 @@ func _count_patrols(planned: Array[EventPlan]) -> int:
 	return count
 
 ## `restore()`'s restored notice is not particular to the heated patrol that surfaced the gap —
-## `alley_robbery` carries the identical `EventDef.notice` shape cold, with no heat level needed to
+## `alley_robbery` carries the identical `EventDef.notice()` shape cold, with no heat level needed to
 ## reach it, and this is the same restore checked against that row instead.
 func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")

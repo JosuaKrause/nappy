@@ -1,6 +1,6 @@
 class_name EventCarDriving
 extends EventBehaviour
-## **A car that drives** (`EventDef.vehicle`): a body that moves and never into her, standing for
+## **A car that drives** (`EventDef.drives()`): a body that moves and never into her, standing for
 ## her, giving way where the crowd's cars do, and a strike ahead of its nose while it drives. See
 ## `VehicleSpec` for why the body and the strike are separate things.
 ##
@@ -61,7 +61,7 @@ extends EventBehaviour
 ## car comes into the world standing, streamed back in as when it is first made.
 
 ## How far past the touch a patrol car's strike reaches ahead of its nose, in seconds of its own
-## travel (`EventDef.vehicle`): a tenth of a second, 7px at the patrol's 74px/s. The strike has to
+## travel (`EventDef.drives()`): a tenth of a second, 7px at the patrol's 74px/s. The strike has to
 ## reach past the point where the car's body would first touch her, because the car never moves its
 ## body into her — a step that would is refused — and a strike stated over the touch alone could
 ## then never fire: a lethal reach a body stops her short of, which `EventDef.validate()` refuses for

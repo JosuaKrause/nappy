@@ -516,7 +516,7 @@ func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
 
 ## "A stationary actor whose action has a target faces that target": the waiting robber has not
 ## noticed her yet (`is_waiting()` stays true — `EventPursuit` only turns `_heading` toward her once
-## she is inside `EventDef.notice`), but a man only watching the street is worth nothing next to a
+## she is inside `EventDef.notice()`), but a man only watching the street is worth nothing next to a
 ## man watching *her*, so `robber_waiting_heading()` asks the event for the line to her
 ## (`sight_line_to_her()`).
 func _test_robber_waiting_faces_her(t: TestRunner) -> void:
@@ -527,7 +527,7 @@ func _test_robber_waiting_faces_her(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(instance_where))
 	t.check(instance.is_waiting(), "nobody has come near him yet")
 	for sector in range(8):
-		# Well outside `EventDef.notice` (180px), so he never actually notices her — this is the
+		# Well outside `EventDef.notice()` (180px), so he never actually notices her — this is the
 		# waiting posture's own facing, not the notice turning `_heading` for it.
 		instance_where.tell(_heading_for_sector(sector) * (def.notice_within() + 40.0))
 		var heading := instance.look.robber_waiting_heading()
@@ -555,7 +555,7 @@ func _test_robber_lunging_faces_her_through_the_chase(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
-	# Southeast of him and inside `EventDef.notice`, so one `EventPursuit` step notices her and turns to
+	# Southeast of him and inside `EventDef.notice()`, so one `EventPursuit` step notices her and turns to
 	# face her.
 	var her := _heading_for_sector(1) * (def.notice_within() - 10.0)
 	instance_where.tell(her)
@@ -603,7 +603,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
 	t.check(instance.is_waiting()
 			and await _drawn_from(t, instance, [EventPictures.GUARD_STANDING_BY_VIEW]),
 			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `EventDef.notice` (900px), outside `NoticeSpec.runs_within()`: one step notices her,
+	# Inside `EventDef.notice()` (900px), outside `NoticeSpec.runs_within()`: one step notices her,
 	# and he warns for as long as she stays there, longer than his `telegraphs_for()`.
 	instance_where.tell(Vector2(0.0, def.notice().runs_within() + 100.0))
 	instance.step(STEP)

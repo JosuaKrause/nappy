@@ -265,8 +265,8 @@ func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 ## The review finding on M100, a mouse in the alley: `alley_mouse` is `MAP`-placed at dawn,
 ## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
 ## a row that started telegraphing the moment it existed dashed and finished off screen before she
-## ever walked into the alley — nothing happened, from where she was standing. `EventDef.notice`
-## without `EventDef.pursuit` (`EventDef.notice`'s own note, `EventNoticeRun`) is
+## ever walked into the alley — nothing happened, from where she was standing. `EventDef.notice()`
+## without `EventDef.pursuit()` (`EventDef.notice()`'s own note, `EventNoticeRun`) is
 ## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
 ## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
 ## isolation.
@@ -422,7 +422,7 @@ func _test_sighted_successors_resolve(t: TestRunner) -> void:
 	t.check(checked > 0, "there is at least one row with an aftermath.calls_in() ('burning_building')")
 
 ## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can
-## put one in the world — see `EventDef.aftermath.calls_in()` on `burning_building`.
+## put one in the world — see `EventDef.calls_in()` on `burning_building`.
 func _test_fire_truck_is_never_scheduled(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")

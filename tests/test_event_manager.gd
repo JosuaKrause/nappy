@@ -661,13 +661,13 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 ## and pins that its save restores the notice; the gap that shipped anyway
 ## was one level up — `EventPlan` had no field to hold the notice, so
 ## `EventStreaming.stream_in()` always restored a save with the default `INF` notice and a
-## `EventDef.notice` row streamed out mid-chase came back `is_waiting()`, standing where the day
+## `EventDef.notice()` row streamed out mid-chase came back `is_waiting()`, standing where the day
 ## planted it. This drives the same encounter through
 ## `EventStreaming.stream_in()`/`stream_out()` themselves, the only place that bug could
 ## actually live — the same kind of wiring question the rest of this suite exists for (see the
 ## class doc above).
 ##
-## `alley_robbery` rather than a scheduled plan: it carries `EventDef.notice` cold, with no heat
+## `alley_robbery` rather than a scheduled plan: it carries `EventDef.notice()` cold, with no heat
 ## level or a particular day's roll needed to reach it, and a `EventPlan` built by hand is
 ## deterministic where waiting for the scheduler to place one on some day would not be.
 func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:

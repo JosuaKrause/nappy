@@ -356,7 +356,7 @@ func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t: TestRunner
 ## within 62px of the mark (his catch and the touch reach). Marks one tile in from either end are
 ## both met, so "nearer" is asked both ways. Every alley is one block long, so this is the short case
 ## on every mark: he stands two-thirds in although that is under 216px from the mark (his
-## `EventDef.notice` and the touch reach), which the test counts so it is not vacuous. For the same
+## `EventDef.notice()` and the touch reach), which the test counts so it is not vacuous. For the same
 ## reason his distance from the mark is the same on every mark tile, and the 62px floor past the
 ## mark binds on none of them (two-thirds in is far past it); the oracle keeps the floor for a point
 ## no mark stands on. Before, he stood at the far end tile or up to three tiles in from it, at least

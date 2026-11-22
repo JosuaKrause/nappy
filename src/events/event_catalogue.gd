@@ -541,8 +541,8 @@ static func _cat_dash() -> EventDef:
 ## `alley_robbery`'s id, so a required alley (one the day's corridor runs down with no way round)
 ## never offers one; only an alley she chose to detour into can.
 ##
-## **Acts and cap, derived from the cat's.** `first_day`, `last_day` and `act_tag` are left at their
-## defaults (1, 0, 1), as `_cat_dash` leaves them: everyday background texture. The cap is half of
+## **Days and cap, derived from the cat's.** The first and last day are left at their defaults (1,
+## and none), as `_cat_dash` leaves them: everyday background texture. The cap is half of
 ## the cat's 8; an `ALLEY` tile is scarcer than every `ROAD` and `CROSSING` tile a cat may cross,
 ## and `EventDef.stands_only_in_alleys()` narrows the pool further.
 ##
@@ -557,7 +557,7 @@ static func _cat_dash() -> EventDef:
 ## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
 ## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px), so a row that started
 ## telegraphing on arrival would dash and finish off screen before she was anywhere near. The row
-## sets `EventDef.notice` (150px) without `EventDef.pursuit`: `EventNoticeRun` holds it
+## sets `EventDef.notice()` (150px) without `EventDef.pursuit()`: `EventNoticeRun` holds it
 ## `is_waiting()`, emitting nothing above the ordinary field and not yet on the clock, until she is
 ## within 150px, and only then does the telegraph start and the path run. 150px is inside
 ## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she faces) and past the
@@ -607,7 +607,7 @@ static func _alley_mouse() -> EventDef:
 	# width (`ALLEY_WIDTH_TILES · Tuning.TILE_SIZE`), so `_has_expired()` never cuts the dash short.
 	row.lasts(1.0)
 	row.route(RouteSpec.at(200.0, RouteSpec.Kind.ACROSS_ITS_ALLEY))
-	# Waits unclocked until she is this close (`EventDef.notice`): inside VIEW_HALF_EXTENT.y (180px)
+	# Waits unclocked until she is this close (`EventDef.notice()`): inside VIEW_HALF_EXTENT.y (180px)
 	# with room to spare, past outer radius (60px).
 	row.notice(NoticeSpec.at(150.0))
 	# Shared with `alley_robbery`'s own weight: the two rows draw from the same `ALLEY`-only pool
@@ -880,7 +880,7 @@ static func _construction() -> EventDef:
 ## street.
 ##
 ## Never scheduled directly: a SCRIPTED def with no day, created only once the fire has been seen
-## (`EventDef.aftermath.calls_in()`, `EventSpawner.summon_what_has_been_sighted()`), so the player
+## (`EventDef.calls_in()`, `EventSpawner.summon_what_has_been_sighted()`), so the player
 ## encounters the burning building before the engine.
 static func _fire_truck() -> EventDef:
 	var row := EventDraft.new("fire_truck")
@@ -913,7 +913,7 @@ static func _fire_truck() -> EventDef:
 ## called in the moment she first sees it (`aftermath.calls_in()`).
 ##
 ## **It is on her way, because the day sites it from the walk she is taking.**
-## `EventDef.on_her_way` leaves the plan without a position at dawn and
+## `EventDef.is_sited_from_her_walk()` leaves the plan without a position at dawn and
 ## `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her heading once
 ## her direction for the day is clear: the fire comes first and is on her way guaranteed. A set
 ## piece sited anywhere in the city is a day-3 that can pass without a fire in it and without an
@@ -1001,7 +1001,7 @@ static func _burnt_shell() -> EventDef:
 ##
 ## `TOWARD_PLAYER`, sited by `EventDirector` on her own line when she gets close, since a dog sited
 ## before the day knows where she walks is a dog she may never pass, and the whole content of the
-## row is meeting it. It is not `EventDef.pursuit`: it does not adjust to her or stop at a
+## row is meeting it. It is not `EventDef.pursuit()`: it does not adjust to her or stop at a
 ## stand-off; it is a straight line down the sidewalk that she answers by crossing the street or
 ## turning.
 ##
@@ -1152,7 +1152,7 @@ static func _leaf_blower() -> EventDef:
 ## the day streams them in at `Tuning.EVENT_STREAM_RADIUS` (900px), so what she sees from down the
 ## street is the thing she is deciding about.
 ##
-## **The telegraph contract is then paid in geometry, as the robber's is.** `EventDef.notice` is the
+## **The telegraph contract is then paid in geometry, as the robber's is.** `EventDef.notice()` is the
 ## wait: the birds stand there unclocked and quiet, and the clock starts when she comes inside the
 ## trigger rather than at dawn, four streets away. It is the shape `alley_mouse` and a `MAP`-placed
 ## `charging_dog` use, and it keeps "it must not be over before she arrives" true without siting the
@@ -1195,7 +1195,7 @@ static func _leaf_blower() -> EventDef:
 ##   shared between eleven birds, so the middle is several overlapping fields and the rim is one.
 ##   `docs/COSTS.md` carries the rate; the line through it is measured by walking, in
 ##   `tests/test_events.gd`.
-## - It must not be **deleted at the top of its climb**, which is what `EventDef.departs_at` is for.
+## - It must not be **deleted at the top of its climb**, which is what `EventDef.departure_speed()` is for.
 ## - The **birds** have to move, not just the event. Copies of one sprite at fixed offsets sharing a
 ##   single `rise` term go up in one movement and hang in the air for the whole burst.
 ##
@@ -1239,7 +1239,7 @@ static func _pigeon_flock() -> EventDef:
 	row.lasts(4.0)
 	# On the ground the whole time, which makes this a thing to walk around rather than a thing that
 	# happens. Over the 1.55s the contract asks of a 168px field, measured from the moment it
-	# notices her (`EventDef.notice`). The backstop for a flock she passed without reaching; the
+	# notices her (`EventDef.notice()`). The backstop for a flock she passed without reaching; the
 	# flush at the birds ends it for one she walked into.
 	# Faster than she can run, and up: they are gone in a second and a half and they are gone
 	# *somewhere*.
@@ -1476,7 +1476,7 @@ static func _chatting_mother() -> EventDef:
 ##
 ## **The lesson does not retire, and it does not stay a lesson either** (PLAYTEST-68). Past
 ## `RUN_TAUGHT_DAY` this row is two already-authored shapes at once: `EventScheduler` places it on
-## a tile like `alley_robbery`, waiting inside its own field for her (`EventDef.from_day_after`);
+## a tile like `alley_robbery`, waiting inside its own field for her (`EventDef.spawn_mode_on()`);
 ## and `EventDirector` now and then still sends the day-3 shape itself (warned first from off
 ## screen, already noticing her, no tip), `EventDirector.CHARGING_DOG_SPRINKLE_CHANCE` of the time
 ## on a day it is eligible. One `EventDef` answers both, since neither changes what the row *is*,
@@ -1548,7 +1548,7 @@ static func _charging_dog() -> EventDef:
 ## Mobile, unhurried, and it stops. Its field is not the danger; the danger is that you start
 ## planning around it.
 ##
-## **A car, solid and lethal the way a car is** (`EventDef.vehicle`; inbox #648 in leafy-puffin):
+## **A car, solid and lethal the way a car is** (`EventDef.drives()`; inbox #648 in leafy-puffin):
 ## she walks round its body whether it drives or stands, and it ends the day only in front of it,
 ## while it drives its route, with her on the carriageway.
 ##
@@ -1562,7 +1562,7 @@ static func _charging_dog() -> EventDef:
 static func _police_patrol() -> EventDef:
 	var row := EventDraft.new("police_patrol")
 	# It does not telegraph its coming (`WarningSpec.unannounced()`): 74px/s is slower than a walk, and
-	# its strike is a car's, warned the way a car warns (`EventDef.vehicle`) rather than with a
+	# its strike is a car's, warned the way a car warns (`EventDef.drives()`) rather than with a
 	# badge from off screen. Its copies (the one the director sends ahead of her, the raid's pacing
 	# car and the investigating one at heat) carry it with them.
 	row.warning(WarningSpec.lasting(1.97).unannounced())
@@ -1605,7 +1605,7 @@ static func _police_patrol() -> EventDef:
 ## lane on one for a crew to stand in; `poster_crew_square` is the square's own crew, at the column
 ## a square has instead of a wall.
 ##
-## **It works on walls along the way she walks** (`EventDef.on_her_way`, `OnHerWay.pastes_a_front()`;
+## **It works on walls along the way she walks** (`EventDef.is_sited_from_her_walk()`, `OnHerWay.pastes_a_front()`;
 ## PLAYTEST-116). A crew placed anywhere in the city is a crew she never meets. So a unit that
 ## draws a crew hands it to her walk with no position (`MarbleDraw.draw()`), and her walk
 ## sites each crew, one at a time, on her branch of the day's routes, in front of a blank
@@ -1793,7 +1793,7 @@ static func _roadblock() -> EventDef:
 	row.ground([GameEnums.TileType.ROAD])
 	row.field(FieldSpec.of(0.0, 86.0, 179.0).as_one_barrier())
 	row.warning(WarningSpec.lasting(1.8))
-	# **How his hunting copy pursues** (`EventDef.hunts`, `HuntSpec.pursuing()`, a catch that ends
+	# **How his hunting copy pursues** (`EventDef.answers_to_heat()`, `HuntSpec.pursuing()`, a catch that ends
 	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
 	# (woolly-penguin #748) on the clock every charger that waits for her keeps.
@@ -1821,7 +1821,7 @@ static func _roadblock() -> EventDef:
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 ##
 ## **The `HUNTS` rung, the lethal rung of the resistance's ladder, hunted on foot**
-## (`EventDef.hunts`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched
+## (`EventDef.answers_to_heat()`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched
 ## (population and intensity are `PRESSES`'s axes). At and above it, the derived copy stops idling
 ## for a stranger and hunts her with its men: it stays parked and solid, and once she is within
 ## `EventDef.HEAT_HUNTS_WITHIN` of it along a clear line it lets two men out at its door,
@@ -1843,7 +1843,7 @@ static func _abduction() -> EventDef:
 	row.warning(WarningSpec.lasting(4.6))
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
 	# body never shields her from the van's own reach. It keeps the body at every heat: hunting, it
-	# stays parked and lets its men out (`EventDef.hunts`), so nothing about a moving wall applies.
+	# stays parked and lets its men out (`EventDef.answers_to_heat()`), so nothing about a moving wall applies.
 	row.lethal(LethalSpec.at_its_core())
 	# The caps on the rows that end the day rise with the rest, but by half as much: at one event per block the late
 	# city should feel *occupied*, not landmined. Four unmarked vans across forty-nine blocks is one
@@ -1866,7 +1866,7 @@ static func _abduction() -> EventDef:
 ## - **Getting close is day ending.** Ending the day inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
-## - **Get close and he comes at you.** `EventDef.notice` 180, his one radius: inside that he
+## - **Get close and he comes at you.** `EventDef.notice()` 180, his one radius: inside that he
 ##   stands up, turns to face her and walks at her slowly, at 40px/s (`PursuitSpec.walk_speed()`),
 ##   holding at his 116px stand-off, for his 2.0s warning (`PursuitSpec.warns_for()`; inbox #788 in
 ##   minty-lemur), and if she is still inside his radius once it has run he lunges, and chases at
@@ -1954,7 +1954,7 @@ static func _alley_robbery() -> EventDef:
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
 ## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`PursuitSpec.lunge_reach()`),
 ## his catch that ends the day and the way he walks off once he has lost her. What differs is **no trigger**
-## (`EventDef.notice` 0), so he is never `is_waiting()`, and his timing: the day-3 dog's badge and
+## (`EventDef.notice()` 0), so he is never `is_waiting()`, and his timing: the day-3 dog's badge and
 ## chase, read off `_charging_dog()`. His chase does not give up on a walker
 ## (`Tuning.PURSUIT_TIME`, a long cap); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him
 ## off, including while he is still offscreen.
@@ -2010,7 +2010,7 @@ static func _robber_giving_chase() -> EventDef:
 ## robber's own 100px/s.
 ##
 ##
-## **No trigger, and the robber row's own timing**: `EventDef.notice` stays 0.0, so he is never
+## **No trigger, and the robber row's own timing**: `EventDef.notice()` stays 0.0, so he is never
 ## `is_waiting()`; he is warned first for the dog's half second, arrives already chasing
 ## (`PursuitSpec.Start.ARRIVES_CHASING`) and does not give up on a walker (`Tuning.PURSUIT_TIME`),
 ## identical to `robber_giving_chase`, since nothing about the timing is the picture's to change.
@@ -2129,7 +2129,7 @@ static func _out_of(on_foot: EventDef, stops: bool) -> EventDef:
 ## (a second on screen and a second off if they were not visible; inbox #764 in minty-lemur), then
 ## arriving charging. A derived copy, built once, under an id of its own, `task_guard_sent`, so
 ## GoatCounter tells him apart from the robber a task sends (inbox #849 in minty-dolphin); his
-## charges count as the task guard's (`EventDef.counts_charges_as`).
+## charges count as the task guard's (`EventDef.charges_counted_as()`).
 static func task_guard_sent() -> EventDef:
 	if _task_guard_sent == null:
 		var sent := _robber_giving_chase()
@@ -2146,7 +2146,7 @@ static var _task_guard_sent: EventDef = null
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
 ## **The `HUNTS` rung `abduction` climbs, but it hunts on foot**
-## (`EventDef.hunts`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed
+## (`EventDef.answers_to_heat()`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed
 ## block and nothing more. At and above it, the derived copy `investigates`: the van stays where it
 ## stands, and the moment she is within `EventDef.HEAT_HUNTS_WITHIN` (180px) of it along a clear
 ## line it lets two men out at its door on her side, who pursue her under the pursuit contract
@@ -2303,11 +2303,11 @@ static func _firefight() -> EventDef:
 
 # --------------------------------------------------------------- seal pictures ---
 # Every row below exists only as `SealPlanner` candidate material (`docs/DECISIONS.md`, "Eight
-# seal pictures, so that no single barrier becomes the city's signature."). Each is `SCRIPTED` with
-# `scripted_day = 0`, a day nobody plays, so `EventDef.available_on()` never rolls one and the
+# seal pictures, so that no single barrier becomes the city's signature."). Each is `SCRIPTED` on
+# day 0, a day nobody plays, so `EventDef.available_on()` never rolls one and the
 # ordinary scheduler never sites one, the shape `barricade` uses to keep out of the day's own bags.
-# `EventDef.own_first_day()` reads `act_tag` instead, so `act_tag` is what gates the day a
-# seal may use the row, not `first_day`.
+# `EventDef.own_first_day()` reads the act each is scripted with instead, so the act is what gates
+# the day a seal may use the row.
 #
 # **Silent, like every other seal candidate**: each carries `intensity = 0.0`. Radii still have to
 # satisfy `EventDef.validate()` even at zero intensity, so every row below copies `barricade`'s
@@ -2680,7 +2680,7 @@ static func _impact_crater() -> EventDef:
 ## A masked man running up the stairwell: masked pursuers run up the stairs and can be avoided by
 ## going into a corridor and letting them pass.
 ##
-## **Mobile, not `EventDef.pursuit`, and that is the whole counterplay.** A pursuer steers at her,
+## **Mobile, not `EventDef.pursuit()`, and that is the whole counterplay.** A pursuer steers at her,
 ## so the only answer to one is speed; this runs a line (the shaft, bottom landing to top) and the
 ## answer to it is *not being on that line*, which in a building whose stairwell doors are a fade
 ## and a teleport means stepping through the nearest one and letting him go past. It is
@@ -2705,8 +2705,8 @@ static func _masked_pursuer() -> EventDef:
 	row.warning(WarningSpec.lasting(3.6).holding_still())
 	row.route(RouteSpec.at(Tuning.HEAT_HUNTS_SPEED))
 	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
-	# moment the section begins and being gone before she has come down a floor. `EventDef.notice`
-	# without `EventDef.pursuit` stands unclocked until she is in range and then runs its ordinary
+	# moment the section begins and being gone before she has come down a floor. `EventDef.notice()`
+	# without `EventDef.pursuit()` stands unclocked until she is in range and then runs its ordinary
 	# path, which is `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own height
 	# (three floors of eight tiles is 768px) with room over it, so he notices her the moment she is
 	# anywhere in the same stairwell and never from the hallway two parts away.

@@ -5,7 +5,7 @@ extends RefCounted
 ## The player's words *(2026-10-04, calm-kestrel, inbox #558: "the fire truck has no collision at
 ## all -- I can walk through it without it being lethal"; asked what touching it should do: "Lethal
 ## driving, solid parked")*. The truck is built the way the patrol car is (sunny-finch,
-## `EventDef.vehicle`): lethal only in front of it, with a car's warning, while it drives its route.
+## `EventDef.drives()`): lethal only in front of it, with a car's warning, while it drives its route.
 ## Her real `CharacterBody2D` rig is swept against a real `fire_truck` instance's body with the
 ## synchronous `move_and_collide()` sweep `tests/test_police_car.gd` uses, and the truck is stepped
 ## by hand, a frame at a time, told where she and her pram are the way `EventManager` tells it.

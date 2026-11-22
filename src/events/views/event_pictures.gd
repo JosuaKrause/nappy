@@ -1307,13 +1307,13 @@ const FIRE_ENGINE_CANVAS_BOTTOM_MARGIN := {
 }
 
 ## The canvas margins of the car family `look` belongs to — a patrol car's or the fire engine's —
-## both bodies a segment `EventDef.vehicle` lays along the heading and a picture anchored over it.
+## both bodies a segment `EventDef.drives()` lays along the heading and a picture anchored over it.
 static func canvas_margins(look: EventDef.Look) -> Dictionary:
 	return FIRE_ENGINE_CANVAS_BOTTOM_MARGIN if look == EventDef.Look.FIRE_ENGINE \
 			else POLICE_CAR_CANVAS_BOTTOM_MARGIN
 
 ## Whether `look` is a body whose picture is anchored over it by `EventLook.body_anchor()`: the
-## patrol car's and the fire engine's, the two looks of a car that drives (`EventDef.vehicle`).
+## patrol car's and the fire engine's, the two looks of a car that drives (`EventDef.drives()`).
 static func is_anchored_over_its_body(look: EventDef.Look) -> bool:
 	return look == EventDef.Look.POLICE_CAR or look == EventDef.Look.FIRE_ENGINE
 

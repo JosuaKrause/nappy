@@ -27,7 +27,7 @@ extends RefCounted
 ##
 ## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
 ## this class and it breaks the sentence above on purpose: a row carrying
-## `EventDef.on_her_way` — day 3's burning building, and the day's poster crews after it —
+## `EventDef.is_sited_from_her_walk()` — day 3's burning building, and the day's poster crews after it —
 ## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
 ## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
 ## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
@@ -88,7 +88,7 @@ const RETURN_PATROL_WITHIN_THE_NEXT := 2
 ## director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`) and
 ## takes none of these, so with the lesson these marbles rarely reach `max_per_day`'s 3.
 const ROUTE_BAG_SHARE_OF := {"charging_dog": 2.0 / 16.0}
-## Marbles per unit of `EventDef.weight` in the bag the director draws her route's events from
+## Marbles per unit of `EventDef.drawn_as_often()` in the bag the director draws her route's events from
 ## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
 ## statement 2: "events should use the marble bag approach as well. that way we can control what
 ## the player sees on their route".)* The bag is the stretch over which the mix is exact, and at 2
@@ -170,7 +170,7 @@ var _doors := PackedVector2Array()
 ## one or until it makes its own.
 var _way_on: WayOn = null
 
-## Today's plans that the day made and left for her walk to site — `EventDef.on_her_way`,
+## Today's plans that the day made and left for her walk to site — `EventDef.is_sited_from_her_walk()`,
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
 ## in `start_day()`, or handed over as a unit draws one as she walks (`owe_on_her_way()`); and the
 ## places a marble from her route's bag names, added the moment the marble is drawn
@@ -405,7 +405,7 @@ func _bag_the_next(count: int) -> void:
 ## off her heading, already noticing her.
 ##
 ## **The row itself, untouched.** `EventCatalogue.by_id()` returns the shared, cold `EventDef` —
-## `EventDef.notice` still its authored 0.0 — so nothing here has to build a copy the way
+## `EventDef.notice()` still its authored 0.0 — so nothing here has to build a copy the way
 ## `EventDef.for_day()` does for the waiting one: a director-sited dog is met exactly as
 ## day 3's is, charging the moment it streams in, because both are already-noticing encounters
 ## rather than places she is routed into. No tip and no guarantee are the whole of what changes —
@@ -429,7 +429,7 @@ func _bag_the_next(count: int) -> void:
 ## it. Pushing to the front only decides which of today's `AHEAD_OF_PLAYER` encounters is met
 ## *first* when one has been rolled at all; it never adds a second roll on top of the first.
 ##
-## Asked over the def's own `EventDef.from_day_after` rather than `Tuning.RUN_TAUGHT_DAY`
+## Asked over the def's own `EventDef.spawn_mode_on()` rather than `Tuning.RUN_TAUGHT_DAY`
 ## directly, so this stays in step with whichever day the row's siting actually changes on.
 func _owe_the_sprinkled_dog(day: int) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
@@ -1344,7 +1344,7 @@ func way_on() -> WayOn:
 ## `EventDef.announces_its_coming()` gives it no badge. Under the player's rule a thing telegraphs
 ## its coming only if it goes fast, comes toward her and carries a heavy penalty (PLAYTEST-145,
 ## statements 18-23), and a patrol is not fast; its strike in front of it on the carriageway is a
-## car's, warned the way a car warns (`EventDef.vehicle`), not a badge from off screen.
+## car's, warned the way a car warns (`EventDef.drives()`), not a badge from off screen.
 func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))

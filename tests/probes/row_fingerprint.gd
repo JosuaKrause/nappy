@@ -71,6 +71,7 @@ func run(t: TestRunner) -> void:
 		"share": [0.25, 1.0], "outer": [80.0, 200.0], "rate": [0.5, 2.0, 6.0],
 		"walk_speed": [Tuning.WALK_SPEED, 150.0], "age": [0.0, 1.5, 7.0], "into_its_burst": [0.0, 0.5],
 		"beat": [-1.0, 0.5], "vertical": [false, true], "scar_id": ["", "x"],
+		"kind": GameEnums.EventKind.values(),
 	}
 	var rows := EventCatalogue.all()
 	for row in rows:

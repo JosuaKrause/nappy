@@ -1,6 +1,6 @@
 class_name OnHerWay
 extends RefCounted
-## **The day plans the row but leaves where it stands to the walk she takes** (`EventDef.on_her_way`).
+## **The day plans the row but leaves where it stands to the walk she takes** (`EventDef.is_sited_from_her_walk()`).
 ##
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
 ## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves
@@ -21,7 +21,7 @@ extends RefCounted
 ## a run owes, and a crew is not one.
 
 ## Whether her walk sites the row on the sidewalk in front of a blank ground-floor cell of a
-## building's front, facing the wall, rather than on the side `EventDef.pavement_side` names —
+## building's front, facing the wall, rather than on the side `EventDef.sidewalk_lane()` names —
 ## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). A location's draw offers the
 ## row by `pavement_side`, as it offers any row, and only the walk's siting reads this.
 var _at_a_front := false

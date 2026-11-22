@@ -303,7 +303,7 @@ func _relocations_over_the_marks(t: TestRunner, seed_value: int, her_at: Callabl
 ## Where she stands to have a mark relocated onto `tile` with nothing about her refusing its guard:
 ## four tiles out from it through its mouth, on the ground beyond the mouth, so the mark tile is the
 ## one nearest her (its twin across a two-tile alley is farther, another alley's across the street)
-## and its guard, further in, is past his notice of her (`EventDef.notice`) even at a small
+## and its guard, further in, is past his notice of her (`EventDef.notice()`) even at a small
 ## courtyard's inner end. The tile's own centre when it has no mouth beside it.
 static func _outside_its_mouth(map: CityMap, tile: Vector2i) -> Vector2:
 	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:

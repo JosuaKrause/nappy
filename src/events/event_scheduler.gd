@@ -335,7 +335,7 @@ static func clearance_around_her(def: EventDef) -> float:
 ## through the legend. `TOWARD_PLAYER` is sited by the same director for the same reason and gets
 ## the same answer. `spawn_mode_on(day)` is what this asks rather than `spawn_mode` alone, since a
 ## row like `charging_dog` answers `NONE` on `Tuning.RUN_TAUGHT_DAY` — a director moment, exactly
-## like the cat — and `WALL` every day after, once it is `EventDef.from_day_after`'s `MAP`
+## like the cat — and `WALL` every day after, once it is `EventDef.spawn_mode_on()`'s `MAP`
 ## placement and the scheduler has chosen it a tile like any other lethal row.
 ##
 ## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to

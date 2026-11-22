@@ -249,7 +249,7 @@ static func encounters() -> Array[Dictionary]:
 				"path": PackedVector2Array([centre - across, centre + across]),
 				"her": Vector2.ZERO, "heading": heading, "warm": 0.0})
 
-	# `alley_mouse`: waits in an alley until she is within `EventDef.notice`, then dashes across it.
+	# `alley_mouse`: waits in an alley until she is within `EventDef.notice()`, then dashes across it.
 	# With no map its path is the flat 64px crossing `EventInstance._alley_crossing_path()` falls
 	# back to, across X — so she walks up the alley along Y.
 	var mouse := EventCatalogue.by_id("alley_mouse")
@@ -312,7 +312,7 @@ static func encounters() -> Array[Dictionary]:
 		return PackedVector2Array([place, place + Vector2(0.0, 4000.0)])
 	list.append(_warned(column, "day 13's column, warned in its lane", lane_where, lane_route, up))
 
-	# `pigeon_flock`: waits, quiet, until she is within `EventDef.notice`, then goes up.
+	# `pigeon_flock`: waits, quiet, until she is within `EventDef.notice()`, then goes up.
 	var flock := EventCatalogue.by_id("pigeon_flock")
 	list.append({"def": flock, "how": "waits on the sidewalk", "path": PackedVector2Array(),
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, flock.notice_within() + 200.0),
@@ -358,7 +358,7 @@ static func encounters() -> Array[Dictionary]:
 			"path": PackedVector2Array(), "spawn": guard_at, "her": Vector2(1.0, 0.0),
 			"heading": (guard_at - Vector2(1.0, 0.0)).normalized(), "warm": 0.0})
 
-	# `alley_robbery`: waits in the alley until she is within `EventDef.notice`.
+	# `alley_robbery`: waits in the alley until she is within `EventDef.notice()`.
 	var robber := EventCatalogue.by_id("alley_robbery")
 	list.append({"def": robber, "how": "waits in an alley", "path": PackedVector2Array(),
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, robber.notice_within() + 200.0),
