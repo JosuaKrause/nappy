@@ -7,9 +7,10 @@ copy of their order, timing each apart. Both chain a hash over every event's and
 the baby's meters after every tick, and the probe checks the two chains agree, which is what shows
 the split is still the step the game runs.
 
-**Its first failure:** six of its checks fail; the first is that on seed 478156010, day 9, the
-split step does not change every event, agent and meter exactly as the real one does, and day 14
-fails the same way (the record 2026-10-18-minty-quail-snowy-magpie). Its records still hash the same
+**Its first failure:** its check that the split step changes every event, agent and meter exactly
+as the real one does fails on day 9: on seed 478156010, where day 14 fails the same way (the record
+2026-10-18-minty-quail-snowy-magpie), and on seed 4242's events walk on `main` after row 4b of
+minty-quail's `event-interface.md`. Its records still hash the same
 on `main` and on that pass's head, so it measures what it measured; whether the split measures the
 game's step is what fails.
 
