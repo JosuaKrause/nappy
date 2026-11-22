@@ -12,7 +12,7 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 - **A further word on a note the agent already knows is appended to it**; the inbox is never searched for an overlap.
 - **When it is not certain what the words refer to, the agent asks before recording any reading.**
 - **`tools/inbox.py` is the one way an agent writes an issue**, as `claude-orchestrator` (Codex: `codex-coder`).
-- **The orchestrating session lists the inbox at every run of its recurring check**, since the player posts new tasks there (inbox #1623 in dappled-bison).
+- **The orchestrating session checks the inbox along with the board**, since the player posts new tasks there (inbox #1623 in dappled-bison).
 - **The orchestrating session files the open notes on its own, periodically, and when the player asks**, in one pull request that names each note `Filed from #N`, and never waits on a question.
 
 **GitHub Issues are the player's inbox, and nothing else** (bouncy-heron 5). A note is an open
@@ -20,9 +20,8 @@ issue carrying the label `inbox`, and an issue without it is never filed (plaid-
 opened it: `tools/inbox.py` skips it and refuses to close a batch naming it, and CI's
 `tools/ci_transcription.py` fails a filing pull request that names it. The player writes one at any
 time, edits it until it is filed, and posts new tasks there rather than on the board, which is
-where questions and answers live (inbox #1623 in dappled-bison). The orchestrating session lists
-the inbox at every run of its ~30-minute recurring check, never leaving a gap past about 55
-minutes, as it reads the board (**board**, "When it is read"; inbox #1623 in dappled-bison). The orchestrating session turns a batch of notes into a filing
+where questions and answers live (inbox #1623 in dappled-bison). The orchestrating session checks
+the inbox along with the board (**board**, "When it is read"; inbox #1623 in dappled-bison). The orchestrating session turns a batch of notes into a filing
 pull request on its own, periodically, and when the player asks (inbox #1619 in teal-dolphin). The
 queue, the review items, the playtest files and the decision records stay in the repository, because
 an entry is reviewed when it enters the queue (`tools/decisions.sh leafy-finch` has the reasons, and
@@ -194,7 +193,7 @@ Every note is filed as it stands, and a question it leaves open is written into 
 marked open, for whoever picks the task up.
 
 **A question about a note can still be asked on its issue** (dotted-quail 1), when the filer has one
-before the batch is filed; the answer is filed with the note, and the batch does not wait for it:
+before the batch is filed; the answer is filed with the note, and the batch does not wait for it. Whether a question about an inbox note may still go on its issue is open, asked on the board as notes-questions-where; both rules stand until the player answers it.
 
 ```sh
 uv run python tools/inbox.py --role claude-orchestrator ask N --body-file <dir>/question.md
@@ -232,8 +231,8 @@ file is open:
 These rules are the filer's proposals and readings, not the player's words, and hold until the player
 corrects them:
 
-- **That the periodic filing rides the same beat as the inbox listing, every run of the orchestrating session's ~30-minute recurring check**
+- **That the inbox is listed and the periodic filing made at every run of the orchestrating session's ~30-minute recurring check, never a gap past about 55 minutes**
   ("Filing a batch"; **orchestrating**, "What the orchestrator keeps"); the player's words are that
   the session files the inbox by itself, periodically (inbox #1619 in teal-dolphin), and that checks
-  cover the inbox as well as the board (inbox #1623 in dappled-bison); filing at every run is the
-  filer's reading of "periodically".
+  cover the inbox as well as the board (inbox #1623 in dappled-bison); the beat of every run, for
+  the listing and the filing, is the filer's reading.

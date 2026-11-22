@@ -477,12 +477,13 @@ to the player's correction:
   from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
-- **That the one recurring job carries the filing of the inbox** ("What the orchestrator keeps"),
-  on the same beat as the reads, the out-of-tasks note being the line under Running on the board,
-  and the 45-minute wake also looking at the open pull requests and `tools/queue.sh` on
-  `origin/main`. The player's words are the reads of the board and the inbox, the hour meaning
-  under about 55 minutes, the periodic filing, the note on the board and the wake every 45
-  minutes (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin, inbox #1623 in dappled-bison).
+- **That the one recurring job reads the board and lists the inbox at every run of the 30-minute
+  job, so no gap passes about 55 minutes, and files on the same beat** ("What the orchestrator
+  keeps"), the out-of-tasks note being the line under Running on the board, and the 45-minute wake
+  also looking at the open pull requests and `tools/queue.sh` on `origin/main`. The player's
+  words are that the check covers the board and the inbox, the hour meaning under about 55
+  minutes, the periodic filing, the note on the board and the wake every 45 minutes (inbox #1619
+  in teal-dolphin, inbox #1621 in teal-dolphin, inbox #1623 in dappled-bison).
 - **How the resume hook remembers and words its refusal** ("What the orchestrator keeps"): the
   filer's design. The player's are the hook itself, refusing the resume of an agent that has
   compacted automatically or grown too large (inbox #1291 in grassy-trout), the size it refuses at, that nothing
