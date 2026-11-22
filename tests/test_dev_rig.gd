@@ -144,12 +144,13 @@ func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 			named = true
 	t.check(named, "the refusal names the row in the run log (got %s)" % [lines])
 
-## A row that waits (`EventDef.waits_for_her()`: the pigeon flock, the charging dog) and has a copy placed
-## on the suite's day: `event:<row>` stands her outside both its wait trigger and its field. A
-## fixed offset of a share of outer radius stood her inside the flock's trigger (its 150px notice
-## under its 168px field, and the old 100.8px offset under both), so the offset has to clear the
-## larger of the two plus a tile's margin. The first such row the day placed is asked, since which
-## rows a day places moves with the declared table (`PlacementDensity`).
+## A row that waits (`EventDef.waits_for_her()`: the pigeon flock, the charging dog) and
+## has a copy placed on the suite's day: `event:<row>` stands her outside both its wait
+## trigger and its field. A fixed offset of a share of outer radius stood her inside the
+## flock's trigger (its 150px notice under its 168px field, and the old 100.8px offset
+## under both), so the offset has to clear the larger of the two plus a tile's margin. The
+## first such row the day placed is asked, since which rows a day places moves with the
+## declared table (`PlacementDensity`).
 func _test_a_waiting_row_stands_outside_its_trigger(t: TestRunner) -> void:
 	RunCity.events(_city).draw_the_ground_round(Vector2.ZERO, INF)
 	var found: EventPlan = null

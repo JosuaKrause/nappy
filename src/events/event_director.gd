@@ -27,12 +27,13 @@ extends RefCounted
 ##
 ## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
 ## this class and it breaks the sentence above on purpose: a row carrying
-## `EventDef.is_sited_from_her_walk()` — day 3's burning building, and the day's poster crews after it —
-## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
-## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
-## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
-## nothing. So the day plans it and this sites it, on a tile of the row's own ground ahead of her
-## heading (a building face for the fire and the crews), once her direction for the day is clear.
+## `EventDef.is_sited_from_her_walk()` — day 3's burning building, and the day's poster crews
+## after it — is a place in every sense: a tile, a body, a field, and what it leaves on the city
+## outlives the day. What it cannot be is *anywhere*: the fire is the authored beat of act I and
+## a crew is the walls visibly changing, and either one on a street she never walks down is a
+## silhouette spent on nothing. So the day plans it and this sites it, on a tile of the row's
+## own ground ahead of her heading (a building face for the fire and the crews), once her
+## direction for the day is clear.
 ##
 ## The two jobs share this class because they share the one thing neither the scheduler nor the
 ## manager has: **the direction she is actually travelling, now**. They do not share a queue, an
@@ -88,16 +89,17 @@ const RETURN_PATROL_WITHIN_THE_NEXT := 2
 ## director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`) and
 ## takes none of these, so with the lesson these marbles rarely reach `max_per_day`'s 3.
 const ROUTE_BAG_SHARE_OF := {"charging_dog": 2.0 / 16.0}
-## Marbles per unit of `EventDef.drawn_as_often()` in the bag the director draws her route's events from
-## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
-## statement 2: "events should use the marble bag approach as well. that way we can control what
-## the player sees on their route".)* The bag is the stretch over which the mix is exact, and at 2
-## every weight comes out whole. With the rows the director sends ahead of her in it
-## (`EventDef.is_sent_ahead()`: the dog walker, the patrol and the convoy, the heaviest of its rows)
-## a bag holds more than a whole day of walking at `AHEAD_INTERVAL` hands out
-## (`tests/probes/olive_badger_route_mix.gd` counts both), so the mix is exact over a bag, never over
-## a day; and over a bag only where nothing waits for room, since a sent row that waits comes after
-## the marbles handed out meanwhile (`_sent_waiting`) and can fall past its bag's end.
+## Marbles per unit of `EventDef.drawn_as_often()` in the bag the director draws her route's
+## events from (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row.
+## *(olive-koala, statement 2: "events should use the marble bag approach as well. that way we
+## can control what the player sees on their route".)* The bag is the stretch over which the
+## mix is exact, and at 2 every weight comes out whole. With the rows the director sends ahead
+## of her in it (`EventDef.is_sent_ahead()`: the dog walker, the patrol and the convoy, the
+## heaviest of its rows) a bag holds more than a whole day of walking at `AHEAD_INTERVAL`
+## hands out (`tests/probes/olive_badger_route_mix.gd` counts both), so the mix is exact over
+## a bag, never over a day; and over a bag only where nothing waits for room, since a sent row
+## that waits comes after the marbles handed out meanwhile (`_sent_waiting`) and can fall past
+## its bag's end.
 const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 
 ## How far to either side of the crossing point the run reaches at most. A street's width, so the
@@ -170,11 +172,12 @@ var _doors := PackedVector2Array()
 ## one or until it makes its own.
 var _way_on: WayOn = null
 
-## Today's plans that the day made and left for her walk to site — `EventDef.is_sited_from_her_walk()`,
-## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
-## in `start_day()`, or handed over as a unit draws one as she walks (`owe_on_her_way()`); and the
-## places a marble from her route's bag names, added the moment the marble is drawn
-## (`_place_on_her_route()`). Emptied as each one is put in the world.
+## Today's plans that the day made and left for her walk to site —
+## `EventDef.is_sited_from_her_walk()`, which is day 3's fire, and the poster crews from day 4
+## — read off the same plan list `_owed` is, in `start_day()`, or handed over as a unit draws
+## one as she walks (`owe_on_her_way()`); and the places a marble from her route's bag names,
+## added the moment the marble is drawn (`_place_on_her_route()`). Emptied as each one is put
+## in the world.
 var _on_her_way: Array[EventPlan] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and

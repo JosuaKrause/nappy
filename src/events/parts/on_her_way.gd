@@ -1,6 +1,7 @@
 class_name OnHerWay
 extends RefCounted
-## **The day plans the row but leaves where it stands to the walk she takes** (`EventDef.is_sited_from_her_walk()`).
+## **The day plans the row but leaves where it stands to the walk she takes**
+## (`EventDef.is_sited_from_her_walk()`).
 ##
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
 ## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves

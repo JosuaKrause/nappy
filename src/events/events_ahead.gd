@@ -148,9 +148,10 @@ var _director: EventDirector
 ## none in a world with no city, where no torn poster sends anybody.
 var _spawn_siting: SpawnSiting
 ## The day's placement context for a row the day left for her walk to site, or `null` on a day that
-## left none — the whole of `EventDef.is_sited_from_her_walk()`, which today is day 3's fire and nothing
-## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
-## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
+## left none — the whole of `EventDef.is_sited_from_her_walk()`, which today is day 3's fire
+## and nothing else. Built in `start_day()` and read twice: the director sites against it
+## while she walks, and `light_what_she_never_met()` places off it at dusk on a day she never
+## met what it was for.
 var _siting: WalkSiting = null
 ## What makes a siting (`SitingMaker`), handed in by the manager (`use_sitings()`): this class makes
 ## none itself, so a suite hands in a maker that answers a stand-in, or keeps what it made.
@@ -681,8 +682,9 @@ func _owe_pursuer_again(def: EventDef) -> void:
 
 ## The other half of the director's day: a place left unsited, put ahead of her on the branch she
 ## is walking once her heading for the day is clear — day 3's fire and the day's poster crews
-## (`EventDef.is_sited_from_her_walk()`), and a place a marble from her route's bag names, which joins the
-## day's plan here (`_put_down_on_her_route()`). See `EventDirector.site_what_is_on_her_way`.
+## (`EventDef.is_sited_from_her_walk()`), and a place a marble from her route's bag
+## names, which joins the day's plan here (`_put_down_on_her_route()`). See
+## `EventDirector.site_what_is_on_her_way`.
 ##
 ## **The bookkeeping a late placement owes is the bookkeeping dawn already did for everything
 ## else.** A body is recorded per tile from the *plan* so the crowd steers round it whether or not

@@ -391,7 +391,8 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
 
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
-	# the `WALL` role — the exemption is `EventDef.pursues()`, not "the role happens not to be WALL".
+	# the `WALL` role — the exemption is `EventDef.pursues()`, not "the role happens not
+	# to be WALL".
 	var stationary := EventCatalogue.by_id("reversing_lorry")
 	t.check(stationary.ends_the_day() and not stationary.pursues(),
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")

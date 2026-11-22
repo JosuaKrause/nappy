@@ -15,10 +15,10 @@ extends RefCounted
 ## ships the 26px catch with the 116px lunge (`PursuitSpec.lunge_reach()` 38); the probe sets both
 ## per row, whatever the catalogue says.
 ##
-## The rig walks her along a line at the robber from outside his notice (`EventDef.notice_within()`, read off
-## the row), and answers after a reaction time drawn per seed: `turns` runs away `reaction` seconds
-## after the lunge (the chase begins), accelerating at `Tuning.ACCELERATION`. Other rigs: stands
-## still, walks away, runs from the notice.
+## The rig walks her along a line at the robber from outside his notice
+## (`EventDef.notice_within()`, read off the row), and answers after a reaction time drawn per
+## seed: `turns` runs away `reaction` seconds after the lunge (the chase begins), accelerating
+## at `Tuning.ACCELERATION`. Other rigs: stands still, walks away, runs from the notice.
 
 const STEP := 1.0 / 60.0
 const SEEDS := 200

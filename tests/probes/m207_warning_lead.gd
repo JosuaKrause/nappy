@@ -249,9 +249,10 @@ static func encounters() -> Array[Dictionary]:
 				"path": PackedVector2Array([centre - across, centre + across]),
 				"her": Vector2.ZERO, "heading": heading, "warm": 0.0})
 
-	# `alley_mouse`: waits in an alley until she is within `EventDef.notice_within()`, then dashes across it.
-	# With no map its path is the flat 64px crossing `EventInstance._alley_crossing_path()` falls
-	# back to, across X — so she walks up the alley along Y.
+	# `alley_mouse`: waits in an alley until she is within `EventDef.notice_within()`, then
+	# dashes across it. With no map its path is the flat 64px crossing
+	# `EventInstance._alley_crossing_path()` falls back to, across X — so she walks up the
+	# alley along Y.
 	var mouse := EventCatalogue.by_id("alley_mouse")
 	list.append({"def": mouse, "how": "waits in an alley, dashes across it",
 			"path": PackedVector2Array(), "spawn": Vector2.ZERO,

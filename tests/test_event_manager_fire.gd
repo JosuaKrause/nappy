@@ -106,9 +106,10 @@ func _start(day: int) -> void:
 
 # ------------------------------------------- the fire is on her way (M179) ---
 # *"the fire should come first and be on your way guaranteed (a dynamic event dependent on the
-# route you chose that day)"* (PLAYTEST-117). Day 3's fire carries `EventDef.is_sited_from_her_walk()`, so
-# the day budgets it with no position and `EventDirector.site_what_is_on_her_way()` puts it on a
-# building face ahead of her once her heading for the day is clear.
+# route you chose that day)"* (PLAYTEST-117). Day 3's fire carries
+# `EventDef.is_sited_from_her_walk()`, so the day budgets it with no position and
+# `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her once her
+# heading for the day is clear.
 #
 # **These have to be here rather than in `tests/test_events.gd`.** Everything about the siting is a
 # function of where she actually walked, so it needs a real city, a real manager and something in

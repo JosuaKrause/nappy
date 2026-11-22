@@ -984,10 +984,11 @@ static func _a_street_that_ends_at_a_corner() -> CityMap:
 
 ## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
 ## where one's guard notices her while she deals with the other: their notices, each
-## `EventDef.notice_within()` round its band, never overlap (`OneNoticeRule._keeps_its_notice_to_itself()`).
-## *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the second guard is
-## invisible (hidden) until it already charges".)* One a street keeps two off one street; this keeps
-## two apart across a junction or a corner as well.
+## `EventDef.notice_within()` round its band, never overlap
+## (`OneNoticeRule._keeps_its_notice_to_itself()`). *(Inbox #771 in minty-lemur, 2026-10-18:
+## "two roadblocks are right next to each other and the second guard is invisible (hidden) until
+## it already charges".)* One a street keeps two off one street; this keeps two apart across a
+## junction or a corner as well.
 func _test_no_two_roadblocks_notice_her_from_the_same_ground(t: TestRunner) -> void:
 	var pairs := 0
 	for seed_value: int in SEEDS:

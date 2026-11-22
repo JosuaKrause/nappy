@@ -618,10 +618,10 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 ## and **nothing built stands between them** (`EventInstance.sight_line_to_her()`, the test his
 ## notice asks), since she is the one thing worth turning toward before he has actually noticed
 ## her — `EventPursuit`'s own `is_waiting()` branch does not turn the event until she is inside
-## `EventDef.waits_for_her()`, see that function's doc. With a building between them he has not seen her, so
-## he does not visibly track her round the corner, since noticing needs a clear line
-## (inbox #648 in leafy-puffin): he keeps the facing he was sited with, which is also the harmless
-## default a data-level rig with no player position gets.
+## `EventDef.waits_for_her()`, see that function's doc. With a building between them he has not
+## seen her, so he does not visibly track her round the corner, since noticing needs a clear
+## line (inbox #648 in leafy-puffin): he keeps the facing he was sited with, which is also the
+## harmless default a data-level rig with no player position gets.
 func robber_waiting_heading() -> Vector2:
 	var toward := event.sight_line_to_her()
 	return toward if toward != Vector2.ZERO else event.facing_now()

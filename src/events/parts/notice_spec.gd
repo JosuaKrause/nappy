@@ -7,8 +7,8 @@ extends RefCounted
 ##
 ## Carried by every row that waits — the alley robber, the alley mouse, the pigeon flock, the
 ## masked man, the hunting and investigating copies `EventDef.at_heat()` makes, and `charging_dog`
-## once it is placed on the map (`EventDef.spawn_mode_on()`). A row with no `NoticeSpec` has no wait:
-## its clock starts when it exists.
+## once it is placed on the map (`EventDef.spawn_mode_on()`). A row with no `NoticeSpec` has no
+## wait: its clock starts when it exists.
 ##
 ## For a pursuer `within` is its **one radius** (inbox #788 in minty-lemur): inside it the pursuer
 ## warns for its `PursuitSpec.warns_for()`, and charges if she is still inside once that has run.

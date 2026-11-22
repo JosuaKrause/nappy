@@ -327,8 +327,8 @@ func drawn_as_often() -> float:
 var _ground_weights: Dictionary
 
 ## **How many times its `_weight` the row weighs on `ground`** (`UnitFills`): what the catalogue
-## set (`EventDraft.weighed_on()`), else one where the row's `_placement` holds a tile of that ground
-## (`PlacementGround.holds()`), else nothing.
+## set (`EventDraft.weighed_on()`), else one where the row's `_placement` holds a tile of that
+## ground (`PlacementGround.holds()`), else nothing.
 func weight_on(ground: PlacementGround.Kind) -> float:
 	if _ground_weights.has(ground):
 		var times: float = _ground_weights[ground]
@@ -385,8 +385,8 @@ var _repeat_after: float
 
 var _duration: float
 
-## Seconds it lasts at full strength: 0 for a row that lasts the whole day. For a pursuer, the length
-## of the chase, counted from the moment it notices her.
+## Seconds it lasts at full strength: 0 for a row that lasts the whole day. For a pursuer, the
+## length of the chase, counted from the moment it notices her.
 func lasts_for() -> float:
 	return _duration
 
@@ -397,21 +397,24 @@ var _spawn_mode: SpawnMode
 ## through `spawn_mode_on()` and `_notice_on()`, never by hand.
 var _from_day_after: DaySwitch
 
-## Which `SpawnMode` this row is sited in on `day`: its own spawn mode through the day switch's `after_day()`,
-## the switch's own past it. Every reader that sites an event by its day asks this.
+## Which `SpawnMode` this row is sited in on `day`: its own spawn mode through the day
+## switch's `after_day()`, the switch's own past it. Every reader that sites an event by its
+## day asks this.
 func spawn_mode_on(day: int) -> SpawnMode:
 	if _from_day_after and day > _from_day_after.after_day():
 		return _from_day_after.spawn_mode()
 	return _spawn_mode
 
-## Whether `day` is past the day this row's siting switches (`_from_day_after`): false for a row with no
-## switch. `charging_dog` is sprinkled into the route only once its first siting has switched.
+## Whether `day` is past the day this row's siting switches (`_from_day_after`): false for
+## a row with no switch. `charging_dog` is sprinkled into the route only once its first
+## siting has switched.
 func is_past_its_switch_on(day: int) -> bool:
 	return _from_day_after != null and day > _from_day_after.after_day()
 
-## How this row notices her on `day`: its own notice settings through the day switch's `after_day()`, the
-## switch's own past it. An instance asks the def it was handed (`waits_for_her()`, `notice_within()`),
-## so a placement past the switch is handed a copy carrying this (`for_day()`); a director-sited row keeps its own.
+## How this row notices her on `day`: its own notice settings through the day switch's
+## `after_day()`, the switch's own past it. An instance asks the def it was handed
+## (`waits_for_her()`, `notice_within()`), so a placement past the switch is handed a copy
+## carrying this (`for_day()`); a director-sited row keeps its own.
 func _notice_on(day: int) -> NoticeSpec:
 	if _from_day_after and day > _from_day_after.after_day():
 		return _from_day_after.notice()
@@ -450,9 +453,9 @@ func is_sent_ahead() -> bool:
 func is_warned_in_its_lane() -> bool:
 	return _sent_ahead != null and _sent_ahead.is_warned_first() and keeps_to_the_carriageway()
 
-## **Whether it keeps to the carriageway as it goes**: a row of the road (`_placement` names `ROAD`),
-## the patrol and the convoy, whose route worked out as it goes drives from junction box to junction
-## box (`WayOn`). Any other walks.
+## **Whether it keeps to the carriageway as it goes**: a row of the road (`_placement` names
+## `ROAD`), the patrol and the convoy, whose route worked out as it goes drives from junction
+## box to junction box (`WayOn`). Any other walks.
 func keeps_to_the_carriageway() -> bool:
 	return _placement.has(GameEnums.TileType.ROAD)
 
@@ -564,8 +567,8 @@ func notice() -> NoticeSpec:
 
 ## **How this row hunts her once the resistance has heated it** (`HuntSpec`): a vehicle that lets
 ## men out, or a man who pursues her himself. Authored on the cold row of every `PRESSES` and `HUNTS`
-## row; `at_heat()` attaches it to the copy (`_hunting`) at and past its rung's threshold. Null for a
-## row that answers to nothing.
+## row; `at_heat()` attaches it to the copy (`_hunting`) at and past its rung's threshold. Null
+## for a row that answers to nothing.
 var _hunts: HuntSpec
 
 ## **The hunting behaviour this copy carries**: the row's `_hunts`, attached by `at_heat()` at and
@@ -609,9 +612,9 @@ func obstructs_within() -> float:
 	return _body.obstructs_within()
 
 ## **Whether this row is a one-shot not sited from her walk**, which `validate()` refuses: a one-shot
-## is a set piece, which has to be met wherever she goes, so one without `_on_her_way` would stand in
-## one place and be met only if she walked there. Public so a test can ask it of a bad row, since
-## `validate()`'s refusal is a `push_error`, which fails the whole run.
+## is a set piece, which has to be met wherever she goes, so one without `_on_her_way` would
+## stand in one place and be met only if she walked there. Public so a test can ask it of a bad
+## row, since `validate()`'s refusal is a `push_error`, which fails the whole run.
 func is_a_one_shot_off_her_way() -> bool:
 	return _kind == GameEnums.EventKind.ONE_SHOT and _on_her_way == null
 
@@ -748,11 +751,11 @@ func starts_by(start: PursuitSpec.Start) -> bool:
 ## mid-run would be checked in the shape it booted in, and the fairness contract would not be
 ## stated about the dangerous one.
 ##
-## **A row answers to heat exactly when it says how it hunts** (`_hunts`, a `HuntSpec` that carries its
-## rung): `HuntSpec.pressing()` is the rung of more of them, more expensive to stand near, that
-## investigates past a threshold and never ends the day, and `HuntSpec.letting_out()` and
-## `HuntSpec.pursuing()` are the lethal rung. A row without one answers to nothing: everything in
-## act I, a cat does not care who you know.
+## **A row answers to heat exactly when it says how it hunts** (`_hunts`, a `HuntSpec` that
+## carries its rung): `HuntSpec.pressing()` is the rung of more of them, more expensive to stand
+## near, that investigates past a threshold and never ends the day, and `HuntSpec.letting_out()`
+## and `HuntSpec.pursuing()` are the lethal rung. A row without one answers to nothing:
+## everything in act I, a cat does not care who you know.
 func answers_to_heat() -> bool:
 	return _hunts != null
 
@@ -791,8 +794,8 @@ var _pavement_side: Pavement
 ##
 ## **The one mechanic in the catalogue that takes the controls away rather than costing a meter.**
 ## Everything else that stops her is a choice, which is why `validate()` refuses it on anything
-## that ends the day or has a `_pursuit`. See `Stroller.detain()` for the lock itself, which runs out
-## through the ordinary friction rather than stopping her dead.
+## that ends the day or has a `_pursuit`. See `Stroller.detain()` for the lock itself, which
+## runs out through the ordinary friction rather than stopping her dead.
 ##
 ## **The reach is stated over the body rather than over her** (`detain_distance()`): a radius from the
 ## middle has to be bigger than whatever she pushes in front of her, so it silently switches the
@@ -970,9 +973,10 @@ func at_heat(level: int) -> EventDef:
 		notices_within = HEAT_INVESTIGATE_WITHIN
 	if level < hunts_from:
 		return hot.build()
-	# **At its rung's threshold the copy takes the row's hunt** (`_hunts`, `HuntSpec`) and notices her
-	# at the rung's own distance: a vehicle stops on its road, or stands where it is, and lets its men
-	# out (`investigates()`), keeping its cold row's catch; or a man pursues her himself.
+	# **At its rung's threshold the copy takes the row's hunt** (`_hunts`, `HuntSpec`) and
+	# notices her at the rung's own distance: a vehicle stops on its road, or stands where it
+	# is, and lets its men out (`investigates()`), keeping its cold row's catch; or a man
+	# pursues her himself.
 	hot.hunting(_hunts)
 	hot.notice(NoticeSpec.at(notices_within))
 	if _hunts.pursuit() != null:
@@ -1169,11 +1173,12 @@ func validate() -> bool:
 			push_error("event '%s' notices her at %.0fpx: a notice needs a distance" % [_id,
 					each_notice.within()])
 			return false
-	# **A row that answers to the resistance says how it hunts** (`_hunts`), and a `HuntSpec` is built
-	# either letting men out or pursuing, never both and never neither, with its rung and its catch
-	# beside it: the patrol rung never pursues, and only a hunt that pursues ends the day by its own
-	# catch. What no construction rules out is the patrol rung on a row that ends the day itself.
-	# A hunt does exactly one of the two: `HuntSpec.new()` builds neither, which no factory does.
+	# **A row that answers to the resistance says how it hunts** (`_hunts`), and a `HuntSpec` is
+	# built either letting men out or pursuing, never both and never neither, with its rung and
+	# its catch beside it: the patrol rung never pursues, and only a hunt that pursues ends the
+	# day by its own catch. What no construction rules out is the patrol rung on a row that ends
+	# the day itself. A hunt does exactly one of the two: `HuntSpec.new()` builds neither, which
+	# no factory does.
 	if _hunts != null and (_hunts.lets_out() > 0) == (_hunts.pursuit() != null):
 		push_error("event '%s' hunts neither by letting men out nor by pursuing, or both" % _id)
 		return false
@@ -1256,13 +1261,12 @@ func validate() -> bool:
 					% [core_within(), heard_within()]))
 			return false
 		# **A car that drives is a body that moves and a strike that is not the body** (see
-		# `_vehicle`). Each half-set version is a row the rules cannot read: a car with no route stands
-		# for ever, a car with no shape has no body, one that also obstructs would be a moving closure
-		# every planner reads as standing ground, and one that also ends the day would kill twice
-		# over.
-		# A vehicle that investigates notices her (`_notice`) and lets men out: one that also pursued
-		# would be the vehicle chasing her like a running man, one with no reach never notices, and
-		# one with no body has no door to let them out of.
+		# `_vehicle`). Each half-set version is a row the rules cannot read: a car with no route
+		# stands for ever, a car with no shape has no body, one that also obstructs would be a
+		# moving closure every planner reads as standing ground, and one that also ends the day
+		# would kill twice over. A vehicle that investigates notices her (`_notice`) and lets
+		# men out: one that also pursued would be the vehicle chasing her like a running man,
+		# one with no reach never notices, and one with no body has no door to let them out of.
 	if investigates() and (_pursuit or _notice == null or ground_shape() == null):
 		push_error("event '%s' investigates but is not a vehicle with a reach to notice her in, a "
 				% _id + "body to let men out of and men to let out, that stays where it is")

@@ -162,8 +162,8 @@ func _test_the_notice_switches_after_the_teaching_day(t: TestRunner) -> void:
 
 ## The waiting itself, on the copy `EventDef.for_day()` hands a `MAP` placement past the
 ## switch. `EventInstance` never asks a day of anybody — this is where the day answer actually has
-## to arrive: a different `EventDef`, `EventDef.waits_for_her()` already set, never a mutation of the one
-## day 3's own dog reads.
+## to arrive: a different `EventDef`, `EventDef.waits_for_her()` already set, never a mutation
+## of the one day 3's own dog reads.
 func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("charging_dog")
 	if not cold:
@@ -176,8 +176,8 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 	var dog := EventInstance.new()
 	dog.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().hearing(her))
-	# Inside the field (outer radius) but outside the trigger (`EventDef.notice_within()`) — the "on sight"
-	# band alley_robbery's own shape leaves room for.
+	# Inside the field (outer radius) but outside the trigger (`EventDef.notice_within()`) — the
+	# "on sight" band alley_robbery's own shape leaves room for.
 	her.tell(Vector2((hot.heard_within() + hot.notice_within()) * 0.5, 0.0))
 	dog.step(STEP)
 	t.check(dog.is_waiting() and not dog.is_telegraphing(),
@@ -189,9 +189,10 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 			"inside the trigger, it notices her and starts its telegraph")
 	dog.free()
 
-## Day 3's own dog, unchanged: the raw catalogue def, `EventDef.notice_within()` still 0.0, so it is already
-## telegraphing its charge from the first frame, wherever she happens to be standing. The same fact
-## `tests/test_danger.gd` checks from the caret's side; this is the trigger's own.
+## Day 3's own dog, unchanged: the raw catalogue def, `EventDef.notice_within()` still
+## 0.0, so it is already telegraphing its charge from the first frame, wherever she
+## happens to be standing. The same fact `tests/test_danger.gd` checks from the caret's
+## side; this is the trigger's own.
 func _test_day_3_dog_still_charges_the_moment_it_streams_in(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	if not def:

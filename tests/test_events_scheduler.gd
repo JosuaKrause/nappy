@@ -265,11 +265,11 @@ func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 ## The review finding on M100, a mouse in the alley: `alley_mouse` is `MAP`-placed at dawn,
 ## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
 ## a row that started telegraphing the moment it existed dashed and finished off screen before she
-## ever walked into the alley — nothing happened, from where she was standing. `EventDef.waits_for_her()`
-## without `EventDef.pursues()` (`EventDef.waits_for_her()`'s own note, `EventNoticeRun`) is
-## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
-## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
-## isolation.
+## ever walked into the alley — nothing happened, from where she was standing.
+## `EventDef.waits_for_her()` without `EventDef.pursues()` (`EventDef.waits_for_her()`'s own
+## note, `EventNoticeRun`) is the fix: this holds the whole sequence end to end, on a real
+## generated alley, rather than only the crossing axis
+## `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in isolation.
 func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_mouse")
 	t.check(def.notice_within() > 0.0 and not def.pursues(),

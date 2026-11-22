@@ -14,10 +14,10 @@ extends EventBehaviour
 ## chase is the charge once its warning has run with her still inside its radius.
 ##
 ## **A pursuer that waited for her warns inside its one radius, on a clock** (`warns_by_radius()`,
-## inbox #788 in minty-lemur): from the frame it notices her inside `EventDef.notice_within()` it warns for
-## its `notice_time()`; her back outside the radius stops the warning and it waits again from where
-## it stands; still inside once the warning has run, it charges, along a clear line. Walking away
-## from the warning is safe; standing in it is not.
+## inbox #788 in minty-lemur): from the frame it notices her inside `EventDef.notice_within()`
+## it warns for its `notice_time()`; her back outside the radius stops the warning and it waits
+## again from where it stands; still inside once the warning has run, it charges, along a clear
+## line. Walking away from the warning is safe; standing in it is not.
 ##
 ## **And it gives up when it is being outrun**, not when a gap has reached a size: it is faster than
 ## a walk and slower than a run by construction, so sustained running for
@@ -154,10 +154,11 @@ func _stop_warning() -> void:
 	if _barrier_post:
 		_barrier_post.back_at_the_band()
 
-## **It notices her only along a clear line** (leafy-puffin #648), within `EventDef.notice_within()`,
-## and a charger that waits for her only once his warning would stand in her view. It turns to face
-## her on the frame it notices. Noticed already inside the stand-off, which only a wall can do since
-## the notice is wider than the stand-off on every row, the wall held the lunge back too.
+## **It notices her only along a clear line** (leafy-puffin #648), within
+## `EventDef.notice_within()`, and a charger that waits for her only once his warning would
+## stand in her view. It turns to face her on the frame it notices. Noticed already inside the
+## stand-off, which only a wall can do since the notice is wider than the stand-off on every
+## row, the wall held the lunge back too.
 func _notice(toward: Vector2, standoff: float) -> void:
 	var range_to_her := toward.length()
 	if range_to_her > _row.notice_within() or not _figure.clear_line_to(_where.at()) \

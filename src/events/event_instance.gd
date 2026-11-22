@@ -85,8 +85,8 @@ var unreachable: EventUnreachable
 ## question about it — is it waiting, warning, done — reads one value rather than re-deriving the
 ## phase from a dozen flags each frame. Every row has one, a pursuer or not.
 enum Phase {
-	## A row that waits for her (`EventDef.waits_for_her()`) has not noticed her: standing there, at full
-	## strength unless its notice is quiet, not lethal, not moving.
+	## A row that waits for her (`EventDef.waits_for_her()`) has not noticed her: standing
+	## there, at full strength unless its notice is quiet, not lethal, not moving.
 	WAITING,
 	## Its telegraph or notice is running: a row's own telegraph from the frame it exists, or for a
 	## row that waits, its warning from the frame it noticed her (`chase_age() < notice_time()`).
@@ -702,15 +702,15 @@ func _tick(delta: float) -> void:
 		if behaviour.steps_each_tick:
 			behaviour.step(delta)
 
-	# A car that drives keeps its body through a chase (`EventDef.drives()`): cars that drive are the
-	# only bodies that move, and `EventCarDriving` is what keeps them off her.
+	# A car that drives keeps its body through a chase (`EventDef.drives()`): cars that drive
+	# are the only bodies that move, and `EventCarDriving` is what keeps them off her.
 	if _body.is_in_place() and pursues() and not drives() and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# The pursuit's own note on its step says why a moving pursuer may not keep a body
 		# (`EventPursuit`): giving a pursuer one would let a moving wall pin her against a
 		# building on a two-tile pavement.
-		# A hunting `abduction` or raid never gets here: it lets its men out (`EventDef.investigates()`)
-		# and stays parked, solid, while its men come after her.
+		# A hunting `abduction` or raid never gets here: it lets its men out
+		# (`EventDef.investigates()`) and stays parked, solid, while its men come after her.
 		#
 		# **`PursuitSpec.leaves_its_body_standing()` is the other case, and it is not an exception to that rule.** The
 		# body still stops moving with the pursuer; it stops moving at all. A barrier built across
@@ -780,8 +780,8 @@ func start_chat() -> void:
 ## the telemetry, which is the only thing that can tell the two apart from outside.
 var _gave_up := false
 ## **Its notice's clock** (`Warning`, read against `age`): started when it exists for a row with no
-## wait, and when it notices her for one that waits (`EventDef.waits_for_her()`); stopped while it waits.
-## `chase_age()` is its elapsed time, and a stream-out carries its start (`save()`).
+## wait, and when it notices her for one that waits (`EventDef.waits_for_her()`); stopped while
+## it waits. `chase_age()` is its elapsed time, and a stream-out carries its start (`save()`).
 var _notice := Warning.new()
 ## Its charge as it is counted — its warning, its start and the one way it ended — and the one
 ## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
@@ -804,8 +804,8 @@ func counts_a_charge() -> bool:
 	return _def.pursues() or _def.runs_its_own_line()
 
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
-## `pursuit_ended`): the row's `EventDef.charges_counted_as()` where it sets one (the task guard sent
-## from out of her view counts as `task_guard`), otherwise the row's own `id()` — the day-3
+## `pursuit_ended`): the row's `EventDef.charges_counted_as()` where it sets one (the task guard
+## sent from out of her view counts as `task_guard`), otherwise the row's own `id()` — the day-3
 ## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
 func _charger_name() -> String:
 	return _def.charges_counted_as() if _def.charges_counted_as() != "" else _def.id()
@@ -1333,12 +1333,13 @@ func chase_age() -> float:
 	return _notice.elapsed(_age)
 
 ## **Whether this pursuer warns by radius rather than by a clock**: one that waited for her and
-## noticed her by sight (`EventDef.waits_for_her()` on the def it was handed) — the dog that waited, the
-## alley robber and every guard drawn from his row, the hunting roadblock's guard (inbox #788 in
-## minty-lemur). **One radius, and a warning on a clock inside it**: from the frame it notices her
-## inside `EventDef.notice_within()` it warns for its row's `PursuitSpec.warns_for()` (`notice_time()`); back
-## outside the radius before that, the warning stops and it waits again (`EventPursuit`), its
-## clock reset; still inside when it runs out, it charges.
+## noticed her by sight (`EventDef.waits_for_her()` on the def it was handed) — the dog that
+## waited, the alley robber and every guard drawn from his row, the hunting roadblock's guard
+## (inbox #788 in minty-lemur). **One radius, and a warning on a clock inside it**: from the
+## frame it notices her inside `EventDef.notice_within()` it warns for its row's
+## `PursuitSpec.warns_for()` (`notice_time()`); back outside the radius before that, the
+## warning stops and it waits again (`EventPursuit`), its clock reset; still inside when it
+## runs out, it charges.
 ##
 ## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_set_on_her`):
 ## he is sent after her from wherever he stands, often a city away, so a radius he has to be inside
@@ -1621,13 +1622,14 @@ func _bird_distance(bird: EventFlock.Bird, world_position: Vector2) -> float:
 ## corner is not a catch (freckled-goose #544). The reach is unchanged; nothing may stand between
 ## them. Every other lethal row keeps the straight-line distance.
 ##
-## **Cars that drive are the only rows lethal whose row does not end the day** (`ends_the_day()` is false; `EventDef.drives()`): one strikes
-## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
-## else — not behind it, not beside it, not while it stands (`EventCarDriving._is_driving()`). A body touching her is
-## not enough, and not needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the
-## touch, so a car driving its nose into her strikes her rather than standing for her (`EventCarDriving`).
-## Its telegraph is not asked: its warning is a car's, `EventCarDriving.closes_on()`, not a field coming up to
-## strength.
+## **Cars that drive are the only rows lethal whose row does not end the day** (`ends_the_day()`
+## is false; `EventDef.drives()`): one strikes her in front of its nose while it drives its
+## route and she is on the carriageway, and nowhere else — not behind it, not beside it, not
+## while it stands (`EventCarDriving._is_driving()`). A body touching her is not enough, and not
+## needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the touch,
+## so a car driving its nose into her strikes her rather than standing for her
+## (`EventCarDriving`). Its telegraph is not asked: its warning is a car's,
+## `EventCarDriving.closes_on()`, not a field coming up to strength.
 func is_lethal_at(world_position: Vector2) -> bool:
 	if car:
 		return car.strikes(world_position)
@@ -2156,8 +2158,9 @@ class Figure:
 func row() -> EventDef:
 	return _def
 
-## The id of the row this is a live one of (`EventDef.id()`), which the run log's chase lines and the
-## poster walls name it by. `logged_name()` is the name a log line calls the thing she met.
+## The id of the row this is a live one of (`EventDef.id()`), which the run log's chase
+## lines and the poster walls name it by. `logged_name()` is the name a log line calls the
+## thing she met.
 func row_id() -> String:
 	return _def.id()
 

@@ -32,10 +32,11 @@ extends RefCounted
 ## A guard who noticed her is not ticked in this rig, so none is.
 ##
 ## **And whether he stands on her way** (review of #659): on each step before she is within touch
-## reach of the arrow's roadblock, whether she is within his `EventDef.notice_within()` along a clear line
-## (`CityMap.clear_line()`) — her shortest walk passing his notice — and how near she comes to his
-## feet; and, on arrival, whether any walk from the mark reaches touch range without entering his
-## notice (a flood fill of this file's own, tile centres, around closures and standing bodies).
+## reach of the arrow's roadblock, whether she is within his `EventDef.notice_within()` along a
+## clear line (`CityMap.clear_line()`) — her shortest walk passing his notice — and how near she
+## comes to his feet; and, on arrival, whether any walk from the mark reaches touch range
+## without entering his notice (a flood fill of this file's own, tile centres, around closures
+## and standing bodies).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DAY := 13
@@ -242,8 +243,9 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	return result
 
 ## Whether some walk from `from` reaches ground within touch reach of `roadblock` without her
-## centre coming within `guard`'s `EventDef.notice_within()` along a clear line: a flood fill over open,
-## unobstructed walkable tiles, never onto a tile his notice reaches. Yes with either missing.
+## centre coming within `guard`'s `EventDef.notice_within()` along a clear line: a flood
+## fill over open, unobstructed walkable tiles, never onto a tile his notice reaches. Yes
+## with either missing.
 static func _a_way_past_from(map: CityMap, guard: EventInstance, roadblock: EventInstance,
 		from: Vector2) -> bool:
 	if guard == null or roadblock == null:

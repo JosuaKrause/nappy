@@ -185,11 +185,11 @@ func _cold_roadblock() -> EventDef:
 
 ## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
 ## `EventDef.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
-## at or above it its guards leave the post: `EventDef.pursues()` and `ends_the_day()` turn on for the
-## same body, and neither when it may appear nor its population nor its intensity moves, since
-## heat sets what a row does and never when it is allowed to. The pursuit numbers themselves are
-## left to `validate()` and to the generic loop's ordering check, for the reason given on the
-## raid above.
+## at or above it its guards leave the post: `EventDef.pursues()` and `ends_the_day()` turn on
+## for the same body, and neither when it may appear nor its population nor its intensity moves,
+## since heat sets what a row does and never when it is allowed to. The pursuit numbers
+## themselves are left to `validate()` and to the generic loop's ordering check, for the reason
+## given on the raid above.
 func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	var cold := _cold_roadblock()
 	t.check(cold.hunts_for_her(),
@@ -394,10 +394,10 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> vo
 			"and it still leaves once it drives off the end, exactly as a plain mobile row would")
 	instance.free()
 
-## Once she comes inside `EventDef.notice_within()` along a clear line it stops where it is on its road
-## and owes the man it lets out — it never moves toward her; it stands while he is out, still while
-## he walks back after giving up, and once he is back in it drives on along its route the way it was
-## going, never turned round.
+## Once she comes inside `EventDef.notice_within()` along a clear line it stops where it is on
+## its road and owes the man it lets out — it never moves toward her; it stands while he is out,
+## still while he walks back after giving up, and once he is back in it drives on along its
+## route the way it was going, never turned round.
 func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
@@ -646,10 +646,10 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 ## fix is that the chase's own clock picks up where it left off, not only that the flag agrees —
 ## a restored notice that disagreed with the restored `age` would still read `not is_waiting()`
 ## while timing the telegraph and the duration from the wrong moment. `alley_robbery` has had
-## the same `EventDef.waits_for_her()` shape since the mechanic was built, just never in a position to be
-## streamed out mid-chase, since a stationary pursuer's field never moves far enough from where
-## the day planted it — see `_test_every_waiting_row_resumes_the_notice` for the same restore
-## checked against that row rather than only the patrol that surfaced the gap.
+## the same `EventDef.waits_for_her()` shape since the mechanic was built, just never in a
+## position to be streamed out mid-chase, since a stationary pursuer's field never moves far
+## enough from where the day planted it — see `_test_every_waiting_row_resumes_the_notice` for
+## the same restore checked against that row rather than only the patrol that surfaced the gap.
 func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
@@ -729,8 +729,8 @@ func _count_patrols(planned: Array[EventPlan]) -> int:
 	return count
 
 ## `restore()`'s restored notice is not particular to the heated patrol that surfaced the gap —
-## `alley_robbery` carries the identical `EventDef.waits_for_her()` shape cold, with no heat level needed to
-## reach it, and this is the same restore checked against that row instead.
+## `alley_robbery` carries the identical `EventDef.waits_for_her()` shape cold, with no heat
+## level needed to reach it, and this is the same restore checked against that row instead.
 func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	t.check(def.notice_within() > 0.0, "'alley_robbery' is a waiting pursuer, cold")

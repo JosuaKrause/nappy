@@ -976,10 +976,10 @@ func _test_a_pursuer_can_wait(t: TestRunner) -> void:
 ## inbox #748: guards lift a hand, only the robber walks; inbox #788 in minty-lemur: "We should do one radius and
 ## warn inside it for 2s. If the player leaves the radius nothing happens and the warning stops. If
 ## they stay within the charge starts.")* The dog that waited (any day past `RUN_TAUGHT_DAY`), the
-## hunting roadblock's guard and the alley robber notice her inside `EventDef.notice_within()` and warn for
-## their row's `PursuitSpec.warns_for()` (`EventInstance.warns_by_radius()`, `notice_time()`).
-## Each is walked here from the catalogue (`_waiting_pursuers()`), so a row that starts waiting
-## for her is walked without anybody listing it:
+## hunting roadblock's guard and the alley robber notice her inside `EventDef.notice_within()`
+## and warn for their row's `PursuitSpec.warns_for()` (`EventInstance.warns_by_radius()`,
+## `notice_time()`). Each is walked here from the catalogue (`_waiting_pursuers()`), so a row
+## that starts waiting for her is walked without anybody listing it:
 ##
 ## - **Walking in** is warned for the whole of `PursuitSpec.warns_for()`, nothing lethal in it,
 ##   and then charged and caught. The rows that stand do not move while they warn; the robber
@@ -1173,9 +1173,9 @@ func _run_inside_the_warning_rig(t: TestRunner, def: EventDef) -> Dictionary:
 ## Every pursuer that waits for her, in each state it is met in: every catalogue row on every day
 ## of a run (`EventDef.for_day()`, which is where the dog's trigger switches on past
 ## `Tuning.RUN_TAUGHT_DAY`) at every heat (`EventCatalogue.heated()`, which is where the roadblock's
-## guard starts to pursue), kept where it pursues and waits (`EventDef.waits_for_her()`) and `keep` says yes,
-## once per distinct set of the numbers the walk reads. One that sets off beside her or arrives
-## chasing has no trigger to be sited inside.
+## guard starts to pursue), kept where it pursues and waits (`EventDef.waits_for_her()`) and
+## `keep` says yes, once per distinct set of the numbers the walk reads. One that sets off
+## beside her or arrives chasing has no trigger to be sited inside.
 func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	var seen := {}
@@ -1417,11 +1417,11 @@ func _a_waiting_robber(t: TestRunner, map: CityMap, mouth: Dictionary, back: flo
 ## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
 ## her should need a clear line: "yes noticing needs a clear line".)* He waits in the alley 40px
 ## back from the mouth; she stands on the sidewalk round the building's corner, well inside his
-## `EventDef.notice_within()` of 180px in a straight line but with the building between them, and he goes on
-## waiting and is drawn looking the way he was sited, not tracking her round the corner. She steps
-## in front of the mouth, nearer still, the line between them clear, and on that frame he notices
-## her and is drawn facing her. What is checked is `drawn_heading()`, the heading his picture is
-## chosen from, not only his own `_heading`.
+## `EventDef.notice_within()` of 180px in a straight line but with the building between them,
+## and he goes on waiting and is drawn looking the way he was sited, not tracking her round the
+## corner. She steps in front of the mouth, nearer still, the line between them clear, and on
+## that frame he notices her and is drawn facing her. What is checked is `drawn_heading()`, the
+## heading his picture is chosen from, not only his own `_heading`.
 func _test_the_robber_does_not_notice_her_through_a_wall(t: TestRunner) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)

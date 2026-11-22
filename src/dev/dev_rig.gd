@@ -257,22 +257,22 @@ static func for_spawn_target(target: String, map: CityMap, events: EventManager,
 ##
 ## **A row the director sites while she walks has no position at dawn** — `cat_dash`, `cyclist`,
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
-## the day plans and sites from her walk (`EventDef.is_sited_from_her_walk()`) — so `event:<id>` cannot
-## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
-## **refuses by name**: the row and the reason are written to the run log through the run's trace
-## (`trace.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
+## the day plans and sites from her walk (`EventDef.is_sited_from_her_walk()`) — so `event:<id>`
+## cannot find one. Rather than silently starting her on the doorstep as if nothing were wrong,
+## this **refuses by name**: the row and the reason are written to the run log through the run's
+## trace (`trace.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
 ## judged from and the terminal that launched it show the same failure — `push_warning` rather
-## than `push_error` because a test that feeds this bad input on purpose has to reach a code path
-## that reports it by return value rather than failing the run, the same reporting weight the
-## neighbouring unrecognised-target case already carries. `--follow <id>` tracks such a row once
-## it exists.
+## than `push_error` because a test that feeds this bad input on purpose has to reach a code
+## path that reports it by return value rather than failing the run, the same reporting weight
+## the neighbouring unrecognised-target case already carries. `--follow <id>` tracks such a row
+## once it exists.
 ##
-## **A row that waits for her** (`EventDef.waits_for_her()` — a `pigeon_flock`, an `alley_robbery`) is stood
-## just *outside* its own trigger rather than inside it: the offset below is measured against
-## whichever is larger of its field's reach (`EventPlan.heard_within()`) and its notice
-## (`EventPlan.notice_within()`), plus a tile's width of clearance,
-## so a rig can photograph the silence before it notices her rather than always finding it already
-## noticing.
+## **A row that waits for her** (`EventDef.waits_for_her()` — a `pigeon_flock`, an
+## `alley_robbery`) is stood just *outside* its own trigger rather than inside it: the offset
+## below is measured against whichever is larger of its field's reach
+## (`EventPlan.heard_within()`) and its notice (`EventPlan.notice_within()`), plus a tile's
+## width of clearance, so a rig can photograph the silence before it notices her rather than
+## always finding it already noticing.
 ##
 ## **Every unit of the day is drawn first** (`EventManager.draw_the_ground_round()`): a unit draws
 ## as she comes near it, so a row the target names may stand in a unit no walk has reached yet.
@@ -319,8 +319,8 @@ static func first_event_position(events: EventManager, map: CityMap, trace: RunT
 ##
 ## `scale` defaults to 0.6 — comfortably clear of an ordinary event's own `radius` without
 ## wandering off toward the next thing down the street. `first_event_position()` passes `1.0` for
-## a row that waits (`EventDef.waits_for_her()`), where `radius` already carries its own margin and the step
-## has to reach the full distance rather than a fraction of it.
+## a row that waits (`EventDef.waits_for_her()`), where `radius` already carries its own margin
+## and the step has to reach the full distance rather than a fraction of it.
 static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: float = 0.6) -> Vector2:
 	var vertical := BodyStance.lies_vertically_at(map, at)
 	return Vector2(0.0, radius * scale) if vertical else Vector2(radius * scale, 0.0)

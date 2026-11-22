@@ -158,9 +158,10 @@ const COLUMN_SPACING := 128.0
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
-# *that* it answers to the resistance with `EventDef.answers_to_heat()`; these say what answering costs.
-# Keeping the numbers here rather than on the rows is what stops heat becoming a per-row difficulty
-# dial — there is one ladder and every row that climbs it climbs the same one.
+# *that* it answers to the resistance with `EventDef.answers_to_heat()`; these say what
+# answering costs. Keeping the numbers here rather than on the rows is what stops heat
+# becoming a per-row difficulty dial — there is one ladder and every row that climbs it climbs
+# the same one.
 #
 # **All of it is spent between progress 0 and `RESISTANCE_GOAL`**, so the escalation is finished at
 # the moment the subquest qualifies rather than trailing past it.
