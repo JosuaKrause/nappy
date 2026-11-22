@@ -664,10 +664,8 @@ func comes_again_after() -> float:
 ## **The first day the row may be used as a seal**, which ordinary availability (`available_on()`)
 ## cannot say for a `SCRIPTED` row: its `scripted_day` is a day nobody plays, `barricade`'s own is
 ## 0, so the ordinary scheduler never rolls it, on purpose. A `SCRIPTED` row's own day is the
-## first day of its act (`act_tag`), `act_tag` being the act the row belongs to narratively and
-## the rule for every other row ("`act_tag` against the act its `first_day` falls in"), so reading
-## it the other way round for a `SCRIPTED` one is the smallest way to give it a day at all. Every
-## other row's is its `first_day`.
+## first day of its act (`act_tag`, the act the row belongs to narratively), the smallest way to
+## give it a day at all. Every other row's is its `first_day`.
 func own_first_day() -> int:
 	if kind == GameEnums.EventKind.SCRIPTED:
 		var index := clampi(act_tag - 1, 0, Tuning.ACT_START_DAYS.size() - 1)
@@ -891,8 +889,8 @@ var aftermath: Aftermath
 
 ## Which act the row belongs to, narratively. Only `own_first_day()` reads it, for a `SCRIPTED` row,
 ## whose own day is the first day of its act (`first_day` decides when any other row can appear);
-## `tests/test_acts.gd` asserts every row's `act_tag` against the act its
-## `first_day` falls in. It is where a per-act palette or sound would key off.
+## the act of any other row has no reader. `tests/test_acts.gd` holds a scripted row's act against
+## the day it fires on. It is where a per-act palette or sound would key off.
 var act_tag: int
 
 ## What this row does to a route that meets it, in the words `docs/CITY.md` fixes.
