@@ -6,7 +6,7 @@ agents in turn.
 
 **What was built.** Three values in `src/events/parts/` (data), each held by the row with `use_<part>()` and
 `<part>()` and shared by its copies. `LethalSpec` says whether contact ends her day and the reach it is measured from
-(`none()`, `at_its_core()`, `within(reach)`, `catching_within(reach)`); it replaces the row's `hard_fail` and
+(`none()`, `at_its_core()`, `within(reach)`); it replaces the row's `hard_fail` and
 `catch_reach` and the pursuit's own `catch_reach`, so a hunting copy's catch is stored once, as the hunt's
 `LethalSpec` (`HuntSpec.pursuing(chase, catches)`). `HoldSpec` holds a hold, the checkpoint guard's detain and the chatting mother's
 conversation alike: how long, how far past its edge, and whether it holds her again; `EventHold` is handed it. `WarningSpec` holds the warning: how long before,
