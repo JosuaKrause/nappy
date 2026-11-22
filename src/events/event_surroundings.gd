@@ -8,9 +8,10 @@ extends RefCounted
 ## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
 ## handed the same one (`EventWorld.surroundings()`). An event keeps what it read of it when it was
 ## set up, so a later hand-in reaches only the events made after it; what an event asks each time
-## follows one: where a protest points (`pointing_protests_with()`) and where she is, through the
-## one `WhereSheIs`. The game hands it nothing after the manager is set up but where a protest
-## points, since the resistance that answers is built over the events.
+## follows a later hand-in, which is only where a protest points (`pointing_protests_with()`). It
+## hears where she is through a handle on the one `WhereSheIs`, which the manager tells each tick.
+## The game hands it nothing after the manager is set up but where a protest points, since the
+## resistance that answers is built over the events.
 ##
 ## **Built by chaining**: `EventSurroundings.new().on(map).hearing(where)` and so on, each call
 ## returning the same object. It is the one place each default is stated: what is not handed is
@@ -51,8 +52,9 @@ func moving_by(navigator: Navigator) -> EventSurroundings:
 	return self
 
 ## Where she is (`WhereSheIs`), in place of the one it makes itself: the one its manager tells
-## once a physics tick.
+## once a physics tick. Never null: hand none to keep its own.
 func hearing(where: WhereSheIs) -> EventSurroundings:
+	assert(where != null, "hearing() is handed a WhereSheIs, or none to keep its own")
 	_where_she_is = where
 	return self
 
