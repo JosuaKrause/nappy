@@ -570,6 +570,79 @@ else
     echo "ok   reject_route_with_screenshot leaves a plain --screenshot alone"
 fi
 
+# --walk, --flee, --press and --tap move her only where a screenshot rig carries them
+# (RunConfig.screenshot_rig()): refused with no launch when nothing does, accepted when something does.
+for input in "--walk 3n" "--flee" "--press pause 1" "--tap 1 1"; do
+    # shellcheck disable=SC2086
+    set -- $input
+    checks=$(( checks + 1 ))
+    if reject_input_flag_without_carrier live --seed 1 "$@" 2>/dev/null; then
+        echo "FAIL reject_input_flag_without_carrier: $1 with no rig was accepted" >&2
+        failures=$(( failures + 1 ))
+    else
+        echo "ok   reject_input_flag_without_carrier refuses $1 with no rig"
+    fi
+    for carrier in "--screenshot out.png" "--frame-trace --after 25" "--frame-record --after 25"; do
+        checks=$(( checks + 1 ))
+        # shellcheck disable=SC2086
+        if ! reject_input_flag_without_carrier live --seed 1 "$@" $carrier 2>/dev/null; then
+            echo "FAIL reject_input_flag_without_carrier: $1 with $carrier was refused" >&2
+            failures=$(( failures + 1 ))
+        fi
+    done
+done
+checks=$(( checks + 1 ))
+if reject_input_flag_without_carrier live --walk 3n --frame-record 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: --walk beside a --frame-record with no --after was accepted" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_input_flag_without_carrier wants --after beside --frame-record"
+fi
+checks=$(( checks + 1 ))
+if reject_input_flag_without_carrier recording --walk 3n 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: a recording with --walk and no --after was accepted" >&2
+    failures=$(( failures + 1 ))
+elif ! reject_input_flag_without_carrier recording --walk 3n --after 5 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: a recording with --walk and --after was refused" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_input_flag_without_carrier takes a recording bounded by --after as a carrier"
+fi
+checks=$(( checks + 1 ))
+if ! reject_input_flag_without_carrier live --seed 1 --day 3 2>/dev/null; then
+    echo "FAIL reject_input_flag_without_carrier: a line with no input flag was refused" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_input_flag_without_carrier leaves a line with no input flag alone"
+fi
+
+# A recording of a recipe with --walk gets the recipe's own refusal, not the carrier message.
+out="$(./tools/record.sh --recipe "$work_dir/none.json" --walk 3n 2>&1)"
+checks=$(( checks + 1 ))
+if grep -q "nothing to carry it" <<<"$out"; then
+    echo "FAIL record.sh --recipe --walk: the carrier message was given for a recipe line" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   record.sh --recipe --walk leaves the refusal to the recipe's own checks"
+fi
+
+rm -f "$GODOT_MARKER"
+out="$(./tools/run.sh --no-save --seed 1 --walk 3n 2>&1)"
+status=$?
+checks=$(( checks + 1 ))
+if [[ $status -eq 0 ]]; then
+    echo "FAIL run.sh --walk with no rig: expected a non-zero exit, got 0" >&2
+    failures=$(( failures + 1 ))
+elif ! grep -q -- "--screenshot" <<<"$out"; then
+    echo "FAIL run.sh --walk with no rig: the message did not name what carries it" >&2
+    failures=$(( failures + 1 ))
+elif [[ -f "$GODOT_MARKER" ]]; then
+    echo "FAIL run.sh --walk with no rig: launched Godot" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   run.sh --walk with no rig is refused before any launch"
+fi
+
 rm -f "$GODOT_MARKER"
 out="$(./tools/shot.sh "$work_dir/shot-route.png" 1 --route mark 2>&1)"
 status=$?

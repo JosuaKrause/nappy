@@ -144,6 +144,35 @@ reject_route_with_screenshot() {
     return 0
 }
 
+# `--walk`, `--flee`, `--press` and `--tap` are pressed by AutoScreenshot (src/dev/auto_screenshot.gd),
+# which the game builds only for a run it can drive: a `--screenshot <path>`, or a `--frame-trace`,
+# a `--frame-record` or a movie recording bounded by `--after` (`RunConfig.screenshot_rig()`). On
+# any other command line they are accepted and move nothing, so such a line is refused here, before
+# Godot is launched, rather than run as a standing-still game. $1 is "recording" when the caller
+# is itself the movie writer (tools/record.sh), anything else when it is not; the rest is the
+# forwarded dev flags.
+reject_input_flag_without_carrier() {
+    local recording="$1" tok input="" carrier_flag="" after=""
+    shift
+    for tok in "$@"; do
+        case "$tok" in
+            --walk|--flee|--press|--tap) [[ -z "$input" ]] && input="$tok" ;;
+            --screenshot) return 0 ;;
+            --frame-trace|--frame-record) carrier_flag=1 ;;
+            --after) after=1 ;;
+        esac
+    done
+    [[ -z "$input" ]] && return 0
+    if [[ -n "$after" && ( -n "$carrier_flag" || "$recording" == recording ) ]]; then
+        return 0
+    fi
+    echo "$input has nothing to carry it: it moves her only in a run that has a screenshot rig, and" >&2
+    echo "this one has none, so she would stand on the doorstep for the whole run. Add" >&2
+    echo "--screenshot <path>, or --frame-trace or --frame-record together with --after <seconds>" >&2
+    echo "(a movie recording from tools/record.sh needs --after <seconds> too)." >&2
+    return 1
+}
+
 # ------------------------------------------------------------------ a rig's own lockdown ---
 # M195: a rig's window takes no focus, hears no stray key, and always closes. `rig_flag_present()`
 # and `rig_kill_after_seconds()` below are the shell half of the same three-defence lockdown
@@ -192,8 +221,7 @@ _rig_quit_constant() {
 }
 
 # `src/autoload/tuning.gd`'s own DAY_LENGTH_SECONDS -- read live, the day-length fallback for a
-# rig with no --after and no --day-length of its own (a --route, or a bare --walk/--flee/--press/
-# --tap with none of --screenshot, --frame-trace or --frame-record beside it), matching what
+# rig with no --after and no --day-length of its own (a --route), matching what
 # `RunConfig.rig_quit_seconds()` falls back to on the GDScript side (that side additionally shortens
 # it for a curfew day; this side stays with the longer, ordinary-day number, which can only ever
 # make the external kill wait a little longer than the in-game timer, never race it).

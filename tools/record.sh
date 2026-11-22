@@ -144,6 +144,13 @@ if ! validate_dev_flags "${FULL_FLAGS[@]}"; then
     exit 1
 fi
 
+# A recipe line is not refused here: the recipe owns --walk and its preflight below says so.
+if [[ -z "$RECIPE" ]] && ! reject_input_flag_without_carrier recording "${FULL_FLAGS[@]}"; then
+    echo >&2
+    usage >&2
+    exit 1
+fi
+
 # Everything that follows does real work (an atlas rebuild, a Godot launch) -- checked only once
 # the flags themselves are known good, so a typo is rejected before any of it runs.
 if [[ ! -x "$GODOT" ]]; then
