@@ -117,7 +117,7 @@ func _assert_distances_clear_every_outer_radius(rows: Array[EventDef]) -> bool:
 	for def in rows:
 		if def.heard_within() >= last:
 			push_error(("tools/cost_table.gd: %s has outer_radius %.1fpx, at or past the table's "
-					% [def.id, def.heard_within()])
+					% [def.id(), def.heard_within()])
 					+ "own last distance %.1fpx — widen DISTANCES so the last column still reads "
 					% last + "the bare decay for it")
 			ok = false
@@ -250,16 +250,16 @@ func _build_tables(rows: Array[EventDef]) -> Array[TableModel]:
 	pass_asleep.headers = PASS_HEADERS
 
 	for def in rows:
-		geometry.order.append(def.id)
-		geometry.rows[def.id] = _geometry_row(def)
-		distance_awake.order.append(def.id)
-		distance_awake.rows[def.id] = _distance_row(def, 1.0)
-		distance_asleep.order.append(def.id)
-		distance_asleep.rows[def.id] = _distance_row(def, Baby.SLEEPING_SENSITIVITY)
-		pass_awake.order.append(def.id)
-		pass_awake.rows[def.id] = _pass_row(def, 1.0)
-		pass_asleep.order.append(def.id)
-		pass_asleep.rows[def.id] = _pass_row(def, Baby.SLEEPING_SENSITIVITY)
+		geometry.order.append(def.id())
+		geometry.rows[def.id()] = _geometry_row(def)
+		distance_awake.order.append(def.id())
+		distance_awake.rows[def.id()] = _distance_row(def, 1.0)
+		distance_asleep.order.append(def.id())
+		distance_asleep.rows[def.id()] = _distance_row(def, Baby.SLEEPING_SENSITIVITY)
+		pass_awake.order.append(def.id())
+		pass_awake.rows[def.id()] = _pass_row(def, 1.0)
+		pass_asleep.order.append(def.id())
+		pass_asleep.rows[def.id()] = _pass_row(def, Baby.SLEEPING_SENSITIVITY)
 
 	return [geometry, distance_awake, distance_asleep, pass_awake, pass_asleep]
 
@@ -351,8 +351,8 @@ func _header_text() -> String:
 			"paragraphs below say otherwise. `M174Pass." +
 			"pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather " +
 			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
-			"code. Dashed for a row that pursues or waits (`EventDef.pursuit` or " +
-			"`EventDef.notice` set: alley_mouse, " +
+			"code. Dashed for a row that pursues or waits (`EventDef.pursues()` or " +
+			"`EventDef.waits_for_her()`: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +
 			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase, " +
 			"masked_pursuer) — its notice " +

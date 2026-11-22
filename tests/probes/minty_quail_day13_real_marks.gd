@@ -152,7 +152,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 	var paths := director._paths_reach_between(at, 0.0, reaches.back())
 	var ring := -1.0
 	for reach in reaches:
-		if director._a_roadblock_the_day_placed(def.id, paths, reach):
+		if director._a_roadblock_the_day_placed(def.id(), paths, reach):
 			ring = reach
 			break
 	var before := {}

@@ -335,7 +335,7 @@ func _test_an_area_cleared_of_its_rows_draws_first(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
 	var drew := _the_day_drawn_whole()
 	var not_ambient := func(one: _Drew, k: int) -> bool:
-		return EventCatalogue.by_id(one.ids[k]).kind != GameEnums.EventKind.AMBIENT
+		return not EventCatalogue.by_id(one.ids[k]).is_ambient()
 	var far_row := _a_far_row(drew, not_ambient, _home())
 	t.check(not far_row.is_empty(), "the day drawn whole holds a row far from her door")
 	if far_row.is_empty():

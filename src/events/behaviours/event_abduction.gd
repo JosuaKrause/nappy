@@ -44,7 +44,7 @@ func walked_for() -> float:
 ##
 ## Overrides EventBehaviour.step.
 func step(_delta: float) -> void:
-	if (_row.pursuit != null or _row.investigates()) and not _figure.is_waiting():
+	if (_row.pursues() or _row.investigates()) and not _figure.is_waiting():
 		_taken_at = INF
 		return
 	if _taken_at == INF:
@@ -56,14 +56,14 @@ func step(_delta: float) -> void:
 	if _logged or _figure.age() - _taken_at < _spec.taken_over():
 		return
 	_logged = true
-	_trace.note("taken", "'%s' takes a bystander" % _row.id)
+	_trace.note("taken", "'%s' takes a bystander" % _row.id())
 
 ## How long the van has before it is simply gone, or `INF` where the question does not yet apply:
 ## a row still waiting has no expiry of its own.
 func _time_left() -> float:
-	if _figure.is_waiting() or _row.duration <= 0.0:
+	if _figure.is_waiting() or _row.lasts_for() <= 0.0:
 		return INF
-	return (_figure.notice_time() + _row.duration) - _figure.chase_age()
+	return (_figure.notice_time() + _row.lasts_for()) - _figure.chase_age()
 
 ## The take's start as seconds before the event's age (`INF` for none), and whether it was logged.
 ##

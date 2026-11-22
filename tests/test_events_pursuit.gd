@@ -272,10 +272,10 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> voi
 	var robbers := ["alley_robbery", "robber_giving_chase", "policeman_giving_chase",
 			"guardsman_giving_chase"]
 	for def in EventCatalogue.all():
-		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
-		if def.pursues() and not robbers.has(def.id):
+		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id())
+		if def.pursues() and not robbers.has(def.id()):
 			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
-					"'%s' lunges from its own catch" % def.id)
+					"'%s' lunges from its own catch" % def.id())
 	# A `PursuitSpec.lunge_reach()` inside the catch would stand the pursuer off closer than
 	# `PURSUIT_REACTION` of its own approach from taking her: 10px on a 26px catch is an 88px
 	# stand-off, 62px of room, 0.48s at 130px/s. `validate()` refuses it on load (asked here
@@ -283,13 +283,13 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> voi
 	# lunge exactly at the catch is allowed.
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var lunging := robbery.redraft()
-	lunging.pursuit(robbery.pursuit.lunging_from(10.0))
+	lunging.pursuit(robbery.pursuit().lunging_from(10.0))
 	var too_short := lunging.build()
 	t.check(too_short.lunge_is_inside_the_catch(), "a 10px lunge on a 26px catch is inside it")
-	lunging.pursuit(robbery.pursuit.lunging_from(robbery.lethal_reach()))
+	lunging.pursuit(robbery.pursuit().lunging_from(robbery.lethal_reach()))
 	var at_the_catch := lunging.build()
 	t.check(not at_the_catch.lunge_is_inside_the_catch(), "a lunge exactly at the catch is not")
-	lunging.pursuit(robbery.pursuit.lunging_from(0.0))
+	lunging.pursuit(robbery.pursuit().lunging_from(0.0))
 	var from_nowhere := lunging.build()
 	t.check(not from_nowhere.lunge_is_inside_the_catch(), "and 0 means the catch")
 
@@ -320,7 +320,7 @@ func _test_a_pursuer_leaves_room_to_answer(t: TestRunner) -> void:
 		pursuers += 1
 		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 		t.check(standoff > def.core_within(),
-				"'%s' holds off outside the radius that ends the day" % def.id)
+				"'%s' holds off outside the radius that ends the day" % def.id())
 		# One that waits for her charges on its warning's clock, not at its stand-off; it is walked
 		# in `_test_every_waiting_charger_warns_by_radius`.
 		if def.notice_within() > 0.0:
@@ -330,16 +330,16 @@ func _test_a_pursuer_leaves_room_to_answer(t: TestRunner) -> void:
 		# three times: it keeps its distance while it is only telegraphing, however far she walks in.
 		var walked_in := _chase_rig(def, -Tuning.WALK_SPEED)
 		t.close_to(walked_in["at_the_lunge"], standoff,
-				"walking into '%s' still leaves the whole stand-off when it goes lethal" % def.id,
+				"walking into '%s' still leaves the whole stand-off when it goes lethal" % def.id(),
 				8.0)
 		t.check(not walked_in["lethal_while_telegraphing"],
-				"and nothing '%s' does during its own telegraph can end the day" % def.id)
+				"and nothing '%s' does during its own telegraph can end the day" % def.id())
 
 		# Away from it at a walk. Walking has to lose, or the mechanic teaches nothing.
 		var walked_off := _chase_rig(def, Tuning.WALK_SPEED)
-		t.check(walked_off["caught"], "walking away from '%s' is not enough" % def.id)
+		t.check(walked_off["caught"], "walking away from '%s' is not enough" % def.id())
 		t.check(not walked_off["gave_up"],
-				"so '%s' never has to give up on somebody walking" % def.id)
+				"so '%s' never has to give up on somebody walking" % def.id())
 
 		# Away from it at a run. Running has to win, and it has to *end* it: the price of the right
 		# answer is fourteen points a second, so a chase that runs its full clock however well it is
@@ -347,16 +347,16 @@ func _test_a_pursuer_leaves_room_to_answer(t: TestRunner) -> void:
 		# nothing slower than the pursuer can open the gap and nothing faster can fail to — which is
 		# why `PURSUIT_SHAKEN_OFF` is stated as a rate and there is no distance to get wrong.
 		var ran := _chase_rig(def, Tuning.RUN_SPEED)
-		t.check(not ran["caught"], "running away from '%s' works" % def.id)
+		t.check(not ran["caught"], "running away from '%s' works" % def.id())
 		t.check(ran["gave_up"],
-				"and '%s' breaks off rather than tailing her for the whole chase" % def.id)
-		t.check(ran["ended_at"] < def.telegraphs_for() + def.duration,
+				"and '%s' breaks off rather than tailing her for the whole chase" % def.id())
+		t.check(ran["ended_at"] < def.telegraphs_for() + def.lasts_for(),
 				"which ends '%s' early: %.1fs against a %.1fs chase"
-				% [def.id, ran["ended_at"], def.telegraphs_for() + def.duration])
+				% [def.id(), ran["ended_at"], def.telegraphs_for() + def.lasts_for()])
 		var cost: float = ran["ended_at"] * Baby.EXCITEMENT_FROM_RUNNING
 		t.check(cost < Tuning.METER_MAX * 0.6,
 				"and running from '%s' costs %.0f of a %.0f meter rather than the day"
-				% [def.id, cost, Tuning.METER_MAX])
+				% [def.id(), cost, Tuning.METER_MAX])
 	t.check(pursuers >= 2, "there is more than one kind of thing that comes after her")
 
 ## **The answer is priced by how soon it is given, and the rig has to turn round to find out.**
@@ -394,7 +394,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t: TestRunner) -> void:
 			continue
 		var at_once := _answer_rig(def, 0.0)
 		t.check(not at_once["caught"],
-				"'%s' can be answered at the lunge (closest %.0fpx)" % [def.id, at_once["closest"]])
+				"'%s' can be answered at the lunge (closest %.0fpx)" % [def.id(), at_once["closest"]])
 		t.check(at_once["closest"] > def.core_within(),
 				"and answering it clears the %.0fpx that ends the day by %.0fpx"
 				% [def.core_within(), at_once["closest"] - def.core_within()])
@@ -404,7 +404,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t: TestRunner) -> void:
 		var turn := (Tuning.WALK_SPEED + Tuning.RUN_SPEED) / Tuning.ACCELERATION
 		t.check(at_once["running"] < Tuning.PURSUIT_SHAKEN_OFF + turn + 0.5,
 				"and it costs %.1fs of running rather than the %.1fs chase"
-				% [at_once["running"], def.duration])
+				% [at_once["running"], def.lasts_for()])
 		t.check(at_once["running"] * Baby.EXCITEMENT_FROM_RUNNING < Tuning.METER_MAX * 0.3,
 				"which is %.0f of a %.0f meter"
 				% [at_once["running"] * Baby.EXCITEMENT_FROM_RUNNING, Tuning.METER_MAX])
@@ -416,11 +416,11 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t: TestRunner) -> void:
 		var early := _chase_rig(def, Tuning.RUN_SPEED)
 		t.check((early["gave_up"] or (def.notice_within() > 0.0 and early["waiting"]))
 				and not early["caught"],
-				"running from '%s' the moment it appears shakes it off" % def.id)
+				"running from '%s' the moment it appears shakes it off" % def.id())
 
 		# And doing nothing still loses, which is the whole reason any of this is a mechanic.
 		t.check(_answer_rig(def, 1.0)["caught"],
-				"'%s' still catches somebody who leaves it far too long" % def.id)
+				"'%s' still catches somebody who leaves it far too long" % def.id())
 
 		# Reported, not asserted: the widest reaction at the lunge that still survives. See above.
 		var window := 0.0
@@ -430,7 +430,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t: TestRunner) -> void:
 				break
 			window = reaction
 		t.check(window > 0.0,
-				"the window to answer '%s' at the lunge itself is %.2fs" % [def.id, window])
+				"the window to answer '%s' at the lunge itself is %.2fs" % [def.id(), window])
 
 ## **A pursuer has to be sited where it actually closes on her rather than backing away.**
 ##
@@ -453,17 +453,17 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t: TestRunner) -> void:
 		var floor_lead := SpawnSiting.least_distance()
 		t.check(standoff < floor_lead,
 				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
-				% [def.id, standoff, floor_lead])
+				% [def.id(), standoff, floor_lead])
 		if def.notice_within() > 0.0:
 			# A place, not a moment: the director never sites it, so what has to hold is that its
 			# trigger is outside its stand-off — which `validate_pursuit` also checks, from the
 			# other side and for a different reason.
 			t.check(def.notice_within() > standoff,
-					"'%s' notices her before it has stopped coming" % def.id)
+					"'%s' notices her before it has stopped coming" % def.id())
 			continue
 		t.check(_sited_at(def) >= standoff,
 				"'%s' is sited at %.0fpx, at or beyond the %.0fpx it stops at, so it closes rather "
-				% [def.id, _sited_at(def), standoff] + "than backing away through its own telegraph")
+				% [def.id(), _sited_at(def), standoff] + "than backing away through its own telegraph")
 
 ## **A row declared lethal has to actually get the chance to be lethal.** *(2026-09-07: "also a
 ## biker hit should be lethal.")* `cyclist` ends the day (`ends_the_day()`), but
@@ -499,7 +499,7 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t:
 				break
 		t.check(was_lethal,
 				"'%s' is declared lethal and its warning is over by the time it reaches her"
-				% def.id)
+				% def.id())
 		for instance in arrived:
 			instance.free()
 	t.check(checked > 0, "there is at least one lethal TOWARD_PLAYER row to check ('cyclist')")
@@ -681,7 +681,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	var walked := 0
 	for encounter in M207Lead.encounters():
 		var row: EventDef = encounter["def"]
-		if row.id != "cyclist":
+		if row.id() != "cyclist":
 			continue
 		walked += 1
 		var floor_s := row.minimum_telegraph()
@@ -738,7 +738,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t: TestRunner) -> void:
 	var edge := DangerEdge.new()
 	for encounter in M207Lead.gold_encounters():
 		var def: EventDef = encounter["def"]
-		if def.id != "charging_dog":
+		if def.id() != "charging_dog":
 			continue
 		for answer: M207Lead.Answer in M207Lead.GOLD_ANSWERS:
 			var how := "%s, answer %d" % [encounter["how"], answer]
@@ -776,12 +776,12 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void
 		t.check(def.warns_before_it_exists() and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"'%s' is warned of before it exists and arrives chasing" % id)
 		t.check(is_equal_approx(def.warned_for(), dog.warned_for())
-				and is_equal_approx(def.duration, dog.duration),
+				and is_equal_approx(def.lasts_for(), dog.lasts_for()),
 				"'%s' reads the dog's own %.1fs badge and %.1fs chase (%.1f, %.1f)"
-				% [id, dog.warned_for(), dog.duration, def.warned_for(), def.duration])
+				% [id, dog.warned_for(), dog.lasts_for(), def.warned_for(), def.lasts_for()])
 		for encounter in M207Lead.gold_encounters():
 			var encountered: EventDef = encounter["def"]
-			if encountered.id != id or encounter["heading"] != Vector2.UP:
+			if encountered.id() != id or encounter["heading"] != Vector2.UP:
 				continue
 			for answer: M207Lead.Answer in M207Lead.ANSWERS:
 				var met := M207Lead.gold(encounter, answer, edge)
@@ -807,7 +807,7 @@ func _test_every_pursuer_sent_from_off_screen_is_warned_first(t: TestRunner) -> 
 		var warned := EventSpawner.as_warned(def)
 		t.check(warned.warns_before_it_exists() and warned.warned_for() <= Tuning.WARNING_ALONE_MAX,
 				"'%s' is warned first, its badge alone %.2fs, at most %.2fs"
-				% [def.id, warned.warned_for(), Tuning.WARNING_ALONE_MAX])
+				% [def.id(), warned.warned_for(), Tuning.WARNING_ALONE_MAX])
 	t.check(sent >= 3, "the dog and the resistance's two are among them (%d)" % sent)
 
 ## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
@@ -966,7 +966,7 @@ func _test_a_pursuer_can_wait(t: TestRunner) -> void:
 
 	# Standing there, inside his radius, he walks up to her stand-off and charges once his warning
 	# has run (`PursuitSpec.warns_for()`).
-	_advance(instance, def.pursuit.warns_for() + 0.1)
+	_advance(instance, def.pursuit().warns_for() + 0.1)
 	t.check(not instance.is_telegraphing() and not instance.is_waiting(),
 			"then, his warning having run with her still inside his radius, he charges")
 	instance.free()
@@ -976,10 +976,10 @@ func _test_a_pursuer_can_wait(t: TestRunner) -> void:
 ## inbox #748: guards lift a hand, only the robber walks; inbox #788 in minty-lemur: "We should do one radius and
 ## warn inside it for 2s. If the player leaves the radius nothing happens and the warning stops. If
 ## they stay within the charge starts.")* The dog that waited (any day past `RUN_TAUGHT_DAY`), the
-## hunting roadblock's guard and the alley robber notice her inside `EventDef.notice` and warn for
-## their row's `PursuitSpec.warns_for()` (`EventInstance.warns_by_radius()`, `notice_time()`).
-## Each is walked here from the catalogue (`_waiting_pursuers()`), so a row that starts waiting
-## for her is walked without anybody listing it:
+## hunting roadblock's guard and the alley robber notice her inside `EventDef.notice_within()`
+## and warn for their row's `PursuitSpec.warns_for()` (`EventInstance.warns_by_radius()`,
+## `notice_time()`). Each is walked here from the catalogue (`_waiting_pursuers()`), so a row
+## that starts waiting for her is walked without anybody listing it:
 ##
 ## - **Walking in** is warned for the whole of `PursuitSpec.warns_for()`, nothing lethal in it,
 ##   and then charged and caught. The rows that stand do not move while they warn; the robber
@@ -998,31 +998,31 @@ func _test_every_waiting_charger_warns_by_radius(t: TestRunner) -> void:
 	var rows := _waiting_pursuers(func(_def: EventDef) -> bool: return true)
 	var ids := {}
 	for def in rows:
-		ids[def.id] = true
+		ids[def.id()] = true
 	t.check(ids.has("charging_dog") and ids.has("roadblock") and ids.has("alley_robbery"),
 			"the waiting dog, the hunting roadblock's guard and the alley robber are walked (%s)"
 			% ", ".join(ids.keys()))
 	for def in rows:
-		var walks := def.pursuit.walk_speed() > 0.0
-		var name := "'%s' (%s)" % [def.id, "walks" if walks else "stands"]
-		t.check(def.pursuit.warns_for() >= Tuning.OFFSCREEN_WARNING_MIN,
-				"%s warns for %.1fs before it charges" % [name, def.pursuit.warns_for()])
+		var walks := def.pursuit().walk_speed() > 0.0
+		var name := "'%s' (%s)" % [def.id(), "walks" if walks else "stands"]
+		t.check(def.pursuit().warns_for() >= Tuning.OFFSCREEN_WARNING_MIN,
+				"%s warns for %.1fs before it charges" % [name, def.pursuit().warns_for()])
 		var walked_in := _standing_rig(t, def, -Tuning.WALK_SPEED)
-		t.check(absf(float(walked_in["notice_lasted"]) - def.pursuit.warns_for()) <= 2.0 * STEP
+		t.check(absf(float(walked_in["notice_lasted"]) - def.pursuit().warns_for()) <= 2.0 * STEP
 				and walked_in["caught"] and not walked_in["lethal_while_telegraphing"],
 				"walking into %s she is warned %.2fs, nothing lethal in it, then charged and caught"
 				% [name, walked_in["notice_lasted"]])
 		if walks:
 			t.check(walked_in["moved_in_notice"] > 0.5 and walked_in["moved_in_notice"]
-					<= def.pursuit.walk_speed() * walked_in["notice_lasted"] + 0.5,
+					<= def.pursuit().walk_speed() * walked_in["notice_lasted"] + 0.5,
 					"%s walks at her through its warning, no faster than %.0fpx/s (moved %.1fpx)"
-					% [name, def.pursuit.walk_speed(), walked_in["moved_in_notice"]])
+					% [name, def.pursuit().walk_speed(), walked_in["moved_in_notice"]])
 		else:
 			t.check(walked_in["stood"], "%s holds its ground while she walks in (moved %.1fpx)"
 					% [name, walked_in["moved_in_notice"]])
 		var stood := _standing_rig(t, def, 0.0, INF, 10.0, 20.0)
 		t.check(stood["caught"] and not stood["lethal_while_telegraphing"]
-				and absf(float(stood["notice_lasted"]) - def.pursuit.warns_for()) <= 2.0 * STEP,
+				and absf(float(stood["notice_lasted"]) - def.pursuit().warns_for()) <= 2.0 * STEP,
 				"standing just inside %s's radius she is charged after %.2fs of warning, and caught"
 				% [name, stood["notice_lasted"]])
 		var baited := _standing_rig(t, def, 0.0, 0.3)
@@ -1041,7 +1041,7 @@ func _test_every_waiting_charger_warns_by_radius(t: TestRunner) -> void:
 				+ "and it charges once its warning has run and catches her (ran %.1fs, %.0fpx at most)"
 				% [ran_inside["ran_for"], ran_inside["farthest"]])
 		var again := _back_inside_rig(t, def)
-		t.check(again["waited"] and absf(float(again["second_warning"]) - def.pursuit.warns_for()) <= 2.0 * STEP,
+		t.check(again["waited"] and absf(float(again["second_warning"]) - def.pursuit().warns_for()) <= 2.0 * STEP,
 				"leaving %s's radius %.2fs into its warning and coming back, its clock starts " % [name,
 				again["first_warning"]] + "again from zero: charged %.2fs after she is back inside"
 				% again["second_warning"])
@@ -1061,7 +1061,7 @@ func _test_every_waiting_charger_warns_by_radius(t: TestRunner) -> void:
 		print(("[test_events_pursuit] %s, one radius %.0fpx, warns %.1fs: walked in, warned %.2fs "
 				+ "and charged at %.0fpx; stood, charged at %.0fpx; baited, closest %.0fpx%s; "
 				+ "answered at the charge, closest %.0fpx; walked away from the charge, caught %.2fs "
-				+ "after it") % [name, def.notice_within(), def.pursuit.warns_for(), walked_in["notice_lasted"],
+				+ "after it") % [name, def.notice_within(), def.pursuit().warns_for(), walked_in["notice_lasted"],
 				walked_in["at_the_lunge"], stood["at_the_lunge"], baited["closest"],
 				", caught" if baited["caught"] else ", got away", answered["closest"],
 				charged_then_walked["after_the_lunge"]])
@@ -1077,7 +1077,7 @@ func _test_a_warning_is_not_counted_as_a_chase(t: TestRunner) -> void:
 	var dog_where := WhereSheIs.nowhere()
 	var dog := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, dog_where)
 	dog_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
-	_advance(dog, def.pursuit.warns_for() * 0.5)
+	_advance(dog, def.pursuit().warns_for() * 0.5)
 	t.check(dog.is_telegraphing() and began.is_empty(), "warning her, it has not begun a chase")
 	dog_where.tell(Vector2(def.notice_within() + 10.0, 0.0))
 	_advance(dog, 0.5)
@@ -1086,7 +1086,7 @@ func _test_a_warning_is_not_counted_as_a_chase(t: TestRunner) -> void:
 	_advance(dog, 0.2)
 	t.check(dog.is_telegraphing() and began.is_empty(), "back inside, it warns again, still no chase")
 	dog_where.tell(Vector2(standoff - 2.0, 0.0))
-	_advance(dog, def.pursuit.warns_for())
+	_advance(dog, def.pursuit().warns_for())
 	t.check(not dog.is_telegraphing() and began == ["charging_dog"],
 			"it begins one at its charge, once its warning has run (%s)" % str(began))
 	EventBus.pursuit_began.disconnect(listen)
@@ -1105,7 +1105,7 @@ func _back_inside_rig(t: TestRunner, def: EventDef) -> Dictionary:
 		instance_where.tell(instance.body_position() + Vector2(0.0, def.notice_within() + off))
 	stand_at.call(-10.0)
 	var elapsed := 0.0
-	while elapsed < def.pursuit.warns_for() * 0.75 and not instance.is_gone():
+	while elapsed < def.pursuit().warns_for() * 0.75 and not instance.is_gone():
 		instance.step(STEP)
 		if instance.is_telegraphing():
 			elapsed += STEP
@@ -1118,7 +1118,7 @@ func _back_inside_rig(t: TestRunner, def: EventDef) -> Dictionary:
 			break
 	stand_at.call(-10.0)
 	var back := 0.0
-	while back < def.pursuit.warns_for() * 3.0 and not instance.is_gone():
+	while back < def.pursuit().warns_for() * 3.0 and not instance.is_gone():
 		instance.step(STEP)
 		back += STEP
 		if not instance.is_waiting() and not instance.is_telegraphing():
@@ -1173,9 +1173,9 @@ func _run_inside_the_warning_rig(t: TestRunner, def: EventDef) -> Dictionary:
 ## Every pursuer that waits for her, in each state it is met in: every catalogue row on every day
 ## of a run (`EventDef.for_day()`, which is where the dog's trigger switches on past
 ## `Tuning.RUN_TAUGHT_DAY`) at every heat (`EventCatalogue.heated()`, which is where the roadblock's
-## guard starts to pursue), kept where it pursues and waits (`EventDef.notice`) and `keep` says yes,
-## once per distinct set of the numbers the walk reads. One that sets off beside her or arrives
-## chasing has no trigger to be sited inside.
+## guard starts to pursue), kept where it pursues and waits (`EventDef.waits_for_her()`) and
+## `keep` says yes, once per distinct set of the numbers the walk reads. One that sets off
+## beside her or arrives chasing has no trigger to be sited inside.
 func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	var seen := {}
@@ -1186,9 +1186,9 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 				if not def.pursues() or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or not keep.call(def):
 					continue
-				var key := "%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f|%s" % [def.id, def.notice_within(),
-						def.telegraphs_for(), def.chase_speed(), def.duration, def.lethal_reach(),
-						def.pursuit.walk_speed(), def.pursuit.stands_for_its_notice()]
+				var key := "%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f|%s" % [def.id(), def.notice_within(),
+						def.telegraphs_for(), def.chase_speed(), def.lasts_for(), def.lethal_reach(),
+						def.pursuit().walk_speed(), def.pursuit().stands_for_its_notice()]
 				if seen.has(key):
 					continue
 				seen[key] = true
@@ -1363,7 +1363,7 @@ func _a_chasing_robber(t: TestRunner, map: CityMap, where: WhereSheIs) -> EventI
 	var instance := _instance(t, def, origin, PackedVector2Array(), map, where)
 	where.tell(origin + Vector2(run, 0.0))
 	instance.step(STEP)
-	_advance(instance, def.pursuit.warns_for() + 0.1)
+	_advance(instance, def.pursuit().warns_for() + 0.1)
 	return instance
 
 ## **He catches her only by touching her.** *(freckled-goose, #544: "Even then the distance would
@@ -1417,11 +1417,11 @@ func _a_waiting_robber(t: TestRunner, map: CityMap, mouth: Dictionary, back: flo
 ## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
 ## her should need a clear line: "yes noticing needs a clear line".)* He waits in the alley 40px
 ## back from the mouth; she stands on the sidewalk round the building's corner, well inside his
-## 180px `EventDef.notice` in a straight line but with the building between them, and he goes on
-## waiting and is drawn looking the way he was sited, not tracking her round the corner. She steps
-## in front of the mouth, nearer still, the line between them clear, and on that frame he notices
-## her and is drawn facing her. What is checked is `drawn_heading()`, the heading his picture is
-## chosen from, not only his own `_heading`.
+## `EventDef.notice_within()` of 180px in a straight line but with the building between them,
+## and he goes on waiting and is drawn looking the way he was sited, not tracking her round the
+## corner. She steps in front of the mouth, nearer still, the line between them clear, and on
+## that frame he notices her and is drawn facing her. What is checked is `drawn_heading()`, the
+## heading his picture is chosen from, not only his own `_heading`.
 func _test_the_robber_does_not_notice_her_through_a_wall(t: TestRunner) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
@@ -1482,7 +1482,7 @@ func _test_the_robber_does_not_lunge_through_a_wall(t: TestRunner) -> void:
 	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
 			"round the corner the building stands between them")
 	instance_where.tell(round_the_corner)
-	_advance(instance, def.pursuit.warns_for() + 0.5)
+	_advance(instance, def.pursuit().warns_for() + 0.5)
 	t.check(instance.is_telegraphing() and instance.global_position.distance_to(round_the_corner)
 			<= def.notice_within(),
 			"past his whole warning, inside his radius, he does not charge through the building")
@@ -1595,7 +1595,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t: TestRunner) -> vo
 					"%dpx in: never charged, he never catches her and waits again" % int(back))
 		else:
 			charged += 1
-			t.check(lunged_at - noticed_at >= def.pursuit.warns_for() - 2.0 * STEP
+			t.check(lunged_at - noticed_at >= def.pursuit().warns_for() - 2.0 * STEP
 					and lunge_range <= def.notice_within(),
 					"%dpx in: he charges %.2fs after he noticed her, his whole warning, she %.0fpx off"
 					% [int(back), lunged_at - noticed_at, lunge_range])

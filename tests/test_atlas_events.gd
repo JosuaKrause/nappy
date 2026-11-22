@@ -98,7 +98,7 @@ func _collect_paths(value: Variant, found: Dictionary) -> void:
 func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t: TestRunner) -> void:
 	var looks: Dictionary = {}
 	for def in EventCatalogue.all():
-		looks[def.picture()] = def.id
+		looks[def.picture()] = def.id()
 	var checked := 0
 	for look: EventDef.Look in looks.keys():
 		if look == EventDef.Look.NONE:
@@ -124,14 +124,14 @@ func _test_every_badge_silhouette_is_on_the_page(t: TestRunner) -> void:
 		if def.picture() == EventDef.Look.NONE:
 			continue
 		var icon := EventPictures.icon_for(def.picture())
-		t.check(not icon.is_empty(), "'%s' has a silhouette for the badge" % def.id)
+		t.check(not icon.is_empty(), "'%s' has a silhouette for the badge" % def.id())
 		if icon.is_empty():
 			continue
 		checked += 1
 		var name := StringName(icon)
 		t.check(AtlasTable.baked().group_of(name) == EventPictures.ATLAS_GROUP,
 				"'%s' badge draws %s from the '%s' page"
-				% [def.id, icon.get_file(), EventPictures.ATLAS_GROUP])
+				% [def.id(), icon.get_file(), EventPictures.ATLAS_GROUP])
 	t.check(checked > 0, "some row offered a badge silhouette to check (%d)" % checked)
 
 ## Both dog families draw the comic pictures the player accepted *(2026-09-27, dotted-panda: "the

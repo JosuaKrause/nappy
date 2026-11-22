@@ -103,7 +103,7 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 			break
 	t.check(instance.phase == EventInstance.Phase.ACTIVE,
 			"staying inside, it charges once its warning has run (%d frames)" % frames)
-	t.close_to(frames * STEP, def.pursuit.warns_for(), "after its own warning", 2.0 * STEP)
+	t.close_to(frames * STEP, def.pursuit().warns_for(), "after its own warning", 2.0 * STEP)
 	instance.free()
 
 func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
@@ -268,13 +268,13 @@ func _test_a_long_body_reaches_along_its_spine_the_way_its_field_does(t: TestRun
 		var axis := instance.solid_axis()
 		var along := body.half_length + def.heard_within()
 		t.check(instance.field_reaches(axis * (along - 1.0)),
-				"'%s' reaches a point just inside its capsule along its spine" % def.id)
+				"'%s' reaches a point just inside its capsule along its spine" % def.id())
 		t.check(not instance.field_reaches(axis * (along + 1.0)),
-				"'%s' does not reach one just outside its capsule along its spine" % def.id)
+				"'%s' does not reach one just outside its capsule along its spine" % def.id())
 		var across := axis.orthogonal()
 		t.check(instance.field_reaches(across * (def.heard_within() - 1.0))
 				and not instance.field_reaches(across * (def.heard_within() + 1.0)),
-				"'%s' reaches abeam of its body exactly as far as its row is heard" % def.id)
+				"'%s' reaches abeam of its body exactly as far as its row is heard" % def.id())
 		instance.free()
 		tried += 1
 	t.check(tried > 0, "the catalogue has a stationary row with a long body to try")

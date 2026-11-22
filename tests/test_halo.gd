@@ -188,7 +188,7 @@ func _test_the_cap_keeps_the_strongest(t: TestRunner) -> void:
 		var def := _def("source_%d" % i, intensity)
 		instances.append(_instance_at(def, Vector2.ZERO))
 		if i < ExcitementHalo.MAX_SOURCES:
-			expected_ids.append(def.id)
+			expected_ids.append(def.id())
 
 	var candidates: Array = []
 	for instance in instances:
@@ -691,7 +691,7 @@ func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:
 			"a cat_dash instance standing on her clears the floor while still telegraphing")
 
 	var elapsed := def.telegraphs_for() * 0.5
-	while elapsed < def.telegraphs_for() + def.duration:
+	while elapsed < def.telegraphs_for() + def.lasts_for():
 		cat.step(STEP)
 		elapsed += STEP
 		var contribution: float = cat.source().contribution_at(Vector2.ZERO)
@@ -709,9 +709,10 @@ func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
 	t.check(flock.flock.birds.size() == def.flock().count(),
 			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
-	# Standing in it: a flock waits on the pavement until she is inside `EventDef.notice`, and both
-	# the telegraph and the burst below are measured from the moment it notices her — which is the
-	# end of a frame, so the notice gets a frame of its own before the telegraph is stepped.
+	# Standing in it: a flock waits on the pavement until she is inside
+	# `EventDef.notice_within()`, and both the telegraph and the burst below are measured from
+	# the moment it notices her — which is the end of a frame, so the notice gets a frame of its
+	# own before the telegraph is stepped.
 	flock_where.tell(Vector2.ZERO)
 	flock.step(STEP)
 
@@ -720,7 +721,7 @@ func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 			"a flock standing on her clears the floor while still on the ground telegraphing")
 
 	var elapsed := def.telegraphs_for() * 0.5
-	while elapsed < def.telegraphs_for() + def.duration:
+	while elapsed < def.telegraphs_for() + def.lasts_for():
 		flock.step(STEP)
 		elapsed += STEP
 		var contribution: float = flock.source().contribution_at(Vector2.ZERO)

@@ -357,10 +357,10 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		var def := plan.row()
 		if def.obstructs_within() <= 0.0 or def.is_scenery():
 			continue
-		if def.id.begins_with(_DOOR_ID_PREFIX):
+		if def.id().begins_with(_DOOR_ID_PREFIX):
 			continue
 		var body := Body.new()
-		body.id = def.id
+		body.id = def.id()
 		body.radius = def.obstructs_within()
 		body.position = plan.placed_at()
 		body.source = int(provenance.get(plan.get_instance_id(), Source.OTHER))

@@ -93,17 +93,17 @@ signal hard_fail_triggered(reason: String)
 ## `burning_building` today) is actually on screen — fired once per plan whether or not the warning
 ## for the row it summons could be put up, since seeing the fire is what happened and an engine with
 ## no road off screen to wait on is a separate fact about the geometry. `id` is the seen row's own
-## `def.id`.
+## `id()`.
 ## Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal event_sighted(id: String)
-## `EventManager.light_what_she_never_met()`'s own moment an `EventDef.on_her_way` row (only day 3's
-## fire today) is lit off her path at dusk on a day she won without meeting it. `id` is the lit
-## row's own `def.id`. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts
-## visits".
+## `EventManager.light_what_she_never_met()`'s own moment a row sited from her walk
+## (`EventDef.is_sited_from_her_walk()`, only day 3's fire today) is lit off her path at dusk on
+## a day she won without meeting it. `id` is the lit row's own `id()`. Listen-only, for
+## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal event_lit_unmet(id: String)
 # **A charge, counted on its own whatever the day does** *(inbox #764 in minty-lemur, the player: "Ending a day and
 # a charging counter are not the same thing"; "Charging is independent of an ended day")*. Each
-# signal below carries the charger's name, `EventInstance._charger_name()`: its row's own `def.id`,
+# signal below carries the charger's name, `EventInstance._charger_name()`: its row's own `id()`,
 # or `charging_dog_tutorial` for the day-3 lesson's dog. `VisitCounter` sends a counter of its own
 # for every charger. Listen-only — see docs/TELEMETRY.md, "The page counts visits". Every charger's
 # own sends go through its `ChargeRecord`, the one owner of "said once" and of a charge that began
@@ -139,7 +139,7 @@ signal pursuit_ended(id: String, shaken_off: bool)
 # Encounters and bouts of running, for the page's counter — `EncounterWatch`, which `EventManager`
 # asks once a physics frame, is the one emitter of all three. `day` is the day they happened on,
 # carried rather than read from the run because an influence that waited is sent as late as the
-# next day's start. `name` is `EventInstance.logged_name()`: the row's own `def.id`, or `pelican`.
+# next day's start. `name` is `EventInstance.logged_name()`: the row's own `id()`, or `pelican`.
 # Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 
 ## An encounter's instance properly on screen for the first time in that encounter — once per
@@ -196,7 +196,7 @@ signal resistance_contact_available(step: int)
 ## step index. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal resistance_mark_seen(step: int)
 ## `CheckpointController.check_detentions()`'s own catch — `chatting_mother`, or a checkpoint's
-## hut or post — named by the catching row's own `def.id`; `VisitCounter` turns that into `chat` or
+## hut or post — named by the catching row's own `id()`; `VisitCounter` turns that into `chat` or
 ## `checkpoint`. Listen-only — see docs/TELEMETRY.md, "The page counts visits".
 signal player_detained(id: String)
 ## `PosterWalls._tear()`'s own moment a sheet actually tears (never a tear that missed, which

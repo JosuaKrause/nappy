@@ -1208,7 +1208,7 @@ static func _choose_again(director: ResistanceDirector) -> void:
 ## (`EventManager.instances()`), or null once he is gone.
 func _task_guard() -> EventInstance:
 	for instance in RunCity.events(_city).instances():
-		if instance.row_id() == EventCatalogue.task_guard().id and not instance.is_gone():
+		if instance.row_id() == EventCatalogue.task_guard().id() and not instance.is_gone():
 			return instance
 	return null
 

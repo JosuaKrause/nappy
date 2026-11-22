@@ -74,7 +74,7 @@ func director() -> EventDirector:
 ## keeps the placement context a row left for her walk is sited against.
 func start_day(day: int, tree: RouteTree) -> void:
 	# The day's placement context, kept past dawn for the one kind of plan the day plans and
-	# leaves for her walk to site — see `WalkSiting` and `EventDef.on_her_way`.
+	# leaves for her walk to site — see `WalkSiting` and `EventDef.is_sited_from_her_walk()`.
 	# Stated against exactly what `build_day` was: the same tree, the walk's own doors and calm
 	# areas, which are the day's, and the day's ground for a row (`_ground_of_the_walk()`). Only
 	# on a day that has such a plan: the context grows a corridor, and a day with nothing left for
@@ -148,9 +148,10 @@ var _director: EventDirector
 ## none in a world with no city, where no torn poster sends anybody.
 var _spawn_siting: SpawnSiting
 ## The day's placement context for a row the day left for her walk to site, or `null` on a day that
-## left none — the whole of `EventDef.on_her_way`, which today is day 3's fire and nothing
-## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
-## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
+## left none — the whole of `EventDef.is_sited_from_her_walk()`, which today is day 3's fire
+## and nothing else. Built in `start_day()` and read twice: the director sites against it
+## while she walks, and `light_what_she_never_met()` places off it at dusk on a day she never
+## met what it was for.
 var _siting: WalkSiting = null
 ## What makes a siting (`SitingMaker`), handed in by the manager (`use_sitings()`): this class makes
 ## none itself, so a suite hands in a maker that answers a stand-in, or keeps what it made.
@@ -497,7 +498,7 @@ func place_what_is_owed_ahead(delta: float) -> void:
 	var lead := (due[3] as Vector2 if crosses else path[0]).distance_to(body.global_position)
 	var verb := "crosses" if crosses else "comes at her from"
 	world.trace().note("ahead", "%s %s %.0fpx in front of her at %s" % [
-		def.id, verb, lead,
+		def.id(), verb, lead,
 		RunTrace.tile(world.map().world_to_tile(body.global_position))])
 
 ## A place a marble from her route's bag named — the mast day 11's rigged bag puts on it, the man
@@ -596,7 +597,7 @@ func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -
 		_spawner.spawn_warned(def, path).go_on_by(_director.way_on())
 		world.trace().note("ahead",
 				"%s comes down the road at her from ahead of her, %.0fpx up it, at %s, its warning over"
-				% [def.id, place.distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
+				% [def.id(), place.distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
 		return true
 	_warnings.warn_first(def, her, where, arrive)
 
@@ -635,7 +636,7 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	else:
 		instance.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
-			% [def.id, place.distance_to(her), RunTrace.tile(world.map().world_to_tile(her))])
+			% [def.id(), place.distance_to(her), RunTrace.tile(world.map().world_to_tile(her))])
 
 ## A pursuer the director sends at her down her heading — `charging_dog`, on the day it teaches the
 ## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new
@@ -653,7 +654,7 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		_spawner.spawn_warned(def, PackedVector2Array([place]))
 		world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
-				% [def.id, place.distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
+				% [def.id(), place.distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
 		return true
 	var warning := _warnings.warn_first(def, her, where, arrive)
 	if warning:
@@ -666,7 +667,7 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 	if not _pursuer_failure_logged:
 		_pursuer_failure_logged = true
 		world.trace().note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
-				% [def.id, RunTrace.tile(world.map().world_to_tile(her))])
+				% [def.id(), RunTrace.tile(world.map().world_to_tile(her))])
 
 ## A pursuer the director sent that found nowhere off screen to stand, or whose warning was
 ## withdrawn: tried again down her current heading after a second of walking, the director's own
@@ -681,8 +682,9 @@ func _owe_pursuer_again(def: EventDef) -> void:
 
 ## The other half of the director's day: a place left unsited, put ahead of her on the branch she
 ## is walking once her heading for the day is clear — day 3's fire and the day's poster crews
-## (`EventDef.on_her_way`), and a place a marble from her route's bag names, which joins the
-## day's plan here (`_put_down_on_her_route()`). See `EventDirector.site_what_is_on_her_way`.
+## (`EventDef.is_sited_from_her_walk()`), and a place a marble from her route's bag
+## names, which joins the day's plan here (`_put_down_on_her_route()`). See
+## `EventDirector.site_what_is_on_her_way`.
 ##
 ## **The bookkeeping a late placement owes is the bookkeeping dawn already did for everything
 ## else.** A body is recorded per tile from the *plan* so the crowd steers round it whether or not

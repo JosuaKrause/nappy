@@ -106,7 +106,7 @@ func _investigate() -> void:
 ## calm day by itself. Its strike and its horn are a driving car's and come back the moment it
 ## drives. *Chosen while building, open to overturn.*
 func is_quiet_for_its_man() -> bool:
-	return _row.vehicle != null and not _figure.is_waiting() and not _left_her_once
+	return _row.drives() and not _figure.is_waiting() and not _left_her_once
 
 ## Whether she is outside this car's field from where it is: further than its outer radius past its
 ## own body, or nobody to be near.
@@ -123,7 +123,7 @@ func runs_its_route() -> bool:
 ## stops there: nothing stands in a box it cannot leave, and the crossing traffic cannot see a
 ## patrol car's body to wait for it (sunny-finch). False for anything that does not drive.
 func _stands_in_a_junction() -> bool:
-	if _row.vehicle == null or _row.ground_shape() == null:
+	if not _row.drives() or _row.ground_shape() == null:
 		return false
 	var axis := _figure.solid_axis()
 	var reach := _row.ground_shape().reach()

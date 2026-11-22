@@ -27,12 +27,13 @@ extends RefCounted
 ##
 ## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
 ## this class and it breaks the sentence above on purpose: a row carrying
-## `EventDef.on_her_way` — day 3's burning building, and the day's poster crews after it —
-## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
-## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
-## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
-## nothing. So the day plans it and this sites it, on a tile of the row's own ground ahead of her
-## heading (a building face for the fire and the crews), once her direction for the day is clear.
+## `EventDef.is_sited_from_her_walk()` — day 3's burning building, and the day's poster crews
+## after it — is a place in every sense: a tile, a body, a field, and what it leaves on the city
+## outlives the day. What it cannot be is *anywhere*: the fire is the authored beat of act I and
+## a crew is the walls visibly changing, and either one on a street she never walks down is a
+## silhouette spent on nothing. So the day plans it and this sites it, on a tile of the row's
+## own ground ahead of her heading (a building face for the fire and the crews), once her
+## direction for the day is clear.
 ##
 ## The two jobs share this class because they share the one thing neither the scheduler nor the
 ## manager has: **the direction she is actually travelling, now**. They do not share a queue, an
@@ -88,16 +89,17 @@ const RETURN_PATROL_WITHIN_THE_NEXT := 2
 ## director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`) and
 ## takes none of these, so with the lesson these marbles rarely reach `max_per_day`'s 3.
 const ROUTE_BAG_SHARE_OF := {"charging_dog": 2.0 / 16.0}
-## Marbles per unit of `EventDef.weight` in the bag the director draws her route's events from
-## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
-## statement 2: "events should use the marble bag approach as well. that way we can control what
-## the player sees on their route".)* The bag is the stretch over which the mix is exact, and at 2
-## every weight comes out whole. With the rows the director sends ahead of her in it
-## (`EventDef.is_sent_ahead()`: the dog walker, the patrol and the convoy, the heaviest of its rows)
-## a bag holds more than a whole day of walking at `AHEAD_INTERVAL` hands out
-## (`tests/probes/olive_badger_route_mix.gd` counts both), so the mix is exact over a bag, never over
-## a day; and over a bag only where nothing waits for room, since a sent row that waits comes after
-## the marbles handed out meanwhile (`_sent_waiting`) and can fall past its bag's end.
+## Marbles per unit of `EventDef.drawn_as_often()` in the bag the director draws her route's
+## events from (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row.
+## *(olive-koala, statement 2: "events should use the marble bag approach as well. that way we
+## can control what the player sees on their route".)* The bag is the stretch over which the
+## mix is exact, and at 2 every weight comes out whole. With the rows the director sends ahead
+## of her in it (`EventDef.is_sent_ahead()`: the dog walker, the patrol and the convoy, the
+## heaviest of its rows) a bag holds more than a whole day of walking at `AHEAD_INTERVAL`
+## hands out (`tests/probes/olive_badger_route_mix.gd` counts both), so the mix is exact over
+## a bag, never over a day; and over a bag only where nothing waits for room, since a sent row
+## that waits comes after the marbles handed out meanwhile (`_sent_waiting`) and can fall past
+## its bag's end.
 const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 
 ## How far to either side of the crossing point the run reaches at most. A street's width, so the
@@ -170,11 +172,12 @@ var _doors := PackedVector2Array()
 ## one or until it makes its own.
 var _way_on: WayOn = null
 
-## Today's plans that the day made and left for her walk to site — `EventDef.on_her_way`,
-## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
-## in `start_day()`, or handed over as a unit draws one as she walks (`owe_on_her_way()`); and the
-## places a marble from her route's bag names, added the moment the marble is drawn
-## (`_place_on_her_route()`). Emptied as each one is put in the world.
+## Today's plans that the day made and left for her walk to site —
+## `EventDef.is_sited_from_her_walk()`, which is day 3's fire, and the poster crews from day 4
+## — read off the same plan list `_owed` is, in `start_day()`, or handed over as a unit draws
+## one as she walks (`owe_on_her_way()`); and the places a marble from her route's bag names,
+## added the moment the marble is drawn (`_place_on_her_route()`). Emptied as each one is put
+## in the world.
 var _on_her_way: Array[EventPlan] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
@@ -360,10 +363,10 @@ func _take_the_forced_row() -> void:
 func _teach_the_run(day: int, lesson: EventDef) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY or not lesson:
 		return
-	if _route_rows.has(lesson.id):
+	if _route_rows.has(lesson.id()):
 		if not _owed.has(null):
 			return
-		_route.rig([lesson.id], 1)
+		_route.rig([lesson.id()], 1)
 		_bag_the_next(1)
 	else:
 		var at := _owed.find(lesson)
@@ -405,7 +408,7 @@ func _bag_the_next(count: int) -> void:
 ## off her heading, already noticing her.
 ##
 ## **The row itself, untouched.** `EventCatalogue.by_id()` returns the shared, cold `EventDef` —
-## `EventDef.notice` still its authored 0.0 — so nothing here has to build a copy the way
+## `EventDef.notice_within()` still its authored 0.0 — so nothing here has to build a copy the way
 ## `EventDef.for_day()` does for the waiting one: a director-sited dog is met exactly as
 ## day 3's is, charging the moment it streams in, because both are already-noticing encounters
 ## rather than places she is routed into. No tip and no guarantee are the whole of what changes —
@@ -429,7 +432,7 @@ func _bag_the_next(count: int) -> void:
 ## it. Pushing to the front only decides which of today's `AHEAD_OF_PLAYER` encounters is met
 ## *first* when one has been rolled at all; it never adds a second roll on top of the first.
 ##
-## Asked over the def's own `EventDef.from_day_after` rather than `Tuning.RUN_TAUGHT_DAY`
+## Asked over the def's own `EventDef.spawn_mode_on()` rather than `Tuning.RUN_TAUGHT_DAY`
 ## directly, so this stays in step with whichever day the row's siting actually changes on.
 func _owe_the_sprinkled_dog(day: int) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
@@ -456,8 +459,8 @@ func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> voi
 	_route_rows.clear()
 	_ordinary_rows.clear()
 	for def in _route_rows_on(day, heat):
-		_route_rows[def.id] = def
-		_ordinary_rows[def.id] = true
+		_route_rows[def.id()] = def
+		_ordinary_rows[def.id()] = true
 	_route = MarbleBag.new([], ordinary_route_marbles(day, heat), hash("%d:route-bag" % rng.seed))
 
 ## The rows the director sites on `day` — recurring, available, and `AHEAD_OF_PLAYER` or
@@ -481,9 +484,9 @@ static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
 	var other_weights := {}
 	for def in _route_rows_on(day, heat):
-		weights[def.id] = def.drawn_as_often()
-		if not ROUTE_BAG_SHARE_OF.has(def.id):
-			other_weights[def.id] = def.drawn_as_often()
+		weights[def.id()] = def.drawn_as_often()
+		if not ROUTE_BAG_SHARE_OF.has(def.id()):
+			other_weights[def.id()] = def.drawn_as_often()
 	var others := MarbleBag.in_proportion(other_weights, ROUTE_BAG_MARBLES_PER_WEIGHT).size()
 	var counts := {}
 	for id: String in ROUTE_BAG_SHARE_OF:
@@ -632,11 +635,11 @@ func _place_on_her_route(def: EventDef) -> void:
 	_handed_from_the_route()
 	if not _siting:
 		return
-	_met_today[def.id] = int(_met_today.get(def.id, 0)) + 1
+	_met_today[def.id()] = int(_met_today.get(def.id(), 0)) + 1
 	var waiting := EventPlan.new(def, Vector2.INF)
 	_on_her_way.append(waiting)
 	_placed_from_the_route[waiting] = true
-	if _rigged_just_ahead.has(def.id):
+	if _rigged_just_ahead.has(def.id()):
 		_just_ahead[waiting] = true
 
 ## Whether `plan` is a place a marble from her route's bag put on her way (`_place_on_her_route()`),
@@ -1071,8 +1074,8 @@ func _hand_out(next: EventDef, from_the_bag: bool) -> EventDef:
 		handed = next
 		_route.draw()
 		_handed_from_the_route()
-	_met_today[handed.id] = int(_met_today.get(handed.id, 0)) + 1
-	if _lesson and handed.id == _lesson.id:
+	_met_today[handed.id()] = int(_met_today.get(handed.id(), 0)) + 1
+	if _lesson and handed.id() == _lesson.id():
 		handed = EventCatalogue.lesson_of(handed)
 		_lesson = null
 	return handed
@@ -1344,7 +1347,7 @@ func way_on() -> WayOn:
 ## `EventDef.announces_its_coming()` gives it no badge. Under the player's rule a thing telegraphs
 ## its coming only if it goes fast, comes toward her and carries a heavy penalty (PLAYTEST-145,
 ## statements 18-23), and a patrol is not fast; its strike in front of it on the carriageway is a
-## car's, warned the way a car warns (`EventDef.vehicle`), not a badge from off screen.
+## car's, warned the way a car warns (`EventDef.drives()`), not a badge from off screen.
 func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))

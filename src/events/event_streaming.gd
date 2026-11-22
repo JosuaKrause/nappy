@@ -254,9 +254,10 @@ func stream_in(plan: EventPlan) -> void:
 	# would put back exactly the thing streaming exists to fix — a twenty-second event that is over
 	# before anybody could reach it.
 	#
-	# The plan's save carries the same restore for a `EventDef.notice` row: without its notice a
-	# pursuer streamed out mid-chase forgets she was ever noticed and comes back `is_waiting()`,
-	# standing where the day planted it rather than still coming for her.
+	# The plan's save carries the same restore for a row that waits for her
+	# (`EventDef.waits_for_her()`): without its notice a pursuer streamed out mid-chase forgets
+	# she was ever noticed and comes back `is_waiting()`, standing where the day planted it
+	# rather than still coming for her.
 	#
 	# **A mast's own age is the broadcast clock, not the saved age.** Every mast reads the same
 	# clock at every stream-in, first time or the fifth, so two masts met minutes apart still read the

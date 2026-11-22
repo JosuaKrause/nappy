@@ -6,14 +6,15 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/m99_caps.gd
 ##
-## Both rows carry `EventDef.max_per_day` (`cyclist` 14, `loose_dog` 24) but arrive through
-## `EventDirector`'s single FIFO queue at `EventDirector.AHEAD_INTERVAL` (11-26s) pacing rather than
-## being map-placed, sharing that queue with every other `AHEAD_OF_PLAYER`/`TOWARD_PLAYER` row a
-## day budgets — `cat_dash`, `charging_dog`, and each other. `cyclist`'s own catalogue comment
-## already states the claim this measures: *"how many of fourteen she could ever actually meet is
-## bounded by the day's own length long before the cap is."* This counts how many the queue
-## actually hands out over a whole day of continuous walking, across every act, and holds it next
-## to the two numbers on the row.
+## Both rows cap how many are out in a day (`EventDef.most_in_a_day()`: `cyclist` 14,
+## `loose_dog` 24) but arrive through `EventDirector`'s single FIFO queue at
+## `EventDirector.AHEAD_INTERVAL` (11-26s) pacing rather than being map-placed, sharing that
+## queue with every other `AHEAD_OF_PLAYER`/`TOWARD_PLAYER` row a day budgets — `cat_dash`,
+## `charging_dog`, and each other. `cyclist`'s own catalogue comment already states the claim
+## this measures: *"how many of fourteen she could ever actually meet is bounded by the day's
+## own length long before the cap is."* This counts how many the queue actually hands out over
+## a whole day of continuous walking, across every act, and holds it next to the two numbers
+## on the row.
 ##
 ## Walked the same way `tests/test_events.gd`'s `_test_a_rig_meets_the_three_things_that_arrive`
 ## drives `EventDirector` — continuous motion on a real street
@@ -24,7 +25,7 @@ extends RefCounted
 
 const SEEDS := 6
 ## One sample day per act (`Tuning.ACT_START_DAYS` is `[1, 4, 8, 12]`), the earliest each row
-## could actually appear at all — day 2 rather than day 1, since `cyclist.first_day == 2`.
+## could actually appear at all — day 2 rather than day 1, since the cyclist's first day is 2.
 const ACT_SAMPLE_DAYS: Array[int] = [2, 5, 9, 13]
 const BASE_SEED := 550209
 const STEP := 0.2
@@ -98,8 +99,8 @@ func _measure_caps() -> void:
 				if not due.is_empty():
 					total_owed += 1
 					var def: EventDef = due[0]
-					if def.id in counts:
-						counts[def.id] += 1
+					if def.id() in counts:
+						counts[def.id()] += 1
 				pos += vel * step
 				if pos.y < y_min or pos.y > y_max:
 					vel.y = -vel.y

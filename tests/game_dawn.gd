@@ -51,7 +51,7 @@ class _Dawn extends DawnContext:
 		for def in super.catalogue_rows(kind):
 			var stands_in := def
 			for handed in _handed:
-				if handed.id == def.id:
+				if handed.id() == def.id():
 					stands_in = handed
 			rows.append(stands_in)
 		return rows

@@ -135,31 +135,31 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t: TestRunner) -> 
 	var pursuers := 0
 	var running_is_cheaper := 0
 	for def in EventCatalogue.all():
-		if def.id in _RUNNING_IS_CHEAPER:
+		if def.id() in _RUNNING_IS_CHEAPER:
 			running_is_cheaper += 1
 			t.check(_cost_to_run_through(def) < _cost_to_walk_through(def),
 					("'%s' is named as the row running is cheaper on (%.1f running, %.1f walking) — "
 					+ "if that has stopped being true, take it off the list rather than keeping it")
-					% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
+					% [def.id(), _cost_to_run_through(def), _cost_to_walk_through(def)])
 			continue
 		if def.pursues():
 			pursuers += 1
 			# Walking loses ground and running gains it. Everything else about a pursuit follows
 			# from this one line, including why it is the only place running can be correct.
 			t.check(def.chase_speed() > Tuning.WALK_SPEED,
-					"'%s' catches somebody who walks away from it" % def.id)
+					"'%s' catches somebody who walks away from it" % def.id())
 			t.check(def.chase_speed() < Tuning.RUN_SPEED,
-					"'%s' does not catch somebody who runs" % def.id)
+					"'%s' does not catch somebody who runs" % def.id())
 			t.check(def.ends_the_day(),
-					"'%s' has to be lethal, or running from it is just an expensive walk" % def.id)
-			t.check((Tuning.RUN_SPEED - def.chase_speed()) * def.duration >= def.core_within(),
-					"'%s' can be outrun by more than the radius that ends the day" % def.id)
-			t.check(def.duration <= Tuning.PURSUIT_TIME,
-					"'%s' gives up before the run costs more than the day it saves" % def.id)
+					"'%s' has to be lethal, or running from it is just an expensive walk" % def.id())
+			t.check((Tuning.RUN_SPEED - def.chase_speed()) * def.lasts_for() >= def.core_within(),
+					"'%s' can be outrun by more than the radius that ends the day" % def.id())
+			t.check(def.lasts_for() <= Tuning.PURSUIT_TIME,
+					"'%s' gives up before the run costs more than the day it saves" % def.id())
 			continue
 		t.check(_cost_to_run_through(def) > _cost_to_walk_through(def),
 				"running through '%s' (%.1f) costs more than walking (%.1f)"
-				% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
+				% [def.id(), _cost_to_run_through(def), _cost_to_walk_through(def)])
 	t.check(pursuers > 0, "and there is something in the game that running is the answer to")
 	t.check(running_is_cheaper == _RUNNING_IS_CHEAPER.size(),
 			"every row named as a running exemption is still in the catalogue (%d of %d)"
@@ -177,7 +177,7 @@ const CYCLIST_FULL_PASS_COST_TOLERANCE := 0.1
 func _test_the_cyclist_costs_what_he_did(t: TestRunner) -> void:
 	var found := false
 	for def in EventCatalogue.all():
-		if def.id != "cyclist":
+		if def.id() != "cyclist":
 			continue
 		found = true
 		var cost := def.walk_through_cost()
@@ -195,7 +195,7 @@ func _test_nothing_chases_her_before_the_run_is_taught(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_TAUGHT_DAY):
 		for def in EventCatalogue.available_on(day):
 			t.check(not def.pursues(),
-					"day %d has nothing that has to be outrun ('%s')" % [day, def.id])
+					"day %d has nothing that has to be outrun ('%s')" % [day, def.id()])
 	var chasers := 0
 	for def in EventCatalogue.available_on(Tuning.RUN_TAUGHT_DAY):
 		chasers += 1 if def.pursues() else 0
@@ -205,19 +205,19 @@ func _test_nothing_chases_her_before_the_run_is_taught(t: TestRunner) -> void:
 ## −0.1 points to walk straight through, so the correct play was to plough into it.
 func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
-		if def.peak() <= 0.0 or def.id in _SCENERY:
+		if def.peak() <= 0.0 or def.id() in _SCENERY:
 			continue
-		if def.id in _PRICED_BY_THEIR_CAPTURE:
+		if def.id() in _PRICED_BY_THEIR_CAPTURE:
 			# The exemption owes its own check, or it is a way of not being tested: a row excused
 			# from costing something to walk past has to cost something to walk into.
 			t.check(def.detains_her() and Tuning.CHAT_EXCITEMENT > 0.0,
 					"'%s' is excused the field because the detention is what it charges (%.1f "
-					% [def.id, Tuning.CHAT_EXCITEMENT]
+					% [def.id(), Tuning.CHAT_EXCITEMENT]
 					+ "over %.1fs)" % def.detains_for())
 			continue
 		t.check(_cost_to_walk_through(def) > 0.0,
 				"walking through '%s' costs more than walking around it (%.1f)"
-				% [def.id, _cost_to_walk_through(def)])
+				% [def.id(), _cost_to_walk_through(def)])
 	# And the specific one, stated as itself so the reason survives a rebalance.
 	var dog := EventCatalogue.by_id("dog_walker")
 	t.check(_cost_to_walk_through(dog) > Tuning.EXCITEMENT_CALM_THRESHOLD * 0.4,
@@ -238,10 +238,10 @@ func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 	# rather than making it the wrong side of the street.
 	for def in blockers:
 		t.check(def.obstructs_within() * 2.0 < Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 2.0,
-				"'%s' takes the pavement without sealing the street" % def.id)
+				"'%s' takes the pavement without sealing the street" % def.id())
 		t.check(not def.moves(),
 				"'%s' does not walk toward her: a moving wall on a two-tile pavement pins"
-				% def.id)
+				% def.id())
 
 ## Playtest 03, finding 1: day 1 placed four events across a 7x7-block city and the traced
 ## player met none of them. Playtest 05, finding 6, made it a number: **one event per block**.
@@ -254,7 +254,7 @@ func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
 		var planned := _planned(day)
 		var real := 0
 		for plan in planned:
-			if plan.row().kind != GameEnums.EventKind.AMBIENT:
+			if not plan.row().is_ambient():
 				real += 1
 		# Stated as a fraction of a block each way rather than as a count, so it survives the
 		# city changing size — which M21 is about to do.
@@ -264,10 +264,10 @@ func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
 	var early := 0
 	var late := 0
 	for plan in _planned(1):
-		if plan.row().kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
+		if not plan.row().is_ambient() and plan.is_placed():
 			early += 1
 	for plan in _planned(14):
-		if plan.row().kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
+		if not plan.row().is_ambient() and plan.is_placed():
 			late += 1
 	# A fifth more, not half again: what day 14 places is under half again what day 1 places, before
 	# the bags as after (`tests/probes/placement_view_mix.gd`), so a bar of half again on what is
@@ -310,7 +310,7 @@ func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 	var early: Array[String] = []
 	for def in EventCatalogue.available_on(2):
 		if def.ends_the_day():
-			early.append(def.id)
+			early.append(def.id())
 	t.check(not early.is_empty(),
 			"act I has lethal events in its pool by day 2 (%s)" % ", ".join(early))
 	# And they are fair, which for a lethal thing is the doubled margin. `validate()` covers the
@@ -372,16 +372,17 @@ func _test_no_two_events_are_drawn_inside_each_other(t: TestRunner) -> void:
 						% [day, a.row_id(), b.row_id(), gap])
 	t.check(pairs > 0, "there were placed pairs to measure (%d)" % pairs)
 
-## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
-## either row that carries it today.** A lethal field that follows her is neither on the
-## corridor nor off it, so placement cannot keep it clear of anything — `charging_dog` never
-## reaches `StreetInvalidation.room_around()` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
-## and sited with no tile, and `alley_robbery` (and `charging_dog` again, past the teaching day,
-## once `spawn_mode_on()` answers `MAP`) is exempt only because lethal always classifies a
-## `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before `EventScheduler.role_for()` ever asks whether it
+## **The third case of the clearance rule, pinned over whether a row pursues
+## (`EventDef.pursues()`) rather than over either of the two rows that pursue today.** A lethal
+## field that follows her is neither on the corridor nor off it, so placement cannot keep it
+## clear of anything — `charging_dog` never reaches `StreetInvalidation.room_around()` at all on
+## `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER` and sited with no tile, and
+## `alley_robbery` (and `charging_dog` again, past the teaching day, once `spawn_mode_on()`
+## answers `MAP`) is exempt only because lethal always classifies a `MAP`-placed
+## `RECURRING`/`SCRIPTED` row `WALL` before `EventScheduler.role_for()` ever asks whether it
 ## pursues. Forcing the role off `WALL` here is what tells the two reasons apart, and it is why
-## a third pursuer — one a future `EventScheduler.role_for()` change routes through `SET_PIECE` or `FRICTION`
-## instead — inherits the exemption without anybody adding a case for it.
+## a third pursuer — one a future `EventScheduler.role_for()` change routes through `SET_PIECE`
+## or `FRICTION` instead — inherits the exemption without anybody adding a case for it.
 func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
 	t.check(pursuer.ends_the_day() and pursuer.pursues(), "alley_robbery is lethal and pursues")
@@ -391,7 +392,8 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
 
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
-	# the `WALL` role — the exemption is `EventDef.pursuit`, not "the role happens not to be WALL".
+	# the `WALL` role — the exemption is that the row pursues (`EventDef.pursues()`), not "the
+	# role happens not to be WALL".
 	var stationary := EventCatalogue.by_id("reversing_lorry")
 	t.check(stationary.ends_the_day() and not stationary.pursues(),
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")

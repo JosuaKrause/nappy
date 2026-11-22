@@ -244,7 +244,7 @@ func _cost_table() -> void:
 			Baby.EXCITEMENT_FROM_RUNNING])
 	var rows: Array[Dictionary] = []
 	for def in EventCatalogue.all():
-		rows.append({"id": def.id, "walk": def.walk_through_cost(),
+		rows.append({"id": def.id(), "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
 				"hard_fail": def.ends_the_day(), "flock": def.flock().count() > 1,
 				"pursues": def.pursues(), "emission": _mean_emission(def),

@@ -50,7 +50,7 @@ func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 1000 + roll
 			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).plan().placements():
-				if plan.row_id() != mouse.id:
+				if plan.row_id() != mouse.id():
 					continue
 				mice += 1
 				expected += share

@@ -100,7 +100,7 @@ func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 					if instance.look.mark_rect().has_area():
 						marked += 1
 					if _drawn_in(view, instance) and popped.size() < 3:
-						popped.append("'%s' along %v, camera at %v%s" % [row.id, way,
+						popped.append("'%s' along %v, camera at %v%s" % [row.id(), way,
 								view.view.get_center() - her, " (joystick)" if v % 2 == 1 else ""])
 					instance.free()
 	t.check(placed > 0 and popped.is_empty(),
@@ -134,7 +134,7 @@ func _test_her_own_sidewalk_on_real_cities(t: TestRunner) -> void:
 								PendingWarning.route_down_her_line(map, at, her, way))
 						placed += 1
 						if _drawn_in(view, instance) and popped.size() < 3:
-							popped.append("seed %d, '%s' at %v along %v" % [seed_value, row.id, at, way])
+							popped.append("seed %d, '%s' at %v along %v" % [seed_value, row.id(), at, way])
 						instance.free()
 	t.check(placed > 100 and popped.is_empty(),
 			"on real cities, nothing any of %d sidewalk arrivals draws is in view on its first frame%s"

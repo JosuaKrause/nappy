@@ -15,10 +15,10 @@ extends RefCounted
 ## ships the 26px catch with the 116px lunge (`PursuitSpec.lunge_reach()` 38); the probe sets both
 ## per row, whatever the catalogue says.
 ##
-## The rig walks her along a line at the robber from outside his notice (`EventDef.notice`, read off
-## the row), and answers after a reaction time drawn per seed: `turns` runs away `reaction` seconds
-## after the lunge (the chase begins), accelerating at `Tuning.ACCELERATION`. Other rigs: stands
-## still, walks away, runs from the notice.
+## The rig walks her along a line at the robber from outside his notice
+## (`EventDef.notice_within()`, read off the row), and answers after a reaction time drawn per
+## seed: `turns` runs away `reaction` seconds after the lunge (the chase begins), accelerating
+## at `Tuning.ACCELERATION`. Other rigs: stands still, walks away, runs from the notice.
 
 const STEP := 1.0 / 60.0
 const SEEDS := 200
@@ -41,7 +41,7 @@ func _def(catch_radius: float, lunge: float) -> EventDef:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var draft := robbery.redraft()
 	draft.field(robbery.field().holding_to(catch_radius))
-	draft.pursuit(robbery.pursuit.lunging_from(lunge))
+	draft.pursuit(robbery.pursuit().lunging_from(lunge))
 	return draft.build()
 
 func _report(catch_radius: float, lunge: float) -> void:

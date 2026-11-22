@@ -224,7 +224,7 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t: Te
 ## - **And it is on the ground, quiet, until she walks up to it.** A flock that streamed in already
 ##   bursting would have spent its whole event two screens away; one that emitted its full 42/s
 ##   while pecking would be a place nobody can walk past. The birds leave the ground only once she
-##   is inside `EventDef.notice`, which is the telegraph contract paid in geometry.
+##   is inside `EventDef.notice_within()`, which is the telegraph contract paid in geometry.
 func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -237,7 +237,7 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	var planned_flocks := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		for plan in _planned(day):
-			if plan.row_id() != def.id:
+			if plan.row_id() != def.id():
 				continue
 			planned_flocks += 1
 			t.check(plan.is_placed(), "day %d's flock has ground of its own" % day)
@@ -330,7 +330,7 @@ func _test_a_crouching_event_holds_still_until_it_bolts(t: TestRunner) -> void:
 
 	# The duration has to outlast the crossing, or it expires in the middle of the road.
 	var crossing := float(EventDirector.CROSSING_REACH_TILES * Tuning.TILE_SIZE) * 2.0
-	t.check(def.duration >= crossing / def.speed(),
+	t.check(def.lasts_for() >= crossing / def.speed(),
 			"it lives long enough (%.2fs) to cross the whole street (%.2fs)"
-			% [def.duration, crossing / def.speed()])
+			% [def.lasts_for(), crossing / def.speed()])
 	instance.free()

@@ -138,7 +138,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 	var robber := events.spawner.create(EventCatalogue.by_id("alley_robbery"), at)
 	var first := events.spawner.create(lesson, at)
 	var second := events.spawner.create(dog, at)
-	t.check(lesson.id == "charging_dog_tutorial" and lesson != dog
+	t.check(lesson.id() == "charging_dog_tutorial" and lesson != dog
 			and lesson.pursues() and lesson.picture() == dog.picture(),
 			"the lesson's dog is a row of its own, drawn and chasing as the dog does")
 	t.check(first.logged_name() == "charging_dog_tutorial" and second.logged_name() == "charging_dog",
@@ -598,7 +598,7 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 		_start(day)
 		var by_row := {}
 		for plan in RunCity.events(_city).plans():
-			if plan.row().kind != GameEnums.EventKind.ONE_SHOT:
+			if not plan.row().is_a_one_shot():
 				continue
 			by_row[plan.row_id()] = int(by_row.get(plan.row_id(), 0)) + 1
 			owed_to_her_walk += 1
@@ -661,15 +661,15 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 ## and pins that its save restores the notice; the gap that shipped anyway
 ## was one level up — `EventPlan` had no field to hold the notice, so
 ## `EventStreaming.stream_in()` always restored a save with the default `INF` notice and a
-## `EventDef.notice` row streamed out mid-chase came back `is_waiting()`, standing where the day
-## planted it. This drives the same encounter through
+## row that waits for her (`EventDef.waits_for_her()`) streamed out mid-chase came back
+## `is_waiting()`, standing where the day planted it. This drives the same encounter through
 ## `EventStreaming.stream_in()`/`stream_out()` themselves, the only place that bug could
 ## actually live — the same kind of wiring question the rest of this suite exists for (see the
 ## class doc above).
 ##
-## `alley_robbery` rather than a scheduled plan: it carries `EventDef.notice` cold, with no heat
-## level or a particular day's roll needed to reach it, and a `EventPlan` built by hand is
-## deterministic where waiting for the scheduler to place one on some day would not be.
+## `alley_robbery` rather than a scheduled plan: it waits for her (`EventDef.waits_for_her()`) cold,
+## with no heat level or a particular day's roll needed to reach it, and a `EventPlan` built by
+## hand is deterministic where waiting for the scheduler to place one on some day would not be.
 func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var plan := EventPlan.new(def, Vector2(500.0, 500.0))
@@ -723,15 +723,15 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 	for def in EventCatalogue.all():
 		if not def.comes_down_her_line():
 			continue
-		checked.append(def.id)
+		checked.append(def.id())
 		# Nothing planned and nothing sited ahead of her, then the one row owed her from a route bag
 		# holding nothing else, as a scene's recipe hands it (`EventManager.start_recipe_route()`),
 		# due as soon as she is walking.
 		var nothing: Array[EventPlan] = []
 		events.start_recipe(nothing, DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2),
 				Tuning.RUN_TAUGHT_DAY + 2, Vector2.ZERO)
-		var owed := events.start_recipe_route([def.id], [def.id], 1, 0.0)
-		t.check(owed == 1, "the director owes her '%s' (%d)" % [def.id, owed])
+		var owed := events.start_recipe_route([def.id()], [def.id()], 1, 0.0)
+		t.check(owed == 1, "the director owes her '%s' (%d)" % [def.id(), owed])
 		var her := CrowdLanes.arterial_pavement(map)
 		for _tile in map.size.y / 2:
 			if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
@@ -757,7 +757,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 			if seen["warned_at"] < 0 and events.pending_warnings().size() > warnings_before:
 				seen["warned_at"] = seen["tick"]
 			for instance in events.instances():
-				if instance.row_id() == def.id and not before.has(instance):
+				if instance.row_id() == def.id() and not before.has(instance):
 					seen["arrived"] = instance
 					seen["arrived_at"] = seen["tick"]
 					seen["warnings_at_arrival"] = events.pending_warnings().size()
@@ -774,21 +774,21 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 		if not def.telegraphs_its_coming():
 			t.check(seen["warned_at"] < 0 and seen["arrived"] != null
 					and seen["warnings_at_arrival"] == warnings_before,
-					"'%s' does not telegraph: no warning goes up for it, it is created at once" % def.id)
+					"'%s' does not telegraph: no warning goes up for it, it is created at once" % def.id())
 		else:
 			t.check(seen["warned_at"] >= 0 and seen["warned_at"] < seen["arrived_at"],
 					"'%s' is warned of down her line on a tick before it exists (warned on %d, made on %d)"
-					% [def.id, seen["warned_at"], seen["arrived_at"]])
+					% [def.id(), seen["warned_at"], seen["arrived_at"]])
 		var arrived: EventInstance = seen["arrived"]
-		t.check(arrived != null, "'%s' is sent down her line and created" % def.id)
+		t.check(arrived != null, "'%s' is sent down her line and created" % def.id())
 		if not arrived:
 			continue
 		t.check(not arrived.is_telegraphing() and is_equal_approx(arrived.current_intensity(1.0), def.peak()),
 				("'%s' is created with its telegraph spent, emitting at its own intensity rather "
-				% def.id) + "than the telegraph's %.0f%%" % (EventInstance.TELEGRAPH_INTENSITY_FRACTION * 100.0))
+				% def.id()) + "than the telegraph's %.0f%%" % (EventInstance.TELEGRAPH_INTENSITY_FRACTION * 100.0))
 		if def.ends_the_day():
 			t.check(arrived.is_lethal_at(arrived.global_position),
-					"and '%s', declared as ending the day, is lethal from its first frame" % def.id)
+					"and '%s', declared as ending the day, is lethal from its first frame" % def.id())
 		events.retire(arrived)
 	if rig:
 		events.use_player(null)

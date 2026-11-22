@@ -73,7 +73,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 				"for that day, over the day's tree")
 		t.check((maker.made[0][2] as RowGround).tiles_for(def) == holds_it,
 				"on a ground that keeps off the home street, the spec holding the home's streets")
-	var rigged := ahead.rig_her_route([EventCatalogue.mast().id], 4)
+	var rigged := ahead.rig_her_route([EventCatalogue.mast().id()], 4)
 	t.check(not rigged.is_empty() and maker.made.size() == 1,
 			"a rigged route asks no second siting while the day has one (%d asks, %d marbles)"
 			% [maker.made.size(), rigged.size()])
@@ -81,7 +81,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	walk.set_plans([] as Array[EventPlan])
 	ahead.start_day(DAY, tree)
 	var before := maker.made.size()
-	ahead.rig_her_route([EventCatalogue.mast().id], 4)
+	ahead.rig_her_route([EventCatalogue.mast().id()], 4)
 	t.check(maker.made.size() == before + 1,
 			"a rigged route of a day with none asks the maker for one (%d asks, %d before)"
 			% [maker.made.size(), before])
@@ -91,7 +91,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	ahead.holds_the_home_streets = false
 	ahead.start_day(DAY, tree)
 	before = maker.made.size()
-	ahead.rig_her_route([EventCatalogue.mast().id], 4)
+	ahead.rig_her_route([EventCatalogue.mast().id()], 4)
 	t.check(maker.made.size() == before + 1
 			and (maker.made.back()[2] as RowGround).tiles_for(def) == leaves_it,
 			"and on one that offers it where the spec does not")

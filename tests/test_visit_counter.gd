@@ -610,10 +610,10 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 ## created where its warning pointed reports the chase it starts**. `EventManager.spawn_warned()`
 ## creates such a row through `EventInstance.restore()` to spend the telegraph the warning already
 ## ran, and a restore otherwise stands for an instance streamed back in, whose chase — for a row
-## like `charging_dog` that never waits (`EventDef.notice` 0.0) — began before it streamed out and
-## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
-## warned the way `spawn_warned()` does it (`arrive_from_its_warning()` told, then `restore()`), and
-## streamed back in mid-chase, which reports nothing a second time.
+## like `charging_dog` that never waits (`EventDef.notice_within()` 0.0) — began before it
+## streamed out and was already reported. Three arrivals of the one row: placed at once and
+## telegraphing, created warned the way `spawn_warned()` does it (`arrive_from_its_warning()`
+## told, then `restore()`), and streamed back in mid-chase, which reports nothing a second time.
 func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def.pursues() and def.notice_within() <= 0.0,
@@ -690,7 +690,7 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t: TestRunner) -> void:
 	_walk(dog, dog_where, Vector2(def.notice_within() - 10.0, 0.0), 0.5)
 	t.check(counter.sent.size() == 1, "walked out of and back into, it is not counted again (%s)"
 		% [counter.sent])
-	_walk(dog, dog_where, Vector2(standoff - 2.0, 0.0), def.pursuit.warns_for() + 0.2)
+	_walk(dog, dog_where, Vector2(standoff - 2.0, 0.0), dog.notice_time() + 0.2)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day, "nappy-day-%d-dog-chased" % day],
 		"its charge, once its warning has run with her still inside, is counted chased (%s)"
 		% [counter.sent])
@@ -775,7 +775,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t: TestRunner) -> void:
 	counter.sent.clear()
 	var outlasted_where := WhereSheIs.nowhere()
 	var outlasted := _charger(t, def, outlasted_where)
-	for i in int(round((def.telegraphs_for() + def.duration + 1.0) / step)):
+	for i in int(round((def.telegraphs_for() + def.lasts_for() + 1.0) / step)):
 		outlasted_where.tell(outlasted.global_position + Vector2(400.0, 0.0))
 		outlasted.step(step)
 		if outlasted.is_on_its_way_out():
@@ -865,9 +865,9 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(man_where))
 	t.add_child(man)
 	man.set_process(false)
-	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within() + 100.0)), 0.5)
+	_walk(man, man_where, Vector2(0.0, -(def.notice().runs_within() + 100.0)), 0.5)
 	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
-	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within() - 10.0)), 1.0 / 60.0)
+	_walk(man, man_where, Vector2(0.0, -(def.notice().runs_within() - 10.0)), 1.0 / 60.0)
 	t.check(counter.sent == [name + "warned", name + "chased"],
 		"his run is counted chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
@@ -885,7 +885,7 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(caught_where))
 	t.add_child(caught)
 	caught.set_process(false)
-	_walk(caught, caught_where, Vector2(0.0, -(def.notice.runs_within() - 10.0)),
+	_walk(caught, caught_where, Vector2(0.0, -(def.notice().runs_within() - 10.0)),
 			Tuning.WARNING_ALONE_MAX + 0.1)
 	caught.report_the_catch()
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
@@ -934,7 +934,7 @@ func _charger(t: Node, def: EventDef, where: WhereSheIs) -> EventInstance:
 ## finishes it, its own clock run out (or her shaken off), and says whether it did.
 func _finish_by_its_own_frames(instance: EventInstance, where: WhereSheIs) -> bool:
 	var step := 1.0 / 60.0
-	for i in int(round((instance.telegraphs_for() + instance.row().duration + 1.0) / step)):
+	for i in int(round((instance.telegraphs_for() + instance.row().lasts_for() + 1.0) / step)):
 		where.tell(instance.global_position + Vector2(400.0, 0.0))
 		instance.step(step)
 		if instance.is_on_its_way_out() or instance.is_gone():

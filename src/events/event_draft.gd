@@ -132,11 +132,9 @@ func known_as(row_id: String) -> void:
 	_id = row_id
 
 
-## The first day the row may appear (1-based, inclusive) and the act it belongs to narratively,
-## which only a scripted row's own first day reads (`EventDef.own_first_day()`).
-func from_day(first: int, act: int) -> void:
+## The first day the row may appear (1-based, inclusive).
+func from_day(first: int) -> void:
 	_first_day = first
-	_act_tag = act
 
 
 ## The last day the row may appear (inclusive); a row that never expires writes none.
@@ -150,10 +148,13 @@ func one_shot() -> void:
 
 
 ## A row something places itself, on the exact `day` (0, the day nobody plays, for the rows only
-## a director or a building places).
-func scripted_on(day: int) -> void:
+## a director or a building places), and the act it belongs to narratively: a scripted row's own
+## first day is the first day of its act (`EventDef.own_first_day()`), the one thing the act is
+## read for.
+func scripted_on(day: int, act: int) -> void:
 	_kind = GameEnums.EventKind.SCRIPTED
 	_scripted_day = day
+	_act_tag = act
 
 
 ## A permanent feature of a fixed map, which `source` makes (`EventDef.AmbientSource`).

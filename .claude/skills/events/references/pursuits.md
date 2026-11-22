@@ -1,6 +1,6 @@
 # Pursuits
 
-Read this before touching `EventDef.pursuit`, `EventDef.notice`, `PursuitSpec`, `NoticeSpec`,
+Read this before touching `EventDef.pursuit()`, `EventDef.notice()`, `PursuitSpec`, `NoticeSpec`,
 `EventPursuit`, `EventNoticeRun`, or any charger, robber or guard.
 
 The mechanics — the stand-off, the break-off as a rate, the waiting state — are
@@ -70,7 +70,7 @@ on, and verifying escape with the actual Baby meter.
 
 ## The waiting state
 
-Two more, about the waiting state (`EventDef.notice`): **whatever follows it starts when it notices
+Two more, about the waiting state (`EventDef.waits_for_her()`): **whatever follows it starts when it notices
 her**, not at dawn — for a pursuer its warning's clock, for anything else its telegraph; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
 false in the other's phase, so a picture that asks only the second holds its whole wait in the
 wrong posture.

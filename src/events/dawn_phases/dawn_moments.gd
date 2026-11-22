@@ -30,7 +30,7 @@ func run(context: DawnContext) -> void:
 		var open: Array[EventDef] = []
 		var total := 0.0
 		for def in rows:
-			if int(owed.get(def.id, 0)) < def.most_in_a_day():
+			if int(owed.get(def.id(), 0)) < def.most_in_a_day():
 				open.append(def)
 				total += def.drawn_as_often()
 		if open.is_empty():
@@ -42,5 +42,5 @@ func run(context: DawnContext) -> void:
 			if roll <= 0.0:
 				chosen = def
 				break
-		owed[chosen.id] = int(owed.get(chosen.id, 0)) + 1
+		owed[chosen.id()] = int(owed.get(chosen.id(), 0)) + 1
 		events.add(EventPlan.new(chosen, Vector2.INF))

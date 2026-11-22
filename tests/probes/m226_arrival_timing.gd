@@ -32,7 +32,7 @@ func run(t: TestRunner) -> void:
 	# The engine can use either road axis; the column's actual main-road lane is vertical.
 	for encounter: Dictionary in encounters.duplicate():
 		var row: EventDef = encounter["def"]
-		if row.id != "fire_truck":
+		if row.id() != "fire_truck":
 			continue
 		encounter["how"] += ", vertical"
 		# Rotate the factory's (-48,150) kerb and southbound travel through a quarter turn.
@@ -48,18 +48,18 @@ func run(t: TestRunner) -> void:
 	var count := 0
 	for encounter: Dictionary in encounters:
 		var def: EventDef = encounter["def"]
-		if def.id not in IDS or (def.id == "military_convoy" and not encounter.get("warned", false)):
+		if def.id() not in IDS or (def.id() == "military_convoy" and not encounter.get("warned", false)):
 			continue
-		var variants := [false, true] if def.id == "cyclist" else [false]
+		var variants := [false, true] if def.id() == "cyclist" else [false]
 		for pelican: bool in variants:
 			for answer in 3:
 				var row := collect(t, encounter, answer, pelican)
 				print("| %s | %s | %s | %s | %s | %s | %s | %s |" % [
-						"pelican" if pelican else def.id, encounter["how"],
+						"pelican" if pelican else def.id(), encounter["how"],
 						["toward", "standing", "away"][answer], seconds(row.badge_start),
 						seconds(row.created), seconds(row.entry), seconds(row.badge_removed),
 						seconds(float(row.entry) - float(row.created)) if row.entry != INF else "never"])
-				t.check(row.created != INF, "arrival collector actually creates %s" % def.id)
+				t.check(row.created != INF, "arrival collector actually creates %s" % def.id())
 				count += 1
 	t.check(count == 27, "both variants, both road axes and the vertical column cover 27 encounters")
 

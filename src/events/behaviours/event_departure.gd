@@ -84,7 +84,7 @@ func begin() -> void:
 	if not (_course.moves() and _figure.walks().size() > 1) and her != Vector2.INF \
 			and not _figure.place().is_equal_approx(her):
 		_figure.turn_to((_figure.place() - her).normalized())
-	if _row.vehicle != null:
+	if _row.drives():
 		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
 		# into her is refused, and a car that has a body she can stand against is gone only once she
 		# could not be watching. An investigating car reaches here only at the end of its route,

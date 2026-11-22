@@ -46,5 +46,5 @@ func run(context: DawnContext) -> void:
 		placed.append(RunTrace.tile(map.world_to_tile(plan.placed_at())))
 	context.note("plan", ("%d %s placed beside the day's routes, at %s; %d route tiles left with " +
 			"none close by, the phase done")
-			% [placed.size(), def.id, " ".join(placed) if not placed.is_empty() else "none",
+			% [placed.size(), def.id(), " ".join(placed) if not placed.is_empty() else "none",
 			phase.left_uncovered()])

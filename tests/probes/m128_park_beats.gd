@@ -18,7 +18,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const SEEDS: Array[int] = [4242, 90210, 1337]
-const BUSKER_DAY := 2  # `busker.first_day`.
+const BUSKER_DAY := 2  # The busker's first day.
 
 const OLD_BUSKER_INTENSITY := 13.0
 const OLD_BUSKER_INNER := 45.0
@@ -36,8 +36,8 @@ func run(t: TestRunner) -> void:
 
 # --------------------------------------------------------------- sleep over a whole day ---
 
-## `DAY_LENGTH_SECONDS` (210s, `busker.first_day` is day 2, an ordinary day) plus a 20s margin so
-## a chosen intensity does not sit exactly on the line — see the sweep below.
+## `DAY_LENGTH_SECONDS` (210s, the busker's first day is day 2, an ordinary day) plus a 20s
+## margin so a chosen intensity does not sit exactly on the line — see the sweep below.
 const _SLEEP_CAP_SECONDS := 230.0
 const _SWEEP_STEP := 0.1
 const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; never exceeded.

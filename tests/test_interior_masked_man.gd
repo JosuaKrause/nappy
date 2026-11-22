@@ -131,7 +131,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 
 ## **She has to run to the door** *(inbox #764 in minty-lemur, the player: "player should have to run to the
 ## door"; inbox #782 in minty-lemur, the player: the radius bigger, not him moved)*. He warns while she is in the
-## stairwell and runs his line once she is within `masked_pursuer.notice.runs_within()` of him
+## stairwell and runs his line once she is within the masked man's `NoticeSpec.runs_within()` of him
 ## (`EventNoticeRun`). Stepped at the game's own rhythm: the game's physics
 ## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
 ## carrying body moves with the real stair steering and collision, then the building's
@@ -190,7 +190,7 @@ func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: TestRunner) -
 ##
 ## Driven by the building's `EventManager` on real physics ticks, with her standing on the lobby's door at the shaft's
 ## foot for the whole run — off his line, clear of his reach, and inside
-## `masked_pursuer.notice.runs_within()` of where each man appears, so every man that appears
+## the masked man's `NoticeSpec.runs_within()` of where each man appears, so every man that appears
 ## notices her, warns her and runs rather than waiting at the bottom for ever.
 ##
 ## Three contracts, and the second is what keeps the first fair:

@@ -516,9 +516,9 @@ func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
 
 ## "A stationary actor whose action has a target faces that target": the waiting robber has not
 ## noticed her yet (`is_waiting()` stays true — `EventPursuit` only turns `_heading` toward her once
-## she is inside `EventDef.notice`), but a man only watching the street is worth nothing next to a
-## man watching *her*, so `robber_waiting_heading()` asks the event for the line to her
-## (`sight_line_to_her()`).
+## she is inside `EventDef.notice_within()`), but a man only watching the street is worth
+## nothing next to a man watching *her*, so `robber_waiting_heading()` asks the event for the
+## line to her (`sight_line_to_her()`).
 func _test_robber_waiting_faces_her(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
@@ -527,8 +527,8 @@ func _test_robber_waiting_faces_her(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(instance_where))
 	t.check(instance.is_waiting(), "nobody has come near him yet")
 	for sector in range(8):
-		# Well outside `EventDef.notice` (180px), so he never actually notices her — this is the
-		# waiting posture's own facing, not the notice turning `_heading` for it.
+		# Well outside `EventDef.notice_within()` (180px), so he never actually notices her —
+		# this is the waiting posture's own facing, not the notice turning `_heading` for it.
 		instance_where.tell(_heading_for_sector(sector) * (def.notice_within() + 40.0))
 		var heading := instance.look.robber_waiting_heading()
 		t.check(instance.is_waiting(), "still only waiting at sector %d" % sector)
@@ -555,8 +555,8 @@ func _test_robber_lunging_faces_her_through_the_chase(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
-	# Southeast of him and inside `EventDef.notice`, so one `EventPursuit` step notices her and turns to
-	# face her.
+	# Southeast of him and inside `EventDef.notice_within()`, so one `EventPursuit` step notices
+	# her and turns to face her.
 	var her := _heading_for_sector(1) * (def.notice_within() - 10.0)
 	instance_where.tell(her)
 	instance.step(STEP)
@@ -603,9 +603,10 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
 	t.check(instance.is_waiting()
 			and await _drawn_from(t, instance, [EventPictures.GUARD_STANDING_BY_VIEW]),
 			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `EventDef.notice` (900px), outside `NoticeSpec.runs_within()`: one step notices her,
-	# and he warns for as long as she stays there, longer than his `telegraphs_for()`.
-	instance_where.tell(Vector2(0.0, def.notice.runs_within() + 100.0))
+	# Inside `EventDef.notice_within()` (900px), outside `NoticeSpec.runs_within()`:
+	# one step notices her, and he warns for as long as she stays there, longer than
+	# his `telegraphs_for()`.
+	instance_where.tell(Vector2(0.0, def.notice().runs_within() + 100.0))
 	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
@@ -614,7 +615,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
 				and await _drawn_from(t, instance, [EventPictures.GUARD_ALERT_BY_VIEW])
 		instance.step(STEP)
 	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
-	instance_where.tell(Vector2(0.0, def.notice.runs_within() - 10.0))
+	instance_where.tell(Vector2(0.0, def.notice().runs_within() - 10.0))
 	for i in int(round(0.1 / STEP)):
 		instance.step(STEP)
 	t.check(not instance.is_telegraphing()
@@ -685,7 +686,7 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t: TestRunner) -> void
 	t.check(instance.facing_now().is_equal_approx(her.normalized()), "turned to face her")
 	var still := true
 	var alert := true
-	var warning_steps := int(round(def.pursuit.warns_for() / STEP)) - 3
+	var warning_steps := int(round(def.pursuit().warns_for() / STEP)) - 3
 	for i in warning_steps:
 		instance.step(STEP)
 		still = still and instance.global_position.is_equal_approx(Vector2.ZERO) \
@@ -704,7 +705,7 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t: TestRunner) -> void
 	_hold(instance, instance_where, her, STEP)
 	t.check(_is_drawn_from(await _stood_pictures(t, instance), EventPictures.CHARGING_DOG_ALERT_BY_VIEW),
 			"and back inside, it warns again")
-	_hold(instance, instance_where, her, def.pursuit.warns_for() + 0.2)
+	_hold(instance, instance_where, her, def.pursuit().warns_for() + 0.2)
 	# Galloping it draws both stride frames, one after the other, and only those.
 	var first_frame := false
 	var second_frame := false
@@ -820,7 +821,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t: TestRunner) -> voi
 			"the guard on her side has noticed her and stands for his notice")
 	t.check(_is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_ALERT_BY_VIEW), "hand raised")
 	var post := guard.global_position
-	_hold(guard, guard_where, her, hot.pursuit.warns_for() - 0.2)
+	_hold(guard, guard_where, her, hot.pursuit().warns_for() - 0.2)
 	t.check(guard.global_position.is_equal_approx(post)
 			and _is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_ALERT_BY_VIEW),
 			"at his post, hand raised, through his warning")
@@ -833,7 +834,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t: TestRunner) -> voi
 	t.check(guard.is_standing_for_its_notice()
 			and _is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_ALERT_BY_VIEW),
 			"and back inside it he raises his hand again")
-	_hold(guard, guard_where, her, hot.pursuit.warns_for() + 0.2)
+	_hold(guard, guard_where, her, hot.pursuit().warns_for() + 0.2)
 	t.check(not guard.is_telegraphing()
 			and _is_drawn_from(await _stood_pictures(t, guard), EventPictures.GUARD_LUNGING_BY_VIEW),
 			"then, his warning run with her still inside his radius, he lunges")
@@ -883,7 +884,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) 
 		for stops: bool in [true, false]:
 			var def := EventCatalogue.out_of_the_car(DaySpec.for_day(day_of[id]), stops)
 			var name := "%s out of %s" % [id, "a patrol car" if stops else "a hunting van"]
-			t.check(def.pursuit.stands_for_its_notice() and def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
+			t.check(def.pursuit().stands_for_its_notice() and def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
 					and is_equal_approx(def.telegraphs_for(), Tuning.WARNING_ALONE_MAX),
 					"%s stands for a %.1fs heads-up" % [name, def.telegraphs_for()])
 			var alert_pictures := EventPictures.POLICEMAN_ALERT_BY_VIEW \
@@ -933,7 +934,7 @@ func _drawn_from(t: TestRunner, instance: EventInstance, families: Array) -> boo
 func _test_no_guard_who_arrives_charging_takes_the_alert(t: TestRunner) -> void:
 	for id: String in ["van_guard_giving_chase", "policeman_giving_chase", "guardsman_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
-		t.check(def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and not def.pursuit.stands_for_its_notice(),
+		t.check(def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and not def.pursuit().stands_for_its_notice(),
 				"'%s' arrives charging and does not stand for a notice" % id)
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()

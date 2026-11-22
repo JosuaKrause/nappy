@@ -269,7 +269,7 @@ func _relocate_round(director: ResistanceDirector, player: Stroller, here: Vecto
 ## The feet of the chalk mark's guard as the street has him (the live `EventCatalogue.mark_guard()`
 ## among the test city's instances), or `Vector2.INF` when none stands, or more than one.
 func _marks_guard_feet() -> Vector2:
-	var guards := _live(EventCatalogue.mark_guard().id)
+	var guards := _live(EventCatalogue.mark_guard().id())
 	return guards[0].global_position if guards.size() == 1 else Vector2.INF
 
 ## **Every mark tile of the city of `seed_value`, relocated to in turn** (`_relocate_round()`), on
@@ -303,7 +303,7 @@ func _relocations_over_the_marks(t: TestRunner, seed_value: int, her_at: Callabl
 ## Where she stands to have a mark relocated onto `tile` with nothing about her refusing its guard:
 ## four tiles out from it through its mouth, on the ground beyond the mouth, so the mark tile is the
 ## one nearest her (its twin across a two-tile alley is farther, another alley's across the street)
-## and its guard, further in, is past his notice of her (`EventDef.notice`) even at a small
+## and its guard, further in, is past his notice of her (`EventDef.notice_within()`) even at a small
 ## courtyard's inner end. The tile's own centre when it has no mouth beside it.
 static func _outside_its_mouth(map: CityMap, tile: Vector2i) -> Vector2:
 	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
@@ -424,7 +424,7 @@ func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
 ## The warning `events` has up for the row `id`, or null.
 func _warning_for(events: EventManager, id: String) -> PendingWarning:
 	for warning in events.pending_warnings():
-		if warning.row().id == id:
+		if warning.row().id() == id:
 			return warning
 	return null
 

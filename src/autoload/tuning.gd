@@ -158,9 +158,10 @@ const COLUMN_SPACING := 128.0
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
-# *that* it answers to the resistance with `EventDef.hunts`; these say what answering costs.
-# Keeping the numbers here rather than on the rows is what stops heat becoming a per-row difficulty
-# dial — there is one ladder and every row that climbs it climbs the same one.
+# *that* it answers to the resistance (`EventDef.answers_to_heat()`); these say what
+# answering costs. Keeping the numbers here rather than on the rows is what stops heat
+# becoming a per-row difficulty dial — there is one ladder and every row that climbs it climbs
+# the same one.
 #
 # **All of it is spent between progress 0 and `RESISTANCE_GOAL`**, so the escalation is finished at
 # the moment the subquest qualifies rather than trailing past it.
@@ -924,11 +925,12 @@ const PURSUIT_SHAKEN_OFF := 0.35
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
 ##   found by walking a rig rather than by reading it.
 ## - **It notices her from outside its own stand-off**, or the notice is spent somewhere it was
-##   never going to move from and the telegraph is a formality. (`EventDef.notice` only.)
+##   never going to move from and the telegraph is a formality. (Only a row that waits for her,
+##   `EventDef.waits_for_her()`.)
 ## - **It cannot notice her from outside its own field.** What she is owed before a lethal thing
 ##   starts making decisions about her is the chance to have felt it: the meter is the only thing
 ##   that says a stranger in an alley is worth crossing the road for, and it says nothing at all
-##   past `outer_radius`. (`EventDef.notice` only.)
+##   past `outer_radius`. (Only a row with a notice radius, `EventDef.notice_within()`.)
 ##
 ## **Two clauses that used to be here are gone, and their absence is the design.** The chase used to
 ## end at a *distance*, so the contract needed "walking cannot reach it inside the chase" and

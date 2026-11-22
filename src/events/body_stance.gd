@@ -114,7 +114,7 @@ static func stands_side_on(body: BodySpec, map: WorldMap, at: Vector2, face: Vec
 	return absf(face.x) >= absf(face.y)
 
 ## The ground-plane direction a row's solid body's spine lies along, for whichever of the three
-## families ever has a segment shape: a car that drives (`EventDef.vehicle`), along its own
+## families ever has a segment shape: a car that drives (`EventDef.drives()`), along its own
 ## `heading`; a spread-drawn row, down the screen on a street laid that way (`spread_vertical`) and
 ## across it otherwise; or the one stationary-vehicle row wide enough to be a segment (`moving_van` —
 ## see `GroundShape.band()` on that row), which lies along whichever of the street's axes it is drawn

@@ -158,7 +158,7 @@ func _test_the_dog_walker_comes_down_her_sidewalk_toward_her(t: TestRunner) -> v
 		return
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
-	t.check(def.id == "dog_walker" and def.comes_down_her_line() and not def.warns_before_it_exists(),
+	t.check(def.id() == "dog_walker" and def.comes_down_her_line() and not def.warns_before_it_exists(),
 			"as the copy sent down her line, created at once with no warning first")
 	t.check(map.tile_at(map.world_to_tile(path[0])) == GameEnums.TileType.SIDEWALK
 			and path[0].y < _her().y - Tuning.VIEW_HALF_EXTENT.y,
@@ -417,7 +417,7 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 			continue
 		closest = minf(closest, walked - last_at)
 		last_at = walked
-		if (due[0] as EventDef).id == "police_patrol":
+		if (due[0] as EventDef).id() == "police_patrol":
 			patrols_came += 1
 	t.check(patrols_came >= 2, "and once there is room the patrols that waited come (%d)" % patrols_came)
 	t.check(closest >= EventDirector.AHEAD_INTERVAL.x - step,
@@ -579,7 +579,7 @@ func _test_the_copy_on_her_route_shares_its_rows_body(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	director.start_day(DAY, _no_plans(), rng)
-	var ids: Array[String] = [EventCatalogue.mast().id, "car_accident"]
+	var ids: Array[String] = [EventCatalogue.mast().id(), "car_accident"]
 	director.rig_her_route(ids, 2)
 	for id in ids:
 		var routed := director.route_row(id)

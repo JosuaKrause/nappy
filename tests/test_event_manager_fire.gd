@@ -106,9 +106,10 @@ func _start(day: int) -> void:
 
 # ------------------------------------------- the fire is on her way (M179) ---
 # *"the fire should come first and be on your way guaranteed (a dynamic event dependent on the
-# route you chose that day)"* (PLAYTEST-117). Day 3's fire carries `EventDef.on_her_way`, so
-# the day budgets it with no position and `EventDirector.site_what_is_on_her_way()` puts it on a
-# building face ahead of her once her heading for the day is clear.
+# route you chose that day)"* (PLAYTEST-117). Day 3's fire carries
+# `EventDef.is_sited_from_her_walk()`, so the day budgets it with no position and
+# `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her once her
+# heading for the day is clear.
 #
 # **These have to be here rather than in `tests/test_events.gd`.** Everything about the siting is a
 # function of where she actually walked, so it needs a real city, a real manager and something in
@@ -165,7 +166,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 				func() -> bool: return plan.is_placed() and RunCity.events(_city).sees(plan.placed_at()))
 	var warning: PendingWarning = null
 	for pending in RunCity.events(_city).pending_warnings():
-		if pending.row().id == "fire_truck":
+		if pending.row().id() == "fire_truck":
 			warning = pending
 	t.check(plan != null and warning != null, "she walks out, finds the fire, and the engine is warned")
 	if not warning:
@@ -383,7 +384,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 			# The engine is what the sight of it summons, and its warning goes up on that same frame.
 			var engine := false
 			for warning in RunCity.events(_city).pending_warnings():
-				engine = engine or warning.row().id == "fire_truck"
+				engine = engine or warning.row().id() == "fire_truck"
 			t.check(engine, "walking %s: and seeing it calls the engine in" % leg)
 		rig.free()
 	RunCity.events(_city).stream_within(INF)
@@ -484,7 +485,7 @@ func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 	t.check(not engine_in_the_world,
 			"and the engine it calls in is not in the world yet: its warning comes first")
 	for warning in RunCity.events(_city).pending_warnings():
-		if warning.row().id != "fire_truck":
+		if warning.row().id() != "fire_truck":
 			continue
 		engines += 1
 		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(rig.global_position, null),

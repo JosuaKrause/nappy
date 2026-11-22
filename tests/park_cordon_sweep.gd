@@ -199,7 +199,7 @@ func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 		var def := live.row()
 		if live.is_gone() or not live.is_on_its_way_out() or not area.has_point(live.global_position):
 			continue
-		if def.kind != GameEnums.EventKind.AMBIENT and not def.pursues() and not def.drives() \
+		if not def.is_ambient() and not def.pursues() and not def.drives() \
 				and not def.was_sent_at_her() and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 			people += 1
 	return people
@@ -363,7 +363,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 				reach = maxf(reach, def.lethal_reach() + Tuning.PLAYER_BODY_RADIUS)
 			if point.distance_to(plan.placed_at()) < reach:
 				clear = false
-				blocker = "%s %.0fpx away, reach %.0fpx" % [def.id, point.distance_to(plan.placed_at()),
+				blocker = "%s %.0fpx away, reach %.0fpx" % [def.id(), point.distance_to(plan.placed_at()),
 						reach]
 	var other := false
 	for tile in map.calm_tiles():

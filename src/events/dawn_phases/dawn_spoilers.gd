@@ -154,7 +154,7 @@ static func _spoil_one_park(context: DawnContext, rng: RandomNumberGenerator,
 			if plan == null:
 				continue
 		events.add(plan)
-		placed.append(def.id)
+		placed.append(def.id())
 	if placed.is_empty():
 		return
 	context.note("roll", "%s in the park she used yesterday, %s"

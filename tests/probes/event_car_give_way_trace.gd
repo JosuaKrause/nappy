@@ -31,7 +31,7 @@ func run(t: TestRunner) -> void:
 			for rig: Dictionary in _rigs(map):
 				var report := _drive(t, map, def, rig)
 				report["seed"] = city_seed
-				report["def"] = def.id
+				report["def"] = def.id()
 				report["speed"] = def.speed()
 				report["rig"] = rig["name"]
 				var route: PackedVector2Array = rig["route"]

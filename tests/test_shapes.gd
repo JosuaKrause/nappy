@@ -105,12 +105,12 @@ func _test_every_catalogue_row_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.picture() != EventDef.Look.NONE:
-			t.check(def.ground_shape() != null, "'%s' has a look and carries a shape" % def.id)
+			t.check(def.ground_shape() != null, "'%s' has a look and carries a shape" % def.id())
 		if def.obstructs_within() > 0.0:
 			checked += 1
 			t.check(_shape_agrees(def),
 					"'%s' obstructs %.1fpx and its shape reaches %.1fpx: they agree"
-					% [def.id, def.obstructs_within(),
+					% [def.id(), def.obstructs_within(),
 							def.ground_shape().reach() if def.ground_shape() else -1.0])
 	t.check(checked >= 20, "and most of the catalogue actually obstructs (%d rows)" % checked)
 
@@ -122,10 +122,10 @@ func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 			checked += 1
 			if hot.picture() != EventDef.Look.NONE:
 				t.check(hot.ground_shape() != null,
-						"'%s' at heat %d has a look and carries a shape" % [def.id, level])
+						"'%s' at heat %d has a look and carries a shape" % [def.id(), level])
 			t.check(_shape_agrees(hot),
 					"'%s' at heat %d: obstructs %.1fpx, shape reaches %.1fpx"
-					% [def.id, level, hot.obstructs_within(),
+					% [def.id(), level, hot.obstructs_within(),
 							hot.ground_shape().reach() if hot.ground_shape() else -1.0])
 	t.check(checked > EventCatalogue.all().size(), "every row was checked at every heat level")
 
@@ -170,7 +170,7 @@ func _test_every_spread_row_still_fills_the_pavement_it_blocked(t: TestRunner) -
 		checked += 1
 		t.check(def.ground_shape().rounding_radius() + Tuning.PLAYER_BODY_RADIUS > half_band,
 				("'%s' blocked the whole %.0fpx pavement band as a disc (%.0fpx + her %.0fpx); "
-						% [def.id, half_band * 2.0, def.obstructs_within(), Tuning.PLAYER_BODY_RADIUS])
+						% [def.id(), half_band * 2.0, def.obstructs_within(), Tuning.PLAYER_BODY_RADIUS])
 				+ ("its capsule (%.0fpx across + her %.0fpx) still does" % [def.ground_shape().rounding_radius(),
 						Tuning.PLAYER_BODY_RADIUS]))
 	t.check(checked >= 6, "and some spread row actually blocked a pavement to check (%d)" % checked)
@@ -473,7 +473,7 @@ func _test_approaching_costs_more_than_receding(t: TestRunner) -> void:
 ## D2: nobody builds the general capsule-and-ellipse sum, because a moving emitter's field is priced
 ## from its centre as a point (`GroundShape.field_distance()`). That is only true to the row's own
 ## body when the body lies inside its own field's core — the patrol car's 21px capsule inside its
-## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.vehicle`): the
+## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.drives()`): the
 ## core is full strength wherever the body is, and past it the point is wrong by at most the spine's
 ## half-length. A moving segment reaching past its core would quietly drop its own body from its
 ## field — this is the regression guard.
@@ -487,6 +487,6 @@ func _test_no_emitting_segment_row_moves(t: TestRunner) -> void:
 			continue
 		t.check(def.ground_shape().reach() <= def.core_within(),
 				("'%s' emits, is a segment and moves, so its %.0fpx body must lie inside its %.0fpx "
-				% [def.id, def.ground_shape().reach(), def.core_within()])
+				% [def.id(), def.ground_shape().reach(), def.core_within()])
 				+ "core (D2: moving objects are points)")
 	t.check(checked >= 1, "and at least one emitting segment row was actually checked (%d)" % checked)

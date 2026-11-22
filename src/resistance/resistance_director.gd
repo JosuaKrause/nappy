@@ -965,14 +965,15 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## `_maybe_set_a_trap()`). A mark stands only on a mark tile (`_marks()`; a recipe's pin off one is
 ## refused, `_the_pinned_mark()`), and every mark tile is in a through-alley or past a courtyard's
 ## passage, so a point on neither has no guard, as `_guard_spot()` answers off an alley. Every
-## candidate is refused within his `EventDef.notice` of `her` and, with `on_screen_matters`, where
-## he would be drawn in her view (brisk-wombat, "a robber also appeared out of nowhere and
-## instakilled me"): his spot is worked out from the contact alone, so those refusals are what keep
-## him off her. `Vector2.INF` when no candidate qualifies. Split out so a move of the roadblock's guard
+## candidate is refused within his `EventDef.notice_within()` of `her` and, with
+## `on_screen_matters`, where he would be drawn in her view (brisk-wombat, "a robber also
+## appeared out of nowhere and instakilled me"): his spot is worked out from the contact
+## alone, so those refusals are what keep him off her. `Vector2.INF` when no candidate
+## qualifies. Split out so a move of the roadblock's guard
 ## (`_move_the_task_guard_to_her_target()`) can ask where he would stand without spawning him.
-## `approach` and `near_side_too` are the roadblock's alone (`_roadblock_guard_spot()`): the way she
-## comes to it, and true for the guard placed with the task, false for a move of the guard already
-## there, which is how `_move_the_task_guard_to_her_target()` asks.
+## `approach` and `near_side_too` are the roadblock's alone (`_roadblock_guard_spot()`): the
+## way she comes to it, and true for the guard placed with the task, false for a move of the
+## guard already there, which is how `_move_the_task_guard_to_her_target()` asks.
 func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
 		on_screen_matters: bool, reach := ContactPoint.REACH, approach := Vector2.ZERO,
 		near_side_too := true) -> Vector2:
@@ -1011,8 +1012,8 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ##
 ## Refused, as every guard's ground is, where he may not stand (`SpawnSiting.CONTACT_GROUND`: not
 ## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — within
-## `EventDef.notice` of `her`, and, when `on_screen_matters`, anywhere any part of him would be on
-## screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
+## `EventDef.notice_within()` of `her`, and, when `on_screen_matters`, anywhere any part of him
+## would be on screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
 ## `TASK_GUARD_FARTHEST`, nearest ring first, on the same terms: the band can be wholly in her view
@@ -1426,11 +1427,12 @@ func _guard_spot(at: Vector2) -> Vector2:
 ## have to lure the robber out first.")* His distance from the mark is whatever the courtyard leaves.
 ##
 ## **Beyond `max_distance` of the mark wherever the courtyard is deep enough for that** —
-## `EventDef.notice` plus `ContactPoint.REACH`, so reading the mark leaves him asleep — drawn
-## anywhere from the inner end up to `FAR_END_REACH_IN` in from it but never nearer the mark than
-## that. **Where the inner end itself is nearer than that, he stands on it**: no farther place
-## exists. An ordinary courtyard is four tiles square, so he is often inside `max_distance` and may
-## wake as she reads the mark; she lures him out, as the player found in play.
+## `EventDef.notice_within()` plus `ContactPoint.REACH`, so reading the mark leaves him
+## asleep — drawn anywhere from the inner end up to `FAR_END_REACH_IN` in from it but never
+## nearer the mark than that. **Where the inner end itself is nearer than that, he stands on
+## it**: no farther place exists. An ordinary courtyard is four tiles square, so he is often
+## inside `max_distance` and may wake as she reads the mark; she lures him out, as the
+## player found in play.
 ##
 ## **Never within `min_distance` of the mark**, whatever the ground — `core_within()`, his catch
 ## (`EventDef.lethal_reach()`), plus `ContactPoint.REACH`: a touch from anywhere within reach of
@@ -3472,7 +3474,7 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 		return
 	if task.rigs_within <= 0:
 		return
-	var row := EventCatalogue.mast().id if task.target_kind == ResistanceSteps.TargetKind.MAST \
+	var row := EventCatalogue.mast().id() if task.target_kind == ResistanceSteps.TargetKind.MAST \
 			else task.task_event_id
 	var size := task.rigs_within
 	var ids: Array[String] = [row]

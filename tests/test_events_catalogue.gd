@@ -76,7 +76,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 		var expected := _SPREAD_LOOKS.has(source.picture()) \
 				and source.picture() != EventDef.Look.PROTEST and source.picture() != EventDef.Look.FIREFIGHT
 		t.check(source.lies_as_a_spread() == expected,
-				"catalogue row '%s' says it is a spread exactly when its picture is one" % source.id)
+				"catalogue row '%s' says it is a spread exactly when its picture is one" % source.id())
 
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	var reshaped := cafe.redraft()
@@ -123,10 +123,10 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 		drafts.append(SealPlanner.sealed_variant(source, false))
 	var kept := 0
 	for copy in drafts:
-		if copy.body() == EventCatalogue.by_id(copy.id).body():
+		if copy.body() == EventCatalogue.by_id(copy.id()).body():
 			kept += 1
 		else:
-			t.check(false, "a copy of '%s' shares its row's body" % copy.id)
+			t.check(false, "a copy of '%s' shares its row's body" % copy.id())
 	t.check(kept == drafts.size() and kept > 0,
 			"every copy the game makes (redrafted, sent ahead (warned first where it is), for a day, heated, sealed) shares its row's body (%d)" % kept)
 
@@ -184,7 +184,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 		if is_centred:
 			solid_unpinned += 1
 		t.check((stands != at) == is_centred,
-				"%s stands %s" % [def.id, "on the middle of its band, off its lane" if is_centred else "where it is put"])
+				"%s stands %s" % [def.id(), "on the middle of its band, off its lane" if is_centred else "where it is put"])
 	t.check(solid_unpinned > 0, "the catalogue has a stationary solid row the pavement does not pin")
 	var road := Vector2i(-1, -1)
 	for y in map.size.y:
@@ -202,7 +202,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 		if kerbed:
 			at_the_kerb += 1
 		t.check(stands == (CityMap.kerb_beside(on_the_road) if kerbed else on_the_road),
-				"%s stands %s" % [def.id, "on the kerb beside its lane" if kerbed else "where it is put on the road"])
+				"%s stands %s" % [def.id(), "on the kerb beside its lane" if kerbed else "where it is put on the road"])
 	t.check(at_the_kerb > 0, "the catalogue has a row that spans the street and stands at its kerb")
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
@@ -285,7 +285,7 @@ func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t: TestRunner) -> v
 		var over_a_hold := def.peak() * EventCatalogue.CHECKPOINT_DETAIN_SECONDS
 		t.check(over_a_hold < Tuning.CHAT_EXCITEMENT,
 				("one '%s' bills %.1f over a %.0fs hold at its core rate, under the %.1f the hold "
-				+ "itself charges") % [def.id, over_a_hold, EventCatalogue.CHECKPOINT_DETAIN_SECONDS,
+				+ "itself charges") % [def.id(), over_a_hold, EventCatalogue.CHECKPOINT_DETAIN_SECONDS,
 				Tuning.CHAT_EXCITEMENT])
 	t.check(barriers > 0, "there were barrier structures to ask (%d)" % barriers)
 
@@ -298,14 +298,14 @@ func _test_catalogue_is_fair(t: TestRunner) -> void:
 	var defs := EventCatalogue.all()
 	t.check(not defs.is_empty(), "the catalogue is not empty")
 	for def in defs:
-		t.check(def.id != "", "every event has an id")
-		t.check(def.validate(), "event '%s' gives the player time to walk clear" % def.id)
-		if def.kind != GameEnums.EventKind.AMBIENT and (def.telegraphs_its_coming() or not def.comes_down_her_line()):
+		t.check(def.id() != "", "every event has an id")
+		t.check(def.validate(), "event '%s' gives the player time to walk clear" % def.id())
+		if not def.is_ambient() and (def.telegraphs_its_coming() or not def.comes_down_her_line()):
 			t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
 					"event '%s' warns %.2fs before it can reach her >= minimum %.2fs"
-					% [def.id, def.warning_time(), def.minimum_telegraph()])
+					% [def.id(), def.warning_time(), def.minimum_telegraph()])
 		t.check(def.heard_within() > def.core_within(),
-				"event '%s' has a falloff band to fade across" % def.id)
+				"event '%s' has a falloff band to fade across" % def.id())
 
 	# Ambient events are exempt because they never "appear"; assert that is deliberate.
 	var playground := EventCatalogue.by_id("playground")
@@ -333,11 +333,11 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 	warned.append(EventSpawner.as_warned(EventCatalogue.by_id("charging_dog")))
 	var ids: Array[String] = []
 	for def in warned:
-		ids.append(def.id)
+		ids.append(def.id())
 		t.check(def.warned_for() <= Tuning.WARNING_ALONE_MAX + 0.001,
 				"'%s' is warned of %.2fs before it exists, at most the %.2fs ceiling"
-				% [def.id, def.warned_for(), Tuning.WARNING_ALONE_MAX])
-		t.check(def.validate(), "and '%s' gives what it owes" % def.id)
+				% [def.id(), def.warned_for(), Tuning.WARNING_ALONE_MAX])
+		t.check(def.validate(), "and '%s' gives what it owes" % def.id())
 		if def.pursues():
 			continue
 		var widening := def.redraft()
@@ -347,7 +347,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
 				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),
 				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
-				% [def.id, def.minimum_telegraph(), wider.minimum_telegraph()])
+				% [def.id(), def.minimum_telegraph(), wider.minimum_telegraph()])
 				+ "and half as fast again: the flat %.2fs either way" % Tuning.OFFSCREEN_WARNING_MIN)
 	for id: String in ["cyclist", "fire_truck", "military_convoy", "charging_dog",
 			"robber_giving_chase", "van_guard_giving_chase"]:
@@ -415,9 +415,9 @@ func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t: TestRunner
 	for row in EventCatalogue.all():
 		if row.announces_its_coming(walk):
 			t.check(not EventPictures.icon_for(row.picture()).is_empty(),
-					"'%s' is announced and has a silhouette for its badge" % row.id)
+					"'%s' is announced and has a silhouette for its badge" % row.id())
 		if row.ends_the_day():
-			t.check(row.lethal_reach() > 0.0, "'%s' ends the day within a reach" % row.id)
+			t.check(row.lethal_reach() > 0.0, "'%s' ends the day within a reach" % row.id())
 
 ## **`as_warned_first()` keeps the row's body pieces, as every other copy of a row does** (`at_heat()`,
 ## `EventDef.for_day()`, `EventCatalogue.neighbor_heading_home()`, `SealPlanner`'s variants: each
@@ -485,16 +485,16 @@ func _test_a_row_sent_ahead_of_her_is_sent_as_its_own_copy(t: TestRunner) -> voi
 ## `PARK` and `ALLEY` are wide open and carry no bound here; a tile type with no clearance defined is
 ## skipped rather than treated as a failure.
 ##
-## **Blind spot, not a hole this test can close:** `barricade` carries no `def.placement` of its
+## **Blind spot, not a hole this test can close:** `barricade` lists no `ground_kinds()` of its
 ## own — it is a spawn sited wherever `military_convoy` stopped rather than placed by
-## `def.placement` — so the loop below never sees it and a future regression on its
+## `ground_kinds()` — so the loop below never sees it and a future regression on its
 ## `obstructs_within()` would pass silently. Checked by hand instead: it lands on `ROAD` (its
 ## spawning row's own placement), and 62px sits inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
 ## (`burnt_shell`, the other row with no placement, has no body to fit.)
 ##
 ## **The same blind spot covers every seal-only row** (`fallen_tree`, `car_accident`,
 ## `skip`, `scaffolding`, `burst_water_main`, `moving_van`, `burnt_out_car`,
-## `collapsed_frontage`) — none carries a `def.placement` either, since `SealPlanner` sites them
+## `collapsed_frontage`) — none lists a `ground_kinds()` either, since `SealPlanner` sites them
 ## directly from the street lattice rather than through `EventScheduler`'s tile pool. Their
 ## clearance is checked in `tests/test_seals.gd` instead, against the street's own 192px width
 ## rather than a single tile's, which is the ground they actually stand on.
@@ -517,7 +517,7 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 			checked += 1
 			t.check(half <= clearance,
 					"'%s' draws %.0fpx wide, which fits the %.0fpx that a %d-type tile clears"
-					% [def.id, half * 2.0, clearance * 2.0, tile_type])
+					% [def.id(), half * 2.0, clearance * 2.0, tile_type])
 	t.check(checked >= 6, "and the rule covers the catalogue's spread rows (%d checks)" % checked)
 
 ## **The kerb exception must not silently regress.** `delivery_van` and `ice_cream_van` are
@@ -716,12 +716,12 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 				side, true, def.obstructs_within() * 2.0)
 		var end_extent := EventPictures.stationary_vehicle_extent(
 				end, false, def.obstructs_within() * 2.0)
-		t.check(side != end, "'%s' has distinct side and end artwork" % def.id)
+		t.check(side != end, "'%s' has distinct side and end artwork" % def.id())
 		t.check(is_equal_approx(side_extent.x, def.obstructs_within() * 2.0),
-				"'%s' side view fits the diameter of its solid body" % def.id)
+				"'%s' side view fits the diameter of its solid body" % def.id())
 		t.check(end_extent.is_equal_approx(EventPictures.native_size(end))
 				and end_extent.x < side_extent.x,
-				"'%s' end view keeps its narrower authored projection" % def.id)
+				"'%s' end view keeps its narrower authored projection" % def.id())
 
 ## **A spread never lands on a corner.** `RowGround._is_a_corner()` refuses any tile whose two
 ## coordinates are both inside a corridor band to a row whose body `BodySpec.as_a_spread()` names — see
@@ -999,12 +999,12 @@ func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 			continue
 		var expected := 1 if def.body().ground_shape() != null else 0
 		t.check(def.body().pieces().size() == expected,
-				"'%s' is one body, or none where it has no shape (%d)" % [def.id, expected])
+				"'%s' is one body, or none where it has no shape (%d)" % [def.id(), expected])
 		if def.obstructs_within() > 0.0:
 			t.check(is_equal_approx(def.solid_reach(), def.obstructs_within()),
 					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "
 					+ "readings of a body only come apart for a row that is several")
-					% [def.id, def.solid_reach(), def.obstructs_within()])
+					% [def.id(), def.solid_reach(), def.obstructs_within()])
 
 ## No two rows draw the same picture, and the rows that draw nothing are named.
 ##
@@ -1020,12 +1020,12 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 	var owner_of := {}
 	for def in EventCatalogue.all():
 		if def.picture() == EventDef.Look.NONE:
-			t.check(invisible.has(def.id), "'%s' draws nothing on purpose" % def.id)
+			t.check(invisible.has(def.id()), "'%s' draws nothing on purpose" % def.id())
 			continue
 		t.check(not owner_of.has(def.picture()),
 				"'%s' has a picture of its own (else shared with '%s')"
-				% [def.id, owner_of.get(def.picture(), "")])
-		owner_of[def.picture()] = def.id
+				% [def.id(), owner_of.get(def.picture(), "")])
+		owner_of[def.picture()] = def.id()
 	for id: String in invisible:
 		var def := EventCatalogue.by_id(id)
 		t.check(def != null and def.picture() == EventDef.Look.NONE,
@@ -1045,13 +1045,13 @@ func _test_every_look_carries_its_own_silhouette(t: TestRunner) -> void:
 		if def.picture() == EventDef.Look.NONE:
 			continue
 		var icon := EventPictures.icon_for(def.picture())
-		t.check(not icon.is_empty(), "'%s' has a silhouette a badge could draw" % def.id)
+		t.check(not icon.is_empty(), "'%s' has a silhouette a badge could draw" % def.id())
 		if icon.is_empty():
 			continue
 		t.check(not seen.has(icon),
 				"'%s' draws %s, which nothing else draws (else '%s')"
-				% [def.id, icon.get_file(), seen.get(icon, "")])
-		seen[icon] = def.id
+				% [def.id(), icon.get_file(), seen.get(icon, "")])
+		seen[icon] = def.id()
 
 ## **A row drawn on a building stands nothing on the sidewalk**: no body and no shadow where the
 ## row is sited, since its picture is on the building behind it. `docs/EVENTS.md`, "Solid things
@@ -1093,7 +1093,7 @@ func _test_a_row_is_weighed_only_on_ground_it_stands_on(t: TestRunner) -> void:
 	var stray: Array[String] = []
 	for def in EventCatalogue.all():
 		if def.is_weighed_on_ground_it_cannot_stand_on():
-			stray.append(def.id)
+			stray.append(def.id())
 	t.check(stray.is_empty(), "every catalogue row is weighed only where it stands (%s)" % [stray])
 	var stray_draft := EventDraft.new("bad")
 	stray_draft.ground([GameEnums.TileType.SIDEWALK] as Array[int])
@@ -1126,5 +1126,5 @@ func _test_every_copy_of_a_row_keeps_its_ground_weights(t: TestRunner) -> void:
 					and row.weight_on(ground) < 1.0)
 			kept = kept and copy.weight_on(ground) == row.weight_on(ground)
 		t.check(copy != row and set_under_one, "'%s' is copied, and weighed under one on a ground"
-				% row.id)
+				% row.id())
 		t.check(kept, "and its copy keeps its weight on every kind of ground")

@@ -56,9 +56,9 @@ func run(t: TestRunner) -> void:
 		var asleep_old := rate * Baby.SLEEPING_SENSITIVITY - 3.5
 		var asleep_now := rate * Baby.SLEEPING_SENSITIVITY - Tuning.EXCITEMENT_DECAY_WALKING
 		print("%-22s %8.2f %10.2f %10.2f %10.2f %10.2f"
-				% [def.id, rate, awake_old, awake_now, asleep_old, asleep_now])
+				% [def.id(), rate, awake_old, awake_now, asleep_old, asleep_now])
 		if awake_now <= 0.0:
-			flagged.append(def.id)
+			flagged.append(def.id())
 	print("\n== rows at or below zero net awake, today's decay (%.1f/s) ==" % Tuning.EXCITEMENT_DECAY_WALKING)
 	if flagged.is_empty():
 		print("  none")
@@ -70,7 +70,7 @@ func run(t: TestRunner) -> void:
 func _walkable_beside(def: EventDef) -> bool:
 	if def.peak() <= 0.0:
 		return false
-	if def.id in _SCENERY or def.id in _DETAINERS:
+	if def.id() in _SCENERY or def.id() in _DETAINERS:
 		return false
 	if def.pursues() or def.notice_within() > 0.0:
 		return false

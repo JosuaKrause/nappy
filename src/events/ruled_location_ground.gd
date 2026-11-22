@@ -103,7 +103,7 @@ func offer_on(def: EventDef, location: Location, tiles: Array[Vector2i],
 ## asked, and by whoever asks (the unit's draw, her walk's siting).
 func _stream_of(def: EventDef, location: Location) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%s:%s" % [_base, location.tiles(), def.id])
+	rng.seed = hash("%d:%s:%s" % [_base, location.tiles(), def.id()])
 	return rng
 
 ## **The event `def` would be at `location`**: a candidate built on each of `fits` in the order

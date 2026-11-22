@@ -268,7 +268,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 			checked += 1
 			t.check(not def.reaches_the_far_lane(),
 					"day %d: '%s' is friction on a sidewalk and denies %.1fpx of it, so the far"
-					% [day, def.id, def.line_reach()]
+					% [day, def.id(), def.line_reach()]
 					+ " lane (%.0fpx out) is still a line" % float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE))
 	t.check(checked >= 2,
 			"and the catalogue has rows on a sidewalk to ask it of (%d)" % checked)
@@ -306,11 +306,11 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 			placed_on += 1
 			t.check(role == GameEnums.BlockerRole.WALL,
 					"day %d: '%s' leaves %.1fpx where she needs %.0f (obstructs %.1fpx, %s), so it has to"
-					% [day, def.id, gap, her_clearance, def.obstructs_within(),
+					% [day, def.id(), gap, her_clearance, def.obstructs_within(),
 					EventDef.Pavement.keys()[def.sidewalk_lane()]]
 					+ " be placed as a wall rather than friction")
 		narrow_and_placed += 1 if placed_on > 0 else 0
-		t.check(placed_on > 0, "'%s' is placed on one of the days asked (%d)" % [def.id, placed_on])
+		t.check(placed_on > 0, "'%s' is placed on one of the days asked (%d)" % [def.id(), placed_on])
 	t.check(solid_on_a_sidewalk >= 4,
 			"and the catalogue has solid, non-pacing sidewalk rows to ask this of (%d)"
 			% solid_on_a_sidewalk)
@@ -405,7 +405,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 			asked += 1
 			t.check(wanted > 0,
 					"'%s' is pinned %s, and the %s ground it lists has %d tiles that side exists on"
-					% [def.id, EventDef.Pavement.keys()[def.sidewalk_lane()],
+					% [def.id(), EventDef.Pavement.keys()[def.sidewalk_lane()],
 					GameEnums.TileType.keys()[type], wanted])
 	t.check(asked >= 4, "and the catalogue has pinned rows to ask it of (%d)" % asked)
 	# The pool the roll actually draws from, for the one row the player asked about: `poster_crew`
@@ -1064,8 +1064,8 @@ func _test_a_lethal_rows_line_reach_is_its_whole_field(t: TestRunner) -> void:
 		lethal += 1
 		t.check(is_equal_approx(def.line_reach(), maxf(def.heard_within(), def.obstructs_within())),
 				"%s: a lethal row's line reach is its whole field (%.0fpx)"
-				% [def.id, def.line_reach()])
+				% [def.id(), def.line_reach()])
 	t.check(lethal > 0, "the catalogue has lethal rows to ask (%d)" % lethal)
 	for def in EventCatalogue.all():
 		t.check(def.line_reach() >= def.obstructs_within(),
-				"%s: no row reaches less than its own body" % def.id)
+				"%s: no row reaches less than its own body" % def.id())

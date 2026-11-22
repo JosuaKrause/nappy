@@ -1,10 +1,10 @@
 class_name AbductionSpec
 extends RefCounted
-## **The unmarked van takes somebody first** (`EventDef.abduction`, `EventAbduction`): the first time
-## she comes close enough to see it, a bystander is walked to the van and taken. Drawing and
-## telemetry only — nothing here reaches into the crowd, and nothing here changes the van's field.
-## The hunting copies carry the same take (`EventDef.at_heat()` keeps it), which stops the moment
-## the van notices her.
+## **The unmarked van takes somebody first** (`EventDef.takes_a_victim_by()`, `EventAbduction`):
+## the first time she comes close enough to see it, a bystander is walked to the van and taken.
+## Drawing and telemetry only — nothing here reaches into the crowd, and nothing here changes
+## the van's field. The hunting copies carry the same take (`EventDef.at_heat()` keeps it),
+## which stops the moment the van notices her.
 ##
 ## A value: built once by `standard()`, never changed, shared by a row and its copies.
 

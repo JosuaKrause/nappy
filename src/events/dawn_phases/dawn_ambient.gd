@@ -19,7 +19,7 @@ static func _plans(context: DawnContext) -> Array[EventPlan]:
 	var map := context.map()
 	var planned: Array[EventPlan] = []
 	for def in context.catalogue_rows(GameEnums.EventKind.AMBIENT):
-		match def.ambient_source:
+		match def.ambient_source():
 			EventDef.AmbientSource.PLAYGROUND:
 				for rect in map.playground_rects():
 					planned.append(EventPlan.new(def, map.tile_rect_to_world(rect).get_center()))

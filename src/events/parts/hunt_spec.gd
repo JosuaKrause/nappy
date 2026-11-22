@@ -1,8 +1,8 @@
 class_name HuntSpec
 extends RefCounted
 ## **How a row hunts her once the resistance has heated it past its rung's threshold**: the
-## behaviour `EventDef.at_heat()` attaches to its copy (`EventDef.hunting`), authored on the cold row
-## (`EventDef.hunts`). One of two shapes, never both:
+## behaviour `EventDef.at_heat()` attaches to its copy, authored on the cold row
+## (`EventDef.answers_to_heat()` says which rows have one). One of two shapes, never both:
 ##
 ## - **A vehicle that lets men out** (`lets_out()`): once it notices her it stops and lets that many
 ##   men out on foot, who pursue her (`EventInvestigation`); the vehicle itself never chases. The

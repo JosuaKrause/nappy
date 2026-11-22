@@ -160,7 +160,7 @@ The events:
   `dog-outlasted` count what they always counted, and **day 13's task guard counts as
   `task-guard`**, waiting at his roadblock or sent from out of her view: his own rows,
   `task_guard` (`EventCatalogue.task_guard()`) and `task_guard_sent`, whose charges count as his
-  (`EventDef.counts_charges_as`), apart from every other alley robber and sent robber. A man out of a
+  (`EventDef.charges_counted_as()`), apart from every other alley robber and sent robber. A man out of a
   patrol car or a hunting van counts under his row, `policeman-giving-chase` or
   `guardsman-giving-chase`, as the one a torn poster sends does.
   **The day-3 lesson's dog has its own set**, `nappy-day-3-dog-tutorial-chased`, `-caught`,

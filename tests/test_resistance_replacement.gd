@@ -222,11 +222,11 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t: TestRunne
 
 ## brisk-wombat's other half: *"a robber also appeared out of nowhere and instakilled me."* A
 ## guard's own spot is worked out from the mark alone, with no idea where she is standing, so a mark
-## relocating right up to where she stands could put him inside his own `EventDef.notice`, or worse
-## inner radius (an end of the day with no warning), of wherever she actually is unless his placement
-## also refuses that. Read off the street over every mark tile of `SWEEP_SEEDS`' cities, each
-## relocated onto with her standing on it (`_relocations_over_the_marks()`) — the closest a real
-## guard's own spot ever gets to her.
+## relocating right up to where she stands could put him inside his own
+## `EventDef.notice_within()`, or worse inner radius (an end of the day with no warning), of
+## wherever she actually is unless his placement also refuses that. Read off the street over
+## every mark tile of `SWEEP_SEEDS`' cities, each relocated onto with her standing on it
+## (`_relocations_over_the_marks()`) — the closest a real guard's own spot ever gets to her.
 func _test_a_guard_never_lands_within_his_own_reach_of_her(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var checked := 0
@@ -269,7 +269,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 		for i in range(0, through.size(), 2):
 			var her := map.tile_to_world(through[i])
 			_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
-			var guards_before := _live(EventCatalogue.mark_guard().id)
+			var guards_before := _live(EventCatalogue.mark_guard().id())
 			var mark := _relocate_round(director, player, her, away)
 			if mark == Vector2.INF:
 				continue
@@ -277,7 +277,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 			t.check(not _box_on_screen(mark, Vector2(16.0, 16.0), her),
 					"seed %d: from %s, no part of the relocated mark at %s is on screen"
 					% [seed_value, through[i], map.world_to_tile(mark)])
-			var guard := _new_one(EventCatalogue.mark_guard().id, guards_before)
+			var guard := _new_one(EventCatalogue.mark_guard().id(), guards_before)
 			t.check(guard != null, "seed %d: the mark relocated to %s is guarded"
 					% [seed_value, map.world_to_tile(mark)])
 			if guard != null:

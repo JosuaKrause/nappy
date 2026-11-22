@@ -52,11 +52,11 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 		# is sited on — the fire on its facade, the burnt building it leaves — so there is no
 		# silhouette here for a body to be half of either. `tests/test_events_catalogue.gd` holds
 		# both to having none.
-		if def.id in ["burning_building", "burnt_shell"]:
+		if def.id() in ["burning_building", "burnt_shell"]:
 			continue
 		checked += 1
 		t.check(def.obstructs_within() > 0.0,
-				"'%s' stands still, so it is solid" % def.id)
+				"'%s' stands still, so it is solid" % def.id())
 	t.check(checked >= 15,
 			"and the rule covers most of the catalogue (%d rows)" % checked)
 
@@ -74,7 +74,7 @@ func _test_a_lethal_thing_can_still_be_reached(t: TestRunner) -> void:
 		lethal += 1
 		t.check(def.obstructs_within() + Tuning.PLAYER_BODY_RADIUS < def.core_within(),
 				"'%s' is solid to %.0f and lethal inside %.0f, so touching it still ends the day"
-				% [def.id, def.obstructs_within(), def.core_within()])
+				% [def.id(), def.obstructs_within(), def.core_within()])
 	t.check(lethal > 0, "and there are lethal solid things to check")
 
 ## `Tuning.PLAYER_BODY_RADIUS` is a copy of a number authored in the player's scene, and the rule

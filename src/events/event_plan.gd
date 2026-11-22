@@ -31,7 +31,7 @@ var _mast_id := ""
 var _silenced := false
 
 ## **A plan that comes again** (`repeats()`): seconds from one of its instances coming to the
-## next, and seconds from one being done to the next coming (`EventDef.repeat_every`,
+## next, and seconds from one being done to the next coming (`EventDef.comes_again_every()`,
 ## `repeat_after`, the row's unless a placement gives this plan its own, as each of the building's
 ## vents has its own period). Streaming keeps the clock they set (`EventStreaming`).
 var _repeat_every := 0.0
@@ -121,13 +121,13 @@ func is_spent() -> bool:
 func spend() -> void:
 	_spent = true
 
-## The id of the row this plan places (`EventDef.id`).
+## The id of the row this plan places (`EventDef.id()`).
 func row_id() -> String:
-	return _def.id
+	return _def.id()
 
 ## Whether `other` places the same row as this plan.
 func is_the_same_row_as(other: EventPlan) -> bool:
-	return _def.id == other._def.id
+	return _def.id() == other._def.id()
 
 ## Where the day placed this plan, `Vector2.INF` while it is unsited (`is_placed()`). Its instance
 ## may have moved since: `where_it_stands_now()` answers where it is.

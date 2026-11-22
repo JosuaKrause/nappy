@@ -193,12 +193,12 @@ func _check_a_task_stands_unguarded_until_it_is_handed_over(t: TestRunner, day: 
 		who: String, mark_guarded: String, at: String) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
-	var mark_guards := _live(EventCatalogue.mark_guard().id)
+	var mark_guards := _live(EventCatalogue.mark_guard().id())
 	director.start_day(day, _rng(day, "resistance"), 300.0)
-	var mark_guard := _new_one(EventCatalogue.mark_guard().id, mark_guards)
+	var mark_guard := _new_one(EventCatalogue.mark_guard().id(), mark_guards)
 	t.check(mark_guard != null, mark_guarded)
 	var robbers_before := _robbers_on_the_street()
-	var task_guards := _live(EventCatalogue.task_guard().id)
+	var task_guards := _live(EventCatalogue.task_guard().id())
 	_read_the_mark(director)
 	var task := director.current_step()
 	t.check(task != null and task.index == 2 * (day - 6) + 2, "%s is active" % perform)
@@ -206,7 +206,7 @@ func _check_a_task_stands_unguarded_until_it_is_handed_over(t: TestRunner, day: 
 			"activating it stands no %s at %s (%d before, %d after)"
 			% [who, at, robbers_before, _robbers_on_the_street()])
 	t.check(mark_guard != null and not mark_guard.is_gone()
-			and _new_one(EventCatalogue.task_guard().id, task_guards) == null,
+			and _new_one(EventCatalogue.task_guard().id(), task_guards) == null,
 			"the only guard is still the mark's own")
 	var trap_row := task.trap_row if task else "robber_giving_chase"
 	t.check(_live(trap_row).is_empty() and _warning_for(RunCity.events(_city), trap_row) == null,
@@ -227,8 +227,8 @@ func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	_city.start_day(state, 13, _rng(13, "closures"))
 	RunCity.events(_city).start_day(DaySpec.for_day(13), _rng(13, "events"), [],
 			_city.map.doorstep_world_position())
-	var mark_row := EventCatalogue.mark_guard().id
-	var task_row := EventCatalogue.task_guard().id
+	var mark_row := EventCatalogue.mark_guard().id()
+	var task_row := EventCatalogue.task_guard().id()
 	var director := _director(t)
 	var mark_guards := _live(mark_row)
 	director.start_day(13, _rng(13, "resistance"), 300.0)
@@ -290,7 +290,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t: TestRunner) ->
 			director.free()
 			continue
 		var marks_guard := 1 if mark_guard else 0
-		t.check(_live(EventCatalogue.task_guard().id).is_empty()
+		t.check(_live(EventCatalogue.task_guard().id()).is_empty()
 				and _robbers_on_the_street() == before + marks_guard,
 				"day %d: no robber waits at the task (%d before dawn, %d now, the mark's %d)"
 				% [day, before, _robbers_on_the_street(), marks_guard])
@@ -338,9 +338,9 @@ func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	RunCity.events(_city).start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var before := _robbers_on_the_street()
 	var director := _director(t)
-	var mark_guards := _live(EventCatalogue.mark_guard().id)
+	var mark_guards := _live(EventCatalogue.mark_guard().id())
 	director.start_day(day, _rng(day, "resistance"), 300.0)
-	var mark_guard := _new_one(EventCatalogue.mark_guard().id, mark_guards)
+	var mark_guard := _new_one(EventCatalogue.mark_guard().id(), mark_guards)
 	var offered := director.current_step()
 	if offered and offered.is_pickup:
 		_read_the_mark(director)
@@ -532,7 +532,7 @@ func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: 
 		return start
 	var caught := false
 	var elapsed := 0.0
-	while elapsed < chaser.telegraphs_for() + chaser.row().duration \
+	while elapsed < chaser.telegraphs_for() + chaser.row().lasts_for() \
 			and not chaser.is_gone() and not caught:
 		RunCity.events(_city).world.where_she_is().tell(her)
 		chaser.step(STEP)
@@ -785,7 +785,7 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 	var velocity := speed if absf(speed) <= Tuning.WALK_SPEED else 0.0
 	var elapsed := 0.0
 	var was_telegraphing := true
-	while elapsed < def.telegraphs_for() + def.duration + 1.0:
+	while elapsed < def.telegraphs_for() + def.lasts_for() + 1.0:
 		var wanted := speed
 		if elapsed >= turn_to_run_after:
 			wanted = -Tuning.RUN_SPEED
@@ -859,7 +859,7 @@ func _assert_a_trap_row_is_never_the_schedulers(t: TestRunner, id: String) -> vo
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		for heat in EventCatalogue.heat_levels():
 			for def in EventCatalogue.available_on(day, heat):
-				t.check(def.id != id,
+				t.check(def.id() != id,
 						"day %d at heat %d does not offer '%s'" % [day, heat, id])
 	var map := CityGenerator.generate(SEED)
 	var consumed: Array[String] = []

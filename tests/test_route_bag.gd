@@ -293,7 +293,7 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 		while counted < length and walked < 2000.0:
 			var due := director.due(STEP, at, velocity)
 			if not due.is_empty():
-				var id := (due[0] as EventDef).id
+				var id := (due[0] as EventDef).id()
 				# A row owed as itself — a sprinkled dog — is not one of the bag's marbles.
 				if expected.has(id):
 					met[id] = int(met.get(id, 0)) + 1
@@ -352,7 +352,7 @@ func _test_day_one_hands_out_two_dog_walkers_among_the_first_three(t: TestRunner
 		while handed.size() < EventDirector.DAY_ONE_DOG_WALKERS_WITHIN and walked < 400.0:
 			var due := director.due(STEP, at, velocity)
 			if not due.is_empty():
-				handed.append((due[0] as EventDef).id)
+				handed.append((due[0] as EventDef).id())
 			at += velocity * STEP
 			if at.y < 0.0 or at.y > y_max:
 				velocity.y = -velocity.y
@@ -400,7 +400,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 			at += velocity * STEP
 			walked += STEP
 			if not due.is_empty():
-				first = (due[0] as EventDef).id
+				first = (due[0] as EventDef).id()
 				first_at = walked
 		t.check(first == "charging_dog_tutorial",
 				"seed %d: the first thing she meets is the lesson's dog, its own row (%s)"
@@ -478,7 +478,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 		director.site_what_is_on_her_way(STEP, at, velocity)
 		var due := director.due(STEP, at, velocity)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 		at += velocity * STEP
 		if at.y < 0.0 or at.y > y_max:
 			velocity.y = -velocity.y

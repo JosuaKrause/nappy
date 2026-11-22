@@ -404,11 +404,12 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 ## half-diagonal the way a centre-distance test would — a nearest-point test already sees a tile's
 ## corner for what it is. A bigger margin here (an earlier build used the half-diagonal-plus-body
 ## sum, 38px, over a centre-distance test) blocks a wider ring than the true kill radius needs,
-## and on a two-tile-wide alley — the guard's own placement, `alley_robbery.placement = [ALLEY]`,
-## and *"a robber who never moves is avoidable by walking two tiles wide of him"* — a wide enough
-## ring can span the whole width and leave no tile within one hop of wherever she is already
-## standing that is not itself still "blocked", which is a plan that can never get out from
-## wherever it started rather than one that avoids the guard. See `_hazard_tiles()`'s own doc.
+## and on a two-tile-wide alley — the guard's own placement, `alley_robbery`'s `ground_kinds()`
+## being `[ALLEY]`, and *"a robber who never moves is avoidable by walking two tiles wide of
+## him"* — a wide enough ring can span the whole width and leave no tile within one hop of
+## wherever she is already standing that is not itself still "blocked", which is a plan that can
+## never get out from wherever it started rather than one that avoids the guard. See
+## `_hazard_tiles()`'s own doc.
 const _HAZARD_MARGIN := Tuning.PLAYER_BODY_RADIUS
 
 ## Whether `instance` is a lethal place worth planning a route around at all — live, and standing

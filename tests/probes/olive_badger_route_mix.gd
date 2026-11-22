@@ -150,7 +150,7 @@ func _measure_the_return() -> void:
 					director.owe_the_return(day, 0)
 				var step := minf(STEP, day_len - t)
 				var due: Array = director.due(step, pos, vel)
-				if returned and not due.is_empty() and (due[0] as EventDef).id == "police_patrol":
+				if returned and not due.is_empty() and (due[0] as EventDef).id() == "police_patrol":
 					in_leg += 1
 				pos += vel * step
 				if pos.y < 0.0 or pos.y > y_max:
@@ -181,7 +181,7 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 		var step := minf(STEP, day_len - t)
 		var due: Array = director.due(step, pos, vel)
 		if not due.is_empty():
-			met.append((due[0] as EventDef).id)
+			met.append((due[0] as EventDef).id())
 		pos += vel * step
 		if pos.y < 0.0 or pos.y > y_max:
 			vel.y = -vel.y
@@ -199,7 +199,7 @@ func _intended_shares(day: int) -> Dictionary:
 		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER \
 				and not def.is_sent_ahead():
 			continue
-		shares[def.id] = def.drawn_as_often()
+		shares[def.id()] = def.drawn_as_often()
 		total += def.drawn_as_often()
 	for id: String in shares:
 		shares[id] = float(shares[id]) / total

@@ -569,7 +569,7 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 ## **the drawn content's bottom edge lands on the southernmost point of its body**, the crowd car's
 ## own registration rule (`CarLook.body_anchor()`), because every view is a standing elevation whose
 ## bottom row is the car's nearest ground contact. The body is its `shape`, a capsule centred on the
-## node and laid along the heading (`EventDef.vehicle`), so its southern reach is its spine's half
+## node and laid along the heading (`EventDef.drives()`), so its southern reach is its spine's half
 ## length (`GroundShape.spine_half_length()`) times `|heading.y|` plus its rounding
 ## (`GroundShape.rounding_radius()`) — the patrol car's 12px driving east or west, 21 north or
 ## south — plus the view's own canvas margin (`EventPictures.canvas_margins()`), and the picture
@@ -618,10 +618,10 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 ## and **nothing built stands between them** (`EventInstance.sight_line_to_her()`, the test his
 ## notice asks), since she is the one thing worth turning toward before he has actually noticed
 ## her — `EventPursuit`'s own `is_waiting()` branch does not turn the event until she is inside
-## `EventDef.notice`, see that function's doc. With a building between them he has not seen her, so
-## he does not visibly track her round the corner, since noticing needs a clear line
-## (inbox #648 in leafy-puffin): he keeps the facing he was sited with, which is also the harmless
-## default a data-level rig with no player position gets.
+## `EventDef.notice_within()`, see that function's doc. With a building between them he has not
+## seen her, so he does not visibly track her round the corner, since noticing needs a clear
+## line (inbox #648 in leafy-puffin): he keeps the facing he was sited with, which is also the
+## harmless default a data-level rig with no player position gets.
 func robber_waiting_heading() -> Vector2:
 	var toward := event.sight_line_to_her()
 	return toward if toward != Vector2.ZERO else event.facing_now()

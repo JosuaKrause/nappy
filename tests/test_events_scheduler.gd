@@ -160,7 +160,7 @@ func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 		for day in range(1, 15):
 			for plan in GameDawn.of(DaySpec.for_day(day), rng_for.call(day), map).masts(sites) \
 					.spent(consumed).plan().placements():
-				if plan.row().kind != GameEnums.EventKind.ONE_SHOT:
+				if not plan.row().is_a_one_shot():
 					continue
 				t.check(int(seen.get(plan.row_id(), day)) == day,
 						"one-shot '%s' is planned on one day of a run" % plan.row_id())
@@ -265,11 +265,11 @@ func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 ## The review finding on M100, a mouse in the alley: `alley_mouse` is `MAP`-placed at dawn,
 ## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
 ## a row that started telegraphing the moment it existed dashed and finished off screen before she
-## ever walked into the alley — nothing happened, from where she was standing. `EventDef.notice`
-## without `EventDef.pursuit` (`EventDef.notice`'s own note, `EventNoticeRun`) is
-## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
-## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
-## isolation.
+## ever walked into the alley — nothing happened, from where she was standing.
+## A row that waits for her without pursuing (`EventDef.waits_for_her()`, not `EventDef.pursues()`;
+## its own note, `EventNoticeRun`) is the fix: this holds the whole sequence end to end, on a real
+## generated alley, rather than only the crossing axis
+## `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in isolation.
 func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_mouse")
 	t.check(def.notice_within() > 0.0 and not def.pursues(),
@@ -405,7 +405,7 @@ func _test_successors_resolve(t: TestRunner) -> void:
 			continue
 		t.check(EventCatalogue.by_id(def.leaves_behind()) != null,
 				"'%s' spawns '%s', which exists in the catalogue"
-				% [def.id, def.leaves_behind()])
+				% [def.id(), def.leaves_behind()])
 
 ## The opposite direction: `aftermath.calls_in()` names what arrives once a row has been seen,
 ## `aftermath.leaves_behind()`'s own check above, mirrored. `burning_building` is the only row that
@@ -418,11 +418,11 @@ func _test_sighted_successors_resolve(t: TestRunner) -> void:
 		checked += 1
 		t.check(EventCatalogue.by_id(def.calls_in()) != null,
 				"'%s' summons '%s' on sight, which exists in the catalogue"
-				% [def.id, def.calls_in()])
+				% [def.id(), def.calls_in()])
 	t.check(checked > 0, "there is at least one row with an aftermath.calls_in() ('burning_building')")
 
 ## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can
-## put one in the world — see `EventDef.aftermath.calls_in()` on `burning_building`.
+## put one in the world — see `EventDef.calls_in()` on `burning_building`.
 func _test_fire_truck_is_never_scheduled(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")
@@ -595,7 +595,7 @@ static func _walls_of(plans: Array[EventPlan]) -> int:
 	var count := 0
 	for plan in plans:
 		if plan.role() == GameEnums.BlockerRole.WALL and plan.is_placed() \
-				and plan.row().kind == GameEnums.EventKind.RECURRING:
+				and plan.row().is_of_kind(GameEnums.EventKind.RECURRING):
 			count += 1
 	return count
 
@@ -972,7 +972,7 @@ func _test_the_fixed_parts_hold_their_locations(t: TestRunner) -> void:
 		var locations := dawn.locations()
 		var map := _map()
 		for part in events.placements():
-			if part.row().role != EventDef.Role.MAST and part.row().kind != GameEnums.EventKind.AMBIENT:
+			if not part.row().is_a_mast() and not part.row().is_ambient():
 				continue
 			var tile := map.world_to_tile(part.placed_at())
 			var location := locations.holding(tile, map.tile_at(tile))
@@ -1000,7 +1000,7 @@ func _test_a_scripted_row_takes_a_location_of_its_own(t: TestRunner) -> void:
 		var events := dawn.events()
 		var map := _map()
 		for plan in events.placements():
-			if plan.row().kind != GameEnums.EventKind.SCRIPTED or plan.row().is_a_mast() \
+			if not plan.row().is_of_kind(GameEnums.EventKind.SCRIPTED) or plan.row().is_a_mast() \
 					or not plan.is_placed() or plan.is_a_fixed_part():
 				continue
 			asked += 1

@@ -1,6 +1,7 @@
 class_name Aftermath
 extends RefCounted
-## **The rows an event brings after it** (`EventDef.aftermath`): the scar it leaves on the run, the
+## **The rows an event brings after it** (a row's own, asked through `EventDef.scar_id()`,
+## `EventDef.leaves_behind()` and `EventDef.calls_in()`): the scar it leaves on the run, the
 ## row it leaves where it ends, and the row it calls in once she has seen it. One resource because
 ## they are one thing to take away: the escape's rows and the seals' are made without them
 ## (`EventCatalogue.without_its_aftermath()`, `SealPlanner`), where the run has no mornings left

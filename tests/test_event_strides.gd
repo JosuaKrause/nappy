@@ -130,7 +130,7 @@ func _test_waiting_robber_holds_frame_a(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().hearing(instance_where))
-	# Well outside `EventDef.notice`, so he stays `is_waiting()` for the whole run.
+	# Well outside `EventDef.notice_within()`, so he stays `is_waiting()` for the whole run.
 	instance_where.tell(Vector2(9999.0, 9999.0))
 	for i in 120:
 		instance.step(STEP)
@@ -330,7 +330,7 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
 	instance.abduction.step(0.0)
 	t.check(not instance.look.victim_gait_is_stepping(), "the walk starts on frame a")
 	var saw_b := false
-	var steps := int(instance.row().abduction.taken_over() / STEP)
+	var steps := int(instance.row().takes_a_victim_by().taken_over() / STEP)
 	for i in steps:
 		instance.restore(EventSave.aged(instance.age() + STEP))
 		if instance.look.victim_gait_is_stepping():

@@ -141,9 +141,9 @@ func _rows_differing_in_one_setting(definition: EventDef) -> Dictionary:
 		var faster := _draft_of(definition)
 		faster.route(_route_at_another_speed(definition.route(), definition.speed() + 3.0))
 		rows["speed"] = faster.build()
-	if definition.pursuit:
+	if definition.pursues():
 		var chasing := _draft_of(definition)
-		chasing.pursuit(definition.pursuit.at_speed(definition.pursuit.speed() + 3.0))
+		chasing.pursuit(definition.pursuit().at_speed(definition.pursuit().speed() + 3.0))
 		rows["chase speed"] = chasing.build()
 	return rows
 
@@ -232,44 +232,44 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(source_where))
 		if source.row().is_a_flock():
 			source.flock.build()
-		_event_parity(t, source, Vector2(80.0, 0.0), definition.id + " before player")
+		_event_parity(t, source, Vector2(80.0, 0.0), definition.id() + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.restore(EventSave.aged(phase))
 			for at: Vector2 in [Vector2(-170.0, 30.0), Vector2(20.0, 30.0), Vector2(1000.0, 0.0)]:
 				source.source().set_her_motion(Vector2(92.0, 0.0), 6.0, 0.8)
-				_event_parity(t, source, at, definition.id + " phase/position")
+				_event_parity(t, source, at, definition.id() + " phase/position")
 				if source.source().expected_gross_at(at) > 0.0:
 					positive += 1
 		var at := Vector2(-170.0, 30.0)
 		source.source().set_her_motion(Vector2(92.0, 0.0))
 		# All writes happen without advancing age or the engine frame.
 		source.position += Vector2(9.0, 4.0)
-		_event_parity(t, source, at, definition.id + " source movement")
+		_event_parity(t, source, at, definition.id() + " source movement")
 		source._heading = Vector2.DOWN
-		_event_parity(t, source, at, definition.id + " source heading")
-		if source.row().notice:
+		_event_parity(t, source, at, definition.id() + " source heading")
+		if source.row().waits_for_her():
 			source._notice_her()
 		else:
 			source.transition(EventInstance.Phase.WARNING)
-		_event_parity(t, source, at, definition.id + " noticed")
+		_event_parity(t, source, at, definition.id() + " noticed")
 		source.transition(EventInstance.Phase.ACTIVE)
-		_event_parity(t, source, at, definition.id + " lunged")
+		_event_parity(t, source, at, definition.id() + " lunged")
 		source.transition(EventInstance.Phase.PARKED)
-		_event_parity(t, source, at, definition.id + " parked")
+		_event_parity(t, source, at, definition.id() + " parked")
 		source.transition(EventInstance.Phase.ACTIVE)
 		source.source().set_her_motion(Vector2(43.0, 71.0))
-		_event_parity(t, source, at, definition.id + " player velocity")
+		_event_parity(t, source, at, definition.id() + " player velocity")
 		source.source().set_her_motion(Vector2(43.0, 71.0), 0.0, 0.35)
-		_event_parity(t, source, at, definition.id + " sensitivity")
+		_event_parity(t, source, at, definition.id() + " sensitivity")
 		if source.detains_her():
 			source.hold.start()
-			_event_parity(t, source, at, definition.id + " chatting")
+			_event_parity(t, source, at, definition.id() + " chatting")
 		source_where.tell(at, Vector2.INF, Rect2(), false, false)
-		_event_parity(t, source, at, definition.id + " sleep")
+		_event_parity(t, source, at, definition.id() + " sleep")
 		if source.hold:
 			source.hold.stop()
 		source.source().set_outranked(true)
-		_event_parity(t, source, at, definition.id + " outranked")
+		_event_parity(t, source, at, definition.id() + " outranked")
 		source.source().set_outranked(false)
 		# A row can no longer be told apart from another by being changed, so each setting the
 		# projection reads is held by a second row that differs in that one setting, handed to the
@@ -281,31 +281,31 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			# The cache holds the last answer, so the row's own is asked first: a cache that does
 			# not notice the other row hands that one back.
 			_under_a_different_row(source, own_row)
-			_event_parity(t, source, at, definition.id + " its own row before a different " + label)
+			_event_parity(t, source, at, definition.id() + " its own row before a different " + label)
 			_under_a_different_row(source, others[label] as EventDef)
-			_event_parity(t, source, at, definition.id + " a different " + label)
+			_event_parity(t, source, at, definition.id() + " a different " + label)
 		_under_a_different_row(source, own_row)
-		_event_parity(t, source, at, definition.id + " its own row again")
+		_event_parity(t, source, at, definition.id() + " its own row again")
 		# A row of another shape is a second row, as the field's settings are: the shape is not
 		# replaced under the live event.
 		var reshaping := _draft_of(definition)
 		reshaping.body(own_row.body().reshaped(GroundShape.segment(17.0, 12.0)))
 		var reshaped_row := reshaping.build()
 		_under_a_different_row(source, reshaped_row)
-		_event_parity(t, source, at, definition.id + " shape replacement")
+		_event_parity(t, source, at, definition.id() + " shape replacement")
 		source.ground_shape().half_length = 63.0
-		_event_parity(t, source, at, definition.id + " shape length mutation")
+		_event_parity(t, source, at, definition.id() + " shape length mutation")
 		source.ground_shape().kind = GroundShape.Kind.RECT
 		source.ground_shape().half_extents = Vector2(52.0, 8.0)
-		_event_parity(t, source, at, definition.id + " shape kind/extents mutation")
+		_event_parity(t, source, at, definition.id() + " shape kind/extents mutation")
 		source._body._spread_vertical = not source._body._spread_vertical
 		source._body._stationary_vehicle_side = not source._body._stationary_vehicle_side
-		_event_parity(t, source, at, definition.id + " body axis")
+		_event_parity(t, source, at, definition.id() + " body axis")
 		var shapeless := _draft_of(definition)
 		shapeless.body(BodySpec.none())
 		var shapeless_row := shapeless.build()
 		_under_a_different_row(source, shapeless_row)
-		_event_parity(t, source, at, definition.id + " no shape")
+		_event_parity(t, source, at, definition.id() + " no shape")
 		# No row is replaced under a live event: its behaviours (`EventBehaviours.compose()`) and its
 		# excitement source (`EventExcitement.use_row_and_where_she_is()`) answer from the row they
 		# were handed as it was set up. A flock, whose birds are never cached, is asked again with
@@ -316,17 +316,17 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			source.birds()[0].place(source.birds()[0].at() + Vector2(17.0, 4.0))
 			source.birds()[0].face(Vector2.LEFT)
 			source.birds()[0].speed += 10.0
-			_event_parity(t, source, at, definition.id + " bird geometry")
+			_event_parity(t, source, at, definition.id() + " bird geometry")
 			t.check(source.sampling_runs > runs, "flock always samples its mutable birds")
 		# Silenced last: nothing un-silences a live event, and a leaving or a retired one answers 0
 		# silenced or not, so the two checks after it still hold their own phases.
 		source.silence()
-		_event_parity(t, source, at, definition.id + " silence")
+		_event_parity(t, source, at, definition.id() + " silence")
 		source.transition(EventInstance.Phase.LEAVING)
-		_event_parity(t, source, at, definition.id + " leaving")
+		_event_parity(t, source, at, definition.id() + " leaving")
 		source.transition(EventInstance.Phase.ACTIVE)
 		retiring.retire(source)
-		_event_parity(t, source, at, definition.id + " retired")
+		_event_parity(t, source, at, definition.id() + " retired")
 		sampled += source.sampling_runs
 		source.free()
 	t.check(sampled > 100 and positive > 20, "catalogue sweep samples live positive projections")

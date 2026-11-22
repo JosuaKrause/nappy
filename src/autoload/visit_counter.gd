@@ -401,7 +401,8 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 ## (`EventInstance._charger_name()`'s `charging_dog_tutorial`), which sends its own set and not the
 ## dog's *(PLAYTEST-141: "we need to record like dog tutorial")*; every other row its id hyphenated,
 ## as the encounter events are (`alley_robbery` -> `alley-robbery`), and `task-guard` for day 13's
-## task guard, his row `task_guard`, whose sent copy counts as him (`EventDef.counts_charges_as`).
+## task guard, his row `task_guard`, whose sent copy is counted under it
+## by `EventDef.charges_counted_as()`.
 static func _charger_counter_name(id: String) -> String:
 	match id:
 		"charging_dog":

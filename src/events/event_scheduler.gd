@@ -335,7 +335,7 @@ static func clearance_around_her(def: EventDef) -> float:
 ## through the legend. `TOWARD_PLAYER` is sited by the same director for the same reason and gets
 ## the same answer. `spawn_mode_on(day)` is what this asks rather than `spawn_mode` alone, since a
 ## row like `charging_dog` answers `NONE` on `Tuning.RUN_TAUGHT_DAY` — a director moment, exactly
-## like the cat — and `WALL` every day after, once it is `EventDef.from_day_after`'s `MAP`
+## like the cat — and `WALL` every day after, once it is `EventDef.spawn_mode_on()`'s `MAP`
 ## placement and the scheduler has chosen it a tile like any other lethal row.
 ##
 ## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to
@@ -408,12 +408,12 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 		doors: PackedVector2Array, calm: CalmAreas, standing: Array[EventPlan] = [],
 		locations: DayLocations = null, why: Array[String] = []) -> EventPlan:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
-		why.append("%s is not placed on the map on day %d" % [def.id, day])
+		why.append("%s is not placed on the map on day %d" % [def.id(), day])
 		return null
 	def = def.for_day(day)
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
-		why.append("%s is not at the middle of a tile" % def.id)
+		why.append("%s is not at the middle of a tile" % def.id())
 		return null
 	if locations == null:
 		locations = DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
@@ -423,7 +423,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 		return null
 	var fit := LocationFit.new(day, map, builder, row_ground(map, corridor))
 	if not tile in fit.tiles(def, location):
-		why.append("the location holding tile %s does not take %s there" % [tile, def.id])
+		why.append("the location holding tile %s does not take %s there" % [tile, def.id()])
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
@@ -433,13 +433,13 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 		run = location.run()
 	var candidate := fit.build(def, tile, rng, run)
 	if not candidate:
-		why.append("%s cannot be built on tile %s" % [def.id, tile])
+		why.append("%s cannot be built on tile %s" % [def.id(), tile])
 		return null
 	var around := already.duplicate()
 	around.append_array(standing)
 	var rules := StreetInvalidation.new(map, corridor, calm.unused_ground(), doors, null)
 	if rules.room(candidate, role_for(def, day), tile, already, around) == -INF:
-		why.append("the day's rules refuse %s on tile %s" % [def.id, tile])
+		why.append("the day's rules refuse %s on tile %s" % [def.id(), tile])
 		return null
 	return candidate
 

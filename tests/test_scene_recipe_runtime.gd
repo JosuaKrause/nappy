@@ -440,9 +440,9 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 		var tiles := _placeable_tiles(city, def, own_run.header().day(), int(case[1]))
 		for i in tiles.size():
 			var at := city.map.tile_to_world(tiles[i])
-			entries.append({"name": "%s_%d" % [def.id, i], "row": def.id, "at": [at.x, at.y]})
+			entries.append({"name": "%s_%d" % [def.id(), i], "row": def.id(), "at": [at.x, at.y]})
 		t.check(entries.size() == int(case[1]), "%d places for %s are found (%d)"
-				% [int(case[1]), def.id, entries.size()])
+				% [int(case[1]), def.id(), entries.size()])
 		var runtime := SceneRecipeRuntime.new()
 		runtime.configure({"data": {"setup": {"day": own_run.header().day(), "events": entries,
 				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {},
@@ -451,7 +451,7 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 				DaySpec.for_day(own_run.header().day(), Tuning.DAY_LENGTH_SECONDS))
 		var capped := errors.any(func(e: String) -> bool:
 				return e.contains("exceeds the ordinary per-day cap"))
-		t.check(capped != bool(case[2]), "%d of %s %s: %s" % [int(case[1]), def.id,
+		t.check(capped != bool(case[2]), "%d of %s %s: %s" % [int(case[1]), def.id(),
 				"are installed with no cap" if bool(case[2]) else "are refused by the day's cap",
 				errors])
 		runtime.free()

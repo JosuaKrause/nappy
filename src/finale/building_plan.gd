@@ -86,7 +86,8 @@ static func fire_tile(map: InteriorMapPlan) -> Vector2i:
 	return at
 
 ## The masked man, at the foot of the shaft the fire did not take, running its whole height, and
-## another of him this long after the last has run out of the top (`masked_pursuer.repeat_after`).
+## another of him this long after the last has run out of the top
+## (`masked_pursuer.comes_again_after()`).
 ##
 ## **His path is the staircase itself** (`InteriorMapPlan.stairwell_walk()`): the shaft's own
 ## branchless walk, landing to landing, so every step he takes is ground she could be standing on.
