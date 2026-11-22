@@ -503,7 +503,8 @@ class _BucketLook extends EventLook:
 
 	static func watching(instance: EventInstance) -> _BucketLook:
 		instance.look.release_nodes()
-		var look := _BucketLook.new(instance, instance.row().look(), EventDrawer.new(null), false)
+		var look := _BucketLook.new(instance, instance.row().look(), instance.row().body(),
+				EventDrawer.new(null), false)
 		instance.look = look
 		return look
 
