@@ -8,8 +8,8 @@ agents in turn.
 `<part>()` and shared by its copies. `LethalSpec` says whether contact ends her day and the reach it is measured from
 (`none()`, `at_its_core()`, `within(reach)`, `catching_within(reach)`); it replaces the row's `hard_fail` and
 `catch_reach` and the pursuit's own `catch_reach`, so a hunting copy's catch is stored once, as the hunt's
-`LethalSpec` (`HuntSpec.pursuing(chase, catches)`). `HoldSpec` holds the guard's detain: how long, how far past its
-edge, and whether it holds her again; `EventHold` is handed it. `WarningSpec` holds the warning: how long before,
+`LethalSpec` (`HuntSpec.pursuing(chase, catches)`). `HoldSpec` holds a hold, the checkpoint guard's detain and the chatting mother's
+conversation alike: how long, how far past its edge, and whether it holds her again; `EventHold` is handed it. `WarningSpec` holds the warning: how long before,
 whether the row holds still while warning, whether it is announced, whether it is warned first, and the badge's notice.
 `validate()` keeps "a hold on a row that ends the day", which spans two parts; the fairness contract
 (`Tuning.validate_event()`) is asked as before. The catalogue's 97 writers are rewritten by
@@ -27,4 +27,4 @@ work per agent turn (the suites, then the checks and comments, then the docs and
 
 **Open to overturn:** the design's forks; `is_warned_first()` as the question's name; `HoldSpec.from()` and
 `again()` without asserts; `HuntSpec.pursuing()` requiring a catch that ends the day; the default warning, 2.5 s and
-announced; tests reading `warned_for()`; "lethal" or "a row that ends the day" in prose for the removed `hard_fail`.
+announced; tests reading `warned_for()`; "lethal" or "a row that ends the day" in prose for the removed `hard_fail`. The design's `catching_within()`, a catch that is a stop, was built and then deleted in review, since no row has such a catch.
