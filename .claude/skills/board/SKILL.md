@@ -41,7 +41,7 @@ length (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin). Nothing notif
 recurring read is what finds an answer the player left; the player is in code mode and looks at the
 board rather than the chat, so the board is where the orchestrating session communicates with them
 (inbox #1619 in teal-dolphin). The read before a turn's first write is what keeps a write from
-landing on a page the player has changed since, and every board read, whoever makes it, rewrites the board's time in the
+landing on a page the player has changed since, and every board read by the orchestrating session rewrites the board's time in the
 restart prompt's `## Last checked` (**session-cleanup**, step 8).
 Between the session's own consecutive writes there is no read: each write's acknowledgement is the
 next one's anchor ("Keeping it cheap"). A report from an agent, a merge or
@@ -271,8 +271,8 @@ the player corrects them. The citation is the player's word each one extends:
   inbox #1163 in gray-dolphin).
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
   inbox #1163 in gray-dolphin).
-- **Where the out-of-tasks note stands, and the hourly beat** ("The layout", part 4; "When it is
-  read"): the note is the line under Running, and the hourly read is every run of the
+- **Where the out-of-tasks note stands, and the beat of the read** ("The layout", part 4; "When it is
+  read"): the note is the line under Running, and the board read is every run of the
   30-minute recurring check, so no gap passes about 55 minutes, which the player's words set
   (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **One read covers a turn's run of writes** ("When it is read"): the pick the player took is a

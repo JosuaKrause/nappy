@@ -228,7 +228,7 @@ file is open:
 These rules are the filer's proposals and readings, not the player's words, and hold until the player
 corrects them:
 
-- **That the periodic filing rides the same beat as the hourly read, every run of the orchestrating session's recurring check**
+- **That the periodic filing rides the same beat as the board read, every run of the orchestrating session's ~30-minute recurring check, never a gap past about 55 minutes**
   ("Filing a batch"; **orchestrating**, "What the orchestrator keeps"); the player's words are that
   the session files the inbox by itself, periodically, and the filing at every run is the filer's reading
   of "periodically" (inbox #1619 in teal-dolphin).

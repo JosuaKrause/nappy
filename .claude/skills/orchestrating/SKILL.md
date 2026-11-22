@@ -15,8 +15,8 @@ The rules the orchestrating session must not miss, one line each; the sections b
   and the work that goes first (inbox #1305 in grassy-trout), and a running agent is looked at at least every 45 minutes.
 - **The session does not end when it runs out of tasks**: it writes a note on the board saying so and
   ends its turn, and a recurring job wakes it at least every 45 minutes (no gap longer than 45) to look for new work
-  (inbox #1619 in teal-dolphin). The same job reads the board about every hour, never more than
-  about 55 minutes apart (inbox #1621 in teal-dolphin), and files the open inbox notes on its own.
+  (inbox #1619 in teal-dolphin). The same job reads the board at every run (about every 30 minutes), never leaving a gap
+  past about 55 minutes (inbox #1621 in teal-dolphin), and files the open inbox notes on its own.
 - **Work on how the project is worked on goes first**: a change to a skill, `CLAUDE.md`, a rule, a
   hook, a general project script or anything else of that kind is started, reviewed and merged
   ahead of everything else but a queue update (inbox #1305 in grassy-trout); a wait the player set on an entry
@@ -474,8 +474,8 @@ to the player's correction:
   from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
-- **That the one recurring job carries the hourly board read and the inbox filing** ("What the
-  orchestrator keeps"), the hourly read being every run of the 30-minute job, so that no gap passes about 55 minutes,
+- **That the one recurring job carries the board read and the inbox filing** ("What the
+  orchestrator keeps"), the read being at every run of the 30-minute job, so that no gap passes about 55 minutes,
   the filing on the same beat, the out-of-tasks note being the line under Running on the board, and the 45-minute
   wake looking at the open pull requests, `tools/queue.sh` on `origin/main`, the inbox and the
   board. The player's words are the hour, the periodic filing, the note on the board and the
