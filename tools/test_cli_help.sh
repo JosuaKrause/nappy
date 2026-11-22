@@ -616,6 +616,16 @@ else
     echo "ok   reject_input_flag_without_carrier leaves a line with no input flag alone"
 fi
 
+# A recording of a recipe with --walk gets the recipe's own refusal, not the carrier message.
+out="$(./tools/record.sh --recipe "$work_dir/none.json" --walk 3n 2>&1)"
+checks=$(( checks + 1 ))
+if grep -q "nothing to carry it" <<<"$out"; then
+    echo "FAIL record.sh --recipe --walk: the carrier message was given for a recipe line" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   record.sh --recipe --walk leaves the refusal to the recipe's own checks"
+fi
+
 rm -f "$GODOT_MARKER"
 out="$(./tools/run.sh --no-save --seed 1 --walk 3n 2>&1)"
 status=$?

@@ -144,7 +144,8 @@ if ! validate_dev_flags "${FULL_FLAGS[@]}"; then
     exit 1
 fi
 
-if ! reject_input_flag_without_carrier recording "${FULL_FLAGS[@]}"; then
+# A recipe line is not refused here: the recipe owns --walk and its preflight below says so.
+if [[ -z "$RECIPE" ]] && ! reject_input_flag_without_carrier recording "${FULL_FLAGS[@]}"; then
     echo >&2
     usage >&2
     exit 1
