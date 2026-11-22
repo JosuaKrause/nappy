@@ -20,7 +20,7 @@ lift; its record says what it was.
 that is Fable's, and writes any change it wants as a design, never as code and never as a code review
 (inbox #1501 and #1504 in silky-lemur).
 
-**Fable is back** (inbox #1610 in teal-dolphin): the player asked for Fable to review "the merged fable-only items that opus did", "so it can request follow up changes". Fable's verdicts on polite-tapir's six designs followed (the record calm-lemur). **Open:** whether Fable also looks at minty-quail's rows 3a and 3b, which the item lists from the earlier words (inbox #1571 in teal-quail) though they are not fable-only, while the words on #1610 name the fable-only items. It is asked on the board (the question fable-rows-3a-3b), and the work goes on built on the filer's pick, that Fable looks at them: a request for one part of the work is read as not dropping the rest.
+**Fable is back** (inbox #1610 in teal-dolphin): the player asked for Fable to review "the merged fable-only items that opus did", "so it can request follow up changes". Fable's verdicts on polite-tapir's six designs followed (the record calm-lemur). Asked on the board whether Fable also looks at minty-quail's rows 3a and 3b, which the item lists from the earlier words (inbox #1571 in teal-quail) though they are not fable-only, the player answered "yes, everything that fable was supposed to do should be checked by fable" (inbox #1624 in dappled-bison). **Read as:** Fable reviews every design it was meant to make that Opus made in its place, rows 3a and 3b included, after row 4b.
 
 **Item:** `fable-looks-over-merged-work.md`.
 
