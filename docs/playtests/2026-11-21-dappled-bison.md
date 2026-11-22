@@ -2,7 +2,7 @@
 
 2026-11-21.
 
-Two notes the player wrote on the Nappy board, filed by the orchestrating session under the player's standing ask to file the inbox on its own (inbox #1619 in teal-dolphin).
+Three notes the player wrote on the Nappy board, filed by the orchestrating session under the player's standing ask to file the inbox on its own (inbox #1619 in teal-dolphin).
 
 ## #1623
 
@@ -38,7 +38,18 @@ Two notes the player wrote on the Nappy board, filed by the orchestrating sessio
 
    Settled on the board (fable-rows-3a-3b): Fable reviews every design it was meant to make that Opus made in its place, minty-quail's rows 3a and 3b included, after row 4b; anything it wants changed is filed as new work. Goes into calm-lemur (Fable looks over the work that merged without it) by the filing of this note.
 
+## #1626
+
+1. **Context** (the assistant's):
+
+   Written on the Nappy board on 2026-11-22 as a loose "You:" paragraph under the Waiting on you section, below the question notes-questions-where. "The one above" is read as the player's earlier loose board note (#1623: "to clarify, by checking I meant checking both the board and the inbox. New tasks will be posted in the inbox, questions and answers are on the board. Update the skills accordingly."), which the orchestrator captured into the inbox. Said while PR #1625, which files #1623, was open.
+
+2. **The note.**
+
+   > also give me a place here to write quick inbox notes like the one above (and update the board skill for this, too)
+
 ## Filed as
 
 - #1623 is built in the same pull request that files it: the board, inbox and orchestrating skills say that each check reads both the board and the inbox, that new tasks come through the inbox, and that questions and answers are on the board.
 - #1624 answers the open point in calm-lemur (Fable looks over the work that merged without it) and is filed as its answer there.
+- #1626 is built in the same pull request: the board gets a section for quick notes, and the board skill says what it is and that the orchestrating session copies each into the inbox at its next check.
