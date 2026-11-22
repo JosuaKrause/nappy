@@ -7,7 +7,8 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 
 - **A question to the player goes on the board, never in a modal dialog in the chat**; one about an inbox note may go on its issue.
 - **Only the orchestrating Claude Code session acts on it**, changing it or answering on it, and Claude is never @-mentioned on it.
-- **It is read at session start, when the player says "doc" or "check the doc", and before the first write of a turn**; it is not polled on other turns.
+- **It is read at session start, at every run of the orchestrating session's recurring check (about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
+- **What the player should learn goes on the board**, not only into a chat report (inbox #1619 in teal-dolphin).
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
 - **A question is a level-3 heading over one nested list** (Question, Context, My pick, You, Me) and asks one thing.
@@ -31,11 +32,17 @@ separate session that has none of this context.
 
 ## When it is read
 
-**The board is read at session start, when the player says "doc" or "check the doc", and before
-the first write to it in a turn; it is not polled on other turns** (inbox #830 in minty-dolphin,
-inbox #1267 in olive-ferret). Nothing notifies the terminal session of an edit, and the player gives a heads-up
-when it matters rather than have the board polled (inbox #830 in minty-dolphin); the read before a
-turn's first write is what keeps a write from landing on a page the player has changed since.
+**The board is read at session start, at every run of the orchestrating session's recurring check
+(about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write to it in a
+turn** (the check is in **orchestrating**, "What the orchestrator keeps"). The reads at session start, on "doc"
+and before a write are the player's words (inbox #830 in minty-dolphin, inbox #1267 in olive-ferret); the
+player's later words replace their earlier no-polling ones for the cadence, and set the hour's
+length (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin). Nothing notifies the terminal session of an edit, so the
+recurring read is what finds an answer the player left; the player is in code mode and looks at the
+board rather than the chat, so the board is where the orchestrating session communicates with them
+(inbox #1619 in teal-dolphin). The read before a turn's first write is what keeps a write from
+landing on a page the player has changed since, and every board read by the orchestrating session rewrites the board's time in the
+restart prompt's `## Last checked` (**session-cleanup**, step 8).
 Between the session's own consecutive writes there is no read: each write's acknowledgement is the
 next one's anchor ("Keeping it cheap"). A report from an agent, a merge or
 a review verdict is not written to the Running table at once: the board is the player's information
@@ -43,8 +50,9 @@ and the channel they answer on, so it is updated in batches, and the orchestrato
 working state is kept in the local restart prompt (**session-cleanup**, step 8), which a fresh session
 can recover from. The player usually asks for the current state before looking at the board
 (inbox #986 in brisk-pelican). A batch is
-whenever the orchestrator next writes the board for the player: a question, an answer, or the player
-asking for the state. **Both tabs are read**, since the
+whenever the orchestrator next writes the board for the player: a question, an answer, the player
+asking for the state, or a recurring read, which brings the tables current with what merged and
+finished since the last batch. **Both tabs are read**, since the
 player answers review items on the Review tab and design questions on the Main tab.
 
 ## The layout
@@ -63,7 +71,10 @@ Top to bottom, every part present even when empty:
    they are, or until the chat has fully discussed them (see "Settling"), each as below.
 4. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
    a refactor step, a fix, inbox notes waiting to be filed. A PR is a link in the State cell. Under
-   it, one line on what comes after the running work.
+   it, one line on what comes after the running work. **When the orchestrating session is out of
+   tasks, that line says so and says it keeps checking** (what it looks at is in **orchestrating**,
+   "What the orchestrator keeps"), so the player reads an idle session as waiting and not as gone
+   (inbox #1619 in teal-dolphin).
 5. `## Recently done`: a table `Merged | What`, the PR linked, newest first, the last six or so.
 6. `## How this board works`: a bullet list of the rules below, in the player's terms.
 
@@ -250,7 +261,8 @@ These rules above are the filer's proposals and readings, not the player's words
 the player corrects them. The citation is the player's word each one extends:
 
 - **What a batch is** ("When it is read"): the orchestrator's next write for the player
-  (inbox #986 in brisk-pelican).
+  (inbox #986 in brisk-pelican), the recurring read included, so the Running and Recently done
+  tables are current within about an hour (inbox #1619 in teal-dolphin).
 - **How a heads-up is written** ("The layout", part 2): as a question that stays until answered,
   an agent's own choice staying in its report (inbox #850 in minty-dolphin).
 - **What the Review tab holds** ("The layout"): its sections, each item as a question, the
@@ -259,6 +271,10 @@ the player corrects them. The citation is the player's word each one extends:
   inbox #1163 in gray-dolphin).
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
   inbox #1163 in gray-dolphin).
+- **Where the out-of-tasks note stands, and the beat of the read** ("The layout", part 4; "When it is
+  read"): the note is the line under Running, and the board read is every run of the
+  30-minute recurring check, so no gap passes about 55 minutes, which the player's words set
+  (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **One read covers a turn's run of writes** ("When it is read"): the pick the player took is a
   read before each write (inbox #1267 in olive-ferret), read as before the first of a turn, since each later write
   is anchored on the acknowledgement of the one before it.
