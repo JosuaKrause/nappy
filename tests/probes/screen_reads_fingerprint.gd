@@ -39,7 +39,7 @@ static func _view_about(centre: Vector2, joystick: bool, controls: TouchControls
 
 ## The crowd's view of the screen, anchored in `anchor`'s viewport.
 static func _crowd_view_of(anchor: Node) -> CrowdView:
-	return ScreenCrowdView.new(anchor)
+	return ScreenCrowdView.new(anchor, DrawnView.on(anchor))
 
 static func _hex(values: Array) -> String:
 	var parts: Array[String] = []
@@ -145,7 +145,7 @@ func _crowd_view(t: TestRunner) -> void:
 	anchor.free()
 
 ## The drawn box once the next process frame has begun: the box is worked out once a process frame
-## per viewport (`DrawnView.box_of()`), so a camera moved inside one frame is read on the next.
+## (`DrawnView.box()`), so a camera moved inside one frame is read on the next.
 func _drawn_box(t: TestRunner, view: CrowdView) -> Rect2:
 	var asked_in := Engine.get_process_frames()
 	while Engine.get_process_frames() == asked_in:

@@ -10,8 +10,8 @@ var _barrier_post: EventBarrierPost
 ## Handed, as its event is set up, what every look is handed and the barrier post its guards stand
 ## at, none for a row with no post (`EventBehaviours.compose()` makes it first).
 func _init(owner: EventInstance, look: LookSpec, body: BodySpec, drawer: EventDrawer,
-		skip_draw: bool, barrier_post: EventBarrierPost) -> void:
-	super(owner, look, body, drawer, skip_draw)
+		skip_draw: bool, drawn_view: DrawnView, barrier_post: EventBarrierPost) -> void:
+	super(owner, look, body, drawer, skip_draw, drawn_view)
 	_barrier_post = barrier_post
 
 ## Overrides SpreadLook._draw_figure.
@@ -263,7 +263,7 @@ func band_rim_holder() -> Node2D:
 
 ## Overrides EventLook._shows_its_nodes.
 func _shows_its_nodes(reach: Rect2) -> bool:
-	return _band != null and _band.is_inside_tree() and DrawnView.shows(_band, reach)
+	return _band != null and _band.is_inside_tree() and _drawn_view.shows(_band, reach)
 
 ## The far guard's node while he walks away (`EventBarrierPost.where_the_far_guard_walks()` names a
 ## place), null while he stands at his post and once he is gone.

@@ -114,7 +114,7 @@ func _the_building(t: TestRunner, seed_value: int) -> int:
 ## (`main._simulation_builder()`).
 func _builder(t: TestRunner) -> SimulationBuilder:
 	var builder := RunCity.new_builder()
-	builder.use_the_crowds_screen(ScreenCrowdView.new(t), CrowdTiming.new())
+	builder.use_the_crowds_screen(ScreenCrowdView.new(t, DrawnView.on(t)), CrowdTiming.new())
 	return builder
 
 ## One walk of `ticks` ticks in `world`, whose charges are the sets `sources` (the ones the world

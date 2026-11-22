@@ -4,7 +4,8 @@ extends RefCounted
 ## change things with animation if it's of screen. If we have a bounding box that extends a little
 ## bit into of screen then it won't be noticable.")*
 ##
-## `DrawnView` is the one box every gate asks. Each gate here is held to the cues' own promise: a
+## `DrawnView` is the one box every gate asks, handed to each gate: the crowd's cases keep a real
+## `SubViewport` under it, and the events' cases hand a stand-in whose box they move. Each gate here is held to the cues' own promise: a
 ## caret or a badge that is owed is drawn on the frame its thing comes into view, never a frame late
 ## — so each one is walked in from off screen a step at a time, and the frame it asks for its redraw
 ## is checked against the first frame any of its drawing reaches the screen itself, measured from
@@ -20,13 +21,30 @@ const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const SCREEN := Vector2(1280.0, 720.0)
 const ZOOM := 2.0
 
+## A screen with no viewport behind it, whose box a case moves: what an event's look is handed in a
+## suite, where the real one reads the viewport's canvas.
+class MovedView extends DrawnView:
+	var _shown := Rect2()
+
+	## Moves the box to the world `shown` grown by the margin.
+	func look_at(shown: Rect2) -> void:
+		_shown = shown.grow(DrawnView.MARGIN)
+
+	## Overrides DrawnView.has_screen.
+	func has_screen() -> bool:
+		return true
+
+	## Overrides DrawnView.box.
+	func box() -> Rect2:
+		return _shown
+
 func run(t: TestRunner) -> void:
 	await _test_the_box_is_the_screen_grown_by_the_margin(t)
 	_test_a_hand_built_agent_with_no_screen_is_always_drawn(t)
 	_test_a_car_reach_holds_everything_it_draws(t)
 	_test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t)
 	await _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t)
-	await _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t)
+	_test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t)
 	await _test_a_wide_burning_front_redraws_while_any_of_it_shows(t)
 	await _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
 	_test_a_hidden_arrow_redraws_once(t)
@@ -45,7 +63,7 @@ func _aim(screen: SubViewport, top_left: Vector2) -> void:
 	screen.canvas_transform = Transform2D(0.0, Vector2.ONE * ZOOM, 0.0, -top_left * ZOOM)
 
 ## Moves `screen` to show the world from `top_left`, then lets the next process frame begin: the
-## box is worked out once a process frame per viewport (`DrawnView.box_of()`), as the camera moves
+## box is worked out once a process frame (`DrawnView.box()`), as the camera moves
 ## in the physics step before any gate asks, so a view moved between two asks in one frame is a
 ## screen the game never shows.
 func _look_from(t: TestRunner, screen: SubViewport, top_left: Vector2) -> void:
@@ -66,7 +84,7 @@ func _world_shown(top_left: Vector2) -> Rect2:
 ## zoom and the portrait presentation's quarter turn are the screen they are.
 func _test_the_box_is_the_screen_grown_by_the_margin(t: TestRunner) -> void:
 	var screen := _screen(t, Vector2(100.0, 50.0))
-	var box := DrawnView.box_of(screen)
+	var box := DrawnView.on(screen).box()
 	var wanted := _world_shown(Vector2(100.0, 50.0)).grow(DrawnView.MARGIN)
 	t.check(box.position.is_equal_approx(wanted.position) and box.size.is_equal_approx(wanted.size),
 			"the box is the world shown, %s, grown by the margin (got %s)" % [wanted, box])
@@ -76,7 +94,7 @@ func _test_the_box_is_the_screen_grown_by_the_margin(t: TestRunner) -> void:
 	screen.canvas_transform = Transform2D(PI * 0.5, Vector2.ONE * ZOOM, 0.0, centre) \
 			* Transform2D(0.0, -centre / ZOOM)
 	await _next_frame(t)
-	var turned := DrawnView.box_of(screen)
+	var turned := DrawnView.on(screen).box()
 	t.check(is_equal_approx(turned.size.x, SCREEN.y / ZOOM + DrawnView.MARGIN * 2.0)
 			and is_equal_approx(turned.size.y, SCREEN.x / ZOOM + DrawnView.MARGIN * 2.0),
 			"a quarter turn shows the same world on its side, and the box follows it (%s)" % turned)
@@ -142,7 +160,8 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	car.set_process(false)
 	screen.add_child(car)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
-	car.view = ScreenCrowdView.new(screen)
+	var drawn := DrawnView.on(screen)
+	car.view = ScreenCrowdView.new(screen, drawn)
 	var x := -700.0
 	var asked_since_off := false
 	var first_seen_asked := false
@@ -155,7 +174,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 		car.mood().set_her_at(her)
 		car.mood().advance(STEP)
 		var asked := car.end_the_frame(0.0)
-		var in_box := DrawnView.box_of(screen).intersects(
+		var in_box := drawn.box().intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
 			skipped += 0 if asked else 1
@@ -207,7 +226,7 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRu
 	walker.visible = false
 	screen.add_child(walker)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
-	walker.view = ScreenCrowdView.new(screen)
+	walker.view = ScreenCrowdView.new(screen, DrawnView.on(screen))
 	walker.position = Vector2(320.0, 180.0)
 	walker.end_the_frame(0.0)
 	t.check(not walker.end_the_frame(0.0),
@@ -229,26 +248,27 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
 	if not def:
 		return
-	var screen := _screen(t, Vector2(-2000.0, 0.0))
+	var view := MovedView.new()
+	view.look_at(_world_shown(Vector2(-2000.0, 0.0)))
 	var her := WhereSheIs.nowhere()
 	var cyclist := EventInstance.new()
 	cyclist.setup(def, Vector2(320.0, 180.0),
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(her))
+			EventSurroundings.new().hearing(her).shown_by(view))
 	cyclist.set_process(false)
 	# Hidden, so the frames the view pans through never draw it (it was handed no atlas): the gate
 	# asks for a redraw whatever the event's visibility, and that answer is what is checked.
 	cyclist.visible = false
-	screen.add_child(cyclist)
+	t.add_child(cyclist)
 	her.tell(cyclist.global_position + Vector2(def.heard_within(), 0.0))
 	# A twin it is asked of first: whether the gate worked out the caret is read off what it left
 	# cached (below), and reading it works the caret out.
 	var twin := EventInstance.new()
 	twin.setup(def, Vector2(320.0, 180.0),
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(her))
+			EventSurroundings.new().hearing(her).shown_by(view))
 	twin.set_process(false)
-	screen.add_child(twin)
+	t.add_child(twin)
 	t.check(not twin.look.redraw_if_the_picture_changed(), "off screen its twin asks for no redraw")
 	# The caret is cached on the age and where she stands, so a change to whether the event may carry
 	# one at all (`leave_for_a_completed_task()`, which no key term names) is answered afresh by a
@@ -266,7 +286,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	var first_seen_asked := false
 	var seen := false
 	while left < 320.0 and not seen:
-		await _look_from(t, screen, Vector2(left, 0.0))
+		view.look_at(_world_shown(Vector2(left, 0.0)))
 		asked_since_off = cyclist.look.redraw_if_the_picture_changed() or asked_since_off
 		if _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(cyclist.global_position + drawn.position, drawn.size)):
@@ -278,16 +298,16 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	t.check(cyclist.look.mark_rect().has_area(), "and that redraw carries its caret")
 	# The same picture off screen and back: nothing in its key moved, and it redraws all the same,
 	# since nothing kept what it shows current while it was away.
-	await _look_from(t, screen, Vector2.ZERO)
+	view.look_at(_world_shown(Vector2.ZERO))
 	cyclist.look.redraw_if_the_picture_changed()
 	t.check(not cyclist.look.redraw_if_the_picture_changed(),
 			"on screen and unchanged, it asks for nothing")
-	await _look_from(t, screen, Vector2(-2000.0, 0.0))
+	view.look_at(_world_shown(Vector2(-2000.0, 0.0)))
 	cyclist.look.redraw_if_the_picture_changed()
-	await _look_from(t, screen, Vector2.ZERO)
+	view.look_at(_world_shown(Vector2.ZERO))
 	t.check(cyclist.look.redraw_if_the_picture_changed(),
 			"back on screen with the same key, it redraws once")
-	screen.free()
+	cyclist.free()
 
 ## The ground of a street fire's long building, answering per tile as a city's long block does: the
 ## sidewalk row in front of the building (`FRONT_ROW`) points north, at the building's lot (`LOT`,
@@ -318,16 +338,17 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 	t.check(def != null and def.obstructs_within() <= 0.0, "burning_building is the street fire")
 	if not def:
 		return
-	var screen := _screen(t, Vector2(2000.0, 0.0))
+	var view := MovedView.new()
+	view.look_at(_world_shown(Vector2(2000.0, 0.0)))
 	var fire := EventInstance.new()
 	var map := LongFrontage.new()
 	# The window's tree draws it while the reference below is awaited, so it paints through a drawer
 	# that records rather than one over an atlas it was not given.
 	fire.setup(def, Vector2(0.0, 180.0), PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(map) \
-				.drawing_through(DrawnEvent.recording(fire, RecordingEventDrawer.new())))
+				.drawing_through(DrawnEvent.recording(fire, RecordingEventDrawer.new())).shown_by(view))
 	fire.set_process(false)
-	screen.add_child(fire)
+	t.add_child(fire)
 	# What the front draws, from a fire of the same siting drawn on real frames in the window's own
 	# tree: every picture it tells its drawer to stand, flames and smoke, merged, in its own space.
 	var reference := await DrawnEvent.stand(t, def, false, null, map, Vector2(0.0, 180.0))
@@ -350,7 +371,7 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 	var shown_point_outside := 0
 	var left := 1200.0
 	while left > -700.0:
-		await _look_from(t, screen, Vector2(left, 0.0))
+		view.look_at(_world_shown(Vector2(left, 0.0)))
 		var asked := fire.look.redraw_if_the_picture_changed()
 		var on_screen := _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(fire.global_position + drawn.position, drawn.size))
@@ -358,7 +379,7 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 			shown_unasked += 1
 		var point := Rect2(fire.global_position + EventFootprints.footprint_of(def).position,
 				EventFootprints.footprint_of(def).size)
-		if on_screen and not DrawnView.box_of(screen).intersects(point):
+		if on_screen and not view.box().intersects(point):
 			shown_point_outside += 1
 		left -= 8.0
 	t.check(shown_point_outside > 20,
@@ -367,7 +388,7 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 	t.check(shown_unasked == 0,
 			"and every frame any of the front showed, the fire was redrawn (%d were not)"
 			% shown_unasked)
-	screen.free()
+	fire.free()
 
 ## **The badge is drawn on the frame it goes up, redrawn every frame it is up, and redrawn once to
 ## come off** — and with none up and none drawn there is nothing to redraw. The edge runs its own

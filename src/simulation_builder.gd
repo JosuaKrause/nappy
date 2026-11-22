@@ -32,6 +32,9 @@ var _poster_art := PosterArt.new()
 ## What the crowd is handed of the screen and of the frame record: no screen (always drawn) and
 ## the null sink until handed others.
 var _crowd_view: CrowdView = null
+## The box every drawing gate is asked against, handed to every live event and to the crowd's view; a
+## view with no screen (everything drawn) until handed one.
+var _drawn_view := DrawnView.new()
 var _crowd_timing := CrowdTiming.new()
 ## `--skip events`, `--skip crowd` and `--skip motion`: what a frame reading leaves out.
 var _skip_event_drawing := false
@@ -59,6 +62,11 @@ func use_bus(bus: _BUS) -> void:
 ## Hands the builder the torn posters' textures every city's walls draw through.
 func use_poster_art(art: PosterArt) -> void:
 	_poster_art = art
+
+## Hands the builder the one drawn view of the screen (`DrawnView`) every live event of a world is
+## set up with.
+func use_the_drawn_view(view: DrawnView) -> void:
+	_drawn_view = view
 
 ## Hands the builder what a crowd is handed of the screen (`CrowdView`, null for none: always
 ## drawn) and of the frame record (`CrowdTiming`).
@@ -172,11 +180,11 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 	return simulation
 
 ## **What the events of a world are set up in, the one way for every world**: its trace, its
-## atlas, its frame timing, and whether they skip their drawing, drawn in `world`. The caller adds
+## atlas, its frame timing, the drawn view, and whether they skip their drawing, drawn in `world`. The caller adds
 ## the map and what it moves by.
 func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
 	var surroundings := EventSurroundings.new().drawn_in(world).tracing_to(_trace) \
-			.drawn_from(_atlas)
+			.drawn_from(_atlas).shown_by(_drawn_view)
 	if _timing != null:
 		surroundings.timed_by(_timing)
 	if _skip_event_drawing:

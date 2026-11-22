@@ -2,7 +2,7 @@ class_name EventSurroundings
 extends RefCounted
 ## **What every live event of a world is set up in** (`EventInstance.setup()`): the map it stands
 ## on and the navigator it moves by, where she is, the world it is drawn in, the pictures and the
-## drawer it paints through, whether it draws at all, where it charges its time, the run log it
+## drawer it paints through, the screen box its look is gated by, whether it draws at all, where it charges its time, the run log it
 ## writes to, the lights a car of it stops at and where a protest of it points its placards.
 ## **One value for a world's whole life**, built where the world is built and handed to its manager
 ## (`EventManager.new()`), which keeps it in its `EventWorld`: every live event of the world is
@@ -16,7 +16,7 @@ extends RefCounted
 ## **Built by chaining**: `EventSurroundings.new().on(map).hearing(where)` and so on, each call
 ## returning the same object. It is the one place each default is stated: what is not handed is
 ## open ground with a navigator over it, a `WhereSheIs` that says she is nowhere, no world, a silent
-## trace, the null timing sink, an atlas and a drawer of its own, drawn, no lights, protests
+## trace, the null timing sink, an atlas and a drawer of its own, a view with no screen (everything is drawn), drawn, no lights, protests
 ## pointing at nothing.
 
 var _map: WorldMap = null
@@ -26,6 +26,7 @@ var _where_she_is := WhereSheIs.nowhere()
 var _drawn_in: WorldContext = null
 var _atlas: AtlasLibrary = null
 var _drawer: EventDrawer = null
+var _drawn_view := DrawnView.new()
 var _draws := true
 var _timing := FrameTiming.new()
 var _trace := RunTrace.new()
@@ -71,6 +72,11 @@ func drawn_from(atlas: AtlasLibrary) -> EventSurroundings:
 ## What its look paints its pictures through (`EventDrawer`).
 func drawing_through(drawer: EventDrawer) -> EventSurroundings:
 	_drawer = drawer
+	return self
+
+## The box its look asks whether any of its drawing can be on the screen (`DrawnView`).
+func shown_by(view: DrawnView) -> EventSurroundings:
+	_drawn_view = view
 	return self
 
 ## Nothing of it is drawn (`--skip events`).
@@ -141,6 +147,10 @@ func drawer() -> EventDrawer:
 	if _drawer == null:
 		_drawer = EventDrawer.new(atlas())
 	return _drawer
+
+## The box its look asks, or one with no screen, which shows everything.
+func drawn_view() -> DrawnView:
+	return _drawn_view
 
 ## Whether it draws at all.
 func draws() -> bool:

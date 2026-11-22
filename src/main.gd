@@ -846,8 +846,8 @@ func _build_the_city(dark_from_the_start := false) -> void:
 			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
 ## **The boot's simulation builder**, made the first time a world needs one: equipped with this
-## boot's trace, atlas and frame timing, the bus, the torn posters' textures, the crowd's view of
-## the screen and its timing, and what the developer's flags decide.
+## boot's trace, atlas and frame timing, the bus, the torn posters' textures, the drawn view of the
+## screen (one object, handed to the events and the crowd's view), the crowd's timing, and what the developer's flags decide.
 func _simulation_builder() -> SimulationBuilder:
 	if _simulations:
 		return _simulations
@@ -855,7 +855,9 @@ func _simulation_builder() -> SimulationBuilder:
 	_simulations.equip(_the_trace(), _sitting.atlas(), _sitting.kept_frame_timing())
 	_simulations.use_bus(EventBus)
 	_simulations.use_poster_art(_poster_art)
-	_simulations.use_the_crowds_screen(ScreenCrowdView.new(self),
+	var drawn := DrawnView.on(self)
+	_simulations.use_the_drawn_view(drawn)
+	_simulations.use_the_crowds_screen(ScreenCrowdView.new(self, drawn),
 			FrameRecordTiming.new(_sitting.kept_frame_timing()))
 	_simulations.leave_out(config.leaves_out_the_events(), config.leaves_out_the_crowd(),
 			config.leaves_out_the_motion())

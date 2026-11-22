@@ -74,7 +74,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	var run := RunState.new()
 	run.start_run(STRETCH_SEED)
 	var city := RunCity.in_run(CITY_SCENE, run)
-	var view := ScreenCrowdView.new(t)
+	var view := ScreenCrowdView.new(t, DrawnView.on(t))
 	t.add_child(city)
 	var builder := RunCity.new_builder()
 	builder.use_the_crowds_screen(view, CrowdTiming.new())

@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	var builder := RunCity.new_builder()
-	builder.use_the_crowds_screen(ScreenCrowdView.new(t), CrowdTiming.new())
+	builder.use_the_crowds_screen(ScreenCrowdView.new(t, DrawnView.on(t)), CrowdTiming.new())
 	RunCity.build(city, CityGenerator.generate(CITY_SEED), builder)
 	var state := CityState.new()
 	state.begin_day(city.map.plans_by_block(), 1)
