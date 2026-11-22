@@ -487,7 +487,7 @@ func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: A
 
 # --------------------------------------------------------- a body in pieces ---
 # `EventSpawner.obstructed_footprint()` rasterises `BodySpec.pieces()`, laid out through
-# `BodyStance.pieces_at()`, rather than the row's one `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
+# `BodyStance.pieces()`, rather than the row's one `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
 # `shape`, and these two tests are the two halves of that sentence: nothing moved for the rows that
 # are one piece, and the crash records its two cars instead of the street they are lying across.
 
@@ -516,7 +516,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 				EventSurroundings.new().on(map))
 		var placed := sited.position
 		sited.free()
-		var axis := BodyStance.pieces_at(map, def, at, Vector2.RIGHT)[0].axis()
+		var axis := BodyStance.of(map, def, at, Vector2.RIGHT).pieces()[0].axis()
 		var before := def.ground_shape().tiles_under(placed, axis)
 		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 		before.sort()
@@ -549,7 +549,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t: TestRun
 	# copy a 96px reach takes to span a 6-tile street.
 	var at := Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
 			(float(along) + 0.5) * Tuning.TILE_SIZE)
-	var axis := BodyStance.pieces_at(map, def, at, Vector2.RIGHT)[0].axis()
+	var axis := BodyStance.of(map, def, at, Vector2.RIGHT).pieces()[0].axis()
 	var whole_band := def.ground_shape().tiles_under(at, axis)
 	var cars := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 	t.check(not cars.is_empty(), "the cars stand on ground (%d tiles)" % cars.size())

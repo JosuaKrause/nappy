@@ -101,17 +101,11 @@ func lies_vertically() -> bool:
 func stands_side_on() -> bool:
 	return _side_on
 
-## The direction its spine lies along when it is sited facing the way it was built: a car that
-## drives lies along its facing and turns with it (`spine_along()`), every other row along its
-## street, a spread-drawn row down the screen on a street laid that way and across it otherwise, a
-## stationary vehicle along whichever of the street's axes it shows. Never asked of a point shape,
-## where an axis means nothing.
-func spine() -> Vector2:
-	return spine_along(_facing)
-
 ## The direction its spine lies along while it heads along `heading`: the heading for a car that
 ## drives (`EventDef.drives()`; the way it is driving, turned by `EventCarDriving.turn_the_body()`),
-## and its street's lay for every other row, whatever the heading.
+## and its street's lay for every other row, whatever the heading: a spread-drawn row down the
+## screen on a street laid that way and across it otherwise, a stationary vehicle along whichever of
+## the street's axes it shows. Never asked of a point shape, where an axis means nothing.
 func spine_along(heading: Vector2) -> Vector2:
 	if _row.drives():
 		return heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
@@ -119,7 +113,7 @@ func spine_along(heading: Vector2) -> Vector2:
 
 ## **Its pieces where they stand**, each at its own offset along its street's axis from where its
 ## center stands (`BodySpec.pieces()`, each by its own reading of the picture in use), its spine
-## along `spine()`. Nothing for a row with no body or no ground shape. It does not filter a row that
+## along `spine_along()` the way it was sited facing. Nothing for a row with no body or no ground shape. It does not filter a row that
 ## moves or a door's body: each caller asks for the rows it counts. The one layout of a body not
 ## yet built, or built and recorded: the walk's ground, the map's record of standing bodies and the
 ## route rig ask it, so the three cannot disagree.

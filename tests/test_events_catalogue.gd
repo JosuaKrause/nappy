@@ -162,7 +162,7 @@ func _find_deep_copies(folder: String, into: Array[String]) -> void:
 	for sub in DirAccess.get_directories_at(folder):
 		_find_deep_copies("%s/%s" % [folder, sub], into)
 
-## **Where a body stands once built is `BodyStance.stands_at()`'s one answer**, which a body
+## **Where a body stands once built is `BodyStance.of()`'s one answer**, which a body
 ## moved after dawn (`EventInstance.move_to()`) takes as a new body does: on a pavement lane, a
 ## stationary solid row the pavement does not pin is stood on the middle of its band; on a
 ## carriageway lane, a row that spans the street is stood on the kerb beside it; a mobile row, a
@@ -179,7 +179,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var at := map.tile_to_world(lane)
 	var solid_unpinned := 0
 	for def in EventCatalogue.all():
-		var stands := BodyStance.stands_at(map, def, at)
+		var stands := BodyStance.of(map, def, at, Vector2.RIGHT).center()
 		var is_centred := def.stands_on_its_band_middle()
 		if is_centred:
 			solid_unpinned += 1
@@ -197,7 +197,7 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var on_the_road := map.tile_to_world(road)
 	var at_the_kerb := 0
 	for def in EventCatalogue.all():
-		var stands := BodyStance.stands_at(map, def, on_the_road)
+		var stands := BodyStance.of(map, def, on_the_road, Vector2.RIGHT).center()
 		var kerbed := def.stands_at_its_kerb()
 		if kerbed:
 			at_the_kerb += 1
@@ -577,7 +577,7 @@ func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 ## let's use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road",
 ## inbox #1465 in spry-plover). On a hand-drawn street of each axis, a roadblock put on either
 ## carriageway lane is solid from the frontage on its own side to the far kerb and nowhere past it,
-## read along the band's own line through where its body stands (`BodyStance.stands_at()`) and
+## read along the band's own line through where its body stands (`BodyStance.center()`) and
 ## the shape the row collides as. The map is real because the guarantee is the row's width and
 ## where the map stands it together: neither alone says where the band ends.
 func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> void:
@@ -598,8 +598,9 @@ func _test_a_roadblock_covers_its_own_sidewalk_and_the_road(t: TestRunner) -> vo
 			var tile := Vector2i(lane, off_the_corridor) if across_x \
 					else Vector2i(off_the_corridor, lane)
 			var placed := map.tile_to_world(tile)
-			var stands := BodyStance.stands_at(map, row, placed)
-			var axis := BodyStance.pieces_at(map, row, placed, Vector2.RIGHT)[0].axis()
+			var stance := BodyStance.of(map, row, placed, Vector2.RIGHT)
+			var stands := stance.center()
+			var axis := stance.pieces()[0].axis()
 			var own_low := lane * 2 < Tuning.STREET_WIDTH
 			var own_edge := 0.0 if own_low else street
 			var far_kerb := street - sidewalk if own_low else sidewalk
@@ -683,24 +684,23 @@ func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
 ## Stationary seal vehicles use the street axis even though their default facing is right. The van
 ## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
 ## while end art keeps the narrower projection instead of stretching into a square.
+## How the row `id` stands on `map` when it is built at `at` facing right.
+func _stance_of(id: String, map: WorldMap, at: Vector2) -> BodyStance:
+	return BodyStance.of(map, EventCatalogue.by_id(id), at, Vector2.RIGHT)
+
 func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
-	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("moving_van").body(),
-			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
+	t.check(not _stance_of("moving_van", map, map.tile_to_world(ns_tile)).stands_side_on(),
 			"a moving van on a north-south street uses its end view")
-	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("moving_van").body(),
-			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
+	t.check(_stance_of("moving_van", map, map.tile_to_world(ew_tile)).stands_side_on(),
 			"a moving van on an east-west street uses its side view")
-	t.check(BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car").body(),
-			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
+	t.check(_stance_of("burnt_out_car", map, map.tile_to_world(ns_tile)).stands_side_on(),
 			"a burnt car across a north-south street uses its side view")
-	t.check(not BodyStance.stands_side_on(EventCatalogue.by_id("burnt_out_car").body(),
-			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
+	t.check(not _stance_of("burnt_out_car", map, map.tile_to_world(ew_tile)).stands_side_on(),
 			"a burnt car across an east-west street uses its end view")
-	t.check(BodyStance.stands_side_on(
-			EventCatalogue.by_id("moving_van").body(), WorldMap.open_ground(), Vector2.ZERO, Vector2.RIGHT),
+	t.check(_stance_of("moving_van", WorldMap.open_ground(), Vector2.ZERO).stands_side_on(),
 			"off-street or data-level placement follows the vehicle's own default facing")
 
 	var vehicle_looks: Array[EventDef.Look] = [

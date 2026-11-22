@@ -293,8 +293,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		boxed.body(own_row.body().reshaped(GroundShape.rect(Vector2(52.0, 8.0))))
 		_under_a_different_row(source, boxed.build())
 		_event_parity(t, source, at, definition.id() + " shape kind/extents")
-		source._body._spread_vertical = not source._body._spread_vertical
-		source._body._stationary_vehicle_side = not source._body._stationary_vehicle_side
+		var stood := source.stance()
+		source._body.land_at(BodyStance.new(own_row, stood.center(), not stood.lies_vertically(),
+				not stood.stands_side_on(), source.facing_now()))
 		_event_parity(t, source, at, definition.id() + " body axis")
 		var shapeless := _draft_of(definition)
 		shapeless.body(BodySpec.none())
