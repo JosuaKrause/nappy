@@ -76,10 +76,10 @@ func place_at(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator,
 		return null
 	return candidate
 
-## Where a placement's body stands once it is built (`BodyStance.planned_body_at()`), which is where
+## Where a placement's body stands once it is built (`BodyStance.of_plan()`), which is where
 ## a waiting guard's band stands and where he notices her from (`OneNoticeRule`).
 func body_stands_at(plan: EventPlan) -> Vector2:
-	return BodyStance.planned_body_at(_map, plan)
+	return BodyStance.of_plan(_map, plan).center()
 
 ## Distance in tiles from a tile to the edge of the map along a direction, less a
 ## one-block margin so a route always ends inside the city rather than against the wall.

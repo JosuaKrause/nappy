@@ -1606,17 +1606,18 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 
 ## Whether the row is a stationary solid body the pavement does not pin to an edge
 ## (`_pavement_side` `ANY`) and that does not span the street: the body a pavement band's middle is
-## where it stands (`BodyStance.stands_at()`). A row that spans the street stands at its kerb
+## where it stands (`BodyStance.of()`). A row that spans the street stands at its kerb
 ## instead (`stands_at_its_kerb()`); the two never both hold.
 func stands_on_its_band_middle() -> bool:
 	return _is_an_unpinned_standing_body() and not _spans_the_street
 
 ## Whether the row's body stands on the kerb beside the carriageway lane it is placed in rather
 ## than on the lane (`CityMap.kerb_beside()`): a stationary solid body that spans the street
-## (`spans_the_street()`) and that `_pavement_side` does not pin, the roadblock. From the kerb its
-## band reaches across its own sidewalk and the road and stops at the far kerb, so the far sidewalk
-## stays whole. A region wall's bodies are pinned (`SealPlanner.sealed_variant()`) and stand where
-## they are put. Read by `EventPlan.stands_without_a_map()`, the one place that moves a body there.
+## (`spans_the_street()`) and that `_pavement_side` does not pin, the roadblock. From the kerb
+## its band reaches across its own sidewalk and the road and stops at the far kerb, so the far
+## sidewalk stays whole. A region wall's bodies are pinned (`SealPlanner.sealed_variant()`) and
+## stand where they are put. Read by `BodyStance.stands_without_a_map()`, the one place that
+## moves a body there.
 func stands_at_its_kerb() -> bool:
 	return _is_an_unpinned_standing_body() and _spans_the_street
 
@@ -1877,7 +1878,7 @@ func is_a_boom() -> bool:
 ## (`detains_her()`) or the boom (`is_a_boom()`), a crossing the day keeps open, answered for a
 ## walker by `WalkerDoorHold` at a hut or a post and for a car by `Crowd._stop_for_gates()` at the
 ## boom, which detains nobody, so it is named by its own flag rather than by its hold. The rows whose
-## ground the map's record of blocked tiles holds (`EventSpawner.obstructed_footprint()` asks it),
+## ground the map's record of blocked tiles holds (`EventSpawner.footprint_of()` asks it),
 ## and the bodies the route rig keeps clear of before they are streamed in.
 func stands_as_a_fixed_body() -> bool:
 	return ground_shape() != null and has_a_body() and not moves() and not detains_her() \

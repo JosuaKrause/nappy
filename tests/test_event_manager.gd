@@ -231,7 +231,7 @@ func _test_two_walks_draw_the_same_day(t: TestRunner) -> void:
 
 ## **A body a draw stands is told on, tile for tile** (`EventStreaming.use_body_listener()`): the
 ## listener is called once for each placed plan whose row has a solid body, with
-## `EventSpawner.obstructed_footprint()` of it, and for no plan without one, and **after the body is
+## `EventSpawner.footprint_of()` of it, and for no plan without one, and **after the body is
 ## recorded on the map**, so a car recycled for it is rolled with the body in the record. With no
 ## listener a draw says nothing and still stands its rows.
 func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
@@ -257,8 +257,9 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 			if not plan.is_placed():
 				continue
 			placed += 1
-			var tiles := EventSpawner.obstructed_footprint(_city.map, plan.row(), plan.placed_at(),
-					plan.faces())
+			var tiles := EventSpawner.footprint_of(
+					BodyStance.of(_city.map, plan.row(), plan.placed_at(),
+					plan.faces()))
 			if not tiles.is_empty():
 				expected.append(str(tiles))
 	expected.sort()

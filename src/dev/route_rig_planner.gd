@@ -493,13 +493,13 @@ const _CAUGHT_CLEARANCE := Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 ##
 ## **Every body the day has, not only the ones streamed in near her.** `EventManager` builds an
 ## instance only once she is within `EventManager.stream_radius()` of its plan and takes it away
-## again once she leaves, but it records every planned body in `obstructed_tiles` at dawn, because
-## "a body is a body whether or not the player has come near enough to stream it in". A plan that
-## knew only the live ones kept meeting a van streaming in over a waypoint a few tiles ahead, and
-## re-planned onto a street whose own van streamed in next. So each placed, unspent plan answers
-## from where its instance will stand (`_planned_body_tiles()`, off `BodyStance.pieces_at()`), and a live instance from where it
-## does stand, which also covers a body the director sites from her walk and has no plan position
-## at dawn.
+## again once she leaves, but it records every planned body in `obstructed_tiles` at dawn,
+## because "a body is a body whether or not the player has come near enough to stream it in". A
+## plan that knew only the live ones kept meeting a van streaming in over a waypoint a few tiles
+## ahead, and re-planned onto a street whose own van streamed in next. So each placed, unspent
+## plan answers from where its instance will stand (`_planned_body_tiles()`, off
+## `BodyStance.pieces()`), and a live instance from where it does stand, which also covers a
+## body the director sites from her walk and has no plan position at dawn.
 func body_clear_tiles() -> Dictionary:
 	var near := {}
 	for plan: EventPlan in _events.plans():
@@ -522,10 +522,10 @@ func _planned_body_tiles(plan: EventPlan) -> Dictionary:
 	_planned_clear[plan] = tiles
 	return tiles
 
-## A placed plan's solid pieces as its instance will stand (`BodyStance.pieces_at()`, the layout the
+## A placed plan's solid pieces as its instance will stand (`BodyStance.pieces()`, the layout the
 ## walk's ground and the map's record ask too).
 func _planned_pieces(plan: EventPlan) -> Array[StandingPiece]:
-	return BodyStance.pieces_at(_map, plan.row(), plan.placed_at(), plan.faces())
+	return BodyStance.of_plan(_map, plan).pieces()
 
 ## The angle a piece's spine lies at: its axis for a shape with a spine, none for a disc.
 func _angle_of(piece: StandingPiece) -> float:
@@ -533,9 +533,10 @@ func _angle_of(piece: StandingPiece) -> float:
 
 ## Where a door body stands now: its live event's place while it is in the world
 ## (`EventPlan.where_it_stands_now()`), where its instance will stand otherwise
-## (`BodyStance.planned_body_at()`).
+## (`BodyStance.of_plan()`).
 func _door_now(plan: EventPlan) -> Vector2:
-	return plan.where_it_stands_now() if plan.is_in_the_world() else BodyStance.planned_body_at(_map, plan)
+	return plan.where_it_stands_now() if plan.is_in_the_world() \
+			else BodyStance.of_plan(_map, plan).center()
 
 ## Every tile whose centre lies within a door's reach — `EventPlan.detain_distance()` from a
 ## `checkpoint_hut` or `checkpoint_post` (`EventPlan.detains_again()`, the two that inspect her),
@@ -571,7 +572,7 @@ func door_tiles() -> Dictionary:
 	for plan: EventPlan in _events.plans():
 		if not plan.is_placed() or plan.is_spent() or not plan.detains_again():
 			continue
-		var door := BodyStance.planned_body_at(_map, plan)
+		var door := BodyStance.of_plan(_map, plan).center()
 		var facing := plan.faces()
 		if plan.is_in_the_world():
 			if plan.its_event_is_gone():
@@ -651,7 +652,7 @@ func _gate_ground() -> Dictionary:
 	for gate in doors:
 		if gate.gate() == null:
 			continue
-		var at := BodyStance.planned_body_at(_map, gate)
+		var at := BodyStance.of_plan(_map, gate).center()
 		var reach := gate.solid_reach() + Tuning.PLAYER_BODY_RADIUS + ARRIVE_RADIUS
 		var centre_tile := _map.world_to_tile(at)
 		var span := ceili(reach / Tuning.TILE_SIZE) + 1
@@ -664,7 +665,8 @@ func _gate_ground() -> Dictionary:
 					continue
 				var nearest_is_gate := true
 				for other in doors:
-					if other != gate and point.distance_to(BodyStance.planned_body_at(_map, other)) < distance:
+					var other_at := BodyStance.of_plan(_map, other).center()
+					if other != gate and point.distance_to(other_at) < distance:
 						nearest_is_gate = false
 						break
 				if nearest_is_gate:
@@ -1174,9 +1176,9 @@ func _room_at(point: Vector2, pieces: Array[StandingPiece], walls: Array[Vector2
 		room = minf(room, _tile_nearest_distance(wall, point))
 	return room
 
-## Every solid `StandingPiece` of a standing body within `radius` of `point` — the live instances
-## `body_clear_tiles()` keeps clear of, and the placed plans not yet built (`BodyStance.pieces_at()`),
-## measured the same way.
+## Every solid `StandingPiece` of a standing body within `radius` of `point` — the live
+## instances `body_clear_tiles()` keeps clear of, and the placed plans not yet built
+## (`BodyStance.pieces()`), measured the same way.
 func _body_pieces_near(point: Vector2, radius: float) -> Array[StandingPiece]:
 	var pieces: Array[StandingPiece] = []
 	for instance: EventInstance in _events.instances():
@@ -1187,7 +1189,7 @@ func _body_pieces_near(point: Vector2, radius: float) -> Array[StandingPiece]:
 				or not planned.stands_as_a_fixed_body():
 			continue
 		var bound := radius + planned.ground_shape().reach() * 2.0
-		if BodyStance.planned_body_at(_map, planned).distance_to(point) > bound:
+		if BodyStance.of_plan(_map, planned).center().distance_to(point) > bound:
 			continue
 		_add_pieces_near(pieces, _planned_pieces(planned), point, radius)
 	return pieces

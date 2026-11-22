@@ -42,7 +42,7 @@ enum Lie {
 	SPREAD,
 	## Along its street without being drawn as a spread (`along_its_street()`): a protest's rank of
 	## placards and a firefight's cover. Their drawn box and their solid body's spine follow the
-	## street's axis (`EventFootprints.drawn_box_of()`, `BodyStance.solid_axis_of()`); they never
+	## street's axis (`EventFootprints.drawn_box_of()`, `BodyStance.spine_along()`); they never
 	## ask the spread's corner question.
 	ALONG,
 	## Across its street (`across_its_street()`): a stationary vehicle left broadside across the
@@ -85,7 +85,7 @@ enum SolidWhen {
 	## alone, and a hut never takes her in from the carriageway its own door's boom spans.
 	##
 	## Read in three more places, each because a boom is a door body that does not detain:
-	## `EventSpawner.obstructed_footprint()` keeps it out of the crowd's per-tile record as it keeps
+	## `EventSpawner.footprint_of()` keeps it out of the crowd's per-tile record as it keeps
 	## the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's clear
 	## ground around it, and the live event's body lets its collision body follow the arm
 	## (`EventBody.follow_the_arm()`).
@@ -298,7 +298,7 @@ func is_solid_with_no_shape() -> bool:
 
 ## The pieces its body is made of, in the scene's own frame: the declared ones, or one piece at the
 ## origin carrying its shape. The one form a live event's body (`EventBody`), its shadow and
-## `BodyStance`'s layout of a body (`pieces_laid_out()`) are built from.
+## `BodyStance`'s layout of a body (`pieces_at()`) are built from.
 func pieces() -> Array[BodyPiece]:
 	return _laid
 

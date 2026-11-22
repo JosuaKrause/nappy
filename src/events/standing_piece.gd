@@ -2,7 +2,7 @@ class_name StandingPiece
 extends RefCounted
 ## **One solid piece of a body where it stands on the map**: its middle in world space, its ground
 ## shape (a disc, a capsule or a rectangle) and the axis its spine lies along. What
-## `BodyStance.pieces_at()` and `BodyStance.pieces_laid_out()` answer, so the walk's ground, the
+## `BodyStance.pieces()` and `BodyStance.pieces_at()` answer, so the walk's ground, the
 ## map's record of standing bodies, the route rig and a live body's footprint all read one layout of
 ## a body's pieces. Pure data, holding nothing it was not built with.
 
@@ -23,7 +23,8 @@ func center() -> Vector2:
 func ground_shape() -> GroundShape:
 	return _shape
 
-## The way the piece's spine lies on the ground (`BodyStance.solid_axis_of()`'s answer, a unit vector).
+## The way the piece's spine lies on the ground (`BodyStance.spine_along()`'s answer, a unit
+## vector).
 func axis() -> Vector2:
 	return _axis
 

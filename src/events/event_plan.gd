@@ -134,24 +134,13 @@ func is_the_same_row_as(other: EventPlan) -> bool:
 func placed_at() -> Vector2:
 	return _position
 
-## **Where its body stands, as far as the lattice says**: `stands_without_a_map()` of where it was
-## placed. Every reading of its geometry here asks it, and so do the day's disc readings of a body
-## (`OneSidewalkOpenRule`, `RouteSidewalkRule`, `RouteGroundRule`, `DoorClearanceRule`,
-## `EventScheduler.blocked_by()`, the roadblock phase, the day-13 swap), so a roadblock's band is
-## read where it is drawn and solid, leaving the far sidewalk whole.
+## **Where its body stands, as far as the lattice says**: `BodyStance.stands_without_a_map()` of
+## where it was placed. Every reading of its geometry here asks it, and so do the day's disc
+## readings of a body (`OneSidewalkOpenRule`, `RouteSidewalkRule`, `RouteGroundRule`,
+## `DoorClearanceRule`, `EventScheduler.blocked_by()`, the roadblock phase, the day-13 swap), so
+## a roadblock's band is read where it is drawn and solid, leaving the far sidewalk whole.
 func body_at() -> Vector2:
-	return stands_without_a_map(_def, _position)
-
-## **Where a body of `row` built at `at` stands, as far as the lattice says without a map**: on the
-## kerb beside its carriageway lane when the row stands at its kerb (`EventDef.stands_at_its_kerb()`,
-## the roadblock, `CityMap.kerb_beside()`), otherwise `at`. The one place that decides the kerb:
-## `BodyStance.stands_at()` asks it for the built body, which with a map also moves a sidewalk
-## body onto its band's middle. **A plan's own reading stays without that move**: the move needs the
-## pavement, which a plan holds no map to read, keeps a body on its own sidewalk, at most half a tile
-## across it, and the day's rules have always read a sidewalk body where it was placed; the kerb
-## changes what a band covers, the street's far sidewalk, and so is read here.
-static func stands_without_a_map(row: EventDef, at: Vector2) -> Vector2:
-	return CityMap.kerb_beside(at) if row.stands_at_its_kerb() else at
+	return BodyStance.stands_without_a_map(_def, _position)
 
 ## **Whether this body is one of a region door's**: a `checkpoint_hut` or the `checkpoint_gate`
 ## at a street door's mouth, or a `checkpoint_post` at an alley door's. What makes a body a door

@@ -72,7 +72,7 @@ func _init(the_world: EventWorld, spawner: EventSpawner, walk: WalkEvents) -> vo
 var _body_listener := Callable()
 
 ## **Hands in who is told where a body stands**, called by `add()` and `move_the_body()` with the
-## tiles a plan's body covers (`EventSpawner.obstructed_footprint()`) once the body is recorded on
+## tiles a plan's body covers (`EventSpawner.footprint_of()`) once the body is recorded on
 ## the map, so a crowd that holds a car on those tiles can recycle it (`Crowd.recycle_cars_on()`)
 ## and the car's new place is rolled with the body already in the map's record. A body placed after
 ## dawn goes through one of two calls, each through `_record_and_tell()`: `add()` for a plan new to

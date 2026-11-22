@@ -6,18 +6,20 @@ extends RefCounted
 ## its outward questions about its body through (`is_solid()`, `runs_vertically()`,
 ## `stands_side_on()`, `solid_axis()`, `standing_pieces()`).
 ##
-## **It is handed what never changes under it** (its row, the row's body part, the map, where she is, the node its
-## collision body stands under, how it lies where it landed, and the boom state its arm is) and **tells nothing upward**: the
-## event asks it, and tells it what happened (it came into the world, it started, its arm moved, its
-## guard left it), handing it what changes with each call (where the event stands, which way it
-## heads). Until the row is written as its parts it asks the row under the
-## row's body part (`BodySpec`) for everything it says about the body.
+## **It is handed what never changes under it** (its row, the row's body part, where she is, the
+## node its collision body stands under, how it stands where it landed, and the boom state its
+## arm is) and **tells nothing upward**: the event asks it, and tells it what happened (it came
+## into the world, it started, its arm moved, its guard left it, it landed on other ground),
+## handing it what changes with each call (where the event stands, which way it heads). How it
+## stands is a `BodyStance` the event derives once and hands it, and hands it again when it
+## lands somewhere else (`land_at()`). Until the row is written as its parts it asks the row
+## under the row's body part (`BodySpec`) for everything it says about the body.
 ##
-## **The body and the day's blocked record are one solid read twice**: the body is built from the
-## row's solid footprint (`EventFootprints.solid_footprint_of()`), and the tiles it is recorded on
-## are the record's own (`EventSpawner.obstructed_footprint()`), each laid out by
-## `BodyStance.pieces_laid_out()` and `BodyStance.pieces_at()`, so the body that stops her and the
-## tiles that stop every other mover cannot disagree.
+## **The body and the day's blocked record are one solid read twice**: the body is built from
+## the row's solid footprint (`EventFootprints.solid_footprint_of()`), and the tiles it is
+## recorded on are the record's own (`EventSpawner.footprint_of()`), each laid out by the one
+## `BodyStance`, so the body that stops her and the tiles that stop every other mover cannot
+## disagree.
 
 ## Its row, for the three things that span the body and what else the row is (whether it moves,
 ## whether it drives, and the day's blocked record).
@@ -25,27 +27,21 @@ var _row: EventDef
 ## What it is on the ground: its pieces, when it is solid, what a walker takes it for, whether it
 ## parks, how it lies.
 var _body: BodySpec
-## The map it stands on, which the tiles of its body are recorded on.
-var _map: WorldMap
 ## Where she is (`WhereSheIs`): a body never goes down around her.
 var _where: WhereSheIs
 ## The node its collision body is a child of, so the body travels with a mobile event and
 ## disappears with it: the live event itself.
 var _holder: Node2D
-## Whether it lies down the screen rather than across it, decided once from the street it landed on
-## (`BodyStance.lies_vertically_at()`): never a per-row field, since two rows on the same street
-## face the same way for the same reason, and a row that had to say so itself could disagree with
-## the street it was actually placed on.
-var _spread_vertical := false
-## Whether a vehicle standing still shows its side (`BodyStance.stands_side_on()`): the moving
-## van stands along its street while the burnt car lies across it; a junction, off-street ground or
-## open ground follows its facing.
-var _stationary_vehicle_side := true
+## How it stands on the street it landed on: where, which way it lies, the side a vehicle
+## standing still shows, its pieces. Handed in as the event is set up and again when it lands
+## elsewhere.
+var _stance: BodyStance
 ## The collision body `go_down()` made, or null before it is down and after it was dropped.
 var _obstruction: StaticBody2D
-## The tiles of its body, and where the body stood when they were worked out (`tiles_at()`).
+## The tiles of its body for the stance it holds (`tiles()`), worked out the first time they are
+## asked for, and again after it lands elsewhere.
 var _own_tiles := {}
-var _own_tiles_at := Vector2.INF
+var _own_tiles_are_worked_out := false
 ## What `follow_the_arm()` last set a boom's shapes to, so a boom standing still in either position
 ## costs a comparison rather than a deferred call a frame.
 var _arm_was_open := false
@@ -53,18 +49,17 @@ var _arm_was_open := false
 ## crowd writes; null for every row but a street door's boom, and read as lowered then.
 var _gate: GateState
 
-## Handed, as its event is set up, its row, the row's body, the map, where she is, the node its collision body
-## stands under, where it landed (`at`), the way it was sited facing (`face`), and whether the
-## street it landed on runs it down the screen (`vertical`), and the boom state its arm is (`gate`).
-func _init(row: EventDef, body: BodySpec, map: WorldMap, where: WhereSheIs, holder: Node2D,
-		at: Vector2, face: Vector2, vertical: bool, gate: GateState = null) -> void:
+## Handed, as its event is set up, its row, the row's body, where she is, the node its collision
+## body stands under, how it stands where it landed (`stance`), and the boom state its arm is
+## (`gate`).
+func _init(row: EventDef, body: BodySpec, where: WhereSheIs, holder: Node2D, stance: BodyStance,
+		gate: GateState = null) -> void:
 	_gate = gate
 	_row = row
 	_body = body
-	_map = map
 	_where = where
 	_holder = holder
-	land_at(at, face, vertical)
+	land_at(stance)
 
 # ------------------------------------------------------------------ questions ---
 
@@ -83,26 +78,31 @@ func has_parked_from_the_start() -> bool:
 
 ## Whether its spread runs down the screen rather than across it.
 func runs_vertically() -> bool:
-	return _spread_vertical
+	return _stance.lies_vertically()
 
 ## Whether a vehicle standing still shows its side rather than its end.
 func stands_side_on() -> bool:
-	return _stationary_vehicle_side
+	return _stance.stands_side_on()
+
+## How it stands on the street it landed on (`BodyStance`), for what is handed it on: its look,
+## its footprint.
+func stance() -> BodyStance:
+	return _stance
 
 ## The ground-plane direction a spread lies along: down the screen on an east-west street, across
 ## it otherwise.
 func spread_axis() -> Vector2:
-	return Vector2.DOWN if _spread_vertical else Vector2.RIGHT
+	return Vector2.DOWN if _stance.lies_vertically() else Vector2.RIGHT
 
 ## A point `offset` along the axis it spreads on (`spread_axis()`), from its own centre.
 func spread_at(offset: float) -> Vector2:
-	return Vector2(0.0, offset) if _spread_vertical else Vector2(offset, 0.0)
+	return Vector2(0.0, offset) if _stance.lies_vertically() else Vector2(offset, 0.0)
 
 ## The ground-plane direction its body's spine lies along when it heads along `heading`
-## (`BodyStance.solid_axis_of()`): its heading for a car that drives, its street's axis for a
+## (`BodyStance.spine_along()`): its heading for a car that drives, its street's axis for a
 ## spread, the side it shows for a vehicle standing still.
 func solid_axis(heading: Vector2) -> Vector2:
-	return BodyStance.solid_axis_of(_row, heading, _spread_vertical, _stationary_vehicle_side)
+	return _stance.spine_along(heading)
 
 ## Whether its collision body is in place: put down and not dropped since, whatever a boom's arm
 ## is doing.
@@ -124,32 +124,31 @@ func waits_to_come_down() -> bool:
 ## **Its solid pieces where they stand**, in world space, for a body whose centre stands at `at` and
 ## which heads along `heading`: each piece's middle offset along its street's axis, its ground shape
 ## and the axis its spine lies along (`solid_axis()`, the axis its collision shape and its shadow are
-## turned by). The one layout of a body's pieces, `BodyStance.pieces_laid_out()`, which the walk's
+## turned by). The one layout of a body's pieces, `BodyStance.pieces_at()`, which the walk's
 ## ground, the map's record of standing bodies and the route rig read as well: one piece for every
 ## row but the crash, which stands a piece under each car and leaves the ground between them open, the
 ## whole reason the crowd steps round the cars and walks the debris.
 func standing_pieces(at: Vector2, heading: Vector2) -> Array[StandingPiece]:
-	return BodyStance.pieces_laid_out(_body, at, solid_axis(heading), _spread_vertical)
+	return _stance.pieces_at(at, heading)
 
-## The tiles its body is recorded on (`EventSpawner.obstructed_footprint()`) for a body standing at
-## `at` and heading along `heading`, as a set; empty for a row with no body. Worked out once for
-## each place the body stands.
-func tiles_at(at: Vector2, heading: Vector2) -> Dictionary:
-	if _own_tiles_at != at:
-		_own_tiles_at = at
+## The tiles its body is recorded on (`EventSpawner.footprint_of()`) where it stands, as a set;
+## empty for a row the record leaves out. Worked out once for each stance it holds.
+func tiles() -> Dictionary:
+	if not _own_tiles_are_worked_out:
 		_own_tiles.clear()
-		for tile in EventSpawner.obstructed_footprint(_map, _row, at, heading):
+		for tile in EventSpawner.footprint_of(_stance):
 			_own_tiles[tile] = true
+		_own_tiles_are_worked_out = true
 	return _own_tiles
 
 # ------------------------------------------------------------- what happened ---
 
-## **It landed at `at`**, sited facing `face`, on ground whose street runs it down the screen
-## (`vertical`) or not: how it lies there (its spread's axis, the side a vehicle standing still
-## shows) is decided from that ground, as it is set up and again when it is moved to other ground.
-func land_at(at: Vector2, face: Vector2, vertical: bool) -> void:
-	_spread_vertical = vertical
-	_stationary_vehicle_side = BodyStance.stands_side_on(_body, _map, at, face)
+## **It landed standing as `stance` says**: how it lies there (its spread's axis, the side a
+## vehicle standing still shows) was decided from that ground when the stance was made, as it is
+## set up and again when it is moved to other ground.
+func land_at(stance: BodyStance) -> void:
+	_stance = stance
+	_own_tiles_are_worked_out = false
 
 ## It came into the world heading along `heading`: a body solid from its first frame goes down.
 ## A row solid once it starts (`BodySpec.SolidWhen.ONCE_IT_STARTS`) waits for that
@@ -162,11 +161,11 @@ func come_into_the_world(heading: Vector2) -> void:
 ##
 ## **Built from the row's solid footprint** (`EventFootprints.solid_footprint_of()`), laid out by the
 ## `BodyStance` layout the day's blocked record is written from too
-## (`EventSpawner.obstructed_footprint()`). One
+## (`EventSpawner.footprint_of()`). One
 ## `StaticBody2D` holds every piece, so nothing downstream (the debug view's bounding-box layer,
 ## which walks the physics tree, or `is_solid()`) has to learn that a row may have more than one.
 func go_down(heading: Vector2) -> void:
-	var collision := EventFootprints.solid_footprint_of(_body, solid_axis(heading), _spread_vertical).body()
+	var collision := EventFootprints.solid_footprint_of(_stance, heading).body()
 	_holder.add_child(collision)
 	_obstruction = collision
 

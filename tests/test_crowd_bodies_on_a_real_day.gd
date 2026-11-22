@@ -101,7 +101,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 
 ## Every crashed car standing on the day `events` has planned, as `[centre, radius]` pairs — the
 ## rows that declare `BodySpec.in_pieces()`, each piece placed the way
-## `EventSpawner.obstructed_footprint()` places it. Read off the **plan** rather than off the live
+## `EventSpawner.footprint_of()` places it. Read off the **plan** rather than off the live
 ## instances for the reason the record is: a plan covers the whole map and an instance only exists
 ## near the player.
 func _car_bodies(map: CityMap, events: EventManager) -> Array:

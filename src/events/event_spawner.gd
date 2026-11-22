@@ -53,26 +53,38 @@ var _sight_reported: Dictionary = {}
 # out, the resistance's own robbery — has no plan behind it. The record counts rather than flags
 # for exactly this reason, so neither release can open ground the other is still standing on.
 
-## Records one body's footprint under `owner`, or nothing at all for anything the record leaves
-## out, and answers the tiles it recorded (none for the latter). Safe to call for every plan and
-## every instance: the deciding is all in `obstructed_footprint()`.
+## Records the footprint of a body with no instance (a plan's, `EventManager._take()`,
+## `EventStreaming`) under `owner` and answers the tiles it recorded. Safe to call for every
+## plan: `record_the_body()` itself cuts off a row the record leaves out before a stance is made,
+## and records and answers nothing for it.
 func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> Array[Vector2i]:
-	var tiles := obstructed_footprint(world.map(), def, at, facing)
+	if def == null or not def.stands_as_a_fixed_body():
+		var none: Array[Vector2i] = []
+		return none
+	return record_the_stance(owner, BodyStance.of(world.map(), def, at, facing))
+
+## **Records a body's footprint under `owner` from its stance**, the one a live instance holds
+## (`EventInstance.stance()`) when it is created or moved (`move_extra()`): the tiles it
+## recorded, none for a row the record leaves out.
+func record_the_stance(owner: int, stance: BodyStance) -> Array[Vector2i]:
+	var tiles := footprint_of(stance)
 	world.map().obstruct_tiles(owner, tiles)
 	return tiles
 
-## The tiles a row's own solid body stands on when it is sited at `at` looking `facing`, or an
-## empty list for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a
-## door body, or a row with no body at all.
+## The tiles a row's own solid body stands on as its `stance` says it stands, or an empty list
+## for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a door body,
+## or a row with no body at all. A body built at a point is asked through `BodyStance.of()`, a
+## live one through the stance it holds (`EventInstance.stance()`, `EventBody.tiles()`).
 ##
-## **The row's pieces are laid out by `BodyStance.pieces_at()`**, the one layout the walk's ground and
-## the route rig ask too, and each is rasterised, never the one disc of `obstructs_within()`. A row
-## is solid where `BodySpec.pieces()` says it is, which is one piece at the origin carrying `shape`
-## for every row that declares none — so a one-piece row records exactly the tiles it always did,
-## and a row solid in parts records its pieces and leaves the ground between them open. That is the
-## whole of what makes a crash two cars to the crowd rather than a wall: the pieces are a subset of
-## `shape` (`EventDef.validate()` refuses one reaching past it), so the change only ever *removes*
-## tiles from the record, and removing obstruction can only add reachable ground.
+## **The row's pieces are laid out by `BodyStance.pieces()`**, the one layout the walk's ground
+## and the route rig ask too, and each is rasterised, never the one disc of
+## `obstructs_within()`. A row is solid where `BodySpec.pieces()` says it is, which is one piece
+## at the origin carrying `shape` for every row that declares none — so a one-piece row records
+## exactly the tiles it always did, and a row solid in parts records its pieces and leaves the
+## ground between them open. That is the whole of what makes a crash two cars to the crowd
+## rather than a wall: the pieces are a subset of `shape` (`EventDef.validate()` refuses one
+## reaching past it), so the change only ever *removes* tiles from the record, and removing
+## obstruction can only add reachable ground.
 ##
 ## A hard seal's own body and a region wall's are recorded like any other, and that is what a walker
 ## actually meets. The hold on their segment is a car's answer — a car cannot turn round against a
@@ -80,15 +92,14 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 ## a walker walks the street up to the body and turns where it stands, so the record has to say where
 ## the body is. It is also what keeps a crash walkable on its pavements, since a row solid in parts
 ## records its pieces and the two cars are the only pieces there are.
-static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
-		facing: Vector2) -> Array[Vector2i]:
+static func footprint_of(stance: BodyStance) -> Array[Vector2i]:
 	var covered: Array[Vector2i] = []
-	if def == null or not def.stands_as_a_fixed_body():
+	if not stance.row().stands_as_a_fixed_body():
 		return covered
-	for piece in BodyStance.pieces_at(map, def, at, facing):
+	for piece in stance.pieces():
 		for tile in piece.tiles():
-			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body that
-			# recorded one tile twice would need two releases to give it back.
+			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body
+			# that recorded one tile twice would need two releases to give it back.
 			if not covered.has(tile):
 				covered.append(tile)
 	return covered
@@ -234,7 +245,7 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.
-	record_the_body(instance.get_instance_id(), def, at, facing)
+	record_the_stance(instance.get_instance_id(), instance.stance())
 	if def.scar_id() != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
@@ -285,8 +296,7 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 		return
 	world.map().release_obstruction(instance.get_instance_id())
 	instance.move_to(at)
-	record_the_body(instance.get_instance_id(), instance.row(), instance.global_position,
-			instance.facing_now())
+	record_the_stance(instance.get_instance_id(), instance.stance())
 
 ## Creates `def` on `path`, for a row whose warning ran before it existed, placed where the warning
 ## pointed just out of sight. A non-pursuer is created with its telegraph already spent, since the

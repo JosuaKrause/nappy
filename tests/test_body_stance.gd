@@ -1,7 +1,8 @@
 extends RefCounted
-## `BodyStance`: where a body stands (`stands_at()`, `planned_body_at()`, the plan's answer) and where each piece of
-## a body built at a point stands (`pieces_at()`), which every reader of a planned body's layout (the walk's
-## ground, the map's record, the route rig) takes from it.
+## `BodyStance`: how a body built at a point stands on its street (`of()`, `of_plan()`): where
+## its center stands, which way it lies, the side a vehicle standing still shows, and each of
+## its pieces (`pieces()`), which every reader of a body's layout (the walk's ground, the map's
+## record, the route rig, a live body and its look) takes from it.
 ##
 ## Rows are the catalogue's own, built as they are (data), except check 4's, a bare row with a shape and no body. The map is a stand-in per street axis
 ## (`tests/east_west_street.gd` and the north-south twin below), so no city is generated and the
@@ -54,12 +55,14 @@ func run(t: TestRunner) -> void:
 	_test_a_stood_point_is_stood_where_it_is(t)
 	_test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t)
 	_test_a_planned_body_stands_where_its_plan_was_placed(t)
+	_test_a_stance_lays_its_pieces_out_round_any_point(t)
+	_test_only_a_car_that_drives_lies_along_its_heading(t)
 
 func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
 	var row := EventCatalogue.by_id("car_accident")
-	var stood := BodyStance.stands_at(map, row, _AT)
-	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
+	var stood := BodyStance.of(map, row, _AT, Vector2.RIGHT).center()
+	var pieces := BodyStance.of(map, row, _AT, Vector2.RIGHT).pieces()
 	var parts: Array[BodyPiece] = row.body().pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on a north-south street (%d)" % pieces.size())
@@ -74,8 +77,8 @@ func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 func _test_the_crash_lies_down_an_east_west_street(t: TestRunner) -> void:
 	var map: WorldMap = EastWestStreet.new()
 	var row := EventCatalogue.by_id("car_accident")
-	var stood := BodyStance.stands_at(map, row, _AT)
-	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
+	var stood := BodyStance.of(map, row, _AT, Vector2.RIGHT).center()
+	var pieces := BodyStance.of(map, row, _AT, Vector2.RIGHT).pieces()
 	var parts: Array[BodyPiece] = row.body().pieces()
 	t.check(pieces.size() == parts.size() and parts.size() == 2,
 			"the crash is two pieces on an east-west street (%d)" % pieces.size())
@@ -91,7 +94,7 @@ func _test_a_row_that_spans_the_street_stands_at_its_kerb(t: TestRunner) -> void
 	t.check(lane != Vector2.INF, "there is a carriageway point whose kerb is elsewhere")
 	if lane == Vector2.INF:
 		return
-	var pieces := BodyStance.pieces_at(WorldMap.open_ground(), row, lane, Vector2.RIGHT)
+	var pieces := BodyStance.of(WorldMap.open_ground(), row, lane, Vector2.RIGHT).pieces()
 	t.check(pieces.size() == 1, "the roadblock is one piece (%d)" % pieces.size())
 	if pieces.is_empty():
 		return
@@ -112,19 +115,19 @@ func _test_a_shape_with_no_body_has_no_pieces(t: TestRunner) -> void:
 	draft.body(BodySpec.footprint(GroundShape.point(10.0)))
 	var row := draft.build()
 	t.check(not row.has_a_body(), "the row has a shape and no body")
-	t.check(BodyStance.pieces_at(WorldMap.open_ground(), row, _AT, Vector2.RIGHT).is_empty(),
+	t.check(BodyStance.of(WorldMap.open_ground(), row, _AT, Vector2.RIGHT).pieces().is_empty(),
 			"a row with no body answers no pieces")
 
 func _test_the_crash_leaves_the_ground_between_its_cars_open(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
 	var row := EventCatalogue.by_id("car_accident")
-	var pieces := BodyStance.pieces_at(map, row, _AT, Vector2.RIGHT)
+	var pieces := BodyStance.of(map, row, _AT, Vector2.RIGHT).pieces()
 	var covered: Array[Vector2i] = []
 	for piece in pieces:
 		for tile in piece.tiles():
 			if not covered.has(tile):
 				covered.append(tile)
-	var stood := BodyStance.stands_at(map, row, _AT)
+	var stood := BodyStance.of(map, row, _AT, Vector2.RIGHT).center()
 	var whole := row.ground_shape().tiles_under(stood, pieces[0].axis())
 	t.check(not covered.is_empty(), "the cars cover tiles")
 	var inside := true
@@ -161,8 +164,8 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 			for from_the_middle: float in [0.0, 5.0, -9.0]:
 				var built := map.tile_to_world(tile) + across * from_the_middle
 				for row in rows:
-					var once := BodyStance.stands_at(map, row, built)
-					var twice := BodyStance.stands_at(map, row, once)
+					var once := BodyStance.of(map, row, built, Vector2.RIGHT).center()
+					var twice := BodyStance.of(map, row, once, Vector2.RIGHT).center()
 					asked += 1
 					if not twice.is_equal_approx(once):
 						moved += 1
@@ -172,9 +175,10 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 	# The one row that stands at its kerb is stood where it is as well.
 	var lane := _carriageway_point()
 	var roadblock := EventCatalogue.by_id("roadblock")
-	var kerb := BodyStance.stands_at(WorldMap.open_ground(), roadblock, lane)
+	var kerb := BodyStance.of(WorldMap.open_ground(), roadblock, lane, Vector2.RIGHT).center()
 	t.check(lane != Vector2.INF and kerb != lane
-			and BodyStance.stands_at(WorldMap.open_ground(), roadblock, kerb).is_equal_approx(kerb),
+			and BodyStance.of(WorldMap.open_ground(), roadblock, kerb, Vector2.RIGHT).center() \
+					.is_equal_approx(kerb),
 			"the roadblock stood at its kerb is stood where it is")
 	t.check(asked == 2 * Tuning.STREET_WIDTH * 3 * rows.size() and moved == 0,
 			"a stood point is stood where it is: %d of %d moved" % [moved, asked])
@@ -182,10 +186,10 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 	# they were built: the guard that the sweep above is not asking points that never move.
 	t.check(unstood == 0, "a sidewalk point built at a lane's middle is moved (%d stayed)" % unstood)
 
-## **A body already stood lays its pieces out where its build point does**, so the record of a live
-## body's tiles (`EventBody.tiles_at()`) and the record of the move of a body
-## (`EventSpawner.move_extra()`), which hand the record the point the body stands at, are the
-## record of the body built at `at`.
+## **A stance made from a point already stood lays its pieces out where its build point's
+## does**: a stance is made from a build point and never from a stance, and where a caller holds
+## only the point a body already stands at (a successor built where its predecessor stood,
+## `successor_of()`; a rig's or a test's) it still gets the body built at `at`.
 func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRunner) -> void:
 	var asked := 0
 	var differ := 0
@@ -195,9 +199,9 @@ func _test_a_stood_body_lays_its_pieces_out_where_its_build_point_does(t: TestRu
 			var tile := Vector2i(lane + 12, 20) if north_south else Vector2i(20, lane + 12)
 			var built := map.tile_to_world(tile)
 			for row in _rows_on_the_band_middle():
-				var from_build := BodyStance.pieces_at(map, row, built, Vector2.RIGHT)
-				var from_stood := BodyStance.pieces_at(map, row,
-						BodyStance.stands_at(map, row, built), Vector2.RIGHT)
+				var from_build := BodyStance.of(map, row, built, Vector2.RIGHT).pieces()
+				var stood := BodyStance.of(map, row, built, Vector2.RIGHT).center()
+				var from_stood := BodyStance.of(map, row, stood, Vector2.RIGHT).pieces()
 				asked += 1
 				var same := from_build.size() == from_stood.size()
 				for k in mini(from_build.size(), from_stood.size()):
@@ -213,5 +217,74 @@ func _test_a_planned_body_stands_where_its_plan_was_placed(t: TestRunner) -> voi
 	for id: String in ["market_stall", "roadblock", "car_accident"]:
 		var row := EventCatalogue.by_id(id)
 		var plan := EventPlan.new(row, at)
-		t.check(BodyStance.planned_body_at(map, plan) == BodyStance.stands_at(map, row, at),
+		var from_plan := BodyStance.of_plan(map, plan)
+		var from_row := BodyStance.of(map, row, at, plan.faces())
+		t.check(from_plan.center() == from_row.center(),
 				"%s's planned body stands where its row stands a body built at the plan's point" % id)
+		t.check(from_plan.lies_vertically() == from_row.lies_vertically()
+				and from_plan.stands_side_on() == from_row.stands_side_on(),
+				"%s's planned body lies as one built at the plan's point and facing does" % id)
+
+## **A stance lays the one body out wherever it is asked**: round its own center (`pieces()`),
+## round the origin (what a live body's collision body and shadow are made from) and round a
+## point a live body has moved to are the same pieces, shifted, along the same spine, on both
+## street axes.
+func _test_a_stance_lays_its_pieces_out_round_any_point(t: TestRunner) -> void:
+	var elsewhere := Vector2(120.0, -40.0)
+	var asked := 0
+	var differ := 0
+	for map: WorldMap in [NorthSouthStreet.new(), EastWestStreet.new()]:
+		for id: String in ["car_accident", "market_stall", "moving_van"]:
+			var stance := BodyStance.of(map, EventCatalogue.by_id(id), _AT, Vector2.RIGHT)
+			var own := stance.pieces()
+			var round_the_origin := stance.pieces_at(Vector2.ZERO, Vector2.RIGHT)
+			var moved := stance.pieces_at(elsewhere, Vector2.RIGHT)
+			t.check(round_the_origin.size() == own.size() and moved.size() == own.size(),
+					"%s lays the same pieces out round any point (%d, %d, %d)"
+					% [id, own.size(), round_the_origin.size(), moved.size()])
+			for k in mini(own.size(), mini(round_the_origin.size(), moved.size())):
+				asked += 1
+				var shift := round_the_origin[k].center()
+				var same := own[k].center().is_equal_approx(stance.center() + shift)
+				same = same and moved[k].center().is_equal_approx(elsewhere + shift)
+				same = same and own[k].axis() == round_the_origin[k].axis() \
+						and own[k].axis() == moved[k].axis()
+				if not same:
+					differ += 1
+			t.check(stance.round_the_origin().size() == own.size(),
+					"%s keeps the same pieces round the origin as it lays out there (%d)"
+					% [id, stance.round_the_origin().size()])
+			for k in mini(own.size(), stance.round_the_origin().size()):
+				t.check(stance.round_the_origin()[k].center().is_equal_approx(
+						round_the_origin[k].center()) and stance.round_the_origin()[k].axis()
+						== round_the_origin[k].axis(),
+						"%s's kept piece %d is the one it lays out round the origin" % [id, k])
+	t.check(asked > 0 and differ == 0,
+			"pieces round any point are shifted copies: %d of %d differ" % [differ, asked])
+
+## **Only a car that drives lies along the heading it is asked with**; every other row lies
+## along its street whatever it heads, which is why a live body that does not drive never lays
+## its pieces out again.
+func _test_only_a_car_that_drives_lies_along_its_heading(t: TestRunner) -> void:
+	var map := NorthSouthStreet.new()
+	var drivers := 0
+	var stood_still := 0
+	for row in EventCatalogue.all():
+		if row.body() == null or row.ground_shape() == null:
+			continue
+		var stance := BodyStance.of(map, row, _AT, Vector2.RIGHT)
+		var along_up := stance.spine_along(Vector2.UP)
+		var along_down := stance.spine_along(Vector2.DOWN)
+		if row.drives():
+			drivers += 1
+			t.check(along_up.is_equal_approx(Vector2.UP)
+					and along_down.is_equal_approx(Vector2.DOWN),
+					"%s, a car that drives, lies along the heading it is asked with" % row.id())
+			t.check(stance.spine_along(Vector2.ZERO).is_equal_approx(Vector2.RIGHT),
+					"%s with no heading lies along the right" % row.id())
+		else:
+			stood_still += 1
+			t.check(along_up == along_down,
+					"%s lies along its street whatever it heads" % row.id())
+	t.check(drivers > 0 and stood_still > 0,
+			"there were cars that drive and rows that do not (%d, %d)" % [drivers, stood_still])
