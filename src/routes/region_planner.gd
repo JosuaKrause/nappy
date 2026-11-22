@@ -614,7 +614,7 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## **Draws one guard, on the street side, never the one inside the alley.** *(2026-09-25, the
 ## player, on a walled alley's own two guards per mouth: "one guard in alleys on each end.")* The
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
-## reach — so `EventDef.guard_sides` is set here to the one side that does, the same way
+## reach — so its look's guard sides are set here to the one side that does, the same way
 ## `body.row().use_body()` already replaces the body of the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
 ## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
@@ -623,10 +623,11 @@ static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
 	body.row().use_body(body.row().body().reshaped(
 			GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0)))
-	body.row().guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
+	body.row().use_look(body.row().look().guarded_on(
+			[_alley_mouth_street_side(at_start)] as Array[int]))
 	return body
 
-## Which side of a mouth body's own band is the street side, in `EventDef.guard_sides`'s own `-1`/
+## Which side of a mouth body's own band is the street side, in `LookSpec.guard_sides()`'s own `-1`/
 ## `+1` reading of `EventFootprints.guard_post_offset()`'s `side` — the one this mouth's alone,
 ## `-1` at the mouth `SealPlanner.alley_mouth_rect()` places at `rect.position` (`at_start`), `+1`
 ## at the one it places at `rect.end - 1`.

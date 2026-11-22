@@ -77,7 +77,7 @@ static func footprint_of(row: EventDef) -> Rect2:
 	if row.casts_a_shadow() and row.ground_shape() != null:
 		var r := row.obstructs_within() if row.has_a_body() else row.ground_shape().rounding_radius()
 		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
-	if row.drags_a_lead():
+	if row.look().drags_a_lead():
 		box = box.merge(Rect2(-LOOSE_LEAD_REACH, -8.0, LOOSE_LEAD_REACH * 2.0, 8.0))
 	box = box.grow(EventPictures.BOB_HEIGHT + EntityHalo.HALO_MARGIN)
 	if row.has_a_field() or row.ends_the_day():
@@ -160,22 +160,22 @@ static func guard_post_heading(vertical: bool, side: int) -> Vector2:
 
 # ---------------------------------------------------------------- the warning ---
 
-## The largest of a row's warning pictures (`EventDef.warning_picture`): the dog's alert, the
+## The largest of a row's warning pictures (`LookSpec.warning_picture()`): the dog's alert, the
 ## robber's two alert frames, or the guard's raised hand for anyone else drawn standing in a warning.
-static func warning_picture_size(row: EventDef) -> Vector2:
-	if _warning_sizes.has(row.warning_picture):
-		return _warning_sizes[row.warning_picture]
+static func warning_picture_size(look: LookSpec) -> Vector2:
+	if _warning_sizes.has(look.warning_picture()):
+		return _warning_sizes[look.warning_picture()]
 	var families: Array[Dictionary] = [EventPictures.GUARD_ALERT_BY_VIEW]
-	match row.warning_picture:
-		EventDef.WarningPicture.DOG_ALERT:
+	match look.warning_picture():
+		LookSpec.WarningPicture.DOG_ALERT:
 			families = [EventPictures.CHARGING_DOG_ALERT_BY_VIEW]
-		EventDef.WarningPicture.ROBBER_ALERT:
+		LookSpec.WarningPicture.ROBBER_ALERT:
 			families = [EventPictures.ROBBER_ALERT_BY_VIEW, EventPictures.ROBBER_ALERT_BY_VIEW_B]
 	var size := Vector2.ZERO
 	for family in families:
 		for view: String in family:
 			size = size.max(EventPictures.native_size(family[view]))
-	_warning_sizes[row.warning_picture] = size
+	_warning_sizes[look.warning_picture()] = size
 	return size
 
 static var _warning_sizes := {}
@@ -199,7 +199,7 @@ static var _warning_guard := Vector2.ZERO
 ## Whether a checkpoint's own hold suppresses *every* drawing of `event`, halo included.
 ##
 ## **True only where the guard is the whole of what this row draws**
-## (`EventDef.vanishes_into_its_hold()`): `checkpoint_post` is one man at an alley mouth and nothing
+## (`LookSpec.vanishes_into_its_hold()`): `checkpoint_post` is one man at an alley mouth and nothing
 ## else, so when he goes in there is nothing left to draw. A hut is a building and a gate is a boom
 ## across a road, and a structure that blinks out while she is inside it reads as the door having
 ## been removed rather than as her having gone through it (PLAYTEST-57).
@@ -208,4 +208,4 @@ static var _warning_guard := Vector2.ZERO
 ## that function's doc for why the halo needs its own guard rather than inheriting
 ## `EventLook.draw()`'s), and by a test, so the three can never drift apart from each other.
 static func hidden_by_its_hold(event: EventInstance) -> bool:
-	return event.row().vanishes_into_its_hold() and event.is_its_guard_inside()
+	return event.row().look().vanishes_into_its_hold() and event.is_its_guard_inside()

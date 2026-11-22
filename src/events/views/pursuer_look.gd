@@ -5,7 +5,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
 			_draw_robber(canvas)
 		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, \
@@ -107,7 +107,7 @@ func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 ## (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*` while `_stands_still_now()` —
 ## the masked man's wait, a stop — and `guard_lunging_*` after.
 func _masked_pursuer_pictures() -> Dictionary:
-	if event.is_standing_for_its_notice() or (_row.notice_within() > 0.0
+	if event.is_standing_for_its_notice() or (event.notice_within() > 0.0
 			and event.is_telegraphing()):
 		return EventPictures.GUARD_ALERT_BY_VIEW
 	return EventPictures.GUARD_STANDING_BY_VIEW if _stands_still_now() \

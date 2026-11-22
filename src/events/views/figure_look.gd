@@ -7,7 +7,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
 		EventDef.Look.MOUSE:
@@ -160,7 +160,7 @@ func _draw_mast(canvas: CanvasItem) -> void:
 ## street for is the span it owns, and a span you cannot see is a span you walk into. The dog
 ## leads on the side the walker is heading, so the pair reads as being dragged along.
 func _draw_dog_walker(canvas: CanvasItem) -> void:
-	var reach := _row.core_within() * 0.8
+	var reach := event.core_within() * 0.8
 	# The lead's own span stays a plain east/west offset — a composite the walker's own picture
 	# does not own, unaffected by which of the eight views that picture now is.
 	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)

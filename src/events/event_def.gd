@@ -171,37 +171,25 @@ enum SpawnMode {
 @export var id := ""
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
-## Every visible row states its own picture; `tests/test_events.gd` names the three that are
-## legitimately invisible.
-@export var look := Look.NONE
+## **How it is drawn** (`LookSpec`): its picture, the picture it warns in, whether it casts a shadow,
+## whether it trails a lead, whether its hold hides all of it, whether a rider of it may be the
+## pelican and the sides its guards stand on. Written through `use_look()` until the draft writes
+## it; asked through `look()` and the questions below. Every visible row states its own picture;
+## `tests/test_events.gd` names the three that are legitimately invisible. `LookSpec.none()` is a
+## row with no picture.
+@export var _look := LookSpec.none()
+
+## Makes the row drawn as `spec` says (`_look`). Only the catalogue, a copy being made and a
+## suite's row call it, until the draft writes the row's settings; a copy that changes the look asks
+## the row's for a new value (`copy.use_look(copy.look().guarded_on(sides))`).
+func use_look(spec: LookSpec) -> void:
+	_look = spec
+
+## How it is drawn, for the code inside the events folder that runs one look (`LookSpec`).
+func look() -> LookSpec:
+	return _look
+
 @export var ambient_source := AmbientSource.NONE
-
-## The pictures a row standing in its warning is drawn in, whose largest decides whether its warning
-## would stand in her view (`EventFootprints.warning_picture_size()`).
-enum WarningPicture {
-	## The guard's raised hand: every pursuer drawn standing in a warning that is not one of these.
-	GUARD_ALERT,
-	## The charging dog's alert.
-	DOG_ALERT,
-	## The alley robber's two alert frames.
-	ROBBER_ALERT,
-}
-
-@export var warning_picture := WarningPicture.GUARD_ALERT
-
-## **Whether it trails a slack lead behind it**: the loose dog, whose lead reaches
-## `EventFootprints.LOOSE_LEAD_REACH` behind it, which everything it can put on the screen includes
-## (`EventFootprints.footprint_of()`).
-@export var trails_a_lead := false
-
-## **Whether its own hold hides the whole of it**: `checkpoint_post`, one guard at an alley mouth and
-## nothing else, who goes in with her (`EventFootprints.hidden_by_its_hold()`). A hut or a gate is a
-## structure, drawn through its hold.
-@export var hides_in_its_hold := false
-
-## **Whether a rider on it may be drawn as the pelican** (`EventSpawner.rolls_a_pelican()`): the
-## cyclist, about one in 400 drawn as a pelican on the same bike. Only the picture changes.
-@export var may_be_a_pelican := false
 
 ## What the run log calls one of it and several of it, for a pursuer on foot whose line names him
 ## ("a policeman", "two guardsmen"): `EventsAhead`'s poster-tear and vehicle notes. Empty for any
@@ -238,9 +226,9 @@ func body() -> BodySpec:
 func ground_shape() -> GroundShape:
 	return _body.ground_shape()
 
-## Whether a shadow is put down under its body (`draws_body_shadow`).
+## Whether a shadow is put down under its body (`LookSpec.casts_a_shadow()`).
 func casts_a_shadow() -> bool:
-	return draws_body_shadow
+	return _look.casts_a_shadow()
 
 ## Whether it has a body at all (`BodySpec.has_a_body()`): something she is stopped by, rather than
 ## a figure she walks up to or a picture flat on the ground.
@@ -260,12 +248,6 @@ func moves() -> bool:
 ## (`RouteSpec.speed()`).
 func speed() -> float:
 	return _route.speed()
-
-## Whether `EventLook._draw_body_shadow()` puts anything down for this row. `true` for every row but
-## three: `burst_water_main` is a crater sunk into the road, and `burning_building` and
-## `burnt_shell` are drawn on the building they stand against. **The body and the collision are
-## untouched**; this governs the shadow patch alone.
-@export var draws_body_shadow := true
 
 ## Day gating, 1-based and inclusive. `last_day = 0` means it never expires.
 @export var first_day := 1
@@ -887,23 +869,6 @@ func standoff_reach() -> float:
 func lunge_is_inside_the_catch() -> bool:
 	return pursuit != null and pursuit.lunge_reach() > 0.0 and pursuit.lunge_reach() < lethal_reach()
 
-## Which side or sides of a `Look.ROADBLOCK` band `RoadblockLook._draw_roadblock()` posts a standing
-## guard on: `-1`/`+1` in `guard_post_offset()`'s own reading of `side`, the same sign
-## `_guard_side_toward()` and `EventBarrierPost.chaser_side()` use. `[-1, 1]` (both) is every row's
-## default: the catalogue `roadblock` and every wall body inherit it unless something overrides it.
-##
-## **Two overrides, both the region wall's own.** A wall crossing stands three bodies (sidewalk,
-## road, sidewalk), and a guard on both sides of all three would draw six
-## (PLAYTEST-135 8): `SealPlanner.place_hard_on()` duplicates the middle one with `guard_sides`
-## emptied, so the tarmac between the sidewalks draws none. A walled alley's two mouths would each
-## draw two guards, one standing inside an alley she can never reach, so
-## `RegionPlanner._alley_mouth_wall_body()` sets the one-element array naming the mouth's own
-## street-facing side (`_alley_mouth_street_side()`).
-##
-## **Carried on the def, set on the placement, read only at draw time**: nothing decides *which* side
-## is which, so an override is a value set on a fresh duplicate at placement.
-@export var guard_sides: Array[int] = [-1, 1]
-
 ## **A part one row plays in a system beside the catalogue**, which that system finds it by rather
 ## than by its id: a renamed or derived row keeps its role.
 enum Role {
@@ -926,6 +891,11 @@ enum Role {
 ## **It takes a bystander first**, or null for a row that takes nobody — see `AbductionSpec`:
 ## `abduction`, the unmarked van.
 @export var abduction: AbductionSpec = null
+
+## How it takes a victim (`AbductionSpec`), or null for a row that takes nobody: what the van's look
+## draws the walk and the standing place from.
+func takes_a_victim_by() -> AbductionSpec:
+	return abduction
 
 ## The name its charges are counted under when it is not its own id
 ## (`EventInstance._charger_name()`): `task_guard` for the task guard sent from out of her view,
@@ -1053,7 +1023,7 @@ func validate() -> bool:
 	# **The body is the shape.** A row that draws something has a shape to draw it from. A solid
 	# body's reach is its shape's (`BodySpec.obstructs_within()`), so the two cannot disagree and
 	# the body and the picture cannot disagree about where she can walk.
-	if look != Look.NONE and ground_shape() == null:
+	if _look.picture() != Look.NONE and ground_shape() == null:
 		push_error("event '%s' has a look but no shape to draw its shadow and body from" % id)
 		return false
 	if _body.is_solid_with_no_shape():
@@ -1858,26 +1828,14 @@ func leaves_behind() -> String:
 func scar_id() -> String:
 	return aftermath.scar_id()
 
-## Whether a rider of it may be the run's one pelican (`may_be_a_pelican`): the cyclist, which is the
-## only row that draws from the run's pelican bag.
-func may_be_drawn_as_a_pelican() -> bool:
-	return may_be_a_pelican
-
-## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`).
+## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`;
+## `LookSpec.picture()`).
 func picture() -> Look:
-	return look
+	return _look.picture()
 
 ## Whether it is a flock of bodies wheeling over one place (`FlockSpec.is_a_flock()`).
 func is_a_flock() -> bool:
 	return _flock.is_a_flock()
-
-## Whether it drags a slack lead behind it (`trails_a_lead`): the loose dog.
-func drags_a_lead() -> bool:
-	return trails_a_lead
-
-## Whether its own hold hides the whole of it (`hides_in_its_hold`): one guard at an alley mouth.
-func vanishes_into_its_hold() -> bool:
-	return hides_in_its_hold
 
 ## Whether it holds her when she comes to it (`HoldSpec.detains_her()`): a chatting mother's conversation,
 ## a door's hut or post. What the crowd's walkers are held at.

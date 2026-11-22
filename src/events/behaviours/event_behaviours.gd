@@ -25,7 +25,7 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		on_foot = EventOfficer.new(figure, where, row, row.pursuit, navigator, mover)
 	var barrier_post: EventBarrierPost = null
 	if row.leaves_its_body():
-		barrier_post = EventBarrierPost.new(figure, where, row, map, navigator, mover)
+		barrier_post = EventBarrierPost.new(figure, where, row, row.look(), map, navigator, mover)
 	var route: EventRouteWalk = null
 	if row.moves():
 		route = EventRouteWalk.new(figure, where, row, row.route(), navigator, mover)

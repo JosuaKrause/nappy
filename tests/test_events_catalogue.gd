@@ -67,7 +67,7 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> void:
 	var def := EventDef.new()
 	t.check(not def.lies_as_a_spread(), "a default invisible definition has no spread")
-	def.look = EventDef.Look.ROADWORKS
+	def.use_look(LookSpec.of(EventDef.Look.ROADWORKS))
 	t.check(not def.lies_as_a_spread(), "drawing a spread's picture does not make a row a spread by itself")
 
 	for source in EventCatalogue.all():
@@ -142,7 +142,7 @@ func _test_a_copy_of_a_row_lies_as_the_row_does(t: TestRunner) -> void:
 ## it reports a fault with an engine error, which fails the run, so the suite asks the body.
 func _test_a_solid_body_with_no_shape_is_refused(t: TestRunner) -> void:
 	var bare := EventCatalogue.by_id("cafe_tables").duplicate() as EventDef
-	bare.look = EventDef.Look.NONE
+	bare.use_look(LookSpec.none())
 	t.check(bare.validate(), "the row the faulty one is made from is valid")
 	t.check(not bare.body().is_solid_with_no_shape(), "and its body does not say it is solid with no shape")
 	bare.use_body(BodySpec.solid(null).walked_round().parked())

@@ -9,14 +9,14 @@ var _barrier_post: EventBarrierPost
 
 ## Handed, as its event is set up, what every look is handed and the barrier post its guards stand
 ## at, none for a row with no post (`EventBehaviours.compose()` makes it first).
-func _init(owner: EventInstance, row: EventDef, drawer: EventDrawer, skip_draw: bool,
+func _init(owner: EventInstance, look: LookSpec, drawer: EventDrawer, skip_draw: bool,
 		barrier_post: EventBarrierPost) -> void:
-	super(owner, row, drawer, skip_draw)
+	super(owner, look, drawer, skip_draw)
 	_barrier_post = barrier_post
 
 ## Overrides SpreadLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.ROADBLOCK:
 			_draw_roadblock(canvas)
 
@@ -34,12 +34,12 @@ func drawn_heading() -> Vector2:
 ## is which of them is moving.
 ##
 ## - **Cold, or hunting but not yet noticed** (`is_waiting()`), one man stands at his post for
-##   every side its row's `guard_sides` names (PLAYTEST-135 3), in the
+##   every side its look's `guard_sides()` names (PLAYTEST-135 3), in the
 ##   `guard_standing_*` family, each clear of the barrier's picture and facing out from it
 ##   (`guard_post_offset()`). `[-1, 1]` (both sides) is every row's own default — a cold roadblock
 ##   posts two, drawings with no field, no body and no cost of their own — except the region wall's
 ##   own road body, which `SealPlanner.place_hard_on()` builds with the array emptied: see
-##   `EventDef.guard_sides`.
+##   `LookSpec.guarded_on()`.
 ## - **Once the one on her side sets off** — the only one who does, his own barrier blocking the
 ##   other — the event's own node *is* him: it steps out to his post and `EventPursuit` walks it at
 ##   her (`EventBarrierPost.leave_the_body()`). The barrier he left is drawn back at

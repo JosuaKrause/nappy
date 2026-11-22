@@ -5,7 +5,7 @@ extends SpreadLook
 
 ## Overrides SpreadLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.CAFE:
 			_draw_cafe(canvas)
 		EventDef.Look.PROTEST:
@@ -206,7 +206,7 @@ const MUZZLE_FLASH := Color("e8b64a")
 
 ## Overrides SpreadLook._slice_plan.
 func _slice_plan() -> PackedVector2Array:
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.PROTEST:
 			return _protest_feet(_protest_pose_now()[0])
 		EventDef.Look.FIREFIGHT:
@@ -220,7 +220,7 @@ func _slice_plan() -> PackedVector2Array:
 ## Overrides SpreadLook.draw_the_slice.
 func draw_the_slice(canvas: CanvasItem, index: int) -> void:
 	var origin := -_slice_feet[index]
-	match _row.picture():
+	match _look.picture():
 		EventDef.Look.PROTEST:
 			_draw_protest(canvas, index, origin)
 		EventDef.Look.CAFE:

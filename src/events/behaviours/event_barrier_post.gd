@@ -23,22 +23,25 @@ var _body_left_at := Vector2.INF
 var _chaser_side := 0
 ## The guard at the far post.
 var _far: RoadblockFarGuard
-## Its row: the shape of its band and the sides its guards stand on.
+## Its row: the shape of its band.
 var _row: EventDef
+## Its look: the sides of its band its guards stand on (`LookSpec.guard_sides()`).
+var _look: LookSpec
 ## The departure its guard walks off by (`EventDeparture`), which this ends once he is gone and
 ## clears for a barrier streamed in spent, held by a weak reference: the departure holds this to
 ## walk him off, so a strong one each way would be a reference cycle that is never freed. Handed once
 ## the departure is made (`take_its_departure()`).
 var _departure: WeakRef = null
 
-## Handed, as its event is set up, the figure it moves, where she is, its row, and the ground and how
-## its guards move over it, which it hands on to the guard at the far post.
-func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
-		navigator: Navigator, mover: Mover) -> void:
+## Handed, as its event is set up, the figure it moves, where she is, its row and its look, and the
+## ground and how its guards move over it, which it hands on to the guard at the far post.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, look: LookSpec,
+		map: WorldMap, navigator: Navigator, mover: Mover) -> void:
 	steps_each_tick = false
 	_figure = figure
 	_where = where
 	_row = row
+	_look = look
 	_far = RoadblockFarGuard.new(figure, where, row, map, navigator, mover)
 
 ## Handed the departure its guard walks off by, as its event is set up: it is made after this, since
@@ -135,7 +138,7 @@ func tiles_under_the_band() -> Rect2i:
 ## Sends the far guard off from his post, the frame his partner starts to walk away.
 func send_the_far_guard_off() -> void:
 	var far_side := 0
-	for side: int in _row.guard_sides:
+	for side: int in _look.guard_sides():
 		if side != _chaser_side:
 			far_side = side
 			break
@@ -159,14 +162,14 @@ func which_way_the_far_guard_walks() -> Vector2:
 func how_far_the_far_guard_has_walked() -> float:
 	return _far.how_far_he_has_walked()
 
-## The sides of the band a guard still stands posted at: every side its row names but the side of
+## The sides of the band a guard still stands posted at: every side its look names but the side of
 ## the one who set off, and none once the guard at the far post has left. What its look posts a man
 ## at each time it draws the band.
 func sides_still_posted() -> Array[int]:
 	var sides: Array[int] = []
 	if _far.has_left():
 		return sides
-	for side: int in _row.guard_sides:
+	for side: int in _look.guard_sides():
 		if side != _chaser_side:
 			sides.append(side)
 	return sides
