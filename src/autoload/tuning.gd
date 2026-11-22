@@ -925,8 +925,8 @@ const PURSUIT_SHAKEN_OFF := 0.35
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
 ##   found by walking a rig rather than by reading it.
 ## - **It notices her from outside its own stand-off**, or the notice is spent somewhere it was
-## never going to move from and the telegraph is a formality. (Only a row that waits
-## for her, `EventDef.waits_for_her()`.)
+##   never going to move from and the telegraph is a formality. (Only a row that waits for her,
+##   `EventDef.waits_for_her()`.)
 ## - **It cannot notice her from outside its own field.** What she is owed before a lethal thing
 ##   starts making decisions about her is the chance to have felt it: the meter is the only thing
 ##   that says a stranger in an alley is worth crossing the road for, and it says nothing at all
