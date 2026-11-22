@@ -39,7 +39,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `pursuit.stands_for_its_notice()` | Whether a pursuer that noticed her **stands still for its notice**, turned to her in its alert pose, instead of closing on her (woolly-penguin #748). Only the closing stops: one set off beside her lunges as it would, and one that waited for her charges on its warning's clock, as every waiting charger does. Read only on an instance that waited for her or set off beside her, so the day-3 dog, whose telegraph is its approach, still comes. `charging_dog`, the roadblock's hunting copy and the men an investigating vehicle lets out stand, and day 13's task guard stands for the second his task gives him in her view; `alley_robbery` does not |
 | `pursuit.walk_speed()` | How fast it walks at her through its notice, when that is slower than its chase: the alley robber's 40px/s, so his alert walk is seen. `0` closes at `speed` |
 | `pursuit.lunge_reach()` | Where its lunge is measured from when that is **not** its catch. `0` — every pursuer but the alley robber and the man who comes at her from his row — means the catch, and `standoff_reach()` is what every stand-off caller asks. The alley robber catches at 26px but lunges from 38px, so his stand-off is 116px and the room between his lunge and his catch is 90px. `EventDef.validate()` refuses a `PursuitSpec.lunge_reach()` inside the row's own catch (`lunge_is_inside_the_catch()`), since that stand-off would leave her less than `PURSUIT_REACTION` of his approach |
-| `lethal()` on a pursuer | How close the man has to get to catch her, when that is **not** the field's own core: `LethalSpec.within(reach)` where the catch ends the day, `catching_within(reach)` where it is a stop. Unset, the catch is the inner radius, and `lethal_reach()` is what every caller asks. It exists for a pursuer whose killer is not what the field is drawn around: the roadblock's guard catches at a man's reach, not at his band's core — see "The heat" |
+| `lethal()` on a pursuer | How close the man has to get to catch her, when that is **not** the field's own core: `LethalSpec.within(reach)`. Unset, the catch is the inner radius, and `lethal_reach()` is what every caller asks. It exists for a pursuer whose killer is not what the field is drawn around: the roadblock's guard catches at a man's reach, not at his band's core — see "The heat" |
 | `pursuit.stop_excitement()` | A catch that is a **stop** rather than the end of the day, in meter points: the man an investigating patrol car lets out, who stops her for `EventCatalogue.OFFICER_STOP_EXCITEMENT` and walks back. `0`, every other pursuer, is a catch that is what lethal says — see "The heat" |
 | `pursuit.leaves_its_body_standing()` | Whether the row's body is a **fixture of the street** the man leaves standing rather than his own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built (`EventBarrierPost`), so the street stays shut behind the man who left it. The roadblock carries it on its hunt's pursuit (`hunts.pursuit()`, read by `EventDef.leaves_its_body()`) |
 | `pursuit.is_drawn_over_the_street()` | Whether the man is drawn over the street's other figures while he stands for his notice, on the warning layer, and with them again once he charges: the roadblock's guard at his post |
@@ -49,7 +49,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `paces` | Walks its route and turns round at the ends, for ever. The difference between a journey and a **beat** — see `homeless_yeller` |
 | `body()` | A `BodySpec` (`src/events/parts/body_spec.gd`), set once by `use_body()` and never changed (a refinement returns a new value; the row's copies share it): **what the row is on the ground**, as one value. It is made by `BodySpec.none()` (nothing on the ground), `footprint(shape)` (a shape drawn and cast as a shadow with nothing solid under it) or `solid(shape)`, and refined by `reshaped(shape)`, `in_pieces()`, `once_it_starts()`, `while_lowered()`, `walked_through()`, `walked_round()`, `unmet()`, `parked()`, `going_on()`, `as_a_spread()`, `along_its_street()` and `across_its_street()`. **The body is the shape**: its `ground_shape()` is a `GroundShape` (`src/ground_shape.gd`, a point or a segment, independent of the picture) that its shadow and, when it is solid, its collision body are both derived from, and the ground it closes (`obstructs_within()`, the row answers it too) is that shape's reach, never a second number chosen to match it. **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid". `none()` is a row with no picture on the ground (`Look.NONE`). *When it is solid to her* (`solid_from()`): always, every row but two; `once_it_starts()`, the body arrives at the end of the row's own notice rather than with the instance and is withheld while she stands in the footprint, for a row that turns on where she may already be — `basement_steam` is the only one — see "Solid things are solid"; `while_lowered()`, a **boom**, a bar across a door's carriageway that the cars raise and lower, solid to her only while it is down, and never an inspection — `checkpoint_gate` is the one row, see "Checkpoints". *What its figure is to a crowd walker that meets it standing still*, declared by every row (`validate()` refuses a body that does not say): `walked_through()`, a person or an animal, which a walker may walk through while it stands; `walked_round()`, an object or a vehicle, which a walker walks round (inbox #905 in freckled-moose); `unmet()`, no picture on the ground — `Look.NONE`, the fire on a facade, a crater, a steam vent — walked through like a person. A figure under way is given way to whatever it is — see `docs/MECHANICS.md`, "The crowd gives way to event figures". *Whether its figure, once it stands, stands there for good*, declared by every row (`validate()` refuses a body that does not say): `parked()`, a crowd car standing behind it in its lane turns round as at a blocked street (inbox #909 in freckled-moose) — a row that never moves, or one that stops where it arrives (`stops_where_it_arrives`, which requires it); `going_on()`, a car behind it waits for it to move — anything that drives on, leaves, chases her or wheels as a flock (`validate()` refuses `parked()` for a row that moves any other way). The instance says when it has parked (`MoveProposal.parked`): from the start for a row that never moves, and only once it has stopped where it arrives for one that drives. See `docs/MECHANICS.md`, "The crowd gives way to event figures". *How it lies on its street*, one choice, so two cannot be written (`lies()`): as it faces (nothing said); `as_a_spread()`, drawn as a **spread** laid along its street's axis, segments or one scene fitted across the body's reach (`construction`, `burnt_shell`, `market_stall`, `roadblock`, `barricade`, `scaffolding`, `collapsed_frontage`, `cafe_tables`, and the wide seal scenes `fallen_tree`, `car_accident`, `burst_water_main`), which the row answers as `lies_as_a_spread()`, kept by every copy, and which is never offered a corner (`RowGround.tiles_for()`); `along_its_street()`, standing along its street like a spread without being drawn as one, `protest` and `firefight`, whose drawn box and body's spine follow the street's axis (`EventFootprints.drawn_box_of()`, `BodyStance.solid_axis_of()`) and which never ask a spread's corner question; `across_its_street()`, a stationary vehicle lying across its street rather than along it, `burnt_out_car`, where `moving_van` stands along the kerb (`BodyStance.stands_side_on()`) |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
-| `lethal()` | A `LethalSpec` (`src/events/parts/lethal_spec.gd`), set once by `use_lethal()` and never changed: **whether contact ends the day, and from how close**, as one value. It is made by `LethalSpec.none()` (contact costs points and nothing more), `at_its_core()` (contact with the core of its field ends the day immediately), `within(reach)` (ends the day within a reach of its own, where that is not the field's core) and `catching_within(reach)` (a catch that is a **stop**: it measures from `reach` and never ends the day), and asked as `ends_the_day()` and `reach_from(core)`. The row answers `ends_the_day()` and `lethal_reach()`, the distance its catch is measured from, which is what every caller asks. A pursuer's catch is the row's own: a hunting copy takes it from the hunt (`HuntSpec.pursuing(chase, catches)`) |
+| `lethal()` | A `LethalSpec` (`src/events/parts/lethal_spec.gd`), set once by `use_lethal()` and never changed: **whether contact ends the day, and from how close**, as one value. It is made by `LethalSpec.none()` (contact costs points and nothing more), `at_its_core()` (contact with the core of its field ends the day immediately) and `within(reach)` (ends the day within a reach of its own, where that is not the field's core), and asked as `ends_the_day()` and `reach_from(core)`. The row answers `ends_the_day()` and `lethal_reach()`, the distance its catch is measured from, which is what every caller asks. A pursuer's catch is the row's own: a hunting copy takes it from the hunt (`HuntSpec.pursuing(chase, catches)`) |
 | `vehicle` | A `VehicleSpec`, or null: a **car that drives**, solid at its own `shape` in every state and lethal only in front of it while it drives its route — `police_patrol` and every copy of it, and `fire_truck`. `field().is_priced_from_its_centre()` prices its field from its centre rather than its body (`fire_truck`), a setting of the field and not of the vehicle — see "Solid things are solid" |
 | `aftermath` | An `Aftermath`, empty on most rows, never null: the rows this one brings after it — `scar_id()`, left at its position for the rest of the run (a fire's `burnt_shell`); `leaves_behind()`, spawned where it ends (the escape's explosion's `impact_crater`); `calls_in()`, called in the moment she first sees it (the burning building's `fire_truck`). `EventCatalogue.without_its_aftermath()` takes all three off for the escape |
 | `abduction` | An `AbductionSpec`, or null: it takes a bystander first, walked to it over `taken_over()` seconds from `standing_offset()` px aside (`abduction`, the unmarked van) |
@@ -342,7 +342,7 @@ for what else places them: the escape's bag lays its trucks before she sets off,
 and the raid make their own, and a scene recipe lays a dog walker at a tile.
 
 - **The dog walker** is sent down her own sidewalk toward her, created at once just out of sight
-  with no badge (`telegraphs` false on the copy: 32px/s is slower than a walk and it never ends the
+  with no badge (`telegraphs_its_coming()` false on the copy: 32px/s is slower than a walk and it never ends the
   day, so the rule in "What telegraphs" gives it none), as the loose dog is; its route runs back down
   her line and past her by the same distance. **It is created past its telegraph, at a point of its
   bark drawn on the director's stream** (`EventDirector.age_it_is_sent_at()`): it is the row she would
@@ -466,7 +466,7 @@ rule was about heavy penalty not *only* lethal" · "fire truck has heavy penalty
 does not telegraph its coming is outside the screen-edge badge and warning-first placement**:
 nothing announces it before she can see it, and it is met as it comes. Its in-world telegraph still
 meets the contract below; only the loose dog and the dog walker the director sends ahead of her,
-each created down her line with that telegraph already spent, have none. `EventDef.telegraphs` carries it. **A heavy hit is a quarter of the meter or
+each created down her line with that telegraph already spent, have none. `EventDef.telegraphs_its_coming()` carries it. **A heavy hit is a quarter of the meter or
 more in one pass** at a walk (`docs/COSTS.md`): the fire engine's 32 points and the convoy's 30 are,
 the loose dog's 24 is not. Applied to every row by its numbers:
 
@@ -627,7 +627,7 @@ the moment she has done a task; the pursuer on foot a torn poster sends, `police
 from day 9 `guardsman_giving_chase`, the moment the tear draws its pursuit marble; day 13's
 column of `military_convoy` trucks (`ResistanceHappenings`); and a convoy the director sends ahead
 of her, in the lane beside her. The fire engine, the resistance's two and the pursuer on foot are
-flagged `warned_first` on their rows; the dog, the column and the sent convoy are copies made so
+made warned first by `WarningSpec.warned_first()` on their rows; the dog, the column and the sent convoy are copies made so
 (`EventSpawner.as_warned()`, which everything put up as a warning goes through, and
 `EventDef.as_sent_ahead()`). When one is sent, nothing is put in the world. A
 `PendingWarning` is put up instead (`EventManager.warn_first()`), and `DangerEdge` draws its badge
@@ -636,7 +636,7 @@ from that frame, pointing at the place the thing will come from.
 - **The badge is up alone for at most a second**, `Tuning.WARNING_ALONE_MAX`: the row's own
   `EventDef.warned_for()`, which is a non-pursuer's `telegraphs_for()` (a second for the cyclist, the
   fire engine, the column's 4.43s cut to it on the copy) and a pursuer's
-  the badge notice (`WarningSpec.badge_notice()`) — the day-3 dog's half second, which is not lengthened to the ceiling, and the
+  badge notice (`WarningSpec.badge_notice()`) — the day-3 dog's half second, which is not lengthened to the ceiling, and the
   resistance's two read the dog's. `EventDef.validate()` refuses a longer one.
 - **The badge holds still.** Its place is fixed against her when it goes up and moves only with her
   own walking: never re-planned while it is up, so it neither jumps between pieces of ground nor
@@ -727,7 +727,7 @@ its lunge to the catch: 0.35s walking into it, 0.60s standing, 2.05s walking awa
 Its 4.5s approach (`telegraphs_for()`) is now spent in sight rather than partly off screen, which the
 player accepted. `tests/test_events_pursuit.gd` fails if any of it moves;
 `tools/test.sh probes/m207_warning_lead.gd` prints the breakdown, per answer, as she meets it.
-**The notice is per row, `EventDef.warned_for()`**, because two rows needed to move in opposite
+**The notice is per row, `WarningSpec.badge_notice()`**, because two rows needed to move in opposite
 directions on the same day *(2026-09-07: "pursuing dog is still too short notice", "while biker is
 now too long notice")*: `Tuning.OFFSCREEN_NOTICE` (0.2s) is the default, and `charging_dog` carries
 0.5s, sized from playtest 20's measured chases, which is now its badge alone.
@@ -978,7 +978,7 @@ stops for her — and a warning `Tuning.CAR_HORN_TIME` (1.6s) of its own travel 
 the exclamation mark over her head (`EventCarDriving.closes_on()`), which is longer than walking off
 the carriageway with the doubled margin, which `tests/test_tuning_fairness.gd`'s traffic check holds — the
 warning is stated in seconds of the car's own travel, so no row's numbers can break it. The doubled red caret is over the car whenever staying put in its lane
-would end the day (`EventExcitement.will_be_lethal()`). it does not end the day (`lethal()` is `none()`): what that decides —
+would end the day (`EventExcitement.will_be_lethal()`). The car does not end the day (`ends_the_day()` is false): what that decides —
 a route wall, a field kept clear, the doubled telegraph margin — is about a place that ends the day,
 and this is a car on a road. A loss to it names `police_patrol` as its cause.
 
@@ -1712,7 +1712,7 @@ from the doorstep to the calm areas still worth reaching.
 
 | kind of row | role | where it may go |
 | --- | --- | --- |
-| lethal (lethal), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall by cost** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
+| a row that ends the day (`ends_the_day()`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall by cost** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
 | a standing row that leaves no line past it along a sidewalk it may stand on, by cost (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`) | **wall by cost** | the same, which includes the far sidewalk of a route's own street |
 | a standing row that leaves no line past it along a sidewalk it may stand on, by physical fit alone (`delivery_van`, and any future row this narrow) | **wall by fit** | never on ground a route runs along; otherwise weighted like friction — no pull toward a rim, since nothing about it is the noisy, seen-from-a-distance thing the rim exists for |
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
@@ -2061,7 +2061,7 @@ Three things about that shape are the design rather than the implementation:
 - **The heat is handed to the day, not a global it reads.** The day's `DawnContext` holds it, so
   planning a hot day is something a rig can do without a run having happened.
 
-**The ladder has two rungs and only the top one hunts.** `PRESSES` never gains lethal at any
+**The ladder has two rungs and only the top one hunts.** `PRESSES` never ends the day at any
 level, and `tests/test_heat.gd` asserts that over the response rather than over the row that
 currently carries it. The patrol that carries it is still a car at every level — lethal in front of
 it while it drives its route, as a car is ("Solid things are solid") — and that strike is not a rung:
@@ -3273,7 +3273,7 @@ Three things it does **not** announce, each for its own reason:
 - **Anything further off than its own arrival window.** The cap is `LEAD_TIME` seconds of its
   approach, not a distance — the same 800px is a fire engine four seconds away and a dawdler
   twenty seconds away, and only one of those is a route decision.
-- **Anything that does not telegraph its coming** (`EventDef.telegraphs`, "What telegraphs"). The
+- **Anything that does not telegraph its coming** (`EventDef.telegraphs_its_coming()`, "What telegraphs"). The
   crossing cat comes faster than a walk, and it gets no badge because it does not telegraph: it
   crosses her line rather than coming at her, and costs her about nothing (the player's own
   exception, PLAYTEST-145 20).

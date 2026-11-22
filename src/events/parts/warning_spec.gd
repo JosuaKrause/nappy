@@ -36,6 +36,9 @@ var _warned_first := false
 
 ## Seconds of notice from off screen before it can be seen: its badge up alone for a pursuer warned
 ## of first, the closing lead of a row created at once from beyond the edge of the view.
+## `charging_dog` sets it to 0.5 (`badged_for()`), the half second its badge is up alone before it is
+## placed: the pursuing dog's day-3 timing is the one the others are fitted to (PLAYTEST-145 9). The
+## resistance's two pursuers read the dog's own.
 var _badge_notice := Tuning.OFFSCREEN_NOTICE
 
 ## A warning that lasts `seconds`: announced, moving through it, not warned of first, with the
@@ -63,7 +66,8 @@ func warned_first() -> WarningSpec:
 	spec._warned_first = true
 	return spec
 
-## The same warning with its badge up alone for `seconds`.
+## The same warning with its badge up alone for `seconds`. The day-3 dog's half second is the timing
+## the other pursuers are fitted to (PLAYTEST-145 9); `_badge_notice` says which rows read it.
 func badged_for(seconds: float) -> WarningSpec:
 	var spec := _copy()
 	spec._badge_notice = seconds

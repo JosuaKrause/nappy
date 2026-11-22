@@ -881,7 +881,7 @@ func takes_of_a_street() -> StreetShare:
 ## **Whether its catch ends the day, and where it is measured from** (`LethalSpec`): entering the
 ## lethal radius ends the day immediately. Written through `use_lethal()` until the draft writes it;
 ## asked through `ends_the_day()` and `lethal_reach()`. `LethalSpec.none()` is a row that cannot end
-## her day, and `LethalSpec.catching_within()` a pursuer whose catch is a stop with a reach of its own.
+## her day.
 @export var _lethal := LethalSpec.none()
 
 ## Makes the row's catch what `spec` says (`_lethal`). Only the catalogue, a copy being made and a

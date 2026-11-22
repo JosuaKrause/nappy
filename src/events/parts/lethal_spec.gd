@@ -4,17 +4,15 @@ extends Resource
 ## holds one (`EventDef.lethal()`); nothing changes it once it exists (a factory makes each, and a
 ## row's copies share it by reference).
 ##
-## Three kinds, and `none()` for a row whose catch is nothing:
+## Two kinds:
 ##
+## - **A catch that is nothing** (`none()`): contact costs points and no more; a pursuer whose catch is a
+##   stop (`PursuitSpec.stopping_her_for()`) holds it.
 ## - **A place that ends the day** (`at_its_core()`, `within()`): walking into its reach is the end of
 ##   her day. `at_its_core()` catches where its field's core ends; `within()` at a reach of its own,
 ##   which is a man's arms rather than a barrier's core (the roadblock's guard, the masked man).
-## - **A catch that is a stop** (`catching_within()`): a pursuer whose catch costs her a measured
-##   share of the meter rather than the day (`PursuitSpec.stopping_her_for()`) and is measured from
-##   a reach of its own. It never ends the day, and `reach_from()` still answers the distance its
-##   catch is measured from.
 ##
-## **One value holds both numbers, so a catch reach on a row and another on its pursuit cannot be
+## **One value holds the catch, so a catch reach on a row and another on its pursuit cannot be
 ## written at once**: the row's `lethal_reach()` is this reach where it sets one, its field's core
 ## otherwise. A car's strike is its driving's (`EventCarDriving`), never this.
 
@@ -38,13 +36,6 @@ static func at_its_core() -> LethalSpec:
 static func within(reach: float) -> LethalSpec:
 	assert(reach > 0.0, "a catch that has a reach of its own has a distance")
 	var spec := LethalSpec.at_its_core()
-	spec._reach = reach
-	return spec
-
-## A catch that is a stop, measured from `reach`, in px: it never ends the day.
-static func catching_within(reach: float) -> LethalSpec:
-	assert(reach > 0.0, "a catch that has a reach of its own has a distance")
-	var spec := LethalSpec.new()
 	spec._reach = reach
 	return spec
 

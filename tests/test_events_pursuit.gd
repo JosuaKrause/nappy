@@ -462,7 +462,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t: TestRunner) -> void:
 				% [def.id, _sited_at(def), standoff] + "than backing away through its own telegraph")
 
 ## **A row declared lethal has to actually get the chance to be lethal.** *(2026-09-07: "also a
-## biker hit should be lethal.")* `cyclist` carries lethal = true`, but
+## biker hit should be lethal.")* `cyclist` ends the day (`ends_the_day()`), but
 ## `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()` — so a
 ## `TOWARD_PLAYER` row that reached her before its own telegraph ended would ride straight through,
 ## declared lethal and never once able to fire. Such a row's telegraph is its warning, run before it

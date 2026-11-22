@@ -10,7 +10,7 @@ extends RefCounted
 const BURNT_SHELL_ID := "burnt_shell"
 
 ## The other answer to *prevents the player from walking past it*: **off**, and one line from being
-## on. True makes the crash a `LethalSpec` row, as a fire is, so the gaps end the day rather than
+## on. True makes the crash a row that ends the day (`ends_the_day()`), as a fire is, so the gaps end the day rather than
 ## costing more of it than she can carry. The built default is the expensive reading, because a
 ## wall that kills has no price to weigh and the verb of this game is *where do I walk*.
 ##
@@ -54,11 +54,11 @@ const CHARGER_WARNING := 2.0
 ## pram's own body is between, so a trigger stated as a radius from the hut's *centre* has to be
 ## larger than whatever she happens to be pushing. Measured from the hut's wall, one number covers
 ## every pram: 48px clears her own body's 14px stand-off and the widest the pram has reached ahead
-## of her, and starts the inspection while she is still walking up. See `HoldSpec.from()`.
+## of her, and starts the inspection while she is still walking up. See `HoldSpec.past_its_edge()`.
 const CHECKPOINT_DETAIN_REACH := 48.0
 ## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her. Short rather than heavier than
 ## `chatting_mother`'s 5s: a toll paid at every crossing of a region wall has to stay cheap to
-## repeat, where a conversation is spent once. See `HoldSpec.for_seconds()`.
+## repeat, where a conversation is spent once. See `HoldSpec.detains_again()`.
 const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## Seconds between two off-screen explosions inside the building. Section one is relatively minimal
 ## and an explosion is its only city-wide beat, so it is spaced like the director's own
@@ -498,14 +498,14 @@ static func _playground() -> EventDef:
 ##
 ## **Two things make a cat happen at all.** It is `AHEAD_OF_PLAYER`, because a cat is not a place:
 ## sited on a road tile at dawn it runs its two seconds out somewhere across the city, alone; the
-## director puts it across her line while she is walking. And it is `WarningSpec.holding_still()`:
+## director puts it across her line while she is walking. And it holds still through its telegraph (`WarningSpec.holds_still()`):
 ## `EventInstance` starts a mobile event moving when the telegraph does, which is wrong for a
 ## crouch, since the path is one street wide and at 240px/s the cat would finish its whole run
 ## *during* the telegraph, never reaching full intensity or drawing the running sprite.
 ##
 ## **That held-still telegraph is also why it needs its own siting distance** rather than the flat
 ## `AHEAD_LEAD_DISTANCE`: a cat sited two seconds of walking ahead and then held still for
-## `WarningSpec.lasting()` measures where she *was*, so it would cross behind her.
+## its telegraph (`telegraphs_for()`) measures where she *was*, so it would cross behind her.
 ## `EventDef.ahead_of_player_lead()` prices the hold in as walking distance.
 ##
 ## **Intensity 17, a startle spike** (PLAYTEST-25 6). There is no `impulse` field: a sharp spike is
@@ -564,8 +564,8 @@ static func _cat_dash() -> EventDef:
 ## alley she is standing in is already worth `Baby.EXCITEMENT_FROM_ALLEY` (+3.0/s) of ambient dread,
 ## so the mouse only adds a spike on top of ground that is already tense.
 ##
-## **No body, nothing lethal.** its body is a footprint, for the shadow alone (`BodySpec.footprint()`) and
-## `LethalSpec` stays `false`.
+## **No body, nothing lethal.** Its body is a footprint, for the shadow alone (`BodySpec.footprint()`), and
+## it never ends the day (`ends_the_day()` is false).
 ##
 ## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
 ## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px), so a row that started
@@ -575,7 +575,7 @@ static func _cat_dash() -> EventDef:
 ## within 150px, and only then does the telegraph start and the path run. 150px is inside
 ## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she faces) and past the
 ## field's own outer radius (60px), so the telegraph is already on screen by the time she could
-## feel it. `Tuning.validate_event()` is stated over `WarningSpec.lasting()` against the field's geometry,
+## feel it. `Tuning.validate_event()` is stated over the row's telegraph (`telegraphs_for()`) against the field's geometry,
 ## not over when the clock starts, so it is unaffected.
 ##
 ## **The dash crosses the alley's own short axis by construction.** `EventInstance` reads
@@ -1039,7 +1039,7 @@ static func _burnt_shell() -> EventDef:
 	return def
 
 # ----------------------------------------- Act I: variety, and two with teeth ---
-# **Act I has to escalate, and its danger is the neighborhood's own.** With every `LethalSpec` row
+# **Act I has to escalate, and its danger is the neighborhood's own.** With every row that ends the day
 # starting on day 8 or later, half a run would have nothing lethal in it but a car the player is
 # never obliged to step in front of. The shape of that is a decision taken **against a patrol**:
 # act I is a nice neighborhood, and a police patrol on day 2 tells a story the game tells in act II.
@@ -1083,7 +1083,7 @@ static func _burnt_shell() -> EventDef:
 ## **It does not telegraph its coming** (PLAYTEST-145 20): no screen-edge badge and no warning first
 ## (`WarningSpec.unannounced()`). The director sends it down her own sidewalk and it is created at once
 ## just out of sight there (`PendingWarning.down_her_line()`, `EventsAhead._send_down_her_line()`),
-## its `WarningSpec.lasting()` already spent, on the point of its beat that has it reach her at its loudest
+## its telegraph (`telegraphs_for()`) already spent, on the point of its beat that has it reach her at its loudest
 ## (`EventSpawner.age_when_warned()`), so a pass costs what it did under a warning. It is outside
 ## the telegraph contract rather than exempted from it.
 static func _loose_dog() -> EventDef:
@@ -1230,7 +1230,7 @@ static func _leaf_blower() -> EventDef:
 ## distance at which she is among the birds rather than near them, as a pursuer's lunge is fired by
 ## her reaching its stand-off.
 ##
-## **`WarningSpec.lasting()` is 1.7s and is the backstop rather than the wait.** It only decides a flock she
+## **Its telegraph (`telegraphs_for()`) is 1.7s and is the backstop rather than the wait.** It only decides a flock she
 ## came near and never reached (80px off the middle, say); shortening it would put *those* birds up
 ## sooner. `Tuning.validate_event()` asks 1.55s of this geometry and the number clears it.
 ##
@@ -1340,7 +1340,7 @@ static func _pigeon_flock() -> EventDef:
 ## rides straight through wherever she was standing.
 ##
 ## **He is warned of before he exists** (PLAYTEST-145). The director's siting puts up a screen-edge
-## badge with nothing in the world, pointing down her line, and when his `WarningSpec.lasting()` is over he
+## badge with nothing in the world, pointing down her line, and when his telegraph (`telegraphs_for()`) is over he
 ## is created just out of sight there on a sidewalk (`PendingWarning.down_her_line()`), with that
 ## telegraph spent, so he is lethal from his first frame; `EventInstance.is_lethal_at()` refusing a
 ## running telegraph never lets him ride through her harmless.
@@ -1353,7 +1353,7 @@ static func _pigeon_flock() -> EventDef:
 ##
 ## **inner radius is 33px, not the 26 a bike's own width would suggest** (PLAYTEST-25 7). 26px sits
 ## *under* the 32px spacing between the two lanes of a two-tile sidewalk (`Tuning.TILE_SIZE`, a lane
-## on its own tile centre), the same gap that let `chatting_mother`'s `HoldSpec.from()` be walked past
+## on its own tile centre), the same gap that let `chatting_mother`'s hold reach (`HoldSpec.past_its_edge()`) be walked past
 ## on the far lane (see that row). Both are "it catches you" rows that caught nobody, and both are
 ## 33px or more: past the lane spacing and under outer radius, so the far lane of her own sidewalk
 ## does not answer a bike coming down it for free.
@@ -1482,12 +1482,12 @@ static func _reversing_lorry() -> EventDef:
 ## outer radius is tight, so brushing past her without triggering a conversation costs about what
 ## an ordinary close pass does.
 ##
-## **The conversation is a trigger rather than a field**: entering `HoldSpec.from()` of an instance
-## that has not yet chatted locks the stroller's movement input for `HoldSpec.for_seconds()`
+## **The conversation is a trigger rather than a field**: entering its hold's reach (`HoldSpec.past_its_edge()`) of an instance
+## that has not yet chatted locks the stroller's movement input for its hold's seconds (`HoldSpec.detains_for()`)
 ## (`Stroller.detain()`), and the meter cost during that lock is priced entirely by
 ## `EventInstance.current_intensity()` reading the baby's state, never by anything authored here.
 ##
-## **`HoldSpec.from()` is 48px, three quarters of the 64px sidewalk band** (PLAYTEST-25 4). The whole
+## **Its hold's reach (`HoldSpec.past_its_edge()`) is 48px, three quarters of the 64px sidewalk band** (PLAYTEST-25 4). The whole
 ## content of this row is that she catches you, so a radius the far lane clears by construction is
 ## a row with a free answer: 26px sat under the **32px** spacing between the two lanes of a
 ## sidewalk (`Tuning.TILE_SIZE`), and 33px, just past it, was still too small. 48px reaches from
@@ -1508,7 +1508,7 @@ static func _chatting_mother() -> EventDef:
 	def.first_day = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(4.5, 56.0, 70.0))
-	# (70-56)/92 = 0.15s required; not lethal, so no doubled margin. Generous rather than tight,
+	# (70-56)/92 = 0.15s required; it does not end the day, so no doubled margin. Generous rather than tight,
 	# since the ambient field is nearly nothing next to what the conversation costs.
 	def.use_warning(WarningSpec.lasting(1.0))
 	def.mobile = true
@@ -1611,8 +1611,8 @@ static func _charging_dog() -> EventDef:
 	# wait, so its approach is still its telegraph (`EventInstance.is_standing_for_its_notice()`).
 	def.pursuit = PursuitSpec.at(130.0).warning_for(CHARGER_WARNING).standing()
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
-	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part (see
-	# `WarningSpec.badged_for()`).
+	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, and the reason it is
+	# half a second is on `WarningSpec`'s badge notice (`_badge_notice`).
 	# And it trots off rather than blinking out: a dog that gives up in front of her and then is not
 	# there says the chase was never real.
 	def.departs_at = 110.0
@@ -1648,7 +1648,7 @@ static func _charging_dog() -> EventDef:
 ## `EventDef.HEAT_INVESTIGATES_LEVEL` it stops merely patrolling and starts investigating: it stops
 ## on its road once she is close and a policeman gets out and pursues her
 ## (`EventDef.investigates()`, `out_of_the_car()`), whose catch costs her and never ends the day by
-## itself. The car never gains `LethalSpec`, whatever the heat, and never strikes her while it
+## itself. The car never ends the day, whatever the heat, and never strikes her while it
 ## stands for him; the unmarked van is the rung that hunts.
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
@@ -1867,7 +1867,7 @@ static func _curfew_announce() -> EventDef:
 ## he follows her round the corner; inbox #771 in minty-lemur: "it should be in a way that luring
 ## away the guard is enough")*.
 ##
-## **The catch is a man's reach, not a barrier's.** `LethalSpec.within()` is 28px, read off
+## **The catch is a man's reach, not a barrier's.** Its catch reach (`EventDef.lethal_reach()`) is 28px, read off
 ## `masked_pursuer`: the same fiction, the same distance at which a masked man takes the baby. It is
 ## separate from inner radius because the field is a street being held, cored on the band, while
 ## what ends the day is a pair of arms. `EventDef.validate()` has nothing to say about the band's
@@ -1944,7 +1944,7 @@ static func _roadblock() -> EventDef:
 ## for a stranger and hunts her with its men: it stays parked and solid, and once she is within
 ## `EventDef.HEAT_HUNTS_WITHIN` of it along a clear line it lets two men out at its door,
 ## `out_of_the_car()`'s hunting copy, whose catch ends the day (inbox #669 in coral-lark). The van
-## keeps `LethalSpec` throughout, so its own 54px still takes her once its telegraph is over, as the
+## keeps ending the day throughout, so its own 54px still takes her once its telegraph is over, as the
 ## cold van's does. See `EventDef.at_heat()`.
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
@@ -1967,7 +1967,7 @@ static func _abduction() -> EventDef:
 	# stays parked and lets its men out (`EventDef.hunts`), so nothing about a moving wall applies.
 	def.use_lethal(LethalSpec.at_its_core())
 	def.weight = 2.0
-	# The `LethalSpec` caps rise with the rest, but by half as much: at one event per block the late
+	# The caps on the rows that end the day rise with the rest, but by half as much: at one event per block the late
 	# city should feel *occupied*, not landmined. Four unmarked vans across forty-nine blocks is one
 	# every twelve; twelve would be a difficulty setting nobody asked for.
 	def.max_per_day = 4
@@ -1985,7 +1985,7 @@ static func _abduction() -> EventDef:
 ##
 ## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
 ##   meter is what tells you he is there, before he has noticed her at all.
-## - **Getting close is day ending.** `LethalSpec` inside 26px, and it has to be **reachable**: he
+## - **Getting close is day ending.** Ending the day inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
 ## - **Get close and he comes at you.** `EventDef.notice` 180, his one radius: inside that he
@@ -2079,7 +2079,7 @@ static func _alley_robbery() -> EventDef:
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
 ## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`PursuitSpec.lunge_reach()`),
-## his `LethalSpec` and the way he walks off once he has lost her. What differs is **no trigger**
+## his catch that ends the day and the way he walks off once he has lost her. What differs is **no trigger**
 ## (`EventDef.notice` 0), so he is never `is_waiting()`, and his timing: the day-3 dog's badge and
 ## chase, read off `_charging_dog()`. His chase does not give up on a walker
 ## (`Tuning.PURSUIT_TIME`, a long cap); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him
@@ -2129,7 +2129,7 @@ static func _robber_giving_chase() -> EventDef:
 ## `SCRIPTED` on day 0 so the roll, the stream and the bags never reach it.
 ##
 ## **The door guard, read off his row rather than copied**: his shape, his field (18 over a
-## 28–120px band: `MASKED_MAN_REACH` inside `door_guard`'s own 120px), his `LethalSpec`, and
+## 28–120px band: `MASKED_MAN_REACH` inside `door_guard`'s own 120px), his catch that ends the day, and
 ## `Tuning.HEAT_HUNTS_SPEED` (130px/s), the figure `_alley_robbery()` hardcodes as the robber's own
 ## `PursuitSpec.speed()`, so nothing about the chase differs from the robber row. What differs from
 ## `robber_giving_chase` is the picture, `EventDef.Look.VAN_GUARD_GIVING_CHASE`, drawn like
@@ -2286,7 +2286,7 @@ static var _task_guard_sent: EventDef = null
 ## line it lets two men out at its door on her side, who pursue her under the pursuit contract
 ## (`EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10) and whose catch ends
 ## the day (inbox #669 in coral-lark). Men who give up or run out their chase walk back to the van,
-## which stands over its block for the rest of the day. The van itself is never `LethalSpec`, cold
+## which stands over its block for the rest of the day. The van itself never ends the day, cold
 ## or hot. See `EventDef.at_heat()`.
 ##
 ## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
@@ -2683,7 +2683,7 @@ static func _collapsed_frontage() -> EventDef:
 ## gets detained inside, and spawns on the other side.
 ##
 ## **The hold starts a reach past the hut's own wall**, not a radius from the middle of it:
-## `HoldSpec.from()` is `CHECKPOINT_DETAIN_REACH` (48px) measured from the solid edge, so
+## The hold's reach (`HoldSpec.past_its_edge()`) is `CHECKPOINT_DETAIN_REACH` (48px), measured from the solid edge, so
 ## `EventDef.detain_distance()` comes out at 80px from the centre, and the guard steps out while she
 ## is still walking up rather than only once she is pressed against the hut. It sits inside
 ## inner radius (84px) as every detainer's does, and the ambient field is a small peak over
@@ -2695,7 +2695,7 @@ static func _collapsed_frontage() -> EventDef:
 ## price is the detention. `tests/test_events.gd` exempts the detainers from its catalogue-wide
 ## "nothing is cheaper to walk through than around" rule by name and holds them to charging their
 ## capture instead. The band stays 14px wide, which is what the telegraph is priced on; the disc
-## moved out with the capture so the two keep the order `validate()` requires. `HoldSpec.again()` tells
+## moved out with the capture so the two keep the order `validate()` requires. `HoldSpec.detains_again()` tells
 ## `EventManager` this instance is armed again once she is outside `detain_distance()`, in either
 ## direction, rather than spent after one conversation like `chatting_mother`.
 ##
@@ -2754,7 +2754,7 @@ static func _checkpoint_gate() -> EventDef:
 ## The alley half of a door: a single guard where a through-alley crosses a region boundary,
 ## standing in for the hut and gate a full street gets; the alley is one lane wide, so one body
 ## covers its whole 64px mouth. Detains exactly like `checkpoint_hut`, with the same numbers and the
-## same `HoldSpec.again()`, because the toll is the crossing itself, not the width of the street it stands
+## same `HoldSpec.detains_again()`, because the toll is the crossing itself, not the width of the street it stands
 ## on.
 static func _checkpoint_post() -> EventDef:
 	var def := EventDef.new()
@@ -2784,7 +2784,7 @@ static func _checkpoint_post() -> EventDef:
 ## `guard_standing_*`/`guard_lunging_*` pictures, `Tuning.HEAT_HUNTS_SPEED` (130px/s, between her
 ## walk and her run by the pursuit contract's own margin), no notice of his own, a chase of
 ## `Tuning.PURSUIT_TIME`, and `MASKED_MAN_REACH` (28px) as the catch, the core of his own field here
-## since the field is the man. **`LethalSpec` in its own right, not through its hunt**: a
+## since the field is the man. **Ending the day in its own right, not through its hunt**: a
 ## catch is a detention on every day a door stands and at every heat level, never a rung of the
 ## resistance's ladder. The field is `masked_pursuer`'s, 18 over a 28–120px band, the same figure
 ## coming at her.
@@ -2831,14 +2831,14 @@ static func _door_guard() -> EventDef:
 ## **Off screen is bought with the streaming radius rather than with a rule.** A `MAP` placement
 ## comes into the world at `Tuning.EVENT_STREAM_RADIUS` (900px), where the camera at zoom 2 sees
 ## 640×360, so an explosion begins its telegraph roughly two and a half screens away, spends
-## `WarningSpec.lasting()` + `duration` (3.7s, about 340px of walking) getting to its bang, and is over
+## its telegraph (`telegraphs_for()`) + `duration` (3.7s, about 340px of walking) getting to its bang, and is over
 ## while it is still well outside the view.
 ##
 ## **The radii are sized against that distance and not against taste.** outer radius 520 reaches
 ## a screen and a half; inner radius 300 puts the near half of that band at close to full
 ## strength, so a burst just beyond the screen edge (about 360px on the long axis) still lands
 ## roughly 22 of its 24 points per second on her. A narrower band would be an explosion she could
-## be next to and not hear. `WarningSpec.lasting()` is the contract's own minimum for that band,
+## be next to and not hear. Its telegraph (`telegraphs_for()`) is the contract's own minimum for that band,
 ## `(520 − 300) / WALK_SPEED` = 2.39s, with the ordinary margin on top.
 ##
 ## **Not lethal, and that is the tone rule rather than an omission** (`docs/NARRATIVE.md`: *the
@@ -2904,7 +2904,7 @@ static func _impact_crater() -> EventDef:
 ## **Faster than a walk, so it cannot be out-walked**, which makes stepping aside the answer rather
 ## than a preference, and makes the telegraph contract ask for a long one: at 130px/s it prices the
 ## escape as the field's whole forward reach rather than its falloff band, so outer radius 120 at
-## `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and `WarningSpec.lasting()` carries a little over it. That
+## `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and its telegraph (`telegraphs_for()`) carries a little over it. That
 ## number is read only by the contract: he warns while she is in the stairwell and runs on a
 ## distance, with no clock (below).
 ##
@@ -2937,7 +2937,7 @@ static func _masked_pursuer() -> EventDef:
 	# minty-lemur: no delay), since his warning is off screen and a delay only lets a walker reach
 	# the door. She has to run to the first floor's door (inbox #764 in minty-lemur) rather than walk
 	# down to it and out to the other shaft without meeting him (inbox #782 in minty-lemur: a bigger
-	# radius, and him not moved). No clock, so his `WarningSpec.lasting()` above is read only by the
+	# radius, and him not moved). No clock, so his telegraph (`telegraphs_for()`) above is read only by the
 	# telegraph contract. 426px is measured on the escape as built
 	# (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as the game steps, a 30Hz physics
 	# tick that moves her, then steps him and checks the catch): coming down from the second floor's

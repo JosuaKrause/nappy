@@ -735,7 +735,7 @@ const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
 ## (just a part or too far off the edge doesn't count)".)*
 const ENCOUNTER_SEEN_SHARE := 0.8
 
-## The default seconds of notice a row gives from off screen (`EventDef.warned_for()`): for a
+## The default seconds of notice a row gives from off screen (`WarningSpec.badge_notice()`): for a
 ## row created at once — a patrol sent down the road — the seconds it still has to be off screen
 ## once it is created, at the speed the gap is actually closing. *(2026-09-07: "events that go
 ## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning.")*

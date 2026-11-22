@@ -1122,13 +1122,13 @@ func _roll_interval() -> float:
 ## and, of the day-3 dog specifically, "the run tutorial spawns inside the visible area making the
 ## headsup way too short now".)* A flat 200px sits inside the 320px horizontal boundary, so a dog
 ## sited while she walked east or west had no offscreen phase at all — it appeared already on
-## screen. `Offscreen.lead(heading, closing_speed, `def.warned_for()`)` asks the real
+## screen. `Offscreen.lead()`, asked for the heading, the closing speed and `def.warned_for()`, asks the real
 ## question instead: how far to the edge of the view *this* heading actually reaches, plus how far
 ## it and she together cover in the row's own notice — for `charging_dog` at 130px/s pursuing,
 ## closing at 130 + `WALK_SPEED` (92) = 222px/s, `EventDef.warned_for()` of 0.5s buys 111px, sized
-## against playtest 20's own measurement of how much closing an evasion needed. See that field's own
-## reasoning for why the dog carries a different notice than the rest of the catalogue, and its own
-## `telegraphs_for()` for what pays for the longer approach.
+## against playtest 20's own measurement of how much closing an evasion needed. `WarningSpec`'s badge
+## notice (`_badge_notice`) says why the dog carries a different notice than the rest of the catalogue,
+## and its own `telegraphs_for()` is what pays for the longer approach.
 ##
 ## **Unavoidable, on purpose, was the day-3 dog's whole point** — a dog starting further away is a
 ## dog with more room to be walked around, which is exactly what siting it close was for.

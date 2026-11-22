@@ -1590,7 +1590,7 @@ func _bird_distance(bird: EventFlock.Bird, world_position: Vector2) -> float:
 ## corner is not a catch (freckled-goose #544). The reach is unchanged; nothing may stand between
 ## them. Every other lethal row keeps the straight-line distance.
 ##
-## **Cars that drive are the only rows lethal without lethal** (`EventDef.vehicle`): one strikes
+## **Cars that drive are the only rows lethal whose row does not end the day** (`ends_the_day()` is false; `EventDef.vehicle`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
 ## else — not behind it, not beside it, not while it stands (`EventCarDriving._is_driving()`). A body touching her is
 ## not enough, and not needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the

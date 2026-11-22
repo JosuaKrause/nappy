@@ -1,6 +1,6 @@
 # Rows warned of before they exist
 
-Read this before touching `warned_first`, `PendingWarning`, `EventSpawner.as_warned()`,
+Read this before touching `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`,
 `EventManager.warn_first()` or a pursuer sent from out of her sight. The design, row by row, is
 `docs/EVENTS.md`, "Everything arrives from off screen"; this file holds what the fairness contract
 asks of such a row and the traps in the code.
@@ -24,7 +24,7 @@ telegraph fairness contract".
 ## From the badge to the thing
 
 A row that arrives from off screen under the screen-edge badge is one
-`EventDef.warns_before_it_exists()` answers true for: flagged `warned_first` on its row, or made so
+`EventDef.warns_before_it_exists()` answers true for: its row's `WarningSpec.warned_first()`, or made so
 by `EventSpawner.as_warned()`, which every warning goes through. It is a `PendingWarning` first
 (`EventManager.warn_first()`; PLAYTEST-145 2): nothing in the world, the badge up at once for the
 row's own `EventDef.warned_for()`, **at most `Tuning.WARNING_ALONE_MAX`** (`validate()` refuses
