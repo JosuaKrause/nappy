@@ -40,7 +40,18 @@ Two notes from the orchestrating session's chat, filed by the orchestrating sess
 
    Said a few minutes after the quotes above, while the orchestrating session was starting its first agents of 2026-11-22.
 
+## #1621
+
+1. **Context** (the assistant's):
+
+   A further word on #1619 (the standing checks, its first line "automatically check updates on the board every hour or so"), said while its filing pull request #1620 was open and after #1619 had been closed by the filing; so it is captured as a note of its own and added to the same filing.
+
+2. **The note.**
+
+   > about every hour means just below one hour (like 55min) -- just making sure the cache doesn't go stale
+
 ## Filed as
 
 - #1610 is a further word on calm-lemur (Fable looks over the work that merged without it), whose item already lists polite-tapir's six designs (reviewed by Fable since) and minty-quail's rows 3a and 3b; it is filed as a line in that entry, not as an entry of its own.
 - #1619 is built in the same pull request that files it: the board, inbox, orchestrating and session-cleanup skills say what it asks, and the record named in the pull request says what was built.
+- #1621 says what "about every hour" in #1619 means, and is built with it.
