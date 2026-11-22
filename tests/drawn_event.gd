@@ -35,11 +35,12 @@ static func build(parent: Node, def: EventDef, vertical: bool,
 	var ground: WorldMap = map
 	if ground == null:
 		ground = EastWestStreet.new() if vertical else WorldMap.open_ground()
-	instance.setup(def, at, PackedVector2Array(), heading,
-			EventSurroundings.new().on(ground) \
-				.hearing(where) \
-				.drawn_from(atlas) \
-				.drawing_through(recording(instance, RecordingEventDrawer.new(atlas))))
+	var surroundings := EventSurroundings.new().on(ground) \
+			.drawn_from(atlas) \
+			.drawing_through(recording(instance, RecordingEventDrawer.new(atlas)))
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, PackedVector2Array(), heading, surroundings)
 	parent.add_child(instance)
 	return instance
 

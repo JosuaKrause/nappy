@@ -144,9 +144,10 @@ func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 func _rig_instance(t: TestRunner, def: EventDef, at: Vector2,
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(where) \
-				.drawn_from(_atlas))
+	var surroundings := EventSurroundings.new().drawn_from(_atlas)
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, surroundings)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

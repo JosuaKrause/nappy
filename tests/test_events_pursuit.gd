@@ -55,10 +55,11 @@ func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), map: CityMap = null,
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new(ToldEvents.on(EventBus))
-	instance.setup(def, at, path, Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
-				.moving_by(Navigator.new(map) if map else null) \
-				.hearing(where))
+	var surroundings := EventSurroundings.new().on(map) \
+			.moving_by(Navigator.new(map) if map else null)
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance

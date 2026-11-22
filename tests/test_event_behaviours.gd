@@ -28,7 +28,10 @@ func run(t: TestRunner) -> void:
 func _instance(_t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
+	var surroundings := EventSurroundings.new()
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
 	return instance
 
 func _advance(instance: EventInstance, seconds: float) -> void:

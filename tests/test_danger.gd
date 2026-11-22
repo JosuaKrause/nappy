@@ -949,10 +949,11 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 func _instance(def: EventDef, route := PackedVector2Array(),
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT,
-			EventSurroundings.new().hearing(where) \
-				.drawn_from(_atlas) \
-				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(_atlas))))
+	var surroundings := EventSurroundings.new().drawn_from(_atlas) \
+			.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new(_atlas)))
+	if where != null:
+		surroundings.hearing(where)
+	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT, surroundings)
 	return instance
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`
