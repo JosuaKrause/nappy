@@ -234,7 +234,7 @@ func _test_the_unreachable_dog_round_trips(t: TestRunner) -> void:
 			"not_closing_for": 1.0}
 	first.restore(EventSave.new(0.0, 0.0, INF, {"EventUnreachable": state}))
 	t.check(first.save().state_of("EventUnreachable") == state,
-			"the loose dog is retired once it cannot reach her")
+			"the loose dog carries the state of its unreachable behaviour")
 	var second := _round_trip(t, first, "unreachable", &"EventUnreachable")
 	t.check(second.save().state_of("EventUnreachable") == state,
 			"every field of its state survives the trip")
