@@ -128,8 +128,9 @@ func transition(to: Phase) -> void:
 		_telegraph_ended = true
 	phase = to
 	_excitement.invalidate_contribution()
-	# **Parked while it stands for good, and only then** (`MoveProposal.has_parked()`): a row that parks
-	# has once it stops where it arrives, and nothing leaving or gone stands anywhere for good.
+	# **Parked while it stands for good, and only then** (`MoveProposal.has_parked()`): a row
+	# that parks has once it stops where it arrives, and nothing leaving or gone stands anywhere
+	# for good.
 	if to == Phase.PARKED:
 		_move.be_parked(_body.parks())
 	elif to == Phase.LEAVING or to == Phase.DONE:

@@ -237,9 +237,9 @@ var _stands_on: SpawnSiting.Ask
 ## her, with no reach ahead of him. His walks keep to tile-centre ways and to the park's edge, where
 ## a reach would only stop him short of a point beside a solid that his feet can stand on.
 var _officer_walks := Mover.on_foot()
-## How far an officer's body reaches round his feet, for his move (`MoveProposal.radius`): the
-## policeman's own figure, as he walks when he is an event (`EventInstance.mover_for()` of
-## `OFFICER_ROW`), though his own walks go at no reach.
+## How far an officer's body reaches round his feet, for his move
+## (`MoveProposal.body_radius()`): the policeman's own figure, as he walks when he is an event
+## (`EventInstance.mover_for()` of `OFFICER_ROW`), though his own walks go at no reach.
 var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).body_reach()
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.

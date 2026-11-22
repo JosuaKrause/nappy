@@ -516,9 +516,9 @@ var _nose := 0.0
 var _acts_within := 1
 var _scans_from_its_lane := false
 
-## Takes its kind's ground shape (`shape()`), and the reach round its centre its move carries for
-## whoever gives way or is given way to (`MoveProposal.radius`): once, at either setup, a rolled
-## morning's or a pinned actor's.
+## Takes its kind's ground shape (`shape()`), and the reach round its centre its move carries
+## for whoever gives way or is given way to (`MoveProposal.body_radius()`): once, at either
+## setup, a rolled morning's or a pinned actor's.
 func _take_the_shape() -> void:
 	_shape = _strategy.ground_shape()
 	_move.use_body_radius(_shape.reach())
@@ -812,8 +812,8 @@ func _propose_the_step(delta: float) -> void:
 	_move.step_to(Vector2(cross, along) if _vertical else Vector2(along, cross))
 
 ## **The check on its proposed step**: keeps an agent's own centre out of a tile it may not stand on,
-## when the step proposed (`_move.steps_to()`) would carry it in. `stood_on` is the tile it was on before
-## that step.
+## when the step proposed (`_move.steps_to()`) would carry it in. `stood_on` is the tile it was
+## on before that step.
 ##
 ## **A brake and a sidestep are both approaches, and an approach arrives late.** A car easing toward
 ## a blockage overshoots by whatever the last frame's speed bought it, and a walker crossing to the

@@ -96,7 +96,8 @@ enum SolidWhen {
 ## freckled-moose): a walker may walk through a person or an animal standing still, and walks round
 ## an object or a vehicle. A figure under way is given way to whatever it is, and a crowd car stands
 ## for any figure in its lane once it has moved; this is only the walker's question about a figure
-## that stands (`MoveProposal.stood_round_a_body()`, which `EventInstance.setup()` sets from it).
+## that stands (`MoveProposal.stood_round_a_body()`, which `EventInstance.setup()` sets from
+## it).
 ##
 ## Every row declares it, and `EventDef.validate()` refuses one that does not: a default would have
 ## walkers walk through a parked van, or round an invisible point, without anybody deciding either.
@@ -124,11 +125,11 @@ enum StandsAs {
 ## its notice) it waits.
 ##
 ## The row says whether its figure parks; the instance says when it has (`EventInstance` sets
-## `MoveProposal.has_parked()` from this and its phase): a figure that never moves has parked from the
-## start, and one that drives to where it stops (`EventDef.parks_where_it_arrives()`) has parked once
-## it is there. Every row declares it, and `EventDef.validate()` refuses one that does not, and one
-## whose declaration its motion contradicts: a row that stops where it arrives parks, and a row that
-## moves any other way, chases her or wheels as a flock does not.
+## `MoveProposal.has_parked()` from this and its phase): a figure that never moves has parked
+## from the start, and one that drives to where it stops (`EventDef.parks_where_it_arrives()`)
+## has parked once it is there. Every row declares it, and `EventDef.validate()` refuses one
+## that does not, and one whose declaration its motion contradicts: a row that stops where it
+## arrives parks, and a row that moves any other way, chases her or wheels as a flock does not.
 enum WhenItStops {
 	## Not declared: refused by `EventDef.validate()`.
 	UNDECLARED,

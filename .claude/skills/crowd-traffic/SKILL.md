@@ -40,10 +40,10 @@ things must not be inside each other, move them apart; do not ask them to want t
 **Between the crowd and an event figure only the crowd moves** (plaid-raven #884): each
 crowd body's proposed step is cleared of, or held short of, the event figures, event cars and
 cordon officers at its own step, before its check (`LaneStrategy.give_way_on_the_step()`, through
-the map's `SeparationPass`), and nothing an event does reads the crowd. **A move's `radius` is the
-circle round the whole body**, which for a vehicle is its length: a car's lane test counts at most
-`CarStrategy.FIGURE_WIDEST` of it across the lane, or an event car in the next lane stops the
-traffic in this one.
+the map's `SeparationPass`), and nothing an event does reads the crowd. **A move's body radius
+(`MoveProposal.body_radius()`) is the circle round the whole body**, which for a vehicle is its
+length: a car's lane test counts at most `CarStrategy.FIGURE_WIDEST` of it across the lane, or an
+event car in the next lane stops the traffic in this one.
 
 ## The traffic fairness contract
 

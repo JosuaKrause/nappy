@@ -5,11 +5,12 @@ extends RefCounted
 ## docs/EVENTS.md, "Solid things are solid".
 ##
 ## A shape is a **spine** plus a **radius**: the spine is either a point or a segment of
-## `half_length` along local +X, and `radius` is the rounding around it. That gives a disc (point
-## spine) and a capsule (segment spine). **A third kind, a rectangle, exists only because a
-## building's footprint is one** — `half_extents`, an axis-aligned box in the object's own frame —
-## and nothing else in the game uses it: every other obstructing thing reduces to a point or a
-## band, which is why `band()` below still hands out only those two. There is still no polygon.
+## half-length along local +X, and the radius is the rounding around it. That gives a disc
+## (point spine) and a capsule (segment spine). **A third kind, a rectangle, exists only because
+## a building's footprint is one** — its half extents, an axis-aligned box in the object's own
+## frame — and nothing else in the game uses it: every other obstructing thing reduces to a
+## point or a band, which is why `band()` below still hands out only those two. There is still
+## no polygon.
 ##
 ## **The excitement field is the Minkowski sum of this datum and a kernel** — `field_distance()`
 ## and `field_outline()` below, read by an event's field (`EventInstance.field_at()`), a crowd
@@ -22,16 +23,16 @@ extends RefCounted
 ## docs/EVENTS.md, "The emission model".
 
 ## Which of the three kinds this shape is. A point and a segment could still be told apart by
-## `half_length` being positive, the way this file did before the rectangle existed, but a
-## rectangle needs its own tag — nothing about `half_extents` alone says "this is the field in use"
-## the way a positive `half_length` does for a segment.
+## its half-length being positive, the way this file did before the rectangle existed, but a
+## rectangle needs its own tag — nothing about its half extents alone says "this is the one in
+## use" the way a positive half-length does for a segment.
 enum Kind { POINT, SEGMENT, RECT }
 
 var _kind := Kind.POINT
 ## The spine's half-length along local +X. Zero for a point or a rectangle.
 var _half_length := 0.0
 ## The rounding around the spine — the shape's half-thickness perpendicular to it. Zero for a
-## rectangle, whose own half-thickness is the smaller of `half_extents`.
+## rectangle, whose own half-thickness is the smaller of its half extents.
 var _radius := 0.0
 ## Half-width and half-depth of a rectangle, in the object's own frame, local X by local Y. Zero
 ## for a point or a segment.
