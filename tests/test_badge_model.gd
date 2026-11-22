@@ -394,7 +394,8 @@ func _test_a_pending_warning_is_listed_closing_at_its_approach_speed(t: TestRunn
 	model.step(STEP, Vector2.ZERO, [w], _sees)
 	var listed := model.announcing()
 	t.check(listed.size() == 1 and is_equal_approx(listed[0].approach(), 240.0),
-			"a pending warning is listed closing at its approach speed (%d listed)" % listed.size())
+			"a pending warning is listed closing at its approach speed (%s)"
+			% [listed.map(func(b: EdgeBadges.Badge) -> float: return b.approach())])
 
 ## A pending warning with 0.7s left is ranked against a live thing by when each arrives: the live
 ## one, still 0.6s off, is listed ahead of it, and once it is 0.75s off the warning is. A warning's
