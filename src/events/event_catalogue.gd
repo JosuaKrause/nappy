@@ -58,7 +58,7 @@ const CHARGER_WARNING := 2.0
 const CHECKPOINT_DETAIN_REACH := 48.0
 ## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her. Short rather than heavier than
 ## `chatting_mother`'s 5s: a toll paid at every crossing of a region wall has to stay cheap to
-## repeat, where a conversation is spent once. See `HoldSpec.detains_again()`.
+## repeat, where a conversation is spent once. See `HoldSpec.detains_for()`.
 const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## Seconds between two off-screen explosions inside the building. Section one is relatively minimal
 ## and an explosion is its only city-wide beat, so it is spaced like the director's own
@@ -1867,7 +1867,7 @@ static func _curfew_announce() -> EventDef:
 ## he follows her round the corner; inbox #771 in minty-lemur: "it should be in a way that luring
 ## away the guard is enough")*.
 ##
-## **The catch is a man's reach, not a barrier's.** Its catch reach (`EventDef.lethal_reach()`) is 28px, read off
+## **The catch is a man's reach, not a barrier's.** His catch (the hunt's `LethalSpec.within(MASKED_MAN_REACH)`) is 28px, read off
 ## `masked_pursuer`: the same fiction, the same distance at which a masked man takes the baby. It is
 ## separate from inner radius because the field is a street being held, cored on the band, while
 ## what ends the day is a pair of arms. `EventDef.validate()` has nothing to say about the band's
