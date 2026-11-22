@@ -9,6 +9,7 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 - **Only the orchestrating Claude Code session acts on it**, changing it or answering on it, and Claude is never @-mentioned on it.
 - **It is read at session start, at every run of the orchestrating session's recurring check (about every 30 minutes, never more than about 55 minutes apart), when the player says "doc" or "check the doc", and before the first write of a turn**, since in code mode the player reads the board and rarely the chat (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
 - **What the player should learn goes on the board**, not only into a chat report (inbox #1619 in teal-dolphin).
+- **A quick note to the inbox can be written in the board's `## Quick notes` section**, which each recurring check captures into the inbox word for word and then clears (inbox #1626 in dappled-bison).
 - **Questions and answers live on the board, and new tasks are posted in the inbox**, which the recurring check lists at every run as it reads the board (inbox #1623 in dappled-bison).
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
@@ -69,16 +70,21 @@ Top to bottom, every part present even when empty:
    pick saying what happens if they leave it, and it stays until they answer it; a choice an agent
    made where the design was silent stays in its report and the pull request's description rather
    than coming here.
-3. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
+3. `## Quick notes`: the place where the player writes a quick inbox note, like a task or a
+   remark, without opening an issue (inbox #1626 in dappled-bison). Each recurring check reads it, and
+   **captures each note into the inbox, word for word, before anything else** (**inbox**), then
+   removes it from the board; the player's words are never reworded. Empty, it holds the section's
+   one line saying what it is for.
+4. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
    they are, or until the chat has fully discussed them (see "Settling"), each as below.
-4. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
+5. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
    a refactor step, a fix, inbox notes waiting to be filed. A PR is a link in the State cell. Under
    it, one line on what comes after the running work. **When the orchestrating session is out of
    tasks, that line says so and says it keeps checking** (what it looks at is in **orchestrating**,
    "What the orchestrator keeps"), so the player reads an idle session as waiting and not as gone
    (inbox #1619 in teal-dolphin).
-5. `## Recently done`: a table `Merged | What`, the PR linked, newest first, the last six or so.
-6. `## How this board works`: a bullet list of the rules below, in the player's terms.
+6. `## Recently done`: a table `Merged | What`, the PR linked, newest first, the last six or so.
+7. `## How this board works`: a bullet list of the rules below, in the player's terms.
 
 That is the Main tab. **The review items have a tab of their own, Review, in the same overall style,
 and it is kept in step with `docs/review/`** (inbox #948 in bouncy-marten). A review item under
@@ -273,7 +279,11 @@ the player corrects them. The citation is the player's word each one extends:
   inbox #1163 in gray-dolphin).
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
   inbox #1163 in gray-dolphin).
-- **Where the out-of-tasks note stands, and the beat of the read** ("The layout", part 4; "When it is
+- **Where the Quick notes section stands, and that a captured note is removed** ("The layout", part 3):
+  the player asked for a place on the board for quick inbox notes (inbox #1626 in dappled-bison);
+  that it sits between Waiting on you and Settled, and that a note is removed once captured, are
+  the filer's.
+- **Where the out-of-tasks note stands, and the beat of the read** ("The layout", part 5; "When it is
   read"): the note is the line under Running, and the board read is every run of the
   30-minute recurring check, so no gap passes about 55 minutes, which the player's words set
   (inbox #1619 in teal-dolphin, inbox #1621 in teal-dolphin).
