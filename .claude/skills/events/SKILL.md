@@ -42,10 +42,10 @@ The steps are `docs/EVENTS.md`, "Adding a new event". A row is written through a
 one statement per ability it has (`row.look()`, `row.body()`, `row.field()`, ...), then `build()`;
 a part it has none of is left out and holds that part's default. A variant of a row (the heated
 shape, the copy for a later day, the one sent ahead) is its `redraft()`, the parts it differs in
-written over it and built again, and **a built row is never written to**. The step that gets skipped is **a drawing**
-(its step 5): a look, an SVG, its pictures and a badge silhouette of the row's own. There is no
-generic to borrow, and `tests/test_events_catalogue.gd` fails if two rows share a picture or two
-looks share a silhouette.
+written over it and built again, and **a built row is never written to**. The step that gets
+skipped is **a drawing** (its step 5): a look, an SVG, its pictures and a badge silhouette of the
+row's own. There is no generic to borrow, and `tests/test_events_catalogue.gd` fails if two rows
+share a picture or two looks share a silhouette.
 
 How a row is drawn is a `LookSpec` (`EventDef.look()`): its picture, the picture it warns in,
 whether a shadow goes under it, a trailing lead, whether its hold hides it, whether a rider of it

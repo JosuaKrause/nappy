@@ -554,8 +554,8 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## sidewalk, road, sidewalk — the same order `RegionPlanner._add_door_bodies` reads its own
 ## `road_index` from — and a crossing's two sidewalk bodies keep the row's own default two guards
 ## each (`LookSpec.guard_sides()`) while the road body between them draws none, so a crossing posts
-## four rather than six. The choice is carried on the placement: `_no_wall_guards` duplicates the
-## shared def once more (a redraft of it), with its look's guard sides emptied —
+## four rather than six. The choice is carried on the placement: `_no_wall_guards` builds a
+## redraft of the shared def with its look's guard sides emptied —
 ## `_draw_roadblock()` never has to guess a body's position back out of where it happens to stand.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventPlan]:
@@ -663,7 +663,8 @@ static func _mark_soft_sealed(map: CityMap, tiles: Array[Vector2i]) -> void:
 ##
 ## **Public rather than the file-private helper it started as**, because `RegionPlanner` needs the
 ## same protection for the region door's own hut/gate/post bodies, which are not one of this
-## file's own candidates — see `place_hard_on` and `alley_mouth_wall` for the precedent, and
+## file's own candidates — see `place_hard_on()` and `RegionPlanner._alley_mouth_wall_body()`, which
+## both go through `sealed_draft()`, for the precedent, and
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` for the new callers.
 static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	return sealed_draft(def, suppress_recenter).build()

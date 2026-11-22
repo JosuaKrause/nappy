@@ -216,11 +216,11 @@ func _init(draft: EventDraft) -> void:
 	aftermath = draft.drafted_aftermath()
 
 ## **A new draft holding every setting and part of this row**: how every copy of a row is made.
-## The row keeps the draft it was built from (`_draft`), so a copy is a copy of that draft: one list
-## of settings (`EventDraft.copy()`) and none to keep in step here. The copy changes the parts it
-## differs in on the draft and builds it again (`draft.field(def.field().at_peak(rate))`); the parts
-## it keeps are the row's own values, shared, which nothing changes. A row is never changed after it
-## is built.
+## The row keeps the draft it was built from (`_draft`), so a copy is a copy of that draft: one
+## list of settings (`EventDraft.copy()`) and none to keep in step here. The copy changes the parts
+## it differs in on the draft and builds it again (`draft.field(def.field().at_peak(rate))`); the
+## parts it keeps are the row's own values, shared, which nothing changes. A row is never changed
+## after it is built.
 func redraft() -> EventDraft:
 	return _draft.copy()
 
@@ -417,7 +417,8 @@ var on_her_way: OnHerWay
 ## not send (`SentAhead`): the dog walker, the police patrol and the military convoy. A row with one
 ## is drawn by no unit (`is_drawn_by_units()`), is a marble of her route's bag (`EventDirector`) and
 ## counts among the moments the dawn owes her (`DawnMoments`). Whatever else places the row (the
-## escape's bag, a scene recipe, a happening) reads none of it. Written by the draft (`EventDraft.sent_ahead()`).
+## escape's bag, a scene recipe, a happening) reads none of it. Written by the draft
+## (`EventDraft.sent_ahead()`).
 var _sent_ahead: SentAhead
 
 ## Whether the director sends it ahead of her on an ordinary day (`EventDraft.sent_ahead()`).
@@ -436,11 +437,11 @@ func is_warned_in_its_lane() -> bool:
 func keeps_to_the_carriageway() -> bool:
 	return placement.has(GameEnums.TileType.ROAD)
 
-## **The copy the director sends** (`EventDraft.sent_ahead()`): one created at once comes `TOWARD_PLAYER`, down
-## her sidewalk on foot (the dog walker) or down the carriageway beside her (the patrol), with no
-## badge (`telegraphs_its_coming()` false: a row the director creates at once just out of sight is met as it
-## comes, which the rule gives both anyway, each slower than a walk and neither lethal,
-## PLAYTEST-145 18-23); one warned of first is its `as_warned_first()` copy, still `MAP`, since its
+## **The copy the director sends** (`EventDraft.sent_ahead()`): one created at once comes
+## `TOWARD_PLAYER`, down her sidewalk on foot (the dog walker) or down the carriageway beside her
+## (the patrol), with no badge (`telegraphs_its_coming()` false: a row the director creates at once
+## just out of sight is met as it comes, which the rule gives both anyway, each slower than a walk
+## and neither lethal, PLAYTEST-145 18-23); one warned of first is its `as_warned_first()` copy, still `MAP`, since its
 ## 300px field is wider than a `TOWARD_PLAYER` row may be (the convoy). Validated as it is made.
 ## Itself for a row the director does not send.
 func as_sent_ahead() -> EventDef:
@@ -483,7 +484,8 @@ func warning() -> WarningSpec:
 
 ## **How the row travels** (`RouteSpec`): whether it moves along a route of its own, how fast, how
 ## the route is built and how long, whether it paces a beat on it, and whether it stops where it
-## arrives. Written by the draft (`EventDraft.route()`); asked through the questions below. `RouteSpec.none()` stays where it is placed, which is every row that does not move.
+## arrives. Written by the draft (`EventDraft.route()`); asked through the questions below.
+## `RouteSpec.none()` stays where it is placed, which is every row that does not move.
 var _route: RouteSpec
 
 ## How the row travels, for the code inside the events folder that walks it (`RouteSpec`).
@@ -1071,8 +1073,8 @@ func validate() -> bool:
 		push_error("event '%s' is a one-shot not sited from her walk: a set piece has to be met " % id
 				+ "wherever she goes, and one placed at dawn is met only if she walks there")
 		return false
-	# **A row is weighed only on ground it can stand on** (`EventDraft.weighed_on()`): a weight on ground none of
-	# its tiles lies on would read as a row drawn there and draw nothing.
+	# **A row is weighed only on ground it can stand on** (`EventDraft.weighed_on()`): a weight on
+	# ground none of its tiles lies on would read as a row drawn there and draw nothing.
 	if is_weighed_on_ground_it_cannot_stand_on():
 		push_error("event '%s' is weighed on a kind of ground none of its placement tiles lies on"
 				% id)

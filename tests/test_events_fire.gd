@@ -357,8 +357,8 @@ func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
 
 ## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every
-## crew the day draws has no position, for the director to site; with the crew row not sited from her walk, the
-## same day stands its crews placed. A unit's draw hands a crew on as it lays it out
+## crew the day draws has no position, for the director to site; with the crew row not sited from
+## her walk, the same day stands its crews placed. A unit's draw hands a crew on as it lays it out
 ## (`MarbleDraw.draw()`), so the rows drawn after it are spaced without it and the two days
 ## need not match beyond the crews.
 func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:

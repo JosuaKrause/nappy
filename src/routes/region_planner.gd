@@ -614,10 +614,11 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## **Draws one guard, on the street side, never the one inside the alley.** *(2026-09-25, the
 ## player, on a walled alley's own two guards per mouth: "one guard in alleys on each end.")* The
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
-## reach — so its look's guard sides are set here to the one side that does, the same way
-## `SealPlanner.sealed_draft()` already replaces the body of the sealed row it hands
-## `SealPlanner.alley_mouth_wall()` — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
-## name in the array rather than assuming two.
+## reach — so its look's guard sides are set here to the one side that does, on the sealed draft
+## (`SealPlanner.sealed_draft()` redrafts the row, drops its aftermath and pins its lane), where the
+## body is replaced too, before `SealPlanner.alley_mouth_wall()` is handed the built row — with no
+## change to `RoadblockLook._draw_roadblock()`, which already draws one guard per name in the array
+## rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventPlan:
 	var wall := EventCatalogue.by_id(_WALL_DEF_ID)

@@ -3456,14 +3456,15 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    (`PursuitSpec`, `VehicleSpec`, `AbductionSpec`, `LethalSpec`, `HoldSpec`, `WarningSpec`, ...),
    with the draft statement that writes it where a row says it, or a new part with its own
    statement on `EventDraft`, and handle it in the behaviour that owns that rule under
-   `src/events/behaviours/`, or in a new `EventBehaviour` that `EventBehaviours.compose()` adds for every row whose data asks for it,
-   saving and restoring its own state. The composer hands a behaviour what never changes under it
-   (its settings, the map, the navigator, what it walks as, where she is, the run log its event
-   writes to, the behaviours beside it it works with), and it asks its event what changes through the event's narrow interface,
-   `EventInstance.Figure`, never through its fields. **Key new behaviour on data, not on `look` or `id`**: a
-   picture is for drawing, and a part one row plays elsewhere is an `EventDef.Role`. Resist a script per event:
-   `EventDef.pursuit`, the warning's `holding_still()` and `pavement_side` are all one setting each, and
-   each one is shared or checkable.
+   `src/events/behaviours/`, or in a new `EventBehaviour` that `EventBehaviours.compose()` adds
+   for every row whose data asks for it, saving and restoring its own state. The composer hands a
+   behaviour what never changes under it (its settings, the map, the navigator, what it walks as,
+   where she is, the run log its event writes to, the behaviours beside it it works with), and it
+   asks its event what changes through the event's narrow interface, `EventInstance.Figure`, never
+   through its fields. **Key new behaviour on data, not on `look` or `id`**: a picture is for
+   drawing, and a part one row plays elsewhere is an `EventDef.Role`. Resist a script per event:
+   `EventDef.pursuit`, the warning's `holding_still()` and `pavement_side` are all one setting
+   each, and each one is shared or checkable.
 8. A variant of a row (a heated shape, a copy for a later day, the one sent ahead) is a
    redraft: `row.redraft()`, the parts it differs in written over the draft, `build()` again. Nothing
    changes a built row, so a variant is never made by writing a field of the row it came from.

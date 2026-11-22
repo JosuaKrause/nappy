@@ -227,7 +227,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 
 ## A row that answers to nothing is the *same object* at every level, not merely an equal one.
 ## Identity rather than equality because the cost of getting this wrong is not a wrong number, it
-## is a duplicate `Resource` per candidate placement per day.
+## is a second row built for every candidate placement of every day.
 func _test_a_row_that_answers_to_nothing_is_untouched(t: TestRunner) -> void:
 	var untouched := 0
 	for def in EventCatalogue.all():
