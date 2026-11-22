@@ -1606,7 +1606,7 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 
 ## Whether the row is a stationary solid body the pavement does not pin to an edge
 ## (`_pavement_side` `ANY`) and that does not span the street: the body a pavement band's middle is
-## where it stands (`BodyStance.stands_at()`). A row that spans the street stands at its kerb
+## where it stands (`BodyStance.of()`). A row that spans the street stands at its kerb
 ## instead (`stands_at_its_kerb()`); the two never both hold.
 func stands_on_its_band_middle() -> bool:
 	return _is_an_unpinned_standing_body() and not _spans_the_street
@@ -1616,7 +1616,7 @@ func stands_on_its_band_middle() -> bool:
 ## (`spans_the_street()`) and that `_pavement_side` does not pin, the roadblock. From the kerb its
 ## band reaches across its own sidewalk and the road and stops at the far kerb, so the far sidewalk
 ## stays whole. A region wall's bodies are pinned (`SealPlanner.sealed_variant()`) and stand where
-## they are put. Read by `EventPlan.stands_without_a_map()`, the one place that moves a body there.
+## they are put. Read by `BodyStance.stands_without_a_map()`, the one place that moves a body there.
 func stands_at_its_kerb() -> bool:
 	return _is_an_unpinned_standing_body() and _spans_the_street
 

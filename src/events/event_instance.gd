@@ -327,17 +327,17 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	# from the start; it sweeps nothing until he is after her (`EventPursuit`).
 	if definition.walks_round_buildings():
 		_chase_way = _navigator.way_to(_mover, _sight)
-	var start := BodyStance.stands_at(_map, definition, at)
-	position = start
+	var stance := BodyStance.of(_map, definition, at, face)
+	position = stance.center()
 	_heading = face
 	look = EventLooks.for_row(self, definition.look(), definition.body(),
 			definition.takes_a_victim_by(), _surroundings.drawer(), not _surroundings.draws(),
 			_surroundings.drawn_view(), _composed.barrier_post())
 	look.face(face)
+	look.stand_as(stance)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
-	_body = EventBody.new(definition, definition.body(), _map, _where, self, position, face,
-			BodyStance.lies_vertically_at(_map, position), _gate_state)
+	_body = EventBody.new(definition, definition.body(), _where, self, stance, _gate_state)
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventBody.is_walked_round()`).
 	_move.be_walked_round(_body.is_walked_round())
@@ -463,6 +463,12 @@ static func mover_for(row: EventDef) -> Mover:
 ## axis its spine lies along as it heads now (`EventBody.standing_pieces()`).
 func standing_pieces() -> Array[StandingPiece]:
 	return _body.standing_pieces(global_position, _heading)
+
+## **How this instance stands on its street** (`BodyStance`): derived once as it is set up and again
+## when it is moved (`move_to()`), and handed to what asks: its body, its look, the spawner's record
+## of where it stands (`EventSpawner.move_extra()`).
+func stance() -> BodyStance:
+	return _body.stance()
 
 ## Built by its rim the first time `ExcitementHalo` picks this instance, never in
 ## `_ready()`: a day has dozens of events live at once, and a rim each would take every block the
@@ -1089,10 +1095,11 @@ func _restore_the_moment(saved: EventSave) -> void:
 ## (the axis of a spread, which side a parked vehicle shows, its idle phase), and its field is asked
 ## afresh. `EventManager.move_extra()` is the caller, which records its body again.
 func move_to(at: Vector2) -> void:
-	var stands := BodyStance.stands_at(_map, _def, at)
-	global_position = stands
+	var stance := BodyStance.of(_map, _def, at, _heading)
+	global_position = stance.center()
 	_move.place(position)
-	_body.land_at(stands, _heading, BodyStance.lies_vertically_at(_map, stands))
+	_body.land_at(stance)
+	look.stand_as(stance)
 	_idle_phase_offset = _position_roll(101)
 	_excitement.invalidate_contribution()
 	reset_physics_interpolation()
@@ -1659,13 +1666,13 @@ func sight_line_to_her() -> Vector2:
 ## built without a map, exactly as a step through the navigator is (`Navigator.step()`).
 ##
 ## **Seeing out of his own band is not reaching through it.** The line a guard notices her along and
-## lunges along does not ask the tiles of his own body (`EventBody.tiles_at()`, where the body
+## lunges along does not ask the tiles of his own body (`EventBody.tiles()`, where the body
 ## stands), because he steps out to his post on her side and she may stand on the band's far side;
 ## the catch above asks every body, his own included, and every other body's tile stops either
 ## question.
 func clear_line_to(world_position: Vector2) -> bool:
 	return _navigator.clear_line(global_position, world_position, _sight,
-			_body.tiles_at(body_position(), _heading))
+			_body.tiles())
 
 
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
@@ -1713,7 +1720,7 @@ func spread_axis() -> Vector2:
 	return _body.spread_axis()
 
 ## The ground-plane direction this instance's own solid body's spine lies along
-## (`BodyStance.solid_axis_of()`): its heading for a car that drives, its street's axis for a
+## (`BodyStance.spine_along()`): its heading for a car that drives, its street's axis for a
 ## spread, the side it shows for a stationary vehicle. Read by its body, its field, its behaviours,
 ## its look's shadow and `DebugLayers`, so a segment is turned one way everywhere
 ## (`EventBody.solid_axis()`).

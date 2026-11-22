@@ -61,11 +61,18 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 	world.map().obstruct_tiles(owner, tiles)
 	return tiles
 
+## **Records a standing instance's footprint again under `owner`**, from the stance it holds, after
+## it was moved (`move_extra()`): the tiles it recorded, none for a row the record leaves out.
+func record_the_stance(owner: int, def: EventDef, stance: BodyStance) -> Array[Vector2i]:
+	var tiles := footprint_of(def, stance)
+	world.map().obstruct_tiles(owner, tiles)
+	return tiles
+
 ## The tiles a row's own solid body stands on when it is sited at `at` looking `facing`, or an
 ## empty list for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a
 ## door body, or a row with no body at all.
 ##
-## **The row's pieces are laid out by `BodyStance.pieces_at()`**, the one layout the walk's ground and
+## **The row's pieces are laid out by `BodyStance.pieces()`**, the one layout the walk's ground and
 ## the route rig ask too, and each is rasterised, never the one disc of `obstructs_within()`. A row
 ## is solid where `BodySpec.pieces()` says it is, which is one piece at the origin carrying `shape`
 ## for every row that declares none — so a one-piece row records exactly the tiles it always did,
@@ -82,10 +89,19 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 ## records its pieces and the two cars are the only pieces there are.
 static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 		facing: Vector2) -> Array[Vector2i]:
+	if def == null or not def.stands_as_a_fixed_body():
+		var none: Array[Vector2i] = []
+		return none
+	return footprint_of(def, BodyStance.of(map, def, at, facing))
+
+## The tiles a row's own solid body stands on as `stance` says it stands, which
+## `obstructed_footprint()` answers for a body built at a point and a live body for the stance it
+## holds: none for a row the record leaves out.
+static func footprint_of(def: EventDef, stance: BodyStance) -> Array[Vector2i]:
 	var covered: Array[Vector2i] = []
 	if def == null or not def.stands_as_a_fixed_body():
 		return covered
-	for piece in BodyStance.pieces_at(map, def, at, facing):
+	for piece in stance.pieces():
 		for tile in piece.tiles():
 			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body that
 			# recorded one tile twice would need two releases to give it back.
@@ -285,8 +301,7 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 		return
 	world.map().release_obstruction(instance.get_instance_id())
 	instance.move_to(at)
-	record_the_body(instance.get_instance_id(), instance.row(), instance.global_position,
-			instance.facing_now())
+	record_the_stance(instance.get_instance_id(), instance.row(), instance.stance())
 
 ## Creates `def` on `path`, for a row whose warning ran before it existed, placed where the warning
 ## pointed just out of sight. A non-pursuer is created with its telegraph already spent, since the

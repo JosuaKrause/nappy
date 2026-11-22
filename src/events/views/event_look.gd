@@ -14,8 +14,9 @@ extends RefCounted
 ## picture is drawn in, and draws on the event's own canvas. What the event does is its behaviours'
 ## (`src/events/behaviours/`); nothing here decides it.
 ##
-## The event calls its look. In `setup()` it makes it (`EventLooks.for_row()`) and faces it
-## (`face()`), and its tree callbacks hand it the
+## The event calls its look. In `setup()` it makes it (`EventLooks.for_row()`), faces it
+## (`face()`) and hands it how it stands on its street (`stand_as()`, again when the event is
+## moved), and its tree callbacks hand it the
 ## drawing nodes to build, rebuild and let go of (`build_nodes()`, `enter_tree()`,
 ## `release_nodes()`; a look that has nodes puts them into the world on the idle frame after it
 ## builds them), its `_draw()` draws through it (`draw()`), and its `_process()`, once a drawn
@@ -42,12 +43,15 @@ var _skip_draw := false
 ## The box its drawing is gated by: whether any of it can be on the screen (`DrawnView`).
 var _drawn_view: DrawnView
 
-## The row's body pieces laid out round the origin along `_shadow_axis` (`BodyStance.pieces_laid_out()`),
-## kept until the axis or the street's direction changes: the body shadow is asked on every draw, and
-## a standing body's axis never does. Empty until the first shadow is drawn.
-var _shadow_pieces: Array[StandingPiece] = []
-var _shadow_axis := Vector2.ZERO
-var _shadow_vertical := false
+## How the event stands on its street (`BodyStance`): the pieces its shadow is made of. Handed by
+## `stand_as()`.
+var _stance: BodyStance
+
+## The pieces of a car that drives laid out round the origin along `_driven_axis`, the way it is
+## heading, kept until the heading turns it: the body shadow is asked on every draw. A body that
+## does not drive keeps its pieces in its stance. Empty until the first shadow of a car is drawn.
+var _driven_pieces: Array[StandingPiece] = []
+var _driven_axis := Vector2.ZERO
 
 func _init(owner: EventInstance, look: LookSpec, body: BodySpec, drawer: EventDrawer,
 		skip_draw: bool, drawn_view: DrawnView) -> void:
@@ -381,7 +385,7 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 	shape.draw_shadow(canvas, at, event.solid_axis())
 
 ## This row's own body shadow: one `GroundShape` shadow per solid piece, at the piece's own offset
-## along the spread axis (the pieces laid out once for the axis it lies along, `_shadow_pieces`, and
+## along the spread axis (the pieces of its stance, laid out once, and
 ## the same halo guard as `_draw_shape_shadow()`): one ellipse or capsule for anything that declares no parts, and two
 ## patches under two cars for the one row that does, so the ground under a crash is dark where the
 ## cars are and lit where the picture leaves a way through.
@@ -395,13 +399,14 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 		return
 	if canvas == event.rim():
 		return
-	var axis := event.solid_axis()
-	var vertical := event.runs_vertically()
-	if _shadow_pieces.is_empty() or axis != _shadow_axis or vertical != _shadow_vertical:
-		_shadow_axis = axis
-		_shadow_vertical = vertical
-		_shadow_pieces = BodyStance.pieces_laid_out(_body, Vector2.ZERO, axis, vertical)
-	for piece in _shadow_pieces:
+	var pieces := _stance.round_the_origin()
+	if event.drives():
+		var axis := event.solid_axis()
+		if _driven_pieces.is_empty() or axis != _driven_axis:
+			_driven_axis = axis
+			_driven_pieces = _stance.pieces_at(Vector2.ZERO, axis)
+		pieces = _driven_pieces
+	for piece in pieces:
 		piece.ground_shape().draw_shadow(canvas, origin + piece.center(), piece.axis())
 
 ## Whether this event is worth a mark at all.
@@ -689,6 +694,12 @@ func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
 ## Faces the picture along `heading` with no hold from an earlier view, for a fresh placement.
 func face(heading: Vector2) -> void:
 	_view_sector = EightDirection.nearest(heading)
+
+## Takes how the event stands on its street: handed as the event is set up, and again each time it
+## is moved to other ground, where its pieces and its spread lie differently.
+func stand_as(stance: BodyStance) -> void:
+	_stance = stance
+	_driven_pieces = []
 
 ## Builds the drawing nodes, once, when the event is made.
 func build_nodes() -> void:

@@ -129,8 +129,8 @@ func _spread_slice_count(segment_picture: String) -> int:
 ## covers `BodySpec.drawn_width()`'s narrowest either side of its origin, as `drawn_box()` reserves.
 func _spread_run() -> PackedVector2Array:
 	if _body.has_a_body() and event.ground_shape() != null:
-		return DrawLayer.run_of(EventFootprints.solid_footprint_of(_body, event.spread_axis(),
-				event.runs_vertically()), Vector2.ZERO)
+		return DrawLayer.run_of(EventFootprints.solid_footprint_of(_stance, event.facing_now()),
+				Vector2.ZERO)
 	var half := _half_run()
 	return PackedVector2Array([event.spread_at(-half), event.spread_at(half)])
 
