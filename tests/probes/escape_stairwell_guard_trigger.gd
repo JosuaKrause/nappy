@@ -55,20 +55,15 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	rng.seed = s
 	var run := RunState.new()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
+	if OS.get_environment("CHARGES_WITHIN") != "":
+		# The building planned again by a planner that gives the man a copy of his row with the other
+		# notice, the catalogue's own row being shared by every run.
+		events.use_planner(_Planner.new(events.world, float(OS.get_environment("CHARGES_WITHIN"))))
+		BuildingEvents.restart(events, scene)
 	var man: EventInstance = null
 	for instance in events.instances():
 		if instance.row_id() == "masked_pursuer":
 			man = instance
-	if OS.get_environment("CHARGES_WITHIN") != "":
-		# His row with another notice, drafted as a copy (the catalogue's own row is shared), stands
-		# where and as he stood: he is taken away and the copy added at his place on his way.
-		var draft := man.row().redraft()
-		draft.notice(man.row().notice.running_within(float(OS.get_environment("CHARGES_WITHIN"))))
-		var at := man.global_position
-		var way := man.way_left()
-		var his_row: Array[String] = ["masked_pursuer"]
-		events.take_away_within(Rect2(at - Vector2.ONE, Vector2.ONE * 2.0), his_row)
-		man = events.spawn_extra(draft.build(), at, way)
 	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door_tile: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
 	var second_door: Vector2i = (f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile
@@ -137,6 +132,28 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	player.free()
 	events.free()
 	scene.free()
+
+## The building's planner, the masked man's plan made over with a copy of his row whose notice
+## reaches `within` pixels.
+class _Planner extends DayPlanner:
+	var _within := 0.0
+
+	func _init(the_world: EventWorld, within: float) -> void:
+		super(the_world)
+		_within = within
+
+	## Overrides DayPlanner.plan.
+	func plan(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
+		var planned := super.plan(spec, rng, consumed)
+		var placements := planned.placements()
+		for i in placements.size():
+			var placed := placements[i]
+			if placed.row_id() != "masked_pursuer":
+				continue
+			var draft := placed.row().redraft()
+			draft.notice(placed.row().notice.running_within(_within))
+			placements[i] = EventPlan.new(draft.build(), placed.placed_at(), placed.walks())
+		return planned
 
 func _hold(actions: Array, running: bool) -> void:
 	for a: String in ["move_left", "move_right", "move_up", "move_down", "run"]:
