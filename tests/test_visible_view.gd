@@ -225,8 +225,9 @@ func _test_the_view_is_about_the_centre_it_is_handed_and_follows_the_scheme(t: T
 static func _sees_the_corners(view: VisibleView) -> bool:
 	var scale := view.camera_view().size / ScreenOrientation.DESIGN_SIZE
 	var cover := TouchCover.joystick()
-	return view.sees(view.camera_view().position + cover.left_corner().get_center() * scale) \
-			and view.sees(view.camera_view().position + cover.right_corner().get_center() * scale)
+	var origin := view.camera_view().position
+	return view.sees(origin + cover.left_corner().get_center() * scale) \
+			and view.sees(origin + cover.right_corner().get_center() * scale)
 
 ## *(PLAYTEST-71 era rotation, `ScreenOrientation`: a portrait touch window presents the game turned
 ## a quarter.)* The world goes through the camera, turned, and the controls through their layer,

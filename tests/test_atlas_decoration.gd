@@ -32,7 +32,8 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 		prop.dress(null, kind)
 		t.add_child(prop)
 		var expected: float = float(AtlasTable.baked().native_size(region).x) * fraction
-		t.check(prop.shape() != null and is_equal_approx(prop.shape().rounding_radius(), expected),
+		t.check(prop.shape() != null
+				and is_equal_approx(prop.shape().rounding_radius(), expected),
 				"Prop.Kind %d's shadow radius is off the region table's own size (%.2f against %.2f)"
 				% [kind, prop.shape().rounding_radius() if prop.shape() else -1.0, expected])
 		prop.free()
@@ -41,7 +42,8 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	tree.dress(null, Prop.Kind.TREE, 0, 1.3)
 	t.add_child(tree)
 	var expected_tree := TreePictures.shape(0, 1.3).reach()
-	t.check(tree.shape() != null and is_equal_approx(tree.shape().rounding_radius(), expected_tree),
+	t.check(tree.shape() != null
+			and is_equal_approx(tree.shape().rounding_radius(), expected_tree),
 			"a tree's shadow radius follows scale_factor() off the region table's own size (%.2f against %.2f)"
 			% [tree.shape().rounding_radius() if tree.shape() else -1.0, expected_tree])
 	var own_size_tree := Prop.new()

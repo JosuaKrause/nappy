@@ -1363,8 +1363,8 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 		if plan.row() == wall:
 			walls += plan.row().emission_at_distance(maxf(0.0,
 					plan.placed_at().distance_to(released)
-					- (plan.ground_shape().spine_half_length() if plan.ground_shape().is_segment()
-					else 0.0)))
+					- (plan.ground_shape().spine_half_length()
+					if plan.ground_shape().is_segment() else 0.0)))
 	t.check(walls == 0.0,
 			"the wall's three roadblocks beside the release cost nothing (%.1f/s)" % walls)
 

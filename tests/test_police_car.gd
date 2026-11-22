@@ -116,7 +116,8 @@ func _test_her_walk_into_a_standing_car_stops_at_its_side(t: TestRunner) -> void
 		t.check(walked < 160.0, "walking %s into a standing patrol car, she is stopped (%.0fpx)"
 				% [approach, walked])
 		# Her pram leads, 14px out on her circumference with its own 8px: it is what touches.
-		var touch := shape.rounding_radius() + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
+		var touch := shape.rounding_radius() + Tuning.PLAYER_BODY_RADIUS \
+				+ Stroller.PRAM_BODY_RADIUS
 		t.check(absf(stopped_at - touch) <= WALK + 0.5,
 				"and stopped where its flank is: her centre %.1fpx from its middle, the touch %.1f"
 				% [stopped_at, touch])

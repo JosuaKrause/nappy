@@ -388,7 +388,8 @@ class Meeting extends RefCounted:
 							and absf(offset.dot(side)) < agent.shape().rounding_radius() + figure.body_radius() + 4.0:
 						for_a_figure = true
 				else:
-					overlaps = offset.length() < agent.shape().reach() + figure.body_radius() - 0.5
+					overlaps = offset.length() \
+							< agent.shape().reach() + figure.body_radius() - 0.5
 				if not overlaps:
 					continue
 				var key := [agent, figure]

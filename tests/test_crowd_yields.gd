@@ -77,7 +77,8 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
 	map.moves.leave(figure)
-	return {"closest": closest, "touching": walker.lane().shape().reach() + figure.body_radius(),
+	return {"closest": closest,
+			"touching": walker.lane().shape().reach() + figure.body_radius(),
 			"past": deepest > at.y + float(Tuning.TILE_SIZE)}
 
 ## A vehicle's move, a patrol car's size (the reach of `police_patrol`'s body), standing at `at`
@@ -208,9 +209,11 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 	var engine_instance: EventInstance = engine["instance"]
 	t.check(engine_move != null and not engine_move.has_parked(), "the fire engine has not parked while it drives")
 	engine_instance.transition(EventInstance.Phase.PARKED)
-	t.check(engine_move != null and engine_move.has_parked(), "and has once it stops at its fire")
+	t.check(engine_move != null and engine_move.has_parked(),
+			"and has once it stops at its fire")
 	engine_instance.transition(EventInstance.Phase.LEAVING)
-	t.check(engine_move != null and not engine_move.has_parked(), "and nothing leaving has parked")
+	t.check(engine_move != null and not engine_move.has_parked(),
+			"and nothing leaving has parked")
 	engine_instance.free()
 	for id: String in ["police_patrol", "charging_dog"]:
 		var rig := _a_row_on_a_map(t, id)

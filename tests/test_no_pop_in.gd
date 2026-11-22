@@ -74,7 +74,8 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 ## included).
 static func _drawn_in(view: VisibleView, instance: EventInstance) -> bool:
 	var rect := instance.look.drawn_rect_now()
-	return Rect2(instance.global_position + rect.position, rect.size).intersects(view.camera_view())
+	return Rect2(instance.global_position + rect.position, rect.size) \
+			.intersects(view.camera_view())
 
 func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 	var her := Vector2(1000.0, 1000.0)
