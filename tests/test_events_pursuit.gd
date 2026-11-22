@@ -462,7 +462,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t: TestRunner) -> void:
 				% [def.id, _sited_at(def), standoff] + "than backing away through its own telegraph")
 
 ## **A row declared lethal has to actually get the chance to be lethal.** *(2026-09-07: "also a
-## biker hit should be lethal.")* `cyclist` carries `hard_fail = true`, but
+## biker hit should be lethal.")* `cyclist` ends the day (`ends_the_day()`), but
 ## `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()` — so a
 ## `TOWARD_PLAYER` row that reached her before its own telegraph ended would ride straight through,
 ## declared lethal and never once able to fire. Such a row's telegraph is its warning, run before it
@@ -470,7 +470,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t: TestRunner) -> void:
 ## telegraph spent; this walks the warning and
 ## the arrival together, at the instance level, rather than trusting the construction.
 ##
-## Walks every `hard_fail` `TOWARD_PLAYER` row in the catalogue rather than naming `cyclist`, so a
+## Walks every lethal `TOWARD_PLAYER` row in the catalogue rather than naming `cyclist`, so a
 ## second row of the same shape is covered by construction rather than by remembering to add it.
 func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t: TestRunner) -> void:
 	var checked := 0
@@ -494,11 +494,11 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t:
 				was_lethal = true
 				break
 		t.check(was_lethal,
-				"'%s' is declared hard_fail and its warning is over by the time it reaches her"
+				"'%s' is declared lethal and its warning is over by the time it reaches her"
 				% def.id)
 		for instance in arrived:
 			instance.free()
-	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
+	t.check(checked > 0, "there is at least one lethal TOWARD_PLAYER row to check ('cyclist')")
 
 ## A warning for `def` coming down her line from `direction`, on open ground, put up with her at
 ## `her` — the construction `EventsAhead._warn_down_her_line()` makes, with creation done the way
@@ -712,7 +712,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 ## a good warning time -- the chase on screen didn't change at all".)* Per answer, the **warning** is
 ## the time from the first warning she can see (the badge) to the dog first visible (anything it
 ## draws in view), and the **chase** is from its lunge to the catch. Its numbers stay as built — a
-## half-second badge alone (`offscreen_notice`), a 4.5s approach (`telegraph_time`) and a chase at
+## half-second badge alone (`warned_for()`), a 4.5s approach (`telegraphs_for()`) and a chase at
 ## 130px/s that does not give up on a walker (`Tuning.PURSUIT_TIME`, a long cap; amendment 8: "pursuers
 ## should never (or a long time) stop pursuing if she walks") — and so does what she meets: walked as
 ## she meets it (`M207Lead.gold()`, the probe's own walk, straight down her line), the warning is the
@@ -726,7 +726,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t: TestRunner) -> void:
 	t.check(Tuning.PURSUIT_TIME >= 30.0, "which is a long cap, not an end a walk outlasts (%.0fs)"
 			% Tuning.PURSUIT_TIME)
 	var sent := EventSpawner.as_warned(dog)
-	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.offscreen_notice)
+	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.warned_for())
 			and sent.warned_for() <= Tuning.WARNING_ALONE_MAX,
 			"sent at her, it is warned first for its own half second, within the one-second ceiling")
 	var chases := {M207Lead.Answer.TOWARD: 0.35, M207Lead.Answer.STAND: 0.60,
@@ -744,7 +744,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t: TestRunner) -> void:
 				t.check(not met["caught"] and str(met["ends"]).begins_with("gave up"),
 						"%s: running away the moment she is warned escapes it (%s)" % [how, met["ends"]])
 				continue
-			t.close_to(met["seen_at"], dog.offscreen_notice,
+			t.close_to(met["seen_at"], dog.warned_for(),
 					"%s: the warning, badge to visible, is its half second (%.2fs)" % [how, met["seen_at"]],
 					0.1)
 			t.check(met["caught"], "%s: and it catches her (%s)" % [how, met["ends"]])
@@ -771,17 +771,17 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void
 		var def := EventCatalogue.by_id(id)
 		t.check(def.warns_before_it_exists() and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"'%s' is warned of before it exists and arrives chasing" % id)
-		t.check(is_equal_approx(def.offscreen_notice, dog.offscreen_notice)
+		t.check(is_equal_approx(def.warned_for(), dog.warned_for())
 				and is_equal_approx(def.duration, dog.duration),
 				"'%s' reads the dog's own %.1fs badge and %.1fs chase (%.1f, %.1f)"
-				% [id, dog.offscreen_notice, dog.duration, def.offscreen_notice, def.duration])
+				% [id, dog.warned_for(), dog.duration, def.warned_for(), def.duration])
 		for encounter in M207Lead.gold_encounters():
 			var encountered: EventDef = encounter["def"]
 			if encountered.id != id or encounter["heading"] != Vector2.UP:
 				continue
 			for answer: M207Lead.Answer in M207Lead.ANSWERS:
 				var met := M207Lead.gold(encounter, answer, edge)
-				t.close_to(met["created_at"], def.offscreen_notice,
+				t.close_to(met["created_at"], def.warned_for(),
 						"'%s': its badge is alone for the dog's half second" % id, 2.0 * STEP)
 				t.check(met["chase_at"] <= met["created_at"] + 2.0 * STEP,
 						"'%s', answer %d: chasing from the frame he exists" % [id, answer])

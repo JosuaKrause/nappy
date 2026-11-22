@@ -108,9 +108,9 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 	var def := EventDef.new()
 	def.id = id
 	def.use_field(FieldSpec.of(intensity, inner, outer))
-	# No telegraph damping to reason about: `is_telegraphing()` is `age < telegraph_time`, and
+	# No telegraph damping to reason about: `is_telegraphing()` is `age < telegraphs_for()`, and
 	# age starts at 0.0, so a zero telegraph is never true.
-	def.telegraph_time = 0.0
+	def.use_warning(WarningSpec.lasting(0.0))
 	return def
 
 ## A manager over open ground and a run of its own, handed in as the escape's building is handed its

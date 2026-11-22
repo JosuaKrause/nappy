@@ -1,6 +1,6 @@
 extends RefCounted
 ## The one row whose whole mechanic is time under compulsion rather than a field: entering
-## `detain_radius` locks the player's own movement input, and what she is charged while it holds
+## `detain_distance()` locks the player's own movement input, and what she is charged while it holds
 ## depends on the baby's state rather than on anything the def can see. An `EventManager` is built
 ## by hand and handed a bare map and a run of its own (`setup_world()`, the entry the escape's building
 ## is handed its world through) -- nothing here needs a real `City` -- and put in the tree with her:
@@ -113,7 +113,7 @@ func _test_a_conversation_locks_her_and_releases(t: TestRunner) -> void:
 	stroller.global_position = at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(stroller.is_detained(), "entering detain_radius locks her input")
+	t.check(stroller.is_detained(), "entering detain_distance() locks her input")
 	t.check(mother.is_chatting(), "and starts the instance's one conversation")
 
 	# Read off `velocity` rather than `global_position`: this rig has no collision shape for
@@ -129,12 +129,12 @@ func _test_a_conversation_locks_her_and_releases(t: TestRunner) -> void:
 	var spent := 11.0 / Engine.physics_ticks_per_second
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detains_for() - spent - 0.2, WAIT_SCALE),
 			Callable(), WAIT_SCALE)
-	t.check(stroller.is_detained(), "still locked a few frames before detain_seconds is up")
+	t.check(stroller.is_detained(), "still locked a few frames before detains_for() is up")
 	t.close_to(stroller.velocity.length(), 0.0, "and stays at rest for the whole lock", 1.0)
 
 	await PhysicsTicks.pass_ticks(t, 4, Callable(), WAIT_SCALE)
 	Input.action_release("move_right")
-	t.check(not stroller.is_detained(), "and releases once detain_seconds has run")
+	t.check(not stroller.is_detained(), "and releases once detains_for() has run")
 	t.check(stroller.velocity.length() > 10.0,
 			"and the same held key moves her again the instant it does")
 	_free_the_cast(manager, mother, stroller)

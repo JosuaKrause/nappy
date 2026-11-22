@@ -80,17 +80,12 @@ var _walk_speed := 0.0
 ## alley robber catches at 26px and lunges from 38px. `EventDef.standoff_reach()` reads it.
 var _lunge_reach := 0.0
 
-## How close the man has to get to catch her when that is not the field's own core, in px, or 0
-## for the row's `inner radius`: the roadblock's guard catches at a man's reach, not at his band's
-## core. `EventDef.lethal_reach()` reads it.
-var _catch_reach := 0.0
-
 ## **A catch that is a stop rather than the end of the day**, in points of the excitement meter, or
-## 0 for a catch that is what the row's `hard_fail` says. When he reaches her he stops, his own field
+## 0 for a catch that is what the row's `LethalSpec` says. When he reaches her he stops, his own field
 ## lands this much on her standing beside him over `Tuning.OFFICER_STOP_SECONDS`, and he walks back to
 ## the vehicle that let him out (inbox #669 in coral-lark). Only the man an investigating patrol car
 ## lets out sets it (`EventCatalogue.out_of_the_car()`); `EventDef.validate()` holds it under the
-## whole meter and refuses it on a `hard_fail` row.
+## whole meter and refuses it on a row that ends the day.
 var _stop_excitement := 0.0
 
 ## Whether the row's body is **a fixture of the street the man leaves standing** when he sets off,
@@ -158,12 +153,6 @@ func lunging_from(reach: float) -> PursuitSpec:
 	spec._lunge_reach = reach
 	return spec
 
-## The same pursuer catching her within `reach`, in px, where that is not the field's own core.
-func catching_within(reach: float) -> PursuitSpec:
-	var spec := _copy()
-	spec._catch_reach = reach
-	return spec
-
 ## The same pursuer whose catch is a stop costing her `points` of the excitement meter.
 func stopping_her_for(points: float) -> PursuitSpec:
 	var spec := _copy()
@@ -212,12 +201,8 @@ func walk_speed() -> float:
 func lunge_reach() -> float:
 	return _lunge_reach
 
-## How close the man has to get to catch her when that is not the field's own core, in px, or 0.
-func catch_reach() -> float:
-	return _catch_reach
-
 ## What its catch costs her when it is a stop rather than the end of the day, in points of the
-## excitement meter, or 0 for a catch that is what the row's `hard_fail` says.
+## excitement meter, or 0 for a catch that is what the row's `LethalSpec` says.
 func stop_excitement() -> float:
 	return _stop_excitement
 
@@ -241,7 +226,6 @@ func _copy() -> PursuitSpec:
 	spec._stands = _stands
 	spec._walk_speed = _walk_speed
 	spec._lunge_reach = _lunge_reach
-	spec._catch_reach = _catch_reach
 	spec._stop_excitement = _stop_excitement
 	spec._leaves_its_body = _leaves_its_body
 	spec._warns_over_the_street = _warns_over_the_street

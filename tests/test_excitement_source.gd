@@ -41,7 +41,7 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 	var def := EventDef.new()
 	def.id = id
 	def.use_field(FieldSpec.of(intensity, inner, outer))
-	def.telegraph_time = 0.0
+	def.use_warning(WarningSpec.lasting(0.0))
 	return def
 
 func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t: TestRunner) -> void:

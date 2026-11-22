@@ -10,7 +10,7 @@ extends RefCounted
 const BURNT_SHELL_ID := "burnt_shell"
 
 ## The other answer to *prevents the player from walking past it*: **off**, and one line from being
-## on. True makes the crash a `hard_fail` row, as a fire is, so the gaps end the day rather than
+## on. True makes the crash a row that ends the day (`ends_the_day()`), as a fire is, so the gaps end the day rather than
 ## costing more of it than she can carry. The built default is the expensive reading, because a
 ## wall that kills has no price to weigh and the verb of this game is *where do I walk*.
 ##
@@ -54,11 +54,11 @@ const CHARGER_WARNING := 2.0
 ## pram's own body is between, so a trigger stated as a radius from the hut's *centre* has to be
 ## larger than whatever she happens to be pushing. Measured from the hut's wall, one number covers
 ## every pram: 48px clears her own body's 14px stand-off and the widest the pram has reached ahead
-## of her, and starts the inspection while she is still walking up. See `EventDef.detain_radius`.
+## of her, and starts the inspection while she is still walking up. See `HoldSpec.past_its_edge()`.
 const CHECKPOINT_DETAIN_REACH := 48.0
 ## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her. Short rather than heavier than
 ## `chatting_mother`'s 5s: a toll paid at every crossing of a region wall has to stay cheap to
-## repeat, where a conversation is spent once. See `EventDef.detain_seconds`.
+## repeat, where a conversation is spent once. See `HoldSpec.detains_for()`.
 const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## Seconds between two off-screen explosions inside the building. Section one is relatively minimal
 ## and an explosion is its only city-wide beat, so it is spaced like the director's own
@@ -441,7 +441,7 @@ static func _neighbor() -> EventDef:
 	def.act_tag = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(0.0, 20.0, 40.0))
-	def.telegraph_time = 0.5
+	def.use_warning(WarningSpec.lasting(0.5))
 	def.mobile = true
 	def.speed = NEIGHBOR_WALK_SPEED
 	return def
@@ -490,7 +490,7 @@ static func _playground() -> EventDef:
 	# `Field.falloff` answers zero at every distance and nothing else reads them.
 	# Free. See the note above.
 	def.use_field(FieldSpec.of(0.0, 40.0, 150.0).pulsing_every(9.0))
-	def.telegraph_time = 0.0
+	def.use_warning(WarningSpec.lasting(0.0))
 	return def
 
 ## The tutorial obstacle: visible crouching before it bolts, sharp while it crosses, gone a second
@@ -498,14 +498,14 @@ static func _playground() -> EventDef:
 ##
 ## **Two things make a cat happen at all.** It is `AHEAD_OF_PLAYER`, because a cat is not a place:
 ## sited on a road tile at dawn it runs its two seconds out somewhere across the city, alone; the
-## director puts it across her line while she is walking. And it is `still_while_telegraphing`:
+## director puts it across her line while she is walking. And it holds still through its telegraph (`WarningSpec.holds_still()`):
 ## `EventInstance` starts a mobile event moving when the telegraph does, which is wrong for a
 ## crouch, since the path is one street wide and at 240px/s the cat would finish its whole run
 ## *during* the telegraph, never reaching full intensity or drawing the running sprite.
 ##
 ## **That held-still telegraph is also why it needs its own siting distance** rather than the flat
 ## `AHEAD_LEAD_DISTANCE`: a cat sited two seconds of walking ahead and then held still for
-## `telegraph_time` measures where she *was*, so it would cross behind her.
+## its telegraph (`telegraphs_for()`) measures where she *was*, so it would cross behind her.
 ## `EventDef.ahead_of_player_lead()` prices the hold in as walking distance.
 ##
 ## **Intensity 17, a startle spike** (PLAYTEST-25 6). There is no `impulse` field: a sharp spike is
@@ -523,9 +523,9 @@ static func _cat_dash() -> EventDef:
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	# It does not telegraph its coming (PLAYTEST-145 20): no screen-edge badge, no warning first,
-	# outside the telegraph contract (`EventDef.telegraphs`). It still holds before it dashes, which
+	# outside the telegraph contract (`WarningSpec.unannounced()`). It still holds before it dashes, which
 	# is the cat's own behaviour, not a warning owed.
-	def.telegraphs = false
+	def.use_warning(WarningSpec.lasting(2.81).holding_still().unannounced())
 	def.use_field(FieldSpec.of(17.0, 30.0, 120.0))
 	# Long enough to carry it the whole way across the street it starts at the edge of:
 	# STREET_WIDTH tiles either side at 240px/s is 1.6s, and it must not expire mid-road.
@@ -533,9 +533,7 @@ static func _cat_dash() -> EventDef:
 	# Faster than a walk, so the escape distance is the forward reach, not the plain radius:
 	# `outer radius · Field.scale(e)` at the cat's own speed (240px/s, e = 0.48, just under the
 	# eccentricity cap): 120 * 1.92 / 92 = 2.51s, plus the row's margin.
-	def.telegraph_time = 2.81
 	def.mobile = true
-	def.still_while_telegraphing = true
 	def.speed = 240.0
 	# Shared with the other things that happen *to* her rather than being the whole of the moments
 	# she is owed: the director also has the cyclist and, from day 3, the dog.
@@ -566,8 +564,8 @@ static func _cat_dash() -> EventDef:
 ## alley she is standing in is already worth `Baby.EXCITEMENT_FROM_ALLEY` (+3.0/s) of ambient dread,
 ## so the mouse only adds a spike on top of ground that is already tense.
 ##
-## **No body, nothing lethal.** its body is a footprint, for the shadow alone (`BodySpec.footprint()`) and
-## `hard_fail` stays `false`.
+## **No body, nothing lethal.** Its body is a footprint, for the shadow alone (`BodySpec.footprint()`), and
+## it never ends the day (`ends_the_day()` is false).
 ##
 ## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
 ## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px), so a row that started
@@ -577,7 +575,7 @@ static func _cat_dash() -> EventDef:
 ## within 150px, and only then does the telegraph start and the path run. 150px is inside
 ## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she faces) and past the
 ## field's own outer radius (60px), so the telegraph is already on screen by the time she could
-## feel it. `Tuning.validate_event()` is stated over `telegraph_time` against the field's geometry,
+## feel it. `Tuning.validate_event()` is stated over the row's telegraph (`telegraphs_for()`) against the field's geometry,
 ## not over when the clock starts, so it is unaffected.
 ##
 ## **The dash crosses the alley's own short axis by construction.** `EventInstance` reads
@@ -597,10 +595,10 @@ static func _cat_dash() -> EventDef:
 static func _alley_mouse() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_mouse"
-	# It does not telegraph its coming (`EventDef.telegraphs`): 200px/s, but it dashes across its
+	# It does not telegraph its coming (`WarningSpec.unannounced()`): 200px/s, but it dashes across its
 	# alley rather than at her, and costs about an eighth of the meter to walk through; no badge,
 	# outside the telegraph contract.
-	def.telegraphs = false
+	def.use_warning(WarningSpec.lasting(1.4).holding_still().unannounced())
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.MOUSE
 	def.use_body(BodySpec.footprint(GroundShape.point(4.0)).walked_through().going_on())
@@ -621,12 +619,10 @@ static func _alley_mouse() -> EventDef:
 	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer radius · Field.scale(e)
 	# at e = min(0.5, 200/500) = 0.4, scale 1.667, over WALK_SPEED); this carries a margin of the
 	# cat's shape.
-	def.telegraph_time = 1.4
 	# Comfortably past the ~0.32s the physical crossing takes at this speed over the alley's 64px
 	# width (`ALLEY_WIDTH_TILES · Tuning.TILE_SIZE`), so `_has_expired()` never cuts the dash short.
 	def.duration = 1.0
 	def.mobile = true
-	def.still_while_telegraphing = true
 	def.speed = 200.0
 	# Waits unclocked until she is this close (`EventDef.notice`): inside VIEW_HALF_EXTENT.y (180px)
 	# with room to spare, past outer radius (60px).
@@ -694,7 +690,7 @@ static func _homeless_yeller() -> EventDef:
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(5.0))
-	def.telegraph_time = 2.6
+	def.use_warning(WarningSpec.lasting(2.6))
 	def.mobile = true
 	def.paces = true
 	# A third of a walking pace: something that shuffles reads as somebody who lives on this
@@ -755,7 +751,7 @@ static func _dog_walker() -> EventDef:
 	# composite has no single shape to be either of its bodies.
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(33.0, 26.0, 105.0).pulsing_every(3.5))
-	def.telegraph_time = 1.4
+	def.use_warning(WarningSpec.lasting(1.4))
 	def.mobile = true
 	def.speed = 32.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
@@ -801,7 +797,7 @@ static func _cafe_tables() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.band(24.0)).walked_round().parked().as_a_spread())
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(12.0, 38.0, 64.0).pulsing_every(6.0))
-	def.telegraph_time = 1.6
+	def.use_warning(WarningSpec.lasting(1.6))
 	# 24 does not clear `GroundShape.BAND_RADIUS`, so the body it derives stays a point: a cafe
 	# frontage this narrow has no spine to be a capsule about.
 	# Raised with `dog_walker` and for the same reason — see the note there.
@@ -837,7 +833,7 @@ static func _delivery_van() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.use_field(FieldSpec.of(0.0, 40.0, 150.0))
-	def.telegraph_time = 1.3
+	def.use_warning(WarningSpec.lasting(1.3))
 	# Under `GroundShape.BAND_RADIUS`, so the stationary-vehicle segment rule still reduces it to a
 	# point (see `GroundShape.band()`).
 	def.weight = 2.0
@@ -881,7 +877,7 @@ static func _busker() -> EventDef:
 	# The lowest tenth, with a small margin above the sweep's own crossing, whose day never fills
 	# a sleep meter standing at his own core (see the note above).
 	def.use_field(FieldSpec.of(19.3, 45.0, 190.0).pulsing_every(7.0))
-	def.telegraph_time = 1.7
+	def.use_warning(WarningSpec.lasting(1.7))
 	def.weight = 2.0
 	# Kept the lowest of the act I caps on purpose: a busker is placed on PARK or SQUARE, the
 	# only calm ground there is, and the calm ground the day keeps clear refuses every one that
@@ -910,7 +906,7 @@ static func _construction() -> EventDef:
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(0.0, 46.0, 200.0))
-	def.telegraph_time = 1.8
+	def.use_warning(WarningSpec.lasting(1.8))
 	# `SIDEWALK_SPREAD_MAX`: the widest silhouette that reads as roadworks is 2px over the full
 	# sidewalk band `EventInstance.setup()` centres it on.
 	def.weight = 1.5
@@ -952,8 +948,7 @@ static func _fire_truck() -> EventDef:
 	# badge is up with nothing in the world (inbox #569 in busy-quail); its field already covers her
 	# where it is created, so that second is the whole of what the contract's flat
 	# `Tuning.OFFSCREEN_WARNING_MIN` measures.
-	def.telegraph_time = Tuning.WARNING_ALONE_MAX
-	def.warned_first = true
+	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
 	def.mobile = true
 	def.speed = 190.0
 	# And it stays at the fire once it gets there (`EventDef.stops_where_it_arrives`): the standing
@@ -1008,7 +1003,7 @@ static func _burning_building() -> EventDef:
 	def.pavement_side = EventDef.Pavement.AT_THE_FRONT
 	def.on_her_way = OnHerWay.on_its_ground()
 	def.use_field(FieldSpec.of(0.0, 60.0, 260.0))
-	def.telegraph_time = 2.2
+	def.use_warning(WarningSpec.lasting(2.2))
 	# A footprint, no solid body: `EventDef.validate()` requires a shape wherever there is a
 	# look to draw, but nothing stands here to be solid, and no shadow is drawn (`draws_body_shadow`).
 	def.draws_body_shadow = false
@@ -1039,12 +1034,12 @@ static func _burnt_shell() -> EventDef:
 	def.look = EventDef.Look.BURNT_SHELL
 	def.use_body(BodySpec.footprint(GroundShape.band(36.0)).unmet().parked().as_a_spread())
 	def.use_field(FieldSpec.of(2.5, 24.0, 78.0))
-	def.telegraph_time = 0.7
+	def.use_warning(WarningSpec.lasting(0.7))
 	def.draws_body_shadow = false
 	return def
 
 # ----------------------------------------- Act I: variety, and two with teeth ---
-# **Act I has to escalate, and its danger is the neighborhood's own.** With every `hard_fail` row
+# **Act I has to escalate, and its danger is the neighborhood's own.** With every row that ends the day
 # starting on day 8 or later, half a run would have nothing lethal in it but a car the player is
 # never obliged to step in front of. The shape of that is a decision taken **against a patrol**:
 # act I is a nice neighborhood, and a police patrol on day 2 tells a story the game tells in act II.
@@ -1086,9 +1081,9 @@ static func _burnt_shell() -> EventDef:
 ## is created just out of sight with it spent, at its own intensity.
 ##
 ## **It does not telegraph its coming** (PLAYTEST-145 20): no screen-edge badge and no warning first
-## (`EventDef.telegraphs`). The director sends it down her own sidewalk and it is created at once
+## (`WarningSpec.unannounced()`). The director sends it down her own sidewalk and it is created at once
 ## just out of sight there (`PendingWarning.down_her_line()`, `EventsAhead._send_down_her_line()`),
-## its `telegraph_time` already spent, on the point of its beat that has it reach her at its loudest
+## its telegraph (`telegraphs_for()`) already spent, on the point of its beat that has it reach her at its loudest
 ## (`EventSpawner.age_when_warned()`), so a pass costs what it did under a warning. It is outside
 ## the telegraph contract rather than exempted from it.
 static func _loose_dog() -> EventDef:
@@ -1102,8 +1097,7 @@ static func _loose_dog() -> EventDef:
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.use_field(FieldSpec.of(39.0, 30.0, 140.0).pulsing_every(2.2))
 	# Spent before it is ever met (see above); it decides only where its beat starts.
-	def.telegraph_time = Tuning.WARNING_ALONE_MAX
-	def.telegraphs = false
+	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).unannounced())
 	def.mobile = true
 	def.speed = 132.0
 	# The other half of day 1's wall pool; see `leaf_blower` for the measurement both numbers came
@@ -1135,7 +1129,7 @@ static func _market_stall() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.band(28.0)).walked_round().parked().as_a_spread())
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(14.0, 38.0, 64.0).pulsing_every(8.0))
-	def.telegraph_time = 1.7
+	def.use_warning(WarningSpec.lasting(1.7))
 	def.weight = 1.6
 	def.max_per_day = 13
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -1186,7 +1180,7 @@ static func _leaf_blower() -> EventDef:
 	def.use_field(FieldSpec.of(19.3, 45.0, 190.0)
 			.with_a_core(35.0, float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE))
 			.pulsing_every(4.0))
-	def.telegraph_time = 1.8
+	def.use_warning(WarningSpec.lasting(1.8))
 	# **A wall row, and on day 1 it is half of the entire wall pool**, so its weight and its cap are
 	# most of what "leaving the path should be lethal or very expensive" is built out of on the one
 	# day with nothing lethal in it.
@@ -1236,7 +1230,7 @@ static func _leaf_blower() -> EventDef:
 ## distance at which she is among the birds rather than near them, as a pursuer's lunge is fired by
 ## her reaching its stand-off.
 ##
-## **`telegraph_time` is 1.7s and is the backstop rather than the wait.** It only decides a flock she
+## **Its telegraph (`telegraphs_for()`) is 1.7s and is the backstop rather than the wait.** It only decides a flock she
 ## came near and never reached (80px off the middle, say); shortening it would put *those* birds up
 ## sooner. `Tuning.validate_event()` asks 1.55s of this geometry and the number clears it.
 ##
@@ -1286,10 +1280,10 @@ static func _leaf_blower() -> EventDef:
 static func _pigeon_flock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "pigeon_flock"
-	# It does not telegraph its coming (`EventDef.telegraphs`): the birds go up where she walks in
+	# It does not telegraph its coming (`WarningSpec.unannounced()`): the birds go up where she walks in
 	# rather than coming at her, and they cannot end the day; no badge, outside the telegraph
 	# contract.
-	def.telegraphs = false
+	def.use_warning(WarningSpec.lasting(1.7).unannounced())
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BIRDS
 	def.use_body(BodySpec.footprint(GroundShape.point(5.0)).walked_through().going_on())
@@ -1316,7 +1310,6 @@ static func _pigeon_flock() -> EventDef:
 	# happens. Over the 1.55s the contract asks of a 168px field, measured from the moment it
 	# notices her (`EventDef.notice`). The backstop for a flock she passed without reaching; the
 	# flush at the birds ends it for one she walked into.
-	def.telegraph_time = 1.7
 	# Faster than she can run, and up: they are gone in a second and a half and they are gone
 	# *somewhere*.
 	def.departs_at = 190.0
@@ -1347,7 +1340,7 @@ static func _pigeon_flock() -> EventDef:
 ## rides straight through wherever she was standing.
 ##
 ## **He is warned of before he exists** (PLAYTEST-145). The director's siting puts up a screen-edge
-## badge with nothing in the world, pointing down her line, and when his `telegraph_time` is over he
+## badge with nothing in the world, pointing down her line, and when his telegraph (`telegraphs_for()`) is over he
 ## is created just out of sight there on a sidewalk (`PendingWarning.down_her_line()`), with that
 ## telegraph spent, so he is lethal from his first frame; `EventInstance.is_lethal_at()` refusing a
 ## running telegraph never lets him ride through her harmless.
@@ -1360,7 +1353,7 @@ static func _pigeon_flock() -> EventDef:
 ##
 ## **inner radius is 33px, not the 26 a bike's own width would suggest** (PLAYTEST-25 7). 26px sits
 ## *under* the 32px spacing between the two lanes of a two-tile sidewalk (`Tuning.TILE_SIZE`, a lane
-## on its own tile centre), the same gap that let `chatting_mother`'s `detain_radius` be walked past
+## on its own tile centre), the same gap that let `chatting_mother`'s hold reach (`HoldSpec.past_its_edge()`) be walked past
 ## on the far lane (see that row). Both are "it catches you" rows that caught nobody, and both are
 ## 33px or more: past the lane spacing and under outer radius, so the far lane of her own sidewalk
 ## does not answer a bike coming down it for free.
@@ -1388,10 +1381,10 @@ static func _cyclist() -> EventDef:
 	# `Tuning.OFFSCREEN_WARNING_MIN`: this, plus 0.57s for him to close from where he is created
 	# closest (180px) to his 33px reach at 257px/s with her
 	# walking into him.
-	def.telegraph_time = Tuning.WARNING_ALONE_MAX
+	def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX))
 	def.mobile = true
 	def.speed = 165.0
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	def.weight = 1.5
 	# Well under the ordinary act I rows, and the cap does different work than its number suggests:
 	# `TOWARD_PLAYER` never puts it on a tile, so it cannot tile a street. What the cap bounds is how
@@ -1426,7 +1419,7 @@ static func _ice_cream_van() -> EventDef:
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	# The jingle is a loop, so the meter cost comes and goes on the same period it does.
 	def.use_field(FieldSpec.of(13.0, 48.0, 240.0).pulsing_every(11.0))
-	def.telegraph_time = 2.2
+	def.use_warning(WarningSpec.lasting(2.2))
 	# `ice_cream_van.svg` is 50px across.
 	def.weight = 1.5
 	def.max_per_day = 5
@@ -1463,12 +1456,12 @@ static func _reversing_lorry() -> EventDef:
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
 	# The beeper. Steady enough to locate, slow enough to be a countdown rather than a wall.
 	def.use_field(FieldSpec.of(16.0, 46.0, 175.0).pulsing_every(1.6))
-	# hard_fail, stationary: (175-46)/92 * 2 = 2.80s.
-	def.telegraph_time = 3.0
+	# Ends the day, stationary: (175-46)/92 * 2 = 2.80s.
+	def.use_warning(WarningSpec.lasting(3.0))
 	# `lorry.svg` is 62px across, and 28 + her own 14 is inside the 46 that ends the day, so the
 	# metal is solid and touching it is still fatal (`EventDef.validate()` makes that arithmetic a
 	# rule).
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	def.weight = 1.2
 	# A lethal wall row, capped like `cyclist` for the same reason: the deep band off the corridor is
 	# where the deadly end of the gradient lives, and a handful across 121 blocks cannot fill it.
@@ -1489,12 +1482,12 @@ static func _reversing_lorry() -> EventDef:
 ## outer radius is tight, so brushing past her without triggering a conversation costs about what
 ## an ordinary close pass does.
 ##
-## **The conversation is a trigger rather than a field**: entering `detain_radius` of an instance
-## that has not yet chatted locks the stroller's movement input for `detain_seconds`
+## **The conversation is a trigger rather than a field**: entering its hold's reach (`HoldSpec.past_its_edge()`) of an instance
+## that has not yet chatted locks the stroller's movement input for its hold's seconds (`HoldSpec.detains_for()`)
 ## (`Stroller.detain()`), and the meter cost during that lock is priced entirely by
 ## `EventInstance.current_intensity()` reading the baby's state, never by anything authored here.
 ##
-## **`detain_radius` is 48px, three quarters of the 64px sidewalk band** (PLAYTEST-25 4). The whole
+## **Its hold's reach (`HoldSpec.past_its_edge()`) is 48px, three quarters of the 64px sidewalk band** (PLAYTEST-25 4). The whole
 ## content of this row is that she catches you, so a radius the far lane clears by construction is
 ## a row with a free answer: 26px sat under the **32px** spacing between the two lanes of a
 ## sidewalk (`Tuning.TILE_SIZE`), and 33px, just past it, was still too small. 48px reaches from
@@ -1515,9 +1508,9 @@ static func _chatting_mother() -> EventDef:
 	def.first_day = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(4.5, 56.0, 70.0))
-	# (70-56)/92 = 0.15s required; not hard_fail, so no doubled margin. Generous rather than tight,
+	# (70-56)/92 = 0.15s required; it does not end the day, so no doubled margin. Generous rather than tight,
 	# since the ambient field is nearly nothing next to what the conversation costs.
-	def.telegraph_time = 1.0
+	def.use_warning(WarningSpec.lasting(1.0))
 	def.mobile = true
 	def.paces = true
 	# A pram's pace, slower than an ordinary walk and a touch slower than `dog_walker`'s 32.
@@ -1526,8 +1519,7 @@ static func _chatting_mother() -> EventDef:
 	def.path_length_tiles = 8
 	def.weight = 2.0
 	def.max_per_day = 2
-	def.detain_seconds = 5.0
-	def.detain_radius = 48.0
+	def.use_hold(HoldSpec.for_seconds(5.0).from(48.0))
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
 	# - a street, 0.29: set by the scaling pass: its share of a street's events was off by more
@@ -1613,19 +1605,18 @@ static func _charging_dog() -> EventDef:
 	# opening the gap it closes to), so the chase starts when this runs out, and this and
 	# `duration` are what catch a walker. The dog that waits for her past the teaching day does not
 	# read it: it warns by radius (`EventInstance.warns_by_radius()`).
-	def.telegraph_time = 4.5
+	def.use_warning(WarningSpec.lasting(4.5).badged_for(0.5))
 	# From day 4, once it notices her, it warns on the clock every charger that waits for her keeps
 	# and stands in its alert pose rather than closing (woolly-penguin #748); the day-3 dog has no
 	# wait, so its approach is still its telegraph (`EventInstance.is_standing_for_its_notice()`).
 	def.pursuit = PursuitSpec.at(130.0).warning_for(CHARGER_WARNING).standing()
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
-	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part (see
-	# `EventDef.offscreen_notice`).
-	def.offscreen_notice = 0.5
+	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, and the reason it is
+	# half a second is on `WarningSpec`'s badge notice (`_badge_notice`).
 	# And it trots off rather than blinking out: a dog that gives up in front of her and then is not
 	# there says the chase was never real.
 	def.departs_at = 110.0
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	def.weight = 1.4
 	# Rare on purpose: it is the one thing running answers, and a street with three of them would
 	# turn the run button into a second walk speed.
@@ -1657,16 +1648,16 @@ static func _charging_dog() -> EventDef:
 ## `EventDef.HEAT_INVESTIGATES_LEVEL` it stops merely patrolling and starts investigating: it stops
 ## on its road once she is close and a policeman gets out and pursues her
 ## (`EventDef.investigates()`, `out_of_the_car()`), whose catch costs her and never ends the day by
-## itself. The car never gains `hard_fail`, whatever the heat, and never strikes her while it
+## itself. The car never ends the day, whatever the heat, and never strikes her while it
 ## stands for him; the unmarked van is the rung that hunts.
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
-	# It does not telegraph its coming (`EventDef.telegraphs`): 74px/s is slower than a walk, and
+	# It does not telegraph its coming (`WarningSpec.unannounced()`): 74px/s is slower than a walk, and
 	# its strike is a car's, warned the way a car warns (`EventDef.vehicle`) rather than with a
 	# badge from off screen. Its copies (the one the director sends ahead of her, the raid's pacing
 	# car and the investigating one at heat) carry it with them.
-	def.telegraphs = false
+	def.use_warning(WarningSpec.lasting(1.97).unannounced())
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICE_CAR
 	def.use_body(BodySpec.footprint(GroundShape.segment(9.0, 12.0)).walked_round().going_on())
@@ -1682,7 +1673,6 @@ static func _police_patrol() -> EventDef:
 	# Slower than a walk, so the escape distance is the falloff band stretched forward by the
 	# patrol's own eccentricity: `(outer radius - inner radius) · Field.scale(e)` at 74px/s
 	# (e = 0.148) is 165px, 1.80s, plus the row's margin.
-	def.telegraph_time = 1.97
 	def.mobile = true
 	def.speed = 74.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
@@ -1732,7 +1722,7 @@ static func _poster_crew() -> EventDef:
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
 	def.on_her_way = OnHerWay.at_a_front()
 	def.use_field(FieldSpec.of(5.0, 30.0, 110.0))
-	def.telegraph_time = 1.0
+	def.use_warning(WarningSpec.lasting(1.0))
 	def.weight = 2.5
 	def.max_per_day = 12
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -1766,7 +1756,7 @@ static func _poster_crew_square() -> EventDef:
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(5.0, 30.0, 110.0))
-	def.telegraph_time = 1.0
+	def.use_warning(WarningSpec.lasting(1.0))
 	def.weight = 0.03
 	def.max_per_day = 1
 	# **Its weight on a kind of ground** (`EventDef.weigh_on()`; `docs/EVENTS.md`, "The
@@ -1795,7 +1785,7 @@ static func _loudspeaker() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.point(MAST_BODY)).walked_round().parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(20.0, 45.0, 210.0).pulsing_every(22.0))
-	def.telegraph_time = 3.0
+	def.use_warning(WarningSpec.lasting(3.0))
 	# `DawnMasts` places one at every site `MastSites.compute()` names, which is
 	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the count of the city's sites, which is
 	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as. A day
@@ -1821,7 +1811,7 @@ static func _curfew_announce() -> EventDef:
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(30.0, 45.0, 210.0).swelling_by(0.2))
 	def.duration = 26.0
-	def.telegraph_time = 2.0
+	def.use_warning(WarningSpec.lasting(2.0))
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
@@ -1877,7 +1867,7 @@ static func _curfew_announce() -> EventDef:
 ## he follows her round the corner; inbox #771 in minty-lemur: "it should be in a way that luring
 ## away the guard is enough")*.
 ##
-## **The catch is a man's reach, not a barrier's.** `PursuitSpec.catch_reach()` is 28px, read off
+## **The catch is a man's reach, not a barrier's.** His catch (the hunt's `LethalSpec.within(MASKED_MAN_REACH)`) is 28px, read off
 ## `masked_pursuer`: the same fiction, the same distance at which a masked man takes the baby. It is
 ## separate from inner radius because the field is a street being held, cored on the band, while
 ## what ends the day is a pair of arms. `EventDef.validate()` has nothing to say about the band's
@@ -1919,14 +1909,14 @@ static func _roadblock() -> EventDef:
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD]
 	def.use_field(FieldSpec.of(0.0, 86.0, 179.0).as_one_barrier())
-	def.telegraph_time = 1.8
+	def.use_warning(WarningSpec.lasting(1.8))
 	# **How his hunting copy pursues** (`EventDef.hunts`, `HuntSpec.pursuing()`, a catch that ends
 	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
 	# (woolly-penguin #748) on the clock every charger that waits for her keeps.
-	var chase := PursuitSpec.at(0.0).catching_within(MASKED_MAN_REACH).standing() \
+	var chase := PursuitSpec.at(0.0).standing() \
 			.warning_for(CHARGER_WARNING).leaving_its_body().over_the_street().round_buildings()
-	def.hunts = HuntSpec.pursuing(chase)
+	def.hunts = HuntSpec.pursuing(chase, LethalSpec.within(MASKED_MAN_REACH))
 	def.span_the_street()
 	def.weight = 2.0
 	def.max_per_day = 6
@@ -1954,7 +1944,7 @@ static func _roadblock() -> EventDef:
 ## for a stranger and hunts her with its men: it stays parked and solid, and once she is within
 ## `EventDef.HEAT_HUNTS_WITHIN` of it along a clear line it lets two men out at its door,
 ## `out_of_the_car()`'s hunting copy, whose catch ends the day (inbox #669 in coral-lark). The van
-## keeps `hard_fail` throughout, so its own 54px still takes her once its telegraph is over, as the
+## keeps ending the day throughout, so its own 54px still takes her once its telegraph is over, as the
 ## cold van's does. See `EventDef.at_heat()`.
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
@@ -1968,16 +1958,16 @@ static func _abduction() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.CROSSING]
 	def.use_field(FieldSpec.of(20.0, 54.0, 250.0))
 	def.duration = 34.0
-	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s. It stays this long once the
+	# Ending the day doubles the required margin: (250-54)/92 * 2 = 4.26s. It stays this long once the
 	# van hunts: the hunting van is still a place she can walk out of, and its 54px takes her only
 	# once this telegraph after its notice is over; its men carry their own notice.
-	def.telegraph_time = 4.6
+	def.use_warning(WarningSpec.lasting(4.6))
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
 	# body never shields her from the van's own reach. It keeps the body at every heat: hunting, it
 	# stays parked and lets its men out (`EventDef.hunts`), so nothing about a moving wall applies.
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	def.weight = 2.0
-	# The `hard_fail` caps rise with the rest, but by half as much: at one event per block the late
+	# The caps on the rows that end the day rise with the rest, but by half as much: at one event per block the late
 	# city should feel *occupied*, not landmined. Four unmarked vans across forty-nine blocks is one
 	# every twelve; twelve would be a difficulty setting nobody asked for.
 	def.max_per_day = 4
@@ -1995,7 +1985,7 @@ static func _abduction() -> EventDef:
 ##
 ## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
 ##   meter is what tells you he is there, before he has noticed her at all.
-## - **Getting close is day ending.** `hard_fail` inside 26px, and it has to be **reachable**: he
+## - **Getting close is day ending.** Ending the day inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
 ## - **Get close and he comes at you.** `EventDef.notice` 180, his one radius: inside that he
@@ -2037,7 +2027,7 @@ static func _alley_robbery() -> EventDef:
 	# (`EventInstance.warns_by_radius()`), and day 13's guard set on her by the task has the task's
 	# own second (`EventInstance.notice_her_at()`,
 	# `ResistanceDirector._set_the_task_guard_on_her()`).
-	def.telegraph_time = 1.8
+	def.use_warning(WarningSpec.lasting(1.8))
 	def.duration = Tuning.PURSUIT_TIME
 	# The same speed as the charging dog, deliberately: a player who learned on day 3 what a thing
 	# that comes after you moves like should not have to learn it again in act III.
@@ -2068,7 +2058,7 @@ static func _alley_robbery() -> EventDef:
 	def.pursuit = def.pursuit.warning_for(CHARGER_WARNING)
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	def.weight = 1.5
 	def.max_per_day = 4
 	return def
@@ -2081,15 +2071,15 @@ static func _alley_robbery() -> EventDef:
 ## day nobody plays, so the roll, the stream and the bags never reach it; `EventDef.validate()`
 ## refuses a pursuer with no trigger on any other terms.
 ##
-## **Warned first** (`warned_first`): the screen-edge badge is up alone, with nothing in the world,
-## for the dog's half second (`offscreen_notice`), pointing where he will come from, and he is then
+## **Warned first** (`WarningSpec.warned_first()`): the screen-edge badge is up alone, with nothing in the world,
+## for the dog's half second (`WarningSpec.badged_for()`), pointing where he will come from, and he is then
 ## created just off screen that way (`PendingWarning`), above or below her by preference.
 ## **And he arrives already chasing** (`PursuitSpec.Start.ARRIVES_CHASING`): no closing-in to a
 ## stand-off and no telegraph to spend (the proximity rule is only for standing robbers).
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
 ## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`PursuitSpec.lunge_reach()`),
-## his `hard_fail` and the way he walks off once he has lost her. What differs is **no trigger**
+## his catch that ends the day and the way he walks off once he has lost her. What differs is **no trigger**
 ## (`EventDef.notice` 0), so he is never `is_waiting()`, and his timing: the day-3 dog's badge and
 ## chase, read off `_charging_dog()`. His chase does not give up on a walker
 ## (`Tuning.PURSUIT_TIME`, a long cap); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him
@@ -2121,15 +2111,15 @@ static func _robber_giving_chase() -> EventDef:
 	def.use_field(alley.field())
 	# The day-3 dog's own timing, read off its row: its badge alone, its approach and its chase.
 	var dog := _charging_dog()
-	def.offscreen_notice = dog.offscreen_notice
+	def.use_warning(WarningSpec.lasting(0.0)
+			.warned_first()
+			.badged_for(dog.warning().badge_notice()))
 	# No telegraph: he arrives already chasing.
-	def.telegraph_time = 0.0
 	def.duration = dog.duration
-	def.warned_first = true
 	def.pursuit = PursuitSpec.at(alley.pursuit.speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING) \
 			.lunging_from(alley.pursuit.lunge_reach())
 	def.departs_at = alley.departs_at
-	def.hard_fail = alley.hard_fail
+	def.use_lethal(alley.lethal())
 	return def
 
 ## **The guard a task sets on her: the roadblock's own guard, awake from his first frame, coming at
@@ -2139,7 +2129,7 @@ static func _robber_giving_chase() -> EventDef:
 ## `SCRIPTED` on day 0 so the roll, the stream and the bags never reach it.
 ##
 ## **The door guard, read off his row rather than copied**: his shape, his field (18 over a
-## 28–120px band: `MASKED_MAN_REACH` inside `door_guard`'s own 120px), his `hard_fail`, and
+## 28–120px band: `MASKED_MAN_REACH` inside `door_guard`'s own 120px), his catch that ends the day, and
 ## `Tuning.HEAT_HUNTS_SPEED` (130px/s), the figure `_alley_robbery()` hardcodes as the robber's own
 ## `PursuitSpec.speed()`, so nothing about the chase differs from the robber row. What differs from
 ## `robber_giving_chase` is the picture, `EventDef.Look.VAN_GUARD_GIVING_CHASE`, drawn like
@@ -2168,14 +2158,14 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.use_field(guard.field())
 	# The day-3 dog's own timing, read off its row, as the robber's is.
 	var dog := _charging_dog()
-	def.offscreen_notice = dog.offscreen_notice
+	def.use_warning(WarningSpec.lasting(0.0)
+			.warned_first()
+			.badged_for(dog.warning().badge_notice()))
 	# No telegraph: he arrives already chasing.
-	def.telegraph_time = 0.0
 	def.duration = dog.duration
-	def.warned_first = true
 	def.pursuit = PursuitSpec.at(guard.pursuit.speed()).starting_by(PursuitSpec.Start.ARRIVES_CHASING)
 	def.departs_at = alley.departs_at
-	def.hard_fail = guard.hard_fail
+	def.use_lethal(guard.lethal())
 	return def
 
 # ------------------------------------------------------- the pursuer on foot ---
@@ -2260,12 +2250,10 @@ static func _out_of(on_foot: EventDef, stops: bool) -> EventDef:
 	var key := on_foot.id + (":stops" if stops else ":hunts")
 	if not _out_of_the_car.has(key):
 		var def := on_foot.duplicate() as EventDef
-		def.warned_first = false
-		def.offscreen_notice = Tuning.OFFSCREEN_NOTICE
-		def.telegraph_time = Tuning.WARNING_ALONE_MAX
+		def.use_warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX))
 		def.pursuit = on_foot.pursuit.starting_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER).standing()
 		if stops:
-			def.hard_fail = false
+			def.use_lethal(LethalSpec.none())
 			def.pursuit = def.pursuit.stopping_her_for(OFFICER_STOP_EXCITEMENT)
 		_out_of_the_car[key] = def
 	return _out_of_the_car[key]
@@ -2282,7 +2270,7 @@ static func task_guard_sent() -> EventDef:
 	if _task_guard_sent == null:
 		_task_guard_sent = _robber_giving_chase()
 		_task_guard_sent.id = "task_guard_sent"
-		_task_guard_sent.offscreen_notice = Tuning.WARNING_ALONE_MAX
+		_task_guard_sent.use_warning(_task_guard_sent.warning().badged_for(Tuning.WARNING_ALONE_MAX))
 		_task_guard_sent.counts_charges_as = "task_guard"
 	return _task_guard_sent
 
@@ -2298,7 +2286,7 @@ static var _task_guard_sent: EventDef = null
 ## line it lets two men out at its door on her side, who pursue her under the pursuit contract
 ## (`EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10) and whose catch ends
 ## the day (inbox #669 in coral-lark). Men who give up or run out their chase walk back to the van,
-## which stands over its block for the rest of the day. The van itself is never `hard_fail`, cold
+## which stands over its block for the rest of the day. The van itself never ends the day, cold
 ## or hot. See `EventDef.at_heat()`.
 ##
 ## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
@@ -2324,7 +2312,7 @@ static func _night_raid() -> EventDef:
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.use_field(FieldSpec.of(24.0, 70.0, 330.0).pulsing_every(6.0))
-	def.telegraph_time = 3.0
+	def.use_warning(WarningSpec.lasting(3.0))
 	def.hunts = HuntSpec.letting_out(2)
 	return def
 
@@ -2350,7 +2338,7 @@ static func _military_convoy() -> EventDef:
 	# Day 13's column is this row warned first (`EventSpawner.as_warned()`): that copy's badge alone
 	# is cut to `Tuning.WARNING_ALONE_MAX`, and it is held to the flat
 	# `Tuning.OFFSCREEN_WARNING_MIN`.
-	def.telegraph_time = 4.43
+	def.use_warning(WarningSpec.lasting(4.43))
 	def.mobile = true
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
@@ -2379,7 +2367,7 @@ static func _barricade() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.band(62.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	def.aftermath = Aftermath.none().scarring("barricade")
 	return def
 
@@ -2415,7 +2403,7 @@ static func _protest() -> EventDef:
 	def.placement = [GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]
 	def.use_field(FieldSpec.of(19.5, 39.0, 269.0).pulsing_every(8.0).swelling_by(1.9))
 	def.duration = 150.0
-	def.telegraph_time = 2.6
+	def.use_warning(WarningSpec.lasting(2.6))
 	# The clearest case in the catalogue of the picture deciding a gameplay number: a body may not
 	# claim ground the drawing does not (`SpreadLook._draw_spread`'s rule in the other direction),
 	# so a protest drawn as one man obstructs one man's width however much of a square it is
@@ -2462,11 +2450,11 @@ static func _firefight() -> EventDef:
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.CROSSING, GameEnums.TileType.SQUARE]
 	def.use_field(FieldSpec.of(30.0, 84.0, 374.0).pulsing_every(2.5))
-	# hard_fail: (374-84)/92 * 2 = 6.3s.
-	def.telegraph_time = 6.5
+	# Ends the day: (374-84)/92 * 2 = 6.3s.
+	def.use_warning(WarningSpec.lasting(6.5))
 	# The 30px band the two gunmen are drawn across (`RankLook._draw_firefight()` stands
 	# them at 0.62 of it either side), and far inside the 84 that ends the day.
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	return def
 
 # --------------------------------------------------------------- seal pictures ---
@@ -2495,7 +2483,7 @@ static func _fallen_tree() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	return def
 
 ## A hard seal: two cars locked together across the carriageway, debris between them and an
@@ -2531,14 +2519,14 @@ static func _car_accident() -> EventDef:
 			.as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(CAR_ACCIDENT_INTENSITY, GroundShape.BAND_RADIUS, 96.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	if CAR_ACCIDENT_GAPS_ARE_LETHAL:
 		# The other answer to *prevents*, off by default (see the constant). The lethal radius has to
 		# clear the cars' own bodies with her 14px to spare or the kill can never fire
 		# (`EventDef.validate()`), and the telegraph has to buy the walk out of the doubled margin.
-		def.hard_fail = true
+		def.use_lethal(LethalSpec.at_its_core())
 		def.use_field(def.field().holding_to(CAR_ACCIDENT_LETHAL_INNER_RADIUS))
-		def.telegraph_time = 1.2
+		def.use_warning(WarningSpec.lasting(1.2))
 	return def
 
 ## Where the two cars stand, read off the two authored pictures at the scale
@@ -2576,7 +2564,7 @@ static func _skip() -> EventDef:
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	return def
 
 ## The other half of the same soft seal: boards over the far footway. `pavement_side` stays `ANY`
@@ -2594,7 +2582,7 @@ static func _scaffolding() -> EventDef:
 			.as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	return def
 
 ## A hard seal: a crater with water across the asphalt and a municipal barrier at each kerb, "the
@@ -2611,7 +2599,7 @@ static func _burst_water_main() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 1
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	# The crater is sunk into the road, not standing above it, so the body and the barriers keep
 	# their ordinary geometry and only the shadow patch
 	# is refused.
@@ -2636,7 +2624,7 @@ static func _moving_van() -> EventDef:
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	# Over `GroundShape.BAND_RADIUS`, so it is the one stationary-vehicle row whose shape is a
 	# segment rather than a point — see `EventInstance.solid_axis()`.
 	return def
@@ -2658,7 +2646,7 @@ static func _burnt_out_car() -> EventDef:
 			.across_its_street())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	return def
 
 ## A hard seal, acts II-IV: rubble spilled frontage to frontage. Single-copy geometry like
@@ -2676,7 +2664,7 @@ static func _collapsed_frontage() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.band(96.0)).walked_round().parked().as_a_spread())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	return def
 
 # ------------------------------------------------------ the region door's own structure ---
@@ -2695,7 +2683,7 @@ static func _collapsed_frontage() -> EventDef:
 ## gets detained inside, and spawns on the other side.
 ##
 ## **The hold starts a reach past the hut's own wall**, not a radius from the middle of it:
-## `detain_radius` is `CHECKPOINT_DETAIN_REACH` (48px) measured from the solid edge, so
+## The hold's reach (`HoldSpec.past_its_edge()`) is `CHECKPOINT_DETAIN_REACH` (48px), measured from the solid edge, so
 ## `EventDef.detain_distance()` comes out at 80px from the centre, and the guard steps out while she
 ## is still walking up rather than only once she is pressed against the hut. It sits inside
 ## inner radius (84px) as every detainer's does, and the ambient field is a small peak over
@@ -2707,7 +2695,7 @@ static func _collapsed_frontage() -> EventDef:
 ## price is the detention. `tests/test_events.gd` exempts the detainers from its catalogue-wide
 ## "nothing is cheaper to walk through than around" rule by name and holds them to charging their
 ## capture instead. The band stays 14px wide, which is what the telegraph is priced on; the disc
-## moved out with the capture so the two keep the order `validate()` requires. `redetains` tells
+## moved out with the capture so the two keep the order `validate()` requires. `HoldSpec.detains_again()` tells
 ## `EventManager` this instance is armed again once she is outside `detain_distance()`, in either
 ## direction, rather than spent after one conversation like `chatting_mother`.
 ##
@@ -2726,10 +2714,10 @@ static func _checkpoint_hut() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.point(32.0)).walked_round().parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
-	def.telegraph_time = 1.0
-	def.detain_seconds = CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = CHECKPOINT_DETAIN_REACH
-	def.redetains = true
+	def.use_warning(WarningSpec.lasting(1.0))
+	def.use_hold(HoldSpec.for_seconds(CHECKPOINT_DETAIN_SECONDS)
+			.from(CHECKPOINT_DETAIN_REACH)
+			.again())
 	return def
 
 ## The boom over the roadway between a door's two huts. **It never inspects her**: a lowered boom is
@@ -2760,13 +2748,13 @@ static func _checkpoint_gate() -> EventDef:
 			.parked())
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(0.0, 84.0, 120.0).as_one_barrier())
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	return def
 
 ## The alley half of a door: a single guard where a through-alley crosses a region boundary,
 ## standing in for the hut and gate a full street gets; the alley is one lane wide, so one body
 ## covers its whole 64px mouth. Detains exactly like `checkpoint_hut`, with the same numbers and the
-## same `redetains`, because the toll is the crossing itself, not the width of the street it stands
+## same `HoldSpec.detains_again()`, because the toll is the crossing itself, not the width of the street it stands
 ## on.
 static func _checkpoint_post() -> EventDef:
 	var def := EventDef.new()
@@ -2779,10 +2767,10 @@ static func _checkpoint_post() -> EventDef:
 	def.hides_in_its_hold = true
 	def.act_tag = 2
 	def.use_field(FieldSpec.of(4.0, 84.0, 98.0).as_one_barrier())
-	def.telegraph_time = 1.0
-	def.detain_seconds = CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = CHECKPOINT_DETAIN_REACH
-	def.redetains = true
+	def.use_warning(WarningSpec.lasting(1.0))
+	def.use_hold(HoldSpec.for_seconds(CHECKPOINT_DETAIN_SECONDS)
+			.from(CHECKPOINT_DETAIN_REACH)
+			.again())
 	return def
 
 ## The guard a door sets on her when she walks across its line and stays. Not
@@ -2796,7 +2784,7 @@ static func _checkpoint_post() -> EventDef:
 ## `guard_standing_*`/`guard_lunging_*` pictures, `Tuning.HEAT_HUNTS_SPEED` (130px/s, between her
 ## walk and her run by the pursuit contract's own margin), no notice of his own, a chase of
 ## `Tuning.PURSUIT_TIME`, and `MASKED_MAN_REACH` (28px) as the catch, the core of his own field here
-## since the field is the man. **`hard_fail` in its own right, not through its hunt**: a
+## since the field is the man. **Ending the day in its own right, not through its hunt**: a
 ## catch is a detention on every day a door stands and at every heat level, never a rung of the
 ## resistance's ladder. The field is `masked_pursuer`'s, 18 over a 28–120px band, the same figure
 ## coming at her.
@@ -2820,10 +2808,10 @@ static func _door_guard() -> EventDef:
 	# No notice of his own: his warning was the hut guard's raised hand from her crossing
 	# (`CheckpointController.warn_at_the_doors()`), and he charges the moment he is set on her
 	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
-	def.telegraph_time = 0.0
+	def.use_warning(WarningSpec.lasting(0.0))
 	def.duration = Tuning.PURSUIT_TIME
 	def.pursuit = PursuitSpec.at(Tuning.HEAT_HUNTS_SPEED).starting_by(PursuitSpec.Start.CHARGES_AT_ONCE)
-	def.hard_fail = true
+	def.use_lethal(LethalSpec.at_its_core())
 	return def
 
 # ------------------------------------------------------------------ the finale ---
@@ -2843,14 +2831,14 @@ static func _door_guard() -> EventDef:
 ## **Off screen is bought with the streaming radius rather than with a rule.** A `MAP` placement
 ## comes into the world at `Tuning.EVENT_STREAM_RADIUS` (900px), where the camera at zoom 2 sees
 ## 640×360, so an explosion begins its telegraph roughly two and a half screens away, spends
-## `telegraph_time` + `duration` (3.7s, about 340px of walking) getting to its bang, and is over
+## its telegraph (`telegraphs_for()`) + `duration` (3.7s, about 340px of walking) getting to its bang, and is over
 ## while it is still well outside the view.
 ##
 ## **The radii are sized against that distance and not against taste.** outer radius 520 reaches
 ## a screen and a half; inner radius 300 puts the near half of that band at close to full
 ## strength, so a burst just beyond the screen edge (about 360px on the long axis) still lands
 ## roughly 22 of its 24 points per second on her. A narrower band would be an explosion she could
-## be next to and not hear. `telegraph_time` is the contract's own minimum for that band,
+## be next to and not hear. Its telegraph (`telegraphs_for()`) is the contract's own minimum for that band,
 ## `(520 − 300) / WALK_SPEED` = 2.39s, with the ordinary margin on top.
 ##
 ## **Not lethal, and that is the tone rule rather than an omission** (`docs/NARRATIVE.md`: *the
@@ -2867,7 +2855,7 @@ static func _finale_explosion() -> EventDef:
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
 	def.use_field(FieldSpec.of(24.0, 300.0, 520.0))
-	def.telegraph_time = 2.5
+	def.use_warning(WarningSpec.lasting(2.5))
 	# Short and over: a sharp spike is a short `duration` at high peak, since there is no
 	# `impulse` field (`CLAUDE.md`, "Things deliberately not done").
 	def.duration = 1.2
@@ -2900,7 +2888,7 @@ static func _impact_crater() -> EventDef:
 	def.use_body(BodySpec.solid(GroundShape.point(32.0)).unmet().parked())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(0.0, 40.0, 120.0))
-	def.telegraph_time = 0.9
+	def.use_warning(WarningSpec.lasting(0.9))
 	return def
 
 ## A masked man running up the stairwell: masked pursuers run up the stairs and can be avoided by
@@ -2916,7 +2904,7 @@ static func _impact_crater() -> EventDef:
 ## **Faster than a walk, so it cannot be out-walked**, which makes stepping aside the answer rather
 ## than a preference, and makes the telegraph contract ask for a long one: at 130px/s it prices the
 ## escape as the field's whole forward reach rather than its falloff band, so outer radius 120 at
-## `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and `telegraph_time` carries a little over it. That
+## `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and its telegraph (`telegraphs_for()`) carries a little over it. That
 ## number is read only by the contract: he warns while she is in the stairwell and runs on a
 ## distance, with no clock (below).
 ##
@@ -2932,7 +2920,7 @@ static func _masked_pursuer() -> EventDef:
 	def.use_body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	def.act_tag = 4
 	def.use_field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
-	def.telegraph_time = 3.6
+	def.use_warning(WarningSpec.lasting(3.6).holding_still())
 	def.mobile = true
 	def.speed = Tuning.HEAT_HUNTS_SPEED
 	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
@@ -2944,13 +2932,12 @@ static func _masked_pursuer() -> EventDef:
 	def.notice = NoticeSpec.at(900.0)
 	# And the warning is spent standing, not approaching: a man already running when he first
 	# becomes visible has given no notice at all.
-	def.still_while_telegraphing = true
 	# **He warns while she is in the stairwell, and runs the moment she is within this of him, with
 	# no warning clock**: the one waiting charger outside the one-radius rule (inbox #788 in
 	# minty-lemur: no delay), since his warning is off screen and a delay only lets a walker reach
 	# the door. She has to run to the first floor's door (inbox #764 in minty-lemur) rather than walk
 	# down to it and out to the other shaft without meeting him (inbox #782 in minty-lemur: a bigger
-	# radius, and him not moved). No clock, so his `telegraph_time` above is read only by the
+	# radius, and him not moved). No clock, so his telegraph (`telegraphs_for()`) above is read only by the
 	# telegraph contract. 426px is measured on the escape as built
 	# (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as the game steps, a 30Hz physics
 	# tick that moves her, then steps him and checks the catch): coming down from the second floor's
@@ -2969,8 +2956,7 @@ static func _masked_pursuer() -> EventDef:
 	# player accepted both (inbox #782 in minty-lemur).
 	# #782 in minty-lemur).
 	def.notice = def.notice.running_within(426.0)
-	def.hard_fail = true
-	def.catch_reach = MASKED_PURSUER_CATCH
+	def.use_lethal(LethalSpec.within(MASKED_PURSUER_CATCH))
 	# **One of him at a time, and there is always another**: a fresh one comes up the shaft this long
 	# after the last has run out of the top of it, so every run waits, warns and runs exactly as the
 	# first did (`EventManager`'s repeats).
@@ -3021,6 +3007,6 @@ static func _basement_steam() -> EventDef:
 	# 0.72s. The body asks for far less than the field does (a step of `STEAM_VENT_BODY` plus her
 	# own 14px is a third of a second), so the notice she is owed for the ground is paid several
 	# times over by the notice she is owed for the noise.
-	def.telegraph_time = 1.2
+	def.use_warning(WarningSpec.lasting(1.2))
 	def.duration = FINALE_STEAM_BLOWS_FOR
 	return def

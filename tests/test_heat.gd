@@ -74,7 +74,7 @@ func _test_every_shape_of_every_row_is_fair(t: TestRunner) -> void:
 			t.check(hot.validate(), "'%s' is fair at heat %d" % [def.id, level])
 			t.check(hot.id == def.id, "heat does not change what '%s' is" % def.id)
 
-## The rung that does not hunt never gains `hard_fail`, and it is checked over the response rather
+## The rung that does not hunt never ends the day, and it is checked over the response rather
 ## than over the one row that carries it, so a second `PRESSES` row added later inherits the
 ## promise. Nor does the man it lets out end the day: his catch is a stop (inbox #669 in coral-lark, "it needs to
 ## give a substantial cost but not lethal directly"). (The patrol that carries it strikes as a car
@@ -85,14 +85,14 @@ func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 			continue
 		for level in EventCatalogue.heat_levels():
 			t.check(not EventCatalogue.heated(def, level).ends_the_day(),
-					"'%s' presses without ever becoming hard_fail (heat %d)" % [def.id, level])
+					"'%s' presses without ever ending the day (heat %d)" % [def.id, level])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
 		t.check(not out.ends_the_day() and out.pursuit.stop_excitement() > 0.0,
 				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
-## pursues, keeps `hard_fail`, and its derived numbers satisfy the pursuit contract measured from
+## pursues, keeps ending the day, and its derived numbers satisfy the pursuit contract measured from
 ## its own data — or, a row that hunts on foot (`EventDef.hunts` letting men out, the two vans), it lets
 ## its men out instead, never a pursuer itself and as lethal as it is cold, its men's stand-off
 ## inside its notice and their catch ending the day. Checked over the response rather than over the one row that carries it, the same
@@ -183,7 +183,7 @@ func _cold_roadblock() -> EventDef:
 
 ## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
 ## `EventDef.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
-## at or above it its guards leave the post: `EventDef.pursuit` and `hard_fail` turn on for the
+## at or above it its guards leave the post: `EventDef.pursuit` and `ends_the_day()` turn on for the
 ## same body, and neither when it may appear nor its population nor its intensity moves, since
 ## heat sets what a row does and never when it is allowed to. The pursuit numbers themselves are
 ## left to `validate()` and to the generic loop's ordering check, for the reason given on the

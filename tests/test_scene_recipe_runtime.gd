@@ -218,7 +218,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	# Where the director would send the dog at her: the lead straight ahead of her, facing south, on
 	# ground the dog may stand on; she stands on the first sidewalk tile that gives one.
 	var row := EventCatalogue.by_id("charging_dog")
-	var lead := Offscreen.lead(Vector2.DOWN, row.chase_speed() + Tuning.WALK_SPEED, row.offscreen_notice)
+	var lead := Offscreen.lead(Vector2.DOWN, row.chase_speed() + Tuning.WALK_SPEED, row.warned_for())
 	var her := Vector2.INF
 	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
 		var stand := city.map.tile_to_world(tile)

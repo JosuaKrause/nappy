@@ -154,7 +154,7 @@ func _test_chatting_mother_freezes_gait_when_talking(t: TestRunner) -> void:
 		t.check(not instance.look.gait_is_stepping(), "frozen mid-conversation holds frame a (tick %d)" % i)
 	instance.free()
 
-## The crouch is the telegraph, held still by construction (`still_while_telegraphing`) — it must
+## The crouch is the telegraph, held still by construction (`holds_still()`) — it must
 ## never draw the running family's own b frame, whatever `gait_is_stepping()` says, since crouched
 ## has no second frame of its own at all. A cat the game would never see striding while it crouches
 ## is walked on by hand, as a scene recipe's held event is (`walk_on_by_hand()`, which advances the

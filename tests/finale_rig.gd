@@ -397,7 +397,7 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> voi
 	t.check(vans > 80, "there were streets full of vans to walk past (%d)" % vans)
 
 ## Marks every grid point within the lethal reach of a row the plan stands that is not mobile, is
-## `hard_fail` and does not pursue, measured from where its `EventInstance` stands, and answers how
+## lethal and does not pursue, measured from where its `EventInstance` stands, and answers how
 ## many reaches it marked.
 static func _block_every_standing_reach(t: TestRunner, map: CityMap,
 		placements: Array[EventPlan], blocked: Dictionary) -> int:
@@ -788,7 +788,7 @@ func _watch_them_walk_off(t: TestRunner, map: CityMap, told: WhereSheIs,
 
 ## **And nothing over her head says otherwise.** A posted band's guard has not noticed her yet, so
 ## inside its outer radius it raises the `SOON` mark (`WarningBoard.warn_about_the_ground_she_is_on()`),
-## as every `hard_fail` row waiting for her does. A band whose guard has left for good waits for
+## as every lethal row waiting for her does. A band whose guard has left for good waits for
 ## nobody: he never notices her or charges again, so it raises nothing, or the walk past a band
 ## that costs nothing would be made under a warning of a catch that cannot come.
 func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
@@ -1590,7 +1590,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -
 ##
 ## **The mark means one thing and one condition raises it.**
 ## `WarningBoard.warn_about_the_ground_she_is_on()` puts `Stroller.Alert.SOON` over her head for
-## any `hard_fail` row that is still telegraphing, or still waiting to notice her, whose **outer**
+## any lethal row that is still telegraphing, or still waiting to notice her, whose **outer**
 ## radius covers her — because that radius is exactly what the telegraph fairness contract promises
 ## her time to walk out of. On the first frame of section two every placement the finale made is in
 ## one of those two states, so that one inequality is the whole of the mark, and it is asked here

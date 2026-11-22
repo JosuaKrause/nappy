@@ -1158,7 +1158,7 @@ static func _sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 ## calm-kestrel, inbox #559, and busy-quail, inbox #569, "1s warning should be enough -- let's apply
 ## that to the others as well")*: the screen-edge badge goes up alone at once, with nothing in the
 ## world, pointing at where he will start (`_draw_arrival_position()`), for the row's own
-## `offscreen_notice` (`EventDef.warned_for()`, at most `Tuning.WARNING_ALONE_MAX`); then he is
+## `EventDef.warned_for()` (at most `Tuning.WARNING_ALONE_MAX`); then he is
 ## created just out of sight that way from where she is by then, already chasing
 ## (`EventManager.send_from_out_of_sight()`), and the badge goes off as he comes into
 ## view. The badge's place moves only with her, so it never jumps (`PendingWarning`).

@@ -259,7 +259,7 @@ func _test_controls_event_name(t: TestRunner) -> void:
 	_done(counter)
 
 ## `chatting_mother` is a `chat`; every other id that can reach `EventBus.player_detained` — the
-## catalogue's only other two rows with a `detain_seconds` above zero — is a `checkpoint`.
+## catalogue's only other two rows with a `detains_for()` above zero — is a `checkpoint`.
 func _test_detention_suffix(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header().day()

@@ -85,10 +85,10 @@ const EXCITEMENT_WAKE_THRESHOLD := 60.0
 const EXCITEMENT_DECAY_WALKING := 6.0
 
 
-## What a `chatting_mother` conversation adds over its whole `detain_seconds`, while the baby is
+## What a `chatting_mother` conversation adds over its whole `detains_for()`, while the baby is
 ## awake — "consumes 25%" in the player's own words (`docs/playtests/PLAYTEST-18.md` finding 4, read as
 ## *adds 25 points*, because the same sentence calls the awake case an overstimulation risk).
-## Divided by `detain_seconds` for the flat per-second rate a captured player is charged while she
+## Divided by `detains_for()` for the flat per-second rate a captured player is charged while she
 ## is inside the conversation; zero while asleep, which is what makes it a *pure* time loss then —
 ## see `EventInstance.current_intensity()`.
 const CHAT_EXCITEMENT := 25.0
@@ -735,7 +735,7 @@ const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
 ## (just a part or too far off the edge doesn't count)".)*
 const ENCOUNTER_SEEN_SHARE := 0.8
 
-## The default seconds of notice a row gives from off screen (`EventDef.offscreen_notice`): for a
+## The default seconds of notice a row gives from off screen (`WarningSpec.badge_notice()`): for a
 ## row created at once — a patrol sent down the road — the seconds it still has to be off screen
 ## once it is created, at the speed the gap is actually closing. *(2026-09-07: "events that go
 ## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning.")*
@@ -836,7 +836,7 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## walk out of its field that `required_telegraph_time()` prices is not a walk she can take during
 ## the badge; an ordinary pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, while a sent
 ## robber or guard arrives chasing after its badge alone. A row with an in-world telegraph owes
-## the minimum its field sets even when it has no coming badge (`EventDef.telegraphs` is false).
+## the minimum its field sets even when it has no coming badge (`EventDef.telegraphs_its_coming()` is false).
 const OFFSCREEN_WARNING_MIN := 1.0
 ## The longest a screen-edge badge is up alone, with nothing in the world, before the thing it warns
 ## of is placed just out of sight where it points (`PendingWarning`). *(calm-kestrel, inbox #559: "it
@@ -845,7 +845,7 @@ const OFFSCREEN_WARNING_MIN := 1.0
 ## turning off the warning"; busy-quail, inbox #569: "1s warning should be enough -- there is enough
 ## screen space to cross -- let's apply that to the others as well".)* A ceiling, not a length: a row
 ## whose own is already shorter keeps it, as the day-3 dog keeps its half second
-## (`EventDef.offscreen_notice`). `EventDef.validate()` refuses a row warned of first whose badge
+## (`EventDef.warned_for()`). `EventDef.validate()` refuses a row warned of first whose badge
 ## alone (`EventDef.warned_for()`) is longer.
 const WARNING_ALONE_MAX := 1.0
 

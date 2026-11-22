@@ -286,7 +286,7 @@ func _test_a_sent_row_keeps_out_of_a_field_kept_clear(t: TestRunner) -> void:
 	var map := _street()
 	var lethal := EventDef.new()
 	lethal.id = "lethal_by_hand"
-	lethal.hard_fail = true
+	lethal.use_lethal(LethalSpec.at_its_core())
 	lethal.use_field(lethal.field().holding_to(30.0).reaching(120.0))
 	var plan := EventPlan.new(lethal, _her() + Vector2(TILE, -3.0 * TILE))
 	t.check(plan.keeps_its_field_clear(), "a lethal row that is no wall keeps its field clear")
@@ -308,7 +308,7 @@ func _test_a_further_leg_keeps_out_of_a_field_kept_clear_and_a_doors_ground(t: T
 	var map := _street()
 	var lethal := EventDef.new()
 	lethal.id = "lethal_by_hand"
-	lethal.hard_fail = true
+	lethal.use_lethal(LethalSpec.at_its_core())
 	lethal.use_field(lethal.field().holding_to(30.0).reaching(120.0))
 	# North of her is up the street; every place and leg below is in tiles north of her.
 	var north := func(tiles: float, across := 0.0) -> Vector2:
@@ -369,7 +369,7 @@ func _test_a_sent_row_with_no_room_lets_the_next_marbles_through(t: TestRunner) 
 	var map := _street()
 	var lethal := EventDef.new()
 	lethal.id = "lethal_by_hand"
-	lethal.hard_fail = true
+	lethal.use_lethal(LethalSpec.at_its_core())
 	lethal.use_field(lethal.field().holding_to(30.0).reaching(600.0))
 	var blocking := EventPlan.new(lethal, _her() + Vector2(-1.5 * TILE, 0.0))
 	var plans: Array[EventPlan] = [blocking]

@@ -706,7 +706,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 ## its first frame.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be more
 ## intense".)* `EventInstance.is_lethal_at()` refuses the whole telegraph and `_notice_damping()`
 ## holds the field at `EventInstance.TELEGRAPH_INTENSITY_FRACTION` through it, so a row that arrived still
-## telegraphing would ride past her unable to do the one thing it is for — the kill for a `hard_fail`
+## telegraphing would ride past her unable to do the one thing it is for — the kill for a lethal
 ## row, the noise for a loud one. The warning was the telegraph, so the thing it warned of is created
 ## past it.
 ##
@@ -771,7 +771,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 		while seen["arrived"] == null and ticks < limit:
 			await PhysicsTicks.pass_ticks(t, 1, each, Rig.WALK_SCALE)
 			ticks += 1
-		if not def.telegraphs:
+		if not def.telegraphs_its_coming():
 			t.check(seen["warned_at"] < 0 and seen["arrived"] != null
 					and seen["warnings_at_arrival"] == warnings_before,
 					"'%s' does not telegraph: no warning goes up for it, it is created at once" % def.id)
@@ -788,7 +788,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 				% def.id) + "than the telegraph's %.0f%%" % (EventInstance.TELEGRAPH_INTENSITY_FRACTION * 100.0))
 		if def.ends_the_day():
 			t.check(arrived.is_lethal_at(arrived.global_position),
-					"and '%s', declared hard_fail, is lethal from its first frame" % def.id)
+					"and '%s', declared as ending the day, is lethal from its first frame" % def.id)
 		events.retire(arrived)
 	if rig:
 		events.use_player(null)

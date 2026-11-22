@@ -297,7 +297,7 @@ static func row_ground(map: CityMap, corridor: Corridor = null,
 ## **A lethal field is its whole `outer radius`**, which is a different and much wider question.
 ## *(2026-09-19: "I still spawn with flashing !!! in the city.")* The doubled exclamation mark over
 ## her head means *this will end your day*, and `WarningBoard.warn_about_the_ground_she_is_on()`
-## raises it for any `hard_fail` row still telegraphing — or still waiting to notice her — whose
+## raises it for any lethal row still telegraphing — or still waiting to notice her — whose
 ## **outer** radius covers her, because that radius is exactly what the fairness contract promises
 ## her time to walk out of. A row placed inside it has therefore already spent her notice before
 ## she has taken a step, which is the same defect as a body on her spawn read one field wider: on

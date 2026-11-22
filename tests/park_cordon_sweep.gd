@@ -200,7 +200,7 @@ func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 		if live.is_gone() or not live.is_on_its_way_out() or not area.has_point(live.global_position):
 			continue
 		if def.kind != GameEnums.EventKind.AMBIENT and not def.pursues() and not def.drives() \
-				and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
+				and not def.was_sent_at_her() and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 			people += 1
 	return people
 

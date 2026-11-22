@@ -102,7 +102,7 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t: TestRunner) -> void:
 	var def := EventDef.new()
 	def.id = "caret_matches_halo"
 	def.use_field(FieldSpec.of(30.0, 40.0, 200.0))
-	def.telegraph_time = 0.0
+	def.use_warning(WarningSpec.lasting(0.0))
 	var instance := _instance(def)
 	var player_velocity := Vector2(Tuning.WALK_SPEED, 0.0)
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
@@ -236,11 +236,11 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> v
 	var def_a := EventDef.new()
 	def_a.id = "share_decay_a"
 	def_a.use_field(FieldSpec.of(30.0, 40.0, 200.0))
-	def_a.telegraph_time = 0.0
+	def_a.use_warning(WarningSpec.lasting(0.0))
 	var def_b := EventDef.new()
 	def_b.id = "share_decay_b"
 	def_b.use_field(FieldSpec.of(30.0, 40.0, 200.0))
-	def_b.telegraph_time = 0.0
+	def_b.use_warning(WarningSpec.lasting(0.0))
 
 	var a := _instance(def_a)
 	a.global_position = Vector2(0.0, 20.0)
@@ -297,7 +297,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t: TestRunner) -> void:
 	var where := WhereSheIs.nowhere()
 	var instance := _instance(def, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]), where)
 	# One frame past the telegraph is enough to turn the crouch into a heading — `cat_dash` is
-	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
+	# `holds_still()`, so `travel_velocity()` is zero until then.
 	_advance(instance, def.telegraphs_for() + STEP)
 	where.tell(Vector2(def.heard_within(), 0.0))
 	t.check((await _carets(t, instance)).is_empty(),
@@ -314,7 +314,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> 
 		return
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)])
 
-	# `cyclist` is not `still_while_telegraphing`, so it is already riding its route through the
+	# `cyclist` is not `holds_still()`, so it is already riding its route through the
 	# whole telegraph — the player is placed relative to wherever it actually is once the
 	# telegraph clears rather than at a fixed point its own approach may have already ridden past.
 	# (A telegraphing cyclist is its own scenario below — `caret_strength()` no longer needs the
@@ -338,7 +338,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> 
 
 ## **A telegraph is not an alibi.** `is_lethal_at()` refuses the whole of a telegraph because it
 ## answers *is this lethal right now*; `will_be_lethal()` answers a different question — is this
-## row's own course, once the telegraph clears, one that ends her day — and a `hard_fail` row
+## row's own course, once the telegraph clears, one that ends her day — and a lethal row
 ## riding straight at her through the telegraph has to read red for the whole of it, or the
 ## doubled caret only ever appears in the fraction of a second the telegraph has left. Three
 ## scenarios, one for each way a lethal row can be *not yet arrived* and still owe her the mark:
@@ -348,7 +348,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 	var cyclist_def := EventCatalogue.by_id("cyclist")
 	if cyclist_def:
 		# No `_advance()` at all: still inside its own 2.0s telegraph, and already moving —
-		# `cyclist` is not `still_while_telegraphing`, so `_caret_velocity()` reads its route speed
+		# `cyclist` is not `holds_still()`, so `_caret_velocity()` reads its route speed
 		# from age zero.
 		var cyclist_where := WhereSheIs.nowhere()
 		var cyclist := _instance(cyclist_def,
@@ -533,7 +533,7 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t: TestRunn
 ## It used to be raised for any telegraphing event whose radius reached her, and the player's
 ## verdict was *"it doesn't actually have an effect on gameplay — I can just keep doing what I
 ## was doing."* That was accurate for fifteen of the eighteen rows: for anything that is not a
-## `hard_fail`, the mark meant *a number is about to move faster*, which the meter already says
+## lethal, the mark meant *a number is about to move faster*, which the meter already says
 ## continuously and proportionally. This is the same rule the caret over an entity got right
 ## first time — a cue that marks everything says nothing — applied to the one cue that gives an
 ## instruction rather than information.

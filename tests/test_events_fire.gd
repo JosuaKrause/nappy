@@ -165,7 +165,7 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	var path := due[1] as PackedVector2Array
 	t.check(path.size() == 2, "it is given a route across her line")
 	var def := due[0] as EventDef
-	# The cat is `still_while_telegraphing`, so its lead is `EventDef.ahead_of_player_lead()` —
+	# The cat is `holds_still()`, so its lead is `EventDef.ahead_of_player_lead()` —
 	# longer than the flat `AHEAD_LEAD_DISTANCE` by exactly the ground she covers while it holds
 	# its crouch — rather than the constant every other crossing row is sited at.
 	var lead := def.ahead_of_player_lead()
@@ -465,8 +465,8 @@ func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 	def.id = "test_hard_fail"
 	def.use_body(BodySpec.none().walked_round().going_on())
 	def.use_field(FieldSpec.of(20.0, 40.0, 120.0))
-	def.hard_fail = true
-	def.telegraph_time = def.minimum_telegraph()
+	def.use_lethal(LethalSpec.at_its_core())
+	def.use_warning(WarningSpec.lasting(def.minimum_telegraph()))
 	t.check(def.validate(), "a hard-fail event with the doubled margin is fair")
 
 	var instance := _instance(t, def)

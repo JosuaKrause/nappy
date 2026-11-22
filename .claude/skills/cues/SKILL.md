@@ -13,7 +13,7 @@ description: The visual danger vocabulary — what may be drawn to signal danger
   charging now, never sized to its reach, and nothing else gets one by analogy.
 - **One picture per row**: no two rows share a look, no two looks a silhouette.
 - **A mark shows what a thing is projected to net her**, computed on its own source, never a second table.
-- **Only a `hard_fail` event and a closing car raise the exclamation mark.**
+- **Only an event that ends the day (`LethalSpec.ends_the_day()`) and a closing car raise the exclamation mark.**
 - **Every caret is `Sprites.draw_caret()`**: no second hand-drawn chevron.
 - **A picture is an asset, never code** (PLAYTEST-29 3): a new symbol is an image file. Three
   symbols are drawn in code today (the caret, the home arrow, the badge's pointer).
@@ -52,7 +52,7 @@ coming* are claims about the thing's own course.
   gone — **for the things that telegraph**: a thing telegraphs
   its coming only if it goes fast, comes toward her (PLAYTEST-145 18-23), and carries a heavy
   penalty (olive-hedgehog #598), ending the day or a heavy hit. One that does not
-  (`EventDef.telegraphs`) — the loose dog and the cat, the player's own — is outside the badge and
+  (`EventDef.telegraphs_its_coming()`) — the loose dog and the cat, the player's own — is outside the badge and
   warning-first placement rather than exempted from them, as are `alley_mouse`, `pigeon_flock`,
   `police_patrol` and the `dog_walker` the director sends ahead of her by the rule's numbers
   (`docs/EVENTS.md`, "What telegraphs")
@@ -156,7 +156,7 @@ Nothing in `tests/test_danger.gd` can see a moment, which is why the `cue` telem
 Every other cue says *a thing exists*. That one says **the fairness contract is now about you and
 the clock has started**, which is the difference between information and instruction.
 
-**Only a `hard_fail` event and a closing car raise it.** Raised for every telegraph it would mean "a
+**Only an event that ends the day (`LethalSpec.ends_the_day()`) and a closing car raise it.** Raised for every telegraph it would mean "a
 number is about to move faster" for most of the catalogue — which the meter already says, and the
 player's verdict on that (PLAYTEST-05 3) was that she can just keep doing what she was doing.
 

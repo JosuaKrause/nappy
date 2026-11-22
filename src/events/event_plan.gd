@@ -45,7 +45,7 @@ var _first_comes_in := 0.0
 ## she has got to. Its `placed_at()` is where it last came.
 var _at_her := false
 ## The age each of its instances arrives at: 0 for one that comes and gives its notice, the
-## row's `telegraph_time` for one whose notice is already over when it comes (the explosion
+## row's `telegraphs_for()` for one whose notice is already over when it comes (the explosion
 ## outside: what the windows say is that it has already happened).
 var _arrives_aged := 0.0
 
@@ -492,16 +492,16 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## the first place.
 ##
 ## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
-## name: `EventScheduler.role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
-## before it ever asks whether the row pursues, so `alley_robbery` (placed, `hard_fail`, therefore
+## name: `EventScheduler.role_for` gives any placed lethal row that is not a `ONE_SHOT` the `WALL` role
+## before it ever asks whether the row pursues, so `alley_robbery` (placed, lethal, therefore
 ## always `WALL`) and `charging_dog` past `Tuning.RUN_TAUGHT_DAY` (`spawn_mode_on()` answers `MAP`
-## from there, placed and `hard_fail` the same way) are both exempt without this line doing
+## from there, placed and lethal the same way) are both exempt without this line doing
 ## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
 ## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
 ## the other way a pursuer reaches this exemption. Stating it over `pursues()` (its row's `pursuit`) rather than
 ## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
-## say, which `EventScheduler.role_for` would classify ahead of the `hard_fail` check.
+## say, which `EventScheduler.role_for` would classify ahead of the lethal check.
 func keeps_its_field_clear() -> bool:
 	return _def.ends_the_day() and _role != GameEnums.BlockerRole.WALL and not _def.pursues()
 

@@ -74,10 +74,10 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		out.append(event.notice_run)
 	if row.mobile and not row.investigates() and row.pursuit == null and row.notice == null:
 		out.append(route)
-	if row.detain_seconds > 0.0:
-		event.hold = EventHold.new(figure, row)
+	if row.detains_her():
+		event.hold = EventHold.new(figure, row.hold())
 		out.append(event.hold)
-	if row.comes_down_her_line() and not row.telegraphs:
+	if row.comes_down_her_line() and not row.telegraphs_its_coming():
 		event.unreachable = EventUnreachable.new(figure, where)
 		out.append(event.unreachable)
 	if row.abduction != null:

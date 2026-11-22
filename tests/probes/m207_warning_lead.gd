@@ -38,7 +38,7 @@ extends RefCounted
 ## (for a row that waits, once it has noticed her), at which either the thing itself is inside the
 ## view — the `Tuning.VIEW_HALF_EXTENT` box about her, the camera being centred on her — or
 ## `BadgeModel` would have its badge up: the game's own decision stepped each frame, not copied. **The earliest reach** is the first frame `EventInstance.is_lethal_at()` is true for a
-## `hard_fail` row, and for any other row the first frame after its telegraph that its field
+## lethal row, and for any other row the first frame after its telegraph that its field
 ## charges her anything at all (`contribution_at()` above zero at full strength) — the moment the
 ## thing it was warning about is actually happening to her.
 ##
@@ -87,8 +87,8 @@ func run(t: TestRunner) -> void:
 			overs.append("never" if result["lead"] == INF else "%+.2f" % (result["lead"] - floor_s))
 			if answer == Answer.TOWARD and result["created_at"] != INF:
 				exists = "%.2f" % result["created_at"]
-		# A row that does not telegraph (`EventDef.telegraphs`) is outside the contract: no floor.
-		var telegraphs := def.telegraphs
+		# A row that does not telegraph (`EventDef.telegraphs_its_coming()`) is outside the contract: no floor.
+		var telegraphs := def.telegraphs_its_coming()
 		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [def.id,
 				encounter["how"], cells[0], cells[1], cells[2], exists,
 				"%.2f" % floor_s if telegraphs else "outside",

@@ -52,7 +52,7 @@ var _behaviours: Array[EventBehaviour] = []
 ## covered, clocks and phase — as its behaviours may ask it and tell it, handed to each as it is
 ## composed.
 var _figure := Figure.new(self)
-## A conversation or a door's hold (`EventDef.detain_seconds`).
+## A conversation or a door's hold (`HoldSpec`).
 var hold: EventHold
 ## The unmarked van's take of a bystander.
 var abduction: EventAbduction
@@ -756,15 +756,15 @@ func is_chatting() -> bool:
 
 ## Whether the guard this instance draws is inside with her for its own hold right now — he is the
 ## one taking her in, so he is not also standing in the street, see
-## `Stroller.hide_for_inspection()`. `_def.redetains` is the flag only `checkpoint_hut` and
+## `Stroller.hide_for_inspection()`. `HoldSpec.detains_again()` is the flag only `checkpoint_hut` and
 ## `checkpoint_post` carry (the boom, `checkpoint_gate`, blocks rather than inspects), so
-## `chatting_mother`, which holds her by the same mechanism without `redetains`, keeps her ordinary
+## `chatting_mother`, which holds her by the same mechanism without it, keeps her ordinary
 ## talking posture for the whole of her own conversation instead.
 func is_its_guard_inside() -> bool:
-	return _def.redetains and is_chatting()
+	return _def.detains_again() and is_chatting()
 
 ## Whether this instance has ever held her (`EventHold.has_held()`). `CheckpointController` does
-## not start a second hold on a row that has held her and does not `redetains`.
+## not start a second hold on a row that has held her and does not `detains_again()`.
 func has_chatted() -> bool:
 	return hold != null and hold.has_held()
 
@@ -921,7 +921,7 @@ func give_up_the_chase() -> void:
 ## it, and **it tells the event nothing about where she is**, which stays the manager's word
 ## (`WhereSheIs`), so a rig with nobody in the world leaves him hearing nowhere.
 ##
-## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
+## `notice` replaces the row's `telegraphs_for()` for this notice when it is not negative, and `stand`
 ## has him stand still in his warning for it (`is_standing_for_its_notice()`): in her view, day
 ## 13's guard raises his warning for a second and then charges. From
 ## here he walks round buildings toward her (`_chase_way`), since he may start a city away, and he
@@ -965,7 +965,7 @@ var _chase_way: ChaseWay
 ## (`warns_by_radius()`), whether or not it has a way round.
 var _set_on_her := false
 ## The notice `notice_her_at()` was given, in seconds, or negative for the row's own
-## `telegraph_time` (`notice_time()`).
+## `telegraphs_for()` (`notice_time()`).
 var _notice_time := -1.0
 ## Whether `notice_her_at()` asked it to stand still with its warning up for that notice
 ## (`is_standing_for_its_notice()`), as day 13's task guard does in her view.
@@ -1301,7 +1301,7 @@ func hold_still_longer(seconds: float) -> void:
 
 ## How long this instance's notice runs once it has noticed her: a charger that warns by radius
 ## warns for its row's `PursuitSpec.warns_for()` (`warns_by_radius()`); anything else for its row's
-## `telegraph_time`, the notice a task gave it when it set it on her (`notice_her_at()`), or a
+## `telegraphs_for()`, the notice a task gave it when it set it on her (`notice_her_at()`), or a
 ## crossing's crouch held longer (`hold_still_longer()`).
 func notice_time() -> float:
 	if _notice_time >= 0.0:
@@ -1322,7 +1322,7 @@ func is_waiting() -> bool:
 ##
 ## For everything in the catalogue but one it is the age. For a pursuer that waits, the clock starts
 ## when it notices her — a telegraph spent at dawn, four streets away, is not a notice, and
-## `telegraph_time` and `duration` are both promises about the encounter rather than about the day.
+## `telegraphs_for()` and `duration` are both promises about the encounter rather than about the day.
 ##
 ## It is the notice's own clock (`_notice`, a `Warning` read against `age`), less whatever held it:
 ## a held lunge with her inside its stand-off, a waiting charger behind a wall at its warning's last
@@ -1588,9 +1588,9 @@ func _bird_distance(bird: EventFlock.Bird, world_position: Vector2) -> float:
 ## **A pursuer catches her only by touching her**, so its catch also needs a clear line to her (the
 ## strict one, `_navigator.clear_line()` with no own tiles): within reach across a building's
 ## corner is not a catch (freckled-goose #544). The reach is unchanged; nothing may stand between
-## them. Every other `hard_fail` row keeps the straight-line distance.
+## them. Every other lethal row keeps the straight-line distance.
 ##
-## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.vehicle`): one strikes
+## **Cars that drive are the only rows lethal whose row does not end the day** (`ends_the_day()` is false; `EventDef.vehicle`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
 ## else — not behind it, not beside it, not while it stands (`EventCarDriving._is_driving()`). A body touching her is
 ## not enough, and not needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the

@@ -199,7 +199,7 @@ func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: TestRunner) -
 ## - **Every one of them warns her standing still before he runs.** Appearing with her already
 ##   inside his charge distance, he warns for `Tuning.WARNING_ALONE_MAX` first
 ##   (`EventNoticeRun`); a respawned pursuer that inherited an old instance's
-##   state would arrive at speed, which is the exact thing `still_while_telegraphing` exists to
+##   state would arrive at speed, which is the exact thing `holds_still()` exists to
 ##   prevent, and no screenshot could ever catch it.
 ## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
 ##   appearing at the foot, rather than read off the constant.

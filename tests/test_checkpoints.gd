@@ -634,7 +634,7 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t: TestRunner) -> void:
 	await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting(), "the conversation has ended")
 	t.check(not hut.is_gone() and not hut.is_on_its_way_out(),
-			"and the hut stays put — redetains, it does not depart like chatting_mother")
+			"and the hut stays put — `detains_again()`, it does not depart like chatting_mother")
 
 	t.check(set_down.size() == 1, "and she is let out once (%d)" % set_down.size())
 	var released: Vector2 = set_down[0] if not set_down.is_empty() else Vector2.INF
@@ -1693,7 +1693,7 @@ func _test_walking_back_redetains_her(t: TestRunner) -> void:
 	t.check(not post.is_chatting(), "one step outside its reach is not a toll either")
 	stroller.global_position = centre + out_side * 60.0
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(post.is_chatting(), "but walking back in from there detains her again — redetains, in "
+	t.check(post.is_chatting(), "but walking back in from there detains her again — detains_again(), in "
 			+ "either direction")
 	await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS)
 	var second_release := stroller.global_position
@@ -1729,7 +1729,7 @@ func _test_the_release_latch(t: TestRunner) -> void:
 	latch.arm(at, 48.0)
 	t.check(latch.holds(), "which the door does by arming it again")
 
-## The one row that keeps its old, once-only behaviour: `redetains` defaults to `false`, and
+## The one row that keeps its old, once-only behaviour: `detains_again()` defaults to `false`, and
 ## `chatting_mother` never sets it, so a second approach to the same instance never starts a
 ## second conversation — restated here beside the redetaining rows so the new gate in
 ## `CheckpointController.check_detentions()` (`not instance.detains_again() and
@@ -1901,7 +1901,7 @@ func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 ## one crossing's `GateState` structurally (`RegionPlanner._add_door_bodies` builds one `GateState`
 ## per street door and hands it to the gate's own instance), but
 ## `CheckpointController.check_detentions()` never reads `gate_state` or `raised` at all — the
-## hut's hold is `def.detain_seconds` and `detain_distance()` alone, so raising the boom for the
+## hut's hold is `def.detains_for()` and `detain_distance()` alone, so raising the boom for the
 ## cars must leave it exactly as long. Drives her into the hut along its own sidewalk with the
 ## door's real gate beside it marked raised and asserts the inspection still starts and still
 ## runs its full length.

@@ -1115,20 +1115,20 @@ func _roll_interval() -> float:
 ## seeing is now a screen-edge badge's job for as long as the dog is off screen, not the dog's own
 ## silhouette, which is the overturn below.
 ##
-## **And a pursuer is sited at least `def.offscreen_notice` seconds outside the view along the
+## **And a pursuer is sited at least `def.warned_for()` seconds outside the view along the
 ## heading in play, not against a flat number sized for one axis.** *(2026-09-07: "bikers /
 ## unleashed dogs all pop in in front of the player instead of starting off screen", "events that go
 ## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning",
 ## and, of the day-3 dog specifically, "the run tutorial spawns inside the visible area making the
 ## headsup way too short now".)* A flat 200px sits inside the 320px horizontal boundary, so a dog
 ## sited while she walked east or west had no offscreen phase at all — it appeared already on
-## screen. `Offscreen.lead(heading, closing_speed, def.offscreen_notice)` asks the real
+## screen. `Offscreen.lead()`, asked for the heading, the closing speed and `def.warned_for()`, asks the real
 ## question instead: how far to the edge of the view *this* heading actually reaches, plus how far
 ## it and she together cover in the row's own notice — for `charging_dog` at 130px/s pursuing,
-## closing at 130 + `WALK_SPEED` (92) = 222px/s, `EventDef.offscreen_notice` of 0.5s buys 111px, sized
-## against playtest 20's own measurement of how much closing an evasion needed. See that field's own
-## reasoning for why the dog carries a different notice than the rest of the catalogue, and its own
-## `telegraph_time` for what pays for the longer approach.
+## closing at 130 + `WALK_SPEED` (92) = 222px/s, `EventDef.warned_for()` of 0.5s buys 111px, sized
+## against playtest 20's own measurement of how much closing an evasion needed. `WarningSpec`'s badge
+## notice (`_badge_notice`) says why the dog carries a different notice than the rest of the catalogue,
+## and its own `telegraphs_for()` is what pays for the longer approach.
 ##
 ## **Unavoidable, on purpose, was the day-3 dog's whole point** — a dog starting further away is a
 ## dog with more room to be walked around, which is exactly what siting it close was for.
@@ -1139,7 +1139,7 @@ func _roll_interval() -> float:
 ##
 ## **The site is a direction and a check, not where the pursuer is created.** `EventManager` warns
 ## of it first (`EventsAhead._warn_down_her_heading()`, M226): its badge is up alone for its own
-## `offscreen_notice`, pointing down the way this site lies from her, and it is then created just out
+## `warned_for()`, pointing down the way this site lies from her, and it is then created just out
 ## of sight that way on walkable ground (`PendingWarning.along_her_heading()`), its approach still to
 ## run. The lunge is still fired by **proximity** (`EventPursuit`).
 ##
@@ -1217,7 +1217,7 @@ func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = nu
 ## `PendingWarning.down_her_line()` puts it just out of sight along her heading, on a sidewalk or a
 ## square.
 ## *(PLAYTEST-145: "I don't like that the warning is tied to the size of the field or the speed.")*
-## The warning is the row's own `telegraph_time`, spent before the thing exists, so nothing about
+## The warning is the row's own `telegraphs_for()`, spent before the thing exists, so nothing about
 ## where it is sited has to outlast it.
 ##
 ## **The line is straightened onto the pavement she is standing on, when she is standing on one.**
@@ -1339,8 +1339,8 @@ func way_on() -> WayOn:
 ## convoy's is, and its first leg runs past her by as far (`leg_in_the_lane()`). A row on foot that
 ## `_toward_her()` sites goes up as a screen-edge warning before it exists
 ## (`EventDef.warns_before_it_exists()`); a patrol is created in the world instead, and telegraphs on
-## its way in (`telegraph_time` 1.97s) with no badge, since 74px/s is slower than a walk and it is never
-## `hard_fail` (`EventDef.at_heat()` states it for the `PRESSES` rung) — that is why
+## its way in (`telegraphs_for()` 1.97s) with no badge, since 74px/s is slower than a walk and it is never
+## lethal (`EventDef.at_heat()` states it for the `PRESSES` rung) — that is why
 ## `EventDef.announces_its_coming()` gives it no badge. Under the player's rule a thing telegraphs
 ## its coming only if it goes fast, comes toward her and carries a heavy penalty (PLAYTEST-145,
 ## statements 18-23), and a patrol is not fast; its strike in front of it on the carriageway is a

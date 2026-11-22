@@ -610,7 +610,7 @@ func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
 			EventInstance.mover_for(def))
 
 ## A row the director sends down her own line that does not telegraph its coming (`loose_dog`, the
-## dog walker it sends ahead of her; `EventDef.telegraphs`): no badge and no warning, so it is created
+## dog walker it sends ahead of her; `EventDef.telegraphs_its_coming()`): no badge and no warning, so it is created
 ## at once just out of sight down her line on its own ground (`PendingWarning.down_her_line()`,
 ## against what she can see), its telegraph spent. **Where its beat is as it is created differs.**
 ## The dog walker is the row she would come upon, put just ahead of her, so its bark is at a point
@@ -640,7 +640,7 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## A pursuer the director sends at her down her heading — `charging_dog`, on the day it teaches the
 ## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new
 ## system should be made to work to retain that timing for the pursuing dog")*: its badge is up
-## alone for its own `offscreen_notice` (the dog's half second), pointing down the way `sited` lies
+## alone for its own `warned_for()` (the dog's half second), pointing down the way `sited` lies
 ## from her, and it is then created just off screen that way on walkable ground (`PendingWarning.
 ## along_her_heading()`), its telegraph — the approach she watches — still to run. With nowhere to
 ## stand then, or now, it is owed again (`_pursuer_owed`) and the run log says so.

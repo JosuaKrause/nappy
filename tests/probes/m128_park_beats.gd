@@ -58,7 +58,7 @@ const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; ne
 ## `_instances`) — so the only two things she is standing between are this one field and the
 ## ground's own 12.0/s. The rig stands exactly inner radius from the busker's own centre,
 ## starting at `EXCITEMENT_CALM_THRESHOLD` with an empty sleep meter, matching the question
-## exactly as asked. The instance is stepped past its own `telegraph_time` before she "arrives",
+## exactly as asked. The instance is stepped past its own `telegraphs_for()` before she "arrives",
 ## since a busker that has been playing all morning has no telegraph left by the time anyone
 ## walks up to him.
 func _busker_never_fills_the_day(t: TestRunner) -> void:
@@ -132,7 +132,7 @@ func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing
 	def.id = "busker"
 	def.use_field(FieldSpec.of(intensity, real.core_within(), real.heard_within())
 			.pulsing_every(real.pulses_every()))
-	def.telegraph_time = real.telegraphs_for()
+	def.use_warning(WarningSpec.lasting(real.telegraphs_for()))
 
 	var instance := EventInstance.new()
 	instance.setup(def, busker_at)

@@ -103,7 +103,7 @@ func _she_has_left_his_notice() -> bool:
 ## **Birds go up when she reaches them, and a clock cannot know when that is** (2026-09-20: they
 ## should basically start fluttering when I touch them, not after). The flush fires on her arrival
 ## at the birds' own spread plus her body, the distance at which she is among them — the same end of
-## its notice a pursuer's lunge makes (`Phase.ACTIVE`). Its `telegraph_time` is the backstop for a
+## its notice a pursuer's lunge makes (`Phase.ACTIVE`). Its `telegraphs_for()` is the backstop for a
 ## flock she came near and never reached, not the wait.
 func _flush_the_flock_if_she_is_among_them() -> void:
 	var her: Vector2 = _where.at()

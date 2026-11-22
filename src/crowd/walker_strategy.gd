@@ -331,7 +331,7 @@ func enter_at_an_end(along_tile: int) -> bool:
 # is and `Crowd._hold_walkers_at_doors()` for the geometry that feeds them.
 #
 # **None of this is her detention.** `EventInstance`/`EventManager` hide her, ease the camera onto
-# the door, charge her meter and teleport her out past the body's own `detain_radius`; a walker is
+# the door, charge her meter and teleport her out past the body's own `detain_distance()`; a walker is
 # not the one being looked for and shares only the shape of the wait. What a hut is to the crowd is
 # `WalkerDoorHold` — a point, somebody inside, and a line — and nothing here reads a catalogue row.
 
