@@ -87,10 +87,10 @@ func _label(hud: Hud, node_name: String) -> Label:
 	return hud.find_child(node_name, true, false) as Label
 
 func _pursuer() -> EventInstance:
-	var def := EventDef.new()
-	def.id = "test_pursuer"
-	def.pursuit = PursuitSpec.at(0.0)
-	def.use_warning(WarningSpec.lasting(2.0))
+	var draft := EventDraft.new("test_pursuer")
+	draft.pursuit(PursuitSpec.at(0.0))
+	draft.warning(WarningSpec.lasting(2.0))
+	var def := draft.build()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	return instance

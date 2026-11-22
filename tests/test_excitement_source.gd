@@ -38,11 +38,10 @@ class Fixed extends ExcitementSources:
 		return alone
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
-	var def := EventDef.new()
-	def.id = id
-	def.use_field(FieldSpec.of(intensity, inner, outer))
-	def.use_warning(WarningSpec.lasting(0.0))
-	return def
+	var draft := EventDraft.new(id)
+	draft.field(FieldSpec.of(intensity, inner, outer))
+	draft.warning(WarningSpec.lasting(0.0))
+	return draft.build()
 
 func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t: TestRunner) -> void:
 	var body := Node2D.new()
@@ -95,14 +94,18 @@ func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var first := source.contribution_at(at)
 	t.check(first > 0.0 and first == instance.field_at(at, -1.0, Vector2.INF),
 			"an event's rate on open ground is its field (%.2f/s)" % first)
-	instance.row().use_field(instance.row().field().at_peak(40.0))
 	t.check(source.contribution_at(at) == first,
 			"asked again at the same age and point, the cached rate answers")
 	source.invalidate_contribution()
-	t.check(source.contribution_at(at) > first,
-			"invalidated, it is worked out again from the field as it now stands")
+	t.check(source.contribution_at(at) == first,
+			"invalidated, it is worked out again from the same field to the same rate")
 	t.check(source.contribution_at(Vector2(1000.0, 0.0)) == 0.0,
 			"and a point past its reach is charged nothing")
+	var stronger := EventInstance.new()
+	stronger.setup(_def("cached_stronger", 40.0), Vector2.ZERO)
+	t.check(stronger.source().contribution_at(at) > first,
+			"a row whose field peaks higher is charged more at the same point")
+	stronger.free()
 	instance.free()
 
 func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) -> void:
@@ -124,8 +127,9 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 
 func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	var instance := EventInstance.new()
-	var def := _def("moving", 30.0)
-	def.use_route(RouteSpec.at(80.0))
+	var moving := _def("moving", 30.0).redraft()
+	moving.route(RouteSpec.at(80.0))
+	var def := moving.build()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]))
 	var her := Vector2(200.0, 0.0)
 	var gross := instance.source().expected_gross_at(her)

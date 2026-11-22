@@ -294,8 +294,7 @@ func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 ## closing on it, doubled red with her on it, and nothing with her away and still, and each change
 ## of her state is drawn on the next frame.
 func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
-	var def := _copy_of(EventCatalogue.by_id("loose_dog"))
-	def.use_lethal(LethalSpec.at_its_core())
+	var def := _made_lethal(EventCatalogue.by_id("loose_dog"))
 	var her := WhereSheIs.nowhere()
 	var instance: EventInstance = await DrawnEvent.stand(t, def, false, null, null,
 			DrawnEvent.AT, Vector2.RIGHT, her)
@@ -621,9 +620,10 @@ static func _never_settles(instance: EventInstance) -> bool:
 	_asks(instance)
 	return _asks(instance)
 
-## A copy of `def` to change without changing the catalogue's own row, which every suite shares: made
-## the way the game makes a derived row (`EventDef.at_heat()`, `as_warned_first()`), a
-## `Resource.duplicate()`, which shares the row's body value.
-static func _copy_of(def: EventDef) -> EventDef:
-	var copy := def.duplicate() as EventDef
-	return copy
+## A copy of `def` that ends the day at its core, the catalogue's own row left as it is, since every
+## suite shares it: made the way the game makes a derived row (`EventDef.at_heat()`,
+## `as_warned_first()`), a redraft, which shares the row's body value.
+static func _made_lethal(def: EventDef) -> EventDef:
+	var draft := def.redraft()
+	draft.lethal(LethalSpec.at_its_core())
+	return draft.build()

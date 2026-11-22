@@ -58,7 +58,7 @@ func _mast_plans(day: int) -> Array[EventPlan]:
 ## that no longer exists: `Object.get()` is the dynamic accessor, and it answers `null` for a
 ## property nobody declared rather than raising the parse error a static `def.city_wide` would.
 func _test_no_row_is_city_wide(t: TestRunner) -> void:
-	t.check(EventDef.new().get("city_wide") == null,
+	t.check(EventDraft.new("").build().get("city_wide") == null,
 			"EventDef carries no city_wide field any more")
 	var loudspeaker := EventCatalogue.by_id("loudspeaker")
 	var curfew := EventCatalogue.by_id("curfew_announce")

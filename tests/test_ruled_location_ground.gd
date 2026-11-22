@@ -137,15 +137,15 @@ func _test_a_route_is_built_inside_its_run(t: TestRunner) -> void:
 	t.check(fit.bounds == ([Rect2i()] as Array[Rect2i]), "and off it, on no bound")
 
 ## **A location's weight is its own ground's alone** (`scale()`): a row weighed at a half on a
-## street (`EventDef.weigh_on()`) scales at one on an ordinary sidewalk location, since its weight
+## street (`EventDraft.weighed_on()`) scales at one on an ordinary sidewalk location, since its weight
 ## on a kind of ground is in the bag's fill already (`UnitFills`) and is not counted again here.
 func _test_a_locations_weight_is_its_grounds_alone(t: TestRunner) -> void:
-	var row := EventDef.new()
-	row.id = "light"
-	row.kind = GameEnums.EventKind.RECURRING
-	row.role = EventDef.Role.SCENERY
-	row.placement = [GameEnums.TileType.SIDEWALK] as Array[int]
-	row.weigh_on(PlacementGround.Kind.STREET, 0.5)
+	var draft := EventDraft.new("light")
+	draft.recurring()
+	draft.plays(EventDef.Role.SCENERY)
+	draft.ground([GameEnums.TileType.SIDEWALK] as Array[int])
+	draft.weighed_on(PlacementGround.Kind.STREET, 0.5)
+	var row := draft.build()
 	var ground := RowGround.new(null, null, true, RowGround.Weights.new(),
 			func(_def: EventDef) -> bool: return false)
 	var standing: Array[EventPlan] = []

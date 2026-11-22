@@ -281,13 +281,17 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> voi
 	# stand-off, 62px of room, 0.48s at 130px/s. `validate()` refuses it on load (asked here
 	# through the predicate, since the refusal is a `push_error`, which fails the whole run); a
 	# lunge exactly at the catch is allowed.
-	var too_short := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
-	too_short.pursuit = too_short.pursuit.lunging_from(10.0)
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var lunging := robbery.redraft()
+	lunging.pursuit(robbery.pursuit.lunging_from(10.0))
+	var too_short := lunging.build()
 	t.check(too_short.lunge_is_inside_the_catch(), "a 10px lunge on a 26px catch is inside it")
-	too_short.pursuit = too_short.pursuit.lunging_from(too_short.lethal_reach())
-	t.check(not too_short.lunge_is_inside_the_catch(), "a lunge exactly at the catch is not")
-	too_short.pursuit = too_short.pursuit.lunging_from(0.0)
-	t.check(not too_short.lunge_is_inside_the_catch(), "and 0 means the catch")
+	lunging.pursuit(robbery.pursuit.lunging_from(robbery.lethal_reach()))
+	var at_the_catch := lunging.build()
+	t.check(not at_the_catch.lunge_is_inside_the_catch(), "a lunge exactly at the catch is not")
+	lunging.pursuit(robbery.pursuit.lunging_from(0.0))
+	var from_nowhere := lunging.build()
+	t.check(not from_nowhere.lunge_is_inside_the_catch(), "and 0 means the catch")
 
 ## **The one encounter in the game with a right answer, walked three ways.** *(M35, playtest 08
 ## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died

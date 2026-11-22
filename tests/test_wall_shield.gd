@@ -776,11 +776,8 @@ class _Emitter extends EventInstance:
 func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 6420
-	var def := EventCatalogue.by_id("busker").duplicate() as EventDef
-	var emitter := _Emitter.new()
-	emitter.setup(def, Vector2.ZERO)
+	var busker := EventCatalogue.by_id("busker")
 	var source := _Source.new()
-	source.live.append(emitter)
 	var layers := DebugLayers.new()
 	layers.setup(source, null, null, Callable(), null)
 	var view := Rect2(Vector2(-320.0, -180.0), Vector2(640.0, 360.0))
@@ -790,14 +787,24 @@ func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> v
 	var drawn_off_screen := 0
 	for i in 4000:
 		var spine := rng.randf_range(0.0, 60.0) if rng.randf() < 0.5 else 0.0
-		emitter.chosen_shape = GroundShape.segment(spine, 6.0) if spine > 0.0 \
-				else GroundShape.point(6.0)
-		emitter.chosen_axis = Vector2.from_angle(rng.randf() * TAU)
-		emitter.chosen_velocity = Vector2.ZERO if rng.randf() < 0.4 \
+		var shape := GroundShape.segment(spine, 6.0) if spine > 0.0 else GroundShape.point(6.0)
+		var axis := Vector2.from_angle(rng.randf() * TAU)
+		var velocity := Vector2.ZERO if rng.randf() < 0.4 \
 				else Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 600.0)
-		emitter.position = Vector2(rng.randf_range(-1500.0, 1500.0), rng.randf_range(-1500.0, 1500.0))
+		var at := Vector2(rng.randf_range(-1500.0, 1500.0), rng.randf_range(-1500.0, 1500.0))
 		var inner := rng.randf_range(10.0, 200.0)
-		def.use_field(def.field().holding_to(inner).reaching(inner + rng.randf_range(0.0, 320.0)))
+		# A row is never changed, so each field width is a row of its own on its own emitter.
+		var widening := busker.redraft()
+		widening.field(busker.field().holding_to(inner).reaching(inner + rng.randf_range(0.0, 320.0)))
+		var def := widening.build()
+		var emitter := _Emitter.new()
+		emitter.setup(def, Vector2.ZERO)
+		emitter.chosen_shape = shape
+		emitter.chosen_axis = axis
+		emitter.chosen_velocity = velocity
+		emitter.position = at
+		source.live.clear()
+		source.live.append(emitter)
 		var on_screen := 0
 		for level: float in [def.core_within(), def.heard_within()]:
 			var outline := emitter.chosen_shape.field_outline(emitter.position,
@@ -816,6 +823,7 @@ func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> v
 			culled_on_screen += 1
 		elif drawn.size() > on_screen:
 			drawn_off_screen += 1
+		emitter.free()
 	t.check(seen > 200 and unseen > 200,
 			"the sweep met outlines on screen (%d emitters) and off it (%d)" % [seen, unseen])
 	t.check(culled_on_screen == 0, "and culled none that reach the screen (%d emitters lost one)"
@@ -824,4 +832,3 @@ func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> v
 			% drawn_off_screen)
 	layers.free()
 	source.free()
-	emitter.free()

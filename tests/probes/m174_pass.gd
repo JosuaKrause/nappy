@@ -109,14 +109,15 @@ func _row(id: String) -> void:
 ## public (`M174Pass.historical_def()`) so `tests/test_events.gd` shares this rather than keeping
 ## a second copy that could drift from it.
 static func historical_def(id: String) -> EventDef:
-	var d: EventDef = EventCatalogue.by_id(id).duplicate()
+	var current := EventCatalogue.by_id(id)
+	var d := current.redraft()
 	if id == "homeless_yeller":
-		d.use_field(FieldSpec.of(14.0, 45.0, 210.0).pulsing_every(d.pulses_every()))
+		d.field(FieldSpec.of(14.0, 45.0, 210.0).pulsing_every(current.pulses_every()))
 	elif id == "dog_walker":
-		d.use_field(d.field().at_peak(26.0))
+		d.field(current.field().at_peak(26.0))
 	elif id == "loose_dog":
-		d.use_field(d.field().at_peak(32.0))
-	return d
+		d.field(current.field().at_peak(32.0))
+	return d.build()
 
 ## The pass, averaged over `PHASE_SAMPLES` points in the row's own pulse — see the class doc.
 ## Static and public so the relationship test in `tests/test_events.gd` runs the identical

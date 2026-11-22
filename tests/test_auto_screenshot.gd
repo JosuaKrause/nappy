@@ -434,10 +434,10 @@ func _test_a_script_lets_go_of_the_last_action_when_it_ends(t: TestRunner) -> vo
 ## A pursuit as the director announces one: an event whose def carries a pursuit, telegraphed on
 ## the bus the rig listens to.
 func _telegraph_a_pursuer() -> void:
-	var def := EventDef.new()
-	def.id = "test_pursuer"
-	def.pursuit = PursuitSpec.at(0.0)
-	def.use_warning(WarningSpec.lasting(2.0))
+	var draft := EventDraft.new("test_pursuer")
+	draft.pursuit(PursuitSpec.at(0.0))
+	draft.warning(WarningSpec.lasting(2.0))
+	var def := draft.build()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	EventBus.event_telegraphed.emit(instance)

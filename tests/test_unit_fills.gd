@@ -5,7 +5,7 @@ extends RefCounted
 ## only on ground it stands on, scaled by its weight there; a marble that takes a section weighs as
 ## the two locations it speaks for; and a cell no row stands in is the empty marble alone.
 ##
-## Built for real over rows made by hand (`EventDef.new()` with the fields a fill reads) or taken
+## Built for real over rows made by hand (`EventDraft` with the settings a fill reads) or taken
 ## from the catalogue, the role-by-view weights `RowGround.Weights.of(1, 3, 5, 1, 7)` (three
 ## different numbers, so each role's weight is told apart without naming a setting) and a lambda
 ## for which wall is one by its cost. Mocks nothing: every collaborator is data
@@ -47,21 +47,20 @@ static func _by_cost(ids: Array[String]) -> Callable:
 ## `role` says otherwise: `"friction"` a quiet row, `"wall"` one whose field is too costly to walk
 ## through, `"lethal"` one that ends the day.
 static func _row(id: String, placement: Array[int], role := "scenery") -> EventDef:
-	var def := EventDef.new()
-	def.id = id
-	def.kind = GameEnums.EventKind.RECURRING
-	def.placement = placement
-	def.weight = 1.0
+	var draft := EventDraft.new(id)
+	draft.recurring()
+	draft.ground(placement)
+	draft.drawn(1.0, 1)
 	match role:
 		"scenery":
-			def.role = EventDef.Role.SCENERY
+			draft.plays(EventDef.Role.SCENERY)
 		"friction":
-			def.use_field(FieldSpec.of(1.0, 10.0, 40.0))
+			draft.field(FieldSpec.of(1.0, 10.0, 40.0))
 		"wall":
-			def.use_field(FieldSpec.of(60.0, 80.0, 200.0))
+			draft.field(FieldSpec.of(60.0, 80.0, 200.0))
 		"lethal":
-			def.use_lethal(LethalSpec.at_its_core())
-	return def
+			draft.lethal(LethalSpec.at_its_core())
+	return draft.build()
 
 ## The rows a unit draws on `day`, as the dawn draw gathers them (`DawnDraw`), cold.
 static func _catalogue(day: int) -> Dictionary:
@@ -268,8 +267,9 @@ func _test_a_row_has_marbles_only_where_it_stands(t: TestRunner) -> void:
 ## junction box's.
 func _test_a_rows_weight_on_a_ground_scales_its_marbles(t: TestRunner) -> void:
 	var sidewalk: Array[int] = [GameEnums.TileType.SIDEWALK]
-	var light := _row("light", sidewalk)
-	light.weigh_on(STREET, 0.5)
+	var weighed := _row("light", sidewalk).redraft()
+	weighed.weighed_on(STREET, 0.5)
+	var light := weighed.build()
 	var fills := _fills({"plain": _row("plain", sidewalk), "light": light}, 1)
 	var street := fills.of(OFF, STREET)
 	var box := fills.of(OFF, JUNCTION)

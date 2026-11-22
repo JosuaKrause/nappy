@@ -461,12 +461,14 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 		instance.free()
 
 func _test_hard_fail_only_when_active(t: TestRunner) -> void:
-	var def := EventDef.new()
-	def.id = "test_hard_fail"
-	def.use_body(BodySpec.none().walked_round().going_on())
-	def.use_field(FieldSpec.of(20.0, 40.0, 120.0))
-	def.use_lethal(LethalSpec.at_its_core())
-	def.use_warning(WarningSpec.lasting(def.minimum_telegraph()))
+	var draft := EventDraft.new("test_hard_fail")
+	draft.body(BodySpec.none().walked_round().going_on())
+	draft.field(FieldSpec.of(20.0, 40.0, 120.0))
+	draft.lethal(LethalSpec.at_its_core())
+	# The telegraph is the minimum this row's own field and body ask, so it is read off the row
+	# built without one.
+	draft.warning(WarningSpec.lasting(draft.build().minimum_telegraph()))
+	var def := draft.build()
 	t.check(def.validate(), "a hard-fail event with the doubled margin is fair")
 
 	var instance := _instance(t, def)

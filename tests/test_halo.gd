@@ -105,13 +105,12 @@ static func _frames_for(t: TestRunner, clock: HaloRig.FrameClock, seconds: float
 		await t.get_tree().process_frame
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
-	var def := EventDef.new()
-	def.id = id
-	def.use_field(FieldSpec.of(intensity, inner, outer))
+	var draft := EventDraft.new(id)
+	draft.field(FieldSpec.of(intensity, inner, outer))
 	# No telegraph damping to reason about: `is_telegraphing()` is `age < telegraphs_for()`, and
 	# age starts at 0.0, so a zero telegraph is never true.
-	def.use_warning(WarningSpec.lasting(0.0))
-	return def
+	draft.warning(WarningSpec.lasting(0.0))
+	return draft.build()
 
 ## A manager over open ground and a run of its own, handed in as the escape's building is handed its
 ## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
@@ -653,8 +652,9 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 	# The other flag `contribution_at()`'s early return reads, flipped outside a tick the way a
 	# completed task sends a figure off (`leave_for_a_completed_task()`, through `_be_done()`'s
 	# leaving branch when a mobile row has somewhere to go).
-	var leaving_def := _def("leaving", 40.0, 40.0, 400.0)
-	leaving_def.departs_at = 10.0 # departure_speed() > 0, so _be_done() takes the leaving branch
+	var leaving_draft := _def("leaving", 40.0, 40.0, 400.0).redraft()
+	leaving_draft.leaves_at(10.0) # departure_speed() > 0, so _be_done() takes the leaving branch
+	var leaving_def := leaving_draft.build()
 	var leaving := _instance_at(leaving_def, Vector2.ZERO)
 	t.check(leaving.source().contribution_at(Vector2(10.0, 0.0)) > 0.0,
 			"a live row reaches a point inside its own field, which the cache now holds")
